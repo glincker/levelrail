@@ -39,10 +39,12 @@ type ServiceHealth struct {
 // for why this is a distinct type from internal/spec.Service rather than
 // reusing it directly.
 type DesiredService struct {
-	Name      string
-	Image     string
-	Port      int
-	Env       map[string]string
+	Name    string
+	Image   string
+	Port    int
+	Domains []string
+	Env     map[string]string
+
 	Resources *ServiceResources
 	Health    *ServiceHealth
 }
@@ -53,6 +55,10 @@ type DesiredService struct {
 // produced (a deploy pipeline resolving a complete DesiredService from
 // one app.yaml service block, not assembling one field at a time).
 func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error {
+	domainsJSON, err := json.Marshal(nonNilSlice(svc.Domains))
+	if err != nil {
+		return fmt.Errorf("store: marshal domains for service %q: %w", svc.Name, err)
+	}
 	envJSON, err := json.Marshal(nonNilMap(svc.Env))
 	if err != nil {
 		return fmt.Errorf("store: marshal env for service %q: %w", svc.Name, err)
@@ -67,16 +73,17 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	}
 
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, env, resources, health, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, domains, env, resources, health, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
+			domains = excluded.domains,
 			env = excluded.env,
 			resources = excluded.resources,
 			health = excluded.health,
 			updated_at = excluded.updated_at
-	`, svc.Name, svc.Image, svc.Port, string(envJSON), string(resourcesJSON), string(healthJSON))
+	`, svc.Name, svc.Image, svc.Port, string(domainsJSON), string(envJSON), string(resourcesJSON), string(healthJSON))
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
@@ -91,7 +98,7 @@ var ErrServiceNotFound = errors.New("store: service not found")
 // ErrServiceNotFound if no such service has been saved.
 func (db *DB) GetDesiredService(ctx context.Context, name string) (*DesiredService, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT name, image, port, env, resources, health
+		SELECT name, image, port, domains, env, resources, health
 		FROM desired_services
 		WHERE name = ?
 	`, name)
@@ -109,7 +116,7 @@ func (db *DB) GetDesiredService(ctx context.Context, name string) (*DesiredServi
 // ListDesiredServices returns every saved service, ordered by name.
 func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, image, port, env, resources, health
+		SELECT name, image, port, domains, env, resources, health
 		FROM desired_services
 		ORDER BY name
 	`)
@@ -139,13 +146,16 @@ func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error)
 // signature), so the decode-JSON-columns logic exists exactly once.
 func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	var (
-		svc                            DesiredService
-		envJSON, resourcesJSON, health string
+		svc                                        DesiredService
+		domainsJSON, envJSON, resourcesJSON, health string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &envJSON, &resourcesJSON, &health); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &resourcesJSON, &health); err != nil {
 		return nil, err
 	}
 
+	if err := json.Unmarshal([]byte(domainsJSON), &svc.Domains); err != nil {
+		return nil, fmt.Errorf("unmarshal domains: %w", err)
+	}
 	if err := json.Unmarshal([]byte(envJSON), &svc.Env); err != nil {
 		return nil, fmt.Errorf("unmarshal env: %w", err)
 	}
@@ -171,4 +181,13 @@ func nonNilMap(m map[string]string) map[string]string {
 		return map[string]string{}
 	}
 	return m
+}
+
+// nonNilSlice is nonNilMap's counterpart for Domains: an unset slice
+// marshals to "[]", not JSON null.
+func nonNilSlice(s []string) []string {
+	if s == nil {
+		return []string{}
+	}
+	return s
 }

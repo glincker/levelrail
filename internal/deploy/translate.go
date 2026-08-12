@@ -15,10 +15,11 @@ import (
 // else before a build was even attempted.
 func toDesiredService(name, image string, svc spec.Service) (store.DesiredService, error) {
 	d := store.DesiredService{
-		Name:  name,
-		Image: image,
-		Port:  svc.Port,
-		Env:   literalEnv(svc.Env),
+		Name:    name,
+		Image:   image,
+		Port:    svc.Port,
+		Domains: svc.Domains,
+		Env:     literalEnv(svc.Env),
 	}
 
 	if svc.Resources != nil {

@@ -13,10 +13,11 @@ func TestSaveAndGetDesiredService(t *testing.T) {
 	ctx := context.Background()
 
 	want := DesiredService{
-		Name:  "web",
-		Image: "levelrail/thesvg:abc1234",
-		Port:  3000,
-		Env:   map[string]string{"NODE_ENV": "production"},
+		Name:    "web",
+		Image:   "levelrail/thesvg:abc1234",
+		Port:    3000,
+		Domains: []string{"app.example.com", "www.app.example.com"},
+		Env:     map[string]string{"NODE_ENV": "production"},
 		Resources: &ServiceResources{
 			MemoryBytes: 512 * 1024 * 1024,
 			NanoCPUs:    500_000_000,
@@ -38,6 +39,9 @@ func TestSaveAndGetDesiredService(t *testing.T) {
 
 	if got.Name != want.Name || got.Image != want.Image || got.Port != want.Port {
 		t.Errorf("scalar fields = %+v, want %+v", got, want)
+	}
+	if !reflect.DeepEqual(got.Domains, want.Domains) {
+		t.Errorf("Domains = %+v, want %+v", got.Domains, want.Domains)
 	}
 	if !reflect.DeepEqual(got.Env, want.Env) {
 		t.Errorf("Env = %+v, want %+v", got.Env, want.Env)
@@ -80,6 +84,12 @@ func TestSaveDesiredService_MinimalFieldsRoundTrip(t *testing.T) {
 	}
 	if len(got.Env) != 0 {
 		t.Errorf("Env = %+v, want empty", got.Env)
+	}
+	if got.Domains == nil {
+		t.Error("Domains = nil, want a non-nil (possibly empty) slice")
+	}
+	if len(got.Domains) != 0 {
+		t.Errorf("Domains = %+v, want empty", got.Domains)
 	}
 }
 

@@ -1,0 +1,72 @@
+#!/bin/bash
+# Fast local quality gate, the Go-project equivalent of a frontend's
+# lint/prettier pre-commit hook: format, vet, lint, and the project's own
+# no-em-dash rule. Deliberately does NOT run the full test suite (many
+# packages have live tests against a real Docker daemon, seconds each,
+# too slow for every commit), that stays CI's job
+# (.github/workflows/ci.yml), which runs on every push.
+set -uo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+fail=0
+
+echo "pre-commit: gofmt"
+staged_go_files=$(git diff --cached --name-only --diff-filter=ACM -- '*.go' | grep -v '^docs-local/')
+if [ -n "$staged_go_files" ]; then
+	# xargs, not a bare $(...) expansion inside gofmt -l: an empty
+	# staged_go_files would otherwise pass gofmt zero file arguments,
+	# and gofmt with no files reads stdin and hangs waiting for input.
+	unformatted=$(echo "$staged_go_files" | xargs gofmt -l)
+	if [ -n "$unformatted" ]; then
+		echo "not gofmt-formatted:"
+		echo "$unformatted"
+		fail=1
+	fi
+fi
+
+echo "pre-commit: go vet"
+if ! go vet ./... 2>&1; then
+	fail=1
+fi
+
+echo "pre-commit: golangci-lint"
+if command -v golangci-lint >/dev/null; then
+	if ! golangci-lint run ./...; then
+		fail=1
+	fi
+else
+	echo "golangci-lint not installed, skipping (CI still enforces this)"
+fi
+
+# CLAUDE.md is excluded: it quotes the banned characters as a literal
+# example of what's disallowed, in the rule that bans them. This script
+# is excluded for the same reason, one line down: the search pattern
+# itself has to contain the literal characters it's looking for.
+echo "pre-commit: em dash / en dash sweep"
+staged_files=$(git diff --cached --name-only --diff-filter=ACM | grep -v '^docs-local/competitor-clones/' | grep -v '^CLAUDE.md$' | grep -v '^scripts/git-hooks/pre-commit$')
+dash_hits=""
+for f in $staged_files; do
+	[ -f "$f" ] || continue
+	if grep -l "—\|–" "$f" >/dev/null 2>&1; then
+		dash_hits="$dash_hits $f"
+	fi
+done
+if [ -n "$dash_hits" ]; then
+	echo "em dash or en dash found in:$dash_hits"
+	echo "CLAUDE.md: no em dashes or en dashes anywhere. Use commas, periods, parentheses, or colons."
+	fail=1
+fi
+
+echo "pre-commit: go build"
+if ! go build ./... 2>&1; then
+	fail=1
+fi
+
+if [ "$fail" -ne 0 ]; then
+	echo ""
+	echo "pre-commit checks failed, commit aborted."
+	exit 1
+fi
+
+echo "pre-commit: all checks passed"
