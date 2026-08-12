@@ -524,16 +524,33 @@ store. 75.9% coverage on `internal/api`, 77.7% on `internal/store`
 table both gained direct store-level tests too). 83.4% on `internal/`
 overall, gate is 70%.
 
-### 1.10 Frontend (`/web`). APP DETAIL AND LIVE LOG VIEWER DONE (2026-08-12), embed.FS still open
+### 1.10 Frontend (`/web`). DONE (2026-08-12)
 
 - [x] Vite + React 19 + TypeScript + Tailwind scaffold, TanStack
       Router/Query wired in (`web/src/main.tsx`, `web/src/routes/__root.tsx`).
       Predates this pass; not touched here beyond what's listed below.
-- [ ] **Embedding into the Go binary via `embed.FS`** (CLAUDE.md 4.1/4.12):
-      still not done. `cmd/levelrail/main.go` doesn't reference `web/dist`
-      at all yet. Explicitly out of scope for this pass per its own
-      brief, tracked here as the real remaining gap rather than folded
-      into a checked box.
+- [x] **Embedding into the Go binary via `embed.FS`** (CLAUDE.md 4.1/4.12),
+      package `web` (`web/handler.go`, `embed_real.go`, `embed_stub.go`).
+      `DistFS` sits behind a `-tags embedweb` build tag rather than a
+      bare `//go:embed dist`: `web/dist` is gitignored and doesn't exist
+      until `npm run build` runs, and a bare directive would break plain
+      `go build ./...` repo-wide on any checkout without a frontend
+      build, including every quick sanity command both sessions' git
+      hooks and CI rely on constantly. Default build embeds nothing and
+      serves an actionable 501 instead of a bare 404 (this needed an
+      explicit `index.html` existence probe, not just trusting
+      `fs.Sub`'s error return, which is lazy and doesn't fail until
+      first file access, caught by the package's own test). SPA
+      fallback (any unmatched path serves `index.html` so a hard
+      refresh on a client-side route like `/apps/foo` resolves
+      correctly) is what `handler.go` actually does. `main.go`'s
+      `rootHandler` mounts the 1.9 API at `/api/` (subtree, full path
+      passed through unchanged) and this at `/`, one process per
+      CLAUDE.md 4.1's single-binary story. 100% coverage on the new
+      package; live-verified end to end with a real `npm run build`
+      and a real `-tags embedweb` binary, not just unit tested: `/`,
+      a client-side route, a real static asset, and `/api/v1/brand`
+      all curled through the same running server, all correct.
 - [x] App list (`web/src/routes/apps/index.tsx`,
       `queries/apps.ts`'s `fetchApps`/`appListQueryOptions`). **Contract
       mismatch closed (2026-08-12)**: the list route originally assumed a
