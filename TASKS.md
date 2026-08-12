@@ -524,24 +524,113 @@ store. 75.9% coverage on `internal/api`, 77.7% on `internal/store`
 table both gained direct store-level tests too). 83.4% on `internal/`
 overall, gate is 70%.
 
-### 1.10 Frontend (`/web`). IN PROGRESS, claimed by the parallel session (2026-08-12)
+### 1.10 Frontend (`/web`). APP DETAIL DONE (2026-08-12), embed.FS and live logs still open
 
-Picking this up specifically so two sessions working the same repo don't
-duplicate effort a third time today (already happened once on the
-application controller, once on git hooks): this section is the
-claim marker, keep it current rather than letting it go stale.
+- [x] Vite + React 19 + TypeScript + Tailwind scaffold, TanStack
+      Router/Query wired in (`web/src/main.tsx`, `web/src/routes/__root.tsx`).
+      Predates this pass; not touched here beyond what's listed below.
+- [ ] **Embedding into the Go binary via `embed.FS`** (CLAUDE.md 4.1/4.12):
+      still not done. `cmd/levelrail/main.go` doesn't reference `web/dist`
+      at all yet. Explicitly out of scope for this pass per its own
+      brief, tracked here as the real remaining gap rather than folded
+      into a checked box.
+- [x] App list (`web/src/routes/apps/index.tsx`, `queries/apps.ts`'s
+      `fetchAppPage`/`appListQueryOptions`): also predates this pass.
+      **Known gap surfaced while building the detail route, not fixed
+      here**: `fetchAppPage` expects a `{ items, nextCursor }` page of
+      `AppSummary` rows (`id`, `status`, `primaryDomain`, `lastDeployAt`,
+      `lastDeployStatus`) with cursor pagination, but the real, frozen
+      `GET /api/v1/apps` (`internal/api/apps.go`'s `handleListApps`)
+      returns a bare `[]appResource` array (`name`, `image`, `port`,
+      `domains`, `env`, `resources`, `health`), no cursor, no status, no
+      id. The two were built against different assumptions before 1.9
+      landed and were never reconciled. The list route will not render
+      real data against the real API until someone rewrites its fetch
+      layer and `AppSummary` type to match `appResource`, decides what a
+      list endpoint should actually paginate on, and either adds
+      status/primaryDomain fields server-side or drops them client-side.
+      Not attempted here: it's a different route's data layer, and
+      guessing at a pagination/status design under this task's scope
+      would be exactly the kind of invented contract CLAUDE.md 7 warns
+      against. `AppRow.tsx` was still updated to link by `app.name` (see
+      below), since that part is independent of the fetch-shape bug.
+- [x] **App detail (`web/src/routes/apps/$name.tsx`), this pass.** Built
+      against the real, frozen `internal/api` contract directly (not the
+      list route's mismatched assumptions above):
+      - View: `AppOverview.tsx` renders name, image, port, resource
+        limits, and readiness/liveness probe config from
+        `GET /api/v1/apps/{name}`, formatted by new `lib/format.ts`
+        helpers (`internal/store.ServiceResources`/`ServiceProbe`'s raw
+        bytes/nano-CPUs/nanosecond units, read-only, no edit affordance).
+      - Status: `ConditionsPanel.tsx` renders
+        `GET /api/v1/apps/{name}/deploys`. Deliberately worded and typed
+        as current reconcile *status*, not a history log, matching
+        `internal/api/deploys.go`'s `handleDeployHistory` doc comment
+        (`internal/store.UpsertConditions` only ever keeps the latest
+        condition per type). `types/deploy.ts`'s `ReconcileCondition`
+        intentionally keeps `internal/reconcile.Condition`'s capitalized
+        field names (`Type`, `Status`, `Reason`, `Message`,
+        `LastTransitionTime`) since that Go struct carries no `json`
+        tags and encoding/json falls back to the exported name verbatim.
+      - Domains: `DomainEditor.tsx`, add/remove list, React Hook Form +
+        Zod (per `docs-local/research/frontend-plan.md` section 2),
+        `useFieldArray` with basic domain-shape validation, saved via
+        `PUT /api/v1/apps/{name}` sending the full `AppDetail` back
+        (`handleUpdateApp`'s full-replace semantics, not a patch).
+      - Env vars: `EnvEditor.tsx`, same add/remove-list and full-replace
+        PUT pattern, key/value pairs bound to `AppDetail.env`, duplicate-key
+        validation via a Zod `superRefine`. Explicitly plain string
+        values only, both in the help copy shown in the UI and in the
+        package comment: `internal/deploy.requireNoUnresolvedEnv`
+        (TASKS.md 1.7) still rejects `{ secret: true }`/`{ from: ... }`
+        outright, and `store.DesiredService.Env` is a flat
+        `map[string]string` with no room to represent a secret
+        reference. Nothing here implies secret support exists.
+      - Deploy trigger: `DeployTriggerForm.tsx`, a single image-tag
+        field, `POST /api/v1/apps/{name}/deploys`. No log viewer, no
+        progress bar, no "deploying..." polling beyond the mutation's
+        own pending state: `handleTriggerDeploy` only repoints
+        `desired_services.image` at a new tag, and there is no backend
+        SSE endpoint to stream against, so nothing here pretends one
+        exists.
+      - `DomainEditor`/`EnvEditor` both use RHF's `values` +
+        `resetOptions: { keepDirtyValues: true }` instead of a manual
+        `useEffect`/`reset`, specifically because they render side by
+        side against the same `AppDetail` prop: a successful save in one
+        editor must not silently clobber unsaved edits sitting in the
+        other when the shared query cache updates.
+      - `AppRow.tsx` (list row) swapped from a plain `div` to a
+        `<Link to="/apps/$name" params={{ name: app.name }}>`, per its
+        own comment inviting exactly this once the detail route existed.
+        Links by `name`, the only identifier `appResource` actually has,
+        not `AppSummary.id`.
+- [ ] **Live build logs**: not built, and deliberately not faked.
+      CLAUDE.md 4.12 specifies SSE for this, and
+      `docs-local/research/frontend-plan.md` section 2 already designs
+      the client half (`useDeployLogStream`, a bounded ring buffer, a
+      dedicated isolated route chunk), but there is no backend SSE
+      endpoint to consume yet: `internal/api` (1.9) only exposes trigger
+      and current-status endpoints, no log stream. Building a client
+      against a nonexistent endpoint, or worse a fake polling
+      substitute, would be exactly the kind of invented contract this
+      repo's own conventions warn against. Follow-up: add the SSE
+      endpoint (likely surfacing `internal/build`'s already-decoupled
+      `build.ProgressEvent`/`SlogProgress`, see TASKS.md 1.4) before
+      building this route.
+- [x] Route-level code splitting: confirmed by build output, not just
+      configured. `npm run build` produces a separate chunk for the
+      `$name` route (`_name-*.js`, ~107 KB) from the `apps` list route
+      (`apps-*.js`, ~27 KB) and the shared `index-*.js` bundle, i.e. a
+      session that never opens an app's detail page doesn't pay for
+      React Hook Form, Zod, or the editor components.
 
-- [x] Vite + React 19 + TypeScript (strict) + Tailwind scaffold, TanStack
-      Router/Query/Virtual, ESLint + Prettier, App List route against the
-      real `/api/v1/apps` (1.9)
-- [ ] `embed.FS` wiring into the Go binary (CLAUDE.md 4.1/4.12): nothing
-      serves `/web`'s build output from `cmd/levelrail` yet
-- [ ] App detail, deploy history, live build logs (consumes 1.4's SSE
-      stream), env editor, domain config, per
-      `docs-local/research/frontend-plan.md`'s route tree
-- [ ] Route-level code splitting per route added, per CLAUDE.md 4.12 and
-      7 ("the dashboard should not ship the log viewer's bundle"), not
-      just the App List route's existing split
+No test runner is configured for `/web` yet (no `test` script in
+`package.json`, no Vitest/Testing Library installed), and that predates
+this pass too. Verification here is what the scaffold's own list route
+already established as the bar: `npm run typecheck`, `npm run lint`,
+`npm run format:check`, and `npm run build`, all clean, plus a manual
+`grep -rlP '[\x{2014}\x{2013}]' web/src` confirming no em/en dashes
+anywhere in `/web/src`.
 
 ---
 
