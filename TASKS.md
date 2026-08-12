@@ -524,7 +524,7 @@ store. 75.9% coverage on `internal/api`, 77.7% on `internal/store`
 table both gained direct store-level tests too). 83.4% on `internal/`
 overall, gate is 70%.
 
-### 1.10 Frontend (`/web`). APP DETAIL DONE (2026-08-12), embed.FS and live logs still open
+### 1.10 Frontend (`/web`). APP DETAIL AND LIVE LOG VIEWER DONE (2026-08-12), embed.FS still open
 
 - [x] Vite + React 19 + TypeScript + Tailwind scaffold, TanStack
       Router/Query wired in (`web/src/main.tsx`, `web/src/routes/__root.tsx`).
@@ -605,19 +605,29 @@ overall, gate is 70%.
         own comment inviting exactly this once the detail route existed.
         Links by `name`, the only identifier `appResource` actually has,
         not `AppSummary.id`.
-- [ ] **Live build logs**: not built, and deliberately not faked.
-      CLAUDE.md 4.12 specifies SSE for this, and
-      `docs-local/research/frontend-plan.md` section 2 already designs
-      the client half (`useDeployLogStream`, a bounded ring buffer, a
-      dedicated isolated route chunk), but there is no backend SSE
-      endpoint to consume yet: `internal/api` (1.9) only exposes trigger
-      and current-status endpoints, no log stream. Building a client
-      against a nonexistent endpoint, or worse a fake polling
-      substitute, would be exactly the kind of invented contract this
-      repo's own conventions warn against. Follow-up: add the SSE
-      endpoint (likely surfacing `internal/build`'s already-decoupled
-      `build.ProgressEvent`/`SlogProgress`, see TASKS.md 1.4) before
-      building this route.
+- [x] **Live build logs (`web/src/routes/apps/$name/deploys/$deployId/logs.tsx`),
+      this pass.** Client half only, per `docs-local/research/frontend-plan.md`
+      section 2: `useDeployLogStream` wraps native `EventSource` (no
+      hand-rolled reconnect), an 8,000-line ring buffer, and a
+      pause/resume flag the route's auto-scroll consumes without ever
+      stopping ingestion. Rendered through TanStack Virtual, fixed-height
+      monospace rows, ANSI escape codes stripped (`lib/ansi.ts`, full
+      ANSI-to-HTML color rendering left as a stretch goal). The most
+      isolated route in the app per CLAUDE.md 4.12: confirmed via
+      `npm run build`'s per-chunk output that the SSE hook, the ANSI
+      stripper, and this route's own `useVirtualizer` instance appear
+      only in its own chunk, never the shared or app-list bundles.
+      **Still not wired to anything real**: `internal/api` (1.9) has no
+      log-streaming endpoint, so this was built against a documented,
+      unconfirmed contract (`GET /api/v1/apps/{name}/deploys/{deployId}/logs`,
+      SSE, each `data:` payload a bare line or `{line, stream}` JSON),
+      written directly into `queries/deployLogs.ts` and the hook's own
+      comment. Follow-up, unchanged from before: add the SSE endpoint
+      (likely surfacing `internal/build`'s already-decoupled
+      `build.ProgressEvent`/`SlogProgress`, see TASKS.md 1.4) and confirm
+      the contract matches. Not yet linked from the app detail page
+      (`DeployTriggerForm.tsx` was under active concurrent work at the
+      time this landed); reachable directly by route today.
 - [x] Route-level code splitting: confirmed by build output, not just
       configured. `npm run build` produces a separate chunk for the
       `$name` route (`_name-*.js`, ~107 KB) from the `apps` list route
