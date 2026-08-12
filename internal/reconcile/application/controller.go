@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -218,6 +219,17 @@ func (c *Controller) removeStale(ctx context.Context, keep string) error {
 		if cs.Name == keep {
 			continue
 		}
+		if !ownsContainer(c.serviceName, cs.Name) {
+			// ListByPrefix is a bare string-prefix match, not a service
+			// boundary: internal/spec's service-name validation permits
+			// hyphens freely, so a service named "web" also
+			// prefix-matches containers belonging to a differently-named
+			// service like "web-worker". Only ever touch a container
+			// whose name is exactly this service's own containerName
+			// shape; anything else found by the prefix scan belongs to
+			// someone else and must be left alone.
+			continue
+		}
 		if err := c.runtime.Stop(ctx, cs.ID, 10*time.Second); err != nil && firstErr == nil {
 			firstErr = fmt.Errorf("stop stale container %s: %w", cs.Name, err)
 		}
@@ -237,6 +249,12 @@ func primaryAddr(state *docker.ContainerState) (string, error) {
 	return "127.0.0.1:" + strconv.Itoa(state.Ports[0].HostPort), nil
 }
 
+// hashLen is the number of hex characters containerName keeps from the
+// image's hash. Shared with ownsContainer so the two stay in lockstep:
+// the length that identifies "this is one of my containers" has to
+// exactly match the length containerName actually produces.
+const hashLen = 8
+
 // containerName derives a stable, unique-per-image name so the
 // level-triggered check "does the right container exist" needs no
 // memory beyond what Docker itself can answer. Two deploys of the same
@@ -245,7 +263,33 @@ func primaryAddr(state *docker.ContainerState) (string, error) {
 // (so both can exist side by side during a cutover).
 func containerName(serviceName, image string) string {
 	sum := sha256.Sum256([]byte(image))
-	return serviceName + "-" + hex.EncodeToString(sum[:])[:8]
+	return serviceName + "-" + hex.EncodeToString(sum[:])[:hashLen]
+}
+
+// ownsContainer reports whether name is exactly one this service's
+// containerName produces: serviceName + "-" + an hashLen-character hex
+// image hash, nothing more and nothing less. A plain prefix match isn't
+// enough: service names may contain hyphens (internal/spec's nameLike
+// permits them), so a service named "web" string-prefix-matches
+// containers belonging to an entirely different, differently-owned
+// service like "web-worker". Without this exact check, removeStale would
+// treat another service's live container as one of "web"'s own stale
+// leftovers and remove it.
+func ownsContainer(serviceName, name string) bool {
+	suffix, ok := strings.CutPrefix(name, serviceName+"-")
+	if !ok || len(suffix) != hashLen {
+		return false
+	}
+	for _, r := range suffix {
+		if !isHexDigit(r) {
+			return false
+		}
+	}
+	return true
+}
+
+func isHexDigit(r rune) bool {
+	return (r >= '0' && r <= '9') || (r >= 'a' && r <= 'f')
 }
 
 func toContainerSpec(name string, desired *store.DesiredService) docker.ContainerSpec {
