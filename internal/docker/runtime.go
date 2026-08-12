@@ -19,7 +19,7 @@ type ContainerState struct {
 }
 
 // ContainerSpec is desired state for a container a controller wants to
-// exist. Deliberately minimal for the Phase 0 skeleton — CLAUDE.md 4.9's
+// exist. Deliberately minimal for the Phase 0 skeleton: CLAUDE.md 4.9's
 // full app spec (ports, health checks, resources, env) lands in Phase 1.
 type ContainerSpec struct {
 	Name  string
@@ -30,6 +30,7 @@ type ContainerSpec struct {
 // reconciler cares about.
 type EventAction string
 
+// The lifecycle actions a reconciler can receive from Events.
 const (
 	EventStart EventAction = "start"
 	EventDie   EventAction = "die"
@@ -47,12 +48,12 @@ type Event struct {
 
 // Runtime is the surface reconcile controllers are allowed to depend on.
 // The real implementation (Client, in client.go) talks to the Docker
-// Engine API. Tests use a hand-written fake — see nginxdemo's test file
+// Engine API. Tests use a hand-written fake: see nginxdemo's test file
 // for the pattern every future controller's tests should follow.
 type Runtime interface {
 	// InspectByName returns the current state of the container with this
 	// name, or (nil, nil) if no such container exists. It never returns
-	// an error for "not found" — that's a valid observed state, not a
+	// an error for "not found": that's a valid observed state, not a
 	// failure.
 	InspectByName(ctx context.Context, name string) (*ContainerState, error)
 

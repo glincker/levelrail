@@ -38,6 +38,7 @@ func (c *Client) Close() error {
 	return c.cli.Close()
 }
 
+// InspectByName implements Runtime.
 func (c *Client) InspectByName(ctx context.Context, name string) (*ContainerState, error) {
 	f := filters.NewArgs()
 	f.Add("name", "^/"+name+"$") // anchored: Docker's name filter is a substring match otherwise
@@ -57,6 +58,7 @@ func (c *Client) InspectByName(ctx context.Context, name string) (*ContainerStat
 	}, nil
 }
 
+// Create implements Runtime.
 func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error) {
 	if err := c.ensureImage(ctx, spec.Image); err != nil {
 		return "", err
@@ -74,6 +76,7 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 	return resp.ID, nil
 }
 
+// Start implements Runtime.
 func (c *Client) Start(ctx context.Context, id string) error {
 	if err := c.cli.ContainerStart(ctx, id, container.StartOptions{}); err != nil {
 		return fmt.Errorf("docker: start container %s: %w", id, err)
@@ -98,13 +101,16 @@ func (c *Client) ensureImage(ctx context.Context, ref string) error {
 	if err != nil {
 		return fmt.Errorf("docker: pull image %q: %w", ref, err)
 	}
-	defer rc.Close()
+	defer func() {
+		_ = rc.Close() // read side, fully drained by io.Copy below; nothing actionable on a close error here
+	}()
 	if _, err := io.Copy(io.Discard, rc); err != nil {
 		return fmt.Errorf("docker: pull image %q: reading progress stream: %w", ref, err)
 	}
 	return nil
 }
 
+// Events implements Runtime.
 func (c *Client) Events(ctx context.Context) (<-chan Event, <-chan error) {
 	f := filters.NewArgs()
 	f.Add("type", string(events.ContainerEventType))

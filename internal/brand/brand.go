@@ -29,7 +29,11 @@ const envPrefix = "APP_BRAND_"
 // rebranded without a rebuild. The prefix is deliberately generic rather
 // than tied to the current name, see CLAUDE.md section 3.
 func Load(path string) (*Brand, error) {
-	data, err := os.ReadFile(path)
+	// path is operator-supplied at binary startup (a fixed config location,
+	// not attacker-controlled request input), so the usual path-traversal
+	// concern gosec flags here does not apply.
+	data, err := os.ReadFile(path) //nolint:gosec // caller-controlled startup config path, not user input
+
 	if err != nil {
 		return nil, fmt.Errorf("brand: read %s: %w", path, err)
 	}

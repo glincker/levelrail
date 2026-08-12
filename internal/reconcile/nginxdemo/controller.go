@@ -1,7 +1,7 @@
 // Package nginxdemo is the Phase 0 exit criterion from CLAUDE.md: "one
 // controller that keeps a single hardcoded nginx container running. Kill
 // the container by hand, watch it come back." Desired state is hardcoded
-// on purpose — reading desired state from the SQLite store is Phase 1
+// on purpose: reading desired state from the SQLite store is Phase 1
 // (4.7), not this.
 package nginxdemo
 
@@ -23,7 +23,7 @@ const (
 
 // Controller converges a single hardcoded nginx container to "exists and
 // running." Every Reconcile call re-derives what to do from the runtime's
-// current observed state — it never assumes a previous call finished
+// current observed state: it never assumes a previous call finished
 // cleanly, which is what makes it safe to interrupt mid-operation and
 // safe to call again immediately after (CLAUDE.md 4.2: idempotent,
 // level-triggered, safe to interrupt).
@@ -37,8 +37,10 @@ func New(runtime docker.Runtime) *Controller {
 	return &Controller{runtime: runtime}
 }
 
+// Name implements reconcile.Controller.
 func (c *Controller) Name() string { return "nginx-demo" }
 
+// Reconcile implements reconcile.Controller.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	state, err := c.runtime.InspectByName(ctx, ContainerName)
 	if err != nil {
@@ -52,7 +54,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		}
 		// A container that exists but isn't started yet is a valid
 		// observed state the next Reconcile call would find and fix on
-		// its own — but starting it now is still the right first move
+		// its own: but starting it now is still the right first move
 		// rather than waiting for the next trigger.
 		if err := c.runtime.Start(ctx, id); err != nil {
 			return notReady("StartFailedAfterCreate", err), fmt.Errorf("nginx-demo: start after create: %w", err)

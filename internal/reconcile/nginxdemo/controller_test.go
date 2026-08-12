@@ -9,7 +9,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 )
 
-// fakeRuntime is a hand-written fake, not a mocking framework — CLAUDE.md
+// fakeRuntime is a hand-written fake, not a mocking framework: CLAUDE.md
 // 7 asks for exactly this: "Reconcilers get tests against a fake Docker
 // client that can be told to fail in specific ways."
 type fakeRuntime struct {
@@ -23,11 +23,11 @@ type fakeRuntime struct {
 	startedID   string
 }
 
-func (f *fakeRuntime) InspectByName(ctx context.Context, name string) (*docker.ContainerState, error) {
+func (f *fakeRuntime) InspectByName(_ context.Context, _ string) (*docker.ContainerState, error) {
 	return f.inspectResult, f.inspectErr
 }
 
-func (f *fakeRuntime) Create(ctx context.Context, spec docker.ContainerSpec) (string, error) {
+func (f *fakeRuntime) Create(_ context.Context, _ docker.ContainerSpec) (string, error) {
 	f.createCalls++
 	if f.createErr != nil {
 		return "", f.createErr
@@ -35,13 +35,13 @@ func (f *fakeRuntime) Create(ctx context.Context, spec docker.ContainerSpec) (st
 	return "new-container-id", nil
 }
 
-func (f *fakeRuntime) Start(ctx context.Context, id string) error {
+func (f *fakeRuntime) Start(_ context.Context, id string) error {
 	f.startCalls++
 	f.startedID = id
 	return f.startErr
 }
 
-func (f *fakeRuntime) Events(ctx context.Context) (<-chan docker.Event, <-chan error) {
+func (f *fakeRuntime) Events(_ context.Context) (<-chan docker.Event, <-chan error) {
 	return nil, nil // unused by Reconcile
 }
 
@@ -122,7 +122,7 @@ func TestController_Reconcile(t *testing.T) {
 			// The half-succeeded case CLAUDE.md 7 explicitly requires a
 			// test for: the container was created but never started. A
 			// naive controller might think "create succeeded" is enough
-			// state to skip re-checking on the next call — this proves
+			// state to skip re-checking on the next call: this proves
 			// Reconcile reports failure honestly instead.
 			name:           "create succeeds but start fails: half-succeeded, reported as failure",
 			rt:             &fakeRuntime{inspectResult: nil, startErr: errors.New("start failed")},
@@ -173,8 +173,8 @@ func TestController_Reconcile(t *testing.T) {
 }
 
 func TestController_Reconcile_Idempotent(t *testing.T) {
-	// Calling Reconcile repeatedly once converged must stay a no-op —
-	// this is the "safe to call again" half of level-triggered.
+	// Calling Reconcile repeatedly once converged must stay a no-op.
+	// This is the "safe to call again" half of level-triggered.
 	rt := &fakeRuntime{inspectResult: &docker.ContainerState{
 		ID: "existing-id", Name: ContainerName, Running: true,
 	}}

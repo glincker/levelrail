@@ -8,9 +8,9 @@ Audience: this file is the root context document for Claude Code sessions. Read 
 
 The public name is **Levelrail**, decided after four rounds and 65 candidates of generation plus live registry verification (npm, crates.io, PyPI, Docker Hub, GitHub, Homebrew, AUR, Wikipedia, App Store, whois). Full trail is in `docs-local/research/naming/`.
 
-Levelrail was the only candidate clean across every check across all four rounds, including the `.com`. It also encodes a real architectural decision: the reconciler is level-triggered, never edge-triggered (see 4.2). The known cost is a phonetic echo of Railway, a direct competitor — accepted knowingly, not overlooked.
+Levelrail was the only candidate clean across every check across all four rounds, including the `.com`. It also encodes a real architectural decision: the reconciler is level-triggered, never edge-triggered (see 4.2). The known cost is a phonetic echo of Railway, a direct competitor: accepted knowingly, not overlooked.
 
-**This does not change the rule below.** "Levelrail" is documentation, not code. It appears in this file, in ADRs, in the git remote name, and in `brand.yaml`. It must never appear as a hardcoded string anywhere under `/cmd`, `/internal`, `/web`, or `/proto`. The brand indirection layer in section 3 is not a formality now that naming is settled — it's exactly as load-bearing as before.
+**This does not change the rule below.** "Levelrail" is documentation, not code. It appears in this file, in ADRs, in the git remote name, and in `brand.yaml`. It must never appear as a hardcoded string anywhere under `/cmd`, `/internal`, `/web`, or `/proto`. The brand indirection layer in section 3 is not a formality now that naming is settled: it's exactly as load-bearing as before.
 
 ## 1. What this is
 
@@ -26,7 +26,7 @@ So the wedge is: agent-based control plane, observability built into the core, l
 
 Not a Kubernetes competitor. Not a Vercel competitor. The target user runs between 3 and 50 services on between 1 and 10 machines and does not want to learn Kubernetes.
 
-Positioning shorthand for this repo: a lightweight, AI-ready Coolify alternative. "AI-ready" means the HTTP API is designed from Phase 1 so the Phase 4 MCP layer bolts on cleanly (see 4.11) — it does not mean AI enters the reconciliation path. That rule (4.2, 4.11) is unchanged by the positioning language.
+Positioning shorthand for this repo: a lightweight, AI-ready Coolify alternative. "AI-ready" means the HTTP API is designed from Phase 1 so the Phase 4 MCP layer bolts on cleanly (see 4.11): it does not mean AI enters the reconciliation path. That rule (4.2, 4.11) is unchanged by the positioning language.
 
 ## 2. Non-goals
 
@@ -43,12 +43,12 @@ Writing these down because scope creep kills projects in this category.
 
 ## 3. Naming and rebrandability
 
-**Rule: no product name string appears anywhere in source code, ever.** This held true through four rounds of naming and stays true now that the name is decided — see the naming decision note above.
+**Rule: no product name string appears anywhere in source code, ever.** This held true through four rounds of naming and stays true now that the name is decided: see the naming decision note above.
 
 Implementation:
 
 - `internal/brand/brand.go` holds a single `Brand` struct: `Name`, `ShortName`, `BinaryName`, `Domain`, `SupportURL`, `PrimaryColor`, `LogoSVG`, `DocsURL`.
-- Values load from `brand.yaml` at build time, overridable at runtime by `APP_BRAND_*` env vars. (Deliberately not `LEVELRAIL_BRAND_*` — an env prefix that bakes in the current name would itself need a migration if the name ever changes, defeating the point.)
+- Values load from `brand.yaml` at build time, overridable at runtime by `APP_BRAND_*` env vars. (Deliberately not `LEVELRAIL_BRAND_*`: an env prefix that bakes in the current name would itself need a migration if the name ever changes, defeating the point.)
 - Go binary name comes from an ldflags variable, not from the directory name.
 - Frontend reads brand from a `/api/v1/brand` endpoint on boot, hydrates a React context. No hardcoded strings in components.
 - All filesystem paths derive from a single `DataDir` constant, default `/var/lib/levelrail-data` pending final confirmation, env override `APP_DATA_DIR`.
@@ -169,7 +169,7 @@ Per-app data encryption keys, wrapped by a master key held only by the control p
 
 ### 4.11 AI layer: MCP server over the platform API
 
-A separate binary or a subcommand. Tools: list apps, get logs, get metrics, diagnose a crashloop, trigger deploy, rollback, explain a failed build. It is a thin wrapper once the HTTP API is well designed, which is the point. Build it in a later phase, but design the HTTP API assuming it will exist. This is the concrete meaning of "AI-ready" in section 1 — the API contract, not the reconciler, carries that responsibility.
+A separate binary or a subcommand. Tools: list apps, get logs, get metrics, diagnose a crashloop, trigger deploy, rollback, explain a failed build. It is a thin wrapper once the HTTP API is well designed, which is the point. Build it in a later phase, but design the HTTP API assuming it will exist. This is the concrete meaning of "AI-ready" in section 1: the API contract, not the reconciler, carries that responsibility.
 
 ### 4.12 Frontend
 
@@ -203,8 +203,8 @@ The failure mode to avoid is Coolify's: dashboards that degrade as resource coun
   /network           # WireGuard mesh (phase 4)
 /proto               # gRPC definitions for control plane <-> agent
 /web                 # React frontend
-/docs                # user-facing docs, becomes the glinr.com/levelrail pages — PUBLIC, ships with the repo
-/docs-local          # PRIVATE, gitignored — competitive research, naming trail, strategy. Never referenced from /docs or source. See section 8a.
+/docs                # user-facing docs, becomes the glinr.com/levelrail pages: PUBLIC, ships with the repo
+/docs-local          # PRIVATE, gitignored: competitive research, naming trail, strategy. Never referenced from /docs or source. See section 8a.
 /test
   /e2e               # full stack tests against real Docker
   /fixtures          # sample apps to deploy in tests
@@ -224,7 +224,7 @@ No timelines. Each phase has an exit criterion that is a demonstrable behavior, 
 Work:
 
 - Clone and read, do not fork: `coollabsio/coolify`, `Dokploy/dokploy`, `caprover/caprover`, `dokku/dokku`, `basecamp/kamal`. Kamal is the most instructive because it is the smallest and its author had strong opinions about what to leave out.
-- Write `docs-local/research/prior-art.md` covering, for each: how they handle zero-downtime cutover, how they detect a bad deploy, how they roll back, how they store state, what their idle resource usage is, what their most common GitHub issues are. That last one is the most valuable signal available. Sort their issue tracker by comment count. **This lives in `docs-local`, not `/docs` — it's competitive intelligence, not user-facing documentation, and it must never ship in the public repo (see section 8a).**
+- Write `docs-local/research/prior-art.md` covering, for each: how they handle zero-downtime cutover, how they detect a bad deploy, how they roll back, how they store state, what their idle resource usage is, what their most common GitHub issues are. That last one is the most valuable signal available. Sort their issue tracker by comment count. **This lives in `docs-local`, not `/docs`: it's competitive intelligence, not user-facing documentation, and it must never ship in the public repo (see section 8a).**
 - Read the BuildKit Go client examples and get a programmatic build working standalone.
 - Read Caddy's library embedding docs and get a programmatic reverse proxy with auto TLS working standalone.
 - Scaffold the repo, CI, linting, the brand indirection layer, and the SQLite store with migrations.
@@ -334,6 +334,14 @@ These are the rules agents must follow.
 - No global state except the brand config and the logger.
 - Structured logging with `log/slog`. Every log line that describes a resource includes its ID.
 
+**CI and linting**
+
+- Lint config lives at `.golangci.yml` (repo root), golangci-lint v2 schema. `linters.default: none` plus an explicit `enable` list, so only the seven linters named above run, nothing padded on top by golangci-lint's own defaults.
+- Run it locally with `golangci-lint run` (or `golangci-lint run ./internal/brand/...` to scope it to one package while iterating).
+- CI workflow is `.github/workflows/ci.yml`: runs on push and PR against `main`, does `go build ./...`, `go vet ./...`, `golangci-lint run` (via `golangci-lint-action`), then `go test ./... -race -coverprofile=coverage.out` followed by the 70%/`internal` coverage gate.
+- The coverage gate is `scripts/check-coverage.sh <profile> <path-prefix> <threshold>`, runnable locally the same way CI runs it: `go test ./... -race -coverprofile=coverage.out && scripts/check-coverage.sh coverage.out internal/ 70`.
+- The changed-file coverage check on PRs is not implemented yet. See the TODO comment in `ci.yml` for what it needs and why it's deferred until there's a real GitHub remote and a real PR to test it against.
+
 **Frontend**
 
 - TypeScript strict mode, no `any`.
@@ -347,7 +355,7 @@ These are the rules agents must follow.
 - Conventional commits.
 - Every PR must state what it does not do.
 - Feature flags for anything half-built. No long-lived branches.
-- **No em dashes (—) or en dashes (–) anywhere** — code, comments, commit messages, docs, PR bodies. Use commas, periods, parentheses, or colons.
+- **No em dashes (—) or en dashes (–) anywhere**: code, comments, commit messages, docs, PR bodies. Use commas, periods, parentheses, or colons.
 - No direct commits/pushes to `main`. Always branch + PR. Do not open the PR until explicitly told to.
 
 ## 8. How to run Claude Code agents on this
@@ -378,13 +386,13 @@ Parallel agents work well for research and for independent feature slices. They 
 
 ### 8a. docs-local convention (this repo specifically)
 
-`docs-local/` is real, permanent, and lives on disk exactly like any other directory here — it's just excluded from git via `.gitignore`. Nothing here ever gets committed, pushed, or referenced from `/docs`, source, or commit messages.
+`docs-local/` is real, permanent, and lives on disk exactly like any other directory here: it's just excluded from git via `.gitignore`. Nothing here ever gets committed, pushed, or referenced from `/docs`, source, or commit messages.
 
 What goes here:
 
-- `docs-local/research/` — competitor prior-art analysis (`prior-art-<name>.md` per competitor, `prior-art.md` as the synthesized index), pattern extraction, anything that guides a design decision but would be awkward or competitively unwise to publish verbatim.
-- `docs-local/research/naming/` — the full four-round naming trail (65 candidates, registry verification results, the reasoning that landed on Levelrail).
-- `docs-local/competitor-clones/` — shallow clones of Coolify, Dokploy, CapRover, Dokku, Kamal, kept as read-only reference for agents doing research. Never modified, never a source dependency, never fetched/vendored into `/internal` or `/web`.
+- `docs-local/research/`: competitor prior-art analysis (`prior-art-<name>.md` per competitor, `prior-art.md` as the synthesized index), pattern extraction, anything that guides a design decision but would be awkward or competitively unwise to publish verbatim.
+- `docs-local/research/naming/`: the full four-round naming trail (65 candidates, registry verification results, the reasoning that landed on Levelrail).
+- `docs-local/competitor-clones/`: shallow clones of Coolify, Dokploy, CapRover, Dokku, Kamal, kept as read-only reference for agents doing research. Never modified, never a source dependency, never fetched/vendored into `/internal` or `/web`.
 - Anything else that's strategy, launch planning, or pre-decision material.
 
 Before every commit: `git status` and eyeball it. `docs-local/` should never appear staged. If it ever does, that's a stop-and-check moment, not a force-through.

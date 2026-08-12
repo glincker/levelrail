@@ -37,7 +37,11 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer func() {
+		if cerr := client.Close(); cerr != nil {
+			logger.Error("closing docker client", slog.String("error", cerr.Error()))
+		}
+	}()
 
 	engine := reconcile.NewEngine(logger, nginxdemo.New(client))
 

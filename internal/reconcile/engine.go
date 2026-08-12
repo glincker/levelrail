@@ -1,7 +1,7 @@
 // Package reconcile implements the core convergence loop described in
 // CLAUDE.md 4.2: desired state in, observed state diffed against it,
 // idempotent and level-triggered controllers converge the two. Reconcilers
-// never assume they're continuing a previous partial operation — every
+// never assume they're continuing a previous partial operation: every
 // call re-derives what to do from current observed state, which is what
 // makes them safe to interrupt and safe to retry.
 package reconcile
@@ -27,14 +27,14 @@ type Controller interface {
 
 	// Reconcile diffs desired against observed state and takes whatever
 	// action is needed to converge them. It returns the conditions
-	// resulting from this attempt even when it also returns an error —
+	// resulting from this attempt even when it also returns an error;
 	// callers should record both.
 	Reconcile(ctx context.Context) (Result, error)
 }
 
 // Engine runs a fixed set of controllers, triggered by Docker events with
 // a periodic resync as a safety net for any event the stream missed. This
-// push-primary/pull-as-safety-net shape is deliberate — Coolify's own v5
+// push-primary/pull-as-safety-net shape is deliberate: Coolify's own v5
 // rearchitecture (see docs-local/research/prior-art-coolify.md) converged
 // on the same pattern independently.
 type Engine struct {
@@ -48,7 +48,7 @@ type Engine struct {
 
 // NewEngine builds an Engine over the given controllers. Order is
 // preserved for each ReconcileAll pass but controllers must not depend on
-// each other's side effects within a single pass — that's what makes
+// each other's side effects within a single pass: that's what makes
 // per-resource-type controllers safe to reason about independently.
 func NewEngine(logger *slog.Logger, controllers ...Controller) *Engine {
 	if logger == nil {
@@ -63,7 +63,7 @@ func NewEngine(logger *slog.Logger, controllers ...Controller) *Engine {
 }
 
 // ReconcileAll runs every controller once, in order. A single controller
-// failing does not stop the others from running — one broken resource
+// failing does not stop the others from running: one broken resource
 // should never block convergence of everything else.
 func (e *Engine) ReconcileAll(ctx context.Context) {
 	for _, c := range e.controllers {
@@ -113,7 +113,7 @@ func (e *Engine) LastResult(name string) (Result, error) {
 // Run reconciles once immediately, then keeps reconciling on every
 // incoming Docker event and on every resyncInterval tick, until ctx is
 // cancelled or the event stream closes. Interrupting Run at any point is
-// safe — nothing here holds a lock across a reconcile, so the next Run
+// safe: nothing here holds a lock across a reconcile, so the next Run
 // (or a fresh process) picks up wherever observed state actually is.
 func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInterval time.Duration) error {
 	e.logger.Info("reconcile engine starting",

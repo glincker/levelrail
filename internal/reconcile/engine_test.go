@@ -23,7 +23,7 @@ type countingController struct {
 
 func (c *countingController) Name() string { return c.name }
 
-func (c *countingController) Reconcile(ctx context.Context) (Result, error) {
+func (c *countingController) Reconcile(_ context.Context) (Result, error) {
 	c.calls.Add(1)
 	if c.err != nil {
 		return Result{Conditions: []Condition{{Type: "Ready", Status: ConditionFalse, Reason: "Failed"}}}, c.err
@@ -58,7 +58,7 @@ func TestEngine_ReconcileAll_OneFailureDoesNotBlockOthers(t *testing.T) {
 	e.ReconcileAll(context.Background())
 
 	if got := healthy.calls.Load(); got != 1 {
-		t.Errorf("healthy controller: got %d calls, want 1 — one controller failing must not block the others", got)
+		t.Errorf("healthy controller: got %d calls, want 1: one controller failing must not block the others", got)
 	}
 
 	_, err := e.LastResult("failing")

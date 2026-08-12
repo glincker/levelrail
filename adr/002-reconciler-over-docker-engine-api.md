@@ -28,24 +28,24 @@ client, so tests can fake it without a daemon).
 
 ## Rejected alternatives
 
-- **Docker Swarm** — in maintenance mode, and Dokploy's own research
+- **Docker Swarm**: in maintenance mode, and Dokploy's own research
   (`prior-art-dokploy.md`) shows the coupling to Swarm-specific update
   semantics becomes a liability, not a convenience.
-- **Nomad** — BSL license.
-- **K3s / Kubernetes** — defeats the point; brings back the whole surface
+- **Nomad**: BSL license.
+- **K3s / Kubernetes**: defeats the point, brings back the whole surface
   area this project exists to avoid.
-- **SSH + shelled `docker` CLI commands** (Coolify v4, CapRover, Dokku) —
+- **SSH + shelled `docker` CLI commands** (Coolify v4, CapRover, Dokku):
   every one of these was independently confirmed by Phase 0 research to
   force either continuous polling (Coolify: `ServerManagerJob` every
   minute, `docker container inspect` over SSH per registered server,
   confirmed at `app/Jobs/ServerManagerJob.php`) or accept real gaps (CapRover:
   zero per-app health check confirmed by grep; Dokku: no daemon at all,
   paid for with two admitted hacks per its own source comments).
-- **No persistent agent, pure SSH one-shot commands** (Kamal) — genuinely
+- **No persistent agent, pure SSH one-shot commands** (Kamal): genuinely
   zero idle cost, but Kamal's own highest-comment GitHub issue (76 comments,
   `Net::SSH::Disconnect`) is a pure transport-layer failure with nothing to
-  do with deploy logic — exactly the failure class a persistent, reverse-
-  dialed connection (ADR pending for 4.3) removes.
+  do with deploy logic, exactly the failure class a persistent, reverse-dialed
+  connection (ADR 003) removes.
 
 ## Consequences
 
@@ -53,14 +53,14 @@ client, so tests can fake it without a daemon).
   the container it's about to create doesn't already exist, or that an
   in-flight operation from a moment ago finished. `internal/reconcile/
   nginxdemo`'s test suite includes an explicit test for the half-succeeded
-  case (container created, start failed) per CLAUDE.md 7 — that discipline
+  case (container created, start failed) per CLAUDE.md 7. That discipline
   has to hold for every future controller, not just this one.
 - No controller may shell out to `docker` or SSH into anything. The
   `docker.Runtime` interface is the only way `internal/reconcile` is allowed
   to touch container state, and it's implemented entirely over the Engine
   API's HTTP/socket transport.
 - The event-stream-primary, ticker-as-safety-net shape (`Engine.Run` in
-  `internal/reconcile/engine.go`) is not a novel design — it's independently
+  `internal/reconcile/engine.go`) is not a novel design: it's independently
   what Coolify's own in-progress v5 rewrite converges on
   (`app/Jobs/V5ReconcileServerStateJob.php`, per `prior-art-coolify.md`),
   which is reassuring rather than concerning: two independent efforts

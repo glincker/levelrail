@@ -3,11 +3,12 @@ package reconcile
 import "time"
 
 // ConditionStatus mirrors Kubernetes' tri-state convention deliberately:
-// "Unknown" is a real, distinct state from "False" — a controller that
+// "Unknown" is a real, distinct state from "False": a controller that
 // hasn't finished its first reconcile yet is not the same as one that has
 // confirmed failure.
 type ConditionStatus string
 
+// The three values a Condition's Status can hold.
 const (
 	ConditionTrue    ConditionStatus = "True"
 	ConditionFalse   ConditionStatus = "False"
