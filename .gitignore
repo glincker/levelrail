@@ -33,3 +33,6 @@ node_modules/
 .idea/
 .vscode/
 *.swp
+
+# Agent worktrees (see CLAUDE.md Worktree Hygiene): never versioned
+.claude/worktrees/

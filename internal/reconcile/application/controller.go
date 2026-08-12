@@ -4,7 +4,7 @@
 // nginxdemo's hardcoded desired state with the real thing.
 //
 // Deploy strategy: a container's name is derived deterministically from
-// its image (containerName), so the level-triggered check "does the
+// its image (ContainerName), so the level-triggered check "does the
 // right container exist" needs no memory of past deploys beyond what's
 // queryable from Docker directly. When the desired image changes,
 // Reconcile creates a new, differently-named container alongside
@@ -103,7 +103,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		return notReady("StoreError", err), fmt.Errorf("application/%s: get desired service: %w", c.serviceName, err)
 	}
 
-	target := containerName(c.serviceName, desired.Image)
+	target := ContainerName(c.serviceName, desired.Image)
 
 	state, err := c.runtime.InspectByName(ctx, target)
 	if err != nil {
@@ -249,19 +249,23 @@ func primaryAddr(state *docker.ContainerState) (string, error) {
 	return "127.0.0.1:" + strconv.Itoa(state.Ports[0].HostPort), nil
 }
 
-// hashLen is the number of hex characters containerName keeps from the
+// hashLen is the number of hex characters ContainerName keeps from the
 // image's hash. Shared with ownsContainer so the two stay in lockstep:
 // the length that identifies "this is one of my containers" has to
-// exactly match the length containerName actually produces.
+// exactly match the length ContainerName actually produces.
 const hashLen = 8
 
-// containerName derives a stable, unique-per-image name so the
+// ContainerName derives a stable, unique-per-image name so the
 // level-triggered check "does the right container exist" needs no
 // memory beyond what Docker itself can answer. Two deploys of the same
 // image produce the same name (a genuine no-op redeploy correctly finds
 // nothing to do); two different images always produce different names
-// (so both can exist side by side during a cutover).
-func containerName(serviceName, image string) string {
+// (so both can exist side by side during a cutover). Exported so the
+// ingress controller (internal/reconcile/ingress, TASKS.md 1.6) can
+// derive the exact same name to find a service's currently active
+// container, without reimplementing this hash logic a second time and
+// risking the two drifting apart.
+func ContainerName(serviceName, image string) string {
 	sum := sha256.Sum256([]byte(image))
 	return serviceName + "-" + hex.EncodeToString(sum[:])[:hashLen]
 }
