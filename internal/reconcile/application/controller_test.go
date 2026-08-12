@@ -48,8 +48,9 @@ type fakeRuntime struct {
 	stopErr   error
 	removeErr error
 
-	createCalls int
-	removeCalls int
+	createCalls   int
+	removeCalls   int
+	lastCreateEnv map[string]string
 }
 
 func newFakeRuntime(hostPort int) *fakeRuntime {
@@ -82,6 +83,7 @@ func (f *fakeRuntime) Create(_ context.Context, spec docker.ContainerSpec) (stri
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.createCalls++
+	f.lastCreateEnv = spec.Env
 	if f.createErr != nil {
 		return "", f.createErr
 	}
@@ -553,6 +555,148 @@ func TestOwnsContainer(t *testing.T) {
 				t.Errorf("ownsContainer(%q, %q) = %v, want %v", tt.serviceName, tt.container, got, tt.want)
 			}
 		})
+	}
+}
+
+// fakeSecretResolver is a hand-written fake for SecretResolver, the same
+// pattern every other fake in this file uses: a set of (service, key)
+// pairs mapped to plaintext values, standing in for a real
+// secrets.Manager without a master key or database.
+type fakeSecretResolver struct {
+	values       map[string]string
+	existsErr    error
+	resolveErr   error
+	existsCalls  int
+	resolveCalls int
+}
+
+func newFakeSecretResolver(values map[string]string) *fakeSecretResolver {
+	return &fakeSecretResolver{values: values}
+}
+
+func (f *fakeSecretResolver) Exists(_ context.Context, serviceName, envKey string) (bool, error) {
+	f.existsCalls++
+	if f.existsErr != nil {
+		return false, f.existsErr
+	}
+	_, ok := f.values[serviceName+"/"+envKey]
+	return ok, nil
+}
+
+func (f *fakeSecretResolver) Resolve(_ context.Context, serviceName, envKey string) (string, error) {
+	f.resolveCalls++
+	if f.resolveErr != nil {
+		return "", f.resolveErr
+	}
+	return f.values[serviceName+"/"+envKey], nil
+}
+
+func TestController_Reconcile_SecretEnv_NoResolverConfigured_FailsLoudly(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		SecretEnv: []string{"API_KEY"},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt) // no WithSecretResolver
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want a failure: a secret-backed env var with no resolver configured must never silently start a container missing it")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "CreateFailed" {
+		t.Errorf("condition = %+v, want Status=False Reason=CreateFailed", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0: must never call Create with an unresolved secret", rt.createCalls)
+	}
+}
+
+func TestController_Reconcile_SecretEnv_Resolved_MergedIntoContainerEnv(t *testing.T) {
+	rt := newFakeRuntime(0)
+	resolver := newFakeSecretResolver(map[string]string{"web/API_KEY": "sk-real-value"})
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Env:       map[string]string{"NODE_ENV": "production"},
+		SecretEnv: []string{"API_KEY"},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithSecretResolver(resolver))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue {
+		t.Errorf("condition = %+v, want Status=True", cond)
+	}
+
+	if got := rt.lastCreateEnv["API_KEY"]; got != "sk-real-value" {
+		t.Errorf("container env API_KEY = %q, want the resolved secret value", got)
+	}
+	if got := rt.lastCreateEnv["NODE_ENV"]; got != "production" {
+		t.Errorf("container env NODE_ENV = %q, want the literal value preserved alongside the resolved secret", got)
+	}
+}
+
+func TestController_Reconcile_SecretEnv_OptionalUnsetSecret_OmittedNotFailed(t *testing.T) {
+	rt := newFakeRuntime(0)
+	resolver := newFakeSecretResolver(nil) // nothing set
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		SecretEnv: []string{"OPTIONAL_FLAG"},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithSecretResolver(resolver))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v, want an unset optional secret to be omitted, not fail reconcile", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue {
+		t.Errorf("condition = %+v, want Status=True", cond)
+	}
+	if _, exists := rt.lastCreateEnv["OPTIONAL_FLAG"]; exists {
+		t.Error("container env contains OPTIONAL_FLAG, want it omitted since no value was ever set")
+	}
+}
+
+func TestController_Reconcile_SecretEnv_ResolverErrorPropagates(t *testing.T) {
+	rt := newFakeRuntime(0)
+	resolver := newFakeSecretResolver(map[string]string{"web/API_KEY": "value"})
+	resolver.resolveErr = errors.New("master key not configured")
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		SecretEnv: []string{"API_KEY"},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithSecretResolver(resolver))
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want the resolver's error to propagate")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse {
+		t.Errorf("condition = %+v, want Status=False", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0", rt.createCalls)
+	}
+}
+
+func TestController_Reconcile_NoSecretEnv_ResolverNeverCalled(t *testing.T) {
+	// A service with no secret-backed env vars must not pay any cost for
+	// a configured resolver it doesn't need.
+	rt := newFakeRuntime(0)
+	resolver := newFakeSecretResolver(nil)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	c := New("web", &fakeStore{svc: desired}, rt, WithSecretResolver(resolver))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if resolver.existsCalls != 0 || resolver.resolveCalls != 0 {
+		t.Errorf("resolver calls = exists:%d resolve:%d, want 0/0", resolver.existsCalls, resolver.resolveCalls)
 	}
 }
 

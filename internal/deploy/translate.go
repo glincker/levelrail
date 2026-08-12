@@ -10,16 +10,18 @@ import (
 )
 
 // toDesiredService translates a build's result into the runtime desired
-// state the application controller reconciles against. Only literal env
-// values reach here; requireNoUnresolvedEnv already rejected anything
-// else before a build was even attempted.
+// state the application controller reconciles against. validateEnv
+// already rejected any { from: ... } reference, and any { secret: true }
+// var with no checker configured or (if required) no value set, before
+// a build was even attempted.
 func toDesiredService(name, image string, svc spec.Service) (store.DesiredService, error) {
 	d := store.DesiredService{
-		Name:    name,
-		Image:   image,
-		Port:    svc.Port,
-		Domains: svc.Domains,
-		Env:     literalEnv(svc.Env),
+		Name:      name,
+		Image:     image,
+		Port:      svc.Port,
+		Domains:   svc.Domains,
+		Env:       literalEnv(svc.Env),
+		SecretEnv: secretEnvNames(svc.Env),
 	}
 
 	if svc.Resources != nil {
@@ -47,9 +49,26 @@ func literalEnv(env map[string]spec.EnvVar) map[string]string {
 	}
 	out := make(map[string]string, len(env))
 	for k, v := range env {
+		if v.Secret {
+			continue
+		}
 		out[k] = v.Value
 	}
 	return out
+}
+
+// secretEnvNames lists the env var names declared { secret: true },
+// carrying no value: store.DesiredService.SecretEnv is names only, the
+// application controller resolves each one's actual value from
+// internal/secrets immediately before container creation.
+func secretEnvNames(env map[string]spec.EnvVar) []string {
+	var names []string
+	for k, v := range env {
+		if v.Secret {
+			names = append(names, k)
+		}
+	}
+	return names
 }
 
 func toServiceResources(r spec.Resources) (store.ServiceResources, error) {

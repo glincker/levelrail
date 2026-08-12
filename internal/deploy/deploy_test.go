@@ -48,6 +48,35 @@ func (f *fakeServiceStore) SaveDesiredService(_ context.Context, svc store.Desir
 	return f.saveErr
 }
 
+// fakeSecretChecker is a hand-written fake for SecretChecker: a set of
+// (service, key) pairs considered to exist, same pattern as the other
+// fakes in this file.
+type fakeSecretChecker struct {
+	set         map[string]bool
+	err         error
+	existsCalls int
+	lastService string
+	lastEnvKey  string
+}
+
+func newFakeSecretChecker(existing ...string) *fakeSecretChecker {
+	set := make(map[string]bool, len(existing))
+	for _, k := range existing {
+		set[k] = true
+	}
+	return &fakeSecretChecker{set: set}
+}
+
+func (f *fakeSecretChecker) Exists(_ context.Context, serviceName, envKey string) (bool, error) {
+	f.existsCalls++
+	f.lastService = serviceName
+	f.lastEnvKey = envKey
+	if f.err != nil {
+		return false, f.err
+	}
+	return f.set[serviceName+"/"+envKey], nil
+}
+
 func dockerfileService() spec.Service {
 	return spec.Service{
 		Build: spec.Build{Type: spec.BuildDockerfile, Path: "./Dockerfile"},
@@ -188,6 +217,111 @@ func TestPipeline_Deploy_UnresolvedEnv_RejectedBeforeBuild(t *testing.T) {
 				t.Errorf("SaveDesiredService called %d times, want 0", svcStore.saveCalls)
 			}
 		})
+	}
+}
+
+func TestPipeline_Deploy_FromReference_StillRejected_EvenWithSecretChecker(t *testing.T) {
+	// { from: ... } stays unsupported regardless of whether a
+	// SecretChecker is configured: it needs managed database
+	// credentials, a different, still-blocked dependency.
+	builder := &fakeBuilder{result: &build.Result{Tag: "x:y"}}
+	svcStore := &fakeServiceStore{}
+	checker := newFakeSecretChecker()
+	p := New(builder, svcStore, WithSecretChecker(checker))
+
+	svc := dockerfileService()
+	svc.Env = map[string]spec.EnvVar{"DATABASE_URL": {From: "postgres.main.url"}}
+
+	_, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: svc, SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web"}, nil)
+	if err == nil {
+		t.Fatal("Deploy() error = nil, want { from: ... } to still be rejected")
+	}
+	if builder.calls != 0 {
+		t.Errorf("builder.Build called %d times, want 0", builder.calls)
+	}
+}
+
+func TestPipeline_Deploy_RequiredSecret_NoValueSet_Rejected(t *testing.T) {
+	builder := &fakeBuilder{result: &build.Result{Tag: "x:y"}}
+	svcStore := &fakeServiceStore{}
+	checker := newFakeSecretChecker() // nothing set
+	p := New(builder, svcStore, WithSecretChecker(checker))
+
+	svc := dockerfileService()
+	svc.Env = map[string]spec.EnvVar{"API_KEY": {Secret: true, Required: true}}
+
+	_, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: svc, SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web"}, nil)
+	if err == nil {
+		t.Fatal("Deploy() error = nil, want a required-but-unset secret to be rejected")
+	}
+	if builder.calls != 0 {
+		t.Errorf("builder.Build called %d times, want 0: must fail before attempting a build", builder.calls)
+	}
+	if checker.lastService != "web" || checker.lastEnvKey != "API_KEY" {
+		t.Errorf("checker called with (%q, %q), want (web, API_KEY)", checker.lastService, checker.lastEnvKey)
+	}
+}
+
+func TestPipeline_Deploy_RequiredSecret_ValueSet_PassesThrough(t *testing.T) {
+	builder := &fakeBuilder{result: &build.Result{Tag: "x:y"}}
+	svcStore := &fakeServiceStore{}
+	checker := newFakeSecretChecker("web/API_KEY")
+	p := New(builder, svcStore, WithSecretChecker(checker))
+
+	svc := dockerfileService()
+	svc.Env = map[string]spec.EnvVar{"API_KEY": {Secret: true, Required: true}}
+
+	_, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: svc, SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web"}, nil)
+	if err != nil {
+		t.Fatalf("Deploy() error = %v, want it to pass now that a value is set", err)
+	}
+	if builder.calls != 1 {
+		t.Errorf("builder.Build called %d times, want 1", builder.calls)
+	}
+	if _, exists := svcStore.saved.Env["API_KEY"]; exists {
+		t.Error("saved.Env contains API_KEY, want secret-backed vars kept out of the plain Env map entirely")
+	}
+	if len(svcStore.saved.SecretEnv) != 1 || svcStore.saved.SecretEnv[0] != "API_KEY" {
+		t.Errorf("saved.SecretEnv = %v, want [API_KEY]", svcStore.saved.SecretEnv)
+	}
+}
+
+func TestPipeline_Deploy_OptionalSecret_NoValueSet_StillPassesThrough(t *testing.T) {
+	// Required=false means "ok to be unset", matching spec.EnvVar's own
+	// documented meaning: only a required-but-unset secret fails the
+	// deploy.
+	builder := &fakeBuilder{result: &build.Result{Tag: "x:y"}}
+	svcStore := &fakeServiceStore{}
+	checker := newFakeSecretChecker() // nothing set
+	p := New(builder, svcStore, WithSecretChecker(checker))
+
+	svc := dockerfileService()
+	svc.Env = map[string]spec.EnvVar{"OPTIONAL_FLAG": {Secret: true, Required: false}}
+
+	_, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: svc, SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web"}, nil)
+	if err != nil {
+		t.Fatalf("Deploy() error = %v, want an optional unset secret to pass through", err)
+	}
+	if len(svcStore.saved.SecretEnv) != 1 || svcStore.saved.SecretEnv[0] != "OPTIONAL_FLAG" {
+		t.Errorf("saved.SecretEnv = %v, want [OPTIONAL_FLAG]", svcStore.saved.SecretEnv)
+	}
+}
+
+func TestPipeline_Deploy_SecretChecker_ErrorPropagates(t *testing.T) {
+	builder := &fakeBuilder{result: &build.Result{Tag: "x:y"}}
+	checker := newFakeSecretChecker()
+	checker.err = errors.New("database unavailable")
+	p := New(builder, &fakeServiceStore{}, WithSecretChecker(checker))
+
+	svc := dockerfileService()
+	svc.Env = map[string]spec.EnvVar{"API_KEY": {Secret: true}}
+
+	_, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: svc, SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web"}, nil)
+	if err == nil {
+		t.Fatal("Deploy() error = nil, want the checker's error to propagate")
+	}
+	if builder.calls != 0 {
+		t.Errorf("builder.Build called %d times, want 0", builder.calls)
 	}
 }
 

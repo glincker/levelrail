@@ -28,6 +28,29 @@ type ServiceStore interface {
 	SaveDesiredService(ctx context.Context, svc store.DesiredService) error
 }
 
+// SecretChecker is the narrow surface this package needs from
+// internal/secrets.Manager: whether a value has been set for a
+// { secret: true } env var, never the value itself. A deploy never
+// needs to see a secret's plaintext, only confirm one exists (or
+// doesn't, for a required one) before proceeding.
+type SecretChecker interface {
+	Exists(ctx context.Context, serviceName, envKey string) (bool, error)
+}
+
+// Option configures optional Pipeline behavior.
+type Option func(*Pipeline)
+
+// WithSecretChecker enables { secret: true } env vars to pass through
+// deployment instead of being rejected outright. Without one configured
+// (the default), a service declaring any secret-backed env var fails to
+// deploy with an explicit error, the same as before TASKS.md 1.7's
+// secret storage existed: an operator running Levelrail without a
+// master key configured should get a clear failure, not a container
+// silently missing a variable it declared as required.
+func WithSecretChecker(checker SecretChecker) Option {
+	return func(p *Pipeline) { p.secrets = checker }
+}
+
 // Request is one deploy attempt for a single service.
 type Request struct {
 	// ServiceName identifies the service, matching the name the
@@ -52,11 +75,16 @@ type Request struct {
 type Pipeline struct {
 	builder ImageBuilder
 	store   ServiceStore
+	secrets SecretChecker // nil is valid: secret-backed env vars are rejected without one
 }
 
 // New builds a Pipeline.
-func New(builder ImageBuilder, svcStore ServiceStore) *Pipeline {
-	return &Pipeline{builder: builder, store: svcStore}
+func New(builder ImageBuilder, svcStore ServiceStore, opts ...Option) *Pipeline {
+	p := &Pipeline{builder: builder, store: svcStore}
+	for _, opt := range opts {
+		opt(p)
+	}
+	return p
 }
 
 // Deploy runs req's build (if its build.Type needs one) and saves the
@@ -82,7 +110,7 @@ func (p *Pipeline) Deploy(ctx context.Context, req Request, progress func(build.
 }
 
 func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress func(build.ProgressEvent)) (string, error) {
-	if err := requireNoUnresolvedEnv(req.Service.Env); err != nil {
+	if err := p.validateEnv(ctx, req.ServiceName, req.Service.Env); err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
 
@@ -114,16 +142,44 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 	return res.Tag, nil
 }
 
-// requireNoUnresolvedEnv fails loudly rather than silently deploying a
-// container missing values it needs: secret-sourced and from-referenced
-// env vars (CLAUDE.md 4.10's secrets, and cross-resource references like
-// "postgres.main.url") aren't resolvable yet, since neither secrets
-// (TASKS.md 1.7) nor managed databases (1.8) exist. Only plain literal
-// values can be carried through today.
-func requireNoUnresolvedEnv(env map[string]spec.EnvVar) error {
+// validateEnv fails loudly rather than silently deploying a container
+// missing values it needs.
+//
+// { from: ... } (cross-resource references like "postgres.main.url")
+// still isn't resolvable: it needs a managed database's credentials,
+// which are themselves blocked on secret storage (TASKS.md 1.8's own
+// Postgres scope note), so this stays unsupported until that lands.
+//
+// { secret: true } is resolvable now that TASKS.md 1.7's secret storage
+// exists, but only if this Pipeline has a SecretChecker configured
+// (WithSecretChecker); without one, secret-backed env vars are rejected
+// exactly like before, so a control plane running without a master key
+// configured fails a deploy clearly rather than silently starting a
+// container missing a variable it declared as required. When a checker
+// is configured, a { secret: true, required: true } var with no value
+// set yet still fails the deploy here, matching spec.EnvVar.Required's
+// documented meaning ("fail the deploy... rather than starting the
+// container with the variable unset"); an optional one with no value
+// set is allowed through; the application controller's own resolution
+// (internal/reconcile/application) simply omits it from the container's
+// environment if it's still unset by the time of a later reconcile.
+func (p *Pipeline) validateEnv(ctx context.Context, serviceName string, env map[string]spec.EnvVar) error {
 	for name, v := range env {
-		if v.Secret || v.From != "" {
-			return fmt.Errorf("env var %q needs secrets or cross-resource resolution, not supported until TASKS.md 1.7/1.8 land", name)
+		if v.From != "" {
+			return fmt.Errorf("env var %q needs cross-resource resolution ({ from: ... }), not supported until managed database credentials exist", name)
+		}
+		if !v.Secret {
+			continue
+		}
+		if p.secrets == nil {
+			return fmt.Errorf("env var %q is a secret but no secret store is configured for this deploy pipeline", name)
+		}
+		exists, err := p.secrets.Exists(ctx, serviceName, name)
+		if err != nil {
+			return fmt.Errorf("env var %q: check secret value exists: %w", name, err)
+		}
+		if !exists && v.Required {
+			return fmt.Errorf("env var %q is required but no secret value has been set for it yet", name)
 		}
 	}
 	return nil

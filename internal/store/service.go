@@ -44,6 +44,13 @@ type DesiredService struct {
 	Port    int
 	Domains []string
 	Env     map[string]string
+	// SecretEnv names env vars whose values live in secret storage
+	// (internal/secrets, TASKS.md 1.7), resolved and decrypted by the
+	// application controller immediately before container creation.
+	// Never holds a value itself, only the key name, the same shape
+	// app.yaml's { secret: true } already has: a name is not a secret,
+	// only the value is.
+	SecretEnv []string
 
 	Resources *ServiceResources
 	Health    *ServiceHealth
@@ -63,6 +70,10 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	if err != nil {
 		return fmt.Errorf("store: marshal env for service %q: %w", svc.Name, err)
 	}
+	secretEnvJSON, err := json.Marshal(nonNilSlice(svc.SecretEnv))
+	if err != nil {
+		return fmt.Errorf("store: marshal secret_env for service %q: %w", svc.Name, err)
+	}
 	resourcesJSON, err := json.Marshal(svc.Resources)
 	if err != nil {
 		return fmt.Errorf("store: marshal resources for service %q: %w", svc.Name, err)
@@ -73,17 +84,18 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	}
 
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, domains, env, resources, health, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, domains, env, secret_env, resources, health, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
 			domains = excluded.domains,
 			env = excluded.env,
+			secret_env = excluded.secret_env,
 			resources = excluded.resources,
 			health = excluded.health,
 			updated_at = excluded.updated_at
-	`, svc.Name, svc.Image, svc.Port, string(domainsJSON), string(envJSON), string(resourcesJSON), string(healthJSON))
+	`, svc.Name, svc.Image, svc.Port, string(domainsJSON), string(envJSON), string(secretEnvJSON), string(resourcesJSON), string(healthJSON))
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
@@ -98,7 +110,7 @@ var ErrServiceNotFound = errors.New("store: service not found")
 // ErrServiceNotFound if no such service has been saved.
 func (db *DB) GetDesiredService(ctx context.Context, name string) (*DesiredService, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT name, image, port, domains, env, resources, health
+		SELECT name, image, port, domains, env, secret_env, resources, health
 		FROM desired_services
 		WHERE name = ?
 	`, name)
@@ -116,7 +128,7 @@ func (db *DB) GetDesiredService(ctx context.Context, name string) (*DesiredServi
 // ListDesiredServices returns every saved service, ordered by name.
 func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, image, port, domains, env, resources, health
+		SELECT name, image, port, domains, env, secret_env, resources, health
 		FROM desired_services
 		ORDER BY name
 	`)
@@ -169,15 +181,15 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 	return nil
 }
 
-// scanDesiredService reads the five-column shape both GetDesiredService
+// scanDesiredService reads the six-column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
 // signature), so the decode-JSON-columns logic exists exactly once.
 func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	var (
-		svc                                        DesiredService
-		domainsJSON, envJSON, resourcesJSON, health string
+		svc                                                        DesiredService
+		domainsJSON, envJSON, secretEnvJSON, resourcesJSON, health string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &resourcesJSON, &health); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health); err != nil {
 		return nil, err
 	}
 
@@ -186,6 +198,9 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	}
 	if err := json.Unmarshal([]byte(envJSON), &svc.Env); err != nil {
 		return nil, fmt.Errorf("unmarshal env: %w", err)
+	}
+	if err := json.Unmarshal([]byte(secretEnvJSON), &svc.SecretEnv); err != nil {
+		return nil, fmt.Errorf("unmarshal secret_env: %w", err)
 	}
 	if resourcesJSON != "null" {
 		if err := json.Unmarshal([]byte(resourcesJSON), &svc.Resources); err != nil {

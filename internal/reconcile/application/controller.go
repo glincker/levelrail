@@ -43,17 +43,30 @@ type ServiceStore interface {
 	GetDesiredService(ctx context.Context, name string) (*store.DesiredService, error)
 }
 
+// SecretResolver is the narrow surface this controller needs from
+// internal/secrets.Manager (TASKS.md 1.7), so tests can fake it without
+// a real master key or database. *secrets.Manager satisfies this
+// structurally. Resolve's plaintext return value is used exactly once,
+// merged into a container's env map immediately before
+// docker.Runtime.Create, and never persisted anywhere by this
+// controller.
+type SecretResolver interface {
+	Exists(ctx context.Context, serviceName, envKey string) (bool, error)
+	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+}
+
 const defaultReadyBudget = 60 * time.Second
 
 // Controller converges one named service's desired state (read fresh
 // from ServiceStore on every Reconcile, never cached) to a running
 // container.
 type Controller struct {
-	serviceName string
-	store       ServiceStore
-	runtime     docker.Runtime
-	httpClient  *http.Client
-	readyBudget time.Duration
+	serviceName    string
+	store          ServiceStore
+	runtime        docker.Runtime
+	httpClient     *http.Client
+	readyBudget    time.Duration
+	secretResolver SecretResolver // nil is valid: a service with no secret-backed env vars never needs one
 }
 
 // Option configures optional Controller behavior.
@@ -71,6 +84,16 @@ func WithHTTPClient(c *http.Client) Option {
 // Defaults to 60s.
 func WithReadyBudget(d time.Duration) Option {
 	return func(ctrl *Controller) { ctrl.readyBudget = d }
+}
+
+// WithSecretResolver enables container creation to fill in
+// secret-backed env vars (store.DesiredService.SecretEnv). Without one
+// configured (the default), a service that declares any secret-backed
+// env var fails Reconcile loudly rather than silently starting a
+// container missing a variable it needs, the same "fail loudly" choice
+// internal/deploy.Pipeline makes at save time.
+func WithSecretResolver(r SecretResolver) Option {
+	return func(ctrl *Controller) { ctrl.secretResolver = r }
 }
 
 // New builds a Controller for serviceName.
@@ -162,7 +185,15 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 }
 
 func (c *Controller) createAndStart(ctx context.Context, name string, desired *store.DesiredService) error {
-	id, err := c.runtime.Create(ctx, toContainerSpec(name, desired))
+	env, err := c.resolveEnv(ctx, desired)
+	if err != nil {
+		return fmt.Errorf("resolve env: %w", err)
+	}
+
+	spec := toContainerSpec(name, desired)
+	spec.Env = env
+
+	id, err := c.runtime.Create(ctx, spec)
 	if err != nil {
 		return fmt.Errorf("create %q: %w", name, err)
 	}
@@ -170,6 +201,49 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		return fmt.Errorf("start %q after create: %w", name, err)
 	}
 	return nil
+}
+
+// resolveEnv merges desired.Env's literal values with each of
+// desired.SecretEnv's names, decrypted via the configured
+// SecretResolver. This is the only place in this controller a secret's
+// plaintext exists: it lives in this function's local env map only for
+// the moment between here and docker.Runtime.Create in createAndStart,
+// and is never written to the store, logged, or returned in a
+// reconcile.Result.
+//
+// An unset optional ({ secret: true, required: false }) secret is
+// silently omitted from the container's environment, matching
+// spec.EnvVar.Required's documented meaning: internal/deploy.Pipeline
+// already rejects a deploy outright if a required secret has no value,
+// so by the time this runs, an unset secret still in desired.SecretEnv
+// can only be an optional one.
+func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredService) (map[string]string, error) {
+	if len(desired.SecretEnv) == 0 {
+		return desired.Env, nil
+	}
+	if c.secretResolver == nil {
+		return nil, fmt.Errorf("service declares %d secret-backed env var(s) but no secret resolver is configured", len(desired.SecretEnv))
+	}
+
+	env := make(map[string]string, len(desired.Env)+len(desired.SecretEnv))
+	for k, v := range desired.Env {
+		env[k] = v
+	}
+	for _, key := range desired.SecretEnv {
+		exists, err := c.secretResolver.Exists(ctx, c.serviceName, key)
+		if err != nil {
+			return nil, fmt.Errorf("check secret %q: %w", key, err)
+		}
+		if !exists {
+			continue
+		}
+		value, err := c.secretResolver.Resolve(ctx, c.serviceName, key)
+		if err != nil {
+			return nil, fmt.Errorf("resolve secret %q: %w", key, err)
+		}
+		env[key] = value
+	}
+	return env, nil
 }
 
 // waitReady gates a freshly (re)started container on its readiness

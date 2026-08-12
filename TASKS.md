@@ -337,7 +337,7 @@ both hostnames before either handshake succeeds. 98.1% coverage on
 `internal/reconcile/ingress`, 91.5% on `internal/ingress` after the
 `BuildRoutesConfig` addition.
 
-### 1.7 Secrets (`internal/secrets`). PRIMITIVES DONE, INTEGRATION DEFERRED (2026-08-12)
+### 1.7 Secrets (`internal/secrets`). DONE (2026-08-12)
 
 Built directly, not delegated, per CLAUDE.md 8's rule on anything
 touching secrets. Deliberately scoped as a standalone primitives
@@ -374,18 +374,83 @@ database controller's extension of `docker.ContainerSpec`.
       simulated fresh process (only the serialized master key and the
       two ciphertexts persist, proving the pieces compose correctly, not
       just that each works in isolation)
-- [ ] **Not done, explicit follow-up**: env injection at container-create
-      time. `internal/deploy.requireNoUnresolvedEnv` still rejects
-      `{ secret: true }` and `{ from: ... }` env vars outright. Wiring
-      real resolution needs: a reviewed schema addition (per-app DEK
-      storage, `desired_services.env`'s current plain
-      `map[string]string` shape can't represent "this value is a secret
-      reference" at all) and updating the application controller to
-      decrypt only immediately before `docker.Runtime.Create`, never
-      writing a decrypted value back to the store (`GET /api/v1/apps`
-      from 1.9 returns that table directly, a decrypted value sitting in
-      it would defeat the entire point of encrypting it in the first
-      place)
+- [x] **Integration closed (2026-08-12), single-session per CLAUDE.md 8's
+      rule on anything touching secrets.** Env injection at
+      container-create time, in full, `{ secret: true }` only (`{ from:
+      ... }` cross-resource references stay explicitly unsupported, see
+      below):
+      - Schema: migration 0006 adds `service_secrets` (one wrapped DEK
+        per service, generated on first use, never replaced) and
+        `service_secret_values` (one AES-256-GCM ciphertext per
+        service/env-key pair), plus a `secret_env` column on
+        `desired_services` holding key *names* only, never values, the
+        same shape `domains` already established. `internal/store`'s new
+        `secret.go` is pure byte storage, it never sees a plaintext
+        value or a raw DEK, matching `reconcile_status.go`'s existing
+        separation of "what happened" from "what decides"
+      - `internal/secrets.Manager` (`manager.go`) is the integration
+        layer the package's own doc comment always said would follow the
+        primitives: generate-or-reuse a service's DEK, encrypt and
+        persist a value (`SetValue`), decrypt one back (`Resolve`), or
+        check existence without decrypting (`Exists`, what
+        `internal/deploy` uses so a deploy can fail loudly on a missing
+        required secret without ever touching its value)
+      - `internal/deploy.Pipeline` gained `WithSecretChecker`: with one
+        configured, `{ secret: true }` env vars pass validation (a
+        `required: true` one with no value set still fails the deploy,
+        matching `spec.EnvVar.Required`'s documented meaning); without
+        one, exactly the old behavior, an explicit rejection, so a
+        control plane started without a master key fails clearly rather
+        than silently dropping a variable. `{ from: ... }` stays rejected
+        unconditionally: it needs managed database credentials, which
+        are themselves blocked on this very work per 1.8's own scope note
+      - `internal/reconcile/application.Controller` gained
+        `WithSecretResolver`: immediately before
+        `docker.Runtime.Create`, `resolveEnv` decrypts each
+        `desired.SecretEnv` name and merges it into the container's env
+        map. That map is the only place a secret's plaintext ever exists
+        in this controller's memory; it is never written back to the
+        store, logged, or returned in a `reconcile.Result`. A service
+        with `SecretEnv` set but no resolver configured fails Reconcile
+        loudly (`Reason=CreateFailed`) before ever calling `Create`. An
+        unset *optional* secret is silently omitted from the container's
+        environment, not an error: `internal/deploy` already rejected the
+        deploy outright if it was required and unset, so by the time
+        Reconcile runs, an unset one in `SecretEnv` can only be optional
+      - `internal/api` gained `PUT /api/v1/apps/{name}/secrets/{key}`
+        (`secrets.go`), the operator-facing way to actually set a value:
+        session-authenticated, set-only (deliberately no `GET`, a
+        decrypted value has no business in a response body), 501 when no
+        master key is configured (`WithSecretSetter`), 404 for an unknown
+        app, 400 for an empty value
+      - `cmd/levelrail/main.go` sources the master key from
+        `APP_MASTER_KEY` (CLAUDE.md 4.10: "file, env, or a future KMS
+        interface"; env is what this pass wires). Unset is not fatal,
+        the same non-fatal choice `bootstrapAdmin` already makes: the
+        control plane still starts, every secrets-touching route or
+        reconcile path just fails specifically and loudly instead of the
+        feature not existing at all
+      - Live-verified end to end, not just unit tested: a real generated
+        master key, a real store, `Manager.SetValue` for a real
+        `API_KEY`, a real `Controller.Reconcile` creating a real
+        container, independently verified via the raw Docker Engine
+        API's own `ContainerInspect` (not this controller's return
+        value) that the container's actual environment contains the
+        decrypted value, and via the store directly that only ciphertext,
+        never that exact plaintext string, ever reached disk
+      - Coverage: 81.0% on `internal/secrets` (`manager_test.go`'s 9
+        cases include a wrong-master-key negative test and a real
+        store-error-propagates-not-swallowed-as-not-found test),
+        91.0% on `internal/reconcile/application` (up from 89.7%), 96.4%
+        on `internal/deploy` (up from 95.6%), 78.1% on `internal/store`.
+        85.0% on `internal/` overall, gate is 70%
+      - Known gap, honestly out of scope here: nothing in
+        `cmd/levelrail/main.go` constructs an `internal/deploy.Pipeline`
+        or mounts `internal/webhook` yet, so `{ secret: true }` declared
+        in an app.yaml has no path from a real git push into this
+        control plane today. That's the webhook-to-main.go wiring gap,
+        not a secrets one; every piece this task owns is real and
+        live-tested independently of it
 
 ### 1.8 Managed databases. DONE (2026-08-12), Postgres scoped down
 

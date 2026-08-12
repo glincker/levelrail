@@ -37,12 +37,19 @@
 //     internal/store.UpsertConditions persists today, not a row-per-
 //     deploy-attempt log. A real deploy history table is a store-schema
 //     addition this package deliberately didn't invent speculatively.
-//   - cmd/levelrail/main.go's reconcile engine still only runs the Phase
-//     0 hardcoded nginxdemo controller, not a dynamic
-//     internal/reconcile/application.Controller per app. A deploy
-//     triggered through this API updates desired state correctly, but
-//     nothing reconciles that particular app until the engine is wired
-//     to spawn per-app controllers. Also not this package's job to fix.
+//
+// cmd/levelrail/main.go's reconcile engine closed the gap noted above in
+// an earlier draft of this comment: it now derives a dynamic controller
+// set from the store every pass (reconcile.Engine.Source), so a deploy
+// triggered through this API does reconcile on the next pass.
+//
+// Secrets (TASKS.md 1.7): PUT /api/v1/apps/{name}/secrets/{key} sets a
+// value, encrypted at rest via internal/secrets.Manager. Deliberately
+// set-only, no GET: this package never decrypts a value for a response
+// body, only internal/reconcile/application does, immediately before
+// container creation. Available only when the control plane was started
+// with a master key (WithSecretSetter); without one, the route returns
+// 501.
 package api
 
 import (
@@ -85,6 +92,13 @@ type Store interface {
 	AuthStore
 }
 
+// SecretSetter is the surface the secrets handler needs from
+// internal/secrets.Manager (TASKS.md 1.7): set a value, never read one
+// back. *secrets.Manager satisfies this structurally.
+type SecretSetter interface {
+	SetValue(ctx context.Context, serviceName, envKey, plaintext string) error
+}
+
 // Router wires every internal/api handler onto one http.Handler.
 type Router struct {
 	logger   *slog.Logger
@@ -92,15 +106,28 @@ type Router struct {
 	apps     AppStore
 	deploys  DeployStore
 	auth     AuthStore
+	secrets  SecretSetter // nil is valid: a control plane with no master key configured serves everything except secret-setting
 	sessions *sessionStore
 }
 
+// Option configures optional Router behavior.
+type Option func(*Router)
+
+// WithSecretSetter enables PUT /api/v1/apps/{name}/secrets/{key}.
+// Without one configured (the default), that route returns 501: an
+// operator running Levelrail without APP_MASTER_KEY set gets a clear
+// "not configured" response instead of the route not existing at all or
+// silently discarding the value.
+func WithSecretSetter(s SecretSetter) Option {
+	return func(rt *Router) { rt.secrets = s }
+}
+
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
-func NewRouter(logger *slog.Logger, b *brand.Brand, s Store) *Router {
+func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Router {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Router{
+	rt := &Router{
 		logger:   logger,
 		brand:    b,
 		apps:     s,
@@ -108,6 +135,10 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store) *Router {
 		auth:     s,
 		sessions: newSessionStore(),
 	}
+	for _, opt := range opts {
+		opt(rt)
+	}
+	return rt
 }
 
 // Handler builds the *http.ServeMux with every route registered. Called
@@ -135,6 +166,12 @@ func (rt *Router) Handler() http.Handler {
 	// Deploys.
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys", rt.requireAuth(rt.handleTriggerDeploy))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAuth(rt.handleDeployHistory))
+
+	// Secrets (TASKS.md 1.7). Set-only: there is deliberately no GET,
+	// returning a value (even to its own owner over an authenticated
+	// session) is exactly the kind of exposure envelope encryption
+	// exists to avoid.
+	mux.HandleFunc("PUT /api/v1/apps/{name}/secrets/{key}", rt.requireAuth(rt.handleSetSecret))
 
 	return mux
 }

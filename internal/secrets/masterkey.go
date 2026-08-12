@@ -2,17 +2,18 @@
 // per-app data encryption keys, wrapped by a master key held only by the
 // control plane, using filippo.io/age for the crypto primitives.
 //
-// This is the primitives layer only: MasterKey, DEK wrap/unwrap, and
-// value encrypt/decrypt, standalone and fully tested, the same shape
-// internal/build and internal/ingress were built as Phase 0 spikes
-// before being wired into the real deploy flow. Wiring this into
-// internal/deploy's env resolution and internal/reconcile/application's
-// container creation (decrypting a value only at container-create time,
-// never persisting it, per CLAUDE.md 4.10) is deliberate follow-up work,
-// not built here: those integration points were being actively modified
-// by parallel work when this package was built, and a real per-app DEK
-// needs its own reviewed store schema (CLAUDE.md 8: schema changes need
-// one coherent session), not one bolted on alongside unrelated changes.
+// masterkey.go, dek.go, and value.go are the primitives layer: MasterKey,
+// DEK wrap/unwrap, and value encrypt/decrypt, standalone and fully
+// tested, knowing nothing about storage. manager.go (TASKS.md 1.7's
+// follow-up, landed 2026-08-12) is the integration layer: Manager
+// combines a MasterKey with internal/store's new service_secrets/
+// service_secret_values tables to generate-or-reuse a per-app DEK,
+// encrypt and persist a value, and decrypt one back. Callers:
+// internal/deploy.Pipeline checks whether a { secret: true } var has a
+// value before deploying (never the value itself), and
+// internal/reconcile/application.Controller decrypts a value only
+// immediately before docker.Runtime.Create, never persisting it,
+// exactly the sequencing CLAUDE.md 4.10 specifies.
 package secrets
 
 import (

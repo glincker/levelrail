@@ -27,6 +27,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/web"
 )
@@ -94,9 +95,20 @@ func run(logger *slog.Logger) error {
 		logger.Warn("admin account not bootstrapped", slog.String("error", err.Error()))
 	}
 
+	secretsManager, err := loadSecretsManager(db)
+	if err != nil {
+		// Not fatal, the same choice bootstrapAdmin makes above: the
+		// control plane still starts. Every route and reconcile path
+		// touching secrets (PUT .../secrets/{key}, any service declaring
+		// a { secret: true } env var) fails loudly and specifically
+		// instead, rather than this refusing to start at all over a
+		// feature an operator may not be using yet.
+		logger.Warn("secrets not configured", slog.String("error", err.Error()))
+	}
+
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
-		Handler:           rootHandler(logger, b, db),
+		Handler:           rootHandler(logger, b, db, secretsManager),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -109,7 +121,7 @@ func run(logger *slog.Logger) error {
 
 	engine := reconcile.NewEngine(logger)
 	engine.SetStore(db)
-	engine.SetSource(dynamicSource(db, client, ingressDriver, logger))
+	engine.SetSource(dynamicSource(db, client, ingressDriver, logger, secretsManager))
 
 	events, errs := client.Events(ctx)
 	go func() {
@@ -168,6 +180,28 @@ func loadBrand() (*brand.Brand, error) {
 	return brand.Load(path)
 }
 
+// loadSecretsManager builds a secrets.Manager from APP_MASTER_KEY (CLAUDE.md
+// 4.10: "Master key can be sourced from file, env, or an external KMS
+// interface added later"; env is what this control plane supports today).
+// An unset APP_MASTER_KEY is not an error: it returns (nil, nil), the
+// same "feature just isn't configured" shape openStore's directory
+// default and loadBrand's file default don't need, because unlike those,
+// secrets have no sensible zero-config default to fall back to. A
+// generated-on-the-fly key would make every previously-wrapped DEK
+// permanently unwrappable on the next restart, worse than not offering
+// the feature at all.
+func loadSecretsManager(db *store.DB) (*secrets.Manager, error) {
+	serialized := os.Getenv("APP_MASTER_KEY")
+	if serialized == "" {
+		return nil, fmt.Errorf("APP_MASTER_KEY not set")
+	}
+	mk, err := secrets.LoadMasterKey(serialized)
+	if err != nil {
+		return nil, fmt.Errorf("load master key: %w", err)
+	}
+	return secrets.NewManager(db, mk), nil
+}
+
 // rootHandler combines the TASKS.md 1.9 HTTP API with the TASKS.md 1.10
 // frontend into one *http.Server handler: "/api/" (a subtree pattern,
 // so the full original path reaches api's own mux unchanged, matching
@@ -175,9 +209,20 @@ func loadBrand() (*brand.Brand, error) {
 // else to web.Handler's embedded frontend with SPA fallback. Combining
 // them here rather than running two servers keeps CLAUDE.md 4.1's
 // single-binary story intact: one process, one listen address.
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB) http.Handler {
+//
+// secretsManager may be nil (APP_MASTER_KEY unset): api.WithSecretSetter
+// is only applied when it isn't, since a nil *secrets.Manager wrapped in
+// a non-nil api.SecretSetter interface value would panic the first time
+// PUT .../secrets/{key} tried to call a method on it, rather than
+// hitting api.Router's own "not configured" 501 path.
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, secretsManager *secrets.Manager) http.Handler {
+	var opts []api.Option
+	if secretsManager != nil {
+		opts = append(opts, api.WithSecretSetter(secretsManager))
+	}
+
 	mux := http.NewServeMux()
-	mux.Handle("/api/", api.NewRouter(logger, b, db).Handler())
+	mux.Handle("/api/", api.NewRouter(logger, b, db, opts...).Handler())
 	mux.Handle("/", web.Handler())
 	return mux
 }
@@ -198,7 +243,14 @@ func httpAddr() string {
 // the store every pass, so a service or database created or deleted
 // through the HTTP API takes effect on the very next reconcile, no
 // restart needed.
-func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.Driver, logger *slog.Logger) reconcile.Source {
+//
+// secretsManager may be nil (APP_MASTER_KEY unset): application.
+// WithSecretResolver is only applied when it isn't, the same nil-check
+// rootHandler makes for api.WithSecretSetter and for the identical
+// reason. A service with no { secret: true } env vars reconciles
+// exactly the same either way; one that declares any fails loudly with
+// a clear reason instead of silently starting without the variable.
+func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.Driver, logger *slog.Logger, secretsManager *secrets.Manager) reconcile.Source {
 	return func(ctx context.Context) ([]reconcile.Controller, error) {
 		services, err := db.ListDesiredServices(ctx)
 		if err != nil {
@@ -209,9 +261,14 @@ func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.D
 			return nil, fmt.Errorf("list desired databases: %w", err)
 		}
 
+		var appOpts []application.Option
+		if secretsManager != nil {
+			appOpts = append(appOpts, application.WithSecretResolver(secretsManager))
+		}
+
 		controllers := make([]reconcile.Controller, 0, len(services)+len(databases)+1)
 		for _, svc := range services {
-			controllers = append(controllers, application.New(svc.Name, db, runtime))
+			controllers = append(controllers, application.New(svc.Name, db, runtime, appOpts...))
 		}
 		for _, desired := range databases {
 			controllers = append(controllers, database.New(desired.Name, db, runtime))
