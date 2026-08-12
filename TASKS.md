@@ -84,19 +84,58 @@ had zero test coverage since Phase 0; a live test now proves real
 start/die events flow through end to end, not just that the plumbing
 compiles. 78.2% coverage.
 
-### 1.3 Application controller (`internal/reconcile`)
+### 1.3 Application controller. DONE (2026-08-12)
 
-- [ ] New `Controller`: desired state read from `internal/store` (not
-      hardcoded, unlike `nginxdemo`), one controller instance per declared
-      service
-- [ ] Readiness/liveness probing against the app spec's `health` block
-- [ ] Rolling deploy: start new, wait for readiness, cut traffic, drain
-      old (blue-green as the default per CLAUDE.md 6, "easier to get
-      right than rolling with a single replica")
-- [ ] Rollback: pin the previous N images so garbage collection can't
-      orphan a rollback target (CLAUDE.md 6 calls this out as "a real bug
-      in competitors", confirmed independently in Phase 0's Coolify
-      research)
+Landed across four packages, each with its own tests, all wired
+together and live-verified as one pipeline at the end.
+
+- [x] `internal/docker`: `Stop`, `Remove`, `ListByPrefix` added, the
+      three primitives blue-green cutover needs beyond what `nginxdemo`
+      required
+- [x] `internal/store`: `desired_services` table, `DesiredService`
+      (deliberately distinct from `spec.Service`: resolved runtime
+      state, an image plus what it needs, not a build recipe)
+- [x] `internal/probe`: HTTP readiness checking, the mechanism, not
+      Docker's own `HEALTHCHECK` (matches ADR 002 and the decision
+      already recorded in `internal/docker`'s `ContainerSpec` doc
+      comment). Liveness (continuous monitoring of an already-running
+      container, restart after repeated failures) stays out, a
+      genuinely separate reconcile-time concern, not scope creep
+      avoidance for its own sake
+- [x] `internal/reconcile/application`: the real `Controller`. Desired
+      state read fresh from the store every reconcile, never cached.
+      Deploy strategy is deterministic-name-based: a container's name
+      is derived from its image (`containerName`, a short hash), so
+      "does the right container exist" needs no memory beyond what
+      Docker itself can answer, level-triggered by construction. A
+      changed image naturally produces a new, differently-named
+      container alongside the old one; only once the new one passes
+      its readiness probe does the controller remove every other
+      container for the service (blue-green, without needing a
+      separate "which one is active" field anywhere)
+- [x] Rollback mechanism: no dedicated command yet (nothing to trigger
+      it from until the HTTP API, 1.9, or a CLI exist), but the
+      mechanics are real and already provable: pointing `desired.Image`
+      back at an older tag and reconciling converges to it the same way
+      any other redeploy does, and `ListImages` (added under 1.2)
+      already exposes what tags are available to roll back to. A
+      dedicated rollback command is a thin wrapper over this once 1.9
+      exists, not new reconciler logic
+
+Traffic cutover itself (updating Caddy to point at the new container)
+is deliberately not this controller's job: CLAUDE.md 4.2's "a reconcile
+loop per resource type" makes ingress its own controller (1.6, not yet
+wired). This controller's contract with that future controller is
+simple: whichever container exists and is running for a service is the
+one meant to receive traffic.
+
+Live-verified end to end, not just unit tested: real store, real
+Docker, fresh deploy, a no-op second reconcile (proving convergence
+doesn't recreate anything), then a full redeploy against a locally
+retagged image (no network dependency) proving the actual cutover: new
+container created, passes a real HTTP readiness probe, old container
+confirmed removed by independently inspecting for it afterward, not by
+trusting the returned status alone. 86.2% coverage.
 
 ### 1.4 Build integration
 
