@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -33,6 +34,31 @@ func (c *countingController) Reconcile(_ context.Context) (Result, error) {
 
 func testLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{Level: slog.LevelError + 1}))
+}
+
+// fakeStore is a hand-written fake Store, not a mocking framework, same
+// pattern nginxdemo's tests use for docker.Runtime.
+type fakeStore struct {
+	mu       sync.Mutex
+	upserts  int
+	lastName string
+	lastCond []Condition
+	err      error
+}
+
+func (f *fakeStore) UpsertConditions(_ context.Context, name string, conditions []Condition) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.upserts++
+	f.lastName = name
+	f.lastCond = conditions
+	return f.err
+}
+
+func (f *fakeStore) calls() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.upserts
 }
 
 func TestEngine_ReconcileAll_RunsEveryController(t *testing.T) {
@@ -118,5 +144,55 @@ func TestEngine_Run_ClosedEventChannelFallsBackToTicker(t *testing.T) {
 	}
 	if got := c.calls.Load(); got < 2 {
 		t.Errorf("got %d reconciles after event channel closed, want the ticker to keep driving reconciles (>= 2)", got)
+	}
+}
+
+func TestEngine_ReconcileAll_PersistsToStoreWhenSet(t *testing.T) {
+	c := &countingController{name: "nginx-demo"}
+	store := &fakeStore{}
+	e := NewEngine(testLogger(), c)
+	e.SetStore(store)
+
+	e.ReconcileAll(context.Background())
+
+	if got := store.calls(); got != 1 {
+		t.Fatalf("expected store.UpsertConditions called once, got %d", got)
+	}
+	if store.lastName != "nginx-demo" {
+		t.Errorf("store received controller name %q, want %q", store.lastName, "nginx-demo")
+	}
+	if len(store.lastCond) != 1 || store.lastCond[0].Reason != "OK" {
+		t.Errorf("store received conditions %+v, want one condition with Reason=OK", store.lastCond)
+	}
+}
+
+func TestEngine_ReconcileAll_NoStoreSet_DoesNotPanic(t *testing.T) {
+	c := &countingController{name: "a"}
+	e := NewEngine(testLogger(), c) // no SetStore call
+
+	e.ReconcileAll(context.Background()) // must not panic on nil store
+
+	if got := c.calls.Load(); got != 1 {
+		t.Errorf("got %d calls, want 1", got)
+	}
+}
+
+func TestEngine_ReconcileAll_StoreFailureDoesNotFailReconcile(t *testing.T) {
+	c := &countingController{name: "a"}
+	store := &fakeStore{err: errors.New("disk full")}
+	e := NewEngine(testLogger(), c)
+	e.SetStore(store)
+
+	e.ReconcileAll(context.Background())
+
+	// The controller's own Reconcile succeeded; a store failure must not
+	// retroactively turn that into a recorded failure. Persisting status
+	// is best-effort, not load-bearing for the reconcile's own success.
+	_, err := e.LastResult("a")
+	if err != nil {
+		t.Errorf("LastResult error = %v, want nil: a store failure must not propagate as the controller's error", err)
+	}
+	if got := store.calls(); got != 1 {
+		t.Errorf("expected store.UpsertConditions still attempted once despite returning an error, got %d calls", got)
 	}
 }

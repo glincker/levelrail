@@ -32,6 +32,17 @@ type Controller interface {
 	Reconcile(ctx context.Context) (Result, error)
 }
 
+// Store is optional persistence for reconcile status. CLAUDE.md 4.2
+// requires every reconcile to emit "a status condition with a reason
+// string, stored and shown in the UI"; without a Store, Engine still
+// tracks the latest result via LastResult, but only in memory, lost on
+// restart. internal/store.DB satisfies this interface structurally, no
+// import of internal/store needed here (or that would be a cycle, since
+// internal/store already imports this package for the Condition type).
+type Store interface {
+	UpsertConditions(ctx context.Context, controllerName string, conditions []Condition) error
+}
+
 // Engine runs a fixed set of controllers, triggered by Docker events with
 // a periodic resync as a safety net for any event the stream missed. This
 // push-primary/pull-as-safety-net shape is deliberate: Coolify's own v5
@@ -40,6 +51,7 @@ type Controller interface {
 type Engine struct {
 	controllers []Controller
 	logger      *slog.Logger
+	store       Store // nil is valid: persistence is optional, not required
 
 	mu         sync.RWMutex
 	lastResult map[string]Result
@@ -62,6 +74,12 @@ func NewEngine(logger *slog.Logger, controllers ...Controller) *Engine {
 	}
 }
 
+// SetStore attaches persistence for reconcile status. Call it once before
+// Run, if at all; not safe to call concurrently with reconciles in flight.
+func (e *Engine) SetStore(s Store) {
+	e.store = s
+}
+
 // ReconcileAll runs every controller once, in order. A single controller
 // failing does not stop the others from running: one broken resource
 // should never block convergence of everything else.
@@ -80,6 +98,19 @@ func (e *Engine) reconcileOne(ctx context.Context, c Controller) {
 	e.lastResult[c.Name()] = result
 	e.lastErr[c.Name()] = err
 	e.mu.Unlock()
+
+	// Persisting status is best-effort and secondary to the reconcile
+	// itself: a database hiccup must never stop the controller from
+	// converging the actual resource, so a store failure is logged, not
+	// propagated as this reconcile's error.
+	if e.store != nil && len(result.Conditions) > 0 {
+		if serr := e.store.UpsertConditions(ctx, c.Name(), result.Conditions); serr != nil {
+			e.logger.Error("persisting reconcile status failed",
+				slog.String("controller", c.Name()),
+				slog.String("error", serr.Error()),
+			)
+		}
+	}
 
 	attrs := []any{
 		slog.String("controller", c.Name()),
