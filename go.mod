@@ -6,6 +6,7 @@ require (
 	github.com/caddyserver/caddy/v2 v2.11.4
 	github.com/docker/docker v27.5.1+incompatible
 	github.com/moby/buildkit v0.27.1
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/tonistiigi/fsutil v0.0.0-20251211185533-a2aa163d723f
 	golang.org/x/sync v0.22.0
 	gopkg.in/yaml.v3 v3.0.1

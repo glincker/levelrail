@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://glinr.com/levelrail/schema/app.json",
+  "title": "Levelrail app spec",
+  "description": "CLAUDE.md 4.9: the one declarative file a user writes in their repo.",
+  "type": "object",
+  "required": ["version", "services"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "services": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/$defs/service" }
+    },
+    "databases": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/database" }
+    }
+  },
+  "$defs": {
+    "service": {
+      "type": "object",
+      "required": ["build"],
+      "additionalProperties": false,
+      "properties": {
+        "build": { "$ref": "#/$defs/build" },
+        "domains": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "health": { "$ref": "#/$defs/health" },
+        "resources": { "$ref": "#/$defs/resources" },
+        "env": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/envValue" }
+        },
+        "replicas": { "type": "integer", "minimum": 1 },
+        "strategy": { "enum": ["rolling", "recreate", "blue-green"] }
+      }
+    },
+    "build": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "enum": ["dockerfile", "compose", "railpack", "static"] },
+        "path": { "type": "string", "minLength": 1 }
+      }
+    },
+    "health": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "readiness": { "$ref": "#/$defs/probe" },
+        "liveness": { "$ref": "#/$defs/probe" }
+      }
+    },
+    "probe": {
+      "type": "object",
+      "required": ["path"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "interval": { "type": "string", "pattern": "^[0-9]+(ms|s|m|h)$" },
+        "timeout": { "type": "string", "pattern": "^[0-9]+(ms|s|m|h)$" },
+        "failures": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "memory": { "type": "string", "pattern": "^[0-9]+(Mi|Gi)$" },
+        "cpu": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "envValue": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "from": { "type": "string", "minLength": 1 },
+            "secret": { "type": "boolean" },
+            "required": { "type": "boolean" }
+          }
+        }
+      ]
+    },
+    "database": {
+      "type": "object",
+      "required": ["engine"],
+      "additionalProperties": false,
+      "properties": {
+        "engine": { "enum": ["postgres", "redis"] },
+        "version": { "type": "string", "minLength": 1 },
+        "backup": { "$ref": "#/$defs/backup" }
+      }
+    },
+    "backup": {
+      "type": "object",
+      "required": ["schedule"],
+      "additionalProperties": false,
+      "properties": {
+        "schedule": { "type": "string", "minLength": 1 },
+        "retain": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

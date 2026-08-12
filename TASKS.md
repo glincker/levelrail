@@ -36,16 +36,21 @@ a valid cert, and you can roll back to the previous version in one click.
 Deliberately excluded from Phase 1 (CLAUDE.md 6): multi-server, templates,
 backups to S3, teams, notifications, Compose support.
 
-### 1.1 App spec (`internal/spec`)
+### 1.1 App spec (`internal/spec`). DONE (2026-08-11)
 
-- [~] Go structs for the app.yaml shape (CLAUDE.md 4.9)
-- [ ] Hand-written JSON Schema, embedded, validated at parse time
-- [ ] Candidate-filename discovery (`app.yaml`, `deploy.yaml`, plus the
-      branded name from `brand.yaml`, per CLAUDE.md section 3)
-- [ ] `EnvVar` union type: literal string, `{ from: ... }` reference, or
+- [x] Go structs for the app.yaml shape (CLAUDE.md 4.9)
+- [x] Hand-written JSON Schema, embedded, validated at parse time
+- [x] Candidate-filename discovery (`app.yaml`, `deploy.yaml`, plus the
+      branded name, per CLAUDE.md section 3); takes the branded stem as
+      a caller-supplied string rather than importing `internal/brand`
+      directly, to keep the two packages decoupled
+- [x] `EnvVar` union type: literal string, `{ from: ... }` reference, or
       `{ secret: true, required: true }`
-- [ ] Semantic validation beyond JSON Schema's reach (e.g. `build.path`
-      required for `dockerfile`/`compose` but not `static`)
+- [x] Semantic validation beyond JSON Schema's reach: `build.path`
+      required for `compose`, `port` required unless `static`, domain
+      uniqueness across all services, service/database name shape
+- [x] 82.3% test coverage, real fixture files under `testdata/`, no
+      mocks needed since there's no I/O beyond reading a byte slice
 
 ### 1.2 Docker wrapper extensions (`internal/docker`)
 

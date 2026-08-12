@@ -1,0 +1,25 @@
+version: 1
+services:
+  web:
+    build:
+      type: dockerfile
+      path: ./Dockerfile
+    domains:
+      - app.example.com
+    port: 3000
+    health:
+      readiness: { path: /healthz, interval: 5s, timeout: 2s }
+      liveness: { path: /healthz, interval: 30s, failures: 3 }
+    resources:
+      memory: 512Mi
+      cpu: 0.5
+    env:
+      DATABASE_URL: { from: postgres.main.url }
+      API_KEY: { secret: true, required: true }
+    replicas: 2
+    strategy: rolling
+databases:
+  main:
+    engine: postgres
+    version: "16"
+    backup: { schedule: "0 3 * * *", retain: 7 }
