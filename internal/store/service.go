@@ -134,6 +134,34 @@ func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error)
 	return out, nil
 }
 
+// DeleteDesiredService removes a service's desired state, e.g. because
+// the app was deleted through the HTTP API (TASKS.md 1.9). It returns
+// ErrServiceNotFound if no such service exists, the same sentinel
+// GetDesiredService uses, so callers handle "not found" one way
+// regardless of which method produced it.
+//
+// Deleting desired state does not, by itself, stop or remove any
+// container currently running for this service: as of this writing the
+// application controller (internal/reconcile/application) treats a
+// missing desired service as "nothing to do yet" (NoDesiredState), not
+// "tear down what's running". Making delete actually converge to zero
+// containers is a reconciler change, not a store one, and is a known gap
+// left for that package.
+func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
+	res, err := db.ExecContext(ctx, `DELETE FROM desired_services WHERE name = ?`, name)
+	if err != nil {
+		return fmt.Errorf("store: delete desired service %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: delete desired service %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrServiceNotFound
+	}
+	return nil
+}
+
 // scanDesiredService reads the five-column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
 // signature), so the decode-JSON-columns logic exists exactly once.

@@ -5,9 +5,11 @@ go 1.25.1
 require (
 	github.com/caddyserver/caddy/v2 v2.11.4
 	github.com/docker/docker v27.5.1+incompatible
+	github.com/docker/go-connections v0.5.0
 	github.com/moby/buildkit v0.27.1
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/tonistiigi/fsutil v0.0.0-20251211185533-a2aa163d723f
+	golang.org/x/crypto v0.54.0
 	golang.org/x/sync v0.22.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.56.0
@@ -58,7 +60,6 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/dlclark/regexp2 v1.12.0 // indirect
-	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
@@ -189,7 +190,6 @@ require (
 	go.uber.org/zap/exp v0.3.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.54.0 // indirect
 	golang.org/x/crypto/x509roots/fallback v0.0.0-20260213171211-a408498e5541 // indirect
 	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546 // indirect
 	golang.org/x/mod v0.37.0 // indirect
