@@ -295,15 +295,7 @@ func BuildProxyConfig(opts ProxyOptions) (*Config, error) {
 			},
 		},
 	}
-
-	// See AdminConfigSettings.Persist: always disable Caddy's own
-	// autosave-on-disk config copy, regardless of whether the caller
-	// customized AdminListen.
-	noPersist := false
-	cfg.Admin = &AdminConfig{Config: &AdminConfigSettings{Persist: &noPersist}}
-	if opts.AdminListen != "" {
-		cfg.Admin.Listen = opts.AdminListen
-	}
+	cfg.Admin = newAdminConfig(opts.AdminListen)
 	if opts.StorageDir != "" {
 		cfg.Storage = NewFileStorage(opts.StorageDir)
 	}
@@ -313,25 +305,164 @@ func BuildProxyConfig(opts ProxyOptions) (*Config, error) {
 		// which would otherwise try to bind Caddy's default HTTP port
 		// (80) and needs root.
 		server.AutomaticHTTPS = &AutoHTTPSConfig{DisableRedir: true}
-		cfg.Apps.TLS = &TLSApp{
-			Automation: &Automation{
-				Policies: []AutomationPolicy{
-					{
-						Subjects: opts.Hosts,
-						Issuers:  []any{NewInternalIssuer()},
-					},
-				},
-			},
-		}
-		// See CA.InstallTrust: never let a headless control plane
-		// attempt an interactive sudo trust-store install.
-		noInstallTrust := false
-		cfg.Apps.PKI = &PKIApp{
-			CertificateAuthorities: map[string]*CA{
-				"local": {InstallTrust: &noInstallTrust},
-			},
-		}
+		cfg.Apps.TLS = internalIssuerTLSApp(opts.Hosts)
+		cfg.Apps.PKI = newInternalPKIApp()
 	}
 
 	return cfg, nil
+}
+
+// ProxyRoute is one reverse-proxy backend routed by hostname within a
+// Server potentially shared with other routes. Unlike ProxyOptions
+// (BuildProxyConfig), where Hosts is optional (an empty Hosts list means
+// "match everything on this listener," valid for a single-backend
+// listener), a Route here always requires host matching: hostname is the
+// only thing that disambiguates two different backends sharing one
+// listener.
+type ProxyRoute struct {
+	// Hosts are the Host header values routed to BackendDial. Also
+	// contributes to the Subjects list used for TLS automation when
+	// RoutesOptions.TLS is true.
+	Hosts []string
+	// BackendDial is the reverse-proxy target, e.g. "127.0.0.1:9090".
+	BackendDial string
+}
+
+// RoutesOptions is the input to BuildRoutesConfig: everything needed to
+// stand up one Caddy server carrying many independently host-routed
+// backends on a single shared listener. This is the shape a real ingress
+// controller needs (TASKS.md 1.6): ADR 005's Verified section found that
+// caddy.Load replaces Caddy's entire process-wide config on every call,
+// so a controller tracking many services builds one complete Config from
+// every currently routable service and applies it whole on every
+// reconcile, rather than incrementally updating a single service's
+// route. BuildProxyConfig, by contrast, only ever builds a single route
+// to a single backend and stays as-is for that narrower spike use case.
+type RoutesOptions struct {
+	// ServerName keys the server within apps.http.servers. Arbitrary,
+	// used only for logging/introspection.
+	ServerName string
+	// ListenAddr is a Caddy network address shared by every route, e.g.
+	// ":443".
+	ListenAddr string
+	// Routes is every backend to route on this listener. Empty is valid:
+	// it produces a listener with no routes and no TLS automation policy,
+	// the normal shape for a reconcile pass over zero currently-routable
+	// services, not an error condition.
+	Routes []ProxyRoute
+	// TLS, if true, adds a tls app automation policy scoped to every
+	// route's Hosts (skipped if Routes is empty, since automatic HTTPS
+	// needs at least one subject to issue a certificate for), and
+	// disables the HTTP->HTTPS redirect (see Server.AutomaticHTTPS).
+	TLS bool
+	// AdminListen overrides Caddy's admin API bind address. Empty keeps
+	// Caddy's own default (localhost:2019).
+	AdminListen string
+	// StorageDir overrides Caddy's storage root. Empty keeps Caddy's own
+	// OS-specific default. See FileStorage's doc comment.
+	StorageDir string
+}
+
+// BuildRoutesConfig builds a Config with one server carrying one route
+// per entry in opts.Routes, each matched by its own Hosts and proxied to
+// its own BackendDial. An empty opts.Routes is valid and produces a
+// Config with a listener but no routes and no TLS app: this is the
+// normal shape for a reconcile pass over zero currently-routable
+// services (every known service either declares no domains or has no
+// running container yet), not an error.
+func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
+	if opts.ServerName == "" {
+		return nil, fmt.Errorf("ingress: build routes config: server name is required")
+	}
+	if opts.ListenAddr == "" {
+		return nil, fmt.Errorf("ingress: build routes config: listen address is required")
+	}
+
+	var allHosts []string
+	routes := make([]Route, 0, len(opts.Routes))
+	for i, r := range opts.Routes {
+		if len(r.Hosts) == 0 {
+			return nil, fmt.Errorf("ingress: build routes config: route %d has no hosts", i)
+		}
+		if r.BackendDial == "" {
+			return nil, fmt.Errorf("ingress: build routes config: route %d has no backend dial address", i)
+		}
+		routes = append(routes, Route{
+			Match:  []Matcher{{Host: r.Hosts}},
+			Handle: []any{NewReverseProxyHandler(r.BackendDial)},
+		})
+		allHosts = append(allHosts, r.Hosts...)
+	}
+
+	server := &Server{
+		Listen: []string{opts.ListenAddr},
+		Routes: routes,
+	}
+
+	cfg := &Config{
+		Apps: Apps{
+			HTTP: &HTTPApp{
+				Servers: map[string]*Server{
+					opts.ServerName: server,
+				},
+			},
+		},
+	}
+	cfg.Admin = newAdminConfig(opts.AdminListen)
+	if opts.StorageDir != "" {
+		cfg.Storage = NewFileStorage(opts.StorageDir)
+	}
+
+	if opts.TLS && len(allHosts) > 0 {
+		// See Server.AutomaticHTTPS: skip the HTTP->HTTPS redirect,
+		// which would otherwise try to bind Caddy's default HTTP port
+		// (80) and needs root.
+		server.AutomaticHTTPS = &AutoHTTPSConfig{DisableRedir: true}
+		cfg.Apps.TLS = internalIssuerTLSApp(allHosts)
+		cfg.Apps.PKI = newInternalPKIApp()
+	}
+
+	return cfg, nil
+}
+
+// newAdminConfig builds the AdminConfig every builder in this package
+// uses: Persist always disabled (see AdminConfigSettings.Persist), Listen
+// left at Caddy's own default unless the caller overrides it.
+func newAdminConfig(adminListen string) *AdminConfig {
+	noPersist := false
+	admin := &AdminConfig{Config: &AdminConfigSettings{Persist: &noPersist}}
+	if adminListen != "" {
+		admin.Listen = adminListen
+	}
+	return admin
+}
+
+// internalIssuerTLSApp builds a TLSApp with a single automation policy
+// scoping Caddy's internal issuer to hosts. See InternalIssuer's doc
+// comment for why this is the only issuer this package builds; real ACME
+// is explicitly unverified per ADR 005.
+func internalIssuerTLSApp(hosts []string) *TLSApp {
+	return &TLSApp{
+		Automation: &Automation{
+			Policies: []AutomationPolicy{
+				{
+					Subjects: hosts,
+					Issuers:  []any{NewInternalIssuer()},
+				},
+			},
+		},
+	}
+}
+
+// newInternalPKIApp builds a PKIApp for the internal issuer's local CA
+// with InstallTrust always disabled. See CA.InstallTrust's doc comment:
+// a headless control plane must never attempt an interactive sudo
+// trust-store install.
+func newInternalPKIApp() *PKIApp {
+	noInstallTrust := false
+	return &PKIApp{
+		CertificateAuthorities: map[string]*CA{
+			"local": {InstallTrust: &noInstallTrust},
+		},
+	}
 }

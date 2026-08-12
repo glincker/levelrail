@@ -185,17 +185,87 @@ exists. 87.4% coverage on `internal/build`, 95.6% on `internal/deploy`.
 - [ ] Commit SHA tracking through to the image tag (depends on 1.2's
       SHA-tagging)
 
-### 1.6 Ingress integration
+### 1.6 Ingress integration. DONE (2026-08-12)
 
-- [ ] Wire `internal/ingress` (currently a standalone spike) into the
-      deploy flow: app spec's `domains` drives Caddy config
-- [ ] Certificate/ACME account state moved into `internal/store`
-      (currently the spike uses Caddy's default file-system storage
-      module, per ADR 005's Verified section)
-- [ ] Real ACME spot-check against an actual public domain. Not
-      optional: the Phase 1 exit criterion specifically requires
-      real HTTPS, and only the internal/self-signed issuer path has
-      been verified so far
+- [x] `internal/reconcile/ingress`: the real ingress `reconcile.Controller`,
+      wiring the Phase 0 Caddy spike (`internal/ingress`) into the deploy
+      flow. ADR 005's Verified section is the load-bearing constraint this
+      is built around: `caddy.Load` replaces Caddy's entire process-wide
+      config on every call, there's no per-app incremental update. So
+      unlike the application controller (one named service per
+      `Reconcile`), this controller reconciles as a single whole pass:
+      every call lists every `store.DesiredService` via
+      `ListDesiredServices`, and for each with non-empty `Domains`,
+      derives its currently active container the same way the
+      application controller does (`application.ContainerName`, now
+      exported specifically so this package can reuse the exact hash
+      logic instead of reimplementing it and risking drift), inspects it,
+      and if it's running with a published port, builds a route to
+      `127.0.0.1:<hostPort>` (`internal/docker.PortBinding`'s own doc
+      comment explains why host-port routing, not container-IP routing,
+      is this codebase's deliberate choice throughout). A service with no
+      valid backend right now (mid-deploy, crashed, never deployed) is
+      logged and left out of that pass's config, not treated as a
+      reconcile failure; only a real Docker-inspect anomaly, a config-build
+      failure, or Caddy itself rejecting the applied config produce
+      `Ready=False`
+- [x] `internal/ingress.BuildRoutesConfig` (extended the spike, since
+      `BuildProxyConfig` only ever builds one route to one backend):
+      assembles one `Config` with one shared HTTPS server carrying one
+      host-matched route per routable service. An empty route set is
+      valid and applies cleanly, the correct shape for a pass over zero
+      currently-routable services, not an error. Table-tested in
+      `config_test.go` for validation and exact JSON shape, the same
+      style `BuildProxyConfig` already established
+- [x] TLS: Caddy's `internal` issuer only, per the Phase 0 spike's own
+      finding that this is the only issuer path actually verified. Real
+      ACME against a public domain is still explicitly unverified and
+      deferred, not attempted here
+- [x] Admin API: bound to `localhost:2019` explicitly rather than left
+      disabled or left to Caddy's implicit default. Caddy's own default
+      is already loopback-only, so this changes nothing about exposure,
+      it just pins the choice in code (`defaultAdminListen`'s doc
+      comment) so a future upstream default change can't silently widen
+      it, while keeping local introspection into a stuck ingress
+      reconcile available for debugging
+- [x] Certificate/ACME account state: deliberately still on Caddy's
+      default file-system storage module for this pass, per the task's
+      own scoping. The real requirement, a `certmagic.Storage`
+      implementation backed by `internal/store`'s SQLite so multi-node
+      deployments share cert state, is Phase 3 work and is called out as
+      an explicit follow-up in the controller's package doc comment, not
+      built speculatively here
+- [ ] Real ACME spot-check against an actual public domain. Still not
+      done, still not optional before the Phase 1 exit criterion (real
+      HTTPS) can be claimed: only the internal/self-signed issuer path
+      has ever been verified, Phase 0 or now
+
+A real, currently open gap this pass does not close, recorded in the
+controller's package doc comment rather than assumed away: domain
+uniqueness within one `app.yaml` is enforced by `internal/spec`'s
+`Validate()`, but nothing stops two different services written to the
+store by two separate deploys over time from claiming the same domain.
+`BuildRoutesConfig` would silently build two routes matching the same
+host in that case. Needs either a store-level uniqueness constraint or a
+check in this controller before applying; neither exists yet.
+
+Exported `application.containerName` as `application.ContainerName`
+(one call site inside the application controller itself, plus its test
+and live-test references) specifically so this controller could depend
+on the identical derivation instead of a second copy of the same hash
+logic.
+
+Live-verified, not just unit tested against fakes: two real Docker
+containers (`nginx:alpine` and `httpd:alpine`, chosen because their
+default pages are two different, well-known strings), a real Caddy
+instance driven entirely by this controller's `Reconcile`, and two real
+HTTPS requests through Caddy, one per domain, each checked against the
+*other* backend's response body too, not just its own, to actually prove
+host-based routing picked the right one rather than merely returning
+200. Caddy's own logs confirm real internal-issuer certs obtained for
+both hostnames before either handshake succeeds. 98.1% coverage on
+`internal/reconcile/ingress`, 91.5% on `internal/ingress` after the
+`BuildRoutesConfig` addition.
 
 ### 1.7 Secrets (`internal/secrets`)
 

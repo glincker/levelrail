@@ -297,7 +297,7 @@ func TestController_Reconcile_FreshDeploy_ReadinessFails(t *testing.T) {
 func TestController_Reconcile_AlreadyRunning_NoOp(t *testing.T) {
 	rt := newFakeRuntime(0)
 	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
-	target := containerName("web", desired.Image)
+	target := ContainerName("web", desired.Image)
 	rt.seed(target, true)
 
 	c := New("web", &fakeStore{svc: desired}, rt)
@@ -317,7 +317,7 @@ func TestController_Reconcile_AlreadyRunning_NoOp(t *testing.T) {
 func TestController_Reconcile_RestartAfterCrash(t *testing.T) {
 	rt := newFakeRuntime(0)
 	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
-	target := containerName("web", desired.Image)
+	target := ContainerName("web", desired.Image)
 	rt.seed(target, false) // exists, not running: crashed
 
 	c := New("web", &fakeStore{svc: desired}, rt)
@@ -339,7 +339,7 @@ func TestController_Reconcile_Redeploy_CleansUpOldContainer(t *testing.T) {
 	defer srv.Close()
 
 	rt := newFakeRuntime(serverPort(t, srv))
-	oldTarget := containerName("web", "img:v1")
+	oldTarget := ContainerName("web", "img:v1")
 	rt.seed(oldTarget, true)
 
 	desired := &store.DesiredService{
@@ -357,7 +357,7 @@ func TestController_Reconcile_Redeploy_CleansUpOldContainer(t *testing.T) {
 		t.Errorf("condition = %+v, want Status=True Reason=Deployed", cond)
 	}
 
-	newTarget := containerName("web", "img:v2")
+	newTarget := ContainerName("web", "img:v2")
 	names := rt.names()
 	if len(names) != 1 || names[0] != newTarget {
 		t.Errorf("containers after redeploy = %v, want exactly [%s] (old must be cleaned up, only after new is healthy)", names, newTarget)
@@ -366,7 +366,7 @@ func TestController_Reconcile_Redeploy_CleansUpOldContainer(t *testing.T) {
 
 func TestController_Reconcile_CleanupFailure_StillReportsReadyButErrors(t *testing.T) {
 	rt := newFakeRuntime(0)
-	oldTarget := containerName("web", "img:v1")
+	oldTarget := ContainerName("web", "img:v1")
 	rt.seed(oldTarget, true)
 	rt.removeErr = errors.New("permission denied")
 
@@ -422,17 +422,17 @@ func TestWithHTTPClient(t *testing.T) {
 }
 
 func TestContainerName_DeterministicPerImage(t *testing.T) {
-	a1 := containerName("web", "img:v1")
-	a2 := containerName("web", "img:v1")
-	b := containerName("web", "img:v2")
+	a1 := ContainerName("web", "img:v1")
+	a2 := ContainerName("web", "img:v1")
+	b := ContainerName("web", "img:v2")
 
 	if a1 != a2 {
-		t.Errorf("containerName is not deterministic: %q != %q for the same inputs", a1, a2)
+		t.Errorf("ContainerName is not deterministic: %q != %q for the same inputs", a1, a2)
 	}
 	if a1 == b {
-		t.Errorf("containerName collided for different images: %q", a1)
+		t.Errorf("ContainerName collided for different images: %q", a1)
 	}
 	if !strings.HasPrefix(a1, "web-") {
-		t.Errorf("containerName(%q) = %q, want it prefixed with the service name", "web", a1)
+		t.Errorf("ContainerName(%q) = %q, want it prefixed with the service name", "web", a1)
 	}
 }
