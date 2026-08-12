@@ -153,3 +153,48 @@ func TestListDesiredServices_OrderedByName(t *testing.T) {
 		}
 	}
 }
+
+func TestDeleteDesiredService(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:tag", Port: 8080}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	if err := db.DeleteDesiredService(ctx, "web"); err != nil {
+		t.Fatalf("DeleteDesiredService() error = %v", err)
+	}
+
+	if _, err := db.GetDesiredService(ctx, "web"); !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("GetDesiredService after delete: error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+func TestDeleteDesiredService_NotFound(t *testing.T) {
+	db := openTestDB(t)
+
+	err := db.DeleteDesiredService(context.Background(), "never-saved")
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+func TestDeleteDesiredService_DoesNotAffectOtherServices(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	for _, name := range []string{"api", "web"} {
+		if err := db.SaveDesiredService(ctx, DesiredService{Name: name, Image: "img:tag", Port: 8080}); err != nil {
+			t.Fatalf("seed %q: %v", name, err)
+		}
+	}
+
+	if err := db.DeleteDesiredService(ctx, "web"); err != nil {
+		t.Fatalf("DeleteDesiredService() error = %v", err)
+	}
+
+	if _, err := db.GetDesiredService(ctx, "api"); err != nil {
+		t.Errorf("unrelated service api should be untouched, got error = %v", err)
+	}
+}

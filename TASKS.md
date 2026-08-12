@@ -254,14 +254,71 @@ database controller's extension of `docker.ContainerSpec`.
 - [ ] Redis as a first-class resource
 - [ ] Volume management for both
 
-### 1.9 HTTP API (`internal/api`)
+### 1.9 HTTP API (`internal/api`). DONE (2026-08-11)
 
-- [ ] `/api/v1/brand` (CLAUDE.md section 3, the frontend's brand
-      indirection depends on this existing)
-- [ ] Apps CRUD
-- [ ] Deploy trigger, deploy history
-- [ ] Single admin user, session auth. No teams, no RBAC (explicitly
-      out of scope until Phase 4)
+- [x] `/api/v1/brand` (CLAUDE.md section 3, the frontend's brand
+      indirection depends on this existing). Serves `internal/brand`'s
+      loaded `*Brand` as JSON, public, no auth, since a login screen
+      needs branding before a session exists. `cmd/levelrail/main.go`
+      now actually calls `brand.Load` (it never did before this), env
+      override `APP_BRAND_FILE`, default `./brand.yaml`
+- [x] Apps CRUD, layered directly on `store.DesiredService`
+      (`internal/store/service.go`), the closest existing resource,
+      rather than a new speculative domain type. `DeleteDesiredService`
+      added to `internal/store` since CRUD's "D" didn't exist yet.
+      Known gap, deliberately not papered over: `DesiredService` has no
+      domains/replicas/strategy fields, so the API can't expose what
+      app.yaml (`internal/spec`) can express but the store can't yet
+      hold. That's a store-schema and deploy-pipeline change (1.3/1.4/
+      1.5), not something invented here
+- [x] Deploy trigger (`POST .../deploys`), deploy history
+      (`GET .../deploys`). Trigger only updates `desired_services.image`,
+      the same mechanism TASKS.md 1.3's rollback note describes ("pointing
+      desired.Image back at an older tag and reconciling converges to it
+      the same way any other redeploy does"), run forward instead of
+      backward: it takes an already-built image tag as input rather than
+      building one, since `internal/build`/`internal/deploy` (1.4) were
+      owned by a different concurrent session while this was written.
+      History returns the latest reconcile condition per
+      (controller, condition type) pair via `store.GetConditions`, which
+      is genuinely all `UpsertConditions` persists today, not a
+      row-per-deploy-attempt log; no new log format was invented to fake
+      one
+- [x] Single admin user, session auth. No teams, no RBAC (explicitly
+      out of scope until Phase 4). `internal/store` gained an
+      `admin_user` table (migration 0003, single row enforced by
+      `CHECK (id = 1)`) and bcrypt password hashing
+      (`golang.org/x/crypto/bcrypt`, already an indirect dependency,
+      promoted to direct). Sessions are a server-side in-memory map keyed
+      by an opaque cookie token, deliberately nothing more elaborate
+      (no JWT/OAuth) per CLAUDE.md 6 Phase 1's explicit scope.
+      `cmd/levelrail/main.go` bootstraps the admin account from
+      `APP_ADMIN_USERNAME`/`APP_ADMIN_PASSWORD` on startup, non-fatal if
+      unset (the server still starts; auth-required routes just stay
+      inaccessible until an operator sets them)
+
+Known gap outside this package's scope: `cmd/levelrail/main.go`'s
+reconcile engine still only runs the Phase 0 hardcoded `nginxdemo`
+controller, not a dynamic `internal/reconcile/application.Controller`
+per app. A deploy triggered through this API updates desired state
+correctly, but nothing reconciles that specific app until the engine is
+wired to spawn per-app controllers. Not an HTTP API problem to fix.
+
+HTTP layer is stdlib `net/http.ServeMux` with Go 1.22+ pattern routing
+(`"GET /api/v1/apps/{name}"`), not Chi: CLAUDE.md 4.1 says "do not pull
+in a heavy framework," and the one thing a framework would earn its
+weight on, auth middleware, is a plain `http.HandlerFunc`-wrapping
+closure stdlib composes with directly.
+
+Tested with a real temp-file SQLite store per handler (`httptest`
+against `Router.Handler()`), not a mock, matching `internal/store`'s own
+test convention: every handler covers its 200/201/204 path, its 401
+(missing/invalid session), its 404 (unknown app), and at least one
+invalid/half-succeeded-input 400 case verified not to have reached the
+store. 75.9% coverage on `internal/api`, 77.7% on `internal/store`
+(up from before this pass, `DeleteDesiredService` and the admin_user
+table both gained direct store-level tests too). 83.4% on `internal/`
+overall, gate is 70%.
 
 ### 1.10 Frontend (`/web`)
 
