@@ -9,6 +9,35 @@ import (
 	"time"
 )
 
+// PortBinding maps one container port to a host port. In a ContainerSpec,
+// HostPort of 0 means "let Docker assign one"; in an observed
+// ContainerState it's always the concrete port actually bound, never 0.
+//
+// Host ports, not direct container-IP routing, on purpose: this process
+// runs as a plain host process today (CLAUDE.md 4.3's single-node mode),
+// and container IPs on Docker's bridge network are only reachable from
+// the host on Linux, not from Docker Desktop's macOS VM boundary. Every
+// target this matters for (a Linux managed node, and this Mac during
+// development) can always reach localhost:hostPort, so that's the one
+// mechanism used everywhere rather than branching on platform.
+type PortBinding struct {
+	ContainerPort int
+	HostPort      int
+	// Protocol is "tcp" or "udp". Empty is treated as "tcp" by Create.
+	Protocol string
+}
+
+// Resources caps a container's memory and CPU, in the Engine API's own
+// units directly (bytes, nano-CPUs) rather than an invented "cores as
+// float64" indirection. Translating from app.yaml's human-friendly units
+// (spec.Resources: "512Mi", 0.5 cores) into these is the caller's job,
+// keeping this package spec-agnostic, same as ContainerSpec.Image being
+// a plain string rather than something spec-aware.
+type Resources struct {
+	MemoryBytes int64
+	NanoCPUs    int64
+}
+
 // ContainerState is the observed state of a single container, trimmed to
 // the fields a controller actually needs to decide what to do next.
 type ContainerState struct {
@@ -16,14 +45,47 @@ type ContainerState struct {
 	Name    string
 	Image   string
 	Running bool
+	// Ports reflects live port bindings. Docker only actually binds a
+	// container's published ports once it's running, so this is empty
+	// for a created-but-not-yet-started container, not an error.
+	Ports []PortBinding
 }
 
 // ContainerSpec is desired state for a container a controller wants to
-// exist. Deliberately minimal for the Phase 0 skeleton: CLAUDE.md 4.9's
-// full app spec (ports, health checks, resources, env) lands in Phase 1.
+// exist.
+//
+// No restart policy field, deliberately: CLAUDE.md 4.2 makes the
+// reconciler, not Docker, the sole authority on "should this container
+// be running." A Docker-native restart policy running alongside a
+// reconciler that also restarts dead containers is two independent
+// systems racing to make the same decision, exactly the kind of drift
+// CLAUDE.md 4.2's level-triggered design exists to avoid. Every
+// container Levelrail creates gets Docker's "no" restart policy; staying
+// running is the reconciler's job, proven live in nginxdemo (Phase 0).
+//
+// No health check field either: CLAUDE.md 4.9's readiness/liveness probes
+// are modeled on Kubernetes' prober pattern (the controller calls out to
+// the container, not the container reporting its own health via Docker's
+// HEALTHCHECK state machine), the same design choice ADR 002's
+// Consequences section already commits to over Coolify's confirmed
+// weaker alternative (health check disabled by default, gated entirely
+// on Docker's own HEALTHCHECK). The prober itself belongs in the
+// application controller (Phase 1, TASKS.md 1.3), not here; this package
+// only needs to make a container reachable, via Ports above.
 type ContainerSpec struct {
-	Name  string
-	Image string
+	Name      string
+	Image     string
+	Ports     []PortBinding
+	Env       map[string]string
+	Resources *Resources
+}
+
+// ImageInfo is one tagged image available locally, used to discover
+// rollback candidates (CLAUDE.md 6: "keep the previous N images pinned
+// so garbage collection cannot orphan a rollback target").
+type ImageInfo struct {
+	Tag       string
+	CreatedAt time.Time
 }
 
 // EventAction mirrors the subset of Docker container lifecycle events a
@@ -69,4 +131,10 @@ type Runtime interface {
 	// and is then closed; the event channel is closed once the stream
 	// ends for any reason.
 	Events(ctx context.Context) (<-chan Event, <-chan error)
+
+	// ListImages returns every locally-present tag under repo (e.g.
+	// "levelrail/myapp"), newest first, for rollback candidate discovery.
+	// An empty result and a nil error both mean "no images found", not
+	// an error: a service that's never been built has no images yet.
+	ListImages(ctx context.Context, repo string) ([]ImageInfo, error)
 }

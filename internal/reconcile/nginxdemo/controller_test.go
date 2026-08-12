@@ -41,6 +41,10 @@ func (f *fakeRuntime) Start(_ context.Context, id string) error {
 	return f.startErr
 }
 
+func (f *fakeRuntime) ListImages(_ context.Context, _ string) ([]docker.ImageInfo, error) {
+	return nil, nil // unused by Reconcile
+}
+
 func (f *fakeRuntime) Events(_ context.Context) (<-chan docker.Event, <-chan error) {
 	return nil, nil // unused by Reconcile
 }

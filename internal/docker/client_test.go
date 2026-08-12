@@ -1,0 +1,202 @@
+package docker
+
+import (
+	"reflect"
+	"testing"
+
+	dockertypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/events"
+)
+
+func TestToDockerPorts(t *testing.T) {
+	tests := []struct {
+		name    string
+		ports   []PortBinding
+		wantErr bool
+	}{
+		{name: "empty", ports: nil},
+		{
+			name: "single port, auto host port",
+			ports: []PortBinding{
+				{ContainerPort: 3000},
+			},
+		},
+		{
+			name: "single port, explicit host port",
+			ports: []PortBinding{
+				{ContainerPort: 3000, HostPort: 8080},
+			},
+		},
+		{
+			name: "protocol defaults to tcp when empty",
+			ports: []PortBinding{
+				{ContainerPort: 53, Protocol: ""},
+			},
+		},
+		{
+			name: "udp respected when set",
+			ports: []PortBinding{
+				{ContainerPort: 53, Protocol: "udp"},
+			},
+		},
+		{
+			name: "invalid port number",
+			ports: []PortBinding{
+				{ContainerPort: -1},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			exposed, bindings, err := toDockerPorts(tt.ports)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("toDockerPorts() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
+			}
+			if len(tt.ports) == 0 {
+				if exposed != nil || bindings != nil {
+					t.Errorf("expected nil/nil for no ports, got %v / %v", exposed, bindings)
+				}
+				return
+			}
+			if len(exposed) != len(tt.ports) {
+				t.Errorf("exposed has %d entries, want %d", len(exposed), len(tt.ports))
+			}
+			if len(bindings) != len(tt.ports) {
+				t.Errorf("bindings has %d entries, want %d", len(bindings), len(tt.ports))
+			}
+		})
+	}
+}
+
+func TestToDockerPorts_HostPortZeroMeansAutoAssign(t *testing.T) {
+	_, bindings, err := toDockerPorts([]PortBinding{{ContainerPort: 3000, HostPort: 0}})
+	if err != nil {
+		t.Fatalf("toDockerPorts() error = %v", err)
+	}
+	for _, bs := range bindings {
+		for _, b := range bs {
+			if b.HostPort != "" {
+				t.Errorf("HostPort = %q, want empty string (auto-assign) when spec HostPort is 0", b.HostPort)
+			}
+		}
+	}
+}
+
+func TestToDockerPorts_HostPortSetIsPassedThrough(t *testing.T) {
+	_, bindings, err := toDockerPorts([]PortBinding{{ContainerPort: 3000, HostPort: 8080}})
+	if err != nil {
+		t.Fatalf("toDockerPorts() error = %v", err)
+	}
+	found := false
+	for _, bs := range bindings {
+		for _, b := range bs {
+			if b.HostPort == "8080" {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Error("expected a binding with HostPort=8080")
+	}
+}
+
+func TestToDockerEnv(t *testing.T) {
+	tests := []struct {
+		name string
+		env  map[string]string
+		want []string
+	}{
+		{name: "empty", env: nil, want: nil},
+		{
+			name: "single var",
+			env:  map[string]string{"FOO": "bar"},
+			want: []string{"FOO=bar"},
+		},
+		{
+			name: "multiple vars, sorted for determinism",
+			env:  map[string]string{"ZOO": "z", "AAA": "a"},
+			want: []string{"AAA=a", "ZOO=z"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := toDockerEnv(tt.env)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("toDockerEnv() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMapAction(t *testing.T) {
+	tests := []struct {
+		name string
+		in   events.Action
+		want EventAction
+	}{
+		{name: "start", in: "start", want: EventStart},
+		{name: "die", in: "die", want: EventDie},
+		{name: "stop", in: "stop", want: EventStop},
+		{name: "unrecognized action mapped to empty, filtered out by caller", in: "exec_create", want: ""},
+		{name: "empty input", in: "", want: ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := mapAction(tt.in); got != tt.want {
+				t.Errorf("mapAction(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestObservedPorts(t *testing.T) {
+	tests := []struct {
+		name  string
+		ports []dockertypes.Port
+		want  []PortBinding
+	}{
+		{name: "no ports", ports: nil, want: nil},
+		{
+			name: "exposed but not published, skipped",
+			ports: []dockertypes.Port{
+				{PrivatePort: 3000, PublicPort: 0, Type: "tcp"},
+			},
+			want: nil,
+		},
+		{
+			name: "published port kept",
+			ports: []dockertypes.Port{
+				{PrivatePort: 3000, PublicPort: 32768, Type: "tcp"},
+			},
+			want: []PortBinding{
+				{ContainerPort: 3000, HostPort: 32768, Protocol: "tcp"},
+			},
+		},
+		{
+			name: "mix of published and unpublished",
+			ports: []dockertypes.Port{
+				{PrivatePort: 3000, PublicPort: 32768, Type: "tcp"},
+				{PrivatePort: 9000, PublicPort: 0, Type: "tcp"},
+			},
+			want: []PortBinding{
+				{ContainerPort: 3000, HostPort: 32768, Protocol: "tcp"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := observedPorts(tt.ports)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("observedPorts() = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}

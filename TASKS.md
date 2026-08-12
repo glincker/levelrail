@@ -52,14 +52,37 @@ backups to S3, teams, notifications, Compose support.
 - [x] 82.3% test coverage, real fixture files under `testdata/`, no
       mocks needed since there's no I/O beyond reading a byte slice
 
-### 1.2 Docker wrapper extensions (`internal/docker`)
+### 1.2 Docker wrapper extensions (`internal/docker`). DONE (2026-08-11)
 
-- [ ] Extend `ContainerSpec`: ports, env vars, resource limits (memory/cpu),
-      restart policy
-- [ ] Health check wiring (readiness/liveness from the app spec down to
-      Docker's own `HEALTHCHECK` or an internal prober, decide which)
-- [ ] Image tagging by commit SHA (rollback depends on this existing
-      before rollback itself is built, not after)
+- [x] Extend `ContainerSpec`: ports (`PortBinding`, host port 0 means
+      auto-assign), env vars, resource limits (`Resources`: memory
+      bytes, nano-CPUs, the Engine API's own units, not app.yaml's
+      "512Mi"/0.5-cores units; that translation is the application
+      controller's job, 1.3)
+- [x] Restart policy: decided against a Docker-native one. Every
+      container gets Docker's `"no"` policy explicitly; the reconciler,
+      not Docker, is the sole authority on whether a dead container
+      comes back (CLAUDE.md 4.2). Verified live: a real container's
+      `HostConfig.RestartPolicy.Name` inspected directly is `"no"`.
+- [x] Health check: decided on an internal prober (Kubernetes-style, the
+      controller calls out to the container) over Docker's own
+      `HEALTHCHECK` state machine, the same choice ADR 002 already
+      commits to over Coolify's confirmed weaker alternative. The actual
+      prober is 1.3 scope; this package only had to make a container's
+      address discoverable, done via the new `ContainerState.Ports`.
+- [x] Image tagging by commit SHA: no new code needed, `ContainerSpec.Image`
+      already accepts any tag. What rollback actually needs is the new
+      `ListImages(repo)`, discovering available tagged versions,
+      newest first, deduped and live-verified against a real image.
+
+Two real bugs caught by live testing, not by unit tests: `observedPorts`
+returned duplicate bindings (Docker reports one entry per bind IP, so a
+port published on all interfaces appeared twice) and an empty-but-non-nil
+slice instead of `nil` on the "nothing published" path. Both fixed.
+Also closed a Phase 0 gap while in this file: `Events` and `mapAction`
+had zero test coverage since Phase 0; a live test now proves real
+start/die events flow through end to end, not just that the plumbing
+compiles. 78.2% coverage.
 
 ### 1.3 Application controller (`internal/reconcile`)
 

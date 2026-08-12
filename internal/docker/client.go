@@ -4,12 +4,17 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sort"
+	"strconv"
+	"time"
 
+	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
 	dockerclient "github.com/docker/docker/client"
+	"github.com/docker/go-connections/nat"
 )
 
 // Client is the real Runtime implementation, talking to the Docker Engine
@@ -55,7 +60,34 @@ func (c *Client) InspectByName(ctx context.Context, name string) (*ContainerStat
 		Name:    name,
 		Image:   s.Image,
 		Running: s.State == "running",
+		Ports:   observedPorts(s.Ports),
 	}, nil
+}
+
+func observedPorts(ports []dockertypes.Port) []PortBinding {
+	// Docker reports one entry per (IP, port) combination, so a port
+	// published on all interfaces typically appears twice, once for the
+	// IPv4 wildcard and once for IPv6. PortBinding doesn't carry the
+	// bind IP, so from a caller's view those are the same binding;
+	// dedupe on the fields that are actually kept.
+	seen := make(map[PortBinding]bool, len(ports))
+	var out []PortBinding
+	for _, p := range ports {
+		if p.PublicPort == 0 {
+			continue // exposed but not published to a host port, nothing for a caller to route to
+		}
+		binding := PortBinding{
+			ContainerPort: int(p.PrivatePort),
+			HostPort:      int(p.PublicPort),
+			Protocol:      p.Type,
+		}
+		if seen[binding] {
+			continue
+		}
+		seen[binding] = true
+		out = append(out, binding)
+	}
+	return out
 }
 
 // Create implements Runtime.
@@ -64,9 +96,31 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 		return "", err
 	}
 
+	exposedPorts, portBindings, err := toDockerPorts(spec.Ports)
+	if err != nil {
+		return "", fmt.Errorf("docker: create container %q: %w", spec.Name, err)
+	}
+
+	hostConfig := &container.HostConfig{
+		PortBindings: portBindings,
+		// Explicitly "no": the reconciler, not Docker, decides whether a
+		// dead container comes back. See ContainerSpec's doc comment.
+		RestartPolicy: container.RestartPolicy{Name: container.RestartPolicyDisabled},
+	}
+	if spec.Resources != nil {
+		hostConfig.Resources = container.Resources{
+			Memory:   spec.Resources.MemoryBytes,
+			NanoCPUs: spec.Resources.NanoCPUs,
+		}
+	}
+
 	resp, err := c.cli.ContainerCreate(ctx,
-		&container.Config{Image: spec.Image},
-		&container.HostConfig{},
+		&container.Config{
+			Image:        spec.Image,
+			ExposedPorts: exposedPorts,
+			Env:          toDockerEnv(spec.Env),
+		},
+		hostConfig,
 		nil, nil,
 		spec.Name,
 	)
@@ -74,6 +128,48 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 		return "", fmt.Errorf("docker: create container %q: %w", spec.Name, err)
 	}
 	return resp.ID, nil
+}
+
+func toDockerPorts(ports []PortBinding) (nat.PortSet, nat.PortMap, error) {
+	if len(ports) == 0 {
+		return nil, nil, nil
+	}
+
+	exposed := make(nat.PortSet, len(ports))
+	bindings := make(nat.PortMap, len(ports))
+
+	for _, p := range ports {
+		proto := p.Protocol
+		if proto == "" {
+			proto = "tcp"
+		}
+		natPort, err := nat.NewPort(proto, strconv.Itoa(p.ContainerPort))
+		if err != nil {
+			return nil, nil, fmt.Errorf("port %d/%s: %w", p.ContainerPort, proto, err)
+		}
+
+		exposed[natPort] = struct{}{}
+
+		hostPort := ""
+		if p.HostPort != 0 {
+			hostPort = strconv.Itoa(p.HostPort)
+		}
+		bindings[natPort] = append(bindings[natPort], nat.PortBinding{HostPort: hostPort})
+	}
+
+	return exposed, bindings, nil
+}
+
+func toDockerEnv(env map[string]string) []string {
+	if len(env) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(env))
+	for k, v := range env {
+		out = append(out, k+"="+v)
+	}
+	sort.Strings(out) // deterministic order, mainly so tests aren't flaky
+	return out
 }
 
 // Start implements Runtime.
@@ -108,6 +204,29 @@ func (c *Client) ensureImage(ctx context.Context, ref string) error {
 		return fmt.Errorf("docker: pull image %q: reading progress stream: %w", ref, err)
 	}
 	return nil
+}
+
+// ListImages implements Runtime.
+func (c *Client) ListImages(ctx context.Context, repo string) ([]ImageInfo, error) {
+	f := filters.NewArgs()
+	f.Add("reference", repo)
+
+	summaries, err := c.cli.ImageList(ctx, image.ListOptions{Filters: f})
+	if err != nil {
+		return nil, fmt.Errorf("docker: list images for %q: %w", repo, err)
+	}
+
+	var out []ImageInfo
+	for _, s := range summaries {
+		createdAt := time.Unix(s.Created, 0).UTC()
+		for _, tag := range s.RepoTags {
+			out = append(out, ImageInfo{Tag: tag, CreatedAt: createdAt})
+		}
+	}
+
+	sort.Slice(out, func(i, j int) bool { return out[i].CreatedAt.After(out[j].CreatedAt) })
+
+	return out, nil
 }
 
 // Events implements Runtime.
