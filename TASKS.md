@@ -177,13 +177,83 @@ confirmed by inspecting the container afterward rather than trusting the
 returned status. This is the same chain a git push will drive once 1.5
 exists. 87.4% coverage on `internal/build`, 95.6% on `internal/deploy`.
 
-### 1.5 Git integration
+### 1.5 Git integration. DONE (2026-08-12)
 
-- [ ] Webhook receiver
-- [ ] Deploy keys or GitHub App auth (decide which; deploy keys are
-      simpler, GitHub App is the better long-term UX)
-- [ ] Commit SHA tracking through to the image tag (depends on 1.2's
-      SHA-tagging)
+- [x] Webhook receiver: new `internal/webhook` package. `Handler` is a
+      plain `http.Handler` (no `http.ListenAndServe` inside it), so the
+      HTTP API package (1.9) mounts it later at whatever path it
+      chooses, the same "don't stand up a server, expose a handler"
+      shape the rest of this phase has kept to
+- [x] Signature verification: HMAC-SHA256 over the raw body against
+      `Config.Secret`, GitHub's `X-Hub-Signature-256` scheme, compared
+      with `hmac.Equal` (constant-time by construction). An empty
+      configured secret always rejects rather than degrading to "any
+      signature passes." Table-driven tests cover valid, wrong-secret,
+      missing-header, non-hex, and the case that actually exercises
+      whether the comparison uses the right bytes: a tampered payload
+      checked against a signature computed over the *original* body,
+      not just a missing-signature check. A dedicated test also proves
+      a signature differing in only its last byte is rejected exactly
+      like one differing in its first, guarding against a future
+      refactor accidentally reintroducing a short-circuiting compare
+- [x] Branch gating: only a push whose `ref` matches `Config.Branch`
+      (default `main`) triggers a deploy. Any other branch returns 200
+      (so GitHub doesn't retry) with a response body that says the push
+      was ignored and why, verified by a test that also asserts the
+      git-fetch step never runs for the wrong branch
+- [x] Fetching source at a SHA: `github.com/go-git/go-git/v5`, no `git`
+      binary dependency, consistent with `internal/docker` and
+      `internal/build`'s "no shelling out" doc comments. Full clone, not
+      shallow: documented tradeoff in `cloneAndCheckout`'s doc comment,
+      a depth-1 clone isn't guaranteed to contain the pushed SHA if the
+      branch moved between the push and the fetch. Checks out into a
+      fresh temp dir per call and always cleans it up (`defer cleanup()`
+      covers both the success and failure paths), so repeated webhook
+      calls don't leak disk
+- [x] Commit SHA tracking through to the image tag: the pushed `after`
+      SHA flows straight into `deploy.Request.CommitSHA`, which
+      `internal/deploy` (1.4) already tags the built image with, no new
+      plumbing needed on that side, this was the missing caller
+- [x] Auth decision: neither deploy keys nor a GitHub App, a shared
+      HMAC webhook secret (`Config.Secret`) instead. Simpler than both
+      for Phase 1's single-repo scope, and GitHub's push webhook payload
+      only needs read access to know what was pushed; fetching the
+      source itself goes over `Config.RepoURL`, which is server-side
+      static configuration, never taken from the untrusted payload,
+      so a forged payload can't redirect a clone at an
+      attacker-controlled remote. Revisit deploy keys/GitHub App if a
+      private repo needs authenticated clones (this repo's own clone
+      today assumes a reachable/public or otherwise pre-authorized
+      remote; wiring credentials into the go-git clone call is a small
+      follow-up once thesvg.org's actual repo visibility is decided,
+      not a redesign)
+- [x] `Config` is deliberately static, single-app configuration (one
+      secret, one repo, one branch, one `spec.Service`), not a
+      multi-tenant "which repo maps to which app.yaml" registry.
+      Documented as a scope boundary in the package doc comment,
+      matching CLAUDE.md 7's "don't design for hypothetical future
+      requirements": a second app arriving is the trigger to build that
+      registry, not a hypothesis about one arriving
+
+Response codes verified by table-driven `httptest`-based tests against a
+fake `Deployer` (mirroring the `ImageBuilder`/`ServiceStore` narrow
+interfaces `internal/deploy` already established): 200 for a triggered or
+correctly-ignored push, 400 for a malformed payload or one missing
+`ref`/`after`, 401 for a missing or invalid signature, 500 with a fixed,
+non-leaky message (checked directly: the fake's real error text must not
+appear in the response body) when either the git fetch or the deploy call
+fails. A live test builds a real two-commit repo with `go-git` itself in a
+temp dir (no clone of an actual GitHub repo, so nothing here can flake on
+GitHub's availability) and proves `cloneAndCheckout` lands the first
+commit's file content, not the branch tip's, and that a bad SHA fails the
+checkout instead of silently landing on some other commit. 86.9% coverage
+on `internal/webhook`.
+
+Not built here, deliberately: GitHub App auth (see the auth decision
+above), deploy progress streaming to a UI (build progress is logged via
+`slog` through `build.SlogProgress`, actual SSE streaming is 1.9's job,
+same boundary 1.4 already drew), and any multi-repo/multi-app registry
+(see the `Config` scope-boundary note above).
 
 ### 1.6 Ingress integration
 
