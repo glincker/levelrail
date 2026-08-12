@@ -50,6 +50,7 @@ type Store interface {
 // on the same pattern independently.
 type Engine struct {
 	controllers []Controller
+	source      Source
 	logger      *slog.Logger
 	store       Store // nil is valid: persistence is optional, not required
 
@@ -57,6 +58,18 @@ type Engine struct {
 	lastResult map[string]Result
 	lastErr    map[string]error
 }
+
+// Source dynamically supplies the current set of controllers to reconcile,
+// called once per pass immediately before those controllers run. A Source
+// re-derives its controller set from live desired state every call, the
+// same level-triggered principle every controller in this codebase already
+// follows for its own resource: nothing about which apps or databases
+// exist is remembered between calls, everything is re-derived from what's
+// in the store right now. This is how the engine goes from a fixed set of
+// controllers built once at startup to one controller per app and per
+// database, appearing and disappearing as desired state changes, without
+// a restart.
+type Source func(ctx context.Context) ([]Controller, error)
 
 // NewEngine builds an Engine over the given controllers. Order is
 // preserved for each ReconcileAll pass but controllers must not depend on
@@ -80,11 +93,32 @@ func (e *Engine) SetStore(s Store) {
 	e.store = s
 }
 
-// ReconcileAll runs every controller once, in order. A single controller
-// failing does not stop the others from running: one broken resource
-// should never block convergence of everything else.
+// SetSource attaches a dynamic controller source, reconciled in addition
+// to the fixed controllers NewEngine was built with. Call it once before
+// Run, if at all; not safe to call concurrently with reconciles in flight.
+func (e *Engine) SetSource(s Source) {
+	e.source = s
+}
+
+// ReconcileAll runs every controller once: first the fixed set NewEngine
+// was built with, then whatever the Source currently reports, if one is
+// set. A single controller failing does not stop the others from running:
+// one broken resource should never block convergence of everything else.
+// A Source error is logged and skipped for this pass rather than treated
+// as fatal, since the next tick or event re-derives the set again anyway.
 func (e *Engine) ReconcileAll(ctx context.Context) {
 	for _, c := range e.controllers {
+		e.reconcileOne(ctx, c)
+	}
+	if e.source == nil {
+		return
+	}
+	dynamic, err := e.source(ctx)
+	if err != nil {
+		e.logger.Error("listing dynamic controllers failed", slog.String("error", err.Error()))
+		return
+	}
+	for _, c := range dynamic {
 		e.reconcileOne(ctx, c)
 	}
 }

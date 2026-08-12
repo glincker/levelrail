@@ -1,15 +1,16 @@
-// Command levelrail is the control plane binary. Alongside the Phase 0
-// reconcile-engine skeleton (still wired to a single hardcoded nginx
-// controller; see internal/reconcile/nginxdemo), this now also starts
-// the TASKS.md 1.9 HTTP API on its own listener, shut down on the same
-// signal context as everything else. Reading desired state from the
-// store into the reconcile engine dynamically, and everything else in
-// CLAUDE.md 4, lands in later phases.
+// Command levelrail is the control plane binary. It starts the TASKS.md
+// 1.9 HTTP API and a reconcile engine whose controller set is derived
+// dynamically from desired state in the store every pass (see
+// dynamicSource): one application.Controller per desired service, one
+// database.Controller per desired database, plus a single ingress
+// controller routing every service with domains. Everything else in
+// CLAUDE.md 4 (multi-node, WireGuard, MCP) lands in later phases.
 package main
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -21,8 +22,11 @@ import (
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
-	"github.com/GLINCKER/levelrail/internal/reconcile/nginxdemo"
+	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -95,8 +99,16 @@ func run(logger *slog.Logger) error {
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
-	engine := reconcile.NewEngine(logger, nginxdemo.New(client))
+	ingressDriver := ingressdriver.New(logger)
+	defer func() {
+		if cerr := ingressDriver.Stop(context.Background()); cerr != nil {
+			logger.Error("stopping ingress driver", slog.String("error", cerr.Error()))
+		}
+	}()
+
+	engine := reconcile.NewEngine(logger)
 	engine.SetStore(db)
+	engine.SetSource(dynamicSource(db, client, ingressDriver, logger))
 
 	events, errs := client.Events(ctx)
 	go func() {
@@ -161,6 +173,37 @@ func httpAddr() string {
 		addr = defaultHTTPAddr
 	}
 	return addr
+}
+
+// dynamicSource builds a reconcile.Source that re-lists desired services
+// and databases from the store on every call and returns one controller
+// per resource, plus a single ingress controller. Level-triggered by
+// construction, matching every controller it builds: nothing about which
+// apps or databases currently exist is cached here, it's re-derived from
+// the store every pass, so a service or database created or deleted
+// through the HTTP API takes effect on the very next reconcile, no
+// restart needed.
+func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.Driver, logger *slog.Logger) reconcile.Source {
+	return func(ctx context.Context) ([]reconcile.Controller, error) {
+		services, err := db.ListDesiredServices(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("list desired services: %w", err)
+		}
+		databases, err := db.ListDesiredDatabases(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("list desired databases: %w", err)
+		}
+
+		controllers := make([]reconcile.Controller, 0, len(services)+len(databases)+1)
+		for _, svc := range services {
+			controllers = append(controllers, application.New(svc.Name, db, runtime))
+		}
+		for _, desired := range databases {
+			controllers = append(controllers, database.New(desired.Name, db, runtime))
+		}
+		controllers = append(controllers, ingressreconcile.New(db, runtime, driver, ingressreconcile.WithLogger(logger)))
+		return controllers, nil
+	}
 }
 
 // bootstrapAdmin creates the single admin account from

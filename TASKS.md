@@ -489,12 +489,24 @@ on `internal/docker` (was 78.2% before this task).
       unset (the server still starts; auth-required routes just stay
       inaccessible until an operator sets them)
 
-Known gap outside this package's scope: `cmd/levelrail/main.go`'s
-reconcile engine still only runs the Phase 0 hardcoded `nginxdemo`
-controller, not a dynamic `internal/reconcile/application.Controller`
-per app. A deploy triggered through this API updates desired state
-correctly, but nothing reconciles that specific app until the engine is
-wired to spawn per-app controllers. Not an HTTP API problem to fix.
+**Closed (2026-08-12), single-session per CLAUDE.md 8's rule on the
+reconcile loop**: `cmd/levelrail/main.go` now wires `reconcile.Engine` to
+a dynamic controller set instead of the Phase 0 hardcoded `nginxdemo`
+controller. `reconcile.Engine` gained a `Source` (`SetSource`), a
+function re-called at the start of every `ReconcileAll` pass that lists
+`desired_services`/`desired_databases` from the store and returns one
+`application.Controller` per service, one `database.Controller` per
+database, and a single shared `ingress.Controller`, in addition to
+whatever fixed controllers `NewEngine` was built with. Level-triggered by
+construction like everything else here: nothing about which apps exist is
+cached in the engine, it's re-derived from the store every pass, so a
+deploy triggered through this API (or an app/database created or deleted)
+takes effect on the very next reconcile with no restart. A `Source` error
+is logged and skipped for that pass rather than treated as fatal, and
+never blocks the fixed controller set from still running. Smoke-tested
+end to end: binary starts with zero apps, the ingress controller
+reconciles `Routed0Services` cleanly, Caddy starts and stops without
+error on SIGTERM.
 
 HTTP layer is stdlib `net/http.ServeMux` with Go 1.22+ pattern routing
 (`"GET /api/v1/apps/{name}"`), not Chi: CLAUDE.md 4.1 says "do not pull

@@ -196,3 +196,67 @@ func TestEngine_ReconcileAll_StoreFailureDoesNotFailReconcile(t *testing.T) {
 		t.Errorf("expected store.UpsertConditions still attempted once despite returning an error, got %d calls", got)
 	}
 }
+
+func TestEngine_ReconcileAll_RunsFixedAndDynamicControllers(t *testing.T) {
+	fixed := &countingController{name: "fixed"}
+	dynamic := &countingController{name: "dynamic"}
+	e := NewEngine(testLogger(), fixed)
+	e.SetSource(func(_ context.Context) ([]Controller, error) {
+		return []Controller{dynamic}, nil
+	})
+
+	e.ReconcileAll(context.Background())
+
+	if got := fixed.calls.Load(); got != 1 {
+		t.Errorf("fixed controller: got %d calls, want 1", got)
+	}
+	if got := dynamic.calls.Load(); got != 1 {
+		t.Errorf("dynamic controller: got %d calls, want 1", got)
+	}
+}
+
+func TestEngine_ReconcileAll_SourceReflectsCurrentState(t *testing.T) {
+	// A Source is called fresh every pass, not cached from the first
+	// call: this is what lets an app created or deleted through the HTTP
+	// API take effect on the very next reconcile with no restart.
+	names := []string{"app-a"}
+	calls := map[string]*countingController{"app-a": {name: "app-a"}}
+	e := NewEngine(testLogger())
+	e.SetSource(func(_ context.Context) ([]Controller, error) {
+		controllers := make([]Controller, 0, len(names))
+		for _, n := range names {
+			c, ok := calls[n]
+			if !ok {
+				c = &countingController{name: n}
+				calls[n] = c
+			}
+			controllers = append(controllers, c)
+		}
+		return controllers, nil
+	})
+
+	e.ReconcileAll(context.Background())
+	names = []string{"app-a", "app-b"}
+	e.ReconcileAll(context.Background())
+
+	if got := calls["app-a"].calls.Load(); got != 2 {
+		t.Errorf("app-a: got %d calls, want 2 (present both passes)", got)
+	}
+	if got := calls["app-b"].calls.Load(); got != 1 {
+		t.Errorf("app-b: got %d calls, want 1 (only present on the second pass)", got)
+	}
+}
+
+func TestEngine_ReconcileAll_SourceErrorSkipsDynamicPassButNotFixed(t *testing.T) {
+	fixed := &countingController{name: "fixed"}
+	e := NewEngine(testLogger(), fixed)
+	e.SetSource(func(_ context.Context) ([]Controller, error) {
+		return nil, errors.New("store unavailable")
+	})
+
+	e.ReconcileAll(context.Background())
+
+	if got := fixed.calls.Load(); got != 1 {
+		t.Errorf("fixed controller: got %d calls, want 1: a Source error must not block the fixed set", got)
+	}
+}
