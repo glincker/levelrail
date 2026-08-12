@@ -3,8 +3,7 @@ package build
 import (
 	"context"
 	"errors"
-	"io"
-	"log/slog"
+	"sync"
 	"testing"
 	"time"
 
@@ -12,8 +11,37 @@ import (
 	dockerclient "github.com/docker/docker/client"
 )
 
-func testLogger() *slog.Logger {
-	return slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{Level: slog.LevelError + 1}))
+// collectProgress is a hand-written fake progress sink, recording every
+// event so a test can assert real events actually flowed through, not
+// just that Build() didn't error.
+type collectProgress struct {
+	mu     sync.Mutex
+	events []ProgressEvent
+}
+
+func (c *collectProgress) fn() func(ProgressEvent) {
+	return func(ev ProgressEvent) {
+		c.mu.Lock()
+		defer c.mu.Unlock()
+		c.events = append(c.events, ev)
+	}
+}
+
+func (c *collectProgress) count() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return len(c.events)
+}
+
+func TestSlogProgress(_ *testing.T) {
+	// A lightweight smoke test: SlogProgress is a formatting adapter, not
+	// business logic, so this just proves it doesn't panic on any of the
+	// event shapes Build actually produces, including a nil logger.
+	fn := SlogProgress(nil)
+	fn(ProgressEvent{Step: "build", Error: "boom", Completed: true})
+	fn(ProgressEvent{Step: "build", Cached: true, Completed: true})
+	fn(ProgressEvent{Log: "some output"})
+	fn(ProgressEvent{}) // no-op shape: none of Error/Completed/Log set
 }
 
 // liveClient dials the local Docker Engine and, through it, the embedded
@@ -21,7 +49,7 @@ func testLogger() *slog.Logger {
 // skips the calling test cleanly, rather than failing, when either isn't
 // reachable, so this test suite does not require Docker-in-Docker to pass
 // in CI (CLAUDE.md 7's testing standard).
-func liveClient(t *testing.T) (*dockerclient.Client, *Client) {
+func liveClient(t *testing.T, opts ...Option) (*dockerclient.Client, *Client) {
 	t.Helper()
 
 	docker, err := dockerclient.NewClientWithOpts(
@@ -41,7 +69,7 @@ func liveClient(t *testing.T) (*dockerclient.Client, *Client) {
 
 	connectCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	bk, err := NewClient(connectCtx, docker)
+	bk, err := NewClient(connectCtx, docker, opts...)
 	if err != nil {
 		t.Skipf("skipping: could not connect to buildkit via docker: %v", err)
 	}
@@ -72,10 +100,11 @@ func TestClient_Build_Live(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
+	progress := &collectProgress{}
 	res, err := bk.Build(ctx, Request{
 		ContextDir: "testdata",
 		Tag:        tag,
-	}, testLogger())
+	}, progress.fn())
 	if err != nil {
 		t.Fatalf("Build() error = %v", err)
 	}
@@ -84,6 +113,9 @@ func TestClient_Build_Live(t *testing.T) {
 	}
 	if res.Duration <= 0 {
 		t.Errorf("Result.Duration = %v, want > 0", res.Duration)
+	}
+	if progress.count() == 0 {
+		t.Error("expected at least one ProgressEvent from a real build, got none")
 	}
 
 	// Verify independently, through the Docker Engine API, that the image
@@ -110,8 +142,51 @@ func TestClient_Build_Live_InvalidRequest(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	_, err := bk.Build(ctx, Request{}, testLogger())
+	_, err := bk.Build(ctx, Request{}, nil)
 	if !errors.Is(err, ErrContextDirRequired) {
 		t.Fatalf("Build() with empty request error = %v, want %v", err, ErrContextDirRequired)
+	}
+}
+
+// TestClient_Build_Live_CacheAccelerates proves WithCacheDir isn't just
+// wired but actually does something: a second build of the same
+// Dockerfile and context, with the cache from the first build available,
+// reports at least one cached step. A faster wall-clock time alone
+// wouldn't rule out noise; a real cached=true event is the load-bearing
+// assertion.
+func TestClient_Build_Live_CacheAccelerates(t *testing.T) {
+	cacheDir := t.TempDir()
+	docker, bk := liveClient(t, WithCacheDir(cacheDir))
+
+	tag := "levelrail-buildkit-spike:cache-test"
+	t.Cleanup(func() {
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		_, _ = docker.ImageRemove(cleanupCtx, tag, image.RemoveOptions{Force: true})
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	req := Request{ContextDir: "testdata", Tag: tag}
+
+	if _, err := bk.Build(ctx, req, nil); err != nil {
+		t.Fatalf("first (cold) Build() error = %v", err)
+	}
+
+	second := &collectProgress{}
+	if _, err := bk.Build(ctx, req, second.fn()); err != nil {
+		t.Fatalf("second (warm) Build() error = %v", err)
+	}
+
+	sawCached := false
+	for _, ev := range second.events {
+		if ev.Completed && ev.Cached {
+			sawCached = true
+			break
+		}
+	}
+	if !sawCached {
+		t.Error("expected at least one cached=true step on the second build, got none; WithCacheDir may not be taking effect")
 	}
 }

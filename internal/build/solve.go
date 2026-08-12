@@ -17,7 +17,12 @@ import (
 // API's /images/load endpoint (see loadImage in build.go); this keeps the
 // whole path CLI-free, in contrast to BuildKit's own
 // build-using-dockerfile example, which shells out to `docker load`.
-func newSolveOpt(req Request, out io.WriteCloser) (*bkclient.SolveOpt, error) {
+//
+// cacheDir, when non-empty, wires BuildKit's "local" cache backend as
+// both import and export: every build tries to reuse whatever the
+// previous build left in cacheDir, then updates it. Empty disables
+// caching for this build, not an empty-but-present cache.
+func newSolveOpt(req Request, cacheDir string, out io.WriteCloser) (*bkclient.SolveOpt, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -46,7 +51,7 @@ func newSolveOpt(req Request, out io.WriteCloser) (*bkclient.SolveOpt, error) {
 		attrs["build-arg:"+k] = v
 	}
 
-	return &bkclient.SolveOpt{
+	opt := &bkclient.SolveOpt{
 		Frontend:      "dockerfile.v0",
 		FrontendAttrs: attrs,
 		LocalMounts: map[string]fsutil.FS{
@@ -64,5 +69,16 @@ func newSolveOpt(req Request, out io.WriteCloser) (*bkclient.SolveOpt, error) {
 				},
 			},
 		},
-	}, nil
+	}
+
+	if cacheDir != "" {
+		opt.CacheImports = []bkclient.CacheOptionsEntry{
+			{Type: "local", Attrs: map[string]string{"src": cacheDir}},
+		}
+		opt.CacheExports = []bkclient.CacheOptionsEntry{
+			{Type: "local", Attrs: map[string]string{"dest": cacheDir, "mode": "max"}},
+		}
+	}
+
+	return opt, nil
 }

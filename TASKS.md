@@ -137,15 +137,45 @@ container created, passes a real HTTP readiness probe, old container
 confirmed removed by independently inspecting for it afterward, not by
 trusting the returned status alone. 86.2% coverage.
 
-### 1.4 Build integration
+### 1.4 Build integration. DONE (2026-08-12)
 
-- [ ] Wire `internal/build` (currently a standalone spike) into the
-      deploy flow: app spec's `build.type` selects the frontend
-- [ ] Remote cache (`SolveOpt.CacheImports`/`CacheExports`, untouched by
-      the Phase 0 spike per its own findings)
-- [ ] Build log streaming over SSE (BuildKit's own
-      `Vertex`/`VertexStatus`/`VertexLog` progress channel already
-      carries what's needed, per `docs-local/research/buildkit-spike.md`)
+- [x] Local build cache wired into `internal/build`
+      (`SolveOpt.CacheImports`/`CacheExports`, `type=local`). Scoped
+      honestly for Phase 1: a cache genuinely shared across dedicated
+      build nodes needs a registry or object-store backend and those
+      nodes to exist, neither of which lands before Phase 3. Local
+      on-disk still delivers the actual value this phase needs, fast
+      incremental rebuilds on one node, without inventing infrastructure
+      early. Live-verified to actually accelerate a second build, not
+      just wired and assumed: a real `cached=true` step observed on the
+      second build of the same Dockerfile
+- [x] Progress events decoupled from BuildKit's own `SolveStatus` type
+      (`build.ProgressEvent`, a callback `Build` takes instead of a
+      hardcoded `*slog.Logger`), so a future SSE handler (1.9) can format
+      build progress for a browser without importing `moby/buildkit`.
+      `SlogProgress` adapts it back to logging for callers that just
+      want that. The actual SSE wire format and HTTP handler are still
+      1.9's job, not built here
+- [x] New `internal/deploy` package: dispatches by `build.Type` (real
+      support for `dockerfile`; `static` explicitly errors until ingress
+      exists to serve it, 1.6; `compose`/`railpack` explicitly error as
+      not yet supported, rather than pretending), and on a successful
+      build, translates the app spec's port/resources/health into
+      `store.DesiredService` and saves it, the missing link that makes
+      the whole system real: a build now produces something the
+      application controller (1.3) actually picks up and converges
+- [x] Secrets and cross-resource env references (`{ secret: true }`,
+      `{ from: ... }`) are rejected explicitly, before a build is even
+      attempted, rather than silently deploying a container missing
+      values it needs. Real support lands with 1.7/1.8
+
+Live-verified as one complete chain, not just as separate pieces: a real
+`spec.Service` through a real BuildKit build, into a real image, into a
+real SQLite desired-state row, into the application controller (1.3)
+actually reconciling a real running container from it, independently
+confirmed by inspecting the container afterward rather than trusting the
+returned status. This is the same chain a git push will drive once 1.5
+exists. 87.4% coverage on `internal/build`, 95.6% on `internal/deploy`.
 
 ### 1.5 Git integration
 

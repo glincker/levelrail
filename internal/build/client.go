@@ -23,10 +23,29 @@ import (
 //
 // See docs-local/research/buildkit-spike.md for the connection methods
 // that were tried and why this one is the one that actually works in this
-// environment, plus what Phase 1's full integration needs to add.
+// environment.
 type Client struct {
-	bk     *bkclient.Client
-	docker *dockerclient.Client
+	bk       *bkclient.Client
+	docker   *dockerclient.Client
+	cacheDir string
+}
+
+// Option configures optional Client behavior.
+type Option func(*Client)
+
+// WithCacheDir enables BuildKit's local cache backend, importing from and
+// exporting to dir on every build. Empty (the default) disables cache
+// import/export entirely, not an empty-but-present cache.
+//
+// This is CLAUDE.md 4.4's "remote cache" scoped honestly for Phase 1's
+// single-node target: a cache genuinely shared across dedicated build
+// nodes needs a registry or object-store backend and dedicated build
+// nodes to share it with, neither of which exist before Phase 3. A local
+// on-disk cache still delivers the actual value this phase can use (fast
+// incremental rebuilds on one node) without inventing infrastructure
+// this phase doesn't need yet.
+func WithCacheDir(dir string) Option {
+	return func(c *Client) { c.cacheDir = dir }
 }
 
 // NewClient builds a Client that reaches BuildKit through docker's
@@ -37,7 +56,7 @@ type Client struct {
 // dockerclient.NewClientWithOpts(dockerclient.FromEnv,
 // dockerclient.WithAPIVersionNegotiation())). NewClient does not create
 // one itself so callers control the daemon connection lifecycle.
-func NewClient(ctx context.Context, docker *dockerclient.Client) (*Client, error) {
+func NewClient(ctx context.Context, docker *dockerclient.Client, opts ...Option) (*Client, error) {
 	if docker == nil {
 		return nil, fmt.Errorf("build: new client: docker client is required")
 	}
@@ -47,7 +66,11 @@ func NewClient(ctx context.Context, docker *dockerclient.Client) (*Client, error
 		return nil, fmt.Errorf("build: connect to buildkit via docker daemon: %w", err)
 	}
 
-	return &Client{bk: bk, docker: docker}, nil
+	c := &Client{bk: bk, docker: docker}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c, nil
 }
 
 // Close releases the underlying BuildKit connection. It does not close

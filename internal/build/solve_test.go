@@ -19,6 +19,7 @@ func TestNewSolveOpt(t *testing.T) {
 	tests := []struct {
 		name       string
 		req        Request
+		cacheDir   string
 		wantErr    error // checked with errors.Is when set
 		wantErrAny bool  // checked with a plain non-nil check when wantErr is unset
 	}{
@@ -46,12 +47,17 @@ func TestNewSolveOpt(t *testing.T) {
 			req:        Request{ContextDir: "testdata/does-not-exist", Tag: "levelrail-spike:latest"},
 			wantErrAny: true,
 		},
+		{
+			name:     "cache dir set: import and export both wired",
+			req:      Request{ContextDir: "testdata", Tag: "levelrail-spike:latest"},
+			cacheDir: "/tmp/levelrail-build-cache",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			out := discardWriteCloser{io.Discard}
-			opt, err := newSolveOpt(tt.req, out)
+			opt, err := newSolveOpt(tt.req, tt.cacheDir, out)
 
 			if tt.wantErr != nil {
 				if !errors.Is(err, tt.wantErr) {
@@ -100,6 +106,19 @@ func TestNewSolveOpt(t *testing.T) {
 				if got := opt.FrontendAttrs["build-arg:"+k]; got != v {
 					t.Errorf("FrontendAttrs[build-arg:%s] = %q, want %q", k, got, v)
 				}
+			}
+
+			if tt.cacheDir == "" {
+				if len(opt.CacheImports) != 0 || len(opt.CacheExports) != 0 {
+					t.Errorf("expected no cache import/export when cacheDir is empty, got imports=%+v exports=%+v", opt.CacheImports, opt.CacheExports)
+				}
+				return
+			}
+			if len(opt.CacheImports) != 1 || opt.CacheImports[0].Type != "local" || opt.CacheImports[0].Attrs["src"] != tt.cacheDir {
+				t.Errorf("CacheImports = %+v, want one local entry with src=%q", opt.CacheImports, tt.cacheDir)
+			}
+			if len(opt.CacheExports) != 1 || opt.CacheExports[0].Type != "local" || opt.CacheExports[0].Attrs["dest"] != tt.cacheDir {
+				t.Errorf("CacheExports = %+v, want one local entry with dest=%q", opt.CacheExports, tt.cacheDir)
 			}
 		})
 	}
