@@ -28,6 +28,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/web"
 )
 
 const (
@@ -95,7 +96,7 @@ func run(logger *slog.Logger) error {
 
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
-		Handler:           api.NewRouter(logger, b, db).Handler(),
+		Handler:           rootHandler(logger, b, db),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -165,6 +166,20 @@ func loadBrand() (*brand.Brand, error) {
 		path = defaultBrandFile
 	}
 	return brand.Load(path)
+}
+
+// rootHandler combines the TASKS.md 1.9 HTTP API with the TASKS.md 1.10
+// frontend into one *http.Server handler: "/api/" (a subtree pattern,
+// so the full original path reaches api's own mux unchanged, matching
+// its routes' own "/api/v1/..." patterns) goes to the API, everything
+// else to web.Handler's embedded frontend with SPA fallback. Combining
+// them here rather than running two servers keeps CLAUDE.md 4.1's
+// single-binary story intact: one process, one listen address.
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB) http.Handler {
+	mux := http.NewServeMux()
+	mux.Handle("/api/", api.NewRouter(logger, b, db).Handler())
+	mux.Handle("/", web.Handler())
+	return mux
 }
 
 func httpAddr() string {
