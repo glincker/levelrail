@@ -533,6 +533,86 @@ overall, gate is 70%.
 - [ ] Route-level code splitting from the start, per CLAUDE.md 4.12 and
       7 ("the dashboard should not ship the log viewer's bundle")
 
+### 1.11 Whole-chain E2E proof (`test/e2e`, `test/fixtures`). DONE (2026-08-12)
+
+Every piece landed under 1.1-1.9 had its own live test against real
+Docker/BuildKit/Caddy, but nothing before this had run the whole chain in
+one process: build, save desired state, converge a container, converge
+routing, and get back real traffic. `cmd/levelrail/main.go`'s
+`dynamicSource` (closed under 1.9) is what actually wires
+`reconcile.Engine` to one `application.Controller` per service, one
+`database.Controller` per database, and a shared `ingress.Controller`;
+this task is the first test to exercise that same three-controller shape
+end to end rather than trusting that each piece's isolated live test
+implies they compose.
+
+- [x] `test/fixtures/hello-e2e/Dockerfile`: a real HTTP-serving fixture,
+      unlike `internal/deploy/testdata/Dockerfile` (deliberately listens
+      on nothing, no probe possible). `busybox:1.36`'s built-in `httpd`
+      applet serving a static `index.html` whose body is the distinctive,
+      greppable string `"hello from levelrail e2e"`, so a passing
+      assertion proves a specific response reached this fixture, not just
+      that some 200 came back from somewhere. Small image, no compile
+      step, fast to build and pull in CI
+- [x] `test/e2e/deploy_test.go`
+      (`TestDeploy_Live_BuildToHTTPS`): live-only, skips cleanly (not a
+      failure) if Docker or BuildKit aren't reachable, the exact pattern
+      `internal/deploy/deploy_live_test.go` and
+      `internal/reconcile/ingress/controller_live_test.go` already use.
+      Real `internal/build.Client` builds the fixture (called directly
+      rather than through `internal/deploy.Pipeline`, since this test
+      needs to set `Domains` and `Health.Readiness` on the saved
+      `store.DesiredService` directly, fields `internal/deploy`'s
+      `Request`/`translate.go` don't currently expose a path to from a
+      bare build with no `app.yaml`). Saves desired state in a real
+      temp-file SQLite store with domain `e2e-test.levelrail.internal`
+      (matching the internal-hostname convention
+      `controller_live_test.go` already established) and a readiness
+      probe at `/`. A real `application.Controller` converges the
+      container; a real `ingress.Controller`, constructed the same way
+      `controller_live_test.go` does (real `ingress.Driver`, ephemeral
+      Caddy/admin ports via `t.TempDir()`-backed storage), converges
+      routing. A real HTTPS request through Caddy
+      (`InsecureSkipVerify: true`, `//nolint:gosec`, same justification
+      comment as `controller_live_test.go`: Caddy's internal issuer cert
+      is never installed into this process's trust store) asserts the
+      fixture's exact response body comes back, not just a 200
+- [x] Independent verification, not trusting return values: after the
+      application controller's `Reconcile`, the container is directly
+      inspected via `runtime.ListByPrefix`/`InspectByName` (confirming
+      exactly one container, running, tagged with the image `Build()`
+      produced) before the ingress and HTTP steps run at all, the same
+      rigor `deploy_live_test.go` applies
+- [x] Cleanup in `t.Cleanup`, matching every other live test's
+      convention here: container removed by service-name prefix, image
+      removed by exact tag, Caddy driver stopped. Registered before the
+      build even runs (not after a successful one), so a failure partway
+      through still leaves nothing behind on a re-run. Verified by
+      running the test twice in a row and by inspecting Docker directly
+      afterward: no leftover container or image either time
+
+What this deliberately does not prove, left as real, open gaps rather
+than implied coverage:
+
+- No rollback exercised. The mechanism (pointing `desired.Image` at an
+  older tag and reconciling) is already proven by 1.3's own live test;
+  this task never deploys a second image over the first
+- No webhook/git-push path exercised. This test calls
+  `internal/build.Client.Build` directly; `internal/webhook`'s HMAC
+  verification, branch gating, and `go-git` fetch (1.5) have their own
+  live test and are not re-exercised here
+- Single service only. Nothing here proves two services' ingress routes
+  coexist correctly; `internal/reconcile/ingress`'s own live test
+  (`controller_live_test.go`) is what actually proves that, with two
+  real backends and two real domains
+- No multi-node. Everything runs in one process against one local Docker
+  daemon, matching every other live test in this repo and Phase 1's own
+  scope (CLAUDE.md 6: multi-server is explicitly Phase 3)
+- Real ACME is still unverified. Like `internal/reconcile/ingress`, this
+  test only exercises Caddy's internal (self-signed) issuer; the
+  Phase 1 exit criterion's "valid cert" against a real public domain
+  remains the open gap noted under 1.6
+
 ---
 
 ## Sequencing notes
