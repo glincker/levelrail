@@ -524,14 +524,24 @@ store. 75.9% coverage on `internal/api`, 77.7% on `internal/store`
 table both gained direct store-level tests too). 83.4% on `internal/`
 overall, gate is 70%.
 
-### 1.10 Frontend (`/web`)
+### 1.10 Frontend (`/web`). IN PROGRESS, claimed by the parallel session (2026-08-12)
 
-- [ ] Vite + React + TypeScript + Tailwind scaffold, embedded into the
-      Go binary via `embed.FS` per CLAUDE.md 4.1/4.12
-- [ ] App list, app detail, deploy history, live build logs (consumes
-      1.4's SSE stream), env editor, domain config
-- [ ] Route-level code splitting from the start, per CLAUDE.md 4.12 and
-      7 ("the dashboard should not ship the log viewer's bundle")
+Picking this up specifically so two sessions working the same repo don't
+duplicate effort a third time today (already happened once on the
+application controller, once on git hooks): this section is the
+claim marker, keep it current rather than letting it go stale.
+
+- [x] Vite + React 19 + TypeScript (strict) + Tailwind scaffold, TanStack
+      Router/Query/Virtual, ESLint + Prettier, App List route against the
+      real `/api/v1/apps` (1.9)
+- [ ] `embed.FS` wiring into the Go binary (CLAUDE.md 4.1/4.12): nothing
+      serves `/web`'s build output from `cmd/levelrail` yet
+- [ ] App detail, deploy history, live build logs (consumes 1.4's SSE
+      stream), env editor, domain config, per
+      `docs-local/research/frontend-plan.md`'s route tree
+- [ ] Route-level code splitting per route added, per CLAUDE.md 4.12 and
+      7 ("the dashboard should not ship the log viewer's bundle"), not
+      just the App List route's existing split
 
 ---
 
