@@ -18,11 +18,12 @@
 // of papering over them with a fuller model TASKS.md 1.9 doesn't
 // actually ask this package to build yet:
 //
-//   - No domains, replicas, or strategy fields on an app: internal/spec's
-//     app.yaml Service has them, store.DesiredService doesn't yet, so
-//     this API can't expose what the store can't hold. Adding them is a
-//     store-schema and deploy-pipeline change (1.3/1.4/1.5), not
-//     something this package should invent on its own.
+//   - No replicas or strategy fields on an app: internal/spec's app.yaml
+//     Service has them, store.DesiredService doesn't yet, so this API
+//     can't expose what the store can't hold. Adding them is a
+//     store-schema and deploy-pipeline change, not something this
+//     package should invent on its own. Domains closed once TASKS.md 1.6
+//     added the column: appResource now carries Domains too.
 //   - Deploy trigger (deploys.go) only updates desired_services.image; it
 //     doesn't build anything. TASKS.md 1.4's internal/build and
 //     internal/deploy already exist and do that, but they're owned by a

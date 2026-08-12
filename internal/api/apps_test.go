@@ -182,6 +182,28 @@ func TestHandleGetApp(t *testing.T) {
 	}
 }
 
+func TestHandleGetApp_DomainsRoundTrip(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "web", Image: "levelrail/web:1", Port: 3000,
+		Domains: []string{"web.example.com", "www.example.com"},
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web", ""))
+	var got appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got.Domains) != 2 || got.Domains[0] != "web.example.com" || got.Domains[1] != "www.example.com" {
+		t.Errorf("got.Domains = %v, want [web.example.com www.example.com]", got.Domains)
+	}
+}
+
 func TestHandleUpdateApp(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

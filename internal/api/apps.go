@@ -12,14 +12,16 @@ import (
 // appResource is the wire shape for an app: store.DesiredService plus
 // its name, marshaled and unmarshaled directly rather than through a
 // parallel domain type, since TASKS.md 1.9 doesn't ask this endpoint to
-// represent anything store.DesiredService can't already hold. See
-// router.go's package doc comment for what a fuller app resource
-// (domains, replicas, strategy) still needs upstream before this type
-// can grow to match it.
+// represent anything store.DesiredService can't already hold. Replicas
+// and strategy still have no home in store.DesiredService itself (that's
+// a store-schema change, not an API one), so this resource still can't
+// represent everything app.yaml (internal/spec) can express; domains
+// closed once TASKS.md 1.6 added the column.
 type appResource struct {
 	Name      string                  `json:"name"`
 	Image     string                  `json:"image"`
 	Port      int                     `json:"port"`
+	Domains   []string                `json:"domains,omitempty"`
 	Env       map[string]string       `json:"env,omitempty"`
 	Resources *store.ServiceResources `json:"resources,omitempty"`
 	Health    *store.ServiceHealth    `json:"health,omitempty"`
@@ -30,6 +32,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		Name:      svc.Name,
 		Image:     svc.Image,
 		Port:      svc.Port,
+		Domains:   svc.Domains,
 		Env:       svc.Env,
 		Resources: svc.Resources,
 		Health:    svc.Health,
@@ -41,6 +44,7 @@ func (a appResource) toDesiredService() store.DesiredService {
 		Name:      a.Name,
 		Image:     a.Image,
 		Port:      a.Port,
+		Domains:   a.Domains,
 		Env:       a.Env,
 		Resources: a.Resources,
 		Health:    a.Health,
