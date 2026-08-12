@@ -534,26 +534,27 @@ overall, gate is 70%.
       at all yet. Explicitly out of scope for this pass per its own
       brief, tracked here as the real remaining gap rather than folded
       into a checked box.
-- [x] App list (`web/src/routes/apps/index.tsx`, `queries/apps.ts`'s
-      `fetchAppPage`/`appListQueryOptions`): also predates this pass.
-      **Known gap surfaced while building the detail route, not fixed
-      here**: `fetchAppPage` expects a `{ items, nextCursor }` page of
-      `AppSummary` rows (`id`, `status`, `primaryDomain`, `lastDeployAt`,
-      `lastDeployStatus`) with cursor pagination, but the real, frozen
-      `GET /api/v1/apps` (`internal/api/apps.go`'s `handleListApps`)
-      returns a bare `[]appResource` array (`name`, `image`, `port`,
-      `domains`, `env`, `resources`, `health`), no cursor, no status, no
-      id. The two were built against different assumptions before 1.9
-      landed and were never reconciled. The list route will not render
-      real data against the real API until someone rewrites its fetch
-      layer and `AppSummary` type to match `appResource`, decides what a
-      list endpoint should actually paginate on, and either adds
-      status/primaryDomain fields server-side or drops them client-side.
-      Not attempted here: it's a different route's data layer, and
-      guessing at a pagination/status design under this task's scope
-      would be exactly the kind of invented contract CLAUDE.md 7 warns
-      against. `AppRow.tsx` was still updated to link by `app.name` (see
-      below), since that part is independent of the fetch-shape bug.
+- [x] App list (`web/src/routes/apps/index.tsx`,
+      `queries/apps.ts`'s `fetchApps`/`appListQueryOptions`). **Contract
+      mismatch closed (2026-08-12)**: the list route originally assumed a
+      `{ items, nextCursor }` page of `AppSummary` rows (`id`, `status`,
+      `primaryDomain`, `lastDeployAt`, `lastDeployStatus`) with cursor
+      pagination, built before 1.9 landed and never reconciled against
+      it. The real, frozen `GET /api/v1/apps` returns a bare
+      `[]appResource` array, the identical shape the detail endpoint
+      returns, no cursor, no status, no id. Fixed by deleting the
+      speculative `AppSummary`/`AppPage` types (`types/app.ts` is gone,
+      the list and detail routes now share `types/appDetail.ts`'s single
+      `AppDetail` type), switching the list query from
+      `useSuspenseInfiniteQuery` to a plain `useSuspenseQuery` (nothing
+      server-side to page against), and dropping `AppRow`'s status badge
+      rather than faking one: appResource has no status field, and
+      deriving one would mean an extra `GET .../deploys` per row, an N+1
+      fetch for a list CLAUDE.md 7 requires to stay virtualized and cheap
+      at 50+ rows. Verified against the real binary, not just
+      typechecked: started it, created an app via `POST /api/v1/apps`,
+      confirmed `GET /api/v1/apps` returns exactly the flat-array shape
+      the fixed client now expects.
 - [x] **App detail (`web/src/routes/apps/$name.tsx`), this pass.** Built
       against the real, frozen `internal/api` contract directly (not the
       list route's mismatched assumptions above):

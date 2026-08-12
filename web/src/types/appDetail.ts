@@ -1,13 +1,12 @@
-// Wire types for the single-app resource, GET/PUT /api/v1/apps/{name}
-// (internal/api/apps.go's appResource). Deliberately separate from
-// types/app.ts's list-page AppSummary/AppPage: those are summary rows
-// for the virtualized list, this is the full resource the detail route
-// reads and writes. Field names below mirror the JSON wire shape
-// directly (snake_case for ServiceResources, matching appResource's own
-// struct tags) rather than being remapped to camelCase: this is an
-// internal admin dashboard talking to one frozen backend contract, not a
-// public SDK, and a remapping layer would just be one more place for the
-// two shapes to silently drift apart.
+// Wire type for the app resource, GET/PUT /api/v1/apps/{name} and GET
+// /api/v1/apps (internal/api/apps.go's appResource): the list endpoint
+// returns the same full shape as the detail endpoint, no separate
+// summary projection, so this one type covers both routes. Field names
+// mirror the JSON wire shape directly (snake_case for ServiceResources,
+// matching appResource's own struct tags) rather than being remapped to
+// camelCase: this is an internal admin dashboard talking to one frozen
+// backend contract, not a public SDK, and a remapping layer would just
+// be one more place for the two shapes to silently drift apart.
 
 export interface ServiceResources {
   memory_bytes?: number

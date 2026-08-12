@@ -1,23 +1,22 @@
 import { Link } from '@tanstack/react-router'
-import type { AppSummary } from '../types/app'
+import type { AppDetail } from '../types/appDetail'
 
-const STATUS_STYLES: Record<AppSummary['status'], string> = {
-  running:
-    'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
-  stopped:
-    'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
-  deploying: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-  crashloop: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
-  unknown:
-    'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
-}
+// Links by app.name, not a separate id: the detail route
+// (routes/apps/$name.tsx) and its backing API (GET /api/v1/apps/{name})
+// both key off the app's name, the only identifier appResource actually
+// carries.
+//
+// No status badge here: appResource has no status field, and rendering
+// one would mean an extra GET /api/v1/apps/{name}/deploys per row (an
+// N+1 fetch for a list that's supposed to stay cheap at 50+ rows, per
+// CLAUDE.md 7's virtualization requirement). The app detail route
+// (ConditionsPanel) is where current reconcile status actually lives;
+// inventing a placeholder status here would be exactly the kind of
+// fabricated contract this repo's own conventions warn against.
+export function AppRow({ app }: { app: AppDetail }) {
+  const domain = app.domains?.[0] ?? null
+  const extraDomains = (app.domains?.length ?? 0) - 1
 
-// Links by app.name, not app.id: the detail route (routes/apps/$name.tsx)
-// and its backing API (GET /api/v1/apps/{name}) both key off the app's
-// name, the only identifier internal/api/apps.go's appResource actually
-// carries. AppSummary.id is a separate field the list contract defines
-// but the detail route has no use for.
-export function AppRow({ app }: { app: AppSummary }) {
   return (
     <Link
       to="/apps/$name"
@@ -28,12 +27,17 @@ export function AppRow({ app }: { app: AppSummary }) {
         {app.name}
       </span>
       <span className="min-w-0 flex-1 truncate text-sm text-neutral-500 dark:text-neutral-400">
-        {app.primaryDomain ?? 'no domain'}
+        {app.image}
       </span>
-      <span
-        className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[app.status]}`}
-      >
-        {app.status}
+      <span className="shrink-0 truncate text-sm text-neutral-500 dark:text-neutral-400">
+        {domain ? (
+          <>
+            {domain}
+            {extraDomains > 0 ? ` +${extraDomains}` : null}
+          </>
+        ) : (
+          'no domain'
+        )}
       </span>
     </Link>
   )
