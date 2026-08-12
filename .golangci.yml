@@ -23,3 +23,11 @@ linters:
     - revive
     - ineffassign
     - unparam
+  exclusions:
+    paths:
+      # web/node_modules can ship stray .go files as part of unrelated
+      # npm packages (e.g. flatted's golang port); they're not part of
+      # this module. Never committed (web/.gitignore), so CI never sees
+      # this, but a contributor who ran `npm install` locally would hit
+      # a false positive on every `golangci-lint run ./...` otherwise.
+      - web/node_modules
