@@ -1,0 +1,13 @@
+# Loaded by internal/brand at startup. Every value here is overridable at
+# runtime via APP_BRAND_* env vars (see internal/brand/brand.go) — this file
+# is the default, not a hardcoded assumption anywhere else in the codebase.
+name: Levelrail
+short_name: Levelrail
+binary_name: levelrail
+domain: glinr.com/levelrail
+support_url: https://github.com/GLINCKER/levelrail/issues
+docs_url: https://glinr.com/levelrail/docs
+# primary_color and logo_svg are intentionally unset pending visual identity
+# work. Leave blank rather than guessing a palette.
+primary_color: ""
+logo_svg: ""

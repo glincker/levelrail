@@ -1,0 +1,33 @@
+# Private research, strategy, and competitor reference material.
+# Never remove this line or narrow it — everything under docs-local/
+# is pre-launch, competitive, or strategy content that must not ship
+# in the public OSS repo.
+docs-local/
+
+# Go
+/bin/
+/dist/
+*.test
+*.out
+vendor/
+
+# Node (web frontend, once scaffolded)
+node_modules/
+.next/
+.turbo/
+dist/
+build/
+
+# Local runtime state
+*.db
+*.db-wal
+*.db-shm
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
