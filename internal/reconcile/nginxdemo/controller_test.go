@@ -62,6 +62,10 @@ func (f *fakeRuntime) Events(_ context.Context) (<-chan docker.Event, <-chan err
 	return nil, nil // unused by Reconcile
 }
 
+func (f *fakeRuntime) EnsureVolume(_ context.Context, _ string) error {
+	return nil // unused by Reconcile
+}
+
 func conditionStatus(t *testing.T, result reconcile.Result) reconcile.ConditionStatus {
 	t.Helper()
 	if len(result.Conditions) != 1 {

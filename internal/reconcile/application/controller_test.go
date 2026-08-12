@@ -153,6 +153,14 @@ func (f *fakeRuntime) ListImages(_ context.Context, _ string) ([]docker.ImageInf
 	return nil, nil
 }
 
+// EnsureVolume is a no-op here: this controller's ContainerSpecs never
+// set Volumes, so nothing in this package's tests exercises it. Added
+// purely to keep fakeRuntime satisfying docker.Runtime as that interface
+// grows, the same pattern ListImages and Events above already follow.
+func (f *fakeRuntime) EnsureVolume(_ context.Context, _ string) error {
+	return nil
+}
+
 func (f *fakeRuntime) Events(_ context.Context) (<-chan docker.Event, <-chan error) {
 	return nil, nil
 }

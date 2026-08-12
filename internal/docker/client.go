@@ -14,6 +14,8 @@ import (
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/api/types/volume"
 	dockerclient "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 )
@@ -132,6 +134,7 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 		// Explicitly "no": the reconciler, not Docker, decides whether a
 		// dead container comes back. See ContainerSpec's doc comment.
 		RestartPolicy: container.RestartPolicy{Name: container.RestartPolicyDisabled},
+		Mounts:        toDockerMounts(spec.Volumes),
 	}
 	if spec.Resources != nil {
 		hostConfig.Resources = container.Resources{
@@ -186,6 +189,21 @@ func toDockerPorts(ports []PortBinding) (nat.PortSet, nat.PortMap, error) {
 	return exposed, bindings, nil
 }
 
+func toDockerMounts(volumes []VolumeMount) []mount.Mount {
+	if len(volumes) == 0 {
+		return nil
+	}
+	out := make([]mount.Mount, 0, len(volumes))
+	for _, v := range volumes {
+		out = append(out, mount.Mount{
+			Type:   mount.TypeVolume,
+			Source: v.Name,
+			Target: v.ContainerPath,
+		})
+	}
+	return out
+}
+
 func toDockerEnv(env map[string]string) []string {
 	if len(env) == 0 {
 		return nil
@@ -226,6 +244,17 @@ func (c *Client) Stop(ctx context.Context, id string, timeout time.Duration) err
 func (c *Client) Remove(ctx context.Context, id string, force bool) error {
 	if err := c.cli.ContainerRemove(ctx, id, container.RemoveOptions{Force: force}); err != nil {
 		return fmt.Errorf("docker: remove container %s: %w", id, err)
+	}
+	return nil
+}
+
+// EnsureVolume implements Runtime. Docker's VolumeCreate is itself
+// idempotent by name (creating a volume that already exists returns the
+// existing volume, not an error), so this is a thin wrapper, not a
+// check-then-create with its own race window.
+func (c *Client) EnsureVolume(ctx context.Context, name string) error {
+	if _, err := c.cli.VolumeCreate(ctx, volume.CreateOptions{Name: name}); err != nil {
+		return fmt.Errorf("docker: ensure volume %q: %w", name, err)
 	}
 	return nil
 }
