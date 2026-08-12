@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import type { AppSummary } from '../types/app'
 
 const STATUS_STYLES: Record<AppSummary['status'], string> = {
@@ -11,14 +12,18 @@ const STATUS_STYLES: Record<AppSummary['status'], string> = {
     'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
 }
 
-// A plain div, not a Link, for this pass: the /apps/$appId detail route
-// (frontend-plan.md section 1) is out of scope here, and TanStack
-// Router's typed `to` prop would fail to compile against a route that
-// does not exist yet. Swap this for a <Link to="/apps/$appId" .../> once
-// that route file lands.
+// Links by app.name, not app.id: the detail route (routes/apps/$name.tsx)
+// and its backing API (GET /api/v1/apps/{name}) both key off the app's
+// name, the only identifier internal/api/apps.go's appResource actually
+// carries. AppSummary.id is a separate field the list contract defines
+// but the detail route has no use for.
 export function AppRow({ app }: { app: AppSummary }) {
   return (
-    <div className="flex h-full w-full items-center gap-4 border-b border-neutral-100 px-4 py-3 hover:bg-neutral-50 dark:border-neutral-900 dark:hover:bg-neutral-900">
+    <Link
+      to="/apps/$name"
+      params={{ name: app.name }}
+      className="flex h-full w-full items-center gap-4 border-b border-neutral-100 px-4 py-3 hover:bg-neutral-50 dark:border-neutral-900 dark:hover:bg-neutral-900"
+    >
       <span className="min-w-0 flex-1 truncate font-medium text-neutral-900 dark:text-neutral-100">
         {app.name}
       </span>
@@ -30,7 +35,7 @@ export function AppRow({ app }: { app: AppSummary }) {
       >
         {app.status}
       </span>
-    </div>
+    </Link>
   )
 }
 
