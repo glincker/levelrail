@@ -51,6 +51,16 @@ type ContainerState struct {
 	Ports []PortBinding
 }
 
+// VolumeMount attaches one named Docker volume to a path inside a
+// container, e.g. Postgres's /var/lib/postgresql/data or Redis's /data
+// (TASKS.md 1.8). Name is a Docker volume name, not a host path: bind
+// mounts aren't exposed here, keeping this package's surface to what a
+// single-node managed database actually needs today.
+type VolumeMount struct {
+	Name          string
+	ContainerPath string
+}
+
 // ContainerSpec is desired state for a container a controller wants to
 // exist.
 //
@@ -78,6 +88,10 @@ type ContainerSpec struct {
 	Ports     []PortBinding
 	Env       map[string]string
 	Resources *Resources
+	// Volumes are named Docker volumes to mount at create time. A
+	// database controller (TASKS.md 1.8) is the first caller; ordinary
+	// application containers leave this nil.
+	Volumes []VolumeMount
 }
 
 // ImageInfo is one tagged image available locally, used to discover
@@ -153,4 +167,11 @@ type Runtime interface {
 	// one (stopping it first); without force, removing a running
 	// container is an error, matching Docker's own default.
 	Remove(ctx context.Context, id string, force bool) error
+
+	// EnsureVolume creates a named Docker volume if it doesn't already
+	// exist. Idempotent: calling it for a volume that's already present
+	// is not an error, matching the Engine API's own VolumeCreate
+	// semantics (creating by an existing name returns that volume
+	// unchanged rather than failing).
+	EnsureVolume(ctx context.Context, name string) error
 }

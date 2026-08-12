@@ -6,6 +6,7 @@ import (
 
 	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
+	"github.com/docker/docker/api/types/mount"
 )
 
 func TestToDockerPorts(t *testing.T) {
@@ -129,6 +130,43 @@ func TestToDockerEnv(t *testing.T) {
 			got := toDockerEnv(tt.env)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("toDockerEnv() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestToDockerMounts(t *testing.T) {
+	tests := []struct {
+		name    string
+		volumes []VolumeMount
+		want    []mount.Mount
+	}{
+		{name: "empty", volumes: nil, want: nil},
+		{
+			name:    "single volume",
+			volumes: []VolumeMount{{Name: "db-main-data", ContainerPath: "/var/lib/postgresql/data"}},
+			want: []mount.Mount{
+				{Type: mount.TypeVolume, Source: "db-main-data", Target: "/var/lib/postgresql/data"},
+			},
+		},
+		{
+			name: "multiple volumes preserve order",
+			volumes: []VolumeMount{
+				{Name: "a", ContainerPath: "/a"},
+				{Name: "b", ContainerPath: "/b"},
+			},
+			want: []mount.Mount{
+				{Type: mount.TypeVolume, Source: "a", Target: "/a"},
+				{Type: mount.TypeVolume, Source: "b", Target: "/b"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := toDockerMounts(tt.volumes)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("toDockerMounts() = %+v, want %+v", got, tt.want)
 			}
 		})
 	}

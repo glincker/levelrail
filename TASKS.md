@@ -317,12 +317,64 @@ database controller's extension of `docker.ContainerSpec`.
       it would defeat the entire point of encrypting it in the first
       place)
 
-### 1.8 Managed databases
+### 1.8 Managed databases. DONE (2026-08-12), Postgres scoped down
 
-- [ ] Postgres as a first-class resource (the app spec example in
-      CLAUDE.md 4.9 uses this as its own example, `databases.main`)
-- [ ] Redis as a first-class resource
-- [ ] Volume management for both
+- [x] `internal/docker`: `VolumeMount` (`Name`, `ContainerPath`) added to
+      `ContainerSpec`, wired into `Client.Create` via
+      `container.HostConfig.Mounts` (`mount.Mount{Type: TypeVolume,
+      Source, Target}`, the exact shape checked with `go doc` first per
+      the buildkit spike's own lesson about not guessing Docker SDK
+      shapes). New `Runtime.EnsureVolume` method wraps `VolumeCreate`,
+      idempotent by construction since the Engine API itself returns an
+      existing volume by name rather than erroring
+- [x] Redis as a first-class resource, real and working:
+      `internal/reconcile/database.Controller` creates the volume,
+      creates and starts a container with it mounted at `/data`, no
+      restart policy (same reasoning as `internal/docker`'s
+      `ContainerSpec` doc comment: the reconciler owns restart), reports
+      Ready once running. Deterministic naming, but *not* a reuse of
+      `application.containerName`'s hash-of-image approach: a database
+      container exclusively owns its data volume, so unlike a stateless
+      application container it cannot safely run an old and a new
+      version side by side during a cutover the way blue-green does.
+      This controller keeps exactly one container name per database
+      (`db-<name>`) and, when the desired engine version changes, does a
+      strictly sequential stop, remove, then create/start against the
+      same stable volume (`db-<name>-data`), never two containers
+      holding the volume at once. Documented in `containerName`'s doc
+      comment in `internal/reconcile/database/controller.go`
+- [x] Volume management for both: `EnsureVolume` plus the mount wiring
+      above are engine-agnostic: Postgres gets the identical mechanism
+      the moment it's unblocked (below), not a separate implementation
+- [~] Postgres as a first-class resource: **deliberately not started**.
+      `store.DesiredDatabase` (built ahead of this task) already has no
+      credentials field, exactly because database auth needs the same
+      envelope-encrypted secret storage CLAUDE.md 4.10 specifies, which
+      doesn't exist until TASKS.md 1.7 lands. Rather than work around
+      that with Postgres trust-auth (no password) or any other
+      "temporary" insecure shortcut, `Controller.Reconcile` for a
+      Postgres database checks for credentials, finds none, and returns
+      `Status=False Reason=CredentialsNotYetSupported` with a message
+      naming 1.7 as the blocker, every time, without ever calling
+      `runtime.Create`. Structured so this activates cleanly once 1.7
+      exists rather than needing a rewrite: `Controller` already carries
+      an optional `*PostgresCredentials` (`Username`, `Password`, always
+      nil today, set via `WithPostgresCredentials`), and the same
+      `reconcileEngine` volume-then-container logic Redis uses is what
+      runs the moment that field is populated
+      (`TestController_Reconcile_Postgres_WithCredentials_Reconciles`
+      proves the activation path against the fake runtime). No new
+      migration or schema change was made or is needed for this: 1.8's
+      Postgres support is fully blocked on 1.7, not partially done.
+
+Live-verified, not just unit tested: real Docker, a real named volume
+created via `EnsureVolume`, a real Redis container created with it
+mounted, independently confirmed by inspecting the container's mounts
+and the volume itself through the raw Docker Engine API
+(`ContainerInspect`, `VolumeInspect`) rather than trusting this package's
+own return values, then a second reconcile proving the no-op path doesn't
+recreate anything. 86.1% coverage on `internal/reconcile/database`, 79.2%
+on `internal/docker` (was 78.2% before this task).
 
 ### 1.9 HTTP API (`internal/api`). DONE (2026-08-11)
 
