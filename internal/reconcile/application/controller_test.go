@@ -406,6 +406,148 @@ func TestController_Reconcile_NoPort_SkipsProbeEntirely(t *testing.T) {
 	}
 }
 
+func TestController_Reconcile_DoesNotTouchDifferentServiceContainers(t *testing.T) {
+	// internal/spec's service-name validation (nameLike) permits hyphens
+	// freely, so "web" and "web-worker" are both valid, distinct service
+	// names. ListByPrefix("web-") is a bare string-prefix match: without
+	// an exact-ownership check, reconciling "web" would find
+	// "web-worker"'s container (its name also starts with "web-") and
+	// treat it as a stale leftover of "web" itself, stopping and
+	// removing an entirely different, live service's container.
+	rt := newFakeRuntime(0)
+	otherServiceContainer := containerName("web-worker", "img:v9")
+	rt.seed(otherServiceContainer, true)
+
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue {
+		t.Errorf("condition = %+v, want Status=True", cond)
+	}
+
+	if rt.removeCalls != 0 {
+		t.Errorf("removeCalls = %d, want 0: reconciling %q must never remove %q's container", rt.removeCalls, "web", "web-worker")
+	}
+	found := false
+	for _, n := range rt.names() {
+		if n == otherServiceContainer {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("containers after reconcile = %v, want %q (another service's container) still present", rt.names(), otherServiceContainer)
+	}
+}
+
+func TestController_Reconcile_CreateSucceedsStartFails_HalfSucceeded(t *testing.T) {
+	// The half-succeeded case CLAUDE.md 7 explicitly requires a test
+	// for: create succeeds (a container now exists) but start fails (it
+	// isn't running). This proves Reconcile reports that honestly as a
+	// failure, and that the next call recovers by restarting the
+	// existing container rather than erroring forever or blindly
+	// recreating it.
+	rt := newFakeRuntime(0)
+	rt.startErr = errors.New("start failed")
+
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want the start failure to propagate")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "CreateFailed" {
+		t.Errorf("condition = %+v, want Status=False Reason=CreateFailed", cond)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1 (create succeeded before start failed)", rt.createCalls)
+	}
+
+	rt.startErr = nil
+	result2, err2 := c.Reconcile(context.Background())
+	if err2 != nil {
+		t.Fatalf("second Reconcile() error = %v, want nil: must recover from the half-succeeded state", err2)
+	}
+	cond2 := conditionOf(t, result2)
+	if cond2.Status != reconcile.ConditionTrue || cond2.Reason != "Deployed" {
+		t.Errorf("second reconcile condition = %+v, want Status=True Reason=Deployed (recovered from half-succeeded create)", cond2)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls after recovery = %d, want still 1: the half-created container must be restarted, not recreated", rt.createCalls)
+	}
+}
+
+func TestController_Reconcile_Redeploy_ReadinessFails_OldContainerSurvives(t *testing.T) {
+	// TestController_Reconcile_FreshDeploy_ReadinessFails covers a
+	// from-scratch deploy with nothing to lose; this covers the
+	// higher-stakes case: a redeploy whose new container never becomes
+	// ready must never touch the old, still-serving container. Old is
+	// stopped only after new is confirmed ready, never before or
+	// instead.
+	srv := neverHealthy()
+	defer srv.Close()
+
+	rt := newFakeRuntime(serverPort(t, srv))
+	oldTarget := containerName("web", "img:v1")
+	rt.seed(oldTarget, true)
+
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v2", Port: 80,
+		Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/healthz", Interval: 10 * time.Millisecond, Timeout: 50 * time.Millisecond}},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithReadyBudget(150*time.Millisecond))
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want a readiness timeout error")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "ReadinessFailed" {
+		t.Errorf("condition = %+v, want Status=False Reason=ReadinessFailed", cond)
+	}
+
+	if rt.removeCalls != 0 {
+		t.Errorf("removeCalls = %d, want 0: the old container must never be removed when the new one's readiness probe fails", rt.removeCalls)
+	}
+	found := false
+	for _, n := range rt.names() {
+		if n == oldTarget {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("containers after failed redeploy = %v, want old container %q still present and serving", rt.names(), oldTarget)
+	}
+}
+
+func TestOwnsContainer(t *testing.T) {
+	tests := []struct {
+		name        string
+		serviceName string
+		container   string
+		want        bool
+	}{
+		{name: "exact match", serviceName: "web", container: containerName("web", "img:v1"), want: true},
+		{name: "different service that happens to prefix-match", serviceName: "web", container: containerName("web-worker", "img:v1"), want: false},
+		{name: "unrelated name", serviceName: "web", container: "totally-unrelated", want: false},
+		{name: "right prefix, wrong suffix length", serviceName: "web", container: "web-abc", want: false},
+		{name: "right prefix, non-hex suffix", serviceName: "web", container: "web-zzzzzzzz", want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ownsContainer(tt.serviceName, tt.container); got != tt.want {
+				t.Errorf("ownsContainer(%q, %q) = %v, want %v", tt.serviceName, tt.container, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestController_Name(t *testing.T) {
 	c := New("web", &fakeStore{}, newFakeRuntime(0))
 	if got, want := c.Name(), "application/web"; got != want {
