@@ -103,7 +103,8 @@ func (f *fakeRuntime) ListByPrefix(_ context.Context, _ string) ([]docker.Contai
 	return nil, nil
 }
 func (f *fakeRuntime) Stop(_ context.Context, _ string, _ time.Duration) error { return nil }
-func (f *fakeRuntime) Remove(_ context.Context, _ string, _ bool) error       { return nil }
+func (f *fakeRuntime) Remove(_ context.Context, _ string, _ bool) error        { return nil }
+func (f *fakeRuntime) EnsureVolume(_ context.Context, _ string) error          { return nil }
 
 // fakeApplier is a hand-written fake for internal/ingress.Driver: it
 // records the last Config it was handed so tests can assert on exactly
