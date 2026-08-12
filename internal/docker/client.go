@@ -6,6 +6,7 @@ import (
 	"io"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	dockertypes "github.com/docker/docker/api/types"
@@ -54,14 +55,39 @@ func (c *Client) InspectByName(ctx context.Context, name string) (*ContainerStat
 	if len(summaries) == 0 {
 		return nil, nil
 	}
-	s := summaries[0]
+	return toContainerState(summaries[0]), nil
+}
+
+// ListByPrefix implements Runtime.
+func (c *Client) ListByPrefix(ctx context.Context, prefix string) ([]ContainerState, error) {
+	f := filters.NewArgs()
+	f.Add("name", "^/"+prefix) // no trailing $: prefix match, not exact
+	summaries, err := c.cli.ContainerList(ctx, container.ListOptions{All: true, Filters: f})
+	if err != nil {
+		return nil, fmt.Errorf("docker: list containers with prefix %q: %w", prefix, err)
+	}
+	if len(summaries) == 0 {
+		return nil, nil
+	}
+	out := make([]ContainerState, 0, len(summaries))
+	for _, s := range summaries {
+		out = append(out, *toContainerState(s))
+	}
+	return out, nil
+}
+
+func toContainerState(s dockertypes.Container) *ContainerState {
+	name := ""
+	if len(s.Names) > 0 {
+		name = strings.TrimPrefix(s.Names[0], "/")
+	}
 	return &ContainerState{
 		ID:      s.ID,
 		Name:    name,
 		Image:   s.Image,
 		Running: s.State == "running",
 		Ports:   observedPorts(s.Ports),
-	}, nil
+	}
 }
 
 func observedPorts(ports []dockertypes.Port) []PortBinding {
@@ -176,6 +202,30 @@ func toDockerEnv(env map[string]string) []string {
 func (c *Client) Start(ctx context.Context, id string) error {
 	if err := c.cli.ContainerStart(ctx, id, container.StartOptions{}); err != nil {
 		return fmt.Errorf("docker: start container %s: %w", id, err)
+	}
+	return nil
+}
+
+// Stop implements Runtime.
+func (c *Client) Stop(ctx context.Context, id string, timeout time.Duration) error {
+	opts := container.StopOptions{}
+	if timeout >= 0 {
+		seconds := int(timeout.Seconds())
+		opts.Timeout = &seconds
+	} else {
+		negativeOne := -1
+		opts.Timeout = &negativeOne // Engine API convention: -1 means wait indefinitely
+	}
+	if err := c.cli.ContainerStop(ctx, id, opts); err != nil {
+		return fmt.Errorf("docker: stop container %s: %w", id, err)
+	}
+	return nil
+}
+
+// Remove implements Runtime.
+func (c *Client) Remove(ctx context.Context, id string, force bool) error {
+	if err := c.cli.ContainerRemove(ctx, id, container.RemoveOptions{Force: force}); err != nil {
+		return fmt.Errorf("docker: remove container %s: %w", id, err)
 	}
 	return nil
 }

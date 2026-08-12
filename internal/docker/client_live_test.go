@@ -215,6 +215,84 @@ func waitForEvent(t *testing.T, eventCh <-chan Event, name string, action EventA
 	}
 }
 
+// TestClient_ListByPrefix_Stop_Remove_Live proves the three primitives
+// the application controller's blue-green cutover depends on: finding
+// every container belonging to a service by name prefix (not just one
+// exact name, unlike everything nginxdemo needed), and actually being
+// able to stop and remove one.
+func TestClient_ListByPrefix_Stop_Remove_Live(t *testing.T) {
+	c := liveClient(t)
+	ctx := context.Background()
+
+	prefix := "levelrail-test-prefix-"
+	nameA := prefix + "a"
+	nameB := prefix + "b"
+	unrelated := "levelrail-test-prefix-unrelated-but-different-service"
+
+	for _, n := range []string{nameA, nameB, unrelated} {
+		removeIfExists(ctx, t, c, n)
+	}
+	t.Cleanup(func() {
+		for _, n := range []string{nameA, nameB, unrelated} {
+			removeIfExists(context.Background(), t, c, n)
+		}
+	})
+
+	if err := c.ensureImage(ctx, "nginx:alpine"); err != nil {
+		t.Fatalf("ensureImage() error = %v", err)
+	}
+
+	var idA string
+	for _, n := range []string{nameA, nameB} {
+		id, err := c.Create(ctx, ContainerSpec{Name: n, Image: "nginx:alpine"})
+		if err != nil {
+			t.Fatalf("Create(%q) error = %v", n, err)
+		}
+		if n == nameA {
+			idA = id
+		}
+	}
+	// unrelated deliberately NOT sharing prefix's exact form, to prove
+	// ListByPrefix doesn't over-match: same leading substring, different
+	// service.
+	if _, err := c.Create(ctx, ContainerSpec{Name: unrelated, Image: "nginx:alpine"}); err != nil {
+		t.Fatalf("Create(unrelated) error = %v", err)
+	}
+
+	found, err := c.ListByPrefix(ctx, prefix+"a")
+	if err != nil {
+		t.Fatalf("ListByPrefix(%q) error = %v", prefix+"a", err)
+	}
+	if len(found) != 1 || found[0].Name != nameA {
+		t.Fatalf("ListByPrefix(%q) = %+v, want exactly [%s]", prefix+"a", found, nameA)
+	}
+
+	if err := c.Start(ctx, idA); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	if err := c.Stop(ctx, idA, 5*time.Second); err != nil {
+		t.Fatalf("Stop() error = %v", err)
+	}
+	stopped, err := c.InspectByName(ctx, nameA)
+	if err != nil {
+		t.Fatalf("InspectByName() after stop error = %v", err)
+	}
+	if stopped == nil || stopped.Running {
+		t.Fatalf("expected container to exist and not be running after Stop(), got %+v", stopped)
+	}
+
+	if err := c.Remove(ctx, idA, false); err != nil {
+		t.Fatalf("Remove() error = %v", err)
+	}
+	removed, err := c.InspectByName(ctx, nameA)
+	if err != nil {
+		t.Fatalf("InspectByName() after remove error = %v", err)
+	}
+	if removed != nil {
+		t.Errorf("expected InspectByName() to return nil after Remove(), got %+v", removed)
+	}
+}
+
 func removeIfExists(ctx context.Context, t *testing.T, c *Client, name string) {
 	t.Helper()
 	state, err := c.InspectByName(ctx, name)

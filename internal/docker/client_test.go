@@ -134,6 +134,36 @@ func TestToDockerEnv(t *testing.T) {
 	}
 }
 
+func TestToContainerState(t *testing.T) {
+	tests := []struct {
+		name    string
+		summary dockertypes.Container
+		want    ContainerState
+	}{
+		{
+			name: "leading slash trimmed from name",
+			summary: dockertypes.Container{
+				ID: "abc123", Names: []string{"/web-a1b2c3d4"}, Image: "myapp:sha", State: "running",
+			},
+			want: ContainerState{ID: "abc123", Name: "web-a1b2c3d4", Image: "myapp:sha", Running: true},
+		},
+		{
+			name:    "no names at all: empty name, not a panic",
+			summary: dockertypes.Container{ID: "abc123", Names: nil, State: "exited"},
+			want:    ContainerState{ID: "abc123", Name: "", Running: false},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := toContainerState(tt.summary)
+			if got.ID != tt.want.ID || got.Name != tt.want.Name || got.Image != tt.want.Image || got.Running != tt.want.Running {
+				t.Errorf("toContainerState() = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestMapAction(t *testing.T) {
 	tests := []struct {
 		name string

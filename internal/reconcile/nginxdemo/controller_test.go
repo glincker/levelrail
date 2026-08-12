@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
@@ -43,6 +44,18 @@ func (f *fakeRuntime) Start(_ context.Context, id string) error {
 
 func (f *fakeRuntime) ListImages(_ context.Context, _ string) ([]docker.ImageInfo, error) {
 	return nil, nil // unused by Reconcile
+}
+
+func (f *fakeRuntime) ListByPrefix(_ context.Context, _ string) ([]docker.ContainerState, error) {
+	return nil, nil // unused by Reconcile
+}
+
+func (f *fakeRuntime) Stop(_ context.Context, _ string, _ time.Duration) error {
+	return nil // unused by Reconcile
+}
+
+func (f *fakeRuntime) Remove(_ context.Context, _ string, _ bool) error {
+	return nil // unused by Reconcile
 }
 
 func (f *fakeRuntime) Events(_ context.Context) (<-chan docker.Event, <-chan error) {

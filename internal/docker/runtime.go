@@ -137,4 +137,20 @@ type Runtime interface {
 	// An empty result and a nil error both mean "no images found", not
 	// an error: a service that's never been built has no images yet.
 	ListImages(ctx context.Context, repo string) ([]ImageInfo, error)
+
+	// ListByPrefix returns every container (running or not) whose name
+	// starts with prefix, for a controller to find every container
+	// belonging to a service it manages, not just the one canonical name
+	// nginxdemo's simpler world got away with.
+	ListByPrefix(ctx context.Context, prefix string) ([]ContainerState, error)
+
+	// Stop stops a running container, sending Signal (empty means
+	// Docker's default, SIGTERM) and waiting up to timeout before
+	// forcing it. A negative timeout waits indefinitely.
+	Stop(ctx context.Context, id string, timeout time.Duration) error
+
+	// Remove deletes a container. force also removes a still-running
+	// one (stopping it first); without force, removing a running
+	// container is an error, matching Docker's own default.
+	Remove(ctx context.Context, id string, force bool) error
 }
