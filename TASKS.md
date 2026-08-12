@@ -197,16 +197,55 @@ exists. 87.4% coverage on `internal/build`, 95.6% on `internal/deploy`.
       real HTTPS, and only the internal/self-signed issuer path has
       been verified so far
 
-### 1.7 Secrets (`internal/secrets`)
+### 1.7 Secrets (`internal/secrets`). PRIMITIVES DONE, INTEGRATION DEFERRED (2026-08-12)
 
-- [ ] Envelope encryption using `filippo.io/age`, per-app data
-      encryption keys wrapped by a master key
-- [ ] Env injection at container-create time, never persisted to disk
-      on the agent side (single-process today, but write it as if the
-      agent were remote, since 4.3's in-memory-transport design means
-      it will be later without a rewrite)
-- [ ] Master key sourcing: file or env for now, external KMS interface
-      is explicitly a later addition per CLAUDE.md 4.10
+Built directly, not delegated, per CLAUDE.md 8's rule on anything
+touching secrets. Deliberately scoped as a standalone primitives
+package, the same shape `internal/build` and `internal/ingress` were
+built as Phase 0 spikes before being wired into the real flow: the
+integration points (`internal/deploy`'s env resolution,
+`internal/reconcile/application`'s container creation) were being
+actively modified by the parallel 1.5/1.6/1.8/1.9 wave when this was
+built, wiring into them here would have guaranteed a merge conflict
+with the ingress controller's export of `ContainerName` and the
+database controller's extension of `docker.ContainerSpec`.
+
+- [x] Envelope encryption using `filippo.io/age`'s `HybridIdentity`/
+      `HybridRecipient` (the library's own current recommended default,
+      safe against future cryptographically-relevant quantum computers,
+      not the older plain X25519 API). `MasterKey` wraps and unwraps
+      per-app data encryption keys (`GenerateDEK`/`UnwrapDEK`); the DEK
+      itself encrypts actual secret values with AES-256-GCM
+      (`EncryptValue`/`DecryptValue`), the right tool for repeated
+      same-key encryption, reserving age's asymmetric machinery for the
+      one wrap operation per DEK
+- [x] Master key sourcing: `LoadMasterKey`/`MasterKey.String()` handle
+      parsing and serialization only; reading the serialized key from a
+      file or env var is deliberately left to the caller (matching
+      `internal/brand.Load`'s own shape), not baked into this package.
+      External KMS stays a later addition per CLAUDE.md 4.10
+- [x] 82.8% coverage, with real negative-case security tests, not just
+      happy-path round-trips: wrong master key can't unwrap another's
+      DEK, tampered ciphertext fails GCM's auth tag, tampered wrapped
+      DEK fails to unwrap, same plaintext encrypted twice produces
+      different ciphertext (proving the nonce is actually randomized,
+      nonce reuse under AES-GCM is a critical vulnerability class), and
+      a full master-key-to-value-and-back round trip through a
+      simulated fresh process (only the serialized master key and the
+      two ciphertexts persist, proving the pieces compose correctly, not
+      just that each works in isolation)
+- [ ] **Not done, explicit follow-up**: env injection at container-create
+      time. `internal/deploy.requireNoUnresolvedEnv` still rejects
+      `{ secret: true }` and `{ from: ... }` env vars outright. Wiring
+      real resolution needs: a reviewed schema addition (per-app DEK
+      storage, `desired_services.env`'s current plain
+      `map[string]string` shape can't represent "this value is a secret
+      reference" at all) and updating the application controller to
+      decrypt only immediately before `docker.Runtime.Create`, never
+      writing a decrypted value back to the store (`GET /api/v1/apps`
+      from 1.9 returns that table directly, a decrypted value sitting in
+      it would defeat the entire point of encrypting it in the first
+      place)
 
 ### 1.8 Managed databases
 

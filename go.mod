@@ -3,8 +3,10 @@ module github.com/GLINCKER/levelrail
 go 1.25.1
 
 require (
+	filippo.io/age v1.3.1
 	github.com/caddyserver/caddy/v2 v2.11.4
 	github.com/docker/docker v27.5.1+incompatible
+	github.com/docker/go-connections v0.5.0
 	github.com/moby/buildkit v0.27.1
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/tonistiigi/fsutil v0.0.0-20251211185533-a2aa163d723f
@@ -21,6 +23,7 @@ require (
 	dario.cat/mergo v1.0.2 // indirect
 	filippo.io/bigmod v0.1.0 // indirect
 	filippo.io/edwards25519 v1.2.0 // indirect
+	filippo.io/hpke v0.4.0 // indirect
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
 	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/DeRuina/timberjack v1.4.2 // indirect
@@ -58,7 +61,6 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/dlclark/regexp2 v1.12.0 // indirect
-	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
