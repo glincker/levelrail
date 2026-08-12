@@ -551,6 +551,16 @@ overall, gate is 70%.
       and a real `-tags embedweb` binary, not just unit tested: `/`,
       a client-side route, a real static asset, and `/api/v1/brand`
       all curled through the same running server, all correct.
+      **Bug fixed after this landed**: `handler_test.go`'s
+      `TestHandler_UsesPackageDistFS` hardcoded the stub build's 501
+      assertion, so `go test -tags embedweb ./web/...` failed the moment
+      `DistFS` actually held the real embedded frontend instead of the
+      stub's empty zero value, exactly the build mode the test claimed
+      to be pinning. Split into `handler_stub_test.go` (`!embedweb`,
+      asserts 501) and `handler_embedweb_test.go` (`embedweb`, asserts a
+      real 200 with the built `index.html` shell in the body), so both
+      build tags are actually exercised rather than one silently never
+      running its own assertion in CI. Still 100% coverage on `web`.
 - [x] App list (`web/src/routes/apps/index.tsx`,
       `queries/apps.ts`'s `fetchApps`/`appListQueryOptions`). **Contract
       mismatch closed (2026-08-12)**: the list route originally assumed a

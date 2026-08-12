@@ -56,16 +56,3 @@ func TestHandlerFromFS_UnknownPath_FallsBackToIndex(t *testing.T) {
 		})
 	}
 }
-
-func TestHandler_UsesPackageDistFS(t *testing.T) {
-	// Handler() itself just delegates to handlerFromFS(DistFS); this
-	// pins that wiring so a future refactor can't silently drop it.
-	// DistFS is the stub (empty) in a default (non -tags embedweb)
-	// test run, so this should behave exactly like the no-dist case.
-	rec := httptest.NewRecorder()
-	Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
-
-	if rec.Code != http.StatusNotImplemented {
-		t.Errorf("status = %d, want %d (stub DistFS, no -tags embedweb in this test run)", rec.Code, http.StatusNotImplemented)
-	}
-}
