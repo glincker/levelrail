@@ -197,6 +197,33 @@ func (db *DB) ListEnabledRules(ctx context.Context) ([]Rule, error) {
 	return out, nil
 }
 
+// ListRulesForResource returns every rule scoped to resourceID, ordered
+// by name, regardless of enabled state. internal/api's alert-rule
+// handlers (TASKS.md 2.5) use this to list only one app's own rules
+// rather than every rule in the database; alert_rules already carries
+// idx_alert_rules_resource (migrations/0001_alert_rules.sql) for
+// exactly this lookup.
+func (db *DB) ListRulesForResource(ctx context.Context, resourceID string) ([]Rule, error) {
+	rows, err := db.QueryContext(ctx, ruleSelectColumns+` FROM alert_rules WHERE resource_id = ? ORDER BY name`, resourceID)
+	if err != nil {
+		return nil, fmt.Errorf("alerting: list rules for resource %q: %w", resourceID, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []Rule
+	for rows.Next() {
+		r, err := scanRule(rows.Scan)
+		if err != nil {
+			return nil, fmt.Errorf("alerting: scan rule row: %w", err)
+		}
+		out = append(out, *r)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("alerting: iterate rule rows: %w", err)
+	}
+	return out, nil
+}
+
 // DeleteRule removes a rule by ID. Deleting a rule that doesn't exist is
 // not an error, matching internal/store.DeleteDesiredService's own
 // idempotent-delete convention.

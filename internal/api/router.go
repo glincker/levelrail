@@ -138,6 +138,7 @@ type Router struct {
 	tokens     TokenStore
 	secrets    SecretSetter     // nil is valid: a control plane with no master key configured serves everything except secret-setting
 	telemetry  TelemetryQuerier // nil is valid: metrics/logs query routes return 501, same shape as secrets above
+	alertRules AlertRules       // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
 	sessions   *sessionStore
 	logins     *loginLimiter
 	sessionTTL time.Duration // 0 means "use defaultSessionTTL", set via WithSessionTTL
@@ -173,6 +174,16 @@ func WithSessionTTL(d time.Duration) Option {
 // existing at all or panicking on a nil dereference.
 func WithTelemetryQuerier(q TelemetryQuerier) Option {
 	return func(rt *Router) { rt.telemetry = q }
+}
+
+// WithAlertRules enables POST/GET /api/v1/apps/{name}/alerts and DELETE
+// /api/v1/apps/{name}/alerts/{id} (TASKS.md 2.5/2.7). Without one
+// configured (the default), all three routes return 501, the same
+// "not configured" shape WithSecretSetter and WithTelemetryQuerier's
+// absence already produce: this control plane still starts and serves
+// everything else without an alerting.DB wired in.
+func WithAlertRules(a AlertRules) Option {
+	return func(rt *Router) { rt.alertRules = a }
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
@@ -250,6 +261,13 @@ func (rt *Router) Handler() http.Handler {
 	// fanned out through a Federator (today, exactly one local source).
 	mux.HandleFunc("GET /api/v1/apps/{name}/metrics", rt.requireAbility(AbilityRead, rt.handleQueryMetrics))
 	mux.HandleFunc("GET /api/v1/apps/{name}/logs", rt.requireAbility(AbilityRead, rt.handleQueryLogs))
+
+	// Alerting (TASKS.md 2.5/2.7): threshold and crashloop rules scoped
+	// to one app, fanned through a *alerting.DB when configured (see
+	// WithAlertRules).
+	mux.HandleFunc("POST /api/v1/apps/{name}/alerts", rt.requireAbility(AbilityWrite, rt.handleCreateAlertRule))
+	mux.HandleFunc("GET /api/v1/apps/{name}/alerts", rt.requireAbility(AbilityRead, rt.handleListAlertRules))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/alerts/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteAlertRule))
 
 	// Prometheus remote read (TASKS.md 2.6). Gated by requireAbility the
 	// same as every other read route, not left open: leaving a metrics
