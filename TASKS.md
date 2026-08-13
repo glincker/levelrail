@@ -1938,7 +1938,7 @@ CLAUDE.md 4.3/4.6 and ADRs 003/006's stated intent:
   dedicated build nodes to share it with" as the Phase 3 trigger for a
   real remote build cache (3.5 below).
 
-### 3.1 Agent transport interface + node registry
+### 3.1 Agent transport interface + node registry. CLAUDED (this session, 2026-08-13)
 
 The foundation everything else in this phase routes through. Single-
 session per CLAUDE.md 8's explicit "the agent transport protocol" and
