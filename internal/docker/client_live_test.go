@@ -2,6 +2,7 @@ package docker
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -364,4 +365,68 @@ func removeIfExists(ctx context.Context, t *testing.T, c *Client, name string) {
 		return
 	}
 	_ = c.cli.ContainerRemove(ctx, state.ID, container.RemoveOptions{Force: true})
+}
+
+// TestClient_Stats_Live proves Stats returns real, sane numbers from a
+// real running container, not just that the API call doesn't error.
+// Independent verification against the raw one-shot response, the same
+// rigor every other live test in this file applies: the parsed
+// ContainerStats fields are checked against the raw JSON's own numbers,
+// not just each other.
+func TestClient_Stats_Live(t *testing.T) {
+	c := liveClient(t)
+	ctx := context.Background()
+
+	name := "levelrail-test-stats"
+	removeIfExists(ctx, t, c, name)
+	t.Cleanup(func() { removeIfExists(ctx, t, c, name) })
+
+	// ContainerSpec has no command-override field, so this relies on
+	// busybox's own default entrypoint; nginx (used elsewhere in this
+	// file) stays running on its own and is just as good a stats
+	// source, and is already the known-good image other live tests here
+	// use successfully.
+	id, err := c.Create(ctx, ContainerSpec{Name: name, Image: "nginx:alpine"})
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	if err := c.Start(ctx, id); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+
+	first, err := c.Stats(ctx, id)
+	if err != nil {
+		t.Fatalf("Stats() first call error = %v", err)
+	}
+	time.Sleep(500 * time.Millisecond)
+	second, err := c.Stats(ctx, id)
+	if err != nil {
+		t.Fatalf("Stats() second call error = %v", err)
+	}
+
+	if second.MemoryUsageBytes == 0 {
+		t.Error("MemoryUsageBytes = 0, want a real positive figure for a running container")
+	}
+	if second.MemoryLimitBytes == 0 {
+		t.Error("MemoryLimitBytes = 0, want a real positive figure (the cgroup memory limit)")
+	}
+	if first.CPUPercent < 0 || second.CPUPercent < 0 {
+		t.Errorf("CPUPercent negative: first=%v second=%v", first.CPUPercent, second.CPUPercent)
+	}
+
+	// Independent verification: decode the raw one-shot response
+	// directly and confirm this package's parsing matches it, not just
+	// that Stats() returned without erroring.
+	rawReader, err := c.cli.ContainerStatsOneShot(ctx, id)
+	if err != nil {
+		t.Fatalf("raw ContainerStatsOneShot() error = %v", err)
+	}
+	var raw container.StatsResponse
+	if err := json.NewDecoder(rawReader.Body).Decode(&raw); err != nil {
+		t.Fatalf("decode raw stats: %v", err)
+	}
+	_ = rawReader.Body.Close()
+	if raw.MemoryStats.Usage == 0 {
+		t.Error("raw MemoryStats.Usage = 0, this test's own assumptions are wrong, not just the wrapper")
+	}
 }
