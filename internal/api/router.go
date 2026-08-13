@@ -244,7 +244,7 @@ func (rt *Router) Handler() http.Handler {
 	// returning a value (even to its own owner over an authenticated
 	// session) is exactly the kind of exposure envelope encryption
 	// exists to avoid.
-	mux.HandleFunc("PUT /api/v1/apps/{name}/secrets/{key}", rt.requireAbility(AbilityWrite, rt.handleSetSecret))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/secrets/{key}", rt.requireAbility(AbilityWriteSensitive, rt.handleSetSecret))
 
 	// Telemetry query (TASKS.md 2.3): metrics and logs for one app,
 	// fanned out through a Federator (today, exactly one local source).

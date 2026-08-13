@@ -22,6 +22,7 @@ const ABILITY_BADGE_VARIANT: Record<
   read: 'outline',
   'read:sensitive': 'outline',
   write: 'default',
+  'write:sensitive': 'default',
   deploy: 'default',
   root: 'destructive',
 }

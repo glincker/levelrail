@@ -28,17 +28,18 @@ func (e *unknownAbilityError) Error() string {
 // caller chooses to call. AbilityRoot is exclusive of the rest (checked
 // at mint time, see validateAbilities), not additive with them.
 const (
-	AbilityRead          = "read"
-	AbilityReadSensitive = "read:sensitive"
-	AbilityWrite         = "write"
-	AbilityDeploy        = "deploy"
-	AbilityRoot          = "root"
+	AbilityRead           = "read"
+	AbilityReadSensitive  = "read:sensitive"
+	AbilityWrite          = "write"
+	AbilityWriteSensitive = "write:sensitive"
+	AbilityDeploy         = "deploy"
+	AbilityRoot           = "root"
 )
 
 // validAbilities is every ability a token may be minted with, used to
 // reject an unrecognized string at creation time rather than silently
 // storing (and never matching) a typo.
-var validAbilities = []string{AbilityRead, AbilityReadSensitive, AbilityWrite, AbilityDeploy, AbilityRoot}
+var validAbilities = []string{AbilityRead, AbilityReadSensitive, AbilityWrite, AbilityWriteSensitive, AbilityDeploy, AbilityRoot}
 
 // hasAbility reports whether abilities grants required: either directly,
 // or via AbilityRoot, which implies everything. A session (the single

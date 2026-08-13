@@ -6,7 +6,9 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -131,6 +133,58 @@ func TestHandleSetSecret_RequiresAuth(t *testing.T) {
 	}
 	if setter.calls != 0 {
 		t.Errorf("setter.calls = %d, want 0", setter.calls)
+	}
+}
+
+func TestHandleSetSecret_PlainWriteTokenForbidden(t *testing.T) {
+	setter := &fakeSecretSetter{}
+	rt, db := newTestRouterWithSecrets(t, setter)
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "img:v1", Port: 80}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	const plaintext = "write-only-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_write", Name: "app-editor", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWrite}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/apps/web/secrets/API_KEY", strings.NewReader(`{"value":"sk-abc"}`))
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want %d: a plain write-scoped token must not be able to write secret values", rec.Code, http.StatusForbidden)
+	}
+	if setter.calls != 0 {
+		t.Errorf("setter.calls = %d, want 0", setter.calls)
+	}
+}
+
+func TestHandleSetSecret_WriteSensitiveTokenSucceeds(t *testing.T) {
+	setter := &fakeSecretSetter{}
+	rt, db := newTestRouterWithSecrets(t, setter)
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "img:v1", Port: 80}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	const plaintext = "write-sensitive-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_write_sensitive", Name: "secrets-editor", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWriteSensitive}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/apps/web/secrets/API_KEY", strings.NewReader(`{"value":"sk-abc"}`))
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNoContent, rec.Body.String())
+	}
+	if setter.calls != 1 {
+		t.Errorf("setter.calls = %d, want 1", setter.calls)
 	}
 }
 

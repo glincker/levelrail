@@ -944,6 +944,36 @@ secrets and the reconciler, applied here for the same reason.
       obvious self-escalation path. 26 new tests including revoked/
       expired/wrong-ability/root-implies-everything cases; 77.4% coverage
       on `internal/api`, 78.4% on `internal/store`.
+- [x] **ADR backfill + `write:sensitive` gap fix (2026-08-13)**: while
+      writing ADRs 010-013 to close the CLAUDE.md 7 "one ADR per
+      architectural decision" gap for the whole Dashboard & auth pass
+      (010: extend own auth, don't adopt theauth-go; 011: shadcn/Base UI,
+      skip theauth SDK; 012: scoped API token abilities; 013: backend
+      dev-mode build-tag gate), reviewing ADR 012 against the actual
+      route wiring surfaced a real security-model gap: the research
+      doc's finding 9 names six Coolify abilities including
+      `write:sensitive`, but only five were implemented, and
+      `PUT /api/v1/apps/{name}/secrets/{key}` was gated behind plain
+      `AbilityWrite`, meaning a token minted for ordinary app-config
+      edits (domains, env vars) could also overwrite encrypted secret
+      values. Fixed: added `AbilityWriteSensitive` to
+      `internal/api/abilities.go`, changed the secrets route to require
+      it specifically instead of `AbilityWrite`. TDD:
+      `TestHandleSetSecret_PlainWriteTokenForbidden` and
+      `_WriteSensitiveTokenSucceeds` (both written failing first), plus
+      new `TestHasAbility`/`TestValidateAbilities` cases for the new
+      ability. Frontend updated to match: `web/src/types/token.ts`'s
+      `Ability` type and `ABILITIES` list, `CreateTokenDialog.tsx`'s
+      checkbox options and zod schema, `TokenTable.tsx`'s badge-variant
+      map (`tsc --noEmit` caught the missing case as a compile error).
+      `gofmt`/`go vet`/`golangci-lint`/`go test -race` clean in both
+      `embedweb` build variants; frontend `tsc`/`eslint`/`vite build`
+      clean. Live end-to-end verified against a real binary: minted a
+      plain-`write` token and a `write:sensitive` token via the real
+      API, confirmed the former gets 403 on the secrets route and the
+      latter reaches the handler (501, no master key configured locally,
+      the same response an authorized session gets, proving it passed
+      the ability check).
 - [x] **First-run registration (2026-08-12)**: `POST /api/v1/auth/register`,
       coexists with the existing env-var bootstrap rather than replacing
       it. New `store.CreateAdminUser` is a plain `INSERT` with no `ON

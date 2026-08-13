@@ -45,6 +45,11 @@ const ABILITY_OPTIONS: { value: Ability; label: string; hint: string }[] = [
     label: 'Write',
     hint: 'Edit app config, domains, env vars.',
   },
+  {
+    value: 'write:sensitive',
+    label: 'Write sensitive',
+    hint: 'Set secret values. Separate from Write: a token scoped to plain Write cannot touch secrets.',
+  },
   { value: 'deploy', label: 'Deploy', hint: 'Trigger deploys and rollbacks.' },
   {
     value: 'root',
@@ -73,7 +78,16 @@ const createTokenSchema = z.object({
   name: z.string().trim().min(1, 'Name is required'),
   expiration: z.enum(['never', '1', '7', '30', '90', '365']),
   abilities: z
-    .array(z.enum(['read', 'read:sensitive', 'write', 'deploy', 'root']))
+    .array(
+      z.enum([
+        'read',
+        'read:sensitive',
+        'write',
+        'write:sensitive',
+        'deploy',
+        'root',
+      ]),
+    )
     .min(1, 'Select at least one ability'),
 })
 

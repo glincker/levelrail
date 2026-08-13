@@ -13,6 +13,9 @@ func TestHasAbility(t *testing.T) {
 		{name: "no match", abilities: []string{AbilityRead}, required: AbilityWrite, want: false},
 		{name: "root implies read", abilities: []string{AbilityRoot}, required: AbilityRead, want: true},
 		{name: "root implies deploy", abilities: []string{AbilityRoot}, required: AbilityDeploy, want: true},
+		{name: "root implies write:sensitive", abilities: []string{AbilityRoot}, required: AbilityWriteSensitive, want: true},
+		{name: "plain write does not imply write:sensitive", abilities: []string{AbilityWrite}, required: AbilityWriteSensitive, want: false},
+		{name: "write:sensitive direct match", abilities: []string{AbilityWriteSensitive}, required: AbilityWriteSensitive, want: true},
 		{name: "empty abilities", abilities: nil, required: AbilityRead, want: false},
 		{name: "multiple abilities, one matches", abilities: []string{AbilityRead, AbilityDeploy}, required: AbilityDeploy, want: true},
 	}
@@ -33,6 +36,7 @@ func TestValidateAbilities(t *testing.T) {
 	}{
 		{name: "single valid", abilities: []string{AbilityRead}, wantErr: false},
 		{name: "multiple valid", abilities: []string{AbilityRead, AbilityDeploy}, wantErr: false},
+		{name: "write:sensitive valid", abilities: []string{AbilityWriteSensitive}, wantErr: false},
 		{name: "root alone", abilities: []string{AbilityRoot}, wantErr: false},
 		{name: "empty", abilities: nil, wantErr: true},
 		{name: "root combined with another", abilities: []string{AbilityRoot, AbilityRead}, wantErr: true},

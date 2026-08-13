@@ -6,7 +6,13 @@
 // comment on handleCreateToken, so there is no token-authenticated path
 // through this file, only the session-authenticated dashboard.
 
-export type Ability = 'read' | 'read:sensitive' | 'write' | 'deploy' | 'root'
+export type Ability =
+  | 'read'
+  | 'read:sensitive'
+  | 'write'
+  | 'write:sensitive'
+  | 'deploy'
+  | 'root'
 
 // Ordered to match abilities.go's validAbilities declaration order, which
 // CreateTokenDialog's checkbox list renders in directly.
@@ -14,6 +20,7 @@ export const ABILITIES: Ability[] = [
   'read',
   'read:sensitive',
   'write',
+  'write:sensitive',
   'deploy',
   'root',
 ]
