@@ -251,5 +251,15 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/apps/{name}/metrics", rt.requireAbility(AbilityRead, rt.handleQueryMetrics))
 	mux.HandleFunc("GET /api/v1/apps/{name}/logs", rt.requireAbility(AbilityRead, rt.handleQueryLogs))
 
+	// Prometheus remote read (TASKS.md 2.6). Gated by requireAbility the
+	// same as every other read route, not left open: leaving a metrics
+	// endpoint unauthenticated would let any caller pull every service's
+	// resource usage. Prometheus's own remote_read config supports
+	// bearer-token auth (authorization.credentials), which is exactly an
+	// API token scoped to at least "read" (see the token management
+	// routes above); requireAbility already accepts one the same way it
+	// does for every JSON route, this isn't a special case.
+	mux.HandleFunc("POST /api/v1/prometheus/read", rt.requireAbility(AbilityRead, rt.handlePrometheusRead))
+
 	return mux
 }
