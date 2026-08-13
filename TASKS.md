@@ -1624,17 +1624,50 @@ historical container logs is new scope, not asked for here), and the
 six not-yet-collected metrics above, each of which needs its own
 backend collector, not a frontend change.
 
-### 2.5 Alerting. CLAIMED (this session, 2026-08-13)
+### 2.5 Alerting. DONE (2026-08-13), email/Telegram deferred
 
-Building alongside 2.7: crashloop detection is architecturally a
+Built alongside 2.7: crashloop detection is architecturally a
 built-in alert rule (a restart-frequency threshold with a fixed
 notification payload shape, log lines attached), not a separate
 system, so the same rule/evaluator/notifier schema and dispatch path
 serve both rather than building two parallel mechanisms. Database
-schema work for both stays this one session per CLAUDE.md 8.
+schema work for both stayed one session per CLAUDE.md 8.
 
-- [ ] Threshold rules over 2.1/2.2's data
-- [ ] Notification via webhook, email, Slack, Discord, Telegram
+- [x] Threshold rules over 2.1's data: a new `internal/alerting`
+      package, its own SQLite file (`alerting.db`, ADR 009's
+      write-isolation reasoning applied a third time), one polymorphic
+      `alert_rules` table for both rule kinds. A rule debounces via
+      `ForDuration` (the condition must hold continuously before
+      firing) and clears immediately on a single recovering sample, no
+      resolve-debounce, since false-positive resolution is a much
+      smaller problem than false-positive firing. `GET`/`POST`
+      `/api/v1/apps/{name}/alerts`, `DELETE .../alerts/{id}`
+      (ownership-checked: a rule ID from a different app 404s, not a
+      403, the same information-hiding this codebase already applies
+      elsewhere), all `requireAbility`-gated
+- [x] Notification via webhook, Slack, Discord: `notify.go`, a
+      generic JSON payload plus Slack/Discord's own single-field
+      incoming-webhook shapes. Notifies only on a firing/resolved
+      transition, never on every tick a rule stays in the same state,
+      and sends a resolved notification too, not just firing, since an
+      operator who only ever hears about problems starting trains
+      themselves to distrust or mute the channel
+- [ ] **Not done, explicit follow-up**: email and Telegram
+      notification channels. Both need real credential/API integration
+      (SMTP config, a bot token) heavier than a webhook POST, without a
+      concrete signal yet that either is actually wanted; the
+      `Notifier` interface (`notify.go`) is already shaped to add
+      either without touching the evaluator or engine
+
+Also caught and fixed while building this: `internal/docker.Client
+.Events` never populated `Event.Time` (silently the zero value since
+Phase 0). Nothing that already existed read that field, so nothing
+broke loudly, but `RestartTracker.CountSince` comparing against a
+real time cutoff would never be `After()` the zero value, crashloop
+detection would have silently never fired in production. Fixed and
+live-verified against a real daemon (`internal/docker`'s own
+`TestClient_Events_Live` now asserts a real event's `Time` is recent,
+not zero).
 
 ### 2.6 Prometheus remote read endpoint. DONE (2026-08-13)
 
@@ -1659,12 +1692,37 @@ schema work for both stays this one session per CLAUDE.md 8.
       round-tripped through the codec's own (potentially symmetrically
       wrong) encode/decode pair.
 
-### 2.7 Crashloop detection. CLAIMED (this session, 2026-08-13): building together with 2.5, see that section's note on why
+### 2.7 Crashloop detection. DONE (2026-08-13), no frontend surfacing yet
 
-- [ ] Last 200 lines of a failing container's logs surfaced
-      automatically in the UI on repeated restart. CLAUDE.md 6: "nobody
-      does this well and it is the single most common thing a user
-      needs when a deploy fails"
+Built as a `KindCrashloop` alert rule, not a separate mechanism, see
+2.5's note.
+
+- [x] `RestartTracker` (`internal/alerting/crashloop.go`) counts
+      Docker "start" events, not "die" events: a crashloop is repeated
+      restarts, which is what the reconciler's own restart-on-crash
+      logic produces as repeated `Start` calls on the same container
+      ID. A container name's first-ever start is never counted as a
+      restart, which correctly excludes both ordinary first startup
+      and a fresh redeploy's new container (deterministic per-image
+      naming means a redeploy always gets a new name). Resolves
+      container name to service via the same exact-match check
+      `internal/reconcile/application.ownsContainer` already
+      established (reimplemented locally, not exported): a bare
+      prefix match would let service "web" match "web-worker"'s
+      container, the same bug class TASKS.md 1.3 already fixed once
+- [x] Last 200 lines of a failing container's logs surfaced
+      automatically: `Engine.dispatch` attaches
+      `fetchRecentLogLines` (via 2.2's `LogsSource`) to a firing
+      crashloop event only, exactly CLAUDE.md 6's number, truncated to
+      the most recent 200 lines when more are available
+- [ ] **Not done**: frontend surfacing. The last-200-lines payload is
+      real and attached to the notification event, but there's no
+      dashboard UI yet showing "this app is crashlooping, here are its
+      logs" the way CLAUDE.md 6 pictures it ("without leaving the
+      dashboard"); today an operator sees it via whatever webhook/
+      Slack/Discord channel they configured, not in `/web` itself. A
+      frontend pass over the alert-rules API (2.5) and crashloop state
+      is the real remaining gap here, not new backend work
 
 ---
 
