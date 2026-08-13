@@ -993,14 +993,74 @@ Parallel-safe once the backend tasks above land (frozen API contract),
 per CLAUDE.md 8's "frontend pages, one agent per route" rule. The shadcn
 setup task has no backend dependency and can start immediately.
 
-- [ ] **shadcn/ui setup**: `cd web && npx shadcn@latest init` (Vite
-      target, Base UI primitives), then `npx shadcn add button input
-      label card table dialog select form checkbox switch alert
-      popover tabs` (the set `frontend-component-reuse.md` section 1.1
-      identifies as missing versus thesvg's partial 13-component set).
-      No existing component needs to change. New `web/package.json`
-      deps need the standing package.json-changes-need-approval gate
-      acknowledged, per the research doc's own flag.
+- [x] **shadcn/ui setup**: done 2026-08-12. `npx shadcn@latest init -t
+      vite -b base -p nova` against `web/` (fresh init, not thesvg's
+      `components.json`), confirmed by reading the resulting
+      `web/components.json` (`"style": "base-nova"`) and
+      `web/package.json`: the primitive backend that landed is
+      `@base-ui/react` (`^1.7.0`), not `@radix-ui/react-*`, matching the
+      research doc's recommendation exactly, current CLI's `-b base`
+      flag maps directly to it. 14 files generated into
+      `web/src/components/ui/`: `button`, `input`, `label`, `card`,
+      `table`, `dialog`, `select`, `checkbox`, `switch`, `alert`,
+      `popover`, `tabs`, plus `separator` (a dependency the `field` add
+      pulled in) and `field`. One deviation from the requested list,
+      flagged rather than silent: `form` resolves in the current shadcn
+      registry (CLI v4.17.0) to an empty stub
+      (`{"name": "form", "type": "registry:ui"}`, no `files`), not the
+      classic React-Hook-Form wrapper `frontend-component-reuse.md`
+      expected. `npx shadcn add field` was installed instead: the
+      registry's actual current replacement (form-library-agnostic
+      `Field`/`FieldLabel`/`FieldError`/etc., composes with RHF via an
+      `errors` prop, `web/src/components/ui/field.tsx`, docs linked from
+      the registry item itself at
+      `ui.shadcn.com/docs/components/base/field`). `web/src/lib/utils.ts`
+      already had `cn()` (clsx + tailwind-merge) written by the CLI, not
+      hand-added.
+
+      Init's own file changes were checked line by line, not assumed
+      safe: `web/src/index.css` gained shadcn's OKLCH color tokens, a
+      `@layer base` block, and `tw-animate-css`/`shadcn/tailwind.css`
+      imports (additive, zero visible effect today since no existing
+      component consumes `bg-background`/`text-foreground`/etc. yet, and
+      the pre-existing unlayered `body { @apply bg-white ... }` rule
+      still wins the cascade over the new `@layer base` block under CSS
+      cascade-layer rules). One real regression was caught and reverted
+      before commit: the Nova preset's `@theme inline` block tried to
+      override `--font-sans` repo-wide to `'Geist Variable', sans-serif`
+      (plus a `@fontsource-variable/geist` import/dependency); since
+      Tailwind v4's Preflight derives its default `html` font-family
+      from `--font-sans` (`--default-font-family: --theme(--font-sans,
+      initial)` in `tailwindcss/theme.css`), that would have silently
+      reflowed every existing screen's typography. Stripped the
+      override, dropped the `@fontsource-variable/geist` dependency
+      (`npm uninstall`), kept the original `system-ui, 'Segoe UI',
+      Roboto, sans-serif` stack. `vite.config.ts` and
+      `tsconfig.{json,app.json}` gained the `@/*` path alias shadcn's
+      Vite install needs (none existed before init; the CLI's own
+      "Validating import alias" preflight check failed until these were
+      added by hand first). `eslint.config.js` gained one targeted
+      override, mirroring the existing `src/routes/**` carve-out's
+      style: `react-refresh/only-export-components` off for
+      `src/components/ui/**`, since shadcn's generated files (e.g.
+      `button.tsx`) co-export a `cva()` variants function in the same
+      file per upstream convention, and hand-fighting that shape would
+      just be undone by the next `npx shadcn add --overwrite`.
+
+      Verification, all re-run clean after the fixes above:
+      `npm run build`, `npm run typecheck`, `npm run lint`, `npm run
+      format:check` all pass. `grep -rlP '[\x{2014}\x{2013}]' web/src`
+      empty. No file under `web/src/components/*.tsx` (the five
+      hand-rolled ones) or `web/src/routes/**` touched, confirmed via
+      `git diff --stat`. New runtime deps in `web/package.json`:
+      `@base-ui/react ^1.7.0`, `class-variance-authority ^0.7.1`,
+      `clsx ^2.1.1`, `lucide-react ^1.31.0`, `shadcn ^4.17.0` (kept as a
+      runtime dep, not dev: `index.css` imports `shadcn/tailwind.css` at
+      build time), `tailwind-merge ^3.6.0`, `tw-animate-css ^1.4.0`. Per
+      the root GLINRV5 `CLAUDE.md`'s generic file-boundaries rule and
+      this repo having no override of it, this `package.json` diff is
+      flagged for approval before merge, not assumed pre-cleared by this
+      being the task's own point.
 - [ ] **Vite dev proxy**: `web/vite.config.ts` gets a `server.proxy`
       entry for `/api` (dev-only), a prerequisite the dev-mode research
       flagged as missing regardless of the auth bypass itself.
