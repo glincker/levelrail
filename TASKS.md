@@ -1692,7 +1692,7 @@ not zero).
       round-tripped through the codec's own (potentially symmetrically
       wrong) encode/decode pair.
 
-### 2.7 Crashloop detection. DONE (2026-08-13), no frontend surfacing yet
+### 2.7 Crashloop detection. DONE (2026-08-13)
 
 Built as a `KindCrashloop` alert rule, not a separate mechanism, see
 2.5's note.
@@ -1715,15 +1715,23 @@ Built as a `KindCrashloop` alert rule, not a separate mechanism, see
       `fetchRecentLogLines` (via 2.2's `LogsSource`) to a firing
       crashloop event only, exactly CLAUDE.md 6's number, truncated to
       the most recent 200 lines when more are available
-- [ ] **Not done, CLAIMED (this session, 2026-08-13)**: frontend
-      surfacing. The last-200-lines payload is real and attached to
-      the notification event, but there's no dashboard UI yet showing
-      "this app is crashlooping, here are its logs" the way CLAUDE.md
-      6 pictures it ("without leaving the dashboard"); today an
-      operator sees it via whatever webhook/Slack/Discord channel they
-      configured, not in `/web` itself. A frontend pass over the
-      alert-rules API (2.5) and crashloop state is the real remaining
-      gap here, not new backend work
+- [x] Frontend surfacing: `AlertRulesPanel.tsx` on the app detail page
+      (`web/src/routes/apps/$name.tsx`), a rule list with firing/
+      pending/OK state badges, human-readable condition strings, last
+      evaluated time and last value, plus `CreateAlertRuleDialog.tsx`
+      and `DeleteAlertRuleDialog.tsx` following this codebase's
+      existing dialog-flow conventions. One real, honestly-documented
+      limitation: the last-200-lines payload is only ever attached to
+      the outbound webhook/Slack/Discord notification
+      (`internal/alerting`'s `Engine.dispatch`), there is no API
+      endpoint returning it back to the dashboard, so a firing
+      crashloop rule links to the existing historical log search
+      (`LogSearchPanel`, anchored at `#log-search`) rather than
+      fabricating a "here are the exact lines that fired" view that
+      doesn't exist. CLAUDE.md 6's "without leaving the dashboard" is
+      now true for seeing that a crashloop is firing and pulling up
+      that app's logs, not for reconstructing the precise historical
+      firing snapshot after the fact
 
 ---
 
