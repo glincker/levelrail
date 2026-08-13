@@ -2,9 +2,11 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef } from 'react'
-import { BoxIcon } from 'lucide-react'
+import { BoxIcon, PlusIcon } from 'lucide-react'
 import { appListQueryOptions } from '../../queries/apps'
 import { APP_LIST_GRID, AppRow, RowSkeleton } from '../../components/AppRow'
+import { CreateAppDialog } from '../../components/CreateAppDialog'
+import { Button } from '../../components/ui/button'
 
 // Typed loader primes the Query cache, the component only reads that
 // cache via useSuspenseQuery against the same key (no data fetching in
@@ -56,13 +58,23 @@ function AppListPage() {
 
   return (
     <div>
-      <div className="mb-4 flex items-baseline justify-between">
+      <div className="mb-4 flex items-baseline justify-between gap-3">
         <h1 className="text-lg font-semibold text-foreground">Apps</h1>
-        {apps.length > 0 ? (
-          <span className="text-sm text-muted-foreground">
-            {apps.length} {apps.length === 1 ? 'app' : 'apps'}
-          </span>
-        ) : null}
+        <div className="flex items-baseline gap-3">
+          {apps.length > 0 ? (
+            <span className="text-sm text-muted-foreground">
+              {apps.length} {apps.length === 1 ? 'app' : 'apps'}
+            </span>
+          ) : null}
+          <CreateAppDialog
+            trigger={
+              <Button size="sm">
+                <PlusIcon />
+                New app
+              </Button>
+            }
+          />
+        </div>
       </div>
       {apps.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-16 text-center">
@@ -73,9 +85,17 @@ function AppListPage() {
             <p className="text-sm font-medium text-foreground">No apps yet</p>
             <p className="mx-auto max-w-sm text-sm text-muted-foreground">
               Apps deployed from an app.yaml spec in a connected repo will show
-              up here.
+              up here, or create one directly if you already have a built image.
             </p>
           </div>
+          <CreateAppDialog
+            trigger={
+              <Button size="sm">
+                <PlusIcon />
+                New app
+              </Button>
+            }
+          />
         </div>
       ) : (
         <div

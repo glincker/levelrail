@@ -122,3 +122,57 @@ export function useUpdateApp(name: string) {
     },
   })
 }
+
+// Request body for POST /api/v1/apps (internal/api/apps.go's
+// handleCreateApp), deliberately narrower than the full appResource
+// shape AppDetail models: domains/env/resources/health are real fields
+// the endpoint accepts, but CreateAppDialog only ever collects
+// name/image/port (a manually-created app here is the "already have a
+// built image" path per CLAUDE.md 4.9, the git-push spec path is
+// separate and unaffected). The server still runs validateAppResource
+// against whatever arrives, so leaving the rest undefined is safe, not
+// a bypass.
+export interface CreateAppRequest {
+  name: string
+  image: string
+  port: number
+}
+
+// POST /api/v1/apps. Rejects a name that already exists with a 409
+// (handleCreateApp's own existence check), which readErrorMessage below
+// surfaces verbatim so CreateAppDialog can show the real server message
+// on a conflict instead of a generic failure.
+export async function createApp(req: CreateAppRequest): Promise<AppDetail> {
+  const res = await fetch('/api/v1/apps', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `create app failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as AppDetail
+}
+
+// Mirrors useUpdateApp's cache-write shape: the 201 response already is
+// the canonical new AppDetail, so it's written straight into the detail
+// query's cache (keyed by the name the server echoed back) rather than
+// waiting on a refetch, so navigating straight to /apps/$name right
+// after creation has data available immediately. The list query is
+// invalidated rather than patched in place, same reasoning useUpdateApp
+// documents above: AppRow renders fields this mutation never touches
+// (domains), so a full refetch is simpler than hand-merging the new row
+// in.
+export function useCreateApp() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: createApp,
+    onSuccess: (created) => {
+      queryClient.setQueryData(appKeys.detail(created.name), created)
+      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+    },
+  })
+}
