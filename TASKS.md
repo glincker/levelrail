@@ -1108,11 +1108,38 @@ setup task has no backend dependency and can start immediately.
       Distinguish 401 specifically (redirect to login / surface
       "session expired," not a generic error) across every query
       function, not just `apps.ts`.
-- [ ] **Secrets UI**: a form on the app detail route calling
-      `PUT /api/v1/apps/{name}/secrets/{key}` (exists server-side since
-      TASKS.md 1.7, zero frontend consumer today), handling the 501
-      "not configured" case (no `APP_MASTER_KEY` set) with a clear
-      message distinct from a user error.
+- [x] **Secrets UI (2026-08-12)**: `web/src/components/SecretsEditor.tsx`,
+      composed into `web/src/routes/apps/$name.tsx` below `EnvEditor`, a
+      separate section rather than a change to that component (its "Secret
+      references are not supported yet" help text and `AppDetail.env`
+      handling are both untouched). Key + value form, react-hook-form +
+      zod, matching `DomainEditor`/`EnvEditor`'s add/save pattern; the
+      value input is masked (`type="password"`) with an eye-icon reveal
+      toggle rather than plain text by default. `web/src/queries/secrets.ts`
+      is a new module (mirrors `deploys.ts`'s per-resource-file shape),
+      deliberately with no query-key factory and no GET fetcher: `PUT
+      /api/v1/apps/{name}/secrets/{key}` has no corresponding read
+      endpoint by design (`internal/api/secrets.go`'s own doc comment), so
+      there's nothing to cache. On 204, the form clears and shows an
+      inline "Secret saved." message, same convention as
+      `DomainEditor`/`EnvEditor`'s "Saved." text. 404 and 400 surface the
+      backend's own `{error: "..."}` message inline (app-not-found,
+      empty-value respectively). 501 is handled distinctly per the task
+      spec: caught via a dedicated `SecretsNotConfiguredError` class,
+      after which the component permanently swaps to an `Alert` (shadcn,
+      `variant="destructive"`) reading "Secrets are not configured on
+      this server... Set APP_MASTER_KEY and restart the control plane to
+      enable this," replacing the form entirely rather than leaving a
+      submittable form next to an error, since there's no GET to check
+      this ahead of time. New work uses the shadcn primitives installed
+      in the prior task (`Card`-adjacent `Field`/`FieldLabel`/`FieldError`/
+      `Input`/`Button`/`Alert` from `web/src/components/ui/`), kept inside
+      the same `<section>` wrapper classes as its three siblings on the
+      page for visual consistency until they migrate too. Verification:
+      `npm run build`, `npm run typecheck`, `npm run lint`, `npm run
+      format:check` all pass clean; `grep -rlP '[\x{2014}\x{2013}]'
+      web/src` empty. Not touched: `EnvEditor.tsx`,
+      `DomainEditor.tsx`, `DeployTriggerForm.tsx`.
 - [ ] **API token management UI**: name + optional prefix + expiration
       dropdown (with a real "never" option) + ability checkboxes +
       plaintext-shown-once modal with copy button + one-click revoke
