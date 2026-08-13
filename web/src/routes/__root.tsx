@@ -9,6 +9,8 @@ import { useAuthUsername } from '../hooks/useAuthUsername'
 import { brandQueryOptions } from '../queries/brand'
 import { BrandProvider } from '../components/BrandProvider'
 import { AppSidebar } from '../components/AppSidebar'
+import { ThemeProvider } from '../components/ThemeProvider'
+import { ThemeToggle } from '../components/ThemeToggle'
 import {
   SidebarInset,
   SidebarProvider,
@@ -56,9 +58,11 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 // (docs-local/research/dashboard-gap-audit-and-devmode.md gaps #4 and #6).
 function RootLayout() {
   return (
-    <BrandProvider>
-      <AppShell />
-    </BrandProvider>
+    <ThemeProvider>
+      <BrandProvider>
+        <AppShell />
+      </BrandProvider>
+    </ThemeProvider>
   )
 }
 
@@ -84,6 +88,9 @@ function AppShell() {
         <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
+          <div className="ml-auto">
+            <ThemeToggle />
+          </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="mx-auto w-full max-w-6xl">
