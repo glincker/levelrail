@@ -345,6 +345,7 @@ func (c *Client) Events(ctx context.Context) (<-chan Event, <-chan error) {
 				case out <- Event{
 					Action:        action,
 					ContainerName: msg.Actor.Attributes["name"],
+					Time:          eventTime(msg),
 				}:
 				case <-ctx.Done():
 					return
@@ -354,6 +355,26 @@ func (c *Client) Events(ctx context.Context) (<-chan Event, <-chan error) {
 	}()
 
 	return out, outErr
+}
+
+// eventTime extracts msg's timestamp, preferring TimeNano (full
+// nanosecond-precision Unix time, not a fractional remainder of Time)
+// when the daemon sets it, falling back to the whole-second Time field
+// for older daemons or event sources that only populate that one.
+// Without this, every Event's Time field silently stayed the zero
+// value: nothing broke loudly (Action/ContainerName, the only fields
+// every other consumer of Events reads, were always populated
+// correctly), but any consumer keyed on Time, like
+// internal/alerting.RestartTracker's restart-window counting, would
+// silently never count anything against a real time window.
+func eventTime(msg events.Message) time.Time {
+	if msg.TimeNano != 0 {
+		return time.Unix(0, msg.TimeNano)
+	}
+	if msg.Time != 0 {
+		return time.Unix(msg.Time, 0)
+	}
+	return time.Time{}
 }
 
 func mapAction(a events.Action) EventAction {

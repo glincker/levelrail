@@ -245,15 +245,25 @@ func TestClient_Events_Live(t *testing.T) {
 		t.Fatalf("Start() error = %v", err)
 	}
 
-	if !waitForEvent(t, eventCh, name, EventStart, 10*time.Second) {
+	startEvent, ok := waitForEvent(t, eventCh, name, EventStart, 10*time.Second)
+	if !ok {
 		t.Error("did not observe a start event for the container we just started")
+	}
+	// Independent verification that eventTime actually wired up: the
+	// daemon's own timestamp for this event should be very recent, not
+	// the zero value internal/alerting.RestartTracker would otherwise
+	// silently never count anything against.
+	if startEvent.Time.IsZero() {
+		t.Error("start event Time is zero, want the daemon's real event timestamp")
+	} else if since := time.Since(startEvent.Time); since < 0 || since > time.Minute {
+		t.Errorf("start event Time = %v, want within the last minute (got a delta of %v)", startEvent.Time, since)
 	}
 
 	if err := c.cli.ContainerKill(ctx, id, "KILL"); err != nil {
 		t.Fatalf("ContainerKill() error = %v", err)
 	}
 
-	if !waitForEvent(t, eventCh, name, EventDie, 10*time.Second) {
+	if _, ok := waitForEvent(t, eventCh, name, EventDie, 10*time.Second); !ok {
 		t.Error("did not observe a die event after killing the container")
 	}
 }
@@ -262,20 +272,24 @@ func TestClient_Events_Live(t *testing.T) {
 // action, or the timeout expires. Other events (from unrelated
 // containers on a shared daemon, or events this test doesn't care about)
 // are consumed and ignored, not treated as failures.
-func waitForEvent(t *testing.T, eventCh <-chan Event, name string, action EventAction, timeout time.Duration) bool {
+// waitForEvent returns the matching event and true, or a zero Event and
+// false on timeout/stream close, so callers can assert on more than
+// just "did a matching event arrive" (e.g. that Time was actually
+// populated by the daemon, not left at the zero value).
+func waitForEvent(t *testing.T, eventCh <-chan Event, name string, action EventAction, timeout time.Duration) (Event, bool) {
 	t.Helper()
 	deadline := time.After(timeout)
 	for {
 		select {
 		case ev, ok := <-eventCh:
 			if !ok {
-				return false
+				return Event{}, false
 			}
 			if ev.ContainerName == name && ev.Action == action {
-				return true
+				return ev, true
 			}
 		case <-deadline:
-			return false
+			return Event{}, false
 		}
 	}
 }

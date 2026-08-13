@@ -3,6 +3,7 @@ package docker
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
@@ -219,6 +220,38 @@ func TestMapAction(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := mapAction(tt.in); got != tt.want {
 				t.Errorf("mapAction(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEventTime(t *testing.T) {
+	tests := []struct {
+		name string
+		msg  events.Message
+		want time.Time
+	}{
+		{
+			name: "TimeNano set: preferred over Time",
+			msg:  events.Message{Time: 1_700_000_000, TimeNano: 1_700_000_000_123_456_789},
+			want: time.Unix(0, 1_700_000_000_123_456_789),
+		},
+		{
+			name: "only Time set: falls back to whole-second precision",
+			msg:  events.Message{Time: 1_700_000_000},
+			want: time.Unix(1_700_000_000, 0),
+		},
+		{
+			name: "neither set: zero value, not a fabricated time",
+			msg:  events.Message{},
+			want: time.Time{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := eventTime(tt.msg); !got.Equal(tt.want) {
+				t.Errorf("eventTime(%+v) = %v, want %v", tt.msg, got, tt.want)
 			}
 		})
 	}
