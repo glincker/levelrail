@@ -83,6 +83,16 @@ function AppShell() {
               >
                 Apps
               </Link>
+              <Link
+                to="/settings/tokens"
+                className="text-sm text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
+                activeProps={{
+                  className:
+                    'text-neutral-900 dark:text-neutral-100 font-medium',
+                }}
+              >
+                API tokens
+              </Link>
               <div className="ml-auto flex items-center gap-3">
                 <span className="text-sm text-neutral-500 dark:text-neutral-400">
                   {username}
