@@ -1393,7 +1393,7 @@ re-discovering the same gap independently a fourth time today. Claim a
 sub-task by editing its status line here before starting, same as 1.10's
 claim marker.
 
-### 2.1 Node-local metrics store (`internal/telemetry`). MOSTLY DONE (2026-08-12), deploy-frequency/build-duration metrics CLAUDED (this session, 2026-08-13)
+### 2.1 Node-local metrics store (`internal/telemetry`). DONE (2026-08-13), deploy-frequency/build-duration gap closed
 
 - [x] Spike + ADR: ADR 009 picks a purpose-built SQLite-backed store
       over embedding VictoriaMetrics's storage engine, consistent with
@@ -1414,12 +1414,82 @@ claim marker.
       (15s) is a fixed const, not env-configurable: it changes the
       shape of every sample going forward, a materially bigger blast
       radius than trimming how much history is kept
-- [ ] **Not done, explicit follow-up**: deploy-frequency and
-      build-duration metrics, the two items in CLAUDE.md 6's
-      required-metrics list that don't come from Docker stats at all
-      (reconcile status conditions and `internal/build`'s own timing
-      instead). Everything Docker-stats-derived is collected; these two
-      need their own, different collection path
+- [x] **Deploy-frequency and build-duration metrics (2026-08-13)**:
+      the two items in CLAUDE.md 6's required-metrics list that don't
+      come from Docker stats at all. New `internal/telemetry/
+      deploy_metrics.go`: `RecordDeploy` (one `deploy_count` sample,
+      Value always 1, per completed deploy) and `RecordBuildDuration`
+      (one `build_duration_seconds` sample, Value the build's real
+      wall-clock seconds) on `*DB`. Deliberately event-recorded by each
+      metric's own real source at the moment it happens, not polled by
+      `Collector` the way Docker-stats metrics are: a deploy or a build
+      is a discrete event, not a continuously observable resource.
+      - Deploy frequency's source is `internal/reconcile/application
+        .Controller`'s own `justDeployed`/`"Deployed"` reason
+        distinction (TASKS.md 1.3), not a raw diff of reconcile-status
+        rows: `store.UpsertConditions` overwrites the latest condition
+        per (controller, type) on every tick regardless of whether
+        anything changed, so watching `LastTransitionTime` directly
+        would fire every resync interval, not just on a real deploy.
+        `Controller` gained `DeployRecorder`/`WithDeployRecorder`
+        (nil-safe, same shape as `SecretResolver`/`WithSecretResolver`):
+        `RecordDeploy` is called exactly once, only on the
+        `justDeployed` path, after the new container is confirmed
+        running and stale ones are cleaned up, covering both a
+        webhook-triggered deploy (`internal/deploy`, 1.4) and an
+        API-triggered one (`POST .../deploys`, 1.9, which only ever
+        repoints `desired_services.image` and lets the reconciler pick
+        it up) with the same one hook, no second code path needed. A
+        recorder failure surfaces through the returned error (so
+        `reconcile.Engine` logs it) without downgrading `Status` away
+        from `True`: the deploy really did succeed, a metrics-store
+        hiccup is a lesser, separate problem (`Reason=
+        DeployedMetricRecordFailed`), the identical shape
+        `removeStale`'s own error path already established.
+        `Aggregate`'s existing `Count` field (how many raw samples fell
+        in a bucket) is deploy frequency for a time range with no new
+        aggregation function needed: every deploy writes Value 1, so a
+        bucket's count of samples already is the number of deploys in
+        that window.
+      - Build duration's source is `build.Result.Duration`
+        (`internal/build`, 1.4), already measured, not re-measured
+        here. `internal/deploy.Pipeline` gained
+        `BuildMetricsRecorder`/`WithBuildMetricsRecorder` plus a
+        `WithLogger` option (this package had no logger before; needed
+        one to report a non-fatal recorder failure, matching
+        `internal/reconcile/ingress`'s established `WithLogger`
+        shape). Recorded after a successful build and a successful
+        `SaveDesiredService`, so the build already fully succeeded by
+        the time this runs; a recorder failure is logged, not returned
+        as `Deploy`'s own error, since undoing an already-saved deploy
+        over a metrics hiccup would be worse than an unmeasured one.
+      - `cmd/levelrail/main.go`: `dynamicSource` and
+        `loadWebhookHandler` both gained a `telemetryDB *telemetry.DB`
+        parameter (always non-nil, unlike `secretsManager`, so both
+        options are applied unconditionally, no nil-check needed).
+      - Live-verified end to end against real Docker/BuildKit, not
+        just unit tested: `internal/reconcile/application/
+        deploy_metrics_live_test.go` proves a real `Controller
+        .Reconcile` against a real telemetry store writes exactly one
+        `deploy_count` sample on the deploying reconcile and zero more
+        on the following no-op one; `internal/deploy/
+        deploy_metrics_live_test.go` proves a real BuildKit build
+        writes a `build_duration_seconds` sample with a real positive
+        duration, not a fabricated one. 91.3% coverage on
+        `internal/reconcile/application` (up from before this pass),
+        96.6% on `internal/deploy`, 84.0% on `internal/telemetry`.
+        83.4% on `internal/` overall, gate is 70%.
+
+      **Real, honest gap, not fixed here**: `web/src/components/
+      MetricsDashboard.tsx` (2.4) still lists "Build duration" and
+      "Deploy frequency" under its "Not yet collected" panel. That's now
+      slightly inaccurate (the backend collects both as of this pass)
+      but not fixed in this task, which was scoped to `internal/
+      telemetry` and its callers: charting `deploy_count`'s bucketed
+      `Count` (not `Value`, a genuinely different rendering path than
+      every existing chart, which reads `Value`) is real frontend work,
+      not a one-line fix, and belongs with 2.4's own frontend session,
+      not bundled into this backend pass.
 
 Deliberately deferred, not silently dropped: the in-memory
 recent-window cache ADR 009 describes as part of the design (a latency

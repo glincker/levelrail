@@ -8,7 +8,9 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"path/filepath"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -37,6 +39,15 @@ type SecretChecker interface {
 	Exists(ctx context.Context, serviceName, envKey string) (bool, error)
 }
 
+// BuildMetricsRecorder is the narrow surface this package needs to
+// record TASKS.md 2.1's build-duration metric. *telemetry.DB satisfies
+// this structurally; not imported directly to avoid a dependency this
+// package doesn't otherwise need, the same reasoning ImageBuilder/
+// ServiceStore/SecretChecker above already establish.
+type BuildMetricsRecorder interface {
+	RecordBuildDuration(ctx context.Context, serviceName string, d time.Duration, at time.Time) error
+}
+
 // Option configures optional Pipeline behavior.
 type Option func(*Pipeline)
 
@@ -49,6 +60,21 @@ type Option func(*Pipeline)
 // silently missing a variable it declared as required.
 func WithSecretChecker(checker SecretChecker) Option {
 	return func(p *Pipeline) { p.secrets = checker }
+}
+
+// WithBuildMetricsRecorder enables recording build.Result.Duration as
+// TASKS.md 2.1's build_duration_seconds metric after a successful
+// build. Without one configured (the default), a deploy still succeeds
+// exactly as before, it just isn't measured: a metrics-store outage
+// must never block a real deploy.
+func WithBuildMetricsRecorder(recorder BuildMetricsRecorder) Option {
+	return func(p *Pipeline) { p.metrics = recorder }
+}
+
+// WithLogger overrides the logger used to report a non-fatal metrics
+// recording failure. Defaults to slog.Default().
+func WithLogger(logger *slog.Logger) Option {
+	return func(p *Pipeline) { p.logger = logger }
 }
 
 // Request is one deploy attempt for a single service.
@@ -75,12 +101,14 @@ type Request struct {
 type Pipeline struct {
 	builder ImageBuilder
 	store   ServiceStore
-	secrets SecretChecker // nil is valid: secret-backed env vars are rejected without one
+	secrets SecretChecker        // nil is valid: secret-backed env vars are rejected without one
+	metrics BuildMetricsRecorder // nil is valid: build duration just isn't recorded
+	logger  *slog.Logger
 }
 
 // New builds a Pipeline.
 func New(builder ImageBuilder, svcStore ServiceStore, opts ...Option) *Pipeline {
-	p := &Pipeline{builder: builder, store: svcStore}
+	p := &Pipeline{builder: builder, store: svcStore, logger: slog.Default()}
 	for _, opt := range opts {
 		opt(p)
 	}
@@ -137,6 +165,19 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 
 	if err := p.store.SaveDesiredService(ctx, desired); err != nil {
 		return "", fmt.Errorf("deploy: service %q: save desired state: %w", req.ServiceName, err)
+	}
+
+	// Best-effort, secondary to the deploy itself: the build already
+	// succeeded and desired state is already saved by this point, so a
+	// metrics-store hiccup is logged, not returned as this Deploy call's
+	// error, the same "must never block the real operation" choice
+	// reconcile.Engine.reconcileOne already makes for persisting
+	// reconcile status.
+	if p.metrics != nil {
+		if err := p.metrics.RecordBuildDuration(ctx, req.ServiceName, res.Duration, time.Now()); err != nil {
+			p.logger.Warn("deploy: record build duration metric failed",
+				slog.String("service", req.ServiceName), slog.String("error", err.Error()))
+		}
 	}
 
 	return res.Tag, nil

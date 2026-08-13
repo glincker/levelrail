@@ -700,6 +700,93 @@ func TestController_Reconcile_NoSecretEnv_ResolverNeverCalled(t *testing.T) {
 	}
 }
 
+// fakeDeployRecorder is a hand-written fake for DeployRecorder, same
+// pattern as fakeSecretResolver above.
+type fakeDeployRecorder struct {
+	err             error
+	calls           int
+	lastServiceName string
+}
+
+func (f *fakeDeployRecorder) RecordDeploy(_ context.Context, serviceName string, _ time.Time) error {
+	f.calls++
+	f.lastServiceName = serviceName
+	return f.err
+}
+
+func TestController_Reconcile_FreshDeploy_RecordsDeployMetric(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	recorder := &fakeDeployRecorder{}
+	c := New("web", &fakeStore{svc: desired}, rt, WithDeployRecorder(recorder))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Errorf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+	if recorder.calls != 1 {
+		t.Fatalf("RecordDeploy called %d times, want 1", recorder.calls)
+	}
+	if recorder.lastServiceName != "web" {
+		t.Errorf("recorded service = %q, want web", recorder.lastServiceName)
+	}
+}
+
+func TestController_Reconcile_AlreadyRunning_DoesNotRecordDeployMetric(t *testing.T) {
+	// A no-op reconcile tick must never count as a deploy: RecordDeploy
+	// firing here would make every resync interval look like a fresh
+	// deploy, destroying the whole point of the metric.
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	target := ContainerName("web", desired.Image)
+	rt.seed(target, true)
+	recorder := &fakeDeployRecorder{}
+
+	c := New("web", &fakeStore{svc: desired}, rt, WithDeployRecorder(recorder))
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if recorder.calls != 0 {
+		t.Errorf("RecordDeploy called %d times, want 0 (already converged, not a deploy)", recorder.calls)
+	}
+}
+
+func TestController_Reconcile_NoRecorderConfigured_StillSucceeds(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	c := New("web", &fakeStore{svc: desired}, rt) // no WithDeployRecorder
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v, want nil: no recorder configured is a valid default", err)
+	}
+}
+
+func TestController_Reconcile_DeployRecorderError_SurfacesButStaysReady(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	recorder := &fakeDeployRecorder{err: errors.New("telemetry store unavailable")}
+	c := New("web", &fakeStore{svc: desired}, rt, WithDeployRecorder(recorder))
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want the recorder's error to surface (for the engine to log)")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue {
+		t.Errorf("condition.Status = %v, want True: the container really is deployed and running, a metrics-recording failure doesn't undo that", cond.Status)
+	}
+	if cond.Reason != "DeployedMetricRecordFailed" {
+		t.Errorf("condition.Reason = %q, want DeployedMetricRecordFailed", cond.Reason)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1: the deploy itself must still have happened", rt.createCalls)
+	}
+}
+
 func TestController_Name(t *testing.T) {
 	c := New("web", &fakeStore{}, newFakeRuntime(0))
 	if got, want := c.Name(), "application/web"; got != want {

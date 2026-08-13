@@ -214,7 +214,7 @@ func run(logger *slog.Logger) error {
 		logger.Warn("secrets not configured", slog.String("error", err.Error()))
 	}
 
-	webhookHandler, closeWebhook, err := loadWebhookHandler(ctx, logger, b, db, secretsManager)
+	webhookHandler, closeWebhook, err := loadWebhookHandler(ctx, logger, b, db, telemetryDB, secretsManager)
 	if err != nil {
 		// Not fatal, the same choice as everything else optional above:
 		// the control plane still starts, serving apps deployed by
@@ -245,7 +245,7 @@ func run(logger *slog.Logger) error {
 
 	engine := reconcile.NewEngine(logger)
 	engine.SetStore(db)
-	engine.SetSource(dynamicSource(db, client, ingressDriver, logger, secretsManager))
+	engine.SetSource(dynamicSource(db, client, ingressDriver, logger, telemetryDB, secretsManager))
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
 	go func() {
@@ -592,7 +592,7 @@ func loadSecretsManager(db *store.DB) (*secrets.Manager, error) {
 // moby/buildkit's Go client expects, not internal/docker's Runtime
 // wrapper, the same second-client pattern every BuildKit live test in
 // this codebase already uses.
-func loadWebhookHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand, db *store.DB, secretsManager *secrets.Manager) (http.Handler, func() error, error) {
+func loadWebhookHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager) (http.Handler, func() error, error) {
 	repoURL := os.Getenv("APP_GIT_REPO_URL")
 	webhookSecret := os.Getenv("APP_WEBHOOK_SECRET")
 	imageRepo := os.Getenv("APP_IMAGE_REPO")
@@ -657,7 +657,10 @@ func loadWebhookHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand
 		return dockerErr
 	}
 
-	var deployOpts []deploy.Option
+	deployOpts := []deploy.Option{
+		deploy.WithBuildMetricsRecorder(telemetryDB),
+		deploy.WithLogger(logger),
+	}
 	if secretsManager != nil {
 		deployOpts = append(deployOpts, deploy.WithSecretChecker(secretsManager))
 	}
@@ -763,7 +766,12 @@ func sessionTTL(logger *slog.Logger) time.Duration {
 // reason. A service with no { secret: true } env vars reconciles
 // exactly the same either way; one that declares any fails loudly with
 // a clear reason instead of silently starting without the variable.
-func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.Driver, logger *slog.Logger, secretsManager *secrets.Manager) reconcile.Source {
+//
+// telemetryDB is always non-nil (openTelemetryStore has no optional
+// gating, unlike secretsManager above), so application.WithDeployRecorder
+// is applied unconditionally: TASKS.md 2.1's deploy_count metric is
+// recorded for every application controller this Source builds.
+func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.Driver, logger *slog.Logger, telemetryDB *telemetry.DB, secretsManager *secrets.Manager) reconcile.Source {
 	return func(ctx context.Context) ([]reconcile.Controller, error) {
 		services, err := db.ListDesiredServices(ctx)
 		if err != nil {
@@ -774,7 +782,7 @@ func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.D
 			return nil, fmt.Errorf("list desired databases: %w", err)
 		}
 
-		var appOpts []application.Option
+		appOpts := []application.Option{application.WithDeployRecorder(telemetryDB)}
 		if secretsManager != nil {
 			appOpts = append(appOpts, application.WithSecretResolver(secretsManager))
 		}

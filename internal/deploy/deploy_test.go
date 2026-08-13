@@ -3,8 +3,11 @@ package deploy
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -75,6 +78,22 @@ func (f *fakeSecretChecker) Exists(_ context.Context, serviceName, envKey string
 		return false, f.err
 	}
 	return f.set[serviceName+"/"+envKey], nil
+}
+
+// fakeBuildMetricsRecorder is a hand-written fake for BuildMetricsRecorder,
+// same pattern as the other fakes in this file.
+type fakeBuildMetricsRecorder struct {
+	err             error
+	calls           int
+	lastServiceName string
+	lastDuration    time.Duration
+}
+
+func (f *fakeBuildMetricsRecorder) RecordBuildDuration(_ context.Context, serviceName string, d time.Duration, _ time.Time) error {
+	f.calls++
+	f.lastServiceName = serviceName
+	f.lastDuration = d
+	return f.err
 }
 
 func dockerfileService() spec.Service {
@@ -356,5 +375,69 @@ func TestPipeline_Deploy_NoDockerfilePathDefaultsEmpty(t *testing.T) {
 	}
 	if builder.lastReq.DockerfilePath != "" {
 		t.Errorf("DockerfilePath = %q, want empty (internal/build applies its own default)", builder.lastReq.DockerfilePath)
+	}
+}
+
+func TestPipeline_Deploy_RecordsBuildDuration(t *testing.T) {
+	builder := &fakeBuilder{result: &build.Result{Tag: "levelrail/web:abc1234", Duration: 42 * time.Second}}
+	svcStore := &fakeServiceStore{}
+	recorder := &fakeBuildMetricsRecorder{}
+	p := New(builder, svcStore, WithBuildMetricsRecorder(recorder))
+
+	_, err := p.Deploy(context.Background(), Request{
+		ServiceName: "web", Service: dockerfileService(), SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web",
+	}, nil)
+	if err != nil {
+		t.Fatalf("Deploy() error = %v", err)
+	}
+	if recorder.calls != 1 {
+		t.Fatalf("RecordBuildDuration called %d times, want 1", recorder.calls)
+	}
+	if recorder.lastServiceName != "web" {
+		t.Errorf("recorded service = %q, want web", recorder.lastServiceName)
+	}
+	if recorder.lastDuration != 42*time.Second {
+		t.Errorf("recorded duration = %v, want 42s", recorder.lastDuration)
+	}
+}
+
+func TestPipeline_Deploy_NoRecorderConfigured_StillSucceeds(t *testing.T) {
+	builder := &fakeBuilder{result: &build.Result{Tag: "levelrail/web:abc1234", Duration: time.Second}}
+	p := New(builder, &fakeServiceStore{})
+
+	_, err := p.Deploy(context.Background(), Request{
+		ServiceName: "web", Service: dockerfileService(), SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web",
+	}, nil)
+	if err != nil {
+		t.Fatalf("Deploy() error = %v, want nil: no recorder configured is a valid default", err)
+	}
+}
+
+func TestPipeline_Deploy_RecorderError_DoesNotFailDeploy(t *testing.T) {
+	// A metrics-store hiccup must never undo a deploy that already
+	// succeeded (build done, desired state already saved): the recorder
+	// call happens last and its error is swallowed (logged), not
+	// returned, matching reconcile.Engine.reconcileOne's own choice for
+	// persisting reconcile status.
+	builder := &fakeBuilder{result: &build.Result{Tag: "levelrail/web:abc1234", Duration: time.Second}}
+	svcStore := &fakeServiceStore{}
+	recorder := &fakeBuildMetricsRecorder{err: errors.New("telemetry store unavailable")}
+	var logBuf strings.Builder
+	p := New(builder, svcStore, WithBuildMetricsRecorder(recorder), WithLogger(slog.New(slog.NewTextHandler(&logBuf, nil))))
+
+	tag, err := p.Deploy(context.Background(), Request{
+		ServiceName: "web", Service: dockerfileService(), SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web",
+	}, nil)
+	if err != nil {
+		t.Fatalf("Deploy() error = %v, want nil: a recorder failure must not fail an already-successful deploy", err)
+	}
+	if tag != "levelrail/web:abc1234" {
+		t.Errorf("tag = %q, want levelrail/web:abc1234", tag)
+	}
+	if svcStore.saveCalls != 1 {
+		t.Errorf("SaveDesiredService called %d times, want 1", svcStore.saveCalls)
+	}
+	if !strings.Contains(logBuf.String(), "record build duration metric failed") {
+		t.Errorf("log output = %q, want it to mention the recorder failure", logBuf.String())
 	}
 }

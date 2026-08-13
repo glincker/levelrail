@@ -55,6 +55,18 @@ type SecretResolver interface {
 	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
 }
 
+// DeployRecorder is the narrow surface this controller needs to record
+// TASKS.md 2.1's deploy-frequency metric. *telemetry.DB satisfies this
+// structurally; not imported directly, same reasoning ServiceStore/
+// SecretResolver above already establish. RecordDeploy is only ever
+// called on a real deploy cutover (justDeployed below, the "Deployed"
+// reason), never on a reconcile tick that finds nothing to do, so a
+// series of recorded samples over time IS deploy frequency, no separate
+// rate computation needed downstream.
+type DeployRecorder interface {
+	RecordDeploy(ctx context.Context, serviceName string, at time.Time) error
+}
+
 const defaultReadyBudget = 60 * time.Second
 
 // Controller converges one named service's desired state (read fresh
@@ -67,6 +79,7 @@ type Controller struct {
 	httpClient     *http.Client
 	readyBudget    time.Duration
 	secretResolver SecretResolver // nil is valid: a service with no secret-backed env vars never needs one
+	deployRecorder DeployRecorder // nil is valid: deploy frequency just isn't recorded
 }
 
 // Option configures optional Controller behavior.
@@ -94,6 +107,14 @@ func WithReadyBudget(d time.Duration) Option {
 // internal/deploy.Pipeline makes at save time.
 func WithSecretResolver(r SecretResolver) Option {
 	return func(ctrl *Controller) { ctrl.secretResolver = r }
+}
+
+// WithDeployRecorder enables recording TASKS.md 2.1's deploy_count
+// metric every time Reconcile actually performs a deploy cutover.
+// Without one configured (the default), Reconcile behaves exactly as
+// before, deploys just aren't measured.
+func WithDeployRecorder(r DeployRecorder) Option {
+	return func(ctrl *Controller) { ctrl.deployRecorder = r }
 }
 
 // New builds a Controller for serviceName.
@@ -179,6 +200,21 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 
 	if justDeployed {
+		// Best-effort, secondary to the deploy itself: the container is
+		// already confirmed running (and ready, and stale ones already
+		// cleaned up) by this point, so a metrics-store hiccup is
+		// surfaced through the returned error (which reconcile.Engine
+		// logs) without downgrading Status away from True, the same
+		// "the important fact is still true" shape removeStale's own
+		// error path above already establishes.
+		if c.deployRecorder != nil {
+			if err := c.deployRecorder.RecordDeploy(ctx, c.serviceName, time.Now()); err != nil {
+				return reconcile.Result{Conditions: []reconcile.Condition{{
+					Type: "Ready", Status: reconcile.ConditionTrue,
+					Reason: "DeployedMetricRecordFailed", Message: err.Error(),
+				}}}, fmt.Errorf("application/%s: record deploy metric: %w", c.serviceName, err)
+			}
+		}
 		return ready("Deployed"), nil
 	}
 	return ready("AlreadyRunning"), nil
