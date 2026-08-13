@@ -255,6 +255,50 @@ above), deploy progress streaming to a UI (build progress is logged via
 same boundary 1.4 already drew), and any multi-repo/multi-app registry
 (see the `Config` scope-boundary note above).
 
+**Wired into `cmd/levelrail/main.go` (2026-08-12), closing the real gap
+1.7's own section used to flag**: `loadWebhookHandler` builds a real
+`internal/build.Client` (its own raw `*dockerclient.Client`, distinct
+from the one `docker.NewClient` already opened for the reconciler,
+since BuildKit's Go client needs the raw type, not `internal/docker`'s
+`Runtime` wrapper), discovers and parses the app spec from `APP_SPEC_DIR`
+via `internal/spec`, builds an `internal/deploy.Pipeline` (wired to
+`internal/secrets.Manager` via `WithSecretChecker` when a master key is
+configured, so a `{ secret: true }` env var declared in app.yaml now
+has a real path from a git push all the way to a running container),
+and mounts the resulting `webhook.Handler` at `POST /webhook`, outside
+the `/api/` subtree since GitHub calls it directly, not through the
+versioned Levelrail API. Every required input (`APP_GIT_REPO_URL`,
+`APP_WEBHOOK_SECRET`, `APP_IMAGE_REPO`, a discoverable app spec, a
+reachable BuildKit) is genuinely required, no partial/broken wiring: any
+one missing returns a plain error the caller treats as non-fatal, the
+same choice already made for admin bootstrap and secrets, so the control
+plane still starts and serves apps deployed by hand through the HTTP API,
+only the git-push path is unavailable, and specifically why is in the
+log line. `APP_SERVICE_NAME` is optional when the app spec declares
+exactly one service, matching `webhook.Config`'s own single-app scope.
+
+Live-verified twice, not just unit tested. Manually: a real local git
+repo (`git init`/`commit`, not a fixture in this repo), a real
+HMAC-SHA256-signed push payload built with `openssl dgst -hmac` against
+the actual bytes sent (a first attempt that signed a different byte
+sequence than what was posted correctly failed signature verification,
+confirming the check is real, not a rubber stamp), `curl`'d to a running
+binary with `APP_GIT_REPO_URL` pointing at that local repo: real
+BuildKit build, real container, curled directly and confirmed serving
+the exact content the pushed commit's Dockerfile built. A push to a
+non-target branch was independently confirmed still correctly ignored
+(200, no deploy). Automated as `test/e2e/webhook_test.go`'s
+`TestWebhook_Live_PushToRunningContainer`: builds a real repo with
+`go-git` (no shell-out, matching `internal/webhook`'s own convention),
+POSTs a real signed payload straight at a real `webhook.Handler`, then
+reconciles with a real `application.Controller` and independently
+verifies via `docker.Runtime.ListByPrefix`/an HTTP request to the
+container's actual published port, not any return value, that the
+whole chain produced a real, correctly-serving container. This is the
+one leg `test/e2e/deploy_test.go` (1.11) doesn't cover: that test calls
+`internal/build`/`internal/deploy` directly, this one starts from an
+actual push event the way GitHub would send one.
+
 ### 1.6 Ingress integration. DONE (2026-08-12)
 
 - [x] `internal/reconcile/ingress`: the real ingress `reconcile.Controller`,
@@ -444,13 +488,9 @@ database controller's extension of `docker.ContainerSpec`.
         91.0% on `internal/reconcile/application` (up from 89.7%), 96.4%
         on `internal/deploy` (up from 95.6%), 78.1% on `internal/store`.
         85.0% on `internal/` overall, gate is 70%
-      - Known gap, honestly out of scope here: nothing in
-        `cmd/levelrail/main.go` constructs an `internal/deploy.Pipeline`
-        or mounts `internal/webhook` yet, so `{ secret: true }` declared
-        in an app.yaml has no path from a real git push into this
-        control plane today. That's the webhook-to-main.go wiring gap,
-        not a secrets one; every piece this task owns is real and
-        live-tested independently of it
+      - **Closed (2026-08-12)**: the webhook-to-main.go wiring gap noted
+        in an earlier draft of this section is gone. See the new
+        subsection below for what closed it and how it was verified
 
 ### 1.8 Managed databases. DONE (2026-08-12), Postgres scoped down
 
