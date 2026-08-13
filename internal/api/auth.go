@@ -88,6 +88,23 @@ func (s *sessionStore) lookup(token string) (string, bool) {
 	return sess.username, true
 }
 
+// get returns the full session record for token, used where a caller
+// needs more than lookup's username (e.g. handleGetSession also wants
+// expiresAt). Same liveness/expiry handling as lookup.
+func (s *sessionStore) get(token string) (session, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	sess, ok := s.sessions[token]
+	if !ok {
+		return session{}, false
+	}
+	if time.Now().After(sess.expiresAt) {
+		delete(s.sessions, token)
+		return session{}, false
+	}
+	return sess, true
+}
+
 func (s *sessionStore) revoke(token string) {
 	s.mu.Lock()
 	delete(s.sessions, token)

@@ -86,6 +86,11 @@ type AppStore interface {
 	GetDesiredService(ctx context.Context, name string) (*store.DesiredService, error)
 	ListDesiredServices(ctx context.Context) ([]store.DesiredService, error)
 	DeleteDesiredService(ctx context.Context, name string) error
+	// UpdateServiceNode is TASKS.md 3.3's placement mutation, separate
+	// from SaveDesiredService on purpose: see store.DB.SaveDesiredService's
+	// own doc comment for why an ordinary app update must never be able
+	// to silently move a service between nodes.
+	UpdateServiceNode(ctx context.Context, name, nodeID string) error
 }
 
 // DeployStore is the store surface the deploy-history handler needs.
@@ -230,6 +235,8 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("POST /api/v1/auth/register", rt.handleRegister)
 	mux.HandleFunc("POST /api/v1/auth/logout", rt.requireAuth(rt.handleLogout))
 	mux.HandleFunc("PUT /api/v1/auth/password", rt.requireAuth(rt.handleChangePassword))
+	mux.HandleFunc("GET /api/v1/auth/session", rt.requireAuth(rt.handleGetSession))
+	mux.HandleFunc("POST /api/v1/auth/sessions/revoke-others", rt.requireAuth(rt.handleRevokeOtherSessions))
 
 	// API tokens: session-only, deliberately never bearer-token
 	// authenticated. A token cannot mint or revoke another token on its
@@ -250,6 +257,13 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/apps/{name}", rt.requireAbility(AbilityRead, rt.handleGetApp))
 	mux.HandleFunc("PUT /api/v1/apps/{name}", rt.requireAbility(AbilityWrite, rt.handleUpdateApp))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}", rt.requireAbility(AbilityWrite, rt.handleDeleteApp))
+
+	// Placement (TASKS.md 3.3): AbilityRoot, not AbilityWrite, matching
+	// the sensitivity of the standalone node routes above: moving a
+	// service between physical machines is infrastructure placement,
+	// not ordinary app config, even though it's reached through this
+	// app-scoped URL.
+	mux.HandleFunc("PUT /api/v1/apps/{name}/node", rt.requireAbility(AbilityRoot, rt.handleSetAppNode))
 
 	// Deploys.
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityDeploy, rt.handleTriggerDeploy))

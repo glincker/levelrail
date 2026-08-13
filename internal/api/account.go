@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -72,6 +73,53 @@ func (rt *Router) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rt.sessions.revokeAllExcept(username, cookie.Value)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+type sessionInfoResponse struct {
+	Username  string `json:"username"`
+	ExpiresAt string `json:"expires_at"`
+}
+
+// handleGetSession handles GET /api/v1/auth/session: the security
+// settings screen's read model for "you are signed in as X, until Y."
+// Session-only like every other handler in this file, deliberately not
+// requireAbility: a bearer token has no session of its own to report on.
+func (rt *Router) handleGetSession(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+	sess, ok := rt.sessions.get(cookie.Value)
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+	writeJSON(w, http.StatusOK, sessionInfoResponse{
+		Username:  sess.username,
+		ExpiresAt: sess.expiresAt.UTC().Format(time.RFC3339),
+	})
+}
+
+// handleRevokeOtherSessions handles POST /api/v1/auth/sessions/revoke-others:
+// the standalone, user-triggered version of the same revokeAllExcept
+// rotation handleChangePassword already performs automatically. Exists
+// for the case an operator wants to end other signed-in sessions (a
+// forgotten browser, a shared machine) without also being forced to
+// change their password to get there.
+func (rt *Router) handleRevokeOtherSessions(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+	username, ok := rt.sessions.lookup(cookie.Value)
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
 	rt.sessions.revokeAllExcept(username, cookie.Value)
 	w.WriteHeader(http.StatusNoContent)
 }
