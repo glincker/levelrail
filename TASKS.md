@@ -2262,7 +2262,7 @@ margin erodes further, flagged here rather than silently spent.
 `gofmt`/`go vet`/`golangci-lint`/`go build -tags embedweb` all clean;
 `go test ./... -race` green repo-wide.
 
-### 3.3 Placement: node assignment for services and databases
+### 3.3 Placement: node assignment for services and databases. CLAUDED (this session, 2026-08-13)
 
 Depends on 3.1/3.2 (there has to be more than one usable transport
 target before "which node" is a meaningful question). The schema piece
