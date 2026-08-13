@@ -1035,27 +1035,58 @@ re-discovering the same gap independently a fourth time today. Claim a
 sub-task by editing its status line here before starting, same as 1.10's
 claim marker.
 
-### 2.1 Node-local metrics store (`internal/telemetry`). CLAIMED (this session, 2026-08-12)
+### 2.1 Node-local metrics store (`internal/telemetry`). MOSTLY DONE (2026-08-12), deploy-frequency/build-duration metrics still open
 
-CLAUDE.md 4.8 leaves the storage engine an open evaluation, not a locked
-decision: "Evaluate embedded VictoriaMetrics vs a purpose-built ring
-buffer." That evaluation is this sub-task's first step, written up as an
-ADR with the rejected alternative, the same way Phase 0 spiked BuildKit
-and Caddy before Phase 1 wired them in for real, not skipped in favor of
-just picking one.
+- [x] Spike + ADR: ADR 009 picks a purpose-built SQLite-backed store
+      over embedding VictoriaMetrics's storage engine, consistent with
+      every other minimal-dependency choice already made in this
+      codebase, and rejects a pure in-memory-only ring buffer on a
+      concrete memory-at-scale number (~700MB for a modest deployment
+      held in RAM for the whole retention window)
+- [x] Container stats collection at 15s resolution: CPU, memory, disk
+      IO, network IO, via `internal/docker`'s new `Client.Stats`
+      (`ContainerStatsOneShot`, a single accurate sample, correct for a
+      periodic collector, not the streaming variant), not shelled out.
+      CPU percent matches the Docker CLI's own formula; memory usage
+      subtracts page cache (cgroup v1's `cache` key or v2's `file` key)
+      so it matches `docker stats`' "used" figure, not the raw counter
+- [x] Retention: configurable via `APP_METRICS_RETENTION` (a Go
+      duration string), default 15 days per CLAUDE.md 4.8, swept hourly
+      by `internal/telemetry.DB.Retain`. Collection tick interval
+      (15s) is a fixed const, not env-configurable: it changes the
+      shape of every sample going forward, a materially bigger blast
+      radius than trimming how much history is kept
+- [ ] **Not done, explicit follow-up**: deploy-frequency and
+      build-duration metrics, the two items in CLAUDE.md 6's
+      required-metrics list that don't come from Docker stats at all
+      (reconcile status conditions and `internal/build`'s own timing
+      instead). Everything Docker-stats-derived is collected; these two
+      need their own, different collection path
 
-- [ ] Spike + ADR: VictoriaMetrics (embedded mode) vs a purpose-built
-      ring buffer, decide and record why
-- [ ] Container stats collection at 15s resolution: CPU, memory, disk
-      IO, network IO, read from Docker's stats API (`ContainerStats`),
-      not shelled out
-- [ ] Retention configurable, default 15 days at 15s resolution per
-      CLAUDE.md 4.8, env var per the root CLAUDE.md's "no hardcoded
-      thresholds" rule
-- [ ] Deploy-frequency and build-duration metrics: the two items in
-      CLAUDE.md 6's required-metrics list that don't come from Docker
-      stats at all, sourced from reconcile status conditions and
-      `internal/build`'s own timing instead
+Deliberately deferred, not silently dropped: the in-memory
+recent-window cache ADR 009 describes as part of the design (a latency
+optimization for the live dashboard's most recent window, not a
+correctness requirement; SQLite alone is plenty fast at this data
+volume today). Collection targets are discovered via
+`runtime.ListByPrefix` (already public on `docker.Runtime`) rather
+than reaching into `internal/reconcile/application`'s private
+container-naming function, keeping `internal/telemetry` decoupled from
+that package's internals. Wired into `cmd/levelrail/main.go`: the
+collector and retention sweep both run as goroutines against the same
+shutdown context every other long-running piece already uses.
+
+Live-verified end to end against a real Docker container and a real
+SQLite database, not just unit tested: every one of the seven metrics
+`CollectOnce` is documented to write confirmed present and queryable
+afterward. 76.0% coverage.
+
+### 2.2 Node-local log store (`internal/telemetry` or a sibling package). CLAIMED (this session, 2026-08-12)
+
+- [ ] Read Docker's log stream directly (the existing `Events`
+      consumption pattern in `internal/docker`, not the json-file
+      driver's on-disk files per CLAUDE.md 4.8's explicit call-out)
+- [ ] Chunk, compress, index for full-text search
+- [ ] Structured log parsing where the app emits JSON
 
 ### 2.2 Node-local log store (`internal/telemetry` or a sibling package). CLAIMED (this session, 2026-08-12)
 
