@@ -1,5 +1,7 @@
+import { LayoutDashboardIcon } from 'lucide-react'
 import type { AppDetail, ServiceProbe } from '../types/appDetail'
 import { formatBytes, formatDurationNs, formatNanoCpus } from '../lib/format'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 // Read-only display of an app's current desired state: image, port,
 // resource limits, and health probe config, straight from GET
@@ -8,24 +10,32 @@ import { formatBytes, formatDurationNs, formatNanoCpus } from '../lib/format'
 // on this pass, matching TASKS.md 1.10's scope for this route.
 export function AppOverview({ app }: { app: AppDetail }) {
   return (
-    <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-      <dl className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
-        <Field label="Image" value={app.image} mono />
-        <Field label="Port" value={String(app.port)} />
-        <Field
-          label="Memory limit"
-          value={formatBytes(app.resources?.memory_bytes)}
-        />
-        <Field
-          label="CPU limit"
-          value={formatNanoCpus(app.resources?.nano_cpus)}
-        />
-      </dl>
-      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <ProbeSummary label="Readiness probe" probe={app.health?.readiness} />
-        <ProbeSummary label="Liveness probe" probe={app.health?.liveness} />
-      </div>
-    </section>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <LayoutDashboardIcon className="size-4" />
+          Overview
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <dl className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+          <Field label="Image" value={app.image} mono />
+          <Field label="Port" value={String(app.port)} />
+          <Field
+            label="Memory limit"
+            value={formatBytes(app.resources?.memory_bytes)}
+          />
+          <Field
+            label="CPU limit"
+            value={formatNanoCpus(app.resources?.nano_cpus)}
+          />
+        </dl>
+        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <ProbeSummary label="Readiness probe" probe={app.health?.readiness} />
+          <ProbeSummary label="Liveness probe" probe={app.health?.liveness} />
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -40,11 +50,11 @@ function Field({
 }) {
   return (
     <div>
-      <dt className="text-xs font-medium tracking-wide text-neutral-500 uppercase dark:text-neutral-400">
+      <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
         {label}
       </dt>
       <dd
-        className={`mt-0.5 text-sm text-neutral-900 dark:text-neutral-100 ${mono ? 'font-mono' : ''}`}
+        className={`mt-0.5 text-sm text-foreground ${mono ? 'font-mono' : ''}`}
       >
         {value}
       </dd>
@@ -60,12 +70,12 @@ function ProbeSummary({
   probe?: ServiceProbe | null
 }) {
   return (
-    <div className="rounded-md bg-neutral-50 p-3 dark:bg-neutral-900">
-      <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase dark:text-neutral-400">
+    <div className="rounded-md bg-muted p-3">
+      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
         {label}
       </p>
       {probe ? (
-        <ul className="mt-1 space-y-0.5 text-sm text-neutral-700 dark:text-neutral-300">
+        <ul className="mt-1.5 space-y-0.5 text-sm text-foreground/90">
           <li>
             Path: <span className="font-mono">{probe.path}</span>
           </li>
@@ -74,9 +84,7 @@ function ProbeSummary({
           <li>Failure threshold: {probe.failures ?? 'not set'}</li>
         </ul>
       ) : (
-        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-          not configured
-        </p>
+        <p className="mt-1.5 text-sm text-muted-foreground">not configured</p>
       )}
     </div>
   )

@@ -1,8 +1,20 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { PlusIcon, VariableIcon, XIcon } from 'lucide-react'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Field, FieldError, FieldGroup } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
 
 const envSchema = z
   .object({
@@ -64,83 +76,94 @@ export function EnvEditor({ app }: { app: AppDetail }) {
   })
 
   return (
-    <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-      <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-        Environment variables
-      </h2>
-      <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-        Plain string values only. Secret references are not supported yet.
-      </p>
-      <form
-        onSubmit={(e) => {
-          void onSubmit(e)
-        }}
-        className="mt-3 space-y-2"
-      >
-        {fields.length === 0 ? (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            No environment variables set.
-          </p>
-        ) : null}
-        {fields.map((field, index) => (
-          <div key={field.id} className="flex items-start gap-2">
-            <div className="flex-1">
-              <input
-                {...register(`vars.${index}.key`)}
-                className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1 font-mono text-sm dark:border-neutral-700 dark:bg-neutral-900"
-                placeholder="KEY"
-              />
-              {formState.errors.vars?.[index]?.key ? (
-                <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-                  {formState.errors.vars[index]?.key?.message}
-                </p>
-              ) : null}
-            </div>
-            <div className="flex-1">
-              <input
-                {...register(`vars.${index}.value`)}
-                className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1 font-mono text-sm dark:border-neutral-700 dark:bg-neutral-900"
-                placeholder="value"
-              />
-            </div>
-            <button
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <VariableIcon className="size-4" />
+          Environment variables
+        </CardTitle>
+        <CardDescription>
+          Plain string values only. Secret references are not supported yet, use
+          the Secrets card below for values that need to stay encrypted.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form
+          onSubmit={(e) => {
+            void onSubmit(e)
+          }}
+          className="space-y-3"
+        >
+          {fields.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No environment variables set.
+            </p>
+          ) : (
+            <FieldGroup className="gap-2">
+              {fields.map((field, index) => (
+                <Field key={field.id} orientation="responsive">
+                  <div className="flex-1">
+                    <Input
+                      {...register(`vars.${index}.key`)}
+                      className="font-mono"
+                      placeholder="KEY"
+                    />
+                    <FieldError
+                      errors={
+                        formState.errors.vars?.[index]?.key
+                          ? [formState.errors.vars[index]?.key]
+                          : undefined
+                      }
+                    />
+                  </div>
+                  <div className="flex flex-1 items-start gap-2">
+                    <Input
+                      {...register(`vars.${index}.value`)}
+                      className="flex-1 font-mono"
+                      placeholder="value"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => {
+                        remove(index)
+                      }}
+                    >
+                      <XIcon />
+                      <span className="sr-only">Remove variable</span>
+                    </Button>
+                  </div>
+                </Field>
+              ))}
+            </FieldGroup>
+          )}
+          <div className="flex items-center gap-2 pt-1">
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => {
-                remove(index)
+                append({ key: '', value: '' })
               }}
-              className="rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900"
             >
-              Remove
-            </button>
+              <PlusIcon />
+              Add variable
+            </Button>
+            <Button type="submit" size="sm" disabled={updateApp.isPending}>
+              {updateApp.isPending ? 'Saving...' : 'Save variables'}
+            </Button>
           </div>
-        ))}
-        <div className="flex items-center gap-2 pt-1">
-          <button
-            type="button"
-            onClick={() => {
-              append({ key: '', value: '' })
-            }}
-            className="rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
-          >
-            Add variable
-          </button>
-          <button
-            type="submit"
-            disabled={updateApp.isPending}
-            className="rounded-md bg-neutral-900 px-3 py-1 text-xs font-medium text-white hover:bg-neutral-700 disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300"
-          >
-            {updateApp.isPending ? 'Saving...' : 'Save variables'}
-          </button>
-        </div>
-        {updateApp.isError ? (
-          <p className="text-xs text-red-600 dark:text-red-400">
-            {updateApp.error.message}
-          </p>
-        ) : null}
-        {updateApp.isSuccess ? (
-          <p className="text-xs text-green-700 dark:text-green-400">Saved.</p>
-        ) : null}
-      </form>
-    </section>
+          {updateApp.isError ? (
+            <Alert variant="destructive">
+              <AlertDescription>{updateApp.error.message}</AlertDescription>
+            </Alert>
+          ) : null}
+          {updateApp.isSuccess ? (
+            <p className="text-xs text-green-700 dark:text-green-400">Saved.</p>
+          ) : null}
+        </form>
+      </CardContent>
+    </Card>
   )
 }

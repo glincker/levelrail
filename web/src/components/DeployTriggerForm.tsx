@@ -1,7 +1,19 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { RocketIcon } from 'lucide-react'
 import { useTriggerDeploy } from '../queries/deploys'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Field, FieldError } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
 
 const triggerSchema = z.object({
   image: z.string().trim().min(1, 'Image tag is required'),
@@ -19,6 +31,12 @@ type TriggerFormValues = z.infer<typeof triggerSchema>
 // bar, and no "deploying..." state beyond the mutation's own pending
 // flag: any of those would imply a live process this endpoint doesn't
 // actually drive.
+//
+// Rendered above the tab shell in the app detail route (not inside any
+// one tab) because triggering a deploy is the single most common action
+// on this page and applies to the app as a whole, not to one config
+// concern, matching how Coolify/Dokploy keep their "Deploy" control
+// pinned in the resource header rather than buried in a settings tab.
 export function DeployTriggerForm({ appName }: { appName: string }) {
   const triggerDeploy = useTriggerDeploy(appName)
   const { register, handleSubmit, formState, reset } =
@@ -36,50 +54,53 @@ export function DeployTriggerForm({ appName }: { appName: string }) {
   })
 
   return (
-    <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-      <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-        Trigger a deploy
-      </h2>
-      <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-        Points this app at an already-built image tag. This does not build
-        anything and does not stream deploy progress.
-      </p>
-      <form
-        onSubmit={(e) => {
-          void onSubmit(e)
-        }}
-        className="mt-3 flex items-start gap-2"
-      >
-        <div className="flex-1">
-          <input
-            {...register('image')}
-            className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1 font-mono text-sm dark:border-neutral-700 dark:bg-neutral-900"
-            placeholder="registry.example.com/app:abc1234"
-          />
-          {formState.errors.image ? (
-            <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-              {formState.errors.image.message}
-            </p>
-          ) : null}
-        </div>
-        <button
-          type="submit"
-          disabled={triggerDeploy.isPending}
-          className="rounded-md bg-neutral-900 px-3 py-1 text-xs font-medium whitespace-nowrap text-white hover:bg-neutral-700 disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300"
+    <Card className="ring-primary/20">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <RocketIcon className="size-4" />
+          Trigger a deploy
+        </CardTitle>
+        <CardDescription>
+          Points this app at an already-built image tag. This does not build
+          anything and does not stream deploy progress.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form
+          onSubmit={(e) => {
+            void onSubmit(e)
+          }}
+          className="flex flex-col items-start gap-3 sm:flex-row"
         >
-          {triggerDeploy.isPending ? 'Triggering...' : 'Deploy'}
-        </button>
-      </form>
-      {triggerDeploy.isError ? (
-        <p className="mt-2 text-xs text-red-600 dark:text-red-400">
-          {triggerDeploy.error.message}
-        </p>
-      ) : null}
-      {triggerDeploy.isSuccess ? (
-        <p className="mt-2 text-xs text-green-700 dark:text-green-400">
-          Deploy triggered. Check reconcile status above for the outcome.
-        </p>
-      ) : null}
-    </section>
+          <Field className="flex-1">
+            <Input
+              {...register('image')}
+              className="font-mono"
+              placeholder="registry.example.com/app:abc1234"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <FieldError
+              errors={
+                formState.errors.image ? [formState.errors.image] : undefined
+              }
+            />
+          </Field>
+          <Button type="submit" disabled={triggerDeploy.isPending}>
+            {triggerDeploy.isPending ? 'Triggering...' : 'Deploy'}
+          </Button>
+        </form>
+        {triggerDeploy.isError ? (
+          <Alert variant="destructive" className="mt-3">
+            <AlertDescription>{triggerDeploy.error.message}</AlertDescription>
+          </Alert>
+        ) : null}
+        {triggerDeploy.isSuccess ? (
+          <p className="mt-3 text-xs text-green-700 dark:text-green-400">
+            Deploy triggered. Check the Overview tab for the outcome.
+          </p>
+        ) : null}
+      </CardContent>
+    </Card>
   )
 }

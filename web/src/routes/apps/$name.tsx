@@ -1,9 +1,19 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import {
+  ActivityIcon,
+  ArrowLeftIcon,
+  BellIcon,
+  GlobeIcon,
+  LayoutDashboardIcon,
+  ScrollTextIcon,
+  VariableIcon,
+} from 'lucide-react'
 import { appDetailQueryOptions, useApp } from '../../queries/apps'
 import {
   deployStatusQueryOptions,
   useDeployStatus,
 } from '../../queries/deploys'
+import type { ReconcileCondition } from '../../types/deploy'
 import { AppOverview } from '../../components/AppOverview'
 import { ConditionsPanel } from '../../components/ConditionsPanel'
 import { DeployTriggerForm } from '../../components/DeployTriggerForm'
@@ -13,6 +23,9 @@ import { SecretsEditor } from '../../components/SecretsEditor'
 import { MetricsDashboard } from '../../components/MetricsDashboard'
 import { LogSearchPanel } from '../../components/LogSearchPanel'
 import { AlertRulesPanel } from '../../components/AlertRulesPanel'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 // App detail route (TASKS.md 1.10). Two queries are primed in the
 // loader, matching frontend-plan.md section 3's "cross-cutting" rule
@@ -32,34 +45,122 @@ export const Route = createFileRoute('/apps/$name')({
   errorComponent: AppDetailError,
 })
 
+// Purely a display-layer summary of the same `conditions` array
+// ConditionsPanel renders in full: no new fetch, no new business logic,
+// just a one-line rollup for the page header so the operator does not
+// have to open the Overview tab to learn whether the app is healthy.
+// Mirrors how Coolify/Dokploy show a single status pill next to the
+// resource name at the top of the detail page.
+function summarizeConditions(conditions: ReconcileCondition[]): {
+  label: string
+  className: string
+} {
+  if (conditions.length === 0) {
+    return {
+      label: 'No status yet',
+      className: 'bg-muted text-muted-foreground',
+    }
+  }
+  if (conditions.some((c) => c.Status === 'False')) {
+    return {
+      label: 'Attention needed',
+      className: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+    }
+  }
+  if (conditions.every((c) => c.Status === 'True')) {
+    return {
+      label: 'Healthy',
+      className:
+        'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+    }
+  }
+  return { label: 'Reconciling', className: 'bg-muted text-muted-foreground' }
+}
+
 function AppDetailPage() {
   const { name } = Route.useParams()
   const { data: app } = useApp(name)
   const { data: conditions } = useDeployStatus(name)
+  const status = summarizeConditions(conditions)
 
   return (
     <div className="space-y-6">
       <div>
         <Link
           to="/apps"
-          className="text-xs text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
-          &larr; Apps
+          <ArrowLeftIcon className="size-3" />
+          Apps
         </Link>
-        <h1 className="mt-1 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-          {app.name}
-        </h1>
+        <div className="mt-1 flex items-center gap-2">
+          <h1 className="text-lg font-semibold text-foreground">{app.name}</h1>
+          <Badge className={status.className}>{status.label}</Badge>
+        </div>
       </div>
 
-      <AppOverview app={app} />
-      <ConditionsPanel conditions={conditions} />
-      <MetricsDashboard appName={app.name} conditions={conditions} />
-      <LogSearchPanel appName={app.name} />
-      <AlertRulesPanel appName={app.name} />
+      {/* Deploy is the single most common action on this page, so it is
+          pinned above the tab shell rather than scoped inside one tab:
+          it applies to the app as a whole, not to one config concern. */}
       <DeployTriggerForm appName={app.name} />
-      <DomainEditor app={app} />
-      <EnvEditor app={app} />
-      <SecretsEditor appName={app.name} />
+
+      <Tabs defaultValue="overview">
+        <TabsList variant="line" className="border-b border-border">
+          <TabsTrigger value="overview">
+            <LayoutDashboardIcon
+              className="size-3.5"
+              data-icon="inline-start"
+            />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="domains">
+            <GlobeIcon className="size-3.5" data-icon="inline-start" />
+            Domains
+          </TabsTrigger>
+          <TabsTrigger value="environment">
+            <VariableIcon className="size-3.5" data-icon="inline-start" />
+            Environment
+          </TabsTrigger>
+          <TabsTrigger value="metrics">
+            <ActivityIcon className="size-3.5" data-icon="inline-start" />
+            Metrics
+          </TabsTrigger>
+          <TabsTrigger value="logs">
+            <ScrollTextIcon className="size-3.5" data-icon="inline-start" />
+            Logs
+          </TabsTrigger>
+          <TabsTrigger value="alerts">
+            <BellIcon className="size-3.5" data-icon="inline-start" />
+            Alerts
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="mt-4 space-y-6">
+          <AppOverview app={app} />
+          <ConditionsPanel conditions={conditions} />
+        </TabsContent>
+
+        <TabsContent value="domains" className="mt-4">
+          <DomainEditor app={app} />
+        </TabsContent>
+
+        <TabsContent value="environment" className="mt-4 space-y-6">
+          <EnvEditor app={app} />
+          <SecretsEditor appName={app.name} />
+        </TabsContent>
+
+        <TabsContent value="metrics" className="mt-4">
+          <MetricsDashboard appName={app.name} conditions={conditions} />
+        </TabsContent>
+
+        <TabsContent value="logs" className="mt-4">
+          <LogSearchPanel appName={app.name} />
+        </TabsContent>
+
+        <TabsContent value="alerts" className="mt-4">
+          <AlertRulesPanel appName={app.name} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
@@ -69,11 +170,13 @@ function AppDetailPage() {
 // minimal: a name, a message, and a way back to the list.
 function AppDetailError({ error }: { error: Error }) {
   return (
-    <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300">
-      <p>{error.message}</p>
-      <Link to="/apps" className="mt-2 inline-block underline">
-        Back to apps
-      </Link>
-    </div>
+    <Alert variant="destructive">
+      <AlertDescription>
+        <p>{error.message}</p>
+        <Link to="/apps" className="mt-2 inline-block underline">
+          Back to apps
+        </Link>
+      </AlertDescription>
+    </Alert>
   )
 }

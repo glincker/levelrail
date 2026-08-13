@@ -1,8 +1,20 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { GlobeIcon, PlusIcon, XIcon } from 'lucide-react'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Field, FieldError, FieldGroup } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
 
 const domainSchema = z.object({
   domains: z.array(
@@ -59,73 +71,86 @@ export function DomainEditor({ app }: { app: AppDetail }) {
   })
 
   return (
-    <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-      <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-        Domains
-      </h2>
-      <form
-        onSubmit={(e) => {
-          void onSubmit(e)
-        }}
-        className="mt-3 space-y-2"
-      >
-        {fields.length === 0 ? (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            No domains configured.
-          </p>
-        ) : null}
-        {fields.map((field, index) => (
-          <div key={field.id} className="flex items-start gap-2">
-            <div className="flex-1">
-              <input
-                {...register(`domains.${index}.value`)}
-                className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-                placeholder="app.example.com"
-              />
-              {formState.errors.domains?.[index]?.value ? (
-                <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-                  {formState.errors.domains[index]?.value?.message}
-                </p>
-              ) : null}
-            </div>
-            <button
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <GlobeIcon className="size-4" />
+          Domains
+        </CardTitle>
+        <CardDescription>
+          Domains routed to this app through the ingress layer.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form
+          onSubmit={(e) => {
+            void onSubmit(e)
+          }}
+          className="space-y-3"
+        >
+          {fields.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No domains configured.
+            </p>
+          ) : (
+            <FieldGroup className="gap-2">
+              {fields.map((field, index) => (
+                <Field key={field.id} orientation="horizontal">
+                  <div className="flex-1">
+                    <Input
+                      {...register(`domains.${index}.value`)}
+                      className="font-mono"
+                      placeholder="app.example.com"
+                    />
+                    <FieldError
+                      errors={
+                        formState.errors.domains?.[index]?.value
+                          ? [formState.errors.domains[index]?.value]
+                          : undefined
+                      }
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => {
+                      remove(index)
+                    }}
+                  >
+                    <XIcon />
+                    <span className="sr-only">Remove domain</span>
+                  </Button>
+                </Field>
+              ))}
+            </FieldGroup>
+          )}
+          <div className="flex items-center gap-2 pt-1">
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => {
-                remove(index)
+                append({ value: '' })
               }}
-              className="rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900"
             >
-              Remove
-            </button>
+              <PlusIcon />
+              Add domain
+            </Button>
+            <Button type="submit" size="sm" disabled={updateApp.isPending}>
+              {updateApp.isPending ? 'Saving...' : 'Save domains'}
+            </Button>
           </div>
-        ))}
-        <div className="flex items-center gap-2 pt-1">
-          <button
-            type="button"
-            onClick={() => {
-              append({ value: '' })
-            }}
-            className="rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
-          >
-            Add domain
-          </button>
-          <button
-            type="submit"
-            disabled={updateApp.isPending}
-            className="rounded-md bg-neutral-900 px-3 py-1 text-xs font-medium text-white hover:bg-neutral-700 disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300"
-          >
-            {updateApp.isPending ? 'Saving...' : 'Save domains'}
-          </button>
-        </div>
-        {updateApp.isError ? (
-          <p className="text-xs text-red-600 dark:text-red-400">
-            {updateApp.error.message}
-          </p>
-        ) : null}
-        {updateApp.isSuccess ? (
-          <p className="text-xs text-green-700 dark:text-green-400">Saved.</p>
-        ) : null}
-      </form>
-    </section>
+          {updateApp.isError ? (
+            <Alert variant="destructive">
+              <AlertDescription>{updateApp.error.message}</AlertDescription>
+            </Alert>
+          ) : null}
+          {updateApp.isSuccess ? (
+            <p className="text-xs text-green-700 dark:text-green-400">Saved.</p>
+          ) : null}
+        </form>
+      </CardContent>
+    </Card>
   )
 }

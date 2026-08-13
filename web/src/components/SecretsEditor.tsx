@@ -2,9 +2,16 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { EyeIcon, EyeOffIcon } from 'lucide-react'
+import { EyeIcon, EyeOffIcon, LockIcon } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import {
   Field,
   FieldError,
@@ -67,19 +74,24 @@ export function SecretsEditor({ appName }: { appName: string }) {
   // configured after the fact; a page reload re-checks on next submit.
   if (notConfigured) {
     return (
-      <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-        <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-          Secrets
-        </h2>
-        <Alert variant="destructive" className="mt-3">
-          <AlertTitle>Secrets are not configured on this server</AlertTitle>
-          <AlertDescription>
-            The control plane was started without APP_MASTER_KEY set, so it
-            cannot encrypt or store secret values. Set APP_MASTER_KEY and
-            restart the control plane to enable this.
-          </AlertDescription>
-        </Alert>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <LockIcon className="size-4" />
+            Secrets
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive">
+            <AlertTitle>Secrets are not configured on this server</AlertTitle>
+            <AlertDescription>
+              The control plane was started without APP_MASTER_KEY set, so it
+              cannot encrypt or store secret values. Set APP_MASTER_KEY and
+              restart the control plane to enable this.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
     )
   }
 
@@ -89,87 +101,93 @@ export function SecretsEditor({ appName }: { appName: string }) {
       : null
 
   return (
-    <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-      <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-        Secrets
-      </h2>
-      <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-        Sets an encrypted value for one env var by key, e.g. API_KEY. There is
-        no way to view a secret once saved: this only writes a value, it never
-        reads one back.
-      </p>
-      <form
-        onSubmit={(e) => {
-          void onSubmit(e)
-        }}
-        className="mt-3"
-      >
-        <FieldGroup>
-          <Field>
-            <FieldLabel htmlFor="secret-key">Key</FieldLabel>
-            <Input
-              id="secret-key"
-              className="font-mono"
-              placeholder="API_KEY"
-              autoComplete="off"
-              autoCapitalize="off"
-              spellCheck={false}
-              {...register('key')}
-            />
-            <FieldError
-              errors={formState.errors.key ? [formState.errors.key] : undefined}
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="secret-value">Value</FieldLabel>
-            <div className="relative">
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <LockIcon className="size-4" />
+          Secrets
+        </CardTitle>
+        <CardDescription>
+          Sets an encrypted value for one env var by key, e.g. API_KEY. There is
+          no way to view a secret once saved: this only writes a value, it never
+          reads one back.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form
+          onSubmit={(e) => {
+            void onSubmit(e)
+          }}
+        >
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="secret-key">Key</FieldLabel>
               <Input
-                id="secret-value"
-                type={revealValue ? 'text' : 'password'}
-                className="pr-9 font-mono"
-                placeholder="secret value"
+                id="secret-key"
+                className="font-mono"
+                placeholder="API_KEY"
                 autoComplete="off"
-                {...register('value')}
+                autoCapitalize="off"
+                spellCheck={false}
+                {...register('key')}
               />
-              <button
-                type="button"
-                onClick={() => {
-                  setRevealValue((v) => !v)
-                }}
-                aria-label={revealValue ? 'Hide value' : 'Show value'}
-                aria-pressed={revealValue}
-                className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
-              >
-                {revealValue ? (
-                  <EyeOffIcon className="size-4" />
-                ) : (
-                  <EyeIcon className="size-4" />
-                )}
-              </button>
-            </div>
-            <FieldError
-              errors={
-                formState.errors.value ? [formState.errors.value] : undefined
-              }
-            />
-          </Field>
-        </FieldGroup>
-        <div className="mt-3">
-          <Button type="submit" size="sm" disabled={setSecret.isPending}>
-            {setSecret.isPending ? 'Saving...' : 'Save secret'}
-          </Button>
-        </div>
-        {generalError ? (
-          <p className="mt-2 text-xs text-red-600 dark:text-red-400">
-            {generalError}
-          </p>
-        ) : null}
-        {setSecret.isSuccess ? (
-          <p className="mt-2 text-xs text-green-700 dark:text-green-400">
-            Secret saved.
-          </p>
-        ) : null}
-      </form>
-    </section>
+              <FieldError
+                errors={
+                  formState.errors.key ? [formState.errors.key] : undefined
+                }
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="secret-value">Value</FieldLabel>
+              <div className="relative">
+                <Input
+                  id="secret-value"
+                  type={revealValue ? 'text' : 'password'}
+                  className="pr-9 font-mono"
+                  placeholder="secret value"
+                  autoComplete="off"
+                  {...register('value')}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRevealValue((v) => !v)
+                  }}
+                  aria-label={revealValue ? 'Hide value' : 'Show value'}
+                  aria-pressed={revealValue}
+                  className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
+                >
+                  {revealValue ? (
+                    <EyeOffIcon className="size-4" />
+                  ) : (
+                    <EyeIcon className="size-4" />
+                  )}
+                </button>
+              </div>
+              <FieldError
+                errors={
+                  formState.errors.value ? [formState.errors.value] : undefined
+                }
+              />
+            </Field>
+          </FieldGroup>
+          <div className="mt-3">
+            <Button type="submit" size="sm" disabled={setSecret.isPending}>
+              {setSecret.isPending ? 'Saving...' : 'Save secret'}
+            </Button>
+          </div>
+          {generalError ? (
+            <Alert variant="destructive" className="mt-3">
+              <AlertDescription>{generalError}</AlertDescription>
+            </Alert>
+          ) : null}
+          {setSecret.isSuccess ? (
+            <p className="mt-2 text-xs text-green-700 dark:text-green-400">
+              Secret saved.
+            </p>
+          ) : null}
+        </form>
+      </CardContent>
+    </Card>
   )
 }
