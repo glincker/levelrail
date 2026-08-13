@@ -924,29 +924,44 @@ Single-session, not delegated to parallel agents: this is core
 trust-boundary code, the same discipline CLAUDE.md 8 already applies to
 secrets and the reconciler, applied here for the same reason.
 
-- [ ] **API tokens**: new `internal/store/tokens.go` +
-      migration (`api_tokens(id, name, token_hash, abilities, created_at,
-      last_used_at, expires_at, revoked_at)`). `token_hash` is SHA-256 of
-      a `crypto/rand` token, only the hash ever stored. Abilities:
+- [x] **API tokens (2026-08-12)**: `internal/store/tokens.go` +
+      migration 0007 (`api_tokens(id, name, token_hash, abilities,
+      created_at, last_used_at, expires_at, revoked_at)`). `token_hash`
+      is SHA-256 hex of a `crypto/rand` token (`randomToken`, reused from
+      `auth.go`), only the hash ever stored. `internal/api/abilities.go`:
       `read`, `read:sensitive`, `write`, `deploy`, `root` (root exclusive
-      of all others), checked fresh per request, never a cached snapshot.
-      `POST /api/v1/auth/tokens` mints (plaintext shown exactly once,
-      GitHub-PAT convention), `DELETE /api/v1/auth/tokens/{id}` revokes.
-      `requireAuth` (or a sibling) accepts `Authorization: Bearer <token>`
-      alongside the existing session cookie, updates `last_used_at` on
-      lookup. This is the concrete near-term answer to "how does a CLI or
-      MCP server call the API non-interactively," sized to what Phase 1
-      actually needs (theauth-go doc's sketch, ~150-250 lines, zero new
-      deps).
-- [ ] **First-run registration**: a real `POST /api/v1/auth/register`
-      (or similar) gated server-side by "does an admin row already
-      exist," checked at both the route and the mutation layer
-      (Dokploy's belt-and-suspenders pattern, not a single redirect
-      check). Keep the existing `APP_ADMIN_USERNAME`/`APP_ADMIN_PASSWORD`
-      env-var bootstrap as an alternative path for scripted/CI installs;
-      add this so an interactive install has a real UI-driven path too.
-      Never a hardcoded default credential (CapRover's `captain42` is
-      the named anti-pattern to avoid, cite it in the commit).
+      of all others, `validateAbilities` rejects the combination at mint
+      time), checked fresh per request via `hasAbility`, never a cached
+      snapshot. `POST /api/v1/auth/tokens` mints (plaintext shown exactly
+      once), `GET /api/v1/auth/tokens` lists (never the hash or secret),
+      `DELETE /api/v1/auth/tokens/{id}` revokes (idempotent). New
+      `requireAbility` middleware accepts either a session (implicitly
+      root, Phase 1 has exactly one human identity) or a bearer token
+      scoped to the route's required ability; apps/deploys/secrets routes
+      now use it instead of plain `requireAuth`. Token management routes
+      stay `requireAuth`-only (session-only) on purpose: a token can
+      never mint or revoke another token on its own behalf, closing an
+      obvious self-escalation path. 26 new tests including revoked/
+      expired/wrong-ability/root-implies-everything cases; 77.4% coverage
+      on `internal/api`, 78.4% on `internal/store`.
+- [x] **First-run registration (2026-08-12)**: `POST /api/v1/auth/register`,
+      coexists with the existing env-var bootstrap rather than replacing
+      it. New `store.CreateAdminUser` is a plain `INSERT` with no `ON
+      CONFLICT` clause, deliberately distinct from the existing
+      `UpsertAdminUser` (used by env-var bootstrap and future password
+      changes, where overwriting is the intent): `admin_user`'s own
+      `PRIMARY KEY (id = 1)` constraint is what decides between
+      concurrent registration attempts, not a caller-side "does an admin
+      exist" check performed moments earlier, which a first draft of this
+      handler got wrong (`UpsertAdminUser`-based check-then-act still
+      lets two racing requests both pass the read and one silently
+      overwrite the other). Caught and fixed by a concurrency test before
+      merge: `TestHandleRegister_ConcurrentRequests_OnlyOneWins` (10
+      goroutines) and `TestCreateAdminUser_ConcurrentCallers_OnlyOneSucceeds`
+      (20 goroutines) both assert exactly one winner, run 3x under `-race`
+      clean. Minimum password length enforced (8 chars). Never a hardcoded
+      default credential (CapRover's `captain42` named as the anti-pattern
+      avoided, per `docs-local/research/competitor-onboarding-auth-ux.md`).
 - [ ] **Session security**: rotate/invalidate all sessions on password
       change; session TTL via env var, no "remember me" UI toggle (one
       configurable-by-admin lifetime, matches CLAUDE.md 7's "no hardcoded

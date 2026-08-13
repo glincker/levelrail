@@ -3,12 +3,15 @@ package api
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -179,21 +182,191 @@ func (rt *Router) handleLogout(w http.ResponseWriter, r *http.Request) {
 
 // requireAuth wraps a handler so it only runs for a request carrying a
 // valid, unexpired session cookie; on failure it writes 401 itself, so
-// wrapped handlers never need to check auth themselves.
+// wrapped handlers never need to check auth themselves. Session-only,
+// deliberately: used for routes (token management, logout) where a
+// bearer token must never be able to act on another token's behalf.
 func (rt *Router) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		c, err := r.Cookie(sessionCookieName)
-		if err != nil {
-			writeError(w, http.StatusUnauthorized, "authentication required")
-			return
-		}
-		if _, ok := rt.sessions.lookup(c.Value); !ok {
+		if !rt.hasValidSession(r) {
 			writeError(w, http.StatusUnauthorized, "authentication required")
 			return
 		}
 		next(w, r)
 	}
 }
+
+// requireAbility wraps a handler so it only runs for a request
+// authenticated either by a valid session (treated as implicitly
+// AbilityRoot: CLAUDE.md 6 Phase 1 has exactly one human identity, the
+// admin, so there is nothing narrower to scope a session to) or a
+// bearer token whose stored abilities grant required. This is what lets
+// an MCP-issued or CLI-issued token be provably restricted to, say,
+// AbilityRead: hasAbility is checked on every call against the token's
+// row read fresh from the store, never a cached decision, matching
+// Coolify's own "re-evaluate policies fresh" rule
+// (docs-local/research/competitor-onboarding-auth-ux.md).
+func (rt *Router) requireAbility(required string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if rt.hasValidSession(r) {
+			next(w, r)
+			return
+		}
+
+		token, ok := bearerToken(r)
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "authentication required")
+			return
+		}
+
+		rec, err := rt.tokens.GetAPITokenByHash(r.Context(), hashToken(token))
+		if errors.Is(err, store.ErrAPITokenNotFound) {
+			writeError(w, http.StatusUnauthorized, "invalid token")
+			return
+		}
+		if err != nil {
+			rt.logger.Error("api: token lookup failed", slog.String("error", err.Error()))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+		if rec.RevokedAt != nil {
+			writeError(w, http.StatusUnauthorized, "token revoked")
+			return
+		}
+		if rec.ExpiresAt != nil && time.Now().After(*rec.ExpiresAt) {
+			writeError(w, http.StatusUnauthorized, "token expired")
+			return
+		}
+		if !hasAbility(rec.Abilities, required) {
+			writeError(w, http.StatusForbidden, "token lacks the required ability")
+			return
+		}
+
+		// Best-effort: an observability nicety, must never block or fail
+		// the request it's authenticating.
+		if terr := rt.tokens.TouchAPITokenLastUsed(r.Context(), rec.ID); terr != nil {
+			rt.logger.Warn("api: touch token last_used_at failed", slog.String("error", terr.Error()), slog.String("token_id", rec.ID))
+		}
+
+		next(w, r)
+	}
+}
+
+// hasValidSession reports whether r carries a session cookie that
+// resolves to a live session. Factored out of requireAuth so
+// requireAbility can check it without duplicating the cookie-lookup
+// dance.
+func (rt *Router) hasValidSession(r *http.Request) bool {
+	c, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		return false
+	}
+	_, ok := rt.sessions.lookup(c.Value)
+	return ok
+}
+
+// bearerToken extracts the token from a "Bearer <token>" Authorization
+// header, case-insensitively on the scheme per RFC 6750, empty/absent
+// header reported as not-present rather than an error: the caller
+// (requireAbility) treats "no token" and "malformed header" identically,
+// both mean "not authenticated this way, try the next thing" (there is
+// no next thing here, but the shape matches how a future auth method
+// would compose).
+func bearerToken(r *http.Request) (string, bool) {
+	h := r.Header.Get("Authorization")
+	const prefix = "Bearer "
+	if len(h) <= len(prefix) || !strings.EqualFold(h[:len(prefix)], prefix) {
+		return "", false
+	}
+	token := strings.TrimSpace(h[len(prefix):])
+	if token == "" {
+		return "", false
+	}
+	return token, true
+}
+
+// hashToken returns the hex-encoded SHA-256 digest of a plaintext API
+// token, the only form ever persisted (store.APIToken.TokenHash).
+func hashToken(plaintext string) string {
+	sum := sha256.Sum256([]byte(plaintext))
+	return hex.EncodeToString(sum[:])
+}
+
+// handleRegister handles POST /api/v1/auth/register: the interactive,
+// UI-driven counterpart to BootstrapAdmin's env-var path. Coexists with
+// it rather than replacing it (a scripted/CI install still sets
+// APP_ADMIN_USERNAME/APP_ADMIN_PASSWORD and never touches this route);
+// this exists for an operator who starts the binary with neither env
+// var set and expects a real first-run screen, per
+// docs-local/research/competitor-onboarding-auth-ux.md's synthesis
+// (finding 1: reuse one registration form for the first-run case, gated
+// server-side on "does an admin row exist," never a hardcoded default
+// credential).
+//
+// Gated at the mutation layer, not just by an earlier caller-side check:
+// this calls store.CreateAdminUser, a plain INSERT with no ON CONFLICT
+// clause, so admin_user's own PRIMARY KEY constraint (id = 1) is what
+// actually decides between two concurrent registration attempts, not a
+// GetAdminUser check performed moments earlier that both requests could
+// otherwise pass (a read-then-write race a route-level check alone
+// cannot close, since both reads can observe "not found" before either
+// write lands). Once an admin exists, every subsequent call 409s,
+// permanently: there is no "invite a second user" story in Phase 1
+// ("single admin user... no teams, no RBAC yet"), and re-registering is
+// not how a forgotten password gets reset (see the recovery-path task).
+func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
+	var req loginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.Username == "" || req.Password == "" {
+		writeError(w, http.StatusBadRequest, "username and password are required")
+		return
+	}
+	if len(req.Password) < minPasswordLength {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("password must be at least %d characters", minPasswordLength))
+		return
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		rt.logger.Error("api: register: hash password failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	if err := rt.auth.CreateAdminUser(r.Context(), req.Username, string(hash)); errors.Is(err, store.ErrAdminAlreadyExists) {
+		writeError(w, http.StatusConflict, "an admin account already exists")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: register: save admin failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	token, err := rt.sessions.create(req.Username)
+	if err != nil {
+		rt.logger.Error("api: register: create session failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     sessionCookieName,
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+		Expires:  time.Now().Add(sessionTTL),
+	})
+	writeJSON(w, http.StatusCreated, loginResponse{Username: req.Username})
+}
+
+// minPasswordLength matches CLAUDE.md 7's "no hardcoded thresholds"
+// spirit as closely as a fixed minimum reasonably can: unlike a
+// tunable operational limit (a timeout, a retry count), a minimum
+// password length is a security floor, not a deployment-specific
+// preference, so it stays a constant rather than an env var.
+const minPasswordLength = 8
 
 // BootstrapAdmin ensures a single admin account exists, creating one
 // from username/password if none does yet. It is a no-op once an admin

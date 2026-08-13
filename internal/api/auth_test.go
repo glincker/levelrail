@@ -3,9 +3,11 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -223,5 +225,137 @@ func TestRequireAuth_RejectsMissingOrInvalidSession(t *testing.T) {
 				t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusUnauthorized, rec.Body.String())
 			}
 		})
+	}
+}
+
+func TestHandleRegister_Success(t *testing.T) {
+	rt, db := newTestRouter(t)
+
+	body := `{"username":"admin","password":"a-real-password"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", strings.NewReader(body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	var found bool
+	for _, c := range rec.Result().Cookies() {
+		if c.Name == sessionCookieName && c.Value != "" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("expected a non-empty session cookie to be set on successful registration")
+	}
+
+	admin, err := db.GetAdminUser(context.Background())
+	if err != nil {
+		t.Fatalf("GetAdminUser() error = %v", err)
+	}
+	if admin.Username != "admin" {
+		t.Errorf("admin.Username = %q, want %q", admin.Username, "admin")
+	}
+}
+
+func TestHandleRegister_AlreadyBootstrapped_Conflict(t *testing.T) {
+	rt, db := newTestRouter(t)
+	bootstrapTestAdmin(t, db)
+
+	body := `{"username":"someone-else","password":"a-real-password"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", strings.NewReader(body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusConflict)
+	}
+
+	// The original admin must survive untouched: a second registration
+	// attempt must never overwrite the existing account.
+	admin, err := db.GetAdminUser(context.Background())
+	if err != nil {
+		t.Fatalf("GetAdminUser() error = %v", err)
+	}
+	if admin.Username != testAdminUsername {
+		t.Errorf("admin.Username = %q, want the original %q, want it unchanged", admin.Username, testAdminUsername)
+	}
+}
+
+func TestHandleRegister_ShortPasswordRejected(t *testing.T) {
+	rt, db := newTestRouter(t)
+
+	body := `{"username":"admin","password":"short"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", strings.NewReader(body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusBadRequest)
+	}
+	if _, err := db.GetAdminUser(context.Background()); !errors.Is(err, store.ErrAdminNotFound) {
+		t.Error("a rejected registration must not have created an admin row")
+	}
+}
+
+func TestHandleRegister_MissingFields(t *testing.T) {
+	rt, _ := newTestRouter(t)
+
+	tests := []string{
+		`{"username":"","password":"a-real-password"}`,
+		`{"username":"admin","password":""}`,
+		`{not json`,
+	}
+	for _, body := range tests {
+		t.Run(body, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", strings.NewReader(body))
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, req)
+			if rec.Code != http.StatusBadRequest {
+				t.Errorf("status = %d, want %d", rec.Code, http.StatusBadRequest)
+			}
+		})
+	}
+}
+
+func TestHandleRegister_ConcurrentRequests_OnlyOneWins(t *testing.T) {
+	// Guards the race a route-only "does an admin exist" check would
+	// leave open: the mutation itself must be the thing that decides,
+	// not a check performed earlier and trusted.
+	rt, db := newTestRouter(t)
+
+	const n = 10
+	results := make(chan int, n)
+	var wg sync.WaitGroup
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			body := fmt.Sprintf(`{"username":"admin-%d","password":"a-real-password"}`, i)
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", strings.NewReader(body))
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, req)
+			results <- rec.Code
+		}(i)
+	}
+	wg.Wait()
+	close(results)
+
+	created := 0
+	for code := range results {
+		if code == http.StatusCreated {
+			created++
+		}
+	}
+	if created != 1 {
+		t.Errorf("created = %d successful registrations out of %d concurrent attempts, want exactly 1", created, n)
+	}
+
+	// Exactly one admin row must exist, not zero, not many: admin_user's
+	// own CHECK (id = 1) constraint enforces this at the schema level
+	// too, this proves the API layer converges to the same invariant.
+	if _, err := db.GetAdminUser(context.Background()); err != nil {
+		t.Errorf("GetAdminUser() error = %v, want exactly one admin to exist after the race", err)
 	}
 }

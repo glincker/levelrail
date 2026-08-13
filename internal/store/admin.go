@@ -54,3 +54,35 @@ func (db *DB) UpsertAdminUser(ctx context.Context, username, passwordHash string
 	}
 	return nil
 }
+
+// ErrAdminAlreadyExists is CreateAdminUser's failure mode when a row
+// already exists: unlike UpsertAdminUser, this never overwrites.
+var ErrAdminAlreadyExists = errors.New("store: admin user already exists")
+
+// CreateAdminUser inserts the single admin account, failing with
+// ErrAdminAlreadyExists if one already exists, rather than silently
+// replacing it the way UpsertAdminUser does. This is what
+// internal/api's first-run registration handler needs: a caller-side
+// "does an admin exist yet" check alone can't close the race between
+// two concurrent registration attempts (both can read "not found"
+// before either writes), but a plain INSERT with no ON CONFLICT clause
+// lets admin_user's own PRIMARY KEY constraint (id = 1) decide, which is
+// atomic at the database level regardless of how many goroutines race
+// to call this. On any INSERT failure, this re-checks existence to
+// distinguish "lost the race" (ErrAdminAlreadyExists) from a genuine,
+// unrelated database error, rather than assuming every failure means
+// the former.
+func (db *DB) CreateAdminUser(ctx context.Context, username, passwordHash string) error {
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO admin_user (id, username, password_hash, updated_at)
+		VALUES (1, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+	`, username, passwordHash)
+	if err == nil {
+		return nil
+	}
+
+	if _, getErr := db.GetAdminUser(ctx); getErr == nil {
+		return ErrAdminAlreadyExists
+	}
+	return fmt.Errorf("store: create admin user: %w", err)
+}

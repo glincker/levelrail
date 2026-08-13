@@ -50,6 +50,21 @@
 // container creation. Available only when the control plane was started
 // with a master key (WithSecretSetter); without one, the route returns
 // 501.
+//
+// Auth foundation ("Dashboard & auth", TASKS.md): POST
+// /api/v1/auth/register is the interactive first-run counterpart to
+// BootstrapAdmin's env-var path, gated on "no admin row exists yet" at
+// both the route and the mutation layer. Session auth stays exactly what
+// TASKS.md 1.9 scoped it as (single admin user, no teams, no RBAC); API
+// tokens (POST/GET /api/v1/auth/tokens, DELETE .../{id}) are a separate,
+// additive credential type for non-interactive callers (a future CLI,
+// an MCP server per CLAUDE.md 4.11), scoped to abilities (abilities.go:
+// read, read:sensitive, write, deploy, root) checked fresh on every
+// call by requireAbility, never a cached decision. Token management
+// itself is session-only via requireAuth: a token can never mint or
+// revoke another token on its own behalf. See docs-local/research/
+// theauth-go-fit-assessment.md and competitor-onboarding-auth-ux.md for
+// why this shape (not theauth-go, not an all-or-nothing key) was chosen.
 package api
 
 import (
@@ -81,6 +96,18 @@ type DeployStore interface {
 type AuthStore interface {
 	GetAdminUser(ctx context.Context) (*store.AdminUser, error)
 	UpsertAdminUser(ctx context.Context, username, passwordHash string) error
+	CreateAdminUser(ctx context.Context, username, passwordHash string) error
+}
+
+// TokenStore is the store surface the API-token handlers and the
+// ability-aware auth middleware need (TASKS.md "Backend auth
+// foundation").
+type TokenStore interface {
+	SaveAPIToken(ctx context.Context, t store.APIToken) error
+	GetAPITokenByHash(ctx context.Context, hash string) (*store.APIToken, error)
+	ListAPITokens(ctx context.Context) ([]store.APIToken, error)
+	RevokeAPIToken(ctx context.Context, id string) error
+	TouchAPITokenLastUsed(ctx context.Context, id string) error
 }
 
 // Store is the full surface NewRouter needs. *store.DB satisfies it
@@ -90,6 +117,7 @@ type Store interface {
 	AppStore
 	DeployStore
 	AuthStore
+	TokenStore
 }
 
 // SecretSetter is the surface the secrets handler needs from
@@ -106,6 +134,7 @@ type Router struct {
 	apps     AppStore
 	deploys  DeployStore
 	auth     AuthStore
+	tokens   TokenStore
 	secrets  SecretSetter // nil is valid: a control plane with no master key configured serves everything except secret-setting
 	sessions *sessionStore
 }
@@ -133,6 +162,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		apps:     s,
 		deploys:  s,
 		auth:     s,
+		tokens:   s,
 		sessions: newSessionStore(),
 	}
 	for _, opt := range opts {
@@ -151,27 +181,41 @@ func (rt *Router) Handler() http.Handler {
 	// on the login screen itself).
 	mux.HandleFunc("GET /api/v1/brand", rt.handleBrand)
 
-	// Auth. Login is necessarily public; everything else requires an
-	// existing session.
+	// Auth. Login and first-run registration are necessarily public;
+	// everything else requires an existing session.
 	mux.HandleFunc("POST /api/v1/auth/login", rt.handleLogin)
+	mux.HandleFunc("POST /api/v1/auth/register", rt.handleRegister)
 	mux.HandleFunc("POST /api/v1/auth/logout", rt.requireAuth(rt.handleLogout))
 
-	// Apps CRUD.
-	mux.HandleFunc("GET /api/v1/apps", rt.requireAuth(rt.handleListApps))
-	mux.HandleFunc("POST /api/v1/apps", rt.requireAuth(rt.handleCreateApp))
-	mux.HandleFunc("GET /api/v1/apps/{name}", rt.requireAuth(rt.handleGetApp))
-	mux.HandleFunc("PUT /api/v1/apps/{name}", rt.requireAuth(rt.handleUpdateApp))
-	mux.HandleFunc("DELETE /api/v1/apps/{name}", rt.requireAuth(rt.handleDeleteApp))
+	// API tokens: session-only, deliberately never bearer-token
+	// authenticated. A token cannot mint or revoke another token on its
+	// own behalf; only an interactive human session can manage the
+	// token set, the same boundary that stops a leaked scoped token from
+	// escalating itself by minting a broader one.
+	mux.HandleFunc("POST /api/v1/auth/tokens", rt.requireAuth(rt.handleCreateToken))
+	mux.HandleFunc("GET /api/v1/auth/tokens", rt.requireAuth(rt.handleListTokens))
+	mux.HandleFunc("DELETE /api/v1/auth/tokens/{id}", rt.requireAuth(rt.handleRevokeToken))
+
+	// Apps CRUD. requireAbility accepts either a session (implicitly
+	// root, there is exactly one human identity in Phase 1) or a bearer
+	// token scoped to at least the named ability, so a read-only
+	// MCP-issued token is provably unable to reach a write/deploy route,
+	// not just conventionally discouraged from calling it.
+	mux.HandleFunc("GET /api/v1/apps", rt.requireAbility(AbilityRead, rt.handleListApps))
+	mux.HandleFunc("POST /api/v1/apps", rt.requireAbility(AbilityWrite, rt.handleCreateApp))
+	mux.HandleFunc("GET /api/v1/apps/{name}", rt.requireAbility(AbilityRead, rt.handleGetApp))
+	mux.HandleFunc("PUT /api/v1/apps/{name}", rt.requireAbility(AbilityWrite, rt.handleUpdateApp))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}", rt.requireAbility(AbilityWrite, rt.handleDeleteApp))
 
 	// Deploys.
-	mux.HandleFunc("POST /api/v1/apps/{name}/deploys", rt.requireAuth(rt.handleTriggerDeploy))
-	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAuth(rt.handleDeployHistory))
+	mux.HandleFunc("POST /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityDeploy, rt.handleTriggerDeploy))
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityRead, rt.handleDeployHistory))
 
 	// Secrets (TASKS.md 1.7). Set-only: there is deliberately no GET,
 	// returning a value (even to its own owner over an authenticated
 	// session) is exactly the kind of exposure envelope encryption
 	// exists to avoid.
-	mux.HandleFunc("PUT /api/v1/apps/{name}/secrets/{key}", rt.requireAuth(rt.handleSetSecret))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/secrets/{key}", rt.requireAbility(AbilityWrite, rt.handleSetSecret))
 
 	return mux
 }
