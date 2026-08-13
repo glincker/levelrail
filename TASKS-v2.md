@@ -150,13 +150,19 @@ new file invites drift)
       earlier in this session, not caused by this change), so this
       was not visually screenshotted, flagged explicitly rather than
       claimed.
-- [ ] Merge the in-flight dark-mode `ThemeProvider`/`ThemeToggle` pass
-      (dispatched before this shell rewrite) into the new shell: that
-      agent's own `__root.tsx` diff will conflict with the rewrite
-      above, so only its new component files
-      (`ThemeProvider.tsx`/`ThemeToggle.tsx`) get pulled in, wired into
-      `AppSidebar`'s header or footer directly rather than reapplying
-      its top-nav-shaped diff.
+- [x] **Dark mode merged (2026-08-13)**: took the dark-mode agent's two
+      independent, non-conflicting new files as-is
+      (`ThemeProvider.tsx`: context + `localStorage['levelrail-theme']`
+      persistence + `matchMedia` system-preference sync;
+      `ThemeToggle.tsx`: light/dark/system cycling icon button) plus its
+      `index.html` flash-of-wrong-theme inline script (all three
+      independently correct regardless of shell shape). Its `__root.tsx`
+      diff (added `ThemeToggle` to the old top-nav) was superseded by
+      the shell rewrite rather than reapplied: wired `ThemeProvider`
+      around `RootLayout` and `ThemeToggle` into the new
+      `SidebarInset` header (right-aligned, next to `SidebarTrigger`)
+      by hand instead. `tsc`/`eslint`/`prettier`/`vite build` clean,
+      live-verified via the running preview server.
 - [ ] Reassess the KPI-strip/`SectionCards` pattern for an apps
       overview once the shell has real content flowing through it
       (deferred, not blocking: the current `/apps` route already has
