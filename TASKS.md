@@ -1438,7 +1438,7 @@ Both routes return 501 when no `TelemetryQuerier` is configured
 `WithSecretSetter`'s absence already established for secrets, rather
 than the routes not existing or a nil-dereference panic.
 
-### 2.4 Frontend: metrics dashboard, log viewer, deploy markers
+### 2.4 Frontend: metrics dashboard, log viewer, deploy markers. CLAIMED (this session, 2026-08-13)
 
 - [ ] Per-app metrics dashboard: CPU, memory, disk IO, network IO,
       request rate, response time percentiles, error rate, container
