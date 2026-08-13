@@ -1393,7 +1393,7 @@ re-discovering the same gap independently a fourth time today. Claim a
 sub-task by editing its status line here before starting, same as 1.10's
 claim marker.
 
-### 2.1 Node-local metrics store (`internal/telemetry`). MOSTLY DONE (2026-08-12), deploy-frequency/build-duration metrics still open
+### 2.1 Node-local metrics store (`internal/telemetry`). MOSTLY DONE (2026-08-12), deploy-frequency/build-duration metrics CLAUDED (this session, 2026-08-13)
 
 - [x] Spike + ADR: ADR 009 picks a purpose-built SQLite-backed store
       over embedding VictoriaMetrics's storage engine, consistent with
