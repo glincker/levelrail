@@ -22,6 +22,7 @@ import (
 
 	dockerclient "github.com/docker/docker/client"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/build"
@@ -88,6 +89,25 @@ const (
 	// own reasoning: frequent enough that log_entries never grows much
 	// past its steady-state size, infrequent enough to be a non-event.
 	logsRetentionSweepInterval = 1 * time.Hour
+
+	// alertEvaluationInterval is how often internal/alerting's Engine
+	// evaluates every enabled rule (TASKS.md 2.5/2.7). Deliberately
+	// coarser than metricsCollectionInterval's 15s: a threshold rule's
+	// own ForDuration is the real debounce against a noisy single
+	// sample, so evaluating every tick metrics are collected buys
+	// nothing but a quadrupled query load against telemetryDB. 30s means
+	// a firing or resolved transition is noticed within, at worst, 30s
+	// of the condition actually changing, an acceptable latency for a
+	// notification, not a live dashboard.
+	alertEvaluationInterval = 30 * time.Second
+
+	// restartTrackerResyncInterval is how often alerting.RestartTracker
+	// re-derives its known-services list from the store (the same
+	// "resync" concern resyncInterval and logTargetsResyncInterval
+	// already name for their own loops), not how often it processes
+	// Docker start events, which is driven continuously by the event
+	// stream itself.
+	restartTrackerResyncInterval = 30 * time.Second
 )
 
 func main() {
@@ -173,6 +193,16 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
+	alertingDB, err := openAlertingStore(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if cerr := alertingDB.Close(); cerr != nil {
+			logger.Error("closing alerting store", slog.String("error", cerr.Error()))
+		}
+	}()
+
 	secretsManager, err := loadSecretsManager(db)
 	if err != nil {
 		// Not fatal, the same choice bootstrapAdmin makes above: the
@@ -202,7 +232,7 @@ func run(logger *slog.Logger) error {
 
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
-		Handler:           rootHandler(logger, b, db, telemetryDB, secretsManager, webhookHandler),
+		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -232,6 +262,28 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 	go runLogsRetentionSweep(ctx, telemetryDB, logger)
+
+	// Alerting (TASKS.md 2.5/2.7): RestartTracker watches the same
+	// Docker client's event stream, independently of the reconcile
+	// engine's own subscription below, to count restarts per service for
+	// crashloop rules; Engine evaluates every enabled rule
+	// (threshold and crashloop alike) on its own tick, querying
+	// telemetryDB through the same kind of federator rootHandler already
+	// builds for the HTTP query routes.
+	restartTracker := alerting.NewRestartTracker()
+	go func() {
+		if err := restartTracker.Run(ctx, client, db, restartTrackerResyncInterval, logger); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("alerting restart tracker stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	alertingFederator := telemetry.NewLocalFederator(telemetryDB)
+	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, nil, logger)
+	go func() {
+		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("alerting engine stopped", slog.String("error", err.Error()))
+		}
+	}()
 
 	events, errs := client.Events(ctx)
 	go func() {
@@ -295,6 +347,22 @@ func openTelemetryStore(ctx context.Context) (*telemetry.DB, error) {
 		return nil, err
 	}
 	return telemetry.Open(ctx, filepath.Join(dataDir, "telemetry.db"))
+}
+
+// openAlertingStore opens the TASKS.md 2.5/2.7 alert-rules store on its
+// own SQLite file (alerting.db, alongside levelrail.db and
+// telemetry.db in the same data directory), the same per-concern
+// write-isolation reasoning (ADR 009) telemetry.db's own separation
+// from levelrail.db already applies, per alerting.DB's own doc comment.
+func openAlertingStore(ctx context.Context) (*alerting.DB, error) {
+	dataDir := os.Getenv("APP_DATA_DIR")
+	if dataDir == "" {
+		dataDir = defaultDataDir
+	}
+	if err := os.MkdirAll(dataDir, 0o750); err != nil { //nolint:gosec // operator-controlled startup config, not user input
+		return nil, err
+	}
+	return alerting.Open(ctx, filepath.Join(dataDir, "alerting.db"))
 }
 
 // telemetryTargets lists every desired service's currently running
@@ -618,11 +686,14 @@ func loadWebhookHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand
 // GitHub calls this URL directly, it is not part of the versioned
 // Levelrail API surface the frontend and future MCP layer build on.
 //
-// telemetryDB is always non-nil (openTelemetryStore has no optional
-// gating, unlike secrets/webhook below), so api.WithTelemetryQuerier is
-// applied unconditionally, wrapped in a fresh telemetry.NewLocalFederator
-// per TASKS.md 2.3's federated-shape design (today: exactly one source,
-// this node's own local store).
+// telemetryDB and alertingDB are always non-nil (openTelemetryStore and
+// openAlertingStore have no optional gating, unlike secrets/webhook
+// below), so api.WithTelemetryQuerier and api.WithAlertRules are both
+// applied unconditionally. telemetryDB is wrapped in a fresh
+// telemetry.NewLocalFederator per TASKS.md 2.3's federated-shape design
+// (today: exactly one source, this node's own local store); alertingDB
+// itself already satisfies api.AlertRules structurally, no wrapper
+// needed.
 //
 // secretsManager and webhookHandler may both be nil (APP_MASTER_KEY and
 // the webhook env vars are each independently optional): api.
@@ -631,9 +702,10 @@ func loadWebhookHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand
 // interface value would panic the first time PUT .../secrets/{key}
 // tried to call a method on it, rather than hitting api.Router's own
 // "not configured" 501 path.
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, webhookHandler http.Handler) http.Handler {
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler) http.Handler {
 	opts := []api.Option{
 		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
+		api.WithAlertRules(alertingDB),
 		api.WithSessionTTL(sessionTTL(logger)),
 	}
 	if secretsManager != nil {

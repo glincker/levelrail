@@ -158,6 +158,41 @@ func TestListEnabledRules_ExcludesDisabled(t *testing.T) {
 	}
 }
 
+func TestListRulesForResource_FiltersByResource(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+
+	web1 := Rule{ID: "r1", Name: "web high cpu", Kind: KindThreshold, ResourceID: "service:web", Metric: "cpu_percent", Comparator: GreaterThan, Threshold: 80, Enabled: true}
+	web2 := Rule{ID: "r2", Name: "web crashlooping", Kind: KindCrashloop, ResourceID: "service:web", RestartCountThreshold: 3, RestartWindow: 5 * time.Minute, Enabled: false}
+	worker := Rule{ID: "r3", Name: "worker high cpu", Kind: KindThreshold, ResourceID: "service:worker", Metric: "cpu_percent", Comparator: GreaterThan, Threshold: 80, Enabled: true}
+	for _, r := range []Rule{web1, web2, worker} {
+		if err := db.SaveRule(ctx, r); err != nil {
+			t.Fatalf("SaveRule(%s) error = %v", r.ID, err)
+		}
+	}
+
+	got, err := db.ListRulesForResource(ctx, "service:web")
+	if err != nil {
+		t.Fatalf("ListRulesForResource() error = %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("ListRulesForResource(\"service:web\") = %d rules, want 2 (regardless of enabled)", len(got))
+	}
+	for _, r := range got {
+		if r.ResourceID != "service:web" {
+			t.Errorf("got rule %+v, want ResourceID = service:web", r)
+		}
+	}
+
+	none, err := db.ListRulesForResource(ctx, "service:nonexistent")
+	if err != nil {
+		t.Fatalf("ListRulesForResource() error = %v", err)
+	}
+	if len(none) != 0 {
+		t.Errorf("ListRulesForResource(\"service:nonexistent\") = %d rules, want 0", len(none))
+	}
+}
+
 func TestDeleteRule(t *testing.T) {
 	db := newTestDB(t)
 	ctx := context.Background()
