@@ -992,12 +992,35 @@ secrets and the reconciler, applied here for the same reason.
       path `sessionStore`'s own doc comment already describes). Revisit
       once a real change-password endpoint exists, don't build a
       rotation hook with nothing to trigger it.
-- [ ] **Locked-out recovery path**: a documented, container-native
-      recovery mechanism for a locked-out single admin (a subcommand run
-      via `docker exec`, matching Dokploy's `reset-password.ts` shape,
-      or a `levelrail-agent recover-admin`-style command per CLAUDE.md
-      4.1's single-binary story). Log the action via `log/slog` so it's
-      visible after the fact.
+- [x] **Locked-out recovery path**: `levelrail recover-admin` subcommand
+      (`cmd/levelrail/recover_admin.go`), not a separate binary, per
+      CLAUDE.md 4.1's single-binary story. Container-native: `docker exec
+      <container> levelrail recover-admin [--username X] [--password Y]`,
+      matching Dokploy's `reset-password.ts` shape. Opens the store via
+      the same `openStore` helper `run()` uses (so it operates on the
+      running server's own `APP_DATA_DIR`), bcrypt-hashes the password,
+      writes it directly with `store.UpsertAdminUser` (bypasses the HTTP
+      API entirely, appropriate for a one-shot CLI/`docker exec`
+      context), and logs the action via `logger.Warn` so it's visible
+      after the fact. Password is auto-generated (24 random bytes,
+      base64) and printed once if `--password` is omitted, never printed
+      if the caller supplied one explicitly. TDD: `parseRecoverAdminArgs`,
+      `generateRandomPassword`, `recoverAdminUser`, and `runRecoverAdmin`
+      each got a failing test before implementation
+      (`cmd/levelrail/recover_admin_test.go`), including that an
+      explicitly-supplied password is never echoed to stdout and that an
+      `openStore` failure propagates. `gofmt`/`go vet`/`golangci-lint`
+      clean, `go test -race` green. Live end-to-end verified against the
+      real binary: built it, ran `recover-admin` against a fresh
+      `APP_DATA_DIR` (prints the generated password), started the real
+      server against that same data dir, `POST /api/v1/auth/login` with
+      the generated password returned 200 with a session cookie, and an
+      authenticated `GET /api/v1/apps` with that cookie returned 200.
+      **Known limitation, documented, not worked around**: cannot
+      invalidate the running server's in-memory session map since
+      recover-admin runs as a separate OS process; a container restart
+      after recovery is the practical way to revoke sessions established
+      under the old password.
 - [ ] **Dev mode**: `APP_DEV_MODE=1`, gated by a new build-tag file pair
       in `internal/api` (`devmode_debug.go` `//go:build !embedweb`,
       `devmode_release.go` `//go:build embedweb`, the latter always
