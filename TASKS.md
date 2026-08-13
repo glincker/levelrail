@@ -1120,6 +1120,20 @@ secrets and the reconciler, applied here for the same reason.
       `-tags embedweb` release build seeds nothing and rejects every
       fixture token (401) even with `APP_DEV_MODE=1` set and the file
       present, matching ADR 013's build-tag gate.
+      **Validation tooling (2026-08-13)**: `internal/api/devfixtures_e2e_test.go`
+      reads the real `dev-fixtures.yml` at the repo root (not a synthetic
+      copy) and asserts the ability matrix through real HTTP requests
+      against a real router, so a future change to `router.go`'s
+      `requireAbility` wiring that breaks what `dev-fixtures.yml`'s own
+      header comment promises fails in CI, not just by hand. Separately,
+      `scripts/dev-auth-check.sh` is the interactive version of the same
+      check for a developer running the real binary locally
+      (`APP_DEV_MODE=1 go run ./cmd/levelrail`, then run the script):
+      10 checks against a live server, self-cleaning (creates and
+      deletes a throwaway app via a `trap`), works with or without `yq`
+      installed. Both independently live-verified: the Go test's 7 cases
+      pass with `go test -race`, the shell script scored 10/10 against
+      a real running binary.
 
 ### Frontend: dashboard UI
 
