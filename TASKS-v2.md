@@ -164,13 +164,49 @@ new file invites drift)
 
 ## Phase 2: Screen migration into the new shell
 
-Not detailed yet, same reasoning as Phase 1. Expect this to reuse the
-content-level work already landing from the parallel visual-polish pass
-on `apps/index.tsx`, `apps/$name.tsx` and its panels, the observability
-components, and the auth/settings screens (dispatched 2026-08-13, before
-this redesign was scoped): that work improved the content inside the
-current shell, most of it should still be valid content once re-wrapped
-in the new shell, but expect real adjustment work, not a pure copy-paste.
+- [x] All five content-polish passes landed and are running inside the
+      real sidebar shell (2026-08-13): app list (`apps/index.tsx`,
+      `AppRow.tsx`), app detail (`apps/$name.tsx` rebuilt on `Tabs`,
+      `AppOverview`/`ConditionsPanel`/`DeployTriggerForm`/
+      `DomainEditor`/`EnvEditor`/`SecretsEditor`), observability
+      (`MetricsDashboard`/`LogSearchPanel`/`AlertRulesPanel`/
+      `CreateAlertRuleDialog`/`DeleteAlertRuleDialog`/the per-deploy
+      build-log route), and auth/settings (`login.tsx`,
+      `LoginForm`/`RegisterForm`, `settings/tokens.tsx`,
+      `TokenTable`/`CreateTokenDialog`/`RevokeTokenDialog`). Each
+      merged individually with its own `tsc`/`eslint`/`prettier`/`vite
+      build` verification, not a bulk copy.
+- [x] **Real bug found and fixed while merging observability**:
+      `apps/$name/deploys/$deployId/logs.tsx` (the live SSE build-log
+      viewer) has been a structurally unreachable route since it was
+      first added (`routeTree.gen.ts` confirms it nests under
+      `/apps/$name`, but `$name.tsx` never rendered an `<Outlet />` in
+      any version, checked back through its full git history, not a
+      regression from this pass). Fixed: `$name.tsx` now renders just
+      `<Outlet />` (stepping fully aside, not nesting the build-log view
+      inside the tab shell, since `DeployLogsPage` already renders its
+      own complete header) whenever the URL contains `/deploys/`.
+      **Deliberately not fixed in the same pass**: there is still no
+      in-app link to that route, because there is no backend
+      deploy-history/attempt-listing endpoint to source a `deployId`
+      from yet (`internal/api`'s own doc comment: `GET .../deploys`
+      returns current reconcile conditions, not an attempt-by-attempt
+      log). Building that is a real, store-schema-sized feature
+      (CLAUDE.md 8's "the database schema" is explicitly on the
+      do-not-parallelize list), not a wiring fix, so it wasn't
+      improvised here. **Follow-up task, not yet started**: a real
+      `deploy_attempts` (or similar) table plus a list endpoint, then a
+      "recent deploys" UI in the Overview tab linking each entry to its
+      build log.
+- [x] **Merge coordination note**: `CreateAlertRuleDialog.tsx` was
+      independently modified by the other concurrent session (email/
+      Telegram notification channels, commit `1caabff`) while the
+      observability polish agent's worktree was still based on the
+      prior version. Hand-merged rather than overwritten: kept both the
+      channel additions (email/Telegram options, per-channel
+      destination validation) and the visual additions (kind-select
+      icons, dialog title icon), verified together with `tsc --noEmit`
+      afterward.
 
 ## Phase 3: Rich interactions (stretch, prioritize from research findings)
 
