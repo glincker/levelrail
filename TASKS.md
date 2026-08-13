@@ -1551,7 +1551,14 @@ historical container logs is new scope, not asked for here), and the
 six not-yet-collected metrics above, each of which needs its own
 backend collector, not a frontend change.
 
-### 2.5 Alerting
+### 2.5 Alerting. CLAIMED (this session, 2026-08-13)
+
+Building alongside 2.7: crashloop detection is architecturally a
+built-in alert rule (a restart-frequency threshold with a fixed
+notification payload shape, log lines attached), not a separate
+system, so the same rule/evaluator/notifier schema and dispatch path
+serve both rather than building two parallel mechanisms. Database
+schema work for both stays this one session per CLAUDE.md 8.
 
 - [ ] Threshold rules over 2.1/2.2's data
 - [ ] Notification via webhook, email, Slack, Discord, Telegram
@@ -1579,7 +1586,7 @@ backend collector, not a frontend change.
       round-tripped through the codec's own (potentially symmetrically
       wrong) encode/decode pair.
 
-### 2.7 Crashloop detection
+### 2.7 Crashloop detection. CLAIMED (this session, 2026-08-13): building together with 2.5, see that section's note on why
 
 - [ ] Last 200 lines of a failing container's logs surfaced
       automatically in the UI on repeated restart. CLAUDE.md 6: "nobody
