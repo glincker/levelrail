@@ -222,6 +222,55 @@ navigation. Whether any of these make the cut depends on the "lowest
 effort, highest value" synthesis the cross-cutting research doc is
 asked to produce, not assumed here.
 
+## Phase 4: Account and settings features (real functionality, not just a shell)
+
+Prompted directly by the founder looking at the live sidebar shell and
+pointing out that competitors (Coolify named specifically) show real
+account/settings screens and a way to actually create something, even
+before a single app exists, not just an empty state. This phase is
+about closing concrete functional gaps the redesign surfaced, not more
+visual polish.
+
+- [x] **Backend (2026-08-13, single-session, trust-boundary code)**:
+      `PUT /api/v1/auth/password` (session-only, requires current
+      password re-confirmation per finding 5's re-auth-for-destructive-
+      changes principle, rotates every other live session on success
+      while leaving the caller's own session alone, per finding 6).
+      `GET /api/v1/auth/session` (current session's username + expiry).
+      `POST /api/v1/auth/sessions/revoke-others` (the standalone,
+      user-triggered version of the same session-rotation mechanism).
+      All three TDD'd (`internal/api/account.go`/`account_test.go`),
+      `gofmt`/`go vet`/`golangci-lint`/`go test -race` clean,
+      live-verified against the real running preview server (password
+      changed and reverted back to the known preview credentials
+      afterward so they kept working).
+- [x] **Sidebar nav restructure (2026-08-13)**: the old single "API
+      tokens" secondary-nav item became a real "Settings" group
+      (`SidebarGroupLabel`) with four items: Account, Security, API
+      tokens (unchanged), General. Three placeholder route files
+      created (`routes/settings/{account,security,general}.tsx`) so
+      the nav links type-check against real routes (TanStack Router's
+      `Link` types are generated from files on disk) before handing
+      each one to a parallel agent to build out.
+- [ ] **Account page** (dispatched 2026-08-13, in progress): profile
+      display (username) + a real change-password form against the new
+      endpoint.
+- [ ] **Security page** (dispatched 2026-08-13, in progress): current
+      session info, a "sign out other sessions" action, a short honest
+      note about login rate limiting already being active.
+- [ ] **General page** (dispatched 2026-08-13, in progress): platform/
+      brand info from the already-cached `/api/v1/brand` response.
+      Deliberately scoped to NOT invent a new system-status backend
+      endpoint (Docker health, secrets/webhook configured, disk usage,
+      version) in this pass; that's real future backend work, not
+      something to fake with placeholder data.
+- [ ] **Create App dialog** (dispatched 2026-08-13, in progress): the
+      apps list page had no way to create an app at all, not even a
+      button, despite `POST /api/v1/apps` always having existed and
+      being fully tested on the backend. New `CreateAppDialog.tsx`
+      wired into both the list header and the empty-state CTA, so the
+      empty state stops being purely descriptive text.
+
 ## Status notes
 
 - 2026-08-13: three research agents dispatched in parallel (Vercel deep
