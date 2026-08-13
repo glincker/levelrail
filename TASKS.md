@@ -1694,7 +1694,7 @@ historical container logs is new scope, not asked for here), and the
 six not-yet-collected metrics above, each of which needs its own
 backend collector, not a frontend change.
 
-### 2.5 Alerting. DONE (2026-08-13), email/Telegram deferred
+### 2.5 Alerting. DONE (2026-08-13), email/Telegram CLAUDED (this session, 2026-08-13)
 
 Built alongside 2.7: crashloop detection is architecturally a
 built-in alert rule (a restart-frequency threshold with a fixed
