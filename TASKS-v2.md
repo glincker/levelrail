@@ -252,24 +252,44 @@ visual polish.
       the nav links type-check against real routes (TanStack Router's
       `Link` types are generated from files on disk) before handing
       each one to a parallel agent to build out.
-- [ ] **Account page** (dispatched 2026-08-13, in progress): profile
-      display (username) + a real change-password form against the new
-      endpoint.
-- [ ] **Security page** (dispatched 2026-08-13, in progress): current
-      session info, a "sign out other sessions" action, a short honest
-      note about login rate limiting already being active.
-- [ ] **General page** (dispatched 2026-08-13, in progress): platform/
-      brand info from the already-cached `/api/v1/brand` response.
-      Deliberately scoped to NOT invent a new system-status backend
-      endpoint (Docker health, secrets/webhook configured, disk usage,
-      version) in this pass; that's real future backend work, not
-      something to fake with placeholder data.
-- [ ] **Create App dialog** (dispatched 2026-08-13, in progress): the
-      apps list page had no way to create an app at all, not even a
-      button, despite `POST /api/v1/apps` always having existed and
-      being fully tested on the backend. New `CreateAppDialog.tsx`
-      wired into both the list header and the empty-state CTA, so the
-      empty state stops being purely descriptive text.
+- [x] **Account page (2026-08-13)**: profile card (read-only username,
+      honest that Phase 1's `store.AdminUser` has no other field to
+      edit yet) + a real change-password form (React Hook Form + Zod,
+      `web/src/queries/account.ts`'s `useChangePassword`) against the
+      new endpoint. Agent live-verified the full contract via curl
+      against the real binary (wrong current password, too-short new
+      password, success, old password rejected afterward, new password
+      accepted) before this was merged.
+- [x] **Security page (2026-08-13)**: current-session card (username +
+      formatted expiry), a confirm-gated "sign out other sessions"
+      action (`web/src/queries/security.ts`), and a static login-
+      protection info panel. Agent live-verified with two real
+      concurrent sessions: revoking others left the caller's own
+      session working and the other one truly dead (401 on every
+      route, not just the session endpoint).
+- [x] **General page (2026-08-13)**: platform/brand info from the
+      already-cached `/api/v1/brand` response, conditional Support/Docs
+      links, and an honest "more settings coming later" card.
+      Deliberately did NOT invent a new system-status backend endpoint
+      (Docker health, secrets/webhook configured, disk usage, version)
+      in this pass; confirmed via `grep` that no hardcoded brand-name
+      string exists anywhere in the file, only `brand.Name`/
+      `brand.ShortName` reads, per CLAUDE.md section 3.
+- [x] **Create App dialog (2026-08-13)**: the apps list page had no way
+      to create an app at all, not even a button, despite
+      `POST /api/v1/apps` always having existed and being fully tested
+      on the backend. New `CreateAppDialog.tsx` (name/image/port form)
+      wired into both the list header ("New app" button) and the
+      empty-state CTA via one shared component with a `trigger` prop,
+      so the empty state stopped being purely descriptive text. On
+      success, navigates straight to the new app's detail page. Agent
+      verified this one the most thoroughly of the four: real curl
+      round-trip (201/400/409 all matched) plus an actual browser
+      click-through (`agent-browser`: clicked "New app," filled the
+      form, submitted, watched it navigate to the new app; separately
+      confirmed the empty-state CTA opens the same dialog, and that a
+      duplicate-name submission shows the real server error inline
+      without closing the dialog or adding a phantom row).
 
 ## Status notes
 
