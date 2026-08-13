@@ -119,6 +119,7 @@ type Store interface {
 	DeployStore
 	AuthStore
 	TokenStore
+	NodeStore
 }
 
 // SecretSetter is the surface the secrets handler needs from
@@ -136,6 +137,7 @@ type Router struct {
 	deploys    DeployStore
 	auth       AuthStore
 	tokens     TokenStore
+	nodes      NodeStore
 	secrets    SecretSetter     // nil is valid: a control plane with no master key configured serves everything except secret-setting
 	telemetry  TelemetryQuerier // nil is valid: metrics/logs query routes return 501, same shape as secrets above
 	alertRules AlertRules       // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
@@ -198,6 +200,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		deploys: s,
 		auth:    s,
 		tokens:  s,
+		nodes:   s,
 		logins:  newLoginLimiter(),
 	}
 	for _, opt := range opts {
@@ -278,6 +281,18 @@ func (rt *Router) Handler() http.Handler {
 	// routes above); requireAbility already accepts one the same way it
 	// does for every JSON route, this isn't a special case.
 	mux.HandleFunc("POST /api/v1/prometheus/read", rt.requireAbility(AbilityRead, rt.handlePrometheusRead))
+
+	// Nodes (TASKS.md 3.1): fleet-level infrastructure, not scoped to any
+	// one app, so every route here requires AbilityRoot specifically
+	// rather than AbilityRead/AbilityWrite: minting a join token or
+	// removing a node is a materially more sensitive operation than
+	// editing one app's config, the same reasoning secrets.go's
+	// AbilityWriteSensitive already applies one level down at the
+	// per-app layer.
+	mux.HandleFunc("GET /api/v1/nodes", rt.requireAbility(AbilityRoot, rt.handleListNodes))
+	mux.HandleFunc("GET /api/v1/nodes/{id}", rt.requireAbility(AbilityRoot, rt.handleGetNode))
+	mux.HandleFunc("DELETE /api/v1/nodes/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteNode))
+	mux.HandleFunc("POST /api/v1/nodes/join-tokens", rt.requireAbility(AbilityRoot, rt.handleCreateNodeJoinToken))
 
 	return mux
 }

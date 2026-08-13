@@ -1938,37 +1938,123 @@ CLAUDE.md 4.3/4.6 and ADRs 003/006's stated intent:
   dedicated build nodes to share it with" as the Phase 3 trigger for a
   real remote build cache (3.5 below).
 
-### 3.1 Agent transport interface + node registry. CLAUDED (this session, 2026-08-13)
+### 3.1 Agent transport interface + node registry. DONE (2026-08-13)
 
-The foundation everything else in this phase routes through. Single-
-session per CLAUDE.md 8's explicit "the agent transport protocol" and
-"the database schema" do-not-parallelize entries; this sub-task is
-squarely both at once.
+The foundation everything else in this phase routes through. Built
+single-session per CLAUDE.md 8's explicit "the agent transport
+protocol" and "the database schema" do-not-parallelize entries; this
+sub-task is squarely both at once.
 
-- [ ] New `internal/agent` package: a transport interface abstracting
-      "do container/build/telemetry operations against node N,"
-      structurally close to today's `docker.Runtime` shape (so existing
-      controllers change call sites, not logic) but namespaced per node
-      rather than assuming the one local daemon. Two implementations
-      land together, not the interface alone: an in-process one
-      wrapping today's direct `docker.NewClient()` call (the Phase 1
-      behavior, made explicit rather than implicit, so single-node
-      deployments provably pay zero new cost), and the real gRPC one
-      (3.2).
-- [ ] `internal/store`: new `nodes` table (id, name, address, status,
-      cert fingerprint/serial, joined_at, last_seen_at) plus join-token
-      storage (one-time, single-use, expiring). Migration, following
-      this repo's existing forward-only numbered-migration convention
-      (`internal/store/migrations/000N_*.sql`).
-- [ ] Join-token issuance: an authenticated API route
-      (`POST /api/v1/nodes/join-tokens` or similar, `requireAbility`-
-      gated like every other mutating route in `internal/api`) that
-      mints a one-time token an operator pastes into the agent's
-      enrollment command.
-- [ ] Node CRUD API surface: list nodes, get one, remove one (remove is
-      real deletion only after 3.7's drain exists; before that, deleting
-      a node with services still on it should fail loudly, not
-      silently orphan them).
+- [x] New `internal/agent` package (`transport.go`): `Transport`, an
+      interface embedding `docker.Runtime` directly rather than
+      duplicating its method set field by field, so the two can never
+      silently drift apart. Deliberately *not* extended to cover
+      build/telemetry operations in this pass, despite this section's
+      own original wording suggesting "container/build/telemetry":
+      ADR 008 already gives telemetry its own federated
+      `MetricsSource`/`LogsSource` interfaces
+      (`internal/telemetry/federate.go`), a separate, already-designed
+      RPC surface, and build dispatch has no real caller until 3.5
+      exists. Extending `Transport` speculatively now would be exactly
+      the "design for hypothetical future requirements" CLAUDE.md 7
+      warns against; closing that gap is 3.2/3.5's job, once there's a
+      real proto surface and a real build-node concept to attach it to.
+      Two pieces land together, not the interface alone:
+      - `Local`, wrapping a `docker.Runtime` this process already has
+        open as this process's own node `Transport`, CLAUDE.md 4.3's
+        "single-node mode... in-memory transport that implements the
+        same interface" made real. Not yet wired into
+        `cmd/levelrail/main.go`'s `dynamicSource` (still hands every
+        controller the single shared `docker.Runtime` directly, as
+        before this pass): that wiring is explicitly 3.3's job, once
+        placement exists to route by. `internal/agent` today has zero
+        call sites outside its own tests, the same "build the
+        primitive standalone, wire it in later" shape `internal/build`
+        and `internal/ingress` were built as in Phase 0.
+      - `Registry`, resolving a node ID to its `Transport`. The real
+        gRPC implementation (3.2) is what mostly populates it once
+        nodes exist to register.
+      100% coverage (`transport_test.go`): delegation proven against a
+      hand-written fake `docker.Runtime` (not trusting that embedding
+      compiles to correct behavior), register/get/unregister/replace,
+      not-registered error.
+- [x] `internal/store`: `nodes` and `node_join_tokens` tables
+      (migration `0008_nodes.sql`), `nodes.go`/`node_join_tokens.go`.
+      `SaveNode` is insert-only (a node's ID/name are fixed at
+      enrollment, matching `SaveAPIToken`'s own "no in-place replace"
+      convention); status transitions go through `UpdateNodeStatus`,
+      heartbeats through `TouchNodeLastSeen` (best-effort, matching
+      `TouchAPITokenLastUsed`). A duplicate node name is rejected
+      (`ErrNodeNameTaken`) via the same "let the INSERT's constraint
+      decide, then classify by re-checking" shape `CreateAdminUser`
+      already established for a different unique-constraint conflict,
+      not by parsing the SQLite driver's own error type.
+      `MarkNodeJoinTokenUsed` is the single-use enforcement point: an
+      atomic `UPDATE ... WHERE used_at IS NULL`, proven safe under
+      real concurrent callers
+      (`TestMarkNodeJoinTokenUsed_ConcurrentCallers_OnlyOneSucceeds`,
+      20 goroutines, `-race` clean), the identical concurrency lesson
+      `TestCreateAdminUser_ConcurrentCallers_OnlyOneSucceeds` already
+      proved for a different single-use resource.
+- [x] Join-token issuance: `POST /api/v1/nodes/join-tokens`
+      (`internal/api/nodes.go`), mints a `crypto/rand` token
+      (`randomToken`, reused from `auth.go`), stores only its SHA-256
+      hash, returns the plaintext exactly once (`createTokenResponse`'s
+      own "shown once, never recoverable" shape). 15-minute TTL
+      (`nodeJoinTokenTTL`), a fixed const rather than an env var: this
+      is a one-shot enrollment window, not an ongoing operational
+      setting, so CLAUDE.md 7's "no hardcoded thresholds" concern
+      doesn't bind the same way it does for, say, session TTL.
+- [x] Node CRUD API surface: `GET /api/v1/nodes`,
+      `GET /api/v1/nodes/{id}`, `DELETE /api/v1/nodes/{id}`. **Real,
+      deliberate scope cut from this section's own original wording**:
+      there is no `POST /api/v1/nodes` to directly create a node row.
+      `migrations/0008_nodes.sql`'s own doc comment states the reason
+      up front: a node is meant to come into existence through the
+      join-token enrollment flow (ADR 003: "agent exchanges it for a
+      client certificate"), not an operator hand-typing node details
+      into a form; building a direct-create route now would let a node
+      row exist that never actually enrolled anything, actively wrong
+      per the ADR's own model. `store.SaveNode` is a real, fully tested
+      primitive ready for 3.2's enrollment handler to call, just not
+      reachable over HTTP yet. `DeleteNode` has no placement guard
+      (correctly: 3.3 hasn't landed, so no service can be assigned to
+      a node at all yet, making a "does this node still have services"
+      check vacuous, not merely unwritten; both `store.DeleteNode`'s
+      and this route's own doc comments say so directly, and TASKS.md
+      3.7 already carries the follow-up).
+      Every node route requires `AbilityRoot` specifically, not
+      `AbilityRead`/`AbilityWrite`: fleet-level infrastructure
+      (minting a credential that can enroll a whole machine, or
+      deleting a node's registry row) is a materially more sensitive
+      operation than editing one app's config, the same reasoning
+      `AbilityWriteSensitive` already applies one level down for
+      per-app secrets.
+
+Live-verified as a real end-to-end HTTP surface, not just unit tested
+against fakes: `internal/api/nodes_test.go` exercises every route
+through a real temp-file SQLite store and the real `Router.Handler()`
+(the same `httptest`-against-`Handler()` convention every other
+`internal/api` test file already uses), including that a plain
+`write`-scoped bearer token is forbidden from every node route while a
+`root`-scoped one succeeds, and that two calls to the join-token mint
+route return two distinct plaintext tokens whose hashes both land in
+the store. 100% coverage on `internal/agent` (new package); `internal/
+store` and `internal/api` both stayed within a point of their prior
+coverage (78.6% and 78.3% respectively, gate is 70%). `gofmt`/`go vet`/
+`golangci-lint`/`go build -tags embedweb` all clean; `go test ./... -race`
+green repo-wide; `internal/` coverage gate 83.1%, threshold 70%.
+
+**Not done here, explicit follow-up for 3.2, not silently skipped**:
+the actual join-token *exchange* (an agent presenting a token and
+receiving a certificate back) has no endpoint yet, since building one
+without `cmd/levelrail-agent`, a CA, or any cert-issuance machinery to
+call it would be pure speculation. `internal/agent.Registry` has no
+caller populating it yet, for the same reason. `dynamicSource`
+(`cmd/levelrail/main.go`) is completely untouched by this pass: every
+controller still gets the single shared local `docker.Runtime`
+directly, exactly as before, which is the correct Phase 1-compatible
+behavior until 3.3 actually wires per-node routing in.
 
 ### 3.2 `proto/` definitions and the real gRPC agent binary
 
