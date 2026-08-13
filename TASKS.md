@@ -870,60 +870,156 @@ met, same as Phase 0's competitor research and ADR writing were.
 
 ---
 
-## Dashboard & auth: research phase (started 2026-08-12)
+## Dashboard & auth (started 2026-08-12, research complete, building now)
 
-Cross-cutting, not filed under a single phase number: the dashboard
-(`/web`) already covers app list/detail/domains/env/deploy-trigger/
-log-viewer (1.10), but there is no login screen, no onboarding flow, and
-`internal/api`'s auth (`internal/api/auth.go`) is bespoke bcrypt +
-in-memory session cookie, nothing more. CLAUDE.md 4.11's AI/MCP layer and
-this session's own CLI/API-token ask both need a real answer to "how does
-a caller authenticate" before they can be built on top of it, so this is
-being researched properly before anything gets wired, not improvised.
+Cross-cutting, not filed under a single phase number. Four parallel
+research agents (2026-08-12) each produced a `docs-local/research/` doc,
+all read in full before writing the task list below: `theauth-go-fit-
+assessment.md`, `frontend-component-reuse.md`, `competitor-onboarding-
+auth-ux.md`, `dashboard-gap-audit-and-devmode.md`. Read those for the
+full evidence; this section is the validated, concrete task queue
+distilled from them. Agents pick a task, validate against the cited
+research doc, implement, mark done, move on; new tasks get added here as
+they're discovered, not dumped speculatively ahead of need.
 
-Four parallel research agents dispatched (2026-08-12), each producing a
-`docs-local/research/` doc, no application code touched by any of them:
+**Decisions the research settled, not open questions:**
 
-- [~] **theauth-go fit assessment**: is `github.com/glincker/theauth-go`
-      (OAuth 2.1 + MCP authorization for Go, already a mature project
-      with its own `docs-local/2026-06-2x-theauth-go-*` design/audit
-      trail in this GLINRV5 workspace) the right replacement for
-      `internal/api`'s bespoke auth, given Phase 1's own stated scope
-      ("single admin user, session auth, no teams, no RBAC yet") is far
-      smaller than what theauth-go offers (SAML, WebAuthn, SCIM, agent
-      delegation). Does adopting it now right-size to Phase 1 or
-      overshoot it. Storage: Levelrail is SQLite, theauth-go's own
-      storage adapters are Postgres/MySQL/Memory, is that a blocker or a
-      non-issue. Concrete integration sketch if the recommendation is
-      "adopt now."
-- [~] **Frontend component/auth-SDK reuse**: `theauth`'s `sdk/` (JS/TS
-      client SDK, docs-site, examples) paired with `theauth-go` on the
-      backend, and `thesvg`'s shadcn/ui-based component system
-      (`components.json`: shadcn schema, style `base-nova`, Tailwind,
-      lucide icons) as the reusable-component foundation for `/web`
-      instead of the hand-rolled Tailwind components built so far
-      (`AppOverview`, `DomainEditor`, `EnvEditor`, etc.). What's
-      genuinely reusable, what needs adapting, what's GLINCKER-cloud-only
-      and not applicable to a self-hosted single-binary product.
-- [~] **Competitor onboarding/auth UX**: read the already-cloned
-      `docs-local/competitor-clones/{coolify,dokploy,caprover,dokku}`
-      for first-run setup, login screen, and any API-token/CLI-auth
-      mechanism they expose (Phase 0's `prior-art-*.md` docs covered
-      deploy/rollback mechanics, not this angle). What's good UX to
-      borrow, what's bad UX to avoid, specifically for Levelrail's own
-      first-run/login/token flows.
-- [~] **Dashboard gap audit + dev-mode design**: honest gap list against
-      "install, start, get full control" for a single-admin single-node
-      install (not multi-node/teams, those stay out of scope per
-      CLAUDE.md 6's Phase boundaries), plus a concrete design for a
-      local dev-mode auth bypass so iterating on dashboard features
-      doesn't mean re-logging-in on every reload.
+- **Don't adopt theauth-go now.** Storage mismatch (no SQLite adapter,
+  its Memory backend is explicitly non-production and would regress even
+  the admin row), a flat 40+ method `Storage` interface disproportionate
+  to "hash a password, check a session," and real scope overshoot past
+  "single admin user, no teams, no RBAC yet." Extend Levelrail's own
+  auth instead (tasks below). Revisit theauth-go at Phase 4 when teams/
+  RBAC/MCP-server are actually in scope; its MCP/agent-delegation story
+  is genuinely strong for that phase specifically, not this one. Full
+  reasoning: `docs-local/research/theauth-go-fit-assessment.md`.
+- **Adopt shadcn/ui for `/web`, incrementally, via a fresh `npx shadcn
+  init` targeting Vite** (not a copy of thesvg's Next-tuned
+  `components.json`). Base UI as the primitive backend (matches thesvg,
+  GLINCKER visual/behavioral consistency across products). No existing
+  hand-rolled component (`DomainEditor.tsx` etc.) needs to change; new
+  work uses shadcn, old components migrate opportunistically when
+  touched. Full reasoning: `docs-local/research/frontend-component-
+  reuse.md`.
+- **Skip the theauth SDK for the login screen.** Backend-shape mismatch
+  (OAuth/agent-identity vs. Levelrail's bcrypt+session-cookie), and
+  theauth's own admin dashboard doesn't use its own SDK for this exact
+  case either, it hand-rolls a form + fetch. Same doc as above, section 2.
+- **API tokens use Coolify's scoped-ability model** (`read`,
+  `read:sensitive`, `write`, `deploy`, `root`, root exclusive of the
+  rest, re-checked fresh server-side on every call), not Dokploy's
+  all-or-nothing key. This is what lets an MCP-issued token be provably
+  read-only at the token layer, per CLAUDE.md 4.11. Full reasoning:
+  `docs-local/research/competitor-onboarding-auth-ux.md`, finding 9.
+- **Dev mode is backend-side and build-tag gated**, mirroring
+  `web/embed_real.go`/`embed_stub.go`'s existing `embedweb` tag pattern
+  with the polarity reversed, never a frontend-side auth-guard bypass
+  (that would stop exercising the real guard code being iterated on).
+  Full design: `docs-local/research/dashboard-gap-audit-and-devmode.md`,
+  Part 2.
 
-Synthesis and concrete, validated tasks land here once all four report
-back. Deliberately not dumping a large upfront task list ahead of that:
-CLAUDE.md 7 argues against speculative planning, and locking in a UI
-framework/component/auth direction before the research lands would be
-exactly that.
+### Backend auth foundation
+
+Single-session, not delegated to parallel agents: this is core
+trust-boundary code, the same discipline CLAUDE.md 8 already applies to
+secrets and the reconciler, applied here for the same reason.
+
+- [ ] **API tokens**: new `internal/store/tokens.go` +
+      migration (`api_tokens(id, name, token_hash, abilities, created_at,
+      last_used_at, expires_at, revoked_at)`). `token_hash` is SHA-256 of
+      a `crypto/rand` token, only the hash ever stored. Abilities:
+      `read`, `read:sensitive`, `write`, `deploy`, `root` (root exclusive
+      of all others), checked fresh per request, never a cached snapshot.
+      `POST /api/v1/auth/tokens` mints (plaintext shown exactly once,
+      GitHub-PAT convention), `DELETE /api/v1/auth/tokens/{id}` revokes.
+      `requireAuth` (or a sibling) accepts `Authorization: Bearer <token>`
+      alongside the existing session cookie, updates `last_used_at` on
+      lookup. This is the concrete near-term answer to "how does a CLI or
+      MCP server call the API non-interactively," sized to what Phase 1
+      actually needs (theauth-go doc's sketch, ~150-250 lines, zero new
+      deps).
+- [ ] **First-run registration**: a real `POST /api/v1/auth/register`
+      (or similar) gated server-side by "does an admin row already
+      exist," checked at both the route and the mutation layer
+      (Dokploy's belt-and-suspenders pattern, not a single redirect
+      check). Keep the existing `APP_ADMIN_USERNAME`/`APP_ADMIN_PASSWORD`
+      env-var bootstrap as an alternative path for scripted/CI installs;
+      add this so an interactive install has a real UI-driven path too.
+      Never a hardcoded default credential (CapRover's `captain42` is
+      the named anti-pattern to avoid, cite it in the commit).
+- [ ] **Session security**: rotate/invalidate all sessions on password
+      change; session TTL via env var, no "remember me" UI toggle (one
+      configurable-by-admin lifetime, matches CLAUDE.md 7's "no hardcoded
+      thresholds, use env vars"); real login rate limiting (exponential
+      backoff or a token-bucket per IP+account pair, not CapRover's flat
+      30s global back-off).
+- [ ] **Locked-out recovery path**: a documented, container-native
+      recovery mechanism for a locked-out single admin (a subcommand run
+      via `docker exec`, matching Dokploy's `reset-password.ts` shape,
+      or a `levelrail-agent recover-admin`-style command per CLAUDE.md
+      4.1's single-binary story). Log the action via `log/slog` so it's
+      visible after the fact.
+- [ ] **Dev mode**: `APP_DEV_MODE=1`, gated by a new build-tag file pair
+      in `internal/api` (`devmode_debug.go` `//go:build !embedweb`,
+      `devmode_release.go` `//go:build embedweb`, the latter always
+      returns `false` without even reading the env var). At startup,
+      bootstraps a fixed, loudly-logged dev admin and drives the real
+      `handleLogin` path to get a genuine session, the same shape
+      `internal/api/testutil_test.go`'s `loginTestSession` already uses.
+      Never a second "skip auth" branch in `requireAuth` itself. Wiring
+      the startup call into `cmd/levelrail/main.go` is a small, separate
+      last step, deferred until that file's current concurrent edits
+      (Phase 2 telemetry wiring) settle, to avoid stepping on live
+      in-progress work in the same file.
+
+### Frontend: dashboard UI
+
+Parallel-safe once the backend tasks above land (frozen API contract),
+per CLAUDE.md 8's "frontend pages, one agent per route" rule. The shadcn
+setup task has no backend dependency and can start immediately.
+
+- [ ] **shadcn/ui setup**: `cd web && npx shadcn@latest init` (Vite
+      target, Base UI primitives), then `npx shadcn add button input
+      label card table dialog select form checkbox switch alert
+      popover tabs` (the set `frontend-component-reuse.md` section 1.1
+      identifies as missing versus thesvg's partial 13-component set).
+      No existing component needs to change. New `web/package.json`
+      deps need the standing package.json-changes-need-approval gate
+      acknowledged, per the research doc's own flag.
+- [ ] **Vite dev proxy**: `web/vite.config.ts` gets a `server.proxy`
+      entry for `/api` (dev-only), a prerequisite the dev-mode research
+      flagged as missing regardless of the auth bypass itself.
+- [ ] **Login screen**: hand-rolled form + `fetch` against
+      `POST /api/v1/auth/login` (and the new register endpoint above),
+      cookie-based session (not a bearer token in `sessionStorage`,
+      Levelrail's backend already uses cookies), styled with shadcn
+      primitives once available. Distinguish "no admin exists yet" from
+      "wrong password" in the UI (needs a cheap backend signal or
+      client-side inference from "no session has ever succeeded";
+      resolve this as part of the first-run backend task, not invented
+      client-side).
+- [ ] **Auth-aware app shell** (`web/src/routes/__root.tsx` rewrite):
+      redirect to `/login` on 401/no-session, a logout button calling
+      the existing `POST /api/v1/auth/logout` (currently dead code, zero
+      frontend caller), session-aware nav. Wire `GET /api/v1/brand` to a
+      `BrandProvider` context in the same pass, already flagged as
+      deferred work in this same file.
+- [ ] **401/session-expiry handling**: `web/src/queries/*.ts`'s fetchers
+      currently throw the same generic error for 401 as for 404/500.
+      Distinguish 401 specifically (redirect to login / surface
+      "session expired," not a generic error) across every query
+      function, not just `apps.ts`.
+- [ ] **Secrets UI**: a form on the app detail route calling
+      `PUT /api/v1/apps/{name}/secrets/{key}` (exists server-side since
+      TASKS.md 1.7, zero frontend consumer today), handling the 501
+      "not configured" case (no `APP_MASTER_KEY` set) with a clear
+      message distinct from a user error.
+- [ ] **API token management UI**: name + optional prefix + expiration
+      dropdown (with a real "never" option) + ability checkboxes +
+      plaintext-shown-once modal with copy button + one-click revoke
+      with confirm (Dokploy's lifecycle UX + Coolify's ability model,
+      per the competitor research's finding 10). Link directly to API
+      docs from this screen (Dokploy's Swagger-link touch).
 
 ---
 
