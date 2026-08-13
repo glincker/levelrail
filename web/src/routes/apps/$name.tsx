@@ -1,4 +1,9 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  Link,
+  Outlet,
+  useRouterState,
+} from '@tanstack/react-router'
 import {
   ActivityIcon,
   ArrowLeftIcon,
@@ -82,6 +87,29 @@ function AppDetailPage() {
   const { data: app } = useApp(name)
   const { data: conditions } = useDeployStatus(name)
   const status = summarizeConditions(conditions)
+
+  // /apps/$name/deploys/$deployId/logs is a real, distinct nested route
+  // (routeTree.gen.ts: its getParentRoute is this route), but this
+  // component previously never rendered an <Outlet />, so navigating
+  // there rendered this page's own tab shell with nowhere for the child
+  // route to mount, a silently broken URL. DeployLogsPage renders its
+  // own full header and full-height log pane (a focused build-log view,
+  // not a panel meant to sit inside these tabs), so when that child
+  // route is active this page steps aside entirely rather than nesting
+  // it under the tab UI. There is no in-app link to this route yet: the
+  // backend has no deploy-history/attempt-listing endpoint to source a
+  // deployId from (internal/api's own doc comment is explicit that
+  // deploys.go returns current reconcile conditions, not an
+  // attempt-by-attempt log), so this only fixes the route for direct
+  // navigation, it does not add a "recent deploys" list. That's a real,
+  // separate, store-schema-sized feature, not a wiring fix, see
+  // TASKS-v2.md.
+  const isViewingDeployLogs = useRouterState({
+    select: (s) => s.location.pathname.includes('/deploys/'),
+  })
+  if (isViewingDeployLogs) {
+    return <Outlet />
+  }
 
   return (
     <div className="space-y-6">
