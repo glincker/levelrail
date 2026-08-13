@@ -59,7 +59,16 @@ export function LogSearchPanel({ appName }: { appName: string }) {
   })
 
   return (
-    <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+    // id is a scroll-to-anchor target for AlertRulesPanel's "View logs"
+    // link on a crashlooping rule: the last-200-lines-that-fired payload
+    // only ever reaches the configured notify_url (see AlertRulesPanel's
+    // header comment), so the honest thing this dashboard can offer
+    // instead is jumping straight to this app's own live/historical log
+    // view, not fabricating a view of lines this API cannot return.
+    <section
+      id="log-search"
+      className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
