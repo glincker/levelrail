@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Trash2, TriangleAlert } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -38,11 +39,15 @@ export function DeleteAlertRuleDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="destructive" size="sm" />}>
+        <Trash2 className="size-3.5" aria-hidden="true" />
         Delete
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Delete &ldquo;{rule.name}&rdquo;?</DialogTitle>
+          <DialogTitle className="flex items-center gap-1.5 text-destructive">
+            <TriangleAlert className="size-4" aria-hidden="true" />
+            Delete &ldquo;{rule.name}&rdquo;?
+          </DialogTitle>
           <DialogDescription>
             This rule stops evaluating and notifying immediately. This cannot be
             undone.

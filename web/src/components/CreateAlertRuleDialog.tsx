@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { Gauge, PlusCircle, RotateCcw } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -40,9 +41,13 @@ import type {
 // rejects anyway.
 const GO_DURATION_REGEX = /^-?(\d+(\.\d+)?(ns|us|µs|ms|s|m|h))+$/
 
-const KIND_OPTIONS: { value: AlertRuleKind; label: string }[] = [
-  { value: 'threshold', label: 'Threshold' },
-  { value: 'crashloop', label: 'Crashloop' },
+const KIND_OPTIONS: {
+  value: AlertRuleKind
+  label: string
+  Icon: typeof Gauge
+}[] = [
+  { value: 'threshold', label: 'Threshold', Icon: Gauge },
+  { value: 'crashloop', label: 'Crashloop', Icon: RotateCcw },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -237,7 +242,13 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
       <DialogTrigger render={<Button size="sm" />}>Create rule</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Create alert rule</DialogTitle>
+          <DialogTitle className="flex items-center gap-1.5">
+            <PlusCircle
+              className="size-4 text-muted-foreground"
+              aria-hidden="true"
+            />
+            Create alert rule
+          </DialogTitle>
           <DialogDescription>
             A threshold rule watches a metric; a crashloop rule watches
             container restarts. Both notify the same way once they fire.
@@ -272,6 +283,10 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
                   <SelectContent>
                     {KIND_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
+                        <option.Icon
+                          className="size-3.5 text-muted-foreground"
+                          aria-hidden="true"
+                        />
                         {option.label}
                       </SelectItem>
                     ))}

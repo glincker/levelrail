@@ -10,7 +10,10 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { Activity, Info, RefreshCw } from 'lucide-react'
 import { Button } from './ui/button'
+import { Badge } from './ui/badge'
+import { Alert, AlertDescription, AlertTitle } from './ui/alert'
 import { useMetricSeries } from '../queries/metrics'
 import type { MetricName, MetricSeries } from '../types/metrics'
 import type { ReconcileCondition } from '../types/deploy'
@@ -212,6 +215,24 @@ function resolveDeployMarker(
   return t
 }
 
+// The most recent value across both series, shown next to the chart
+// title as a "current reading" the way Vercel/Grafana small-multiple
+// panels pair a stat with a sparkline rather than making the reader
+// trace the line to the right edge to find "now".
+function latestReading(
+  rows: ChartRow[],
+  group: ChartGroupConfig,
+): string | null {
+  for (let i = rows.length - 1; i >= 0; i -= 1) {
+    const row = rows[i]
+    const value = row?.primary
+    if (value !== undefined) {
+      return formatMetricValue(group.unit, value)
+    }
+  }
+  return null
+}
+
 function ChartCard({
   appName,
   group,
@@ -251,22 +272,31 @@ function ChartCard({
   )
 
   const spanMs = range.to.getTime() - range.from.getTime()
+  const current = isLoading || error ? null : latestReading(rows, group)
 
   return (
-    <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-      <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-        {group.title}
-      </h3>
+    <section className="rounded-lg border border-border bg-card p-4">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+          <span
+            className="size-2 shrink-0 rounded-full"
+            style={{ backgroundColor: group.primary.color }}
+            aria-hidden="true"
+          />
+          {group.title}
+        </h3>
+        {current !== null ? (
+          <span className="font-mono text-sm font-medium text-foreground">
+            {current}
+          </span>
+        ) : null}
+      </div>
       {isLoading ? (
-        <p className="mt-6 text-sm text-neutral-500 dark:text-neutral-400">
-          Loading...
-        </p>
+        <p className="mt-6 text-sm text-muted-foreground">Loading...</p>
       ) : error ? (
-        <p className="mt-6 text-sm text-red-600 dark:text-red-400">
-          {error.message}
-        </p>
+        <p className="mt-6 text-sm text-destructive">{error.message}</p>
       ) : rows.length === 0 ? (
-        <p className="mt-6 text-sm text-neutral-500 dark:text-neutral-400">
+        <p className="mt-6 text-sm text-muted-foreground">
           No data in this range.
         </p>
       ) : (
@@ -276,10 +306,7 @@ function ChartCard({
               data={rows}
               margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
             >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                className="stroke-neutral-200 dark:stroke-neutral-800"
-              />
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis
                 dataKey="t"
                 type="number"
@@ -287,14 +314,14 @@ function ChartCard({
                 tickFormatter={(t: number) => formatAxisTick(t, spanMs)}
                 tick={{ fontSize: 11 }}
                 stroke="currentColor"
-                className="text-neutral-400 dark:text-neutral-500"
+                className="text-muted-foreground"
               />
               <YAxis
                 tickFormatter={(v: number) => formatMetricValue(group.unit, v)}
                 tick={{ fontSize: 11 }}
                 width={64}
                 stroke="currentColor"
-                className="text-neutral-400 dark:text-neutral-500"
+                className="text-muted-foreground"
               />
               <Tooltip
                 labelFormatter={(label) =>
@@ -376,13 +403,17 @@ export function MetricsDashboard({
   )
 
   return (
-    <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+    <section className="rounded-lg border border-border p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+            <Activity
+              className="size-4 text-muted-foreground"
+              aria-hidden="true"
+            />
             Metrics
           </h2>
-          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="mt-1 text-xs text-muted-foreground">
             As of {range.to.toLocaleTimeString()}.
             {deployMarkerMs !== null
               ? " Red dashed line marks the current reconcile's last transition, not a full deploy history (see code comment)."
@@ -393,7 +424,7 @@ export function MetricsDashboard({
           <div
             role="group"
             aria-label="Time range"
-            className="inline-flex rounded-md border border-neutral-300 dark:border-neutral-700"
+            className="inline-flex rounded-md border border-border"
           >
             {TIME_RANGE_PRESETS.map((preset) => (
               <button
@@ -405,8 +436,8 @@ export function MetricsDashboard({
                 aria-pressed={rangeKey === preset.key}
                 className={`px-2.5 py-1 text-xs font-medium first:rounded-l-md last:rounded-r-md ${
                   rangeKey === preset.key
-                    ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
-                    : 'bg-white text-neutral-600 hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800'
+                    ? 'bg-foreground text-background'
+                    : 'bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
               >
                 {preset.label}
@@ -421,12 +452,13 @@ export function MetricsDashboard({
               setRefreshNonce((n) => n + 1)
             }}
           >
+            <RefreshCw className="size-3.5" aria-hidden="true" />
             Refresh
           </Button>
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
         {CHART_GROUPS.map((group) => (
           <ChartCard
             key={group.title}
@@ -438,20 +470,23 @@ export function MetricsDashboard({
         ))}
       </div>
 
-      <div className="mt-4 rounded-md bg-neutral-50 p-3 dark:bg-neutral-900">
-        <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase dark:text-neutral-400">
-          Not yet collected
-        </p>
-        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-          CLAUDE.md 6 also names these as required per-app metrics, but no
-          collector backs them yet:
-        </p>
-        <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-neutral-500 dark:text-neutral-400">
-          {NOT_YET_COLLECTED.map((label) => (
-            <li key={label}>{label}</li>
-          ))}
-        </ul>
-      </div>
+      <Alert className="mt-4">
+        <Info />
+        <AlertTitle>Not yet collected</AlertTitle>
+        <AlertDescription>
+          <p>
+            CLAUDE.md 6 also names these as required per-app metrics, but no
+            collector backs them yet:
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {NOT_YET_COLLECTED.map((label) => (
+              <Badge key={label} variant="outline">
+                {label}
+              </Badge>
+            ))}
+          </div>
+        </AlertDescription>
+      </Alert>
     </section>
   )
 }

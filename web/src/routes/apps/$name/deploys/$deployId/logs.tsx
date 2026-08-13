@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useCallback, useEffect, useRef } from 'react'
+import { ArrowDown, Terminal } from 'lucide-react'
 import {
   useDeployLogStream,
   type LogStreamConnectionState,
@@ -101,11 +102,18 @@ function DeployLogsPage() {
     <div className="flex h-full flex-col gap-3">
       <header className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+          <h1 className="flex items-center gap-1.5 text-lg font-semibold text-foreground">
+            <Terminal
+              className="size-4 text-muted-foreground"
+              aria-hidden="true"
+            />
             Build logs
           </h1>
-          <p className="truncate text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="truncate text-xs text-muted-foreground">
             {name} / deploy {deployId}
+            {lines.length > 0
+              ? ` · ${lines.length.toLocaleString()} lines`
+              : ''}
           </p>
         </div>
         <ConnectionBadge state={connectionState} />
@@ -118,7 +126,8 @@ function DeployLogsPage() {
           className="h-[70vh] overflow-auto rounded-lg border border-neutral-800 bg-neutral-950 font-mono text-xs leading-5 text-neutral-200"
         >
           {lines.length === 0 ? (
-            <p className="px-3 py-2 text-neutral-500">
+            <p className="flex items-center gap-2 px-3 py-2 text-neutral-500">
+              <span className="size-1.5 animate-pulse rounded-full bg-neutral-500" />
               Waiting for log output...
             </p>
           ) : (
@@ -130,6 +139,7 @@ function DeployLogsPage() {
             >
               {virtualItems.map((virtualRow) => {
                 const logLine = lines[virtualRow.index]
+                const isStderr = logLine?.stream === 'stderr'
                 return (
                   <div
                     key={virtualRow.key}
@@ -143,10 +153,10 @@ function DeployLogsPage() {
                       height: ROW_HEIGHT_PX,
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
-                    className={`truncate whitespace-pre px-3 ${
-                      logLine?.stream === 'stderr'
-                        ? 'text-red-400'
-                        : 'text-neutral-200'
+                    className={`truncate border-l-2 px-3 whitespace-pre ${
+                      isStderr
+                        ? 'border-red-500 bg-red-950/30 text-red-400'
+                        : 'border-transparent text-neutral-200'
                     }`}
                   >
                     {logLine ? stripAnsiCodes(logLine.line) : ''}
@@ -161,8 +171,9 @@ function DeployLogsPage() {
           <button
             type="button"
             onClick={handleResumeClick}
-            className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-neutral-800 px-3 py-1 text-xs font-medium text-neutral-100 shadow-lg hover:bg-neutral-700"
+            className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-neutral-800 px-3 py-1 text-xs font-medium text-neutral-100 shadow-lg hover:bg-neutral-700"
           >
+            <ArrowDown className="size-3.5" aria-hidden="true" />
             Resume auto-scroll
           </button>
         )}
@@ -184,11 +195,30 @@ const CONNECTION_STYLE: Record<LogStreamConnectionState, string> = {
   error: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
 }
 
+// The connection dot pulses only while genuinely live (SSE stream open):
+// a still dot for "Connecting..."/"Reconnecting..." would read as "also
+// live", which is the opposite of what those two states mean.
+const CONNECTION_DOT_CLASS: Record<LogStreamConnectionState, string> = {
+  connecting: 'bg-neutral-500 dark:bg-neutral-400',
+  open: 'bg-green-600 dark:bg-green-400',
+  error: 'bg-amber-600 dark:bg-amber-400',
+}
+
 function ConnectionBadge({ state }: { state: LogStreamConnectionState }) {
   return (
     <span
-      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${CONNECTION_STYLE[state]}`}
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${CONNECTION_STYLE[state]}`}
     >
+      <span className="relative inline-flex size-2" aria-hidden="true">
+        {state === 'open' ? (
+          <span
+            className={`absolute inline-flex size-full animate-ping rounded-full opacity-75 ${CONNECTION_DOT_CLASS[state]}`}
+          />
+        ) : null}
+        <span
+          className={`relative inline-flex size-2 rounded-full ${CONNECTION_DOT_CLASS[state]}`}
+        />
+      </span>
       {CONNECTION_LABEL[state]}
     </span>
   )

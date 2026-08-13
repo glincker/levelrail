@@ -1,3 +1,5 @@
+import { useMemo } from 'react'
+import { BellRing } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -47,6 +49,36 @@ const STATE_BADGE_CLASS: Record<RuleState, string> = {
   pending:
     'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
   ok: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+}
+
+// The solid dot color that pairs with STATE_BADGE_CLASS above, used both
+// inside each row's state badge and in the header's firing/pending/ok
+// summary counts, so a rule's state reads as a color before the label
+// text is even parsed.
+const STATE_DOT_CLASS: Record<RuleState, string> = {
+  firing: 'bg-red-600 dark:bg-red-400',
+  pending: 'bg-amber-600 dark:bg-amber-400',
+  ok: 'bg-green-600 dark:bg-green-400',
+}
+
+// A firing rule gets a pulsing dot, not just a static one: it is the
+// state most likely to need immediate attention, and a still dashboard
+// full of quiet badges is exactly the "bolted on" observability feel
+// CLAUDE.md 1 calls out in Coolify/Dokploy. Pending/ok stay static so the
+// motion budget on this page is spent only where it is meaningful.
+function StateDot({ state }: { state: RuleState }) {
+  return (
+    <span className="relative inline-flex size-2 shrink-0" aria-hidden="true">
+      {state === 'firing' ? (
+        <span
+          className={`absolute inline-flex size-full animate-ping rounded-full opacity-75 ${STATE_DOT_CLASS[state]}`}
+        />
+      ) : null}
+      <span
+        className={`relative inline-flex size-2 rounded-full ${STATE_DOT_CLASS[state]}`}
+      />
+    </span>
+  )
 }
 
 // firing implies a non-null pending_since too (advanceState,
@@ -140,6 +172,7 @@ function RuleRow({ appName, rule }: { appName: string; rule: AlertRule }) {
       <TableCell>
         <div className="flex flex-col gap-1">
           <Badge className={STATE_BADGE_CLASS[state]}>
+            <StateDot state={state} />
             {STATE_LABEL[state]}
           </Badge>
           {showLogsLink ? (
@@ -168,42 +201,72 @@ function RuleRow({ appName, rule }: { appName: string; rule: AlertRule }) {
   )
 }
 
+// Small "N firing / N pending / N ok" chips above the table, so a rule's
+// state is scannable at a glance without reading every row, the same
+// summary-before-detail shape alerting UIs (Grafana's alert list,
+// PagerDuty) use.
+function StateSummary({ rules }: { rules: AlertRule[] }) {
+  const counts = useMemo(() => {
+    const result: Record<RuleState, number> = { firing: 0, pending: 0, ok: 0 }
+    for (const rule of rules) {
+      result[ruleState(rule)] += 1
+    }
+    return result
+  }, [rules])
+
+  return (
+    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+      {(Object.keys(STATE_LABEL) as RuleState[]).map((state) =>
+        counts[state] > 0 ? (
+          <span key={state} className="flex items-center gap-1.5">
+            <StateDot state={state} />
+            {counts[state]} {STATE_LABEL[state].toLowerCase()}
+          </span>
+        ) : null,
+      )}
+    </div>
+  )
+}
+
 export function AlertRulesPanel({ appName }: { appName: string }) {
   const { data, isLoading, error } = useAlertRules(appName)
   const rules = data ?? []
 
   return (
-    <section className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+    <section className="rounded-lg border border-border p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+            <BellRing
+              className="size-4 text-muted-foreground"
+              aria-hidden="true"
+            />
             Alert rules
           </h2>
-          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="mt-1 text-xs text-muted-foreground">
             Threshold and crashloop rules over this app&apos;s metrics and
             restarts. Notifies via webhook, Slack, or Discord on a
             firing/resolved transition.
           </p>
         </div>
-        <CreateAlertRuleDialog appName={appName} />
+        <div className="flex items-center gap-3">
+          {rules.length > 0 ? <StateSummary rules={rules} /> : null}
+          <CreateAlertRuleDialog appName={appName} />
+        </div>
       </div>
 
       <div className="mt-3">
         {isLoading ? (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Loading...
-          </p>
+          <p className="text-sm text-muted-foreground">Loading...</p>
         ) : error ? (
-          <p className="text-sm text-red-600 dark:text-red-400">
-            {error.message}
-          </p>
+          <p className="text-sm text-destructive">{error.message}</p>
         ) : rules.length === 0 ? (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          <p className="text-sm text-muted-foreground">
             No alert rules yet. Create one to get notified on a metric threshold
             or a crashloop.
           </p>
         ) : (
-          <div className="rounded-lg border border-neutral-200 dark:border-neutral-800">
+          <div className="rounded-lg border border-border">
             <Table>
               <TableHeader>
                 <TableRow>
