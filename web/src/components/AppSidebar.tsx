@@ -1,11 +1,20 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import { BoxesIcon, BookOpenIcon, KeyRoundIcon, LogOutIcon } from 'lucide-react'
+import {
+  BoxesIcon,
+  BookOpenIcon,
+  KeyRoundIcon,
+  LogOutIcon,
+  SettingsIcon,
+  ShieldIcon,
+  UserIcon,
+} from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -74,10 +83,35 @@ export function AppSidebar() {
             account footer: the two-zone structure dashboard-01's
             NavSecondary establishes. mt-auto on the group itself, not a
             spacer element, so it works regardless of how much primary
-            nav exists above it. */}
+            nav exists above it. A real "Settings" section (account,
+            security, tokens, general), not just the one API-tokens link
+            this group used to hold: Coolify and Dokploy both surface
+            these even before a single app is deployed, and Levelrail's
+            equivalent screens (routes/settings/*) exist now too. */}
         <SidebarGroup className="mt-auto">
+          <SidebarGroupLabel>Settings</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  render={<Link to="/settings/account" />}
+                  isActive={pathname.startsWith('/settings/account')}
+                  tooltip="Account"
+                >
+                  <UserIcon />
+                  <span>Account</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  render={<Link to="/settings/security" />}
+                  isActive={pathname.startsWith('/settings/security')}
+                  tooltip="Security"
+                >
+                  <ShieldIcon />
+                  <span>Security</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   render={<Link to="/settings/tokens" />}
@@ -86,6 +120,16 @@ export function AppSidebar() {
                 >
                   <KeyRoundIcon />
                   <span>API tokens</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  render={<Link to="/settings/general" />}
+                  isActive={pathname.startsWith('/settings/general')}
+                  tooltip="General"
+                >
+                  <SettingsIcon />
+                  <span>General</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               {brand.DocsURL ? (
