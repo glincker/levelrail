@@ -1252,7 +1252,7 @@ matching row. 81.8% coverage for `internal/telemetry` (up from 2.1's
 76.0%), 84.1% for `internal/docker`; 84.9% overall for `internal/`,
 against the repo's 70% gate.
 
-### 2.3 Query API (`internal/api` extension)
+### 2.3 Query API (`internal/api` extension). CLAIMED (this session, 2026-08-12)
 
 - [ ] Time range, filtering, aggregation over both stores
 - [ ] Shaped as a federated query even with one node today (CLAUDE.md
