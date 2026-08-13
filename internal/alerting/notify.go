@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/smtp"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -51,21 +53,47 @@ func (n httpNotifier) Notify(ctx context.Context, ev Event) error {
 	return n.build(ctx, n.client, n.url, ev)
 }
 
+// SMTPConfig is the server-wide (not per-rule) configuration
+// notifyEmail's Notifier needs. Unlike NotifyURL, there is no sensible
+// zero-config default for an SMTP server, the same reasoning
+// internal/secrets' master key has no default: a control plane that
+// hasn't set one gets a clear, documented "not configured" error rather
+// than silently trying (and failing) to connect somewhere.
+type SMTPConfig struct {
+	// Addr is host:port, e.g. "smtp.example.com:587".
+	Addr     string
+	Host     string // just the host part of Addr, for PlainAuth's identity check
+	Username string
+	Password string
+	From     string
+}
+
 // NewNotifier builds the right Notifier for r.NotifyKind. An unknown or
 // empty NotifyKind falls back to NotifyGeneric rather than erroring: a
 // rule with a typo'd notify_kind should still get *a* notification,
 // diagnosable from the payload shape, rather than silently notifying no
 // one.
-func NewNotifier(client *http.Client, r Rule) Notifier {
+//
+// smtpCfg is nil when no SMTP server is configured (the default): a rule
+// with NotifyKind == NotifyEmail still gets a Notifier, one whose Notify
+// always returns a clear "email is not configured" error rather than a
+// nil-pointer panic or a silently dropped notification.
+func NewNotifier(client *http.Client, smtpCfg *SMTPConfig, r Rule) Notifier {
 	if client == nil {
 		client = http.DefaultClient
 	}
+	if r.NotifyKind == NotifyEmail {
+		return emailNotifier{cfg: smtpCfg, to: r.NotifyURL}
+	}
+
 	build := notifyGeneric
 	switch r.NotifyKind {
 	case NotifySlack:
 		build = notifySlack
 	case NotifyDiscord:
 		build = notifyDiscord
+	case NotifyTelegram:
+		build = notifyTelegram
 	}
 	return httpNotifier{client: client, url: r.NotifyURL, build: build}
 }
@@ -118,9 +146,39 @@ func notifyDiscord(ctx context.Context, client *http.Client, url string, ev Even
 	return postJSON(ctx, client, url, discordPayload{Content: summaryText(ev)})
 }
 
-// summaryText is the human-readable line both Slack and Discord's
-// simple webhook shapes send: they're both "one text field," so one
-// summary builder serves both rather than duplicating this per channel.
+// telegramPayload is the Telegram Bot API's sendMessage body. chat_id is
+// required in the body itself (Telegram does not reliably merge it in
+// from a query string), so notifyTelegram below parses it out of
+// r.NotifyURL rather than relying on undocumented API behavior.
+type telegramPayload struct {
+	ChatID string `json:"chat_id"`
+	Text   string `json:"text"`
+}
+
+// notifyTelegram sends via Telegram's Bot API, a plain HTTP POST like
+// Slack/Discord above, "not much heavier than the existing webhooks."
+// r.NotifyURL is the full sendMessage endpoint including the bot token
+// in its path (e.g. "https://api.telegram.org/bot<TOKEN>/sendMessage"),
+// exactly as an operator gets it from @BotFather's setup instructions,
+// plus one required addition this package expects: a "chat_id" query
+// parameter naming the destination chat, which this function extracts
+// and moves into the JSON body Telegram actually requires it in.
+func notifyTelegram(ctx context.Context, client *http.Client, rawURL string, ev Event) error {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("alerting: notify: invalid telegram notify_url: %w", err)
+	}
+	chatID := u.Query().Get("chat_id")
+	if chatID == "" {
+		return fmt.Errorf("alerting: notify: telegram notify_url must include a chat_id query parameter")
+	}
+	return postJSON(ctx, client, rawURL, telegramPayload{ChatID: chatID, Text: summaryText(ev)})
+}
+
+// summaryText is the human-readable line every simple channel here
+// (Slack, Discord, Telegram, email's body) sends: they're all
+// fundamentally "one text field," so one summary builder serves all of
+// them rather than duplicating this per channel.
 func summaryText(ev Event) string {
 	var b strings.Builder
 	if ev.Resolved {
@@ -159,6 +217,48 @@ func postJSON(ctx context.Context, client *http.Client, url string, payload any)
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("alerting: notify: receiver returned status %d", resp.StatusCode)
+	}
+	return nil
+}
+
+// emailNotifier sends one Event as a plain-text email via net/smtp.
+// Unlike every other Notifier here, its transport is SMTP, not HTTP: it
+// doesn't fit httpNotifier's notifyFunc shape (a URL plus a JSON body),
+// so it implements Notifier directly instead.
+type emailNotifier struct {
+	cfg *SMTPConfig // nil means "no SMTP server configured"
+	// to is r.NotifyURL: not a URL for this channel, the destination
+	// email address, the same "NotifyURL is generically 'the
+	// destination', interpreted per channel" reasoning notifyTelegram
+	// above already establishes for its chat_id.
+	to string
+}
+
+// Notify implements Notifier. net/smtp.SendMail has no context.Context
+// parameter to plumb ctx's cancellation through; a hung SMTP connection
+// therefore isn't cancellable the way an HTTP notifier's request is,
+// a real, documented limitation, not an oversight.
+func (n emailNotifier) Notify(_ context.Context, ev Event) error {
+	if n.cfg == nil {
+		return fmt.Errorf("alerting: notify: email is not configured on this control plane (set APP_SMTP_HOST, APP_SMTP_FROM, etc.)")
+	}
+	if n.to == "" {
+		return fmt.Errorf("alerting: notify: no notify_url (destination email address) configured")
+	}
+
+	subject := fmt.Sprintf("[Levelrail] %s", ev.Rule.Name)
+	if ev.Resolved {
+		subject = fmt.Sprintf("[Levelrail][RESOLVED] %s", ev.Rule.Name)
+	}
+	msg := fmt.Sprintf("To: %s\r\nFrom: %s\r\nSubject: %s\r\n\r\n%s\r\n",
+		n.to, n.cfg.From, subject, summaryText(ev))
+
+	var auth smtp.Auth
+	if n.cfg.Username != "" {
+		auth = smtp.PlainAuth("", n.cfg.Username, n.cfg.Password, n.cfg.Host)
+	}
+	if err := smtp.SendMail(n.cfg.Addr, auth, n.cfg.From, []string{n.to}, []byte(msg)); err != nil {
+		return fmt.Errorf("alerting: notify: send email: %w", err)
 	}
 	return nil
 }

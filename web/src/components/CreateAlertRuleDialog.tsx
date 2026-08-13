@@ -56,7 +56,22 @@ const NOTIFY_KIND_OPTIONS: { value: NotifyKind; label: string }[] = [
   { value: 'generic', label: 'Generic webhook' },
   { value: 'slack', label: 'Slack' },
   { value: 'discord', label: 'Discord' },
+  { value: 'telegram', label: 'Telegram' },
+  { value: 'email', label: 'Email' },
 ]
+
+// Notify destination placeholder/validation differ by channel: every
+// channel but email expects a webhook URL in this field (internal/
+// alerting/notify.go's httpNotifier), email expects a plain destination
+// address (internal/alerting's emailNotifier doc comment: NotifyURL is
+// generically "the destination," interpreted per channel).
+const NOTIFY_DESTINATION_PLACEHOLDER: Record<NotifyKind, string> = {
+  generic: 'https://example.com/webhook',
+  slack: 'https://hooks.slack.com/services/...',
+  discord: 'https://discord.com/api/webhooks/...',
+  telegram: 'https://api.telegram.org/bot<token>/sendMessage?chat_id=...',
+  email: 'ops@example.com',
+}
 
 // One flat form model covering both rule kinds rather than a
 // zod.discriminatedUnion, so every field stays registered regardless of
@@ -75,16 +90,25 @@ const createAlertRuleSchema = z
     restartCountThreshold: z.coerce.number({ error: 'Must be a number' }),
     restartWindow: z.string().trim(),
     notifyUrl: z.string().trim(),
-    notifyKind: z.enum(['generic', 'slack', 'discord']),
+    notifyKind: z.enum(['generic', 'slack', 'discord', 'telegram', 'email']),
     enabled: z.boolean(),
   })
   .superRefine((data, ctx) => {
-    if (data.notifyUrl && !z.url().safeParse(data.notifyUrl).success) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Must be a valid URL',
-        path: ['notifyUrl'],
-      })
+    if (data.notifyUrl) {
+      const isValid =
+        data.notifyKind === 'email'
+          ? z.email().safeParse(data.notifyUrl).success
+          : z.url().safeParse(data.notifyUrl).success
+      if (!isValid) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            data.notifyKind === 'email'
+              ? 'Must be a valid email address'
+              : 'Must be a valid URL',
+          path: ['notifyUrl'],
+        })
+      }
     }
 
     if (data.kind === 'threshold') {
@@ -174,6 +198,7 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
     defaultValues: DEFAULT_VALUES,
   })
   const kind = watch('kind')
+  const notifyKind = watch('notifyKind')
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -348,11 +373,13 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
 
           <Field>
             <FieldLabel htmlFor="rule-notify-url">
-              Notify URL (optional)
+              {notifyKind === 'email'
+                ? 'Notify email address (optional)'
+                : 'Notify URL (optional)'}
             </FieldLabel>
             <Input
               id="rule-notify-url"
-              placeholder="https://hooks.slack.com/services/..."
+              placeholder={NOTIFY_DESTINATION_PLACEHOLDER[notifyKind]}
               {...register('notifyUrl')}
             />
             <FieldError errors={[formState.errors.notifyUrl]} />

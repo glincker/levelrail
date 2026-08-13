@@ -1694,7 +1694,7 @@ historical container logs is new scope, not asked for here), and the
 six not-yet-collected metrics above, each of which needs its own
 backend collector, not a frontend change.
 
-### 2.5 Alerting. DONE (2026-08-13), email/Telegram CLAUDED (this session, 2026-08-13)
+### 2.5 Alerting. DONE (2026-08-13), email/Telegram channels closed
 
 Built alongside 2.7: crashloop detection is architecturally a
 built-in alert rule (a restart-frequency threshold with a fixed
@@ -1722,12 +1722,82 @@ schema work for both stayed one session per CLAUDE.md 8.
       and sends a resolved notification too, not just firing, since an
       operator who only ever hears about problems starting trains
       themselves to distrust or mute the channel
-- [ ] **Not done, explicit follow-up**: email and Telegram
-      notification channels. Both need real credential/API integration
-      (SMTP config, a bot token) heavier than a webhook POST, without a
-      concrete signal yet that either is actually wanted; the
-      `Notifier` interface (`notify.go`) is already shaped to add
-      either without touching the evaluator or engine
+- [x] **Email and Telegram notification channels (2026-08-13)**:
+      `NotifyKind` gained `NotifyTelegram`/`NotifyEmail` (`rules.go`).
+      - Telegram reuses `httpNotifier`'s existing plain-POST shape
+        exactly like Slack/Discord, "not much heavier than the
+        existing webhooks" as scoped: `notifyTelegram` (`notify.go`)
+        posts `{chat_id, text}` to `Rule.NotifyURL`, which an operator
+        sets to the full `.../bot<TOKEN>/sendMessage` endpoint
+        `@BotFather` gives them, plus one addition this package
+        requires: a `chat_id` query parameter, parsed out of the URL
+        (not relied on as auto-merged by Telegram's API, which isn't
+        documented behavior) and moved into the JSON body Telegram
+        actually reads it from.
+      - Email is a genuinely different transport (SMTP, not HTTP), so
+        it doesn't fit `httpNotifier`; new `emailNotifier` implements
+        `Notifier` directly via stdlib `net/smtp` (no new dependency).
+        Confirmed the "no sensible zero-config default" prediction:
+        new `SMTPConfig` (Addr/Host/Username/Password/From) has no
+        default, matching `internal/secrets`' master key precedent. A
+        nil `*SMTPConfig` is a fully valid, expected state (no
+        `APP_SMTP_*` set): an email-kind rule's `Notify` then always
+        returns a clear "email is not configured on this control
+        plane (set APP_SMTP_HOST, APP_SMTP_FROM, etc.)" error, the
+        same shape `emailNotifier`'s doc comment and this task's own
+        framing asked for, rather than a 501 HTTP response: unlike
+        secrets' `PUT .../secrets/{key}`, there's no synchronous HTTP
+        request to attach a 501 to here, notification dispatch is
+        `Engine`'s own async tick (`engine.go`), so the analogous
+        "not configured" signal is this per-attempt error, logged by
+        `Engine.dispatch` exactly like any other notify failure.
+        `Rule.NotifyURL` doubles as the destination email address for
+        this one channel (documented explicitly, since "NotifyURL" is
+        otherwise always a webhook URL for every other kind).
+      - `NewNotifier` gained a `smtpCfg *SMTPConfig` parameter
+        (`func NewNotifier(client *http.Client, smtpCfg *SMTPConfig, r
+        Rule) Notifier`); `Engine`'s existing `newNotifier func(Rule)
+        Notifier` constructor-closure injection point (already there
+        for tests) is what threads a real `*SMTPConfig` in without
+        changing `Engine`'s own shape.
+      - `cmd/levelrail/main.go`: new `smtpConfigFromEnv()` reads
+        `APP_SMTP_HOST`/`APP_SMTP_PORT` (default `587`)/
+        `APP_SMTP_USERNAME`/`APP_SMTP_PASSWORD`/`APP_SMTP_FROM`,
+        returns nil unless both `APP_SMTP_HOST` and `APP_SMTP_FROM`
+        are set (the two pieces with no sensible default); wired via a
+        closure passed to `alerting.NewEngine` in place of the
+        previous bare `nil` (which meant "use the package default,"
+        still true today when SMTP isn't configured).
+      - Frontend: `CreateAlertRuleDialog.tsx` gained both channels in
+        `NOTIFY_KIND_OPTIONS`, a per-channel placeholder map
+        (`NOTIFY_DESTINATION_PLACEHOLDER`), and channel-aware
+        validation in the form's `superRefine` (`z.email()` for the
+        email channel, `z.url()` for every other channel, since an
+        email address is not a URL and the old blanket URL check would
+        have rejected every real email address). `types/alerts.ts`'s
+        `NotifyKind` union extended to match.
+      - Tests: table-driven-style unit tests for both new `notifyFunc`s
+        plus `emailNotifier` (`notify_test.go`): Telegram posts the
+        right chat_id/text and rejects a missing chat_id or an
+        unparseable URL; email returns the documented "not configured"
+        error with no `SMTPConfig`, rejects an empty destination
+        address, and (via an intentionally unreachable
+        `127.0.0.1:1` address, not a real SMTP fixture) proves
+        `net/smtp.SendMail`'s own error actually propagates wrapped
+        rather than being silently swallowed. 83.5% coverage on
+        `internal/alerting` (up from 83.2%). 83.4% on `internal/`
+        overall, gate is 70%. Frontend: `npm run typecheck`, targeted
+        `eslint`/`prettier --check` on the two files this task touched
+        (the full-repo lint/format run has pre-existing failures in
+        unrelated files from concurrent work in this repo right now,
+        confirmed via `git status` to not be this task's own change,
+        left untouched), `npm run build` clean.
+      - **Not done, explicit follow-up, not silently skipped**: no
+        live end-to-end test against a real SMTP server or a real
+        Telegram bot (no test fixture/credential for either exists in
+        this environment); Telegram's "chat_id in the URL, moved into
+        the body" contract is unit-tested against a fake HTTP server
+        but never verified against Telegram's real API.
 
 Also caught and fixed while building this: `internal/docker.Client
 .Events` never populated `Event.Time` (silently the zero value since

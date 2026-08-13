@@ -278,7 +278,9 @@ func run(logger *slog.Logger) error {
 	}()
 
 	alertingFederator := telemetry.NewLocalFederator(telemetryDB)
-	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, nil, logger)
+	smtpCfg := smtpConfigFromEnv()
+	alertingNewNotifier := func(r alerting.Rule) alerting.Notifier { return alerting.NewNotifier(nil, smtpCfg, r) }
+	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, alertingNewNotifier, logger)
 	go func() {
 		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("alerting engine stopped", slog.String("error", err.Error()))
@@ -363,6 +365,34 @@ func openAlertingStore(ctx context.Context) (*alerting.DB, error) {
 		return nil, err
 	}
 	return alerting.Open(ctx, filepath.Join(dataDir, "alerting.db"))
+}
+
+// smtpConfigFromEnv reads APP_SMTP_HOST/APP_SMTP_PORT/APP_SMTP_USERNAME/
+// APP_SMTP_PASSWORD/APP_SMTP_FROM for TASKS.md 2.5's email notification
+// channel. There is no sensible zero-config default for an SMTP server
+// (unlike, say, APP_DATA_DIR), so returning nil (both APP_SMTP_HOST and
+// APP_SMTP_FROM unset) is a valid, expected outcome, not an error:
+// alerting.NewNotifier's own doc comment covers what an email-kind rule
+// does with a nil *alerting.SMTPConfig (fails clearly, every time,
+// naming exactly what to set). APP_SMTP_PORT defaults to 587
+// (STARTTLS), the common submission port, not 25.
+func smtpConfigFromEnv() *alerting.SMTPConfig {
+	host := os.Getenv("APP_SMTP_HOST")
+	from := os.Getenv("APP_SMTP_FROM")
+	if host == "" || from == "" {
+		return nil
+	}
+	port := os.Getenv("APP_SMTP_PORT")
+	if port == "" {
+		port = "587"
+	}
+	return &alerting.SMTPConfig{
+		Addr:     host + ":" + port,
+		Host:     host,
+		Username: os.Getenv("APP_SMTP_USERNAME"),
+		Password: os.Getenv("APP_SMTP_PASSWORD"),
+		From:     from,
+	}
 }
 
 // telemetryTargets lists every desired service's currently running

@@ -35,12 +35,16 @@ const (
 // NotifyKind selects the notification payload shape (notify.go).
 type NotifyKind string
 
-// The three payload shapes NewNotifier knows how to build; an unknown
-// or empty NotifyKind falls back to NotifyGeneric.
+// The five payload shapes NewNotifier knows how to build; an unknown or
+// empty NotifyKind falls back to NotifyGeneric. NotifyEmail is the one
+// exception to "NotifyURL is a webhook URL": see emailNotifier's doc
+// comment in notify.go.
 const (
-	NotifyGeneric NotifyKind = "generic"
-	NotifySlack   NotifyKind = "slack"
-	NotifyDiscord NotifyKind = "discord"
+	NotifyGeneric  NotifyKind = "generic"
+	NotifySlack    NotifyKind = "slack"
+	NotifyDiscord  NotifyKind = "discord"
+	NotifyTelegram NotifyKind = "telegram"
+	NotifyEmail    NotifyKind = "email"
 )
 
 // Rule is one alert rule: either a threshold check (Kind ==
