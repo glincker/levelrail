@@ -1,8 +1,12 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { FlaskConicalIcon } from 'lucide-react'
 import { getStoredUsername } from '../lib/authStore'
 import { brandQueryOptions } from '../queries/brand'
+import { devModeQueryOptions } from '../queries/devMode'
 import { useBrand } from '../hooks/useBrand'
+import { useLogin } from '../queries/auth'
 import {
   Card,
   CardContent,
@@ -11,8 +15,19 @@ import {
   CardTitle,
 } from '../components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
+import { Button } from '../components/ui/button'
 import { LoginForm } from '../components/LoginForm'
 import { RegisterForm } from '../components/RegisterForm'
+
+// Matches internal/api/devmode.go's devModeUsername/devModePassword
+// exactly (also the same pair dev-fixtures.yml documents at the repo
+// root). Fixed and deliberately not secret, same reasoning ADR 013
+// gives for not randomizing them: the backend's build-tag gate
+// (devmode_debug.go vs devmode_release.go) is what makes this safe, not
+// credential secrecy, so hardcoding the known pair here to save a click
+// is not a new risk on top of what already exists server-side.
+const DEV_MODE_USERNAME = 'dev'
+const DEV_MODE_PASSWORD = 'dev'
 
 type LoginTab = 'sign-in' | 'register'
 
@@ -48,6 +63,13 @@ function LoginPage() {
   const [tab, setTab] = useState<LoginTab>('sign-in')
   const brandLabel = brand.ShortName || brand.Name
   const isRegister = tab === 'register'
+  // Not suspense: this is a purely optional convenience, the real login
+  // form above must always render immediately regardless of whether this
+  // query has resolved yet, is slow, or fails outright (isError is
+  // deliberately not checked below, a failed check just means the button
+  // stays hidden, exactly like enabled being false).
+  const devMode = useQuery(devModeQueryOptions())
+  const quickLogin = useLogin()
 
   function handleTabChange(value: unknown): void {
     if (value === 'sign-in' || value === 'register') {
@@ -102,6 +124,26 @@ function LoginPage() {
           </Tabs>
         </CardContent>
       </Card>
+      {devMode.data?.enabled ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="w-full max-w-sm"
+          disabled={quickLogin.isPending}
+          onClick={() => {
+            quickLogin.mutate({
+              username: DEV_MODE_USERNAME,
+              password: DEV_MODE_PASSWORD,
+            })
+          }}
+        >
+          <FlaskConicalIcon />
+          {quickLogin.isPending
+            ? 'Signing in...'
+            : `Quick dev login (${DEV_MODE_USERNAME}/${DEV_MODE_PASSWORD})`}
+        </Button>
+      ) : null}
     </div>
   )
 }

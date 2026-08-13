@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"log/slog"
+	"net/http"
 )
 
 // devModeUsername and devModePassword are fixed and deliberately
@@ -42,4 +43,21 @@ func maybeBootstrapDevAdmin(ctx context.Context, s AuthStore, logger *slog.Logge
 // account regardless of call order between the two.
 func MaybeBootstrapDevAdmin(ctx context.Context, s AuthStore, logger *slog.Logger) error {
 	return maybeBootstrapDevAdmin(ctx, s, logger, devModeEnabled())
+}
+
+type devModeResponse struct {
+	Enabled bool `json:"enabled"`
+}
+
+// handleDevMode serves GET /api/v1/dev-mode: public, no auth required,
+// same "public, safe to expose" reasoning as handleBrand. Lets the login
+// screen offer a one-click dev login (the fixed dev/dev credentials
+// MaybeBootstrapDevAdmin already seeds) instead of the operator typing
+// them by hand, without the frontend needing to guess whether dev mode
+// is active. Reveals only a boolean, never the credentials themselves,
+// those are already public knowledge documented in dev-fixtures.yml and
+// this package's own devModeUsername/devModePassword constants, not a
+// secret this endpoint could leak.
+func (rt *Router) handleDevMode(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, devModeResponse{Enabled: devModeEnabled()})
 }

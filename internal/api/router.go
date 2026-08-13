@@ -228,6 +228,7 @@ func (rt *Router) Handler() http.Handler {
 	// Public: the frontend needs branding before a session exists (e.g.
 	// on the login screen itself).
 	mux.HandleFunc("GET /api/v1/brand", rt.handleBrand)
+	mux.HandleFunc("GET /api/v1/dev-mode", rt.handleDevMode)
 
 	// Auth. Login and first-run registration are necessarily public;
 	// everything else requires an existing session.
