@@ -1155,21 +1155,102 @@ SQLite database, not just unit tested: every one of the seven metrics
 `CollectOnce` is documented to write confirmed present and queryable
 afterward. 76.0% coverage.
 
-### 2.2 Node-local log store (`internal/telemetry` or a sibling package). CLAIMED (this session, 2026-08-12)
+### 2.2 Node-local log store (`internal/telemetry`). DONE (2026-08-12)
 
-- [ ] Read Docker's log stream directly (the existing `Events`
-      consumption pattern in `internal/docker`, not the json-file
-      driver's on-disk files per CLAUDE.md 4.8's explicit call-out)
-- [ ] Chunk, compress, index for full-text search
-- [ ] Structured log parsing where the app emits JSON
+- [x] Read Docker's log stream directly via a new `Client.Logs`
+      (`internal/docker/logs.go`), the `ContainerLogs`/`stdcopy.StdCopy`
+      counterpart to `Client.Stats`: a focused method on the concrete
+      `*Client`, not added to `Runtime` (same reasoning `Stats`' own doc
+      comment already gives), demultiplexing stdout/stderr via the SDK's
+      own `stdcopy` helper rather than hand-parsing the 8-byte frame
+      header, and never the json-file driver's on-disk files per
+      CLAUDE.md 4.8's explicit call-out
+- [x] Chunk: batched writes, flushed on whichever comes first of 200
+      buffered lines or 2 seconds (`logBatchMaxLines`/`logBatchMaxWait`
+      in `internal/telemetry/logs.go`), not one SQLite write per line
+- [x] Compress: investigated and deliberately not an explicit step, not
+      a silently skipped one. FTS5 needs plaintext access to build and
+      query its token index, so compressing `message` at the row level
+      would mean decompressing before every search (defeats the index)
+      or storing both a compressed and uncompressed copy (worse than
+      neither). What "compress" is asking to solve (a log firehose
+      bloating storage unchecked) is instead solved by batched writes,
+      FTS5's external-content mode (the index stores token postings
+      only, not a second copy of every message), and the same
+      bounded-retention sweep pattern ADR 009 already applies to
+      `metric_samples`. See `logs.go`'s package-level doc comment for
+      the full reasoning
+- [x] Index for full-text search: FTS5, not the LIKE-based fallback.
+      Investigated rather than assumed, since pure-Go SQLite ports
+      sometimes ship extensions compiled out: `modernc.org/sqlite`
+      v1.56.0's own generated build flags
+      (`lib/sqlite_darwin_{amd64,arm64}.go`) confirm
+      `SQLITE_ENABLE_FTS5`, and a standalone throwaway program
+      (`CREATE VIRTUAL TABLE ... USING fts5`, an insert, a `MATCH`
+      query) confirmed it actually works at runtime, not just that the
+      driver claims to support it. `migrations/0002_log_entries.sql`
+      uses an external-content FTS5 table (`content='log_entries'`) with
+      insert/delete triggers keeping it in sync; `QueryLogs` wraps a
+      caller's search text as a single escaped FTS5 phrase rather than
+      passing it through as raw FTS5 query syntax, so a search can't
+      fail with a syntax error just because it contained a character
+      FTS5's query grammar treats specially
+- [x] Structured log parsing: a line whose full trimmed text is a valid
+      JSON *object* (`classifyLine` in `logs.go`) is flagged
+      `structured = true` and its JSON duplicated into `fields_json`, a
+      separate column from the raw `message`, so a future log viewer
+      (TASKS.md 2.4) can tell structured and plain lines apart without
+      re-parsing. Deliberately restricted to objects, not any valid
+      JSON value: every real structured-logging library emits one JSON
+      object per line, so a bare JSON number or string (e.g. a
+      plain-text line that happens to read "42") isn't misclassified as
+      structured
+- [x] Query API on the same `DB` type: `QueryLogs(ctx, resourceID, from,
+      to, query)`, matching `Query`'s existing shape and its "empty
+      result plus nil error means no matches, not an error" convention.
+      `RetainLogs` mirrors `Retain`'s shape for the same env-configurable-
+      threshold reasoning (`APP_LOGS_RETENTION`, default 15 days, wired
+      into `cmd/levelrail/main.go` alongside 2.1's metrics retention
+      sweep)
 
-### 2.2 Node-local log store (`internal/telemetry` or a sibling package). CLAIMED (this session, 2026-08-12)
+Lives in the same package and the same `telemetry.db` as 2.1's metric
+samples, not a sibling package: ADR 008 frames metrics and logs as one
+"node-local telemetry" category, and ADR 009's write-isolation reasoning
+was applied against `internal/store` specifically (a desired-state
+database with a materially different write pattern), not against
+telemetry's own two data domains, which share both a write cadence and a
+retention model.
 
-- [ ] Read Docker's log stream directly (the existing `Events`
-      consumption pattern in `internal/docker`, not the json-file
-      driver's on-disk files per CLAUDE.md 4.8's explicit call-out)
-- [ ] Chunk, compress, index for full-text search
-- [ ] Structured log parsing where the app emits JSON
+Collector shape genuinely differs from 2.1's, and deliberately so, not
+an oversight: metrics is a polling `Collector` (a fixed 15s tick,
+`StatsSource.Stats` is a point-in-time snapshot), logs is a streaming
+`LogCollector` (`StreamOne` follows one container's log stream until it
+ends or `ctx` is cancelled, `Run` re-derives the desired container set
+on a 30s resync and starts/cancels one `StreamOne` goroutine per
+container as that set changes). Both still share the same
+"re-derive-every-pass, level-triggered" principle `reconcile.Engine`
+established first, just applied to a push-stream target set instead of
+a poll-tick target set.
+
+Known, documented gap, not a silent one: `WriteLogBatch` has no
+idempotency key the way `WriteSamples` does (metric samples dedupe on
+`(resource, metric, ts)`; log lines have no equivalent natural key,
+since a container legitimately emitting the same text twice is normal,
+not a duplicate). A batch write that fails partway and gets retried by
+a caller can therefore produce duplicate rows in rare cases. Closing
+this would need a source-assigned per-container sequence number,
+deliberately deferred rather than solved here.
+
+Live-verified end to end against a real Docker container (a `busybox`
+container emitting one plain line and one JSON line, then sleeping) and
+a real SQLite database: both lines land, classified correctly, the
+plain line is independently checked to *not* be flagged structured, the
+JSON line's `fields_json` is checked against the exact bytes the
+container emitted, and a full-text query against the live-written data
+(not just the synthetic unit-test fixtures) returns exactly the
+matching row. 81.8% coverage for `internal/telemetry` (up from 2.1's
+76.0%), 84.1% for `internal/docker`; 84.9% overall for `internal/`,
+against the repo's 70% gate.
 
 ### 2.3 Query API (`internal/api` extension)
 
