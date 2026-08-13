@@ -591,7 +591,10 @@ func loadWebhookHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand
 // tried to call a method on it, rather than hitting api.Router's own
 // "not configured" 501 path.
 func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, webhookHandler http.Handler) http.Handler {
-	opts := []api.Option{api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB))}
+	opts := []api.Option{
+		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
+		api.WithSessionTTL(sessionTTL(logger)),
+	}
 	if secretsManager != nil {
 		opts = append(opts, api.WithSecretSetter(secretsManager))
 	}
@@ -611,6 +614,25 @@ func httpAddr() string {
 		addr = defaultHTTPAddr
 	}
 	return addr
+}
+
+// sessionTTL reads APP_SESSION_TTL as a Go duration string (e.g. "24h",
+// "30m"), CLAUDE.md 7's "no hardcoded thresholds, use env vars" rule for
+// the value api.WithSessionTTL configures. Returns 0 (api.NewRouter's
+// own signal to fall back to its internal default) when unset or
+// unparseable, logging a warning in the latter case so a typo'd env var
+// is visible rather than silently ignored.
+func sessionTTL(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_SESSION_TTL")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_SESSION_TTL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return d
 }
 
 // dynamicSource builds a reconcile.Source that re-lists desired services
