@@ -26,6 +26,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.85.0",
+    "recharts": "^3.10.1",
     "shadcn": "^4.17.0",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.3",

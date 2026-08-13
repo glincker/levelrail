@@ -10,6 +10,8 @@ import { DeployTriggerForm } from '../../components/DeployTriggerForm'
 import { DomainEditor } from '../../components/DomainEditor'
 import { EnvEditor } from '../../components/EnvEditor'
 import { SecretsEditor } from '../../components/SecretsEditor'
+import { MetricsDashboard } from '../../components/MetricsDashboard'
+import { LogSearchPanel } from '../../components/LogSearchPanel'
 
 // App detail route (TASKS.md 1.10). Two queries are primed in the
 // loader, matching frontend-plan.md section 3's "cross-cutting" rule
@@ -50,6 +52,8 @@ function AppDetailPage() {
 
       <AppOverview app={app} />
       <ConditionsPanel conditions={conditions} />
+      <MetricsDashboard appName={app.name} conditions={conditions} />
+      <LogSearchPanel appName={app.name} />
       <DeployTriggerForm appName={app.name} />
       <DomainEditor app={app} />
       <EnvEditor app={app} />

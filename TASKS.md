@@ -1490,19 +1490,66 @@ Both routes return 501 when no `TelemetryQuerier` is configured
 `WithSecretSetter`'s absence already established for secrets, rather
 than the routes not existing or a nil-dereference panic.
 
-### 2.4 Frontend: metrics dashboard, log viewer, deploy markers. CLAIMED (this session, 2026-08-13)
+### 2.4 Frontend: metrics dashboard, log viewer, deploy markers. DONE (2026-08-13), two real gaps carried forward
 
-- [ ] Per-app metrics dashboard: CPU, memory, disk IO, network IO,
+- [x] Per-app metrics dashboard (`web/src/components/MetricsDashboard.tsx`,
+      `web/src/queries/metrics.ts`, `web/src/types/metrics.ts`): CPU,
+      memory usage vs limit, network rx/tx, disk read/write, the 7
+      metrics `internal/telemetry`'s collector (2.1) actually writes
+      samples for, charted against `GET /api/v1/apps/{name}/metrics`
+      (2.3) with a 1h/6h/24h/7d range selector and a step chosen per
+      range (raw for 1h, up to 30m buckets for 7d, keeping both the
+      response body and the rendered point count bounded). recharts
+      added as the charting library (`web/package.json`), the first in
+      this repo; adds roughly 379 kB raw / 109 kB gzip to the
+      app-detail route's own chunk only (16.24 kB -> 395.78 kB raw,
+      4.33 kB -> 113.53 kB gzip, measured via a clean before/after
+      rebuild), not the shared main bundle: CLAUDE.md 4.12's
+      route-level code splitting still holds, confirmed in
+      `dist/assets` output.
+
+      Real gap, not fixed here: CLAUDE.md 6's full list also names
       request rate, response time percentiles, error rate, container
-      restart count, build duration, deploy frequency, the exact list
-      CLAUDE.md 6 names as required per app without configuration
-- [ ] Log viewer with search and live tail, extending 1.10's SSE/
-      virtualized-list pattern from the build log viewer rather than a
-      new mechanism
-- [ ] Deploy markers overlaid on metric charts: CLAUDE.md 6 calls this
-      out by name as "the feature that makes the product feel
-      different, because it makes 'which deploy caused this' a visual
-      question instead of an investigation"
+      restart count, build duration, and deploy frequency. None of
+      those six is collected anywhere yet (2.1 explicitly deferred
+      restart count/build duration/deploy frequency; request rate/
+      response time/error rate need ingress-layer instrumentation
+      CLAUDE.md 4.5's embedded Caddy driver doesn't have yet). The
+      dashboard shows a clearly labeled "Not yet collected" list for
+      these instead of an empty or fabricated chart.
+- [x] Historical log search (`web/src/components/LogSearchPanel.tsx`,
+      `web/src/queries/logs.ts`, `web/src/types/logs.ts`): debounced
+      full-text search plus the same range selector over
+      `GET /api/v1/apps/{name}/logs` (2.3), rendered through a
+      TanStack-Virtual monospace row list reusing the visual language
+      of 1.9's live SSE build-log viewer
+      (`routes/apps/$name/deploys/$deployId/logs.tsx`), not its code:
+      that route follows one in-progress build's live stream, this
+      panel queries already-stored entries after the fact, a genuinely
+      different data shape (request/response vs. a kept-open
+      EventSource). Structured (JSON) entries render as compact
+      `key=value` pairs built from the `fields` object with a "json"
+      badge, not re-parsed from `message`.
+- [x] Deploy markers: real gap, handled honestly rather than faked.
+      `GET /api/v1/apps/{name}/deploys` only ever returns the
+      *current* reconcile condition per (controller, type) pair (2.3,
+      `internal/api/deploys.go`'s own doc comment); there is no
+      attempt-by-attempt deploy history to plot as multiple markers
+      across a chart's time range. What's actually wired in
+      (`MetricsDashboard.tsx`'s `resolveDeployMarker`): the app's
+      current "Ready" condition's `LastTransitionTime`, shown as at
+      most one dashed reference line, only when it falls inside the
+      visible range, with an inline note pointing at the code comment
+      documenting this as a partial approximation. A real
+      per-deploy-attempt history table is follow-up work, not
+      something this pass invents a shape for.
+
+Deferred out of this pass: live tailing in the new search panel
+(genuinely a different mechanism from search, and 1.9 already covers
+live tail for build/deploy logs specifically; a live tail for arbitrary
+historical container logs is new scope, not asked for here), and the
+six not-yet-collected metrics above, each of which needs its own
+backend collector, not a frontend change.
 
 ### 2.5 Alerting
 
