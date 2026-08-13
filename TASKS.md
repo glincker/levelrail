@@ -1480,10 +1480,28 @@ than the routes not existing or a nil-dereference panic.
 - [ ] Threshold rules over 2.1/2.2's data
 - [ ] Notification via webhook, email, Slack, Discord, Telegram
 
-### 2.6 Prometheus remote read endpoint. CLAIMED (this session, 2026-08-13)
+### 2.6 Prometheus remote read endpoint. DONE (2026-08-13)
 
-- [ ] Expose 2.1's metrics store via Prometheus's remote-read protocol,
-      per CLAUDE.md 4.8, "so people can point Grafana at it if they want"
+- [x] Expose 2.1's metrics store via Prometheus's remote-read protocol,
+      per CLAUDE.md 4.8, "so people can point Grafana at it if they want":
+      `POST /api/v1/prometheus/read`, backed by a new `internal/prompb`
+      package (a minimal, hand-written codec for just the remote-read
+      wire messages, not a dependency on `github.com/prometheus/
+      prometheus/prompb`, which drags in a much heavier tree than the
+      handful of stable messages actually needed; same reasoning ADR
+      009 already applied against embedding VictoriaMetrics). Gated by
+      `requireAbility(AbilityRead, ...)` like every other read route:
+      an operator configures Prometheus's own
+      `remote_read.authorization.credentials` with a Levelrail API
+      token scoped to `read`. Query support is deliberately narrow,
+      exactly one EQ matcher on `__name__` (`levelrail_`-prefixed) and
+      one on `service` per Query; anything broader (regex, multiple
+      series) returns an empty result for that query, matching how
+      Prometheus's own query engine treats "no data for this selector"
+      as normal, not a failure. Verified against actual protobuf
+      wire-format math by hand for two message types, not just
+      round-tripped through the codec's own (potentially symmetrically
+      wrong) encode/decode pair.
 
 ### 2.7 Crashloop detection
 
