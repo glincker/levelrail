@@ -300,7 +300,7 @@ func run(logger *slog.Logger) error {
 
 	engine := reconcile.NewEngine(logger)
 	engine.SetStore(db)
-	engine.SetSource(dynamicSource(db, client, ingressDriver, logger, telemetryDB, secretsManager))
+	engine.SetSource(dynamicSource(db, client, ingressDriver, logger, telemetryDB, secretsManager, agentRegistry))
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
 	go func() {
@@ -924,7 +924,24 @@ func sessionTTL(logger *slog.Logger) time.Duration {
 // gating, unlike secretsManager above), so application.WithDeployRecorder
 // is applied unconditionally: TASKS.md 2.1's deploy_count metric is
 // recorded for every application controller this Source builds.
-func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.Driver, logger *slog.Logger, telemetryDB *telemetry.DB, secretsManager *secrets.Manager) reconcile.Source {
+//
+// agentRegistry is TASKS.md 3.3's placement wiring, the first real
+// consumer of the Registry TASKS.md 3.1/3.2 built and left otherwise
+// unused: each service/database's own NodeID (empty string means this
+// control plane's own local node, migrations/0009_node_placement.sql)
+// picks which docker.Runtime its controller gets, resolved fresh via
+// resolveNodeTransport on every pass, the identical "never cache,
+// re-derive every call" principle this function already applies to
+// which services/databases exist at all. The ingress controller is
+// deliberately NOT routed through this: it stays on the local runtime
+// unconditionally, a real, honest, and currently open gap (a service
+// placed on a remote node has no working ingress route yet), because
+// Caddy runs embedded in this one process (CLAUDE.md 4.5) and a remote
+// node's container isn't reachable at 127.0.0.1:hostPort from here even
+// if its Transport could be inspected; closing this needs the WireGuard
+// mesh and internal DNS TASKS.md 3.4 builds, not something this task
+// can honestly solve on its own.
+func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.Driver, logger *slog.Logger, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry) reconcile.Source {
 	return func(ctx context.Context) ([]reconcile.Controller, error) {
 		services, err := db.ListDesiredServices(ctx)
 		if err != nil {
@@ -942,14 +959,46 @@ func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.D
 
 		controllers := make([]reconcile.Controller, 0, len(services)+len(databases)+1)
 		for _, svc := range services {
-			controllers = append(controllers, application.New(svc.Name, db, runtime, appOpts...))
+			svcRuntime, err := resolveNodeTransport(runtime, agentRegistry, svc.NodeID)
+			if err != nil {
+				logger.Warn("skipping service for this reconcile pass: node transport unavailable",
+					slog.String("service", svc.Name), slog.String("node_id", svc.NodeID), slog.String("error", err.Error()))
+				continue
+			}
+			controllers = append(controllers, application.New(svc.Name, db, svcRuntime, appOpts...))
 		}
 		for _, desired := range databases {
-			controllers = append(controllers, database.New(desired.Name, db, runtime))
+			dbRuntime, err := resolveNodeTransport(runtime, agentRegistry, desired.NodeID)
+			if err != nil {
+				logger.Warn("skipping database for this reconcile pass: node transport unavailable",
+					slog.String("database", desired.Name), slog.String("node_id", desired.NodeID), slog.String("error", err.Error()))
+				continue
+			}
+			controllers = append(controllers, database.New(desired.Name, db, dbRuntime))
 		}
 		controllers = append(controllers, ingressreconcile.New(db, runtime, driver, ingressreconcile.WithLogger(logger)))
 		return controllers, nil
 	}
+}
+
+// resolveNodeTransport picks the docker.Runtime a controller for
+// nodeID should use: the control plane's own local runtime for the
+// empty string (TASKS.md 3.3's "" == local node convention), or a
+// connected remote agent's Transport (TASKS.md 3.2), looked up fresh
+// from registry, for anything else. A node that isn't currently
+// connected returns agent.ErrNodeNotRegistered wrapped; the caller logs
+// and skips that resource for this pass rather than failing the whole
+// reconcile (dynamicSource's own doc comment on "one broken resource
+// must not block others," applied here to node connectivity): a
+// temporarily disconnected node's services simply don't reconcile this
+// tick, and pick back up automatically once it reconnects
+// (Server.Session re-registers on every new connection), not
+// permanently broken.
+func resolveNodeTransport(local docker.Runtime, registry *agent.Registry, nodeID string) (docker.Runtime, error) {
+	if nodeID == "" {
+		return local, nil
+	}
+	return registry.Get(nodeID)
 }
 
 // bootstrapAdmin creates the single admin account from

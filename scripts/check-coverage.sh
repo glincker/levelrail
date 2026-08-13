@@ -27,9 +27,20 @@ trap 'rm -f "$FILTERED"' EXIT
 
 # First line of a coverprofile is the mode line (e.g. "mode: atomic"), the
 # rest are one statement-block per line. Keep the mode line, then keep only
-# statement lines whose file path contains the prefix we're gating on.
+# statement lines whose file path contains the prefix we're gating on,
+# excluding generated *.pb.go/*_grpc.pb.go files (TASKS.md 3.2 added the
+# first of these, internal/agent/agentpb): protoc-generated code has no
+# testable logic of its own (it's marshaling/dispatch boilerplate,
+# already exercised indirectly by every live test that actually talks
+# over the wire), so including it here only dilutes the number with
+# statements no one could meaningfully add a test for, the same reasoning
+# golangci-lint already applies by skipping "// Code generated" files for
+# every linter automatically. Not a hand-picked exclusion of one
+# package: any future protoc output anywhere under internal/ is excluded
+# the same way, matching this script's own "so packages... cannot
+# dilute or inflate the number either way" intent above.
 head -n1 "$PROFILE" > "$FILTERED"
-grep "/${PREFIX}" "$PROFILE" >> "$FILTERED" || true
+grep "/${PREFIX}" "$PROFILE" | grep -v '\.pb\.go:' >> "$FILTERED" || true
 
 MATCHED_LINES="$(($(wc -l < "$FILTERED") - 1))"
 if [ "$MATCHED_LINES" -le 0 ]; then

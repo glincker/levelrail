@@ -22,15 +22,20 @@ type DesiredDatabase struct {
 	Name    string
 	Engine  string
 	Version string
+	// NodeID: see DesiredService.NodeID's own doc comment, identical
+	// meaning and identical "SaveDesiredDatabase never writes it, only
+	// UpdateDatabaseNode does" exception below.
+	NodeID string
 }
 
 // SaveDesiredDatabase creates or fully replaces the desired state for a
 // named database, the same whole-record-replacement semantics as
-// SaveDesiredService.
+// SaveDesiredService, including the identical NodeID exception
+// SaveDesiredService's own doc comment explains.
 func (db *DB) SaveDesiredDatabase(ctx context.Context, d DesiredDatabase) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO desired_databases (name, engine, version, updated_at)
-		VALUES (?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_databases (name, engine, version, node_id, updated_at)
+		VALUES (?, ?, ?, '', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			engine = excluded.engine,
 			version = excluded.version,
@@ -38,6 +43,25 @@ func (db *DB) SaveDesiredDatabase(ctx context.Context, d DesiredDatabase) error 
 	`, d.Name, d.Engine, d.Version)
 	if err != nil {
 		return fmt.Errorf("store: save desired database %q: %w", d.Name, err)
+	}
+	return nil
+}
+
+// UpdateDatabaseNode is DesiredDatabase's counterpart to
+// UpdateServiceNode.
+func (db *DB) UpdateDatabaseNode(ctx context.Context, name, nodeID string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE desired_databases SET node_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, nodeID, name)
+	if err != nil {
+		return fmt.Errorf("store: update node for database %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: update node for database %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrDatabaseNotFound
 	}
 	return nil
 }
@@ -51,10 +75,10 @@ var ErrDatabaseNotFound = errors.New("store: database not found")
 func (db *DB) GetDesiredDatabase(ctx context.Context, name string) (*DesiredDatabase, error) {
 	var d DesiredDatabase
 	err := db.QueryRowContext(ctx, `
-		SELECT name, engine, version
+		SELECT name, engine, version, node_id
 		FROM desired_databases
 		WHERE name = ?
-	`, name).Scan(&d.Name, &d.Engine, &d.Version)
+	`, name).Scan(&d.Name, &d.Engine, &d.Version, &d.NodeID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrDatabaseNotFound
 	}
@@ -67,7 +91,7 @@ func (db *DB) GetDesiredDatabase(ctx context.Context, name string) (*DesiredData
 // ListDesiredDatabases returns every saved database, ordered by name.
 func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, engine, version
+		SELECT name, engine, version, node_id
 		FROM desired_databases
 		ORDER BY name
 	`)
@@ -81,7 +105,7 @@ func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, erro
 	var out []DesiredDatabase
 	for rows.Next() {
 		var d DesiredDatabase
-		if err := rows.Scan(&d.Name, &d.Engine, &d.Version); err != nil {
+		if err := rows.Scan(&d.Name, &d.Engine, &d.Version, &d.NodeID); err != nil {
 			return nil, fmt.Errorf("store: scan desired database row: %w", err)
 		}
 		out = append(out, d)

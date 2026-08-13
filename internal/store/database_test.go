@@ -84,3 +84,57 @@ func TestListDesiredDatabases_OrderedByName(t *testing.T) {
 		}
 	}
 }
+
+func TestUpdateDatabaseNode(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("SaveDesiredDatabase() error = %v", err)
+	}
+	if err := db.UpdateDatabaseNode(ctx, "main", "node-1"); err != nil {
+		t.Fatalf("UpdateDatabaseNode() error = %v", err)
+	}
+
+	got, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if got.NodeID != "node-1" {
+		t.Errorf("NodeID = %q, want node-1", got.NodeID)
+	}
+}
+
+func TestUpdateDatabaseNode_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.UpdateDatabaseNode(context.Background(), "nonexistent", "node-1")
+	if !errors.Is(err, ErrDatabaseNotFound) {
+		t.Errorf("UpdateDatabaseNode() error = %v, want ErrDatabaseNotFound", err)
+	}
+}
+
+func TestSaveDesiredDatabase_ResaveDoesNotResetNodeID(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "15"}); err != nil {
+		t.Fatalf("initial save: %v", err)
+	}
+	if err := db.UpdateDatabaseNode(ctx, "main", "node-1"); err != nil {
+		t.Fatalf("UpdateDatabaseNode() error = %v", err)
+	}
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("resave: %v", err)
+	}
+
+	got, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if got.Version != "16" {
+		t.Errorf("Version = %q, want 16", got.Version)
+	}
+	if got.NodeID != "node-1" {
+		t.Errorf("NodeID = %q, want node-1 (a resave must not silently un-assign a placed database)", got.NodeID)
+	}
+}

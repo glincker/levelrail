@@ -46,7 +46,7 @@ func TestController_Reconcile_Live_SecretEnv(t *testing.T) {
 	const image = "nginx:alpine"
 	longCtx := context.Background()
 
-	if err := pullIfMissing(longCtx, t, rawCli, image); err != nil {
+	if err := pullIfMissing(longCtx, t, rawCli); err != nil {
 		t.Fatalf("pull %s: %v", image, err)
 	}
 

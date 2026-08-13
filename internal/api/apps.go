@@ -25,6 +25,13 @@ type appResource struct {
 	Env       map[string]string       `json:"env,omitempty"`
 	Resources *store.ServiceResources `json:"resources,omitempty"`
 	Health    *store.ServiceHealth    `json:"health,omitempty"`
+	// NodeID is TASKS.md 3.3's placement (empty means this control
+	// plane's own local node). Response-only: toDesiredService below
+	// never reads it, the same "shown but not settable through this
+	// endpoint" boundary ruleResource's own evaluation-state fields
+	// already establish for a different resource. Set it via
+	// PUT /api/v1/apps/{name}/node (handleSetAppNode) instead.
+	NodeID string `json:"node_id,omitempty"`
 }
 
 func toAppResource(svc store.DesiredService) appResource {
@@ -36,6 +43,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		Env:       svc.Env,
 		Resources: svc.Resources,
 		Health:    svc.Health,
+		NodeID:    svc.NodeID,
 	}
 }
 
@@ -147,7 +155,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := rt.apps.GetDesiredService(r.Context(), name)
+	existing, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
@@ -163,7 +171,68 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	// SaveDesiredService never touches node_id (its own doc comment
+	// explains why), so the response reflects existing's placement, not
+	// req's: req.NodeID is always its zero value here anyway (the
+	// client never has a way to set it on this endpoint), but spelling
+	// out "carry the real, unchanged value forward" is clearer than
+	// relying on that zero value happening to look right.
+	req.NodeID = existing.NodeID
 	writeJSON(w, http.StatusOK, req)
+}
+
+// setAppNodeRequest is PUT /api/v1/apps/{name}/node's body.
+type setAppNodeRequest struct {
+	// NodeID is which node to place the app on; empty string moves it
+	// back to this control plane's own local node, the same convention
+	// store.DesiredService.NodeID's own doc comment establishes.
+	NodeID string `json:"node_id"`
+}
+
+// handleSetAppNode handles PUT /api/v1/apps/{name}/node (TASKS.md 3.3):
+// the only way an app's placement actually changes, see appResource's
+// own NodeID field doc comment. A non-empty node_id is checked against
+// the real node registry first, so a typo'd or already-removed node ID
+// fails loudly here with a clear 400 rather than silently parking the
+// service on a node that will never reconcile it (resolveNodeTransport,
+// cmd/levelrail/main.go, would otherwise just skip it forever with
+// nothing surfaced beyond a log line).
+func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+
+	var req setAppNodeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.NodeID != "" {
+		if _, err := rt.nodes.GetNode(r.Context(), req.NodeID); errors.Is(err, store.ErrNodeNotFound) {
+			writeError(w, http.StatusBadRequest, "unknown node_id")
+			return
+		} else if err != nil {
+			rt.logger.Error("api: set app node: look up node failed", slog.String("error", err.Error()), slog.String("node_id", req.NodeID))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+	}
+
+	if err := rt.apps.UpdateServiceNode(r.Context(), name, req.NodeID); errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: set app node failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if err != nil {
+		rt.logger.Error("api: set app node: reload after update failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toAppResource(*svc))
 }
 
 // handleDeleteApp handles DELETE /api/v1/apps/{name}. See

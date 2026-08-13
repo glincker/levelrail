@@ -198,3 +198,83 @@ func TestDeleteDesiredService_DoesNotAffectOtherServices(t *testing.T) {
 		t.Errorf("unrelated service api should be untouched, got error = %v", err)
 	}
 }
+
+func TestSaveDesiredService_NewService_DefaultsToLocalNode(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.NodeID != "" {
+		t.Errorf("NodeID = %q, want empty (local node) for a brand new service", got.NodeID)
+	}
+}
+
+func TestUpdateServiceNode(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.UpdateServiceNode(ctx, "web", "node-1"); err != nil {
+		t.Fatalf("UpdateServiceNode() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.NodeID != "node-1" {
+		t.Errorf("NodeID = %q, want node-1", got.NodeID)
+	}
+}
+
+func TestUpdateServiceNode_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.UpdateServiceNode(context.Background(), "nonexistent", "node-1")
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("UpdateServiceNode() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+// TestSaveDesiredService_RedeployDoesNotResetNodeID is the real
+// regression this task exists to prevent: internal/deploy.Pipeline
+// calls SaveDesiredService on every ordinary redeploy with no opinion
+// on placement at all. If that silently reset node_id back to local,
+// every redeploy of a service an operator had explicitly moved to a
+// remote node would move it back without anyone asking for that.
+func TestSaveDesiredService_RedeployDoesNotResetNodeID(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("initial SaveDesiredService() error = %v", err)
+	}
+	if err := db.UpdateServiceNode(ctx, "web", "node-1"); err != nil {
+		t.Fatalf("UpdateServiceNode() error = %v", err)
+	}
+
+	// A redeploy: a new image, same service, no NodeID opinion at all
+	// (the zero value), exactly what internal/deploy.Pipeline sends.
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("redeploy SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Image != "img:v2" {
+		t.Errorf("Image = %q, want img:v2 (the redeploy itself must still take effect)", got.Image)
+	}
+	if got.NodeID != "node-1" {
+		t.Errorf("NodeID = %q, want node-1 (a redeploy must not silently un-assign a placed service)", got.NodeID)
+	}
+}

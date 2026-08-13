@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -264,5 +265,123 @@ func TestHandleDeleteApp(t *testing.T) {
 	rt.Handler().ServeHTTP(recAgain, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/web", ""))
 	if recAgain.Code != http.StatusNotFound {
 		t.Fatalf("deleting an already-deleted app: status = %d, want %d", recAgain.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleSetAppNode_Success(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	seedNode(t, db, "node_1", "worker-1")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/node", `{"node_id":"node_1"}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.NodeID != "node_1" {
+		t.Errorf("NodeID = %q, want node_1", got.NodeID)
+	}
+
+	svc, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if svc.NodeID != "node_1" {
+		t.Errorf("stored NodeID = %q, want node_1", svc.NodeID)
+	}
+}
+
+func TestHandleSetAppNode_EmptyMovesToLocal(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	if err := db.UpdateServiceNode(ctx, "web", "node_1"); err != nil {
+		t.Fatalf("seed placement: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/node", `{"node_id":""}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if svc.NodeID != "" {
+		t.Errorf("stored NodeID = %q, want empty (moved back to local)", svc.NodeID)
+	}
+}
+
+func TestHandleSetAppNode_UnknownNode_Rejected(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/node", `{"node_id":"nonexistent"}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if svc.NodeID != "" {
+		t.Errorf("stored NodeID = %q, want unchanged (empty): a rejected request must not partially apply", svc.NodeID)
+	}
+}
+
+func TestHandleSetAppNode_UnknownApp_NotFound(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/ghost/node", `{"node_id":""}`))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleSetAppNode_PlainWriteToken_Forbidden(t *testing.T) {
+	rt, db := newTestRouter(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	const plaintext = "write-scoped-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_write", Name: "writer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWrite}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/apps/web/node", strings.NewReader(`{"node_id":""}`))
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d: placement is fleet-level, a plain write token must not reach it", rec.Code, http.StatusForbidden)
 	}
 }

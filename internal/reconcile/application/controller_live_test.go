@@ -45,7 +45,7 @@ func TestController_Reconcile_Live(t *testing.T) {
 	image2 := "nginx:alpine-levelrail-test-redeploy" // a local retag, not a network pull
 
 	longCtx := context.Background()
-	if err := pullIfMissing(longCtx, t, rawCli, image1); err != nil {
+	if err := pullIfMissing(longCtx, t, rawCli); err != nil {
 		t.Fatalf("pull %s: %v", image1, err)
 	}
 	if err := rawCli.ImageTag(longCtx, image1, image2); err != nil {
@@ -131,8 +131,13 @@ func TestController_Reconcile_Live(t *testing.T) {
 	}
 }
 
-func pullIfMissing(ctx context.Context, t *testing.T, cli *dockerclient.Client, ref string) error {
+// pullIfMissing pulls nginx:alpine if not already present locally: the
+// one fixture image every live test in this package uses, hardcoded
+// rather than parameterized since it's never actually been anything
+// else across any of this package's live tests.
+func pullIfMissing(ctx context.Context, t *testing.T, cli *dockerclient.Client) error {
 	t.Helper()
+	const ref = "nginx:alpine"
 	_, _, err := cli.ImageInspectWithRaw(ctx, ref)
 	if err == nil {
 		return nil

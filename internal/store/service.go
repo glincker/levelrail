@@ -54,6 +54,15 @@ type DesiredService struct {
 
 	Resources *ServiceResources
 	Health    *ServiceHealth
+
+	// NodeID is which node (internal/store's own nodes table, TASKS.md
+	// 3.1) this service should run on. Empty string is the explicit
+	// "this control plane's own local node" value (TASKS.md 3.3's own
+	// migration comment explains why that's not NULL or a foreign key),
+	// the only value that existed before this field did, so an existing
+	// single-node deployment's services keep running exactly where they
+	// already were on upgrade.
+	NodeID string
 }
 
 // SaveDesiredService creates or fully replaces the desired state for a
@@ -61,6 +70,16 @@ type DesiredService struct {
 // always written as a whole record, matching how it'll actually be
 // produced (a deploy pipeline resolving a complete DesiredService from
 // one app.yaml service block, not assembling one field at a time).
+//
+// One deliberate exception: NodeID is never written by this method,
+// only ever by UpdateServiceNode below. internal/deploy.Pipeline calls
+// this on every ordinary redeploy without ever setting NodeID (it has
+// no opinion on placement), and svc.NodeID passed in here is always
+// silently ignored, not just on an update but even on the very first
+// INSERT: a new service starts on the local node ("") until an operator
+// explicitly places it elsewhere via UpdateServiceNode, and a redeploy
+// of an already-placed service must never un-assign it from wherever
+// that placement decision put it.
 func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error {
 	domainsJSON, err := json.Marshal(nonNilSlice(svc.Domains))
 	if err != nil {
@@ -84,8 +103,8 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	}
 
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, domains, env, secret_env, resources, health, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, domains, env, secret_env, resources, health, node_id, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
@@ -102,6 +121,28 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	return nil
 }
 
+// UpdateServiceNode reassigns svc to run on nodeID ("" for this control
+// plane's own local node, TASKS.md 3.3's own migration comment), the
+// only way node_id ever changes: SaveDesiredService's own doc comment
+// explains why it's deliberately excluded from that method's
+// full-record-replace semantics.
+func (db *DB) UpdateServiceNode(ctx context.Context, name, nodeID string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE desired_services SET node_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, nodeID, name)
+	if err != nil {
+		return fmt.Errorf("store: update node for service %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: update node for service %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrServiceNotFound
+	}
+	return nil
+}
+
 // ErrServiceNotFound is returned by GetDesiredService when no service
 // has that name.
 var ErrServiceNotFound = errors.New("store: service not found")
@@ -110,7 +151,7 @@ var ErrServiceNotFound = errors.New("store: service not found")
 // ErrServiceNotFound if no such service has been saved.
 func (db *DB) GetDesiredService(ctx context.Context, name string) (*DesiredService, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health
+		SELECT name, image, port, domains, env, secret_env, resources, health, node_id
 		FROM desired_services
 		WHERE name = ?
 	`, name)
@@ -128,7 +169,7 @@ func (db *DB) GetDesiredService(ctx context.Context, name string) (*DesiredServi
 // ListDesiredServices returns every saved service, ordered by name.
 func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health
+		SELECT name, image, port, domains, env, secret_env, resources, health, node_id
 		FROM desired_services
 		ORDER BY name
 	`)
@@ -189,7 +230,7 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 		svc                                                        DesiredService
 		domainsJSON, envJSON, secretEnvJSON, resourcesJSON, health string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health, &svc.NodeID); err != nil {
 		return nil, err
 	}
 
