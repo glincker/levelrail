@@ -46,6 +46,8 @@ export const Route = createFileRoute('/login')({
 function LoginPage() {
   const brand = useBrand()
   const [tab, setTab] = useState<LoginTab>('sign-in')
+  const brandLabel = brand.ShortName || brand.Name
+  const isRegister = tab === 'register'
 
   function handleTabChange(value: unknown): void {
     if (value === 'sign-in' || value === 'register') {
@@ -54,13 +56,35 @@ function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-[70vh] items-center justify-center">
-      <Card className="w-full max-w-sm">
+    <div className="flex min-h-[70vh] flex-col items-center justify-center gap-6 px-4">
+      {/* Brand mark above the card: this is the first screen anyone sees,
+          so it gets a small identity anchor rather than just dropping
+          straight into a bare form (see the visual-pass task's framing
+          of the login screen as a trust signal). Renders the brand's
+          initial rather than brand.LogoSVG: nothing else in this repo
+          renders that field yet (grep confirms), so there is no
+          established sanitize-and-inject pattern to reuse here, and a
+          visual pass is not the place to invent one. */}
+      <div className="flex flex-col items-center gap-2 text-center">
+        <div
+          aria-hidden="true"
+          className="flex size-10 items-center justify-center rounded-lg bg-foreground text-base font-semibold text-background"
+        >
+          {brandLabel.charAt(0).toUpperCase()}
+        </div>
+        <span className="text-sm font-medium text-foreground">
+          {brandLabel}
+        </span>
+      </div>
+      <Card className="w-full max-w-sm shadow-sm">
         <CardHeader>
-          <CardTitle>Sign in to {brand.ShortName || brand.Name}</CardTitle>
+          <CardTitle>
+            {isRegister ? 'Set up the admin account' : 'Sign in'}
+          </CardTitle>
           <CardDescription>
-            Enter your admin credentials, or set up the admin account on first
-            run.
+            {isRegister
+              ? 'Create the one admin account for this instance. Registration is for the first admin only.'
+              : 'Enter your admin credentials to continue.'}
           </CardDescription>
         </CardHeader>
         <CardContent>

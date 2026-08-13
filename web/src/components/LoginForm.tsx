@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useEffect, useState } from 'react'
+import { ClockIcon, TriangleAlertIcon } from 'lucide-react'
 import { RateLimitError, useLogin } from '../queries/auth'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -103,11 +104,13 @@ export function LoginForm() {
 
       {isRateLimited ? (
         <Alert variant="destructive">
+          <ClockIcon />
           <AlertTitle>Too many attempts</AlertTitle>
           <AlertDescription>Try again in {secondsRemaining}s.</AlertDescription>
         </Alert>
       ) : login.isError ? (
         <Alert variant="destructive">
+          <TriangleAlertIcon />
           <AlertDescription>{login.error.message}</AlertDescription>
         </Alert>
       ) : null}

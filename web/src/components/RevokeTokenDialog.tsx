@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { TriangleAlertIcon } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -8,6 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { useRevokeToken } from '../queries/tokens'
 import type { TokenResource } from '../types/token'
@@ -37,16 +39,29 @@ export function RevokeTokenDialog({ token }: { token: TokenResource }) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Revoke &ldquo;{token.name}&rdquo;?</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <TriangleAlertIcon className="size-4 text-destructive" />
+            Revoke &ldquo;{token.name}&rdquo;?
+          </DialogTitle>
           <DialogDescription>
             Anything using this token loses access immediately. This cannot be
             undone.
           </DialogDescription>
         </DialogHeader>
-        {revokeToken.isError ? (
-          <p className="text-sm text-destructive">
-            {revokeToken.error.message}
+        {/* Abilities in context: an admin confirming a destructive,
+            irreversible action should be able to see what they're about
+            to cut off without leaving this dialog to go check the table
+            row again. */}
+        {token.abilities.length > 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Abilities: {token.abilities.join(', ')}
           </p>
+        ) : null}
+        {revokeToken.isError ? (
+          <Alert variant="destructive">
+            <TriangleAlertIcon />
+            <AlertDescription>{revokeToken.error.message}</AlertDescription>
+          </Alert>
         ) : null}
         <DialogFooter>
           <Button

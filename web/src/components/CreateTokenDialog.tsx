@@ -2,7 +2,12 @@ import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { CheckIcon, CopyIcon } from 'lucide-react'
+import {
+  CheckIcon,
+  CopyIcon,
+  KeyRoundIcon,
+  TriangleAlertIcon,
+} from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -12,6 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -22,7 +28,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Field, FieldError, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+  FieldTitle,
+} from '@/components/ui/field'
 import { useCreateToken } from '../queries/tokens'
 import type { Ability, CreateTokenResponse } from '../types/token'
 
@@ -166,21 +179,35 @@ export function CreateTokenDialog() {
             <DialogHeader>
               <DialogTitle>Token created</DialogTitle>
               <DialogDescription>
-                Copy this token now. You will not be able to see it again.
+                &ldquo;{created.name}&rdquo; is ready to use.
               </DialogDescription>
             </DialogHeader>
+            {/* The one moment this token's plaintext ever exists in the
+                UI (tokens.go's handleCreateToken never returns it again),
+                so this gets the clearest possible warning treatment, not
+                just a description line: Dokploy's copy-once modal (finding
+                10) is the model here. No "warning" tone exists in
+                badgeVariants/alertVariants, so this reuses the same
+                amber-precedent classes AlertRulesPanel.tsx and the deploy
+                logs route already established for exactly this gap. */}
+            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+              <TriangleAlertIcon className="mt-0.5 size-4 shrink-0" />
+              <p className="text-sm">
+                Copy this token now. It will not be shown again.
+              </p>
+            </div>
             <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
               <code className="min-w-0 flex-1 overflow-x-auto text-xs break-all">
                 {created.token}
               </code>
               <Button
                 type="button"
-                size="icon-sm"
+                size="sm"
                 variant="outline"
                 onClick={copyToken}
               >
                 {copied ? <CheckIcon /> : <CopyIcon />}
-                <span className="sr-only">Copy token</span>
+                {copied ? 'Copied' : 'Copy'}
               </Button>
             </div>
             <DialogFooter>
@@ -197,7 +224,10 @@ export function CreateTokenDialog() {
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>Create token</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                <KeyRoundIcon className="size-4 text-muted-foreground" />
+                Create token
+              </DialogTitle>
               <DialogDescription>
                 A scoped, revocable credential for the CLI, CI, or an MCP
                 integration.
@@ -252,29 +282,36 @@ export function CreateTokenDialog() {
                         const rootSelected = field.value.includes('root')
                         const disabled = rootSelected && option.value !== 'root'
                         return (
-                          <label
-                            key={option.value}
-                            className="flex items-start gap-2 text-sm"
-                          >
-                            <Checkbox
-                              className="mt-0.5"
-                              checked={field.value.includes(option.value)}
-                              disabled={disabled}
-                              onCheckedChange={() => {
-                                field.onChange(
-                                  toggleAbility(field.value, option.value),
-                                )
-                              }}
-                            />
-                            <span>
-                              <span className="font-medium text-foreground">
-                                {option.label}
-                              </span>
-                              <span className="block text-xs text-muted-foreground">
-                                {option.hint}
-                              </span>
-                            </span>
-                          </label>
+                          // Boxed checkbox-card pattern: FieldLabel wrapping
+                          // a Field is what field.tsx's own classes are
+                          // built for (has-[>[data-slot=field]]:border,
+                          // has-data-checked:border-primary/30), so each
+                          // ability gets a bordered row that highlights on
+                          // selection instead of a bare checkbox + text
+                          // line. Same implicit label-wraps-control click
+                          // target as before (still one <label>, Checkbox
+                          // still a descendant), just with the visual
+                          // weight the ability picker's own doc comment
+                          // above calls for.
+                          <FieldLabel key={option.value}>
+                            <Field orientation="horizontal">
+                              <Checkbox
+                                checked={field.value.includes(option.value)}
+                                disabled={disabled}
+                                onCheckedChange={() => {
+                                  field.onChange(
+                                    toggleAbility(field.value, option.value),
+                                  )
+                                }}
+                              />
+                              <FieldContent>
+                                <FieldTitle>{option.label}</FieldTitle>
+                                <FieldDescription className="text-xs">
+                                  {option.hint}
+                                </FieldDescription>
+                              </FieldContent>
+                            </Field>
+                          </FieldLabel>
                         )
                       })}
                     </div>
@@ -284,9 +321,12 @@ export function CreateTokenDialog() {
               </Field>
 
               {createToken.isError ? (
-                <p className="text-sm text-destructive">
-                  {createToken.error.message}
-                </p>
+                <Alert variant="destructive">
+                  <TriangleAlertIcon />
+                  <AlertDescription>
+                    {createToken.error.message}
+                  </AlertDescription>
+                </Alert>
               ) : null}
 
               <DialogFooter>

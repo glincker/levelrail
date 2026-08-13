@@ -1,3 +1,4 @@
+import { KeyRoundIcon } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -34,14 +35,23 @@ function formatDate(iso: string | undefined, fallback: string): string {
 export function TokenTable({ tokens }: { tokens: TokenResource[] }) {
   if (tokens.length === 0) {
     return (
-      <p className="text-sm text-neutral-500 dark:text-neutral-400">
-        No tokens yet. Create one to get a CLI, CI, or MCP credential.
-      </p>
+      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border px-6 py-12 text-center">
+        <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <KeyRoundIcon className="size-5" />
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-foreground">No tokens yet</p>
+          <p className="text-sm text-muted-foreground">
+            Create a scoped, revocable credential for the CLI, CI, or an MCP
+            integration.
+          </p>
+        </div>
+      </div>
     )
   }
 
   return (
-    <div className="rounded-lg border border-neutral-200 dark:border-neutral-800">
+    <div className="rounded-lg border border-border">
       <Table>
         <TableHeader>
           <TableRow>

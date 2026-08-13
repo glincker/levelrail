@@ -1,10 +1,17 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { TriangleAlertIcon } from 'lucide-react'
 import { useRegister } from '../queries/auth'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
-import { Field, FieldError, FieldGroup, FieldLabel } from './ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from './ui/field'
 import { Alert, AlertDescription, AlertTitle } from './ui/alert'
 
 const registerSchema = z
@@ -76,7 +83,11 @@ export function RegisterForm({
             aria-invalid={!!formState.errors.password}
             {...register('password')}
           />
-          <FieldError errors={[formState.errors.password]} />
+          {formState.errors.password ? (
+            <FieldError errors={[formState.errors.password]} />
+          ) : (
+            <FieldDescription>At least 8 characters.</FieldDescription>
+          )}
         </Field>
         <Field
           data-invalid={formState.errors.confirmPassword ? true : undefined}
@@ -97,6 +108,7 @@ export function RegisterForm({
 
       {adminAlreadyExists ? (
         <Alert variant="destructive">
+          <TriangleAlertIcon />
           <AlertTitle>An admin account already exists</AlertTitle>
           <AlertDescription>
             <button
@@ -110,6 +122,7 @@ export function RegisterForm({
         </Alert>
       ) : registerAdmin.isError ? (
         <Alert variant="destructive">
+          <TriangleAlertIcon />
           <AlertDescription>{registerAdmin.error.message}</AlertDescription>
         </Alert>
       ) : null}
