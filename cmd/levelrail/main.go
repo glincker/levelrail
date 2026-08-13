@@ -69,6 +69,20 @@ const (
 	// steady-state size, infrequent enough to be a non-event on a
 	// control plane CLAUDE.md 6 Phase 5 wants measured for idle cost.
 	metricsRetentionSweepInterval = 1 * time.Hour
+
+	// logTargetsResyncInterval is how often the log collector re-derives
+	// which containers it should be streaming from (TASKS.md 2.2), kept
+	// as its own constant rather than reusing resyncInterval: it governs
+	// a different concern (log stream subscriptions, not reconcile
+	// passes) even though the two currently share the same value.
+	logTargetsResyncInterval = 30 * time.Second
+	// defaultLogsRetention matches CLAUDE.md 4.8's "default 15 days,"
+	// the same default metrics uses, applied to the sibling log store.
+	defaultLogsRetention = 15 * 24 * time.Hour
+	// logsRetentionSweepInterval mirrors metricsRetentionSweepInterval's
+	// own reasoning: frequent enough that log_entries never grows much
+	// past its steady-state size, infrequent enough to be a non-event.
+	logsRetentionSweepInterval = 1 * time.Hour
 )
 
 func main() {
@@ -180,6 +194,14 @@ func run(logger *slog.Logger) error {
 	}()
 	go runMetricsRetentionSweep(ctx, telemetryDB, logger)
 
+	logCollector := telemetry.NewLogCollector(client, telemetryDB, logger)
+	go func() {
+		if err := logCollector.Run(ctx, logTargetsResyncInterval, logTargets(db, client)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("telemetry log collector stopped", slog.String("error", err.Error()))
+		}
+	}()
+	go runLogsRetentionSweep(ctx, telemetryDB, logger)
+
 	events, errs := client.Events(ctx)
 	go func() {
 		if err, ok := <-errs; ok && err != nil {
@@ -279,6 +301,85 @@ func telemetryTargets(db *store.DB, runtime docker.Runtime) func(context.Context
 		}
 		return targets, nil
 	}
+}
+
+// logTargets lists every desired service's currently running container(s)
+// as log collection targets. A deliberate near-duplicate of
+// telemetryTargets above rather than a shared helper: internal/telemetry.
+// LogTarget and telemetry.Target are distinct types for distinct
+// collector shapes (streaming vs polling, see logs.go's own doc comment
+// on why the two collectors differ), and this mirrors the same
+// "deliberate near-duplicate, not a shared package, while both pieces
+// are still under active development" choice migrate.go's own doc
+// comment already makes for internal/telemetry vs internal/store.
+func logTargets(db *store.DB, runtime docker.Runtime) func(context.Context) ([]telemetry.LogTarget, error) {
+	return func(ctx context.Context) ([]telemetry.LogTarget, error) {
+		services, err := db.ListDesiredServices(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("list desired services: %w", err)
+		}
+
+		var targets []telemetry.LogTarget
+		for _, svc := range services {
+			containers, err := runtime.ListByPrefix(ctx, svc.Name+"-")
+			if err != nil {
+				return nil, fmt.Errorf("list containers for %s: %w", svc.Name, err)
+			}
+			for _, c := range containers {
+				if !c.Running {
+					continue
+				}
+				targets = append(targets, telemetry.LogTarget{
+					ResourceID:  "service:" + svc.Name,
+					ContainerID: c.ID,
+				})
+			}
+		}
+		return targets, nil
+	}
+}
+
+// runLogsRetentionSweep deletes log entries older than the configured
+// retention window on a fixed interval, until ctx is done. Mirrors
+// runMetricsRetentionSweep's shape exactly; see that function's doc
+// comment for why retention duration is env-configurable
+// (APP_LOGS_RETENTION here) while the sweep interval itself is not.
+func runLogsRetentionSweep(ctx context.Context, db *telemetry.DB, logger *slog.Logger) {
+	ticker := time.NewTicker(logsRetentionSweepInterval)
+	defer ticker.Stop()
+
+	sweep := func() {
+		cutoff := time.Now().Add(-logsRetention())
+		deleted, err := db.RetainLogs(ctx, cutoff)
+		if err != nil {
+			logger.Error("logs retention sweep failed", slog.String("error", err.Error()))
+			return
+		}
+		if deleted > 0 {
+			logger.Info("logs retention sweep", slog.Int64("deleted", deleted), slog.Time("cutoff", cutoff))
+		}
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			sweep()
+		}
+	}
+}
+
+func logsRetention() time.Duration {
+	raw := os.Getenv("APP_LOGS_RETENTION")
+	if raw == "" {
+		return defaultLogsRetention
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		return defaultLogsRetention
+	}
+	return d
 }
 
 // runMetricsRetentionSweep deletes samples older than the configured
