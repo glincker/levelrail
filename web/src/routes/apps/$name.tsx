@@ -9,6 +9,7 @@ import { ConditionsPanel } from '../../components/ConditionsPanel'
 import { DeployTriggerForm } from '../../components/DeployTriggerForm'
 import { DomainEditor } from '../../components/DomainEditor'
 import { EnvEditor } from '../../components/EnvEditor'
+import { SecretsEditor } from '../../components/SecretsEditor'
 
 // App detail route (TASKS.md 1.10). Two queries are primed in the
 // loader, matching frontend-plan.md section 3's "cross-cutting" rule
@@ -52,6 +53,7 @@ function AppDetailPage() {
       <DeployTriggerForm appName={app.name} />
       <DomainEditor app={app} />
       <EnvEditor app={app} />
+      <SecretsEditor appName={app.name} />
     </div>
   )
 }
