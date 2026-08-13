@@ -1091,6 +1091,35 @@ secrets and the reconciler, applied here for the same reason.
       proved `GET /api/v1/brand` through the Vite proxy reaches the
       backend and returns real brand JSON. `web` `tsc --noEmit`/`eslint`/
       `vite build` all clean.
+- [x] **Dev fixtures (2026-08-13)**: `dev-fixtures.yml` (repo root,
+      `APP_DEV_FIXTURES_FILE` overrides the path), an optional YAML file
+      of fixed-plaintext API tokens seeded on startup under the same
+      `APP_DEV_MODE=1` gate as the dev admin account, so validating the
+      ability model locally (does a read-only token get 403'd on a
+      write route, does write:sensitive actually gate the secrets
+      route) doesn't require registering, logging in, and minting a
+      token by hand every time. `internal/api/devfixtures.go`:
+      `ParseDevFixtures` validates each entry (name/plaintext required,
+      no duplicate names or plaintexts, abilities validated through the
+      same `validateAbilities` a real mint request goes through) so a
+      typo fails loudly at startup. `seedDevFixtures` is idempotent
+      (checks `GetAPITokenByHash` before inserting, so a restart against
+      the same data directory never double-seeds or errors on a
+      primary-key conflict) and reuses the real `SaveAPIToken`/
+      `hashToken` path, no parallel token-issuance code. A missing file
+      is not an error, dev mode works without one. TDD throughout
+      (`internal/api/devfixtures_test.go`), `gofmt`/`go vet`/
+      `golangci-lint`/`go test -race` clean in both `embedweb` build
+      variants. Live end-to-end verified against a real binary with the
+      shipped `dev-fixtures.yml`: a `read`-scoped token GETs `/apps`
+      (200) but is forbidden from POSTing one (403); a `write`-scoped
+      token can POST an app (201) but is forbidden from setting a
+      secret (403); a `write:sensitive`-scoped token reaches the
+      secrets handler (501, no master key configured locally, the same
+      response an authorized caller gets). Separately confirmed a real
+      `-tags embedweb` release build seeds nothing and rejects every
+      fixture token (401) even with `APP_DEV_MODE=1` set and the file
+      present, matching ADR 013's build-tag gate.
 
 ### Frontend: dashboard UI
 

@@ -50,6 +50,11 @@ const (
 	// defaultBrandFile is the same "relative default, env override"
 	// pattern as defaultDataDir, per CLAUDE.md section 3.
 	defaultBrandFile = "./brand.yaml"
+	// defaultDevFixturesFile is the same "relative default, env
+	// override" pattern as defaultBrandFile, for the optional dev-mode
+	// fixture tokens file (internal/api/devfixtures.go). Only ever read
+	// when APP_DEV_MODE=1, see MaybeSeedDevFixturesFromFile's own gate.
+	defaultDevFixturesFile = "./dev-fixtures.yml"
 	// defaultHTTPAddr is where the TASKS.md 1.9 HTTP API listens.
 	defaultHTTPAddr = ":8080"
 
@@ -148,6 +153,14 @@ func run(logger *slog.Logger) error {
 	// call order, but placing it second documents that intent.
 	if err := api.MaybeBootstrapDevAdmin(ctx, db, logger); err != nil {
 		logger.Warn("dev admin account not bootstrapped", slog.String("error", err.Error()))
+	}
+
+	// Also a no-op unless APP_DEV_MODE=1 (same gate as the dev admin
+	// account above). A missing dev-fixtures.yml is not an error: it is
+	// an opt-in convenience layered on top of dev mode, not a
+	// requirement for dev mode to work at all.
+	if err := api.MaybeSeedDevFixturesFromFile(ctx, db, logger, devFixturesFile()); err != nil {
+		logger.Warn("dev fixtures not seeded", slog.String("error", err.Error()))
 	}
 
 	telemetryDB, err := openTelemetryStore(ctx)
@@ -450,6 +463,16 @@ func loadBrand() (*brand.Brand, error) {
 		path = defaultBrandFile
 	}
 	return brand.Load(path)
+}
+
+// devFixturesFile resolves the path MaybeSeedDevFixturesFromFile reads,
+// the same default-plus-env-override shape as loadBrand above.
+func devFixturesFile() string {
+	path := os.Getenv("APP_DEV_FIXTURES_FILE")
+	if path == "" {
+		path = defaultDevFixturesFile
+	}
+	return path
 }
 
 // loadSecretsManager builds a secrets.Manager from APP_MASTER_KEY (CLAUDE.md
