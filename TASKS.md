@@ -1457,7 +1457,7 @@ than the routes not existing or a nil-dereference panic.
 - [ ] Threshold rules over 2.1/2.2's data
 - [ ] Notification via webhook, email, Slack, Discord, Telegram
 
-### 2.6 Prometheus remote read endpoint
+### 2.6 Prometheus remote read endpoint. CLAIMED (this session, 2026-08-13)
 
 - [ ] Expose 2.1's metrics store via Prometheus's remote-read protocol,
       per CLAUDE.md 4.8, "so people can point Grafana at it if they want"
