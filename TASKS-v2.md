@@ -111,17 +111,56 @@ new file invites drift)
 - [ ] Record the approved direction here once reviewed (adjustments,
       sign-off, or a different direction entirely). Blocks Phase 1.
 
-## Phase 1: Shell (blocked on Phase D approval)
+## Phase 1: Shell
 
-Not detailed yet, deliberately: filling this in before the wireframe is
-approved would be designing ahead of the research, the exact thing this
-file's "ground rules" section exists to prevent. Expect: a
-`SidebarProvider`/`Sidebar`/`SidebarContent`-shaped component set (or
-whatever the research doc's shadcn findings actually recommend),
-replacing `web/src/routes/__root.tsx`'s current top-nav `AppShell`,
-integrated with the in-flight `ThemeProvider` work (parallel pass, see
-note below), and TanStack Router wiring for whatever nav structure the
-approved wireframe specifies.
+- [x] **Real shell built (2026-08-13)**, approved by the founder looking
+      at the live preview rather than a formal wireframe sign-off step:
+      `npx shadcn add sidebar` (Base UI variant, confirmed via
+      `@base-ui/react` imports in the generated `sidebar.tsx`) installed
+      `sidebar.tsx`, `sheet.tsx`, `tooltip.tsx`, `skeleton.tsx`,
+      `use-mobile.ts`, no `package.json` changes (all built on
+      already-installed deps). New `web/src/components/AppSidebar.tsx`:
+      `Sidebar collapsible="icon"` with a brand-mark header (real
+      `useBrand()` data, no team switcher, per the research's "skip it,
+      nothing to switch between yet" recommendation), a primary nav
+      group (Apps, real active-route highlighting via
+      `useRouterState`), a `mt-auto`-pinned secondary group (API
+      tokens, Documentation linking to the real `brand.DocsURL`), and a
+      footer with the real signed-in username (`useAuthUsername`) and a
+      working sign-out button (`useLogout`). `web/src/routes/__root.tsx`
+      rewritten: `AppShell` now renders `SidebarProvider > AppSidebar +
+      SidebarInset` for any authenticated route, and just `<Outlet />`
+      (no chrome) for `/login`, replacing the old flat top-nav bar
+      entirely. Fixed a real `react-hooks/set-state-in-effect` lint
+      violation in the shadcn-generated `use-mobile.ts` (lazy
+      `useState` initializer instead of setting state synchronously
+      inside the mount effect) since installing that file makes it
+      this repo's problem to keep lint-clean, not vendored-and-ignored.
+      `tsc --noEmit`/`eslint`/`vite build` all clean on every file this
+      change touched (a separate, unrelated, concurrently in-progress
+      edit to `CreateAlertRuleDialog.tsx` from the other active session
+      working on alerting notification channels was failing `tsc -b`
+      at the same time; confirmed via the error list that none of the
+      failures were in any file this pass touched, left untouched and
+      uncommitted as it wasn't in scope). Live-verified via `curl`
+      against the real embedded binary (real login, real 200 on
+      `/apps`); a from-scratch browser screenshot check hit this
+      session's known "script injection timeout" browser-automation
+      issue (independently confirmed by three separate polish agents
+      earlier in this session, not caused by this change), so this
+      was not visually screenshotted, flagged explicitly rather than
+      claimed.
+- [ ] Merge the in-flight dark-mode `ThemeProvider`/`ThemeToggle` pass
+      (dispatched before this shell rewrite) into the new shell: that
+      agent's own `__root.tsx` diff will conflict with the rewrite
+      above, so only its new component files
+      (`ThemeProvider.tsx`/`ThemeToggle.tsx`) get pulled in, wired into
+      `AppSidebar`'s header or footer directly rather than reapplying
+      its top-nav-shaped diff.
+- [ ] Reassess the KPI-strip/`SectionCards` pattern for an apps
+      overview once the shell has real content flowing through it
+      (deferred, not blocking: the current `/apps` route already has
+      its own list-page polish from the earlier pass).
 
 ## Phase 2: Screen migration into the new shell
 
