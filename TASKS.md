@@ -962,12 +962,36 @@ secrets and the reconciler, applied here for the same reason.
       clean. Minimum password length enforced (8 chars). Never a hardcoded
       default credential (CapRover's `captain42` named as the anti-pattern
       avoided, per `docs-local/research/competitor-onboarding-auth-ux.md`).
-- [ ] **Session security**: rotate/invalidate all sessions on password
-      change; session TTL via env var, no "remember me" UI toggle (one
-      configurable-by-admin lifetime, matches CLAUDE.md 7's "no hardcoded
-      thresholds, use env vars"); real login rate limiting (exponential
-      backoff or a token-bucket per IP+account pair, not CapRover's flat
-      30s global back-off).
+- [x] **Login rate limiting + session TTL (2026-08-12)**:
+      `internal/api/ratelimit.go`'s `loginLimiter`, per-(client IP,
+      attempted username) pair, real exponential backoff (a grace period
+      of 3 free failures, then doubling from 1s up to a 15-minute cap),
+      not CapRover's flat 30s global back-off with no per-IP separation.
+      Gates before any credential check or bcrypt comparison runs, and
+      every failure path (unknown admin, wrong username, wrong password)
+      counts against it equally, so probing for a valid username costs
+      the same as guessing its password; a locked-out request gets 429
+      with `Retry-After`, even with the correct password. `sessionStore`
+      gained a configurable `ttl` (`WithSessionTTL` Option, defaults to
+      `defaultSessionTTL` = 24h when unset), so CLAUDE.md 7's "no
+      hardcoded thresholds, use env vars" rule has somewhere to attach:
+      `internal/api` itself still never reads the environment directly
+      (matches every other `Option` here), `cmd/levelrail/main.go`
+      reading `APP_SESSION_TTL` and calling `WithSessionTTL` is a small,
+      separate wiring step, deferred alongside dev-mode's `main.go` hook
+      for the same reason (that file's concurrent Phase 2 telemetry
+      wiring was still active when this landed). 13 new tests (limiter
+      unit tests including an overflow-safety case at 200 failures,
+      `clientIP`/`loginLimiterKey`, and integration tests through
+      `handleLogin` itself); 79.7% coverage on `internal/api`.
+      **Not done, explicit follow-up**: rotate/invalidate sessions on
+      password change has no code to attach to yet, there is no live
+      "change password while running" endpoint in this codebase (only
+      env-var-driven `UpsertAdminUser` at startup, which already
+      invalidates every session via the ordinary restart-wipes-sessions
+      path `sessionStore`'s own doc comment already describes). Revisit
+      once a real change-password endpoint exists, don't build a
+      rotation hook with nothing to trigger it.
 - [ ] **Locked-out recovery path**: a documented, container-native
       recovery mechanism for a locked-out single admin (a subcommand run
       via `docker exec`, matching Dokploy's `reset-password.ts` shape,
@@ -1252,14 +1276,33 @@ matching row. 81.8% coverage for `internal/telemetry` (up from 2.1's
 76.0%), 84.1% for `internal/docker`; 84.9% overall for `internal/`,
 against the repo's 70% gate.
 
-### 2.3 Query API (`internal/api` extension). CLAIMED (this session, 2026-08-12)
+### 2.3 Query API (`internal/api` extension). DONE (2026-08-12)
 
-- [ ] Time range, filtering, aggregation over both stores
-- [ ] Shaped as a federated query even with one node today (CLAUDE.md
-      4.8: "control plane fans queries out to agents and merges
-      results... pull, not push"), matching 4.3's single-node-now,
-      real-transport-later precedent, so multi-node (Phase 3) doesn't
-      need this rewritten, only the transport underneath it
+- [x] Time range, filtering, aggregation over both stores:
+      `GET /api/v1/apps/{name}/metrics` (query params: `metric`
+      required, `from`/`to` RFC3339 defaulting to the last hour,
+      `step` a Go duration for bucketed averages via
+      `telemetry.Aggregate`, omitted meaning raw samples) and
+      `GET /api/v1/apps/{name}/logs` (`from`/`to` the same defaults,
+      `q` an optional FTS5 full-text search phrase)
+- [x] Shaped as a federated query even with one node today:
+      `internal/telemetry.Federator` fans out to every configured
+      `MetricsSource`/`LogsSource` and merges by timestamp, today
+      exactly one source (this node's own local `*telemetry.DB` via
+      `NewLocalFederator`), the same single-node-now,
+      real-transport-later shape CLAUDE.md 4.3 already establishes for
+      the reconcile agent transport, so Phase 3's real per-node
+      sources slot in without `internal/api` changing. A source
+      erroring doesn't fail the whole query (ADR 008's "handle partial
+      results gracefully" requirement, actually implemented, not just
+      documented): the API layer logs a partial-result warning and
+      still returns what came back, only failing the request outright
+      when every source errored and nothing at all was returned
+
+Both routes return 501 when no `TelemetryQuerier` is configured
+(`WithTelemetryQuerier`), the same "not configured" shape
+`WithSecretSetter`'s absence already established for secrets, rather
+than the routes not existing or a nil-dereference panic.
 
 ### 2.4 Frontend: metrics dashboard, log viewer, deploy markers
 
