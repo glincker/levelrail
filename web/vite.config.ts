@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -6,6 +7,13 @@ import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vite.dev/config/
 export default defineConfig({
+  resolve: {
+    alias: {
+      // shadcn/ui's import alias convention, matching tsconfig.app.json's
+      // "@/*" path mapping so editor and bundler resolution agree.
+      '@': path.resolve(import.meta.dirname, './src'),
+    },
+  },
   plugins: [
     // Must come before @vitejs/plugin-react per TanStack Router docs: it
     // generates routeTree.gen.ts and (with autoCodeSplitting) splits each

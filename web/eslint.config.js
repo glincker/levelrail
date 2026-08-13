@@ -50,6 +50,20 @@ export default tseslint.config(
       'react-refresh/only-export-components': 'off',
     },
   },
+  // shadcn/ui's generated components (src/components/ui/**, e.g.
+  // button.tsx, tabs.tsx) follow the upstream registry's convention of
+  // co-exporting a cva() variants function alongside the component in the
+  // same file. react-refresh/only-export-components flags that as a fast
+  // refresh hazard; these files are vendored from the shadcn registry
+  // (regenerated via `npx shadcn add --overwrite`, not hand-edited), so
+  // fighting the upstream shape here would just be undone on the next
+  // `shadcn add`.
+  {
+    files: ['src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
   // Plain config files run under Node, not the browser/DOM lib, and are
   // not part of the type-checked app project.
   {
