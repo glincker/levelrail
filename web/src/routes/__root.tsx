@@ -2,16 +2,19 @@ import type { QueryClient } from '@tanstack/react-query'
 import {
   createRootRouteWithContext,
   Outlet,
-  Link,
   redirect,
 } from '@tanstack/react-router'
 import { getStoredUsername } from '../lib/authStore'
 import { useAuthUsername } from '../hooks/useAuthUsername'
-import { useBrand } from '../hooks/useBrand'
-import { useLogout } from '../queries/auth'
 import { brandQueryOptions } from '../queries/brand'
 import { BrandProvider } from '../components/BrandProvider'
-import { Button } from '../components/ui/button'
+import { AppSidebar } from '../components/AppSidebar'
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from '../components/ui/sidebar'
+import { Separator } from '../components/ui/separator'
 
 // Router context carries the QueryClient so every route loader can call
 // queryClient.ensureQueryData / ensureInfiniteQueryData without importing
@@ -59,63 +62,35 @@ function RootLayout() {
   )
 }
 
+// The sidebar shell only applies once a session exists: /login itself
+// renders full-bleed with no nav chrome (there is nothing to navigate to
+// yet, and the login screen's own centered-card layout, LoginForm.tsx,
+// already owns its full viewport). Every other route gets the real
+// shadcn sidebar-07/dashboard-01 shape (SidebarProvider > AppSidebar +
+// SidebarInset), per docs-local/research/dashboard-redesign: this
+// replaces the previous flat top-nav bar entirely, not an incremental
+// change to it.
 function AppShell() {
-  const brand = useBrand()
   const username = useAuthUsername()
-  const logout = useLogout()
+
+  if (!username) {
+    return <Outlet />
+  }
 
   return (
-    <div className="flex min-h-full flex-col">
-      <header className="border-b border-neutral-200 dark:border-neutral-800">
-        <nav className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
-          <Link to="/apps" className="text-sm font-semibold tracking-tight">
-            {brand.ShortName || brand.Name}
-          </Link>
-          {username ? (
-            <>
-              <Link
-                to="/apps"
-                className="text-sm text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
-                activeProps={{
-                  className:
-                    'text-neutral-900 dark:text-neutral-100 font-medium',
-                }}
-              >
-                Apps
-              </Link>
-              <Link
-                to="/settings/tokens"
-                className="text-sm text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
-                activeProps={{
-                  className:
-                    'text-neutral-900 dark:text-neutral-100 font-medium',
-                }}
-              >
-                API tokens
-              </Link>
-              <div className="ml-auto flex items-center gap-3">
-                <span className="text-sm text-neutral-500 dark:text-neutral-400">
-                  {username}
-                </span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    logout.mutate()
-                  }}
-                  disabled={logout.isPending}
-                >
-                  {logout.isPending ? 'Signing out...' : 'Sign out'}
-                </Button>
-              </div>
-            </>
-          ) : null}
-        </nav>
-      </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
-        <Outlet />
-      </main>
-    </div>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 h-4" />
+        </header>
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          <div className="mx-auto w-full max-w-6xl">
+            <Outlet />
+          </div>
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
