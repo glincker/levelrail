@@ -71,6 +71,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
@@ -129,14 +130,17 @@ type SecretSetter interface {
 
 // Router wires every internal/api handler onto one http.Handler.
 type Router struct {
-	logger   *slog.Logger
-	brand    *brand.Brand
-	apps     AppStore
-	deploys  DeployStore
-	auth     AuthStore
-	tokens   TokenStore
-	secrets  SecretSetter // nil is valid: a control plane with no master key configured serves everything except secret-setting
-	sessions *sessionStore
+	logger     *slog.Logger
+	brand      *brand.Brand
+	apps       AppStore
+	deploys    DeployStore
+	auth       AuthStore
+	tokens     TokenStore
+	secrets    SecretSetter     // nil is valid: a control plane with no master key configured serves everything except secret-setting
+	telemetry  TelemetryQuerier // nil is valid: metrics/logs query routes return 501, same shape as secrets above
+	sessions   *sessionStore
+	logins     *loginLimiter
+	sessionTTL time.Duration // 0 means "use defaultSessionTTL", set via WithSessionTTL
 }
 
 // Option configures optional Router behavior.
@@ -151,23 +155,48 @@ func WithSecretSetter(s SecretSetter) Option {
 	return func(rt *Router) { rt.secrets = s }
 }
 
+// WithSessionTTL overrides how long a session cookie stays valid.
+// Without one configured, defaultSessionTTL (24h) applies. CLAUDE.md 7's
+// "no hardcoded thresholds, use env vars" rule is honored one layer up,
+// at cmd/levelrail/main.go, which reads APP_SESSION_TTL and passes the
+// parsed duration here; this package itself never reads the environment
+// directly (NewRouter takes everything as constructor args, matching
+// every other option here).
+func WithSessionTTL(d time.Duration) Option {
+	return func(rt *Router) { rt.sessionTTL = d }
+}
+
+// WithTelemetryQuerier enables GET /api/v1/apps/{name}/metrics and
+// GET /api/v1/apps/{name}/logs (TASKS.md 2.3). Without one configured,
+// both routes return 501, the same "not configured" shape
+// WithSecretSetter's absence produces, rather than the routes not
+// existing at all or panicking on a nil dereference.
+func WithTelemetryQuerier(q TelemetryQuerier) Option {
+	return func(rt *Router) { rt.telemetry = q }
+}
+
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
 func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Router {
 	if logger == nil {
 		logger = slog.Default()
 	}
 	rt := &Router{
-		logger:   logger,
-		brand:    b,
-		apps:     s,
-		deploys:  s,
-		auth:     s,
-		tokens:   s,
-		sessions: newSessionStore(),
+		logger:  logger,
+		brand:   b,
+		apps:    s,
+		deploys: s,
+		auth:    s,
+		tokens:  s,
+		logins:  newLoginLimiter(),
 	}
 	for _, opt := range opts {
 		opt(rt)
 	}
+	// sessions is built after options are applied, not in the struct
+	// literal above, specifically so WithSessionTTL can influence it:
+	// sessionStore reads its TTL once at construction, it isn't a field
+	// re-read on every create() call.
+	rt.sessions = newSessionStore(rt.sessionTTL)
 	return rt
 }
 
@@ -216,6 +245,11 @@ func (rt *Router) Handler() http.Handler {
 	// session) is exactly the kind of exposure envelope encryption
 	// exists to avoid.
 	mux.HandleFunc("PUT /api/v1/apps/{name}/secrets/{key}", rt.requireAbility(AbilityWrite, rt.handleSetSecret))
+
+	// Telemetry query (TASKS.md 2.3): metrics and logs for one app,
+	// fanned out through a Federator (today, exactly one local source).
+	mux.HandleFunc("GET /api/v1/apps/{name}/metrics", rt.requireAbility(AbilityRead, rt.handleQueryMetrics))
+	mux.HandleFunc("GET /api/v1/apps/{name}/logs", rt.requireAbility(AbilityRead, rt.handleQueryLogs))
 
 	return mux
 }

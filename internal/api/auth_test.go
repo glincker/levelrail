@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -225,6 +227,100 @@ func TestRequireAuth_RejectsMissingOrInvalidSession(t *testing.T) {
 				t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusUnauthorized, rec.Body.String())
 			}
 		})
+	}
+}
+
+func TestHandleLogin_RateLimited_AfterRepeatedFailures(t *testing.T) {
+	rt, db := newTestRouter(t)
+	bootstrapTestAdmin(t, db)
+
+	// loginGraceFailures+1 failed attempts: the (loginGraceFailures+1)th
+	// itself still gets processed normally (it's what tips the counter
+	// past the threshold and sets the lock for whatever comes next), so
+	// the lockout is only observable on a subsequent request, not that
+	// one.
+	wrongBody := `{"username":"` + testAdminUsername + `","password":"wrong"}`
+	for i := 0; i < loginGraceFailures+1; i++ {
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(wrongBody))
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, req)
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("attempt %d: status = %d, want %d (still processed normally)", i, rec.Code, http.StatusUnauthorized)
+		}
+	}
+
+	// Even the correct password must be rejected while locked out: the
+	// limiter gates before any credential check runs.
+	correctBody := `{"username":"` + testAdminUsername + `","password":"` + testAdminPassword + `"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(correctBody))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusTooManyRequests {
+		t.Errorf("status with correct credentials while locked out = %d, want %d", rec.Code, http.StatusTooManyRequests)
+	}
+	if rec.Header().Get("Retry-After") == "" {
+		t.Error("Retry-After header not set on a rate-limited response")
+	}
+}
+
+func TestHandleLogin_SuccessResetsRateLimit(t *testing.T) {
+	rt, db := newTestRouter(t)
+	bootstrapTestAdmin(t, db)
+
+	wrongBody := `{"username":"` + testAdminUsername + `","password":"wrong"}`
+	for i := 0; i < loginGraceFailures; i++ {
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(wrongBody))
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, req)
+	}
+
+	correctBody := `{"username":"` + testAdminUsername + `","password":"` + testAdminPassword + `"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(correctBody))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d: a correct login within the grace window must still succeed", rec.Code, http.StatusOK)
+	}
+}
+
+func TestHandleLogin_UnknownUsername_CountsAgainstRateLimit(t *testing.T) {
+	// Probing for a valid username must cost the same as guessing its
+	// password, not be a free, unlimited oracle.
+	rt, db := newTestRouter(t)
+	bootstrapTestAdmin(t, db)
+
+	body := `{"username":"nobody","password":"anything"}`
+	for i := 0; i < loginGraceFailures+1; i++ {
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(body))
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, req)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusTooManyRequests {
+		t.Errorf("status after repeated unknown-username attempts = %d, want %d", rec.Code, http.StatusTooManyRequests)
+	}
+}
+
+func TestWithSessionTTL(t *testing.T) {
+	db := openTestDB(t)
+	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
+	rt := NewRouter(logger, testBrand(), db, WithSessionTTL(1*time.Hour))
+
+	if rt.sessions.ttl != 1*time.Hour {
+		t.Errorf("sessions.ttl = %v, want 1h", rt.sessions.ttl)
+	}
+}
+
+func TestWithSessionTTL_DefaultsWhenUnset(t *testing.T) {
+	db := openTestDB(t)
+	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
+	rt := NewRouter(logger, testBrand(), db)
+
+	if rt.sessions.ttl != defaultSessionTTL {
+		t.Errorf("sessions.ttl = %v, want defaultSessionTTL (%v)", rt.sessions.ttl, defaultSessionTTL)
 	}
 }
 

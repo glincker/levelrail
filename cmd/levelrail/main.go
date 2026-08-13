@@ -171,7 +171,7 @@ func run(logger *slog.Logger) error {
 
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
-		Handler:           rootHandler(logger, b, db, secretsManager, webhookHandler),
+		Handler:           rootHandler(logger, b, db, telemetryDB, secretsManager, webhookHandler),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -577,6 +577,12 @@ func loadWebhookHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand
 // GitHub calls this URL directly, it is not part of the versioned
 // Levelrail API surface the frontend and future MCP layer build on.
 //
+// telemetryDB is always non-nil (openTelemetryStore has no optional
+// gating, unlike secrets/webhook below), so api.WithTelemetryQuerier is
+// applied unconditionally, wrapped in a fresh telemetry.NewLocalFederator
+// per TASKS.md 2.3's federated-shape design (today: exactly one source,
+// this node's own local store).
+//
 // secretsManager and webhookHandler may both be nil (APP_MASTER_KEY and
 // the webhook env vars are each independently optional): api.
 // WithSecretSetter and the /webhook mount are only applied when set,
@@ -584,8 +590,8 @@ func loadWebhookHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand
 // interface value would panic the first time PUT .../secrets/{key}
 // tried to call a method on it, rather than hitting api.Router's own
 // "not configured" 501 path.
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, secretsManager *secrets.Manager, webhookHandler http.Handler) http.Handler {
-	var opts []api.Option
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, webhookHandler http.Handler) http.Handler {
+	opts := []api.Option{api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB))}
 	if secretsManager != nil {
 		opts = append(opts, api.WithSecretSetter(secretsManager))
 	}

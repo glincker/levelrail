@@ -24,7 +24,14 @@ import (
 // name doesn't need branding to do its job.
 const sessionCookieName = "session_token"
 
-const sessionTTL = 24 * time.Hour
+// defaultSessionTTL is the fallback when the control plane isn't given
+// an explicit one (Router.sessionTTL, set via WithSessionTTL). CLAUDE.md
+// 7's "no hardcoded thresholds, use env vars" rule is honored at
+// cmd/levelrail/main.go, which reads APP_SESSION_TTL and passes it down;
+// this constant is only the value used when that env var is unset, the
+// same "relative default, env override" shape openStore's data
+// directory and loadBrand's file path already use.
+const defaultSessionTTL = 24 * time.Hour
 
 // session is one logged-in admin session.
 type session struct {
@@ -43,10 +50,17 @@ type session struct {
 type sessionStore struct {
 	mu       sync.Mutex
 	sessions map[string]session
+	ttl      time.Duration
 }
 
-func newSessionStore() *sessionStore {
-	return &sessionStore{sessions: make(map[string]session)}
+// newSessionStore builds a sessionStore. ttl <= 0 falls back to
+// defaultSessionTTL, so callers that construct one directly (existing
+// tests, primarily) don't need to know about the default themselves.
+func newSessionStore(ttl time.Duration) *sessionStore {
+	if ttl <= 0 {
+		ttl = defaultSessionTTL
+	}
+	return &sessionStore{sessions: make(map[string]session), ttl: ttl}
 }
 
 func (s *sessionStore) create(username string) (string, error) {
@@ -55,7 +69,7 @@ func (s *sessionStore) create(username string) (string, error) {
 		return "", fmt.Errorf("api: generate session token: %w", err)
 	}
 	s.mu.Lock()
-	s.sessions[token] = session{username: username, expiresAt: time.Now().Add(sessionTTL)}
+	s.sessions[token] = session{username: username, expiresAt: time.Now().Add(s.ttl)}
 	s.mu.Unlock()
 	return token, nil
 }
@@ -102,6 +116,15 @@ type loginResponse struct {
 // the same generic "invalid credentials" message whether the username
 // doesn't match, the admin account doesn't exist yet, or the password is
 // wrong, so the response never tells an attacker which case they hit.
+//
+// Rate limited per (client IP, attempted username) via rt.logins: a
+// locked-out key is rejected before any bcrypt comparison even runs
+// (bcrypt is deliberately slow, and running it anyway on a
+// known-locked-out request would just burn CPU on a request that was
+// always going to fail), and every failure path below (unknown admin,
+// wrong username, wrong password) counts against the limiter, not just
+// wrong-password specifically, so probing for a valid username costs
+// the same as guessing its password.
 func (rt *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -113,8 +136,16 @@ func (rt *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	key := loginLimiterKey(r, req.Username)
+	if ok, retryAfter := rt.logins.allow(key); !ok {
+		w.Header().Set("Retry-After", fmt.Sprintf("%.0f", retryAfter.Seconds()))
+		writeError(w, http.StatusTooManyRequests, "too many failed attempts, try again later")
+		return
+	}
+
 	admin, err := rt.auth.GetAdminUser(r.Context())
 	if errors.Is(err, store.ErrAdminNotFound) {
+		rt.logins.recordFailure(key)
 		writeError(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
@@ -125,13 +156,16 @@ func (rt *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if admin.Username != req.Username {
+		rt.logins.recordFailure(key)
 		writeError(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(admin.PasswordHash), []byte(req.Password)); err != nil {
+		rt.logins.recordFailure(key)
 		writeError(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
+	rt.logins.recordSuccess(key)
 
 	token, err := rt.sessions.create(admin.Username)
 	if err != nil {
@@ -156,7 +190,7 @@ func (rt *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
-		Expires:  time.Now().Add(sessionTTL),
+		Expires:  time.Now().Add(rt.sessions.ttl),
 	})
 	writeJSON(w, http.StatusOK, loginResponse{Username: admin.Username})
 }
@@ -356,7 +390,7 @@ func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
-		Expires:  time.Now().Add(sessionTTL),
+		Expires:  time.Now().Add(rt.sessions.ttl),
 	})
 	writeJSON(w, http.StatusCreated, loginResponse{Username: req.Username})
 }
