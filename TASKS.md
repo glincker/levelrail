@@ -870,6 +870,63 @@ met, same as Phase 0's competitor research and ADR writing were.
 
 ---
 
+## Dashboard & auth: research phase (started 2026-08-12)
+
+Cross-cutting, not filed under a single phase number: the dashboard
+(`/web`) already covers app list/detail/domains/env/deploy-trigger/
+log-viewer (1.10), but there is no login screen, no onboarding flow, and
+`internal/api`'s auth (`internal/api/auth.go`) is bespoke bcrypt +
+in-memory session cookie, nothing more. CLAUDE.md 4.11's AI/MCP layer and
+this session's own CLI/API-token ask both need a real answer to "how does
+a caller authenticate" before they can be built on top of it, so this is
+being researched properly before anything gets wired, not improvised.
+
+Four parallel research agents dispatched (2026-08-12), each producing a
+`docs-local/research/` doc, no application code touched by any of them:
+
+- [~] **theauth-go fit assessment**: is `github.com/glincker/theauth-go`
+      (OAuth 2.1 + MCP authorization for Go, already a mature project
+      with its own `docs-local/2026-06-2x-theauth-go-*` design/audit
+      trail in this GLINRV5 workspace) the right replacement for
+      `internal/api`'s bespoke auth, given Phase 1's own stated scope
+      ("single admin user, session auth, no teams, no RBAC yet") is far
+      smaller than what theauth-go offers (SAML, WebAuthn, SCIM, agent
+      delegation). Does adopting it now right-size to Phase 1 or
+      overshoot it. Storage: Levelrail is SQLite, theauth-go's own
+      storage adapters are Postgres/MySQL/Memory, is that a blocker or a
+      non-issue. Concrete integration sketch if the recommendation is
+      "adopt now."
+- [~] **Frontend component/auth-SDK reuse**: `theauth`'s `sdk/` (JS/TS
+      client SDK, docs-site, examples) paired with `theauth-go` on the
+      backend, and `thesvg`'s shadcn/ui-based component system
+      (`components.json`: shadcn schema, style `base-nova`, Tailwind,
+      lucide icons) as the reusable-component foundation for `/web`
+      instead of the hand-rolled Tailwind components built so far
+      (`AppOverview`, `DomainEditor`, `EnvEditor`, etc.). What's
+      genuinely reusable, what needs adapting, what's GLINCKER-cloud-only
+      and not applicable to a self-hosted single-binary product.
+- [~] **Competitor onboarding/auth UX**: read the already-cloned
+      `docs-local/competitor-clones/{coolify,dokploy,caprover,dokku}`
+      for first-run setup, login screen, and any API-token/CLI-auth
+      mechanism they expose (Phase 0's `prior-art-*.md` docs covered
+      deploy/rollback mechanics, not this angle). What's good UX to
+      borrow, what's bad UX to avoid, specifically for Levelrail's own
+      first-run/login/token flows.
+- [~] **Dashboard gap audit + dev-mode design**: honest gap list against
+      "install, start, get full control" for a single-admin single-node
+      install (not multi-node/teams, those stay out of scope per
+      CLAUDE.md 6's Phase boundaries), plus a concrete design for a
+      local dev-mode auth bypass so iterating on dashboard features
+      doesn't mean re-logging-in on every reload.
+
+Synthesis and concrete, validated tasks land here once all four report
+back. Deliberately not dumping a large upfront task list ahead of that:
+CLAUDE.md 7 argues against speculative planning, and locking in a UI
+framework/component/auth direction before the research lands would be
+exactly that.
+
+---
+
 ## Phase 2: Observability, the actual differentiator. IN PROGRESS (started 2026-08-12)
 
 Exit criterion (CLAUDE.md 6): you can answer "why was this app slow at
