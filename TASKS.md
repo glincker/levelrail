@@ -1888,7 +1888,269 @@ depends on 2.2 (needs log access) and the reconciler's existing
 restart-count observation, not on 2.3's query API. 2.5 depends on 2.3
 and is realistically the last piece to land.
 
-## Phase 3 onward
+## Phase 3: Multi-node. Breakdown written (2026-08-13)
 
-Not broken down yet. See CLAUDE.md section 6 for the phase-level summary
-(multi-node, platform surface, hardening).
+Exit criterion (CLAUDE.md 6): you add a second server from the UI, move
+an app to it, and the app's internal database connection keeps working
+across machines.
+
+Written now, at the start of this phase, not before: CLAUDE.md 7 warns
+against inventing detailed tasks ahead of need, but Phase 2 is
+functionally complete and this repo's own convention (see the Phase 2
+sequencing notes above) is to break a phase down once it's the one
+actually being built, the same point this file was at when 2.1-2.7 got
+written up. Grounded in what's actually in the repo today, not just
+CLAUDE.md 4.3/4.6 and ADRs 003/006's stated intent:
+
+- **`internal/network` does not exist.** ADR 006 says the network
+  abstraction "gets designed in Phase 1 so the real WireGuard mesh can
+  be swapped in during Phase 3 without a rewrite," but Phase 1 never
+  created it (confirmed: no `internal/network` directory, no
+  `wireguard-go` in `go.mod`). Phase 3 has to design *and* build this
+  interface, not just swap an implementation into an existing one.
+- **There is no agent transport abstraction either.** ADR 003 describes
+  "the reconciler and everything above the transport boundary never
+  knows whether it's talking to a local in-process agent or a remote
+  one," implying an interface boundary should already separate
+  "converge this container" from "on which node." It doesn't:
+  every controller (`internal/reconcile/application`,
+  `internal/reconcile/database`) takes a bare `docker.Runtime` directly
+  (`internal/docker.Runtime`, the Engine API wrapper itself), and
+  `cmd/levelrail/main.go`'s `dynamicSource` hands every controller the
+  same single local `docker.Runtime`. There is exactly one implicit
+  node today. `cmd/levelrail-agent` and `/proto` (both named in CLAUDE.md
+  5's repo layout) don't exist yet either.
+- **No placement concept anywhere.** `store.DesiredService` and
+  `store.DesiredDatabase` have no node field at all (checked directly:
+  `internal/store/service.go`'s `DesiredService` struct). A service
+  today has no node assignment because there is only ever one node to
+  assign it to.
+- **`google.golang.org/grpc` is already an indirect dependency**
+  (pulled in transitively, likely via BuildKit's own client), so 3.2
+  below adds a direct `require` and generated stubs, not a wholly new
+  dependency tree.
+- **Two already-recorded explicit follow-ups land here, not as new
+  discoveries**: `internal/reconcile/ingress/controller.go`'s own doc
+  comment already names a real `certmagic.Storage` backed by
+  `internal/store` as "the real requirement" for multi-node cert
+  sharing (3.6 below); `internal/build/client.go`'s `WithCacheDir` doc
+  comment already names "a registry or object-store backend and
+  dedicated build nodes to share it with" as the Phase 3 trigger for a
+  real remote build cache (3.5 below).
+
+### 3.1 Agent transport interface + node registry
+
+The foundation everything else in this phase routes through. Single-
+session per CLAUDE.md 8's explicit "the agent transport protocol" and
+"the database schema" do-not-parallelize entries; this sub-task is
+squarely both at once.
+
+- [ ] New `internal/agent` package: a transport interface abstracting
+      "do container/build/telemetry operations against node N,"
+      structurally close to today's `docker.Runtime` shape (so existing
+      controllers change call sites, not logic) but namespaced per node
+      rather than assuming the one local daemon. Two implementations
+      land together, not the interface alone: an in-process one
+      wrapping today's direct `docker.NewClient()` call (the Phase 1
+      behavior, made explicit rather than implicit, so single-node
+      deployments provably pay zero new cost), and the real gRPC one
+      (3.2).
+- [ ] `internal/store`: new `nodes` table (id, name, address, status,
+      cert fingerprint/serial, joined_at, last_seen_at) plus join-token
+      storage (one-time, single-use, expiring). Migration, following
+      this repo's existing forward-only numbered-migration convention
+      (`internal/store/migrations/000N_*.sql`).
+- [ ] Join-token issuance: an authenticated API route
+      (`POST /api/v1/nodes/join-tokens` or similar, `requireAbility`-
+      gated like every other mutating route in `internal/api`) that
+      mints a one-time token an operator pastes into the agent's
+      enrollment command.
+- [ ] Node CRUD API surface: list nodes, get one, remove one (remove is
+      real deletion only after 3.7's drain exists; before that, deleting
+      a node with services still on it should fail loudly, not
+      silently orphan them).
+
+### 3.2 `proto/` definitions and the real gRPC agent binary
+
+Depends on 3.1's interface shape being settled. Single-session, same
+CLAUDE.md 8 category as 3.1: this *is* "the agent transport protocol."
+
+- [ ] `/proto`: gRPC service definitions for what an agent exposes to
+      the control plane, mirroring `internal/agent`'s interface from
+      3.1 (container ops, Docker event streaming, stats/log collection
+      for `internal/telemetry`'s federator to reach, per ADR 008's "the
+      control plane fans queries out to agents" design already being
+      built toward this).
+- [ ] `cmd/levelrail-agent`: new binary (named in CLAUDE.md 5's repo
+      layout, doesn't exist yet). Dials **out** to the control plane
+      (ADR 003), presents its join token on first connect, receives a
+      client certificate, reconnects with that certificate afterward.
+      Talks to its local Docker socket directly via
+      `internal/docker` (no CLI shelling, the same invariant ADR 002
+      already established control-plane-side, ADR 003 already commits
+      to node-side).
+- [ ] mTLS: certificate issuance at enrollment, rotation on a schedule
+      (ADR 003's "Consequences" section already names this as a real
+      operational surface to build, not a footnote).
+- [ ] Reconnection, backpressure, and version negotiation as tested
+      behavior, not just a happy-path connect: ADR 003's own
+      Consequences section calls these out by name as the standing cost
+      of the reverse-dialed design, explicitly scoped as Phase 3 work
+      there already.
+- [ ] `internal/agent`'s gRPC implementation (from 3.1) becomes real
+      against this binary; the in-process implementation stays the
+      Phase 1 default for a single-node deployment, per ADR 003's
+      "single-node mode... in-memory transport that implements the same
+      interface" requirement, now actually true instead of aspirational.
+
+### 3.3 Placement: node assignment for services and databases
+
+Depends on 3.1/3.2 (there has to be more than one usable transport
+target before "which node" is a meaningful question). The schema piece
+stays inside the single-session 3.1/3.2 arc per CLAUDE.md 8's "database
+schema" rule; the assignment UX/API on top of that schema can follow
+once the column exists.
+
+- [ ] `store.DesiredService`/`store.DesiredDatabase` gain a `NodeID`
+      field, migration.
+- [ ] `dynamicSource` (`cmd/levelrail/main.go`) routes each
+      controller's transport by the service's assigned node instead of
+      the single shared local `docker.Runtime` it hands every
+      controller today.
+- [ ] Manual node assignment first (CLAUDE.md 6: "Placement: manual
+      node assignment first. Simple spread scheduling second. No
+      bin-packing.") An API route to (re)assign a service to a node.
+      Spread scheduling is explicitly a follow-up, not bundled into
+      this sub-task: manual assignment alone is enough to prove the
+      exit criterion ("move an app to it").
+- [ ] Moving an existing service to a different node: the application
+      controller's existing blue-green mechanics (TASKS.md 1.3) are
+      per-node already; moving a service is "stop reconciling it on
+      node A, start reconciling it on node B," which needs the
+      reconcile engine's per-controller dispatch to actually change
+      which transport a controller uses. Get this working and prove it
+      live before calling 3.3 done: it's the literal Phase 3 exit
+      criterion's middle clause.
+
+### 3.4 WireGuard mesh and internal DNS
+
+Depends on 3.1-3.3 existing (a mesh across zero-to-one nodes is
+nothing to test). Genuinely separate subsystem once the foundation
+lands: fair game to hand to a dedicated session or agent once 3.1-3.3
+are merged, though the WireGuard integration itself is enough of a new
+architectural surface (a new external dependency, kernel-vs-userspace
+path selection) that CLAUDE.md 8's "give each agent an explicit exit
+criterion... human review of every decision" bar should apply, same
+spirit as the reconciler core even though it's not literally on that
+list.
+
+- [ ] `internal/network`: the abstraction interface ADR 006 already
+      says should exist and doesn't yet, built now instead of assumed.
+- [ ] Real implementation on `wireguard-go` (ADR 006: userspace, not a
+      dependency on the in-kernel module, so nodes without kernel-module
+      loading rights still work), with kernel-module detection to take
+      the faster in-kernel path when available.
+- [ ] Peer key distribution: the control plane distributes public
+      keys/allowed-IPs to every node, forming a full mesh (ADR 006:
+      explicitly not hub-and-spoke through the control plane itself).
+- [ ] Internal DNS: stable per-service names resolving to the right
+      peer regardless of which node a service currently runs on. This
+      is what makes 3.3's "move a service" not break an existing
+      database connection string, the literal last clause of the exit
+      criterion.
+
+### 3.5 Dedicated build nodes
+
+Depends on 3.1-3.3 for the placement mechanism to route a build to a
+specific node at all. Parallelizable once that lands; a contained,
+well-scoped addition (extends `internal/build`, doesn't touch the
+reconciler or transport).
+
+- [ ] A registry or object-store backend for BuildKit's remote cache
+      (`internal/build/client.go`'s own `WithCacheDir` doc comment
+      already names this as the missing piece, not invented fresh
+      here), replacing the local-disk-only cache Phase 1 scoped down to.
+- [ ] Node capability: which nodes accept build work, distinct from
+      "which nodes run application containers" (a node can be either,
+      both, or neither).
+- [ ] Route a deploy's build step to a build-capable node via 3.1's
+      transport instead of always building against the control plane's
+      own local BuildKit connection.
+
+### 3.6 Distributed cert storage
+
+Depends on 3.1 only (needs a real multi-node concept to matter at
+all, but not placement or WireGuard specifically). Small, well-scoped,
+parallelizable: touches only `internal/ingress`/
+`internal/reconcile/ingress`, already flagged as a real gap with a
+named solution.
+
+- [ ] Implement `certmagic.Storage` backed by `internal/store`'s SQLite
+      (`internal/reconcile/ingress/controller.go`'s own doc comment
+      already names this exact shape as the real requirement), replacing
+      Caddy's default file-system cert/ACME-account storage.
+- [ ] Multi-node ingress instances (one per node running the ingress
+      controller, per CLAUDE.md 4.5) share cert state through this
+      store instead of each independently re-obtaining a certificate for
+      a domain another node already has one for.
+- [ ] The still-open Phase 1 gap this same controller's doc comment
+      already names (domain uniqueness isn't enforced across separate
+      deploys over time, `BuildRoutesConfig` would silently build two
+      routes for the same host) gets materially worse across nodes if
+      not closed alongside this: worth closing here, not carried forward
+      a third time.
+
+### 3.7 Node health, drain, cordon
+
+Depends on 3.1-3.3 (a node's health/drain/cordon state is meaningless
+without the registry and placement those provide). Parallelizable once
+that foundation lands.
+
+- [ ] Health: agent heartbeat / last-seen tracking (3.1's `nodes` table
+      already has the column), surfaced via API and, per 3.8, the UI.
+      A node that stops heartbeating is a real, user-facing state, not
+      silently ignored.
+- [ ] Cordon: mark a node unschedulable (new placements refuse it)
+      without evacuating what's already running there.
+- [ ] Drain: move every service off a node before it's removed,
+      reusing 3.3's "move a service to a different node" mechanism
+      rather than inventing a second one. This is also what makes node
+      removal (3.1's node-delete route) safe to actually implement as
+      a real delete instead of only ever failing loudly.
+
+### 3.8 Frontend: node management UI
+
+Parallelizable once 3.1/3.3/3.7's API surfaces exist, one agent per
+route, the same CLAUDE.md 8 precedent Phase 1's frontend pages and
+Phase 2's dashboard/log-viewer/alert-rules panels already used.
+
+- [ ] Add-node flow: generate a join token, show the operator the
+      enrollment command to run on the new machine.
+- [ ] Node list: health status (3.7), which services are placed where.
+- [ ] Per-service node assignment / move UI (3.3).
+- [ ] Cordon/drain controls (3.7).
+
+---
+
+## Phase 3 sequencing notes
+
+3.1 and 3.2 form one coherent single-session arc (agent transport
+protocol plus the database schema it needs, both explicitly on CLAUDE.md
+8's do-not-parallelize list) and must land in that order, 3.1's interface
+shape before 3.2's real implementation of it. 3.3's schema piece
+(`NodeID` columns) stays inside that same single-session arc; its
+API/dispatch piece can follow once the columns exist, but "moving a
+service without breaking it" is realistically not separable from 3.1-3.3
+being done by the same continuous effort, the same reasoning TASKS.md
+1.3 (the application controller) was never split across parallel agents
+either. 3.4, 3.5, 3.6, and 3.7 are independent of each other (different
+files, different concerns: networking, builds, certs, node lifecycle)
+and become parallel-safe once 3.1-3.3 are merged, the same shape Phase
+2's 2.1/2.2 split was. 3.8 depends on whichever of 3.1/3.3/3.7 it's
+surfacing and should be split per-page the way Phase 1's 1.10 and Phase
+2's dashboard work already were, not built as one monolithic session.
+The exit criterion itself (add a node, move an app, keep its database
+connection working) needs 3.1 through 3.4 at minimum; 3.5-3.8 are real
+Phase 3 scope per CLAUDE.md 6 but not required to demonstrate the exit
+criterion, worth landing in whatever order real need surfaces rather
+than treating this list as a strict sequence past 3.4.
