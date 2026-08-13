@@ -1113,12 +1113,47 @@ setup task has no backend dependency and can start immediately.
       TASKS.md 1.7, zero frontend consumer today), handling the 501
       "not configured" case (no `APP_MASTER_KEY` set) with a clear
       message distinct from a user error.
-- [ ] **API token management UI**: name + optional prefix + expiration
-      dropdown (with a real "never" option) + ability checkboxes +
-      plaintext-shown-once modal with copy button + one-click revoke
-      with confirm (Dokploy's lifecycle UX + Coolify's ability model,
-      per the competitor research's finding 10). Link directly to API
-      docs from this screen (Dokploy's Swagger-link touch).
+- [x] **API token management UI (2026-08-12)**: new top-level route
+      `web/src/routes/settings/tokens.tsx` (`/settings/tokens`, account-
+      level, not nested under `web/src/routes/apps/` since it isn't
+      scoped to one app), split into `web/src/components/TokenTable.tsx`
+      (list, revoked rows stay visible and greyed out with a "Revoked"
+      badge rather than hidden, per `tokens.go`'s own doc comment that
+      `GET /api/v1/auth/tokens` never drops them),
+      `web/src/components/CreateTokenDialog.tsx` (name, expiration
+      select mapped to `expires_in_days`: never/1/7/30/90/365 days, five
+      ability checkboxes with Coolify's exclusivity rule enforced
+      client-side via `toggleAbility` so `root` clears the other four
+      and any other checkbox clears `root`, matching
+      `abilities.go`'s `validateAbilities` so the UI can't produce a
+      combination the server would 400 on), and
+      `web/src/components/RevokeTokenDialog.tsx` (confirm dialog before
+      `DELETE /api/v1/auth/tokens/{id}`, not a bare one-click button).
+      `web/src/queries/tokens.ts` follows `queries/apps.ts`'s
+      `tokenKeys`/`queryOptions`/mutation-with-invalidation shape
+      exactly; the create mutation deliberately invalidates the list
+      query on success instead of writing the response into any cache
+      (unlike `useUpdateApp`'s `setQueryData`), since the response
+      carries the plaintext token and caching it anywhere would work
+      against "shown once." The plaintext itself lives only in
+      `CreateTokenDialog`'s local `created` state, shown once with a
+      copy-to-clipboard button and an explicit "you will not be able to
+      see this again" warning, and is discarded for good on dialog
+      dismiss, matching the backend: there is no endpoint to retrieve it
+      again. No nav link into `/settings/tokens` yet: deferred on
+      purpose, `web/src/routes/__root.tsx` had unrelated concurrent auth-
+      shell edits in flight from a parallel agent when this was built,
+      and CLAUDE.md 8's parallel-agent guidance is not to step on live
+      work in the same file; the route is reachable directly by URL in
+      the meantime. Also deferred, not silently dropped: the API-docs
+      link finding 10 calls out (Dokploy's Swagger-link touch) has
+      nothing to link to yet, there is no `/docs` directory in this repo
+      at all as of this pass, so linking to one would be inventing a
+      broken link rather than shipping the real UX win. Verification:
+      `npm run build` (route lands in its own chunk,
+      `dist/assets/tokens-*.js`, separate from `apps-*`/`index-*`),
+      `npm run typecheck`, `npm run lint`, `npm run format:check` all
+      clean; `grep -rlP '[\x{2014}\x{2013}]' web/src` empty.
 
 ---
 
