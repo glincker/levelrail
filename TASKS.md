@@ -976,11 +976,12 @@ secrets and the reconciler, applied here for the same reason.
       `defaultSessionTTL` = 24h when unset), so CLAUDE.md 7's "no
       hardcoded thresholds, use env vars" rule has somewhere to attach:
       `internal/api` itself still never reads the environment directly
-      (matches every other `Option` here), `cmd/levelrail/main.go`
-      reading `APP_SESSION_TTL` and calling `WithSessionTTL` is a small,
-      separate wiring step, deferred alongside dev-mode's `main.go` hook
-      for the same reason (that file's concurrent Phase 2 telemetry
-      wiring was still active when this landed). 13 new tests (limiter
+      (matches every other `Option` here). `cmd/levelrail/main.go`'s
+      `sessionTTL(logger)` reads `APP_SESSION_TTL` (a Go duration
+      string, e.g. `24h`) and feeds `api.WithSessionTTL`; live-verified
+      by starting the real binary with `APP_SESSION_TTL=2s` and
+      confirming a session that worked immediately returned `401` after
+      about 3 seconds. 13 new tests (limiter
       unit tests including an overflow-safety case at 200 failures,
       `clientIP`/`loginLimiterKey`, and integration tests through
       `handleLogin` itself); 79.7% coverage on `internal/api`.
@@ -1135,9 +1136,10 @@ setup task has no backend dependency and can start immediately.
       this repo having no override of it, this `package.json` diff is
       flagged for approval before merge, not assumed pre-cleared by this
       being the task's own point.
-- [ ] **Vite dev proxy**: `web/vite.config.ts` gets a `server.proxy`
-      entry for `/api` (dev-only), a prerequisite the dev-mode research
-      flagged as missing regardless of the auth bypass itself.
+- [x] **Vite dev proxy**: done alongside dev mode, see the evidenced
+      "Dev mode" entry in the "Dashboard & auth" section above for the
+      `server.proxy` diff and its live-verified proxy-reaches-backend
+      check.
 - [x] **Login screen (2026-08-12)**: `web/src/routes/login.tsx`, a plain
       form + `fetch` against `POST /api/v1/auth/login` and
       `POST /api/v1/auth/register`, no theauth SDK
