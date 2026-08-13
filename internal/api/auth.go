@@ -94,6 +94,22 @@ func (s *sessionStore) revoke(token string) {
 	s.mu.Unlock()
 }
 
+// revokeAllExcept deletes every session belonging to username other than
+// keepToken. Used by handleChangePassword: rotating every other session
+// on a password change (docs-local/research/competitor-onboarding-auth-
+// ux.md finding 6, "rotate/invalidate all sessions on password change")
+// without logging the caller themselves out of the request that just
+// made the change.
+func (s *sessionStore) revokeAllExcept(username, keepToken string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for token, sess := range s.sessions {
+		if token != keepToken && sess.username == username {
+			delete(s.sessions, token)
+		}
+	}
+}
+
 func randomToken() (string, error) {
 	buf := make([]byte, 32)
 	if _, err := rand.Read(buf); err != nil {
@@ -290,12 +306,21 @@ func (rt *Router) requireAbility(required string, next http.HandlerFunc) http.Ha
 // requireAbility can check it without duplicating the cookie-lookup
 // dance.
 func (rt *Router) hasValidSession(r *http.Request) bool {
+	_, ok := rt.currentSessionUsername(r)
+	return ok
+}
+
+// currentSessionUsername returns the username and session token a
+// request's session cookie resolves to, if any. handleChangePassword
+// needs both: the username to re-verify the current password against,
+// and the token so revokeAllExcept can leave this one session alone.
+func (rt *Router) currentSessionUsername(r *http.Request) (username string, ok bool) {
 	c, err := r.Cookie(sessionCookieName)
 	if err != nil {
-		return false
+		return "", false
 	}
-	_, ok := rt.sessions.lookup(c.Value)
-	return ok
+	username, ok = rt.sessions.lookup(c.Value)
+	return username, ok
 }
 
 // bearerToken extracts the token from a "Bearer <token>" Authorization
