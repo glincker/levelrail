@@ -7,6 +7,22 @@ import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    // Dev-server only: `vite build`'s output never reads this block, so
+    // there's no risk of a hardcoded localhost target leaking into the
+    // embedded production frontend. Without this, `npm run dev` has no
+    // way to reach the Go backend's API at all (it serves only the
+    // frontend on its own port), which is also a prerequisite for
+    // APP_DEV_MODE to matter in practice: see
+    // internal/api/devmode.go's doc comment for the auth-bypass side of
+    // this pairing.
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
+  },
   resolve: {
     alias: {
       // shadcn/ui's import alias convention, matching tsconfig.app.json's

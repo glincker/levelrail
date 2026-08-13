@@ -1021,18 +1021,45 @@ secrets and the reconciler, applied here for the same reason.
       recover-admin runs as a separate OS process; a container restart
       after recovery is the practical way to revoke sessions established
       under the old password.
-- [ ] **Dev mode**: `APP_DEV_MODE=1`, gated by a new build-tag file pair
-      in `internal/api` (`devmode_debug.go` `//go:build !embedweb`,
-      `devmode_release.go` `//go:build embedweb`, the latter always
-      returns `false` without even reading the env var). At startup,
-      bootstraps a fixed, loudly-logged dev admin and drives the real
-      `handleLogin` path to get a genuine session, the same shape
-      `internal/api/testutil_test.go`'s `loginTestSession` already uses.
-      Never a second "skip auth" branch in `requireAuth` itself. Wiring
-      the startup call into `cmd/levelrail/main.go` is a small, separate
-      last step, deferred until that file's current concurrent edits
-      (Phase 2 telemetry wiring) settle, to avoid stepping on live
-      in-progress work in the same file.
+- [x] **Dev mode**: `APP_DEV_MODE=1`, gated by a build-tag file pair in
+      `internal/api` (`devmode_debug.go` `//go:build !embedweb`, real
+      `os.Getenv("APP_DEV_MODE") == "1"`; `devmode_release.go`
+      `//go:build embedweb`, always returns `false` without reading the
+      env var at all). Concretely simpler than the original sketch: no
+      second session-fabrication path is needed, since `BootstrapAdmin`
+      (already used by `cmd/levelrail`'s own `bootstrapAdmin`) is already
+      idempotent and safe to call unconditionally on every startup. At
+      startup, `api.MaybeBootstrapDevAdmin` (thin wrapper around a
+      testable `maybeBootstrapDevAdmin(ctx, s, logger, enabled bool)`
+      core) ensures a fixed `dev`/`dev` admin exists whenever enabled and
+      no admin account exists yet, `slog.Warn`-logging the credentials
+      every startup so the bypass is unmissable in terminal output.
+      Called from `run()` right after the existing `bootstrapAdmin` call:
+      `BootstrapAdmin`'s no-op-once-an-admin-exists rule means an
+      operator-set `APP_ADMIN_USERNAME`/`APP_ADMIN_PASSWORD` always wins
+      over the dev fallback regardless of call order. `requireAuth` and
+      `handleLogin` are completely untouched: the frontend still logs in
+      through the real path, just with trivial known credentials.
+      Companion **Vite dev proxy**: `web/vite.config.ts` gained a
+      `server.proxy` entry (`/api` to `http://localhost:8080`,
+      `changeOrigin: true`), dev-server-only (never read by `vite
+      build`), without which `npm run dev` had no way to reach the Go
+      backend at all regardless of auth. TDD throughout: every new
+      function (`devModeEnabled` per build tag, `maybeBootstrapDevAdmin`)
+      got a failing test first (`internal/api/devmode_test.go`,
+      `devmode_debug_test.go` `//go:build !embedweb`,
+      `devmode_release_test.go` `//go:build embedweb`), including that
+      disabled mode never creates an account and that an existing admin
+      is never clobbered. `gofmt`/`go vet`/`golangci-lint`
+      (`--build-tags embedweb` too)/`go test -race` all clean in **both**
+      build variants. Live end-to-end verified: real binary with
+      `APP_DEV_MODE=1` logs the warning and `dev`/`dev` returns 200 with
+      a session cookie via the real login endpoint; the same binary
+      without `APP_DEV_MODE` set returns 401 for `dev`/`dev`; separately,
+      a real backend on :8080 plus `npm run dev` on a scratch port
+      proved `GET /api/v1/brand` through the Vite proxy reaches the
+      backend and returns real brand JSON. `web` `tsc --noEmit`/`eslint`/
+      `vite build` all clean.
 
 ### Frontend: dashboard UI
 

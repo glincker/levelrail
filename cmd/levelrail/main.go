@@ -140,6 +140,16 @@ func run(logger *slog.Logger) error {
 		logger.Warn("admin account not bootstrapped", slog.String("error", err.Error()))
 	}
 
+	// A no-op unless APP_DEV_MODE=1 in a non -tags embedweb build (see
+	// internal/api/devmode_debug.go / devmode_release.go). Called after
+	// bootstrapAdmin, not before: BootstrapAdmin no-ops once any admin
+	// exists, so an operator-set APP_ADMIN_USERNAME/APP_ADMIN_PASSWORD
+	// always wins over the fixed dev/dev fallback, regardless of this
+	// call order, but placing it second documents that intent.
+	if err := api.MaybeBootstrapDevAdmin(ctx, db, logger); err != nil {
+		logger.Warn("dev admin account not bootstrapped", slog.String("error", err.Error()))
+	}
+
 	telemetryDB, err := openTelemetryStore(ctx)
 	if err != nil {
 		return err
