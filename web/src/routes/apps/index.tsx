@@ -2,8 +2,9 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef } from 'react'
+import { BoxIcon } from 'lucide-react'
 import { appListQueryOptions } from '../../queries/apps'
-import { AppRow } from '../../components/AppRow'
+import { APP_LIST_GRID, AppRow, RowSkeleton } from '../../components/AppRow'
 
 // Typed loader primes the Query cache, the component only reads that
 // cache via useSuspenseQuery against the same key (no data fetching in
@@ -12,11 +13,35 @@ import { AppRow } from '../../components/AppRow'
 // same section) rather than branching on row count, even though GET
 // /api/v1/apps returns everything in one response with no server-side
 // pagination to page through.
+//
+// pendingComponent is purely a rendering fallback for the loader's own
+// pending phase (router-level, shown only past TanStack Router's default
+// pendingMs), it does not add or change a data fetch: the loader above
+// is still the one and only ensureQueryData call.
 export const Route = createFileRoute('/apps/')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(appListQueryOptions()),
   component: AppListPage,
+  pendingComponent: AppListPending,
 })
+
+// Column labels for the sticky header, matching AppRow's APP_LIST_GRID
+// exactly (icon column and trailing chevron column stay blank) so the
+// header never drifts out of alignment with row content.
+function ListHeader() {
+  return (
+    <div
+      className={`${APP_LIST_GRID} sticky top-0 z-10 border-b border-border bg-card px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase`}
+    >
+      <span aria-hidden="true" />
+      <span>Name</span>
+      <span>Image</span>
+      <span>Domain</span>
+      <span>Port</span>
+      <span aria-hidden="true" />
+    </div>
+  )
+}
 
 function AppListPage() {
   const { data: apps } = useSuspenseQuery(appListQueryOptions())
@@ -25,24 +50,39 @@ function AppListPage() {
   const virtualizer = useVirtualizer({
     count: apps.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 56,
+    estimateSize: () => 60,
     overscan: 8,
   })
 
   return (
     <div>
-      <h1 className="mb-4 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-        Apps
-      </h1>
+      <div className="mb-4 flex items-baseline justify-between">
+        <h1 className="text-lg font-semibold text-foreground">Apps</h1>
+        {apps.length > 0 ? (
+          <span className="text-sm text-muted-foreground">
+            {apps.length} {apps.length === 1 ? 'app' : 'apps'}
+          </span>
+        ) : null}
+      </div>
       {apps.length === 0 ? (
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          No apps yet.
-        </p>
+        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-16 text-center">
+          <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <BoxIcon className="size-5" aria-hidden="true" />
+          </span>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-foreground">No apps yet</p>
+            <p className="mx-auto max-w-sm text-sm text-muted-foreground">
+              Apps deployed from an app.yaml spec in a connected repo will show
+              up here.
+            </p>
+          </div>
+        </div>
       ) : (
         <div
           ref={parentRef}
-          className="h-[70vh] overflow-auto rounded-lg border border-neutral-200 dark:border-neutral-800"
+          className="h-[70vh] overflow-auto rounded-lg border border-border bg-card"
         >
+          <ListHeader />
           <div
             style={{
               height: virtualizer.getTotalSize(),
@@ -74,6 +114,26 @@ function AppListPage() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// Route-level fallback for the loader's pending phase (slow network,
+// cold cache): a static stack of RowSkeleton rows under the same header
+// and container chrome as the real list, so a slow /api/v1/apps request
+// shows a layout-accurate loading state instead of a blank page.
+function AppListPending() {
+  return (
+    <div>
+      <div className="mb-4 flex items-baseline justify-between">
+        <h1 className="text-lg font-semibold text-foreground">Apps</h1>
+      </div>
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <ListHeader />
+        {Array.from({ length: 6 }, (_, i) => (
+          <RowSkeleton key={i} />
+        ))}
+      </div>
     </div>
   )
 }
