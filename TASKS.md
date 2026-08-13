@@ -1715,14 +1715,15 @@ Built as a `KindCrashloop` alert rule, not a separate mechanism, see
       `fetchRecentLogLines` (via 2.2's `LogsSource`) to a firing
       crashloop event only, exactly CLAUDE.md 6's number, truncated to
       the most recent 200 lines when more are available
-- [ ] **Not done**: frontend surfacing. The last-200-lines payload is
-      real and attached to the notification event, but there's no
-      dashboard UI yet showing "this app is crashlooping, here are its
-      logs" the way CLAUDE.md 6 pictures it ("without leaving the
-      dashboard"); today an operator sees it via whatever webhook/
-      Slack/Discord channel they configured, not in `/web` itself. A
-      frontend pass over the alert-rules API (2.5) and crashloop state
-      is the real remaining gap here, not new backend work
+- [ ] **Not done, CLAIMED (this session, 2026-08-13)**: frontend
+      surfacing. The last-200-lines payload is real and attached to
+      the notification event, but there's no dashboard UI yet showing
+      "this app is crashlooping, here are its logs" the way CLAUDE.md
+      6 pictures it ("without leaving the dashboard"); today an
+      operator sees it via whatever webhook/Slack/Discord channel they
+      configured, not in `/web` itself. A frontend pass over the
+      alert-rules API (2.5) and crashloop state is the real remaining
+      gap here, not new backend work
 
 ---
 
