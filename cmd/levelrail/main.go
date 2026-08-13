@@ -35,6 +35,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/webhook"
 	"github.com/GLINCKER/levelrail/web"
 )
@@ -53,6 +54,21 @@ const (
 	defaultHTTPAddr = ":8080"
 
 	httpShutdownTimeout = 10 * time.Second
+
+	// metricsCollectionInterval matches CLAUDE.md 4.8's "15s resolution."
+	// Not env-configurable like retention below: resolution changes the
+	// shape of every stored sample going forward, retention only trims
+	// how much of that shape is kept, a materially smaller blast radius
+	// for an operator to tune without redesigning the schema.
+	metricsCollectionInterval = 15 * time.Second
+	// defaultMetricsRetention matches CLAUDE.md 4.8's "default 15 days."
+	defaultMetricsRetention = 15 * 24 * time.Hour
+	// metricsRetentionSweepInterval: how often the retention sweep runs,
+	// not how long data is kept (that's the retention duration itself).
+	// Hourly is frequent enough that the table never grows much past its
+	// steady-state size, infrequent enough to be a non-event on a
+	// control plane CLAUDE.md 6 Phase 5 wants measured for idle cost.
+	metricsRetentionSweepInterval = 1 * time.Hour
 )
 
 func main() {
@@ -102,6 +118,16 @@ func run(logger *slog.Logger) error {
 		logger.Warn("admin account not bootstrapped", slog.String("error", err.Error()))
 	}
 
+	telemetryDB, err := openTelemetryStore(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if cerr := telemetryDB.Close(); cerr != nil {
+			logger.Error("closing telemetry store", slog.String("error", cerr.Error()))
+		}
+	}()
+
 	secretsManager, err := loadSecretsManager(db)
 	if err != nil {
 		// Not fatal, the same choice bootstrapAdmin makes above: the
@@ -145,6 +171,14 @@ func run(logger *slog.Logger) error {
 	engine := reconcile.NewEngine(logger)
 	engine.SetStore(db)
 	engine.SetSource(dynamicSource(db, client, ingressDriver, logger, secretsManager))
+
+	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
+	go func() {
+		if err := collector.Run(ctx, telemetryTargets(db, client)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("telemetry collector stopped", slog.String("error", err.Error()))
+		}
+	}()
+	go runMetricsRetentionSweep(ctx, telemetryDB, logger)
 
 	events, errs := client.Events(ctx)
 	go func() {
@@ -193,6 +227,102 @@ func openStore(ctx context.Context) (*store.DB, error) {
 		return nil, err
 	}
 	return store.Open(ctx, filepath.Join(dataDir, "levelrail.db"))
+}
+
+// openTelemetryStore opens the TASKS.md 2.1 metrics store on its own
+// SQLite file (telemetry.db, alongside levelrail.db in the same data
+// directory), per ADR 009: a separate file so its collection-tick write
+// pattern never contends with levelrail.db's own WAL.
+func openTelemetryStore(ctx context.Context) (*telemetry.DB, error) {
+	dataDir := os.Getenv("APP_DATA_DIR")
+	if dataDir == "" {
+		dataDir = defaultDataDir
+	}
+	if err := os.MkdirAll(dataDir, 0o750); err != nil { //nolint:gosec // operator-controlled startup config, not user input
+		return nil, err
+	}
+	return telemetry.Open(ctx, filepath.Join(dataDir, "telemetry.db"))
+}
+
+// telemetryTargets lists every desired service's currently running
+// container(s) as collection targets, re-derived from the store and
+// runtime fresh on every call: the same level-triggered, no-cached-state
+// principle dynamicSource already applies to reconcile controllers,
+// applied here to "what should be collected." Uses runtime.ListByPrefix
+// (already part of docker.Runtime) rather than reaching into
+// internal/reconcile/application's private container-naming function,
+// keeping this package decoupled from that one's internals: a service
+// converged to steady state has exactly one running container under its
+// service-name prefix, per that package's own blue-green design.
+func telemetryTargets(db *store.DB, runtime docker.Runtime) func(context.Context) ([]telemetry.Target, error) {
+	return func(ctx context.Context) ([]telemetry.Target, error) {
+		services, err := db.ListDesiredServices(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("list desired services: %w", err)
+		}
+
+		var targets []telemetry.Target
+		for _, svc := range services {
+			containers, err := runtime.ListByPrefix(ctx, svc.Name+"-")
+			if err != nil {
+				return nil, fmt.Errorf("list containers for %s: %w", svc.Name, err)
+			}
+			for _, c := range containers {
+				if !c.Running {
+					continue
+				}
+				targets = append(targets, telemetry.Target{
+					ResourceID:  "service:" + svc.Name,
+					ContainerID: c.ID,
+				})
+			}
+		}
+		return targets, nil
+	}
+}
+
+// runMetricsRetentionSweep deletes samples older than the configured
+// retention window on a fixed interval, until ctx is done. Retention
+// duration is env-configurable (APP_METRICS_RETENTION, a Go duration
+// string like "360h"), per the root CLAUDE.md's "no hardcoded
+// thresholds" rule; the sweep interval itself is not, see
+// metricsRetentionSweepInterval's doc comment for why that one's fixed.
+func runMetricsRetentionSweep(ctx context.Context, db *telemetry.DB, logger *slog.Logger) {
+	ticker := time.NewTicker(metricsRetentionSweepInterval)
+	defer ticker.Stop()
+
+	sweep := func() {
+		cutoff := time.Now().Add(-metricsRetention())
+		deleted, err := db.Retain(ctx, cutoff)
+		if err != nil {
+			logger.Error("metrics retention sweep failed", slog.String("error", err.Error()))
+			return
+		}
+		if deleted > 0 {
+			logger.Info("metrics retention sweep", slog.Int64("deleted", deleted), slog.Time("cutoff", cutoff))
+		}
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			sweep()
+		}
+	}
+}
+
+func metricsRetention() time.Duration {
+	raw := os.Getenv("APP_METRICS_RETENTION")
+	if raw == "" {
+		return defaultMetricsRetention
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		return defaultMetricsRetention
+	}
+	return d
 }
 
 func loadBrand() (*brand.Brand, error) {
