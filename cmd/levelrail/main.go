@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -21,7 +22,10 @@ import (
 	"time"
 
 	dockerclient "github.com/docker/docker/client"
+	"google.golang.org/grpc"
 
+	"github.com/GLINCKER/levelrail/internal/agent"
+	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/brand"
@@ -58,6 +62,20 @@ const (
 	defaultDevFixturesFile = "./dev-fixtures.yml"
 	// defaultHTTPAddr is where the TASKS.md 1.9 HTTP API listens.
 	defaultHTTPAddr = ":8080"
+
+	// defaultAgentAddr is where TASKS.md 3.2's agent gRPC service
+	// (Enroll, Session) listens: a distinct port from defaultHTTPAddr,
+	// not multiplexed onto it, since the two have entirely different
+	// transport security models (plain HTTP with its own session/token
+	// auth vs. mTLS with a private, self-issued CA, ADR 003).
+	defaultAgentAddr = ":9443"
+	// agentServerCertValidity is how long the control plane's own gRPC
+	// listener certificate is valid. Regenerated fresh on every startup
+	// (unlike the CA itself, which persists, see loadOrGenerateCA): a
+	// long-running control plane's own process lifetime is what
+	// actually bounds this in practice, so persisting it buys nothing a
+	// restart wouldn't already refresh.
+	agentServerCertValidity = 365 * 24 * time.Hour
 
 	httpShutdownTimeout = 10 * time.Second
 
@@ -202,6 +220,43 @@ func run(logger *slog.Logger) error {
 			logger.Error("closing alerting store", slog.String("error", cerr.Error()))
 		}
 	}()
+
+	// TASKS.md 3.2: the agent gRPC service. agentRegistry starts empty
+	// and stays that way in this pass, wired to nothing else yet: 3.3
+	// (placement) is what will have dynamicSource actually look nodes
+	// up in it. Building and running the real Enroll/Session server now
+	// anyway (not deferred to 3.3) is deliberate, matching the same
+	// "build the primitive, prove it live, wire consumers later" shape
+	// 3.1's own internal/agent package already used: a control plane
+	// that can't yet route reconciles to a second node can still
+	// legitimately accept an agent's enrollment and hold its connection
+	// open.
+	agentDataDir := os.Getenv("APP_DATA_DIR")
+	if agentDataDir == "" {
+		agentDataDir = defaultDataDir
+	}
+	agentCA, err := loadOrGenerateAgentCA(agentDataDir)
+	if err != nil {
+		return fmt.Errorf("load or generate agent CA: %w", err)
+	}
+	agentRegistry := agent.NewRegistry()
+	agentCreds, err := agent.NewServerCredentials(agentCA, []string{agentAdvertiseHost()}, agentServerCertValidity)
+	if err != nil {
+		return fmt.Errorf("build agent grpc credentials: %w", err)
+	}
+	agentListener, err := net.Listen("tcp", agentAddr())
+	if err != nil {
+		return fmt.Errorf("start agent grpc listener: %w", err)
+	}
+	agentGRPCServer := grpc.NewServer(grpc.Creds(agentCreds))
+	agentpb.RegisterAgentServiceServer(agentGRPCServer, agent.NewServer(agentCA, db, agentRegistry, logger))
+	go func() {
+		logger.Info("agent grpc listening", slog.String("addr", agentListener.Addr().String()))
+		if err := agentGRPCServer.Serve(agentListener); err != nil {
+			logger.Error("agent grpc server stopped", slog.String("error", err.Error()))
+		}
+	}()
+	defer agentGRPCServer.GracefulStop()
 
 	secretsManager, err := loadSecretsManager(db)
 	if err != nil {
@@ -393,6 +448,74 @@ func smtpConfigFromEnv() *alerting.SMTPConfig {
 		Password: os.Getenv("APP_SMTP_PASSWORD"),
 		From:     from,
 	}
+}
+
+// agentCACertFilename/agentCAKeyFilename are TASKS.md 3.2's private CA
+// (internal/agent.CA), persisted alongside levelrail.db/telemetry.db/
+// alerting.db in the same data directory, the same per-concern
+// separation ADR 009 already applies to this control plane's other
+// SQLite files, applied here to a different kind of state.
+const (
+	agentCACertFilename = "agent-ca.crt.pem"
+	agentCAKeyFilename  = "agent-ca.key.pem"
+)
+
+// loadOrGenerateAgentCA loads a previously persisted CA from dataDir, or
+// generates and persists a fresh one if none exists yet. Unlike the
+// SQLite stores opened elsewhere in this file, a missing CA on first
+// startup is expected, not an error condition to report differently:
+// every control plane's very first run has no CA yet by definition.
+// Regenerating on every restart instead of persisting would invalidate
+// every already-enrolled agent's certificate for no reason, the same
+// reasoning LoadCA's own doc comment already gives.
+func loadOrGenerateAgentCA(dataDir string) (*agent.CA, error) {
+	if err := os.MkdirAll(dataDir, 0o750); err != nil { //nolint:gosec // operator-controlled startup config, not user input
+		return nil, err
+	}
+	certPath := filepath.Join(dataDir, agentCACertFilename)
+	keyPath := filepath.Join(dataDir, agentCAKeyFilename)
+
+	certPEM, certErr := os.ReadFile(certPath) //nolint:gosec // operator-controlled data directory path, not user input
+	keyPEM, keyErr := os.ReadFile(keyPath)    //nolint:gosec // same
+	if certErr == nil && keyErr == nil {
+		return agent.LoadCA(certPEM, keyPEM)
+	}
+
+	ca, err := agent.GenerateCA()
+	if err != nil {
+		return nil, fmt.Errorf("generate agent CA: %w", err)
+	}
+	if err := os.WriteFile(certPath, ca.CertPEM(), 0o644); err != nil { //nolint:gosec // certificate is not secret
+		return nil, fmt.Errorf("persist agent CA certificate: %w", err)
+	}
+	if err := os.WriteFile(keyPath, ca.KeyPEM(), 0o600); err != nil { //nolint:gosec // operator-controlled data directory path, not user input
+		return nil, fmt.Errorf("persist agent CA private key: %w", err)
+	}
+	return ca, nil
+}
+
+// agentAddr reads APP_AGENT_ADDR, defaulting to defaultAgentAddr.
+func agentAddr() string {
+	addr := os.Getenv("APP_AGENT_ADDR")
+	if addr == "" {
+		addr = defaultAgentAddr
+	}
+	return addr
+}
+
+// agentAdvertiseHost reads APP_AGENT_ADVERTISE_HOST: the hostname or IP
+// agents will actually dial to reach this control plane, which has to
+// be a name/address the gRPC server's own TLS certificate is issued
+// for, or every agent's TLS verification against it fails. Defaults to
+// "127.0.0.1", correct only for local/single-machine testing; a real
+// multi-node deployment (TASKS.md 3.3 onward) needs this set to the
+// control plane's actual reachable address.
+func agentAdvertiseHost() string {
+	host := os.Getenv("APP_AGENT_ADVERTISE_HOST")
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	return host
 }
 
 // telemetryTargets lists every desired service's currently running

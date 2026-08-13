@@ -2056,38 +2056,211 @@ controller still gets the single shared local `docker.Runtime`
 directly, exactly as before, which is the correct Phase 1-compatible
 behavior until 3.3 actually wires per-node routing in.
 
-### 3.2 `proto/` definitions and the real gRPC agent binary
+### 3.2 `proto/` definitions and the real gRPC agent binary. DONE (2026-08-13)
 
-Depends on 3.1's interface shape being settled. Single-session, same
-CLAUDE.md 8 category as 3.1: this *is* "the agent transport protocol."
+Built single-session, same CLAUDE.md 8 category as 3.1: this *is* "the
+agent transport protocol." `protoc`/`protoc-gen-go`/`protoc-gen-go-grpc`
+installed locally (`brew install protobuf`, `go install
+google.golang.org/protobuf/cmd/protoc-gen-go`, `go install
+google.golang.org/grpc/cmd/protoc-gen-go-grpc`); `google.golang.org/grpc`
+and `google.golang.org/protobuf` were already transitive deps (via
+BuildKit), so `go mod tidy` only promoted them from indirect to direct,
+no new dependency tree pulled in.
 
-- [ ] `/proto`: gRPC service definitions for what an agent exposes to
-      the control plane, mirroring `internal/agent`'s interface from
-      3.1 (container ops, Docker event streaming, stats/log collection
-      for `internal/telemetry`'s federator to reach, per ADR 008's "the
-      control plane fans queries out to agents" design already being
-      built toward this).
-- [ ] `cmd/levelrail-agent`: new binary (named in CLAUDE.md 5's repo
-      layout, doesn't exist yet). Dials **out** to the control plane
-      (ADR 003), presents its join token on first connect, receives a
-      client certificate, reconnects with that certificate afterward.
-      Talks to its local Docker socket directly via
-      `internal/docker` (no CLI shelling, the same invariant ADR 002
-      already established control-plane-side, ADR 003 already commits
-      to node-side).
-- [ ] mTLS: certificate issuance at enrollment, rotation on a schedule
-      (ADR 003's "Consequences" section already names this as a real
-      operational surface to build, not a footnote).
-- [ ] Reconnection, backpressure, and version negotiation as tested
-      behavior, not just a happy-path connect: ADR 003's own
-      Consequences section calls these out by name as the standing cost
-      of the reverse-dialed design, explicitly scoped as Phase 3 work
-      there already.
-- [ ] `internal/agent`'s gRPC implementation (from 3.1) becomes real
-      against this binary; the in-process implementation stays the
-      Phase 1 default for a single-node deployment, per ADR 003's
-      "single-node mode... in-memory transport that implements the same
-      interface" requirement, now actually true instead of aspirational.
+- [x] `proto/agent/v1/agent.proto`: `AgentService` defined from the
+      control plane's perspective (it's the gRPC *server*, since it has
+      the one stable address every agent dials into), even though the
+      agent is always the one who physically opens the connection (ADR
+      003). `Enroll` is a plain unary RPC. `Session` is the one call an
+      agent makes: a single long-lived bidirectional stream, carrying
+      many logical request/response pairs multiplexed by `request_id`
+      (mirroring `internal/agent.Transport`'s `docker.Runtime`-shaped
+      method set from 3.1, field-for-field, deliberately, no redesign),
+      plus one persistently-streaming logical call (`WatchEvents`) for
+      ADR 003's "the agent streams Docker events up" design. Generated
+      code lands in `internal/agent/agentpb`.
+      **Real, deliberate scope cut from this section's own original
+      wording**: stats/log collection RPCs were *not* added here. ADR
+      008 already gives telemetry its own federated
+      `MetricsSource`/`LogsSource` interfaces
+      (`internal/telemetry/federate.go`), a separate RPC surface with no
+      real caller yet; adding it speculatively now would be exactly the
+      "design for hypothetical future requirements" CLAUDE.md 7 warns
+      against. Build dispatch (3.5) is a similar, deliberately deferred
+      gap.
+- [x] `internal/agent/pki.go`: a minimal self-signed CA (stdlib
+      `crypto/x509`, ed25519 throughout, no external PKI library, the
+      same "primitives over a framework" precedent `internal/secrets`
+      already set with `age`). `GenerateCA`/`LoadCA` for control-plane
+      startup persistence, `IssueClientCert` for enrollment,
+      `IssueServerCert` for the control plane's own gRPC listener,
+      `CertFingerprint` for `store.Node.CertFingerprint`'s value.
+      Live-verified with a real `net.Listener` performing a real mutual
+      TLS handshake using exactly the shapes this package issues, plus
+      a negative test confirming a certificate from an unrelated CA is
+      rejected.
+- [x] `internal/agent/mux.go`: the control plane's request/response
+      multiplexer over one `Session` stream. `Call` sends a request and
+      blocks for its matching response (or ctx cancellation, or stream
+      closure); `subscribe`/`unsubscribe` fan out unprompted
+      `ProxiedEvent` frames by `watch_id`, bounded by a 64-entry buffer
+      that drops rather than blocks the shared recv loop (a real,
+      documented backpressure choice, not silently lossy behavior
+      nobody decided on).
+- [x] `internal/agent/grpc_transport.go`: `GRPCTransport`, implementing
+      `Transport` (3.1) by dispatching over `mux`. `Events()` returns
+      its channels immediately and does the `WatchEvents` round trip
+      inside its own goroutine, matching `docker.Client.Events`'
+      non-blocking-return contract exactly, a real bug (a deadlocked
+      test) caught and fixed before this landed, not a hypothetical one
+      avoided by inspection.
+- [x] `internal/agent/execute.go`: the agent-side executor, pure with
+      respect to networking. Given one `AgentRequest` and a real
+      `docker.Runtime`, produces the matching `AgentResponse`;
+      `WatchEvents` relays `docker.Runtime.Events` as `ProxiedEvent`
+      frames for the session's lifetime. Testable with a fake Runtime,
+      no network needed, which is exactly how it's tested.
+- [x] `internal/agent/server.go`: `Server` implements
+      `agentpb.AgentServiceServer`. `Enroll` validates a 3.1 join token
+      (hash lookup, expiry, single-use via the existing atomic
+      `MarkNodeJoinTokenUsed`), issues a client cert, and saves a new
+      `store.Node` with its fingerprint. `Session` extracts the node ID
+      and cert fingerprint from the mTLS peer info on the stream's own
+      context and confirms the fingerprint actually matches what was
+      recorded at enrollment, not just that *some* CA-issued cert was
+      presented (a compromised node presenting a different, still
+      validly-signed certificate for another node's ID must not be
+      trusted as that other node), then wires a `GRPCTransport` into
+      `Registry` (3.1) until the stream ends, tracking node
+      status/last-seen along the way.
+- [x] `internal/agent/client.go`: the agent-side connection library.
+      `DialEnroll` exchanges a join token for an `Identity` over an
+      **unverified** TLS connection, a deliberate, documented
+      trust-on-first-use tradeoff (the same model k3s and Nomad's own
+      join-token bootstrapping use): there is no CA certificate to
+      verify the control plane against until this call returns one, so
+      trust rests entirely on the join token's own secrecy at this one
+      bootstrap step. Every connection after this one (`RunSession`, and
+      any future re-enrollment) verifies the server certificate against
+      the CA `DialEnroll` returned. `serveSession` is the directly
+      testable core: dispatches each incoming request to its own
+      goroutine against a real `docker.Runtime` via `Execute`, so one
+      slow operation (an image pull, in particular) never stalls
+      unrelated concurrent requests on the same connection.
+- [x] `cmd/levelrail-agent`: the new binary (named in CLAUDE.md 5's
+      repo layout, didn't exist before this pass). A thin `main()`:
+      every real behavior lives in `internal/agent`, already tested
+      there without a real process. Loads a persisted identity from
+      `APP_AGENT_IDENTITY_FILE` (default `./levelrail-agent-identity.json`,
+      `0600`, contains the private key) if one exists, or enrolls with
+      `APP_JOIN_TOKEN`/`APP_NODE_NAME` if not (a node only ever enrolls
+      once in its lifetime). `runReconnectLoop`: exponential backoff
+      (1s to 30s cap) between `RunSession` attempts, never gives up
+      permanently on its own, only `ctx` cancellation (process
+      shutdown) ends it, ADR 003's own Consequences section naming
+      reconnection as real, standing Phase 3 work, not a footnote.
+- [x] `cmd/levelrail/main.go`: `internal/agent/credentials.go`'s
+      `NewServerCredentials` issues the control plane's own gRPC server
+      certificate and returns real `grpc` `TransportCredentials`,
+      wired via `grpc.Creds` (not a raw `tls.Listener` handed to
+      `Serve`, a real bug caught live: grpc-go's own peer-info
+      extraction, which `Server.Session`'s `peerIdentity` depends on to
+      read the client certificate back out of a request's context, only
+      populates correctly when grpc's credentials layer performs the
+      TLS handshake itself; a raw `tls.Listener` does the handshake
+      transparently at the `net.Conn` level and leaves grpc with
+      nothing to attach to the connection's context, confirmed by a
+      real failing live test before the fix, not by inspection).
+      `VerifyClientCertIfGiven`, not `RequireAndVerifyClientCert`, is
+      what lets `Enroll` (no client cert, by design) and `Session`
+      (always a client cert) share one listener on `APP_AGENT_ADDR`
+      (default `:9443`, deliberately not multiplexed onto the HTTP
+      port: entirely different transport security models). The agent
+      CA persists to `agent-ca.{crt,key}.pem` in `APP_DATA_DIR`,
+      regenerating it on every restart would invalidate every
+      already-enrolled agent's certificate for no reason.
+      `APP_AGENT_ADVERTISE_HOST` (default `127.0.0.1`, correct only for
+      local/single-machine testing) is what has to be set to the
+      control plane's real reachable address for an actual multi-node
+      deployment (3.3 onward). Smoke-tested against the real binary:
+      starts cleanly, the agent gRPC listener comes up, survives
+      graceful shutdown.
+- [x] Reconnection and version negotiation: reconnection is real and
+      tested (`runReconnectLoop`'s backoff, live-verified end to end
+      alongside everything else below). **Version negotiation is a
+      real, honest gap, not built in this pass**: `EnrollRequest`/
+      `AgentRequest`/etc. carry no protocol version field at all yet;
+      a mismatched agent and control plane binary today would fail with
+      whatever ordinary proto-decode or RPC error falls out, not a
+      clear "incompatible version" message. **Backpressure** is real
+      for the one place it actually applies today (`mux`'s 64-entry
+      event buffer, documented above); there is no other queueing or
+      flow-control surface yet since `Call`'s own request/response
+      shape has no backlog to control (gRPC's own HTTP/2 flow control
+      underneath handles the rest). Both are named directly in TASKS.md
+      3.2's own original scope line and are flagged here as open, not
+      silently declared done because "reconnection" (the header word)
+      shipped.
+- [x] `internal/agent`'s gRPC implementation is real. `Local` (3.1)
+      stays the default for `dynamicSource`'s existing single-node
+      wiring, still completely untouched by this pass, exactly as 3.1
+      itself left it: ADR 003's "single-node mode... in-memory
+      transport that implements the same interface" is now provably
+      true (the live test below exercises the *other* implementation of
+      the identical `Transport` interface), not just aspirational, but
+      nothing routes reconciler traffic through `GRPCTransport` yet.
+      That's 3.3's job.
+
+**Live-verified end to end** (`internal/agent/live_test.go`,
+`TestLive_EnrollAndSession`, skips cleanly without Docker): a real join
+token minted through a real temp-file `store.DB`, a real self-signed
+CA, a real TCP listener with real grpc mTLS credentials, a real
+`agent.DialEnroll` exchange, a real `agent.RunSession` holding a real
+mTLS connection open, and a real `nginx:alpine` container inspected
+through the *entire* stack, control-plane caller through `mux`,
+real gRPC, real mTLS, back through gRPC, the agent's own recv loop,
+`Execute`, a real `docker.Runtime`, the real Docker daemon, and the
+response traveling the identical path back, independently checked
+(`Running`, `Image`, matching `ID` between `InspectByName` and
+`ListByPrefix`) rather than trusting a single call's return value.
+`Events()` proven live too: stopping the real container and observing
+the resulting Docker die/stop event arrive as a real `ProxiedEvent`
+relayed over the same physical connection, not a request/response call
+at all. Run 3x under `-race` for stability, no flakes; no leftover
+containers confirmed afterward via `docker ps -a`.
+
+Two real bugs caught by this live test, not by unit tests against
+fakes: missing ALPN (`h2`) on every hand-built `tls.Config` (grpc-go
+>= 1.67 enforces ALPN negotiation; every TLS config in this arc, client
+and server and the live test's own test-server helper, needed
+`NextProtos: []string{"h2"}` added), and the raw-`tls.Listener`-vs-
+`grpc.Creds` peer-info bug described above. Both are exactly the kind
+of integration-boundary bug this repo's own convention of pairing every
+subsystem with a real live test, not just fakes, consistently exists to
+catch.
+
+Coverage: 77.3% on the new `internal/agent` (100% on the pre-existing
+`transport.go`/`pki.go` pieces from earlier in this arc, generated
+`agentpb` code excluded from meaningful coverage by construction, the
+same convention this repo already applies to other generated/vendored
+code); 31.0% on new `cmd/levelrail-agent` (`main()` and the reconnect
+loop's actual network behavior aren't unit-tested, only
+`saveIdentity`/`loadIdentity`/`identityFilePath`/`loadOrEnroll`'s
+load-existing path are, matching how `cmd/levelrail`'s own `main()` has
+always stayed thin and mostly wiring); 8.0% on `cmd/levelrail` (down
+from prior passes only because the package grew, not because anything
+regressed, confirmed by every other package's coverage staying flat or
+improving). **`internal/` overall dropped from 83.1% to 71.1%,
+gate is 70%**, still passing but with a real, worth-naming-honestly
+cause: the newly generated, zero-testable-logic `internal/agent/agentpb`
+package is included in the gate's simple prefix-based calculation with
+no generated-code exclusion, and will keep dragging the number down as
+it grows in 3.5+. Not fixed here (`scripts/check-coverage.sh` is a
+shared CI script named directly in CLAUDE.md 7, not something to
+special-case from inside a single task); worth a real look before this
+margin erodes further, flagged here rather than silently spent.
+`gofmt`/`go vet`/`golangci-lint`/`go build -tags embedweb` all clean;
+`go test ./... -race` green repo-wide.
 
 ### 3.3 Placement: node assignment for services and databases
 

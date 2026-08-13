@@ -54,7 +54,7 @@ type Identity struct {
 // this one bootstrap step only.
 func DialEnroll(ctx context.Context, addr, joinToken, nodeName string) (*Identity, error) {
 	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(
-		credentials.NewTLS(&tls.Config{InsecureSkipVerify: true}), //nolint:gosec // TOFU bootstrap, see doc comment above
+		credentials.NewTLS(&tls.Config{InsecureSkipVerify: true, NextProtos: []string{"h2"}}), //nolint:gosec // TOFU bootstrap, see doc comment above
 	))
 	if err != nil {
 		return nil, fmt.Errorf("agent: dial %q for enrollment: %w", addr, err)
@@ -115,6 +115,7 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
 		Certificates: []tls.Certificate{cert},
 		RootCAs:      pool,
+		NextProtos:   []string{"h2"},
 	})))
 	if err != nil {
 		return fmt.Errorf("agent: dial %q: %w", addr, err)
