@@ -868,7 +868,106 @@ single-session per CLAUDE.md 8's do-not-parallelize list; everything else
 in this phase is fair game for parallel agents once its dependencies are
 met, same as Phase 0's competitor research and ADR writing were.
 
-## Phase 2 onward
+---
+
+## Phase 2: Observability, the actual differentiator. IN PROGRESS (started 2026-08-12)
+
+Exit criterion (CLAUDE.md 6): you can answer "why was this app slow at
+3am last Tuesday" without leaving the dashboard and without having
+installed anything extra.
+
+Breaking this down now that Phase 1 is functionally done, so both
+sessions working this repo pick distinct sub-tasks instead of
+re-discovering the same gap independently a fourth time today. Claim a
+sub-task by editing its status line here before starting, same as 1.10's
+claim marker.
+
+### 2.1 Node-local metrics store (`internal/telemetry`). CLAIMED (this session, 2026-08-12)
+
+CLAUDE.md 4.8 leaves the storage engine an open evaluation, not a locked
+decision: "Evaluate embedded VictoriaMetrics vs a purpose-built ring
+buffer." That evaluation is this sub-task's first step, written up as an
+ADR with the rejected alternative, the same way Phase 0 spiked BuildKit
+and Caddy before Phase 1 wired them in for real, not skipped in favor of
+just picking one.
+
+- [ ] Spike + ADR: VictoriaMetrics (embedded mode) vs a purpose-built
+      ring buffer, decide and record why
+- [ ] Container stats collection at 15s resolution: CPU, memory, disk
+      IO, network IO, read from Docker's stats API (`ContainerStats`),
+      not shelled out
+- [ ] Retention configurable, default 15 days at 15s resolution per
+      CLAUDE.md 4.8, env var per the root CLAUDE.md's "no hardcoded
+      thresholds" rule
+- [ ] Deploy-frequency and build-duration metrics: the two items in
+      CLAUDE.md 6's required-metrics list that don't come from Docker
+      stats at all, sourced from reconcile status conditions and
+      `internal/build`'s own timing instead
+
+### 2.2 Node-local log store (`internal/telemetry` or a sibling package). CLAIMED (this session, 2026-08-12)
+
+- [ ] Read Docker's log stream directly (the existing `Events`
+      consumption pattern in `internal/docker`, not the json-file
+      driver's on-disk files per CLAUDE.md 4.8's explicit call-out)
+- [ ] Chunk, compress, index for full-text search
+- [ ] Structured log parsing where the app emits JSON
+
+### 2.3 Query API (`internal/api` extension)
+
+- [ ] Time range, filtering, aggregation over both stores
+- [ ] Shaped as a federated query even with one node today (CLAUDE.md
+      4.8: "control plane fans queries out to agents and merges
+      results... pull, not push"), matching 4.3's single-node-now,
+      real-transport-later precedent, so multi-node (Phase 3) doesn't
+      need this rewritten, only the transport underneath it
+
+### 2.4 Frontend: metrics dashboard, log viewer, deploy markers
+
+- [ ] Per-app metrics dashboard: CPU, memory, disk IO, network IO,
+      request rate, response time percentiles, error rate, container
+      restart count, build duration, deploy frequency, the exact list
+      CLAUDE.md 6 names as required per app without configuration
+- [ ] Log viewer with search and live tail, extending 1.10's SSE/
+      virtualized-list pattern from the build log viewer rather than a
+      new mechanism
+- [ ] Deploy markers overlaid on metric charts: CLAUDE.md 6 calls this
+      out by name as "the feature that makes the product feel
+      different, because it makes 'which deploy caused this' a visual
+      question instead of an investigation"
+
+### 2.5 Alerting
+
+- [ ] Threshold rules over 2.1/2.2's data
+- [ ] Notification via webhook, email, Slack, Discord, Telegram
+
+### 2.6 Prometheus remote read endpoint
+
+- [ ] Expose 2.1's metrics store via Prometheus's remote-read protocol,
+      per CLAUDE.md 4.8, "so people can point Grafana at it if they want"
+
+### 2.7 Crashloop detection
+
+- [ ] Last 200 lines of a failing container's logs surfaced
+      automatically in the UI on repeated restart. CLAUDE.md 6: "nobody
+      does this well and it is the single most common thing a user
+      needs when a deploy fails"
+
+---
+
+## Phase 2 sequencing notes
+
+2.1 and 2.2 are independent (different data domains, different files)
+and are today's parallel-safe starting points, same reasoning as Phase
+1's 1.4/1.6 split. Both are foundational infrastructure with a real
+architectural decision inside them (storage engine choice for 2.1, log
+ingestion shape for 2.2), so each stays one coherent session per
+CLAUDE.md 8, not fanned out into smaller pieces mid-flight. 2.3 depends
+on both existing. 2.4 depends on 2.3. 2.6 depends only on 2.1. 2.7
+depends on 2.2 (needs log access) and the reconciler's existing
+restart-count observation, not on 2.3's query API. 2.5 depends on 2.3
+and is realistically the last piece to land.
+
+## Phase 3 onward
 
 Not broken down yet. See CLAUDE.md section 6 for the phase-level summary
-(observability, multi-node, platform surface, hardening).
+(multi-node, platform surface, hardening).
