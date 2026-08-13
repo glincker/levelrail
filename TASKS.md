@@ -1088,26 +1088,98 @@ setup task has no backend dependency and can start immediately.
 - [ ] **Vite dev proxy**: `web/vite.config.ts` gets a `server.proxy`
       entry for `/api` (dev-only), a prerequisite the dev-mode research
       flagged as missing regardless of the auth bypass itself.
-- [ ] **Login screen**: hand-rolled form + `fetch` against
-      `POST /api/v1/auth/login` (and the new register endpoint above),
-      cookie-based session (not a bearer token in `sessionStorage`,
-      Levelrail's backend already uses cookies), styled with shadcn
-      primitives once available. Distinguish "no admin exists yet" from
-      "wrong password" in the UI (needs a cheap backend signal or
-      client-side inference from "no session has ever succeeded";
-      resolve this as part of the first-run backend task, not invented
-      client-side).
-- [ ] **Auth-aware app shell** (`web/src/routes/__root.tsx` rewrite):
-      redirect to `/login` on 401/no-session, a logout button calling
-      the existing `POST /api/v1/auth/logout` (currently dead code, zero
-      frontend caller), session-aware nav. Wire `GET /api/v1/brand` to a
-      `BrandProvider` context in the same pass, already flagged as
-      deferred work in this same file.
-- [ ] **401/session-expiry handling**: `web/src/queries/*.ts`'s fetchers
-      currently throw the same generic error for 401 as for 404/500.
-      Distinguish 401 specifically (redirect to login / surface
-      "session expired," not a generic error) across every query
-      function, not just `apps.ts`.
+- [x] **Login screen (2026-08-12)**: `web/src/routes/login.tsx`, a plain
+      form + `fetch` against `POST /api/v1/auth/login` and
+      `POST /api/v1/auth/register`, no theauth SDK
+      (`docs-local/research/frontend-component-reuse.md` section 2),
+      cookie-based session (same-origin `fetch` already sends the
+      `session_token` cookie automatically, no `credentials: 'include'`
+      needed since the frontend and API share an origin). Styled with
+      the shadcn primitives already installed: `Card`, `Tabs`, `Input`,
+      `Label`/`Field`, `Button`, `Alert`
+      (`web/src/components/LoginForm.tsx`,
+      `web/src/components/RegisterForm.tsx`).
+
+      **Real, intentional deviation from auto-detected first-run**: there
+      is no "does an admin already exist" backend signal (deliberately
+      not built, per this section's own framing, to avoid backend churn
+      while parallel work continues). One screen, one tab toggle between
+      "Sign in" and "Set up admin account," picked by the operator, not
+      inferred. Wrong tab is handled by the error response itself: a
+      login 401 stays generic on purpose (`internal/api/auth.go`'s own
+      doc comment: same message whether the username is unknown or the
+      password is wrong, so the UI never guesses which), a register 409
+      ("an admin account already exists") gets a "Switch to Sign in"
+      link that flips the controlled `Tabs` `value`
+      (`RegisterForm.tsx`'s `onSwitchToSignIn` prop, wired from
+      `login.tsx`'s tab state). A 429 gets its own treatment distinct
+      from both: `web/src/queries/auth.ts`'s `RateLimitError` (extends
+      the new shared `ApiError`, carries `retryAfterSeconds` parsed from
+      the `Retry-After` header) drives a live countdown in
+      `LoginForm.tsx` ("Too many attempts, try again in Ns"), submit
+      disabled until it reaches zero. Register enforces the 8-character
+      minimum client-side (mirrors `internal/api/auth.go`'s
+      `minPasswordLength`) plus a confirm-password field, both a head
+      start on the server's own check, never a substitute for it.
+
+- [x] **Auth-aware app shell (2026-08-12)**: `web/src/routes/__root.tsx`
+      rewritten. Root `beforeLoad` redirects to `/login` whenever
+      `lib/authStore.ts`'s `getStoredUsername()` is null and the
+      destination isn't `/login` itself (closes gap #1/#4); `lib/
+      authStore.ts` is a localStorage-backed mirror of "did the last
+      login/register succeed," read synchronously so a page reload on an
+      authenticated route doesn't flash the login screen before a single
+      request even fires. The nav shows the logged-in username and a
+      "Sign out" button (`Button` from shadcn) calling the previously
+      dead-code `POST /api/v1/auth/logout`
+      (`web/src/queries/auth.ts`'s `useLogout`, `onSettled` always clears
+      local state and navigates to `/login` regardless of the response,
+      so a network hiccup during logout can't strand the UI thinking
+      it's still authenticated). `GET /api/v1/brand` is wired to a real
+      `BrandProvider` React context in the same pass, exactly the
+      deferred work this file's own prior comment flagged
+      (`web/src/components/BrandProvider.tsx` + `web/src/hooks/
+      useBrand.ts`, split across two files so
+      `react-refresh/only-export-components` doesn't flag a file mixing
+      a component export with a hook export); the header now reads
+      `brand.ShortName`/`brand.Name` instead of the hardcoded
+      "Deployment Platform" placeholder literal, closing gap #6 too
+      since it was a cheap follow-up in the same file.
+
+- [x] **401/session-expiry handling (2026-08-12)**: new
+      `web/src/lib/apiError.ts` (`ApiError` with a real `.status`,
+      `isUnauthorized()`, a shared `readErrorMessage()`), adopted by
+      every fetcher that previously threw a plain `Error` uniformly for
+      any non-2xx status: `fetchApps`/`fetchApp`/`updateApp`
+      (`queries/apps.ts`), `fetchDeployStatus`/`triggerDeploy`
+      (`queries/deploys.ts`), `fetchBrand` (`queries/brand.ts`), plus the
+      new `login`/`register` fetchers (`queries/auth.ts`). `main.tsx`
+      wires a shared `QueryCache`/`MutationCache` `onError` handler
+      (`handleQueryError`) on the app's one `QueryClient`: any 401,
+      from any query or mutation anywhere in the app, clears the stored
+      username and redirects to `/login`, distinct from how a 404/500
+      still renders in each route's own error boundary
+      (`AppDetailError` and friends are untouched, since the handler
+      only acts on `isUnauthorized`). Guarded against a redundant
+      same-page navigate when the 401 in question is the login form's
+      own failed attempt (that mutation flows through the same shared
+      cache).
+
+      Verification for all three items above, run together since they
+      landed in one pass: `npm run build`, `npm run typecheck`, `npm run
+      lint`, `npm run format:check` all pass clean. `npm run build`'s
+      output confirms `login-*.js` (~35.8 kB, ~11.8 kB gzip) is its own
+      chunk, not folded into the shared `index-*.js` bundle, matching
+      every other route's code-splitting discipline. `grep -rlP
+      '[\x{2014}\x{2013}]' web/src` empty. Manually traced (no live
+      backend in this environment): successful login/register (cookie
+      set, `useLogin`/`useRegister` record the username and navigate to
+      `/apps`), wrong password (generic message, no tab suggestion),
+      429 (countdown, submit disabled), register-when-admin-exists (409,
+      tab-switch link), logout (always clears local state and redirects,
+      even on a failed backend call), and a 401 arriving mid-session on
+      an unrelated route (global handler clears state and redirects,
+      independent of that route's own 404/500 error rendering).
 - [ ] **Secrets UI**: a form on the app detail route calling
       `PUT /api/v1/apps/{name}/secrets/{key}` (exists server-side since
       TASKS.md 1.7, zero frontend consumer today), handling the 501

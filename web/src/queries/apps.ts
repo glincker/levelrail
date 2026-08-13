@@ -11,6 +11,7 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import type { AppDetail } from '../types/appDetail'
+import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export const appKeys = {
   all: ['apps'] as const,
@@ -27,7 +28,10 @@ export const appKeys = {
 export async function fetchApps(): Promise<AppDetail[]> {
   const res = await fetch('/api/v1/apps')
   if (!res.ok) {
-    throw new Error(`fetch apps failed: ${res.status}`)
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `fetch apps failed: ${res.status}`),
+    )
   }
   return (await res.json()) as AppDetail[]
 }
@@ -50,10 +54,13 @@ export function appListQueryOptions() {
 export async function fetchApp(name: string): Promise<AppDetail> {
   const res = await fetch(`/api/v1/apps/${encodeURIComponent(name)}`)
   if (res.status === 404) {
-    throw new Error(`app not found: ${name}`)
+    throw new ApiError(404, `app not found: ${name}`)
   }
   if (!res.ok) {
-    throw new Error(`fetch app failed: ${res.status}`)
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `fetch app failed: ${res.status}`),
+    )
   }
   return (await res.json()) as AppDetail
 }
@@ -77,14 +84,6 @@ export function useApp(name: string) {
   return useSuspenseQuery(appDetailQueryOptions(name))
 }
 
-async function readErrorMessage(
-  res: Response,
-  fallback: string,
-): Promise<string> {
-  const body = (await res.json().catch(() => null)) as { error?: string } | null
-  return body?.error ?? fallback
-}
-
 // PUT /api/v1/apps/{name} (internal/api/apps.go's handleUpdateApp), full
 // replace semantics: the whole AppDetail is sent back on every call,
 // there is no partial-patch endpoint. Callers (DomainEditor, EnvEditor)
@@ -97,7 +96,8 @@ export async function updateApp(app: AppDetail): Promise<AppDetail> {
     body: JSON.stringify(app),
   })
   if (!res.ok) {
-    throw new Error(
+    throw new ApiError(
+      res.status,
       await readErrorMessage(res, `update app failed: ${res.status}`),
     )
   }

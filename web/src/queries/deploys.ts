@@ -20,17 +20,10 @@ import {
 import type { AppDetail } from '../types/appDetail'
 import type { ReconcileCondition } from '../types/deploy'
 import { appKeys } from './apps'
+import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export const deployKeys = {
   status: (appName: string) => [...appKeys.detail(appName), 'deploys'] as const,
-}
-
-async function readErrorMessage(
-  res: Response,
-  fallback: string,
-): Promise<string> {
-  const body = (await res.json().catch(() => null)) as { error?: string } | null
-  return body?.error ?? fallback
 }
 
 export async function fetchDeployStatus(
@@ -38,7 +31,10 @@ export async function fetchDeployStatus(
 ): Promise<ReconcileCondition[]> {
   const res = await fetch(`/api/v1/apps/${encodeURIComponent(appName)}/deploys`)
   if (!res.ok) {
-    throw new Error(`fetch deploy status failed: ${res.status}`)
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `fetch deploy status failed: ${res.status}`),
+    )
   }
   const body = (await res.json()) as ReconcileCondition[] | null
   return body ?? []
@@ -75,7 +71,8 @@ export async function triggerDeploy(
     },
   )
   if (!res.ok) {
-    throw new Error(
+    throw new ApiError(
+      res.status,
       await readErrorMessage(res, `trigger deploy failed: ${res.status}`),
     )
   }
