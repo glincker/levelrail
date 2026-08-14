@@ -38,28 +38,16 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
 
 ## In progress
 
-- [ ] Manual build trigger from the dashboard. Confirmed gap: today the
-      only way to build an image is a git push through the webhook
-      receiver (`internal/webhook/webhook.go`); `DeployTriggerForm.tsx`'s
-      own comment says outright there's no path from the UI into
-      `internal/deploy.Pipeline`, `POST /api/v1/apps/{name}/deploys`
-      only accepts a pre-built image string. A user without a working
-      webhook has zero way to build anything. Reuses existing `Pipeline`
-      and `useDeployLogStream` SSE infra rather than building new
-      plumbing. (builder dispatched)
-- [ ] `build.type: static` support. Named explicitly in ADR/architecture
-      decision 4.2's static-site handling ("served by the embedded Caddy
-      directly with no container") but `internal/deploy/deploy.go`'s
-      `BuildStatic` is a hardcoded "not yet supported" error. Backend
-      only, no reconciler-core changes, Caddy embedding already exists.
-      (builder dispatched)
-- [ ] TLS certificate renewal visibility. Zero surface anywhere today:
-      no API route touches cert status, `settings/general.tsx` only
-      mentions TLS in static copy. This is the literal failure mode
-      CLAUDE.md section 10 names as the project's main risk ("a cert
-      renewal fails silently at 3am"). `internal/ingress/certstorage.go`
-      already has the storage layer to query; this is read-only status
-      surfacing, not reconciler-core. (builder dispatched)
+- [ ] **New direction, not yet scoped**: sidebar only has Apps/Databases;
+      founder wants more sections, and wants the app/database creation
+      flow rethought entirely, a small modal isn't the right shape once
+      an operator is choosing what container to spin up on their own
+      VPS. Explicit ask to study how Coolify does this (wizard-style,
+      multi-step, preloaded/templated image choices, "3-click start"),
+      figure out what Levelrail's version should look like, and revisit
+      icon sourcing (thesvg.org suggested for weight reasons) against the
+      Phosphor-only rule ADR 014 just locked in. See the new note at the
+      top of this file once research lands.
 
 ## Next up (priority order)
 
@@ -111,6 +99,32 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
 
 ## Done (most recent first)
 
+- [x] Manual build trigger from the dashboard: `POST /apps/{name}/builds`
+      (`internal/api/builds.go`), invokes the same `internal/deploy.Pipeline`
+      the git webhook uses given a `repo_url`/`ref` in the request body
+      (no app has a stored git config anywhere in this codebase, so it's
+      asked for on every call, not stored once). Synchronous/blocking,
+      no build-log streaming yet, that SSE endpoint genuinely doesn't
+      exist (`useDeployLogStream.ts`'s own doc comment says its contract
+      is "assumed," not backed by a real route). Frontend: a second tab
+      on the deploy trigger card.
+- [x] `build.type: static` support: a static site gets its own
+      `store.StaticSite` table (migration 0015), bypassing the
+      application controller entirely (no image, no port, nothing to
+      converge to a container). `internal/deploy.Pipeline` copies build
+      output to a durable directory under the data dir, the ingress
+      controller lists both desired services and static sites every
+      pass and builds either a `reverse_proxy` or `file_server` route.
+      Backend only; no frontend surface for creating/viewing a static
+      site exists yet (flagged as its own follow-up gap by the builder,
+      not actioned).
+- [x] TLS certificate renewal visibility: `GET /api/v1/certificates`
+      parses stored certmagic leaf certs directly (no new tracking
+      needed), read-only card on the General settings page
+      (healthy/expiring_soon/expired). No last-renewal-error signal
+      exists to surface, since this codebase's TLS automation only
+      drives Caddy's offline internal issuer today; real ACME renewal
+      tracking is a separate, not-yet-built gap.
 - [x] Fixed a real Base UI "expected a native &lt;button&gt;" console
       warning, but not the one my own initial dispatch note guessed at:
       the 11 `DialogTrigger render={<Button/>}` sites I originally
