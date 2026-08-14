@@ -38,20 +38,16 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
 
 ## In progress
 
-- [ ] MySQL as a third database engine: the creation wizard's step 1
-      originally wanted this as a 5th option, dropped because
-      `internal/reconcile/database/controller.go` only handled
-      `postgres`/`redis`. Reconciler-core per CLAUDE.md section 8:
-      claiming this one myself (PM), single-session, starting now,
-      touches `internal/reconcile/database/*` and
-      `internal/api/databases.go`, not the frontend files the other
-      session is working in.
+(nothing PM-owned right now; see Done below for what just landed.
+Deploy strategy/replicas is in progress under the concurrent session,
+see Next up.)
+
+**Migration number note for whoever adds the next one**: `0016` is now
+taken (`0016_desired_databases_drop_engine_check.sql`), next one is
+`0017`.
 
 ## Next up (priority order)
 
-- [ ] Wire the new MySQL picker option into `CreateResourceWizard.tsx`
-      once the reconciler item above lands (5th step-1 card, matching
-      the design spec's original intent).
 - [ ] Frontend main bundle chunk crossed the 500kB vite build warning
       threshold this round (`index-*.js`, currently ~501KB raw). Not
       urgent, but worth a look before it grows further: CLAUDE.md's own
@@ -128,6 +124,26 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
 
 ## Done (most recent first)
 
+- [x] MySQL as a third database engine, backed by a dynamic registry
+      (`internal/store/database_engines.yaml`, `GET /api/v1/database-engines`)
+      instead of hardcoding engine names across store validation, the
+      JSON schema, and frontend TS: `validateDatabaseResource` and the
+      wizard's engine Select/version-placeholder both read the registry
+      dynamically now, a test cross-checks it against the reconciler's
+      real switch cases so it can never advertise an engine nothing can
+      run. `WithMySQLCredentials`/`mysqlCredentialsFor` mirror Postgres'
+      generate-once-persist-forever shape exactly. Two real bugs found
+      only by testing this live end to end: the MySQL brand icon's
+      default `@thesvg/react` variant is white-on-transparent (built for
+      a dark background), invisible on this app's light cards, fixed
+      with its own `light` variant; and `desired_databases.engine`
+      carried its own hardcoded `CHECK (engine IN ('postgres', 'redis'))`
+      at the SQLite layer, one level below every other check this made
+      dynamic (migration 0016 drops it, doesn't just add 'mysql' to it,
+      recreate-and-copy pattern since SQLite has no
+      `ALTER TABLE ... DROP CONSTRAINT`). Browser-verified end to end
+      against a live rebuilt backend: real MySQL database created,
+      correct icon, correct toast, correct detail page, deleted after.
 - [x] Databases detail route gets the same dynamic/contextual sidebar
       treatment `/apps/$name/*` got, honestly scoped to what Databases
       actually has (one section, Overview, not eight): new
