@@ -20,13 +20,13 @@ import (
 )
 
 // sessionCookieName is deliberately generic, not a brand-derived string:
-// CLAUDE.md section 3 bans product-name strings in source, and a cookie
-// name doesn't need branding to do its job.
+// the project's naming rule bans product-name strings in source, and a
+// cookie name doesn't need branding to do its job.
 const sessionCookieName = "session_token"
 
 // defaultSessionTTL is the fallback when the control plane isn't given
-// an explicit one (Router.sessionTTL, set via WithSessionTTL). CLAUDE.md
-// 7's "no hardcoded thresholds, use env vars" rule is honored at
+// an explicit one (Router.sessionTTL, set via WithSessionTTL). The
+// project's "no hardcoded thresholds, use env vars" rule is honored at
 // cmd/levelrail/main.go, which reads APP_SESSION_TTL and passes it down;
 // this constant is only the value used when that env var is unset, the
 // same "relative default, env override" shape openStore's data
@@ -41,8 +41,8 @@ type session struct {
 
 // sessionStore is a server-side, in-memory session table: the cookie
 // carries only an opaque token, this map is the sole place that token
-// resolves to a username. CLAUDE.md 6 Phase 1 scopes auth to "single
-// admin user, session auth", explicitly not JWT/OAuth, so nothing more
+// resolves to a username. This phase scopes auth to a single admin user
+// with session auth, explicitly not JWT/OAuth, so nothing more
 // elaborate than this is built here. In-memory is an accepted tradeoff
 // for this pass: a restart invalidates every session, which just means
 // logging in again, not a correctness problem for a single-node control
@@ -208,8 +208,8 @@ func (rt *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Secure is intentional even though this HTTP listener itself speaks
-	// plain HTTP (main.go's httpServer): CLAUDE.md 4.5 puts embedded Caddy
-	// in front doing TLS termination in any real deployment, and a
+	// plain HTTP (main.go's httpServer): embedded Caddy sits in front
+	// doing TLS termination in any real deployment, and a
 	// session cookie is exactly the kind of value that must never be
 	// sent back over a plain connection. Local development against this
 	// listener directly (no Caddy in front yet, TASKS.md 1.6) needs to go
@@ -264,7 +264,7 @@ func (rt *Router) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 
 // requireAbility wraps a handler so it only runs for a request
 // authenticated either by a valid session (treated as implicitly
-// AbilityRoot: CLAUDE.md 6 Phase 1 has exactly one human identity, the
+// AbilityRoot: this phase has exactly one human identity, the
 // admin, so there is nothing narrower to scope a session to) or a
 // bearer token whose stored abilities grant required. This is what lets
 // an MCP-issued or CLI-issued token be provably restricted to, say,
@@ -437,8 +437,8 @@ func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, loginResponse{Username: req.Username})
 }
 
-// minPasswordLength matches CLAUDE.md 7's "no hardcoded thresholds"
-// spirit as closely as a fixed minimum reasonably can: unlike a
+// minPasswordLength matches the project's "no hardcoded thresholds"
+// rule as closely as a fixed minimum reasonably can: unlike a
 // tunable operational limit (a timeout, a retry count), a minimum
 // password length is a security floor, not a deployment-specific
 // preference, so it stays a constant rather than an env var.

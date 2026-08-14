@@ -37,7 +37,7 @@ const crashloopLogLookback = 15 * time.Minute
 // Engine evaluates every enabled rule on an interval, persists each
 // rule's updated state, and notifies only on a firing/resolved
 // transition, never on every tick a rule stays in the same state
-// (CLAUDE.md-adjacent reasoning already documented on Event.Resolved:
+// (the same reasoning already documented on Event.Resolved:
 // repeated identical notifications train an operator to ignore the
 // channel).
 type Engine struct {

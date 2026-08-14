@@ -34,8 +34,8 @@ const containerHashLen = 8
 //
 // Counts "start" events, not "die" events: a container dying once is
 // an ordinary crash, what makes it a crashloop is the reconciler
-// repeatedly restarting the same container afterward (CLAUDE.md 4.2:
-// containers never carry Docker's own restart policy, the reconciler
+// repeatedly restarting the same container afterward (containers never
+// carry Docker's own restart policy, the reconciler
 // is the sole authority on bringing a dead container back, so every
 // restart is visible as this process re-issuing Start on the same
 // container ID). The very first start observed for a given container

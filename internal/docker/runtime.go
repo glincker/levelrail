@@ -1,7 +1,8 @@
 // Package docker wraps the Docker Engine API. Every call goes through the
-// SDK's HTTP-over-socket client, never a shelled-out `docker` CLI command
-// (CLAUDE.md 4.3, 4.2 point 3). This file defines the narrow interface
-// reconcile controllers depend on, so tests can fake it without a daemon.
+// SDK's HTTP-over-socket client, never a shelled-out `docker` CLI command,
+// per the project's rules for node communication and orchestration. This
+// file defines the narrow interface reconcile controllers depend on, so
+// tests can fake it without a daemon.
 package docker
 
 import (
@@ -14,8 +15,9 @@ import (
 // ContainerState it's always the concrete port actually bound, never 0.
 //
 // Host ports, not direct container-IP routing, on purpose: this process
-// runs as a plain host process today (CLAUDE.md 4.3's single-node mode),
-// and container IPs on Docker's bridge network are only reachable from
+// runs as a plain host process today (the agent's single-node mode,
+// where control plane and agent share a process), and container IPs on
+// Docker's bridge network are only reachable from
 // the host on Linux, not from Docker Desktop's macOS VM boundary. Every
 // target this matters for (a Linux managed node, and this Mac during
 // development) can always reach localhost:hostPort, so that's the one
@@ -64,16 +66,16 @@ type VolumeMount struct {
 // ContainerSpec is desired state for a container a controller wants to
 // exist.
 //
-// No restart policy field, deliberately: CLAUDE.md 4.2 makes the
-// reconciler, not Docker, the sole authority on "should this container
+// No restart policy field, deliberately: the reconciler, not Docker, is
+// meant to be the sole authority on "should this container
 // be running." A Docker-native restart policy running alongside a
 // reconciler that also restarts dead containers is two independent
 // systems racing to make the same decision, exactly the kind of drift
-// CLAUDE.md 4.2's level-triggered design exists to avoid. Every
+// the reconciler's level-triggered design exists to avoid. Every
 // container Levelrail creates gets Docker's "no" restart policy; staying
 // running is the reconciler's job, proven live in nginxdemo (Phase 0).
 //
-// No health check field either: CLAUDE.md 4.9's readiness/liveness probes
+// No health check field either: the app spec's readiness/liveness probes
 // are modeled on Kubernetes' prober pattern (the controller calls out to
 // the container, not the container reporting its own health via Docker's
 // HEALTHCHECK state machine), the same design choice ADR 002's
@@ -95,8 +97,8 @@ type ContainerSpec struct {
 }
 
 // ImageInfo is one tagged image available locally, used to discover
-// rollback candidates (CLAUDE.md 6: "keep the previous N images pinned
-// so garbage collection cannot orphan a rollback target").
+// rollback candidates, per the rule that the previous N images stay
+// pinned so garbage collection cannot orphan a rollback target.
 type ImageInfo struct {
 	Tag       string
 	CreatedAt time.Time

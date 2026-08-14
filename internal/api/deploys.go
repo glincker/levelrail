@@ -70,9 +70,9 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 
 // handleDeployHistory handles GET /api/v1/apps/{name}/deploys. It
 // surfaces the application controller's stored reconcile conditions for
-// this app (CLAUDE.md 4.2: "every reconcile emits a status condition
-// with a reason string, stored and shown in the UI"). This is current
-// reconcile status, not a log of past deploy attempts:
+// this app, per the reconciler contract that every reconcile emits a
+// status condition with a reason string, stored and shown in the UI.
+// This is current reconcile status, not a log of past deploy attempts:
 // internal/store.UpsertConditions only ever persists the latest
 // condition per (controller, condition type) pair, it has no history
 // table. Router.go's package doc comment tracks that as a real gap
