@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useNavigate } from '@tanstack/react-router'
-import { DatabaseIcon, TriangleAlertIcon } from 'lucide-react'
+import { DatabaseIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
   DialogContent,
@@ -246,7 +246,7 @@ export function CreateDatabaseDialog({
 
           {createDatabase.isError ? (
             <Alert variant="destructive">
-              <TriangleAlertIcon />
+              <WarningIcon />
               <AlertDescription>
                 {createDatabase.error.message}
               </AlertDescription>

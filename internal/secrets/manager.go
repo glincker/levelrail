@@ -36,18 +36,18 @@ type Store interface {
 var ErrValueNotFound = errors.New("secrets: value not found")
 
 // Manager combines a MasterKey with a Store to provide per-app envelope
-// encryption end to end (CLAUDE.md 4.10): generate-or-reuse a service's
-// DEK, encrypt a value under it, persist only ciphertext and a wrapped
-// key, and reverse all of that to get a plaintext value back. Callers
-// never see a raw DEK or handle wrapping/unwrapping themselves.
+// encryption end to end: generate-or-reuse a service's DEK, encrypt a
+// value under it, persist only ciphertext and a wrapped key, and
+// reverse all of that to get a plaintext value back. Callers never see
+// a raw DEK or handle wrapping/unwrapping themselves.
 type Manager struct {
 	store Store
 	mk    *MasterKey
 }
 
 // NewManager builds a Manager. mk is the control plane's master key,
-// held only in memory (CLAUDE.md 4.10: "wrapped by a master key held
-// only by the control plane"), sourced by the caller the same way
+// held only in memory (every DEK is wrapped by a master key held only
+// by the control plane), sourced by the caller the same way
 // MasterKey.String/LoadMasterKey already document (file, env, or a
 // future KMS interface), never by this package.
 func NewManager(store Store, mk *MasterKey) *Manager {
@@ -122,9 +122,9 @@ func (m *Manager) Exists(ctx context.Context, serviceName, envKey string) (bool,
 
 // dekFor returns serviceName's raw DEK, generating and persisting a new
 // wrapped one on first use. A service's DEK is created at most once:
-// every value it ever encrypts is encrypted under the same key
-// (CLAUDE.md 4.10's "wrap the DEK once, encrypt many values fast with
-// it"), so this never overwrites an existing wrapped DEK.
+// every value it ever encrypts is encrypted under the same key, so the
+// DEK is wrapped once and reused to encrypt many values fast, and this
+// never overwrites an existing wrapped DEK.
 func (m *Manager) dekFor(ctx context.Context, serviceName string) ([]byte, error) {
 	wrapped, err := m.store.GetServiceDEK(ctx, serviceName)
 	if err == nil {

@@ -1,13 +1,13 @@
 // Package api implements TASKS.md 1.9: the HTTP API the web frontend
-// (1.10) and, later, the MCP layer (CLAUDE.md 4.11) both build on. Scope
+// (1.10) and, later, the MCP layer both build on. Scope
 // for this pass, per TASKS.md 1.9 literally: GET /api/v1/brand, apps
 // CRUD, deploy trigger and deploy history, single-admin-user session
 // auth. No teams, no RBAC: explicitly out of scope until Phase 4.
 //
 // Routing uses the standard library's Go 1.22+ pattern-based
 // http.ServeMux ("GET /api/v1/apps/{name}") rather than a router
-// framework like Chi. CLAUDE.md 4.1 says "do not pull in a heavy
-// framework"; the one thing a framework would earn its weight on here is
+// framework like Chi, per the project's rule against pulling in a heavy
+// framework; the one thing a framework would earn its weight on here is
 // auth middleware, and requireAuth below is a plain
 // http.HandlerFunc-wrapping closure that stdlib's mux composes with
 // directly, so there is no ergonomics gap stdlib doesn't already close.
@@ -58,7 +58,7 @@
 // TASKS.md 1.9 scoped it as (single admin user, no teams, no RBAC); API
 // tokens (POST/GET /api/v1/auth/tokens, DELETE .../{id}) are a separate,
 // additive credential type for non-interactive callers (a future CLI,
-// an MCP server per CLAUDE.md 4.11), scoped to abilities (abilities.go:
+// an MCP server), scoped to abilities (abilities.go:
 // read, read:sensitive, write, deploy, root) checked fresh on every
 // call by requireAbility, never a cached decision. Token management
 // itself is session-only via requireAuth: a token can never mint or
@@ -92,6 +92,10 @@ type AppStore interface {
 	// own doc comment for why an ordinary app update must never be able
 	// to silently move a service between nodes.
 	UpdateServiceNode(ctx context.Context, name, nodeID string) error
+	// ListDesiredServicesByNode is TASKS.md 3.7's drain and
+	// delete-guard primitive (handleDrainNode, handleDeleteNode): find
+	// what's placed on a node without listing every service.
+	ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]store.DesiredService, error)
 }
 
 // DeployStore is the store surface the deploy-history handler needs.
@@ -107,8 +111,13 @@ type DatabaseStore interface {
 	ListDesiredDatabases(ctx context.Context) ([]store.DesiredDatabase, error)
 	DeleteDesiredDatabase(ctx context.Context, name string) error
 	// UpdateDatabaseNode is AppStore.UpdateServiceNode's counterpart,
-	// same separation-from-ordinary-update reasoning.
+	// same separation-from-ordinary-update reasoning. Originally added
+	// unexposed by 3.3; handleDrainNode is the first caller with an
+	// actual route to reuse it through.
 	UpdateDatabaseNode(ctx context.Context, name, nodeID string) error
+	// ListDesiredDatabasesByNode is the database-kind counterpart to
+	// AppStore.ListDesiredServicesByNode.
+	ListDesiredDatabasesByNode(ctx context.Context, nodeID string) ([]store.DesiredDatabase, error)
 }
 
 // AuthStore is the store surface the auth handlers need.
@@ -214,7 +223,7 @@ func WithSecretSetter(s SecretSetter) Option {
 }
 
 // WithSessionTTL overrides how long a session cookie stays valid.
-// Without one configured, defaultSessionTTL (24h) applies. CLAUDE.md 7's
+// Without one configured, defaultSessionTTL (24h) applies. The project's
 // "no hardcoded thresholds, use env vars" rule is honored one layer up,
 // at cmd/levelrail/main.go, which reads APP_SESSION_TTL and passes the
 // parsed duration here; this package itself never reads the environment
@@ -416,7 +425,14 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/nodes", rt.requireAbility(AbilityRoot, rt.handleListNodes))
 	mux.HandleFunc("GET /api/v1/nodes/{id}", rt.requireAbility(AbilityRoot, rt.handleGetNode))
 	mux.HandleFunc("DELETE /api/v1/nodes/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteNode))
+	mux.HandleFunc("PUT /api/v1/nodes/{id}/workloads", rt.requireAbility(AbilityRoot, rt.handleSetNodeWorkloads))
 	mux.HandleFunc("POST /api/v1/nodes/join-tokens", rt.requireAbility(AbilityRoot, rt.handleCreateNodeJoinToken))
+	// Health, cordon, drain (TASKS.md 3.7), same AbilityRoot boundary as
+	// every other node route above.
+	mux.HandleFunc("GET /api/v1/nodes/{id}/health", rt.requireAbility(AbilityRoot, rt.handleGetNodeHealth))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/cordon", rt.requireAbility(AbilityRoot, rt.handleCordonNode))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/uncordon", rt.requireAbility(AbilityRoot, rt.handleUncordonNode))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/drain", rt.requireAbility(AbilityRoot, rt.handleDrainNode))
 
 	return mux
 }

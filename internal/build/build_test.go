@@ -48,7 +48,7 @@ func TestSlogProgress(_ *testing.T) {
 // BuildKit instance (see client.go for why that indirection exists). It
 // skips the calling test cleanly, rather than failing, when either isn't
 // reachable, so this test suite does not require Docker-in-Docker to pass
-// in CI (CLAUDE.md 7's testing standard).
+// in CI, per this codebase's testing standard.
 func liveClient(t *testing.T, opts ...Option) (*dockerclient.Client, *Client) {
 	t.Helper()
 
@@ -188,5 +188,24 @@ func TestClient_Build_Live_CacheAccelerates(t *testing.T) {
 	}
 	if !sawCached {
 		t.Error("expected at least one cached=true step on the second build, got none; WithCacheDir may not be taking effect")
+	}
+}
+
+// TestClient_Build_Live_CacheRegistryUnreachable exercises TASKS.md
+// 3.5's other documented failure mode: a registry cache backend
+// (WithCacheRegistry) pointed at a host that will never resolve. This
+// must surface as a real Build() error, not a silent "cache just didn't
+// help this time": an operator who configured a dedicated build node's
+// registry cache wrong needs to see that clearly rather than discover
+// it only as an unexplained slow build.
+func TestClient_Build_Live_CacheRegistryUnreachable(t *testing.T) {
+	_, bk := liveClient(t, WithCacheRegistry("build-cache.invalid.example/levelrail/cache:app"))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	_, err := bk.Build(ctx, Request{ContextDir: "testdata", Tag: "levelrail-buildkit-spike:cache-unreachable"}, nil)
+	if err == nil {
+		t.Fatal("Build() with an unreachable cache registry: error = nil, want a non-nil error")
 	}
 }

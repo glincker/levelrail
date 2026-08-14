@@ -1,11 +1,11 @@
 # Tasks
 
-Working task list against CLAUDE.md's phases (section 6). Fine-grained
+Working task list against the project's phased roadmap. Fine-grained
 breakdown only for the phase actively being built; future phases stay at
-CLAUDE.md's own summary level until we're actually there; inventing detailed
-tasks for Phase 3 now would be exactly the kind of speculative planning
-CLAUDE.md 7 argues against ("Don't design for hypothetical future
-requirements").
+the roadmap's own summary level until we're actually there; inventing
+detailed tasks for Phase 3 now would be exactly the kind of speculative
+planning we've committed to avoiding ("don't design for hypothetical
+future requirements").
 
 Status legend: `[ ]` not started, `[~]` in progress, `[x]` done.
 
@@ -33,16 +33,18 @@ in writing.
 Exit criterion: thesvg.org deploys from a git push, serves over HTTPS with
 a valid cert, and you can roll back to the previous version in one click.
 
-Deliberately excluded from Phase 1 (CLAUDE.md 6): multi-server, templates,
-backups to S3, teams, notifications, Compose support.
+Deliberately excluded from Phase 1: multi-server, templates, backups to
+S3, teams, notifications, Compose support.
 
 ### 1.1 App spec (`internal/spec`). DONE (2026-08-11)
 
-- [x] Go structs for the app.yaml shape (CLAUDE.md 4.9)
+- [x] Go structs for the app.yaml shape (the app spec, one declarative,
+      versioned file in the repo)
 - [x] Hand-written JSON Schema, embedded, validated at parse time
 - [x] Candidate-filename discovery (`app.yaml`, `deploy.yaml`, plus the
-      branded name, per CLAUDE.md section 3); takes the branded stem as
-      a caller-supplied string rather than importing `internal/brand`
+      branded name, per the rebrandability rule that config discovery
+      must not break existing users on a rename); takes the branded stem
+      as a caller-supplied string rather than importing `internal/brand`
       directly, to keep the two packages decoupled
 - [x] `EnvVar` union type: literal string, `{ from: ... }` reference, or
       `{ secret: true, required: true }`
@@ -62,7 +64,9 @@ backups to S3, teams, notifications, Compose support.
 - [x] Restart policy: decided against a Docker-native one. Every
       container gets Docker's `"no"` policy explicitly; the reconciler,
       not Docker, is the sole authority on whether a dead container
-      comes back (CLAUDE.md 4.2). Verified live: a real container's
+      comes back, matching the reconciler design's rule that observed
+      state is read from Docker's own events, never delegated to a
+      Docker-native restart policy. Verified live: a real container's
       `HostConfig.RestartPolicy.Name` inspected directly is `"no"`.
 - [x] Health check: decided on an internal prober (Kubernetes-style, the
       controller calls out to the container) over Docker's own
@@ -123,9 +127,10 @@ together and live-verified as one pipeline at the end.
       exists, not new reconciler logic
 
 Traffic cutover itself (updating Caddy to point at the new container)
-is deliberately not this controller's job: CLAUDE.md 4.2's "a reconcile
-loop per resource type" makes ingress its own controller (1.6, not yet
-wired). This controller's contract with that future controller is
+is deliberately not this controller's job: the reconciler architecture's
+"a reconcile loop per resource type" makes ingress its own controller
+(1.6, not yet wired). This controller's contract with that future
+controller is
 simple: whichever container exists and is running for a service is the
 one meant to receive traffic.
 
@@ -231,9 +236,9 @@ exists. 87.4% coverage on `internal/build`, 95.6% on `internal/deploy`.
       secret, one repo, one branch, one `spec.Service`), not a
       multi-tenant "which repo maps to which app.yaml" registry.
       Documented as a scope boundary in the package doc comment,
-      matching CLAUDE.md 7's "don't design for hypothetical future
-      requirements": a second app arriving is the trigger to build that
-      registry, not a hypothesis about one arriving
+      matching the engineering standards' "don't design for hypothetical
+      future requirements": a second app arriving is the trigger to
+      build that registry, not a hypothesis about one arriving
 
 Response codes verified by table-driven `httptest`-based tests against a
 fake `Deployer` (mirroring the `ImageBuilder`/`ServiceStore` narrow
@@ -383,8 +388,9 @@ both hostnames before either handshake succeeds. 98.1% coverage on
 
 ### 1.7 Secrets (`internal/secrets`). DONE (2026-08-12)
 
-Built directly, not delegated, per CLAUDE.md 8's rule on anything
-touching secrets. Deliberately scoped as a standalone primitives
+Built as one continuous, undivided unit of work, matching the standing
+rule that anything touching secrets does not get split across parallel
+work streams. Deliberately scoped as a standalone primitives
 package, the same shape `internal/build` and `internal/ingress` were
 built as Phase 0 spikes before being wired into the real flow: the
 integration points (`internal/deploy`'s env resolution,
@@ -407,7 +413,9 @@ database controller's extension of `docker.ContainerSpec`.
       parsing and serialization only; reading the serialized key from a
       file or env var is deliberately left to the caller (matching
       `internal/brand.Load`'s own shape), not baked into this package.
-      External KMS stays a later addition per CLAUDE.md 4.10
+      External KMS stays a later addition, matching the secrets design's
+      own note that the master key can be sourced from file, env, or an
+      external KMS interface added later
 - [x] 82.8% coverage, with real negative-case security tests, not just
       happy-path round-trips: wrong master key can't unwrap another's
       DEK, tampered ciphertext fails GCM's auth tag, tampered wrapped
@@ -418,8 +426,9 @@ database controller's extension of `docker.ContainerSpec`.
       simulated fresh process (only the serialized master key and the
       two ciphertexts persist, proving the pieces compose correctly, not
       just that each works in isolation)
-- [x] **Integration closed (2026-08-12), single-session per CLAUDE.md 8's
-      rule on anything touching secrets.** Env injection at
+- [x] **Integration closed (2026-08-12) as one continuous, undivided
+      unit of work, matching the standing rule that anything touching
+      secrets stays undivided.** Env injection at
       container-create time, in full, `{ secret: true }` only (`{ from:
       ... }` cross-resource references stay explicitly unsupported, see
       below):
@@ -468,8 +477,9 @@ database controller's extension of `docker.ContainerSpec`.
         master key is configured (`WithSecretSetter`), 404 for an unknown
         app, 400 for an empty value
       - `cmd/levelrail/main.go` sources the master key from
-        `APP_MASTER_KEY` (CLAUDE.md 4.10: "file, env, or a future KMS
-        interface"; env is what this pass wires). Unset is not fatal,
+        `APP_MASTER_KEY` (of the three sourcing options the secrets
+        design allows, file, env, or a future KMS interface, env is
+        what this pass wires). Unset is not fatal,
         the same non-fatal choice `bootstrapAdmin` already makes: the
         control plane still starts, every secrets-touching route or
         reconcile path just fails specifically and loudly instead of the
@@ -524,8 +534,8 @@ database controller's extension of `docker.ContainerSpec`.
 - [~] Postgres as a first-class resource: **deliberately not started**.
       `store.DesiredDatabase` (built ahead of this task) already has no
       credentials field, exactly because database auth needs the same
-      envelope-encrypted secret storage CLAUDE.md 4.10 specifies, which
-      doesn't exist until TASKS.md 1.7 lands. Rather than work around
+      envelope-encrypted secret storage the secrets design specifies,
+      which doesn't exist until 1.7 lands. Rather than work around
       that with Postgres trust-auth (no password) or any other
       "temporary" insecure shortcut, `Controller.Reconcile` for a
       Postgres database checks for credentials, finds none, and returns
@@ -553,8 +563,9 @@ on `internal/docker` (was 78.2% before this task).
 
 ### 1.9 HTTP API (`internal/api`). DONE (2026-08-11)
 
-- [x] `/api/v1/brand` (CLAUDE.md section 3, the frontend's brand
-      indirection depends on this existing). Serves `internal/brand`'s
+- [x] `/api/v1/brand` (the frontend's brand indirection, hydrating a
+      React context on boot with no hardcoded strings in components,
+      depends on this existing). Serves `internal/brand`'s
       loaded `*Brand` as JSON, public, no auth, since a login screen
       needs branding before a session exists. `cmd/levelrail/main.go`
       now actually calls `brand.Load` (it never did before this), env
@@ -588,14 +599,17 @@ on `internal/docker` (was 78.2% before this task).
       (`golang.org/x/crypto/bcrypt`, already an indirect dependency,
       promoted to direct). Sessions are a server-side in-memory map keyed
       by an opaque cookie token, deliberately nothing more elaborate
-      (no JWT/OAuth) per CLAUDE.md 6 Phase 1's explicit scope.
+      (no JWT/OAuth) per Phase 1's explicit scope of a single admin
+      user with no teams or RBAC yet.
       `cmd/levelrail/main.go` bootstraps the admin account from
       `APP_ADMIN_USERNAME`/`APP_ADMIN_PASSWORD` on startup, non-fatal if
       unset (the server still starts; auth-required routes just stay
       inaccessible until an operator sets them)
 
-**Closed (2026-08-12), single-session per CLAUDE.md 8's rule on the
-reconcile loop**: `cmd/levelrail/main.go` now wires `reconcile.Engine` to
+**Closed (2026-08-12), built as one continuous, undivided unit of work,
+matching the standing rule that the reconcile loop and its controllers
+need one coherent mental model, not split across separate work
+streams**: `cmd/levelrail/main.go` now wires `reconcile.Engine` to
 a dynamic controller set instead of the Phase 0 hardcoded `nginxdemo`
 controller. `reconcile.Engine` gained a `Source` (`SetSource`), a
 function re-called at the start of every `ReconcileAll` pass that lists
@@ -614,8 +628,9 @@ reconciles `Routed0Services` cleanly, Caddy starts and stops without
 error on SIGTERM.
 
 HTTP layer is stdlib `net/http.ServeMux` with Go 1.22+ pattern routing
-(`"GET /api/v1/apps/{name}"`), not Chi: CLAUDE.md 4.1 says "do not pull
-in a heavy framework," and the one thing a framework would earn its
+(`"GET /api/v1/apps/{name}"`), not Chi: the control plane's single
+static binary story says "do not pull in a heavy framework," and the
+one thing a framework would earn its
 weight on, auth middleware, is a plain `http.HandlerFunc`-wrapping
 closure stdlib composes with directly.
 
@@ -634,8 +649,10 @@ overall, gate is 70%.
 - [x] Vite + React 19 + TypeScript + Tailwind scaffold, TanStack
       Router/Query wired in (`web/src/main.tsx`, `web/src/routes/__root.tsx`).
       Predates this pass; not touched here beyond what's listed below.
-- [x] **Embedding into the Go binary via `embed.FS`** (CLAUDE.md 4.1/4.12),
-      package `web` (`web/handler.go`, `embed_real.go`, `embed_stub.go`).
+- [x] **Embedding into the Go binary via `embed.FS`** (the frontend is
+      embedded into the Go binary as static assets, no Node runtime on
+      the server), package `web` (`web/handler.go`, `embed_real.go`,
+      `embed_stub.go`).
       `DistFS` sits behind a `-tags embedweb` build tag rather than a
       bare `//go:embed dist`: `web/dist` is gitignored and doesn't exist
       until `npm run build` runs, and a bare directive would break plain
@@ -650,8 +667,8 @@ overall, gate is 70%.
       refresh on a client-side route like `/apps/foo` resolves
       correctly) is what `handler.go` actually does. `main.go`'s
       `rootHandler` mounts the 1.9 API at `/api/` (subtree, full path
-      passed through unchanged) and this at `/`, one process per
-      CLAUDE.md 4.1's single-binary story. 100% coverage on the new
+      passed through unchanged) and this at `/`, one process matching
+      the single static binary story. 100% coverage on the new
       package; live-verified end to end with a real `npm run build`
       and a real `-tags embedweb` binary, not just unit tested: `/`,
       a client-side route, a real static asset, and `/api/v1/brand`
@@ -682,8 +699,9 @@ overall, gate is 70%.
       server-side to page against), and dropping `AppRow`'s status badge
       rather than faking one: appResource has no status field, and
       deriving one would mean an extra `GET .../deploys` per row, an N+1
-      fetch for a list CLAUDE.md 7 requires to stay virtualized and cheap
-      at 50+ rows. Verified against the real binary, not just
+      fetch for a list the frontend standards require to stay
+      virtualized and cheap at 50+ rows. Verified against the real
+      binary, not just
       typechecked: started it, created an app via `POST /api/v1/apps`,
       confirmed `GET /api/v1/apps` returns exactly the flat-array shape
       the fixed client now expects.
@@ -745,7 +763,8 @@ overall, gate is 70%.
       stopping ingestion. Rendered through TanStack Virtual, fixed-height
       monospace rows, ANSI escape codes stripped (`lib/ansi.ts`, full
       ANSI-to-HTML color rendering left as a stretch goal). The most
-      isolated route in the app per CLAUDE.md 4.12: confirmed via
+      isolated route in the app, matching the frontend's route-level
+      code-splitting design: confirmed via
       `npm run build`'s per-chunk output that the SSE hook, the ANSI
       stripper, and this route's own `useVirtualizer` instance appear
       only in its own chunk, never the shared or app-list bundles.
@@ -849,7 +868,7 @@ than implied coverage:
   real backends and two real domains
 - No multi-node. Everything runs in one process against one local Docker
   daemon, matching every other live test in this repo and Phase 1's own
-  scope (CLAUDE.md 6: multi-server is explicitly Phase 3)
+  scope (multi-server is explicitly Phase 3)
 - Real ACME is still unverified. Like `internal/reconcile/ingress`, this
   test only exercises Caddy's internal (self-signed) issuer; the
   Phase 1 exit criterion's "valid cert" against a real public domain
@@ -863,24 +882,25 @@ than implied coverage:
 should land first, everything else in Phase 1 reads the app spec or
 extends the Docker wrapper. 1.3 depends on both. 1.4 and 1.6 can proceed
 in parallel with each other once 1.1-1.3 exist, they don't share files.
-1.7 (secrets) and the database schema work inside 1.3/1.8 stay
-single-session per CLAUDE.md 8's do-not-parallelize list; everything else
-in this phase is fair game for parallel agents once its dependencies are
-met, same as Phase 0's competitor research and ADR writing were.
+1.7 (secrets) and the database schema work inside 1.3/1.8 stay on the
+do-not-parallelize list (anything touching secrets or the database
+schema is worked as one continuous unit); everything else in this phase
+is independent, parallelizable work once its dependencies are met, same
+as Phase 0's competitor research and ADR writing were.
 
 ---
 
 ## Dashboard & auth (started 2026-08-12, research complete, building now)
 
 Cross-cutting, not filed under a single phase number. Four parallel
-research agents (2026-08-12) each produced a `docs-local/research/` doc,
+research streams (2026-08-12) each produced a `docs-local/research/` doc,
 all read in full before writing the task list below: `theauth-go-fit-
 assessment.md`, `frontend-component-reuse.md`, `competitor-onboarding-
 auth-ux.md`, `dashboard-gap-audit-and-devmode.md`. Read those for the
 full evidence; this section is the validated, concrete task queue
-distilled from them. Agents pick a task, validate against the cited
-research doc, implement, mark done, move on; new tasks get added here as
-they're discovered, not dumped speculatively ahead of need.
+distilled from them. Pick a task, validate against the cited research
+doc, implement, mark done, move on; new tasks get added here as they're
+discovered, not dumped speculatively ahead of need.
 
 **Decisions the research settled, not open questions:**
 
@@ -909,7 +929,8 @@ they're discovered, not dumped speculatively ahead of need.
   `read:sensitive`, `write`, `deploy`, `root`, root exclusive of the
   rest, re-checked fresh server-side on every call), not Dokploy's
   all-or-nothing key. This is what lets an MCP-issued token be provably
-  read-only at the token layer, per CLAUDE.md 4.11. Full reasoning:
+  read-only at the token layer, matching the MCP layer's design as a
+  thin wrapper over a well-scoped platform API. Full reasoning:
   `docs-local/research/competitor-onboarding-auth-ux.md`, finding 9.
 - **Dev mode is backend-side and build-tag gated**, mirroring
   `web/embed_real.go`/`embed_stub.go`'s existing `embedweb` tag pattern
@@ -920,8 +941,8 @@ they're discovered, not dumped speculatively ahead of need.
 
 ### Backend auth foundation
 
-Single-session, not delegated to parallel agents: this is core
-trust-boundary code, the same discipline CLAUDE.md 8 already applies to
+Built as one continuous, undivided unit of work, not split up: this is
+core trust-boundary code, the same discipline already applied to
 secrets and the reconciler, applied here for the same reason.
 
 - [x] **API tokens (2026-08-12)**: `internal/store/tokens.go` +
@@ -945,7 +966,7 @@ secrets and the reconciler, applied here for the same reason.
       expired/wrong-ability/root-implies-everything cases; 77.4% coverage
       on `internal/api`, 78.4% on `internal/store`.
 - [x] **ADR backfill + `write:sensitive` gap fix (2026-08-13)**: while
-      writing ADRs 010-013 to close the CLAUDE.md 7 "one ADR per
+      writing ADRs 010-013 to close the process standard's "one ADR per
       architectural decision" gap for the whole Dashboard & auth pass
       (010: extend own auth, don't adopt theauth-go; 011: shadcn/Base UI,
       skip theauth SDK; 012: scoped API token abilities; 013: backend
@@ -1003,8 +1024,8 @@ secrets and the reconciler, applied here for the same reason.
       the same as guessing its password; a locked-out request gets 429
       with `Retry-After`, even with the correct password. `sessionStore`
       gained a configurable `ttl` (`WithSessionTTL` Option, defaults to
-      `defaultSessionTTL` = 24h when unset), so CLAUDE.md 7's "no
-      hardcoded thresholds, use env vars" rule has somewhere to attach:
+      `defaultSessionTTL` = 24h when unset), so the "no hardcoded
+      thresholds, use env vars" rule has somewhere to attach:
       `internal/api` itself still never reads the environment directly
       (matches every other `Option` here). `cmd/levelrail/main.go`'s
       `sessionTTL(logger)` reads `APP_SESSION_TTL` (a Go duration
@@ -1024,8 +1045,8 @@ secrets and the reconciler, applied here for the same reason.
       once a real change-password endpoint exists, don't build a
       rotation hook with nothing to trigger it.
 - [x] **Locked-out recovery path**: `levelrail recover-admin` subcommand
-      (`cmd/levelrail/recover_admin.go`), not a separate binary, per
-      CLAUDE.md 4.1's single-binary story. Container-native: `docker exec
+      (`cmd/levelrail/recover_admin.go`), not a separate binary, matching
+      the single static binary story. Container-native: `docker exec
       <container> levelrail recover-admin [--username X] [--password Y]`,
       matching Dokploy's `reset-password.ts` shape. Opens the store via
       the same `openStore` helper `run()` uses (so it operates on the
@@ -1137,9 +1158,10 @@ secrets and the reconciler, applied here for the same reason.
 
 ### Frontend: dashboard UI
 
-Parallel-safe once the backend tasks above land (frozen API contract),
-per CLAUDE.md 8's "frontend pages, one agent per route" rule. The shadcn
-setup task has no backend dependency and can start immediately.
+Parallel-safe once the backend tasks above land (frozen API contract):
+frontend pages can be worked one route at a time as independent units.
+The shadcn setup task has no backend dependency and can start
+immediately.
 
 - [x] **shadcn/ui setup**: done 2026-08-12. `npx shadcn@latest init -t
       vite -b base -p nova` against `web/` (fresh init, not thesvg's
@@ -1205,10 +1227,9 @@ setup task has no backend dependency and can start immediately.
       `clsx ^2.1.1`, `lucide-react ^1.31.0`, `shadcn ^4.17.0` (kept as a
       runtime dep, not dev: `index.css` imports `shadcn/tailwind.css` at
       build time), `tailwind-merge ^3.6.0`, `tw-animate-css ^1.4.0`. Per
-      the root GLINRV5 `CLAUDE.md`'s generic file-boundaries rule and
-      this repo having no override of it, this `package.json` diff is
-      flagged for approval before merge, not assumed pre-cleared by this
-      being the task's own point.
+      the standing rule that dependency-manifest changes need sign-off
+      before merge, this `package.json` diff is flagged for approval,
+      not assumed pre-cleared by this being the task's own point.
 - [x] **Vite dev proxy**: done alongside dev mode, see the evidenced
       "Dev mode" entry in the "Dashboard & auth" section above for the
       `server.proxy` diff and its live-verified proxy-reaches-backend
@@ -1366,9 +1387,9 @@ setup task has no backend dependency and can start immediately.
       dismiss, matching the backend: there is no endpoint to retrieve it
       again. No nav link into `/settings/tokens` yet: deferred on
       purpose, `web/src/routes/__root.tsx` had unrelated concurrent auth-
-      shell edits in flight from a parallel agent when this was built,
-      and CLAUDE.md 8's parallel-agent guidance is not to step on live
-      work in the same file; the route is reachable directly by URL in
+      shell edits in flight elsewhere when this was built, and the
+      standing guidance for parallel work is not to step on live edits
+      in the same file; the route is reachable directly by URL in
       the meantime. Also deferred, not silently dropped: the API-docs
       link finding 10 calls out (Dokploy's Swagger-link touch) has
       nothing to link to yet, there is no `/docs` directory in this repo
@@ -1383,12 +1404,12 @@ setup task has no backend dependency and can start immediately.
 
 ## Phase 2: Observability, the actual differentiator. IN PROGRESS (started 2026-08-12)
 
-Exit criterion (CLAUDE.md 6): you can answer "why was this app slow at
-3am last Tuesday" without leaving the dashboard and without having
-installed anything extra.
+Exit criterion: you can answer "why was this app slow at 3am last
+Tuesday" without leaving the dashboard and without having installed
+anything extra.
 
-Breaking this down now that Phase 1 is functionally done, so both
-sessions working this repo pick distinct sub-tasks instead of
+Breaking this down now that Phase 1 is functionally done, so
+contributors working this repo pick distinct sub-tasks instead of
 re-discovering the same gap independently a fourth time today. Claim a
 sub-task by editing its status line here before starting, same as 1.10's
 claim marker.
@@ -1409,14 +1430,15 @@ claim marker.
       subtracts page cache (cgroup v1's `cache` key or v2's `file` key)
       so it matches `docker stats`' "used" figure, not the raw counter
 - [x] Retention: configurable via `APP_METRICS_RETENTION` (a Go
-      duration string), default 15 days per CLAUDE.md 4.8, swept hourly
-      by `internal/telemetry.DB.Retain`. Collection tick interval
+      duration string), default 15 days per the observability design's
+      stated default, swept hourly by `internal/telemetry.DB.Retain`.
+      Collection tick interval
       (15s) is a fixed const, not env-configurable: it changes the
       shape of every sample going forward, a materially bigger blast
       radius than trimming how much history is kept
 - [x] **Deploy-frequency and build-duration metrics (2026-08-13)**:
-      the two items in CLAUDE.md 6's required-metrics list that don't
-      come from Docker stats at all. New `internal/telemetry/
+      the two items in the required-metrics list that don't come from
+      Docker stats at all. New `internal/telemetry/
       deploy_metrics.go`: `RecordDeploy` (one `deploy_count` sample,
       Value always 1, per completed deploy) and `RecordBuildDuration`
       (one `build_duration_seconds` sample, Value the build's real
@@ -1516,8 +1538,9 @@ afterward. 76.0% coverage.
       `*Client`, not added to `Runtime` (same reasoning `Stats`' own doc
       comment already gives), demultiplexing stdout/stderr via the SDK's
       own `stdcopy` helper rather than hand-parsing the 8-byte frame
-      header, and never the json-file driver's on-disk files per
-      CLAUDE.md 4.8's explicit call-out
+      header, and never the json-file driver's on-disk files, per the
+      observability design's explicit call-out against reading them
+      directly
 - [x] Chunk: batched writes, flushed on whichever comes first of 200
       buffered lines or 2 seconds (`logBatchMaxLines`/`logBatchMaxWait`
       in `internal/telemetry/logs.go`), not one SQLite write per line
@@ -1619,8 +1642,9 @@ against the repo's 70% gate.
       `MetricsSource`/`LogsSource` and merges by timestamp, today
       exactly one source (this node's own local `*telemetry.DB` via
       `NewLocalFederator`), the same single-node-now,
-      real-transport-later shape CLAUDE.md 4.3 already establishes for
-      the reconcile agent transport, so Phase 3's real per-node
+      real-transport-later shape the node communication design already
+      establishes for the reconcile agent transport, so Phase 3's real
+      per-node
       sources slot in without `internal/api` changing. A source
       erroring doesn't fail the whole query (ADR 008's "handle partial
       results gracefully" requirement, actually implemented, not just
@@ -1647,19 +1671,18 @@ than the routes not existing or a nil-dereference panic.
       this repo; adds roughly 379 kB raw / 109 kB gzip to the
       app-detail route's own chunk only (16.24 kB -> 395.78 kB raw,
       4.33 kB -> 113.53 kB gzip, measured via a clean before/after
-      rebuild), not the shared main bundle: CLAUDE.md 4.12's
-      route-level code splitting still holds, confirmed in
-      `dist/assets` output.
+      rebuild), not the shared main bundle: the frontend's route-level
+      code splitting still holds, confirmed in `dist/assets` output.
 
-      Real gap, not fixed here: CLAUDE.md 6's full list also names
-      request rate, response time percentiles, error rate, container
-      restart count, build duration, and deploy frequency. None of
-      those six is collected anywhere yet (2.1 explicitly deferred
-      restart count/build duration/deploy frequency; request rate/
-      response time/error rate need ingress-layer instrumentation
-      CLAUDE.md 4.5's embedded Caddy driver doesn't have yet). The
-      dashboard shows a clearly labeled "Not yet collected" list for
-      these instead of an empty or fabricated chart.
+      Real gap, not fixed here: the full required-metrics list also
+      names request rate, response time percentiles, error rate,
+      container restart count, build duration, and deploy frequency.
+      None of those six is collected anywhere yet (2.1 explicitly
+      deferred restart count/build duration/deploy frequency; request
+      rate/response time/error rate need ingress-layer instrumentation
+      the embedded Caddy driver doesn't have yet). The dashboard shows
+      a clearly labeled "Not yet collected" list for these instead of
+      an empty or fabricated chart.
 - [x] Historical log search (`web/src/components/LogSearchPanel.tsx`,
       `web/src/queries/logs.ts`, `web/src/types/logs.ts`): debounced
       full-text search plus the same range selector over
@@ -1701,7 +1724,7 @@ built-in alert rule (a restart-frequency threshold with a fixed
 notification payload shape, log lines attached), not a separate
 system, so the same rule/evaluator/notifier schema and dispatch path
 serve both rather than building two parallel mechanisms. Database
-schema work for both stayed one session per CLAUDE.md 8.
+schema work for both stayed one continuous, undivided unit of work.
 
 - [x] Threshold rules over 2.1's data: a new `internal/alerting`
       package, its own SQLite file (`alerting.db`, ADR 009's
@@ -1812,8 +1835,9 @@ not zero).
 ### 2.6 Prometheus remote read endpoint. DONE (2026-08-13)
 
 - [x] Expose 2.1's metrics store via Prometheus's remote-read protocol,
-      per CLAUDE.md 4.8, "so people can point Grafana at it if they want":
-      `POST /api/v1/prometheus/read`, backed by a new `internal/prompb`
+      per the observability design's goal that people can point Grafana
+      at it if they want: `POST /api/v1/prometheus/read`, backed by a
+      new `internal/prompb`
       package (a minimal, hand-written codec for just the remote-read
       wire messages, not a dependency on `github.com/prometheus/
       prometheus/prompb`, which drags in a much heavier tree than the
@@ -1853,8 +1877,9 @@ Built as a `KindCrashloop` alert rule, not a separate mechanism, see
 - [x] Last 200 lines of a failing container's logs surfaced
       automatically: `Engine.dispatch` attaches
       `fetchRecentLogLines` (via 2.2's `LogsSource`) to a firing
-      crashloop event only, exactly CLAUDE.md 6's number, truncated to
-      the most recent 200 lines when more are available
+      crashloop event only, exactly the number the observability phase
+      calls for, truncated to the most recent 200 lines when more are
+      available
 - [x] Frontend surfacing: `AlertRulesPanel.tsx` on the app detail page
       (`web/src/routes/apps/$name.tsx`), a rule list with firing/
       pending/OK state badges, human-readable condition strings, last
@@ -1868,10 +1893,10 @@ Built as a `KindCrashloop` alert rule, not a separate mechanism, see
       crashloop rule links to the existing historical log search
       (`LogSearchPanel`, anchored at `#log-search`) rather than
       fabricating a "here are the exact lines that fired" view that
-      doesn't exist. CLAUDE.md 6's "without leaving the dashboard" is
-      now true for seeing that a crashloop is firing and pulling up
-      that app's logs, not for reconstructing the precise historical
-      firing snapshot after the fact
+      doesn't exist. The exit criterion's "without leaving the
+      dashboard" is now true for seeing that a crashloop is firing and
+      pulling up that app's logs, not for reconstructing the precise
+      historical firing snapshot after the fact
 
 ---
 
@@ -1881,8 +1906,8 @@ Built as a `KindCrashloop` alert rule, not a separate mechanism, see
 and are today's parallel-safe starting points, same reasoning as Phase
 1's 1.4/1.6 split. Both are foundational infrastructure with a real
 architectural decision inside them (storage engine choice for 2.1, log
-ingestion shape for 2.2), so each stays one coherent session per
-CLAUDE.md 8, not fanned out into smaller pieces mid-flight. 2.3 depends
+ingestion shape for 2.2), so each stays one coherent, undivided unit of
+work, not fanned out into smaller pieces mid-flight. 2.3 depends
 on both existing. 2.4 depends on 2.3. 2.6 depends only on 2.1. 2.7
 depends on 2.2 (needs log access) and the reconciler's existing
 restart-count observation, not on 2.3's query API. 2.5 depends on 2.3
@@ -1890,17 +1915,18 @@ and is realistically the last piece to land.
 
 ## Phase 3: Multi-node. Breakdown written (2026-08-13)
 
-Exit criterion (CLAUDE.md 6): you add a second server from the UI, move
-an app to it, and the app's internal database connection keeps working
-across machines.
+Exit criterion: you add a second server from the UI, move an app to it,
+and the app's internal database connection keeps working across
+machines.
 
-Written now, at the start of this phase, not before: CLAUDE.md 7 warns
-against inventing detailed tasks ahead of need, but Phase 2 is
-functionally complete and this repo's own convention (see the Phase 2
-sequencing notes above) is to break a phase down once it's the one
-actually being built, the same point this file was at when 2.1-2.7 got
-written up. Grounded in what's actually in the repo today, not just
-CLAUDE.md 4.3/4.6 and ADRs 003/006's stated intent:
+Written now, at the start of this phase, not before: the engineering
+standards warn against inventing detailed tasks ahead of need, but
+Phase 2 is functionally complete and this repo's own convention (see
+the Phase 2 sequencing notes above) is to break a phase down once it's
+the one actually being built, the same point this file was at when
+2.1-2.7 got written up. Grounded in what's actually in the repo today,
+not just the node networking and node communication designs and ADRs
+003/006's stated intent:
 
 - **`internal/network` does not exist.** ADR 006 says the network
   abstraction "gets designed in Phase 1 so the real WireGuard mesh can
@@ -1918,8 +1944,8 @@ CLAUDE.md 4.3/4.6 and ADRs 003/006's stated intent:
   (`internal/docker.Runtime`, the Engine API wrapper itself), and
   `cmd/levelrail/main.go`'s `dynamicSource` hands every controller the
   same single local `docker.Runtime`. There is exactly one implicit
-  node today. `cmd/levelrail-agent` and `/proto` (both named in CLAUDE.md
-  5's repo layout) don't exist yet either.
+  node today. `cmd/levelrail-agent` and `/proto` (both named in the
+  repo layout) don't exist yet either.
 - **No placement concept anywhere.** `store.DesiredService` and
   `store.DesiredDatabase` have no node field at all (checked directly:
   `internal/store/service.go`'s `DesiredService` struct). A service
@@ -1940,10 +1966,10 @@ CLAUDE.md 4.3/4.6 and ADRs 003/006's stated intent:
 
 ### 3.1 Agent transport interface + node registry. DONE (2026-08-13)
 
-The foundation everything else in this phase routes through. Built
-single-session per CLAUDE.md 8's explicit "the agent transport
-protocol" and "the database schema" do-not-parallelize entries; this
-sub-task is squarely both at once.
+The foundation everything else in this phase routes through. Built as
+one continuous, undivided unit of work, matching the standing
+do-not-parallelize entries for "the agent transport protocol" and "the
+database schema"; this sub-task is squarely both at once.
 
 - [x] New `internal/agent` package (`transport.go`): `Transport`, an
       interface embedding `docker.Runtime` directly rather than
@@ -1956,14 +1982,16 @@ sub-task is squarely both at once.
       (`internal/telemetry/federate.go`), a separate, already-designed
       RPC surface, and build dispatch has no real caller until 3.5
       exists. Extending `Transport` speculatively now would be exactly
-      the "design for hypothetical future requirements" CLAUDE.md 7
-      warns against; closing that gap is 3.2/3.5's job, once there's a
-      real proto surface and a real build-node concept to attach it to.
-      Two pieces land together, not the interface alone:
+      the "design for hypothetical future requirements" the
+      engineering standards warn against; closing that gap is 3.2/3.5's
+      job, once there's a real proto surface and a real build-node
+      concept to attach it to. Two pieces land together, not the
+      interface alone:
       - `Local`, wrapping a `docker.Runtime` this process already has
-        open as this process's own node `Transport`, CLAUDE.md 4.3's
-        "single-node mode... in-memory transport that implements the
-        same interface" made real. Not yet wired into
+        open as this process's own node `Transport`, the node
+        communication design's "single-node mode... in-memory
+        transport that implements the same interface" made real. Not
+        yet wired into
         `cmd/levelrail/main.go`'s `dynamicSource` (still hands every
         controller the single shared `docker.Runtime` directly, as
         before this pass): that wiring is explicitly 3.3's job, once
@@ -2003,8 +2031,8 @@ sub-task is squarely both at once.
       own "shown once, never recoverable" shape). 15-minute TTL
       (`nodeJoinTokenTTL`), a fixed const rather than an env var: this
       is a one-shot enrollment window, not an ongoing operational
-      setting, so CLAUDE.md 7's "no hardcoded thresholds" concern
-      doesn't bind the same way it does for, say, session TTL.
+      setting, so the "no hardcoded thresholds" rule doesn't bind the
+      same way it does for, say, session TTL.
 - [x] Node CRUD API surface: `GET /api/v1/nodes`,
       `GET /api/v1/nodes/{id}`, `DELETE /api/v1/nodes/{id}`. **Real,
       deliberate scope cut from this section's own original wording**:
@@ -2021,8 +2049,8 @@ sub-task is squarely both at once.
       (correctly: 3.3 hasn't landed, so no service can be assigned to
       a node at all yet, making a "does this node still have services"
       check vacuous, not merely unwritten; both `store.DeleteNode`'s
-      and this route's own doc comments say so directly, and TASKS.md
-      3.7 already carries the follow-up).
+      and this route's own doc comments say so directly, and 3.7
+      already carries the follow-up).
       Every node route requires `AbilityRoot` specifically, not
       `AbilityRead`/`AbilityWrite`: fleet-level infrastructure
       (minting a credential that can enroll a whole machine, or
@@ -2058,8 +2086,9 @@ behavior until 3.3 actually wires per-node routing in.
 
 ### 3.2 `proto/` definitions and the real gRPC agent binary. DONE (2026-08-13)
 
-Built single-session, same CLAUDE.md 8 category as 3.1: this *is* "the
-agent transport protocol." `protoc`/`protoc-gen-go`/`protoc-gen-go-grpc`
+Built as one continuous, undivided unit of work, same do-not-parallelize
+category as 3.1: this *is* "the agent transport protocol."
+`protoc`/`protoc-gen-go`/`protoc-gen-go-grpc`
 installed locally (`brew install protobuf`, `go install
 google.golang.org/protobuf/cmd/protoc-gen-go`, `go install
 google.golang.org/grpc/cmd/protoc-gen-go-grpc`); `google.golang.org/grpc`
@@ -2085,9 +2114,9 @@ no new dependency tree pulled in.
       `MetricsSource`/`LogsSource` interfaces
       (`internal/telemetry/federate.go`), a separate RPC surface with no
       real caller yet; adding it speculatively now would be exactly the
-      "design for hypothetical future requirements" CLAUDE.md 7 warns
-      against. Build dispatch (3.5) is a similar, deliberately deferred
-      gap.
+      "design for hypothetical future requirements" the engineering
+      standards warn against. Build dispatch (3.5) is a similar,
+      deliberately deferred gap.
 - [x] `internal/agent/pki.go`: a minimal self-signed CA (stdlib
       `crypto/x509`, ed25519 throughout, no external PKI library, the
       same "primitives over a framework" precedent `internal/secrets`
@@ -2147,8 +2176,8 @@ no new dependency tree pulled in.
       goroutine against a real `docker.Runtime` via `Execute`, so one
       slow operation (an image pull, in particular) never stalls
       unrelated concurrent requests on the same connection.
-- [x] `cmd/levelrail-agent`: the new binary (named in CLAUDE.md 5's
-      repo layout, didn't exist before this pass). A thin `main()`:
+- [x] `cmd/levelrail-agent`: the new binary (named in the repo layout,
+      didn't exist before this pass). A thin `main()`:
       every real behavior lives in `internal/agent`, already tested
       there without a real process. Loads a persisted identity from
       `APP_AGENT_IDENTITY_FILE` (default `./levelrail-agent-identity.json`,
@@ -2197,10 +2226,10 @@ no new dependency tree pulled in.
       event buffer, documented above); there is no other queueing or
       flow-control surface yet since `Call`'s own request/response
       shape has no backlog to control (gRPC's own HTTP/2 flow control
-      underneath handles the rest). Both are named directly in TASKS.md
-      3.2's own original scope line and are flagged here as open, not
-      silently declared done because "reconnection" (the header word)
-      shipped.
+      underneath handles the rest). Both are named directly in this
+      sub-task's own original scope line and are flagged here as open,
+      not silently declared done because "reconnection" (the header
+      word) shipped.
 - [x] `internal/agent`'s gRPC implementation is real. `Local` (3.1)
       stays the default for `dynamicSource`'s existing single-node
       wiring, still completely untouched by this pass, exactly as 3.1
@@ -2256,8 +2285,9 @@ cause: the newly generated, zero-testable-logic `internal/agent/agentpb`
 package is included in the gate's simple prefix-based calculation with
 no generated-code exclusion, and will keep dragging the number down as
 it grows in 3.5+. Not fixed here (`scripts/check-coverage.sh` is a
-shared CI script named directly in CLAUDE.md 7, not something to
-special-case from inside a single task); worth a real look before this
+shared CI script named directly in the engineering standards, not
+something to special-case from inside a single task); worth a real
+look before this
 margin erodes further, flagged here rather than silently spent.
 `gofmt`/`go vet`/`golangci-lint`/`go build -tags embedweb` all clean;
 `go test ./... -race` green repo-wide.
@@ -2300,8 +2330,9 @@ margin erodes further, flagged here rather than silently spent.
       **Real, honest scope boundary, not an oversight**: the ingress
       controller is deliberately *not* routed through
       `resolveNodeTransport`, still always the local runtime. Caddy
-      runs embedded in this one control-plane process (CLAUDE.md 4.5),
-      and even if a remote node's container could be inspected through
+      runs embedded in this one control-plane process, as the ingress
+      design requires, and even if a remote node's container could be
+      inspected through
       its `Transport`, the resulting host:port is on that node's own
       network interface, not reachable at `127.0.0.1:hostPort` from
       here (`docker.PortBinding`'s own doc comment already explains
@@ -2334,9 +2365,9 @@ margin erodes further, flagged here rather than silently spent.
       real and tested; there is simply no HTTP CRUD surface for
       databases at all yet (a pre-existing gap from TASKS.md 1.8, not
       newly introduced here) for a node-placement route to extend.
-      Spread scheduling (CLAUDE.md 6: "manual node assignment first,
-      simple spread scheduling second, no bin-packing") is explicitly
-      not built, matching the task's own original scope line.
+      Spread scheduling ("manual node assignment first, simple spread
+      scheduling second, no bin-packing") is explicitly not built,
+      matching the task's own original scope line.
 - [x] Moving an existing service to a different node, live-verified,
       not just unit tested against fakes
       (`internal/reconcile/application/placement_live_test.go`,
@@ -2389,97 +2420,131 @@ on `account.go`/`auth.go`/`router.go`, per this repo's own multi-
 session convention; waited and re-verified once that session's own
 commits landed, never touched their in-progress files directly).
 
-### 3.4 WireGuard mesh and internal DNS
+### 3.4 WireGuard mesh and internal DNS. DONE (2026-08-13)
 
-Depends on 3.1-3.3 existing (a mesh across zero-to-one nodes is
-nothing to test). Genuinely separate subsystem once the foundation
-lands: fair game to hand to a dedicated session or agent once 3.1-3.3
-are merged, though the WireGuard integration itself is enough of a new
-architectural surface (a new external dependency, kernel-vs-userspace
-path selection) that CLAUDE.md 8's "give each agent an explicit exit
-criterion... human review of every decision" bar should apply, same
-spirit as the reconciler core even though it's not literally on that
-list.
+- [x] `internal/network`: the abstraction interface ADR 006 calls for,
+      split into a pure, table-testable decision half (key generation,
+      full-mesh planning, IP allocation, kernel-vs-userspace detection,
+      the WireGuard UAPI config protocol) and a thin, isolated
+      side-effecting half (the actual `wireguard-go` device, the DNS
+      server). `internal/reconcile/mesh` composes them into a
+      whole-fleet reconcile pass, same shape as the ingress controller.
+- [x] Real implementation on `wireguard-go` (ADR 006: userspace, so
+      nodes without kernel-module loading rights still work), with
+      kernel-module detection behind an injectable probe to prefer the
+      faster in-kernel path when available.
+- [x] Peer key distribution: the control plane distributes public
+      keys/allowed-IPs to every node via a `ConfigSink` boundary,
+      forming a full mesh, explicitly not hub-and-spoke. **Real,
+      structural scope boundary, not an oversight**: a node's private
+      key never leaves that node, there is no field in this codebase
+      to hold one, so key exchange (not key push) means a new node
+      takes two reconcile passes to fully mesh, ordinary level-triggered
+      convergence. The gRPC arm of `ConfigSink` that would carry this
+      over the wire is deliberately not built here: it is a change to
+      `proto/agent/v1/agent.proto`, the agent wire contract, which needs
+      one coherent mental model and a single reviewer end to end, not
+      several people each touching an uncoordinated slice of it. The
+      exact messages needed are written into `ConfigSink`'s own doc
+      comment for whoever picks this up next.
+- [x] Internal DNS: stable per-service names under `.node.<zone>`
+      resolving to the right peer's mesh address regardless of which
+      node a service currently runs on, backed by an authoritative
+      UDP+TCP resolver. Pointing a container's actual DNS config at this
+      server (`ContainerSpec.DNS`) crosses the same agent wire contract
+      as peer distribution and is left for that same follow-up change,
+      documented rather than faked.
+- [x] Two real concurrency/networking bugs caught and fixed during this
+      work, not hypothetical: a data race on `Coordinator`'s observed-
+      endpoints map (read from the reconcile loop, written from the
+      connection handler with no lock, caught by `-race`, fixed with a
+      `sync.RWMutex`), and an intermittent DNS server startup failure
+      (binding UDP then TCP on "whatever port UDP got," which fails
+      because the two are separate port spaces; fixed with an explicit
+      retry over the ephemeral-port case only).
 
-- [ ] `internal/network`: the abstraction interface ADR 006 already
-      says should exist and doesn't yet, built now instead of assumed.
-- [ ] Real implementation on `wireguard-go` (ADR 006: userspace, not a
-      dependency on the in-kernel module, so nodes without kernel-module
-      loading rights still work), with kernel-module detection to take
-      the faster in-kernel path when available.
-- [ ] Peer key distribution: the control plane distributes public
-      keys/allowed-IPs to every node, forming a full mesh (ADR 006:
-      explicitly not hub-and-spoke through the control plane itself).
-- [ ] Internal DNS: stable per-service names resolving to the right
-      peer regardless of which node a service currently runs on. This
-      is what makes 3.3's "move a service" not break an existing
-      database connection string, the literal last clause of the exit
-      criterion.
+### 3.5 Dedicated build nodes. DONE (2026-08-13)
 
-### 3.5 Dedicated build nodes
+- [x] Registry-backed remote cache for BuildKit (`internal/build/cache.go`,
+      `CacheConfig.RegistryRef` wiring `WithCacheRegistry`/
+      `WithCacheRegistryInsecure`), composable with the existing local-disk
+      cache, closing the exact gap `WithCacheDir`'s own doc comment named.
+      Wired into the control plane binary for the first time via
+      `APP_BUILD_CACHE_DIR`/`APP_BUILD_CACHE_REGISTRY`/
+      `APP_BUILD_CACHE_REGISTRY_INSECURE`.
+- [x] Node capability: `accepts_app_workloads`/`accepts_build_workloads`
+      columns (migration `0010_node_workloads.sql`), independent flags, a
+      node can be either, both, or neither. `PUT /api/v1/nodes/{id}/workloads`
+      is the only way they change.
+- [x] Route a deploy's build step to a build-capable node via 3.1's
+      transport (`build.SelectBuildNode`) instead of always building
+      locally. **Real, honest scope boundary, not an oversight**: actually
+      dispatching a build to a remote node's Docker daemon needs a
+      build-dispatch RPC added to the agent transport/proto, the same
+      wire-contract change 3.4 also left open, explicitly out of this
+      task's scope per this file's own sequencing notes. Marking a node
+      build-capable today fails loudly (`ErrNoBuildNodeAvailable`) rather
+      than silently building locally anyway or pretending to dispatch.
 
-Depends on 3.1-3.3 for the placement mechanism to route a build to a
-specific node at all. Parallelizable once that lands; a contained,
-well-scoped addition (extends `internal/build`, doesn't touch the
-reconciler or transport).
+### 3.6 Distributed cert storage. DONE (2026-08-13)
 
-- [ ] A registry or object-store backend for BuildKit's remote cache
-      (`internal/build/client.go`'s own `WithCacheDir` doc comment
-      already names this as the missing piece, not invented fresh
-      here), replacing the local-disk-only cache Phase 1 scoped down to.
-- [ ] Node capability: which nodes accept build work, distinct from
-      "which nodes run application containers" (a node can be either,
-      both, or neither).
-- [ ] Route a deploy's build step to a build-capable node via 3.1's
-      transport instead of always building against the control plane's
-      own local BuildKit connection.
+- [x] `certmagic.Storage` implemented over `internal/store`'s SQLite
+      (`internal/ingress/certstorage.go`, `cert_storage`/
+      `cert_storage_locks` tables, migration `0011_cert_storage.sql`),
+      replacing Caddy's default file-system cert/ACME-account storage.
+      Lock uses polling with a background refresh goroutine so a live
+      holder's lock never looks stale to a competitor. Wired into the
+      ingress controller via `WithCertStore`, taking precedence over
+      `WithStorageDir`; live-verified end to end (`TestController_
+      Reconcile_Live` asserts `cert_storage` has rows after a real HTTPS
+      handshake through Caddy).
+- [x] Multi-node ingress instances share cert state through this store
+      instead of each independently re-obtaining a certificate for a
+      domain another node already has one for.
+- [x] Domain uniqueness now enforced: `service_domains` child table
+      (migration `0012_service_domains.sql`, `ON DELETE CASCADE`),
+      `SaveDesiredService` claims domains transactionally alongside the
+      desired-state upsert, rolling back the whole write with
+      `ErrDomainTaken{Domain, Owner}` if another service already owns
+      one. The migration backfills existing data with a deterministic
+      alphabetical tie-break for anything already (silently) shared.
+      Closes the gap this controller's own doc comment had flagged
+      twice already, so `BuildRoutesConfig` can no longer silently
+      build two routes for the same host.
 
-### 3.6 Distributed cert storage
+### 3.7 Node health, drain, cordon. DONE (2026-08-13)
 
-Depends on 3.1 only (needs a real multi-node concept to matter at
-all, but not placement or WireGuard specifically). Small, well-scoped,
-parallelizable: touches only `internal/ingress`/
-`internal/reconcile/ingress`, already flagged as a real gap with a
-named solution.
-
-- [ ] Implement `certmagic.Storage` backed by `internal/store`'s SQLite
-      (`internal/reconcile/ingress/controller.go`'s own doc comment
-      already names this exact shape as the real requirement), replacing
-      Caddy's default file-system cert/ACME-account storage.
-- [ ] Multi-node ingress instances (one per node running the ingress
-      controller, per CLAUDE.md 4.5) share cert state through this
-      store instead of each independently re-obtaining a certificate for
-      a domain another node already has one for.
-- [ ] The still-open Phase 1 gap this same controller's doc comment
-      already names (domain uniqueness isn't enforced across separate
-      deploys over time, `BuildRoutesConfig` would silently build two
-      routes for the same host) gets materially worse across nodes if
-      not closed alongside this: worth closing here, not carried forward
-      a third time.
-
-### 3.7 Node health, drain, cordon
-
-Depends on 3.1-3.3 (a node's health/drain/cordon state is meaningless
-without the registry and placement those provide). Parallelizable once
-that foundation lands.
-
-- [ ] Health: agent heartbeat / last-seen tracking (3.1's `nodes` table
-      already has the column), surfaced via API and, per 3.8, the UI.
-      A node that stops heartbeating is a real, user-facing state, not
-      silently ignored.
-- [ ] Cordon: mark a node unschedulable (new placements refuse it)
-      without evacuating what's already running there.
-- [ ] Drain: move every service off a node before it's removed,
-      reusing 3.3's "move a service to a different node" mechanism
-      rather than inventing a second one. This is also what makes node
-      removal (3.1's node-delete route) safe to actually implement as
-      a real delete instead of only ever failing loudly.
+- [x] Health: `Server.heartbeatLoop` touches `last_seen_at` on a
+      configurable interval (`WithHeartbeatInterval`, default 15s) for
+      the life of an agent's stream, not just once at connect, so a
+      hung-but-still-"connected" session is actually detectable. A new
+      `internal/reconcile/nodehealth` controller, one instance per node,
+      level-triggered and idempotent, flips `Online`/`Offline` past a
+      timeout (`APP_NODE_HEARTBEAT_TIMEOUT`, default 45s) and stores a
+      `Heartbeat` condition with a reason string, surfaced via
+      `GET /api/v1/nodes/{id}/health`.
+- [x] Cordon: a `schedulable` column (migration `0013_node_health.sql`),
+      deliberately a separate axis from `Status` (a cordoned node can
+      still be online). `SetNodeSchedulable` is the only mutation;
+      `POST /api/v1/nodes/{id}/cordon`/`.../uncordon` toggle it.
+      `validatePlacementTarget` (shared by manual placement and drain)
+      refuses a cordoned node as a target.
+- [x] Drain: `POST /api/v1/nodes/{id}/drain?target_node_id=` reuses
+      3.3's `UpdateServiceNode`/`UpdateDatabaseNode` one resource at a
+      time, not a second placement mechanism. One resource's failure
+      doesn't stop the rest: the response is `200` on full success or
+      `207` with an `Errors` list on partial failure, tested against a
+      hand-written fake that fails call 2 of 3 on purpose. This is what
+      makes node deletion a real, safe delete: `DELETE /api/v1/nodes/{id}`
+      now returns `409` while any service/database still has that node
+      as its `NodeID`, pointing the operator at drain, instead of only
+      ever failing loudly or silently orphaning placements.
 
 ### 3.8 Frontend: node management UI
 
-Parallelizable once 3.1/3.3/3.7's API surfaces exist, one agent per
-route, the same CLAUDE.md 8 precedent Phase 1's frontend pages and
-Phase 2's dashboard/log-viewer/alert-rules panels already used.
+Parallelizable once 3.1/3.3/3.7's API surfaces exist, one route at a
+time, the same precedent Phase 1's frontend pages and Phase 2's
+dashboard/log-viewer/alert-rules panels already used.
 
 - [ ] Add-node flow: generate a join token, show the operator the
       enrollment command to run on the new machine.
@@ -2491,23 +2556,23 @@ Phase 2's dashboard/log-viewer/alert-rules panels already used.
 
 ## Phase 3 sequencing notes
 
-3.1 and 3.2 form one coherent single-session arc (agent transport
-protocol plus the database schema it needs, both explicitly on CLAUDE.md
-8's do-not-parallelize list) and must land in that order, 3.1's interface
+3.1 and 3.2 form one coherent, undivided arc of work (agent transport
+protocol plus the database schema it needs, both explicitly on the
+do-not-parallelize list) and must land in that order, 3.1's interface
 shape before 3.2's real implementation of it. 3.3's schema piece
-(`NodeID` columns) stays inside that same single-session arc; its
+(`NodeID` columns) stays inside that same continuous arc; its
 API/dispatch piece can follow once the columns exist, but "moving a
 service without breaking it" is realistically not separable from 3.1-3.3
-being done by the same continuous effort, the same reasoning TASKS.md
-1.3 (the application controller) was never split across parallel agents
-either. 3.4, 3.5, 3.6, and 3.7 are independent of each other (different
-files, different concerns: networking, builds, certs, node lifecycle)
-and become parallel-safe once 3.1-3.3 are merged, the same shape Phase
-2's 2.1/2.2 split was. 3.8 depends on whichever of 3.1/3.3/3.7 it's
-surfacing and should be split per-page the way Phase 1's 1.10 and Phase
-2's dashboard work already were, not built as one monolithic session.
-The exit criterion itself (add a node, move an app, keep its database
-connection working) needs 3.1 through 3.4 at minimum; 3.5-3.8 are real
-Phase 3 scope per CLAUDE.md 6 but not required to demonstrate the exit
-criterion, worth landing in whatever order real need surfaces rather
-than treating this list as a strict sequence past 3.4.
+being done by the same continuous effort, the same reasoning 1.3 (the
+application controller) was never split into separate parallel work
+streams either. 3.4, 3.5, 3.6, and 3.7 are independent of each other
+(different files, different concerns: networking, builds, certs, node
+lifecycle) and become parallel-safe once 3.1-3.3 are merged, the same
+shape Phase 2's 2.1/2.2 split was. 3.8 depends on whichever of
+3.1/3.3/3.7 it's surfacing and should be split per-page the way Phase
+1's 1.10 and Phase 2's dashboard work already were, not built as one
+monolithic unit of work. The exit criterion itself (add a node, move an
+app, keep its database connection working) needs 3.1 through 3.4 at
+minimum; 3.5-3.8 are real Phase 3 scope but not required to demonstrate
+the exit criterion, worth landing in whatever order real need surfaces
+rather than treating this list as a strict sequence past 3.4.

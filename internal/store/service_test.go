@@ -278,3 +278,52 @@ func TestSaveDesiredService_RedeployDoesNotResetNodeID(t *testing.T) {
 		t.Errorf("NodeID = %q, want node-1 (a redeploy must not silently un-assign a placed service)", got.NodeID)
 	}
 }
+
+// TestListDesiredServicesByNode is TASKS.md 3.7's drain and
+// delete-guard primitive: find what's placed on a node without
+// listing every service and filtering client-side.
+func TestListDesiredServicesByNode(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	for _, svc := range []DesiredService{
+		{Name: "web", Image: "img:v1", Port: 8080},
+		{Name: "worker", Image: "img:v1", Port: 8081},
+		{Name: "api", Image: "img:v1", Port: 8082},
+	} {
+		if err := db.SaveDesiredService(ctx, svc); err != nil {
+			t.Fatalf("SaveDesiredService(%s) error = %v", svc.Name, err)
+		}
+	}
+	if err := db.UpdateServiceNode(ctx, "web", "node-1"); err != nil {
+		t.Fatalf("UpdateServiceNode(web) error = %v", err)
+	}
+	if err := db.UpdateServiceNode(ctx, "worker", "node-1"); err != nil {
+		t.Fatalf("UpdateServiceNode(worker) error = %v", err)
+	}
+	// api stays on the local node ("").
+
+	got, err := db.ListDesiredServicesByNode(ctx, "node-1")
+	if err != nil {
+		t.Fatalf("ListDesiredServicesByNode(node-1) error = %v", err)
+	}
+	if len(got) != 2 || got[0].Name != "web" || got[1].Name != "worker" {
+		t.Fatalf("ListDesiredServicesByNode(node-1) = %+v, want [web worker] ordered by name", got)
+	}
+
+	gotLocal, err := db.ListDesiredServicesByNode(ctx, "")
+	if err != nil {
+		t.Fatalf("ListDesiredServicesByNode(\"\") error = %v", err)
+	}
+	if len(gotLocal) != 1 || gotLocal[0].Name != "api" {
+		t.Fatalf("ListDesiredServicesByNode(\"\") = %+v, want [api]", gotLocal)
+	}
+
+	gotEmpty, err := db.ListDesiredServicesByNode(ctx, "node-2")
+	if err != nil {
+		t.Fatalf("ListDesiredServicesByNode(node-2) error = %v", err)
+	}
+	if len(gotEmpty) != 0 {
+		t.Errorf("ListDesiredServicesByNode(node-2) = %+v, want empty", gotEmpty)
+	}
+}

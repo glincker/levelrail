@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useCallback, useEffect, useRef } from 'react'
-import { ArrowDown, Terminal } from 'lucide-react'
+import { ArrowDownIcon, TerminalIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   useDeployLogStream,
   type LogStreamConnectionState,
@@ -10,9 +10,9 @@ import { buildDeployLogStreamUrl } from '../../../../../queries/deployLogs'
 import { stripAnsiCodes } from '../../../../../lib/ansi'
 import { Badge } from '@/components/ui/badge'
 
-// Live Build Log view, frontend-plan.md section 1: "the literal target of
-// CLAUDE.md 4.12's 'the dashboard should not ship the log viewer's
-// bundle.'" This route file is the only place in the app that imports
+// Live Build Log view, frontend-plan.md section 1: the literal target of
+// the rule that the dashboard should not ship the log viewer's bundle.
+// This route file is the only place in the app that imports
 // the SSE hook, the ANSI stripper, and (here, directly) TanStack Virtual
 // tuned for monospace log rows, so none of the three should ever end up
 // in a shared/main chunk. Verified for this pass via `npm run build`'s
@@ -104,7 +104,7 @@ function DeployLogsPage() {
       <header className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="flex items-center gap-1.5 text-lg font-semibold text-foreground">
-            <Terminal
+            <TerminalIcon
               className="size-4 text-muted-foreground"
               aria-hidden="true"
             />
@@ -174,7 +174,7 @@ function DeployLogsPage() {
             onClick={handleResumeClick}
             className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-neutral-800 px-3 py-1 text-xs font-medium text-neutral-100 shadow-lg hover:bg-neutral-700"
           >
-            <ArrowDown className="size-3.5" aria-hidden="true" />
+            <ArrowDownIcon className="size-3.5" aria-hidden="true" />
             Resume auto-scroll
           </button>
         )}

@@ -1,5 +1,9 @@
 import { Link } from '@tanstack/react-router'
-import { BoxIcon, ChevronRightIcon, GlobeIcon } from 'lucide-react'
+import {
+  PackageIcon,
+  CaretRightIcon,
+  GlobeIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import type { AppDetail } from '../types/appDetail'
 
@@ -19,7 +23,8 @@ export const APP_LIST_GRID =
 // No live status dot here: appResource has no status field, and
 // rendering one would mean an extra GET /api/v1/apps/{name}/deploys per
 // row (an N+1 fetch for a list that's supposed to stay cheap at 50+
-// rows, per CLAUDE.md 7's virtualization requirement). The app detail
+// rows, per the project's virtualization requirement: every list that
+// can exceed 50 items must be virtualized). The app detail
 // route's ConditionsPanel is where current reconcile status actually
 // lives (green/red/neutral condition badges backed by that endpoint);
 // inventing a placeholder status here would be exactly the kind of
@@ -40,7 +45,7 @@ export function AppRow({ app }: { app: AppDetail }) {
       className={`${APP_LIST_GRID} h-full w-full border-b border-border px-4 py-3 transition-colors hover:bg-muted/60`}
     >
       <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-        <BoxIcon className="size-4" aria-hidden="true" />
+        <PackageIcon className="size-4" aria-hidden="true" />
       </span>
 
       <span className="min-w-0 truncate text-sm font-medium text-foreground">
@@ -81,7 +86,7 @@ export function AppRow({ app }: { app: AppDetail }) {
         :{app.port}
       </Badge>
 
-      <ChevronRightIcon
+      <CaretRightIcon
         className="size-4 shrink-0 justify-self-end text-muted-foreground/50"
         aria-hidden="true"
       />

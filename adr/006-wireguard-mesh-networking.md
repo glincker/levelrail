@@ -8,14 +8,15 @@ Date: 2026-08-11
 
 Once Levelrail manages more than one node (Phase 3), containers on
 different machines need to reach each other by a stable name, the way a
-Swarm overlay network or a Kubernetes CNI would provide. CLAUDE.md 4.2
-already rejects Swarm as the orchestration substrate; that decision would
-be incomplete without also deciding what replaces the networking Swarm
-would otherwise have supplied for free, since section 2 explicitly rules
-out building a full service mesh ("WireGuard plus DNS is enough").
+Swarm overlay network or a Kubernetes CNI would provide. The custom
+reconciler decision (ADR 002) already rejects Swarm as the orchestration
+substrate; that decision would be incomplete without also deciding what
+replaces the networking Swarm would otherwise have supplied for free,
+since the project explicitly rules out building a full service mesh
+("WireGuard plus DNS is enough").
 
 This ADR is being written in Phase 0, well ahead of the implementation it
-describes. CLAUDE.md 4.6 is explicit that multi-node networking is not
+describes. The plan is explicit that multi-node networking is not
 Phase 1 work: "Do not build this in Phase 1. Do design the network
 abstraction in Phase 1 so it can be swapped in." Nothing under
 `internal/network` exists yet, and Phase 3 (the phase this ADR's decision
@@ -50,8 +51,8 @@ depends on it.
 ## Rejected alternatives
 
 - **Docker Swarm overlay networking**: rejected for the same root reason
-  Swarm itself is rejected as the orchestration substrate (ADR 002,
-  CLAUDE.md 4.2): it's in maintenance mode, and adopting it here would
+  Swarm itself is rejected as the orchestration substrate (ADR 002):
+  it's in maintenance mode, and adopting it here would
   reintroduce exactly the coupling ADR 002 already ruled out, just at the
   networking layer instead of the orchestration layer. `prior-art-dokploy.md`
   documents concretely what that coupling costs a real competitor built on
@@ -82,7 +83,7 @@ depends on it.
     package, whereas Levelrail deliberately keeps these separate:
     WireGuard mesh handles networking (this ADR), the custom reconciler
     handles orchestration (ADR 002), and placement stays manual-then-simple-
-    spread with no bin-packing (Phase 3, CLAUDE.md section 2). That's a
+    spread with no bin-packing (Phase 3, per the project's non-goals). That's a
     conscious trade of Swarm's one bundled subsystem for two independently
     designed, individually simpler layers, not a claim of equivalent
     functionality with less code.
@@ -105,7 +106,7 @@ depends on it.
   matches Phase 3's exit criterion of adding a second node from the UI.
 - `wireguard-go` plus kernel-module detection is more code than depending
   on the in-kernel module unconditionally, but it's the same portability
-  trade CLAUDE.md already makes elsewhere (pure-Go SQLite driver in 4.7 for
+  trade the project already makes elsewhere (pure-Go SQLite driver, ADR 007, for
   the same reason: cross-compilation and running on hosts you don't fully
   control shouldn't require a kernel feature you can't guarantee is
   present or loadable).

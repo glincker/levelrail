@@ -302,13 +302,13 @@ func TestBuildRoutesConfig_Validation(t *testing.T) {
 			wantErr: "route 0 has no backend dial address",
 		},
 		{
-			name: "empty routes is valid, not an error",
-			opts: RoutesOptions{ServerName: "ingress", ListenAddr: ":8443"},
+			name:    "empty routes is valid, not an error",
+			opts:    RoutesOptions{ServerName: "ingress", ListenAddr: ":8443"},
 			wantErr: "",
 		},
 		{
-			name: "one valid route",
-			opts: RoutesOptions{ServerName: "ingress", ListenAddr: ":8443", Routes: []ProxyRoute{validRoute}},
+			name:    "one valid route",
+			opts:    RoutesOptions{ServerName: "ingress", ListenAddr: ":8443", Routes: []ProxyRoute{validRoute}},
 			wantErr: "",
 		},
 	}

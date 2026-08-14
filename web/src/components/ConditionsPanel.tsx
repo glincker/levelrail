@@ -1,9 +1,9 @@
 import {
-  CheckCircle2Icon,
-  CircleAlertIcon,
-  HelpCircleIcon,
-  type LucideIcon,
-} from 'lucide-react'
+  CheckCircleIcon,
+  WarningCircleIcon,
+  QuestionIcon,
+} from '@phosphor-icons/react/dist/ssr'
+import type { Icon } from '@phosphor-icons/react'
 import type { ConditionStatus, ReconcileCondition } from '../types/deploy'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
@@ -21,10 +21,10 @@ const STATUS_BADGE_VARIANT: Record<
   Unknown: 'muted',
 }
 
-const STATUS_ICON: Record<ConditionStatus, LucideIcon> = {
-  True: CheckCircle2Icon,
-  False: CircleAlertIcon,
-  Unknown: HelpCircleIcon,
+const STATUS_ICON: Record<ConditionStatus, Icon> = {
+  True: CheckCircleIcon,
+  False: WarningCircleIcon,
+  Unknown: QuestionIcon,
 }
 
 // Renders the app's *current* reconcile status, not a deploy history

@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useNavigate } from '@tanstack/react-router'
-import { BoxIcon, TriangleAlertIcon } from 'lucide-react'
+import { PackageIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
   DialogContent,
@@ -82,8 +82,8 @@ const DEFAULT_VALUES: CreateAppFormInput = {
 // pattern CreateTokenDialog's own doc comment gestures at, just with
 // the trigger element supplied by each call site instead of hardcoded.
 //
-// Only name/image/port are collected (CLAUDE.md 4.9's minimal app
-// spec: build, domains, port are the essentials; domains/env/resources/
+// Only name/image/port are collected (the app spec's minimal essentials
+// are build, domains, and port; domains/env/resources/
 // health are real fields the backend accepts but out of scope here, a
 // manually-created app via this dialog is the "already have a built
 // image" path, distinct from and unaffected by the git-push spec
@@ -150,7 +150,7 @@ export function CreateAppDialog({ trigger }: { trigger: React.ReactElement }) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <BoxIcon
+            <PackageIcon
               className="size-4 text-muted-foreground"
               aria-hidden="true"
             />
@@ -233,7 +233,7 @@ export function CreateAppDialog({ trigger }: { trigger: React.ReactElement }) {
 
           {createApp.isError ? (
             <Alert variant="destructive">
-              <TriangleAlertIcon />
+              <WarningIcon />
               <AlertDescription>{createApp.error.message}</AlertDescription>
             </Alert>
           ) : null}

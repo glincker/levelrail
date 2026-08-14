@@ -206,15 +206,21 @@ func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.NodeID != "" {
-		if _, err := rt.nodes.GetNode(r.Context(), req.NodeID); errors.Is(err, store.ErrNodeNotFound) {
+	if err := rt.validatePlacementTarget(r.Context(), req.NodeID); err != nil {
+		switch {
+		case errors.Is(err, store.ErrNodeNotFound):
 			writeError(w, http.StatusBadRequest, "unknown node_id")
-			return
-		} else if err != nil {
+		case errors.Is(err, errNodeCordoned):
+			// TASKS.md 3.7: cordon means "unschedulable for new
+			// placements", and this is a new placement even when the
+			// service already exists, since it's actively choosing to
+			// move it here.
+			writeError(w, http.StatusBadRequest, "node is cordoned and not accepting new placements")
+		default:
 			rt.logger.Error("api: set app node: look up node failed", slog.String("error", err.Error()), slog.String("node_id", req.NodeID))
 			writeError(w, http.StatusInternalServerError, "internal error")
-			return
 		}
+		return
 	}
 
 	if err := rt.apps.UpdateServiceNode(r.Context(), name, req.NodeID); errors.Is(err, store.ErrServiceNotFound) {

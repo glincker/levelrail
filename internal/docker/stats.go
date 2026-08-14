@@ -27,7 +27,7 @@ type ContainerStats struct {
 	MemoryLimitBytes uint64
 	// NetworkRxBytes/TxBytes are summed across every interface Docker
 	// reports for this container; a single container's total network
-	// usage is what CLAUDE.md 6's per-app metrics list asks for, not a
+	// usage is what the per-app metrics requirement asks for, not a
 	// per-interface breakdown.
 	NetworkRxBytes uint64
 	NetworkTxBytes uint64

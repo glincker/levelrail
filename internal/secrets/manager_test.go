@@ -104,8 +104,8 @@ func TestManager_SetValue_ThenResolve_RoundTrips(t *testing.T) {
 }
 
 func TestManager_SetValue_ReusesSameDEKAcrossKeys(t *testing.T) {
-	// CLAUDE.md 4.10: "wrap the DEK once, encrypt many values fast with
-	// it". A service's second secret must not generate a second DEK.
+	// The DEK is wrapped once and reused to encrypt many values fast.
+	// A service's second secret must not generate a second DEK.
 	m, fs := testManager(t)
 	ctx := context.Background()
 

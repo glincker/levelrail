@@ -2,7 +2,11 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef } from 'react'
-import { BoxIcon, DatabaseIcon, PlusIcon } from 'lucide-react'
+import {
+  PackageIcon,
+  DatabaseIcon,
+  PlusIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { appListQueryOptions } from '../../queries/apps'
 import { APP_LIST_GRID, AppRow, RowSkeleton } from '../../components/AppRow'
 import { CreateAppDialog } from '../../components/CreateAppDialog'
@@ -10,9 +14,9 @@ import { Button } from '../../components/ui/button'
 
 // Typed loader primes the Query cache, the component only reads that
 // cache via useSuspenseQuery against the same key (no data fetching in
-// the component body, per CLAUDE.md 7). The list is virtualized
+// the component body is a project-wide rule). The list is virtualized
 // unconditionally (every list that can exceed 50 items must be, per the
-// same section) rather than branching on row count, even though GET
+// same rule) rather than branching on row count, even though GET
 // /api/v1/apps returns everything in one response with no server-side
 // pagination to page through.
 //
@@ -89,7 +93,7 @@ function AppListPage() {
       {apps.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-16 text-center">
           <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <BoxIcon className="size-5" aria-hidden="true" />
+            <PackageIcon className="size-5" aria-hidden="true" />
           </span>
           <div className="space-y-1">
             <p className="text-sm font-medium text-foreground">No apps yet</p>

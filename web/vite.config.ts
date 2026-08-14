@@ -34,9 +34,9 @@ export default defineConfig({
     // Must come before @vitejs/plugin-react per TanStack Router docs: it
     // generates routeTree.gen.ts and (with autoCodeSplitting) splits each
     // route file's component/loader/pendingComponent/errorComponent into
-    // its own chunk, which is what keeps CLAUDE.md 4.12's "the dashboard
-    // should not ship the log viewer's bundle" true without hand-written
-    // React.lazy() at every route boundary.
+    // its own chunk, which is what keeps the dashboard from shipping the
+    // log viewer's bundle without hand-written React.lazy() at every
+    // route boundary.
     tanstackRouter({
       target: 'react',
       autoCodeSplitting: true,
@@ -46,8 +46,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
     // Emits web/dist/stats.html on every `npm run build`, a treemap of
-    // final chunk sizes. CLAUDE.md 7 requires a bundle size budget in CI;
-    // this is the visibility half of that (frontend-plan.md section 2).
+    // final chunk sizes, in service of the route-level code splitting
+    // bundle size budget enforced in CI; this is the visibility half of
+    // that (frontend-plan.md section 2).
     // A per-chunk size-assertion script that fails CI on regression is
     // deferred, see the report for this pass.
     visualizer({

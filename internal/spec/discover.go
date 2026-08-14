@@ -9,13 +9,13 @@ import (
 )
 
 // DiscoverPath finds the app spec file in dir, checking candidate
-// filenames in order and returning the first one that exists. Per
-// CLAUDE.md section 3: "discovered by a list of candidate filenames
-// (app.yaml, deploy.yaml, plus the branded one) so a rename does not
-// break existing users later." The generic names are checked first for
-// exactly that reason: if the product is ever renamed, brandedName
-// changes, but a repo with an app.yaml already committed keeps working
-// without the user touching anything.
+// filenames in order and returning the first one that exists. The spec
+// file is discovered by a list of candidate filenames (app.yaml,
+// deploy.yaml, plus the branded one) so a product rename does not break
+// existing users later. The generic names are checked first for exactly
+// that reason: if the product is ever renamed, brandedName changes, but
+// a repo with an app.yaml already committed keeps working without the
+// user touching anything.
 //
 // brandedName is the caller-supplied branded filename stem (derived from
 // brand.Brand, not imported here, so this package stays decoupled from

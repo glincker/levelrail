@@ -1,6 +1,6 @@
 // Package probe implements HTTP readiness checking: the controller calls
 // out to a container over HTTP, rather than the container self-reporting
-// health via Docker's own HEALTHCHECK state machine. CLAUDE.md 4.9's
+// health via Docker's own HEALTHCHECK state machine. The app spec's
 // health.readiness/liveness config is modeled on Kubernetes' prober
 // pattern for exactly this reason, the same choice ADR 002's
 // Consequences section already commits to over Coolify's confirmed

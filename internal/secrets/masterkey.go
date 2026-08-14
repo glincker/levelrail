@@ -1,6 +1,6 @@
-// Package secrets implements CLAUDE.md 4.10's envelope encryption:
-// per-app data encryption keys, wrapped by a master key held only by the
-// control plane, using filippo.io/age for the crypto primitives.
+// Package secrets implements envelope encryption: per-app data
+// encryption keys, wrapped by a master key held only by the control
+// plane, using filippo.io/age for the crypto primitives.
 //
 // masterkey.go, dek.go, and value.go are the primitives layer: MasterKey,
 // DEK wrap/unwrap, and value encrypt/decrypt, standalone and fully
@@ -12,8 +12,8 @@
 // internal/deploy.Pipeline checks whether a { secret: true } var has a
 // value before deploying (never the value itself), and
 // internal/reconcile/application.Controller decrypts a value only
-// immediately before docker.Runtime.Create, never persisting it,
-// exactly the sequencing CLAUDE.md 4.10 specifies.
+// immediately before docker.Runtime.Create, never persisting it, which
+// is exactly the sequencing envelope encryption is meant to guarantee.
 package secrets
 
 import (
@@ -47,8 +47,8 @@ func GenerateMasterKey() (*MasterKey, error) {
 }
 
 // LoadMasterKey parses a master key from its serialized identity string
-// (MasterKey.String()'s output). CLAUDE.md 4.10: "Master key can be
-// sourced from file, env, or an external KMS interface added later."
+// (MasterKey.String()'s output). The master key can be sourced from a
+// file, an env var, or an external KMS interface added later.
 // This function only handles the parsing; sourcing the string itself
 // (reading a file, reading an env var) is the caller's job, matching
 // internal/brand.Load's own "load from a path the caller resolved"

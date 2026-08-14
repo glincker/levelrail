@@ -1,8 +1,8 @@
 # golangci-lint v2 config.
 #
-# Linter set is deliberately exact, not padded: CLAUDE.md section 7 names
-# errcheck, govet, staticcheck, gosec, revive, ineffassign, unparam and
-# nothing else. `default: none` is required so golangci-lint's own
+# Linter set is deliberately exact, not padded: the project's engineering
+# standards name errcheck, govet, staticcheck, gosec, revive, ineffassign,
+# unparam and nothing else. `default: none` is required so golangci-lint's own
 # default set (which otherwise includes unused) does not sneak in extra
 # linters beyond what's specified.
 #

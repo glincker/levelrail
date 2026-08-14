@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { Trash2Icon, TriangleAlertIcon } from 'lucide-react'
+import { TrashIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
   DialogContent,
@@ -37,13 +37,13 @@ export function DeleteDatabaseDialog({ name }: { name: string }) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="destructive" size="sm" />}>
-        <Trash2Icon className="size-3.5" aria-hidden="true" />
+        <TrashIcon className="size-3.5" aria-hidden="true" />
         Delete
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
-            <TriangleAlertIcon className="size-4" aria-hidden="true" />
+            <WarningIcon className="size-4" aria-hidden="true" />
             Delete &ldquo;{name}&rdquo;?
           </DialogTitle>
           <DialogDescription>

@@ -1,5 +1,6 @@
-// Package application implements CLAUDE.md 4.9 and TASKS.md 1.3's
-// application controller: the reconcile.Controller that converges a
+// Package application implements the declarative app spec's service
+// contract and TASKS.md 1.3's application controller: the
+// reconcile.Controller that converges a
 // real, store-backed desired service to a running container, replacing
 // nginxdemo's hardcoded desired state with the real thing.
 //
@@ -11,8 +12,8 @@
 // whatever's already running, waits for it to pass its readiness probe,
 // then removes every other container for this service. Traffic
 // switching itself (updating Caddy to point at the new container) is
-// deliberately not this controller's job: CLAUDE.md 4.2 makes "a
-// reconcile loop per resource type" the pattern, and ingress is its own
+// deliberately not this controller's job: this codebase's reconciler
+// pattern is a reconcile loop per resource type, and ingress is its own
 // resource type (TASKS.md 1.6, not yet wired in). This controller's
 // contract with that future ingress controller is simple: whichever
 // container currently exists and is running for a service is the one

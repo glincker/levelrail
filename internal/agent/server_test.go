@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -27,11 +28,21 @@ type fakeEnrollStore struct {
 	nodes  map[string]*store.Node          // keyed by ID
 	names  map[string]bool                 // taken names, for ErrNodeNameTaken
 
-	markUsedErr    error
-	saveNodeErr    error
-	getNodeErr     error
+	markUsedErr error
+	saveNodeErr error
+	getNodeErr  error
+
 	updateStatusMu []store.NodeStatus // records every UpdateNodeStatus call, in order
-	lastTouchedID  string
+
+	// touchMu guards lastTouchedID and touchCount: unlike every other
+	// field here, TouchNodeLastSeen is called both synchronously
+	// (Session's own initial touch) and repeatedly from
+	// Server.heartbeatLoop's own background goroutine (TASKS.md 3.7)
+	// for as long as a test's fake session stays open, so concurrent
+	// access is real here, not theoretical.
+	touchMu       sync.Mutex
+	lastTouchedID string
+	touchCount    int
 }
 
 func newFakeEnrollStore() *fakeEnrollStore {
@@ -102,8 +113,17 @@ func (f *fakeEnrollStore) UpdateNodeStatus(_ context.Context, id string, status 
 }
 
 func (f *fakeEnrollStore) TouchNodeLastSeen(_ context.Context, id string) error {
+	f.touchMu.Lock()
+	defer f.touchMu.Unlock()
 	f.lastTouchedID = id
+	f.touchCount++
 	return nil
+}
+
+func (f *fakeEnrollStore) touchStats() (id string, count int) {
+	f.touchMu.Lock()
+	defer f.touchMu.Unlock()
+	return f.lastTouchedID, f.touchCount
 }
 
 func seedJoinToken(f *fakeEnrollStore, plaintext string, expiresIn time.Duration) {
@@ -300,8 +320,8 @@ func TestServer_Session_Success(t *testing.T) {
 		}
 	}
 
-	if st.lastTouchedID != "node-1" {
-		t.Errorf("lastTouchedID = %q, want node-1", st.lastTouchedID)
+	if lastID, _ := st.touchStats(); lastID != "node-1" {
+		t.Errorf("lastTouchedID = %q, want node-1", lastID)
 	}
 	if len(st.updateStatusMu) == 0 || st.updateStatusMu[0] != store.NodeStatusOnline {
 		t.Errorf("updateStatusMu = %v, want first entry Online", st.updateStatusMu)
@@ -326,6 +346,73 @@ func TestServer_Session_Success(t *testing.T) {
 	}
 	if st.updateStatusMu[len(st.updateStatusMu)-1] != store.NodeStatusOffline {
 		t.Errorf("final status = %v, want Offline", st.updateStatusMu[len(st.updateStatusMu)-1])
+	}
+}
+
+// TestServer_Session_PeriodicHeartbeat is TASKS.md 3.7's real point:
+// TouchNodeLastSeen must keep being called on an interval for as long as
+// the session's stream stays open, not just once at connect. Without
+// this, internal/reconcile/nodehealth would see LastSeenAt go stale on
+// every long-lived, perfectly healthy connection and incorrectly flip it
+// Offline.
+func TestServer_Session_PeriodicHeartbeat(t *testing.T) {
+	ca, _ := GenerateCA()
+	st := newFakeEnrollStore()
+	certPEM, _, err := ca.IssueClientCert("node-1", time.Hour)
+	if err != nil {
+		t.Fatalf("IssueClientCert() error = %v", err)
+	}
+	fp, err := certFingerprintFromPEM(certPEM)
+	if err != nil {
+		t.Fatalf("certFingerprintFromPEM() error = %v", err)
+	}
+	now := time.Now()
+	st.nodes["node-1"] = &store.Node{ID: "node-1", Name: "worker-1", CertFingerprint: fp, CreatedAt: now, UpdatedAt: now}
+
+	registry := NewRegistry()
+	srv := NewServer(ca, st, registry, nil, WithHeartbeatInterval(10*time.Millisecond))
+
+	stream := &fakeAgentSessionServer{
+		ctx:  ctxWithPeerCert(certPEM),
+		recv: make(chan *agentpb.AgentMessage),
+		sent: make(chan *agentpb.ControlMessage, 4),
+	}
+
+	sessionDone := make(chan error, 1)
+	go func() { sessionDone <- srv.Session(stream) }()
+
+	// Wait for enough ticks that the loop must have fired more than
+	// once: the connect-time touch (1) plus at least a couple of
+	// interval ticks.
+	deadline := time.After(2 * time.Second)
+	for {
+		if _, count := st.touchStats(); count >= 3 {
+			break
+		}
+		select {
+		case <-deadline:
+			_, count := st.touchStats()
+			t.Fatalf("timed out waiting for periodic heartbeat touches, got count=%d, want >= 3", count)
+		case <-time.After(5 * time.Millisecond):
+		}
+	}
+
+	stream.recvErr = errors.New("connection reset")
+	close(stream.recv)
+
+	select {
+	case <-sessionDone:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for Session() to return")
+	}
+
+	// The heartbeat loop must actually stop once the session ends, not
+	// keep touching a node that's no longer connected.
+	_, countAtEnd := st.touchStats()
+	time.Sleep(50 * time.Millisecond)
+	_, countAfterWait := st.touchStats()
+	if countAfterWait != countAtEnd {
+		t.Errorf("touch count kept growing after Session() returned (%d -> %d), want the heartbeat loop to have stopped", countAtEnd, countAfterWait)
 	}
 }
 

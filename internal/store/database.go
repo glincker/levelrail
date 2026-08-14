@@ -7,9 +7,9 @@ import (
 	"fmt"
 )
 
-// Supported managed database engines, matching internal/spec's list
-// (CLAUDE.md 6 Phase 1: "Managed Postgres and Redis as first-class
-// resources").
+// Supported managed database engines, matching internal/spec's list:
+// Postgres and Redis ship as first-class resources in the initial
+// release.
 const (
 	EnginePostgres = "postgres"
 	EngineRedis    = "redis"
@@ -116,6 +116,38 @@ func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, erro
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("store: list desired databases: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var out []DesiredDatabase
+	for rows.Next() {
+		var d DesiredDatabase
+		if err := rows.Scan(&d.Name, &d.Engine, &d.Version, &d.NodeID); err != nil {
+			return nil, fmt.Errorf("store: scan desired database row: %w", err)
+		}
+		out = append(out, d)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate desired database rows: %w", err)
+	}
+	return out, nil
+}
+
+// ListDesiredDatabasesByNode returns every saved database currently
+// placed on nodeID, ordered by name. The database-kind counterpart to
+// ListDesiredServicesByNode, same TASKS.md 3.7 drain/delete-guard
+// callers.
+func (db *DB) ListDesiredDatabasesByNode(ctx context.Context, nodeID string) ([]DesiredDatabase, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT name, engine, version, node_id
+		FROM desired_databases
+		WHERE node_id = ?
+		ORDER BY name
+	`, nodeID)
+	if err != nil {
+		return nil, fmt.Errorf("store: list desired databases for node %q: %w", nodeID, err)
 	}
 	defer func() {
 		_ = rows.Close()

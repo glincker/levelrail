@@ -1,11 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import {
-  CheckCircle2Icon,
-  LogOutIcon,
+  CheckCircleIcon,
+  SignOutIcon,
   ShieldCheckIcon,
-  TriangleAlertIcon,
-} from 'lucide-react'
+  WarningIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   sessionQueryOptions,
   useRevokeOtherSessions,
@@ -32,7 +32,8 @@ import {
 
 // Loader-primed the same way routes/settings/tokens.tsx primes
 // tokenListQueryOptions: the component below only ever reads that warm
-// cache via useSuspenseQuery, never fetches in its own body (CLAUDE.md 7).
+// cache via useSuspenseQuery, never fetches data in its own body (no
+// data fetching in component bodies is a project-wide rule).
 export const Route = createFileRoute('/settings/security')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(sessionQueryOptions()),
@@ -134,7 +135,7 @@ function OtherSessionsCard() {
       <CardContent className="space-y-3">
         {justRevoked ? (
           <Alert>
-            <CheckCircle2Icon className="text-green-700 dark:text-green-400" />
+            <CheckCircleIcon className="text-green-700 dark:text-green-400" />
             <AlertTitle>Other sessions signed out</AlertTitle>
             <AlertDescription>
               Every other session for this account has been ended. This browser
@@ -144,13 +145,13 @@ function OtherSessionsCard() {
         ) : null}
         <Dialog open={open} onOpenChange={handleOpenChange}>
           <DialogTrigger render={<Button variant="outline" />}>
-            <LogOutIcon />
+            <SignOutIcon />
             Sign out other sessions
           </DialogTrigger>
           <DialogContent className="sm:max-w-sm">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <TriangleAlertIcon className="size-4 text-destructive" />
+                <WarningIcon className="size-4 text-destructive" />
                 Sign out other sessions?
               </DialogTitle>
               <DialogDescription>
@@ -160,7 +161,7 @@ function OtherSessionsCard() {
             </DialogHeader>
             {revokeOtherSessions.isError ? (
               <Alert variant="destructive">
-                <TriangleAlertIcon />
+                <WarningIcon />
                 <AlertDescription>
                   {revokeOtherSessions.error.message}
                 </AlertDescription>

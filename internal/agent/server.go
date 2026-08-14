@@ -51,21 +51,50 @@ type EnrollStore interface {
 // for a year.
 const clientCertValidity = 90 * 24 * time.Hour
 
+// defaultHeartbeatInterval is how often Session touches last_seen_at
+// for a connected node while its stream stays open (TASKS.md 3.7),
+// matching the observability design's own metrics-collection cadence
+// (15s): reusing that same number isn't required by anything, but two
+// independent "how fresh does this need to be" judgment calls landing
+// on the same value is a reasonable default rather than inventing a
+// third cadence.
+const defaultHeartbeatInterval = 15 * time.Second
+
 // Server implements agentpb.AgentServiceServer.
 type Server struct {
 	agentpb.UnimplementedAgentServiceServer
-	ca       *CA
-	store    EnrollStore
-	registry *Registry
-	logger   *slog.Logger
+	ca                *CA
+	store             EnrollStore
+	registry          *Registry
+	logger            *slog.Logger
+	heartbeatInterval time.Duration
+}
+
+// Option configures optional Server behavior.
+type Option func(*Server)
+
+// WithHeartbeatInterval overrides how often Session touches
+// last_seen_at for a connected node. Without one configured,
+// defaultHeartbeatInterval applies. cmd/levelrail's own main.go reads
+// APP_NODE_HEARTBEAT_INTERVAL and passes the parsed duration here,
+// following the project's "no hardcoded thresholds, use env vars"
+// rule; this package itself never reads the environment directly, the
+// same "constructor args only" convention api.WithSessionTTL already
+// establishes.
+func WithHeartbeatInterval(d time.Duration) Option {
+	return func(s *Server) { s.heartbeatInterval = d }
 }
 
 // NewServer builds a Server. logger defaults to slog.Default() if nil.
-func NewServer(ca *CA, st EnrollStore, registry *Registry, logger *slog.Logger) *Server {
+func NewServer(ca *CA, st EnrollStore, registry *Registry, logger *slog.Logger, opts ...Option) *Server {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Server{ca: ca, store: st, registry: registry, logger: logger}
+	s := &Server{ca: ca, store: st, registry: registry, logger: logger, heartbeatInterval: defaultHeartbeatInterval}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
 }
 
 // Enroll implements agentpb.AgentServiceServer.
@@ -126,6 +155,15 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 	if err := s.store.SaveNode(ctx, store.Node{
 		ID: nodeID, Name: req.GetNodeName(), Status: store.NodeStatusPending,
 		CertFingerprint: fingerprint, CreatedAt: now, UpdatedAt: now,
+		// AcceptsAppWorkloads defaults to true for every newly enrolled
+		// node (TASKS.md 3.5, migrations/0010_node_workloads.sql's own
+		// doc comment): set explicitly here rather than relying on the
+		// column's own DEFAULT so the intent is visible at this call
+		// site, not just in a migration file. AcceptsBuildWorkloads is
+		// left at its zero value (false): an operator opts a node into
+		// build work explicitly, via PUT /api/v1/nodes/{id}/workloads,
+		// never implicitly at enrollment time.
+		AcceptsAppWorkloads: true,
 	}); err != nil {
 		if errors.Is(err, store.ErrNodeNameTaken) {
 			return nil, status.Errorf(codes.AlreadyExists, "node name %q is already taken", req.GetNodeName())
@@ -182,7 +220,16 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 	s.registry.Register(nodeID, newGRPCTransport(m))
 	s.logger.Info("agent: node connected", slog.String("node_id", nodeID))
 
+	// heartbeatDone stops the periodic TouchNodeLastSeen loop below
+	// (TASKS.md 3.7): a single touch at connect time (above) can't
+	// distinguish "still connected" from "connected an hour ago, then
+	// the process hung", which is exactly what
+	// internal/reconcile/nodehealth needs LastSeenAt to reflect.
+	heartbeatDone := make(chan struct{})
+	go s.heartbeatLoop(nodeID, heartbeatDone)
+
 	defer func() {
+		close(heartbeatDone)
 		s.registry.Unregister(nodeID)
 		// context.Background(), not ctx: the stream's own context is
 		// already done by the time this defer runs (that's why Session
@@ -196,6 +243,31 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 
 	<-m.closed
 	return nil
+}
+
+// heartbeatLoop touches last_seen_at for nodeID every heartbeatInterval
+// until done is closed. Runs in its own goroutine for the lifetime of
+// one Session call; a single TouchNodeLastSeen failure is logged and
+// retried on the next tick, the same "best-effort, never block the
+// caller" posture TouchNodeLastSeen's own doc comment already commits
+// to.
+func (s *Server) heartbeatLoop(nodeID string, done <-chan struct{}) {
+	ticker := time.NewTicker(s.heartbeatInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-done:
+			return
+		case <-ticker.C:
+			// context.Background(), not the stream's context: the same
+			// reasoning as the final offline update above, a heartbeat
+			// touch must not be cancelled by the stream context tearing
+			// down mid-tick.
+			if err := s.store.TouchNodeLastSeen(context.Background(), nodeID); err != nil {
+				s.logger.Warn("agent: session: heartbeat touch failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
+			}
+		}
+	}
 }
 
 // peerIdentity extracts the enrolled node's ID (the mTLS client

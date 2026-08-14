@@ -87,7 +87,7 @@ func TestParse_ValidMinimal_Defaults(t *testing.T) {
 		t.Errorf("EffectiveReplicas() = %d, want %d", got, DefaultReplicas)
 	}
 	if got := web.EffectiveStrategy(); got != StrategyBlueGreen {
-		t.Errorf("EffectiveStrategy() = %q, want %q (CLAUDE.md 6 default)", got, StrategyBlueGreen)
+		t.Errorf("EffectiveStrategy() = %q, want %q (documented default)", got, StrategyBlueGreen)
 	}
 }
 

@@ -65,6 +65,26 @@ type DesiredService struct {
 	NodeID string
 }
 
+// ErrDomainTaken is returned by SaveDesiredService when one of svc's
+// Domains is already claimed by a different service. Enforced here, not
+// only by internal/spec's Validate() (which only ever sees one app.yaml
+// at a time and so cannot see a domain already claimed by an earlier,
+// separate deploy), because internal/reconcile/ingress's controller
+// builds one Caddy route per domain from every desired service in a
+// single reconcile pass (TASKS.md 3.6): two services claiming the same
+// host would silently produce two routes matching the same Host header,
+// with whichever sorted last winning inside Caddy's own matcher
+// evaluation and silently shadowing the other. See that controller's
+// package doc comment and migrations/0011_service_domains.sql.
+type ErrDomainTaken struct {
+	Domain string
+	Owner  string
+}
+
+func (e *ErrDomainTaken) Error() string {
+	return fmt.Sprintf("store: domain %q is already in use by service %q", e.Domain, e.Owner)
+}
+
 // SaveDesiredService creates or fully replaces the desired state for a
 // named service. There's no partial update: a service's desired state is
 // always written as a whole record, matching how it'll actually be
@@ -80,6 +100,14 @@ type DesiredService struct {
 // explicitly places it elsewhere via UpdateServiceNode, and a redeploy
 // of an already-placed service must never un-assign it from wherever
 // that placement decision put it.
+//
+// The whole write, including reconciling svc.Domains against the
+// service_domains table (0011), happens in one transaction: either the
+// service's desired state and its domain claims both land, or neither
+// does. Returns *ErrDomainTaken (via errors.As) if any domain in
+// svc.Domains is already claimed by a different service; the caller's
+// entire desired-state write is rejected in that case, not partially
+// applied with some domains silently dropped.
 func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error {
 	domainsJSON, err := json.Marshal(nonNilSlice(svc.Domains))
 	if err != nil {
@@ -102,7 +130,15 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 		return fmt.Errorf("store: marshal health for service %q: %w", svc.Name, err)
 	}
 
-	_, err = db.ExecContext(ctx, `
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: save desired service %q: begin transaction: %w", svc.Name, err)
+	}
+	defer func() {
+		_ = tx.Rollback() // no-op if Commit already succeeded
+	}()
+
+	_, err = tx.ExecContext(ctx, `
 		INSERT INTO desired_services (name, image, port, domains, env, secret_env, resources, health, node_id, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
@@ -117,6 +153,59 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	`, svc.Name, svc.Image, svc.Port, string(domainsJSON), string(envJSON), string(secretEnvJSON), string(resourcesJSON), string(healthJSON))
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
+	}
+
+	if err := claimServiceDomains(ctx, tx, svc.Name, svc.Domains); err != nil {
+		// Wrapped with %w, not returned bare: still findable via
+		// errors.As for a *ErrDomainTaken caller that wants the
+		// specific domain/owner, per this method's error-wrapping
+		// convention and the house rule that errors are wrapped with
+		// context at every layer boundary.
+		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: save desired service %q: commit: %w", svc.Name, err)
+	}
+	return nil
+}
+
+// claimServiceDomains replaces serviceName's rows in service_domains
+// with exactly domains: every domain serviceName previously claimed but
+// no longer declares is released, and every domain it now declares is
+// claimed, unless a different service already claims it, in which case
+// this returns *ErrDomainTaken and the caller's whole transaction rolls
+// back (claimServiceDomains never partially claims a service's domain
+// list). Duplicate entries within domains are claimed once, not
+// reported as a conflict against themselves.
+func claimServiceDomains(ctx context.Context, tx *sql.Tx, serviceName string, domains []string) error {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM service_domains WHERE service_name = ?`, serviceName); err != nil {
+		return fmt.Errorf("clear existing domain claims: %w", err)
+	}
+
+	claimed := make(map[string]bool, len(domains))
+	for _, domain := range domains {
+		if domain == "" || claimed[domain] {
+			continue
+		}
+		claimed[domain] = true
+
+		var owner string
+		err := tx.QueryRowContext(ctx, `SELECT service_name FROM service_domains WHERE domain = ?`, domain).Scan(&owner)
+		switch {
+		case err == nil:
+			return &ErrDomainTaken{Domain: domain, Owner: owner}
+		case errors.Is(err, sql.ErrNoRows):
+			// Free: fall through and claim it.
+		default:
+			return fmt.Errorf("check domain %q availability: %w", domain, err)
+		}
+
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO service_domains (domain, service_name) VALUES (?, ?)
+		`, domain, serviceName); err != nil {
+			return fmt.Errorf("claim domain %q: %w", domain, err)
+		}
 	}
 	return nil
 }
@@ -175,6 +264,42 @@ func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error)
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("store: list desired services: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var out []DesiredService
+	for rows.Next() {
+		svc, err := scanDesiredService(rows.Scan)
+		if err != nil {
+			return nil, fmt.Errorf("store: scan desired service row: %w", err)
+		}
+		out = append(out, *svc)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate desired service rows: %w", err)
+	}
+	return out, nil
+}
+
+// ListDesiredServicesByNode returns every saved service currently
+// placed on nodeID, ordered by name. TASKS.md 3.7's drain
+// (internal/api's handleDrainNode) uses this to find what to move off a
+// node before it's removed, and handleDeleteNode uses it as the guard
+// that makes node deletion refuse to run while placements remain.
+// nodeID="" (the local-node sentinel, see DesiredService.NodeID's own
+// doc comment) is a valid argument, matching every other node_id
+// comparison in this package.
+func (db *DB) ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]DesiredService, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT name, image, port, domains, env, secret_env, resources, health, node_id
+		FROM desired_services
+		WHERE node_id = ?
+		ORDER BY name
+	`, nodeID)
+	if err != nil {
+		return nil, fmt.Errorf("store: list desired services for node %q: %w", nodeID, err)
 	}
 	defer func() {
 		_ = rows.Close()

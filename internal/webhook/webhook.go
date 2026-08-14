@@ -10,11 +10,12 @@
 // must never call http.ListenAndServe itself.
 //
 // Scope boundary: Config is deliberately static, single-app configuration
-// (one secret, one repo, one branch, one spec.Service). CLAUDE.md's Phase
-// 1 exit criterion is a single app, thesvg.org, deploying from a git
+// (one secret, one repo, one branch, one spec.Service). This phase's
+// exit criterion is a single app, thesvg.org, deploying from a git
 // push; this package does not build a multi-tenant "which repo maps to
 // which app.yaml" registry, since designing that now would be exactly the
-// speculative-ahead-of-a-real-second-app work CLAUDE.md 7 warns against.
+// speculative-ahead-of-a-real-second-app work the project's engineering
+// standards warn against.
 // A second app arriving is the trigger to revisit this, not a hypothesis
 // about one arriving.
 package webhook

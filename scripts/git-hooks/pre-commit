@@ -39,12 +39,11 @@ else
 	echo "golangci-lint not installed, skipping (CI still enforces this)"
 fi
 
-# CLAUDE.md is excluded: it quotes the banned characters as a literal
-# example of what's disallowed, in the rule that bans them. This script
-# is excluded for the same reason, one line down: the search pattern
-# itself has to contain the literal characters it's looking for.
+# This script itself is excluded from the sweep below: the search
+# pattern has to contain the literal em/en dash characters it's looking
+# for, which would otherwise flag itself.
 echo "pre-commit: em dash / en dash sweep"
-staged_files=$(git diff --cached --name-only --diff-filter=ACM | grep -v '^docs-local/competitor-clones/' | grep -v '^CLAUDE.md$' | grep -v '^scripts/git-hooks/pre-commit$')
+staged_files=$(git diff --cached --name-only --diff-filter=ACM | grep -v '^docs-local/competitor-clones/' | grep -v '^scripts/git-hooks/pre-commit$')
 dash_hits=""
 for f in $staged_files; do
 	[ -f "$f" ] || continue
@@ -54,7 +53,7 @@ for f in $staged_files; do
 done
 if [ -n "$dash_hits" ]; then
 	echo "em dash or en dash found in:$dash_hits"
-	echo "CLAUDE.md: no em dashes or en dashes anywhere. Use commas, periods, parentheses, or colons."
+	echo "No em dashes or en dashes anywhere. Use commas, periods, parentheses, or colons."
 	fail=1
 fi
 

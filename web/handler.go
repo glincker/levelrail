@@ -1,7 +1,7 @@
-// Package web embeds the built frontend (CLAUDE.md 4.1/4.12: "Embedded
-// frontend assets via embed.FS. No Node runtime on the server.") and
-// serves it with client-side-routing fallback, so a hard refresh or
-// direct link to a TanStack Router path like /apps/foo resolves
+// Package web embeds the built frontend via embed.FS, keeping the
+// control plane a single static binary with no Node runtime required on
+// the server, and serves it with client-side-routing fallback, so a hard
+// refresh or direct link to a TanStack Router path like /apps/foo resolves
 // correctly instead of 404ing at the server before React Router ever
 // gets a chance to handle it.
 package web

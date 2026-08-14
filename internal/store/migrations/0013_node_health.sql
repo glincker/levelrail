@@ -1,0 +1,24 @@
+-- Phase 3 (TASKS.md 3.7): health, cordon, drain. Health reuses
+-- 0008_nodes.sql's existing status/last_seen_at columns as-is (that
+-- migration's own comment already names last_seen_at as the heartbeat
+-- column, nothing new to add for it); this migration is only for
+-- cordon.
+--
+-- schedulable is cordon's real backing state, deliberately a separate
+-- column from status rather than reusing the NodeStatusCordoned value
+-- 0008_nodes.sql already defined: 0008's own doc comment for that value
+-- says cordon is "a distinct axis from Online/Offline, not a
+-- replacement for it: a cordoned node can still be online," but a
+-- single status column can only ever hold one of the four values at a
+-- time, so setting status = 'cordoned' would silently lose whether the
+-- node was online or offline the moment it was cordoned. A separate
+-- column is what actually keeps the two axes independent, matching the
+-- doc comment's own promise. NodeStatusCordoned stays defined in
+-- internal/store/nodes.go for now (nothing currently sets it), noted
+-- there rather than removed here.
+--
+-- Every pre-existing node defaults to schedulable = 1 (not cordoned),
+-- zero behavior change on upgrade, the same "DEFAULT reproduces prior
+-- behavior" convention 0009_node_placement.sql already used for
+-- node_id.
+ALTER TABLE nodes ADD COLUMN schedulable INTEGER NOT NULL DEFAULT 1;

@@ -1,18 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef } from 'react'
-import { ServerIcon } from 'lucide-react'
+import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
 import { nodeListQueryOptions, useNodes } from '../../queries/nodes'
 import { NODE_LIST_GRID, NodeRow, RowSkeleton } from '../../components/NodeRow'
 import { AddNodeDialog } from '../../components/AddNodeDialog'
 
 // Typed loader primes the Query cache, the component only reads that
 // cache via useNodes() (suspense), mirroring routes/databases/index.tsx
-// exactly. The list is virtualized unconditionally (per CLAUDE.md 7)
-// even though nodes are a 1-10 machine list for this product's own
-// target audience and GET /api/v1/nodes returns everything in one
-// response with no server-side pagination: a follow-the-rule exercise
-// here, not something that will ever visibly matter at this scale.
+// exactly. The list is virtualized unconditionally, per this project's
+// standing rule that every list over 50 items is virtualized, even
+// though nodes are a 1-10 machine list for this product's own target
+// audience and GET /api/v1/nodes returns everything in one response
+// with no server-side pagination: a follow-the-rule exercise here, not
+// something that will ever visibly matter at this scale.
 export const Route = createFileRoute('/nodes/')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(nodeListQueryOptions()),
@@ -65,7 +66,7 @@ function NodeListPage() {
       {nodes.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-16 text-center">
           <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <ServerIcon className="size-5" aria-hidden="true" />
+            <HardDrivesIcon className="size-5" aria-hidden="true" />
           </span>
           <div className="space-y-1">
             <p className="text-sm font-medium text-foreground">No nodes yet</p>

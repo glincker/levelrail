@@ -1,13 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import {
   BookOpenIcon,
-  CircleCheckIcon,
-  CircleXIcon,
+  CheckCircleIcon,
+  XCircleIcon,
   HardDriveIcon,
-  LifeBuoyIcon,
-  SettingsIcon,
-  SparklesIcon,
-} from 'lucide-react'
+  LifebuoyIcon,
+  GearIcon,
+  SparkleIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   Card,
   CardContent,
@@ -56,12 +56,12 @@ function ConfiguredRow({
       <span className="text-foreground">{label}</span>
       {configured ? (
         <span className="inline-flex items-center gap-1.5 text-green-700 dark:text-green-400">
-          <CircleCheckIcon className="size-4" />
+          <CheckCircleIcon className="size-4" />
           {trueLabel}
         </span>
       ) : (
         <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-          <CircleXIcon className="size-4" />
+          <XCircleIcon className="size-4" />
           {falseLabel}
         </span>
       )}
@@ -125,7 +125,7 @@ function GeneralSettingsPage() {
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-              <SettingsIcon className="size-4" />
+              <GearIcon className="size-4" />
             </div>
             <div>
               <CardTitle>{displayName}</CardTitle>
@@ -154,7 +154,7 @@ function GeneralSettingsPage() {
                     />
                   }
                 >
-                  <LifeBuoyIcon />
+                  <LifebuoyIcon />
                   <span>Support</span>
                 </Button>
               ) : null}
@@ -221,7 +221,7 @@ function GeneralSettingsPage() {
         </CardHeader>
         <CardContent>
           <div className="flex items-start gap-2 text-sm text-muted-foreground">
-            <SparklesIcon className="mt-0.5 size-4 shrink-0" />
+            <SparkleIcon className="mt-0.5 size-4 shrink-0" />
             <span>
               The feature configuration above reflects this instance&apos;s real
               backend state, not a placeholder.

@@ -2,7 +2,11 @@ import { createFileRoute } from '@tanstack/react-router'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { CheckCircle2Icon, TriangleAlertIcon, UserIcon } from 'lucide-react'
+import {
+  CheckCircleIcon,
+  WarningIcon,
+  UserIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { useAuthUsername } from '../../hooks/useAuthUsername'
 import { useChangePassword } from '../../queries/account'
 import { Button } from '../../components/ui/button'
@@ -26,9 +30,10 @@ import {
 // Real account page, following on from the placeholder shell this route
 // used to be (see git history / the previous version of this file for
 // why it was split out on its own). Two independent cards: profile
-// (read-only, Phase 1 has exactly one editable-nothing admin account,
-// CLAUDE.md 6) and change-password (a real form against
-// internal/api/account.go's PUT /api/v1/auth/password).
+// (read-only, Phase 1 has exactly one editable-nothing admin account:
+// single admin user, session auth, no teams or RBAC yet) and
+// change-password (a real form against internal/api/account.go's PUT
+// /api/v1/auth/password).
 export const Route = createFileRoute('/settings/account')({
   component: AccountSettingsPage,
 })
@@ -212,7 +217,7 @@ function ChangePasswordCard() {
 
           {changePassword.isSuccess ? (
             <Alert>
-              <CheckCircle2Icon />
+              <CheckCircleIcon />
               <AlertTitle>Password changed</AlertTitle>
               <AlertDescription>
                 Your other sessions have been signed out. This one stays signed
@@ -221,7 +226,7 @@ function ChangePasswordCard() {
             </Alert>
           ) : changePassword.isError ? (
             <Alert variant="destructive">
-              <TriangleAlertIcon />
+              <WarningIcon />
               <AlertDescription>
                 {changePassword.error.message}
               </AlertDescription>

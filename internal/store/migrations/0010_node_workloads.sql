@@ -1,0 +1,28 @@
+-- Phase 3 (TASKS.md 3.5): node workload capability. Every node has
+-- implicitly "accepted whatever's placed on it" since migration 0009
+-- added placement, with no capability gate at all; this migration makes
+-- that instead an explicit, per-node, per-workload-kind opt-in, because
+-- "does this node run application containers" and "does this node
+-- accept build work" are genuinely independent questions (TASKS.md 3.5:
+-- "a node can be either, both, or neither").
+--
+-- accepts_app_workloads defaults to 1 (true): every node enrolled
+-- before this migration already accepts app/database placement via
+-- 0009's node_id columns with no capability gate at all, so defaulting
+-- both existing and newly-enrolled nodes to "yes" here is the actual
+-- zero-behavior-change value, the same reasoning 0009's own node_id
+-- DEFAULT '' comment already applies to a different column on upgrade.
+-- internal/agent/server.go's Enroll handler sets this explicitly to
+-- true for every newly enrolled node too, rather than relying on the
+-- column default alone, so the intent is visible at the call site.
+--
+-- accepts_build_workloads defaults to 0 (false): no node, including
+-- every node enrolled before this migration, has ever actually run a
+-- build. Every build from Phase 1 through TASKS.md 3.4 runs against the
+-- control plane's own local BuildKit connection
+-- (internal/deploy.Pipeline via cmd/levelrail's loadWebhookHandler), so
+-- "no" is the truthful default here: an operator has to explicitly opt
+-- a node in via PUT /api/v1/nodes/{id}/workloads before
+-- internal/build.SelectBuildNode will ever consider it.
+ALTER TABLE nodes ADD COLUMN accepts_app_workloads INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE nodes ADD COLUMN accepts_build_workloads INTEGER NOT NULL DEFAULT 0;

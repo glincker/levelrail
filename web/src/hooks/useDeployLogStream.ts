@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 // Assumed SSE contract for live build/deploy logs (frontend-plan.md
-// section 2, CLAUDE.md 4.4/4.12). internal/api/router.go has no
-// log-streaming endpoint yet as of this pass (TASKS.md 1.9 predates the
-// frontend work), so this is written against the documented contract
-// rather than a confirmed one:
+// section 2; build log streaming over SSE and live log tailing are both
+// part of the platform's build and frontend design).
+// internal/api/router.go has no log-streaming endpoint yet as of this
+// pass (TASKS.md 1.9 predates the frontend work), so this is written
+// against the documented contract rather than a confirmed one:
 //
 //   GET /api/v1/apps/{name}/deploys/{deployId}/logs
 //   Content-Type: text/event-stream
@@ -22,9 +23,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 // arrives as the default `message` event, since that is the simplest
 // contract to hand-implement server-side with Go's net/http.
 //
-// EventSource reconnects on its own after a dropped connection (per
-// CLAUDE.md 4.12, this is exactly why SSE was chosen over WebSockets), so
-// this hook does not implement any retry/backoff logic itself.
+// EventSource reconnects on its own after a dropped connection (this
+// clean reconnection behavior, plus being simpler through proxies, is
+// exactly why SSE was chosen over WebSockets), so this hook does not
+// implement any retry/backoff logic itself.
 
 export interface DeployLogLine {
   /** Monotonic id local to this hook instance, stable virtualization key. */

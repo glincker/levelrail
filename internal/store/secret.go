@@ -7,8 +7,8 @@ import (
 	"fmt"
 )
 
-// This file is pure byte storage for TASKS.md 1.7's envelope encryption
-// (CLAUDE.md 4.10): it never sees a plaintext secret value or a raw DEK,
+// This file is pure byte storage for TASKS.md 1.7's envelope encryption:
+// it never sees a plaintext secret value or a raw DEK,
 // only a wrapped DEK and ciphertext, both opaque []byte as far as this
 // package is concerned. internal/secrets.Manager is what actually
 // encrypts, decrypts, wraps, and unwraps; this is its storage layer,

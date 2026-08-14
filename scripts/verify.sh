@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # One canonical quality gate for both halves of this repo, so every
-# agent (or human) verifies the same way instead of hand-assembling a
-# different subset of checks each time. Every project agent (builder,
-# QA, quality/fix) should run this before reporting done, and CI runs
-# the same steps (see .github/workflows/ci.yml), just invoked directly
-# there rather than through this wrapper.
+# contributor verifies the same way instead of hand-assembling a
+# different subset of checks each time. Run this before opening a PR;
+# CI runs the same steps (see .github/workflows/ci.yml), just invoked
+# directly there rather than through this wrapper.
 #
 # Usage:
 #   scripts/verify.sh            # backend + frontend
@@ -12,7 +11,7 @@
 #   scripts/verify.sh frontend   # frontend only (web/)
 #
 # Exits non-zero on the first failing step. No em dashes or en dashes
-# anywhere per CLAUDE.md 7, this script included.
+# anywhere in this repo's engineering standards, this script included.
 
 set -euo pipefail
 

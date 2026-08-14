@@ -69,7 +69,7 @@ func TestOpen_WALModeEnabled(t *testing.T) {
 		t.Fatalf("query journal_mode: %v", err)
 	}
 	if mode != "wal" {
-		t.Errorf("journal_mode = %q, want %q (CLAUDE.md 4.7 requires WAL mode)", mode, "wal")
+		t.Errorf("journal_mode = %q, want %q (the state store must run in WAL mode)", mode, "wal")
 	}
 }
 

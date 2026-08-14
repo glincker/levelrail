@@ -1,6 +1,6 @@
-// Package reconcile implements the core convergence loop described in
-// CLAUDE.md 4.2: desired state in, observed state diffed against it,
-// idempotent and level-triggered controllers converge the two. Reconcilers
+// Package reconcile implements the core convergence loop: desired state
+// in, observed state diffed against it, idempotent and level-triggered
+// controllers converge the two. Reconcilers
 // never assume they're continuing a previous partial operation: every
 // call re-derives what to do from current observed state, which is what
 // makes them safe to interrupt and safe to retry.
@@ -32,9 +32,9 @@ type Controller interface {
 	Reconcile(ctx context.Context) (Result, error)
 }
 
-// Store is optional persistence for reconcile status. CLAUDE.md 4.2
-// requires every reconcile to emit "a status condition with a reason
-// string, stored and shown in the UI"; without a Store, Engine still
+// Store is optional persistence for reconcile status. Every reconcile
+// is required to emit a status condition with a reason string, stored
+// and shown in the UI; without a Store, Engine still
 // tracks the latest result via LastResult, but only in memory, lost on
 // restart. internal/store.DB satisfies this interface structurally, no
 // import of internal/store needed here (or that would be a cycle, since

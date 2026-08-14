@@ -1,7 +1,8 @@
 // Query-key factory and fetcher for GET /api/v1/brand
 // (internal/api/brand.go), the public endpoint the login screen (and now
 // every other screen, via BrandProvider) reads the product name from
-// instead of a hardcoded string, per CLAUDE.md section 3.
+// instead of a hardcoded string, per the rebrandability rule: no product
+// name string may be hardcoded in the frontend.
 
 import { queryOptions } from '@tanstack/react-query'
 import type { Brand } from '../types/brand'

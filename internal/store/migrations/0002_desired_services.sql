@@ -11,7 +11,8 @@
 -- env, resources, and health are stored as JSON rather than normalized
 -- into columns: they're read and written as whole nested structures, not
 -- queried by sub-field, so normalizing them now would be exactly the
--- speculative schema CLAUDE.md 7 argues against.
+-- kind of speculative schema the project's engineering standards argue
+-- against.
 CREATE TABLE desired_services (
     name       TEXT PRIMARY KEY,
     image      TEXT NOT NULL,

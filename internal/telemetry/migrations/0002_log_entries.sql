@@ -45,9 +45,9 @@ CREATE INDEX idx_log_entries_resource_ts ON log_entries (resource_id, ts);
 -- content='log_entries' / content_rowid='id' makes this an external
 -- content table: the FTS index stores only the token postings needed to
 -- search, not a second copy of every message's full text, which is this
--- project's answer to CLAUDE.md 4.8's "compress" call-out (see logs.go's
--- package doc comment for why an explicit application-level compression
--- step was rejected instead).
+-- project's answer to the "compress" goal in the log store's design
+-- (see logs.go's package doc comment for why an explicit
+-- application-level compression step was rejected instead).
 CREATE VIRTUAL TABLE log_entries_fts USING fts5(
     message,
     content='log_entries',

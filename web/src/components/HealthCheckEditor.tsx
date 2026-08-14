@@ -7,7 +7,7 @@ import {
   type UseFormRegister,
 } from 'react-hook-form'
 import { z } from 'zod'
-import { HeartPulseIcon } from 'lucide-react'
+import { HeartbeatIcon } from '@phosphor-icons/react/dist/ssr'
 import type { AppDetail, ServiceProbe } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
 import { formatDurationNs } from '../lib/format'
@@ -103,7 +103,7 @@ type ProbeFormValues = HealthFormValues['readiness']
 // interval/timeout are nanosecond time.Duration values on the wire
 // (ServiceProbe's own doc comment in appDetail.ts). The form collects
 // seconds, the same unit app.yaml's own health.readiness.interval: 5s
-// example uses (CLAUDE.md 4.9) and the same unit formatDurationNs
+// example uses in the app spec and the same unit formatDurationNs
 // converts back to for display, so a value round-trips as the same
 // number the operator typed rather than drifting through an
 // intermediate unit.
@@ -174,7 +174,7 @@ export function HealthCheckEditor({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <HeartPulseIcon className="size-4" />
+          <HeartbeatIcon className="size-4" />
           Health checks
         </CardTitle>
         <CardDescription>

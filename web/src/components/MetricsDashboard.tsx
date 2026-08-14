@@ -10,7 +10,11 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { Activity, Info, RefreshCw } from 'lucide-react'
+import {
+  PulseIcon,
+  InfoIcon,
+  ArrowsClockwiseIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
 import { Alert, AlertDescription, AlertTitle } from './ui/alert'
@@ -26,13 +30,14 @@ import {
 } from '../lib/timeRange'
 
 // Per-app metrics dashboard, TASKS.md 2.4, wired against 2.3's real
-// `GET /api/v1/apps/{name}/metrics`. Two honest gaps against CLAUDE.md 6
-// and 4.8's full metrics list, deliberately not papered over:
+// `GET /api/v1/apps/{name}/metrics`. Two honest gaps against the full
+// per-app metrics list the observability phase requires without
+// configuration, deliberately not papered over:
 //
 // 1. Only the 7 metrics MetricName covers (types/metrics.ts) are
 //    actually collected today. Request rate, response time percentiles,
 //    error rate, container restart count, build duration, and deploy
-//    frequency are named in CLAUDE.md 6 but have no collector behind
+//    frequency are required per-app metrics but have no collector behind
 //    them yet (see types/metrics.ts's comment for exactly why each is
 //    missing). NOT_YET_COLLECTED below renders that list as a plain,
 //    clearly labeled gap, not as empty or fabricated charts.
@@ -407,7 +412,7 @@ export function MetricsDashboard({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-            <Activity
+            <PulseIcon
               className="size-4 text-muted-foreground"
               aria-hidden="true"
             />
@@ -452,7 +457,7 @@ export function MetricsDashboard({
               setRefreshNonce((n) => n + 1)
             }}
           >
-            <RefreshCw className="size-3.5" aria-hidden="true" />
+            <ArrowsClockwiseIcon className="size-3.5" aria-hidden="true" />
             Refresh
           </Button>
         </div>
@@ -471,12 +476,11 @@ export function MetricsDashboard({
       </div>
 
       <Alert className="mt-4">
-        <Info />
+        <InfoIcon />
         <AlertTitle>Not yet collected</AlertTitle>
         <AlertDescription>
           <p>
-            CLAUDE.md 6 also names these as required per-app metrics, but no
-            collector backs them yet:
+            These are required per-app metrics, but no collector backs them yet:
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {NOT_YET_COLLECTED.map((label) => (

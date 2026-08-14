@@ -6,11 +6,11 @@ Date: 2026-08-12
 
 ## Context
 
-CLAUDE.md 1 states the positioning directly: "a lightweight, AI-ready
+The project states the positioning directly: "a lightweight, AI-ready
 Coolify alternative," and defines what that phrase is allowed to mean:
 "'AI-ready' means the HTTP API is designed from Phase 1 so the Phase 4 MCP
-layer bolts on cleanly (see 4.11): it does not mean AI enters the
-reconciliation path." Section 4.11 restates the same boundary from the
+layer bolts on cleanly: it does not mean AI enters the
+reconciliation path." That same design goal restates the boundary from the
 API side: the MCP server is "a thin wrapper once the HTTP API is well
 designed, which is the point," built later, but the API contract has to
 be designed now assuming it will exist.
@@ -34,7 +34,7 @@ This decision was researched in
 Dokploy's token models on exactly this axis. `TASKS.md`'s "Dashboard &
 auth" section records the resulting settled decision ("API tokens use
 Coolify's scoped-ability model... This is what lets an MCP-issued token
-be provably read-only at the token layer, per CLAUDE.md 4.11") and its
+be provably read-only at the token layer, per the AI-ready API design goal") and its
 "API tokens (2026-08-12)" checklist item records what was actually built:
 `internal/store/tokens.go`, migration 0007 (`api_tokens(id, name,
 token_hash, abilities, created_at, last_used_at, expires_at,
@@ -105,16 +105,16 @@ secrets route, a `write:sensitive` token reaches the handler).
   specifically: "Dokploy's key system is rich on lifecycle knobs (rate
   limits, expiry, prefixing) but has no authorization granularity at all:
   a key is either 'this whole account' or nothing." For a platform whose
-  own CLAUDE.md 4.11 commits to an MCP server and a Phase 4 CLI sitting
+  own AI-ready design goal commits to an MCP server and a Phase 4 CLI sitting
   on the same API, this model means a leaked or misbehaving AI-issued
   token would have the same reach as a stolen human session: full
   platform control, not a bounded capability. That is precisely the
   outcome the "AI-ready... does not mean AI enters the reconciliation
-  path" boundary in CLAUDE.md 1 and 4.11 is trying to prevent at the API
+  path" boundary the project's AI-ready design goal is trying to prevent at the API
   layer, and an all-or-nothing key cannot express a boundary at all.
 - **A more granular per-resource ACL system** (e.g. per-app permissions,
   per-environment scoping). Rejected as over-engineered for the current
-  phase, not as wrong in principle. CLAUDE.md 6's Phase 1 exit criteria
+  phase, not as wrong in principle. The project's Phase 1 exit criteria
   are explicit: "Single admin user, session auth. No teams, no RBAC yet,"
   and Phase 4 is where "Teams, projects, environments, RBAC with a small
   role set" actually lands, with an explicit warning attached even there
@@ -129,7 +129,7 @@ secrets route, a `write:sensitive` token reaches the handler).
 
 ## Consequences
 
-- This is the mechanism, not just the policy, behind CLAUDE.md 4.11's
+- This is the mechanism, not just the policy, behind the project's
   "AI-ready" claim. Once the Phase 4 MCP server exists, a diagnostic tool
   (list apps, get logs, get metrics, explain a failed build) can be
   issued a token that is provably `read`-scoped at the token layer, and a
@@ -162,5 +162,6 @@ secrets route, a `write:sensitive` token reaches the handler).
   `internal/api` and 78.4% on `internal/store`. Any change to
   `validateAbilities`, `hasAbility`, or `requireAbility` should extend
   that suite rather than treat it as settled, since this is exactly the
-  kind of trust-boundary code CLAUDE.md 8 already singles out for
-  single-session, human-reviewed work rather than parallel agents.
+  kind of trust-boundary code the project's engineering process already
+  singles out for single-session, human-reviewed work rather than
+  independently-scoped parallel workstreams.

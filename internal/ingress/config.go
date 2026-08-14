@@ -1,10 +1,10 @@
-// Package ingress is the Phase 0 spike for CLAUDE.md 4.5: Caddy embedded as
-// a Go library, driven entirely through its in-process admin API. There is
+// Package ingress is the Phase 0 spike for embedding Caddy as a Go
+// library, driven entirely through its in-process admin API. There is
 // no `caddy` binary anywhere in this package and no Caddyfile on disk.
 // Config goes in as a JSON document built from typed Go structs (never a
 // hand-written Caddyfile string), because Phase 1's real requirement is
-// building that document programmatically from app.yaml (CLAUDE.md 4.9),
-// not editing config by hand.
+// building that document programmatically from app.yaml (the declarative
+// app spec's contract), not editing config by hand.
 //
 // This package intentionally defines its own minimal structs mirroring the
 // slice of Caddy's JSON config schema this spike needs (admin, apps.http,
@@ -23,9 +23,20 @@ import "fmt"
 // (https://caddyserver.com/docs/json/), scoped to the subset this spike
 // exercises: the admin endpoint, the http app, and the tls app.
 type Config struct {
-	Admin   *AdminConfig `json:"admin,omitempty"`
-	Storage *FileStorage `json:"storage,omitempty"`
-	Apps    Apps         `json:"apps"`
+	Admin *AdminConfig `json:"admin,omitempty"`
+	// Storage selects the Caddy storage module certificates, ACME
+	// account state, and the internal issuer's local CA are persisted
+	// through. Typed any rather than a single concrete struct for the
+	// same reason Route.Handle and AutomationPolicy.Issuers already are
+	// in this file: it is a Caddy module reference, and Caddy's module
+	// system is inherently polymorphic (any value marshaling to
+	// {"module": "<id>", ...} is valid here). *FileStorage (the local
+	// filesystem, via NewFileStorage) and SQLiteStorageRef
+	// (internal/store's SQLite, via NewSQLiteStorageRef, TASKS.md 3.6)
+	// are this package's two concrete options as of this writing; a nil
+	// Storage leaves Caddy's own OS-specific default in place.
+	Storage any  `json:"storage,omitempty"`
+	Apps    Apps `json:"apps"`
 }
 
 // AdminConfig configures Caddy's admin API endpoint. Leaving Listen empty
@@ -60,7 +71,7 @@ type AdminConfigSettings struct {
 	// config on disk even when the storage module is pointed elsewhere,
 	// which is exactly the "second config surface" ADR 005 argues
 	// against embedding Caddy specifically to avoid. This spike's
-	// builder pins it to false: Levelrail's own reconcile loop and
+	// builder pins it to false: the platform's own reconcile loop and
 	// database are the single source of truth for desired ingress
 	// state, not a file Caddy manages on its own. See
 	// docs-local/research/caddy-spike.md.
@@ -180,7 +191,7 @@ func NewInternalIssuer() InternalIssuer {
 // outside the project entirely (e.g. ~/Library/Application Support/Caddy
 // on macOS) which is the right thing for the `caddy` CLI on a developer's
 // own machine, and the wrong thing for an embedded control plane: it
-// scatters state outside Levelrail's own data directory and, worse, is
+// scatters state outside the platform's own data directory and, worse, is
 // shared and reused across every unrelated process on the machine that
 // also happens to embed Caddy with default settings. See
 // docs-local/research/caddy-spike.md.
@@ -359,8 +370,19 @@ type RoutesOptions struct {
 	// Caddy's own default (localhost:2019).
 	AdminListen string
 	// StorageDir overrides Caddy's storage root. Empty keeps Caddy's own
-	// OS-specific default. See FileStorage's doc comment.
+	// OS-specific default. See FileStorage's doc comment. Ignored when
+	// CertStorage is set.
 	StorageDir string
+	// CertStorage, if non-nil, overrides StorageDir with an arbitrary
+	// Caddy storage module reference (e.g. NewSQLiteStorageRef()),
+	// letting the caller point Caddy's certificate/ACME-account storage
+	// at internal/store's SQLite (TASKS.md 3.6) instead of the local
+	// filesystem, so certificate storage lives in the database and
+	// multi-node deployments can share cert state. Takes precedence over
+	// StorageDir when both are set, rather than being an error, so a
+	// caller migrating from one to the other doesn't need a separate
+	// code path just to clear the old field.
+	CertStorage any
 }
 
 // BuildRoutesConfig builds a Config with one server carrying one route
@@ -409,7 +431,10 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		},
 	}
 	cfg.Admin = newAdminConfig(opts.AdminListen)
-	if opts.StorageDir != "" {
+	switch {
+	case opts.CertStorage != nil:
+		cfg.Storage = opts.CertStorage
+	case opts.StorageDir != "":
 		cfg.Storage = NewFileStorage(opts.StorageDir)
 	}
 

@@ -10,10 +10,10 @@ import (
 // MetricsSource is what the query layer needs from one agent, local or
 // remote, to answer a metrics query. *DB satisfies this today (the
 // single-node, in-process "agent"); a Phase 3 gRPC client would satisfy
-// it too without Federator's callers (internal/api) ever changing,
-// exactly the precedent CLAUDE.md 4.3 already sets for the reconcile
-// agent transport ("must also work in single-node mode... communicating
-// over an in-memory transport that implements the same interface").
+// it too without Federator's callers (internal/api) ever changing. This
+// mirrors the same precedent already set for the reconcile agent
+// transport: it must also work in single-node mode, communicating over
+// an in-memory transport that implements the same interface.
 type MetricsSource interface {
 	Query(ctx context.Context, resourceID, metric string, from, to time.Time) ([]Sample, error)
 }

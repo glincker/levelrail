@@ -14,7 +14,7 @@
 // Redis for real: create, mount its volume, start, report Ready.
 //
 // Postgres cannot run safely without credentials: database auth needs
-// the same envelope-encrypted secret storage CLAUDE.md 4.10 specifies
+// the same envelope-encrypted secret storage the secrets design specifies
 // (TASKS.md 1.7, internal/secrets.Manager), which exists but is only
 // wired into this controller when the control plane itself has a
 // master key configured (cmd/levelrail's dynamicSource calls

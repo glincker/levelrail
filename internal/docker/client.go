@@ -21,8 +21,8 @@ import (
 )
 
 // Client is the real Runtime implementation, talking to the Docker Engine
-// API over the local socket. It never shells out to the `docker` CLI
-// (CLAUDE.md 4.3).
+// API over the local socket. It never shells out to the `docker` CLI,
+// per the project's Docker Engine API only rule.
 type Client struct {
 	cli *dockerclient.Client
 }

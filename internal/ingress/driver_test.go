@@ -38,8 +38,9 @@ func testLogger(t *testing.T) *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{Level: slog.LevelError + 1}))
 }
 
-// TestDriver_ReverseProxy_PlainHTTP is the core proof for CLAUDE.md 4.5 and
-// this spike's task item 3: Caddy, running in-process (no `caddy` binary,
+// TestDriver_ReverseProxy_PlainHTTP is the core proof for the embedded
+// Caddy ingress design and this spike's task item 3: Caddy, running
+// in-process (no `caddy` binary,
 // no container), actually proxies a real HTTP request to a real backend.
 //
 // This starts three things in the same test process: a trivial backend

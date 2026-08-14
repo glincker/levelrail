@@ -10,19 +10,21 @@ import (
 )
 
 // newSolveOpt turns a Request into the SolveOpt BuildKit's client needs.
-// It uses the dockerfile.v0 frontend so any plain Dockerfile is accepted
-// (CLAUDE.md 4.9), and an exporter of type "docker", which produces a
+// It uses the dockerfile.v0 frontend so any plain Dockerfile is accepted,
+// per the declarative app spec's build config, and an exporter of type
+// "docker", which produces a
 // `docker save`-style tar stream on out. The caller is responsible for
 // loading that stream into the local image store via the Docker Engine
 // API's /images/load endpoint (see loadImage in build.go); this keeps the
 // whole path CLI-free, in contrast to BuildKit's own
 // build-using-dockerfile example, which shells out to `docker load`.
 //
-// cacheDir, when non-empty, wires BuildKit's "local" cache backend as
-// both import and export: every build tries to reuse whatever the
-// previous build left in cacheDir, then updates it. Empty disables
-// caching for this build, not an empty-but-present cache.
-func newSolveOpt(req Request, cacheDir string, out io.WriteCloser) (*bkclient.SolveOpt, error) {
+// cache, when non-empty (CacheConfig.empty), wires every backend it
+// configures as both import and export: every build tries to reuse
+// whatever the previous build left in each configured backend, then
+// updates it. A zero-value cache disables caching for this build
+// entirely, not an empty-but-present cache.
+func newSolveOpt(req Request, cache CacheConfig, out io.WriteCloser) (*bkclient.SolveOpt, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -71,14 +73,18 @@ func newSolveOpt(req Request, cacheDir string, out io.WriteCloser) (*bkclient.So
 		},
 	}
 
-	if cacheDir != "" {
-		opt.CacheImports = []bkclient.CacheOptionsEntry{
-			{Type: "local", Attrs: map[string]string{"src": cacheDir}},
-		}
-		opt.CacheExports = []bkclient.CacheOptionsEntry{
-			{Type: "local", Attrs: map[string]string{"dest": cacheDir, "mode": "max"}},
-		}
+	// cache.entries() is called unconditionally, not gated on
+	// cache.empty(): an inconsistent config (e.g. RegistryInsecure set
+	// with no RegistryRef) must fail loudly here even though it has no
+	// Dir or RegistryRef of its own to build entries from, rather than
+	// silently building without caching because "empty" and "invalid"
+	// got conflated.
+	imports, exports, err := cache.entries()
+	if err != nil {
+		return nil, fmt.Errorf("build: cache config: %w", err)
 	}
+	opt.CacheImports = imports
+	opt.CacheExports = exports
 
 	return opt, nil
 }

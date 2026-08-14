@@ -3,8 +3,8 @@
 // dynamically from desired state in the store every pass (see
 // dynamicSource): one application.Controller per desired service, one
 // database.Controller per desired database, plus a single ingress
-// controller routing every service with domains. Everything else in
-// CLAUDE.md 4 (multi-node, WireGuard, MCP) lands in later phases.
+// controller routing every service with domains. Everything else in the
+// locked architecture (multi-node, WireGuard, MCP) lands in later phases.
 package main
 
 import (
@@ -37,6 +37,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
+	"github.com/GLINCKER/levelrail/internal/reconcile/nodehealth"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -47,13 +48,13 @@ import (
 
 const (
 	resyncInterval = 30 * time.Second
-	// defaultDataDir matches CLAUDE.md section 3's APP_DATA_DIR override
+	// defaultDataDir matches the documented APP_DATA_DIR override
 	// pattern. Relative, not /var/lib/levelrail-data (brand.yaml's noted
 	// pending path), since Phase 0 runs locally, not installed as a
 	// service yet.
 	defaultDataDir = "./data"
 	// defaultBrandFile is the same "relative default, env override"
-	// pattern as defaultDataDir, per CLAUDE.md section 3.
+	// pattern as defaultDataDir.
 	defaultBrandFile = "./brand.yaml"
 	// defaultDevFixturesFile is the same "relative default, env
 	// override" pattern as defaultBrandFile, for the optional dev-mode
@@ -79,19 +80,22 @@ const (
 
 	httpShutdownTimeout = 10 * time.Second
 
-	// metricsCollectionInterval matches CLAUDE.md 4.8's "15s resolution."
-	// Not env-configurable like retention below: resolution changes the
-	// shape of every stored sample going forward, retention only trims
-	// how much of that shape is kept, a materially smaller blast radius
-	// for an operator to tune without redesigning the schema.
+	// metricsCollectionInterval matches the observability design's "15s
+	// resolution" default. Not env-configurable like retention below:
+	// resolution changes the shape of every stored sample going forward,
+	// retention only trims how much of that shape is kept, a materially
+	// smaller blast radius for an operator to tune without redesigning
+	// the schema.
 	metricsCollectionInterval = 15 * time.Second
-	// defaultMetricsRetention matches CLAUDE.md 4.8's "default 15 days."
+	// defaultMetricsRetention matches the observability design's
+	// "default 15 days" retention.
 	defaultMetricsRetention = 15 * 24 * time.Hour
 	// metricsRetentionSweepInterval: how often the retention sweep runs,
 	// not how long data is kept (that's the retention duration itself).
 	// Hourly is frequent enough that the table never grows much past its
 	// steady-state size, infrequent enough to be a non-event on a
-	// control plane CLAUDE.md 6 Phase 5 wants measured for idle cost.
+	// control plane whose idle cost the project's hardening phase wants
+	// measured.
 	metricsRetentionSweepInterval = 1 * time.Hour
 
 	// logTargetsResyncInterval is how often the log collector re-derives
@@ -100,8 +104,9 @@ const (
 	// a different concern (log stream subscriptions, not reconcile
 	// passes) even though the two currently share the same value.
 	logTargetsResyncInterval = 30 * time.Second
-	// defaultLogsRetention matches CLAUDE.md 4.8's "default 15 days,"
-	// the same default metrics uses, applied to the sibling log store.
+	// defaultLogsRetention matches the observability design's "default
+	// 15 days," the same default metrics uses, applied to the sibling
+	// log store.
 	defaultLogsRetention = 15 * 24 * time.Hour
 	// logsRetentionSweepInterval mirrors metricsRetentionSweepInterval's
 	// own reasoning: frequent enough that log_entries never grows much
@@ -126,6 +131,21 @@ const (
 	// Docker start events, which is driven continuously by the event
 	// stream itself.
 	restartTrackerResyncInterval = 30 * time.Second
+
+	// defaultNodeHeartbeatInterval matches internal/agent's own
+	// defaultHeartbeatInterval (TASKS.md 3.7): how often a connected
+	// node's last_seen_at is touched while its session stream stays
+	// open. Duplicated as a constant here (not imported) purely so this
+	// file's own env-var-with-default convention stays self-contained,
+	// the same reasoning applicationControllerName's own doc comment
+	// gives for a different small duplication.
+	defaultNodeHeartbeatInterval = 15 * time.Second
+	// defaultNodeHeartbeatTimeout is how long since a node's last_seen_at
+	// internal/reconcile/nodehealth treats as stale (three missed
+	// heartbeats at the default interval above): long enough that one
+	// slow tick or a brief GC pause doesn't flip a healthy node Offline,
+	// short enough that a real hang is caught well within a minute.
+	defaultNodeHeartbeatTimeout = 45 * time.Second
 )
 
 func main() {
@@ -249,7 +269,7 @@ func run(logger *slog.Logger) error {
 		return fmt.Errorf("start agent grpc listener: %w", err)
 	}
 	agentGRPCServer := grpc.NewServer(grpc.Creds(agentCreds))
-	agentpb.RegisterAgentServiceServer(agentGRPCServer, agent.NewServer(agentCA, db, agentRegistry, logger))
+	agentpb.RegisterAgentServiceServer(agentGRPCServer, agent.NewServer(agentCA, db, agentRegistry, logger, agent.WithHeartbeatInterval(nodeHeartbeatInterval())))
 	go func() {
 		logger.Info("agent grpc listening", slog.String("addr", agentListener.Addr().String()))
 		if err := agentGRPCServer.Serve(agentListener); err != nil {
@@ -269,7 +289,7 @@ func run(logger *slog.Logger) error {
 		logger.Warn("secrets not configured", slog.String("error", err.Error()))
 	}
 
-	webhookHandler, closeWebhook, err := loadWebhookHandler(ctx, logger, b, db, telemetryDB, secretsManager)
+	webhookHandler, closeWebhook, err := loadWebhookHandler(ctx, logger, b, db, telemetryDB, secretsManager, agentRegistry)
 	if err != nil {
 		// Not fatal, the same choice as everything else optional above:
 		// the control plane still starts, serving apps deployed by
@@ -300,7 +320,7 @@ func run(logger *slog.Logger) error {
 
 	engine := reconcile.NewEngine(logger)
 	engine.SetStore(db)
-	engine.SetSource(dynamicSource(db, client, ingressDriver, logger, telemetryDB, secretsManager, agentRegistry))
+	engine.SetSource(dynamicSource(db, client, ingressDriver, logger, telemetryDB, secretsManager, agentRegistry, nodeHeartbeatTimeout()))
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
 	go func() {
@@ -637,8 +657,8 @@ func logsRetention() time.Duration {
 // runMetricsRetentionSweep deletes samples older than the configured
 // retention window on a fixed interval, until ctx is done. Retention
 // duration is env-configurable (APP_METRICS_RETENTION, a Go duration
-// string like "360h"), per the root CLAUDE.md's "no hardcoded
-// thresholds" rule; the sweep interval itself is not, see
+// string like "360h"), following the project's "no hardcoded
+// thresholds, use env vars" rule; the sweep interval itself is not, see
 // metricsRetentionSweepInterval's doc comment for why that one's fixed.
 func runMetricsRetentionSweep(ctx context.Context, db *telemetry.DB, logger *slog.Logger) {
 	ticker := time.NewTicker(metricsRetentionSweepInterval)
@@ -678,6 +698,37 @@ func metricsRetention() time.Duration {
 	return d
 }
 
+// nodeHeartbeatInterval reads APP_NODE_HEARTBEAT_INTERVAL (TASKS.md
+// 3.7), the same env-var-with-default shape as metricsRetention/
+// logsRetention above, applied to how often a connected agent's
+// last_seen_at is touched (internal/agent.WithHeartbeatInterval).
+func nodeHeartbeatInterval() time.Duration {
+	raw := os.Getenv("APP_NODE_HEARTBEAT_INTERVAL")
+	if raw == "" {
+		return defaultNodeHeartbeatInterval
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		return defaultNodeHeartbeatInterval
+	}
+	return d
+}
+
+// nodeHeartbeatTimeout reads APP_NODE_HEARTBEAT_TIMEOUT (TASKS.md 3.7),
+// how long since last_seen_at internal/reconcile/nodehealth treats as
+// stale.
+func nodeHeartbeatTimeout() time.Duration {
+	raw := os.Getenv("APP_NODE_HEARTBEAT_TIMEOUT")
+	if raw == "" {
+		return defaultNodeHeartbeatTimeout
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		return defaultNodeHeartbeatTimeout
+	}
+	return d
+}
+
 func loadBrand() (*brand.Brand, error) {
 	path := os.Getenv("APP_BRAND_FILE")
 	if path == "" {
@@ -696,9 +747,10 @@ func devFixturesFile() string {
 	return path
 }
 
-// loadSecretsManager builds a secrets.Manager from APP_MASTER_KEY (CLAUDE.md
-// 4.10: "Master key can be sourced from file, env, or an external KMS
-// interface added later"; env is what this control plane supports today).
+// loadSecretsManager builds a secrets.Manager from APP_MASTER_KEY (the
+// secrets design allows the master key to be sourced from file, env, or an
+// external KMS interface added later; env is what this control plane
+// supports today).
 // An unset APP_MASTER_KEY is not an error: it returns (nil, nil), the
 // same "feature just isn't configured" shape openStore's directory
 // default and loadBrand's file default don't need, because unlike those,
@@ -734,8 +786,8 @@ func loadSecretsManager(db *store.DB) (*secrets.Manager, error) {
 // the control plane still starts, only the git-push path is
 // unavailable, and specifically why is in the returned error.
 //
-// webhook.Config is single-app per its own package doc comment (CLAUDE.md
-// Phase 1's exit criterion is one app deploying from one push), so
+// webhook.Config is single-app per its own package doc comment (the
+// project's Phase 1 exit criterion is one app deploying from one push), so
 // APP_SERVICE_NAME only needs setting when the app spec declares more
 // than one service; with exactly one, it's the unambiguous default.
 //
@@ -745,7 +797,17 @@ func loadSecretsManager(db *store.DB) (*secrets.Manager, error) {
 // moby/buildkit's Go client expects, not internal/docker's Runtime
 // wrapper, the same second-client pattern every BuildKit live test in
 // this codebase already uses.
-func loadWebhookHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager) (http.Handler, func() error, error) {
+//
+// agentRegistry is TASKS.md 3.5's build-node routing wiring: db's
+// current nodes are checked for AcceptsBuildWorkloads
+// (migrations/0010_node_workloads.sql), and build.SelectBuildNode picks
+// among the ones currently reachable through agentRegistry (TASKS.md
+// 3.1's transport). See checkLocalBuildNode's own doc comment for why a
+// selected non-local node makes this function fail loudly rather than
+// silently building locally: actually dispatching a build to a remote
+// node isn't wired yet (internal/build/node.go's package doc comment
+// has the full "why not" and what would need to change).
+func loadWebhookHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry) (http.Handler, func() error, error) {
 	repoURL := os.Getenv("APP_GIT_REPO_URL")
 	webhookSecret := os.Getenv("APP_WEBHOOK_SECRET")
 	imageRepo := os.Getenv("APP_IMAGE_REPO")
@@ -788,13 +850,17 @@ func loadWebhookHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand
 		return nil, nil, fmt.Errorf("service %q not found in app spec %s", serviceName, specPath)
 	}
 
+	if err := checkLocalBuildNode(ctx, db, agentRegistry, logger); err != nil {
+		return nil, nil, fmt.Errorf("select build node: %w", err)
+	}
+
 	rawDockerCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
 	if err != nil {
 		return nil, nil, fmt.Errorf("new docker client for buildkit: %w", err)
 	}
 
 	connectCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	buildClient, err := build.NewClient(connectCtx, rawDockerCli)
+	buildClient, err := build.NewClient(connectCtx, rawDockerCli, buildCacheOptions()...)
 	cancel()
 	if err != nil {
 		_ = rawDockerCli.Close()
@@ -830,17 +896,103 @@ func loadWebhookHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand
 	return webhook.New(cfg, pipeline, logger), closer, nil
 }
 
+// buildCacheOptions reads TASKS.md 3.5's cache-backend env vars and
+// turns whichever are set into build.Options for build.NewClient.
+// APP_BUILD_CACHE_DIR wires build.WithCacheDir (Phase 1's local
+// backend, still useful for a single build node with no registry
+// available); APP_BUILD_CACHE_REGISTRY wires build.WithCacheRegistry,
+// the actual "remote cache shared across dedicated build nodes" the
+// build architecture calls for, optionally with
+// APP_BUILD_CACHE_REGISTRY_INSECURE=true for a plain-HTTP or self-
+// signed registry. Neither set (the default) returns no options at
+// all, matching every other optional env-var-gated feature in this
+// file (secrets, webhook): a control plane with no cache backend
+// configured still builds correctly, just without cache reuse.
+func buildCacheOptions() []build.Option {
+	var opts []build.Option
+	if dir := os.Getenv("APP_BUILD_CACHE_DIR"); dir != "" {
+		opts = append(opts, build.WithCacheDir(dir))
+	}
+	if ref := os.Getenv("APP_BUILD_CACHE_REGISTRY"); ref != "" {
+		opts = append(opts, build.WithCacheRegistry(ref))
+		if os.Getenv("APP_BUILD_CACHE_REGISTRY_INSECURE") == "true" {
+			opts = append(opts, build.WithCacheRegistryInsecure())
+		}
+	}
+	return opts
+}
+
+// checkLocalBuildNode is TASKS.md 3.5's build-node routing gate: it
+// looks at every node's AcceptsBuildWorkloads flag
+// (migrations/0010_node_workloads.sql) and, via
+// internal/build.SelectBuildNode, decides which node a build should
+// run on.
+//
+// Two outcomes let loadWebhookHandler proceed exactly as it always
+// has, building against this control plane's own local BuildKit
+// connection: no node is marked build-capable at all (the default,
+// zero-configuration case every deployment already had), which returns
+// a nil error here.
+//
+// A third outcome does not: SelectBuildNode picking a real, reachable,
+// build-capable node. That's the case this function refuses, loudly,
+// rather than silently building locally instead or pretending to
+// dispatch somewhere it can't reach: actually running a build on a
+// remote node needs a way to open a BuildKit connection against that
+// node's Docker daemon, and today's agent.Transport (TASKS.md 3.1/3.2)
+// only carries docker.Runtime's container-operation surface, not a raw
+// Docker Engine API connection. Extending that wire protocol is
+// explicitly out of scope for this task (TASKS.md's Phase 3 sequencing
+// note: "extends internal/build, doesn't touch the reconciler or
+// transport"); see internal/build/node.go's package doc comment for the
+// full reasoning. An operator who marks a node build-capable today gets
+// a clear, specific error here (surfaced as run's usual "webhook not
+// configured" warning, non-fatal to control-plane startup) instead of
+// deploys that quietly keep landing on the control plane's own
+// resources.
+func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent.Registry, logger *slog.Logger) error {
+	nodes, err := db.ListNodes(ctx)
+	if err != nil {
+		return fmt.Errorf("list nodes: %w", err)
+	}
+
+	infos := make([]build.NodeInfo, 0, len(nodes))
+	for _, n := range nodes {
+		online := false
+		if _, err := agentRegistry.Get(n.ID); err == nil {
+			online = true
+		}
+		infos = append(infos, build.NodeInfo{
+			ID:                    n.ID,
+			AcceptsBuildWorkloads: n.AcceptsBuildWorkloads,
+			Online:                online,
+		})
+	}
+
+	selected, err := build.SelectBuildNode(infos)
+	if err != nil {
+		return fmt.Errorf("no build-capable node is reachable: %w", err)
+	}
+	if selected == "" {
+		return nil
+	}
+
+	logger.Warn("build node selected but remote build dispatch is not implemented yet, refusing to start the webhook handler",
+		slog.String("node_id", selected))
+	return fmt.Errorf("node %q is marked build-capable, but dispatching a build to a remote node isn't implemented yet (TASKS.md 3.5); unmark it via PUT /api/v1/nodes/%s/workloads or wait for remote build dispatch to land", selected, selected)
+}
+
 // rootHandler combines the TASKS.md 1.9 HTTP API with the TASKS.md 1.10
 // frontend into one *http.Server handler: "/api/" (a subtree pattern,
 // so the full original path reaches api's own mux unchanged, matching
 // its routes' own "/api/v1/..." patterns) goes to the API, everything
 // else to web.Handler's embedded frontend with SPA fallback. Combining
-// them here rather than running two servers keeps CLAUDE.md 4.1's
+// them here rather than running two servers keeps the control plane's
 // single-binary story intact: one process, one listen address.
 //
 // webhook.Handler mounts at POST /webhook, outside the /api/ subtree:
 // GitHub calls this URL directly, it is not part of the versioned
-// Levelrail API surface the frontend and future MCP layer build on.
+// platform API surface the frontend and future MCP layer build on.
 //
 // telemetryDB and alertingDB are always non-nil (openTelemetryStore and
 // openAlertingStore have no optional gating, unlike secrets/webhook
@@ -900,11 +1052,11 @@ func httpAddr() string {
 }
 
 // sessionTTL reads APP_SESSION_TTL as a Go duration string (e.g. "24h",
-// "30m"), CLAUDE.md 7's "no hardcoded thresholds, use env vars" rule for
-// the value api.WithSessionTTL configures. Returns 0 (api.NewRouter's
-// own signal to fall back to its internal default) when unset or
-// unparseable, logging a warning in the latter case so a typo'd env var
-// is visible rather than silently ignored.
+// "30m"), following the project's "no hardcoded thresholds, use env
+// vars" rule for the value api.WithSessionTTL configures. Returns 0
+// (api.NewRouter's own signal to fall back to its internal default)
+// when unset or unparseable, logging a warning in the latter case so a
+// typo'd env var is visible rather than silently ignored.
 func sessionTTL(logger *slog.Logger) time.Duration {
 	raw := os.Getenv("APP_SESSION_TTL")
 	if raw == "" {
@@ -950,12 +1102,20 @@ func sessionTTL(logger *slog.Logger) time.Duration {
 // deliberately NOT routed through this: it stays on the local runtime
 // unconditionally, a real, honest, and currently open gap (a service
 // placed on a remote node has no working ingress route yet), because
-// Caddy runs embedded in this one process (CLAUDE.md 4.5) and a remote
-// node's container isn't reachable at 127.0.0.1:hostPort from here even
-// if its Transport could be inspected; closing this needs the WireGuard
-// mesh and internal DNS TASKS.md 3.4 builds, not something this task
-// can honestly solve on its own.
-func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.Driver, logger *slog.Logger, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry) reconcile.Source {
+// Caddy runs embedded in this one process (the ingress design) and a
+// remote node's container isn't reachable at 127.0.0.1:hostPort from
+// here even if its Transport could be inspected; closing this needs
+// the WireGuard mesh and internal DNS TASKS.md 3.4 builds, not
+// something this task can honestly solve on its own.
+//
+// heartbeatTimeout is TASKS.md 3.7's health check: one
+// nodehealth.Controller per registered node (db.ListNodes, the same
+// "re-derive every pass" treatment every other resource here already
+// gets), independent of whether that node currently has anything placed
+// on it. Unlike the application/database controllers above, a node
+// controller never needs resolveNodeTransport: it only ever touches
+// this control plane's own store, not the node's own Docker daemon.
+func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.Driver, logger *slog.Logger, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry, heartbeatTimeout time.Duration) reconcile.Source {
 	return func(ctx context.Context) ([]reconcile.Controller, error) {
 		services, err := db.ListDesiredServices(ctx)
 		if err != nil {
@@ -965,13 +1125,17 @@ func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.D
 		if err != nil {
 			return nil, fmt.Errorf("list desired databases: %w", err)
 		}
+		nodes, err := db.ListNodes(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("list nodes: %w", err)
+		}
 
 		appOpts := []application.Option{application.WithDeployRecorder(telemetryDB)}
 		if secretsManager != nil {
 			appOpts = append(appOpts, application.WithSecretResolver(secretsManager))
 		}
 
-		controllers := make([]reconcile.Controller, 0, len(services)+len(databases)+1)
+		controllers := make([]reconcile.Controller, 0, len(services)+len(databases)+len(nodes)+1)
 		for _, svc := range services {
 			svcRuntime, err := resolveNodeTransport(runtime, agentRegistry, svc.NodeID)
 			if err != nil {
@@ -1009,6 +1173,9 @@ func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.D
 				}
 			}
 			controllers = append(controllers, database.New(desired.Name, db, dbRuntime, dbOpts...))
+		}
+		for _, n := range nodes {
+			controllers = append(controllers, nodehealth.New(n.ID, db, heartbeatTimeout))
 		}
 		controllers = append(controllers, ingressreconcile.New(db, runtime, driver, ingressreconcile.WithLogger(logger)))
 		return controllers, nil

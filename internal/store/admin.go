@@ -7,9 +7,9 @@ import (
 	"fmt"
 )
 
-// AdminUser is the single operator account TASKS.md 1.9 and CLAUDE.md 6
-// Phase 1 call for: "Single admin user, session auth. No teams, no RBAC
-// yet." There is exactly one row in the admin_user table, ever, enforced
+// AdminUser is the single operator account TASKS.md 1.9 and the Phase 1
+// scope call for: single admin user, session auth, no teams or RBAC
+// yet. There is exactly one row in the admin_user table, ever, enforced
 // by that table's CHECK (id = 1) constraint, not by application logic.
 type AdminUser struct {
 	Username     string

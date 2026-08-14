@@ -1,15 +1,15 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import {
-  BoxesIcon,
+  StackIcon,
   BookOpenIcon,
   DatabaseIcon,
-  KeyRoundIcon,
-  LogOutIcon,
-  ServerIcon,
-  SettingsIcon,
+  KeyIcon,
+  SignOutIcon,
+  HardDrivesIcon,
+  GearIcon,
   ShieldIcon,
   UserIcon,
-} from 'lucide-react'
+} from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
   SidebarContent,
@@ -73,7 +73,7 @@ export function AppSidebar() {
                   isActive={pathname.startsWith('/apps')}
                   tooltip="Apps"
                 >
-                  <BoxesIcon />
+                  <StackIcon />
                   <span>Apps</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -130,7 +130,7 @@ export function AppSidebar() {
                   isActive={pathname.startsWith('/settings/tokens')}
                   tooltip="API tokens"
                 >
-                  <KeyRoundIcon />
+                  <KeyIcon />
                   <span>API tokens</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -140,24 +140,24 @@ export function AppSidebar() {
                   isActive={pathname.startsWith('/settings/general')}
                   tooltip="General"
                 >
-                  <SettingsIcon />
+                  <GearIcon />
                   <span>General</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               {/* Infra/admin config, not a deployable resource kind like
                   Apps/Databases, so it lives in Settings rather than the
                   primary group above. Multi-node is an occasional admin
-                  action for this product's 1-10 machine target audience
-                  (CLAUDE.md 1), not a daily-use screen, the same reasoning
-                  that keeps Account/Security/API tokens/General down
-                  here instead of promoted to primary nav. */}
+                  action for this product's 1-10 machine target audience,
+                  not a daily-use screen, the same reasoning that keeps
+                  Account/Security/API tokens/General down here instead of
+                  promoted to primary nav. */}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   render={<Link to="/nodes" />}
                   isActive={pathname.startsWith('/nodes')}
                   tooltip="Nodes"
                 >
-                  <ServerIcon />
+                  <HardDrivesIcon />
                   <span>Nodes</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -204,7 +204,7 @@ export function AppSidebar() {
                 logout.mutate()
               }}
             >
-              <LogOutIcon className="size-3.5" />
+              <SignOutIcon className="size-3.5" />
             </Button>
           </SidebarMenuItem>
         </SidebarMenu>

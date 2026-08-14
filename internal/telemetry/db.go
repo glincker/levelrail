@@ -1,8 +1,9 @@
-// Package telemetry is the node-local metrics store described in
-// CLAUDE.md 4.8 and decided in ADR 009: a dedicated SQLite database
-// (telemetry.db, separate from internal/store's levelrail.db) holding
-// container resource-usage samples, queried in place rather than
-// shipped anywhere centrally.
+// Package telemetry is the node-local metrics store, decided in
+// ADR 009: a dedicated SQLite database (telemetry.db, separate from
+// internal/store's levelrail.db) holding container resource-usage
+// samples, queried in place rather than shipped anywhere centrally.
+// Keeping metrics node-local instead of centralizing them is what keeps
+// idle cost near zero as the number of managed apps grows.
 package telemetry
 
 import (

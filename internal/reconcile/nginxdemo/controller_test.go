@@ -10,9 +10,9 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 )
 
-// fakeRuntime is a hand-written fake, not a mocking framework: CLAUDE.md
-// 7 asks for exactly this: "Reconcilers get tests against a fake Docker
-// client that can be told to fail in specific ways."
+// fakeRuntime is a hand-written fake, not a mocking framework: the
+// testing standard calls for exactly this, a fake Docker client that
+// can be told to fail in specific ways.
 type fakeRuntime struct {
 	inspectResult *docker.ContainerState
 	inspectErr    error
@@ -140,11 +140,11 @@ func TestController_Reconcile(t *testing.T) {
 			wantCreateCall: true,
 		},
 		{
-			// The half-succeeded case CLAUDE.md 7 explicitly requires a
-			// test for: the container was created but never started. A
-			// naive controller might think "create succeeded" is enough
-			// state to skip re-checking on the next call: this proves
-			// Reconcile reports failure honestly instead.
+			// The half-succeeded case the testing standard explicitly
+			// requires a test for: the container was created but never
+			// started. A naive controller might think "create succeeded"
+			// is enough state to skip re-checking on the next call: this
+			// proves Reconcile reports failure honestly instead.
 			name:           "create succeeds but start fails: half-succeeded, reported as failure",
 			rt:             &fakeRuntime{inspectResult: nil, startErr: errors.New("start failed")},
 			wantErr:        true,

@@ -1,4 +1,5 @@
-import { Monitor, Moon, Sun, type LucideIcon } from 'lucide-react'
+import { MonitorIcon, MoonIcon, SunIcon } from '@phosphor-icons/react/dist/ssr'
+import type { Icon } from '@phosphor-icons/react'
 import { Button } from './ui/button'
 import { useTheme, type Theme } from './ThemeProvider'
 
@@ -24,10 +25,10 @@ const THEME_LABEL: Record<Theme, string> = {
   system: 'System',
 }
 
-const THEME_ICON: Record<Theme, LucideIcon> = {
-  light: Sun,
-  dark: Moon,
-  system: Monitor,
+const THEME_ICON: Record<Theme, Icon> = {
+  light: SunIcon,
+  dark: MoonIcon,
+  system: MonitorIcon,
 }
 
 export function ThemeToggle() {

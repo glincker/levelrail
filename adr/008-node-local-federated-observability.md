@@ -6,10 +6,10 @@ Date: 2026-08-11
 
 ## Context
 
-CLAUDE.md section 1 names this the differentiator, not a feature among
+The project names this the differentiator, not a feature among
 others: "Neither treats observability as a first-class primitive. Metrics
 and logs are bolted on, usually by telling the user to install Grafana as
-a one-click app." Section 4.8 is the concrete architecture behind that
+a one-click app." This ADR is the concrete architecture behind that
 claim, and it's a specific rejection of the obvious default (ship
 everything to a central time-series store) in favor of keeping metrics and
 logs where they're generated and querying them in place.
@@ -74,14 +74,14 @@ Levelrail without Levelrail needing to run or manage Grafana itself.
     long-open, confirmed CPU-spike bug exists in a codebase whose
     documented architecture is continuous per-server SSH polling with zero
     event-stream usage, which is exactly the category of idle/background
-    CPU burn CLAUDE.md section 1 positions Levelrail against. Cite the
+    CPU burn Levelrail is positioned against. Cite the
     code (the every-minute `ServerManagerJob` plus per-server
     `docker container inspect` over SSH), not the issue, as the actual
     evidence; the issue is context, not proof.
 
 - **Coolify's "Sentinel" optional metrics agent, i.e. the bolted-on
   pattern generically**: this is the concrete instance of the exact
-  pattern CLAUDE.md section 1 criticizes in the abstract ("telling the
+  pattern the project criticizes in the abstract ("telling the
   user to install Grafana as a one-click app"). `prior-art-coolify.md`
   describes Sentinel as "Coolify's own lightweight Go binary, not literally
   Grafana, but the same architectural pattern: opt-in, separately

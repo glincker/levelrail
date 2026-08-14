@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { ChevronRightIcon, DatabaseIcon } from 'lucide-react'
+import { CaretRightIcon, DatabaseIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import type { DatabaseResource } from '../types/databaseDetail'
 
@@ -16,8 +16,9 @@ export const DATABASE_LIST_GRID =
 // same as AppRow keying off app.name. No live status dot here for the
 // same N+1 reasoning AppRow's own comment gives: rendering one would
 // mean an extra GET /api/v1/databases/{name}/status per row, exactly
-// the kind of per-row fetch CLAUDE.md 7's virtualization requirement
-// exists to avoid. Current reconcile status lives on the detail route's
+// the kind of per-row fetch the project's virtualization requirement
+// exists to avoid (lists over 50 items must stay cheap to render).
+// Current reconcile status lives on the detail route's
 // ConditionsPanel instead.
 export function DatabaseRow({ database }: { database: DatabaseResource }) {
   return (
@@ -44,7 +45,7 @@ export function DatabaseRow({ database }: { database: DatabaseResource }) {
         {database.version}
       </span>
 
-      <ChevronRightIcon
+      <CaretRightIcon
         className="size-4 shrink-0 justify-self-end text-muted-foreground/50"
         aria-hidden="true"
       />

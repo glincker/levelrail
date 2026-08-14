@@ -3,9 +3,9 @@ import {
   CheckIcon,
   CopyIcon,
   PlusIcon,
-  ServerIcon,
-  TriangleAlertIcon,
-} from 'lucide-react'
+  HardDrivesIcon,
+  WarningIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
   DialogContent,
@@ -23,8 +23,8 @@ import { useCreateNodeJoinToken } from '../queries/nodes'
 import { useBrand } from '../hooks/useBrand'
 import type { NodeJoinTokenResponse } from '../types/nodeDetail'
 
-// A dialog, not a wizard: this product's own positioning (CLAUDE.md 1,
-// "lightweight, AI-ready Coolify alternative") and both Coolify's and
+// A dialog, not a wizard: this product's own positioning as a
+// lightweight, AI-ready Coolify alternative, and both Coolify's and
 // Dokploy's own "add server" flows (single screen, no multi-step
 // wizard) back that call, and multi-node is an occasional admin action
 // for the 1-10 machine target audience, not a daily-use flow. One
@@ -54,8 +54,8 @@ export function AddNodeDialog() {
   // (brand.yaml's binary_name); the agent binary follows the same
   // "<binary_name>-agent" convention cmd/levelrail vs cmd/levelrail-agent
   // already uses. Deriving it here instead of writing "levelrail-agent"
-  // literally keeps this file honoring CLAUDE.md section 3: no product
-  // name string hardcoded anywhere under /web.
+  // literally keeps this file honoring the project's brand-indirection
+  // rule: no product name string hardcoded anywhere under /web.
   const agentBinaryName = `${brand.BinaryName}-agent`
   const enrollCommand = created
     ? `APP_CONTROL_PLANE_ADDR=${controlPlaneAddr} APP_JOIN_TOKEN=${created.token} ./${agentBinaryName}`
@@ -105,7 +105,7 @@ export function AddNodeDialog() {
             </DialogHeader>
 
             <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-              <TriangleAlertIcon className="mt-0.5 size-4 shrink-0" />
+              <WarningIcon className="mt-0.5 size-4 shrink-0" />
               <p className="text-sm">
                 This token will not be shown again. It expires at{' '}
                 {formatTime(created.expires_at)} (valid for 15 minutes).
@@ -197,7 +197,7 @@ export function AddNodeDialog() {
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <ServerIcon className="size-4 text-muted-foreground" />
+                <HardDrivesIcon className="size-4 text-muted-foreground" />
                 Add node
               </DialogTitle>
               <DialogDescription>
@@ -209,7 +209,7 @@ export function AddNodeDialog() {
 
             {createJoinToken.isError ? (
               <Alert variant="destructive">
-                <TriangleAlertIcon />
+                <WarningIcon />
                 <AlertDescription>
                   {createJoinToken.error.message}
                 </AlertDescription>

@@ -4,7 +4,7 @@
 // tags on Brand to remap them), the same "match the wire shape exactly"
 // call types/appDetail.ts already made for appResource.
 //
-// CLAUDE.md section 3: no product name string may be hardcoded anywhere
+// Rebrandability rule: no product name string may be hardcoded anywhere
 // under /web. This type exists so every consumer reads the name from
 // here instead, at runtime, via BrandProvider (components/BrandProvider.tsx).
 export interface Brand {

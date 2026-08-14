@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { EyeIcon, EyeOffIcon, LockIcon } from 'lucide-react'
+import { EyeIcon, EyeSlashIcon, LockIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -158,7 +158,7 @@ export function SecretsEditor({ appName }: { appName: string }) {
                   className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
                 >
                   {revealValue ? (
-                    <EyeOffIcon className="size-4" />
+                    <EyeSlashIcon className="size-4" />
                   ) : (
                     <EyeIcon className="size-4" />
                   )}
