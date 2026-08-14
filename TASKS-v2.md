@@ -291,6 +291,61 @@ visual polish.
       duplicate-name submission shows the real server error inline
       without closing the dialog or adding a phantom row).
 
+## Phase 5: resource-creation and config depth (Coolify gap-closing)
+
+Started 2026-08-13, prompted by the founder comparing the "new app" flow
+directly against Coolify's and calling out how much is missing. **This is
+not "chase Coolify's 280 templates"**, CLAUDE.md section 2 already rejects
+that as a non-goal ("ten good ones beat 280 stale ones") and it stays
+rejected here. The real gap is narrower and more concrete: Phase 1's own
+committed scope (CLAUDE.md section 6: "Managed Postgres and Redis as
+first-class resources," "env editor, domain config") had backend support
+that was never fully wired to a UI, or in the database case, had no API
+layer at all.
+
+Verified state before this phase (direct file reads, not agent-reported,
+since one research agent's report on this turned out stale on point 7):
+
+- Env vars and domains: already fully wired (`EnvEditor.tsx`,
+  `DomainEditor.tsx`, `SecretsEditor.tsx`, live in `apps/$name.tsx`'s
+  tabs). Not a gap.
+- Health check probes and resource limits (memory/CPU): backend accepts
+  both on `PUT /api/v1/apps/{name}` (`store.ServiceHealth`,
+  `store.ServiceResources`), but `AppOverview.tsx` only ever displays
+  them read-only, explicit in that file's own comment. **Real gap.**
+- Databases: `store.DesiredDatabase` and the reconciler
+  (`internal/reconcile/database`) existed; `internal/api` had zero
+  routes for it. Nothing could create a database through the product at
+  all, the single biggest gap and the one closest to Coolify's actual
+  "new resource" flow (App vs Database as the first choice). **Real
+  gap, now closed on the backend.**
+- Postgres specifically still can't actually run (needs TASKS.md 1.7's
+  envelope-encrypted secrets, not built): the new API and reconciler
+  both handle this honestly (create succeeds, `GET
+  /databases/{name}/status` shows a real `NotReady` condition) rather
+  than hiding Postgres as an option or pretending it works.
+
+- [x] **Database CRUD API (2026-08-13, backend, single-session TDD)**:
+      `POST/GET /api/v1/databases`, `GET/DELETE /api/v1/databases/{name}`,
+      `GET /api/v1/databases/{name}/status`. New `store.DeleteDesiredDatabase`
+      (mirrors `DeleteDesiredService`). New `DatabaseStore` interface in
+      `internal/api/router.go`, folded into `Store`. Full suite +
+      `-race` + `golangci-lint` clean. No `PUT` (full update): engine/
+      version/name aren't meant to change in place, an engine change is
+      a migration not a config edit.
+- [ ] **Database creation frontend**: `queries/databases.ts`,
+      `CreateDatabaseDialog.tsx` (mirrors `CreateAppDialog.tsx`),
+      `routes/databases/{index,$name}.tsx`, sidebar "Databases" nav
+      item, status display on the detail page reading the new status
+      endpoint. Dispatched to an agent against the frozen contract above.
+- [ ] **Health check + resource limits editors**: `HealthCheckEditor.tsx`,
+      `ResourceLimitsEditor.tsx`, mirroring `DomainEditor.tsx`'s exact
+      pattern (`useUpdateApp`, full-resource PUT, `keepDirtyValues`),
+      wired into `apps/$name.tsx` as new tabs. Dispatched to an agent
+      against the frozen contract above, scoped to `apps/$name.tsx` +
+      two new component files so it cannot collide with the databases
+      agent's sidebar edit.
+
 ## Status notes
 
 - 2026-08-13: three research agents dispatched in parallel (Vercel deep
