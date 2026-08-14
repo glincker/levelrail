@@ -32,6 +32,25 @@ import (
 // own distinctive response body. That last part is what actually proves
 // host-based routing picked the right backend, not just that some
 // response came back.
+//
+// This is also TASKS.md 3.6's end-to-end proof for cert storage:
+// WithCertStore(db), not WithStorageDir, backs Caddy's certificate/ACME
+// storage here, and the assertion at the end checks internal/store's
+// cert_storage table directly, proving the certificate Caddy just served
+// actually came from internal/ingress.SQLiteStorage rather than a local
+// file (a passing TLS handshake alone wouldn't prove that; Caddy would
+// behave identically either way if the "sqlite" storage module were
+// silently never wired in).
+//
+// Deliberately not a second, separate live test: an earlier version of
+// this change added one, and two cert-issuing live Caddy configs loaded
+// back-to-back in the same test binary reliably raced under `go test
+// -race` inside Caddy/certmagic's own TLS background-maintenance
+// goroutines (caddytls.TLS.keepStorageClean vs. its own onEvent
+// callback), even though each one passed cleanly run in isolation. That
+// is caddy.Load's shared package-global instance, not a bug in this
+// controller or in SQLiteStorage; folding the SQLite-storage assertion
+// into this single existing live test avoids it entirely.
 func TestController_Reconcile_Live(t *testing.T) {
 	rt, err := docker.NewClient()
 	if err != nil {
@@ -111,7 +130,7 @@ func TestController_Reconcile_Live(t *testing.T) {
 		WithServerName("ingress-live"),
 		WithListenAddr(caddyAddr),
 		WithAdminListen(adminAddr),
-		WithStorageDir(t.TempDir()),
+		WithCertStore(db),
 		WithLogger(discardLogger()),
 	)
 
@@ -161,6 +180,21 @@ func TestController_Reconcile_Live(t *testing.T) {
 	}
 	if strings.Contains(bodyB, "Welcome to nginx") {
 		t.Errorf("response for %s unexpectedly looked like nginx's response, routing crossed backends", hostB)
+	}
+
+	// TASKS.md 3.6's own proof: the certificates Caddy just served both
+	// domains with must actually have come from internal/store's SQLite,
+	// not a local file. WithCertStore above is the only storage
+	// configuration this test gives Caddy; a passing TLS handshake alone
+	// wouldn't distinguish "the sqlite module worked" from "the sqlite
+	// module was silently never wired in and Caddy fell back to some
+	// other default."
+	var storedKeys int
+	if err := db.QueryRowContext(longCtx, `SELECT COUNT(*) FROM cert_storage`).Scan(&storedKeys); err != nil {
+		t.Fatalf("query cert_storage row count: %v", err)
+	}
+	if storedKeys == 0 {
+		t.Error("cert_storage has no rows after two successful HTTPS handshakes, the sqlite storage module was never actually used")
 	}
 }
 
