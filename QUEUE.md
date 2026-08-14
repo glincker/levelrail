@@ -18,41 +18,21 @@ those APIs before they merge, the shapes can still change.
 
 ## In progress
 
-- [ ] Add a `docker.Runtime` health-check method and wire it into
-      `GET /api/v1/system/status` and the General settings page.
-      Design set: no change to the `Runtime` interface itself (6+ fake
-      implementations would ripple), a `Ping` method on the concrete
-      `*docker.Client` plus a new optional `DockerPinger` Router
-      dependency instead. (builder dispatched)
-- [ ] Document + test `internal/reconcile/application`'s `resolveEnv`
-      `SecretEnv`-over-`Env` precedence. (quality engineer dispatched)
-- [x] Deploy-attempt ID scheme + build-log persistence design note.
-      Recommendation: opaque `crypto/rand` ID in a new `deploy_attempts`
-      table (`internal/store`) + a dedicated log table in `telemetry.db`
-      shaped like `internal/telemetry/logs.go`, not live-only and not
-      reusing `log_entries` directly. Full note:
-      `docs-local/research/deploy-attempt-id-and-log-persistence.md`
-      (gitignored, ask the founder to read it, needs sign-off before
-      anyone implements this).
-- [ ] Add a "paste a .env block" bulk-import affordance to
-      `EnvEditor.tsx`. (builder dispatched)
-- [ ] Consolidate 6 files' hand-rolled status-badge color classes
-      (green/red/amber) into `Badge`'s `success`/`warning` variants
-      (new) plus its existing `destructive`. Found during queue triage:
-      real, repeated inline-styling that should have been shared
-      component variants from the start. (builder dispatched)
+(nothing yet, round 3 not dispatched)
 
 ## Next up (priority order)
-
-(next round picked once in-progress items land; docker-health-check and
-ListImages-dropdown both touch internal/api/router.go and
-cmd/levelrail/main.go's rootHandler, so ListImages waits for the
-health-check item to merge first to avoid a conflict)
 
 - [ ] Expose `docker.Runtime.ListImages` via a small API route (e.g.
       `GET /api/v1/apps/{name}/images`) so `DeployTriggerForm` can offer
       a dropdown of previously built tags instead of a hand-typed
-      image string.
+      image string. Safe to build now, docker-health-check (the other
+      item that touched `internal/api/router.go` /
+      `cmd/levelrail/main.go`'s `rootHandler`) has already landed.
+- [ ] Look for more real, scoped gaps the same way the last two rounds
+      did: re-scan for duplicated inline styling, missing test coverage
+      on real user-facing paths, and small honest UX gaps against
+      Coolify/Dokploy (`docs-local/competitor-clones/`). Not a fixed
+      list, PM triages fresh each round.
 
 ## Blocked
 
@@ -76,14 +56,6 @@ health-check item to merge first to avoid a conflict)
 
 ## Backlog (not yet prioritized)
 
-- [ ] Expose `docker.Runtime.ListImages` via a small API route (e.g.
-      `GET /api/v1/apps/{name}/images`) so `DeployTriggerForm` can offer
-      a dropdown of previously built tags instead of a hand-typed
-      image string.
-- [ ] Add a "paste a .env block" bulk-import affordance to
-      `EnvEditor.tsx`, parsed client-side into the existing key/value
-      fields (Coolify and Dokploy both support this; current editor is
-      add-one-row-at-a-time only).
 - [ ] **Needs a design decision, not just wiring**: a one-click
       "restart" action per app turns out not to be a simple frontend
       task. Checked `internal/reconcile/application/controller.go`'s
@@ -96,13 +68,38 @@ health-check item to merge first to avoid a conflict)
       or a decision that "restart" isn't a first-class operation this
       architecture's immutable-container-per-tag design should support
       at all. Don't dispatch a builder on this until that's decided.
-- [ ] Once the deploy-attempt-log design note lands, add a deploy-history
-      list UI with a one-click "rollback to this build" button, reusing
-      the existing `POST /api/v1/apps/{name}/deploys` endpoint with an
+- [ ] Once the deploy-attempt-log design note lands (needs founder
+      sign-off first, see Done below), add a deploy-history list UI
+      with a one-click "rollback to this build" button, reusing the
+      existing `POST /api/v1/apps/{name}/deploys` endpoint with an
       older image tag.
 
 ## Done (most recent first)
 
+- [x] Consolidated 6 files' hand-rolled status-badge color classes
+      (green/red/amber) into `Badge`'s new `success`/`warning` variants
+      plus its existing `destructive`. Found during queue triage: real,
+      repeated inline-styling that should have been shared component
+      variants from the start.
+- [x] Added a "paste a .env block" bulk-import affordance to
+      `EnvEditor.tsx` (Coolify/Dokploy both support this; the editor
+      was add-one-row-at-a-time only).
+- [x] Docker daemon connectivity on `GET /api/v1/system/status` +
+      General settings page display. `Ping` on the concrete
+      `*docker.Client`, not `docker.Runtime` (would have rippled into
+      6+ fake implementations). Live-verified: `docker_connected: true`
+      against a running instance.
+- [x] Documented + tested `internal/reconcile/application`'s
+      `resolveEnv` `SecretEnv`-over-`Env` precedence: confirmed
+      deterministic, not map-iteration-order luck.
+- [x] Deploy-attempt ID scheme + build-log persistence design note.
+      Recommendation: opaque `crypto/rand` ID in a new `deploy_attempts`
+      table (`internal/store`) + a dedicated log table in `telemetry.db`
+      shaped like `internal/telemetry/logs.go`, not live-only and not
+      reusing `log_entries` directly. Full note:
+      `docs-local/research/deploy-attempt-id-and-log-persistence.md`
+      (gitignored, ask the founder to read it, needs sign-off before
+      anyone implements this).
 - [x] Wire `internal/secrets.Manager` into `internal/reconcile/database`'s
       Postgres path. Creating a Postgres database now converges to a
       real running container with real generated credentials. Live-
