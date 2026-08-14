@@ -9,6 +9,7 @@ import {
   GearIcon,
   ShieldIcon,
   UserIcon,
+  CloudArrowUpIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
@@ -184,6 +185,16 @@ export function AppSidebar() {
                     >
                       <KeyIcon />
                       <span>API tokens</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/settings/backup-targets" />}
+                      isActive={pathname.startsWith('/settings/backup-targets')}
+                      tooltip="Backup targets"
+                    >
+                      <CloudArrowUpIcon />
+                      <span>Backup targets</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
