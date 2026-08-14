@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/netip"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -241,9 +242,47 @@ func TestCoordinator_ForgetsAnEndpointWhenANodeDisconnects(t *testing.T) {
 	if err := c.SetObservedEndpoint("a", ""); err != nil {
 		t.Fatalf("SetObservedEndpoint(clear): %v", err)
 	}
-	if _, still := c.observedEndpoints["a"]; still {
+	if _, still := c.observedEndpoint("a"); still {
 		t.Error("the observed endpoint survived a disconnect")
 	}
+}
+
+// TestCoordinator_ObservedEndpointsAreConcurrencySafe pins the one piece
+// of state a Coordinator keeps between passes. The two callers are
+// genuinely concurrent by design: SetObservedEndpoint runs on whatever
+// handles an agent connecting or disconnecting, Distribute runs on the
+// reconcile loop.
+func TestCoordinator_ObservedEndpointsAreConcurrencySafe(t *testing.T) {
+	sink := newRecordingSink()
+	sink.identities["a"] = NodeIdentity{PublicKey: testKey(1)}
+	c := NewCoordinator(sink, PlanOptions{MeshCIDR: testCIDR()}, WithCoordinatorLogger(quietLogger()))
+	inventory := []NodeInfo{node("a", 1, "10.181.0.1", "")}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 50; i++ {
+			if err := c.SetObservedEndpoint("a", "203.0.113.9:51820"); err != nil {
+				t.Error(err)
+				return
+			}
+			if err := c.SetObservedEndpoint("a", ""); err != nil {
+				t.Error(err)
+				return
+			}
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 50; i++ {
+			if _, _, err := c.Distribute(context.Background(), inventory); err != nil {
+				t.Error(err)
+				return
+			}
+		}
+	}()
+	wg.Wait()
 }
 
 func TestCoordinator_SetObservedEndpointFailures(t *testing.T) {

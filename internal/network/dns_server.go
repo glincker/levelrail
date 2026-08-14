@@ -31,6 +31,7 @@ import (
 	"log/slog"
 	"net"
 	"net/netip"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -102,19 +103,11 @@ func (s *DNSServer) Start(ctx context.Context, addr string) error {
 	mux := dns.NewServeMux()
 	mux.HandleFunc(".", s.handle)
 
-	udpConn, err := net.ListenPacket("udp", addr)
+	udpConn, tcpListener, err := s.bindPair(addr)
 	if err != nil {
-		return fmt.Errorf("network: listen udp for dns on %s: %w", addr, err)
+		return err
 	}
 	bound := udpConn.LocalAddr().String()
-	tcpListener, err := net.Listen("tcp", bound)
-	if err != nil {
-		if cerr := udpConn.Close(); cerr != nil {
-			s.logger.Error("closing dns udp listener after failed tcp bind",
-				slog.String("addr", bound), slog.String("error", cerr.Error()))
-		}
-		return fmt.Errorf("network: listen tcp for dns on %s: %w", bound, err)
-	}
 
 	if ap, perr := netip.ParseAddrPort(bound); perr == nil {
 		s.udpAddr = ap
@@ -157,6 +150,45 @@ func (s *DNSServer) Start(ctx context.Context, addr string) error {
 	s.logger.Info("internal dns listening",
 		slog.String("addr", bound), slog.String("zone", s.resolver.Zone()))
 	return nil
+}
+
+// bindPair binds the same host and port on both UDP and TCP.
+//
+// The retry is not defensive padding. UDP and TCP have separate port
+// spaces, so when addr asks for port 0 the kernel can hand back a UDP
+// port that is already taken on TCP, and the second bind fails with
+// "address already in use" through no fault of the caller. Binding one
+// protocol first and the other second has this problem whichever order
+// it is done in; the only fix is to let go of both and ask again. With
+// an explicit port there is nothing to retry, so a failure there is
+// reported immediately rather than being tried five times.
+func (s *DNSServer) bindPair(addr string) (net.PacketConn, net.Listener, error) {
+	const attempts = 5
+
+	ephemeral := strings.HasSuffix(addr, ":0")
+	var lastErr error
+
+	for i := 0; i < attempts; i++ {
+		udpConn, err := net.ListenPacket("udp", addr)
+		if err != nil {
+			return nil, nil, fmt.Errorf("network: listen udp for dns on %s: %w", addr, err)
+		}
+		bound := udpConn.LocalAddr().String()
+
+		tcpListener, err := net.Listen("tcp", bound)
+		if err == nil {
+			return udpConn, tcpListener, nil
+		}
+		lastErr = err
+		if cerr := udpConn.Close(); cerr != nil {
+			s.logger.Error("closing dns udp listener after a failed tcp bind",
+				slog.String("addr", bound), slog.String("error", cerr.Error()))
+		}
+		if !ephemeral {
+			break
+		}
+	}
+	return nil, nil, fmt.Errorf("network: listen tcp for dns on %s: %w", addr, lastErr)
 }
 
 func (s *DNSServer) serve(srv *dns.Server, proto string, failed chan<- error) {

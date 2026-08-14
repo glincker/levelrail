@@ -39,6 +39,7 @@ import (
 	"log/slog"
 	"net/netip"
 	"sort"
+	"sync"
 	"time"
 )
 
@@ -141,9 +142,17 @@ type Coordinator struct {
 	logger *slog.Logger
 
 	// observedEndpoints maps node ID to the address the control plane
-	// saw that node dial in from. Supplied per pass by the caller
+	// saw that node dial in from. Supplied by the caller
 	// (SetObservedEndpoint), not discovered here: this package has no
 	// access to the gRPC session, and should not.
+	//
+	// Guarded, because the two callers are genuinely concurrent and by
+	// design: SetObservedEndpoint is called from whatever handles an
+	// agent connecting or disconnecting, while Distribute runs on the
+	// reconcile loop. This is the one piece of state a Coordinator keeps
+	// between passes, which is exactly why it needs the lock and why
+	// nothing else here does.
+	mu                sync.RWMutex
 	observedEndpoints map[string]string
 }
 
@@ -190,6 +199,8 @@ func (c *Coordinator) SetObservedEndpoint(nodeID, endpoint string) error {
 		return fmt.Errorf("%w: cannot record an endpoint for an empty node ID", ErrUnknownNode)
 	}
 	if endpoint == "" {
+		c.mu.Lock()
+		defer c.mu.Unlock()
 		delete(c.observedEndpoints, nodeID)
 		return nil
 	}
@@ -197,8 +208,18 @@ func (c *Coordinator) SetObservedEndpoint(nodeID, endpoint string) error {
 	if err != nil {
 		return fmt.Errorf("record observed endpoint for node %q: %w", nodeID, err)
 	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.observedEndpoints[nodeID] = normalized
 	return nil
+}
+
+// observedEndpoint reads one node's observed endpoint under the lock.
+func (c *Coordinator) observedEndpoint(nodeID string) (string, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	e, ok := c.observedEndpoints[nodeID]
+	return e, ok
 }
 
 // Distribute runs one full pass: allocate any missing addresses, plan
@@ -275,7 +296,7 @@ func (c *Coordinator) Distribute(ctx context.Context, nodes []NodeInfo) ([]NodeI
 // view of its address is its private one, which no other node can reach.
 func (c *Coordinator) applyObservedEndpoints(inventory []NodeInfo) {
 	for i := range inventory {
-		if observed, ok := c.observedEndpoints[inventory[i].ID]; ok {
+		if observed, ok := c.observedEndpoint(inventory[i].ID); ok {
 			inventory[i].Endpoint = observed
 		}
 	}
@@ -308,7 +329,7 @@ func (c *Coordinator) foldIdentity(n *NodeInfo, id NodeIdentity) bool {
 
 	// The node's self-reported endpoint is only used when the control
 	// plane has not observed one, per NodeIdentity.Endpoint.
-	if _, observed := c.observedEndpoints[n.ID]; !observed && id.Endpoint != "" {
+	if _, observed := c.observedEndpoint(n.ID); !observed && id.Endpoint != "" {
 		if normalized, err := ParseEndpoint(id.Endpoint); err == nil && normalized != n.Endpoint {
 			n.Endpoint = normalized
 			changed = true
