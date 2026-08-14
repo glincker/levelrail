@@ -16,30 +16,33 @@
 // unit of reconciliation for ingress is "all routable services," not one
 // resource.
 //
-// Two follow-ups this pass deliberately does not build, per ADR 005 and
-// the Phase 1 task breakdown:
+// One follow-up this pass deliberately does not build, per ADR 005 and
+// the Phase 1 task breakdown: only Caddy's internal (self-signed,
+// offline) TLS issuer is used. Real ACME against a public domain is
+// explicitly unverified per ADR 005's Verified section and needs a
+// manual spot-check against a real domain later, not blind wiring here.
 //
-//   - Certificate storage stays on Caddy's default file-system storage
-//     module (internal/ingress.FileStorage). The real requirement, a
-//     certmagic.Storage backed by internal/store's SQLite so multi-node
-//     deployments share cert state, is Phase 3 (CLAUDE.md 4.5, TASKS.md
-//     1.6), not this pass.
-//   - Only Caddy's internal (self-signed, offline) TLS issuer is used.
-//     Real ACME against a public domain is explicitly unverified per ADR
-//     005's Verified section and needs a manual spot-check against a real
-//     domain later, not blind wiring here.
+// Two gaps this package's own doc comment used to flag as open here are
+// now closed, both TASKS.md 3.6:
 //
-// A real, currently open gap this controller does not close: domain
-// uniqueness within a single app.yaml is enforced by internal/spec's
-// Validate() at deploy time, but nothing enforces uniqueness across
-// separate DesiredService rows written by two different deploys over
-// time. Two different services could each claim the same domain in the
-// store, and this controller would build a Config with two routes
-// matching the same host, whichever key sorts last in
-// ingress.RoutesOptions.Routes silently wins inside Caddy's own matcher
-// evaluation. Closing this needs either a store-level uniqueness
-// constraint on domains across all services or a check in this
-// controller before calling BuildRoutesConfig; neither exists yet.
+//   - Certificate storage no longer has to stay on Caddy's default
+//     file-system storage module (internal/ingress.FileStorage).
+//     WithCertStore points it at internal/ingress.SQLiteStorage instead,
+//     a certmagic.Storage backed by internal/store's SQLite, so
+//     multiple ingress-driving processes sharing that database share
+//     cert state (CLAUDE.md 4.5) rather than each independently
+//     re-obtaining a certificate for a domain another one already has.
+//   - Domain uniqueness across separate deploys over time (not just
+//     within a single app.yaml, which internal/spec's Validate() already
+//     enforced) is now enforced where desired state is actually
+//     written: store.SaveDesiredService rejects a save with
+//     *store.ErrDomainTaken if any domain is already claimed by a
+//     different service (see migrations/0011_service_domains.sql). This
+//     controller also carries a defense-in-depth guard in Reconcile
+//     (firstDuplicateHost) for any pre-existing data written before that
+//     constraint existed: it never builds two routes for the same host
+//     in one pass, logging and skipping whichever service loses the
+//     race within this reconcile.
 package ingress
 
 import (
@@ -103,6 +106,14 @@ type Controller struct {
 	listenAddr  string
 	adminListen string
 	storageDir  string
+
+	// certStore, if set via WithCertStore, is built into a
+	// *ingress.SQLiteStorage and registered with ingress.SetActiveCertStorage
+	// once, in New, rather than on every Reconcile. certStorage is the
+	// resulting ingress.RoutesOptions.CertStorage value; nil means
+	// "storageDir/file storage instead" (see WithCertStore).
+	certStore   ingress.CertStore
+	certStorage any
 }
 
 // Option configures optional Controller behavior.
@@ -138,6 +149,18 @@ func WithStorageDir(dir string) Option {
 	return func(c *Controller) { c.storageDir = dir }
 }
 
+// WithCertStore points Caddy's certificate/ACME-account storage at
+// internal/store's SQLite (TASKS.md 3.6) instead of the local
+// filesystem: CLAUDE.md 4.5's "certificate storage goes in the database
+// so multi-node deployments share cert state" requirement. Takes
+// precedence over WithStorageDir if both are set. certStore is typically
+// the same *store.DB already passed to New as the ServiceStore; New
+// builds it into an ingress.SQLiteStorage and registers it via
+// ingress.SetActiveCertStorage exactly once, not on every Reconcile.
+func WithCertStore(certStore ingress.CertStore) Option {
+	return func(c *Controller) { c.certStore = certStore }
+}
+
 // WithLogger overrides the logger used for per-service skip decisions.
 // Defaults to slog.Default().
 func WithLogger(logger *slog.Logger) Option {
@@ -157,6 +180,14 @@ func New(svcStore ServiceStore, runtime docker.Runtime, driver Applier, opts ...
 	}
 	for _, opt := range opts {
 		opt(c)
+	}
+	if c.certStore != nil {
+		// Built after every Option has run, not inside WithCertStore
+		// itself, so the SQLiteStorage's logger reflects a later
+		// WithLogger call regardless of Option ordering.
+		storage := ingress.NewSQLiteStorage(c.certStore, c.logger)
+		ingress.SetActiveCertStorage(storage)
+		c.certStorage = ingress.NewSQLiteStorageRef()
 	}
 	return c
 }
@@ -184,13 +215,34 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 
 	var routes []ingress.ProxyRoute
+	claimedHosts := make(map[string]string, len(services)) // host -> owning service, this pass only
 	for _, svc := range services {
 		if len(svc.Domains) == 0 {
+			continue
+		}
+		if owner, host, dup := firstDuplicateHost(svc, claimedHosts); dup {
+			// store.SaveDesiredService (TASKS.md 3.6) now rejects a save
+			// that would create this situation for any service written
+			// after that change landed, so reaching this branch means
+			// either data written before the constraint existed, or a
+			// direct write that bypassed SaveDesiredService. Either way,
+			// this pass must still never build two routes for the same
+			// host: skip the loser and say so loudly, rather than
+			// silently letting Caddy's own last-match-wins matcher
+			// evaluation decide.
+			c.logger.WarnContext(ctx, "ingress: service claims a domain another service already routed this pass, skipping; internal/store's service_domains uniqueness constraint should prevent this for any service saved since TASKS.md 3.6, this is a defense-in-depth guard for pre-existing data",
+				slog.String("service", svc.Name),
+				slog.String("domain", host),
+				slog.String("already_routed_to", owner),
+			)
 			continue
 		}
 		route, ok := c.routeFor(ctx, svc)
 		if !ok {
 			continue
+		}
+		for _, host := range svc.Domains {
+			claimedHosts[host] = svc.Name
 		}
 		routes = append(routes, route)
 	}
@@ -202,6 +254,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		TLS:         true,
 		AdminListen: c.adminListen,
 		StorageDir:  c.storageDir,
+		CertStorage: c.certStorage,
 	})
 	if err != nil {
 		return notReady("BuildConfigFailed", err), fmt.Errorf("ingress: build config: %w", err)
@@ -218,6 +271,19 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		Reason:  reason,
 		Message: fmt.Sprintf("%d service(s) with domains have a running backend and are routed", len(routes)),
 	}}}, nil
+}
+
+// firstDuplicateHost reports the first of svc.Domains already present in
+// claimed (owned by a different service), if any. See Reconcile's own
+// comment for why this check exists as a defense-in-depth guard on top
+// of store.SaveDesiredService's own domain-uniqueness enforcement.
+func firstDuplicateHost(svc store.DesiredService, claimed map[string]string) (owner, host string, dup bool) {
+	for _, h := range svc.Domains {
+		if o, ok := claimed[h]; ok && o != svc.Name {
+			return o, h, true
+		}
+	}
+	return "", "", false
 }
 
 // routeFor derives svc's currently active container the same way the
