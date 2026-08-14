@@ -176,3 +176,39 @@ export function useCreateApp() {
     },
   })
 }
+
+// PUT /api/v1/apps/{name}/node (internal/api/apps.go's
+// handleSetAppNode), AbilityRoot-gated and separate from updateApp on
+// purpose: see appResource's own NodeID field doc comment, this is the
+// only way an app's placement actually changes. Empty nodeId moves the
+// app back to this control plane's own local node, the store's
+// established convention for "no explicit placement."
+export async function setAppNode(
+  name: string,
+  nodeId: string,
+): Promise<AppDetail> {
+  const res = await fetch(`/api/v1/apps/${encodeURIComponent(name)}/node`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ node_id: nodeId }),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `set app node failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as AppDetail
+}
+
+export function useSetAppNode() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ name, nodeId }: { name: string; nodeId: string }) =>
+      setAppNode(name, nodeId),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(appKeys.detail(updated.name), updated)
+      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+    },
+  })
+}

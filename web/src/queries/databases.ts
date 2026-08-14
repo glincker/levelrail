@@ -192,3 +192,40 @@ export function useDeleteDatabase() {
     },
   })
 }
+
+// PUT /api/v1/databases/{name}/node (internal/api/databases.go's
+// handleSetDatabaseNode), the database counterpart to queries/apps.ts's
+// setAppNode/useSetAppNode: same AbilityRoot gating, same empty-string-
+// means-local-node convention.
+export async function setDatabaseNode(
+  name: string,
+  nodeId: string,
+): Promise<DatabaseResource> {
+  const res = await fetch(
+    `/api/v1/databases/${encodeURIComponent(name)}/node`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ node_id: nodeId }),
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `set database node failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as DatabaseResource
+}
+
+export function useSetDatabaseNode() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ name, nodeId }: { name: string; nodeId: string }) =>
+      setDatabaseNode(name, nodeId),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(databaseKeys.detail(updated.name), updated)
+      void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
+    },
+  })
+}
