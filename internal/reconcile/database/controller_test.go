@@ -355,8 +355,8 @@ func TestController_Reconcile_Postgres_AlwaysCredentialsBlocked(t *testing.T) {
 		t.Fatalf("Reconcile() error = %v, want nil: credentials-blocked is a documented permanent state, not a transient failure", err)
 	}
 	cond := conditionOf(t, result)
-	if cond.Status != reconcile.ConditionFalse || cond.Reason != "CredentialsNotYetSupported" {
-		t.Errorf("condition = %+v, want Status=False Reason=CredentialsNotYetSupported", cond)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "CredentialsNotConfigured" {
+		t.Errorf("condition = %+v, want Status=False Reason=CredentialsNotConfigured", cond)
 	}
 	if cond.Message == "" {
 		t.Error("expected a non-empty Message explaining the block")
@@ -384,8 +384,8 @@ func TestController_Reconcile_Postgres_CredentialsBlocked_EvenIfAlreadyRunning(t
 		t.Fatalf("Reconcile() error = %v", err)
 	}
 	cond := conditionOf(t, result)
-	if cond.Status != reconcile.ConditionFalse || cond.Reason != "CredentialsNotYetSupported" {
-		t.Errorf("condition = %+v, want Status=False Reason=CredentialsNotYetSupported", cond)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "CredentialsNotConfigured" {
+		t.Errorf("condition = %+v, want Status=False Reason=CredentialsNotConfigured", cond)
 	}
 }
 

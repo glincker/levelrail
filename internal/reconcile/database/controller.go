@@ -13,17 +13,22 @@
 // the way unauthenticated Postgres is, so this controller reconciles
 // Redis for real: create, mount its volume, start, report Ready.
 //
-// Postgres cannot run safely without credentials, and nothing supplies
-// them yet: database auth needs the same envelope-encrypted secret
-// storage CLAUDE.md 4.10 specifies (TASKS.md 1.7), which doesn't exist.
-// Rather than start Postgres in trust-auth mode (no password) as a
-// "temporary" workaround, Reconcile refuses to start it at all and
-// reports a loud, explicit condition explaining why, mirroring how
-// internal/deploy.requireNoUnresolvedEnv fails loudly rather than
-// silently deploying a container missing values it needs. Controller
-// carries an optional postgresCredentials field, always nil today, so
-// Postgres support activates by populating it once 1.7 lands rather than
-// by restructuring this controller.
+// Postgres cannot run safely without credentials: database auth needs
+// the same envelope-encrypted secret storage CLAUDE.md 4.10 specifies
+// (TASKS.md 1.7, internal/secrets.Manager), which exists but is only
+// wired into this controller when the control plane itself has a
+// master key configured (cmd/levelrail's dynamicSource calls
+// postgresCredentialsFor and passes the result via
+// WithPostgresCredentials below). Without one, Reconcile refuses to
+// start Postgres at all and reports a loud, explicit condition
+// explaining why, mirroring how internal/deploy.requireNoUnresolvedEnv
+// fails loudly rather than silently deploying a container missing
+// values it needs, rather than starting it in trust-auth mode (no
+// password) as a "temporary" workaround. Controller carries an
+// optional postgresCredentials field, nil whenever no master key is
+// configured or credential generation itself fails for this pass, so
+// Postgres support activates purely by populating it, no restructuring
+// of this controller needed either way.
 package database
 
 import (
@@ -284,17 +289,20 @@ func unknownResult(reason string) reconcile.Result {
 	}}}
 }
 
-// credentialsBlockedResult is the condition every Postgres database
-// reports until TASKS.md 1.7 (envelope-encrypted secrets) lands: no
-// credentials source exists, so Reconcile never attempts to start a
-// Postgres container, unauthenticated or otherwise. See the package doc
-// comment for the full reasoning.
+// credentialsBlockedResult is the condition a Postgres database reports
+// whenever this controller has no credentials to work with, either the
+// control plane has no master key configured at all (TASKS.md 1.7,
+// envelope-encrypted secrets, internal/secrets.Manager), or generating/
+// persisting/resolving this database's own credentials failed on this
+// reconcile pass: either way, no container is started rather than
+// running postgres unauthenticated. See the package doc comment for the
+// full reasoning.
 func credentialsBlockedResult() reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
 		Type:   "Ready",
 		Status: reconcile.ConditionFalse,
-		Reason: "CredentialsNotYetSupported",
-		Message: "postgres reconciliation is blocked on TASKS.md 1.7 (envelope-encrypted secrets); " +
-			"no credentials source exists yet, so no container is started rather than running postgres unauthenticated",
+		Reason: "CredentialsNotConfigured",
+		Message: "no postgres credentials available for this database; either the control plane has no secrets master key configured, " +
+			"or generating/resolving this database's own credentials failed, so no container is started rather than running postgres unauthenticated",
 	}}}
 }

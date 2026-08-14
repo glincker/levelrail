@@ -979,7 +979,27 @@ func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.D
 					slog.String("database", desired.Name), slog.String("node_id", desired.NodeID), slog.String("error", err.Error()))
 				continue
 			}
-			controllers = append(controllers, database.New(desired.Name, db, dbRuntime))
+			var dbOpts []database.Option
+			if desired.Engine == store.EnginePostgres {
+				creds, err := postgresCredentialsFor(ctx, secretsManager, desired.Name)
+				if err != nil {
+					// Not fatal to the whole pass: this one Postgres
+					// database just stays credentials-blocked for this
+					// tick, the same "one broken resource must not
+					// block others" principle this function's own doc
+					// comment already applies to node connectivity
+					// above. It retries on the next pass, since a
+					// transient secrets-store failure (unlike a
+					// permanently-unconfigured secrets manager, which
+					// postgresCredentialsFor itself handles by
+					// returning nil, nil) should recover on its own.
+					logger.Warn("skipping postgres credentials for this reconcile pass",
+						slog.String("database", desired.Name), slog.String("error", err.Error()))
+				} else if creds != nil {
+					dbOpts = append(dbOpts, database.WithPostgresCredentials(creds))
+				}
+			}
+			controllers = append(controllers, database.New(desired.Name, db, dbRuntime, dbOpts...))
 		}
 		controllers = append(controllers, ingressreconcile.New(db, runtime, driver, ingressreconcile.WithLogger(logger)))
 		return controllers, nil
