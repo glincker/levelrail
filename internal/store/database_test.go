@@ -183,3 +183,40 @@ func TestDeleteDesiredDatabase_DoesNotAffectOtherDatabases(t *testing.T) {
 		t.Errorf("unrelated database cache should be untouched, got error = %v", err)
 	}
 }
+
+// TestListDesiredDatabasesByNode is the database-kind counterpart to
+// TestListDesiredServicesByNode (service_test.go), same TASKS.md 3.7
+// drain/delete-guard callers.
+func TestListDesiredDatabasesByNode(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	for _, d := range []DesiredDatabase{
+		{Name: "main", Engine: EngineRedis, Version: "7"},
+		{Name: "cache", Engine: EngineRedis, Version: "7"},
+	} {
+		if err := db.SaveDesiredDatabase(ctx, d); err != nil {
+			t.Fatalf("SaveDesiredDatabase(%s) error = %v", d.Name, err)
+		}
+	}
+	if err := db.UpdateDatabaseNode(ctx, "main", "node-1"); err != nil {
+		t.Fatalf("UpdateDatabaseNode(main) error = %v", err)
+	}
+	// cache stays on the local node ("").
+
+	got, err := db.ListDesiredDatabasesByNode(ctx, "node-1")
+	if err != nil {
+		t.Fatalf("ListDesiredDatabasesByNode(node-1) error = %v", err)
+	}
+	if len(got) != 1 || got[0].Name != "main" {
+		t.Fatalf("ListDesiredDatabasesByNode(node-1) = %+v, want [main]", got)
+	}
+
+	gotEmpty, err := db.ListDesiredDatabasesByNode(ctx, "node-2")
+	if err != nil {
+		t.Fatalf("ListDesiredDatabasesByNode(node-2) error = %v", err)
+	}
+	if len(gotEmpty) != 0 {
+		t.Errorf("ListDesiredDatabasesByNode(node-2) = %+v, want empty", gotEmpty)
+	}
+}

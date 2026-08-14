@@ -363,6 +363,38 @@ func TestHandleSetAppNode_UnknownApp_NotFound(t *testing.T) {
 	}
 }
 
+// TestHandleSetAppNode_CordonedNode_Rejected is TASKS.md 3.7's cordon
+// enforcement point: a cordoned node must refuse new placements while
+// leaving whatever's already running there untouched (store.Node.
+// Schedulable's own doc comment).
+func TestHandleSetAppNode_CordonedNode_Rejected(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	seedNode(t, db, "node_1", "worker-1")
+	if err := db.SetNodeSchedulable(ctx, "node_1", false); err != nil {
+		t.Fatalf("cordon node: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/node", `{"node_id":"node_1"}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if svc.NodeID != "" {
+		t.Errorf("stored NodeID = %q, want unchanged (empty): a rejected request must not partially apply", svc.NodeID)
+	}
+}
+
 func TestHandleSetAppNode_PlainWriteToken_Forbidden(t *testing.T) {
 	rt, db := newTestRouter(t)
 	ctx := context.Background()
