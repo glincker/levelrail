@@ -38,11 +38,6 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
 
 ## In progress
 
-- [ ] Databases detail route gets the same dynamic/contextual sidebar
-      treatment `/apps/$name/*` just got. Claimed by the concurrent
-      session (the one that landed the notification bell/toast
-      consolidation above), starting now. Leaving this to them, not
-      duplicating.
 - [ ] MySQL as a third database engine: the creation wizard's step 1
       originally wanted this as a 5th option, dropped because
       `internal/reconcile/database/controller.go` only handled
@@ -128,6 +123,30 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
 
 ## Done (most recent first)
 
+- [x] Databases detail route gets the same dynamic/contextual sidebar
+      treatment `/apps/$name/*` got, honestly scoped to what Databases
+      actually has (one section, Overview, not eight): new
+      `DatabaseScopedSidebar.tsx` (back link, name+status badge, one nav
+      item), `AppSidebar.tsx` extended with a second, mutually-exclusive
+      scope pattern for `/databases/$name`, `routes/databases/$name.tsx`
+      split into a layout route (loader, header, delete action, Outlet)
+      plus `routes/databases/$name/overview.tsx` (the Overview card +
+      `ConditionsPanel` that used to live directly in the flat page) and
+      `routes/databases/$name/index.tsx` (redirect to overview), mirroring
+      `apps/$name.tsx`/`apps/$name/overview.tsx` exactly. New shared
+      `lib/databaseStatus.ts` (mirrors `lib/appStatus.ts`) so the status
+      rollup isn't copy-pasted between the layout header and the sidebar.
+      No second Databases section found worth its own route: grepped for
+      a connection-string/credentials UI, the only frontend hit is the
+      unrelated change-password flow, and `cmd/levelrail`'s
+      `database_credentials.go` is a CLI subcommand, not a web surface.
+      Browser-verified end to end: real database created via the API,
+      sidebar swaps to the scoped nav on `/databases/$name`, back-link
+      returns to `/databases`, Overview content (engine/version/node,
+      reconcile status) renders, hard navigation straight to
+      `/databases/$name/overview` resolves correctly, and an app's own
+      detail page was re-checked in the same session to confirm the
+      shared scope-detection change didn't regress it.
 - [x] Creation wizard + brand icons + dynamic sidebar (the full
       `docs/superpowers/specs/2026-08-14-creation-wizard-and-sidebar-design.md`,
       brainstormed with the founder): `BrandIcon.tsx` (`@thesvg/react`,

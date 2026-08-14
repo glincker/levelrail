@@ -28,12 +28,22 @@ import { useBrand } from '../hooks/useBrand'
 import { useAuthUsername } from '../hooks/useAuthUsername'
 import { useLogout } from '../queries/auth'
 import { AppScopedSidebar } from './AppScopedSidebar'
+import { DatabaseScopedSidebar } from './DatabaseScopedSidebar'
 
 // Matches /apps/<name> and any nested path under it, capturing <name>.
 // Deliberately excludes the bare /apps list route (no trailing segment)
 // so the list page keeps the global nav, only a specific app's detail
 // tree switches to the scoped one below.
 const APP_SCOPE_PATTERN = /^\/apps\/([^/]+)/
+
+// Same shape, one level over for Databases (fast-follow named explicitly
+// in docs/superpowers/specs/2026-08-14-creation-wizard-and-sidebar-design.md
+// item 2: "Databases' own detail page gets the same treatment ... once
+// the pattern is proven once"). The two patterns are mutually exclusive
+// by construction, one anchors on /apps/, the other on /databases/, so a
+// pathname can never match both, and the checks below stay a simple
+// if/else-if rather than needing extra precedence handling.
+const DATABASE_SCOPE_PATTERN = /^\/databases\/([^/]+)/
 
 // The shadcn sidebar-07/dashboard-01 shape (docs-local/research/
 // dashboard-redesign/cross-cutting-sidebar-patterns.md), minus the team
@@ -46,21 +56,21 @@ const APP_SCOPE_PATTERN = /^\/apps\/([^/]+)/
 //
 // Vercel-style dynamic/contextual nav (docs/superpowers/specs/
 // 2026-08-14-creation-wizard-and-sidebar-design.md item 2): this single
-// component now has two rendering paths, chosen by the current pathname
-// rather than two separate components swapped in by __root.tsx. That
+// component now has three rendering paths, chosen by the current pathname
+// rather than separate components swapped in by __root.tsx. That
 // keeps the brand header, account footer, and outer Sidebar/SidebarRail
-// chrome (identical in both modes) written once, and makes the "which
-// mode" decision live in exactly one place (APP_SCOPE_PATTERN below)
-// instead of being duplicated between a parent chooser and this file.
-// Scoped strictly to the Apps detail tree per the spec: Databases' own
-// detail route keeps the global nav for now, as a fast-follow once this
-// pattern is proven once.
+// chrome (identical in every mode) written once, and makes the "which
+// mode" decision live in exactly one place (the two scope patterns
+// below) instead of being duplicated between a parent chooser and this
+// file. Databases now gets the same scoped treatment Apps got first, per
+// the spec's own "fast-follow once this pattern is proven once" note.
 export function AppSidebar() {
   const brand = useBrand()
   const username = useAuthUsername()
   const logout = useLogout()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const scopedAppName = pathname.match(APP_SCOPE_PATTERN)?.[1]
+  const scopedDatabaseName = pathname.match(DATABASE_SCOPE_PATTERN)?.[1]
 
   return (
     <Sidebar collapsible="icon" variant="floating">
@@ -86,6 +96,10 @@ export function AppSidebar() {
       <SidebarContent>
         {scopedAppName ? (
           <AppScopedSidebar name={decodeURIComponent(scopedAppName)} />
+        ) : scopedDatabaseName ? (
+          <DatabaseScopedSidebar
+            name={decodeURIComponent(scopedDatabaseName)}
+          />
         ) : (
           <>
             <SidebarGroup>
