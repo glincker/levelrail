@@ -91,6 +91,10 @@ type AppStore interface {
 	// own doc comment for why an ordinary app update must never be able
 	// to silently move a service between nodes.
 	UpdateServiceNode(ctx context.Context, name, nodeID string) error
+	// ListDesiredServicesByNode is TASKS.md 3.7's drain and
+	// delete-guard primitive (handleDrainNode, handleDeleteNode): find
+	// what's placed on a node without listing every service.
+	ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]store.DesiredService, error)
 }
 
 // DeployStore is the store surface the deploy-history handler needs.
@@ -105,6 +109,16 @@ type DatabaseStore interface {
 	GetDesiredDatabase(ctx context.Context, name string) (*store.DesiredDatabase, error)
 	ListDesiredDatabases(ctx context.Context) ([]store.DesiredDatabase, error)
 	DeleteDesiredDatabase(ctx context.Context, name string) error
+	// UpdateDatabaseNode is TASKS.md 3.3's placement mutation for
+	// databases (store.DB already had it, nothing in this package
+	// exposed it until 3.7's handleDrainNode became the first caller
+	// with an actual route to reuse it through, per 3.3's own commit
+	// note: "No database CRUD endpoint exists yet to extend the same
+	// way").
+	UpdateDatabaseNode(ctx context.Context, name, nodeID string) error
+	// ListDesiredDatabasesByNode is the database-kind counterpart to
+	// AppStore.ListDesiredServicesByNode.
+	ListDesiredDatabasesByNode(ctx context.Context, nodeID string) ([]store.DesiredDatabase, error)
 }
 
 // AuthStore is the store surface the auth handlers need.
@@ -333,6 +347,12 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/nodes/{id}", rt.requireAbility(AbilityRoot, rt.handleGetNode))
 	mux.HandleFunc("DELETE /api/v1/nodes/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteNode))
 	mux.HandleFunc("POST /api/v1/nodes/join-tokens", rt.requireAbility(AbilityRoot, rt.handleCreateNodeJoinToken))
+	// Health, cordon, drain (TASKS.md 3.7), same AbilityRoot boundary as
+	// every other node route above.
+	mux.HandleFunc("GET /api/v1/nodes/{id}/health", rt.requireAbility(AbilityRoot, rt.handleGetNodeHealth))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/cordon", rt.requireAbility(AbilityRoot, rt.handleCordonNode))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/uncordon", rt.requireAbility(AbilityRoot, rt.handleUncordonNode))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/drain", rt.requireAbility(AbilityRoot, rt.handleDrainNode))
 
 	return mux
 }
