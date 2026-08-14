@@ -2462,6 +2462,47 @@ commits landed, never touched their in-progress files directly).
       (binding UDP then TCP on "whatever port UDP got," which fails
       because the two are separate port spaces; fixed with an explicit
       retry over the ephemeral-port case only).
+- [x] **Wired into `cmd/levelrail` (2026-08-13), gated behind
+      `APP_MESH_ENABLED` (default off)**: half-built until the gRPC
+      wire-contract extension above lands, this project's own "feature
+      flags for anything half-built" rule applies rather than changing
+      default behavior for every existing install. `cmd/levelrail/mesh.go`
+      adds what running this needs and nothing in `internal/network`
+      itself provided: a persisted mesh private key and node ID
+      (`mesh-node.key`/`mesh-node.id` in the data directory, same
+      read-or-generate-then-persist shape `loadOrGenerateAgentCA`
+      already uses for the agent CA), and `bootstrapLocalNode`, a real
+      gap this task's own build left open: `internal/reconcile/mesh`
+      reads its whole inventory from `Store.ListNodes`, and
+      `internal/network.Plan` errors with `ErrUnknownNode` for a selfID
+      absent from it, so the control plane's own node needs a real
+      `nodes` row, which nothing before this wiring pass ever created.
+      Live-verified end to end on this (unprivileged) dev machine: node
+      bootstrapped, `network.Detect` correctly falls back to
+      `*network.Disabled` rather than erroring, the mesh reconciler
+      still runs its full pass and reports all three conditions `True`,
+      and a real `dig` query against the DNS server resolves the local
+      node's own record to its allocated mesh address.
+      **Two real bugs caught by that live verification, not
+      hypothetical**: the local node's own heartbeat starts only on
+      `localNodeHeartbeat`'s first tick, so bootstrapping it with
+      `Status: Online` and a nil `LastSeenAt` read as Offline
+      (`internal/reconcile/nodehealth`'s own `lastSeenAge` treats a nil
+      `LastSeenAt` on a non-Pending node as maximally stale) for the gap
+      between boot and that first tick; fixed by setting `LastSeenAt` to
+      now at bootstrap. And `Resolver.Authoritative` compares an
+      already-lowercased query name against the zone verbatim, so
+      passing `brand.Brand.ShortName` (title-cased in `brand.yaml`)
+      straight through as the zone meant no query could ever match;
+      fixed by lowercasing it before `NewResolver`.
+      **Known, honest rough edge, not fixed here**: the local node's
+      operator-facing name defaults to `os.Hostname()`, which on this
+      dev machine is `Gagans-MacBook-Pro.local`; that reads fine in a
+      node list but produces an odd-looking (if fully correct) DNS
+      label, `gagans-macbook-pro.local.node.<zone>`, once lowercased and
+      placed under `.node.<zone>`. Cosmetic, not a resolution bug (the
+      live `dig` test above resolved it correctly), left for whoever
+      next touches node naming rather than scope-creeping this pass.
 
 ### 3.5 Dedicated build nodes. DONE (2026-08-13)
 
