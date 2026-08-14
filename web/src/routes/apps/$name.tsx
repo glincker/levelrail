@@ -139,10 +139,7 @@ function AppDetailPage() {
       <Tabs defaultValue="overview">
         <TabsList variant="line" className="border-b border-border">
           <TabsTrigger value="overview">
-            <SquaresFourIcon
-              className="size-3.5"
-              data-icon="inline-start"
-            />
+            <SquaresFourIcon className="size-3.5" data-icon="inline-start" />
             Overview
           </TabsTrigger>
           <TabsTrigger value="domains">

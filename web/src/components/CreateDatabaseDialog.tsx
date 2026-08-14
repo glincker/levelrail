@@ -3,10 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useNavigate } from '@tanstack/react-router'
-import {
-  DatabaseIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { DatabaseIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
   DialogContent,

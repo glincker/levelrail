@@ -2,11 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import {
-  EyeIcon,
-  EyeSlashIcon,
-  LockIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { EyeIcon, EyeSlashIcon, LockIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {

@@ -1,8 +1,4 @@
-import {
-  MonitorIcon,
-  MoonIcon,
-  SunIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { MonitorIcon, MoonIcon, SunIcon } from '@phosphor-icons/react/dist/ssr'
 import type { Icon } from '@phosphor-icons/react'
 import { Button } from './ui/button'
 import { useTheme, type Theme } from './ThemeProvider'

@@ -1,8 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import {
-  CaretRightIcon,
-  DatabaseIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CaretRightIcon, DatabaseIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import type { DatabaseResource } from '../types/databaseDetail'
 

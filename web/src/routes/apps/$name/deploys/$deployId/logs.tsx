@@ -1,10 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useCallback, useEffect, useRef } from 'react'
-import {
-  ArrowDownIcon,
-  TerminalIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { ArrowDownIcon, TerminalIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   useDeployLogStream,
   type LogStreamConnectionState,

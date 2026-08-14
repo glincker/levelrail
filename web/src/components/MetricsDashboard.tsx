@@ -480,8 +480,7 @@ export function MetricsDashboard({
         <AlertTitle>Not yet collected</AlertTitle>
         <AlertDescription>
           <p>
-            These are required per-app metrics, but no collector backs
-            them yet:
+            These are required per-app metrics, but no collector backs them yet:
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {NOT_YET_COLLECTED.map((label) => (

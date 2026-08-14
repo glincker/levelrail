@@ -1,9 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import {
-  MagnifyingGlassIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { MagnifyingGlassIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
 import { useLogSearch } from '../queries/logs'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { Button } from './ui/button'
