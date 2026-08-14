@@ -66,7 +66,7 @@ import (
 // the package doc comment for why ingress reconciles as a single whole
 // pass rather than per-service.
 //
-// ListStaticSites is CLAUDE.md 4.4's static-site bypass of the
+// ListStaticSites is the static-site bypass of the
 // container reconciler (migrations/0015_static_sites.sql,
 // internal/store.StaticSite): a static site is never a
 // store.DesiredService (no image, no port, nothing to converge to a
@@ -207,7 +207,7 @@ func New(svcStore ServiceStore, runtime docker.Runtime, driver Applier, opts ...
 func (c *Controller) Name() string { return "ingress" }
 
 // Reconcile implements reconcile.Controller. It lists every desired
-// service and every static site (store.StaticSite, CLAUDE.md 4.4's
+// service and every static site (store.StaticSite, the
 // container-free bypass, migrations/0015_static_sites.sql), builds one
 // reverse-proxy route per service that both declares domains and
 // currently has a running, port-published container, one file_server

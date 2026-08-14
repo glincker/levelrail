@@ -1,6 +1,7 @@
 package ingress
 
-// This file: build.type: static (CLAUDE.md 4.4) coverage for Controller,
+// This file: build.type: static (static sites served by the embedded
+// ingress directly, no container) coverage for Controller,
 // split out of controller_test.go purely to keep that file's line count
 // down; it shares every fake (fakeStore, fakeRuntime, fakeApplier) and
 // helper (conditionOf, discardLogger) controller_test.go already
@@ -19,7 +20,7 @@ import (
 
 // TestController_Reconcile_StaticSite_RouteAppears is the core static-site
 // case: no container, no Docker inspection at all, a file_server route
-// built straight from store.StaticSite.RootDir. This is CLAUDE.md 4.4's
+// built straight from store.StaticSite.RootDir. This is the design's
 // "served by the embedded Caddy directly with no container" bypass of
 // the reconciler, exercised end to end through this controller.
 func TestController_Reconcile_StaticSite_RouteAppears(t *testing.T) {

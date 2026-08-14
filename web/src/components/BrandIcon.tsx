@@ -9,7 +9,7 @@ import RedisLogo from '@thesvg/react/redis'
 // design spec's 2026-08-14 update: thesvg.org is the standing source for
 // this category of icon, going forward, not just this one wizard's 4
 // logos. This is a separate concern from the app's UI icon system
-// (@phosphor-icons/react/dist/ssr, locked by ADR 014 and CLAUDE.md's
+// (@phosphor-icons/react/dist/ssr, locked by ADR 014 and this project's
 // "No new icon sets" rule for nav/buttons/dialog controls): brand marks
 // identify a third-party technology, UI chrome icons do not, and the two
 // are never interchangeable.

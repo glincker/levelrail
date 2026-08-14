@@ -489,8 +489,8 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("POST /api/v1/nodes/{id}/uncordon", rt.requireAbility(AbilityRoot, rt.handleUncordonNode))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/drain", rt.requireAbility(AbilityRoot, rt.handleDrainNode))
 
-	// Certificates (TLS renewal visibility): CLAUDE.md section 10 names
-	// "a cert renewal fails silently at 3am" as this project's central
+	// Certificates (TLS renewal visibility): this project treats
+	// "a cert renewal fails silently at 3am" as its central
 	// risk to catch before it bites a real user, and until now nothing
 	// in the API surfaced certificate state at all. Read-only, so
 	// AbilityRead like handleSystemStatus/handleGetNodeHealth, not

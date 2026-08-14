@@ -2,7 +2,7 @@ package deploy
 
 // This file implements build.type: static (spec.BuildStatic), the
 // architecture's one deliberate exception to "deploy means build an
-// image": CLAUDE.md 4.4 names it directly, "static sites get served by
+// image": the design states it directly, "static sites get served by
 // the embedded Caddy directly with no container." There is nothing here
 // for internal/build.Client to do: the "build" step for a static site is
 // copying its output into a directory internal/reconcile/ingress's

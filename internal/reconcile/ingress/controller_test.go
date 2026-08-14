@@ -286,7 +286,8 @@ func TestController_Reconcile_RunningNoPorts_SkippedNotFailed(t *testing.T) {
 	}
 }
 
-// build.type: static (CLAUDE.md 4.4) coverage for Controller lives in
+// build.type: static (static sites served by the embedded ingress
+// directly, no container) coverage for Controller lives in
 // controller_static_test.go, not here, purely to keep this file's line
 // count down; it shares every fake and helper defined in this file.
 

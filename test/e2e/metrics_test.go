@@ -50,7 +50,7 @@ const (
 	// entropy heuristic flags this particular string (unlike
 	// internal/api/testutil_test.go's shorter testAdminPassword, which
 	// stays under its threshold); nolint below with this explanation per
-	// CLAUDE.md 7's "no nolint without a comment" rule.
+	// the project's "no nolint without a comment" rule.
 	e2eMetricsAdminPassword = "e2e-metrics-correct-horse-battery" //nolint:gosec // test fixture credential, not a real secret
 )
 

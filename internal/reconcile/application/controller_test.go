@@ -1087,7 +1087,7 @@ func TestController_Reconcile_Recreate_Redeploy_NoOverlapBetweenOldAndNew(t *tes
 }
 
 func TestController_Reconcile_Recreate_CreateFailsAfterCleanup_HalfSucceeded(t *testing.T) {
-	// The half-succeeded case CLAUDE.md's own testing standard calls
+	// The half-succeeded case this project's own testing standard calls
 	// for: recreate has already torn down the old container (a real,
 	// intentional consequence of this strategy, not a bug) by the time
 	// creating the replacement fails. The next reconcile pass retries

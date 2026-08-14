@@ -2,7 +2,8 @@ package ingress
 
 // This file: the "many routes on one shared server" API (TASKS.md 1.6's
 // real ingress controller, internal/reconcile/ingress) plus its
-// build.type: static (CLAUDE.md 4.4) extension. config.go stays scoped
+// build.type: static (served by the embedded Caddy directly, no
+// container) extension. config.go stays scoped
 // to the Phase 0 spike's single-route BuildProxyConfig and the Caddy
 // JSON config structs both files build; this file is everything a
 // controller tracking many independently host-routed backends, of
@@ -12,7 +13,7 @@ import "fmt"
 
 // FileServerHandler is Caddy's "file_server" handler
 // (http.handlers.file_server): serves files directly from Root, no
-// backend, no container. This is the whole of what CLAUDE.md 4.4 means
+// backend, no container. This is the whole of what this design means
 // by "static sites get served by the embedded Caddy directly with no
 // container": a route whose Handle is this instead of a
 // ReverseProxyHandler. Registered via the same
@@ -54,9 +55,9 @@ type ProxyRoute struct {
 // site and a container service can be routed by the very same Caddy
 // server, on different hostnames, because both ultimately produce a
 // Route in the same Routes slice, just with a different Handle
-// (FileServerHandler instead of ReverseProxyHandler). See CLAUDE.md
-// 4.4/4.5: this is the shape that lets a static site bypass the
-// container reconciler entirely, not a parallel ingress mechanism.
+// (FileServerHandler instead of ReverseProxyHandler). This is the
+// shape that lets a static site bypass the container reconciler
+// entirely, not a parallel ingress mechanism.
 type StaticRoute struct {
 	// Hosts are the Host header values served from RootDir. Also
 	// contributes to the Subjects list used for TLS automation when
