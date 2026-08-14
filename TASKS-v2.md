@@ -413,10 +413,10 @@ having existed since Phase 3.
       nav group, not primary: infra/admin config, occasional action for
       this product's 1-10 machine target audience, not a daily-use
       screen. Kept to a single dialog, not a wizard, per Coolify/
-      Dokploy's own convention and CLAUDE.md 1's lightweight
-      positioning. Agent caught and avoided a hardcoded "levelrail-agent"
-      string itself, deriving the binary name from `brand.BinaryName`
-      per CLAUDE.md section 3.
+      Dokploy's own convention and this platform's lightweight
+      positioning. Avoided a hardcoded "levelrail-agent" string, deriving
+      the binary name from `brand.BinaryName` per the brand indirection
+      rule that no product name string appears anywhere in source code.
 - [x] **Optional node picker in create dialogs (2026-08-13)**: both
       `CreateAppDialog.tsx` and `CreateDatabaseDialog.tsx` gained a
       `node` field, rendered only when `useNodeListOptional()` returns a
