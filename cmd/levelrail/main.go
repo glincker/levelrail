@@ -37,6 +37,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
+	meshreconcile "github.com/GLINCKER/levelrail/internal/reconcile/mesh"
 	"github.com/GLINCKER/levelrail/internal/reconcile/nodehealth"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -329,9 +330,21 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
+	meshCfg, err := setupMesh(ctx, db, b, agentDataDir, logger)
+	if err != nil {
+		// Not fatal: the same choice this function already makes for
+		// secrets and webhook above. A misconfigured, opted-in mesh
+		// (APP_MESH_ENABLED=1) should not take down a control plane
+		// that would otherwise run fine without it.
+		logger.Warn("mesh not configured", slog.String("error", err.Error()))
+	}
+	if meshCfg != nil {
+		defer meshCfg.close()
+	}
+
 	engine := reconcile.NewEngine(logger)
 	engine.SetStore(db)
-	engine.SetSource(dynamicSource(db, client, ingressDriver, logger, telemetryDB, secretsManager, agentRegistry, nodeHeartbeatTimeout()))
+	engine.SetSource(dynamicSource(db, client, ingressDriver, logger, telemetryDB, secretsManager, agentRegistry, nodeHeartbeatTimeout(), meshCfg))
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
 	go func() {
@@ -1175,7 +1188,13 @@ func certExpiryWarningWindow(logger *slog.Logger) time.Duration {
 // on it. Unlike the application/database controllers above, a node
 // controller never needs resolveNodeTransport: it only ever touches
 // this control plane's own store, not the node's own Docker daemon.
-func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.Driver, logger *slog.Logger, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry, heartbeatTimeout time.Duration) reconcile.Source {
+//
+// meshCfg is TASKS.md 3.4's mesh, nil unless APP_MESH_ENABLED=1
+// (setupMesh's own doc comment). A single mesh.Controller is appended
+// when it isn't nil, the same "reconciles the whole fleet in one pass"
+// shape the ingress controller already has and for the identical
+// reason: a mesh is a property of the set of nodes, not of any one node.
+func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.Driver, logger *slog.Logger, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry, heartbeatTimeout time.Duration, meshCfg *meshSetup) reconcile.Source {
 	return func(ctx context.Context) ([]reconcile.Controller, error) {
 		services, err := db.ListDesiredServices(ctx)
 		if err != nil {
@@ -1238,6 +1257,9 @@ func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.D
 			controllers = append(controllers, nodehealth.New(n.ID, db, heartbeatTimeout))
 		}
 		controllers = append(controllers, ingressreconcile.New(db, runtime, driver, ingressreconcile.WithLogger(logger)))
+		if meshCfg != nil {
+			controllers = append(controllers, meshreconcile.New(meshCfg.localNodeID, db, meshCfg.coordinator, meshCfg.resolver, meshreconcile.WithLogger(logger)))
+		}
 		return controllers, nil
 	}
 }
