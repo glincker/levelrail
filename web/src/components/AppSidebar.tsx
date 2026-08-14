@@ -2,6 +2,7 @@ import { Link, useRouterState } from '@tanstack/react-router'
 import {
   BoxesIcon,
   BookOpenIcon,
+  DatabaseIcon,
   KeyRoundIcon,
   LogOutIcon,
   SettingsIcon,
@@ -73,6 +74,16 @@ export function AppSidebar() {
                 >
                   <BoxesIcon />
                   <span>Apps</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  render={<Link to="/databases" />}
+                  isActive={pathname.startsWith('/databases')}
+                  tooltip="Databases"
+                >
+                  <DatabaseIcon />
+                  <span>Databases</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

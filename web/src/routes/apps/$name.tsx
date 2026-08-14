@@ -8,7 +8,9 @@ import {
   ActivityIcon,
   ArrowLeftIcon,
   BellIcon,
+  CpuIcon,
   GlobeIcon,
+  HeartPulseIcon,
   LayoutDashboardIcon,
   ScrollTextIcon,
   VariableIcon,
@@ -24,6 +26,8 @@ import { ConditionsPanel } from '../../components/ConditionsPanel'
 import { DeployTriggerForm } from '../../components/DeployTriggerForm'
 import { DomainEditor } from '../../components/DomainEditor'
 import { EnvEditor } from '../../components/EnvEditor'
+import { HealthCheckEditor } from '../../components/HealthCheckEditor'
+import { ResourceLimitsEditor } from '../../components/ResourceLimitsEditor'
 import { SecretsEditor } from '../../components/SecretsEditor'
 import { MetricsDashboard } from '../../components/MetricsDashboard'
 import { LogSearchPanel } from '../../components/LogSearchPanel'
@@ -149,6 +153,14 @@ function AppDetailPage() {
             <VariableIcon className="size-3.5" data-icon="inline-start" />
             Environment
           </TabsTrigger>
+          <TabsTrigger value="health">
+            <HeartPulseIcon className="size-3.5" data-icon="inline-start" />
+            Health
+          </TabsTrigger>
+          <TabsTrigger value="resources">
+            <CpuIcon className="size-3.5" data-icon="inline-start" />
+            Resources
+          </TabsTrigger>
           <TabsTrigger value="metrics">
             <ActivityIcon className="size-3.5" data-icon="inline-start" />
             Metrics
@@ -175,6 +187,14 @@ function AppDetailPage() {
         <TabsContent value="environment" className="mt-4 space-y-6">
           <EnvEditor app={app} />
           <SecretsEditor appName={app.name} />
+        </TabsContent>
+
+        <TabsContent value="health" className="mt-4">
+          <HealthCheckEditor app={app} />
+        </TabsContent>
+
+        <TabsContent value="resources" className="mt-4">
+          <ResourceLimitsEditor app={app} />
         </TabsContent>
 
         <TabsContent value="metrics" className="mt-4">

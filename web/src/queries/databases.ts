@@ -1,0 +1,194 @@
+// Query-key factory and fetchers for the /databases resource, mirroring
+// queries/apps.ts's shape exactly: no ad hoc key arrays inline in
+// components, so every route that needs database data imports these
+// instead of writing its own fetch call or query key.
+
+import {
+  queryOptions,
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query'
+import type { DatabaseResource } from '../types/databaseDetail'
+import type { ReconcileCondition } from '../types/deploy'
+import { ApiError, readErrorMessage } from '../lib/apiError'
+
+export const databaseKeys = {
+  all: ['databases'] as const,
+  list: () => [...databaseKeys.all, 'list'] as const,
+  detail: (name: string) => [...databaseKeys.all, 'detail', name] as const,
+  status: (name: string) => [...databaseKeys.detail(name), 'status'] as const,
+}
+
+// Fetches every database from the control plane API. GET
+// /api/v1/databases (internal/api/databases.go's handleListDatabases)
+// returns a bare array of the same databaseResource shape the detail
+// endpoint returns, no cursor and no separate summary projection, so
+// this is the one list fetcher, matching fetchApps's own reasoning.
+export async function fetchDatabases(): Promise<DatabaseResource[]> {
+  const res = await fetch('/api/v1/databases')
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `fetch databases failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as DatabaseResource[]
+}
+
+// Shared options object between the route loader's
+// queryClient.ensureQueryData call and the component's useSuspenseQuery
+// call, the same pattern databaseDetailQueryOptions below uses.
+export function databaseListQueryOptions() {
+  return queryOptions({
+    queryKey: databaseKeys.list(),
+    queryFn: fetchDatabases,
+  })
+}
+
+// Fetches a single database resource for the detail route, GET
+// /api/v1/databases/{name} (internal/api/databases.go's
+// handleGetDatabase).
+export async function fetchDatabase(name: string): Promise<DatabaseResource> {
+  const res = await fetch(`/api/v1/databases/${encodeURIComponent(name)}`)
+  if (res.status === 404) {
+    throw new ApiError(404, `database not found: ${name}`)
+  }
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `fetch database failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as DatabaseResource
+}
+
+export function databaseDetailQueryOptions(name: string) {
+  return queryOptions({
+    queryKey: databaseKeys.detail(name),
+    queryFn: () => fetchDatabase(name),
+  })
+}
+
+// Thin wrapper the detail route's component uses instead of calling
+// useSuspenseQuery(databaseDetailQueryOptions(name)) directly, mirroring
+// useApp(name)'s shape.
+export function useDatabase(name: string) {
+  return useSuspenseQuery(databaseDetailQueryOptions(name))
+}
+
+// GET /api/v1/databases/{name}/status (internal/api/databases.go's
+// handleDatabaseStatus): the same ReconcileCondition[] shape
+// deployStatusQueryOptions returns for apps, per the task's frozen
+// contract, reused as-is rather than modeled with a new type. This is
+// the only place a caller can see that a postgres database exists but
+// isn't actually running yet, see databaseResource's own doc comment on
+// the backend.
+export async function fetchDatabaseStatus(
+  name: string,
+): Promise<ReconcileCondition[]> {
+  const res = await fetch(
+    `/api/v1/databases/${encodeURIComponent(name)}/status`,
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `fetch database status failed: ${res.status}`,
+      ),
+    )
+  }
+  const body = (await res.json()) as ReconcileCondition[] | null
+  return body ?? []
+}
+
+export function databaseStatusQueryOptions(name: string) {
+  return queryOptions({
+    queryKey: databaseKeys.status(name),
+    queryFn: () => fetchDatabaseStatus(name),
+  })
+}
+
+export function useDatabaseStatus(name: string) {
+  return useSuspenseQuery(databaseStatusQueryOptions(name))
+}
+
+// Request body for POST /api/v1/databases (internal/api/databases.go's
+// handleCreateDatabase): name/engine/version are the entire
+// databaseResource shape minus the response-only node_id, so this
+// request type and DatabaseResource are almost the same thing, kept
+// separate anyway for the same reason CreateAppRequest is kept separate
+// from AppDetail: the request is what a form collects, the response is
+// what the server may additionally attach.
+export interface CreateDatabaseRequest {
+  name: string
+  engine: string
+  version: string
+}
+
+// POST /api/v1/databases. Rejects a name that already exists with a 409
+// (handleCreateDatabase's own existence check), which readErrorMessage
+// below surfaces verbatim so CreateDatabaseDialog can show the real
+// server message on a conflict instead of a generic failure.
+export async function createDatabase(
+  req: CreateDatabaseRequest,
+): Promise<DatabaseResource> {
+  const res = await fetch('/api/v1/databases', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `create database failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as DatabaseResource
+}
+
+// Mirrors useCreateApp's cache-write shape: the 201 response already is
+// the canonical new DatabaseResource, so it's written straight into the
+// detail query's cache (keyed by the name the server echoed back)
+// rather than waiting on a refetch, so navigating straight to
+// /databases/$name right after creation has data available immediately.
+// The list query is invalidated rather than patched in place for the
+// same simplicity reasoning useCreateApp gives.
+export function useCreateDatabase() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: createDatabase,
+    onSuccess: (created) => {
+      queryClient.setQueryData(databaseKeys.detail(created.name), created)
+      void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
+    },
+  })
+}
+
+// DELETE /api/v1/databases/{name} (internal/api/databases.go's
+// handleDeleteDatabase). Same known gap the backend doc comment names
+// for handleDeleteApp: removes desired state, does not itself stop or
+// remove a running container.
+export async function deleteDatabase(name: string): Promise<void> {
+  const res = await fetch(`/api/v1/databases/${encodeURIComponent(name)}`, {
+    method: 'DELETE',
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `delete database failed: ${res.status}`),
+    )
+  }
+}
+
+export function useDeleteDatabase() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deleteDatabase,
+    onSuccess: (_data, name) => {
+      queryClient.removeQueries({ queryKey: databaseKeys.detail(name) })
+      void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
+    },
+  })
+}

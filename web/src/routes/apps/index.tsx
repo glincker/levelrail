@@ -1,8 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef } from 'react'
-import { BoxIcon, PlusIcon } from 'lucide-react'
+import { BoxIcon, DatabaseIcon, PlusIcon } from 'lucide-react'
 import { appListQueryOptions } from '../../queries/apps'
 import { APP_LIST_GRID, AppRow, RowSkeleton } from '../../components/AppRow'
 import { CreateAppDialog } from '../../components/CreateAppDialog'
@@ -66,6 +66,16 @@ function AppListPage() {
               {apps.length} {apps.length === 1 ? 'app' : 'apps'}
             </span>
           ) : null}
+          {/* Secondary entry point for the databases resource kind,
+              lower-emphasis (outline) than "New app" since the sidebar's
+              Databases nav item is the primary way in: this is here
+              purely so the gap Coolify closes (creating a database at
+              all) is discoverable from the page most operators land on
+              first, not a competing CTA. */}
+          <Button size="sm" variant="outline" render={<Link to="/databases" />}>
+            <DatabaseIcon />
+            New database
+          </Button>
           <CreateAppDialog
             trigger={
               <Button size="sm">
