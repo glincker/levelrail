@@ -155,6 +155,7 @@ type Store interface {
 	NodeStore
 	CertStore
 	StaticSiteStore
+	BackupTargetStore
 }
 
 // SecretSetter is the surface the secrets handler needs from
@@ -220,9 +221,11 @@ type Router struct {
 	// for GET /api/v1/certificates's "expiring_soon" threshold. 0 means
 	// "use the default", set via WithCertExpiryWarningWindow.
 	certExpiryWarningWindow time.Duration
-	builder                 Builder         // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
-	fetch                   fetchFunc       // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
-	staticSites             StaticSiteStore // always set, same "core Store interface, not an optional plug-in" shape as certs above
+	builder                 Builder             // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
+	fetch                   fetchFunc           // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
+	staticSites             StaticSiteStore     // always set, same "core Store interface, not an optional plug-in" shape as certs above
+	backupTargets           BackupTargetStore   // always set, same "core Store interface" shape as certs/staticSites above: listing/getting/deleting a backup target needs no secrets configuration, only creating one does
+	backupSecrets           BackupSecretsSetter // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
 }
 
 // Option configures optional Router behavior.
@@ -235,6 +238,15 @@ type Option func(*Router)
 // silently discarding the value.
 func WithSecretSetter(s SecretSetter) Option {
 	return func(rt *Router) { rt.secrets = s }
+}
+
+// WithBackupSecrets enables POST /api/v1/backup-targets. Without one
+// configured (the default), that route returns 501, the same
+// "not configured" shape WithSecretSetter's absence produces; listing,
+// getting, and deleting an already-connected backup target work
+// regardless, since none of those need to write a credential.
+func WithBackupSecrets(s BackupSecretsSetter) Option {
+	return func(rt *Router) { rt.backupSecrets = s }
 }
 
 // WithSessionTTL overrides how long a session cookie stays valid.
@@ -328,18 +340,19 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		logger = slog.Default()
 	}
 	rt := &Router{
-		logger:      logger,
-		brand:       b,
-		apps:        s,
-		deploys:     s,
-		databases:   s,
-		auth:        s,
-		tokens:      s,
-		nodes:       s,
-		certs:       s,
-		staticSites: s,
-		fetch:       gitCheckout,
-		logins:      newLoginLimiter(),
+		logger:        logger,
+		brand:         b,
+		apps:          s,
+		deploys:       s,
+		databases:     s,
+		auth:          s,
+		tokens:        s,
+		nodes:         s,
+		certs:         s,
+		staticSites:   s,
+		backupTargets: s,
+		fetch:         gitCheckout,
+		logins:        newLoginLimiter(),
 	}
 	for _, opt := range opts {
 		opt(rt)
@@ -511,6 +524,17 @@ func (rt *Router) Handler() http.Handler {
 	// mutation path for a static site beyond internal/deploy.Pipeline's
 	// own git-push-triggered write.
 	mux.HandleFunc("GET /api/v1/static-sites", rt.requireAbility(AbilityRead, rt.handleListStaticSites))
+
+	// Backup targets (connected S3-compatible buckets a database backup
+	// can be uploaded to). Create and delete need AbilityWriteSensitive:
+	// create because its request body carries live bucket credentials,
+	// delete because it gates access to the same. List/get are ordinary
+	// AbilityRead, the same boundary handleListCertificates/
+	// handleListStaticSites already draw between visibility and mutation.
+	mux.HandleFunc("GET /api/v1/backup-targets", rt.requireAbility(AbilityRead, rt.handleListBackupTargets))
+	mux.HandleFunc("POST /api/v1/backup-targets", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateBackupTarget))
+	mux.HandleFunc("GET /api/v1/backup-targets/{id}", rt.requireAbility(AbilityRead, rt.handleGetBackupTarget))
+	mux.HandleFunc("DELETE /api/v1/backup-targets/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteBackupTarget))
 
 	return mux
 }
