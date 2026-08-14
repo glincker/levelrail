@@ -1,5 +1,9 @@
 import { useState } from 'react'
-import { ArrowLeftIcon, GitBranchIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  ArrowLeftIcon,
+  DatabaseIcon,
+  GitBranchIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
   DialogContent,
@@ -9,33 +13,33 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { BrandIcon } from './BrandIcon'
+import { BrandIcon, BRAND_ICON_NAMES, type BrandIconName } from './BrandIcon'
 import { CreateAppFields } from './CreateAppFields'
 import { CreateAppFromGitFields } from './CreateAppFromGitFields'
 import { CreateDatabaseFields } from './CreateDatabaseFields'
+import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
 
-// The five starting points step 1 offers, per
+// The two non-database starting points step 1 always offers, per
 // docs/superpowers/specs/2026-08-14-creation-wizard-and-sidebar-design.md
 // section 2: a small, fixed grid, not a template catalog (CLAUDE.md
 // section 2's own non-goal: "Not chasing Coolify's 280 one-click
-// templates. Ten good ones beat 280 stale ones"). MySQL was the
-// original fifth pick, held back from the first cut because
-// internal/reconcile/database/controller.go only handled postgres/redis
-// at the time (a picker option backed by nothing would have been worse
-// than one fewer option); added here now that the controller has a real
-// MySQL case (WithMySQLCredentials, the same credentials-blocked-until-
-// configured shape Postgres already has).
-type WizardOption =
-  'docker-image' | 'dockerfile-git' | 'postgres' | 'redis' | 'mysql'
+// templates. Ten good ones beat 280 stale ones"). Database engine cards
+// are appended dynamically below, from GET /api/v1/database-engines
+// (queries/databaseEngines.ts), rather than hardcoded here: this used
+// to list postgres/redis/mysql by hand, the exact "hardcode a name, add
+// a new one, hunt down every place it's copied" problem
+// internal/store/database_engines.yaml exists to close, only half-closed
+// when this file still had its own hardcoded copy of the same list.
+type FixedWizardOption = 'docker-image' | 'dockerfile-git'
 
 interface WizardOptionDef {
-  value: WizardOption
+  value: string
   label: string
   description: string
   icon: React.ReactNode
 }
 
-const WIZARD_OPTIONS: WizardOptionDef[] = [
+const FIXED_OPTIONS: WizardOptionDef[] = [
   {
     value: 'docker-image',
     label: 'Docker image',
@@ -52,38 +56,24 @@ const WIZARD_OPTIONS: WizardOptionDef[] = [
     // "Build from source" tab already uses for the same concept, for
     // visual/semantic consistency with the one other git-related
     // control in this app rather than picking a fresh icon cold. This
-    // is a deliberate mixed-icon-source picker (three cards use brand
-    // logos, one uses UI chrome iconography); see BrandIcon.tsx's own
-    // doc comment for why that's two different concerns that can
-    // coexist in one picker without reopening the Phosphor-only rule.
+    // is a deliberate mixed-icon-source picker (brand-logo cards use
+    // thesvg.org marks, this one uses UI chrome iconography); see
+    // BrandIcon.tsx's own doc comment for why that's two different
+    // concerns that can coexist in one picker without reopening the
+    // Phosphor-only rule.
     icon: <GitBranchIcon className="size-6" />,
-  },
-  {
-    value: 'postgres',
-    label: 'Postgres',
-    description: 'A managed Postgres database.',
-    icon: <BrandIcon name="postgres" className="size-6" />,
-  },
-  {
-    value: 'redis',
-    label: 'Redis',
-    description: 'A managed Redis database.',
-    icon: <BrandIcon name="redis" className="size-6" />,
-  },
-  {
-    value: 'mysql',
-    label: 'MySQL',
-    description: 'A managed MySQL database.',
-    icon: <BrandIcon name="mysql" className="size-6" />,
   },
 ]
 
-const OPTION_TITLES: Record<WizardOption, string> = {
-  'docker-image': 'New app from an image',
-  'dockerfile-git': 'New app from a git repo',
-  postgres: 'New Postgres database',
-  redis: 'New Redis database',
-  mysql: 'New MySQL database',
+// Type guard narrowing an arbitrary engine id string to BrandIconName
+// only when a real vendored logo exists for it (BrandIcon.tsx's own
+// BRAND_ICON_NAMES), so a future engine the registry knows about but
+// thesvg.org hasn't been asked to vendor a mark for yet still renders a
+// real card instead of crashing BrandIcon's exhaustive lookup.
+function brandIconNameFor(engineId: string): BrandIconName | null {
+  return (BRAND_ICON_NAMES as readonly string[]).includes(engineId)
+    ? (engineId as BrandIconName)
+    : null
 }
 
 // Two-step creation flow replacing the old single-step CreateAppDialog/
@@ -112,7 +102,31 @@ export function CreateResourceWizard({
   trigger: React.ReactElement
 }) {
   const [open, setOpen] = useState(false)
-  const [selected, setSelected] = useState<WizardOption | null>(null)
+  const [selected, setSelected] = useState<string | null>(null)
+  // Optional convenience, see useDatabaseEnginesOptional's own doc
+  // comment: a slow/failed fetch just means step 1 shows the two fixed
+  // options without any database cards yet, never a blocked dialog.
+  const engineList = useDatabaseEnginesOptional()
+  const engines = engineList.data ?? []
+  const isFixedOption = (value: string): value is FixedWizardOption =>
+    value === 'docker-image' || value === 'dockerfile-git'
+
+  const options: WizardOptionDef[] = [
+    ...FIXED_OPTIONS,
+    ...engines.map((engine) => {
+      const brandName = brandIconNameFor(engine.id)
+      return {
+        value: engine.id,
+        label: engine.label,
+        description: `A managed ${engine.label} database.`,
+        icon: brandName ? (
+          <BrandIcon name={brandName} className="size-6" />
+        ) : (
+          <DatabaseIcon className="size-6" />
+        ),
+      }
+    }),
+  ]
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -128,6 +142,14 @@ export function CreateResourceWizard({
     handleOpenChange(false)
   }
 
+  const selectedTitle = selected
+    ? isFixedOption(selected)
+      ? selected === 'docker-image'
+        ? 'New app from an image'
+        : 'New app from a git repo'
+      : `New ${engines.find((e) => e.id === selected)?.label ?? selected} database`
+    : ''
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={trigger} />
@@ -139,7 +161,7 @@ export function CreateResourceWizard({
               <DialogDescription>Pick a starting point.</DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-2 gap-3">
-              {WIZARD_OPTIONS.map((option) => (
+              {options.map((option) => (
                 <button
                   key={option.value}
                   type="button"
@@ -174,21 +196,21 @@ export function CreateResourceWizard({
                 >
                   <ArrowLeftIcon />
                 </Button>
-                {OPTION_TITLES[selected]}
+                {selectedTitle}
               </DialogTitle>
               <DialogDescription>
-                {selected === 'docker-image' || selected === 'dockerfile-git'
+                {isFixedOption(selected)
                   ? 'Apps deployed from an app.yaml spec in a connected repo show up automatically instead.'
                   : 'The reconciler provisions it on the target node.'}
               </DialogDescription>
             </DialogHeader>
             {/* key={selected} forces a fresh mount (and so a blank
                 form) whenever the picked option changes, including
-                toggling between postgres/redis/mysql which all render
-                CreateDatabaseFields: switching the starting point is
-                explicitly allowed to drop whatever was typed for the
-                previous one rather than trying to carry values across
-                two different field sets. */}
+                toggling between two different database engines which
+                both render CreateDatabaseFields: switching the starting
+                point is explicitly allowed to drop whatever was typed
+                for the previous one rather than trying to carry values
+                across two different field sets. */}
             {selected === 'docker-image' ? (
               <CreateAppFields
                 key={selected}
@@ -203,28 +225,12 @@ export function CreateResourceWizard({
                 onCreated={handleCreated}
               />
             ) : null}
-            {selected === 'postgres' ? (
+            {!isFixedOption(selected) ? (
               <CreateDatabaseFields
                 key={selected}
                 open={open}
                 onCreated={handleCreated}
-                engine="postgres"
-              />
-            ) : null}
-            {selected === 'redis' ? (
-              <CreateDatabaseFields
-                key={selected}
-                open={open}
-                onCreated={handleCreated}
-                engine="redis"
-              />
-            ) : null}
-            {selected === 'mysql' ? (
-              <CreateDatabaseFields
-                key={selected}
-                open={open}
-                onCreated={handleCreated}
-                engine="mysql"
+                engine={selected}
               />
             ) : null}
           </>
