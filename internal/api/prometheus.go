@@ -16,11 +16,12 @@ import (
 // levelrailMetricPrefix namespaces every metric this control plane
 // exposes over remote-read, so "cpu_percent" (internal/telemetry's own
 // metric name) becomes "levelrail_cpu_percent" in Prometheus's flat,
-// global metric-name space, per CLAUDE.md 4.8: "expose a
-// Prometheus-compatible remote read endpoint so an operator who wants
-// Grafana anyway can point it at Levelrail." Prefixing is the standard
-// Prometheus convention for avoiding collisions with other exporters
-// the same Prometheus/Grafana instance might also be reading from.
+// global metric-name space, matching the observability design goal of
+// exposing a Prometheus-compatible remote read endpoint so an operator
+// who wants Grafana anyway can point it at Levelrail. Prefixing is the
+// standard Prometheus convention for avoiding collisions with other
+// exporters the same Prometheus/Grafana instance might also be reading
+// from.
 const levelrailMetricPrefix = "levelrail_"
 
 // serviceLabel is the one label (beyond __name__) this endpoint
@@ -32,9 +33,10 @@ const serviceLabel = "service"
 // handlePrometheusRead handles POST /api/v1/prometheus/read, the
 // address an operator configures in Prometheus's own remote_read.url
 // (or Grafana's Prometheus data source pointed directly at Levelrail,
-// per CLAUDE.md 4.8). Request and response bodies are snappy-compressed
-// protobuf (internal/prompb), the standard Prometheus remote-read
-// transport. Gated by requireAbility(AbilityRead, ...) in router.go,
+// per the same observability design goal). Request and response bodies
+// are snappy-compressed protobuf (internal/prompb), the standard
+// Prometheus remote-read transport. Gated by
+// requireAbility(AbilityRead, ...) in router.go,
 // the same as every other read route: an operator configures
 // Prometheus's remote_read.authorization.credentials with a
 // Levelrail API token scoped to at least "read" (see the token

@@ -29,9 +29,10 @@ type LogLine struct {
 
 // Logs streams a container's log output, demultiplexed into a channel of
 // individually stream-tagged, timestamped lines. Reads directly from the
-// Docker Engine API's log endpoint (CLAUDE.md 4.8's explicit call-out:
-// never the json-file driver's on-disk files), matching Events' own
-// channel-based streaming shape rather than a blocking read loop.
+// Docker Engine API's log endpoint, per the observability design rule
+// that logs never come from the json-file driver's on-disk files,
+// matching Events' own channel-based streaming shape rather than a
+// blocking read loop.
 //
 // Docker multiplexes stdout and stderr into a single byte stream with an
 // 8-byte frame header per chunk whenever a container wasn't created with

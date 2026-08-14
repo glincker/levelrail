@@ -111,8 +111,8 @@ func loginLimiterKey(r *http.Request, username string) string {
 // RemoteAddr. Deliberately does not consult X-Forwarded-For: trusting
 // that header safely requires knowing how many proxy hops are in front
 // and stripping anything past the trusted one, since it's otherwise
-// trivially spoofable to defeat this exact limiter. CLAUDE.md 4.5 puts
-// Caddy in front of every real deployment's app ingress, but the
+// trivially spoofable to defeat this exact limiter. Caddy sits in
+// front of every real deployment's app ingress, but the
 // control plane's own admin listener isn't behind it yet; wiring a
 // specific trusted-hop count is a follow-up for when that topology
 // exists, not a default to guess at now.

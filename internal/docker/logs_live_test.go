@@ -11,8 +11,8 @@ import (
 
 // TestClient_Logs_Live proves Logs actually demultiplexes a real
 // container's stdout and stderr into correctly-tagged, timestamped lines,
-// reading from the Docker Engine API directly (CLAUDE.md 4.8: never the
-// json-file driver's on-disk files).
+// reading from the Docker Engine API directly (the observability design
+// rule that logs never come from the json-file driver's on-disk files).
 //
 // ContainerSpec has no command-override field (stats_test.go's live test
 // comment notes the same gap), so this test builds the container directly

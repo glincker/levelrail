@@ -14,7 +14,8 @@ import (
 var migrationsFS embed.FS
 
 // migration is one forward-only, numbered schema change, no down
-// migration by design (CLAUDE.md 4.7's convention, applied here too).
+// migration by design (the same versioned, forward-only migration
+// convention used across the store, applied here too).
 //
 // This runner is a deliberate near-duplicate of internal/store's and
 // internal/telemetry's own migrate.go, not a shared package: those

@@ -14,8 +14,8 @@ import (
 // TelemetryQuerier is the surface the metrics and logs query handlers
 // need (TASKS.md 2.3). *telemetry.Federator satisfies this
 // structurally: today it fans out to exactly one source (this node's
-// own local store), the same single-node-now shape CLAUDE.md 4.3
-// already establishes for the reconcile agent transport, so Phase 3's
+// own local store), the same single-node-now shape already established
+// for the reconcile agent transport, so Phase 3's
 // real multi-node federation slots in here without this package
 // changing.
 type TelemetryQuerier interface {

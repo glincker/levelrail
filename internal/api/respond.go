@@ -7,9 +7,9 @@ import (
 )
 
 // apiError is the JSON body every non-2xx response returns. A stable,
-// predictable error shape matters here specifically because CLAUDE.md
-// 4.11 has a later MCP layer parsing these responses programmatically,
-// not just a human reading them in a browser.
+// predictable error shape matters here specifically because a later MCP
+// layer is expected to parse these responses programmatically, not just
+// a human reading them in a browser.
 type apiError struct {
 	Error string `json:"error"`
 }

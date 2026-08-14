@@ -43,8 +43,8 @@ var validAbilities = []string{AbilityRead, AbilityReadSensitive, AbilityWrite, A
 
 // hasAbility reports whether abilities grants required: either directly,
 // or via AbilityRoot, which implies everything. A session (the single
-// human admin, per CLAUDE.md 6 Phase 1's "single admin user... no teams,
-// no RBAC yet") is never checked against this function at all, it is
+// human admin, matching this phase's single-admin-user model of no teams
+// and no RBAC yet) is never checked against this function at all, it is
 // always treated as implicitly root, since there is exactly one identity
 // to be; hasAbility only gates bearer-token callers, where scoping is
 // the entire point.

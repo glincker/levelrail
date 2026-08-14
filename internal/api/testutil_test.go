@@ -20,7 +20,7 @@ const (
 
 // openTestDB opens a fresh temp-file SQLite store, the same pattern
 // internal/store's own tests use (internal/store/store_test.go), not a
-// mock: CLAUDE.md 7 wants real behavior under test, and the store
+// mock: the project favors real behavior under test, and the store
 // package is fast and local enough that a mock buys nothing here.
 func openTestDB(t *testing.T) *store.DB {
 	t.Helper()
