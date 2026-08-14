@@ -64,6 +64,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return exitOK
 	case "apps":
 		return runApps(prog, args[1:], stdout, stderr, lookupEnv)
+	case "databases":
+		return runDatabases(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown command %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, rootUsage(prog))
@@ -75,9 +77,15 @@ func rootUsage(prog string) string {
 	return fmt.Sprintf(`%[1]s: a scriptable client for the control plane API.
 
 Usage:
-  %[1]s apps create [flags]     create an app
-  %[1]s apps list [flags]         list apps
-  %[1]s apps get <name> [flags]   show one app
+  %[1]s apps create [flags]         create an app
+  %[1]s apps list [flags]             list apps
+  %[1]s apps get <name> [flags]       show one app
+  %[1]s apps deploy <name> [flags]   deploy an image to an existing app (also how rollback works)
+  %[1]s apps status <name> [flags]   show an app's current reconcile conditions
+  %[1]s apps logs <name> [flags]     search an app's stored log entries
+  %[1]s databases create [flags]     create a managed database
+  %[1]s databases list [flags]         list databases
+  %[1]s databases get <name> [flags]   show one database
 
 Auth and target:
   --token, %[2]s          API token
@@ -85,6 +93,6 @@ Auth and target:
   or a credentials file at ~/.config/%[1]s/credentials with
   %[2]s=... and %[3]s=... lines.
 
-Run "%[1]s apps -h" or "%[1]s apps <subcommand> -h" for more.
+Run "%[1]s apps -h", "%[1]s databases -h", or "%[1]s <command> <subcommand> -h" for more.
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

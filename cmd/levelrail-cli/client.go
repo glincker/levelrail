@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -78,6 +79,57 @@ type buildTriggerRequestBuild struct {
 type buildTriggerResponse struct {
 	Image string      `json:"image"`
 	App   appResource `json:"app"`
+}
+
+// deployTriggerRequest mirrors internal/api's deployTriggerRequest
+// (internal/api/deploys.go). Response is a plain appResource (the app's
+// now-updated desired state), the same shape CreateApp/GetApp already
+// use, so no separate response type is needed here.
+type deployTriggerRequest struct {
+	Image string `json:"image"`
+}
+
+// conditionResource mirrors internal/reconcile.Condition, the wire shape
+// both GET /api/v1/apps/{name}/deploys (internal/api/deploys.go's
+// handleDeployHistory) and GET /api/v1/databases/{name}/status
+// (internal/api/databases.go's handleDatabaseStatus) return. The source
+// type carries no json struct tags, so its field names are the wire
+// field names verbatim; the tags here just make that explicit rather
+// than relying on encoding/json's case-insensitive match.
+type conditionResource struct {
+	Type               string    `json:"Type"`
+	Status             string    `json:"Status"`
+	Reason             string    `json:"Reason"`
+	Message            string    `json:"Message"`
+	LastTransitionTime time.Time `json:"LastTransitionTime"`
+}
+
+// logEntryResource mirrors internal/api's logEntryResource
+// (internal/api/logs.go).
+type logEntryResource struct {
+	Timestamp  time.Time       `json:"timestamp"`
+	Stream     string          `json:"stream"`
+	Message    string          `json:"message"`
+	Structured bool            `json:"structured"`
+	FieldsJSON json.RawMessage `json:"fields,omitempty"`
+}
+
+// logsResponse mirrors internal/api's logsResponse (internal/api/logs.go).
+type logsResponse struct {
+	Entries []logEntryResource `json:"entries"`
+}
+
+// databaseResource mirrors internal/api's databaseResource
+// (internal/api/databases.go). NodeID is response-only, the same
+// "shown but not settable through this endpoint" boundary appResource's
+// own NodeID field already documents: there is no CLI-facing way to set
+// it, matching there being no PUT .../databases/{name}/node command
+// here either.
+type databaseResource struct {
+	Name    string `json:"name"`
+	Engine  string `json:"engine"`
+	Version string `json:"version"`
+	NodeID  string `json:"node_id,omitempty"`
 }
 
 // apiErrorBody is the JSON shape every non-2xx response from the
@@ -214,6 +266,66 @@ func (c *Client) ListApps(ctx context.Context) ([]appResource, error) {
 func (c *Client) TriggerBuild(ctx context.Context, name string, req buildTriggerRequest) (buildTriggerResponse, error) {
 	var out buildTriggerResponse
 	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+pathEscape(name)+"/builds", req, &out)
+	return out, err
+}
+
+// DeployApp calls POST /api/v1/apps/{name}/deploys: points the app's
+// desired image at image. Asynchronous, same as the server-side
+// handler's own doc comment describes: this returns as soon as the
+// desired state is saved, not once a container is actually running it.
+// Also how a rollback is done: deploying an older, already-known tag
+// with this same method (see apps_deploy.go's own usage text).
+func (c *Client) DeployApp(ctx context.Context, name, image string) (appResource, error) {
+	var out appResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+pathEscape(name)+"/deploys", deployTriggerRequest{Image: image}, &out)
+	return out, err
+}
+
+// GetDeployStatus calls GET /api/v1/apps/{name}/deploys: the application
+// controller's current stored reconcile conditions, not a deploy history
+// log (internal/api/deploys.go's own handleDeployHistory doc comment).
+func (c *Client) GetDeployStatus(ctx context.Context, name string) ([]conditionResource, error) {
+	var out []conditionResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+pathEscape(name)+"/deploys", nil, &out)
+	return out, err
+}
+
+// QueryLogs calls GET /api/v1/apps/{name}/logs?from=&to=&q=
+// (internal/api/logs.go's handleQueryLogs): a real, historical full-text
+// search over already-stored log entries. from/to are sent as RFC3339,
+// the same format the server requires (internal/api's parseTimeRange);
+// q empty means every entry in the window, matching the server's own
+// "empty query" contract.
+func (c *Client) QueryLogs(ctx context.Context, name string, from, to time.Time, q string) ([]logEntryResource, error) {
+	query := url.Values{}
+	query.Set("from", from.UTC().Format(time.RFC3339))
+	query.Set("to", to.UTC().Format(time.RFC3339))
+	if q != "" {
+		query.Set("q", q)
+	}
+	var out logsResponse
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+pathEscape(name)+"/logs?"+query.Encode(), nil, &out)
+	return out.Entries, err
+}
+
+// CreateDatabase calls POST /api/v1/databases.
+func (c *Client) CreateDatabase(ctx context.Context, req databaseResource) (databaseResource, error) {
+	var out databaseResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases", req, &out)
+	return out, err
+}
+
+// GetDatabase calls GET /api/v1/databases/{name}.
+func (c *Client) GetDatabase(ctx context.Context, name string) (databaseResource, error) {
+	var out databaseResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+pathEscape(name), nil, &out)
+	return out, err
+}
+
+// ListDatabases calls GET /api/v1/databases.
+func (c *Client) ListDatabases(ctx context.Context) ([]databaseResource, error) {
+	var out []databaseResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases", nil, &out)
 	return out, err
 }
 

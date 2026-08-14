@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"text/tabwriter"
+	"time"
 )
 
 // Exit codes. Distinct on purpose (per the CLI's own design brief: "real,
@@ -98,6 +99,66 @@ func printAppsTable(out io.Writer, apps []appResource) {
 			node = "(local)"
 		}
 		_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\t%s\n", a.Name, a.Image, a.Port, node)
+	}
+	_ = tw.Flush()
+}
+
+// printConditionsHuman prints an app's or database's current reconcile
+// conditions ("apps status"/"databases status" output): current status,
+// not a history log, matching what GetConditions itself returns.
+func printConditionsHuman(out io.Writer, conditions []conditionResource) {
+	if len(conditions) == 0 {
+		_, _ = fmt.Fprintln(out, "no conditions reported yet")
+		return
+	}
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "TYPE\tSTATUS\tREASON\tMESSAGE\tLAST TRANSITION")
+	for _, c := range conditions {
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", c.Type, c.Status, c.Reason, c.Message, c.LastTransitionTime.Format(time.RFC3339))
+	}
+	_ = tw.Flush()
+}
+
+// printLogEntriesHuman prints "apps logs" output: one line per entry,
+// oldest first (the order handleQueryLogs' underlying store returns
+// them in), timestamp and stream prefixed so stdout/stderr lines are
+// distinguishable without needing --json.
+func printLogEntriesHuman(out io.Writer, entries []logEntryResource) {
+	if len(entries) == 0 {
+		_, _ = fmt.Fprintln(out, "no log entries in range")
+		return
+	}
+	for _, e := range entries {
+		_, _ = fmt.Fprintf(out, "%s %s %s\n", e.Timestamp.Format(time.RFC3339), e.Stream, e.Message)
+	}
+}
+
+// printDatabaseHuman prints one database resource in a human-readable,
+// non-JSON form ("databases get" output).
+func printDatabaseHuman(out io.Writer, d databaseResource) {
+	_, _ = fmt.Fprintf(out, "name:     %s\n", d.Name)
+	_, _ = fmt.Fprintf(out, "engine:   %s\n", d.Engine)
+	_, _ = fmt.Fprintf(out, "version:  %s\n", d.Version)
+	if d.NodeID != "" {
+		_, _ = fmt.Fprintf(out, "node:     %s\n", d.NodeID)
+	}
+}
+
+// printDatabasesTable prints a compact, aligned table of databases
+// ("databases list" output), the same shape printAppsTable uses for apps.
+func printDatabasesTable(out io.Writer, dbs []databaseResource) {
+	if len(dbs) == 0 {
+		_, _ = fmt.Fprintln(out, "no databases")
+		return
+	}
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "NAME\tENGINE\tVERSION\tNODE")
+	for _, d := range dbs {
+		node := d.NodeID
+		if node == "" {
+			node = "(local)"
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", d.Name, d.Engine, d.Version, node)
 	}
 	_ = tw.Flush()
 }
