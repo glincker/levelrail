@@ -148,6 +148,7 @@ type Store interface {
 	AuthStore
 	TokenStore
 	NodeStore
+	CertStore
 }
 
 // SecretSetter is the surface the secrets handler needs from
@@ -208,6 +209,11 @@ type Router struct {
 	dataDir      string        // "" means "don't report disk usage", set via WithDataDir
 	dockerPinger DockerPinger  // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
 	images       ImageLister   // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
+	certs        CertStore     // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
+	// certExpiryWarningWindow overrides defaultCertExpiryWarningWindow
+	// for GET /api/v1/certificates's "expiring_soon" threshold. 0 means
+	// "use the default", set via WithCertExpiryWarningWindow.
+	certExpiryWarningWindow time.Duration
 }
 
 // Option configures optional Router behavior.
@@ -282,6 +288,18 @@ func WithImageLister(l ImageLister) Option {
 	return func(rt *Router) { rt.images = l }
 }
 
+// WithCertExpiryWarningWindow overrides how far ahead of a certificate's
+// expiry GET /api/v1/certificates starts reporting "expiring_soon"
+// instead of "healthy" (see statusForExpiry). Without one configured (or
+// passed as 0), defaultCertExpiryWarningWindow (14 days) applies. Same
+// "no hardcoded thresholds, use env vars" shape as WithSessionTTL: this
+// package never reads the environment directly, cmd/levelrail/main.go
+// reads APP_CERT_EXPIRY_WARNING_WINDOW and passes the parsed duration
+// here.
+func WithCertExpiryWarningWindow(d time.Duration) Option {
+	return func(rt *Router) { rt.certExpiryWarningWindow = d }
+}
+
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
 func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Router {
 	if logger == nil {
@@ -296,6 +314,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		auth:      s,
 		tokens:    s,
 		nodes:     s,
+		certs:     s,
 		logins:    newLoginLimiter(),
 	}
 	for _, opt := range opts {
@@ -433,6 +452,16 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("POST /api/v1/nodes/{id}/cordon", rt.requireAbility(AbilityRoot, rt.handleCordonNode))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/uncordon", rt.requireAbility(AbilityRoot, rt.handleUncordonNode))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/drain", rt.requireAbility(AbilityRoot, rt.handleDrainNode))
+
+	// Certificates (TLS renewal visibility): CLAUDE.md section 10 names
+	// "a cert renewal fails silently at 3am" as this project's central
+	// risk to catch before it bites a real user, and until now nothing
+	// in the API surfaced certificate state at all. Read-only, so
+	// AbilityRead like handleSystemStatus/handleGetNodeHealth, not
+	// AbilityRoot: seeing whether a domain's certificate is about to
+	// expire is ordinary operator visibility, not a fleet-admin
+	// mutation the way the node routes above are.
+	mux.HandleFunc("GET /api/v1/certificates", rt.requireAbility(AbilityRead, rt.handleListCertificates))
 
 	return mux
 }

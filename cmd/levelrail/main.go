@@ -1029,6 +1029,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDataDir(dataDir),
 		api.WithDockerPinger(client),
 		api.WithImageLister(client),
+		api.WithCertExpiryWarningWindow(certExpiryWarningWindow(logger)),
 	}
 	if secretsManager != nil {
 		opts = append(opts, api.WithSecretSetter(secretsManager))
@@ -1065,6 +1066,27 @@ func sessionTTL(logger *slog.Logger) time.Duration {
 	d, err := time.ParseDuration(raw)
 	if err != nil {
 		logger.Warn("invalid APP_SESSION_TTL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return d
+}
+
+// certExpiryWarningWindow reads APP_CERT_EXPIRY_WARNING_WINDOW as a Go
+// duration string, the same env-var-with-default shape sessionTTL above
+// already uses for api.WithSessionTTL, applied here to
+// api.WithCertExpiryWarningWindow (GET /api/v1/certificates's
+// "expiring_soon" threshold). Returns 0 (api's own signal to fall back
+// to its internal default, api.defaultCertExpiryWarningWindow) when
+// unset or unparseable, logging a warning in the latter case so a
+// typo'd env var is visible rather than silently ignored.
+func certExpiryWarningWindow(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_CERT_EXPIRY_WARNING_WINDOW")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_CERT_EXPIRY_WARNING_WINDOW, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return 0
 	}
 	return d
