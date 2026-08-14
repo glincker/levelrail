@@ -5,11 +5,11 @@
 // loader's queryClient.ensureQueryData call and the component's
 // useSuspenseQuery/hook call.
 //
-// This only covers connecting/listing/removing a bucket destination.
-// Triggering an actual backup or reading backup history has no
-// corresponding endpoint yet (backup_targets.go's own handlers stop at
-// the connection, not the runs), so there is nothing here for either of
-// those, deliberately.
+// This only covers connecting/listing/removing a bucket destination
+// (backup_targets.go's own handlers stop at the connection, not the
+// runs). Triggering an actual backup and reading its history is
+// queries/backupHistory.ts's job, a separate resource scoped under a
+// database name rather than a target id.
 
 import {
   queryOptions,
