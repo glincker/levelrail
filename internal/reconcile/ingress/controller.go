@@ -65,8 +65,17 @@ import (
 // service), this controller needs every known service in one call: see
 // the package doc comment for why ingress reconciles as a single whole
 // pass rather than per-service.
+//
+// ListStaticSites is CLAUDE.md 4.4's static-site bypass of the
+// container reconciler (migrations/0015_static_sites.sql,
+// internal/store.StaticSite): a static site is never a
+// store.DesiredService (no image, no port, nothing to converge to a
+// running container), so it needs its own listing call, read fresh on
+// every Reconcile exactly like ListDesiredServices, rather than being
+// threaded through the container-service shape as a special case.
 type ServiceStore interface {
 	ListDesiredServices(ctx context.Context) ([]store.DesiredService, error)
+	ListStaticSites(ctx context.Context) ([]store.StaticSite, error)
 }
 
 // Applier is the narrow surface this controller needs from
@@ -198,31 +207,46 @@ func New(svcStore ServiceStore, runtime docker.Runtime, driver Applier, opts ...
 func (c *Controller) Name() string { return "ingress" }
 
 // Reconcile implements reconcile.Controller. It lists every desired
-// service, builds one route per service that both declares domains and
-// currently has a running, port-published container, and applies the
+// service and every static site (store.StaticSite, CLAUDE.md 4.4's
+// container-free bypass, migrations/0015_static_sites.sql), builds one
+// reverse-proxy route per service that both declares domains and
+// currently has a running, port-published container, one file_server
+// route per static site that declares domains, and applies the
 // resulting whole Config to Caddy in a single call (see the package doc
-// comment for why this can't be done incrementally).
+// comment for why this can't be done incrementally). Both kinds of route
+// share one claimedHosts pass so a container service and a static site
+// can never both route the same host within one apply, the same
+// defense-in-depth firstDuplicateHost already gave container services
+// alone before static sites existed.
 //
 // A service with no valid backend right now (mid-deploy, crashed, never
 // deployed) is not a reconcile failure: it's simply left out of this
 // pass's config, logged at debug level, and picked up automatically once
 // a later reconcile finds it running (this controller and the
 // application controller both re-run on every Docker event and resync
-// tick, per the shared Engine). Only a genuine failure to list desired
-// state, build the config, or apply it to Caddy is reported as an error.
+// tick, per the shared Engine). A static site never has this problem:
+// there is no container to wait for, so every static site with domains
+// is routed the moment internal/deploy.Pipeline has saved it, on this
+// controller's very next reconcile. Only a genuine failure to list
+// desired state, build the config, or apply it to Caddy is reported as
+// an error.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	services, err := c.store.ListDesiredServices(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list desired services: %w", err)
 	}
+	staticSites, err := c.store.ListStaticSites(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list static sites: %w", err)
+	}
 
 	var routes []ingress.ProxyRoute
-	claimedHosts := make(map[string]string, len(services)) // host -> owning service, this pass only
+	claimedHosts := make(map[string]string, len(services)+len(staticSites)) // host -> owning service/static site, this pass only
 	for _, svc := range services {
 		if len(svc.Domains) == 0 {
 			continue
 		}
-		if owner, host, dup := firstDuplicateHost(svc, claimedHosts); dup {
+		if owner, host, dup := firstDuplicateHost(svc.Name, svc.Domains, claimedHosts); dup {
 			// store.SaveDesiredService (TASKS.md 3.6) now rejects a save
 			// that would create this situation for any service written
 			// after that change landed, so reaching this branch means
@@ -249,14 +273,40 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		routes = append(routes, route)
 	}
 
+	var staticRoutes []ingress.StaticRoute
+	for _, site := range staticSites {
+		if len(site.Domains) == 0 {
+			continue
+		}
+		if owner, host, dup := firstDuplicateHost(site.Name, site.Domains, claimedHosts); dup {
+			// Mirrors the container-service guard above: store.SaveStaticSite
+			// (migrations/0015) already rejects a save that would create
+			// this situation, this is the same defense-in-depth for
+			// pre-existing data, now covering the cross-table case too (a
+			// static site and a container service claiming the same
+			// host).
+			c.logger.WarnContext(ctx, "ingress: static site claims a domain another service or static site already routed this pass, skipping",
+				slog.String("static_site", site.Name),
+				slog.String("domain", host),
+				slog.String("already_routed_to", owner),
+			)
+			continue
+		}
+		for _, host := range site.Domains {
+			claimedHosts[host] = site.Name
+		}
+		staticRoutes = append(staticRoutes, ingress.StaticRoute{Hosts: site.Domains, RootDir: site.RootDir})
+	}
+
 	cfg, err := ingress.BuildRoutesConfig(ingress.RoutesOptions{
-		ServerName:  c.serverName,
-		ListenAddr:  c.listenAddr,
-		Routes:      routes,
-		TLS:         true,
-		AdminListen: c.adminListen,
-		StorageDir:  c.storageDir,
-		CertStorage: c.certStorage,
+		ServerName:   c.serverName,
+		ListenAddr:   c.listenAddr,
+		Routes:       routes,
+		StaticRoutes: staticRoutes,
+		TLS:          true,
+		AdminListen:  c.adminListen,
+		StorageDir:   c.storageDir,
+		CertStorage:  c.certStorage,
 	})
 	if err != nil {
 		return notReady("BuildConfigFailed", err), fmt.Errorf("ingress: build config: %w", err)
@@ -266,22 +316,29 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		return notReady("ApplyFailed", err), fmt.Errorf("ingress: apply config: %w", err)
 	}
 
-	reason := fmt.Sprintf("Routed%dServices", len(routes))
+	total := len(routes) + len(staticRoutes)
+	reason := fmt.Sprintf("Routed%dServices", total)
 	return reconcile.Result{Conditions: []reconcile.Condition{{
 		Type:    "Ready",
 		Status:  reconcile.ConditionTrue,
 		Reason:  reason,
-		Message: fmt.Sprintf("%d service(s) with domains have a running backend and are routed", len(routes)),
+		Message: fmt.Sprintf("%d service(s)/static site(s) with domains are routed (%d with a running backend, %d served directly)", total, len(routes), len(staticRoutes)),
 	}}}, nil
 }
 
-// firstDuplicateHost reports the first of svc.Domains already present in
-// claimed (owned by a different service), if any. See Reconcile's own
+// firstDuplicateHost reports the first of domains already present in
+// claimed (owned by a resource other than name), if any. Shared by both
+// container services and static sites (Reconcile calls it once per
+// resource kind against the same claimedHosts map), since the conflict
+// it guards against, migrations/0015's own comment explains, is no
+// longer confined to one table: a static site and a container service
+// must never both route the same host either. See Reconcile's own
 // comment for why this check exists as a defense-in-depth guard on top
-// of store.SaveDesiredService's own domain-uniqueness enforcement.
-func firstDuplicateHost(svc store.DesiredService, claimed map[string]string) (owner, host string, dup bool) {
-	for _, h := range svc.Domains {
-		if o, ok := claimed[h]; ok && o != svc.Name {
+// of store.SaveDesiredService's and store.SaveStaticSite's own
+// domain-uniqueness enforcement.
+func firstDuplicateHost(name string, domains []string, claimed map[string]string) (owner, host string, dup bool) {
+	for _, h := range domains {
+		if o, ok := claimed[h]; ok && o != name {
 			return o, h, true
 		}
 	}

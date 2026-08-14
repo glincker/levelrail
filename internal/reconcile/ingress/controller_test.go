@@ -19,8 +19,10 @@ import (
 // internal/reconcile/application's tests already established: stateful
 // enough for realistic multi-service scenarios, not just a call counter.
 type fakeStore struct {
-	services []store.DesiredService
-	err      error
+	services       []store.DesiredService
+	err            error
+	staticSites    []store.StaticSite
+	staticSitesErr error
 }
 
 func (f *fakeStore) ListDesiredServices(_ context.Context) ([]store.DesiredService, error) {
@@ -28,6 +30,13 @@ func (f *fakeStore) ListDesiredServices(_ context.Context) ([]store.DesiredServi
 		return nil, f.err
 	}
 	return f.services, nil
+}
+
+func (f *fakeStore) ListStaticSites(_ context.Context) ([]store.StaticSite, error) {
+	if f.staticSitesErr != nil {
+		return nil, f.staticSitesErr
+	}
+	return f.staticSites, nil
 }
 
 // fakeRuntime implements docker.Runtime with an in-memory container set,
@@ -276,6 +285,10 @@ func TestController_Reconcile_RunningNoPorts_SkippedNotFailed(t *testing.T) {
 		t.Errorf("condition.Reason = %q, want Routed0Services", cond.Reason)
 	}
 }
+
+// build.type: static (CLAUDE.md 4.4) coverage for Controller lives in
+// controller_static_test.go, not here, purely to keep this file's line
+// count down; it shares every fake and helper defined in this file.
 
 func TestController_Reconcile_InspectError_SkippedNotFailed(t *testing.T) {
 	desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Domains: []string{"web.example.com"}}

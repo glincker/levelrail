@@ -173,11 +173,13 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 // claimServiceDomains replaces serviceName's rows in service_domains
 // with exactly domains: every domain serviceName previously claimed but
 // no longer declares is released, and every domain it now declares is
-// claimed, unless a different service already claims it, in which case
-// this returns *ErrDomainTaken and the caller's whole transaction rolls
-// back (claimServiceDomains never partially claims a service's domain
-// list). Duplicate entries within domains are claimed once, not
-// reported as a conflict against themselves.
+// claimed, unless a different service or static site already claims it
+// (domainOwner, migrations/0015, checks both service_domains and
+// static_site_domains), in which case this returns *ErrDomainTaken and
+// the caller's whole transaction rolls back (claimServiceDomains never
+// partially claims a service's domain list). Duplicate entries within
+// domains are claimed once, not reported as a conflict against
+// themselves.
 func claimServiceDomains(ctx context.Context, tx *sql.Tx, serviceName string, domains []string) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM service_domains WHERE service_name = ?`, serviceName); err != nil {
 		return fmt.Errorf("clear existing domain claims: %w", err)
@@ -190,15 +192,12 @@ func claimServiceDomains(ctx context.Context, tx *sql.Tx, serviceName string, do
 		}
 		claimed[domain] = true
 
-		var owner string
-		err := tx.QueryRowContext(ctx, `SELECT service_name FROM service_domains WHERE domain = ?`, domain).Scan(&owner)
-		switch {
-		case err == nil:
-			return &ErrDomainTaken{Domain: domain, Owner: owner}
-		case errors.Is(err, sql.ErrNoRows):
-			// Free: fall through and claim it.
-		default:
+		owner, found, err := domainOwner(ctx, tx, domain)
+		if err != nil {
 			return fmt.Errorf("check domain %q availability: %w", domain, err)
+		}
+		if found {
+			return &ErrDomainTaken{Domain: domain, Owner: owner}
 		}
 
 		if _, err := tx.ExecContext(ctx, `

@@ -104,6 +104,13 @@ type Pipeline struct {
 	secrets SecretChecker        // nil is valid: secret-backed env vars are rejected without one
 	metrics BuildMetricsRecorder // nil is valid: build duration just isn't recorded
 	logger  *slog.Logger
+
+	// staticSites and staticRootDir back build.type: static (static.go);
+	// both nil/empty is valid, the same "fail loudly without config"
+	// shape secrets above already establishes for a different optional
+	// feature.
+	staticSites   StaticSiteStore
+	staticRootDir string
 }
 
 // New builds a Pipeline.
@@ -116,18 +123,29 @@ func New(builder ImageBuilder, svcStore ServiceStore, opts ...Option) *Pipeline 
 }
 
 // Deploy runs req's build (if its build.Type needs one) and saves the
-// resulting desired state, ready for the application controller to
-// converge on its next reconcile. It returns the full image reference
-// that was built and saved.
+// resulting desired state. For every build.Type except spec.BuildStatic,
+// that means the full image reference that was built, ready for the
+// application controller to converge on its next reconcile, which is
+// also what's returned. spec.BuildStatic has no image and no container
+// for the application controller to converge to at all (see static.go's
+// package doc comment): its desired state is a store.StaticSite instead
+// of a store.DesiredService, consumed directly by
+// internal/reconcile/ingress rather than the application controller, and
+// the string this returns is the local directory now being served, not
+// an image reference.
 //
 // progress, if non-nil, receives build progress as it happens; see
-// build.ProgressEvent and build.SlogProgress.
+// build.ProgressEvent and build.SlogProgress. A static deploy never
+// invokes it: there is no build step to report progress on.
 func (p *Pipeline) Deploy(ctx context.Context, req Request, progress func(build.ProgressEvent)) (string, error) {
 	switch req.Service.Build.Type {
 	case spec.BuildDockerfile:
 		return p.deployDockerfile(ctx, req, progress)
 	case spec.BuildStatic:
-		return "", fmt.Errorf("deploy: service %q: build.type %q needs ingress integration first (TASKS.md 1.6), not yet supported", req.ServiceName, spec.BuildStatic)
+		// No image, no build.ProgressEvent stream: see static.go's
+		// package doc comment for why this is a directory copy plus a
+		// store.StaticSite save, not a build.
+		return p.deployStatic(ctx, req)
 	case spec.BuildCompose:
 		return "", fmt.Errorf("deploy: service %q: build.type %q is not yet supported", req.ServiceName, spec.BuildCompose)
 	case spec.BuildRailpack:

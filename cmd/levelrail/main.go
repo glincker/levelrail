@@ -859,9 +859,26 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		return dockerErr
 	}
 
+	// build.type: static (CLAUDE.md 4.4) needs a durable directory to
+	// copy site output into, distinct from BuildKit's own image build:
+	// staticSitesDir lives under this control plane's own data directory,
+	// the same "operator-controlled startup config, not user input"
+	// dataDir every other on-disk state in this file already resolves,
+	// not the ephemeral checkout dir internal/webhook removes the moment
+	// Deploy returns (see static.go's deployStatic doc comment for why
+	// serving straight from that checkout would break the instant the
+	// webhook handler's own deferred cleanup runs).
+	dataDir := os.Getenv("APP_DATA_DIR")
+	if dataDir == "" {
+		dataDir = defaultDataDir
+	}
+	staticSitesDir := filepath.Join(dataDir, "static")
+
 	deployOpts := []deploy.Option{
 		deploy.WithBuildMetricsRecorder(telemetryDB),
 		deploy.WithLogger(logger),
+		deploy.WithStaticSiteStore(db),
+		deploy.WithStaticRootDir(staticSitesDir),
 	}
 	if secretsManager != nil {
 		deployOpts = append(deployOpts, deploy.WithSecretChecker(secretsManager))

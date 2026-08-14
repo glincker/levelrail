@@ -186,7 +186,12 @@ func TestPipeline_Deploy_SaveFailure(t *testing.T) {
 }
 
 func TestPipeline_Deploy_UnsupportedBuildTypes(t *testing.T) {
-	tests := []string{spec.BuildStatic, spec.BuildCompose, spec.BuildRailpack, "not-a-real-type", ""}
+	// spec.BuildStatic is deliberately not in this list: it has its own
+	// TestPipeline_DeployStatic_* tests in static_test.go, since a
+	// successful static deploy needs a StaticSiteStore/static root dir
+	// configured, unlike every case here which fails before any of that
+	// matters.
+	tests := []string{spec.BuildCompose, spec.BuildRailpack, "not-a-real-type", ""}
 
 	for _, bt := range tests {
 		t.Run(bt, func(t *testing.T) {
