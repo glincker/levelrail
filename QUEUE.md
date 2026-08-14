@@ -38,16 +38,29 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
 
 ## In progress
 
-- [ ] **New direction, not yet scoped**: sidebar only has Apps/Databases;
-      founder wants more sections, and wants the app/database creation
-      flow rethought entirely, a small modal isn't the right shape once
-      an operator is choosing what container to spin up on their own
-      VPS. Explicit ask to study how Coolify does this (wizard-style,
-      multi-step, preloaded/templated image choices, "3-click start"),
-      figure out what Levelrail's version should look like, and revisit
-      icon sourcing (thesvg.org suggested for weight reasons) against the
-      Phosphor-only rule ADR 014 just locked in. See the new note at the
-      top of this file once research lands.
+Design approved: `docs/superpowers/specs/2026-08-14-creation-wizard-and-sidebar-design.md`
+(brainstormed with the founder, confirmed against a local read-only
+Coolify clone). Round 7, two independent pieces dispatched:
+
+- [ ] Icon integration: `@thesvg/react` (real published npm package,
+      typed React components, confirmed `docker`/`postgresql`/`redis`
+      installed and versioned, same tree-shakeable subpath-import shape
+      Phosphor already uses) vendors exactly 4 brand-logo icons for the
+      step-1 picker. UI chrome stays 100% Phosphor, unchanged, this is
+      brand marks only. (builder dispatched)
+- [ ] Dynamic/contextual + floating sidebar: `AppSidebar.tsx` gains a
+      global vs. app-scoped mode (Vercel-style), the Apps detail page's
+      client-side `Tabs` (Overview/Domains/Environment/Health/
+      Resources/Metrics/Logs/Alerts) become real nested routes driving
+      the scoped sidebar nav instead of local tab state. Floating
+      variant: `components/ui/sidebar.tsx`'s `Sidebar` primitive
+      already implements `variant="floating"` (padding/rounded/shadow/
+      ring all pre-built), currently unused, close to a one-prop
+      change plus surrounding layout adjustment. (builder dispatched)
+
+Queued to follow once icons land (genuine dependency, not just
+sequencing for its own sake): the 2-step creation wizard itself
+(picker + per-type config), which consumes the icon component above.
 
 ## Next up (priority order)
 
