@@ -15,7 +15,8 @@ import (
 // same pattern internal/reconcile/ingress/controller_test.go's fakeStore
 // and fakeApplier already establish for this codebase: stateful enough
 // for realistic scenarios (including injectable failures for the
-// half-succeeded cases CLAUDE.md 7 requires), not just a call counter.
+// half-succeeded cases this codebase's testing standard requires), not
+// just a call counter.
 type fakeCertStore struct {
 	mu sync.Mutex
 
@@ -171,9 +172,10 @@ func TestSQLiteStorage_Load_MissingKeyReturnsFsErrNotExist(t *testing.T) {
 }
 
 func TestSQLiteStorage_Store_PropagatesStoreFailure(t *testing.T) {
-	// The "storage read/write failure mid-reconcile" case CLAUDE.md 7
-	// requires a test for: a real database error (connection lost,
-	// disk full) must surface as a real error, not be swallowed.
+	// The "storage read/write failure mid-reconcile" case this codebase's
+	// testing standard requires a test for: a real database error
+	// (connection lost, disk full) must surface as a real error, not be
+	// swallowed.
 	fc := newFakeCertStore()
 	fc.saveErr = errors.New("disk full")
 	s := NewSQLiteStorage(fc, testLogger(t))

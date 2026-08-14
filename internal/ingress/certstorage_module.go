@@ -24,7 +24,7 @@ func init() {
 // connection in Provision. That would work here too, but it would mean
 // opening a second, independent *sql.DB against the same SQLite file
 // this control plane's own internal/store.DB already has open and
-// migrated (CLAUDE.md 4.7), on every Caddy config reload (every
+// migrated, on every Caddy config reload (every
 // ingress reconcile, per this package's own driver.go). Pointing the
 // module at whichever SQLiteStorage was last registered via
 // SetActiveCertStorage instead reuses the one connection the rest of

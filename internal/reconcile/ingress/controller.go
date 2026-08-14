@@ -10,9 +10,9 @@
 // at a time, this controller reconciles all of them in a single pass:
 // every Reconcile call lists every desired service, derives a complete
 // desired ingress.Config from whichever of them currently have a running
-// backend, and applies that whole document. This fits CLAUDE.md 4.2's
-// level-triggered philosophy directly (re-derive from current state
-// every time, assume nothing about a previous call), it just means the
+// backend, and applies that whole document. This fits the reconciler
+// contract's level-triggered philosophy directly (re-derive from current
+// state every time, assume nothing about a previous call), it just means the
 // unit of reconciliation for ingress is "all routable services," not one
 // resource.
 //
@@ -30,7 +30,8 @@
 //     WithCertStore points it at internal/ingress.SQLiteStorage instead,
 //     a certmagic.Storage backed by internal/store's SQLite, so
 //     multiple ingress-driving processes sharing that database share
-//     cert state (CLAUDE.md 4.5) rather than each independently
+//     cert state, per the ingress design's requirement that certificate
+//     storage live in the database rather than each independently
 //     re-obtaining a certificate for a domain another one already has.
 //   - Domain uniqueness across separate deploys over time (not just
 //     within a single app.yaml, which internal/spec's Validate() already
@@ -144,16 +145,17 @@ func WithAdminListen(addr string) Option {
 // OS-specific default location. Production wiring (TASKS.md 1.9/1.10, not
 // yet built) should point this at a path under the control plane's data
 // directory once that constant exists; this package does not invent one,
-// per CLAUDE.md 3's brand/path indirection rule.
+// keeping with the repo's brand/path indirection rule (no hardcoded
+// paths outside the shared data-directory constant).
 func WithStorageDir(dir string) Option {
 	return func(c *Controller) { c.storageDir = dir }
 }
 
 // WithCertStore points Caddy's certificate/ACME-account storage at
 // internal/store's SQLite (TASKS.md 3.6) instead of the local
-// filesystem: CLAUDE.md 4.5's "certificate storage goes in the database
-// so multi-node deployments share cert state" requirement. Takes
-// precedence over WithStorageDir if both are set. certStore is typically
+// filesystem, so multi-node deployments share cert state instead of each
+// node maintaining its own certificate storage. Takes precedence over
+// WithStorageDir if both are set. certStore is typically
 // the same *store.DB already passed to New as the ServiceStore; New
 // builds it into an ingress.SQLiteStorage and registers it via
 // ingress.SetActiveCertStorage exactly once, not on every Reconcile.
@@ -298,9 +300,9 @@ func (c *Controller) routeFor(ctx context.Context, svc store.DesiredService) (in
 	state, err := c.runtime.InspectByName(ctx, target)
 	if err != nil {
 		// A real Docker-level error inspecting one service's container is
-		// still not worth failing every other service's routing over:
-		// CLAUDE.md 4.2's "one broken resource should never block
-		// convergence of everything else" applies within this single
+		// still not worth failing every other service's routing over: the
+		// principle that one broken resource should never block
+		// convergence of everything else applies within this single
 		// pass too, not just across controllers. Logged at a level above
 		// debug since, unlike "not found" or "not running," this is a
 		// genuine anomaly worth noticing.

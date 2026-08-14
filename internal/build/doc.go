@@ -1,7 +1,9 @@
 // Package build drives container image builds through BuildKit's Go
 // client (github.com/moby/buildkit/client), never by shelling out to
-// `docker build` or the `docker` CLI (CLAUDE.md 4.3, 4.4). It accepts
-// plain Dockerfiles via the dockerfile.v0 frontend (CLAUDE.md 4.9).
+// `docker build` or the `docker` CLI, matching the same "no CLI
+// shelling" rule the node communication layer follows. It accepts
+// plain Dockerfiles via the dockerfile.v0 frontend, per the declarative
+// app spec's build config.
 //
 // This package is the Phase 0 spike only: it proves the client works end
 // to end against the BuildKit instance embedded in a local Docker Engine,

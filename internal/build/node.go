@@ -6,9 +6,10 @@ package build
 //
 // What this deliberately does NOT do: actually open a BuildKit
 // connection on a remote node. Doing that needs a way to reach a remote
-// node's Docker daemon from the control plane, and CLAUDE.md 4.3 is
-// explicit that a managed node has no inbound port and is only ever
-// reached through the reverse-dialed mTLS agent.Transport (TASKS.md
+// node's Docker daemon from the control plane, and the node
+// communication design is explicit that a managed node has no inbound
+// port and is only ever reached through the reverse-dialed mTLS
+// agent.Transport (TASKS.md
 // 3.1/3.2). Today that transport is exactly docker.Runtime's container-
 // operation surface (internal/agent/transport.go's own doc comment:
 // "Deliberately identical in shape to docker.Runtime... A future RPC
@@ -84,9 +85,9 @@ var ErrNoBuildNodeAvailable = errors.New("build: no build-capable node is curren
 //     with the lexicographically smallest ID is selected, a
 //     deterministic, easy-to-reason-about tie-break rather than
 //     anything load-aware; real load-based scheduling is explicitly out
-//     of scope (CLAUDE.md 2: "not building a scheduler with bin-packing,
-//     affinity rules, or autoscaling in v1"), and this is the build-node
-//     equivalent of that same non-goal.
+//     of scope, this project's stated non-goal against building a
+//     scheduler with bin-packing, affinity rules, or autoscaling in v1,
+//     and this is the build-node equivalent of that same non-goal.
 //   - At least one node has AcceptsBuildWorkloads set but none is
 //     Online: returns ErrNoBuildNodeAvailable rather than silently
 //     falling back to the local node; see the sentinel's own doc

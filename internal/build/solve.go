@@ -10,8 +10,9 @@ import (
 )
 
 // newSolveOpt turns a Request into the SolveOpt BuildKit's client needs.
-// It uses the dockerfile.v0 frontend so any plain Dockerfile is accepted
-// (CLAUDE.md 4.9), and an exporter of type "docker", which produces a
+// It uses the dockerfile.v0 frontend so any plain Dockerfile is accepted,
+// per the declarative app spec's build config, and an exporter of type
+// "docker", which produces a
 // `docker save`-style tar stream on out. The caller is responsible for
 // loading that stream into the local image store via the Docker Engine
 // API's /images/load endpoint (see loadImage in build.go); this keeps the

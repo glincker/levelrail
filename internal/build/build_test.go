@@ -48,7 +48,7 @@ func TestSlogProgress(_ *testing.T) {
 // BuildKit instance (see client.go for why that indirection exists). It
 // skips the calling test cleanly, rather than failing, when either isn't
 // reachable, so this test suite does not require Docker-in-Docker to pass
-// in CI (CLAUDE.md 7's testing standard).
+// in CI, per this codebase's testing standard.
 func liveClient(t *testing.T, opts ...Option) (*dockerclient.Client, *Client) {
 	t.Helper()
 

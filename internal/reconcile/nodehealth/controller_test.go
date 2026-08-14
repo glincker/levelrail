@@ -19,9 +19,9 @@ type fakeStore struct {
 	// genuine store failure on GetNode.
 	getErr error
 	// updateStatusErr simulates UpdateNodeStatus failing, the "half
-	// succeeded" case CLAUDE.md 7 requires a test for: the controller
-	// has already decided the node is stale (correctly) but can't
-	// persist that decision.
+	// succeeded" case every reconciler is required to have a test for:
+	// the controller has already decided the node is stale (correctly)
+	// but can't persist that decision.
 	updateStatusErr  error
 	updateStatusCall int
 	lastStatus       store.NodeStatus
@@ -164,8 +164,9 @@ func TestController_Reconcile_StoreError(t *testing.T) {
 	}
 }
 
-// TestController_Reconcile_HalfSucceeded is CLAUDE.md 7's required test
-// for "the case where the operation half-succeeded": the controller
+// TestController_Reconcile_HalfSucceeded is the required test, per this
+// codebase's testing standard, for "the case where the operation
+// half-succeeded": the controller
 // correctly determines the node's heartbeat is stale, but persisting
 // that (UpdateNodeStatus) fails. Reconcile must surface the failure
 // (non-nil error, an Unknown condition rather than silently claiming
