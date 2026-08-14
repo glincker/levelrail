@@ -859,10 +859,15 @@ func loadWebhookHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand
 // tried to call a method on it, rather than hitting api.Router's own
 // "not configured" 501 path.
 func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler) http.Handler {
+	dataDir := os.Getenv("APP_DATA_DIR")
+	if dataDir == "" {
+		dataDir = defaultDataDir
+	}
 	opts := []api.Option{
 		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
 		api.WithAlertRules(alertingDB),
 		api.WithSessionTTL(sessionTTL(logger)),
+		api.WithDataDir(dataDir),
 	}
 	if secretsManager != nil {
 		opts = append(opts, api.WithSecretSetter(secretsManager))

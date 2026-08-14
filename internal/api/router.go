@@ -163,6 +163,7 @@ type Router struct {
 	sessions   *sessionStore
 	logins     *loginLimiter
 	sessionTTL time.Duration // 0 means "use defaultSessionTTL", set via WithSessionTTL
+	dataDir    string        // "" means "don't report disk usage", set via WithDataDir
 }
 
 // Option configures optional Router behavior.
@@ -207,6 +208,16 @@ func WithAlertRules(a AlertRules) Option {
 	return func(rt *Router) { rt.alertRules = a }
 }
 
+// WithDataDir enables disk-usage reporting on GET /api/v1/system/status.
+// path should be the same APP_DATA_DIR the control plane itself was
+// started with. Without one configured (the default), the status
+// response simply omits the two data-dir byte fields, the same
+// "optional signal, absence is not an error" shape WithSecretSetter's
+// own absence already has for secret-setting.
+func WithDataDir(path string) Option {
+	return func(rt *Router) { rt.dataDir = path }
+}
+
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
 func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Router {
 	if logger == nil {
@@ -244,6 +255,11 @@ func (rt *Router) Handler() http.Handler {
 	// on the login screen itself).
 	mux.HandleFunc("GET /api/v1/brand", rt.handleBrand)
 	mux.HandleFunc("GET /api/v1/dev-mode", rt.handleDevMode)
+
+	// System status (General settings page): configured/not-configured
+	// signals plus disk usage, AbilityRead like everything else an
+	// authenticated operator can passively view.
+	mux.HandleFunc("GET /api/v1/system/status", rt.requireAbility(AbilityRead, rt.handleSystemStatus))
 
 	// Auth. Login and first-run registration are necessarily public;
 	// everything else requires an existing session.
