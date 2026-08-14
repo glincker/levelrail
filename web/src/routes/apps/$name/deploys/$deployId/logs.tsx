@@ -1,7 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useCallback, useEffect, useRef } from 'react'
-import { ArrowDown, Terminal } from 'lucide-react'
+import {
+  ArrowDownIcon,
+  TerminalIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   useDeployLogStream,
   type LogStreamConnectionState,
@@ -103,7 +106,7 @@ function DeployLogsPage() {
       <header className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="flex items-center gap-1.5 text-lg font-semibold text-foreground">
-            <Terminal
+            <TerminalIcon
               className="size-4 text-muted-foreground"
               aria-hidden="true"
             />
@@ -173,7 +176,7 @@ function DeployLogsPage() {
             onClick={handleResumeClick}
             className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-neutral-800 px-3 py-1 text-xs font-medium text-neutral-100 shadow-lg hover:bg-neutral-700"
           >
-            <ArrowDown className="size-3.5" aria-hidden="true" />
+            <ArrowDownIcon className="size-3.5" aria-hidden="true" />
             Resume auto-scroll
           </button>
         )}

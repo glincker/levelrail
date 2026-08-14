@@ -2,7 +2,10 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef } from 'react'
-import { DatabaseIcon, PlusIcon } from 'lucide-react'
+import {
+  DatabaseIcon,
+  PlusIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { databaseListQueryOptions } from '../../queries/databases'
 import {
   DATABASE_LIST_GRID,

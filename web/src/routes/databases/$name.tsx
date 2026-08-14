@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeftIcon } from 'lucide-react'
+import { ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   databaseDetailQueryOptions,
   databaseStatusQueryOptions,

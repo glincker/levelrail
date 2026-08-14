@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { FlaskConicalIcon } from 'lucide-react'
+import { FlaskIcon } from '@phosphor-icons/react/dist/ssr'
 import { getStoredUsername } from '../lib/authStore'
 import { brandQueryOptions } from '../queries/brand'
 import { devModeQueryOptions } from '../queries/devMode'
@@ -138,7 +138,7 @@ function LoginPage() {
             })
           }}
         >
-          <FlaskConicalIcon />
+          <FlaskIcon />
           {quickLogin.isPending
             ? 'Signing in...'
             : `Quick dev login (${DEV_MODE_USERNAME}/${DEV_MODE_PASSWORD})`}
