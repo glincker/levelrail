@@ -24,6 +24,15 @@ type fakeBuilder struct {
 	lastReq  build.Request
 	calls    int
 	sawEvent bool
+
+	// Railpack-specific fields, kept separate from the Dockerfile fields
+	// above so a test can assert exactly one path was exercised (e.g.
+	// deployRailpack must never call Build, deployDockerfile must never
+	// call BuildRailpack).
+	railpackResult  *build.Result
+	railpackErr     error
+	lastRailpackReq build.RailpackRequest
+	railpackCalls   int
 }
 
 func (f *fakeBuilder) Build(_ context.Context, req build.Request, progress func(build.ProgressEvent)) (*build.Result, error) {
@@ -37,6 +46,19 @@ func (f *fakeBuilder) Build(_ context.Context, req build.Request, progress func(
 		return nil, f.err
 	}
 	return f.result, nil
+}
+
+func (f *fakeBuilder) BuildRailpack(_ context.Context, req build.RailpackRequest, progress func(build.ProgressEvent)) (*build.Result, error) {
+	f.railpackCalls++
+	f.lastRailpackReq = req
+	if progress != nil {
+		progress(build.ProgressEvent{Step: "fake-railpack", Completed: true})
+		f.sawEvent = true
+	}
+	if f.railpackErr != nil {
+		return nil, f.railpackErr
+	}
+	return f.railpackResult, nil
 }
 
 type fakeServiceStore struct {
@@ -99,6 +121,16 @@ func (f *fakeBuildMetricsRecorder) RecordBuildDuration(_ context.Context, servic
 func dockerfileService() spec.Service {
 	return spec.Service{
 		Build: spec.Build{Type: spec.BuildDockerfile, Path: "./Dockerfile"},
+		Port:  3000,
+	}
+}
+
+func railpackService() spec.Service {
+	// No build.Path: unlike spec.BuildDockerfile, spec.BuildRailpack has
+	// no user-authored file to point at, Railpack's own detection reads
+	// SourceDir directly.
+	return spec.Service{
+		Build: spec.Build{Type: spec.BuildRailpack},
 		Port:  3000,
 	}
 }
@@ -190,8 +222,10 @@ func TestPipeline_Deploy_UnsupportedBuildTypes(t *testing.T) {
 	// TestPipeline_DeployStatic_* tests in static_test.go, since a
 	// successful static deploy needs a StaticSiteStore/static root dir
 	// configured, unlike every case here which fails before any of that
-	// matters.
-	tests := []string{spec.BuildCompose, spec.BuildRailpack, "not-a-real-type", ""}
+	// matters. spec.BuildRailpack is also deliberately not in this list
+	// any more: it has its own TestPipeline_Deploy_Railpack_* tests
+	// below, now that it's a supported build.type.
+	tests := []string{spec.BuildCompose, "not-a-real-type", ""}
 
 	for _, bt := range tests {
 		t.Run(bt, func(t *testing.T) {
@@ -444,5 +478,182 @@ func TestPipeline_Deploy_RecorderError_DoesNotFailDeploy(t *testing.T) {
 	}
 	if !strings.Contains(logBuf.String(), "record build duration metric failed") {
 		t.Errorf("log output = %q, want it to mention the recorder failure", logBuf.String())
+	}
+}
+
+// --- spec.BuildRailpack: deployRailpack, mirroring the
+// TestPipeline_Deploy_Dockerfile_* / _ProgressForwarded / _*Failure
+// tests above for the Dockerfile path, substituting
+// fakeBuilder.BuildRailpack for fakeBuilder.Build throughout.
+
+func TestPipeline_Deploy_Railpack_Success(t *testing.T) {
+	builder := &fakeBuilder{railpackResult: &build.Result{Tag: "levelrail/web:abc1234"}}
+	svcStore := &fakeServiceStore{}
+	p := New(builder, svcStore)
+
+	tag, err := p.Deploy(context.Background(), Request{
+		ServiceName: "web",
+		Service:     railpackService(),
+		SourceDir:   "/repo",
+		CommitSHA:   "abc1234",
+		ImageRepo:   "levelrail/web",
+	}, nil)
+	if err != nil {
+		t.Fatalf("Deploy() error = %v", err)
+	}
+	if tag != "levelrail/web:abc1234" {
+		t.Errorf("tag = %q, want %q", tag, "levelrail/web:abc1234")
+	}
+
+	if builder.railpackCalls != 1 {
+		t.Fatalf("BuildRailpack called %d times, want 1", builder.railpackCalls)
+	}
+	if builder.calls != 0 {
+		t.Errorf("Build (Dockerfile path) called %d times, want 0", builder.calls)
+	}
+	if builder.lastRailpackReq.SourceDir != "/repo" {
+		t.Errorf("SourceDir = %q, want /repo", builder.lastRailpackReq.SourceDir)
+	}
+	if builder.lastRailpackReq.Tag != "levelrail/web:abc1234" {
+		t.Errorf("Tag = %q, want levelrail/web:abc1234", builder.lastRailpackReq.Tag)
+	}
+
+	if svcStore.saveCalls != 1 {
+		t.Fatalf("SaveDesiredService called %d times, want 1", svcStore.saveCalls)
+	}
+	if svcStore.saved.Name != "web" || svcStore.saved.Image != "levelrail/web:abc1234" || svcStore.saved.Port != 3000 {
+		t.Errorf("saved = %+v, want Name=web Image=levelrail/web:abc1234 Port=3000", svcStore.saved)
+	}
+}
+
+func TestPipeline_Deploy_Railpack_ProgressForwarded(t *testing.T) {
+	builder := &fakeBuilder{railpackResult: &build.Result{Tag: "levelrail/web:abc1234"}}
+	p := New(builder, &fakeServiceStore{})
+
+	var got []build.ProgressEvent
+	_, err := p.Deploy(context.Background(), Request{
+		ServiceName: "web", Service: railpackService(), SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web",
+	}, func(ev build.ProgressEvent) { got = append(got, ev) })
+	if err != nil {
+		t.Fatalf("Deploy() error = %v", err)
+	}
+	if len(got) == 0 {
+		t.Error("expected at least one progress event forwarded from the builder")
+	}
+}
+
+func TestPipeline_Deploy_Railpack_BuildFailure_DoesNotSave(t *testing.T) {
+	builder := &fakeBuilder{railpackErr: errors.New("build failed")}
+	svcStore := &fakeServiceStore{}
+	p := New(builder, svcStore)
+
+	_, err := p.Deploy(context.Background(), Request{
+		ServiceName: "web", Service: railpackService(), SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web",
+	}, nil)
+	if err == nil {
+		t.Fatal("Deploy() error = nil, want the build error to propagate")
+	}
+	if svcStore.saveCalls != 0 {
+		t.Errorf("SaveDesiredService called %d times, want 0: a failed build must never reach the store", svcStore.saveCalls)
+	}
+}
+
+func TestPipeline_Deploy_Railpack_SaveFailure(t *testing.T) {
+	builder := &fakeBuilder{railpackResult: &build.Result{Tag: "levelrail/web:abc1234"}}
+	svcStore := &fakeServiceStore{saveErr: errors.New("disk full")}
+	p := New(builder, svcStore)
+
+	_, err := p.Deploy(context.Background(), Request{
+		ServiceName: "web", Service: railpackService(), SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web",
+	}, nil)
+	if err == nil {
+		t.Fatal("Deploy() error = nil, want the save error to propagate")
+	}
+}
+
+// TestPipeline_Deploy_Railpack_UnsupportedProvider_ExplicitMessage is this
+// slice's load-bearing "fail loudly, not silently" assertion
+// (docs-local/research/railpack-integration-decision.md's recommendation
+// section): when internal/build reports Railpack detected a provider
+// outside supportedRailpackProviders, deployRailpack must surface the
+// service name and the detected provider explicitly, not a generic build
+// failure, matching validateEnv's own tone for unsupported env
+// resolution.
+func TestPipeline_Deploy_Railpack_UnsupportedProvider_ExplicitMessage(t *testing.T) {
+	builder := &fakeBuilder{railpackErr: &build.UnsupportedProviderError{Provider: "python"}}
+	svcStore := &fakeServiceStore{}
+	p := New(builder, svcStore)
+
+	_, err := p.Deploy(context.Background(), Request{
+		ServiceName: "web", Service: railpackService(), SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web",
+	}, nil)
+	if err == nil {
+		t.Fatal("Deploy() error = nil, want the unsupported provider to be rejected")
+	}
+	want := `deploy: service "web": railpack detected provider "python", only node and golang are supported yet`
+	if err.Error() != want {
+		t.Errorf("error = %q, want %q", err.Error(), want)
+	}
+	if svcStore.saveCalls != 0 {
+		t.Errorf("SaveDesiredService called %d times, want 0", svcStore.saveCalls)
+	}
+}
+
+// TestPipeline_Deploy_Railpack_NoProviderDetected_ExplicitMessage is the
+// same assertion as above for the "Railpack detected nothing at all"
+// case (build.UnsupportedProviderError.Provider == "").
+func TestPipeline_Deploy_Railpack_NoProviderDetected_ExplicitMessage(t *testing.T) {
+	builder := &fakeBuilder{railpackErr: &build.UnsupportedProviderError{}}
+	p := New(builder, &fakeServiceStore{})
+
+	_, err := p.Deploy(context.Background(), Request{
+		ServiceName: "web", Service: railpackService(), SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web",
+	}, nil)
+	if err == nil {
+		t.Fatal("Deploy() error = nil, want the unsupported provider to be rejected")
+	}
+	want := `deploy: service "web": railpack detected provider "(none detected)", only node and golang are supported yet`
+	if err.Error() != want {
+		t.Errorf("error = %q, want %q", err.Error(), want)
+	}
+}
+
+func TestPipeline_Deploy_Railpack_UnresolvedEnv_RejectedBeforeBuild(t *testing.T) {
+	builder := &fakeBuilder{railpackResult: &build.Result{Tag: "x:y"}}
+	svcStore := &fakeServiceStore{}
+	p := New(builder, svcStore)
+
+	svc := railpackService()
+	svc.Env = map[string]spec.EnvVar{"SECRET_VAR": {Secret: true, Required: true}}
+
+	_, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: svc, SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web"}, nil)
+	if err == nil {
+		t.Fatal("Deploy() error = nil, want unresolved env to be rejected")
+	}
+	if builder.railpackCalls != 0 {
+		t.Errorf("BuildRailpack called %d times, want 0: must fail before attempting a build", builder.railpackCalls)
+	}
+	if svcStore.saveCalls != 0 {
+		t.Errorf("SaveDesiredService called %d times, want 0", svcStore.saveCalls)
+	}
+}
+
+func TestPipeline_Deploy_Railpack_RecordsBuildDuration(t *testing.T) {
+	builder := &fakeBuilder{railpackResult: &build.Result{Tag: "levelrail/web:abc1234", Duration: 42 * time.Second}}
+	svcStore := &fakeServiceStore{}
+	recorder := &fakeBuildMetricsRecorder{}
+	p := New(builder, svcStore, WithBuildMetricsRecorder(recorder))
+
+	_, err := p.Deploy(context.Background(), Request{
+		ServiceName: "web", Service: railpackService(), SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web",
+	}, nil)
+	if err != nil {
+		t.Fatalf("Deploy() error = %v", err)
+	}
+	if recorder.calls != 1 {
+		t.Fatalf("RecordBuildDuration called %d times, want 1", recorder.calls)
+	}
+	if recorder.lastDuration != 42*time.Second {
+		t.Errorf("recorded duration = %v, want 42s", recorder.lastDuration)
 	}
 }
