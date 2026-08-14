@@ -333,18 +333,32 @@ since one research agent's report on this turned out stale on point 7):
       `-race` + `golangci-lint` clean. No `PUT` (full update): engine/
       version/name aren't meant to change in place, an engine change is
       a migration not a config edit.
-- [ ] **Database creation frontend**: `queries/databases.ts`,
+- [x] **Database creation frontend (2026-08-13)**: `queries/databases.ts`,
       `CreateDatabaseDialog.tsx` (mirrors `CreateAppDialog.tsx`),
-      `routes/databases/{index,$name}.tsx`, sidebar "Databases" nav
-      item, status display on the detail page reading the new status
-      endpoint. Dispatched to an agent against the frozen contract above.
-- [ ] **Health check + resource limits editors**: `HealthCheckEditor.tsx`,
-      `ResourceLimitsEditor.tsx`, mirroring `DomainEditor.tsx`'s exact
-      pattern (`useUpdateApp`, full-resource PUT, `keepDirtyValues`),
-      wired into `apps/$name.tsx` as new tabs. Dispatched to an agent
-      against the frozen contract above, scoped to `apps/$name.tsx` +
-      two new component files so it cannot collide with the databases
-      agent's sidebar edit.
+      `routes/databases/{index,$name}.tsx`, `DatabaseRow.tsx`,
+      `DeleteDatabaseDialog.tsx`, sidebar "Databases" nav item, a
+      secondary "New database" button on the apps list header, status
+      display on the detail page (`ConditionsPanel`, reused as-is)
+      reading the new status endpoint. Built by an agent against the
+      frozen contract above; reviewed file-by-file, independently
+      re-verified (`tsc -b`, `eslint .`, `prettier --check`, `vite
+      build`, plus a real curl round-trip against the running backend:
+      create redis, create postgres, list, delete, all matched) before
+      merging. Postgres is a selectable engine, not hidden or disabled:
+      the status endpoint is where its real `NotReady` condition will
+      show once the reconciler actually runs it.
+- [x] **Health check + resource limits editors (2026-08-13)**:
+      `HealthCheckEditor.tsx`, `ResourceLimitsEditor.tsx`, mirroring
+      `DomainEditor.tsx`'s exact pattern (`useUpdateApp`, full-resource
+      PUT, `keepDirtyValues` so the four editors on this page never
+      stomp each other's unsaved edits), wired into `apps/$name.tsx` as
+      two new tabs ("Health", "Resources"). Unit conversions documented
+      in-code: CPU cores <-> nano_cpus (x1e9), seconds <-> duration
+      nanoseconds (x1e9), a whole-number MiB field for memory chosen
+      specifically to keep the byte round-trip lossless. Built by an
+      agent, reviewed file-by-file, independently re-verified (`tsc
+      --noEmit`, `eslint`, `prettier --check`) before merging.
+      `AppOverview.tsx`'s read-only summary was left in place.
 
 ## Status notes
 
