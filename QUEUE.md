@@ -38,39 +38,36 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
 
 ## In progress
 
-(nothing yet, round 4 not dispatched)
+- [ ] Surface node health (last-seen/heartbeat) and cordon/drain/
+      workload-capability controls in the Nodes management UI, against
+      the real, verified backend contract (`internal/api/nodes.go`:
+      `GET /nodes/{id}/health`, `POST /nodes/{id}/{cordon,uncordon,drain}`,
+      `PUT /nodes/{id}/workloads`). This also fully covers the
+      build-node-routing item below (there is no separate API surface
+      for "which node will build this", `accepts_build_workloads` is
+      the whole frontend-relevant contract; confirmed via grep, no
+      `SelectBuildNode`-adjacent route exists anywhere in
+      `internal/api`). (builder dispatched)
+- [ ] Redo the "Saved." success-message consolidation (6 files, same
+      scope and design as before, lost uncommitted in the merge-recovery
+      `git reset --hard`, not a design problem, just needs rebuilding).
+      (builder dispatched)
 
-## Next up (priority order), unblocked by the Phase 3 merge
+## Next up (priority order)
 
-- [ ] Route the default build path through the registry-backed remote
-      BuildKit cache and build-capable node routing (backend now real
-      and on `main`: `internal/build/{cache,node}.go`). Verify the
-      frontend has no stale assumptions before building UI for it.
-- [ ] Surface domain-uniqueness validation errors in the frontend
-      (`internal/store/domain_uniqueness_test.go` confirms the backend
-      now enforces this; the create/update app forms don't yet surface
-      the resulting 409 distinctly from any other error) and wire
-      multi-node ingress cert-sharing status into the UI if there's a
-      real signal to show (`internal/ingress/certstorage*.go`).
-- [ ] Surface node health (last-seen/heartbeat) and cordon/drain
-      controls in the Nodes management UI. Backend is real and on
-      `main`: `internal/reconcile/nodehealth/controller.go`,
-      `internal/store/migrations/0013_node_health.sql`. Check
-      `internal/api/nodes.go` for what routes actually exist now before
-      dispatching a builder (verify the exact contract, don't assume).
-- [ ] Verify whether `internal/reconcile/mesh` (WireGuard,
-      `internal/network/*`) has any real frontend surface to build yet,
-      or whether it's still backend-only infrastructure with nothing an
-      operator would see. Investigate before dispatching anything.
-- [ ] Redo the "Saved." success-message consolidation (6 files:
-      `HealthCheckEditor.tsx`, `DomainEditor.tsx`,
-      `ResourceLimitsEditor.tsx`, `EnvEditor.tsx`, `SecretsEditor.tsx`,
-      `DeployTriggerForm.tsx`, plus a new `ui/success-message.tsx`) into
-      `Badge`'s `success` variant or a small dedicated component. Was
-      built and verified once already this session but lost, uncommitted,
-      in the merge-recovery `git reset --hard`. Use
-      `@phosphor-icons/react/dist/ssr` icons if the new component needs
-      any, not `lucide-react`.
+(nothing queued right now; re-triage once the two in-progress items land)
+
+## Resolved by investigation, no build needed
+
+- [x] Build-capable node routing: no separate frontend surface exists
+      or is needed beyond the `accepts_build_workloads` toggle already
+      in scope for the Nodes UI work above. `internal/build.SelectBuildNode`
+      is pure internal reconciler logic with zero API exposure.
+- [x] WireGuard mesh (`internal/reconcile/mesh`, `internal/network/*`):
+      confirmed via grep, zero routes in `internal/api` expose any mesh
+      state. Genuinely backend-only infrastructure right now, nothing
+      for a frontend to build against. Re-check next time `internal/api`
+      changes, don't build speculative UI ahead of a real contract.
 
 ## Backlog (not yet prioritized)
 
@@ -94,6 +91,12 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
 
 ## Done (most recent first)
 
+- [x] Domain-conflict now surfaces as a real 409 naming the conflicting
+      domain instead of a generic 500 (`handleCreateApp`/`handleUpdateApp`
+      never checked for `store.ErrDomainTaken`, which the backend has
+      enforced since the Phase 3 merge). No frontend change needed, the
+      existing generic error display already surfaces any non-ok
+      response's message verbatim.
 - [x] Previously-built image tag dropdown for `DeployTriggerForm`
       (`GET /api/v1/apps/{name}/images`, `ImageLister` Router
       dependency, repo derivation via `github.com/distribution/reference`
