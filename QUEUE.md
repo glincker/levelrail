@@ -18,44 +18,19 @@ those APIs before they merge, the shapes can still change.
 
 ## In progress
 
-- [ ] Add an e2e test that creates a Redis database via the API, lets
-      it reconcile, and verifies a real running container + volume via
-      the Docker Engine API. Done: `test/e2e` has database-reconciliation
-      coverage (currently zero). (builder dispatched)
-- [ ] Add an integration test proving a non-default app.yaml port is
-      actually published on the container and routed by Caddy
-      end-to-end. Done: a fixture on a non-default port deploys and
-      answers over HTTPS on the right upstream port. (builder dispatched)
-- [ ] Add an integration test deploying a fixture with a plain env var
-      and a `{ secret: true }` env var, asserting via ContainerInspect
-      that only the resolved plaintext lands in the container's env.
-      Done: a real, repeatable test instead of a one-time manual check.
-      (builder dispatched)
-- [ ] Add an integration test proving `internal/telemetry`'s stats
-      collector captures a real running container's CPU/memory and that
-      it's queryable via `GET /api/v1/apps/{name}/metrics` end-to-end.
-      Done: metrics collection has a test touching a real container,
-      not just unit-level pieces. (builder dispatched)
-- [ ] Add a toast/notification primitive under `web/src/components/ui`
-      and wire it into the database and node delete flows. Done: a
-      successful delete gives visible feedback outside the dialog it
-      was triggered from, not just a silent list refresh. (builder
-      dispatched)
+(nothing yet, round 2 not dispatched)
 
 ## Next up (priority order)
 
-- [ ] Wire `internal/secrets.Manager` into `internal/reconcile/database`'s
-      Postgres path (`cmd/levelrail/main.go`'s dynamic controller
-      source: generate/store per-database credentials, pass via
-      `database.WithPostgresCredentials`). Done: creating a Postgres
-      database through the API converges to a running container with a
-      real password instead of the permanent credentials-blocked
-      condition. **Reconciler-core + secrets-adjacent: PM does this one
-      personally, not delegated (CLAUDE.md 8).**
 - [ ] Add a `docker.Runtime` health-check method and wire it into
       `GET /api/v1/system/status` and the General settings page. Done:
       frontend shows real Docker daemon connectivity instead of
       omitting it (`status.go`'s own comment names this exact gap).
+- [ ] Document `internal/reconcile/application`'s `resolveEnv` precedence
+      (a `SecretEnv` key silently wins over a literal `Env` entry of the
+      same name) with a doc comment and a unit test. Found by the env-var
+      e2e agent as a real, unintentional-looking gap, not a defect, just
+      undocumented and untested. Small.
 - [ ] Write a short design note deciding the deploy-attempt ID scheme
       and whether build logs persist for replay or stay live-only
       (options: telemetry log store vs. a new table). Done:
@@ -104,6 +79,20 @@ those APIs before they merge, the shapes can still change.
 
 ## Done (most recent first)
 
+- [x] Wire `internal/secrets.Manager` into `internal/reconcile/database`'s
+      Postgres path. Creating a Postgres database now converges to a
+      real running container with real generated credentials. Live-
+      verified end to end (real `postgres:16` container, `Ready: True`).
+      PM did this one personally (reconciler-core + secrets-adjacent).
+- [x] e2e test: Redis database reconciliation (`test/e2e/database_test.go`).
+- [x] e2e test: non-default port routing through Caddy
+      (`test/e2e/port_mapping_test.go`, `test/fixtures/hello-e2e-altport/`).
+- [x] e2e test: plain + secret env var injection
+      (`test/e2e/env_test.go`), first e2e coverage of `internal/secrets`.
+- [x] e2e test: container-to-HTTP metrics seam (`test/e2e/metrics_test.go`).
+- [x] Toast notifications for successful database/node deletion
+      (`web/src/components/ui/toast.tsx`, shadcn Base UI `toast`
+      registry component).
 - [x] Virtualize the Databases list table (already done when
       `routes/databases/index.tsx` was originally built, verified via
       grep during queue triage, not a real gap).
