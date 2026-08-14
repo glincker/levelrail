@@ -28,7 +28,40 @@ those APIs before they merge, the shapes can still change.
 
 ## Next up (priority order)
 
-(populated once the round-3 gap scan lands)
+- [ ] App deletion has no frontend at all: `DELETE /api/v1/apps/{name}`
+      exists and is unused (`useDeleteApp` doesn't exist anywhere in
+      `web/src`). Done: a `DeleteAppDialog` mirroring
+      `DeleteDatabaseDialog`'s honest "removes desired state, does not
+      stop the running container" warning.
+- [ ] App detail page never shows node placement: `appResource` already
+      returns `node_id`, but `AppDetail` (`types/appDetail.ts`) doesn't
+      declare the field and nothing renders it, unlike
+      `databases/$name.tsx` which already shows it. Done: same "Node"
+      row added to the app detail page.
+- [ ] Consolidate 6 files' independently hand-rolled "Saved." success-
+      message styling (`text-xs text-green-700 dark:text-green-400`) in
+      `HealthCheckEditor.tsx`, `DomainEditor.tsx`,
+      `ResourceLimitsEditor.tsx`, `EnvEditor.tsx`, `SecretsEditor.tsx`,
+      `DeployTriggerForm.tsx` into one shared component, same category
+      as the badge-variant consolidation already closed.
+- [ ] e2e test: full auth lifecycle (register first admin -> login ->
+      change password -> revoke other sessions) against a real running
+      server. Only unit-tested with fakes today.
+- [ ] e2e test: rollback actually converges (point `desired.Image` back
+      at an older tag, confirm the reconciler really swaps the running
+      container back). `test/e2e/deploy_test.go` only has one forward
+      deploy today.
+- [ ] e2e test: node placement actually affects where a container runs
+      (a real `PUT /apps/{name}/node` call, verify the container runs
+      through the right transport). Only unit-tested against fakes
+      today.
+
+Checked during round 3 triage, not real gaps: `summarizeConditions`
+duplication across `apps/$name.tsx`/`databases/$name.tsx` (both carry
+explicit reasoning comments, deliberate not accidental); list-row
+keyboard accessibility (real `<Link>` elements already); webhook
+single-app scoping (explicitly a deliberate Phase 1 boundary per
+`internal/webhook`'s own doc comment).
 
 ## Blocked
 
