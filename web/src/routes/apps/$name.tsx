@@ -33,8 +33,9 @@ import { MetricsDashboard } from '../../components/MetricsDashboard'
 import { LogSearchPanel } from '../../components/LogSearchPanel'
 import { AlertRulesPanel } from '../../components/AlertRulesPanel'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
+import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import type { VariantProps } from 'class-variance-authority'
 
 // App detail route (TASKS.md 1.10). Two queries are primed in the
 // loader, matching frontend-plan.md section 3's "cross-cutting" rule
@@ -62,28 +63,18 @@ export const Route = createFileRoute('/apps/$name')({
 // resource name at the top of the detail page.
 function summarizeConditions(conditions: ReconcileCondition[]): {
   label: string
-  className: string
+  variant: VariantProps<typeof badgeVariants>['variant']
 } {
   if (conditions.length === 0) {
-    return {
-      label: 'No status yet',
-      className: 'bg-muted text-muted-foreground',
-    }
+    return { label: 'No status yet', variant: 'muted' }
   }
   if (conditions.some((c) => c.Status === 'False')) {
-    return {
-      label: 'Attention needed',
-      className: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
-    }
+    return { label: 'Attention needed', variant: 'destructive' }
   }
   if (conditions.every((c) => c.Status === 'True')) {
-    return {
-      label: 'Healthy',
-      className:
-        'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
-    }
+    return { label: 'Healthy', variant: 'success' }
   }
-  return { label: 'Reconciling', className: 'bg-muted text-muted-foreground' }
+  return { label: 'Reconciling', variant: 'muted' }
 }
 
 function AppDetailPage() {
@@ -127,7 +118,7 @@ function AppDetailPage() {
         </Link>
         <div className="mt-1 flex items-center gap-2">
           <h1 className="text-lg font-semibold text-foreground">{app.name}</h1>
-          <Badge className={status.className}>{status.label}</Badge>
+          <Badge variant={status.variant}>{status.label}</Badge>
         </div>
       </div>
 

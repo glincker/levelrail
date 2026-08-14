@@ -8,6 +8,7 @@ import {
 } from '../../../../../hooks/useDeployLogStream'
 import { buildDeployLogStreamUrl } from '../../../../../queries/deployLogs'
 import { stripAnsiCodes } from '../../../../../lib/ansi'
+import { Badge } from '@/components/ui/badge'
 
 // Live Build Log view, frontend-plan.md section 1: "the literal target of
 // CLAUDE.md 4.12's 'the dashboard should not ship the log viewer's
@@ -188,11 +189,20 @@ const CONNECTION_LABEL: Record<LogStreamConnectionState, string> = {
   error: 'Reconnecting...',
 }
 
-const CONNECTION_STYLE: Record<LogStreamConnectionState, string> = {
-  connecting:
-    'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
-  open: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
-  error: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+// "open" and "error" now source their color from the shared
+// success/warning badge variants (components/ui/badge.tsx) instead of
+// duplicating bg-green-100/bg-amber-100 locally. "connecting" has no
+// green/red/amber equivalent in badgeVariants, it is a neutral state, so
+// it keeps its literal Tailwind classes exactly as before.
+const CONNECTING_BADGE_CLASS =
+  'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
+
+const CONNECTION_VARIANT: Record<
+  Exclude<LogStreamConnectionState, 'connecting'>,
+  'success' | 'warning'
+> = {
+  open: 'success',
+  error: 'warning',
 }
 
 // The connection dot pulses only while genuinely live (SSE stream open):
@@ -206,8 +216,11 @@ const CONNECTION_DOT_CLASS: Record<LogStreamConnectionState, string> = {
 
 function ConnectionBadge({ state }: { state: LogStreamConnectionState }) {
   return (
-    <span
-      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${CONNECTION_STYLE[state]}`}
+    <Badge
+      variant={state === 'connecting' ? undefined : CONNECTION_VARIANT[state]}
+      className={`gap-1.5 rounded-full ${
+        state === 'connecting' ? CONNECTING_BADGE_CLASS : ''
+      }`}
     >
       <span className="relative inline-flex size-2" aria-hidden="true">
         {state === 'open' ? (
@@ -220,6 +233,6 @@ function ConnectionBadge({ state }: { state: LogStreamConnectionState }) {
         />
       </span>
       {CONNECTION_LABEL[state]}
-    </span>
+    </Badge>
   )
 }

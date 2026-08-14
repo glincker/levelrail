@@ -8,7 +8,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
+import { Badge, type badgeVariants } from '@/components/ui/badge'
+import type { VariantProps } from 'class-variance-authority'
 import { CreateAlertRuleDialog } from './CreateAlertRuleDialog'
 import { DeleteAlertRuleDialog } from './DeleteAlertRuleDialog'
 import { useAlertRules } from '../queries/alerts'
@@ -40,15 +41,16 @@ const STATE_LABEL = {
 
 type RuleState = keyof typeof STATE_LABEL
 
-// No "success"/"warning" badge variant exists in badgeVariants
-// (components/ui/badge.tsx), so these override its background/text
-// classes directly, same as ConditionsPanel's STATUS_STYLES map and the
-// amber precedent in routes/apps/$name/deploys/$deployId/logs.tsx.
-const STATE_BADGE_CLASS: Record<RuleState, string> = {
-  firing: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
-  pending:
-    'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
-  ok: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+// Sourced from the shared destructive/warning/success variants in
+// badgeVariants (components/ui/badge.tsx) rather than a locally hand-rolled
+// class string, same as ConditionsPanel's STATUS_BADGE_VARIANT map.
+const STATE_BADGE_VARIANT: Record<
+  RuleState,
+  VariantProps<typeof badgeVariants>['variant']
+> = {
+  firing: 'destructive',
+  pending: 'warning',
+  ok: 'success',
 }
 
 // The solid dot color that pairs with STATE_BADGE_CLASS above, used both
@@ -171,7 +173,7 @@ function RuleRow({ appName, rule }: { appName: string; rule: AlertRule }) {
       </TableCell>
       <TableCell>
         <div className="flex flex-col gap-1">
-          <Badge className={STATE_BADGE_CLASS[state]}>
+          <Badge variant={STATE_BADGE_VARIANT[state]}>
             <StateDot state={state} />
             {STATE_LABEL[state]}
           </Badge>

@@ -6,11 +6,19 @@ import {
 } from 'lucide-react'
 import type { ConditionStatus, ReconcileCondition } from '../types/deploy'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge, type badgeVariants } from '@/components/ui/badge'
+import type { VariantProps } from 'class-variance-authority'
 
-const STATUS_BADGE_CLASS: Record<ConditionStatus, string> = {
-  True: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
-  False: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
-  Unknown: 'bg-muted text-muted-foreground',
+// Sourced from the shared success/destructive/muted variants in
+// badgeVariants (components/ui/badge.tsx) rather than a locally hand-rolled
+// class string.
+const STATUS_BADGE_VARIANT: Record<
+  ConditionStatus,
+  VariantProps<typeof badgeVariants>['variant']
+> = {
+  True: 'success',
+  False: 'destructive',
+  Unknown: 'muted',
 }
 
 const STATUS_ICON: Record<ConditionStatus, LucideIcon> = {
@@ -55,12 +63,13 @@ export function ConditionsPanel({
                 key={c.Type}
                 className="flex items-start gap-3 px-4 py-3 first:pt-0 last:pb-0"
               >
-                <span
-                  className={`mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE_CLASS[c.Status]}`}
+                <Badge
+                  variant={STATUS_BADGE_VARIANT[c.Status]}
+                  className="mt-0.5 rounded-full"
                 >
                   <Icon className="size-3" />
                   {c.Status}
-                </span>
+                </Badge>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-foreground">
                     {c.Type}: {c.Reason}

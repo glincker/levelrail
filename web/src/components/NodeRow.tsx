@@ -1,6 +1,8 @@
 import { ServerIcon } from 'lucide-react'
 import type { NodeResource, NodeStatus } from '../types/nodeDetail'
 import { DeleteNodeDialog } from './DeleteNodeDialog'
+import { Badge, type badgeVariants } from '@/components/ui/badge'
+import type { VariantProps } from 'class-variance-authority'
 
 // Shared column grid between the sticky header (routes/nodes/index.tsx)
 // and every row below (NodeRow, RowSkeleton), the same convention
@@ -12,21 +14,20 @@ import { DeleteNodeDialog } from './DeleteNodeDialog'
 export const NODE_LIST_GRID =
   'grid grid-cols-[2rem_minmax(0,1.5fr)_7rem_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-3'
 
-// No "success"/"warning" badge variant exists in badgeVariants
-// (components/ui/badge.tsx), so these override background/text classes
-// directly, the same precedent ConditionsPanel's STATUS_BADGE_CLASS and
-// AlertRulesPanel's STATE_BADGE_CLASS already set. No dot/pulse
-// treatment here (unlike AlertRulesPanel's StateDot): there is no live
-// status endpoint backing this page, status is exactly as fresh as the
-// last list fetch, and a pulsing indicator would imply a liveness this
-// page does not have.
-const STATUS_BADGE_CLASS: Record<NodeStatus, string> = {
-  pending: 'bg-muted text-muted-foreground',
-  online:
-    'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
-  offline: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
-  cordoned:
-    'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+// Sourced from the shared success/warning/destructive/muted variants in
+// badgeVariants (components/ui/badge.tsx) rather than a locally hand-rolled
+// class string. No dot/pulse treatment here (unlike AlertRulesPanel's
+// StateDot): there is no live status endpoint backing this page, status is
+// exactly as fresh as the last list fetch, and a pulsing indicator would
+// imply a liveness this page does not have.
+const STATUS_BADGE_VARIANT: Record<
+  NodeStatus,
+  VariantProps<typeof badgeVariants>['variant']
+> = {
+  pending: 'muted',
+  online: 'success',
+  offline: 'destructive',
+  cordoned: 'warning',
 }
 
 const STATUS_LABEL: Record<NodeStatus, string> = {
@@ -61,11 +62,9 @@ export function NodeRow({ node }: { node: NodeResource }) {
       </span>
 
       <span className="min-w-0">
-        <span
-          className={`inline-flex w-fit shrink-0 items-center rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap ${STATUS_BADGE_CLASS[node.status]}`}
-        >
+        <Badge variant={STATUS_BADGE_VARIANT[node.status]}>
           {STATUS_LABEL[node.status]}
-        </span>
+        </Badge>
       </span>
 
       <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
