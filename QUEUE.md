@@ -31,6 +31,11 @@ those APIs before they merge, the shapes can still change.
       implementation). (architect dispatched)
 - [ ] Add a "paste a .env block" bulk-import affordance to
       `EnvEditor.tsx`. (builder dispatched)
+- [ ] Consolidate 6 files' hand-rolled status-badge color classes
+      (green/red/amber) into `Badge`'s `success`/`warning` variants
+      (new) plus its existing `destructive`. Found during queue triage:
+      real, repeated inline-styling that should have been shared
+      component variants from the start. (builder dispatched)
 
 ## Next up (priority order)
 
