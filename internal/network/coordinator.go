@@ -68,8 +68,9 @@ type NodeIdentity struct {
 // An interface, and the only thing this package knows about transport,
 // because the real implementation belongs to the agent Session stream and
 // that stream's wire contract (proto/agent/v1/agent.proto) needs one
-// coherent mental model and a single reviewer end to end, not parallel
-// agents each touching a slice of it. Extending it is a small and
+// coherent mental model and a single reviewer end to end, not several
+// people each touching an uncoordinated slice of it. Extending it is a
+// small and
 // entirely mechanical change: one new arm on AgentRequest.op and one
 // on AgentResponse.result, carrying the fields of DeviceConfig (minus
 // PrivateKey, which never crosses) and NodeIdentity respectively, plus a
