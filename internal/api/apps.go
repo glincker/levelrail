@@ -89,7 +89,11 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 
 // handleCreateApp handles POST /api/v1/apps. Rejects a name that already
 // exists rather than silently overwriting it: that's what PUT
-// (handleUpdateApp) is for.
+// (handleUpdateApp) is for. A domain conflict (store.ErrDomainTaken,
+// enforced by SaveDesiredService itself, see that error's own doc
+// comment for why) surfaces as 409 with the real conflicting domain
+// named in the message, the same shape a duplicate name gets, not the
+// generic 500 it fell through to before this was wired up.
 func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	var req appResource
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -113,6 +117,11 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := rt.apps.SaveDesiredService(r.Context(), req.toDesiredService()); err != nil {
+		var domainTaken *store.ErrDomainTaken
+		if errors.As(err, &domainTaken) {
+			writeError(w, http.StatusConflict, domainTaken.Error())
+			return
+		}
 		rt.logger.Error("api: create app failed", slog.String("error", err.Error()), slog.String("name", req.Name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
@@ -167,6 +176,11 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := rt.apps.SaveDesiredService(r.Context(), req.toDesiredService()); err != nil {
+		var domainTaken *store.ErrDomainTaken
+		if errors.As(err, &domainTaken) {
+			writeError(w, http.StatusConflict, domainTaken.Error())
+			return
+		}
 		rt.logger.Error("api: update app failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return

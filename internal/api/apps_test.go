@@ -155,6 +155,67 @@ func TestHandleCreateApp(t *testing.T) {
 	}
 }
 
+func TestHandleCreateApp_DomainAlreadyTaken(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "web", Image: "levelrail/web:1", Port: 3000,
+		Domains: []string{"app.example.com"},
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps",
+		`{"name":"web2","image":"levelrail/web2:1","port":3000,"domains":["app.example.com"]}`))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusConflict, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "app.example.com") {
+		t.Errorf("body = %s, want it to name the conflicting domain", rec.Body.String())
+	}
+
+	if _, err := db.GetDesiredService(context.Background(), "web2"); err == nil {
+		t.Error("a create rejected for a domain conflict must not have saved a service")
+	}
+}
+
+func TestHandleUpdateApp_DomainAlreadyTaken(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "web", Image: "levelrail/web:1", Port: 3000,
+		Domains: []string{"app.example.com"},
+	}); err != nil {
+		t.Fatalf("seed web: %v", err)
+	}
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "web2", Image: "levelrail/web2:1", Port: 3000,
+	}); err != nil {
+		t.Fatalf("seed web2: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web2",
+		`{"name":"web2","image":"levelrail/web2:1","port":3000,"domains":["app.example.com"]}`))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusConflict, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "app.example.com") {
+		t.Errorf("body = %s, want it to name the conflicting domain", rec.Body.String())
+	}
+
+	web2, err := db.GetDesiredService(context.Background(), "web2")
+	if err != nil {
+		t.Fatalf("GetDesiredService(web2): %v", err)
+	}
+	if len(web2.Domains) != 0 {
+		t.Errorf("web2.Domains = %v, want unchanged (empty), an update rejected for a domain conflict must not partially apply", web2.Domains)
+	}
+}
+
 func TestHandleGetApp(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
