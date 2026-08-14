@@ -19,11 +19,10 @@ import { CreateAppFromGitFields } from './CreateAppFromGitFields'
 import { CreateDatabaseFields } from './CreateDatabaseFields'
 import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
 
-// The two non-database starting points step 1 always offers, per
-// docs/superpowers/specs/2026-08-14-creation-wizard-and-sidebar-design.md
-// section 2: a small, fixed grid, not a template catalog (CLAUDE.md
-// section 2's own non-goal: "Not chasing Coolify's 280 one-click
-// templates. Ten good ones beat 280 stale ones"). Database engine cards
+// The two non-database starting points step 1 always offers: a small,
+// fixed grid, not a template catalog (this project's own stated
+// non-goal: "Not chasing Coolify's 280 one-click templates. Ten good
+// ones beat 280 stale ones"). Database engine cards
 // are appended dynamically below, from GET /api/v1/database-engines
 // (queries/databaseEngines.ts), rather than hardcoded here: this used
 // to list postgres/redis/mysql by hand, the exact "hardcode a name, add

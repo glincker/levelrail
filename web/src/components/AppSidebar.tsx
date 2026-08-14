@@ -36,10 +36,9 @@ import { DatabaseScopedSidebar } from './DatabaseScopedSidebar'
 // tree switches to the scoped one below.
 const APP_SCOPE_PATTERN = /^\/apps\/([^/]+)/
 
-// Same shape, one level over for Databases (fast-follow named explicitly
-// in docs/superpowers/specs/2026-08-14-creation-wizard-and-sidebar-design.md
-// item 2: "Databases' own detail page gets the same treatment ... once
-// the pattern is proven once"). The two patterns are mutually exclusive
+// Same shape, one level over for Databases (a planned fast-follow:
+// Databases' own detail page gets the same treatment once the pattern
+// is proven on Apps). The two patterns are mutually exclusive
 // by construction, one anchors on /apps/, the other on /databases/, so a
 // pathname can never match both, and the checks below stay a simple
 // if/else-if rather than needing extra precedence handling.
@@ -54,8 +53,7 @@ const DATABASE_SCOPE_PATTERN = /^\/databases\/([^/]+)/
 // `mt-auto` on its own SidebarGroup, matching the research's two-zone
 // bottom structure.
 //
-// Vercel-style dynamic/contextual nav (docs/superpowers/specs/
-// 2026-08-14-creation-wizard-and-sidebar-design.md item 2): this single
+// Vercel-style dynamic/contextual nav: this single
 // component now has three rendering paths, chosen by the current pathname
 // rather than separate components swapped in by __root.tsx. That
 // keeps the brand header, account footer, and outer Sidebar/SidebarRail

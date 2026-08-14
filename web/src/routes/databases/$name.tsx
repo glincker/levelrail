@@ -11,8 +11,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 
 // Database detail layout route, mirroring routes/apps/$name.tsx's own
-// split (docs/superpowers/specs/2026-08-14-creation-wizard-and-sidebar-design.md
-// item 2's Databases fast-follow): this file used to render the entire
+// split (the Databases fast-follow to that same treatment): this file
+// used to render the entire
 // page itself (header, Overview card, ConditionsPanel). It is now the
 // layout: it owns the loader (both queries below) and the shared page
 // header (database name, status, delete action), then renders <Outlet />

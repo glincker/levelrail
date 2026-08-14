@@ -23,9 +23,8 @@ import { useApp } from '../queries/apps'
 import { useDeployStatus } from '../queries/deploys'
 import { summarizeAppStatus } from '../lib/appStatus'
 
-// The app-scoped half of AppSidebar's Vercel-style dynamic nav
-// (docs/superpowers/specs/2026-08-14-creation-wizard-and-sidebar-design.md
-// item 2): rendered in place of the global nav whenever the current route
+// The app-scoped half of AppSidebar's Vercel-style dynamic nav:
+// rendered in place of the global nav whenever the current route
 // is under /apps/$name/*. The 8 items below are the same sections
 // routes/apps/$name.tsx's Tabs component used to render in-page (same
 // icons, same order), now real nested routes instead of tab state.

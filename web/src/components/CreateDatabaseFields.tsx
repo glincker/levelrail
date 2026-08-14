@@ -54,8 +54,7 @@ type CreateDatabaseFormOutput = z.output<typeof createDatabaseSchema>
 // The name/engine/version(/node) field set and its submit logic,
 // factored out of what used to be CreateDatabaseDialog's own body so
 // the exact same validation/mutation code backs both that standalone
-// dialog and CreateResourceWizard's step 2 Postgres/Redis paths
-// (docs/superpowers/specs/2026-08-14-creation-wizard-and-sidebar-design.md).
+// dialog and CreateResourceWizard's step 2 Postgres/Redis paths.
 //
 // Honesty note carried over from the original component's own doc
 // comment: creating a postgres database always succeeds here, but the

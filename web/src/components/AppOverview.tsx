@@ -2,6 +2,7 @@ import { SquaresFourIcon } from '@phosphor-icons/react/dist/ssr'
 import type { AppDetail, ServiceProbe } from '../types/appDetail'
 import { formatBytes, formatDurationNs, formatNanoCpus } from '../lib/format'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { MoveToNodeDialog } from './MoveToNodeDialog'
 
 // Read-only display of an app's current desired state: image, port,
 // resource limits, and health probe config, straight from GET
@@ -37,10 +38,15 @@ export function AppOverview({ app }: { app: AppDetail }) {
             <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
               Node
             </dt>
-            <dd className="mt-0.5 font-mono text-sm text-foreground">
+            <dd className="mt-0.5 flex items-center gap-2 font-mono text-sm text-foreground">
               {app.node_id || (
                 <span className="text-muted-foreground italic">unassigned</span>
               )}
+              <MoveToNodeDialog
+                kind="app"
+                name={app.name}
+                currentNodeId={app.node_id}
+              />
             </dd>
           </div>
         </dl>

@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useDatabase, useDatabaseStatus } from '../../../queries/databases'
 import { ConditionsPanel } from '../../../components/ConditionsPanel'
+import { MoveToNodeDialog } from '../../../components/MoveToNodeDialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 // The one real section Databases has today (engine/version/node summary
@@ -44,12 +45,17 @@ function OverviewSection() {
             </div>
             <div>
               <dt className="text-xs text-muted-foreground uppercase">Node</dt>
-              <dd className="mt-1 font-mono text-sm text-foreground">
+              <dd className="mt-1 flex items-center gap-2 font-mono text-sm text-foreground">
                 {database.node_id || (
                   <span className="text-muted-foreground italic">
                     unassigned
                   </span>
                 )}
+                <MoveToNodeDialog
+                  kind="database"
+                  name={database.name}
+                  currentNodeId={database.node_id}
+                />
               </dd>
             </div>
           </dl>

@@ -68,8 +68,7 @@ const DEFAULT_VALUES: CreateAppFormInput = {
 // The name/image/port(/node) field set and its submit logic, factored
 // out of what used to be CreateAppDialog's own body so the exact same
 // validation/mutation code backs both that standalone dialog and
-// CreateResourceWizard's step 2 "Docker image" path
-// (docs/superpowers/specs/2026-08-14-creation-wizard-and-sidebar-design.md):
+// CreateResourceWizard's step 2 "Docker image" path:
 // one schema, one useCreateApp call, not copy-pasted a second time for
 // the wizard. Only name/image/port are collected (the app spec's
 // minimal essentials are build, domains, and port; domains/env/

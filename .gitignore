@@ -33,7 +33,3 @@ node_modules/
 .idea/
 .vscode/
 *.swp
-
-# Agent worktrees (each holds its own node_modules/.next/.turbo build
-# caches and accumulates fast): never versioned
-.claude/worktrees/
