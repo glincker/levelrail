@@ -29,6 +29,20 @@ export function AppOverview({ app }: { app: AppDetail }) {
             label="CPU limit"
             value={formatNanoCpus(app.resources?.nano_cpus)}
           />
+          {/* Same fallback convention routes/databases/$name.tsx uses for
+              the equivalent field: an italic "unassigned" placeholder
+              rather than blank space, so an app with no explicit
+              placement reads as a deliberate state, not missing data. */}
+          <div>
+            <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Node
+            </dt>
+            <dd className="mt-0.5 font-mono text-sm text-foreground">
+              {app.node_id || (
+                <span className="text-muted-foreground italic">unassigned</span>
+              )}
+            </dd>
+          </div>
         </dl>
         <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <ProbeSummary label="Readiness probe" probe={app.health?.readiness} />

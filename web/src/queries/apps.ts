@@ -212,3 +212,34 @@ export function useSetAppNode() {
     },
   })
 }
+
+// DELETE /api/v1/apps/{name} (internal/api/apps.go's handleDeleteApp).
+// Same known gap the backend doc comment names: removes desired state,
+// does not itself stop or remove a running container, mirroring
+// deleteDatabase's own reasoning above.
+export async function deleteApp(name: string): Promise<void> {
+  const res = await fetch(`/api/v1/apps/${encodeURIComponent(name)}`, {
+    method: 'DELETE',
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `delete app failed: ${res.status}`),
+    )
+  }
+}
+
+// Mirrors useDeleteDatabase's cache-invalidation shape exactly: the
+// detail query is removed outright (the resource no longer exists) and
+// the list query is invalidated so /apps reflects the deletion on next
+// render.
+export function useDeleteApp() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deleteApp,
+    onSuccess: (_data, name) => {
+      queryClient.removeQueries({ queryKey: appKeys.detail(name) })
+      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+    },
+  })
+}

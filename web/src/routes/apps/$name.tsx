@@ -23,6 +23,7 @@ import {
 import type { ReconcileCondition } from '../../types/deploy'
 import { AppOverview } from '../../components/AppOverview'
 import { ConditionsPanel } from '../../components/ConditionsPanel'
+import { DeleteAppDialog } from '../../components/DeleteAppDialog'
 import { DeployTriggerForm } from '../../components/DeployTriggerForm'
 import { DomainEditor } from '../../components/DomainEditor'
 import { EnvEditor } from '../../components/EnvEditor'
@@ -116,9 +117,14 @@ function AppDetailPage() {
           <ArrowLeftIcon className="size-3" />
           Apps
         </Link>
-        <div className="mt-1 flex items-center gap-2">
-          <h1 className="text-lg font-semibold text-foreground">{app.name}</h1>
-          <Badge variant={status.variant}>{status.label}</Badge>
+        <div className="mt-1 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-semibold text-foreground">
+              {app.name}
+            </h1>
+            <Badge variant={status.variant}>{status.label}</Badge>
+          </div>
+          <DeleteAppDialog name={app.name} />
         </div>
       </div>
 

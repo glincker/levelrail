@@ -29,6 +29,13 @@ export interface ServiceHealth {
 // `env` carry `omitempty` on the Go side, so an app with neither set may
 // omit them from the response entirely; callers should treat both as
 // possibly undefined, not assume an empty array/object.
+//
+// node_id carries `omitempty` on the Go side and is response-only:
+// appResource's own doc comment is explicit it is TASKS.md 3.3's
+// placement field, set via PUT /api/v1/apps/{name}/node
+// (handleSetAppNode) rather than through this type, the same
+// response-only convention databaseDetail.ts's DatabaseResource
+// documents for the equivalent field.
 export interface AppDetail {
   name: string
   image: string
@@ -37,4 +44,5 @@ export interface AppDetail {
   env?: Record<string, string>
   resources?: ServiceResources | null
   health?: ServiceHealth | null
+  node_id?: string
 }
