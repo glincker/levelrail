@@ -275,6 +275,14 @@ visual polish.
       in this pass; confirmed via `grep` that no hardcoded brand-name
       string exists anywhere in the file, only `brand.Name`/
       `brand.ShortName` reads, per CLAUDE.md section 3.
+      **Follow-up closed 2026-08-13**: `GET /api/v1/system/status`
+      (`internal/api/status.go`, new `WithDataDir` Router option) now
+      reports secrets/telemetry/alerts configured state and data
+      directory disk usage, real backend state, replacing the
+      placeholder card's system-status claim. Docker connectivity and a
+      version string are still not reported (no `Ping` on
+      `docker.Runtime`, no build-time version variable anywhere in this
+      codebase yet), noted plainly in the UI rather than faked.
 - [x] **Create App dialog (2026-08-13)**: the apps list page had no way
       to create an app at all, not even a button, despite
       `POST /api/v1/apps` always having existed and being fully tested
