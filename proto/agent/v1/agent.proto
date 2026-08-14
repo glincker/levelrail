@@ -1,0 +1,251 @@
+// TASKS.md 3.2: the wire contract for ADR 003's reverse-dialed gRPC
+// agent. Message shapes mirror internal/docker's Go types (ContainerSpec,
+// ContainerState, Event, ImageInfo, VolumeMount, PortBinding, Resources)
+// field for field, deliberately: this is the exact narrow surface
+// internal/agent.Transport already committed to in TASKS.md 3.1
+// (docker.Runtime's own 9 methods, no more), not a redesign.
+//
+// AgentService is defined from the control plane's perspective (it is
+// the gRPC *server*, since it has the one stable, well-known address
+// every agent dials into) even though the agent is always the one who
+// physically opens the connection (ADR 003: "the agent runs on every
+// managed node and dials out"). Session is the one call an agent makes:
+// a single long-lived bidirectional stream, kept open for the agent
+// process's lifetime. The control plane sends AgentRequest messages down
+// that stream (each carrying a request_id); the agent replies with
+// AgentResponse messages carrying the same request_id, allowing many
+// logical request/response pairs, including one persistently-streaming
+// one (WatchEvents), to share the single physical connection. This is
+// what "reverse-dialed" looks like at the RPC layer: TCP/TLS connection
+// direction and logical request direction are independent.
+syntax = "proto3";
+
+package levelrail.agent.v1;
+
+option go_package = "github.com/GLINCKER/levelrail/internal/agent/agentpb;agentpb";
+
+import "google/protobuf/timestamp.proto";
+
+service AgentService {
+  // Enroll exchanges a one-time join token (internal/store.NodeJoinToken,
+  // TASKS.md 3.1) for a signed client certificate, over a connection
+  // that does not yet present a client cert (the token itself is the
+  // credential for this one call). Called once per node, before Session
+  // is ever called.
+  rpc Enroll(EnrollRequest) returns (EnrollResponse);
+
+  // Session is the agent's one persistent connection, opened only after
+  // Enroll (using the certificate Enroll returned for mTLS). The agent
+  // never initiates a logical request on this stream, only responds to
+  // AgentRequest messages arriving from the control plane, plus sending
+  // ProxiedEvent messages unprompted (the streaming Docker-event
+  // relay ADR 003 calls out: "the agent streams Docker events up to
+  // the control plane rather than the control plane polling down").
+  rpc Session(stream AgentMessage) returns (stream ControlMessage);
+}
+
+message EnrollRequest {
+  string join_token = 1;
+  // NodeName is what the enrolling node wants to be called
+  // (store.Node.Name); the control plane still enforces uniqueness
+  // (store.ErrNodeNameTaken) the same way it would for any other
+  // SaveNode caller.
+  string node_name = 2;
+}
+
+message EnrollResponse {
+  // NodeID is the store.Node.ID the control plane assigned; the agent
+  // persists this alongside its certificate so subsequent Session
+  // reconnects can identify themselves before the mTLS handshake even
+  // completes (the cert's own CommonName already encodes it too, this
+  // is the same value spelled out for the agent's own local bookkeeping).
+  string node_id = 1;
+  // ClientCertPEM/ClientKeyPEM are this node's new mTLS identity.
+  // ClientKeyPEM never leaves this one response: it isn't persisted by
+  // the control plane, isn't logged, and isn't retrievable again,
+  // matching every other "shown once" credential in this codebase
+  // (API tokens, node join tokens themselves).
+  bytes client_cert_pem = 2;
+  bytes client_key_pem = 3;
+  // CACertPEM is the control plane's own CA certificate, so the agent
+  // can verify the control plane's TLS server certificate on every
+  // future connection without trusting the system root store (this is
+  // a private, self-issued PKI for exactly this one relationship, not a
+  // publicly-trusted certificate).
+  bytes ca_cert_pem = 4;
+}
+
+// AgentMessage is one frame the agent sends up the Session stream:
+// either a reply to an outstanding AgentRequest, or an unprompted
+// streamed Docker event.
+message AgentMessage {
+  oneof payload {
+    AgentResponse response = 1;
+    ProxiedEvent event = 2;
+  }
+}
+
+// ControlMessage is one frame the control plane sends down the Session
+// stream: always a request. (A dedicated envelope message, not just
+// AgentRequest directly, so this type can grow a second oneof arm later
+// without an incompatible wire change, the same reasoning AgentMessage
+// already needs one today for its two arms.)
+message ControlMessage {
+  AgentRequest request = 1;
+}
+
+// AgentRequest is one control-plane-issued operation, tagged with
+// request_id so out-of-order AgentResponse frames on the same stream
+// still resolve to the right caller (internal/agent's multiplexer,
+// TASKS.md 3.2, owns matching these).
+message AgentRequest {
+  string request_id = 1;
+  oneof op {
+    InspectByNameRequest inspect_by_name = 2;
+    CreateRequest create = 3;
+    StartRequest start = 4;
+    StopRequest stop = 5;
+    RemoveRequest remove = 6;
+    ListImagesRequest list_images = 7;
+    ListByPrefixRequest list_by_prefix = 8;
+    EnsureVolumeRequest ensure_volume = 9;
+    WatchEventsRequest watch_events = 10;
+  }
+}
+
+// AgentResponse is the agent's answer to exactly one AgentRequest,
+// carrying the same request_id.
+message AgentResponse {
+  string request_id = 1;
+  // Error is set (and every field below unset) when the underlying
+  // internal/docker.Runtime call itself returned an error: the
+  // multiplexer surfaces this as a real Go error to the caller, never
+  // silently treated as a zero-value success.
+  string error = 2;
+  oneof result {
+    InspectByNameResponse inspect_by_name = 3;
+    CreateResponse create = 4;
+    ListImagesResponse list_images = 5;
+    ListByPrefixResponse list_by_prefix = 6;
+    // Start, Stop, Remove, EnsureVolume, and the WatchEvents
+    // acknowledgment all return nothing but success/Error above, so
+    // none of them needs its own response message.
+    Empty empty = 7;
+  }
+}
+
+message Empty {}
+
+message PortBinding {
+  int32 container_port = 1;
+  int32 host_port = 2;
+  string protocol = 3;
+}
+
+message Resources {
+  int64 memory_bytes = 1;
+  int64 nano_cpus = 2;
+}
+
+message VolumeMount {
+  string name = 1;
+  string container_path = 2;
+}
+
+message ContainerSpec {
+  string name = 1;
+  string image = 2;
+  repeated PortBinding ports = 3;
+  map<string, string> env = 4;
+  Resources resources = 5; // unset means internal/docker.ContainerSpec.Resources == nil
+  repeated VolumeMount volumes = 6;
+}
+
+message ContainerState {
+  string id = 1;
+  string name = 2;
+  string image = 3;
+  bool running = 4;
+  repeated PortBinding ports = 5;
+}
+
+message ImageInfo {
+  string tag = 1;
+  google.protobuf.Timestamp created_at = 2;
+}
+
+// ProxiedEvent mirrors internal/docker.Event, relayed unprompted as it
+// happens on the agent's own local WatchEvents stream (ADR 003's
+// event-push design), scoped to the one watch_events call currently
+// active (a fresh watch_id per WatchEventsRequest, so a control plane
+// that starts and stops watching doesn't get events crossed between
+// watches).
+message ProxiedEvent {
+  string watch_id = 1;
+  string action = 2; // internal/docker.EventAction: "start" | "die" | "stop"
+  string container_name = 3;
+  google.protobuf.Timestamp time = 4;
+}
+
+message InspectByNameRequest {
+  string name = 1;
+}
+message InspectByNameResponse {
+  // Found is false when internal/docker.Runtime.InspectByName's own
+  // (nil, nil) "not found, not an error" contract applies: state below
+  // is then unset, not a zero-valued ContainerState pretending to be a
+  // real one.
+  bool found = 1;
+  ContainerState state = 2;
+}
+
+message CreateRequest {
+  ContainerSpec spec = 1;
+}
+message CreateResponse {
+  string id = 1;
+}
+
+message StartRequest {
+  string id = 1;
+}
+
+message StopRequest {
+  string id = 1;
+  int64 timeout_ms = 2; // internal/docker.Runtime.Stop's time.Duration, in milliseconds; negative means wait indefinitely
+}
+
+message RemoveRequest {
+  string id = 1;
+  bool force = 2;
+}
+
+message ListImagesRequest {
+  string repo = 1;
+}
+message ListImagesResponse {
+  repeated ImageInfo images = 1;
+}
+
+message ListByPrefixRequest {
+  string prefix = 1;
+}
+message ListByPrefixResponse {
+  repeated ContainerState containers = 1;
+}
+
+message EnsureVolumeRequest {
+  string name = 1;
+}
+
+// WatchEventsRequest starts (or, sent a second time with the same
+// watch_id, is meaningless and rejected: one watch per Session,
+// matching internal/docker.Runtime.Events' own "until ctx is cancelled"
+// single-stream contract) the agent's relay of its local Docker event
+// stream as ProxiedEvent frames on the same physical Session stream.
+// There is no corresponding "stop watching" request: the watch runs for
+// the Session's own lifetime, ending only when the stream itself closes,
+// the same lifetime Events(ctx) already ties to ctx cancellation.
+message WatchEventsRequest {
+  string watch_id = 1;
+}

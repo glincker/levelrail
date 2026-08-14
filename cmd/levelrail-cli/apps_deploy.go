@@ -1,0 +1,91 @@
+package main
+
+import (
+	"context"
+	"flag"
+	"fmt"
+	"io"
+)
+
+// runAppsDeploy implements "apps deploy <name> --image <ref>": POST
+// /api/v1/apps/{name}/deploys (internal/api/deploys.go's own
+// handleTriggerDeploy). Points the app's desired image at a new tag and
+// returns as soon as that's saved; the application controller's next
+// reconcile is what actually converges a running container to it, so
+// this command does not wait for that to finish, matching the server's
+// own 202 Accepted response. Use "apps status" to watch the reconcile.
+//
+// There is no separate rollback command: handleTriggerDeploy's own doc
+// comment documents rollback as exactly this same mechanism run with an
+// older tag ("pointing desired.Image back at an older tag and
+// reconciling converges to it the same way any other redeploy does"),
+// and there is no image-history endpoint this CLI could use to look up
+// "the previous tag" on the caller's behalf, so a caller who wants to
+// roll back must already know the tag and pass it to this same command.
+func runAppsDeploy(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs := flag.NewFlagSet(prog+" apps deploy", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	var tokenFlag, apiURLFlag, image string
+	var jsonOut bool
+	fs.StringVar(&image, "image", "", "image reference to deploy, e.g. registry.example.com/org/app:tag (required)")
+	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
+	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	fs.BoolVar(&jsonOut, "json", false, "print the updated app as JSON to stdout and nothing else")
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeployUsage(prog)) }
+
+	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
+		if err == flag.ErrHelp {
+			return exitOK
+		}
+		return exitUsage
+	}
+
+	rest := fs.Args()
+	if len(rest) != 1 {
+		_, _ = fmt.Fprintf(stderr, "%s: apps deploy requires exactly one app name\n\n", prog)
+		fs.Usage()
+		return exitUsage
+	}
+	name := rest[0]
+
+	if image == "" {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--image is required"))
+	}
+
+	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+
+	updated, err := client.DeployApp(context.Background(), name, image)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("deploy app %q: %w", name, err))
+	}
+
+	if jsonOut {
+		if err := writeJSONValue(stdout, updated); err != nil {
+			_, _ = fmt.Fprintln(stderr, err)
+			return exitNetwork
+		}
+		return exitOK
+	}
+	_, _ = fmt.Fprintf(stderr, "app %q now targets image %q; reconcile is asynchronous, check \"%s apps status %s\"\n", updated.Name, updated.Image, prog, updated.Name)
+	printAppHuman(stdout, updated)
+	return exitOK
+}
+
+func appsDeployUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s apps deploy <name> --image IMAGE [flags]
+
+Points an existing app's desired image at IMAGE and returns immediately;
+the next reconcile converges the running container to it. There is no
+separate rollback command: redeploying an older, already-known image tag
+with this same command is what a rollback is, so run
+"%[1]s apps deploy <name> --image <older-tag>" to roll back.
+
+Flags:
+  --image string          image reference to deploy, e.g. registry.example.com/org/app:tag (required)
+  --token string          API token (default: %[2]s env var, then the credentials file)
+  --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --json                    print the updated app as JSON to stdout, nothing else
+  -h, --help              show this help
+`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}

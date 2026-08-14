@@ -1,5 +1,5 @@
-// Package brand provides the branding indirection layer described in
-// CLAUDE.md section 3: no product name is ever hardcoded in source.
+// Package brand provides the branding indirection layer this project
+// requires: no product name is ever hardcoded in source.
 package brand
 
 import (
@@ -27,9 +27,14 @@ const envPrefix = "APP_BRAND_"
 // Load reads brand.yaml from path, then applies APP_BRAND_* environment
 // overrides on top. Env vars win over the file so a deployment can be
 // rebranded without a rebuild. The prefix is deliberately generic rather
-// than tied to the current name, see CLAUDE.md section 3.
+// than tied to the current name, matching the same rebrandability rule
+// this package exists to enforce.
 func Load(path string) (*Brand, error) {
-	data, err := os.ReadFile(path)
+	// path is operator-supplied at binary startup (a fixed config location,
+	// not attacker-controlled request input), so the usual path-traversal
+	// concern gosec flags here does not apply.
+	data, err := os.ReadFile(path) //nolint:gosec // caller-controlled startup config path, not user input
+
 	if err != nil {
 		return nil, fmt.Errorf("brand: read %s: %w", path, err)
 	}

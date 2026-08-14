@@ -1,0 +1,240 @@
+import { useState } from 'react'
+import {
+  ArrowLeftIcon,
+  DatabaseIcon,
+  GitBranchIcon,
+} from '@phosphor-icons/react/dist/ssr'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { BrandIcon, BRAND_ICON_NAMES, type BrandIconName } from './BrandIcon'
+import { CreateAppFields } from './CreateAppFields'
+import { CreateAppFromGitFields } from './CreateAppFromGitFields'
+import { CreateDatabaseFields } from './CreateDatabaseFields'
+import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
+
+// The two non-database starting points step 1 always offers: a small,
+// fixed grid, not a template catalog (this project's own stated
+// non-goal: "Not chasing Coolify's 280 one-click templates. Ten good
+// ones beat 280 stale ones"). Database engine cards
+// are appended dynamically below, from GET /api/v1/database-engines
+// (queries/databaseEngines.ts), rather than hardcoded here: this used
+// to list postgres/redis/mysql by hand, the exact "hardcode a name, add
+// a new one, hunt down every place it's copied" problem
+// internal/store/database_engines.yaml exists to close, only half-closed
+// when this file still had its own hardcoded copy of the same list.
+type FixedWizardOption = 'docker-image' | 'dockerfile-git'
+
+interface WizardOptionDef {
+  value: string
+  label: string
+  description: string
+  icon: React.ReactNode
+}
+
+const FIXED_OPTIONS: WizardOptionDef[] = [
+  {
+    value: 'docker-image',
+    label: 'Docker image',
+    description: 'Already have a built image ready to run.',
+    icon: <BrandIcon name="docker" className="size-6" />,
+  },
+  {
+    value: 'dockerfile-git',
+    label: 'Dockerfile from git',
+    description: 'Build an image from a Dockerfile in a repo.',
+    // No brand mark for this one: git itself isn't one of the four
+    // vendored @thesvg/react logos (BrandIcon.tsx's own doc comment),
+    // so this uses the same Phosphor icon DeployTriggerForm.tsx's
+    // "Build from source" tab already uses for the same concept, for
+    // visual/semantic consistency with the one other git-related
+    // control in this app rather than picking a fresh icon cold. This
+    // is a deliberate mixed-icon-source picker (brand-logo cards use
+    // thesvg.org marks, this one uses UI chrome iconography); see
+    // BrandIcon.tsx's own doc comment for why that's two different
+    // concerns that can coexist in one picker without reopening the
+    // Phosphor-only rule.
+    icon: <GitBranchIcon className="size-6" />,
+  },
+]
+
+// Type guard narrowing an arbitrary engine id string to BrandIconName
+// only when a real vendored logo exists for it (BrandIcon.tsx's own
+// BRAND_ICON_NAMES), so a future engine the registry knows about but
+// thesvg.org hasn't been asked to vendor a mark for yet still renders a
+// real card instead of crashing BrandIcon's exhaustive lookup.
+function brandIconNameFor(engineId: string): BrandIconName | null {
+  return (BRAND_ICON_NAMES as readonly string[]).includes(engineId)
+    ? (engineId as BrandIconName)
+    : null
+}
+
+// Two-step creation flow replacing the old single-step CreateAppDialog/
+// CreateDatabaseDialog entry points, per the design spec's section 2:
+// step 1 picks a starting point from a small fixed grid, step 2 shows
+// the minimal config for whichever was picked, reusing the exact same
+// field sets and mutation hooks CreateAppFields/CreateDatabaseFields/
+// CreateAppFromGitFields already back (no validation or submission
+// logic is duplicated here, this component only owns which step and
+// which option is showing).
+//
+// Both the apps and databases list routes render this same component
+// as their "New app"/"New database" trigger: there's no single step-1
+// option each button could sensibly pre-select (apps has two starting
+// points, docker-image and dockerfile-git; databases has two, postgres
+// and redis), so pre-scrolling to "the relevant option" doesn't reduce
+// clicks in either direction, it would just be an arbitrary pick
+// between two equally-valid ones. Both buttons open the same wizard
+// fresh on step 1 instead, which also matches the actual point of this
+// redesign: replacing "New app" and "New database" as two separate
+// mental models with one unified "pick a starting point" flow, the way
+// Coolify's own New Resource flow works.
+export function CreateResourceWizard({
+  trigger,
+}: {
+  trigger: React.ReactElement
+}) {
+  const [open, setOpen] = useState(false)
+  const [selected, setSelected] = useState<string | null>(null)
+  // Optional convenience, see useDatabaseEnginesOptional's own doc
+  // comment: a slow/failed fetch just means step 1 shows the two fixed
+  // options without any database cards yet, never a blocked dialog.
+  const engineList = useDatabaseEnginesOptional()
+  const engines = engineList.data ?? []
+  const isFixedOption = (value: string): value is FixedWizardOption =>
+    value === 'docker-image' || value === 'dockerfile-git'
+
+  const options: WizardOptionDef[] = [
+    ...FIXED_OPTIONS,
+    ...engines.map((engine) => {
+      const brandName = brandIconNameFor(engine.id)
+      return {
+        value: engine.id,
+        label: engine.label,
+        description: `A managed ${engine.label} database.`,
+        icon: brandName ? (
+          <BrandIcon name={brandName} className="size-6" />
+        ) : (
+          <DatabaseIcon className="size-6" />
+        ),
+      }
+    }),
+  ]
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next)
+    if (!next) {
+      // A fresh step 1 next time the dialog opens; the field
+      // components below already reset their own local form state off
+      // this same `open` prop.
+      setSelected(null)
+    }
+  }
+
+  function handleCreated() {
+    handleOpenChange(false)
+  }
+
+  const selectedTitle = selected
+    ? isFixedOption(selected)
+      ? selected === 'docker-image'
+        ? 'New app from an image'
+        : 'New app from a git repo'
+      : `New ${engines.find((e) => e.id === selected)?.label ?? selected} database`
+    : ''
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger render={trigger} />
+      <DialogContent className="sm:max-w-lg">
+        {selected === null ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>New resource</DialogTitle>
+              <DialogDescription>Pick a starting point.</DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-3">
+              {options.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    setSelected(option.value)
+                  }}
+                  className="flex flex-col items-start gap-2 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                >
+                  {option.icon}
+                  <span className="text-sm font-medium text-foreground">
+                    {option.label}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {option.description}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => {
+                    setSelected(null)
+                  }}
+                  aria-label="Back to starting points"
+                >
+                  <ArrowLeftIcon />
+                </Button>
+                {selectedTitle}
+              </DialogTitle>
+              <DialogDescription>
+                {isFixedOption(selected)
+                  ? 'Apps deployed from an app.yaml spec in a connected repo show up automatically instead.'
+                  : 'The reconciler provisions it on the target node.'}
+              </DialogDescription>
+            </DialogHeader>
+            {/* key={selected} forces a fresh mount (and so a blank
+                form) whenever the picked option changes, including
+                toggling between two different database engines which
+                both render CreateDatabaseFields: switching the starting
+                point is explicitly allowed to drop whatever was typed
+                for the previous one rather than trying to carry values
+                across two different field sets. */}
+            {selected === 'docker-image' ? (
+              <CreateAppFields
+                key={selected}
+                open={open}
+                onCreated={handleCreated}
+              />
+            ) : null}
+            {selected === 'dockerfile-git' ? (
+              <CreateAppFromGitFields
+                key={selected}
+                open={open}
+                onCreated={handleCreated}
+              />
+            ) : null}
+            {!isFixedOption(selected) ? (
+              <CreateDatabaseFields
+                key={selected}
+                open={open}
+                onCreated={handleCreated}
+                engine={selected}
+              />
+            ) : null}
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}

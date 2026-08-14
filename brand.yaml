@@ -1,5 +1,5 @@
 # Loaded by internal/brand at startup. Every value here is overridable at
-# runtime via APP_BRAND_* env vars (see internal/brand/brand.go) — this file
+# runtime via APP_BRAND_* env vars (see internal/brand/brand.go). This file
 # is the default, not a hardcoded assumption anywhere else in the codebase.
 name: Levelrail
 short_name: Levelrail

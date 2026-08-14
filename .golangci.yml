@@ -1,0 +1,33 @@
+# golangci-lint v2 config.
+#
+# Linter set is deliberately exact, not padded: the project's engineering
+# standards name errcheck, govet, staticcheck, gosec, revive, ineffassign,
+# unparam and nothing else. `default: none` is required so golangci-lint's own
+# default set (which otherwise includes unused) does not sneak in extra
+# linters beyond what's specified.
+#
+# Run locally with: golangci-lint run
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - gosec
+    - revive
+    - ineffassign
+    - unparam
+  exclusions:
+    paths:
+      # web/node_modules can ship stray .go files as part of unrelated
+      # npm packages (e.g. flatted's golang port); they're not part of
+      # this module. Never committed (web/.gitignore), so CI never sees
+      # this, but a contributor who ran `npm install` locally would hit
+      # a false positive on every `golangci-lint run ./...` otherwise.
+      - web/node_modules

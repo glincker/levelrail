@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      Flash-of-wrong-theme prevention. Runs synchronously, before the app
+      bundle (a `type="module"` script, which is deferred by the spec)
+      and before first paint, so a dark-preferring visitor never sees a
+      light-mode flash while React boots. Mirrors the key and resolution
+      rules in src/components/ThemeProvider.tsx exactly: 'levelrail-theme'
+      in localStorage wins when present ('light' or 'dark'), otherwise
+      falls back to the OS preference via matchMedia. ThemeProvider reads
+      the class this script already applied as its initial state instead
+      of re-deciding and potentially fighting it.
+    -->
+    <script>
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('levelrail-theme')
+          var isDark =
+            stored === 'dark' ||
+            (stored !== 'light' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.classList.toggle('dark', isDark)
+        } catch (e) {
+          // localStorage/matchMedia can throw in private-browsing or
+          // storage-restricted contexts. Leaving <html> without the
+          // .dark class just means this visitor sees light mode, the
+          // same safe default ThemeProvider's own try/catch falls back
+          // to.
+        }
+      })()
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deployment Platform</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

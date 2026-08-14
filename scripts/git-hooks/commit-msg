@@ -1,0 +1,42 @@
+#!/bin/bash
+# Enforces the project's commit conventions at commit time rather than
+# only in review: conventional-commit format, no em/en dashes, no
+# Co-Authored-By trailer (keeping commits attributable to a single
+# author). Companion to scripts/git-hooks/pre-commit; installed the same
+# way, see scripts/install-hooks.sh.
+set -uo pipefail
+
+msg_file="$1"
+msg="$(cat "$msg_file")"
+subject="$(head -1 "$msg_file")"
+
+fail=0
+
+echo "commit-msg: conventional commit format"
+if ! echo "$subject" | grep -qE '^(feat|fix|perf|refactor|docs|test|chore|ci)(\([a-z0-9-]+\))?: .+'; then
+	echo "commit subject must match '<type>(<scope>): <description>'"
+	echo "  allowed types: feat fix perf refactor docs test chore ci"
+	echo "  got: $subject"
+	fail=1
+fi
+
+echo "commit-msg: em dash / en dash sweep"
+if echo "$msg" | grep -q "—\|–"; then
+	echo "em dash or en dash found in commit message."
+	echo "No em dashes or en dashes anywhere. Use commas, periods, parentheses, or colons."
+	fail=1
+fi
+
+echo "commit-msg: no Co-Authored-By trailer"
+if echo "$msg" | grep -qi "^Co-Authored-By:"; then
+	echo "Co-Authored-By trailer found: this project keeps commits attributable to a single author."
+	fail=1
+fi
+
+if [ "$fail" -ne 0 ]; then
+	echo ""
+	echo "commit-msg checks failed, commit aborted."
+	exit 1
+fi
+
+echo "commit-msg: all checks passed"

@@ -1,0 +1,6 @@
+version: 1
+services:
+  web:
+    build:
+      type: dockerfile
+    port: 8080

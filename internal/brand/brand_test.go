@@ -10,7 +10,7 @@ func writeYAML(t *testing.T, contents string) string {
 	t.Helper()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "brand.yaml")
-	if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
 		t.Fatalf("write fixture: %v", err)
 	}
 	return path

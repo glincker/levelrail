@@ -1,5 +1,5 @@
 # Private research, strategy, and competitor reference material.
-# Never remove this line or narrow it — everything under docs-local/
+# Never remove this line or narrow it: everything under docs-local/
 # is pre-launch, competitive, or strategy content that must not ship
 # in the public OSS repo.
 docs-local/
@@ -11,17 +11,23 @@ docs-local/
 *.out
 vendor/
 
-# Node (web frontend, once scaffolded)
+# Node (web frontend, once scaffolded). Anchored to /web/build/ so this
+# never shadows internal/build/ or any other Go package literally named
+# "build" elsewhere in the tree.
 node_modules/
 .next/
 .turbo/
-dist/
-build/
+/web/dist/
+/web/build/
 
-# Local runtime state
+# Local runtime state: databases, mTLS CA material, anything a local
+# run generates under the default DataDir. Never versioned, regardless
+# of what's actually in it at a given moment.
+/data/
 *.db
 *.db-wal
 *.db-shm
+*.pem
 .env
 .env.*
 !.env.example

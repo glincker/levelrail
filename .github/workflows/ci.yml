@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-vet-test:
+    name: Build, vet, test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: go build
+        run: go build ./...
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test (race detector, coverage profile)
+        run: go test ./... -race -coverprofile=coverage.out
+
+      - name: Coverage gate (70% for /internal)
+        run: scripts/check-coverage.sh coverage.out internal/ 70
+
+      # --------------------------------------------------------------------
+      # TODO: changed-file coverage check on PRs, so new code cannot lower
+      # the bar even if overall coverage passes. NOT implemented yet.
+      #
+      # Deliberately left as a documented gap rather than a step that runs
+      # and always reports green, because it can't be verified without a
+      # real PR against a real GitHub remote, and this repo does not have
+      # one yet (an open decision still pending: when to create the real
+      # GitHub repo and push).
+      #
+      # What building it for real requires:
+      #   1. A coverage baseline from `main`. A PR run only has the PR's
+      #      own coverage.out, so `main`'s must be produced by this same
+      #      job on every push to main and published as a build artifact
+      #      (actions/upload-artifact) for PR runs to pull down.
+      #   2. On pull_request events, fetch that baseline (e.g. via
+      #      dawidd6/action-download-artifact filtered to the latest
+      #      successful run on main), and diff the PR's coverage.out
+      #      against it for the files in
+      #      `git diff --name-only origin/${{ github.base_ref }}...HEAD`.
+      #   3. A tool to do the diffing instead of hand-rolling it, most
+      #      plausibly vladopajic/go-test-coverage (supports this via its
+      #      diff-base-breakdown-file-name input) or a comparable
+      #      diff-coverage action. Either has enough moving parts (artifact
+      #      naming, workflow_conclusion timing, permissions for cross-run
+      #      artifact downloads, PR comment posting) that it needs to be
+      #      built and tested against a real PR once main is pushed, not
+      #      guessed at without one.
+      #   4. Until then, the /internal 70% gate above is the only coverage
+      #      check enforced on PRs.
+      # --------------------------------------------------------------------
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.12
