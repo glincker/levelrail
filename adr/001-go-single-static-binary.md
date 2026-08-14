@@ -5,7 +5,7 @@ Date: 2026-08-11
 
 ## Context
 
-Levelrail's whole pitch (CLAUDE.md section 1) is architectural, not cosmetic:
+Levelrail's whole pitch, a lightweight, AI-ready alternative to Coolify and Dokploy, is architectural, not cosmetic:
 low idle footprint that stays low as managed apps grow, and a wedge against
 Coolify and Dokploy that are, respectively, a Laravel monolith with bolted-on
 services and a TypeScript monorepo with a separate metrics binary. The

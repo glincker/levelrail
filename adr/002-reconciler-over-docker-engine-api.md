@@ -53,7 +53,7 @@ client, so tests can fake it without a daemon).
   the container it's about to create doesn't already exist, or that an
   in-flight operation from a moment ago finished. `internal/reconcile/
   nginxdemo`'s test suite includes an explicit test for the half-succeeded
-  case (container created, start failed) per CLAUDE.md 7. That discipline
+  case (container created, start failed), matching the project's testing standard that every reconciler must have a test for the operation-half-succeeded case. That discipline
   has to hold for every future controller, not just this one.
 - No controller may shell out to `docker` or SSH into anything. The
   `docker.Runtime` interface is the only way `internal/reconcile` is allowed

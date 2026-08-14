@@ -7,12 +7,12 @@ Date: 2026-08-12
 ## Context
 
 ADR 008 decides the architecture (node-local storage, federated pull
-query) but explicitly leaves the storage engine open: CLAUDE.md 4.8
-says "Evaluate embedded VictoriaMetrics vs a purpose-built ring buffer,"
+query) but explicitly leaves the storage engine open: the plan
+says to "evaluate embedded VictoriaMetrics vs a purpose-built ring buffer,"
 a real evaluation, not a rhetorical one. This ADR makes that call for
 TASKS.md 2.1.
 
-Two options on the table, per CLAUDE.md 4.8's own framing:
+Two options on the table, per that framing:
 
 1. **Embed VictoriaMetrics's storage engine as a Go library**
    (`VictoriaMetrics/lib/storage`). Real upside: it's a proper
@@ -42,8 +42,8 @@ doing the same job: BuildKit as a library instead of shelling `docker
 build` (ADR 004), Caddy embedded instead of a separate Traefik
 container (ADR 005), `modernc.org/sqlite` specifically for being
 pure-Go with no cgo toolchain requirement (ADR 007), Railpack over
-Nixpacks "for being significantly lighter" (CLAUDE.md 4.4). CLAUDE.md
-4.1 states the reason once, directly: "do not pull in a heavy
+Nixpacks "for being significantly lighter" (ADR 004). The project
+states the reason once, directly: "do not pull in a heavy
 framework." VictoriaMetrics's storage engine is the heaviest option on
 the table here by a wide margin, and reusing SQLite (a dependency this
 binary already ships and already knows how to migrate, per ADR 007)
@@ -62,18 +62,18 @@ costs nothing new instead of adding one.
     anywhere else in this codebase's dependency choices.
   - Its feature set (multi-tenant isolation, downsampling rollups,
     deduplication across replicated writers) solves problems this
-    control plane doesn't have at the scale CLAUDE.md 6 actually
+    control plane doesn't have at the scale the project actually
     targets (3-50 services, 1-10 machines). Bringing in that surface
     area to get compression and a free Prometheus endpoint is paying
     for capability the product doesn't need to buy the one or two
     pieces it does.
 - **A pure in-memory ring buffer with no persistence at all**, the
-  most literal reading of CLAUDE.md 4.8's phrase. Rejected on a
+  most literal reading of the "purpose-built ring buffer" phrasing above. Rejected on a
   concrete number: 15 days at 15s resolution is 86,400 samples per
   series; at roughly 16 bytes/sample (timestamp + value), a modest
   deployment of 50 services x 10 metrics each is already ~500 series,
   ~700MB of metric history alone, held in RAM for the entire retention
-  window, on a control plane CLAUDE.md 6 Phase 5 explicitly wants to
+  window, on a control plane Phase 5 explicitly wants to
   measure idle memory for ("100 apps on one control plane, measure
   idle CPU and memory, publish the number"). That number would be
   dominated by an in-memory retention buffer that didn't need to be

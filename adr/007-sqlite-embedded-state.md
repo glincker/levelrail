@@ -9,19 +9,18 @@ Date: 2026-08-11
 The control plane needs somewhere to persist desired-state resource
 records (the input to the reconciler, ADR 002), deploy history, secrets
 metadata, and eventually certificate state (ADR 005) and node/mesh
-membership (ADR 006). CLAUDE.md 4.1 commits to a single static Go binary
+membership (ADR 006). The project commits to a single static Go binary
 with the frontend embedded via `embed.FS` and no Node runtime on the
-server; 4.7 extends that commitment to the state layer specifically.
+server (ADR 001); this decision extends that commitment to the state layer specifically.
 
 `internal/store` (schema, migrations, queries) has since been built.
-CLAUDE.md section 8 is explicit that the database schema is one of the
-things that must not be parallelized across agents ("Anything touching
-secrets" and "The database schema" are both on the do-not-parallelize
-list), because it needs one coherent session and human review, not
-independent agent slices. Unlike the BuildKit and Caddy Phase 0 spikes
-(ADRs 004, 005), which ran as parallel agents against non-sensitive,
-independently-scoped code, this one was built directly, in the same
-session as this ADR's writing. See the Verified section below.
+The project's engineering process treats the database schema, like
+anything touching secrets, as work that needs one coherent design session
+and careful human review rather than being split into independently-scoped
+pieces. Unlike the BuildKit and Caddy Phase 0 spikes
+(ADRs 004, 005), which were built as self-contained, non-sensitive,
+independently-scoped pieces of work, this one was built and reviewed as a
+single continuous unit, in the same session as this ADR's writing. See the Verified section below.
 
 ## Decision
 
@@ -41,7 +40,7 @@ gets added in a later phase, and only if a highly-available control plane
 becomes a real, asked-for requirement, not preemptively. Control plane
 write volume is small enough (resource records, deploy history, not
 application data) that SQLite's single-writer model is not a bottleneck for
-the target scale (3 to 50 services per CLAUDE.md section 1).
+the target scale (3 to 50 services, the project's stated target scale).
 
 ## Rejected alternatives
 
@@ -108,7 +107,7 @@ the target scale (3 to 50 services per CLAUDE.md section 1).
 shared connection to avoid this process's own goroutines contending with
 each other), a hand-rolled forward-only migration runner reading embedded
 `migrations/*.sql` files (no external migration library added, matching
-the "no heavy framework" standard in CLAUDE.md 7), and the first real
+the project's "no heavy framework" engineering standard), and the first real
 migration and repository: `reconcile_status`, persisting the status
 conditions ADR 002's reconciler already produces. `reconcile.Engine` got a
 small, additive `Store` interface (defined in `internal/reconcile`, not
@@ -125,8 +124,8 @@ file twice, confirming a restart doesn't re-run or fail on an
 already-applied migration.
 
 Also run live, not just in the test suite: `cmd/levelrail` now opens the
-store at startup (path from `APP_DATA_DIR`, matching CLAUDE.md section 3's
-override convention) and calls `engine.SetStore(db)`. Running the Phase 0
+store at startup (path from `APP_DATA_DIR`, matching the project's
+convention of overriding filesystem paths via env vars) and calls `engine.SetStore(db)`. Running the Phase 0
 demo end to end and querying the database directly afterward:
 
 ```
@@ -141,10 +140,11 @@ confirming status persistence survives the same kill-and-recover cycle
 ADR 002 already verified for the reconciler itself.
 
 Not yet done, left for Phase 1: `applications`, `deployments`, `servers`,
-and the rest of the domain schema CLAUDE.md 4.2 and 4.9 describe.
+and the rest of the domain schema the reconciler (ADR 002) and the app
+spec (`app.yaml`) describe.
 Inventing those tables now, ahead of the code that would actually use
 them, would be exactly the kind of speculative schema this project's own
-standards (CLAUDE.md: "Don't design for hypothetical future requirements")
-argue against; `reconcile_status` was chosen as the first real migration
+standard against designing for hypothetical future requirements
+rules out; `reconcile_status` was chosen as the first real migration
 specifically because it persists something that already exists in the
 codebase, not something anticipated.
