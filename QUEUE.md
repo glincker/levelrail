@@ -18,21 +18,17 @@ those APIs before they merge, the shapes can still change.
 
 ## In progress
 
-(nothing yet, round 3 not dispatched)
-
-## Next up (priority order)
-
 - [ ] Expose `docker.Runtime.ListImages` via a small API route (e.g.
       `GET /api/v1/apps/{name}/images`) so `DeployTriggerForm` can offer
       a dropdown of previously built tags instead of a hand-typed
-      image string. Safe to build now, docker-health-check (the other
-      item that touched `internal/api/router.go` /
-      `cmd/levelrail/main.go`'s `rootHandler`) has already landed.
-- [ ] Look for more real, scoped gaps the same way the last two rounds
-      did: re-scan for duplicated inline styling, missing test coverage
-      on real user-facing paths, and small honest UX gaps against
-      Coolify/Dokploy (`docs-local/competitor-clones/`). Not a fixed
-      list, PM triages fresh each round.
+      image string. (builder dispatched)
+- [ ] Fresh gap scan for round 3 candidates (duplicated styling/logic,
+      missing e2e coverage on real user paths, honest Coolify/Dokploy
+      UX gaps, contract drift, dead code). (architect dispatched)
+
+## Next up (priority order)
+
+(populated once the round-3 gap scan lands)
 
 ## Blocked
 
