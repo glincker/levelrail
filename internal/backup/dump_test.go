@@ -25,12 +25,43 @@ type fakeExecRuntime struct {
 
 	content string
 	err     error
+
+	// ExecWithInput's own recorded call, kept separate from Exec's fields
+	// above rather than shared: restore_test.go's tests need to assert on
+	// what was passed to ExecWithInput specifically (including the stdin
+	// bytes), and reusing Exec's fields would make a test that calls both
+	// methods on the same fake ambiguous about which call it's checking.
+	gotInputContainer  string
+	gotInputCmd        []string
+	gotStdin           string
+	execWithInputCalls int
 }
 
 func (f *fakeExecRuntime) Exec(_ context.Context, containerID string, cmd []string) (io.ReadCloser, error) {
 	f.execCalls++
 	f.gotContainer = containerID
 	f.gotCmd = cmd
+	if f.err != nil {
+		return nil, f.err
+	}
+	return io.NopCloser(strings.NewReader(f.content)), nil
+}
+
+// ExecWithInput reads stdin to completion before returning, the same way
+// the real docker.Client implementation's stdin-copy goroutine always
+// finishes writing before streamExecOutput's stdout side reaches EOF for
+// a well-behaved command: restore_test.go's tests depend on gotStdin
+// reflecting the whole dump, not a partial read racing the fake's own
+// return.
+func (f *fakeExecRuntime) ExecWithInput(_ context.Context, containerID string, cmd []string, stdin io.Reader) (io.ReadCloser, error) {
+	f.execWithInputCalls++
+	f.gotInputContainer = containerID
+	f.gotInputCmd = cmd
+	stdinBytes, readErr := io.ReadAll(stdin)
+	f.gotStdin = string(stdinBytes)
+	if readErr != nil {
+		return nil, readErr
+	}
 	if f.err != nil {
 		return nil, f.err
 	}

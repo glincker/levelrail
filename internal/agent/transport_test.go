@@ -44,6 +44,9 @@ func (f *fakeRuntime) EnsureVolume(context.Context, string) error        { retur
 func (f *fakeRuntime) Exec(context.Context, string, []string) (io.ReadCloser, error) {
 	return nil, errors.New("fakeRuntime: Exec not implemented")
 }
+func (f *fakeRuntime) ExecWithInput(context.Context, string, []string, io.Reader) (io.ReadCloser, error) {
+	return nil, errors.New("fakeRuntime: ExecWithInput not implemented")
+}
 
 func TestLocal_DelegatesToWrappedRuntime(t *testing.T) {
 	rt := &fakeRuntime{state: &docker.ContainerState{Name: "web-abc123", Running: true}}

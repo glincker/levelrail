@@ -157,6 +157,7 @@ type Store interface {
 	StaticSiteStore
 	BackupTargetStore
 	BackupHistoryStore
+	RestoreHistoryStore
 }
 
 // SecretSetter is the surface the secrets handler needs from
@@ -229,6 +230,8 @@ type Router struct {
 	backupSecrets           BackupSecretsSetter // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
 	backupHistory           BackupHistoryStore  // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
 	backupRunner            BackupRunner        // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
+	restoreHistory          RestoreHistoryStore // always set, same "core Store interface" shape as backupHistory above
+	restoreRunner           RestoreRunner       // nil is valid: POST /api/v1/databases/{name}/restore returns 501, same shape as backupRunner above
 }
 
 // Option configures optional Router behavior.
@@ -260,6 +263,16 @@ func WithBackupSecrets(s BackupSecretsSetter) Option {
 // past, nothing about it needs a live runner today.
 func WithBackupRunner(r BackupRunner) Option {
 	return func(rt *Router) { rt.backupRunner = r }
+}
+
+// WithRestoreRunner enables POST /api/v1/databases/{name}/restore.
+// Without one configured (the default), that route returns 501, the same
+// "not configured" shape WithBackupRunner's absence produces; listing
+// restore history (GET .../restores) works regardless, the same
+// "listing needs no live runner" reasoning WithBackupRunner's own doc
+// comment gives for backup history.
+func WithRestoreRunner(r RestoreRunner) Option {
+	return func(rt *Router) { rt.restoreRunner = r }
 }
 
 // WithSessionTTL overrides how long a session cookie stays valid.
@@ -353,20 +366,21 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		logger = slog.Default()
 	}
 	rt := &Router{
-		logger:        logger,
-		brand:         b,
-		apps:          s,
-		deploys:       s,
-		databases:     s,
-		auth:          s,
-		tokens:        s,
-		nodes:         s,
-		certs:         s,
-		staticSites:   s,
-		backupTargets: s,
-		backupHistory: s,
-		fetch:         gitCheckout,
-		logins:        newLoginLimiter(),
+		logger:         logger,
+		brand:          b,
+		apps:           s,
+		deploys:        s,
+		databases:      s,
+		auth:           s,
+		tokens:         s,
+		nodes:          s,
+		certs:          s,
+		staticSites:    s,
+		backupTargets:  s,
+		backupHistory:  s,
+		restoreHistory: s,
+		fetch:          gitCheckout,
+		logins:         newLoginLimiter(),
 	}
 	for _, opt := range opts {
 		opt(rt)
@@ -557,6 +571,15 @@ func (rt *Router) Handler() http.Handler {
 	// History listing is ordinary AbilityRead.
 	mux.HandleFunc("POST /api/v1/databases/{name}/backups", rt.requireAbility(AbilityWriteSensitive, rt.handleTriggerBackup))
 	mux.HandleFunc("GET /api/v1/databases/{name}/backups", rt.requireAbility(AbilityRead, rt.handleListBackupHistory))
+
+	// Restore, per database (restore.go). AbilityRoot, not
+	// AbilityWriteSensitive: see handleTriggerRestore's own doc comment
+	// for why this, alone among every backup-related route, needs the
+	// same top tier as node management and placement. History listing is
+	// ordinary AbilityRead, the same boundary the backup history route
+	// above already draws.
+	mux.HandleFunc("POST /api/v1/databases/{name}/restore", rt.requireAbility(AbilityRoot, rt.handleTriggerRestore))
+	mux.HandleFunc("GET /api/v1/databases/{name}/restores", rt.requireAbility(AbilityRead, rt.handleListRestoreHistory))
 
 	return mux
 }

@@ -32,7 +32,13 @@ import { formatBytes } from '../lib/format'
 import { ApiError } from '../lib/apiError'
 import { useBackupTargets } from '../queries/backupTargets'
 import { useBackupHistory, useTriggerBackup } from '../queries/backupHistory'
+import { useRestoreHistory } from '../queries/restoreHistory'
+import { RestoreBackupDialog } from './RestoreBackupDialog'
 import type { BackupHistoryRecord, BackupStatus } from '../types/backupHistory'
+import type {
+  RestoreHistoryRecord,
+  RestoreStatus,
+} from '../types/restoreHistory'
 
 // Trigger-and-history section for one database's backups, wired against
 // POST/GET /api/v1/databases/{name}/backups (internal/api/backups.go).
@@ -48,15 +54,34 @@ import type { BackupHistoryRecord, BackupStatus } from '../types/backupHistory'
 // (useBackupHistory), the same "optional section, not something the
 // loader needs warm before first paint" shape queries/alerts.ts's
 // useAlertRules already establishes for AlertRulesPanel.
+//
+// Restore (POST/GET /api/v1/databases/{name}/restore(s),
+// internal/api/restore.go) lives in this same Card: RestoreBackupDialog
+// is triggered from a succeeded row in the backup history table below
+// (restoring is always "from a specific past backup", so the action
+// belongs on that row, not as a separate standalone control), and
+// RestoreHistoryTable shows past restore attempts the same
+// self-terminating-polling way BackupHistoryTable already shows backup
+// attempts, via useRestoreHistory.
 
-const STATUS_LABEL: Record<BackupStatus, string> = {
+// Shared between the backup and restore history tables below: both
+// status unions (BackupStatus, RestoreStatus) are the identical three
+// literal strings, running/succeeded/failed, one attempt lifecycle
+// reused for two different resources (see store.RestoreHistory's own
+// Go-side doc comment for why the backend reuses the same status
+// constants rather than defining a second, identically-valued set), so
+// one badge/label/icon mapping and one StatusBadge component below
+// covers both tables rather than duplicating all three per table.
+type AttemptStatus = BackupStatus | RestoreStatus
+
+const STATUS_LABEL: Record<AttemptStatus, string> = {
   running: 'Running',
   succeeded: 'Succeeded',
   failed: 'Failed',
 }
 
 const STATUS_BADGE_VARIANT: Record<
-  BackupStatus,
+  AttemptStatus,
   VariantProps<typeof badgeVariants>['variant']
 > = {
   running: 'muted',
@@ -64,13 +89,13 @@ const STATUS_BADGE_VARIANT: Record<
   failed: 'destructive',
 }
 
-const STATUS_ICON: Record<BackupStatus, Icon> = {
+const STATUS_ICON: Record<AttemptStatus, Icon> = {
   running: SpinnerIcon,
   succeeded: CheckCircleIcon,
   failed: WarningCircleIcon,
 }
 
-function StatusBadge({ status }: { status: BackupStatus }) {
+function StatusBadge({ status }: { status: AttemptStatus }) {
   const StatusIcon = STATUS_ICON[status]
   return (
     <Badge variant={STATUS_BADGE_VARIANT[status]} className="rounded-full">
@@ -225,6 +250,9 @@ function BackupHistoryTable({ databaseName }: { databaseName: string }) {
             <TableHead>Size</TableHead>
             <TableHead>Started</TableHead>
             <TableHead>Finished</TableHead>
+            <TableHead>
+              <span className="sr-only">Actions</span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -257,10 +285,83 @@ function BackupHistoryTable({ databaseName }: { databaseName: string }) {
               <TableCell className="text-muted-foreground">
                 {formatDate(record.finished_at, '-')}
               </TableCell>
+              <TableCell>
+                {record.status === 'succeeded' ? (
+                  <RestoreBackupDialog
+                    databaseName={databaseName}
+                    backup={record}
+                  />
+                ) : null}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+    </div>
+  )
+}
+
+// RestoreHistoryTable is BackupHistoryTable's restore-direction
+// counterpart: same shape (a status-first table, newest attempt on top,
+// polling handled entirely by useRestoreHistory the same way
+// useBackupHistory already drives BackupHistoryTable), rendered only once
+// at least one restore has ever been triggered, so a database nobody has
+// ever restored shows nothing extra here rather than an empty table with
+// nothing in it.
+function RestoreHistoryTable({ databaseName }: { databaseName: string }) {
+  const { data, isLoading, error } = useRestoreHistory(databaseName)
+  const history = data ?? []
+
+  if (isLoading || history.length === 0) {
+    return null
+  }
+  if (error) {
+    return <p className="text-sm text-destructive">{error.message}</p>
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <h3 className="text-sm font-medium text-foreground">Restores</h3>
+      <div className="rounded-lg border border-border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Status</TableHead>
+              <TableHead>From backup</TableHead>
+              <TableHead>Started</TableHead>
+              <TableHead>Finished</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {history.map((record: RestoreHistoryRecord) => (
+              <TableRow key={record.id}>
+                <TableCell>
+                  <div className="flex flex-col gap-1">
+                    <StatusBadge status={record.status} />
+                    {record.status === 'failed' && record.error ? (
+                      <span
+                        className="max-w-[20rem] truncate text-xs text-destructive"
+                        title={record.error}
+                      >
+                        {record.error}
+                      </span>
+                    ) : null}
+                  </div>
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {record.backup_history_id}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {formatDate(record.started_at, '-')}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {formatDate(record.finished_at, '-')}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 }
@@ -274,6 +375,7 @@ export function BackupsSection({ databaseName }: { databaseName: string }) {
       <CardContent className="space-y-4">
         <TriggerBackupRow databaseName={databaseName} />
         <BackupHistoryTable databaseName={databaseName} />
+        <RestoreHistoryTable databaseName={databaseName} />
       </CardContent>
     </Card>
   )

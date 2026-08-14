@@ -133,6 +133,19 @@ func (t *GRPCTransport) Exec(_ context.Context, containerID string, cmd []string
 	return nil, fmt.Errorf("agent: remote Exec not implemented over the agent transport (container %q, cmd %v): backups only support databases placed on this control plane's own node today", containerID, cmd)
 }
 
+// ExecWithInput implements Transport (docker.Runtime). Exec's own doc
+// comment applies identically here, and then some: ExecWithInput needs
+// everything Exec would (a dedicated streaming path, a new agentpb op)
+// plus a second stream direction for stdin, so it inherits the same
+// documented gap rather than a new one. A database restore for a service
+// placed on a remote node fails loudly with this error today, the same
+// "fail loudly, never fake it" posture Exec's own doc comment describes,
+// until the wiring above lands; only Local's in-process Transport (this
+// control plane's own node) supports ExecWithInput until then.
+func (t *GRPCTransport) ExecWithInput(_ context.Context, containerID string, cmd []string, _ io.Reader) (io.ReadCloser, error) {
+	return nil, fmt.Errorf("agent: remote ExecWithInput not implemented over the agent transport (container %q, cmd %v): restores only support databases placed on this control plane's own node today", containerID, cmd)
+}
+
 // EnsureVolume implements Transport (docker.Runtime).
 func (t *GRPCTransport) EnsureVolume(ctx context.Context, name string) error {
 	_, err := t.mux.Call(ctx, &agentpb.AgentRequest{

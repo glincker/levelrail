@@ -199,4 +199,29 @@ type Runtime interface {
 	// the stream, success or failure alike, to release the underlying
 	// exec connection.
 	Exec(ctx context.Context, containerID string, cmd []string) (io.ReadCloser, error)
+
+	// ExecWithInput is Exec plus a stdin stream: it runs cmd inside
+	// containerID exactly as Exec does (same stdout/stderr handling, same
+	// exit-code-becomes-a-trailing-error contract), except cmd's stdin is
+	// wired to stdin instead of being left unattached. This exists for
+	// internal/backup's Restorer, which needs to pipe a downloaded dump
+	// into psql/mysql running inside a live container; Exec itself can't
+	// do this; ContainerExecCreate has to be told AttachStdin: true up
+	// front for the exec session to have a stdin pipe at all, and every
+	// other caller of Exec (ContainerDumper) never needs one, so this is a
+	// second method rather than a third parameter Exec's own existing
+	// call site would otherwise have to grow to accommodate.
+	//
+	// Implementations read stdin to completion (EOF) and then signal
+	// end-of-input to the exec'd process the way closing stdin on a real
+	// terminal would, before returning; a command like psql that reads
+	// until EOF and then exits depends on that signal to ever finish, not
+	// only on stdin's bytes arriving. Callers are not required to provide
+	// a stdin that reaches EOF on its own if the command they're running
+	// doesn't need one; passing an empty reader is equivalent to Exec's
+	// own "nothing attached to stdin" behavior for that command.
+	//
+	// The returned ReadCloser carries stdout, identically to Exec's; Close
+	// must be called once done, same contract.
+	ExecWithInput(ctx context.Context, containerID string, cmd []string, stdin io.Reader) (io.ReadCloser, error)
 }

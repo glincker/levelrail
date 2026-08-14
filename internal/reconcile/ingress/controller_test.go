@@ -123,6 +123,12 @@ func (f *fakeRuntime) Exec(_ context.Context, _ string, _ []string) (io.ReadClos
 	return nil, errors.New("fakeRuntime: Exec not implemented")
 }
 
+// ExecWithInput is unused for the same reason Exec above is. Stubbed to
+// satisfy docker.Runtime.
+func (f *fakeRuntime) ExecWithInput(_ context.Context, _ string, _ []string, _ io.Reader) (io.ReadCloser, error) {
+	return nil, errors.New("fakeRuntime: ExecWithInput not implemented")
+}
+
 // fakeApplier is a hand-written fake for internal/ingress.Driver: it
 // records the last Config it was handed so tests can assert on exactly
 // what would have been sent to Caddy, without starting a real instance.

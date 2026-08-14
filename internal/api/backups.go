@@ -29,9 +29,13 @@ func databaseContainerName(dbName string) string {
 }
 
 // BackupHistoryStore is the store surface the backup history handler
-// needs.
+// needs. GetBackupHistory was added for handleTriggerRestore
+// (restore.go): resolving the one backup attempt a restore names, not
+// just listing every attempt for a database, the same "look up one row
+// by ID" need GetBackupTarget already serves for backup targets.
 type BackupHistoryStore interface {
 	ListBackupHistory(ctx context.Context, databaseName string) ([]store.BackupHistory, error)
+	GetBackupHistory(ctx context.Context, id string) (store.BackupHistory, error)
 }
 
 // BackupRunner is the surface the backup trigger handler needs from
