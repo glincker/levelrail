@@ -38,11 +38,44 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
 
 ## In progress
 
-(nothing right now; see Done below for what just landed)
+- [ ] Manual build trigger from the dashboard. Confirmed gap: today the
+      only way to build an image is a git push through the webhook
+      receiver (`internal/webhook/webhook.go`); `DeployTriggerForm.tsx`'s
+      own comment says outright there's no path from the UI into
+      `internal/deploy.Pipeline`, `POST /api/v1/apps/{name}/deploys`
+      only accepts a pre-built image string. A user without a working
+      webhook has zero way to build anything. Reuses existing `Pipeline`
+      and `useDeployLogStream` SSE infra rather than building new
+      plumbing. (builder dispatched)
+- [ ] `build.type: static` support. Named explicitly in ADR/architecture
+      decision 4.2's static-site handling ("served by the embedded Caddy
+      directly with no container") but `internal/deploy/deploy.go`'s
+      `BuildStatic` is a hardcoded "not yet supported" error. Backend
+      only, no reconciler-core changes, Caddy embedding already exists.
+      (builder dispatched)
+- [ ] TLS certificate renewal visibility. Zero surface anywhere today:
+      no API route touches cert status, `settings/general.tsx` only
+      mentions TLS in static copy. This is the literal failure mode
+      CLAUDE.md section 10 names as the project's main risk ("a cert
+      renewal fails silently at 3am"). `internal/ingress/certstorage.go`
+      already has the storage layer to query; this is read-only status
+      surfacing, not reconciler-core. (builder dispatched)
 
 ## Next up (priority order)
 
-(nothing queued right now; re-triage next round)
+- [ ] Deploy strategy (rolling/recreate/blue-green) + replicas: defined
+      in `internal/spec` but `store.DesiredService` has no such fields
+      and the application controller has zero handling for either.
+      Every deploy today is an implicit single-container image swap.
+      Large, and this is reconciler-core per CLAUDE.md section 8 (one
+      agent, one long session, human review of every decision, do not
+      parallelize). Not dispatched yet for that reason.
+- [ ] Railpack auto-detection: stubbed the same way static builds were
+      (`internal/deploy/deploy.go`), but larger scope (real
+      auto-detection heuristics, not just wiring). Do after static
+      support lands and after the deploy-strategy work above, so
+      Railpack-built images have somewhere real to go besides a bare
+      image swap.
 
 ## Resolved by investigation, no build needed
 
