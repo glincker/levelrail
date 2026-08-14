@@ -30,8 +30,13 @@
 //     different concurrent session as this package was written, so this
 //     endpoint takes an already-built image tag as input, the same
 //     mechanism TASKS.md 1.3 documents for rollback, run forward instead
-//     of backward. Wiring an actual "build then deploy" endpoint is a
-//     follow-up once internal/deploy's API is stable.
+//     of backward. POST /api/v1/apps/{name}/builds (builds.go,
+//     handleTriggerBuild) closes this gap: it invokes the same
+//     internal/deploy.Pipeline the git webhook receiver uses, given a git
+//     source (repo_url/ref) in the request body, since no app has a
+//     stored git/build config anywhere in this codebase yet (see
+//     specServiceFromDesired's own doc comment for what that means for
+//     fidelity versus the original app.yaml).
 //   - Deploy history (deploys.go) returns the latest reconcile condition
 //     per (controller, condition type) pair, which is genuinely all
 //     internal/store.UpsertConditions persists today, not a row-per-
@@ -214,6 +219,8 @@ type Router struct {
 	// for GET /api/v1/certificates's "expiring_soon" threshold. 0 means
 	// "use the default", set via WithCertExpiryWarningWindow.
 	certExpiryWarningWindow time.Duration
+	builder                 Builder   // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
+	fetch                   fetchFunc // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
 }
 
 // Option configures optional Router behavior.
@@ -300,6 +307,19 @@ func WithCertExpiryWarningWindow(d time.Duration) Option {
 	return func(rt *Router) { rt.certExpiryWarningWindow = d }
 }
 
+// WithBuilder enables POST /api/v1/apps/{name}/builds: a manual build
+// trigger for an operator with no working git webhook configured (see
+// internal/webhook.Config's own doc comment on why that path is
+// deliberately static, single-app configuration). Without one configured
+// (the default), that route returns 501, the same "not configured" shape
+// WithSecretSetter/WithTelemetryQuerier/WithAlertRules absence already
+// share. cmd/levelrail/main.go passes the same *deploy.Pipeline the git
+// webhook receiver uses, when a BuildKit connection was successfully
+// established at startup.
+func WithBuilder(b Builder) Option {
+	return func(rt *Router) { rt.builder = b }
+}
+
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
 func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Router {
 	if logger == nil {
@@ -315,6 +335,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		tokens:    s,
 		nodes:     s,
 		certs:     s,
+		fetch:     gitCheckout,
 		logins:    newLoginLimiter(),
 	}
 	for _, opt := range opts {
@@ -383,6 +404,14 @@ func (rt *Router) Handler() http.Handler {
 	// Deploys.
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityDeploy, rt.handleTriggerDeploy))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityRead, rt.handleDeployHistory))
+
+	// Manual build trigger (see Builder/WithBuilder above and
+	// handleTriggerBuild's own doc comment): builds an image from a git
+	// source through the same internal/deploy.Pipeline the webhook
+	// receiver uses, for an operator with no working git webhook
+	// configured. AbilityDeploy, the same boundary as the image-tag
+	// trigger above: this also ultimately writes desired state.
+	mux.HandleFunc("POST /api/v1/apps/{name}/builds", rt.requireAbility(AbilityDeploy, rt.handleTriggerBuild))
 
 	// Previously-built image tags for this app's repo, so the deploy
 	// trigger form can offer a dropdown instead of a hand-typed tag
