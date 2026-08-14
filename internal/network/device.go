@@ -343,14 +343,14 @@ func createSystemTUN(name string, mtu int) (tunDevice, error) {
 // stdout writer (CLAUDE.md 7: structured logging with log/slog, and every
 // line about a resource carries its ID, which here is the interface).
 func newSystemWGDevice(t tunDevice, logger *slog.Logger, iface string) wgDevice {
-	real, ok := t.(tun.Device)
+	systemTUN, ok := t.(tun.Device)
 	if !ok {
 		// Only reachable if a caller injected a fake TUN through the
 		// unexported option and then asked for the real device
 		// constructor, which no code path does.
 		panic("network: newSystemWGDevice requires a real tun.Device")
 	}
-	return device.NewDevice(real, conn.NewDefaultBind(), &device.Logger{
+	return device.NewDevice(systemTUN, conn.NewDefaultBind(), &device.Logger{
 		Verbosef: func(format string, args ...any) {
 			logger.Debug(fmt.Sprintf(format, args...), slog.String("interface", iface))
 		},

@@ -32,6 +32,7 @@ import (
 	"net"
 	"net/netip"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/miekg/dns"
@@ -58,7 +59,13 @@ type DNSServer struct {
 	tcp     *dns.Server
 	udpAddr netip.AddrPort
 	started bool
-	closed  bool
+
+	// closed is atomic rather than guarded by mu because the serve
+	// goroutines read it on their way out while Start may still be
+	// holding mu waiting for those same goroutines to signal readiness.
+	// Guarding it with mu would deadlock exactly when a listener fails to
+	// activate, which is the one case the readiness wait exists for.
+	closed atomic.Bool
 }
 
 // NewDNSServer builds a server for resolver. It does not listen until
@@ -82,7 +89,7 @@ func NewDNSServer(resolver *Resolver, logger *slog.Logger) *DNSServer {
 func (s *DNSServer) Start(ctx context.Context, addr string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.closed {
+	if s.closed.Load() {
 		return fmt.Errorf("network: start dns server: %w", ErrMeshClosed)
 	}
 	if s.started {
@@ -112,30 +119,61 @@ func (s *DNSServer) Start(ctx context.Context, addr string) error {
 	if ap, perr := netip.ParseAddrPort(bound); perr == nil {
 		s.udpAddr = ap
 	}
-	s.udp = &dns.Server{PacketConn: udpConn, Handler: mux}
-	s.tcp = &dns.Server{Listener: tcpListener, Handler: mux}
+
+	// Both servers signal when they are actually in their serve loop, and
+	// Start waits for both before returning. Without this, a Close that
+	// follows Start closely enough races the serve goroutines and gets
+	// "server not started" back from Shutdown, which is a real failure
+	// mode (a control plane that starts and immediately shuts down on a
+	// startup error), not just a test artifact.
+	udpReady := make(chan struct{})
+	tcpReady := make(chan struct{})
+	// Buffered for both goroutines so neither blocks on send if Start has
+	// already returned and nobody is receiving.
+	failed := make(chan error, 2)
+	s.udp = &dns.Server{PacketConn: udpConn, Handler: mux, NotifyStartedFunc: func() { close(udpReady) }}
+	s.tcp = &dns.Server{Listener: tcpListener, Handler: mux, NotifyStartedFunc: func() { close(tcpReady) }}
 	s.started = true
 
-	go s.serve(s.udp, "udp")
-	go s.serve(s.tcp, "tcp")
+	go s.serve(s.udp, "udp", failed)
+	go s.serve(s.tcp, "tcp", failed)
+
+	for _, w := range []struct {
+		proto string
+		ready <-chan struct{}
+	}{{"udp", udpReady}, {"tcp", tcpReady}} {
+		select {
+		case <-w.ready:
+		case err := <-failed:
+			// A listener that never activates must not leave Start
+			// blocked forever waiting for a readiness signal that is
+			// never coming.
+			return fmt.Errorf("network: dns %s listener on %s failed to start: %w", w.proto, bound, err)
+		case <-ctx.Done():
+			return fmt.Errorf("network: waiting for the dns %s listener on %s: %w", w.proto, bound, ctx.Err())
+		}
+	}
 
 	s.logger.Info("internal dns listening",
 		slog.String("addr", bound), slog.String("zone", s.resolver.Zone()))
 	return nil
 }
 
-func (s *DNSServer) serve(srv *dns.Server, proto string) {
-	if err := srv.ActivateAndServe(); err != nil {
-		// Shutdown closes the listener out from under ActivateAndServe,
-		// so an error here after Close is expected, not a failure. The
-		// closed flag distinguishes the two.
-		s.mu.Lock()
-		closed := s.closed
-		s.mu.Unlock()
-		if !closed {
-			s.logger.Error("internal dns server stopped",
-				slog.String("proto", proto), slog.String("error", err.Error()))
-		}
+func (s *DNSServer) serve(srv *dns.Server, proto string, failed chan<- error) {
+	err := srv.ActivateAndServe()
+	if err == nil {
+		return
+	}
+	// Shutdown closes the listener out from under ActivateAndServe, so an
+	// error here after Close is expected, not a failure.
+	if s.closed.Load() {
+		return
+	}
+	s.logger.Error("internal dns server stopped",
+		slog.String("proto", proto), slog.String("error", err.Error()))
+	select {
+	case failed <- err:
+	default:
 	}
 }
 
@@ -149,13 +187,11 @@ func (s *DNSServer) Addr() netip.AddrPort {
 
 // Close shuts both listeners down. Idempotent.
 func (s *DNSServer) Close() error {
-	s.mu.Lock()
-	udp, tcp := s.udp, s.tcp
-	if s.closed {
-		s.mu.Unlock()
+	if s.closed.Swap(true) {
 		return nil
 	}
-	s.closed = true
+	s.mu.Lock()
+	udp, tcp := s.udp, s.tcp
 	s.mu.Unlock()
 
 	var firstErr error

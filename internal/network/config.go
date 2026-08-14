@@ -240,10 +240,20 @@ func ParseEndpoint(s string) (string, error) {
 		return "", fmt.Errorf("network: parse endpoint %q: port must be 1-65535", s)
 	}
 	// An IP literal round-trips through netip so an address written in a
-	// non-canonical form ("10.0.000.1") does not end up as a distinct
-	// string from the canonical one elsewhere. A DNS name is left alone.
+	// non-canonical form ("[FD00::0:1]") does not end up as a distinct
+	// string from the canonical one elsewhere.
 	if addr, addrErr := netip.ParseAddr(host); addrErr == nil {
+		//nolint:gosec // n is bounds-checked to 1-65535 immediately above
 		return netip.AddrPortFrom(addr, uint16(n)).String(), nil
+	}
+	// A host made only of digits and dots that did not parse as an
+	// address is a malformed IP ("10.0.0.256", "010.0.113.4"), not a DNS
+	// name someone meant to write. Left as a hostname it would be
+	// accepted here and fail much later as an unresolvable peer endpoint,
+	// which is exactly the kind of far-from-the-cause failure this
+	// package's validation exists to prevent.
+	if strings.Trim(host, "0123456789.") == "" {
+		return "", fmt.Errorf("network: parse endpoint %q: %q is not a valid IP address", s, host)
 	}
 	return host + ":" + port, nil
 }
