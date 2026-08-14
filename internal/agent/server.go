@@ -53,10 +53,11 @@ const clientCertValidity = 90 * 24 * time.Hour
 
 // defaultHeartbeatInterval is how often Session touches last_seen_at
 // for a connected node while its stream stays open (TASKS.md 3.7),
-// matching CLAUDE.md 4.8's own metrics-collection cadence (15s): reusing
-// that same number isn't required by anything, but two independent "how
-// fresh does this need to be" judgment calls landing on the same value
-// is a reasonable default rather than inventing a third cadence.
+// matching the observability design's own metrics-collection cadence
+// (15s): reusing that same number isn't required by anything, but two
+// independent "how fresh does this need to be" judgment calls landing
+// on the same value is a reasonable default rather than inventing a
+// third cadence.
 const defaultHeartbeatInterval = 15 * time.Second
 
 // Server implements agentpb.AgentServiceServer.
@@ -75,10 +76,11 @@ type Option func(*Server)
 // WithHeartbeatInterval overrides how often Session touches
 // last_seen_at for a connected node. Without one configured,
 // defaultHeartbeatInterval applies. cmd/levelrail's own main.go reads
-// APP_NODE_HEARTBEAT_INTERVAL and passes the parsed duration here
-// (CLAUDE.md 7: "no hardcoded thresholds, use env vars"); this package
-// itself never reads the environment directly, the same "constructor
-// args only" convention api.WithSessionTTL already establishes.
+// APP_NODE_HEARTBEAT_INTERVAL and passes the parsed duration here,
+// following the project's "no hardcoded thresholds, use env vars"
+// rule; this package itself never reads the environment directly, the
+// same "constructor args only" convention api.WithSessionTTL already
+// establishes.
 func WithHeartbeatInterval(d time.Duration) Option {
 	return func(s *Server) { s.heartbeatInterval = d }
 }

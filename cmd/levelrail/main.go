@@ -3,8 +3,8 @@
 // dynamically from desired state in the store every pass (see
 // dynamicSource): one application.Controller per desired service, one
 // database.Controller per desired database, plus a single ingress
-// controller routing every service with domains. Everything else in
-// CLAUDE.md 4 (multi-node, WireGuard, MCP) lands in later phases.
+// controller routing every service with domains. Everything else in the
+// locked architecture (multi-node, WireGuard, MCP) lands in later phases.
 package main
 
 import (
@@ -48,13 +48,13 @@ import (
 
 const (
 	resyncInterval = 30 * time.Second
-	// defaultDataDir matches CLAUDE.md section 3's APP_DATA_DIR override
+	// defaultDataDir matches the documented APP_DATA_DIR override
 	// pattern. Relative, not /var/lib/levelrail-data (brand.yaml's noted
 	// pending path), since Phase 0 runs locally, not installed as a
 	// service yet.
 	defaultDataDir = "./data"
 	// defaultBrandFile is the same "relative default, env override"
-	// pattern as defaultDataDir, per CLAUDE.md section 3.
+	// pattern as defaultDataDir.
 	defaultBrandFile = "./brand.yaml"
 	// defaultDevFixturesFile is the same "relative default, env
 	// override" pattern as defaultBrandFile, for the optional dev-mode
@@ -80,19 +80,22 @@ const (
 
 	httpShutdownTimeout = 10 * time.Second
 
-	// metricsCollectionInterval matches CLAUDE.md 4.8's "15s resolution."
-	// Not env-configurable like retention below: resolution changes the
-	// shape of every stored sample going forward, retention only trims
-	// how much of that shape is kept, a materially smaller blast radius
-	// for an operator to tune without redesigning the schema.
+	// metricsCollectionInterval matches the observability design's "15s
+	// resolution" default. Not env-configurable like retention below:
+	// resolution changes the shape of every stored sample going forward,
+	// retention only trims how much of that shape is kept, a materially
+	// smaller blast radius for an operator to tune without redesigning
+	// the schema.
 	metricsCollectionInterval = 15 * time.Second
-	// defaultMetricsRetention matches CLAUDE.md 4.8's "default 15 days."
+	// defaultMetricsRetention matches the observability design's
+	// "default 15 days" retention.
 	defaultMetricsRetention = 15 * 24 * time.Hour
 	// metricsRetentionSweepInterval: how often the retention sweep runs,
 	// not how long data is kept (that's the retention duration itself).
 	// Hourly is frequent enough that the table never grows much past its
 	// steady-state size, infrequent enough to be a non-event on a
-	// control plane CLAUDE.md 6 Phase 5 wants measured for idle cost.
+	// control plane whose idle cost the project's hardening phase wants
+	// measured.
 	metricsRetentionSweepInterval = 1 * time.Hour
 
 	// logTargetsResyncInterval is how often the log collector re-derives
@@ -101,8 +104,9 @@ const (
 	// a different concern (log stream subscriptions, not reconcile
 	// passes) even though the two currently share the same value.
 	logTargetsResyncInterval = 30 * time.Second
-	// defaultLogsRetention matches CLAUDE.md 4.8's "default 15 days,"
-	// the same default metrics uses, applied to the sibling log store.
+	// defaultLogsRetention matches the observability design's "default
+	// 15 days," the same default metrics uses, applied to the sibling
+	// log store.
 	defaultLogsRetention = 15 * 24 * time.Hour
 	// logsRetentionSweepInterval mirrors metricsRetentionSweepInterval's
 	// own reasoning: frequent enough that log_entries never grows much
@@ -653,8 +657,8 @@ func logsRetention() time.Duration {
 // runMetricsRetentionSweep deletes samples older than the configured
 // retention window on a fixed interval, until ctx is done. Retention
 // duration is env-configurable (APP_METRICS_RETENTION, a Go duration
-// string like "360h"), per the root CLAUDE.md's "no hardcoded
-// thresholds" rule; the sweep interval itself is not, see
+// string like "360h"), following the project's "no hardcoded
+// thresholds, use env vars" rule; the sweep interval itself is not, see
 // metricsRetentionSweepInterval's doc comment for why that one's fixed.
 func runMetricsRetentionSweep(ctx context.Context, db *telemetry.DB, logger *slog.Logger) {
 	ticker := time.NewTicker(metricsRetentionSweepInterval)
@@ -743,9 +747,10 @@ func devFixturesFile() string {
 	return path
 }
 
-// loadSecretsManager builds a secrets.Manager from APP_MASTER_KEY (CLAUDE.md
-// 4.10: "Master key can be sourced from file, env, or an external KMS
-// interface added later"; env is what this control plane supports today).
+// loadSecretsManager builds a secrets.Manager from APP_MASTER_KEY (the
+// secrets design allows the master key to be sourced from file, env, or an
+// external KMS interface added later; env is what this control plane
+// supports today).
 // An unset APP_MASTER_KEY is not an error: it returns (nil, nil), the
 // same "feature just isn't configured" shape openStore's directory
 // default and loadBrand's file default don't need, because unlike those,
@@ -781,8 +786,8 @@ func loadSecretsManager(db *store.DB) (*secrets.Manager, error) {
 // the control plane still starts, only the git-push path is
 // unavailable, and specifically why is in the returned error.
 //
-// webhook.Config is single-app per its own package doc comment (CLAUDE.md
-// Phase 1's exit criterion is one app deploying from one push), so
+// webhook.Config is single-app per its own package doc comment (the
+// project's Phase 1 exit criterion is one app deploying from one push), so
 // APP_SERVICE_NAME only needs setting when the app spec declares more
 // than one service; with exactly one, it's the unambiguous default.
 //
@@ -896,8 +901,8 @@ func loadWebhookHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand
 // APP_BUILD_CACHE_DIR wires build.WithCacheDir (Phase 1's local
 // backend, still useful for a single build node with no registry
 // available); APP_BUILD_CACHE_REGISTRY wires build.WithCacheRegistry,
-// the actual "remote cache shared across dedicated build nodes"
-// CLAUDE.md 4.4 calls for, optionally with
+// the actual "remote cache shared across dedicated build nodes" the
+// build architecture calls for, optionally with
 // APP_BUILD_CACHE_REGISTRY_INSECURE=true for a plain-HTTP or self-
 // signed registry. Neither set (the default) returns no options at
 // all, matching every other optional env-var-gated feature in this
@@ -982,12 +987,12 @@ func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent
 // so the full original path reaches api's own mux unchanged, matching
 // its routes' own "/api/v1/..." patterns) goes to the API, everything
 // else to web.Handler's embedded frontend with SPA fallback. Combining
-// them here rather than running two servers keeps CLAUDE.md 4.1's
+// them here rather than running two servers keeps the control plane's
 // single-binary story intact: one process, one listen address.
 //
 // webhook.Handler mounts at POST /webhook, outside the /api/ subtree:
 // GitHub calls this URL directly, it is not part of the versioned
-// Levelrail API surface the frontend and future MCP layer build on.
+// platform API surface the frontend and future MCP layer build on.
 //
 // telemetryDB and alertingDB are always non-nil (openTelemetryStore and
 // openAlertingStore have no optional gating, unlike secrets/webhook
@@ -1038,11 +1043,11 @@ func httpAddr() string {
 }
 
 // sessionTTL reads APP_SESSION_TTL as a Go duration string (e.g. "24h",
-// "30m"), CLAUDE.md 7's "no hardcoded thresholds, use env vars" rule for
-// the value api.WithSessionTTL configures. Returns 0 (api.NewRouter's
-// own signal to fall back to its internal default) when unset or
-// unparseable, logging a warning in the latter case so a typo'd env var
-// is visible rather than silently ignored.
+// "30m"), following the project's "no hardcoded thresholds, use env
+// vars" rule for the value api.WithSessionTTL configures. Returns 0
+// (api.NewRouter's own signal to fall back to its internal default)
+// when unset or unparseable, logging a warning in the latter case so a
+// typo'd env var is visible rather than silently ignored.
 func sessionTTL(logger *slog.Logger) time.Duration {
 	raw := os.Getenv("APP_SESSION_TTL")
 	if raw == "" {
@@ -1088,11 +1093,11 @@ func sessionTTL(logger *slog.Logger) time.Duration {
 // deliberately NOT routed through this: it stays on the local runtime
 // unconditionally, a real, honest, and currently open gap (a service
 // placed on a remote node has no working ingress route yet), because
-// Caddy runs embedded in this one process (CLAUDE.md 4.5) and a remote
-// node's container isn't reachable at 127.0.0.1:hostPort from here even
-// if its Transport could be inspected; closing this needs the WireGuard
-// mesh and internal DNS TASKS.md 3.4 builds, not something this task
-// can honestly solve on its own.
+// Caddy runs embedded in this one process (the ingress design) and a
+// remote node's container isn't reachable at 127.0.0.1:hostPort from
+// here even if its Transport could be inspected; closing this needs
+// the WireGuard mesh and internal DNS TASKS.md 3.4 builds, not
+// something this task can honestly solve on its own.
 //
 // heartbeatTimeout is TASKS.md 3.7's health check: one
 // nodehealth.Controller per registered node (db.ListNodes, the same

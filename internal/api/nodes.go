@@ -17,7 +17,7 @@ import (
 // nodeJoinTokenTTL is how long a minted join token stays redeemable
 // before an operator has to mint a new one. Not (yet) an env-configurable
 // threshold: this is a one-shot enrollment window, not an ongoing
-// operational setting like APP_SESSION_TTL, so CLAUDE.md 7's "no
+// operational setting like APP_SESSION_TTL, so the project's "no
 // hardcoded thresholds" concern doesn't apply the same way here. Revisit
 // if real usage shows this needs to be adjustable.
 const nodeJoinTokenTTL = 15 * time.Minute

@@ -46,15 +46,15 @@ type Transport interface {
 
 // Local adapts a docker.Runtime this process already has open (this
 // machine's own Docker socket, via docker.NewClient) into a Transport
-// for this process's own node. This is CLAUDE.md 4.3's "single-node
-// mode... in-memory transport that implements the same interface the
-// gRPC transport implements," made real: every method call happens
-// in-process, no network, no serialization, and (because Transport is
-// exactly docker.Runtime's shape) any docker.Runtime value already
-// satisfies Transport structurally without needing this wrapper type at
-// all. Local exists anyway, as a named, documented adapter, so call
-// sites read "this is a node transport" rather than relying on Go's
-// structural typing to make that intent legible.
+// for this process's own node. This is the node-communication design's
+// "single-node mode... in-memory transport that implements the same
+// interface the gRPC transport implements," made real: every method
+// call happens in-process, no network, no serialization, and (because
+// Transport is exactly docker.Runtime's shape) any docker.Runtime
+// value already satisfies Transport structurally without needing this
+// wrapper type at all. Local exists anyway, as a named, documented
+// adapter, so call sites read "this is a node transport" rather than
+// relying on Go's structural typing to make that intent legible.
 type Local struct {
 	docker.Runtime
 }
