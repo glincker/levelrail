@@ -9,7 +9,7 @@ import {
   DatabaseRow,
   RowSkeleton,
 } from '../../components/DatabaseRow'
-import { CreateDatabaseDialog } from '../../components/CreateDatabaseDialog'
+import { CreateResourceWizard } from '../../components/CreateResourceWizard'
 import { Button } from '../../components/ui/button'
 
 // Typed loader primes the Query cache, the component only reads that
@@ -66,7 +66,7 @@ function DatabaseListPage() {
               {databases.length === 1 ? 'database' : 'databases'}
             </span>
           ) : null}
-          <CreateDatabaseDialog
+          <CreateResourceWizard
             trigger={
               <Button size="sm">
                 <PlusIcon />
@@ -90,7 +90,7 @@ function DatabaseListPage() {
               an app&apos;s environment.
             </p>
           </div>
-          <CreateDatabaseDialog
+          <CreateResourceWizard
             trigger={
               <Button size="sm">
                 <PlusIcon />

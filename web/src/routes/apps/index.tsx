@@ -9,7 +9,7 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import { appListQueryOptions } from '../../queries/apps'
 import { APP_LIST_GRID, AppRow, RowSkeleton } from '../../components/AppRow'
-import { CreateAppDialog } from '../../components/CreateAppDialog'
+import { CreateResourceWizard } from '../../components/CreateResourceWizard'
 import { Button } from '../../components/ui/button'
 
 // Typed loader primes the Query cache, the component only reads that
@@ -85,7 +85,7 @@ function AppListPage() {
             <DatabaseIcon />
             New database
           </Button>
-          <CreateAppDialog
+          <CreateResourceWizard
             trigger={
               <Button size="sm">
                 <PlusIcon />
@@ -107,7 +107,7 @@ function AppListPage() {
               up here, or create one directly if you already have a built image.
             </p>
           </div>
-          <CreateAppDialog
+          <CreateResourceWizard
             trigger={
               <Button size="sm">
                 <PlusIcon />
