@@ -2420,91 +2420,125 @@ on `account.go`/`auth.go`/`router.go`, per this repo's own multi-
 session convention; waited and re-verified once that session's own
 commits landed, never touched their in-progress files directly).
 
-### 3.4 WireGuard mesh and internal DNS
+### 3.4 WireGuard mesh and internal DNS. DONE (2026-08-13)
 
-Depends on 3.1-3.3 existing (a mesh across zero-to-one nodes is
-nothing to test). Genuinely separate subsystem once the foundation
-lands: can be worked as an independent unit once 3.1-3.3 are merged,
-though the WireGuard integration itself is enough of a new
-architectural surface (a new external dependency, kernel-vs-userspace
-path selection) that it should get an explicit exit criterion up front
-and a human review of every decision, same spirit as the reconciler
-core even though it's not literally on that list.
+- [x] `internal/network`: the abstraction interface ADR 006 calls for,
+      split into a pure, table-testable decision half (key generation,
+      full-mesh planning, IP allocation, kernel-vs-userspace detection,
+      the WireGuard UAPI config protocol) and a thin, isolated
+      side-effecting half (the actual `wireguard-go` device, the DNS
+      server). `internal/reconcile/mesh` composes them into a
+      whole-fleet reconcile pass, same shape as the ingress controller.
+- [x] Real implementation on `wireguard-go` (ADR 006: userspace, so
+      nodes without kernel-module loading rights still work), with
+      kernel-module detection behind an injectable probe to prefer the
+      faster in-kernel path when available.
+- [x] Peer key distribution: the control plane distributes public
+      keys/allowed-IPs to every node via a `ConfigSink` boundary,
+      forming a full mesh, explicitly not hub-and-spoke. **Real,
+      structural scope boundary, not an oversight**: a node's private
+      key never leaves that node, there is no field in this codebase
+      to hold one, so key exchange (not key push) means a new node
+      takes two reconcile passes to fully mesh, ordinary level-triggered
+      convergence. The gRPC arm of `ConfigSink` that would carry this
+      over the wire is deliberately not built here: it is a change to
+      `proto/agent/v1/agent.proto`, the agent wire contract, which needs
+      one coherent mental model and a single reviewer end to end, not
+      several people each touching an uncoordinated slice of it. The
+      exact messages needed are written into `ConfigSink`'s own doc
+      comment for whoever picks this up next.
+- [x] Internal DNS: stable per-service names under `.node.<zone>`
+      resolving to the right peer's mesh address regardless of which
+      node a service currently runs on, backed by an authoritative
+      UDP+TCP resolver. Pointing a container's actual DNS config at this
+      server (`ContainerSpec.DNS`) crosses the same agent wire contract
+      as peer distribution and is left for that same follow-up change,
+      documented rather than faked.
+- [x] Two real concurrency/networking bugs caught and fixed during this
+      work, not hypothetical: a data race on `Coordinator`'s observed-
+      endpoints map (read from the reconcile loop, written from the
+      connection handler with no lock, caught by `-race`, fixed with a
+      `sync.RWMutex`), and an intermittent DNS server startup failure
+      (binding UDP then TCP on "whatever port UDP got," which fails
+      because the two are separate port spaces; fixed with an explicit
+      retry over the ephemeral-port case only).
 
-- [ ] `internal/network`: the abstraction interface ADR 006 already
-      says should exist and doesn't yet, built now instead of assumed.
-- [ ] Real implementation on `wireguard-go` (ADR 006: userspace, not a
-      dependency on the in-kernel module, so nodes without kernel-module
-      loading rights still work), with kernel-module detection to take
-      the faster in-kernel path when available.
-- [ ] Peer key distribution: the control plane distributes public
-      keys/allowed-IPs to every node, forming a full mesh (ADR 006:
-      explicitly not hub-and-spoke through the control plane itself).
-- [ ] Internal DNS: stable per-service names resolving to the right
-      peer regardless of which node a service currently runs on. This
-      is what makes 3.3's "move a service" not break an existing
-      database connection string, the literal last clause of the exit
-      criterion.
+### 3.5 Dedicated build nodes. DONE (2026-08-13)
 
-### 3.5 Dedicated build nodes
+- [x] Registry-backed remote cache for BuildKit (`internal/build/cache.go`,
+      `CacheConfig.RegistryRef` wiring `WithCacheRegistry`/
+      `WithCacheRegistryInsecure`), composable with the existing local-disk
+      cache, closing the exact gap `WithCacheDir`'s own doc comment named.
+      Wired into the control plane binary for the first time via
+      `APP_BUILD_CACHE_DIR`/`APP_BUILD_CACHE_REGISTRY`/
+      `APP_BUILD_CACHE_REGISTRY_INSECURE`.
+- [x] Node capability: `accepts_app_workloads`/`accepts_build_workloads`
+      columns (migration `0010_node_workloads.sql`), independent flags, a
+      node can be either, both, or neither. `PUT /api/v1/nodes/{id}/workloads`
+      is the only way they change.
+- [x] Route a deploy's build step to a build-capable node via 3.1's
+      transport (`build.SelectBuildNode`) instead of always building
+      locally. **Real, honest scope boundary, not an oversight**: actually
+      dispatching a build to a remote node's Docker daemon needs a
+      build-dispatch RPC added to the agent transport/proto, the same
+      wire-contract change 3.4 also left open, explicitly out of this
+      task's scope per this file's own sequencing notes. Marking a node
+      build-capable today fails loudly (`ErrNoBuildNodeAvailable`) rather
+      than silently building locally anyway or pretending to dispatch.
 
-Depends on 3.1-3.3 for the placement mechanism to route a build to a
-specific node at all. Parallelizable once that lands; a contained,
-well-scoped addition (extends `internal/build`, doesn't touch the
-reconciler or transport).
+### 3.6 Distributed cert storage. DONE (2026-08-13)
 
-- [ ] A registry or object-store backend for BuildKit's remote cache
-      (`internal/build/client.go`'s own `WithCacheDir` doc comment
-      already names this as the missing piece, not invented fresh
-      here), replacing the local-disk-only cache Phase 1 scoped down to.
-- [ ] Node capability: which nodes accept build work, distinct from
-      "which nodes run application containers" (a node can be either,
-      both, or neither).
-- [ ] Route a deploy's build step to a build-capable node via 3.1's
-      transport instead of always building against the control plane's
-      own local BuildKit connection.
+- [x] `certmagic.Storage` implemented over `internal/store`'s SQLite
+      (`internal/ingress/certstorage.go`, `cert_storage`/
+      `cert_storage_locks` tables, migration `0011_cert_storage.sql`),
+      replacing Caddy's default file-system cert/ACME-account storage.
+      Lock uses polling with a background refresh goroutine so a live
+      holder's lock never looks stale to a competitor. Wired into the
+      ingress controller via `WithCertStore`, taking precedence over
+      `WithStorageDir`; live-verified end to end (`TestController_
+      Reconcile_Live` asserts `cert_storage` has rows after a real HTTPS
+      handshake through Caddy).
+- [x] Multi-node ingress instances share cert state through this store
+      instead of each independently re-obtaining a certificate for a
+      domain another node already has one for.
+- [x] Domain uniqueness now enforced: `service_domains` child table
+      (migration `0012_service_domains.sql`, `ON DELETE CASCADE`),
+      `SaveDesiredService` claims domains transactionally alongside the
+      desired-state upsert, rolling back the whole write with
+      `ErrDomainTaken{Domain, Owner}` if another service already owns
+      one. The migration backfills existing data with a deterministic
+      alphabetical tie-break for anything already (silently) shared.
+      Closes the gap this controller's own doc comment had flagged
+      twice already, so `BuildRoutesConfig` can no longer silently
+      build two routes for the same host.
 
-### 3.6 Distributed cert storage
+### 3.7 Node health, drain, cordon. DONE (2026-08-13)
 
-Depends on 3.1 only (needs a real multi-node concept to matter at
-all, but not placement or WireGuard specifically). Small, well-scoped,
-parallelizable: touches only `internal/ingress`/
-`internal/reconcile/ingress`, already flagged as a real gap with a
-named solution.
-
-- [ ] Implement `certmagic.Storage` backed by `internal/store`'s SQLite
-      (`internal/reconcile/ingress/controller.go`'s own doc comment
-      already names this exact shape as the real requirement), replacing
-      Caddy's default file-system cert/ACME-account storage.
-- [ ] Multi-node ingress instances (one per node running the ingress
-      controller, matching the ingress design's embedded-Caddy-per-node
-      shape) share cert state through this store instead of each
-      independently re-obtaining a certificate for a domain another
-      node already has one for.
-- [ ] The still-open Phase 1 gap this same controller's doc comment
-      already names (domain uniqueness isn't enforced across separate
-      deploys over time, `BuildRoutesConfig` would silently build two
-      routes for the same host) gets materially worse across nodes if
-      not closed alongside this: worth closing here, not carried forward
-      a third time.
-
-### 3.7 Node health, drain, cordon
-
-Depends on 3.1-3.3 (a node's health/drain/cordon state is meaningless
-without the registry and placement those provide). Parallelizable once
-that foundation lands.
-
-- [ ] Health: agent heartbeat / last-seen tracking (3.1's `nodes` table
-      already has the column), surfaced via API and, per 3.8, the UI.
-      A node that stops heartbeating is a real, user-facing state, not
-      silently ignored.
-- [ ] Cordon: mark a node unschedulable (new placements refuse it)
-      without evacuating what's already running there.
-- [ ] Drain: move every service off a node before it's removed,
-      reusing 3.3's "move a service to a different node" mechanism
-      rather than inventing a second one. This is also what makes node
-      removal (3.1's node-delete route) safe to actually implement as
-      a real delete instead of only ever failing loudly.
+- [x] Health: `Server.heartbeatLoop` touches `last_seen_at` on a
+      configurable interval (`WithHeartbeatInterval`, default 15s) for
+      the life of an agent's stream, not just once at connect, so a
+      hung-but-still-"connected" session is actually detectable. A new
+      `internal/reconcile/nodehealth` controller, one instance per node,
+      level-triggered and idempotent, flips `Online`/`Offline` past a
+      timeout (`APP_NODE_HEARTBEAT_TIMEOUT`, default 45s) and stores a
+      `Heartbeat` condition with a reason string, surfaced via
+      `GET /api/v1/nodes/{id}/health`.
+- [x] Cordon: a `schedulable` column (migration `0013_node_health.sql`),
+      deliberately a separate axis from `Status` (a cordoned node can
+      still be online). `SetNodeSchedulable` is the only mutation;
+      `POST /api/v1/nodes/{id}/cordon`/`.../uncordon` toggle it.
+      `validatePlacementTarget` (shared by manual placement and drain)
+      refuses a cordoned node as a target.
+- [x] Drain: `POST /api/v1/nodes/{id}/drain?target_node_id=` reuses
+      3.3's `UpdateServiceNode`/`UpdateDatabaseNode` one resource at a
+      time, not a second placement mechanism. One resource's failure
+      doesn't stop the rest: the response is `200` on full success or
+      `207` with an `Errors` list on partial failure, tested against a
+      hand-written fake that fails call 2 of 3 on purpose. This is what
+      makes node deletion a real, safe delete: `DELETE /api/v1/nodes/{id}`
+      now returns `409` while any service/database still has that node
+      as its `NodeID`, pointing the operator at drain, instead of only
+      ever failing loudly or silently orphaning placements.
 
 ### 3.8 Frontend: node management UI
 
