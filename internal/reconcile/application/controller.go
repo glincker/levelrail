@@ -253,6 +253,20 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 // already rejects a deploy outright if a required secret has no value,
 // so by the time this runs, an unset secret still in desired.SecretEnv
 // can only be an optional one.
+//
+// Precedence when the same key appears in both desired.Env and
+// desired.SecretEnv: the secret-resolved value always wins. The literal
+// values are copied into env first, then each resolved secret is
+// written into env afterward, unconditionally, so a colliding key ends
+// up holding the secret's value regardless of desired.Env's (map,
+// unordered) iteration order. This is deterministic by construction,
+// not an accident of that iteration order, because desired.SecretEnv is
+// a slice applied strictly after the literal copy completes, one
+// assignment per declared key. The precedence itself is a deliberate
+// default: if a service declares both, the secret is presumably the
+// more deliberate, more authoritative source, and letting it win
+// prevents a leftover plain-text duplicate from silently shadowing a
+// real secret.
 func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredService) (map[string]string, error) {
 	if len(desired.SecretEnv) == 0 {
 		return desired.Env, nil

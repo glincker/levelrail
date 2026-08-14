@@ -700,6 +700,62 @@ func TestController_Reconcile_NoSecretEnv_ResolverNeverCalled(t *testing.T) {
 	}
 }
 
+// TestController_ResolveEnv_SecretWinsOnKeyCollision pins down
+// resolveEnv's merge precedence directly (rather than only observing it
+// indirectly through Reconcile, as the tests above do): when
+// desired.Env and desired.SecretEnv declare the same key, the
+// secret-resolved value must win, deterministically, every time. See
+// the doc comment on resolveEnv for why that's the intended precedence
+// rather than an accident of map iteration order.
+func TestController_ResolveEnv_SecretWinsOnKeyCollision(t *testing.T) {
+	tests := []struct {
+		name      string
+		env       map[string]string
+		secretEnv []string
+		secrets   map[string]string // "service/key" -> value, per fakeSecretResolver's convention
+		want      map[string]string
+	}{
+		{
+			name:      "same key in both: secret overwrites the literal",
+			env:       map[string]string{"X": "plain"},
+			secretEnv: []string{"X"},
+			secrets:   map[string]string{"web/X": "secret-value"},
+			want:      map[string]string{"X": "secret-value"},
+		},
+		{
+			name:      "no key overlap: literal and secret both survive untouched",
+			env:       map[string]string{"OTHER": "literal-value"},
+			secretEnv: []string{"API_KEY"},
+			secrets:   map[string]string{"web/API_KEY": "secret-value"},
+			want:      map[string]string{"OTHER": "literal-value", "API_KEY": "secret-value"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resolver := newFakeSecretResolver(tt.secrets)
+			desired := &store.DesiredService{
+				Name:      "web",
+				Env:       tt.env,
+				SecretEnv: tt.secretEnv,
+			}
+			c := New("web", &fakeStore{}, newFakeRuntime(0), WithSecretResolver(resolver))
+
+			got, err := c.resolveEnv(context.Background(), desired)
+			if err != nil {
+				t.Fatalf("resolveEnv() error = %v", err)
+			}
+			if len(got) != len(tt.want) {
+				t.Errorf("resolveEnv() = %v, want %v", got, tt.want)
+			}
+			for k, wantV := range tt.want {
+				if gotV := got[k]; gotV != wantV {
+					t.Errorf("resolveEnv()[%q] = %q, want %q", k, gotV, wantV)
+				}
+			}
+		})
+	}
+}
+
 // fakeDeployRecorder is a hand-written fake for DeployRecorder, same
 // pattern as fakeSecretResolver above.
 type fakeDeployRecorder struct {
