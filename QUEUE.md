@@ -9,61 +9,68 @@ visible.
 
 Run `scripts/verify.sh` before moving anything out of "In progress."
 
-A separate, concurrently-running Claude Code session owns Phase 3
-backend work (multi-node build routing, distributed cert storage, the
-WireGuard mesh, node health/cordon/drain) and is consolidating it on its
-own `integration/phase3-consolidation` branch. Items below marked
-"Blocked" depend on that landing on `main` first; do not build against
-those APIs before they merge, the shapes can still change.
+## 2026-08-14: Phase 3 landed on main
+
+The separate concurrent session's `integration/phase3-consolidation`
+branch (multi-node build routing, distributed cert storage, WireGuard
+mesh, node health/cordon/drain, plus an org-wide icon migration from
+`lucide-react` to `@phosphor-icons/react`, ADR 014) merged into `main`
+today. Every item previously listed under "Blocked" in this file is
+unblocked as of this merge; they moved to "Next up" below.
+
+**Real incident, resolved clean**: the merge was executed directly
+against the PM's own isolated `main`-tracking worktree (not the shared
+checkout) by something outside this session's control, twice, each time
+mid-conflict. Both times resolved with `git merge --abort` (the second
+needed a `git reset --hard HEAD` after `--abort` partially failed on a
+concurrently-edited file). No commits were ever lost, verified via
+`git merge-base --is-ancestor` before touching anything. The resulting
+merge commit was fully re-verified before trusting it: full backend
+suite (`go test ./... -race`, all packages including all 9 e2e tests),
+`golangci-lint run` (0 issues after clearing a stale cache), coverage
+gate (83.2% vs 70%), full frontend (`tsc -b`, `eslint`, `prettier`,
+`vite build`). Two files created earlier in this session
+(`DeleteAppDialog.tsx`, `ui/toast.tsx`) still imported the now-fully-
+removed `lucide-react`; fixed using ADR 014's own name-mapping table,
+verified against the installed package's real exports. All future
+frontend work must use `@phosphor-icons/react/dist/ssr`, not
+`lucide-react`, this project's own icon convention changed for real.
 
 ## In progress
 
-- [ ] Expose `docker.Runtime.ListImages` via a small API route so
-      `DeployTriggerForm` can offer a dropdown of previously built
-      tags. (builder dispatched)
-- [ ] App deletion frontend (`DeleteAppDialog`) + node placement
-      display on the app detail page, combined into one task since
-      both touch `AppOverview.tsx`/`apps/$name.tsx`. (builder
-      dispatched)
-- [ ] Consolidate 6 files' hand-rolled "Saved." success-message
-      styling into one shared component. (builder dispatched)
-- [ ] e2e test: full auth lifecycle (register -> login -> change
-      password -> revoke other sessions). (QA engineer dispatched)
-- [ ] e2e test: rollback actually converges. (QA engineer dispatched)
-- [ ] e2e test: node placement affects transport, scoped honestly to
-      what's provable without real multi-node infra (see the agent's
-      report for exact scope). (QA engineer dispatched)
+(nothing yet, round 4 not dispatched)
 
-## Next up (priority order)
-
-(populated once round 3 lands)
-
-Checked during round 3 triage, not real gaps: `summarizeConditions`
-duplication across `apps/$name.tsx`/`databases/$name.tsx` (both carry
-explicit reasoning comments, deliberate not accidental); list-row
-keyboard accessibility (real `<Link>` elements already); webhook
-single-app scoping (explicitly a deliberate Phase 1 boundary per
-`internal/webhook`'s own doc comment).
-
-## Blocked
+## Next up (priority order), unblocked by the Phase 3 merge
 
 - [ ] Route the default build path through the registry-backed remote
-      BuildKit cache and build-capable node routing (blocked on:
-      `integration/phase3-consolidation`, "build-capable node routing +
-      remote BuildKit cache").
-- [ ] Close the domain-uniqueness-across-deploys gap in the frontend
-      (surface the 409/validation error from create/update) and wire
-      multi-node ingress instances to share cert state in the UI
-      (blocked on: `integration/phase3-consolidation`, "certmagic
-      distributed cert storage + domain uniqueness enforcement").
-- [ ] Make a service's internal DNS name resolve correctly after a
-      cross-node placement move, the literal Phase 3 exit criterion
-      (blocked on: `integration/phase3-consolidation`, "internal/network
-      WireGuard mesh + DNS").
+      BuildKit cache and build-capable node routing (backend now real
+      and on `main`: `internal/build/{cache,node}.go`). Verify the
+      frontend has no stale assumptions before building UI for it.
+- [ ] Surface domain-uniqueness validation errors in the frontend
+      (`internal/store/domain_uniqueness_test.go` confirms the backend
+      now enforces this; the create/update app forms don't yet surface
+      the resulting 409 distinctly from any other error) and wire
+      multi-node ingress cert-sharing status into the UI if there's a
+      real signal to show (`internal/ingress/certstorage*.go`).
 - [ ] Surface node health (last-seen/heartbeat) and cordon/drain
-      controls in the Nodes management UI (blocked on:
-      `integration/phase3-consolidation`, "node health/cordon/drain
-      API, TASKS.md 3.7").
+      controls in the Nodes management UI. Backend is real and on
+      `main`: `internal/reconcile/nodehealth/controller.go`,
+      `internal/store/migrations/0013_node_health.sql`. Check
+      `internal/api/nodes.go` for what routes actually exist now before
+      dispatching a builder (verify the exact contract, don't assume).
+- [ ] Verify whether `internal/reconcile/mesh` (WireGuard,
+      `internal/network/*`) has any real frontend surface to build yet,
+      or whether it's still backend-only infrastructure with nothing an
+      operator would see. Investigate before dispatching anything.
+- [ ] Redo the "Saved." success-message consolidation (6 files:
+      `HealthCheckEditor.tsx`, `DomainEditor.tsx`,
+      `ResourceLimitsEditor.tsx`, `EnvEditor.tsx`, `SecretsEditor.tsx`,
+      `DeployTriggerForm.tsx`, plus a new `ui/success-message.tsx`) into
+      `Badge`'s `success` variant or a small dedicated component. Was
+      built and verified once already this session but lost, uncommitted,
+      in the merge-recovery `git reset --hard`. Use
+      `@phosphor-icons/react/dist/ssr` icons if the new component needs
+      any, not `lucide-react`.
 
 ## Backlog (not yet prioritized)
 
@@ -87,6 +94,23 @@ single-app scoping (explicitly a deliberate Phase 1 boundary per
 
 ## Done (most recent first)
 
+- [x] Previously-built image tag dropdown for `DeployTriggerForm`
+      (`GET /api/v1/apps/{name}/images`, `ImageLister` Router
+      dependency, repo derivation via `github.com/distribution/reference`
+      to correctly handle registry:port hosts).
+- [x] App deletion dialog (`DeleteAppDialog`) + node placement display
+      on the app detail page.
+- [x] e2e test: full auth lifecycle (register -> login -> change
+      password -> revoke other sessions), against a real
+      `httptest.NewTLSServer`-wrapped router.
+- [x] e2e test: rollback actually converges (image swap both
+      directions, verified against the Docker Engine API).
+- [x] e2e test: node placement affects transport, honestly scoped to
+      what's provable without real multi-node infra: an
+      `application.Controller` only ever calls `InspectByName`/
+      `Create`/`Start` through the `docker.Runtime` it was constructed
+      with (verified via a spy wrapper around two real Runtime values,
+      one of them a real gRPC agent transport).
 - [x] Consolidated 6 files' hand-rolled status-badge color classes
       (green/red/amber) into `Badge`'s new `success`/`warning` variants
       plus its existing `destructive`. Found during queue triage: real,
