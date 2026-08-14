@@ -5,12 +5,12 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   XIcon,
-  CircleCheckIcon,
+  CheckCircleIcon,
   InfoIcon,
-  TriangleAlertIcon,
-  OctagonXIcon,
-  Loader2Icon,
-} from 'lucide-react'
+  WarningIcon,
+  WarningOctagonIcon,
+  SpinnerIcon,
+} from '@phosphor-icons/react/dist/ssr'
 
 const toast = ToastPrimitive.createToastManager()
 
@@ -139,7 +139,7 @@ function ToastIcon({ type }: { type: string | undefined }) {
   let icon: React.ReactNode = null
 
   if (type === 'success') {
-    icon = <CircleCheckIcon aria-hidden="true" />
+    icon = <CheckCircleIcon aria-hidden="true" />
   }
 
   if (type === 'info') {
@@ -147,15 +147,17 @@ function ToastIcon({ type }: { type: string | undefined }) {
   }
 
   if (type === 'warning') {
-    icon = <TriangleAlertIcon aria-hidden="true" />
+    icon = <WarningIcon aria-hidden="true" />
   }
 
   if (type === 'error') {
-    icon = <OctagonXIcon className="text-destructive" aria-hidden="true" />
+    icon = (
+      <WarningOctagonIcon className="text-destructive" aria-hidden="true" />
+    )
   }
 
   if (type === 'loading') {
-    icon = <Loader2Icon className="animate-spin" aria-hidden="true" />
+    icon = <SpinnerIcon className="animate-spin" aria-hidden="true" />
   }
 
   if (!icon) {
