@@ -38,9 +38,34 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
 
 ## In progress
 
-(nothing PM-owned right now; see Done below for what just landed.
-Deploy strategy/replicas is in progress under the concurrent session,
-see Next up.)
+Round 8, fresh gap-scan, two independent pieces dispatched (both pure
+frontend/new-file backend, no overlap with the concurrent session's
+deploy-strategy work):
+
+- [ ] "Move to another node" action on app/database detail pages.
+      `PUT /api/v1/apps/{name}/node` and `PUT /api/v1/databases/{name}/node`
+      are fully implemented and already have working frontend mutations
+      (`queries/apps.ts`, `queries/databases.ts`), but both are only
+      ever called at creation time (`CreateAppFields.tsx`/
+      `CreateDatabaseFields.tsx`). `AppOverview.tsx` shows node as
+      plain read-only text; the only existing way to move a running
+      resource is `DrainNodeDialog`, which moves everything off a node
+      at once, not one resource. (builder dispatched)
+- [ ] Static sites have no API or dashboard visibility.
+      `store.StaticSite`/`ListStaticSites` exist and
+      `internal/deploy.Pipeline` populates them from a
+      `build.type: static` app.yaml (migration 0015), but zero
+      `internal/api` routes reference `StaticSite` at all, and the
+      creation wizard has no static-site option. A user who deploys a
+      static site via git push has no way to see it anywhere in the
+      dashboard, the exact follow-up gap the builder who shipped
+      static-site support flagged and didn't action. (builder
+      dispatched)
+
+Also fixed the same round: `CreateResourceWizard.tsx`'s step-1 card
+grid still had its own hardcoded postgres/redis/mysql array even after
+step 2 went dynamic, the same class of bug one file behind. Now
+generates database cards from the fetched registry too.
 
 **Migration number note for whoever adds the next one**: `0016` is now
 taken (`0016_desired_databases_drop_engine_check.sql`), next one is
