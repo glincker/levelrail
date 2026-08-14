@@ -28,8 +28,8 @@ import {
   FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { SuccessMessage } from '@/components/ui/success-message'
 import { Switch } from '@/components/ui/switch'
+import { toast } from '@/components/ui/toast'
 
 // A probe is either not configured (`null` on the wire, ServiceHealth's own
 // type) or fully configured with a path and optional interval/timeout/
@@ -162,13 +162,20 @@ export function HealthCheckEditor({ app }: { app: AppDetail }) {
     })
 
   const onSubmit = handleSubmit((values) => {
-    updateApp.mutate({
-      ...app,
-      health: {
-        readiness: toProbe(values.readiness),
-        liveness: toProbe(values.liveness),
+    updateApp.mutate(
+      {
+        ...app,
+        health: {
+          readiness: toProbe(values.readiness),
+          liveness: toProbe(values.liveness),
+        },
       },
-    })
+      {
+        onSuccess: () => {
+          toast.add({ title: 'Health checks saved.', type: 'success' })
+        },
+      },
+    )
   })
 
   return (
@@ -218,7 +225,6 @@ export function HealthCheckEditor({ app }: { app: AppDetail }) {
               <AlertDescription>{updateApp.error.message}</AlertDescription>
             </Alert>
           ) : null}
-          {updateApp.isSuccess ? <SuccessMessage>Saved.</SuccessMessage> : null}
         </form>
       </CardContent>
     </Card>

@@ -14,6 +14,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { toast } from '@/components/ui/toast'
 import { useCordonNode, useUncordonNode } from '../queries/nodes'
 import type { NodeResource } from '../types/nodeDetail'
 
@@ -95,6 +96,12 @@ export function CordonNodeDialog({ node }: { node: NodeResource }) {
               mutation.mutate(node.id, {
                 onSuccess: () => {
                   setOpen(false)
+                  toast.add({
+                    title: node.schedulable
+                      ? `Node "${node.name}" cordoned.`
+                      : `Node "${node.name}" uncordoned.`,
+                    type: 'success',
+                  })
                 },
               })
             }}

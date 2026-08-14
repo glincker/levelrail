@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { toast } from '@/components/ui/toast'
 import { useCreateDatabase, useSetDatabaseNode } from '../queries/databases'
 import { useNodeListOptional } from '../queries/nodes'
 import type { DatabaseEngine } from '../types/databaseDetail'
@@ -131,6 +132,10 @@ export function CreateDatabaseDialog({
       {
         onSuccess: (created) => {
           handleOpenChange(false)
+          toast.add({
+            title: `Database "${created.name}" created.`,
+            type: 'success',
+          })
           void navigate({
             to: '/databases/$name',
             params: { name: created.name },

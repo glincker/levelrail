@@ -19,7 +19,7 @@ import {
   FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { SuccessMessage } from '@/components/ui/success-message'
+import { toast } from '@/components/ui/toast'
 import { SecretsNotConfiguredError, useSetSecret } from '../queries/secrets'
 
 const secretSchema = z.object({
@@ -58,6 +58,7 @@ export function SecretsEditor({ appName }: { appName: string }) {
         onSuccess: () => {
           reset({ key: '', value: '' })
           setRevealValue(false)
+          toast.add({ title: 'Secret saved.', type: 'success' })
         },
         onError: (error) => {
           if (error instanceof SecretsNotConfiguredError) {
@@ -181,9 +182,6 @@ export function SecretsEditor({ appName }: { appName: string }) {
             <Alert variant="destructive" className="mt-3">
               <AlertDescription>{generalError}</AlertDescription>
             </Alert>
-          ) : null}
-          {setSecret.isSuccess ? (
-            <SuccessMessage className="mt-2">Secret saved.</SuccessMessage>
           ) : null}
         </form>
       </CardContent>

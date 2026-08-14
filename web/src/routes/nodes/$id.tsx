@@ -17,6 +17,7 @@ import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Switch } from '@/components/ui/switch'
+import { toast } from '@/components/ui/toast'
 import type { VariantProps } from 'class-variance-authority'
 
 // Node detail route, mirroring routes/databases/$name.tsx's shape: three
@@ -156,11 +157,23 @@ function NodeDetailPage() {
               checked={node.accepts_app_workloads}
               disabled={setWorkloads.isPending}
               onCheckedChange={(checked) => {
-                setWorkloads.mutate({
-                  id: node.id,
-                  acceptsAppWorkloads: checked,
-                  acceptsBuildWorkloads: node.accepts_build_workloads,
-                })
+                setWorkloads.mutate(
+                  {
+                    id: node.id,
+                    acceptsAppWorkloads: checked,
+                    acceptsBuildWorkloads: node.accepts_build_workloads,
+                  },
+                  {
+                    onSuccess: () => {
+                      toast.add({
+                        title: checked
+                          ? 'App workloads enabled.'
+                          : 'App workloads disabled.',
+                        type: 'success',
+                      })
+                    },
+                  },
+                )
               }}
             />
             <FieldLabel htmlFor="node-accepts-app-workloads">
@@ -177,11 +190,23 @@ function NodeDetailPage() {
               checked={node.accepts_build_workloads}
               disabled={setWorkloads.isPending}
               onCheckedChange={(checked) => {
-                setWorkloads.mutate({
-                  id: node.id,
-                  acceptsAppWorkloads: node.accepts_app_workloads,
-                  acceptsBuildWorkloads: checked,
-                })
+                setWorkloads.mutate(
+                  {
+                    id: node.id,
+                    acceptsAppWorkloads: node.accepts_app_workloads,
+                    acceptsBuildWorkloads: checked,
+                  },
+                  {
+                    onSuccess: () => {
+                      toast.add({
+                        title: checked
+                          ? 'Build workloads enabled.'
+                          : 'Build workloads disabled.',
+                        type: 'success',
+                      })
+                    },
+                  },
+                )
               }}
             />
             <FieldLabel htmlFor="node-accepts-build-workloads">

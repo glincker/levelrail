@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
+import { toast } from '@/components/ui/toast'
 import { useCreateAlertRule } from '../queries/alerts'
 import type {
   AlertRuleKind,
@@ -237,6 +238,10 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
     createRule.mutate(req, {
       onSuccess: () => {
         handleOpenChange(false)
+        toast.add({
+          title: `Alert rule "${req.name}" created.`,
+          type: 'success',
+        })
       },
     })
   })

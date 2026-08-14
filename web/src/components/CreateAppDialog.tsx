@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { toast } from '@/components/ui/toast'
 import { useCreateApp, useSetAppNode } from '../queries/apps'
 import { useNodeListOptional } from '../queries/nodes'
 
@@ -128,6 +129,10 @@ export function CreateAppDialog({ trigger }: { trigger: React.ReactElement }) {
       {
         onSuccess: (created) => {
           handleOpenChange(false)
+          toast.add({
+            title: `App "${created.name}" created.`,
+            type: 'success',
+          })
           void navigate({
             to: '/apps/$name',
             params: { name: created.name },

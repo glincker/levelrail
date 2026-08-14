@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/card'
 import { Field, FieldError, FieldGroup } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { SuccessMessage } from '@/components/ui/success-message'
+import { toast } from '@/components/ui/toast'
 
 const domainSchema = z.object({
   domains: z.array(
@@ -65,10 +65,17 @@ export function DomainEditor({ app }: { app: AppDetail }) {
   })
 
   const onSubmit = handleSubmit((values) => {
-    updateApp.mutate({
-      ...app,
-      domains: values.domains.map((d) => d.value.trim()),
-    })
+    updateApp.mutate(
+      {
+        ...app,
+        domains: values.domains.map((d) => d.value.trim()),
+      },
+      {
+        onSuccess: () => {
+          toast.add({ title: 'Domains saved.', type: 'success' })
+        },
+      },
+    )
   })
 
   return (
@@ -147,7 +154,6 @@ export function DomainEditor({ app }: { app: AppDetail }) {
               <AlertDescription>{updateApp.error.message}</AlertDescription>
             </Alert>
           ) : null}
-          {updateApp.isSuccess ? <SuccessMessage>Saved.</SuccessMessage> : null}
         </form>
       </CardContent>
     </Card>

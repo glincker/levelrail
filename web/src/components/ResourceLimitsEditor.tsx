@@ -22,8 +22,8 @@ import {
   FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { SuccessMessage } from '@/components/ui/success-message'
 import { Switch } from '@/components/ui/switch'
+import { toast } from '@/components/ui/toast'
 
 // Unit choice: memory is collected as a single whole-number MiB field
 // rather than a "value + unit" pair. formatBytes (lib/format.ts) already
@@ -121,7 +121,14 @@ export function ResourceLimitsEditor({ app }: { app: AppDetail }) {
     })
 
   const onSubmit = handleSubmit((values) => {
-    updateApp.mutate({ ...app, resources: toResources(values) })
+    updateApp.mutate(
+      { ...app, resources: toResources(values) },
+      {
+        onSuccess: () => {
+          toast.add({ title: 'Resource limits saved.', type: 'success' })
+        },
+      },
+    )
   })
 
   return (
@@ -246,7 +253,6 @@ export function ResourceLimitsEditor({ app }: { app: AppDetail }) {
               <AlertDescription>{updateApp.error.message}</AlertDescription>
             </Alert>
           ) : null}
-          {updateApp.isSuccess ? <SuccessMessage>Saved.</SuccessMessage> : null}
         </form>
       </CardContent>
     </Card>
