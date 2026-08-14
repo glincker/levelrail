@@ -14,17 +14,19 @@ import { CreateAppFields } from './CreateAppFields'
 import { CreateAppFromGitFields } from './CreateAppFromGitFields'
 import { CreateDatabaseFields } from './CreateDatabaseFields'
 
-// The four starting points step 1 offers, per
+// The five starting points step 1 offers, per
 // docs/superpowers/specs/2026-08-14-creation-wizard-and-sidebar-design.md
 // section 2: a small, fixed grid, not a template catalog (CLAUDE.md
 // section 2's own non-goal: "Not chasing Coolify's 280 one-click
 // templates. Ten good ones beat 280 stale ones"). MySQL was the
-// original fifth pick but internal/reconcile/database/controller.go
-// only handles postgres/redis today (verified by grep, no MySQL case
-// anywhere in that controller), so it's left out of this first cut per
-// the spec's own note, a fast-follow once the reconciler grows a third
-// engine rather than a picker option backed by nothing.
-type WizardOption = 'docker-image' | 'dockerfile-git' | 'postgres' | 'redis'
+// original fifth pick, held back from the first cut because
+// internal/reconcile/database/controller.go only handled postgres/redis
+// at the time (a picker option backed by nothing would have been worse
+// than one fewer option); added here now that the controller has a real
+// MySQL case (WithMySQLCredentials, the same credentials-blocked-until-
+// configured shape Postgres already has).
+type WizardOption =
+  'docker-image' | 'dockerfile-git' | 'postgres' | 'redis' | 'mysql'
 
 interface WizardOptionDef {
   value: WizardOption
@@ -68,6 +70,12 @@ const WIZARD_OPTIONS: WizardOptionDef[] = [
     description: 'A managed Redis database.',
     icon: <BrandIcon name="redis" className="size-6" />,
   },
+  {
+    value: 'mysql',
+    label: 'MySQL',
+    description: 'A managed MySQL database.',
+    icon: <BrandIcon name="mysql" className="size-6" />,
+  },
 ]
 
 const OPTION_TITLES: Record<WizardOption, string> = {
@@ -75,6 +83,7 @@ const OPTION_TITLES: Record<WizardOption, string> = {
   'dockerfile-git': 'New app from a git repo',
   postgres: 'New Postgres database',
   redis: 'New Redis database',
+  mysql: 'New MySQL database',
 }
 
 // Two-step creation flow replacing the old single-step CreateAppDialog/
@@ -175,7 +184,7 @@ export function CreateResourceWizard({
             </DialogHeader>
             {/* key={selected} forces a fresh mount (and so a blank
                 form) whenever the picked option changes, including
-                toggling between postgres and redis which both render
+                toggling between postgres/redis/mysql which all render
                 CreateDatabaseFields: switching the starting point is
                 explicitly allowed to drop whatever was typed for the
                 previous one rather than trying to carry values across
@@ -208,6 +217,14 @@ export function CreateResourceWizard({
                 open={open}
                 onCreated={handleCreated}
                 engine="redis"
+              />
+            ) : null}
+            {selected === 'mysql' ? (
+              <CreateDatabaseFields
+                key={selected}
+                open={open}
+                onCreated={handleCreated}
+                engine="mysql"
               />
             ) : null}
           </>

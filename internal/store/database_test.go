@@ -24,6 +24,32 @@ func TestSaveAndGetDesiredDatabase(t *testing.T) {
 	}
 }
 
+// TestSaveAndGetDesiredDatabase_MySQL reproduces the real bug migration
+// 0016 fixes: desired_databases.engine originally carried a hardcoded
+// CHECK (engine IN ('postgres', 'redis')) (0003_desired_databases.sql),
+// so a mysql row failed at the SQLite layer even though every
+// application-layer check (validateDatabaseResource,
+// SupportedDatabaseEngines) already accepted it. Confirmed live via a
+// real browser click-through before this test existed: "CHECK
+// constraint failed: engine IN ('postgres', 'redis')".
+func TestSaveAndGetDesiredDatabase_MySQL(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := DesiredDatabase{Name: "orders", Engine: EngineMySQL, Version: "8"}
+	if err := db.SaveDesiredDatabase(ctx, want); err != nil {
+		t.Fatalf("SaveDesiredDatabase() error = %v", err)
+	}
+
+	got, err := db.GetDesiredDatabase(ctx, "orders")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if *got != want {
+		t.Errorf("got %+v, want %+v", got, want)
+	}
+}
+
 func TestSaveDesiredDatabase_UpsertReplacesNotAccumulates(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

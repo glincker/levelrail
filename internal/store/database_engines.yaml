@@ -1,0 +1,20 @@
+# Registry of managed database engines this control plane can create.
+# This is display/identity metadata only (id, label, a sensible default
+# version to suggest): what an engine's container actually needs to run
+# safely (env vars, data path, whether it requires generated credentials
+# at all) is real behavior, not data, and stays Go code in
+# internal/reconcile/database/controller.go's own per-engine switch
+# case. Adding a row here without a matching reconciler case would
+# advertise an engine this control plane cannot actually run, so
+# database_engines_test.go's own TestSupportedEngines_MatchReconcilerCases
+# cross-checks the two never drift apart.
+engines:
+  - id: postgres
+    label: Postgres
+    default_version: "16"
+  - id: redis
+    label: Redis
+    default_version: "7"
+  - id: mysql
+    label: MySQL
+    default_version: "8"

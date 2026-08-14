@@ -47,6 +47,7 @@ import (
 const (
 	redisDataPath    = "/data"
 	postgresDataPath = "/var/lib/postgresql/data"
+	mysqlDataPath    = "/var/lib/mysql"
 )
 
 const defaultStopTimeout = 10 * time.Second
@@ -69,6 +70,19 @@ type PostgresCredentials struct {
 	Password string
 }
 
+// MySQLCredentials is what MySQL reconciliation needs: the same
+// dbName-scoped username/password shape PostgresCredentials already
+// establishes, injected as MYSQL_USER/MYSQL_PASSWORD/MYSQL_DATABASE
+// (see reconcileMySQLEnv). Password also backs MYSQL_ROOT_PASSWORD:
+// unlike Postgres' image, MySQL's own image refuses to start at all
+// without a root password (or an explicit, deliberately-not-used
+// empty-password opt-out), so there is no unauthenticated-but-running
+// MySQL state this controller could otherwise reach.
+type MySQLCredentials struct {
+	Username string
+	Password string
+}
+
 // Controller converges one named database's desired state (read fresh
 // from Store on every Reconcile, never cached) to a running,
 // volume-backed container.
@@ -77,6 +91,7 @@ type Controller struct {
 	store         Store
 	runtime       docker.Runtime
 	postgresCreds *PostgresCredentials
+	mysqlCreds    *MySQLCredentials
 }
 
 // Option configures optional Controller behavior.
@@ -88,6 +103,15 @@ type Option func(*Controller)
 // an unauthenticated container.
 func WithPostgresCredentials(creds *PostgresCredentials) Option {
 	return func(c *Controller) { c.postgresCreds = creds }
+}
+
+// WithMySQLCredentials supplies the credentials MySQL reconciliation
+// needs, the same "populate to activate, no restructuring needed"
+// shape WithPostgresCredentials already establishes. Without one, every
+// MySQL database reports the credentials-blocked condition, identical
+// reasoning to Postgres: no container starts without real auth.
+func WithMySQLCredentials(creds *MySQLCredentials) Option {
+	return func(c *Controller) { c.mysqlCreds = creds }
 }
 
 // New builds a Controller for dbName.
@@ -135,6 +159,27 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"POSTGRES_PASSWORD": c.postgresCreds.Password,
 		}
 		return c.reconcileEngine(ctx, desired, env, postgresDataPath)
+
+	case store.EngineMySQL:
+		if c.mysqlCreds == nil {
+			// Same reasoning as the Postgres branch above: a known,
+			// permanent, documented block, not a transient failure.
+			return credentialsBlockedResult(), nil
+		}
+		env := map[string]string{
+			// MYSQL_ROOT_PASSWORD is mandatory for this image to start
+			// at all (see MySQLCredentials' own doc comment); MYSQL_USER/
+			// MYSQL_PASSWORD/MYSQL_DATABASE mirror the dbName-scoped
+			// user+database Postgres' own POSTGRES_USER already creates,
+			// so both engines end up with an equivalent "one user, one
+			// database, named after the resource" shape from this
+			// controller's point of view.
+			"MYSQL_ROOT_PASSWORD": c.mysqlCreds.Password,
+			"MYSQL_DATABASE":      c.dbName,
+			"MYSQL_USER":          c.mysqlCreds.Username,
+			"MYSQL_PASSWORD":      c.mysqlCreds.Password,
+		}
+		return c.reconcileEngine(ctx, desired, env, mysqlDataPath)
 
 	default:
 		err := fmt.Errorf("unrecognized engine %q", desired.Engine)

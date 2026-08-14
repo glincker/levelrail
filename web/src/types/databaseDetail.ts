@@ -11,7 +11,7 @@
 // create/edit affordance for it yet (no PUT /databases/{name}/node
 // route), so this type exists to display it, never to send it back.
 
-export type DatabaseEngine = 'postgres' | 'redis'
+export type DatabaseEngine = 'postgres' | 'redis' | 'mysql'
 
 export interface DatabaseResource {
   name: string

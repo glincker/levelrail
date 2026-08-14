@@ -66,6 +66,29 @@ export function BrandIcon({
   'aria-hidden': ariaHidden,
   ...props
 }: BrandIconProps) {
+  // Every @thesvg/react icon's own "default" variant is meant to look
+  // right wherever this codebase places it, and that holds for docker/
+  // postgres/redis (their default variant paths carry real brand
+  // colors: Docker's #008fe2, Redis's #912626, confirmed against the
+  // installed package's own generated source, not guessed). MySQL is
+  // the one exception: its default variant paths are hardcoded white
+  // (#FFF), built for a dark/brand-navy background, invisible on this
+  // app's light picker cards. Its own "light" variant (a dark teal,
+  // #00546B) is what @thesvg/react itself names for exactly this
+  // light-background case, so MySQL renders through its own typed
+  // component with that variant explicit, rather than through the
+  // generic BRAND_ICONS map, which would need a widened `variant?:
+  // string` prop type incompatible with each icon's own narrower,
+  // per-icon variant union.
+  if (name === 'mysql') {
+    return (
+      <MysqlLogo
+        variant="light"
+        aria-hidden={ariaHidden ?? 'true'}
+        {...props}
+      />
+    )
+  }
   const Logo = BRAND_ICONS[name]
   return <Logo aria-hidden={ariaHidden ?? 'true'} {...props} />
 }

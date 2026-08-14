@@ -47,6 +47,10 @@ type fakeRuntime struct {
 
 	createCalls       int
 	ensureVolumeCalls int
+	// lastCreateEnv records the Env of the most recent Create call, so a
+	// test can assert exactly what a controller sent (e.g. which
+	// MYSQL_*/POSTGRES_* keys), not just that Create was called.
+	lastCreateEnv map[string]string
 }
 
 func newFakeRuntime() *fakeRuntime {
@@ -89,6 +93,7 @@ func (f *fakeRuntime) Create(_ context.Context, spec docker.ContainerSpec) (stri
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.createCalls++
+	f.lastCreateEnv = spec.Env
 	if f.createErr != nil {
 		return "", f.createErr
 	}
@@ -413,9 +418,102 @@ func TestController_Reconcile_Postgres_WithCredentials_Reconciles(t *testing.T) 
 	}
 }
 
+func TestController_Reconcile_MySQL_AlwaysCredentialsBlocked(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineMySQL, Version: "8"}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v, want nil: credentials-blocked is a documented permanent state, not a transient failure", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "CredentialsNotConfigured" {
+		t.Errorf("condition = %+v, want Status=False Reason=CredentialsNotConfigured", cond)
+	}
+	if cond.Message == "" {
+		t.Error("expected a non-empty Message explaining the block")
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0: must never start an unauthenticated mysql container", rt.createCalls)
+	}
+	if rt.ensureVolumeCalls != 0 {
+		t.Errorf("ensureVolumeCalls = %d, want 0: must not touch Docker at all while blocked", rt.ensureVolumeCalls)
+	}
+}
+
+func TestController_Reconcile_MySQL_CredentialsBlocked_EvenIfAlreadyRunning(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.seed(containerName("main"), "mysql:8", true)
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineMySQL, Version: "8"}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "CredentialsNotConfigured" {
+		t.Errorf("condition = %+v, want Status=False Reason=CredentialsNotConfigured", cond)
+	}
+}
+
+func TestController_Reconcile_MySQL_WithCredentials_Reconciles(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineMySQL, Version: "8"}
+	c := New("main", &fakeStore{db: desired}, rt, WithMySQLCredentials(&MySQLCredentials{
+		Username: "levelrail",
+		Password: "s3cret",
+	}))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Errorf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1", rt.createCalls)
+	}
+}
+
+func TestController_Reconcile_MySQL_WithCredentials_SetsRootAndUserEnv(t *testing.T) {
+	// MySQL's own image requires MYSQL_ROOT_PASSWORD (or an explicit
+	// opt-out) to start at all, unlike Postgres where POSTGRES_PASSWORD
+	// alone is enough: this asserts the container spec actually carries
+	// both the root password and the dbName-scoped user/database, not
+	// just the user side Postgres' own shape would suggest by analogy.
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineMySQL, Version: "8"}
+	c := New("main", &fakeStore{db: desired}, rt, WithMySQLCredentials(&MySQLCredentials{
+		Username: "main",
+		Password: "s3cret",
+	}))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	env := rt.lastCreateEnv
+	if env["MYSQL_ROOT_PASSWORD"] != "s3cret" {
+		t.Errorf("MYSQL_ROOT_PASSWORD = %q, want %q", env["MYSQL_ROOT_PASSWORD"], "s3cret")
+	}
+	if env["MYSQL_DATABASE"] != "main" {
+		t.Errorf("MYSQL_DATABASE = %q, want %q", env["MYSQL_DATABASE"], "main")
+	}
+	if env["MYSQL_USER"] != "main" {
+		t.Errorf("MYSQL_USER = %q, want %q", env["MYSQL_USER"], "main")
+	}
+	if env["MYSQL_PASSWORD"] != "s3cret" {
+		t.Errorf("MYSQL_PASSWORD = %q, want %q", env["MYSQL_PASSWORD"], "s3cret")
+	}
+}
+
 func TestController_Reconcile_UnknownEngine(t *testing.T) {
 	rt := newFakeRuntime()
-	desired := &store.DesiredDatabase{Name: "main", Engine: "mysql", Version: "8"}
+	desired := &store.DesiredDatabase{Name: "main", Engine: "mongodb", Version: "7"}
 	c := New("main", &fakeStore{db: desired}, rt)
 
 	result, err := c.Reconcile(context.Background())

@@ -96,7 +96,7 @@
       "required": ["engine"],
       "additionalProperties": false,
       "properties": {
-        "engine": { "enum": ["postgres", "redis"] },
+        "engine": { "enum": ["postgres", "redis", "mysql"] },
         "version": { "type": "string", "minLength": 1 },
         "backup": { "$ref": "#/$defs/backup" }
       }

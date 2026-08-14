@@ -18,8 +18,8 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
 import { useCreateDatabase, useSetDatabaseNode } from '../queries/databases'
+import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
 import { useNodeListOptional } from '../queries/nodes'
-import type { DatabaseEngine } from '../types/databaseDetail'
 
 // Sentinel for "this control plane's own local node", the implicit
 // default PUT /api/v1/databases/{name}/node's own doc comment
@@ -27,15 +27,19 @@ import type { DatabaseEngine } from '../types/databaseDetail'
 // is no separate "local" entry the API returns.
 const LOCAL_NODE_VALUE = ''
 
-// Matches validateDatabaseResource (internal/api/databases.go) exactly:
-// name/engine/version all required, engine must be exactly "postgres" or
-// "redis". This is client-side fast feedback only, same reasoning
+// Matches validateDatabaseResource (internal/api/databases.go): name/
+// engine/version all required. engine is a plain non-empty string, not
+// a fixed literal union: the real set of valid engines lives in
+// internal/store/database_engines.yaml (GET /api/v1/database-engines,
+// see queries/databaseEngines.ts), so this schema deliberately doesn't
+// hardcode a second copy of that list just to type-check a string. This
+// is client-side fast feedback only either way, same reasoning
 // createAppSchema's own comment gives: the real request still goes out
-// on submit and the real response (including a 409 on a duplicate name)
-// is what onSubmit below shows.
+// on submit and the real response (including a 409 on a duplicate name,
+// or an unrecognized engine) is what onSubmit below shows.
 const createDatabaseSchema = z.object({
   name: z.string().trim().min(1, 'Name is required'),
-  engine: z.enum(['postgres', 'redis'], { error: 'Engine is required' }),
+  engine: z.string().trim().min(1, 'Engine is required'),
   version: z.string().trim().min(1, 'Version is required'),
   // Optional target node id, empty string means the local node. Only
   // ever populated from the Select below, which only ever offers real
@@ -46,19 +50,6 @@ const createDatabaseSchema = z.object({
 
 type CreateDatabaseFormInput = z.input<typeof createDatabaseSchema>
 type CreateDatabaseFormOutput = z.output<typeof createDatabaseSchema>
-
-const ENGINE_OPTIONS: { value: DatabaseEngine; label: string }[] = [
-  { value: 'postgres', label: 'Postgres' },
-  { value: 'redis', label: 'Redis' },
-]
-
-// Version placeholder differs by engine so the field always suggests a
-// realistic value: "16" reads oddly as a Redis version, "7" reads oddly
-// as a Postgres one.
-const VERSION_PLACEHOLDER: Record<DatabaseEngine, string> = {
-  postgres: '16',
-  redis: '7',
-}
 
 // The name/engine/version(/node) field set and its submit logic,
 // factored out of what used to be CreateDatabaseDialog's own body so
@@ -87,12 +78,13 @@ export function CreateDatabaseFields({
    *  detail page has been kicked off. */
   onCreated: () => void
   /** When set, the engine is fixed and the Select below isn't
-   *  rendered: CreateResourceWizard's step 1 already asked "Postgres or
-   *  Redis" as a separate card, so asking again via a dropdown in step
-   *  2 would be the same question twice. When omitted (the standalone
+   *  rendered: CreateResourceWizard's step 1 already asked which engine
+   *  as a separate card, so asking again via a dropdown in step 2 would
+   *  be the same question twice. When omitted (the standalone
    *  CreateDatabaseDialog's own usage), the Select is shown exactly as
-   *  it always was, letting the one dialog cover both engines. */
-  engine?: DatabaseEngine
+   *  it always was, letting the one dialog cover every registered
+   *  engine. */
+  engine?: string
 }) {
   const navigate = useNavigate()
   const createDatabase = useCreateDatabase()
@@ -103,9 +95,16 @@ export function CreateDatabaseFields({
   // than surfacing a loading or error state of its own.
   const nodeList = useNodeListOptional()
   const nodes = nodeList.data ?? []
+  // Same optional-convenience treatment for the engine registry: when
+  // `engine` is already fixed by the caller (the wizard's step 1), this
+  // list is only consulted for the version placeholder below, not for
+  // validity, so a slow/failed fetch degrades to "no placeholder
+  // suggested" rather than blocking the form.
+  const engineList = useDatabaseEnginesOptional()
+  const engines = engineList.data ?? []
   const defaultValues: CreateDatabaseFormInput = {
     name: '',
-    engine: engine ?? 'postgres',
+    engine: engine ?? engines[0]?.id ?? '',
     version: '',
     node: LOCAL_NODE_VALUE,
   }
@@ -189,8 +188,8 @@ export function CreateDatabaseFields({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ENGINE_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
+                  {engines.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
                       {option.label}
                     </SelectItem>
                   ))}
@@ -206,7 +205,9 @@ export function CreateDatabaseFields({
         <FieldLabel htmlFor="database-version">Version</FieldLabel>
         <Input
           id="database-version"
-          placeholder={VERSION_PLACEHOLDER[watchedEngine]}
+          placeholder={
+            engines.find((e) => e.id === watchedEngine)?.default_version
+          }
           {...register('version')}
         />
         <FieldError errors={[formState.errors.version]} />

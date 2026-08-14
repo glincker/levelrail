@@ -1249,7 +1249,8 @@ func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.D
 				continue
 			}
 			var dbOpts []database.Option
-			if desired.Engine == store.EnginePostgres {
+			switch desired.Engine {
+			case store.EnginePostgres:
 				creds, err := postgresCredentialsFor(ctx, secretsManager, desired.Name)
 				if err != nil {
 					// Not fatal to the whole pass: this one Postgres
@@ -1266,6 +1267,17 @@ func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.D
 						slog.String("database", desired.Name), slog.String("error", err.Error()))
 				} else if creds != nil {
 					dbOpts = append(dbOpts, database.WithPostgresCredentials(creds))
+				}
+			case store.EngineMySQL:
+				// Identical reasoning to the Postgres branch above, see
+				// mysqlCredentialsFor's own doc comment for what makes it
+				// a safe drop-in counterpart rather than a new pattern.
+				creds, err := mysqlCredentialsFor(ctx, secretsManager, desired.Name)
+				if err != nil {
+					logger.Warn("skipping mysql credentials for this reconcile pass",
+						slog.String("database", desired.Name), slog.String("error", err.Error()))
+				} else if creds != nil {
+					dbOpts = append(dbOpts, database.WithMySQLCredentials(creds))
 				}
 			}
 			controllers = append(controllers, database.New(desired.Name, db, dbRuntime, dbOpts...))

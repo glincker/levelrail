@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -48,12 +49,27 @@ func (d databaseResource) toDesiredDatabase() store.DesiredDatabase {
 	}
 }
 
+// validateDatabaseResource checks d.Engine against
+// store.SupportedDatabaseEngines' embedded registry rather than a
+// hardcoded postgres/redis/mysql comparison chain: adding a new engine
+// to that registry (internal/store/database_engines.yaml) makes it
+// valid here automatically, no second edit needed in this package.
 func validateDatabaseResource(d databaseResource) error {
 	if d.Name == "" {
 		return errors.New("name is required")
 	}
-	if d.Engine != store.EnginePostgres && d.Engine != store.EngineRedis {
-		return errors.New("engine must be postgres or redis")
+	supported, err := store.IsSupportedEngine(d.Engine)
+	if err != nil {
+		// The embedded registry failing to parse is a build-time
+		// invariant covered by internal/store's own tests, not a
+		// realistic runtime condition; still checked rather than
+		// ignored, since silently treating a load failure as "any
+		// engine is valid" would be worse than a slightly imprecise
+		// 400 here.
+		return fmt.Errorf("check supported database engines: %w", err)
+	}
+	if !supported {
+		return errors.New("unsupported engine")
 	}
 	if d.Version == "" {
 		return errors.New("version is required")

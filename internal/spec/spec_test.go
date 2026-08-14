@@ -77,6 +77,27 @@ func TestParse_ValidFull(t *testing.T) {
 	}
 }
 
+func TestParse_ValidMySQLDatabase(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  orders: { engine: mysql, version: "8" }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	orders, ok := s.Databases["orders"]
+	if !ok {
+		t.Fatal("expected an \"orders\" database")
+	}
+	if orders.Engine != EngineMySQL || orders.Version != "8" {
+		t.Errorf("Databases[orders] = %+v, want Engine=mysql Version=8", orders)
+	}
+}
+
 func TestParse_ValidMinimal_Defaults(t *testing.T) {
 	s, err := Parse(readTestdata(t, "valid_minimal.yaml"))
 	if err != nil {
@@ -265,7 +286,7 @@ version: 1
 services:
   web: { build: { type: dockerfile }, port: 8080 }
 databases:
-  main: { engine: mysql }
+  main: { engine: mongodb }
 `,
 		},
 	}

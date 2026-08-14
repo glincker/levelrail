@@ -18,6 +18,12 @@ import (
 // for no real benefit.
 const postgresPasswordEnvKey = "postgres_password"
 
+// mysqlPasswordEnvKey is mysqlCredentialsFor's own storage key, distinct
+// from postgresPasswordEnvKey: a database named "main" reconciled as
+// mysql must never share storage (and therefore a password) with a
+// database of the same name reconciled as postgres.
+const mysqlPasswordEnvKey = "mysql_password"
+
 // postgresCredentialsFor returns the Postgres credentials
 // database.WithPostgresCredentials needs for dbName, generating and
 // persisting a random password on first call and returning the same
@@ -64,4 +70,40 @@ func postgresCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName st
 	}
 
 	return &database.PostgresCredentials{Username: dbName, Password: password}, nil
+}
+
+// mysqlCredentialsFor is postgresCredentialsFor's exact counterpart for
+// database.WithMySQLCredentials: same generate-once-persist-forever
+// shape, same "nil manager means nil credentials, not an error" contract,
+// its own storage key (mysqlPasswordEnvKey) so it never collides with a
+// postgres database of the same name. See postgresCredentialsFor's own
+// doc comment for the full reasoning, unchanged here.
+func mysqlCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName string) (*database.MySQLCredentials, error) {
+	if mgr == nil {
+		return nil, nil
+	}
+
+	exists, err := mgr.Exists(ctx, dbName, mysqlPasswordEnvKey)
+	if err != nil {
+		return nil, fmt.Errorf("check existing mysql credentials for %q: %w", dbName, err)
+	}
+	if !exists {
+		password, err := generateRandomPassword()
+		if err != nil {
+			return nil, fmt.Errorf("generate mysql password for %q: %w", dbName, err)
+		}
+		if err := mgr.SetValue(ctx, dbName, mysqlPasswordEnvKey, password); err != nil {
+			return nil, fmt.Errorf("store mysql password for %q: %w", dbName, err)
+		}
+	}
+
+	password, err := mgr.Resolve(ctx, dbName, mysqlPasswordEnvKey)
+	if err != nil {
+		return nil, fmt.Errorf("resolve mysql password for %q: %w", dbName, err)
+	}
+	if password == "" {
+		return nil, errors.New("resolved mysql password is empty")
+	}
+
+	return &database.MySQLCredentials{Username: dbName, Password: password}, nil
 }

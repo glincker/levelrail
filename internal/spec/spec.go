@@ -83,12 +83,14 @@ type Resources struct {
 	CPU    float64 `yaml:"cpu,omitempty"`
 }
 
-// Supported managed database engines: Postgres and Redis ship as
-// first-class resources in the initial release.
+// Supported managed database engines: Postgres and Redis shipped as
+// first-class resources in the initial release, MySQL joined once
+// internal/reconcile/database's controller grew a third engine case.
 const (
 	EngineFake     = "" // zero value only, never valid; see Validate
 	EnginePostgres = "postgres"
 	EngineRedis    = "redis"
+	EngineMySQL    = "mysql"
 )
 
 // Database is one entry under databases:.

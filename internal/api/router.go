@@ -425,6 +425,13 @@ func (rt *Router) Handler() http.Handler {
 	// once created (an engine or major-version change is a migration,
 	// not a config edit), so there is nothing for an update endpoint to
 	// legitimately do yet.
+	// Read-only, ahead of the CRUD routes below since it's not scoped to
+	// any one database: every engine this control plane can create at
+	// all, backed by the embedded database_engines.yaml registry rather
+	// than a hardcoded list, see handleListDatabaseEngines' own doc
+	// comment.
+	mux.HandleFunc("GET /api/v1/database-engines", rt.requireAbility(AbilityRead, rt.handleListDatabaseEngines))
+
 	mux.HandleFunc("GET /api/v1/databases", rt.requireAbility(AbilityRead, rt.handleListDatabases))
 	mux.HandleFunc("POST /api/v1/databases", rt.requireAbility(AbilityWrite, rt.handleCreateDatabase))
 	mux.HandleFunc("GET /api/v1/databases/{name}", rt.requireAbility(AbilityRead, rt.handleGetDatabase))
