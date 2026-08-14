@@ -18,7 +18,29 @@ those APIs before they merge, the shapes can still change.
 
 ## In progress
 
-(nothing yet)
+- [ ] Add an e2e test that creates a Redis database via the API, lets
+      it reconcile, and verifies a real running container + volume via
+      the Docker Engine API. Done: `test/e2e` has database-reconciliation
+      coverage (currently zero). (builder dispatched)
+- [ ] Add an integration test proving a non-default app.yaml port is
+      actually published on the container and routed by Caddy
+      end-to-end. Done: a fixture on a non-default port deploys and
+      answers over HTTPS on the right upstream port. (builder dispatched)
+- [ ] Add an integration test deploying a fixture with a plain env var
+      and a `{ secret: true }` env var, asserting via ContainerInspect
+      that only the resolved plaintext lands in the container's env.
+      Done: a real, repeatable test instead of a one-time manual check.
+      (builder dispatched)
+- [ ] Add an integration test proving `internal/telemetry`'s stats
+      collector captures a real running container's CPU/memory and that
+      it's queryable via `GET /api/v1/apps/{name}/metrics` end-to-end.
+      Done: metrics collection has a test touching a real container,
+      not just unit-level pieces. (builder dispatched)
+- [ ] Add a toast/notification primitive under `web/src/components/ui`
+      and wire it into the database and node delete flows. Done: a
+      successful delete gives visible feedback outside the dialog it
+      was triggered from, not just a silent list refresh. (builder
+      dispatched)
 
 ## Next up (priority order)
 
@@ -28,23 +50,12 @@ those APIs before they merge, the shapes can still change.
       `database.WithPostgresCredentials`). Done: creating a Postgres
       database through the API converges to a running container with a
       real password instead of the permanent credentials-blocked
-      condition.
+      condition. **Reconciler-core + secrets-adjacent: PM does this one
+      personally, not delegated (CLAUDE.md 8).**
 - [ ] Add a `docker.Runtime` health-check method and wire it into
       `GET /api/v1/system/status` and the General settings page. Done:
       frontend shows real Docker daemon connectivity instead of
       omitting it (`status.go`'s own comment names this exact gap).
-- [ ] Add an e2e test that creates a Redis database via the API, lets
-      it reconcile, and verifies a real running container + volume via
-      the Docker Engine API. Done: `test/e2e` has database-reconciliation
-      coverage (currently zero).
-- [ ] Add an integration test proving a non-default app.yaml port is
-      actually published on the container and routed by Caddy
-      end-to-end. Done: a fixture on a non-default port deploys and
-      answers over HTTPS on the right upstream port.
-- [ ] Add an integration test deploying a fixture with a plain env var
-      and a `{ secret: true }` env var, asserting via ContainerInspect
-      that only the resolved plaintext lands in the container's env.
-      Done: a real, repeatable test instead of a one-time manual check.
 - [ ] Write a short design note deciding the deploy-attempt ID scheme
       and whether build logs persist for replay or stay live-only
       (options: telemetry log store vs. a new table). Done:
@@ -52,20 +63,6 @@ those APIs before they merge, the shapes can still change.
       implemented" comment gets replaced by a real, agreed contract.
       Design decision only, no code, until a human signs off on the
       choice (this is ADR-worthy per CLAUDE.md 7).
-- [ ] Add a toast/notification primitive under `web/src/components/ui`
-      and wire it into the database and node delete flows. Done: a
-      successful delete gives visible feedback outside the dialog it
-      was triggered from, not just a silent list refresh.
-- [ ] Add an integration test proving `internal/telemetry`'s stats
-      collector captures a real running container's CPU/memory and that
-      it's queryable via `GET /api/v1/apps/{name}/metrics` end-to-end.
-      Done: metrics collection has a test touching a real container,
-      not just unit-level pieces.
-- [ ] Virtualize the Databases list table per CLAUDE.md 4.12 ("every
-      list that can exceed 50 items is virtualized"). Apps list already
-      does this; Databases list route was actually already built with
-      `useVirtualizer` (verify this is still true before starting,
-      might already be done).
 
 ## Blocked
 
@@ -107,5 +104,6 @@ those APIs before they merge, the shapes can still change.
 
 ## Done (most recent first)
 
-(nothing yet, this file was just created 2026-08-13; prior completed
-work is logged in `TASKS.md` and `TASKS-v2.md`)
+- [x] Virtualize the Databases list table (already done when
+      `routes/databases/index.tsx` was originally built, verified via
+      grep during queue triage, not a real gap).
