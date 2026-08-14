@@ -98,6 +98,15 @@ type DeployStore interface {
 	GetConditions(ctx context.Context, controllerName string) ([]reconcile.Condition, error)
 }
 
+// DatabaseStore is the store surface the databases handlers need, the
+// database-kind counterpart to AppStore.
+type DatabaseStore interface {
+	SaveDesiredDatabase(ctx context.Context, d store.DesiredDatabase) error
+	GetDesiredDatabase(ctx context.Context, name string) (*store.DesiredDatabase, error)
+	ListDesiredDatabases(ctx context.Context) ([]store.DesiredDatabase, error)
+	DeleteDesiredDatabase(ctx context.Context, name string) error
+}
+
 // AuthStore is the store surface the auth handlers need.
 type AuthStore interface {
 	GetAdminUser(ctx context.Context) (*store.AdminUser, error)
@@ -122,6 +131,7 @@ type TokenStore interface {
 type Store interface {
 	AppStore
 	DeployStore
+	DatabaseStore
 	AuthStore
 	TokenStore
 	NodeStore
@@ -140,6 +150,7 @@ type Router struct {
 	brand      *brand.Brand
 	apps       AppStore
 	deploys    DeployStore
+	databases  DatabaseStore
 	auth       AuthStore
 	tokens     TokenStore
 	nodes      NodeStore
@@ -199,14 +210,15 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		logger = slog.Default()
 	}
 	rt := &Router{
-		logger:  logger,
-		brand:   b,
-		apps:    s,
-		deploys: s,
-		auth:    s,
-		tokens:  s,
-		nodes:   s,
-		logins:  newLoginLimiter(),
+		logger:    logger,
+		brand:     b,
+		apps:      s,
+		deploys:   s,
+		databases: s,
+		auth:      s,
+		tokens:    s,
+		nodes:     s,
+		logins:    newLoginLimiter(),
 	}
 	for _, opt := range opts {
 		opt(rt)
@@ -269,6 +281,18 @@ func (rt *Router) Handler() http.Handler {
 	// Deploys.
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityDeploy, rt.handleTriggerDeploy))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityRead, rt.handleDeployHistory))
+
+	// Databases CRUD, the database-kind counterpart to apps CRUD above.
+	// No PUT (full-replace update) yet: unlike a service's image/port/
+	// domains, none of engine/version/name are meant to change in place
+	// once created (an engine or major-version change is a migration,
+	// not a config edit), so there is nothing for an update endpoint to
+	// legitimately do yet.
+	mux.HandleFunc("GET /api/v1/databases", rt.requireAbility(AbilityRead, rt.handleListDatabases))
+	mux.HandleFunc("POST /api/v1/databases", rt.requireAbility(AbilityWrite, rt.handleCreateDatabase))
+	mux.HandleFunc("GET /api/v1/databases/{name}", rt.requireAbility(AbilityRead, rt.handleGetDatabase))
+	mux.HandleFunc("DELETE /api/v1/databases/{name}", rt.requireAbility(AbilityWrite, rt.handleDeleteDatabase))
+	mux.HandleFunc("GET /api/v1/databases/{name}/status", rt.requireAbility(AbilityRead, rt.handleDatabaseStatus))
 
 	// Secrets (TASKS.md 1.7). Set-only: there is deliberately no GET,
 	// returning a value (even to its own owner over an authenticated

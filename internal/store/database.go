@@ -88,6 +88,25 @@ func (db *DB) GetDesiredDatabase(ctx context.Context, name string) (*DesiredData
 	return &d, nil
 }
 
+// DeleteDesiredDatabase removes a database's desired state, the same
+// "not found" sentinel and "does not stop the running container itself"
+// gap DeleteDesiredService's own doc comment documents, applied to a
+// database instead of a service.
+func (db *DB) DeleteDesiredDatabase(ctx context.Context, name string) error {
+	res, err := db.ExecContext(ctx, `DELETE FROM desired_databases WHERE name = ?`, name)
+	if err != nil {
+		return fmt.Errorf("store: delete desired database %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: delete desired database %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrDatabaseNotFound
+	}
+	return nil
+}
+
 // ListDesiredDatabases returns every saved database, ordered by name.
 func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `

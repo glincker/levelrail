@@ -138,3 +138,48 @@ func TestSaveDesiredDatabase_ResaveDoesNotResetNodeID(t *testing.T) {
 		t.Errorf("NodeID = %q, want node-1 (a resave must not silently un-assign a placed database)", got.NodeID)
 	}
 }
+
+func TestDeleteDesiredDatabase(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	if err := db.DeleteDesiredDatabase(ctx, "main"); err != nil {
+		t.Fatalf("DeleteDesiredDatabase() error = %v", err)
+	}
+
+	if _, err := db.GetDesiredDatabase(ctx, "main"); !errors.Is(err, ErrDatabaseNotFound) {
+		t.Errorf("GetDesiredDatabase after delete: error = %v, want ErrDatabaseNotFound", err)
+	}
+}
+
+func TestDeleteDesiredDatabase_NotFound(t *testing.T) {
+	db := openTestDB(t)
+
+	err := db.DeleteDesiredDatabase(context.Background(), "never-saved")
+	if !errors.Is(err, ErrDatabaseNotFound) {
+		t.Errorf("error = %v, want ErrDatabaseNotFound", err)
+	}
+}
+
+func TestDeleteDesiredDatabase_DoesNotAffectOtherDatabases(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	for _, name := range []string{"cache", "main"} {
+		if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: name, Engine: EngineRedis, Version: "7"}); err != nil {
+			t.Fatalf("seed %q: %v", name, err)
+		}
+	}
+
+	if err := db.DeleteDesiredDatabase(ctx, "main"); err != nil {
+		t.Fatalf("DeleteDesiredDatabase() error = %v", err)
+	}
+
+	if _, err := db.GetDesiredDatabase(ctx, "cache"); err != nil {
+		t.Errorf("unrelated database cache should be untouched, got error = %v", err)
+	}
+}
