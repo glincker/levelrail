@@ -194,6 +194,42 @@ func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error)
 	return out, nil
 }
 
+// ListDesiredServicesByNode returns every saved service currently
+// placed on nodeID, ordered by name. TASKS.md 3.7's drain
+// (internal/api's handleDrainNode) uses this to find what to move off a
+// node before it's removed, and handleDeleteNode uses it as the guard
+// that makes node deletion refuse to run while placements remain.
+// nodeID="" (the local-node sentinel, see DesiredService.NodeID's own
+// doc comment) is a valid argument, matching every other node_id
+// comparison in this package.
+func (db *DB) ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]DesiredService, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT name, image, port, domains, env, secret_env, resources, health, node_id
+		FROM desired_services
+		WHERE node_id = ?
+		ORDER BY name
+	`, nodeID)
+	if err != nil {
+		return nil, fmt.Errorf("store: list desired services for node %q: %w", nodeID, err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var out []DesiredService
+	for rows.Next() {
+		svc, err := scanDesiredService(rows.Scan)
+		if err != nil {
+			return nil, fmt.Errorf("store: scan desired service row: %w", err)
+		}
+		out = append(out, *svc)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate desired service rows: %w", err)
+	}
+	return out, nil
+}
+
 // DeleteDesiredService removes a service's desired state, e.g. because
 // the app was deleted through the HTTP API (TASKS.md 1.9). It returns
 // ErrServiceNotFound if no such service exists, the same sentinel

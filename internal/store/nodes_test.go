@@ -41,6 +41,78 @@ func TestSaveAndGetNode(t *testing.T) {
 	if got.JoinedAt != nil || got.LastSeenAt != nil {
 		t.Errorf("got JoinedAt=%v LastSeenAt=%v, want both nil for a freshly saved node", got.JoinedAt, got.LastSeenAt)
 	}
+	if !got.Schedulable {
+		t.Error("got.Schedulable = false, want true for a freshly saved node")
+	}
+}
+
+// TestSaveNode_IgnoresSchedulableField mirrors
+// TestSaveDesiredService_RedeployDoesNotResetNodeID's own convention
+// (service_test.go): SaveNode must not trust the caller's Schedulable
+// field, since cordon has its own dedicated mutation
+// (SetNodeSchedulable), the same "not every field is honored" shape
+// this package already applies to NodeID.
+func TestSaveNode_IgnoresSchedulableField(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	n := testNode("node_1", "worker-1")
+	n.Schedulable = false // even if a caller sets this, SaveNode must ignore it
+	if err := db.SaveNode(ctx, n); err != nil {
+		t.Fatalf("SaveNode() error = %v", err)
+	}
+
+	got, err := db.GetNode(ctx, "node_1")
+	if err != nil {
+		t.Fatalf("GetNode() error = %v", err)
+	}
+	if !got.Schedulable {
+		t.Error("got.Schedulable = false, want true: SaveNode must always insert a schedulable node")
+	}
+}
+
+func TestSetNodeSchedulable(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveNode(ctx, testNode("node_1", "worker-1")); err != nil {
+		t.Fatalf("SaveNode() error = %v", err)
+	}
+
+	if err := db.SetNodeSchedulable(ctx, "node_1", false); err != nil {
+		t.Fatalf("SetNodeSchedulable(false) error = %v", err)
+	}
+	got, err := db.GetNode(ctx, "node_1")
+	if err != nil {
+		t.Fatalf("GetNode() error = %v", err)
+	}
+	if got.Schedulable {
+		t.Error("got.Schedulable = true after cordon, want false")
+	}
+	// Cordon must not touch Status: a cordoned node can still be online,
+	// see Node.Schedulable's own doc comment.
+	if got.Status != NodeStatusPending {
+		t.Errorf("got.Status = %q after cordon, want unchanged %q", got.Status, NodeStatusPending)
+	}
+
+	if err := db.SetNodeSchedulable(ctx, "node_1", true); err != nil {
+		t.Fatalf("SetNodeSchedulable(true) error = %v", err)
+	}
+	got, err = db.GetNode(ctx, "node_1")
+	if err != nil {
+		t.Fatalf("GetNode() error = %v", err)
+	}
+	if !got.Schedulable {
+		t.Error("got.Schedulable = false after uncordon, want true")
+	}
+}
+
+func TestSetNodeSchedulable_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.SetNodeSchedulable(context.Background(), "nonexistent", false)
+	if !errors.Is(err, ErrNodeNotFound) {
+		t.Errorf("SetNodeSchedulable() error = %v, want ErrNodeNotFound", err)
+	}
 }
 
 func TestGetNode_NotFound(t *testing.T) {

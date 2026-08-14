@@ -18,9 +18,16 @@ type NodeStatus string
 // not evacuated" (also 3.7), a distinct axis from Online/Offline, not a
 // replacement for it: a cordoned node can still be online.
 const (
-	NodeStatusPending  NodeStatus = "pending"
-	NodeStatusOnline   NodeStatus = "online"
-	NodeStatusOffline  NodeStatus = "offline"
+	NodeStatusPending NodeStatus = "pending"
+	NodeStatusOnline  NodeStatus = "online"
+	NodeStatusOffline NodeStatus = "offline"
+	// NodeStatusCordoned is unused as of TASKS.md 3.7: cordon's real
+	// backing state is the Schedulable field / schedulable column
+	// (migration 0010), a separate axis from Status, exactly matching
+	// this constant's own original doc comment promise that a cordoned
+	// node "can still be online." Left defined rather than removed,
+	// since nothing before 3.7 ever set it and removing an exported
+	// constant is a needless breaking change for zero benefit.
 	NodeStatusCordoned NodeStatus = "cordoned"
 )
 
@@ -38,8 +45,16 @@ type Node struct {
 	CertFingerprint string
 	JoinedAt        *time.Time
 	LastSeenAt      *time.Time
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	// Schedulable is cordon's backing state (TASKS.md 3.7, migration
+	// 0010): false means "unschedulable for new placements, but not
+	// evacuated," an operator-initiated state independent of Status.
+	// New nodes are always schedulable (SaveNode never trusts this
+	// field, matching SaveDesiredService's own "not every field of the
+	// input struct is honored, some have a dedicated mutation method"
+	// convention); the only way to change it is SetNodeSchedulable.
+	Schedulable bool
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 // ErrNodeNotFound is returned by GetNode when no node has that ID.
@@ -67,8 +82,8 @@ var ErrNodeNameTaken = errors.New("store: node name already taken")
 // establishes for a different unique-constraint conflict.
 func (db *DB) SaveNode(ctx context.Context, n Node) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO nodes (id, name, address, status, cert_fingerprint, joined_at, last_seen_at, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO nodes (id, name, address, status, cert_fingerprint, joined_at, last_seen_at, schedulable, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
 	`,
 		n.ID, n.Name, n.Address, string(n.Status), n.CertFingerprint,
 		formatTimePtr(n.JoinedAt), formatTimePtr(n.LastSeenAt),
@@ -136,12 +151,13 @@ func (db *DB) ListNodes(ctx context.Context) ([]Node, error) {
 // DeleteDesiredService's convention: deleting an already-gone node is
 // not an error.
 //
-// No guard here against a node that still has services placed on it:
-// TASKS.md 3.3 (placement) hasn't landed yet, so no service can be
-// assigned to a node at all as of this pass, making that guard
-// currently vacuous rather than simply unwritten. TASKS.md 3.7's own
-// scope note already calls out closing this once drain exists; tracked
-// there, not silently forgotten here.
+// Still no placement guard at this layer: internal/api's
+// handleDeleteNode (TASKS.md 3.7) is what refuses to call this at all
+// while ListDesiredServicesByNode/ListDesiredDatabasesByNode report any
+// placements remaining, the same "guard at the API boundary, keep the
+// store primitive unconditional" shape this package already uses
+// elsewhere (e.g. SaveDesiredService's node_id exception is enforced by
+// which method gets called, not by a check inside one shared method).
 func (db *DB) DeleteNode(ctx context.Context, id string) error {
 	if _, err := db.ExecContext(ctx, `DELETE FROM nodes WHERE id = ?`, id); err != nil {
 		return fmt.Errorf("store: delete node %q: %w", id, err)
@@ -171,7 +187,13 @@ func (db *DB) UpdateNodeStatus(ctx context.Context, id string, status NodeStatus
 
 // TouchNodeLastSeen updates last_seen_at to now, best-effort by design
 // matching TouchAPITokenLastUsed: a heartbeat recording failure must
-// never block whatever triggered it.
+// never block whatever triggered it. Called once at session start
+// (Server.Session) and, per TASKS.md 3.7, repeatedly on a fixed
+// interval for as long as that session's stream stays open
+// (Server.heartbeatLoop): a single call at connect time can't
+// distinguish "still connected" from "connected an hour ago, then the
+// process hung," which is exactly the case internal/reconcile/nodehealth
+// needs to detect.
 func (db *DB) TouchNodeLastSeen(ctx context.Context, id string) error {
 	_, err := db.ExecContext(ctx, `
 		UPDATE nodes SET last_seen_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?
@@ -182,21 +204,57 @@ func (db *DB) TouchNodeLastSeen(ctx context.Context, id string) error {
 	return nil
 }
 
+// SetNodeSchedulable cordons (schedulable=false) or uncordons
+// (schedulable=true) a node (TASKS.md 3.7). Returns ErrNodeNotFound if
+// no such node exists, the same "distinguish real failure from a no-op"
+// rigor UpdateNodeStatus applies to its own conditional UPDATE. Does not
+// touch Status and does not evacuate anything already running there:
+// cordon on its own only affects new placements (internal/api's
+// handleSetAppNode and handleDrainNode both check Schedulable before
+// accepting a target node), see this package's own Node.Schedulable doc
+// comment for why that's a separate column from Status in the first
+// place.
+func (db *DB) SetNodeSchedulable(ctx context.Context, id string, schedulable bool) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE nodes SET schedulable = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?
+	`, boolToInt(schedulable), id)
+	if err != nil {
+		return fmt.Errorf("store: set schedulable for node %q: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: set schedulable for node %q: rows affected: %w", id, err)
+	}
+	if n == 0 {
+		return ErrNodeNotFound
+	}
+	return nil
+}
+
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
 const nodeSelectColumns = `
-	SELECT id, name, address, status, cert_fingerprint, joined_at, last_seen_at, created_at, updated_at`
+	SELECT id, name, address, status, cert_fingerprint, joined_at, last_seen_at, schedulable, created_at, updated_at`
 
 func scanNode(scan func(dest ...any) error) (*Node, error) {
 	var (
 		n                    Node
 		status               string
 		joinedAt, lastSeenAt sql.NullString
+		schedulable          int
 		createdAt, updatedAt string
 	)
 	if err := scan(&n.ID, &n.Name, &n.Address, &status, &n.CertFingerprint,
-		&joinedAt, &lastSeenAt, &createdAt, &updatedAt); err != nil {
+		&joinedAt, &lastSeenAt, &schedulable, &createdAt, &updatedAt); err != nil {
 		return nil, err
 	}
 	n.Status = NodeStatus(status)
+	n.Schedulable = schedulable != 0
 
 	var err error
 	n.JoinedAt, err = parseTimePtr(joinedAt)
