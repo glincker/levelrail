@@ -42,8 +42,8 @@ const DefaultZoneSuffix = "internal"
 // short name of "Acme" gives "acme.internal".
 //
 // Derived from a caller-supplied short name rather than a constant
-// because CLAUDE.md section 3 forbids the product name appearing in
-// source, and because the zone is genuinely user-visible: it appears in
+// because the product name string must never appear in source, and
+// because the zone is genuinely user-visible: it appears in
 // every connection string a user writes, so it has to follow a rebrand
 // rather than being frozen at whatever the name was when this was
 // written. Callers pass brand.Brand.ShortName.

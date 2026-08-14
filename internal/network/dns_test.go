@@ -31,8 +31,8 @@ func TestZone(t *testing.T) {
 }
 
 func TestZone_FollowsTheShortName(t *testing.T) {
-	// CLAUDE.md section 3: a rebrand has to change the zone, so the zone
-	// cannot be a constant here. The zone is also user-visible (it is in
+	// A rebrand has to change the zone, so the zone cannot be a constant
+	// here. The zone is also user-visible (it is in
 	// every connection string), which is why this matters beyond the rule.
 	if Zone("brandone") == Zone("brandtwo") {
 		t.Fatal("the DNS zone does not follow the brand short name")

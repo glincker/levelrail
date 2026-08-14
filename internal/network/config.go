@@ -73,9 +73,9 @@ func (n NodeInfo) Ready() bool {
 type PeerConfig struct {
 	// NodeID is not part of WireGuard's own model at all. It is carried
 	// so every log line about a peer can name the resource by the ID the
-	// rest of this codebase uses (CLAUDE.md 7: "every log line that
-	// describes a resource includes its ID"), rather than by a base64
-	// key that matches nothing else in the database.
+	// rest of this codebase uses, matching the convention that every log
+	// line describing a resource includes its ID, rather than by a
+	// base64 key that matches nothing else in the database.
 	NodeID    string
 	PublicKey Key
 	Endpoint  string

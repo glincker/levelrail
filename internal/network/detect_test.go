@@ -134,9 +134,10 @@ func TestInterfaceName(t *testing.T) {
 	}
 }
 
-// TestInterfaceName_NoProductNameInSource is the CLAUDE.md section 3
-// check applied to this package specifically: the interface name has to
-// come from the caller's brand short name, never from a constant here.
+// TestInterfaceName_NoProductNameInSource is the "no product name string
+// in source" rule applied to this package specifically: the interface
+// name has to come from the caller's brand short name, never from a
+// constant here.
 func TestInterfaceName_FollowsTheShortName(t *testing.T) {
 	first := interfaceName("brandone")
 	second := interfaceName("brandtwo")

@@ -1,7 +1,7 @@
 // Package network is ADR 006's WireGuard mesh: the abstraction that ADR
 // 006 says "has to be designed in Phase 1 as an interface, not a concrete
 // WireGuard dependency" and that, until TASKS.md 3.4, did not exist at
-// all (the directory CLAUDE.md 5's repo layout reserves for it was empty).
+// all (the directory the project's repo layout reserves for it was empty).
 //
 // The split this package draws, and why:
 //
@@ -27,8 +27,9 @@
 //
 // This package deliberately does not import internal/brand. The DNS zone
 // is derived from a short name passed in by the caller (see Zone), so
-// nothing here embeds a product name, per CLAUDE.md section 3, and the
-// package stays testable without loading brand.yaml.
+// nothing here embeds a product name, matching the rule that no product
+// name string appears anywhere in source, and the package stays testable
+// without loading brand.yaml.
 package network
 
 import (
@@ -81,13 +82,12 @@ const DefaultKeepalive = 25 * time.Second
 // about WireGuard, kernel modules, or TUN devices.
 //
 // Apply is level-triggered and idempotent, the same contract every
-// reconciler in this codebase already has (CLAUDE.md 4.2: "reconcilers
-// are idempotent, level-triggered, and safe to interrupt. Never
-// edge-triggered"). Callers hand it the complete desired peer set every
-// time, never a delta: there is deliberately no AddPeer/RemovePeer pair,
-// because a delta API makes the caller responsible for tracking what it
-// already sent, which is precisely the edge-triggered design CLAUDE.md
-// 4.2 rules out.
+// reconciler in this codebase already has: reconcilers are idempotent,
+// level-triggered, and safe to interrupt, never edge-triggered. Callers
+// hand it the complete desired peer set every time, never a delta: there
+// is deliberately no AddPeer/RemovePeer pair, because a delta API makes
+// the caller responsible for tracking what it already sent, which is
+// precisely the edge-triggered design that contract rules out.
 type Mesh interface {
 	// Apply converges this node's WireGuard device on cfg. Peers present
 	// on the device but absent from cfg are removed; peers in cfg that

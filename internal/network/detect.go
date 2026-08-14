@@ -102,8 +102,8 @@ func (SystemProbe) OS() string { return runtime.GOOS }
 // is how the kernel exposes a loaded module.
 //
 // Deliberately does not attempt to load the module (no modprobe, no
-// shelling out, per CLAUDE.md 4.3's standing "never shell out" rule which
-// applies here for the same reason it applies to Docker). Loading a
+// shelling out, matching this codebase's standing "never shell out" rule,
+// which applies here for the same reason it applies to Docker). Loading a
 // kernel module is a host-configuration decision an operator makes, not
 // something a deploy platform should do behind their back on a machine
 // they may not fully control.
@@ -137,8 +137,8 @@ func (SystemProbe) Privileged() bool {
 // interfaceName is the network interface a node's mesh device is created
 // as.
 //
-// Derived from the caller-supplied short name (CLAUDE.md section 3: no
-// product name string in source) and truncated, because interface names
+// Derived from the caller-supplied short name (no product name string
+// appears in source) and truncated, because interface names
 // are hard-limited to 15 characters on Linux (IFNAMSIZ-1) and a name that
 // overflows fails at device creation with an error that does not mention
 // length. The trailing digit leaves room for a second device later

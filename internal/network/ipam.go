@@ -37,7 +37,7 @@ import (
 // fleet, and a mesh address that collides with the host's own LAN route
 // is a routing failure that looks like a mesh failure.
 //
-// A /16 holds 65534 hosts, far beyond the 1-to-10 machines CLAUDE.md 1
+// A /16 holds 65534 hosts, far beyond the 1-to-10 machines this project
 // targets. Sized for headroom rather than fit because narrowing a CIDR
 // after nodes hold addresses from the wider one is the migration
 // ValidateInventory's ErrAddressOutsideMesh exists to make loud, and

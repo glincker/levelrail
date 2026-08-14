@@ -13,8 +13,8 @@ package network
 //
 //   - Hub-and-spoke doubles the latency of every cross-node call and puts
 //     the whole fleet's east-west traffic through one process. That is
-//     exactly the "gets heavier as resource count grows" failure CLAUDE.md
-//     1 and 4.8 name as the reason this project exists at all.
+//     exactly the "gets heavier as resource count grows" failure this
+//     project exists to avoid in the first place.
 //   - It makes the control plane a hard dependency of the data path. A
 //     control plane restart, which is otherwise a completely safe
 //     operation (every reconciler is level-triggered and resumes), would
@@ -22,7 +22,7 @@ package network
 //   - It gains nothing WireGuard does not already do: a full mesh of N
 //     nodes is N*(N-1)/2 peer relationships, but each node only holds
 //     N-1 peer entries, and a peer entry is a public key and an
-//     endpoint. At the 1-to-10 machines CLAUDE.md 1 targets, that is at
+//     endpoint. At the 1-to-10 machines this project targets, that is at
 //     most nine entries per node.
 
 import (
@@ -84,7 +84,7 @@ func (o PlanOptions) keepalive() time.Duration {
 // to mesh the machines that are ready. The consequence is that the mesh
 // converges over successive passes rather than atomically, which is the
 // same level-triggered convergence every other controller in this
-// codebase already has (CLAUDE.md 4.2), not a weaker guarantee.
+// codebase already has, not a weaker guarantee.
 //
 // selfID itself does not need to be Ready. A node that has not yet
 // reported a key still gets a valid plan naming its peers, which is

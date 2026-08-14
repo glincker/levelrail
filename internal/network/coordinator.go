@@ -21,10 +21,9 @@ package network
 // and answers with its public key, and the *next* pass is the one where
 // that key reaches the other nodes. That is not a wart to be engineered
 // away with a bootstrap handshake; it is ordinary level-triggered
-// convergence (CLAUDE.md 4.2), the same "it takes as many passes as it
-// takes, and every pass is safe to interrupt" property every reconciler
-// here already has. A node joining a fleet is fully meshed within two
-// reconcile intervals.
+// convergence, the same "it takes as many passes as it takes, and every
+// pass is safe to interrupt" property every reconciler here already has.
+// A node joining a fleet is fully meshed within two reconcile intervals.
 //
 // Scope, stated plainly: the ConfigSink interface below is the boundary,
 // and the gRPC implementation of it (a new op on the agent Session
@@ -68,9 +67,10 @@ type NodeIdentity struct {
 //
 // An interface, and the only thing this package knows about transport,
 // because the real implementation belongs to the agent Session stream and
-// that stream's wire contract (proto/agent/v1/agent.proto) is on
-// CLAUDE.md section 8's do-not-parallelize list. Extending it is a small
-// and entirely mechanical change: one new arm on AgentRequest.op and one
+// that stream's wire contract (proto/agent/v1/agent.proto) needs one
+// coherent mental model and a single reviewer end to end, not parallel
+// agents each touching a slice of it. Extending it is a small and
+// entirely mechanical change: one new arm on AgentRequest.op and one
 // on AgentResponse.result, carrying the fields of DeviceConfig (minus
 // PrivateKey, which never crosses) and NodeIdentity respectively, plus a
 // case in internal/agent.Execute that calls Mesh.Apply. It is left out of
@@ -346,9 +346,9 @@ func (c *Coordinator) foldIdentity(n *NodeInfo, id NodeIdentity) bool {
 // node in a single-node one.
 //
 // This is the in-process counterpart to internal/agent.Local, and exists
-// for the same reason that type does (CLAUDE.md 4.3: single-node mode
-// runs "in the same process as the control plane, communicating over an
-// in-memory transport that implements the same interface"). The code path
+// for the same reason that type does: single-node mode runs in the same
+// process as the control plane, communicating over an in-memory transport
+// that implements the same interface as the real one. The code path
 // above it is identical whether there is one node or ten.
 type LocalSink struct {
 	nodeID string

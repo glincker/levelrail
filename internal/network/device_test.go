@@ -240,7 +240,9 @@ func TestDevice_ApplyFailures(t *testing.T) {
 			if !strings.Contains(err.Error(), tc.want) {
 				t.Errorf("error = %q, want it to mention %q", err, tc.want)
 			}
-			// Every error must name the node it was for: CLAUDE.md 7.
+			// Every error must name the node it was for, matching this
+			// codebase's structured logging convention of resource IDs
+			// on every log line.
 			if !strings.Contains(err.Error(), `"self"`) {
 				t.Errorf("error = %q, want it to name the node ID", err)
 			}

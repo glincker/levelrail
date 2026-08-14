@@ -19,8 +19,9 @@ package network
 // addressed externally, and the device says so loudly (once, at Warn,
 // naming the interface and the address it needs) instead of reporting a
 // success that is not one. An unaddressed interface that silently
-// reported healthy is exactly the class of failure CLAUDE.md section 10
-// names as the one that sets a deploy platform's reputation.
+// reported healthy is exactly the class of failure that sets a deploy
+// platform's reputation: the ones a health check cannot catch because
+// it never looked.
 //
 // Both backends land here. The in-kernel path (BackendKernel) is
 // currently detected but not separately implemented: Detect will report
@@ -131,8 +132,8 @@ func WithMTU(mtu int) DeviceOption {
 }
 
 // WithShortName sets the brand short name the interface name is derived
-// from (CLAUDE.md section 3: the product name never appears in source, so
-// this is passed in, not looked up). Callers pass brand.Brand.ShortName.
+// from (the product name never appears in source, so this is passed in,
+// not looked up). Callers pass brand.Brand.ShortName.
 func WithShortName(s string) DeviceOption {
 	return func(o *deviceOptions) { o.shortName = s }
 }
@@ -340,8 +341,8 @@ func createSystemTUN(name string, mtu int) (tunDevice, error) {
 
 // newSystemWGDevice builds the real wireguard-go device, routing its logs
 // into this codebase's structured logger rather than wireguard-go's own
-// stdout writer (CLAUDE.md 7: structured logging with log/slog, and every
-// line about a resource carries its ID, which here is the interface).
+// stdout writer (structured logging with log/slog, and every log line
+// about a resource carries its ID, which here is the interface).
 func newSystemWGDevice(t tunDevice, logger *slog.Logger, iface string) wgDevice {
 	systemTUN, ok := t.(tun.Device)
 	if !ok {

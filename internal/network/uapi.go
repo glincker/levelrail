@@ -40,7 +40,7 @@ import (
 // Instead: peers in current but not in cfg are explicitly removed, and
 // peers in cfg are upserted. An upsert of an unchanged peer leaves its
 // session untouched, so a reconcile pass that changes nothing costs
-// nothing, which is the property CLAUDE.md 4.2's level-triggered design
+// nothing, which is the property level-triggered reconcile design
 // depends on to be run repeatedly and safely.
 //
 // The private key is written first and only when set. A zero PrivateKey
@@ -102,10 +102,11 @@ func EncodeUAPI(cfg DeviceConfig, current []Key) string {
 // test rather than a regexp over the blob.
 //
 // nodeIDs maps public keys back to node IDs so the returned PeerStatus
-// values can be logged by node ID (CLAUDE.md 7). WireGuard has no idea
-// what a node ID is, so a peer whose key is not in the map gets an empty
-// NodeID, which is itself informative: it is a peer on the device that no
-// current plan accounts for.
+// values can be logged by node ID, matching this codebase's structured
+// logging convention of every resource carrying its ID. WireGuard has no
+// idea what a node ID is, so a peer whose key is not in the map gets an
+// empty NodeID, which is itself informative: it is a peer on the device
+// that no current plan accounts for.
 func ParseUAPIStatus(raw string, nodeIDs map[Key]string) (Status, error) {
 	st := Status{}
 	var (

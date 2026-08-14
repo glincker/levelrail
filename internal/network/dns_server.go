@@ -18,8 +18,9 @@ package network
 // Doing that means adding a DNS field to docker.ContainerSpec, to the
 // agent's protobuf ContainerSpec, and to the Engine API call in
 // internal/docker.Client.Create. That change crosses the agent wire
-// contract, which CLAUDE.md section 8 puts on the do-not-parallelize
-// list, and it is small and mechanical enough to be worth landing as its
+// contract, which needs one coherent mental model and a single reviewer
+// end to end rather than parallel agents each touching a slice of it,
+// and it is small and mechanical enough to be worth landing as its
 // own reviewed change rather than buried in this one. Until then this
 // server is reachable and correct but unused by containers; it can be
 // queried directly (dig @<mesh-ip> web.<zone>) to verify the mesh is
