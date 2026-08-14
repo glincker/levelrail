@@ -16,11 +16,12 @@
   "dependencies": {
     "@base-ui/react": "^1.7.0",
     "@hookform/resolvers": "^5.7.1",
+    "@phosphor-icons/react": "^2.1.10",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-router": "^1.170.25",
     "@tanstack/react-virtual": "^3.14.9",
-    "@phosphor-icons/react": "^2.1.10",
+    "@thesvg/react": "^3.2.21",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "react": "^19.2.8",
