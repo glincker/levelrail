@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useNavigate } from '@tanstack/react-router'
 import { BoxIcon, TriangleAlertIcon } from 'lucide-react'
@@ -17,7 +17,21 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import { useCreateApp } from '../queries/apps'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useCreateApp, useSetAppNode } from '../queries/apps'
+import { useNodeListOptional } from '../queries/nodes'
+
+// Sentinel for "this control plane's own local node", the implicit
+// default PUT /api/v1/apps/{name}/node's own doc comment establishes
+// (empty node_id). Not a real row in the node list, there is no
+// separate "local" entry the API returns.
+const LOCAL_NODE_VALUE = ''
 
 // Mirrors validateAppResource (internal/api/apps.go) client-side for
 // fast feedback: name and image non-empty, port a positive integer.
@@ -41,6 +55,11 @@ const createAppSchema = z.object({
     .number({ error: 'Port is required' })
     .int('Port must be a whole number')
     .positive('Port must be a positive integer'),
+  // Optional target node id, empty string means the local node. Only
+  // ever populated from the Select below, which only ever offers real
+  // node ids or the local sentinel, so no further validation is needed
+  // beyond what the Select already constrains it to.
+  node: z.string().optional(),
 })
 
 type CreateAppFormInput = z.input<typeof createAppSchema>
@@ -50,6 +69,7 @@ const DEFAULT_VALUES: CreateAppFormInput = {
   name: '',
   image: '',
   port: '',
+  node: LOCAL_NODE_VALUE,
 }
 
 // Create-via-dialog flow for a new app (POST /api/v1/apps), following
@@ -73,7 +93,14 @@ export function CreateAppDialog({ trigger }: { trigger: React.ReactElement }) {
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
   const createApp = useCreateApp()
-  const { register, handleSubmit, formState, reset } = useForm<
+  const setAppNode = useSetAppNode()
+  // Optional convenience only, see useNodeListOptional's own doc
+  // comment: a failure or empty list here must never block app
+  // creation, so the node field below is simply not rendered rather
+  // than surfacing a loading or error state of its own.
+  const nodeList = useNodeListOptional()
+  const nodes = nodeList.data ?? []
+  const { control, register, handleSubmit, formState, reset } = useForm<
     CreateAppFormInput,
     unknown,
     CreateAppFormOutput
@@ -91,6 +118,7 @@ export function CreateAppDialog({ trigger }: { trigger: React.ReactElement }) {
   }
 
   const onSubmit = handleSubmit((values) => {
+    const nodeId = values.node ?? LOCAL_NODE_VALUE
     createApp.mutate(
       {
         name: values.name.trim(),
@@ -104,6 +132,13 @@ export function CreateAppDialog({ trigger }: { trigger: React.ReactElement }) {
             to: '/apps/$name',
             params: { name: created.name },
           })
+          // Placement is a trailing, best-effort call: the app row
+          // already exists at this point, so a placement failure must
+          // never look like the whole creation failed. Only fired when
+          // a non-default node was actually picked.
+          if (nodeId !== LOCAL_NODE_VALUE) {
+            setAppNode.mutate({ name: created.name, nodeId })
+          }
         },
       },
     )
@@ -164,6 +199,37 @@ export function CreateAppDialog({ trigger }: { trigger: React.ReactElement }) {
             />
             <FieldError errors={[formState.errors.port]} />
           </Field>
+
+          {nodes.length > 0 ? (
+            <Field>
+              <FieldLabel htmlFor="app-node">Node</FieldLabel>
+              <Controller
+                control={control}
+                name="node"
+                render={({ field }) => (
+                  <Select
+                    value={field.value ?? LOCAL_NODE_VALUE}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger id="app-node" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={LOCAL_NODE_VALUE}>
+                        This control plane (local)
+                      </SelectItem>
+                      {nodes.map((node) => (
+                        <SelectItem key={node.id} value={node.id}>
+                          {node.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <FieldError errors={[formState.errors.node]} />
+            </Field>
+          ) : null}
 
           {createApp.isError ? (
             <Alert variant="destructive">

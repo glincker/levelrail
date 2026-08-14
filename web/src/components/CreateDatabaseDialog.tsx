@@ -24,8 +24,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useCreateDatabase } from '../queries/databases'
+import { useCreateDatabase, useSetDatabaseNode } from '../queries/databases'
+import { useNodeListOptional } from '../queries/nodes'
 import type { DatabaseEngine } from '../types/databaseDetail'
+
+// Sentinel for "this control plane's own local node", the implicit
+// default PUT /api/v1/databases/{name}/node's own doc comment
+// establishes (empty node_id). Not a real row in the node list, there
+// is no separate "local" entry the API returns.
+const LOCAL_NODE_VALUE = ''
 
 // Matches validateDatabaseResource (internal/api/databases.go) exactly:
 // name/engine/version all required, engine must be exactly "postgres" or
@@ -37,6 +44,11 @@ const createDatabaseSchema = z.object({
   name: z.string().trim().min(1, 'Name is required'),
   engine: z.enum(['postgres', 'redis'], { error: 'Engine is required' }),
   version: z.string().trim().min(1, 'Version is required'),
+  // Optional target node id, empty string means the local node. Only
+  // ever populated from the Select below, which only ever offers real
+  // node ids or the local sentinel, so no further validation is needed
+  // beyond what the Select already constrains it to.
+  node: z.string().optional(),
 })
 
 type CreateDatabaseFormInput = z.input<typeof createDatabaseSchema>
@@ -46,6 +58,7 @@ const DEFAULT_VALUES: CreateDatabaseFormInput = {
   name: '',
   engine: 'postgres',
   version: '',
+  node: LOCAL_NODE_VALUE,
 }
 
 const ENGINE_OPTIONS: { value: DatabaseEngine; label: string }[] = [
@@ -82,6 +95,13 @@ export function CreateDatabaseDialog({
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
   const createDatabase = useCreateDatabase()
+  const setDatabaseNode = useSetDatabaseNode()
+  // Optional convenience only, see useNodeListOptional's own doc
+  // comment: a failure or empty list here must never block database
+  // creation, so the node field below is simply not rendered rather
+  // than surfacing a loading or error state of its own.
+  const nodeList = useNodeListOptional()
+  const nodes = nodeList.data ?? []
   const { control, register, handleSubmit, formState, reset, watch } = useForm<
     CreateDatabaseFormInput,
     unknown,
@@ -101,6 +121,7 @@ export function CreateDatabaseDialog({
   }
 
   const onSubmit = handleSubmit((values) => {
+    const nodeId = values.node ?? LOCAL_NODE_VALUE
     createDatabase.mutate(
       {
         name: values.name.trim(),
@@ -114,6 +135,13 @@ export function CreateDatabaseDialog({
             to: '/databases/$name',
             params: { name: created.name },
           })
+          // Placement is a trailing, best-effort call: the database row
+          // already exists at this point, so a placement failure must
+          // never look like the whole creation failed. Only fired when
+          // a non-default node was actually picked.
+          if (nodeId !== LOCAL_NODE_VALUE) {
+            setDatabaseNode.mutate({ name: created.name, nodeId })
+          }
         },
       },
     )
@@ -184,6 +212,37 @@ export function CreateDatabaseDialog({
             />
             <FieldError errors={[formState.errors.version]} />
           </Field>
+
+          {nodes.length > 0 ? (
+            <Field>
+              <FieldLabel htmlFor="database-node">Node</FieldLabel>
+              <Controller
+                control={control}
+                name="node"
+                render={({ field }) => (
+                  <Select
+                    value={field.value ?? LOCAL_NODE_VALUE}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger id="database-node" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={LOCAL_NODE_VALUE}>
+                        This control plane (local)
+                      </SelectItem>
+                      {nodes.map((node) => (
+                        <SelectItem key={node.id} value={node.id}>
+                          {node.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <FieldError errors={[formState.errors.node]} />
+            </Field>
+          ) : null}
 
           {createDatabase.isError ? (
             <Alert variant="destructive">
