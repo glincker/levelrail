@@ -38,31 +38,11 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
 
 ## In progress
 
-- [ ] Fix the Base UI "expected a native &lt;button&gt;" console warning
-      firing on every `DialogTrigger render={<Button .../>}` /
-      `DialogTrigger render={trigger}` composition. Confirmed live via
-      browser (`New app` on the apps list, `pm-main`'s dev server,
-      2026-08-13): Base UI logs "A component that acts as a button
-      expected a native &lt;button&gt; because the `nativeButton` prop is
-      true... Use a real &lt;button&gt; in the `render` prop, or set
-      `nativeButton` to `false`." Root cause is composing two Base UI
-      primitives (`Button` wraps `ButtonPrimitive`, `DialogTrigger`
-      expects to control the rendered native element directly) without
-      threading `nativeButton` through. Confirmed systemic via grep, not
-      a one-off: 11 files use this exact
-      `DialogTrigger render={<Button .../>}` pattern
-      (`RevokeTokenDialog`, `DeleteDatabaseDialog`,
-      `CreateAlertRuleDialog`, `CreateTokenDialog`,
-      `DeleteAlertRuleDialog`, `DeleteAppDialog`, `CreateAppDialog`,
-      `DeleteNodeDialog`, `CreateDatabaseDialog`, `AddNodeDialog`,
-      `routes/settings/security.tsx`). Console-warning only in every
-      manual click-test done so far (dialogs open/submit/close
-      correctly), but it's real a11y/semantics drift Base UI itself
-      is flagging, worth a real fix, not a suppress. (builder dispatched)
+(nothing right now; see Done below for what just landed)
 
 ## Next up (priority order)
 
-(nothing else queued right now; re-triage once the in-progress item lands)
+(nothing queued right now; re-triage next round)
 
 ## Resolved by investigation, no build needed
 
@@ -98,6 +78,24 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
 
 ## Done (most recent first)
 
+- [x] Fixed a real Base UI "expected a native &lt;button&gt;" console
+      warning, but not the one my own initial dispatch note guessed at:
+      the 11 `DialogTrigger render={<Button/>}` sites I originally
+      flagged as the suspects turned out to be fine (`DialogTrigger`
+      merges its own props onto the `Button` element via
+      `cloneElement` rather than injecting a `render` prop, so `Button`
+      still renders its own native `<button>` correctly there,
+      confirmed both by reading Base UI's own source and by live
+      browser click-testing all 11 after the fix, zero warnings). The
+      real bug was 2 sites where `Button` itself was given a `render`
+      prop pointing at something that isn't a button
+      (`routes/apps/index.tsx`'s "New database" CTA rendering a
+      `Link`, `routes/settings/general.tsx`'s Support/Documentation
+      buttons rendering an `<a>`), missing the `nativeButton={false}`
+      Base UI's own docs say is required whenever `Button`'s `render`
+      target isn't a native button. Correcting the record here since
+      the original dispatch note above was wrong about the mechanism,
+      even though it correctly caught that something was broken.
 - [x] Node health/cordon/drain/workload-capability UI: new
       `/nodes/$id` detail route, `CordonNodeDialog`, `DrainNodeDialog`
       (target-node picker, renders the real 200/207 partial-success
