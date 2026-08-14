@@ -41,15 +41,22 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
 - [ ] Databases detail route gets the same dynamic/contextual sidebar
       treatment `/apps/$name/*` just got. Claimed by the concurrent
       session (the one that landed the notification bell/toast
-      consolidation above), starting now.
+      consolidation above), starting now. Leaving this to them, not
+      duplicating.
+- [ ] MySQL as a third database engine: the creation wizard's step 1
+      originally wanted this as a 5th option, dropped because
+      `internal/reconcile/database/controller.go` only handled
+      `postgres`/`redis`. Reconciler-core per CLAUDE.md section 8:
+      claiming this one myself (PM), single-session, starting now,
+      touches `internal/reconcile/database/*` and
+      `internal/api/databases.go`, not the frontend files the other
+      session is working in.
 
 ## Next up (priority order)
 
-- [ ] MySQL as a third database engine: the creation wizard's step 1
-      originally wanted this as a 5th option, dropped because
-      `internal/reconcile/database/controller.go` only handles
-      `postgres`/`redis`. Reconciler-core per CLAUDE.md section 8,
-      single-session only.
+- [ ] Wire the new MySQL picker option into `CreateResourceWizard.tsx`
+      once the reconciler item above lands (5th step-1 card, matching
+      the design spec's original intent).
 - [ ] Frontend main bundle chunk crossed the 500kB vite build warning
       threshold this round (`index-*.js`, currently ~501KB raw). Not
       urgent, but worth a look before it grows further: CLAUDE.md's own
@@ -57,10 +64,14 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
       CI.
 - [ ] A concurrent session merged a real, useful gap-close while this
       round was in flight: a notification bell (`NotificationBell.tsx`,
-      polls node/certificate state) and a toast-based consolidation
-      retiring `success-message.tsx` entirely. Both already landed on
-      `main` directly (not through this queue), noting here only so
-      the history isn't a mystery to whoever reads this file next.
+      polls node/certificate state), a toast-based consolidation
+      retiring `success-message.tsx` entirely, and `cmd/levelrail-cli`
+      (a scriptable client for app creation, config/client/git-detect
+      pieces plus tests, an early slice of Phase 4's own "CLI:
+      levelrail deploy/logs/exec/rollback" roadmap item). All already
+      landed on `main` directly (not through this queue), noting here
+      only so the history isn't a mystery to whoever reads this file
+      next.
 
 - [ ] Deploy strategy (rolling/recreate/blue-green) + replicas: defined
       in `internal/spec` but `store.DesiredService` has no such fields
