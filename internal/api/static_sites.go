@@ -35,7 +35,7 @@ type StaticSiteStore interface {
 }
 
 // handleListStaticSites handles GET /api/v1/static-sites: every
-// build.type: static site (CLAUDE.md 4.4, internal/store/static_site.go)
+// build.type: static site (internal/store/static_site.go)
 // this control plane currently serves directly through embedded Caddy,
 // with no container involved. Before this route existed, a static site
 // deployed via git push had no API surface and no dashboard visibility

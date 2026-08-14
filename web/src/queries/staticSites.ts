@@ -1,6 +1,6 @@
 // Query-key factory and fetcher for GET /api/v1/static-sites
 // (internal/api/static_sites.go's handleListStaticSites): dashboard
-// visibility for build.type: static sites (CLAUDE.md 4.4), served
+// visibility for build.type: static sites, served
 // directly by embedded Caddy with no container, previously nowhere in
 // the API or the dashboard at all. Mirrors certificates.ts's own shape:
 // an ordinary suspense query, requires a session.

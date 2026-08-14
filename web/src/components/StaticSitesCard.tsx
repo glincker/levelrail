@@ -2,7 +2,7 @@ import { GlobeIcon, LayoutIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { useStaticSites } from '../queries/staticSites'
 
-// Read-only summary of build.type: static sites (CLAUDE.md 4.4) on the
+// Read-only summary of build.type: static sites on the
 // Apps list page. Static sites are a genuinely different resource kind
 // from an app (no container, no store.DesiredService row: see
 // internal/store/static_site.go), so they don't belong mixed into

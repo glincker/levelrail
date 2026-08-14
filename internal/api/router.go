@@ -502,7 +502,7 @@ func (rt *Router) Handler() http.Handler {
 	// mutation the way the node routes above are.
 	mux.HandleFunc("GET /api/v1/certificates", rt.requireAbility(AbilityRead, rt.handleListCertificates))
 
-	// Static sites (build.type: static, CLAUDE.md 4.4): read-only
+	// Static sites (build.type: static): read-only
 	// dashboard visibility for sites served directly by embedded Caddy
 	// with no container, closing the gap flagged when static-site
 	// support (migration 0015) first landed. AbilityRead, the same
