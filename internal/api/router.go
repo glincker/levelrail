@@ -74,6 +74,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/brand"
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -163,6 +164,22 @@ type DockerPinger interface {
 	Ping(ctx context.Context) error
 }
 
+// ImageLister is the surface GET /api/v1/apps/{name}/images needs:
+// discover previously-built tags under a repo, so the deploy trigger
+// form (web/src/components/DeployTriggerForm.tsx) can offer a dropdown
+// instead of forcing an operator to hand-type a full image reference
+// every time. Unlike DockerPinger above, this mirrors an existing
+// docker.Runtime method (internal/docker/runtime.go) exactly rather than
+// inventing a narrower one: ListImages is already the consumer-defined
+// boundary every reconciler controller depends on for rollback candidate
+// discovery, so redeclaring it here (structurally satisfied by
+// *docker.Client, same as Runtime) avoids a second, divergent surface
+// for the same one capability. *docker.Client satisfies this
+// structurally.
+type ImageLister interface {
+	ListImages(ctx context.Context, repo string) ([]docker.ImageInfo, error)
+}
+
 // Router wires every internal/api handler onto one http.Handler.
 type Router struct {
 	logger       *slog.Logger
@@ -181,6 +198,7 @@ type Router struct {
 	sessionTTL   time.Duration // 0 means "use defaultSessionTTL", set via WithSessionTTL
 	dataDir      string        // "" means "don't report disk usage", set via WithDataDir
 	dockerPinger DockerPinger  // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
+	images       ImageLister   // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
 }
 
 // Option configures optional Router behavior.
@@ -242,6 +260,17 @@ func WithDataDir(path string) Option {
 // WithSecretSetter's own absence already have.
 func WithDockerPinger(p DockerPinger) Option {
 	return func(rt *Router) { rt.dockerPinger = p }
+}
+
+// WithImageLister enables GET /api/v1/apps/{name}/images. Without one
+// configured (the default), that route returns an empty list rather
+// than 501 or 404: the deploy trigger form's manual text input always
+// works regardless, so a missing image lister is "no suggestions
+// available" (an empty array), not a request error, the same
+// "optional signal, absence is not an error" shape WithDockerPinger's
+// own absence already has.
+func WithImageLister(l ImageLister) Option {
+	return func(rt *Router) { rt.images = l }
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
@@ -326,6 +355,12 @@ func (rt *Router) Handler() http.Handler {
 	// Deploys.
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityDeploy, rt.handleTriggerDeploy))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityRead, rt.handleDeployHistory))
+
+	// Previously-built image tags for this app's repo, so the deploy
+	// trigger form can offer a dropdown instead of a hand-typed tag
+	// (see ImageLister above). AbilityRead like every other passive
+	// view of an app's own state.
+	mux.HandleFunc("GET /api/v1/apps/{name}/images", rt.requireAbility(AbilityRead, rt.handleListImages))
 
 	// Databases CRUD, the database-kind counterpart to apps CRUD above.
 	// No PUT (full-replace update) yet: unlike a service's image/port/

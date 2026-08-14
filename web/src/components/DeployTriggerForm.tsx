@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { RocketIcon } from 'lucide-react'
 import { useTriggerDeploy } from '../queries/deploys'
+import { useImageTagsOptional } from '../queries/images'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -12,8 +13,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Field, FieldError } from '@/components/ui/field'
+import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 const triggerSchema = z.object({
   image: z.string().trim().min(1, 'Image tag is required'),
@@ -39,7 +47,16 @@ type TriggerFormValues = z.infer<typeof triggerSchema>
 // pinned in the resource header rather than buried in a settings tab.
 export function DeployTriggerForm({ appName }: { appName: string }) {
   const triggerDeploy = useTriggerDeploy(appName)
-  const { register, handleSubmit, formState, reset } =
+  // Optional convenience only, the same graceful-degradation shape
+  // useNodeListOptional's own doc comment establishes (queries/nodes.ts):
+  // a failure or empty result here must never block this form's core
+  // function, so the dropdown below is simply not rendered rather than
+  // surfacing a loading or error state of its own. Manually typing an
+  // image tag (e.g. one pushed outside this system) always keeps
+  // working regardless.
+  const imageTags = useImageTagsOptional(appName)
+  const tags = imageTags.data ?? []
+  const { register, handleSubmit, formState, reset, setValue } =
     useForm<TriggerFormValues>({
       resolver: zodResolver(triggerSchema),
       defaultValues: { image: '' },
@@ -66,6 +83,37 @@ export function DeployTriggerForm({ appName }: { appName: string }) {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {tags.length > 0 ? (
+          <Field className="mb-3">
+            <FieldLabel htmlFor="deploy-image-suggestion">
+              Previously built
+            </FieldLabel>
+            <Select
+              value=""
+              onValueChange={(tag: string | null) => {
+                if (!tag) return
+                setValue('image', tag, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                })
+              }}
+            >
+              <SelectTrigger
+                id="deploy-image-suggestion"
+                className="w-full font-mono"
+              >
+                <SelectValue placeholder="Pick a previously-built tag..." />
+              </SelectTrigger>
+              <SelectContent>
+                {tags.map((t) => (
+                  <SelectItem key={t.tag} value={t.tag} className="font-mono">
+                    {t.tag}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        ) : null}
         <form
           onSubmit={(e) => {
             void onSubmit(e)
