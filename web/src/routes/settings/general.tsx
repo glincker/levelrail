@@ -28,13 +28,12 @@ import type { SystemStatus } from '../../queries/systemStatus'
 
 // Real content for the General settings page. Platform info comes from
 // the already-warm /api/v1/brand cache via useBrand() (primed by
-// routes/__root.tsx's loader). The status card below is new: GET
-// /api/v1/system/status (internal/api/status.go) closes the exact gap
+// routes/__root.tsx's loader). The status card below closes the gap
 // this file's own prior comment named ("no system-status card here...
-// none of that exists as a backend endpoint yet"). Still deliberately
-// missing from that endpoint, and so still absent here: Docker
-// connectivity and a version string, neither exists on the backend yet
-// either (see status.go's own doc comment for why), not faked here.
+// none of that exists as a backend endpoint yet"), including Docker
+// daemon connectivity. Still deliberately missing: a build version
+// string, no build-time version variable exists anywhere in this
+// codebase yet, not faked here.
 export const Route = createFileRoute('/settings/general')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(systemStatusQueryOptions()),
@@ -44,9 +43,13 @@ export const Route = createFileRoute('/settings/general')({
 function ConfiguredRow({
   label,
   configured,
+  trueLabel = 'Configured',
+  falseLabel = 'Not configured',
 }: {
   label: string
   configured: boolean
+  trueLabel?: string
+  falseLabel?: string
 }) {
   return (
     <div className="flex items-center justify-between py-1.5 text-sm">
@@ -54,12 +57,12 @@ function ConfiguredRow({
       {configured ? (
         <span className="inline-flex items-center gap-1.5 text-green-700 dark:text-green-400">
           <CircleCheckIcon className="size-4" />
-          Configured
+          {trueLabel}
         </span>
       ) : (
         <span className="inline-flex items-center gap-1.5 text-muted-foreground">
           <CircleXIcon className="size-4" />
-          Not configured
+          {falseLabel}
         </span>
       )}
     </div>
@@ -193,6 +196,12 @@ function GeneralSettingsPage() {
             label="Alert rules"
             configured={status.alerts_configured}
           />
+          <ConfiguredRow
+            label="Docker daemon"
+            configured={status.docker_connected}
+            trueLabel="Connected"
+            falseLabel="Not connected"
+          />
         </CardContent>
       </Card>
 
@@ -205,9 +214,9 @@ function GeneralSettingsPage() {
             <Badge variant="muted">Planned</Badge>
           </div>
           <CardDescription>
-            Docker connectivity and a build version aren&apos;t wired up on the
-            backend yet. Notification channels live on individual alert rules
-            for now, not as a global setting here.
+            A build version isn&apos;t wired up on the backend yet. Notification
+            channels live on individual alert rules for now, not as a global
+            setting here.
           </CardDescription>
         </CardHeader>
         <CardContent>

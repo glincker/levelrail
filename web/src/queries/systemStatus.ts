@@ -20,6 +20,7 @@ export interface SystemStatus {
   alerts_configured: boolean
   data_dir_total_bytes?: number
   data_dir_free_bytes?: number
+  docker_connected: boolean
 }
 
 export async function fetchSystemStatus(): Promise<SystemStatus> {
