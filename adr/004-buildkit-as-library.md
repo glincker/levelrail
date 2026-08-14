@@ -26,8 +26,8 @@ plane binary, to drive builds, not `docker build` shelled out as a
 subprocess and not the plain Docker Engine API's legacy build endpoint.
 This gets remote build cache, parallel stage execution, and cache mounts as
 programmatically controlled features rather than CLI flags a user has to
-know to pass. CLAUDE.md 4.4 states the cost of not doing this plainly:
-remote cache is "the difference between a 6 minute Next.js build and a 40
+know to pass. The stated cost of not doing this is plain: remote cache is
+"the difference between a 6 minute Next.js build and a 40
 second one." That number is the plan's own stated rationale, not yet an
 independently measured Phase 0 finding, since detailed build-time
 benchmarking wasn't part of the competitor research; it's recorded here as
@@ -40,9 +40,9 @@ no container at all, skipping the build-and-run-a-web-server-container step
 entirely for the case that doesn't need one.
 
 A Phase 0 spike proving out the BuildKit Go client standalone has since
-landed in `internal/build/` per CLAUDE.md's Phase 0 work list ("Read the
+landed in `internal/build/`, per the Phase 0 work item to read the
 BuildKit Go client examples and get a programmatic build working
-standalone"). See the Verified section below.
+standalone. See the Verified section below.
 
 ## Rejected alternatives
 
@@ -59,16 +59,15 @@ standalone"). See the Verified section below.
   specifically so builds don't compete with production workloads for CPU,
   a design that only pays off if build cache can be addressed remotely
   rather than living on whichever box happened to run the last build).
-- **Nixpacks over Railpack.** CLAUDE.md 4.4 states Railpack is Nixpacks'
-  successor and is "significantly lighter," and that's the basis this
-  decision rests on. This is worth flagging explicitly as taken on the
+- **Nixpacks over Railpack.** The stated basis for this decision is that
+  Railpack is Nixpacks' successor and is "significantly lighter." This is worth flagging explicitly as taken on the
   plan's own authority rather than on Phase 0 research: none of the five
   `prior-art-*.md` docs cover build auto-detection in any depth (Coolify's
   own auto-detection is Nixpacks-based per its stack, but the research
   didn't go deep on comparing it against Railpack specifically), so unlike
   the other rejected alternatives in this ADR set, there isn't an
   independent research finding to cite here, only the stated decision.
-  Flagging this now so a future agent doesn't mistake the absence of a
+  Flagging this now so a future reader doesn't mistake the absence of a
   citation for an oversight.
 
 ## Consequences
@@ -96,7 +95,7 @@ standalone"). See the Verified section below.
   way a shelled-out `docker build` would force. This is more work up front
   and a better result: structured build events instead of scraped log
   lines.
-- The 6-minute-to-40-second number in CLAUDE.md 4.4 is currently a stated
+- The 6-minute-to-40-second number cited above is currently a stated
   target, not a measured one. The Phase 0 spike deliberately does not touch
   `SolveOpt.CacheImports`/`CacheExports`, so that number is still unmeasured
   as of this ADR; it becomes a real, checkable claim once Phase 1 wires up

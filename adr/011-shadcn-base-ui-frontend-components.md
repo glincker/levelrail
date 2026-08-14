@@ -6,12 +6,12 @@ Date: 2026-08-12
 
 ## Context
 
-CLAUDE.md 4.12 locks the frontend stack: React, Vite, TypeScript, Tailwind,
+The frontend architecture decision locks the frontend stack: React, Vite, TypeScript, Tailwind,
 embedded into the Go binary as static assets, route-level code splitting
 from the start ("the dashboard should not ship the log viewer's bundle").
-Section 4.12 also names the specific failure mode to avoid: Coolify's
-Livewire dashboard, which "degrades with resource count," per section 1's
-framing of why Levelrail exists at all. Neither of these is negotiable
+It also names the specific failure mode to avoid: Coolify's
+Livewire dashboard, which "degrades with resource count," reflecting the
+project's framing of why Levelrail exists at all. Neither of these is negotiable
 context for any decision about what `/web`'s component library looks like.
 
 Levelrail is one of several GLINCKER products, and two of the others were
@@ -19,7 +19,7 @@ real candidates for reuse rather than building `/web`'s UI from scratch:
 `thesvg` (an icon and component library, Next.js 16 App Router, static
 export to Vercel) and `theauth` (a JS/TS auth SDK: `packages/client`,
 `packages/react`, `packages/ui`, built around a theauth-go backend).
-CLAUDE.md's own Phase 4 work list names both explicitly: "Integration of
+The project's own Phase 4 work list names both explicitly: "Integration of
 first-party GLINCKER libraries: theauth for the auth layer, thesvg for the
 icon system," deferred to Phase 4 "so the platform's own auth is boring
 and proven first." The Dashboard & auth work pass (TASKS.md, started
@@ -27,12 +27,12 @@ and proven first." The Dashboard & auth work pass (TASKS.md, started
 Phase 1, ahead of that deferred integration point, so the reuse question
 had to be answered early rather than assumed away.
 
-Four research agents ran in parallel on 2026-08-12 to settle this and
+Four research streams ran in parallel on 2026-08-12 to settle this and
 related dashboard/auth questions; `docs-local/research/frontend-component-
 reuse.md` is the one that covers thesvg's component system and theauth's
 SDK. It was read in full before this decision. Its recommendation was
 adopted and implemented before this ADR was written, which is the gap
-this ADR closes: CLAUDE.md section 7 requires "one ADR per architectural
+this ADR closes: the project's process requires "one ADR per architectural
 decision... with the rejected alternatives written down," and this
 decision (a new component library, a new primitive dependency, a new
 `web/package.json` diff, and an explicit choice to not integrate an
@@ -98,7 +98,8 @@ styled with the shadcn primitives from part (a) (`Card`, `Tabs`, `Input`,
   an identical result.
 
 - **A big-bang rewrite of existing hand-rolled components to shadcn on
-  landing.** Rejected because CLAUDE.md 4.12 and 8 both favor bounded,
+  landing.** Rejected because the project's frontend architecture decision
+  and engineering process both favor bounded,
   reviewable slices over sweeping rewrites, and because nothing about
   shadcn/ui's own shape requires it: shadcn components are plain function
   components with the same bundling behavior as `DomainEditor.tsx` today
@@ -113,13 +114,13 @@ styled with the shadcn primitives from part (a) (`Card`, `Tabs`, `Input`,
   component-reuse.md` section 2.2 traces `<SignIn>` through `useSignIn`
   to a `basePath` (default `/api/kavach`) expecting theauth-go's
   contract, OAuth 2.1, magic-link send endpoints, `{success, error}`
-  result shapes, and documents theauth's own `CLAUDE.md` describing
+  result shapes, and documents theauth's own internal documentation describing
   itself as agent-first ("`AgentIdentity` is primary entity, not `User`").
   Levelrail's actual backend (`internal/api/auth.go`) is bcrypt-plus-
   session-cookie for a single admin user, explicitly "no teams, no RBAC
   yet." Using the SDK against that backend meant either standing up
   theauth-go as Levelrail's auth backend (a separate, larger decision the
-  parallel theauth-go fit-assessment agent evaluated independently and
+  parallel theauth-go fit-assessment work evaluated independently and
   rejected for Phase 1, per TASKS.md's "Don't adopt theauth-go now" entry)
   or reimplementing `useSignIn`'s context contract by hand, at which point
   the SDK import is dead weight around what section 2.4 measured as an
@@ -144,7 +145,7 @@ styled with the shadcn primitives from part (a) (`Card`, `Tabs`, `Input`,
   dependency rather than a dev dependency because `web/src/index.css`
   imports `shadcn/tailwind.css` at build time), `tailwind-merge`
   (`^3.6.0`), and `tw-animate-css` (`^1.4.0`). None of these existed in
-  `web/package.json` before this work. The root GLINRV5 `CLAUDE.md`'s
+  `web/package.json` before this work. The root GLINRV5 project's
   file-boundaries rule requires approval for `package.json` changes and
   this repo has no override of that rule; per TASKS.md's shadcn/ui setup
   entry, this diff was explicitly flagged for founder sign-off before

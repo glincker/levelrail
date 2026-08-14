@@ -7,11 +7,11 @@ Date: 2026-08-11
 ## Context
 
 Levelrail needs TLS-terminating ingress that maps the domains declared in
-`app.yaml` (CLAUDE.md 4.9) to running containers, issues and renews ACME
+`app.yaml` to running containers, issues and renews ACME
 certificates without operator intervention, and, once multi-node ships
 (4.6, Phase 3), shares certificate state across every node running ingress
-rather than pinning it to whichever node happened to issue it. Section 4.5
-settles how: import `caddyserver/caddy/v2` into the control plane binary and
+rather than pinning it to whichever node happened to issue it. The platform's
+ingress design settles how: import `caddyserver/caddy/v2` into the control plane binary and
 drive it in-process through Caddy's admin API, not as a sibling process with
 its own config file and reload cycle.
 
@@ -34,8 +34,8 @@ each node independently negotiating and holding its own copy.
 
 ## Rejected alternatives
 
-- **Traefik**: CLAUDE.md's own stated reason (4.5) is that running it means a
-  separate container with its own config surface, which breaks the
+- **Traefik**: the platform's own stated reason for rejecting it is that
+  running it means a separate container with its own config surface, which breaks the
   single-binary story that 4.1 commits to. That is a self-contained
   argument and does not need competitor evidence to stand, but the
   evidence below shows what a separate-process proxy costs in practice for
@@ -136,7 +136,7 @@ not just implementation detail: `caddy.Load` replaces Caddy's entire
 process-wide config on every call, there is no per-app incremental update.
 The reconciler for ingress will need to hold or cheaply rebuild the full
 desired `Config` from every known app and call `Apply` with the complete
-thing on every change. This fits CLAUDE.md 4.2's level-triggered philosophy
+thing on every change. This fits the reconciler's level-triggered philosophy
 well (re-derive from current desired state every time, don't assume
 incremental progress), but it is a real constraint, not a free choice, and
 it settles the "how does the ingress controller diff desired vs observed"

@@ -19,8 +19,8 @@ implementation of it.
 ## Decision
 
 A persistent agent binary runs on every managed node and dials **out** to
-the control plane over gRPC secured with mutual TLS. Consequences, per
-CLAUDE.md 4.3: no inbound ports open on managed servers, the setup works
+the control plane over gRPC secured with mutual TLS. This is the reverse-dialed
+agent design: no inbound ports open on managed servers, the setup works
 behind NAT and residential connections unmodified, and the agent streams
 Docker events up to the control plane rather than the control plane polling
 down.

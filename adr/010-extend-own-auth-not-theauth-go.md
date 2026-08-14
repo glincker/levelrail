@@ -7,7 +7,7 @@ Date: 2026-08-13
 ## Context
 
 The "Dashboard & auth" work pass (started 2026-08-12) needed a real answer
-to a question CLAUDE.md itself already anticipates: CLAUDE.md 6 Phase 4's
+to a question the project plan itself already anticipates: Phase 4's
 work list, item 8, names "Integration of first-party GLINCKER libraries:
 theauth for the auth layer, thesvg for the icon system," with an explicit
 instruction attached, "Do this here, not earlier, so the platform's own
@@ -17,18 +17,18 @@ plan already earmarks as a future integration target, which is exactly why
 this needed a considered decision and an ADR rather than a default
 assumption either way.
 
-Two locked decisions bear directly on the fit question. CLAUDE.md 4.1
-commits the control plane to a single static Go binary with no separate
-runtime dependencies pulled in casually. CLAUDE.md 4.11 makes the HTTP API
+Two locked decisions bear directly on the fit question. The single-binary
+decision (ADR 001) commits the control plane to a single static Go binary with no separate
+runtime dependencies pulled in casually. The AI-ready API design goal makes the HTTP API
 contract, not the reconciler, carry the "AI-ready" promise: a future MCP
 server and CLI need a way to authenticate non-interactively, and that
 requirement has to be designed for now even though the MCP server itself
 is Phase 4 work. Both of these point at the same open question: does
 adopting theauth-go now serve Phase 1's actual auth surface ("single admin
-user, session auth. No teams, no RBAC yet.", CLAUDE.md 6), or does it
+user, session auth. No teams, no RBAC yet.", per the Phase 1 scope), or does it
 front-load Phase 4 machinery into a phase that doesn't need it.
 
-Four parallel research agents ran on 2026-08-12 to settle this and adjacent
+Four parallel research streams ran on 2026-08-12 to settle this and adjacent
 frontend/UX questions before implementation started; the auth-specific one
 produced `docs-local/research/theauth-go-fit-assessment.md`, a full
 source-read of theauth-go (not README summary), covering `theauth.go`,
@@ -38,7 +38,7 @@ source-read of theauth-go (not README summary), covering `theauth.go`,
 security/architecture/performance/reliability audit trail. TASKS.md's
 "Dashboard & auth" section records the settled conclusion inline ("Don't
 adopt theauth-go now... Revisit theauth-go at Phase 4") but that section is
-a task queue, not the ADR CLAUDE.md 7 requires for an architectural
+a task queue, not the ADR the project's process requires for an architectural
 decision with rejected alternatives on the record. This ADR is that
 record, written after the fact for a decision that was already made and
 implemented.
@@ -60,7 +60,7 @@ than adopting theauth-go for Phase 1. Concretely, this pass built:
   `internal/api/abilities.go`, never a cached snapshot), matching
   Coolify's scoped-ability model rather than Dokploy's all-or-nothing key,
   specifically so an MCP-issued token can be provably read-only at the
-  token layer per CLAUDE.md 4.11. `requireAbility` middleware accepts
+  token layer, per the AI-ready API design goal. `requireAbility` middleware accepts
   either a session (implicitly root, since Phase 1 has exactly one human
   identity) or a bearer token scoped to the route's required ability;
   token-management routes stay session-only on purpose, so a token can
@@ -74,9 +74,10 @@ than adopting theauth-go for Phase 1. Concretely, this pass built:
   per-(client IP, attempted username), exponential backoff after a grace
   period, gating before any bcrypt comparison runs so probing a username
   costs the same as guessing its password. Session TTL is configurable
-  (`APP_SESSION_TTL`) rather than hardcoded, per CLAUDE.md 7's rule.
+  (`APP_SESSION_TTL`) rather than hardcoded, per the project's
+  no-hardcoded-thresholds rule.
 - **A locked-out recovery path**: `levelrail recover-admin`, a subcommand
-  of the same binary (per CLAUDE.md 4.1, not a second binary),
+  of the same binary (per the single-binary decision, ADR 001, not a second binary),
   container-native (`docker exec <container> levelrail recover-admin`),
   writing a bcrypt hash directly via `store.UpsertAdminUser`.
 - **Dev mode**: `APP_DEV_MODE=1`, build-tag gated
@@ -87,7 +88,7 @@ than adopting theauth-go for Phase 1. Concretely, this pass built:
   than bypassed.
 
 All of this is additive to the existing bcrypt+session-cookie design, uses
-the SQLite store the project is already committed to (CLAUDE.md 4.7), and
+the SQLite store the project is already committed to (ADR 007), and
 introduces zero new dependencies.
 
 ## Rejected alternatives
@@ -101,7 +102,7 @@ introduces zero new dependencies.
      `storage/memory/doc.go` as "intended for tests, examples, and local
      development... offers no persistence guarantees. Production
      deployments should use storage/postgres." There is no SQLite
-     adapter. CLAUDE.md 4.7 locks the control plane to embedded SQLite
+     adapter. The embedded-SQLite decision (ADR 007) locks the control plane to embedded SQLite
      via `modernc.org/sqlite`, with Postgres explicitly deferred "only if
      HA control plane becomes a real request." Levelrail's current auth
      already accepts that a restart wipes sessions, but the admin account
@@ -117,7 +118,7 @@ introduces zero new dependencies.
      credentials, TOTP secrets, recovery codes, and multi-tenancy tables
      whether or not a deployment uses any of them. The existing Postgres
      adapter that does implement the full interface is 4,537 lines. Phase
-     1's actual auth requirement, per CLAUDE.md 6, is "hash a password,
+     1's actual auth requirement, per the project's phased scope, is "hash a password,
      create a session, look up a session." Building and maintaining a
      from-scratch SQLite adapter at that scale to serve that requirement
      is disproportionate by any reasonable measure.
@@ -132,7 +133,7 @@ introduces zero new dependencies.
      server, or agent identities have to be turned on, which is the good
      part of theauth-go's opt-in `Config` design, but even with nothing
      else enabled, Phase 1 would be carrying a multi-user auth system for
-     a product whose CLAUDE.md 6 Phase 1 scope is explicitly one admin
+     a product whose Phase 1 scope is explicitly one admin
      user. The one integration path that would justify adopting now for a
      real Phase 1 need, agent/CLI bearer tokens, requires
      `Config.AuthorizationServer` plus `Config.AgentIdentity`, which pulls
@@ -153,7 +154,7 @@ introduces zero new dependencies.
   above, not a reason by itself.
 
 - **Do nothing until Phase 4, ship Phase 1 without API tokens at all.**
-  Rejected because CLAUDE.md 4.11 requires the HTTP API contract to be
+  Rejected because the AI-ready API design goal requires the HTTP API contract to be
   designed for the future MCP layer starting now, and the concrete
   near-term need (a CLI or early MCP prototype getting a bearer token
   without a human clicking through a login form) is real in this pass, not
@@ -179,13 +180,13 @@ introduces zero new dependencies.
   current scheme onto it will be real work, not a config change.
 - The research doc is explicit that this is not a permanent no: theauth-go's
   MCP/agent-authorization story is "the one part of this evaluation that
-  is a legitimately strong, forward-looking fit" for CLAUDE.md 4.11,
-  specifically because `mcpresource` is a separately-importable,
+  is a legitimately strong, forward-looking fit" for the platform's AI-ready
+  API goal, specifically because `mcpresource` is a separately-importable,
   zero-dependency module that answers "how does a future MCP server
   validate a caller's identity" with RFC 9728 protected-resource metadata
   and RFC 8693 actor-chain walking, not a bespoke scheme. That fit is real
   at Phase 4, when teams, RBAC, and the MCP server itself are actually in
-  scope per CLAUDE.md 6, not before.
+  scope per the project's phased roadmap, not before.
 - Revisit this decision at Phase 4. At that point Levelrail's needs
   (multi-user, scoped agent delegation, possibly SAML/SCIM for an
   enterprise self-hosted tier) would actually exercise the parts of
