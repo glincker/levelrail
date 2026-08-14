@@ -40,6 +40,15 @@ type Node struct {
 	LastSeenAt      *time.Time
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
+
+	// AcceptsAppWorkloads and AcceptsBuildWorkloads are TASKS.md 3.5's
+	// node capability flags (migrations/0010_node_workloads.sql): which
+	// kinds of work this node is willing to run, independent of each
+	// other. A node can be either, both, or neither. See the migration's
+	// own doc comment for the default values new and pre-existing nodes
+	// get.
+	AcceptsAppWorkloads   bool
+	AcceptsBuildWorkloads bool
 }
 
 // ErrNodeNotFound is returned by GetNode when no node has that ID.
@@ -67,12 +76,13 @@ var ErrNodeNameTaken = errors.New("store: node name already taken")
 // establishes for a different unique-constraint conflict.
 func (db *DB) SaveNode(ctx context.Context, n Node) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO nodes (id, name, address, status, cert_fingerprint, joined_at, last_seen_at, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO nodes (id, name, address, status, cert_fingerprint, joined_at, last_seen_at, created_at, updated_at, accepts_app_workloads, accepts_build_workloads)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		n.ID, n.Name, n.Address, string(n.Status), n.CertFingerprint,
 		formatTimePtr(n.JoinedAt), formatTimePtr(n.LastSeenAt),
 		formatTime(n.CreatedAt), formatTime(n.UpdatedAt),
+		boolToInt(n.AcceptsAppWorkloads), boolToInt(n.AcceptsBuildWorkloads),
 	)
 	if err == nil {
 		return nil
@@ -169,6 +179,27 @@ func (db *DB) UpdateNodeStatus(ctx context.Context, id string, status NodeStatus
 	return nil
 }
 
+// UpdateNodeWorkloads sets a node's workload capability flags
+// (TASKS.md 3.5). Returns ErrNodeNotFound if no such node exists, the
+// same "distinguish real failure from a no-op" rigor UpdateNodeStatus
+// already applies to its own conditional UPDATE.
+func (db *DB) UpdateNodeWorkloads(ctx context.Context, id string, acceptsApp, acceptsBuild bool) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE nodes SET accepts_app_workloads = ?, accepts_build_workloads = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?
+	`, boolToInt(acceptsApp), boolToInt(acceptsBuild), id)
+	if err != nil {
+		return fmt.Errorf("store: update workloads for node %q: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: update workloads for node %q: rows affected: %w", id, err)
+	}
+	if n == 0 {
+		return ErrNodeNotFound
+	}
+	return nil
+}
+
 // TouchNodeLastSeen updates last_seen_at to now, best-effort by design
 // matching TouchAPITokenLastUsed: a heartbeat recording failure must
 // never block whatever triggered it.
@@ -183,20 +214,40 @@ func (db *DB) TouchNodeLastSeen(ctx context.Context, id string) error {
 }
 
 const nodeSelectColumns = `
-	SELECT id, name, address, status, cert_fingerprint, joined_at, last_seen_at, created_at, updated_at`
+	SELECT id, name, address, status, cert_fingerprint, joined_at, last_seen_at, created_at, updated_at, accepts_app_workloads, accepts_build_workloads`
+
+// boolToInt and intToBool convert Go's bool to and from SQLite's
+// INTEGER 0/1 convention (SQLite has no native boolean type), the first
+// boolean-shaped columns this package has needed to store: nodes'
+// accepts_app_workloads/accepts_build_workloads (migrations/
+// 0010_node_workloads.sql).
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+func intToBool(i int) bool {
+	return i != 0
+}
 
 func scanNode(scan func(dest ...any) error) (*Node, error) {
 	var (
-		n                    Node
-		status               string
-		joinedAt, lastSeenAt sql.NullString
-		createdAt, updatedAt string
+		n                                          Node
+		status                                     string
+		joinedAt, lastSeenAt                       sql.NullString
+		createdAt, updatedAt                       string
+		acceptsAppWorkloads, acceptsBuildWorkloads int
 	)
 	if err := scan(&n.ID, &n.Name, &n.Address, &status, &n.CertFingerprint,
-		&joinedAt, &lastSeenAt, &createdAt, &updatedAt); err != nil {
+		&joinedAt, &lastSeenAt, &createdAt, &updatedAt,
+		&acceptsAppWorkloads, &acceptsBuildWorkloads); err != nil {
 		return nil, err
 	}
 	n.Status = NodeStatus(status)
+	n.AcceptsAppWorkloads = intToBool(acceptsAppWorkloads)
+	n.AcceptsBuildWorkloads = intToBool(acceptsBuildWorkloads)
 
 	var err error
 	n.JoinedAt, err = parseTimePtr(joinedAt)

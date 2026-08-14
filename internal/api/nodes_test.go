@@ -121,6 +121,59 @@ func TestHandleDeleteNode_Idempotent(t *testing.T) {
 	}
 }
 
+func TestHandleSetNodeWorkloads_Success(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNode(t, db, "node_a", "alpha")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/nodes/node_a/workloads",
+		`{"accepts_app_workloads":false,"accepts_build_workloads":true}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got nodeResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.AcceptsAppWorkloads != false || got.AcceptsBuildWorkloads != true {
+		t.Errorf("got = %+v, want AcceptsAppWorkloads=false AcceptsBuildWorkloads=true", got)
+	}
+
+	stored, err := db.GetNode(context.Background(), "node_a")
+	if err != nil {
+		t.Fatalf("GetNode() error = %v", err)
+	}
+	if stored.AcceptsAppWorkloads != false || stored.AcceptsBuildWorkloads != true {
+		t.Errorf("stored = %+v, want AcceptsAppWorkloads=false AcceptsBuildWorkloads=true", stored)
+	}
+}
+
+func TestHandleSetNodeWorkloads_UnknownNode_NotFound(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/nodes/nonexistent/workloads",
+		`{"accepts_app_workloads":true,"accepts_build_workloads":true}`))
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d, body = %s", rec.Code, http.StatusNotFound, rec.Body.String())
+	}
+}
+
+func TestHandleSetNodeWorkloads_InvalidBody_BadRequest(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNode(t, db, "node_a", "alpha")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/nodes/node_a/workloads", `not json`))
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
 func TestHandleCreateNodeJoinToken(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -182,6 +235,7 @@ func TestNodeRoutes_RequireAuth(t *testing.T) {
 		{http.MethodGet, "/api/v1/nodes"},
 		{http.MethodGet, "/api/v1/nodes/some-id"},
 		{http.MethodDelete, "/api/v1/nodes/some-id"},
+		{http.MethodPut, "/api/v1/nodes/some-id/workloads"},
 		{http.MethodPost, "/api/v1/nodes/join-tokens"},
 	}
 	for _, tt := range tests {
