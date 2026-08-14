@@ -81,7 +81,12 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
       Every deploy today is an implicit single-container image swap.
       Large, and this is reconciler-core per CLAUDE.md section 8 (one
       agent, one long session, human review of every decision, do not
-      parallelize). Not dispatched yet for that reason.
+      parallelize). Claimed by the concurrent session (the one that did
+      the CLI/notification-bell/toast/databases-sidebar work above),
+      starting investigation now, single-session, not dispatched to
+      parallel agents, touches `internal/reconcile/application/*`,
+      `internal/store`, `internal/spec` (and probably `internal/api`),
+      not the reconciler-database or frontend files the PM is in.
 - [ ] Railpack auto-detection: stubbed the same way static builds were
       (`internal/deploy/deploy.go`), but larger scope (real
       auto-detection heuristics, not just wiring). Do after static
