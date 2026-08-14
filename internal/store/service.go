@@ -63,7 +63,33 @@ type DesiredService struct {
 	// single-node deployment's services keep running exactly where they
 	// already were on upgrade.
 	NodeID string
+
+	// Strategy and Replicas are always the *resolved* (never empty/zero)
+	// values: internal/spec.Service.EffectiveStrategy()/
+	// EffectiveReplicas() already define what "unset in app.yaml" means,
+	// and this package stores that already-resolved decision rather than
+	// re-deriving it on every read, the same "resolve once, store the
+	// resolved form" shape Resources/Health already follow (app.yaml's
+	// human units are converted before a DesiredService exists at all).
+	// SaveDesiredService independently defends against an empty
+	// Strategy/zero Replicas from any caller, so this field is never
+	// ambiguous regardless of who constructs the struct.
+	Strategy string
+	Replicas int
 }
+
+// DefaultDeployStrategy and DefaultReplicas mirror internal/spec's
+// StrategyBlueGreen/DefaultReplicas exactly (same values), kept as this
+// package's own constants rather than importing internal/spec: this
+// package's own doc comment already establishes that DesiredService is
+// deliberately independent of spec.Service, and every other cross-
+// package enum in this file (NodeStatus, and so on) follows the same
+// "define locally, don't import a higher-level package's vocabulary"
+// convention.
+const (
+	DefaultDeployStrategy = "blue-green"
+	DefaultReplicas       = 1
+)
 
 // ErrDomainTaken is returned by SaveDesiredService when one of svc's
 // Domains is already claimed by a different service. Enforced here, not
@@ -130,6 +156,15 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 		return fmt.Errorf("store: marshal health for service %q: %w", svc.Name, err)
 	}
 
+	strategy := svc.Strategy
+	if strategy == "" {
+		strategy = DefaultDeployStrategy
+	}
+	replicas := svc.Replicas
+	if replicas <= 0 {
+		replicas = DefaultReplicas
+	}
+
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: begin transaction: %w", svc.Name, err)
@@ -139,8 +174,8 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	}()
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, domains, env, secret_env, resources, health, node_id, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
@@ -149,8 +184,10 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 			secret_env = excluded.secret_env,
 			resources = excluded.resources,
 			health = excluded.health,
+			strategy = excluded.strategy,
+			replicas = excluded.replicas,
 			updated_at = excluded.updated_at
-	`, svc.Name, svc.Image, svc.Port, string(domainsJSON), string(envJSON), string(secretEnvJSON), string(resourcesJSON), string(healthJSON))
+	`, svc.Name, svc.Image, svc.Port, string(domainsJSON), string(envJSON), string(secretEnvJSON), string(resourcesJSON), string(healthJSON), strategy, replicas)
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
@@ -239,7 +276,7 @@ var ErrServiceNotFound = errors.New("store: service not found")
 // ErrServiceNotFound if no such service has been saved.
 func (db *DB) GetDesiredService(ctx context.Context, name string) (*DesiredService, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health, node_id
+		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas
 		FROM desired_services
 		WHERE name = ?
 	`, name)
@@ -257,7 +294,7 @@ func (db *DB) GetDesiredService(ctx context.Context, name string) (*DesiredServi
 // ListDesiredServices returns every saved service, ordered by name.
 func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health, node_id
+		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas
 		FROM desired_services
 		ORDER BY name
 	`)
@@ -292,7 +329,7 @@ func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error)
 // comparison in this package.
 func (db *DB) ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]DesiredService, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health, node_id
+		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas
 		FROM desired_services
 		WHERE node_id = ?
 		ORDER BY name
@@ -354,7 +391,7 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 		svc                                                        DesiredService
 		domainsJSON, envJSON, secretEnvJSON, resourcesJSON, health string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health, &svc.NodeID); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas); err != nil {
 		return nil, err
 	}
 
