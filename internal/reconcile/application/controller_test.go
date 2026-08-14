@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -165,6 +166,14 @@ func (f *fakeRuntime) EnsureVolume(_ context.Context, _ string) error {
 
 func (f *fakeRuntime) Events(_ context.Context) (<-chan docker.Event, <-chan error) {
 	return nil, nil
+}
+
+// Exec is a no-op here for the same reason EnsureVolume above is: this
+// controller never runs a command inside a container, only manages
+// container lifecycle. internal/backup's Dumper is the real caller,
+// covered by that package's own tests.
+func (f *fakeRuntime) Exec(_ context.Context, _ string, _ []string) (io.ReadCloser, error) {
+	return nil, errors.New("fakeRuntime: Exec not implemented")
 }
 
 func (f *fakeRuntime) count() int {
