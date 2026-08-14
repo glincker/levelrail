@@ -10,7 +10,11 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { Activity, Info, RefreshCw } from 'lucide-react'
+import {
+  PulseIcon,
+  InfoIcon,
+  ArrowsClockwiseIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
 import { Alert, AlertDescription, AlertTitle } from './ui/alert'
@@ -407,7 +411,7 @@ export function MetricsDashboard({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-            <Activity
+            <PulseIcon
               className="size-4 text-muted-foreground"
               aria-hidden="true"
             />
@@ -452,7 +456,7 @@ export function MetricsDashboard({
               setRefreshNonce((n) => n + 1)
             }}
           >
-            <RefreshCw className="size-3.5" aria-hidden="true" />
+            <ArrowsClockwiseIcon className="size-3.5" aria-hidden="true" />
             Refresh
           </Button>
         </div>
@@ -471,7 +475,7 @@ export function MetricsDashboard({
       </div>
 
       <Alert className="mt-4">
-        <Info />
+        <InfoIcon />
         <AlertTitle>Not yet collected</AlertTitle>
         <AlertDescription>
           <p>

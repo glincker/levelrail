@@ -1,5 +1,8 @@
 import { Link } from '@tanstack/react-router'
-import { ChevronRightIcon, DatabaseIcon } from 'lucide-react'
+import {
+  CaretRightIcon,
+  DatabaseIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import type { DatabaseResource } from '../types/databaseDetail'
 
@@ -44,7 +47,7 @@ export function DatabaseRow({ database }: { database: DatabaseResource }) {
         {database.version}
       </span>
 
-      <ChevronRightIcon
+      <CaretRightIcon
         className="size-4 shrink-0 justify-self-end text-muted-foreground/50"
         aria-hidden="true"
       />

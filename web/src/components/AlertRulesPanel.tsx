@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { BellRing } from 'lucide-react'
+import { BellRingingIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Table,
   TableBody,
@@ -237,7 +237,7 @@ export function AlertRulesPanel({ appName }: { appName: string }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-            <BellRing
+            <BellRingingIcon
               className="size-4 text-muted-foreground"
               aria-hidden="true"
             />

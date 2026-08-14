@@ -1,4 +1,4 @@
-import { LayoutDashboardIcon } from 'lucide-react'
+import { SquaresFourIcon } from '@phosphor-icons/react/dist/ssr'
 import type { AppDetail, ServiceProbe } from '../types/appDetail'
 import { formatBytes, formatDurationNs, formatNanoCpus } from '../lib/format'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,7 +13,7 @@ export function AppOverview({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LayoutDashboardIcon className="size-4" />
+          <SquaresFourIcon className="size-4" />
           Overview
         </CardTitle>
       </CardHeader>

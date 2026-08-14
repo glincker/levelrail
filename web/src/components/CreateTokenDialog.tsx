@@ -5,9 +5,9 @@ import { z } from 'zod'
 import {
   CheckIcon,
   CopyIcon,
-  KeyRoundIcon,
-  TriangleAlertIcon,
-} from 'lucide-react'
+  KeyIcon,
+  WarningIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
   DialogContent,
@@ -191,7 +191,7 @@ export function CreateTokenDialog() {
                 amber-precedent classes AlertRulesPanel.tsx and the deploy
                 logs route already established for exactly this gap. */}
             <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-              <TriangleAlertIcon className="mt-0.5 size-4 shrink-0" />
+              <WarningIcon className="mt-0.5 size-4 shrink-0" />
               <p className="text-sm">
                 Copy this token now. It will not be shown again.
               </p>
@@ -225,7 +225,7 @@ export function CreateTokenDialog() {
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <KeyRoundIcon className="size-4 text-muted-foreground" />
+                <KeyIcon className="size-4 text-muted-foreground" />
                 Create token
               </DialogTitle>
               <DialogDescription>
@@ -322,7 +322,7 @@ export function CreateTokenDialog() {
 
               {createToken.isError ? (
                 <Alert variant="destructive">
-                  <TriangleAlertIcon />
+                  <WarningIcon />
                   <AlertDescription>
                     {createToken.error.message}
                   </AlertDescription>

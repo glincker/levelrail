@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { RocketIcon } from 'lucide-react'
+import { RocketIcon } from '@phosphor-icons/react/dist/ssr'
 import { useTriggerDeploy } from '../queries/deploys'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'

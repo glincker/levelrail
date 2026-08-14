@@ -1,5 +1,9 @@
 import { Link } from '@tanstack/react-router'
-import { BoxIcon, ChevronRightIcon, GlobeIcon } from 'lucide-react'
+import {
+  PackageIcon,
+  CaretRightIcon,
+  GlobeIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import type { AppDetail } from '../types/appDetail'
 
@@ -40,7 +44,7 @@ export function AppRow({ app }: { app: AppDetail }) {
       className={`${APP_LIST_GRID} h-full w-full border-b border-border px-4 py-3 transition-colors hover:bg-muted/60`}
     >
       <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-        <BoxIcon className="size-4" aria-hidden="true" />
+        <PackageIcon className="size-4" aria-hidden="true" />
       </span>
 
       <span className="min-w-0 truncate text-sm font-medium text-foreground">
@@ -81,7 +85,7 @@ export function AppRow({ app }: { app: AppDetail }) {
         :{app.port}
       </Badge>
 
-      <ChevronRightIcon
+      <CaretRightIcon
         className="size-4 shrink-0 justify-self-end text-muted-foreground/50"
         aria-hidden="true"
       />

@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { CpuIcon } from 'lucide-react'
+import { CpuIcon } from '@phosphor-icons/react/dist/ssr'
 import type { AppDetail, ServiceResources } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
 import { formatBytes, formatNanoCpus } from '../lib/format'

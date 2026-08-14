@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useEffect, useState } from 'react'
-import { ClockIcon, TriangleAlertIcon } from 'lucide-react'
+import { ClockIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { RateLimitError, useLogin } from '../queries/auth'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -110,7 +110,7 @@ export function LoginForm() {
         </Alert>
       ) : login.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertIcon />
+          <WarningIcon />
           <AlertDescription>{login.error.message}</AlertDescription>
         </Alert>
       ) : null}
