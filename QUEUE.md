@@ -96,22 +96,12 @@ taken (`0016_desired_databases_drop_engine_check.sql`), next one is
       only so the history isn't a mystery to whoever reads this file
       next.
 
-- [ ] Deploy strategy (rolling/recreate/blue-green) + replicas: defined
-      in `internal/spec` but `store.DesiredService` has no such fields
-      and the application controller has zero handling for either.
-      Every deploy today is an implicit single-container image swap.
-      Large, and this is reconciler-core per CLAUDE.md section 8 (one
-      agent, one long session, human review of every decision, do not
-      parallelize). Claimed by the concurrent session (the one that did
-      the CLI/notification-bell/toast/databases-sidebar work above),
-      starting investigation now, single-session, not dispatched to
-      parallel agents, touches `internal/reconcile/application/*`,
-      `internal/store`, `internal/spec` (and probably `internal/api`),
-      not the reconciler-database or frontend files the PM is in.
+- [x] Deploy strategy (rolling/recreate/blue-green) + replicas: landed.
+      See Done below.
 - [ ] Railpack auto-detection: stubbed the same way static builds were
       (`internal/deploy/deploy.go`), but larger scope (real
       auto-detection heuristics, not just wiring). Do after static
-      support lands and after the deploy-strategy work above, so
+      support lands, now that the deploy-strategy work above is in, so
       Railpack-built images have somewhere real to go besides a bare
       image swap.
 
@@ -149,6 +139,24 @@ taken (`0016_desired_databases_drop_engine_check.sql`), next one is
 
 ## Done (most recent first)
 
+- [x] Deploy strategies (`internal/store/migrations/0017_deploy_strategy.sql`):
+      `store.DesiredService` gained `Strategy`/`Replicas`, resolved once
+      in `internal/deploy` via `spec.Service`'s own
+      `EffectiveStrategy()`/`EffectiveReplicas()` so the controller
+      always reads an already-valid value. `internal/reconcile/application`
+      now supports `replicas` (N containers, replica 0 stays
+      byte-identical to the old single-container name so ingress and
+      already-running containers need no change), `blue-green`
+      (generalized to N replicas), and `recreate` (stop-everything-
+      then-create, with an idempotency guard so an already-converged
+      service is never touched on a repeat reconcile, covered by a
+      dedicated test asserting zero stop/create calls). `rolling`
+      reports itself explicitly unsupported rather than silently
+      falling back to another strategy. Documented gap left honest, not
+      silently handled: ingress only ever routes to one container per
+      service today, so replicas > 1 run but aren't load-balanced
+      across yet. Full suite green (build, vet, lint, `go test ./...
+      -race` including live Docker e2e, coverage 83.1% vs the 70% gate).
 - [x] MySQL as a third database engine, backed by a dynamic registry
       (`internal/store/database_engines.yaml`, `GET /api/v1/database-engines`)
       instead of hardcoding engine names across store validation, the
