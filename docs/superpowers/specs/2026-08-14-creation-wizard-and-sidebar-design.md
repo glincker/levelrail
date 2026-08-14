@@ -1,5 +1,44 @@
 # Creation wizard + sidebar IA
 
+**Update 2026-08-14 (post-approval, before implementation)**: founder
+expanded scope on three points after the first pass above was approved.
+All three below now supersede the corresponding narrower text further
+down in this doc where they conflict.
+
+1. **thesvg.org is the standing source for brand/service icons going
+   forward**, not just this one wizard's 4 logos: as more service types
+   get picker entries later, their logos come from thesvg.org too.
+   Framed explicitly as dogfooding the founder's own product. This does
+   **not** reopen ADR 014 / the Phosphor-only rule for UI chrome (nav,
+   buttons, dialog controls stay Phosphor); it's scoped to brand/service
+   marks only, the same boundary the original design already drew, just
+   confirmed as the permanent policy rather than a one-off.
+2. **Sidebar becomes dynamic/contextual, Vercel-style**, not a single
+   static nav: at the global level (nothing selected) it shows
+   account-wide routes (Apps, Databases, Nodes, API tokens, etc, same
+   as today's primary+settings groups combined into one view). Inside a
+   specific app, the sidebar swaps to that app's own scoped nav
+   (Overview, Domains, Environment, Health, Resources, Metrics, Logs,
+   Alerts), the same items `routes/apps/$name.tsx`'s `Tabs` component
+   already renders horizontally in-content today, moved into the
+   sidebar and driven by real nested routes instead of client-only tab
+   state (so each section is a real, deep-linkable URL, matching the
+   precedent `/apps/$name/deploys/$deployId/logs` already sets as a
+   real nested route rather than in-page state). A "back to Apps"
+   affordance replaces the global nav while scoped. This round scopes
+   the conversion to the Apps detail page only; Databases' own detail
+   page gets the same treatment as a fast-follow once the pattern is
+   proven once.
+3. **Sidebar becomes a floating panel**, not edge-to-edge/sticky.
+   Mechanically small: the shadcn `Sidebar` primitive
+   (`web/src/components/ui/sidebar.tsx`) already implements a
+   `variant="floating"` option (padding, rounded corners, shadow, ring
+   border, all pre-built), currently unused (`AppSidebar.tsx` renders
+   plain `variant="sidebar"`, the default). This is close to a one-prop
+   change plus whatever spacing/layout adjustment the surrounding
+   `SidebarInset`/page shell needs once the sidebar itself is inset
+   rather than flush.
+
 ## Problem
 
 Sidebar primary nav only shows Apps and Databases (Nodes exists but is
