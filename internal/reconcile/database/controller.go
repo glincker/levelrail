@@ -15,7 +15,7 @@
 //
 // Postgres cannot run safely without credentials, and nothing supplies
 // them yet: database auth needs the same envelope-encrypted secret
-// storage CLAUDE.md 4.10 specifies (TASKS.md 1.7), which doesn't exist.
+// storage the secrets design specifies (TASKS.md 1.7), which doesn't exist.
 // Rather than start Postgres in trust-auth mode (no password) as a
 // "temporary" workaround, Reconcile refuses to start it at all and
 // reports a loud, explicit condition explaining why, mirroring how

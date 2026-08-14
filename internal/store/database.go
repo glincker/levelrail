@@ -7,9 +7,9 @@ import (
 	"fmt"
 )
 
-// Supported managed database engines, matching internal/spec's list
-// (CLAUDE.md 6 Phase 1: "Managed Postgres and Redis as first-class
-// resources").
+// Supported managed database engines, matching internal/spec's list:
+// Postgres and Redis ship as first-class resources in the initial
+// release.
 const (
 	EnginePostgres = "postgres"
 	EngineRedis    = "redis"

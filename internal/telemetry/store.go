@@ -96,9 +96,9 @@ func (db *DB) Query(ctx context.Context, resourceID, metric string, from, to tim
 }
 
 // Retain deletes every sample older than the given cutoff, returning how
-// many rows were removed. CLAUDE.md 4.8's default (15 days) is a caller
-// concern (the collector or a scheduled sweep decides the cutoff), not
-// hardcoded here, per the root CLAUDE.md's "no hardcoded thresholds"
+// many rows were removed. The documented default retention (15 days) is
+// a caller concern (the collector or a scheduled sweep decides the
+// cutoff), not hardcoded here, per the house "no hardcoded thresholds"
 // rule.
 func (db *DB) Retain(ctx context.Context, cutoff time.Time) (deleted int64, err error) {
 	res, err := db.ExecContext(ctx, `DELETE FROM metric_samples WHERE ts < ?`, cutoff.Unix())

@@ -1,5 +1,5 @@
--- CLAUDE.md 4.2: "Every reconcile emits a status condition with a reason
--- string, stored and shown in the UI." This is that storage. A resource
+-- Every reconcile emits a status condition with a reason string, stored
+-- and shown in the UI. This is that storage. A resource
 -- can report more than one named condition (Ready, Available, ...), so
 -- the primary key is the pair, not controller_name alone.
 CREATE TABLE reconcile_status (

@@ -1,6 +1,7 @@
 -- TASKS.md 1.7's deferred follow-up: env injection at container-create
--- time. CLAUDE.md 4.10 specifies per-app data encryption keys wrapped by
--- a master key held only by the control plane; these two tables hold
+-- time. The secrets design specifies per-app data encryption keys
+-- wrapped by a master key held only by the control plane; these two
+-- tables hold
 -- exactly that, and nothing else. Neither table nor this migration knows
 -- how to encrypt or decrypt anything, that stays internal/secrets'
 -- job: this is storage for opaque bytes, the same separation
@@ -8,8 +9,8 @@
 --
 -- service_secrets holds one wrapped DEK per service, generated the
 -- first time a secret value is set for that service and reused for
--- every value after (CLAUDE.md 4.10: "wrap the DEK once, encrypt many
--- values fast with it").
+-- every value after: the DEK is wrapped once and reused to encrypt
+-- many values fast.
 CREATE TABLE service_secrets (
     service_name TEXT PRIMARY KEY,
     wrapped_dek BLOB NOT NULL,

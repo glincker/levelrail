@@ -124,8 +124,8 @@ func TestEncryptValue_EmptyPlaintextRoundTrips(t *testing.T) {
 	}
 }
 
-// TestFullEnvelope_MasterKeyToValueAndBack exercises the entire chain
-// CLAUDE.md 4.10 describes in one pass: a master key wraps a per-app
+// TestFullEnvelope_MasterKeyToValueAndBack exercises the entire
+// envelope-encryption chain in one pass: a master key wraps a per-app
 // DEK, the DEK encrypts a value, and both unwrap steps reverse it
 // correctly, proving the pieces compose the way the design intends, not
 // just that each piece works in isolation.

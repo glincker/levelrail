@@ -16,8 +16,8 @@ const (
 )
 
 // Condition is a single named status a controller reports after each
-// reconcile, always with a machine-readable Reason. CLAUDE.md 4.2: "Every
-// reconcile emits a status condition with a reason string."
+// reconcile, always with a machine-readable Reason: every reconcile
+// emits a status condition with a reason string.
 type Condition struct {
 	Type               string
 	Status             ConditionStatus
