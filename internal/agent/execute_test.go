@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"errors"
+	"io"
 	"testing"
 	"time"
 
@@ -78,6 +79,13 @@ func (f *execRuntime) Remove(_ context.Context, id string, force bool) error {
 func (f *execRuntime) EnsureVolume(_ context.Context, name string) error {
 	f.volumeName = name
 	return f.volumeErr
+}
+
+// Exec is unexercised here: Execute's dispatch switch has no case for it
+// yet (see grpc_transport.go's own doc comment on why), so nothing in
+// this file's tests calls it. Stubbed to satisfy docker.Runtime.
+func (f *execRuntime) Exec(_ context.Context, _ string, _ []string) (io.ReadCloser, error) {
+	return nil, errors.New("execRuntime: Exec not implemented")
 }
 
 func TestExecute_InspectByName_Found(t *testing.T) {

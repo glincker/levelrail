@@ -3,6 +3,8 @@ package docker
 import (
 	"context"
 	"encoding/json"
+	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -370,6 +372,80 @@ func TestClient_ListByPrefix_Stop_Remove_Live(t *testing.T) {
 	if removed != nil {
 		t.Errorf("expected InspectByName() to return nil after Remove(), got %+v", removed)
 	}
+}
+
+// TestClient_Exec_Live proves Exec actually runs a command inside a
+// real running container via the Engine API's exec facility and streams
+// its real stdout back byte for byte, the exact mechanism
+// internal/backup.ContainerDumper depends on entirely to run
+// pg_dump/mysqldump/redis-cli. Three things are load-bearing enough to
+// prove against a real daemon rather than trust from documentation
+// alone:
+//
+//  1. stdout comes through demultiplexed and uncorrupted.
+//  2. environment variables set at container creation are visible to
+//     the exec'd process without this call passing them again, since
+//     that is exactly what lets postgresDumpCmd/mysqlDumpCmd read
+//     $POSTGRES_USER/$MYSQL_ROOT_PASSWORD without ContainerDumper ever
+//     handling a credential itself.
+//  3. a non-zero exit surfaces as a real error from the stream, not a
+//     silently truncated or empty read, so a caller can tell "the
+//     database is empty" apart from "the dump command failed."
+func TestClient_Exec_Live(t *testing.T) {
+	c := liveClient(t)
+	ctx := context.Background()
+
+	name := "levelrail-test-docker-exec"
+	removeIfExists(ctx, t, c, name)
+	t.Cleanup(func() { removeIfExists(context.Background(), t, c, name) })
+
+	if err := c.ensureImage(ctx, "nginx:alpine"); err != nil {
+		t.Fatalf("ensureImage() error = %v", err)
+	}
+	id, err := c.Create(ctx, ContainerSpec{
+		Name:  name,
+		Image: "nginx:alpine",
+		Env:   map[string]string{"LEVELRAIL_TEST_VAR": "hello-from-container-env"},
+	})
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	if err := c.Start(ctx, id); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+
+	t.Run("stdout streamed back and env inherited", func(t *testing.T) {
+		rc, err := c.Exec(ctx, name, []string{"sh", "-c", `echo "$LEVELRAIL_TEST_VAR"`})
+		if err != nil {
+			t.Fatalf("Exec() error = %v", err)
+		}
+		defer func() { _ = rc.Close() }()
+
+		got, err := io.ReadAll(rc)
+		if err != nil {
+			t.Fatalf("reading Exec() stream error = %v", err)
+		}
+		want := "hello-from-container-env\n"
+		if string(got) != want {
+			t.Errorf("Exec() stdout = %q, want %q (proves the exec'd process inherits the container's own creation-time env, unprompted)", got, want)
+		}
+	})
+
+	t.Run("non-zero exit surfaces as a stream error", func(t *testing.T) {
+		rc, err := c.Exec(ctx, name, []string{"sh", "-c", "echo partial-output; exit 7"})
+		if err != nil {
+			t.Fatalf("Exec() error = %v", err)
+		}
+		defer func() { _ = rc.Close() }()
+
+		_, readErr := io.ReadAll(rc)
+		if readErr == nil {
+			t.Fatal("reading Exec() stream error = nil, want a non-nil error for a command that exited 7")
+		}
+		if !strings.Contains(readErr.Error(), "exited 7") {
+			t.Errorf("Exec() stream error = %v, want it to mention the real exit code (7)", readErr)
+		}
+	})
 }
 
 func removeIfExists(ctx context.Context, t *testing.T, c *Client, name string) {

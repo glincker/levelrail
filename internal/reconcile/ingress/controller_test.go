@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"errors"
+	"io"
 	"log/slog"
 	"sync"
 	"testing"
@@ -114,6 +115,13 @@ func (f *fakeRuntime) ListByPrefix(_ context.Context, _ string) ([]docker.Contai
 func (f *fakeRuntime) Stop(_ context.Context, _ string, _ time.Duration) error { return nil }
 func (f *fakeRuntime) Remove(_ context.Context, _ string, _ bool) error        { return nil }
 func (f *fakeRuntime) EnsureVolume(_ context.Context, _ string) error          { return nil }
+
+// Exec is unused by this package's tests: the ingress controller never
+// runs a command inside a container, only manages container lifecycle
+// and reads observed state. Stubbed to satisfy docker.Runtime.
+func (f *fakeRuntime) Exec(_ context.Context, _ string, _ []string) (io.ReadCloser, error) {
+	return nil, errors.New("fakeRuntime: Exec not implemented")
+}
 
 // fakeApplier is a hand-written fake for internal/ingress.Driver: it
 // records the last Config it was handed so tests can assert on exactly
