@@ -12,7 +12,7 @@
 #   scripts/verify.sh frontend   # frontend only (web/)
 #
 # Exits non-zero on the first failing step. No em dashes or en dashes
-# anywhere per CLAUDE.md 7, this script included.
+# anywhere in this repo's engineering standards, this script included.
 
 set -euo pipefail
 

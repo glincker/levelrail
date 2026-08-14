@@ -6,8 +6,8 @@ Date: 2026-08-13
 
 ## Context
 
-The root GLINRV5 `CLAUDE.md` sets a platform-wide rule for every repo under
-it: "No new icon sets (Phosphor only - `@phosphor-icons/react/dist/ssr`)".
+Every repo in the organization inherits a standing, platform-wide engineering
+rule: "No new icon sets (Phosphor only - `@phosphor-icons/react/dist/ssr`)".
 That rule predates this repo and is not something an individual ADR gets to
 relitigate.
 
@@ -26,9 +26,9 @@ shadcn-generated primitives under `web/src/components/ui/` (`dialog.tsx`,
 `select.tsx`, `sheet.tsx`, `sidebar.tsx`, `checkbox.tsx`) that shadcn's init
 wrote directly.
 
-This is exactly the situation CLAUDE.md's rule exists to prevent: a second
-icon set entering the codebase unreviewed. The user explicitly approved
-fixing it now, including the `web/package.json` dependency swap.
+This is exactly the situation the platform-wide icon rule exists to prevent:
+a second icon set entering the codebase unreviewed. The user explicitly
+approved fixing it now, including the `web/package.json` dependency swap.
 
 ## Decision
 
@@ -93,7 +93,8 @@ broken imports.
   closed, past decision.** Rejected because the platform-wide Phosphor rule
   is not scoped to "new features going forward", it is a standing rule this
   repo has no override for (per its own File Boundaries section deferring to
-  the root `CLAUDE.md` where a repo doesn't define its own), and 44 files
+  the organization's platform-wide engineering guide where a repo doesn't
+  define its own), and 44 files
   importing a second icon set is the exact failure mode the rule exists to
   catch, whether or not the introduction was deliberate.
 - **A blind find-and-replace of import specifiers only, leaving Lucide icon
@@ -113,7 +114,7 @@ broken imports.
   UI, shadcn, the login-screen SDK decision) is unaffected and still stands.
 - `web/package.json` changed: `lucide-react` removed, `@phosphor-icons/react`
   (`^2.1.10`) added. This is a dependency swap already approved by the user
-  for this specific change, per the root `CLAUDE.md` file-boundaries rule
+  for this specific change, per the platform-wide file-boundaries rule
   requiring approval for `package.json` edits.
 - The 5 shadcn-generated primitives under `web/src/components/ui/`
   (`dialog.tsx`, `select.tsx`, `sheet.tsx`, `sidebar.tsx`, `checkbox.tsx`)
@@ -122,6 +123,6 @@ broken imports.
   regenerate a file with a fresh `lucide-react` import; whoever runs that
   command needs to swap it by hand (or re-run this ADR's mapping) rather
   than assume shadcn's own defaults already match this repo's icon library.
-- No product-name strings were introduced by this change (CLAUDE.md section
-  3's brand-indirection rule is unaffected, this is a pure icon-library
-  swap).
+- No product-name strings were introduced by this change (this repo's own
+  brand-indirection rule, section 3, is unaffected, this is a pure
+  icon-library swap).
