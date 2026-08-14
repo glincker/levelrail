@@ -425,8 +425,8 @@ having existed since Phase 3.
       place sequencing: creation and navigation never wait on or depend
       on the trailing placement call succeeding.
 
-All four pieces built by two parallel agents against the frozen
-query-layer contract (queries/nodes.ts, the placement mutations),
+All four pieces built as two independent units of work against the
+frozen query-layer contract (queries/nodes.ts, the placement mutations),
 reviewed file-by-file and independently re-verified (`tsc -b`,
 `eslint .`, `prettier --check`, `vite build`, plus real curl round-trips
 against the running backend: login, list nodes, mint join token) before
