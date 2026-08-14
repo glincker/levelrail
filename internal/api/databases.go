@@ -152,6 +152,55 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// setDatabaseNodeRequest is PUT /api/v1/databases/{name}/node's body,
+// identical shape to setAppNodeRequest.
+type setDatabaseNodeRequest struct {
+	NodeID string `json:"node_id"`
+}
+
+// handleSetDatabaseNode handles PUT /api/v1/databases/{name}/node, the
+// database counterpart to handleSetAppNode: same unknown-node-id 400,
+// same empty-string-means-local-node convention, same AbilityRoot
+// gating at the router. UpdateDatabaseNode has existed in the store
+// since TASKS.md 3.3 landed; this was the missing route over it.
+func (rt *Router) handleSetDatabaseNode(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+
+	var req setDatabaseNodeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.NodeID != "" {
+		if _, err := rt.nodes.GetNode(r.Context(), req.NodeID); errors.Is(err, store.ErrNodeNotFound) {
+			writeError(w, http.StatusBadRequest, "unknown node_id")
+			return
+		} else if err != nil {
+			rt.logger.Error("api: set database node: look up node failed", slog.String("error", err.Error()), slog.String("node_id", req.NodeID))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+	}
+
+	if err := rt.databases.UpdateDatabaseNode(r.Context(), name, req.NodeID); errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: set database node failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	d, err := rt.databases.GetDesiredDatabase(r.Context(), name)
+	if err != nil {
+		rt.logger.Error("api: set database node: reload after update failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toDatabaseResource(*d))
+}
+
 // handleDatabaseStatus handles GET /api/v1/databases/{name}/status: the
 // database analogue of handleDeployHistory, surfacing the database
 // controller's stored reconcile conditions (current status, not a

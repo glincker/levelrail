@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -44,6 +45,7 @@ func TestDatabaseRoutes_RequireAuth(t *testing.T) {
 		{http.MethodGet, "/api/v1/databases/main"},
 		{http.MethodDelete, "/api/v1/databases/main"},
 		{http.MethodGet, "/api/v1/databases/main/status"},
+		{http.MethodPut, "/api/v1/databases/main/node"},
 	}
 	for _, r := range routes {
 		t.Run(r.method+" "+r.target, func(t *testing.T) {
@@ -198,6 +200,93 @@ func TestHandleDatabaseStatus_NotFound(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/ghost/status", ""))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleSetDatabaseNode_Success(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed database: %v", err)
+	}
+	seedNode(t, db, "node_1", "worker-1")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/node", `{"node_id":"node_1"}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got databaseResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.NodeID != "node_1" {
+		t.Errorf("NodeID = %q, want node_1", got.NodeID)
+	}
+
+	d, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if d.NodeID != "node_1" {
+		t.Errorf("stored NodeID = %q, want node_1", d.NodeID)
+	}
+}
+
+func TestHandleSetDatabaseNode_EmptyMovesToLocal(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed database: %v", err)
+	}
+	if err := db.UpdateDatabaseNode(ctx, "main", "node_1"); err != nil {
+		t.Fatalf("seed placement: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/node", `{"node_id":""}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	d, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if d.NodeID != "" {
+		t.Errorf("stored NodeID = %q, want empty (moved back to local)", d.NodeID)
+	}
+}
+
+func TestHandleSetDatabaseNode_UnknownNode_Rejected(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed database: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/node", `{"node_id":"ghost"}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusBadRequest)
+	}
+}
+
+func TestHandleSetDatabaseNode_DatabaseNotFound(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/ghost/node", `{"node_id":""}`))
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
 	}

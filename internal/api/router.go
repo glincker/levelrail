@@ -105,6 +105,9 @@ type DatabaseStore interface {
 	GetDesiredDatabase(ctx context.Context, name string) (*store.DesiredDatabase, error)
 	ListDesiredDatabases(ctx context.Context) ([]store.DesiredDatabase, error)
 	DeleteDesiredDatabase(ctx context.Context, name string) error
+	// UpdateDatabaseNode is AppStore.UpdateServiceNode's counterpart,
+	// same separation-from-ordinary-update reasoning.
+	UpdateDatabaseNode(ctx context.Context, name, nodeID string) error
 }
 
 // AuthStore is the store surface the auth handlers need.
@@ -293,6 +296,10 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/databases/{name}", rt.requireAbility(AbilityRead, rt.handleGetDatabase))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}", rt.requireAbility(AbilityWrite, rt.handleDeleteDatabase))
 	mux.HandleFunc("GET /api/v1/databases/{name}/status", rt.requireAbility(AbilityRead, rt.handleDatabaseStatus))
+
+	// Placement (TASKS.md 3.3), the database counterpart to
+	// PUT /apps/{name}/node above: same AbilityRoot gating.
+	mux.HandleFunc("PUT /api/v1/databases/{name}/node", rt.requireAbility(AbilityRoot, rt.handleSetDatabaseNode))
 
 	// Secrets (TASKS.md 1.7). Set-only: there is deliberately no GET,
 	// returning a value (even to its own owner over an authenticated
