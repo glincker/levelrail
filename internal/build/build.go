@@ -82,7 +82,7 @@ func (c *Client) Build(ctx context.Context, req Request, progress func(ProgressE
 
 	pipeR, pipeW := io.Pipe()
 
-	solveOpt, err := newSolveOpt(req, c.cacheDir, pipeW)
+	solveOpt, err := newSolveOpt(req, c.cache, pipeW)
 	if err != nil {
 		_ = pipeW.Close()
 		_ = pipeR.Close()

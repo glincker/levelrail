@@ -269,7 +269,7 @@ func run(logger *slog.Logger) error {
 		logger.Warn("secrets not configured", slog.String("error", err.Error()))
 	}
 
-	webhookHandler, closeWebhook, err := loadWebhookHandler(ctx, logger, b, db, telemetryDB, secretsManager)
+	webhookHandler, closeWebhook, err := loadWebhookHandler(ctx, logger, b, db, telemetryDB, secretsManager, agentRegistry)
 	if err != nil {
 		// Not fatal, the same choice as everything else optional above:
 		// the control plane still starts, serving apps deployed by
@@ -745,7 +745,17 @@ func loadSecretsManager(db *store.DB) (*secrets.Manager, error) {
 // moby/buildkit's Go client expects, not internal/docker's Runtime
 // wrapper, the same second-client pattern every BuildKit live test in
 // this codebase already uses.
-func loadWebhookHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager) (http.Handler, func() error, error) {
+//
+// agentRegistry is TASKS.md 3.5's build-node routing wiring: db's
+// current nodes are checked for AcceptsBuildWorkloads
+// (migrations/0010_node_workloads.sql), and build.SelectBuildNode picks
+// among the ones currently reachable through agentRegistry (TASKS.md
+// 3.1's transport). See checkLocalBuildNode's own doc comment for why a
+// selected non-local node makes this function fail loudly rather than
+// silently building locally: actually dispatching a build to a remote
+// node isn't wired yet (internal/build/node.go's package doc comment
+// has the full "why not" and what would need to change).
+func loadWebhookHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry) (http.Handler, func() error, error) {
 	repoURL := os.Getenv("APP_GIT_REPO_URL")
 	webhookSecret := os.Getenv("APP_WEBHOOK_SECRET")
 	imageRepo := os.Getenv("APP_IMAGE_REPO")
@@ -788,13 +798,17 @@ func loadWebhookHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand
 		return nil, nil, fmt.Errorf("service %q not found in app spec %s", serviceName, specPath)
 	}
 
+	if err := checkLocalBuildNode(ctx, db, agentRegistry, logger); err != nil {
+		return nil, nil, fmt.Errorf("select build node: %w", err)
+	}
+
 	rawDockerCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
 	if err != nil {
 		return nil, nil, fmt.Errorf("new docker client for buildkit: %w", err)
 	}
 
 	connectCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	buildClient, err := build.NewClient(connectCtx, rawDockerCli)
+	buildClient, err := build.NewClient(connectCtx, rawDockerCli, buildCacheOptions()...)
 	cancel()
 	if err != nil {
 		_ = rawDockerCli.Close()
@@ -828,6 +842,92 @@ func loadWebhookHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand
 		ImageRepo:   imageRepo,
 	}
 	return webhook.New(cfg, pipeline, logger), closer, nil
+}
+
+// buildCacheOptions reads TASKS.md 3.5's cache-backend env vars and
+// turns whichever are set into build.Options for build.NewClient.
+// APP_BUILD_CACHE_DIR wires build.WithCacheDir (Phase 1's local
+// backend, still useful for a single build node with no registry
+// available); APP_BUILD_CACHE_REGISTRY wires build.WithCacheRegistry,
+// the actual "remote cache shared across dedicated build nodes"
+// CLAUDE.md 4.4 calls for, optionally with
+// APP_BUILD_CACHE_REGISTRY_INSECURE=true for a plain-HTTP or self-
+// signed registry. Neither set (the default) returns no options at
+// all, matching every other optional env-var-gated feature in this
+// file (secrets, webhook): a control plane with no cache backend
+// configured still builds correctly, just without cache reuse.
+func buildCacheOptions() []build.Option {
+	var opts []build.Option
+	if dir := os.Getenv("APP_BUILD_CACHE_DIR"); dir != "" {
+		opts = append(opts, build.WithCacheDir(dir))
+	}
+	if ref := os.Getenv("APP_BUILD_CACHE_REGISTRY"); ref != "" {
+		opts = append(opts, build.WithCacheRegistry(ref))
+		if os.Getenv("APP_BUILD_CACHE_REGISTRY_INSECURE") == "true" {
+			opts = append(opts, build.WithCacheRegistryInsecure())
+		}
+	}
+	return opts
+}
+
+// checkLocalBuildNode is TASKS.md 3.5's build-node routing gate: it
+// looks at every node's AcceptsBuildWorkloads flag
+// (migrations/0010_node_workloads.sql) and, via
+// internal/build.SelectBuildNode, decides which node a build should
+// run on.
+//
+// Two outcomes let loadWebhookHandler proceed exactly as it always
+// has, building against this control plane's own local BuildKit
+// connection: no node is marked build-capable at all (the default,
+// zero-configuration case every deployment already had), which returns
+// a nil error here.
+//
+// A third outcome does not: SelectBuildNode picking a real, reachable,
+// build-capable node. That's the case this function refuses, loudly,
+// rather than silently building locally instead or pretending to
+// dispatch somewhere it can't reach: actually running a build on a
+// remote node needs a way to open a BuildKit connection against that
+// node's Docker daemon, and today's agent.Transport (TASKS.md 3.1/3.2)
+// only carries docker.Runtime's container-operation surface, not a raw
+// Docker Engine API connection. Extending that wire protocol is
+// explicitly out of scope for this task (TASKS.md's Phase 3 sequencing
+// note: "extends internal/build, doesn't touch the reconciler or
+// transport"); see internal/build/node.go's package doc comment for the
+// full reasoning. An operator who marks a node build-capable today gets
+// a clear, specific error here (surfaced as run's usual "webhook not
+// configured" warning, non-fatal to control-plane startup) instead of
+// deploys that quietly keep landing on the control plane's own
+// resources.
+func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent.Registry, logger *slog.Logger) error {
+	nodes, err := db.ListNodes(ctx)
+	if err != nil {
+		return fmt.Errorf("list nodes: %w", err)
+	}
+
+	infos := make([]build.NodeInfo, 0, len(nodes))
+	for _, n := range nodes {
+		online := false
+		if _, err := agentRegistry.Get(n.ID); err == nil {
+			online = true
+		}
+		infos = append(infos, build.NodeInfo{
+			ID:                    n.ID,
+			AcceptsBuildWorkloads: n.AcceptsBuildWorkloads,
+			Online:                online,
+		})
+	}
+
+	selected, err := build.SelectBuildNode(infos)
+	if err != nil {
+		return fmt.Errorf("no build-capable node is reachable: %w", err)
+	}
+	if selected == "" {
+		return nil
+	}
+
+	logger.Warn("build node selected but remote build dispatch is not implemented yet, refusing to start the webhook handler",
+		slog.String("node_id", selected))
+	return fmt.Errorf("node %q is marked build-capable, but dispatching a build to a remote node isn't implemented yet (TASKS.md 3.5); unmark it via PUT /api/v1/nodes/%s/workloads or wait for remote build dispatch to land", selected, selected)
 }
 
 // rootHandler combines the TASKS.md 1.9 HTTP API with the TASKS.md 1.10

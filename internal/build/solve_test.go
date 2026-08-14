@@ -3,6 +3,7 @@ package build
 import (
 	"errors"
 	"io"
+	"reflect"
 	"testing"
 
 	bkclient "github.com/moby/buildkit/client"
@@ -19,7 +20,7 @@ func TestNewSolveOpt(t *testing.T) {
 	tests := []struct {
 		name       string
 		req        Request
-		cacheDir   string
+		cache      CacheConfig
 		wantErr    error // checked with errors.Is when set
 		wantErrAny bool  // checked with a plain non-nil check when wantErr is unset
 	}{
@@ -48,16 +49,35 @@ func TestNewSolveOpt(t *testing.T) {
 			wantErrAny: true,
 		},
 		{
-			name:     "cache dir set: import and export both wired",
-			req:      Request{ContextDir: "testdata", Tag: "levelrail-spike:latest"},
-			cacheDir: "/tmp/levelrail-build-cache",
+			name:  "cache dir set: import and export both wired",
+			req:   Request{ContextDir: "testdata", Tag: "levelrail-spike:latest"},
+			cache: CacheConfig{Dir: "/tmp/levelrail-build-cache"},
+		},
+		{
+			name:  "cache registry set: import and export both wired",
+			req:   Request{ContextDir: "testdata", Tag: "levelrail-spike:latest"},
+			cache: CacheConfig{RegistryRef: "registry.example.com/levelrail/build-cache:app"},
+		},
+		{
+			name: "cache dir and registry both set: both backends wired",
+			req:  Request{ContextDir: "testdata", Tag: "levelrail-spike:latest"},
+			cache: CacheConfig{
+				Dir:         "/tmp/levelrail-build-cache",
+				RegistryRef: "registry.example.com/levelrail/build-cache:app",
+			},
+		},
+		{
+			name:    "cache registry insecure without a ref fails before touching the filesystem",
+			req:     Request{ContextDir: "testdata", Tag: "levelrail-spike:latest"},
+			cache:   CacheConfig{RegistryInsecure: true},
+			wantErr: ErrCacheRegistryRefRequired,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			out := discardWriteCloser{io.Discard}
-			opt, err := newSolveOpt(tt.req, tt.cacheDir, out)
+			opt, err := newSolveOpt(tt.req, tt.cache, out)
 
 			if tt.wantErr != nil {
 				if !errors.Is(err, tt.wantErr) {
@@ -108,17 +128,21 @@ func TestNewSolveOpt(t *testing.T) {
 				}
 			}
 
-			if tt.cacheDir == "" {
+			if tt.cache.empty() {
 				if len(opt.CacheImports) != 0 || len(opt.CacheExports) != 0 {
-					t.Errorf("expected no cache import/export when cacheDir is empty, got imports=%+v exports=%+v", opt.CacheImports, opt.CacheExports)
+					t.Errorf("expected no cache import/export when cache is empty, got imports=%+v exports=%+v", opt.CacheImports, opt.CacheExports)
 				}
 				return
 			}
-			if len(opt.CacheImports) != 1 || opt.CacheImports[0].Type != "local" || opt.CacheImports[0].Attrs["src"] != tt.cacheDir {
-				t.Errorf("CacheImports = %+v, want one local entry with src=%q", opt.CacheImports, tt.cacheDir)
+			wantImports, wantExports, err := tt.cache.entries()
+			if err != nil {
+				t.Fatalf("cache.entries() unexpected error: %v", err)
 			}
-			if len(opt.CacheExports) != 1 || opt.CacheExports[0].Type != "local" || opt.CacheExports[0].Attrs["dest"] != tt.cacheDir {
-				t.Errorf("CacheExports = %+v, want one local entry with dest=%q", opt.CacheExports, tt.cacheDir)
+			if !reflect.DeepEqual(opt.CacheImports, wantImports) {
+				t.Errorf("CacheImports = %+v, want %+v", opt.CacheImports, wantImports)
+			}
+			if !reflect.DeepEqual(opt.CacheExports, wantExports) {
+				t.Errorf("CacheExports = %+v, want %+v", opt.CacheExports, wantExports)
 			}
 		})
 	}

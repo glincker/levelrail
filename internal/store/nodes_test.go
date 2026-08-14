@@ -152,6 +152,57 @@ func TestUpdateNodeStatus_NotFound(t *testing.T) {
 	}
 }
 
+func TestSaveNode_WorkloadFlagsRoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	n := testNode("node_1", "worker-1")
+	n.AcceptsAppWorkloads = false
+	n.AcceptsBuildWorkloads = true
+	if err := db.SaveNode(ctx, n); err != nil {
+		t.Fatalf("SaveNode() error = %v", err)
+	}
+
+	got, err := db.GetNode(ctx, "node_1")
+	if err != nil {
+		t.Fatalf("GetNode() error = %v", err)
+	}
+	if got.AcceptsAppWorkloads != false {
+		t.Errorf("got.AcceptsAppWorkloads = %v, want false", got.AcceptsAppWorkloads)
+	}
+	if got.AcceptsBuildWorkloads != true {
+		t.Errorf("got.AcceptsBuildWorkloads = %v, want true", got.AcceptsBuildWorkloads)
+	}
+}
+
+func TestUpdateNodeWorkloads(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveNode(ctx, testNode("node_1", "worker-1")); err != nil {
+		t.Fatalf("SaveNode() error = %v", err)
+	}
+	if err := db.UpdateNodeWorkloads(ctx, "node_1", false, true); err != nil {
+		t.Fatalf("UpdateNodeWorkloads() error = %v", err)
+	}
+
+	got, err := db.GetNode(ctx, "node_1")
+	if err != nil {
+		t.Fatalf("GetNode() error = %v", err)
+	}
+	if got.AcceptsAppWorkloads != false || got.AcceptsBuildWorkloads != true {
+		t.Errorf("got = %+v, want AcceptsAppWorkloads=false AcceptsBuildWorkloads=true", got)
+	}
+}
+
+func TestUpdateNodeWorkloads_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.UpdateNodeWorkloads(context.Background(), "nonexistent", true, true)
+	if !errors.Is(err, ErrNodeNotFound) {
+		t.Errorf("UpdateNodeWorkloads() error = %v, want ErrNodeNotFound", err)
+	}
+}
+
 func TestTouchNodeLastSeen(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

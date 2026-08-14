@@ -25,9 +25,9 @@ import (
 // that were tried and why this one is the one that actually works in this
 // environment.
 type Client struct {
-	bk       *bkclient.Client
-	docker   *dockerclient.Client
-	cacheDir string
+	bk     *bkclient.Client
+	docker *dockerclient.Client
+	cache  CacheConfig
 }
 
 // Option configures optional Client behavior.
@@ -37,15 +37,35 @@ type Option func(*Client)
 // exporting to dir on every build. Empty (the default) disables cache
 // import/export entirely, not an empty-but-present cache.
 //
-// This is CLAUDE.md 4.4's "remote cache" scoped honestly for Phase 1's
-// single-node target: a cache genuinely shared across dedicated build
-// nodes needs a registry or object-store backend and dedicated build
-// nodes to share it with, neither of which exist before Phase 3. A local
-// on-disk cache still delivers the actual value this phase can use (fast
-// incremental rebuilds on one node) without inventing infrastructure
-// this phase doesn't need yet.
+// This was CLAUDE.md 4.4's "remote cache" scoped honestly for Phase 1's
+// single-node target, before TASKS.md 3.5 added WithCacheRegistry: a
+// cache genuinely shared across dedicated build nodes needs a registry
+// or object-store backend and dedicated build nodes to share it with.
+// WithCacheDir is still useful on its own (fast incremental rebuilds on
+// one node with no registry round trip) and composes with
+// WithCacheRegistry rather than being replaced by it: both may be set
+// on the same Client, see CacheConfig.
 func WithCacheDir(dir string) Option {
-	return func(c *Client) { c.cacheDir = dir }
+	return func(c *Client) { c.cache.Dir = dir }
+}
+
+// WithCacheRegistry enables BuildKit's registry cache backend
+// (CacheConfig.RegistryRef): this is the actual remote cache TASKS.md
+// 3.5 asks for, shared by every build node with network access to ref's
+// registry, unlike WithCacheDir's per-machine directory. Empty ref
+// disables the registry backend, the same "empty disables this backend"
+// convention WithCacheDir already establishes.
+func WithCacheRegistry(ref string) Option {
+	return func(c *Client) { c.cache.RegistryRef = ref }
+}
+
+// WithCacheRegistryInsecure allows the registry cache backend
+// (WithCacheRegistry) to talk plain HTTP or accept a self-signed
+// certificate. Only meaningful combined with WithCacheRegistry;
+// NewClient returns ErrCacheRegistryRefRequired if this is set without
+// a registry ref configured, rather than silently ignoring it.
+func WithCacheRegistryInsecure() Option {
+	return func(c *Client) { c.cache.RegistryInsecure = true }
 }
 
 // NewClient builds a Client that reaches BuildKit through docker's
@@ -69,6 +89,9 @@ func NewClient(ctx context.Context, docker *dockerclient.Client, opts ...Option)
 	c := &Client{bk: bk, docker: docker}
 	for _, opt := range opts {
 		opt(c)
+	}
+	if err := c.cache.validate(); err != nil {
+		return nil, fmt.Errorf("build: new client: %w", err)
 	}
 	return c, nil
 }

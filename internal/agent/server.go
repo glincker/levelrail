@@ -126,6 +126,15 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 	if err := s.store.SaveNode(ctx, store.Node{
 		ID: nodeID, Name: req.GetNodeName(), Status: store.NodeStatusPending,
 		CertFingerprint: fingerprint, CreatedAt: now, UpdatedAt: now,
+		// AcceptsAppWorkloads defaults to true for every newly enrolled
+		// node (TASKS.md 3.5, migrations/0010_node_workloads.sql's own
+		// doc comment): set explicitly here rather than relying on the
+		// column's own DEFAULT so the intent is visible at this call
+		// site, not just in a migration file. AcceptsBuildWorkloads is
+		// left at its zero value (false): an operator opts a node into
+		// build work explicitly, via PUT /api/v1/nodes/{id}/workloads,
+		// never implicitly at enrollment time.
+		AcceptsAppWorkloads: true,
 	}); err != nil {
 		if errors.Is(err, store.ErrNodeNameTaken) {
 			return nil, status.Errorf(codes.AlreadyExists, "node name %q is already taken", req.GetNodeName())

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -30,30 +31,35 @@ type NodeStore interface {
 	GetNode(ctx context.Context, id string) (*store.Node, error)
 	DeleteNode(ctx context.Context, id string) error
 	SaveNodeJoinToken(ctx context.Context, t store.NodeJoinToken) error
+	UpdateNodeWorkloads(ctx context.Context, id string, acceptsApp, acceptsBuild bool) error
 }
 
 // nodeResource is the wire shape for a node.
 type nodeResource struct {
-	ID              string     `json:"id"`
-	Name            string     `json:"name"`
-	Address         string     `json:"address,omitempty"`
-	Status          string     `json:"status"`
-	CertFingerprint string     `json:"cert_fingerprint,omitempty"`
-	JoinedAt        *time.Time `json:"joined_at,omitempty"`
-	LastSeenAt      *time.Time `json:"last_seen_at,omitempty"`
-	CreatedAt       time.Time  `json:"created_at"`
+	ID                    string     `json:"id"`
+	Name                  string     `json:"name"`
+	Address               string     `json:"address,omitempty"`
+	Status                string     `json:"status"`
+	CertFingerprint       string     `json:"cert_fingerprint,omitempty"`
+	JoinedAt              *time.Time `json:"joined_at,omitempty"`
+	LastSeenAt            *time.Time `json:"last_seen_at,omitempty"`
+	CreatedAt             time.Time  `json:"created_at"`
+	AcceptsAppWorkloads   bool       `json:"accepts_app_workloads"`
+	AcceptsBuildWorkloads bool       `json:"accepts_build_workloads"`
 }
 
 func toNodeResource(n store.Node) nodeResource {
 	return nodeResource{
-		ID:              n.ID,
-		Name:            n.Name,
-		Address:         n.Address,
-		Status:          string(n.Status),
-		CertFingerprint: n.CertFingerprint,
-		JoinedAt:        n.JoinedAt,
-		LastSeenAt:      n.LastSeenAt,
-		CreatedAt:       n.CreatedAt,
+		ID:                    n.ID,
+		Name:                  n.Name,
+		Address:               n.Address,
+		Status:                string(n.Status),
+		CertFingerprint:       n.CertFingerprint,
+		JoinedAt:              n.JoinedAt,
+		LastSeenAt:            n.LastSeenAt,
+		CreatedAt:             n.CreatedAt,
+		AcceptsAppWorkloads:   n.AcceptsAppWorkloads,
+		AcceptsBuildWorkloads: n.AcceptsBuildWorkloads,
 	}
 }
 
@@ -107,6 +113,51 @@ func (rt *Router) handleDeleteNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// setNodeWorkloadsRequest is the body PUT /api/v1/nodes/{id}/workloads
+// expects. Both fields are required, not individually optional/nil-able
+// PATCH-style fields: a caller always states the node's complete
+// intended capability set in one call, the same "full replace, not a
+// partial merge" shape handleSetAppNode's own node_id field already
+// uses for placement, so there is never an ambiguous "field omitted,
+// leave unchanged" case to reason about.
+type setNodeWorkloadsRequest struct {
+	AcceptsAppWorkloads   bool `json:"accepts_app_workloads"`
+	AcceptsBuildWorkloads bool `json:"accepts_build_workloads"`
+}
+
+// handleSetNodeWorkloads handles PUT /api/v1/nodes/{id}/workloads
+// (TASKS.md 3.5): the only way a node's workload capability changes.
+// This is what internal/build.SelectBuildNode's node list ultimately
+// reflects (via cmd/levelrail's wiring), so toggling
+// accepts_build_workloads here is what actually opts a node in or out
+// of dedicated build-node consideration.
+func (rt *Router) handleSetNodeWorkloads(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	var req setNodeWorkloadsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if err := rt.nodes.UpdateNodeWorkloads(r.Context(), id, req.AcceptsAppWorkloads, req.AcceptsBuildWorkloads); errors.Is(err, store.ErrNodeNotFound) {
+		writeError(w, http.StatusNotFound, "node not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: set node workloads failed", slog.String("error", err.Error()), slog.String("node_id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	n, err := rt.nodes.GetNode(r.Context(), id)
+	if err != nil {
+		rt.logger.Error("api: set node workloads: reload after update failed", slog.String("error", err.Error()), slog.String("node_id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toNodeResource(*n))
 }
 
 // createNodeJoinTokenResponse is a join token's one and only appearance
