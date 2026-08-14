@@ -78,7 +78,7 @@ func TestController_Reconcile_Live(t *testing.T) {
 		t.Fatalf("first Reconcile() condition = %+v, want Status=True Reason=Deployed", cond)
 	}
 
-	firstTarget := ContainerName(serviceName, image1)
+	firstTarget := ContainerName(serviceName, image1, "")
 	state, err := rt.InspectByName(longCtx, firstTarget)
 	if err != nil {
 		t.Fatalf("InspectByName(%q) error = %v", firstTarget, err)
@@ -113,7 +113,7 @@ func TestController_Reconcile_Live(t *testing.T) {
 		t.Fatalf("redeploy Reconcile() condition = %+v, want Status=True Reason=Deployed", cond)
 	}
 
-	secondTarget := ContainerName(serviceName, image2)
+	secondTarget := ContainerName(serviceName, image2, "")
 	newState, err := rt.InspectByName(longCtx, secondTarget)
 	if err != nil {
 		t.Fatalf("InspectByName(%q) error = %v", secondTarget, err)

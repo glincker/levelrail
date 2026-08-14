@@ -85,7 +85,7 @@ func TestController_Reconcile_Live_SecretEnv(t *testing.T) {
 		t.Fatalf("Reconcile() condition = %+v, want Status=True", cond)
 	}
 
-	target := ContainerName(serviceName, image)
+	target := ContainerName(serviceName, image, "")
 	inspect, err := rawCli.ContainerInspect(longCtx, target)
 	if err != nil {
 		t.Fatalf("raw ContainerInspect(%q) error = %v", target, err)

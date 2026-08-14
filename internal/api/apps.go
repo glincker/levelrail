@@ -304,6 +304,33 @@ func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, toAppResource(*svc))
 }
 
+// handleRestartApp handles POST /api/v1/apps/{name}/restart: force a
+// running container to be recreated with no image change. No request
+// body. See store.DB.RestartService's own doc comment for the mechanism
+// (a fresh restart_nonce, folded into the reconciler's container-name
+// hash, makes this indistinguishable from an image change to the
+// existing, already-tested blue-green/recreate cutover logic).
+func (rt *Router) handleRestartApp(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+
+	if err := rt.apps.RestartService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: restart app failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if err != nil {
+		rt.logger.Error("api: restart app: reload after restart failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toAppResource(*svc))
+}
+
 // handleDeleteApp handles DELETE /api/v1/apps/{name}. See
 // store.DeleteDesiredService's doc comment for the known gap: this
 // removes desired state, it does not itself stop the running container.

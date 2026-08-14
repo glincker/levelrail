@@ -376,3 +376,109 @@ func TestSaveDesiredService_EmptyStrategyAndZeroReplicas_DefaultsPersisted(t *te
 		t.Errorf("Replicas = %d, want default %d", got.Replicas, DefaultReplicas)
 	}
 }
+
+func TestRestartService_SetsNonNilNonce(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	before, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if before.RestartNonce != "" {
+		t.Fatalf("RestartNonce before restart = %q, want empty", before.RestartNonce)
+	}
+
+	if err := db.RestartService(ctx, "web"); err != nil {
+		t.Fatalf("RestartService() error = %v", err)
+	}
+
+	after, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if after.RestartNonce == "" {
+		t.Error("RestartNonce after restart is empty, want a generated value")
+	}
+}
+
+func TestRestartService_EachCallGeneratesADifferentNonce(t *testing.T) {
+	// The reconciler treats a changed nonce as the signal to recreate a
+	// container (internal/reconcile/application.ContainerName): two
+	// restarts in a row must produce two different nonces, or the second
+	// restart would be indistinguishable from a no-op.
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.RestartService(ctx, "web"); err != nil {
+		t.Fatalf("first RestartService() error = %v", err)
+	}
+	first, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+
+	if err := db.RestartService(ctx, "web"); err != nil {
+		t.Fatalf("second RestartService() error = %v", err)
+	}
+	second, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+
+	if first.RestartNonce == second.RestartNonce {
+		t.Errorf("RestartNonce unchanged across two restarts: %q", first.RestartNonce)
+	}
+}
+
+func TestRestartService_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.RestartService(context.Background(), "nonexistent")
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("RestartService() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+// TestSaveDesiredService_RedeployDoesNotResetRestartNonce mirrors
+// TestSaveDesiredService_RedeployDoesNotResetNodeID exactly, for the
+// same reason: internal/deploy.Pipeline calls SaveDesiredService on
+// every ordinary redeploy with no opinion on RestartNonce at all
+// (DesiredService{} zero value). If that silently reset restart_nonce,
+// it would be indistinguishable from a real container recreation from
+// the reconciler's point of view, which is harmless here (a redeploy
+// already changes the image, which already forces a new container name
+// on its own) but would still be the wrong general contract for a field
+// that's deliberately excluded from full-record-replace semantics.
+func TestSaveDesiredService_RedeployDoesNotResetRestartNonce(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("initial SaveDesiredService() error = %v", err)
+	}
+	if err := db.RestartService(ctx, "web"); err != nil {
+		t.Fatalf("RestartService() error = %v", err)
+	}
+	beforeRedeploy, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("redeploy SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.RestartNonce != beforeRedeploy.RestartNonce {
+		t.Errorf("RestartNonce = %q, want unchanged %q", got.RestartNonce, beforeRedeploy.RestartNonce)
+	}
+}

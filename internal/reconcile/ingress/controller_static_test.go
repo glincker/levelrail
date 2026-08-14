@@ -85,7 +85,7 @@ func TestController_Reconcile_StaticSiteNoDomains_Skipped(t *testing.T) {
 // site with no container at all, applied in the same Caddy config.
 func TestController_Reconcile_ContainerAndStaticSite_BothRouted(t *testing.T) {
 	desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Domains: []string{"web.example.com"}}
-	target := application.ContainerName(desired.Name, desired.Image)
+	target := application.ContainerName(desired.Name, desired.Image, "")
 
 	rt := newFakeRuntime()
 	rt.seedRunning(target, 34567)
@@ -132,7 +132,7 @@ func TestController_Reconcile_ContainerAndStaticSite_BothRouted(t *testing.T) {
 // it happens.
 func TestController_Reconcile_StaticSiteAndContainer_DomainCollision_LoserSkipped(t *testing.T) {
 	desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Domains: []string{"shared.example.com"}}
-	target := application.ContainerName(desired.Name, desired.Image)
+	target := application.ContainerName(desired.Name, desired.Image, "")
 
 	rt := newFakeRuntime()
 	rt.seedRunning(target, 34567)

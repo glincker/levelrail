@@ -1,0 +1,17 @@
+-- Restart support. Before this column, a container's name was derived
+-- solely from its image (internal/reconcile/application.ContainerName),
+-- so re-deploying the exact same image tag was a genuine no-op: the
+-- reconciler saw no diff and did nothing, meaning there was no way to
+-- ask "restart this app" without a real image change. See
+-- docs-local/logs/QUEUE.md's own backlog note on this, and this
+-- migration's companion change to ContainerName, which folds this
+-- column into the container name hash (only when non-empty, so every
+-- pre-existing, never-restarted service keeps the exact container name
+-- it already has on upgrade).
+--
+-- Deliberately excluded from store.SaveDesiredService's full-record-
+-- replace semantics, the same way node_id already is (see that method's
+-- own doc comment): an ordinary redeploy has no opinion on restart state
+-- and must not silently reset it. Only store.RestartService writes this
+-- column.
+ALTER TABLE desired_services ADD COLUMN restart_nonce TEXT NOT NULL DEFAULT '';

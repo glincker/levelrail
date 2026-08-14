@@ -303,7 +303,7 @@ func TestNodePlacement_Live_EachControllerUsesItsOwnRuntime(t *testing.T) {
 			spyB.inspectCalls, spyB.createCalls, spyB.startCalls)
 	}
 
-	target := application.ContainerName(serviceName, tag)
+	target := application.ContainerName(serviceName, tag, "")
 	state, err := rtA.InspectByName(buildCtx, target)
 	if err != nil {
 		t.Fatalf("InspectByName(%q) via rtA error = %v", target, err)

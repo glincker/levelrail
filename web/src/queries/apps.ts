@@ -226,6 +226,35 @@ export function useSetAppNode() {
   })
 }
 
+// POST /api/v1/apps/{name}/restart (internal/api/apps.go's
+// handleRestartApp): force a running container to be recreated with no
+// image change, the only way to do that at all today (re-deploying the
+// same image tag is otherwise a genuine reconciler no-op). No request
+// body.
+export async function restartApp(name: string): Promise<AppDetail> {
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(name)}/restart`,
+    { method: 'POST' },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `restart app failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as AppDetail
+}
+
+export function useRestartApp() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: restartApp,
+    onSuccess: (updated) => {
+      queryClient.setQueryData(appKeys.detail(updated.name), updated)
+    },
+  })
+}
+
 // DELETE /api/v1/apps/{name} (internal/api/apps.go's handleDeleteApp).
 // Same known gap the backend doc comment names: removes desired state,
 // does not itself stop or remove a running container, mirroring
