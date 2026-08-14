@@ -23,8 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { SuccessMessage } from '@/components/ui/success-message'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { toast } from '@/components/ui/toast'
 
 const triggerSchema = z.object({
   image: z.string().trim().min(1, 'Image tag is required'),
@@ -63,6 +63,11 @@ function DeployExistingImageForm({ appName }: { appName: string }) {
     triggerDeploy.mutate(values.image.trim(), {
       onSuccess: () => {
         reset({ image: '' })
+        toast.add({
+          title: 'Deploy triggered.',
+          description: 'Check the Overview tab for the outcome.',
+          type: 'success',
+        })
       },
     })
   })
@@ -129,11 +134,6 @@ function DeployExistingImageForm({ appName }: { appName: string }) {
           <AlertDescription>{triggerDeploy.error.message}</AlertDescription>
         </Alert>
       ) : null}
-      {triggerDeploy.isSuccess ? (
-        <SuccessMessage className="mt-3">
-          Deploy triggered. Check the Overview tab for the outcome.
-        </SuccessMessage>
-      ) : null}
     </div>
   )
 }
@@ -191,8 +191,13 @@ function BuildFromSourceForm({ appName }: { appName: string }) {
         buildPath: values.dockerfilePath.trim() || undefined,
       },
       {
-        onSuccess: () => {
+        onSuccess: (result) => {
           reset({ repoUrl: '', ref: '', imageRepo: '', dockerfilePath: '' })
+          toast.add({
+            title: `Built ${result.image}.`,
+            description: 'Check the Overview tab for the outcome.',
+            type: 'success',
+          })
         },
       },
     )
@@ -293,12 +298,6 @@ function BuildFromSourceForm({ appName }: { appName: string }) {
         <Alert variant="destructive" className="mt-3">
           <AlertDescription>{triggerBuild.error.message}</AlertDescription>
         </Alert>
-      ) : null}
-      {triggerBuild.isSuccess ? (
-        <SuccessMessage className="mt-3">
-          Built {triggerBuild.data.image}. Check the Overview tab for the
-          outcome.
-        </SuccessMessage>
       ) : null}
     </div>
   )

@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { toast } from '@/components/ui/toast'
 import { useRevokeToken } from '../queries/tokens'
 import type { TokenResource } from '../types/token'
 
@@ -81,6 +82,10 @@ export function RevokeTokenDialog({ token }: { token: TokenResource }) {
               revokeToken.mutate(token.id, {
                 onSuccess: () => {
                   setOpen(false)
+                  toast.add({
+                    title: `Token "${token.name}" revoked.`,
+                    type: 'success',
+                  })
                 },
               })
             }}

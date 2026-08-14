@@ -11,6 +11,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { toast } from '@/components/ui/toast'
 import { useDeleteApp } from '../queries/apps'
 
 // One app's delete action, split out of the detail route the same way
@@ -70,6 +71,10 @@ export function DeleteAppDialog({ name }: { name: string }) {
               deleteApp.mutate(name, {
                 onSuccess: () => {
                   setOpen(false)
+                  toast.add({
+                    title: `App "${name}" deleted.`,
+                    type: 'success',
+                  })
                   void navigate({ to: '/apps' })
                 },
               })

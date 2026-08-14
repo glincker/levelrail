@@ -10,6 +10,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { toast } from '@/components/ui/toast'
 import { useDeleteAlertRule } from '../queries/alerts'
 import type { AlertRule } from '../types/alerts'
 
@@ -74,6 +75,10 @@ export function DeleteAlertRuleDialog({
               deleteRule.mutate(rule.id, {
                 onSuccess: () => {
                   setOpen(false)
+                  toast.add({
+                    title: `Alert rule "${rule.name}" deleted.`,
+                    type: 'success',
+                  })
                 },
               })
             }}

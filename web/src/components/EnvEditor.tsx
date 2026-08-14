@@ -30,8 +30,8 @@ import {
 } from '@/components/ui/dialog'
 import { Field, FieldError, FieldGroup } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { SuccessMessage } from '@/components/ui/success-message'
 import { Textarea } from '@/components/ui/textarea'
+import { toast } from '@/components/ui/toast'
 
 const envSchema = z
   .object({
@@ -129,7 +129,14 @@ export function EnvEditor({ app }: { app: AppDetail }) {
     for (const v of values.vars) {
       env[v.key.trim()] = v.value
     }
-    updateApp.mutate({ ...app, env })
+    updateApp.mutate(
+      { ...app, env },
+      {
+        onSuccess: () => {
+          toast.add({ title: 'Variables saved.', type: 'success' })
+        },
+      },
+    )
   })
 
   // Importing a pasted block never submits the form, it only stages rows
@@ -293,7 +300,6 @@ export function EnvEditor({ app }: { app: AppDetail }) {
               <AlertDescription>{updateApp.error.message}</AlertDescription>
             </Alert>
           ) : null}
-          {updateApp.isSuccess ? <SuccessMessage>Saved.</SuccessMessage> : null}
         </form>
       </CardContent>
     </Card>
