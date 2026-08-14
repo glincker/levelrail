@@ -8,8 +8,10 @@ import {
   PlusIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { appListQueryOptions } from '../../queries/apps'
+import { staticSitesQueryOptions } from '../../queries/staticSites'
 import { APP_LIST_GRID, AppRow, RowSkeleton } from '../../components/AppRow'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
+import { StaticSitesCard } from '../../components/StaticSitesCard'
 import { Button } from '../../components/ui/button'
 
 // Typed loader primes the Query cache, the component only reads that
@@ -26,7 +28,10 @@ import { Button } from '../../components/ui/button'
 // is still the one and only ensureQueryData call.
 export const Route = createFileRoute('/apps/')({
   loader: ({ context: { queryClient } }) =>
-    queryClient.ensureQueryData(appListQueryOptions()),
+    Promise.all([
+      queryClient.ensureQueryData(appListQueryOptions()),
+      queryClient.ensureQueryData(staticSitesQueryOptions()),
+    ]),
   component: AppListPage,
   pendingComponent: AppListPending,
 })
@@ -153,6 +158,7 @@ function AppListPage() {
           </div>
         </div>
       )}
+      <StaticSitesCard />
     </div>
   )
 }

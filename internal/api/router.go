@@ -154,6 +154,7 @@ type Store interface {
 	TokenStore
 	NodeStore
 	CertStore
+	StaticSiteStore
 }
 
 // SecretSetter is the surface the secrets handler needs from
@@ -219,8 +220,9 @@ type Router struct {
 	// for GET /api/v1/certificates's "expiring_soon" threshold. 0 means
 	// "use the default", set via WithCertExpiryWarningWindow.
 	certExpiryWarningWindow time.Duration
-	builder                 Builder   // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
-	fetch                   fetchFunc // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
+	builder                 Builder         // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
+	fetch                   fetchFunc       // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
+	staticSites             StaticSiteStore // always set, same "core Store interface, not an optional plug-in" shape as certs above
 }
 
 // Option configures optional Router behavior.
@@ -326,17 +328,18 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		logger = slog.Default()
 	}
 	rt := &Router{
-		logger:    logger,
-		brand:     b,
-		apps:      s,
-		deploys:   s,
-		databases: s,
-		auth:      s,
-		tokens:    s,
-		nodes:     s,
-		certs:     s,
-		fetch:     gitCheckout,
-		logins:    newLoginLimiter(),
+		logger:      logger,
+		brand:       b,
+		apps:        s,
+		deploys:     s,
+		databases:   s,
+		auth:        s,
+		tokens:      s,
+		nodes:       s,
+		certs:       s,
+		staticSites: s,
+		fetch:       gitCheckout,
+		logins:      newLoginLimiter(),
 	}
 	for _, opt := range opts {
 		opt(rt)
@@ -498,6 +501,16 @@ func (rt *Router) Handler() http.Handler {
 	// expire is ordinary operator visibility, not a fleet-admin
 	// mutation the way the node routes above are.
 	mux.HandleFunc("GET /api/v1/certificates", rt.requireAbility(AbilityRead, rt.handleListCertificates))
+
+	// Static sites (build.type: static, CLAUDE.md 4.4): read-only
+	// dashboard visibility for sites served directly by embedded Caddy
+	// with no container, closing the gap flagged when static-site
+	// support (migration 0015) first landed. AbilityRead, the same
+	// passive-visibility boundary as handleListCertificates above: no
+	// create/update/delete route exists yet because the backend has no
+	// mutation path for a static site beyond internal/deploy.Pipeline's
+	// own git-push-triggered write.
+	mux.HandleFunc("GET /api/v1/static-sites", rt.requireAbility(AbilityRead, rt.handleListStaticSites))
 
 	return mux
 }

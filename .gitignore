@@ -20,10 +20,14 @@ node_modules/
 /web/dist/
 /web/build/
 
-# Local runtime state
+# Local runtime state: databases, mTLS CA material, anything a local
+# run generates under the default DataDir. Never versioned, regardless
+# of what's actually in it at a given moment.
+/data/
 *.db
 *.db-wal
 *.db-shm
+*.pem
 .env
 .env.*
 !.env.example
