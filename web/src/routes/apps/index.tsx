@@ -76,7 +76,12 @@ function AppListPage() {
               purely so the gap Coolify closes (creating a database at
               all) is discoverable from the page most operators land on
               first, not a competing CTA. */}
-          <Button size="sm" variant="outline" render={<Link to="/databases" />}>
+          <Button
+            size="sm"
+            variant="outline"
+            render={<Link to="/databases" />}
+            nativeButton={false}
+          >
             <DatabaseIcon />
             New database
           </Button>

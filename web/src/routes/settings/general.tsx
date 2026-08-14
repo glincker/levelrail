@@ -153,6 +153,7 @@ function GeneralSettingsPage() {
                       rel="noreferrer"
                     />
                   }
+                  nativeButton={false}
                 >
                   <LifebuoyIcon />
                   <span>Support</span>
@@ -165,6 +166,7 @@ function GeneralSettingsPage() {
                   render={
                     <a href={brand.DocsURL} target="_blank" rel="noreferrer" />
                   }
+                  nativeButton={false}
                 >
                   <BookOpenIcon />
                   <span>Documentation</span>
