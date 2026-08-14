@@ -38,34 +38,29 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
 
 ## In progress
 
-Design approved: `docs/superpowers/specs/2026-08-14-creation-wizard-and-sidebar-design.md`
-(brainstormed with the founder, confirmed against a local read-only
-Coolify clone). Round 7, two independent pieces dispatched:
-
-- [x] Icon integration: `BrandIcon.tsx` wraps `@thesvg/react`
-      (confirmed real, published, tree-shakeable per-icon subpath
-      imports, ~71KB raw/~20KB gzip for the 4 icons). Not wired into
-      any UI yet, ready for the wizard below to consume.
-- [x] Dynamic/contextual + floating sidebar: `AppSidebar.tsx` now has
-      a global vs. app-scoped mode (Vercel-style); the Apps detail
-      page's 8 former `Tabs` sections are real nested routes under
-      `/apps/$name/*` driving the scoped sidebar nav; floating variant
-      applied. Browser-verified: created a real app, confirmed the
-      scoped sidebar renders on both client nav and a fresh hard
-      navigation deep link, "Back to Apps" restores global nav, deleted
-      the test app after. Also fixed a gap from the original dispatch:
-      Nodes is now promoted to primary nav (design spec item 1), which
-      got missed when this task was scoped to only items 2/3.
-      Databases' own detail route keeps the old shape for now, a
-      fast-follow once this pattern needed proving once.
-- [ ] Creation wizard: 2-step dialog (picker grid using `BrandIcon` +
-      `RocketIcon`/whatever fits for the Docker-image option, then
-      per-type minimal config), 4 options (Docker image, Dockerfile
-      from git, Postgres, Redis), replacing the current single-step
-      `CreateAppDialog`/`CreateDatabaseDialog` flow. (builder
-      dispatched, consumes the merged `BrandIcon` component)
+(nothing right now; see Done below for what just landed)
 
 ## Next up (priority order)
+
+- [ ] Databases detail route gets the same dynamic/contextual sidebar
+      treatment `/apps/$name/*` just got. Deliberately deferred until
+      the Apps pattern had proven itself once; now it has.
+- [ ] MySQL as a third database engine: the creation wizard's step 1
+      originally wanted this as a 5th option, dropped because
+      `internal/reconcile/database/controller.go` only handles
+      `postgres`/`redis`. Reconciler-core per CLAUDE.md section 8,
+      single-session only.
+- [ ] Frontend main bundle chunk crossed the 500kB vite build warning
+      threshold this round (`index-*.js`, currently ~501KB raw). Not
+      urgent, but worth a look before it grows further: CLAUDE.md's own
+      frontend rule calls for a bundle-size budget, not yet enforced in
+      CI.
+- [ ] A concurrent session merged a real, useful gap-close while this
+      round was in flight: a notification bell (`NotificationBell.tsx`,
+      polls node/certificate state) and a toast-based consolidation
+      retiring `success-message.tsx` entirely. Both already landed on
+      `main` directly (not through this queue), noting here only so
+      the history isn't a mystery to whoever reads this file next.
 
 - [ ] Deploy strategy (rolling/recreate/blue-green) + replicas: defined
       in `internal/spec` but `store.DesiredService` has no such fields
@@ -115,6 +110,21 @@ Coolify clone). Round 7, two independent pieces dispatched:
 
 ## Done (most recent first)
 
+- [x] Creation wizard + brand icons + dynamic sidebar (the full
+      `docs/superpowers/specs/2026-08-14-creation-wizard-and-sidebar-design.md`,
+      brainstormed with the founder): `BrandIcon.tsx` (`@thesvg/react`,
+      4 tree-shaken brand logos), `AppSidebar.tsx`'s Vercel-style
+      global/app-scoped dynamic nav plus floating variant, `/apps/$name/*`
+      converted from client-side Tabs to real nested routes, and
+      `CreateResourceWizard.tsx` replacing the old single-step
+      `CreateAppDialog`/`CreateDatabaseDialog` with a 2-step
+      pick-a-type-then-configure flow (Docker image, Dockerfile from
+      git, Postgres, Redis). Browser-verified end to end: real app and
+      database creation, real git-triggered build, real deletion,
+      floating-sidebar visual confirmed, deep-linked nested routes
+      confirmed on a fresh hard navigation. Landed across 3 rounds (7
+      dispatched agents total across icons/sidebar/wizard), each
+      independently re-verified before merge.
 - [x] Manual build trigger from the dashboard: `POST /apps/{name}/builds`
       (`internal/api/builds.go`), invokes the same `internal/deploy.Pipeline`
       the git webhook uses given a `repo_url`/`ref` in the request body
