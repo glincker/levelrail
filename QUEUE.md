@@ -18,43 +18,25 @@ those APIs before they merge, the shapes can still change.
 
 ## In progress
 
-- [ ] Expose `docker.Runtime.ListImages` via a small API route (e.g.
-      `GET /api/v1/apps/{name}/images`) so `DeployTriggerForm` can offer
-      a dropdown of previously built tags instead of a hand-typed
-      image string. (builder dispatched)
-- [ ] Fresh gap scan for round 3 candidates (duplicated styling/logic,
-      missing e2e coverage on real user paths, honest Coolify/Dokploy
-      UX gaps, contract drift, dead code). (architect dispatched)
+- [ ] Expose `docker.Runtime.ListImages` via a small API route so
+      `DeployTriggerForm` can offer a dropdown of previously built
+      tags. (builder dispatched)
+- [ ] App deletion frontend (`DeleteAppDialog`) + node placement
+      display on the app detail page, combined into one task since
+      both touch `AppOverview.tsx`/`apps/$name.tsx`. (builder
+      dispatched)
+- [ ] Consolidate 6 files' hand-rolled "Saved." success-message
+      styling into one shared component. (builder dispatched)
+- [ ] e2e test: full auth lifecycle (register -> login -> change
+      password -> revoke other sessions). (QA engineer dispatched)
+- [ ] e2e test: rollback actually converges. (QA engineer dispatched)
+- [ ] e2e test: node placement affects transport, scoped honestly to
+      what's provable without real multi-node infra (see the agent's
+      report for exact scope). (QA engineer dispatched)
 
 ## Next up (priority order)
 
-- [ ] App deletion has no frontend at all: `DELETE /api/v1/apps/{name}`
-      exists and is unused (`useDeleteApp` doesn't exist anywhere in
-      `web/src`). Done: a `DeleteAppDialog` mirroring
-      `DeleteDatabaseDialog`'s honest "removes desired state, does not
-      stop the running container" warning.
-- [ ] App detail page never shows node placement: `appResource` already
-      returns `node_id`, but `AppDetail` (`types/appDetail.ts`) doesn't
-      declare the field and nothing renders it, unlike
-      `databases/$name.tsx` which already shows it. Done: same "Node"
-      row added to the app detail page.
-- [ ] Consolidate 6 files' independently hand-rolled "Saved." success-
-      message styling (`text-xs text-green-700 dark:text-green-400`) in
-      `HealthCheckEditor.tsx`, `DomainEditor.tsx`,
-      `ResourceLimitsEditor.tsx`, `EnvEditor.tsx`, `SecretsEditor.tsx`,
-      `DeployTriggerForm.tsx` into one shared component, same category
-      as the badge-variant consolidation already closed.
-- [ ] e2e test: full auth lifecycle (register first admin -> login ->
-      change password -> revoke other sessions) against a real running
-      server. Only unit-tested with fakes today.
-- [ ] e2e test: rollback actually converges (point `desired.Image` back
-      at an older tag, confirm the reconciler really swaps the running
-      container back). `test/e2e/deploy_test.go` only has one forward
-      deploy today.
-- [ ] e2e test: node placement actually affects where a container runs
-      (a real `PUT /apps/{name}/node` call, verify the container runs
-      through the right transport). Only unit-tested against fakes
-      today.
+(populated once round 3 lands)
 
 Checked during round 3 triage, not real gaps: `summarizeConditions`
 duplication across `apps/$name.tsx`/`databases/$name.tsx` (both carry
