@@ -2,8 +2,9 @@
 -- ingress integration first" note, now closed. Static sites are the
 -- architecture's one deliberate exception to the desired_services shape
 -- (migrations/0002): "static sites get served by the embedded Caddy
--- directly with no container" (CLAUDE.md 4.4). There is no image, no
--- port, no container to converge, so a static site's desired state does
+-- directly with no container" (the static-site build path's own
+-- design). There is no image, no port, no container to converge, so a
+-- static site's desired state does
 -- not belong in desired_services at all: it would force every reader of
 -- that table (the application controller, telemetry/log target
 -- collection in cmd/levelrail, the ingress controller's own container

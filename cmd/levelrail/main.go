@@ -859,7 +859,8 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		return dockerErr
 	}
 
-	// build.type: static (CLAUDE.md 4.4) needs a durable directory to
+	// build.type: static (static sites are served by the embedded ingress
+	// directly, with no container) needs a durable directory to
 	// copy site output into, distinct from BuildKit's own image build:
 	// staticSitesDir lives under this control plane's own data directory,
 	// the same "operator-controlled startup config, not user input"

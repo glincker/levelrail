@@ -95,7 +95,7 @@ export const PENDING_BUILD_TAG = 'pending-build'
 // attempt (and fail) to pull it before the build finishes and
 // overwrites it. This is accepted rather than engineered around:
 // reconcilers in this codebase are level-triggered and idempotent by
-// design (CLAUDE.md 4.2), so a transient failed-pull condition during
+// design, so a transient failed-pull condition during
 // that window self-heals on the next reconcile once the real image
 // lands, the same way any other transient desired/observed mismatch
 // already does.

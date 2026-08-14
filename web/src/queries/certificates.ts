@@ -1,7 +1,7 @@
 // Query-key factory and fetcher for GET /api/v1/certificates
 // (internal/api/certificates.go's handleListCertificates): the TLS
-// renewal-visibility gap CLAUDE.md section 10 names as this project's
-// central risk ("a cert renewal fails silently at 3am"), previously
+// renewal-visibility gap this project treats as its central risk
+// ("a cert renewal fails silently at 3am"), previously
 // nowhere in the API at all. Mirrors systemStatus.ts's own shape: an
 // ordinary suspense query, requires a session, primed by the settings/
 // general route's own loader.

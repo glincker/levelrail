@@ -16,8 +16,8 @@ import { CreateDatabaseFields } from './CreateDatabaseFields'
 
 // The four starting points step 1 offers, per
 // docs/superpowers/specs/2026-08-14-creation-wizard-and-sidebar-design.md
-// section 2: a small, fixed grid, not a template catalog (CLAUDE.md
-// section 2's own non-goal: "Not chasing Coolify's 280 one-click
+// section 2: a small, fixed grid, not a template catalog (this
+// project's own stated non-goal: "Not chasing Coolify's 280 one-click
 // templates. Ten good ones beat 280 stale ones"). MySQL was the
 // original fifth pick but internal/reconcile/database/controller.go
 // only handles postgres/redis today (verified by grep, no MySQL case

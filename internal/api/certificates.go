@@ -47,8 +47,8 @@ type CertStore interface {
 }
 
 // certificateStatus is one issued certificate's wire shape: what
-// settings/general.tsx's TLS card (CLAUDE.md section 10 names "a cert
-// renewal fails silently at 3am" as this project's main risk to catch
+// settings/general.tsx's TLS card (this project treats "a cert
+// renewal fails silently at 3am" as its main risk to catch
 // before it bites a real user) needs to show an operator before an
 // expiry becomes an outage, no more.
 type certificateStatus struct {

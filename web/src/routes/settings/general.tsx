@@ -167,8 +167,8 @@ function CertificateRow({ cert }: { cert: CertificateStatus }) {
 
 // CertificatesCard closes the gap this file's own prior comment left
 // open: this route used to mention TLS only in the marketing paragraph
-// above, with zero live status anywhere. CLAUDE.md section 10 names "a
-// cert renewal fails silently at 3am" as this project's central risk;
+// above, with zero live status anywhere. This project treats "a
+// cert renewal fails silently at 3am" as its central risk;
 // this card is the read-only surface that makes an at-risk certificate
 // visible before that happens, not a management UI: renewal is
 // automatic (see internal/ingress), so there is nothing to click here.

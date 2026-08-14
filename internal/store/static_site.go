@@ -11,9 +11,9 @@ import (
 // point Caddy's file_server handler directly at a directory on disk, no
 // container involved. See migrations/0015_static_sites.sql for why this
 // is a separate table from DesiredService rather than a variant of it:
-// build.type: static (CLAUDE.md 4.4) has no image, no port, and no
-// running container to converge to, so it never belongs in
-// desired_services at all.
+// build.type: static (served directly by the embedded Caddy) has no
+// image, no port, and no running container to converge to, so it
+// never belongs in desired_services at all.
 type StaticSite struct {
 	Name    string
 	Domains []string

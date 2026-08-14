@@ -135,7 +135,7 @@ func TestEnv_Live_PlainAndSecretResolveInContainer(t *testing.T) {
 	}
 
 	// Step 3: save desired state with both a literal env var and a
-	// secret-backed one, matching CLAUDE.md 4.9's app.yaml shape
+	// secret-backed one, matching the app spec's env shape
 	// (env: { PLAIN: value } alongside env: { SECRET: { secret: true } })
 	// one level down, past internal/deploy/translate.go's parsing, the
 	// same "construct store.DesiredService directly" choice
