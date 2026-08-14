@@ -2,7 +2,11 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef } from 'react'
-import { BoxIcon, DatabaseIcon, PlusIcon } from 'lucide-react'
+import {
+  PackageIcon,
+  DatabaseIcon,
+  PlusIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { appListQueryOptions } from '../../queries/apps'
 import { APP_LIST_GRID, AppRow, RowSkeleton } from '../../components/AppRow'
 import { CreateAppDialog } from '../../components/CreateAppDialog'
@@ -89,7 +93,7 @@ function AppListPage() {
       {apps.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-16 text-center">
           <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <BoxIcon className="size-5" aria-hidden="true" />
+            <PackageIcon className="size-5" aria-hidden="true" />
           </span>
           <div className="space-y-1">
             <p className="text-sm font-medium text-foreground">No apps yet</p>

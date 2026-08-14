@@ -7,7 +7,7 @@ import {
   type UseFormRegister,
 } from 'react-hook-form'
 import { z } from 'zod'
-import { HeartPulseIcon } from 'lucide-react'
+import { HeartbeatIcon } from '@phosphor-icons/react/dist/ssr'
 import type { AppDetail, ServiceProbe } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
 import { formatDurationNs } from '../lib/format'
@@ -174,7 +174,7 @@ export function HealthCheckEditor({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <HeartPulseIcon className="size-4" />
+          <HeartbeatIcon className="size-4" />
           Health checks
         </CardTitle>
         <CardDescription>

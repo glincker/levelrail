@@ -2,7 +2,11 @@ import { createFileRoute } from '@tanstack/react-router'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { CheckCircle2Icon, TriangleAlertIcon, UserIcon } from 'lucide-react'
+import {
+  CheckCircleIcon,
+  WarningIcon,
+  UserIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { useAuthUsername } from '../../hooks/useAuthUsername'
 import { useChangePassword } from '../../queries/account'
 import { Button } from '../../components/ui/button'
@@ -213,7 +217,7 @@ function ChangePasswordCard() {
 
           {changePassword.isSuccess ? (
             <Alert>
-              <CheckCircle2Icon />
+              <CheckCircleIcon />
               <AlertTitle>Password changed</AlertTitle>
               <AlertDescription>
                 Your other sessions have been signed out. This one stays signed
@@ -222,7 +226,7 @@ function ChangePasswordCard() {
             </Alert>
           ) : changePassword.isError ? (
             <Alert variant="destructive">
-              <TriangleAlertIcon />
+              <WarningIcon />
               <AlertDescription>
                 {changePassword.error.message}
               </AlertDescription>

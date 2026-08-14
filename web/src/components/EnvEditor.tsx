@@ -1,7 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { PlusIcon, VariableIcon, XIcon } from 'lucide-react'
+import {
+  PlusIcon,
+  BracketsCurlyIcon,
+  XIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -79,7 +83,7 @@ export function EnvEditor({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <VariableIcon className="size-4" />
+          <BracketsCurlyIcon className="size-4" />
           Environment variables
         </CardTitle>
         <CardDescription>

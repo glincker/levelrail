@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef } from 'react'
-import { ServerIcon } from 'lucide-react'
+import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
 import { nodeListQueryOptions, useNodes } from '../../queries/nodes'
 import { NODE_LIST_GRID, NodeRow, RowSkeleton } from '../../components/NodeRow'
 import { AddNodeDialog } from '../../components/AddNodeDialog'
@@ -65,7 +65,7 @@ function NodeListPage() {
       {nodes.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-16 text-center">
           <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <ServerIcon className="size-5" aria-hidden="true" />
+            <HardDrivesIcon className="size-5" aria-hidden="true" />
           </span>
           <div className="space-y-1">
             <p className="text-sm font-medium text-foreground">No nodes yet</p>

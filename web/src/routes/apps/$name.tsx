@@ -5,16 +5,16 @@ import {
   useRouterState,
 } from '@tanstack/react-router'
 import {
-  ActivityIcon,
+  PulseIcon,
   ArrowLeftIcon,
   BellIcon,
   CpuIcon,
   GlobeIcon,
-  HeartPulseIcon,
-  LayoutDashboardIcon,
-  ScrollTextIcon,
-  VariableIcon,
-} from 'lucide-react'
+  HeartbeatIcon,
+  SquaresFourIcon,
+  ScrollIcon,
+  BracketsCurlyIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { appDetailQueryOptions, useApp } from '../../queries/apps'
 import {
   deployStatusQueryOptions,
@@ -139,7 +139,7 @@ function AppDetailPage() {
       <Tabs defaultValue="overview">
         <TabsList variant="line" className="border-b border-border">
           <TabsTrigger value="overview">
-            <LayoutDashboardIcon
+            <SquaresFourIcon
               className="size-3.5"
               data-icon="inline-start"
             />
@@ -150,11 +150,11 @@ function AppDetailPage() {
             Domains
           </TabsTrigger>
           <TabsTrigger value="environment">
-            <VariableIcon className="size-3.5" data-icon="inline-start" />
+            <BracketsCurlyIcon className="size-3.5" data-icon="inline-start" />
             Environment
           </TabsTrigger>
           <TabsTrigger value="health">
-            <HeartPulseIcon className="size-3.5" data-icon="inline-start" />
+            <HeartbeatIcon className="size-3.5" data-icon="inline-start" />
             Health
           </TabsTrigger>
           <TabsTrigger value="resources">
@@ -162,11 +162,11 @@ function AppDetailPage() {
             Resources
           </TabsTrigger>
           <TabsTrigger value="metrics">
-            <ActivityIcon className="size-3.5" data-icon="inline-start" />
+            <PulseIcon className="size-3.5" data-icon="inline-start" />
             Metrics
           </TabsTrigger>
           <TabsTrigger value="logs">
-            <ScrollTextIcon className="size-3.5" data-icon="inline-start" />
+            <ScrollIcon className="size-3.5" data-icon="inline-start" />
             Logs
           </TabsTrigger>
           <TabsTrigger value="alerts">

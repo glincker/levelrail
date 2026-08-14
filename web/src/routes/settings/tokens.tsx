@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { KeyRoundIcon } from 'lucide-react'
+import { KeyIcon } from '@phosphor-icons/react/dist/ssr'
 import { tokenListQueryOptions } from '../../queries/tokens'
 import { TokenTable } from '../../components/TokenTable'
 import { CreateTokenDialog } from '../../components/CreateTokenDialog'
@@ -34,7 +34,7 @@ function TokensPage() {
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <KeyRoundIcon className="size-4" />
+            <KeyIcon className="size-4" />
           </div>
           <div>
             <h1 className="text-lg font-semibold text-foreground">

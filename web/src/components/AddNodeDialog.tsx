@@ -3,9 +3,9 @@ import {
   CheckIcon,
   CopyIcon,
   PlusIcon,
-  ServerIcon,
-  TriangleAlertIcon,
-} from 'lucide-react'
+  HardDrivesIcon,
+  WarningIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
   DialogContent,
@@ -105,7 +105,7 @@ export function AddNodeDialog() {
             </DialogHeader>
 
             <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-              <TriangleAlertIcon className="mt-0.5 size-4 shrink-0" />
+              <WarningIcon className="mt-0.5 size-4 shrink-0" />
               <p className="text-sm">
                 This token will not be shown again. It expires at{' '}
                 {formatTime(created.expires_at)} (valid for 15 minutes).
@@ -197,7 +197,7 @@ export function AddNodeDialog() {
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <ServerIcon className="size-4 text-muted-foreground" />
+                <HardDrivesIcon className="size-4 text-muted-foreground" />
                 Add node
               </DialogTitle>
               <DialogDescription>
@@ -209,7 +209,7 @@ export function AddNodeDialog() {
 
             {createJoinToken.isError ? (
               <Alert variant="destructive">
-                <TriangleAlertIcon />
+                <WarningIcon />
                 <AlertDescription>
                   {createJoinToken.error.message}
                 </AlertDescription>

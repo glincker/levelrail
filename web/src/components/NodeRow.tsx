@@ -1,4 +1,4 @@
-import { ServerIcon } from 'lucide-react'
+import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
 import type { NodeResource, NodeStatus } from '../types/nodeDetail'
 import { DeleteNodeDialog } from './DeleteNodeDialog'
 
@@ -53,7 +53,7 @@ export function NodeRow({ node }: { node: NodeResource }) {
       className={`${NODE_LIST_GRID} h-full w-full border-b border-border px-4 py-3`}
     >
       <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-        <ServerIcon className="size-4" aria-hidden="true" />
+        <HardDrivesIcon className="size-4" aria-hidden="true" />
       </span>
 
       <span className="min-w-0 truncate text-sm font-medium text-foreground">

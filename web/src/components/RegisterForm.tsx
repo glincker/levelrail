@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { TriangleAlertIcon } from 'lucide-react'
+import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { useRegister } from '../queries/auth'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -108,7 +108,7 @@ export function RegisterForm({
 
       {adminAlreadyExists ? (
         <Alert variant="destructive">
-          <TriangleAlertIcon />
+          <WarningIcon />
           <AlertTitle>An admin account already exists</AlertTitle>
           <AlertDescription>
             <button
@@ -122,7 +122,7 @@ export function RegisterForm({
         </Alert>
       ) : registerAdmin.isError ? (
         <Alert variant="destructive">
-          <TriangleAlertIcon />
+          <WarningIcon />
           <AlertDescription>{registerAdmin.error.message}</AlertDescription>
         </Alert>
       ) : null}

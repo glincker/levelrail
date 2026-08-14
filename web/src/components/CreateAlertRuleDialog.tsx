@@ -2,7 +2,11 @@ import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { Gauge, PlusCircle, RotateCcw } from 'lucide-react'
+import {
+  GaugeIcon,
+  PlusCircleIcon,
+  ArrowCounterClockwiseIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
   DialogContent,
@@ -44,10 +48,10 @@ const GO_DURATION_REGEX = /^-?(\d+(\.\d+)?(ns|us|µs|ms|s|m|h))+$/
 const KIND_OPTIONS: {
   value: AlertRuleKind
   label: string
-  Icon: typeof Gauge
+  Icon: typeof GaugeIcon
 }[] = [
-  { value: 'threshold', label: 'Threshold', Icon: Gauge },
-  { value: 'crashloop', label: 'Crashloop', Icon: RotateCcw },
+  { value: 'threshold', label: 'Threshold', Icon: GaugeIcon },
+  { value: 'crashloop', label: 'Crashloop', Icon: ArrowCounterClockwiseIcon },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -243,7 +247,7 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5">
-            <PlusCircle
+            <PlusCircleIcon
               className="size-4 text-muted-foreground"
               aria-hidden="true"
             />

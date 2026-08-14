@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { Search, X } from 'lucide-react'
+import {
+  MagnifyingGlassIcon,
+  XIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { useLogSearch } from '../queries/logs'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { Button } from './ui/button'
@@ -71,7 +74,7 @@ export function LogSearchPanel({ appName }: { appName: string }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-            <Search
+            <MagnifyingGlassIcon
               className="size-4 text-muted-foreground"
               aria-hidden="true"
             />
@@ -120,7 +123,7 @@ export function LogSearchPanel({ appName }: { appName: string }) {
       </div>
 
       <div className="relative mt-3">
-        <Search
+        <MagnifyingGlassIcon
           className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
           aria-hidden="true"
         />
@@ -142,7 +145,7 @@ export function LogSearchPanel({ appName }: { appName: string }) {
             aria-label="Clear search"
             className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
-            <X className="size-3.5" aria-hidden="true" />
+            <XIcon className="size-3.5" aria-hidden="true" />
           </button>
         ) : null}
       </div>

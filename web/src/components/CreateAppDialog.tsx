@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useNavigate } from '@tanstack/react-router'
-import { BoxIcon, TriangleAlertIcon } from 'lucide-react'
+import { PackageIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
   DialogContent,
@@ -150,7 +150,7 @@ export function CreateAppDialog({ trigger }: { trigger: React.ReactElement }) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <BoxIcon
+            <PackageIcon
               className="size-4 text-muted-foreground"
               aria-hidden="true"
             />
@@ -233,7 +233,7 @@ export function CreateAppDialog({ trigger }: { trigger: React.ReactElement }) {
 
           {createApp.isError ? (
             <Alert variant="destructive">
-              <TriangleAlertIcon />
+              <WarningIcon />
               <AlertDescription>{createApp.error.message}</AlertDescription>
             </Alert>
           ) : null}

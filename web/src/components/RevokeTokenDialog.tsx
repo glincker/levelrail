@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { TriangleAlertIcon } from 'lucide-react'
+import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
   DialogContent,
@@ -40,7 +40,7 @@ export function RevokeTokenDialog({ token }: { token: TokenResource }) {
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <TriangleAlertIcon className="size-4 text-destructive" />
+            <WarningIcon className="size-4 text-destructive" />
             Revoke &ldquo;{token.name}&rdquo;?
           </DialogTitle>
           <DialogDescription>
@@ -59,7 +59,7 @@ export function RevokeTokenDialog({ token }: { token: TokenResource }) {
         ) : null}
         {revokeToken.isError ? (
           <Alert variant="destructive">
-            <TriangleAlertIcon />
+            <WarningIcon />
             <AlertDescription>{revokeToken.error.message}</AlertDescription>
           </Alert>
         ) : null}
