@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Coverage gate for CLAUDE.md section 7: "Coverage gate at 70% for
-# /internal, enforced in CI."
+# Coverage gate: 70% for /internal, enforced in CI.
 #
 # Reads a go test coverprofile (produced by
 # `go test ./... -race -coverprofile=coverage.out`) and computes coverage

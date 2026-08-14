@@ -16,8 +16,9 @@ export const DATABASE_LIST_GRID =
 // same as AppRow keying off app.name. No live status dot here for the
 // same N+1 reasoning AppRow's own comment gives: rendering one would
 // mean an extra GET /api/v1/databases/{name}/status per row, exactly
-// the kind of per-row fetch CLAUDE.md 7's virtualization requirement
-// exists to avoid. Current reconcile status lives on the detail route's
+// the kind of per-row fetch the project's virtualization requirement
+// exists to avoid (lists over 50 items must stay cheap to render).
+// Current reconcile status lives on the detail route's
 // ConditionsPanel instead.
 export function DatabaseRow({ database }: { database: DatabaseResource }) {
   return (

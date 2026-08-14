@@ -64,8 +64,9 @@ const STATE_DOT_CLASS: Record<RuleState, string> = {
 // A firing rule gets a pulsing dot, not just a static one: it is the
 // state most likely to need immediate attention, and a still dashboard
 // full of quiet badges is exactly the "bolted on" observability feel
-// CLAUDE.md 1 calls out in Coolify/Dokploy. Pending/ok stay static so the
-// motion budget on this page is spent only where it is meaningful.
+// this project set out to avoid, the kind Coolify/Dokploy have.
+// Pending/ok stay static so the motion budget on this page is spent
+// only where it is meaningful.
 function StateDot({ state }: { state: RuleState }) {
   return (
     <span className="relative inline-flex size-2 shrink-0" aria-hidden="true">

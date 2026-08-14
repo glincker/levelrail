@@ -11,13 +11,14 @@ import { useBrand } from '../../hooks/useBrand'
 // dashboard UI" task for API token management. Reachable directly at
 // /settings/tokens; no nav link wires it in yet, see this route's own
 // report for why (routes/__root.tsx had unrelated concurrent edits in
-// flight when this was built, per CLAUDE.md 8's parallel-agent
-// guidance not to step on live work in the same file).
+// flight when this was built, deliberately avoiding stepping on live
+// work in the same file from a parallel pass).
 //
 // Typed loader primes the Query cache before render, same pattern
 // routes/apps/index.tsx already established: the component below only
-// ever reads that warm cache via useSuspenseQuery, never fetches in its
-// own body (CLAUDE.md 7).
+// ever reads that warm cache via useSuspenseQuery, never fetches data in
+// its own body (no data fetching in component bodies is a project-wide
+// rule).
 export const Route = createFileRoute('/settings/tokens')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(tokenListQueryOptions()),
@@ -49,8 +50,9 @@ function TokensPage() {
                 auth-ux.md finding 12): the moment someone has a credential
                 is the moment they most want to know what to do with it.
                 brand.DocsURL is a real field on the /api/v1/brand response
-                (CLAUDE.md section 3), not an invented route, so this only
-                renders when the running instance actually configured one. */}
+                (part of the rebrandability contract), not an invented
+                route, so this only renders when the running instance
+                actually configured one. */}
             {brand.DocsURL ? (
               <a
                 href={brand.DocsURL}

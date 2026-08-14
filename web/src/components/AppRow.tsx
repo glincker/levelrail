@@ -19,7 +19,8 @@ export const APP_LIST_GRID =
 // No live status dot here: appResource has no status field, and
 // rendering one would mean an extra GET /api/v1/apps/{name}/deploys per
 // row (an N+1 fetch for a list that's supposed to stay cheap at 50+
-// rows, per CLAUDE.md 7's virtualization requirement). The app detail
+// rows, per the project's virtualization requirement: every list that
+// can exceed 50 items must be virtualized). The app detail
 // route's ConditionsPanel is where current reconcile status actually
 // lives (green/red/neutral condition badges backed by that endpoint);
 // inventing a placeholder status here would be exactly the kind of

@@ -128,7 +128,7 @@ export function useUpdateApp(name: string) {
 // shape AppDetail models: domains/env/resources/health are real fields
 // the endpoint accepts, but CreateAppDialog only ever collects
 // name/image/port (a manually-created app here is the "already have a
-// built image" path per CLAUDE.md 4.9, the git-push spec path is
+// built image" path in the app spec's model, the git-push spec path is
 // separate and unaffected). The server still runs validateAppResource
 // against whatever arrives, so leaving the rest undefined is safe, not
 // a bypass.

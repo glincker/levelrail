@@ -48,8 +48,9 @@ export const Route = createFileRoute('/login')({
       redirect({ to: '/apps', throw: true })
     }
   },
-  // The login screen needs branding before a session exists (CLAUDE.md
-  // section 3), same as the root route's own loader; primed again here so
+  // The login screen needs branding before a session exists, per the
+  // rebrandability rule that no product name is hardcoded in components,
+  // same as the root route's own loader; primed again here so
   // this route works even if it's the very first thing to load (root's
   // beforeLoad redirect can land here before root's own loader runs on a
   // fresh navigation, so this route can't assume the cache is warm yet).

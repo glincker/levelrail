@@ -26,7 +26,7 @@ export default tseslint.config(
       },
     },
     rules: {
-      // CLAUDE.md 7: "TypeScript strict mode, no any." Flags any explicit
+      // TypeScript strict mode, no `any`. Flags any explicit
       // `any` usage, including implicit escapes like `as any`.
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unsafe-assignment': 'error',

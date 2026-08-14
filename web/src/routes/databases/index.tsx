@@ -15,8 +15,8 @@ import { Button } from '../../components/ui/button'
 // Typed loader primes the Query cache, the component only reads that
 // cache via useSuspenseQuery against the same key, mirroring
 // routes/apps/index.tsx exactly. The list is virtualized unconditionally
-// (per CLAUDE.md 7: every list that can exceed 50 items must be) even
-// though databases will rarely exceed a handful of rows and GET
+// (every list that can exceed 50 items must be, a project-wide rule)
+// even though databases will rarely exceed a handful of rows and GET
 // /api/v1/databases returns everything in one response with no
 // server-side pagination.
 export const Route = createFileRoute('/databases/')({

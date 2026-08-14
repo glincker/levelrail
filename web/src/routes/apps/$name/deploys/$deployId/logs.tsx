@@ -9,9 +9,9 @@ import {
 import { buildDeployLogStreamUrl } from '../../../../../queries/deployLogs'
 import { stripAnsiCodes } from '../../../../../lib/ansi'
 
-// Live Build Log view, frontend-plan.md section 1: "the literal target of
-// CLAUDE.md 4.12's 'the dashboard should not ship the log viewer's
-// bundle.'" This route file is the only place in the app that imports
+// Live Build Log view, frontend-plan.md section 1: the literal target of
+// the rule that the dashboard should not ship the log viewer's bundle.
+// This route file is the only place in the app that imports
 // the SSE hook, the ANSI stripper, and (here, directly) TanStack Virtual
 // tuned for monospace log rows, so none of the three should ever end up
 // in a shared/main chunk. Verified for this pass via `npm run build`'s

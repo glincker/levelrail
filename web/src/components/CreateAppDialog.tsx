@@ -82,8 +82,8 @@ const DEFAULT_VALUES: CreateAppFormInput = {
 // pattern CreateTokenDialog's own doc comment gestures at, just with
 // the trigger element supplied by each call site instead of hardcoded.
 //
-// Only name/image/port are collected (CLAUDE.md 4.9's minimal app
-// spec: build, domains, port are the essentials; domains/env/resources/
+// Only name/image/port are collected (the app spec's minimal essentials
+// are build, domains, and port; domains/env/resources/
 // health are real fields the backend accepts but out of scope here, a
 // manually-created app via this dialog is the "already have a built
 // image" path, distinct from and unaffected by the git-push spec

@@ -26,9 +26,10 @@ import {
 // Real account page, following on from the placeholder shell this route
 // used to be (see git history / the previous version of this file for
 // why it was split out on its own). Two independent cards: profile
-// (read-only, Phase 1 has exactly one editable-nothing admin account,
-// CLAUDE.md 6) and change-password (a real form against
-// internal/api/account.go's PUT /api/v1/auth/password).
+// (read-only, Phase 1 has exactly one editable-nothing admin account:
+// single admin user, session auth, no teams or RBAC yet) and
+// change-password (a real form against internal/api/account.go's PUT
+// /api/v1/auth/password).
 export const Route = createFileRoute('/settings/account')({
   component: AccountSettingsPage,
 })

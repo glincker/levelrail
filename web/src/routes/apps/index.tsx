@@ -10,9 +10,9 @@ import { Button } from '../../components/ui/button'
 
 // Typed loader primes the Query cache, the component only reads that
 // cache via useSuspenseQuery against the same key (no data fetching in
-// the component body, per CLAUDE.md 7). The list is virtualized
+// the component body is a project-wide rule). The list is virtualized
 // unconditionally (every list that can exceed 50 items must be, per the
-// same section) rather than branching on row count, even though GET
+// same rule) rather than branching on row count, even though GET
 // /api/v1/apps returns everything in one response with no server-side
 // pagination to page through.
 //
