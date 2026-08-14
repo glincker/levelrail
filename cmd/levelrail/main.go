@@ -28,6 +28,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/api"
+	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
@@ -1075,7 +1076,12 @@ func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent
 // tried to call a method on it, rather than hitting api.Router's own
 // "not configured" 501 path; api.Builder has the identical nil-interface
 // hazard, so builder gets the same explicit nil check rather than being
-// passed to api.WithBuilder unconditionally.
+// passed to api.WithBuilder unconditionally. Backup targets
+// (api.WithBackupSecrets, api.WithBackupRunner) share this exact
+// dependency on secretsManager and get the same nil check: a backup
+// target's credentials go through internal/secrets the same as any app
+// secret, so there is nowhere to store or resolve them without a master
+// key either.
 //
 // client is always non-nil here: run() returns early on a
 // docker.NewClient error, before rootHandler is ever called, so unlike
@@ -1099,6 +1105,25 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	}
 	if secretsManager != nil {
 		opts = append(opts, api.WithSecretSetter(secretsManager))
+		// Backup targets and running a real backup both need
+		// secretsManager: creating a target writes its credentials
+		// through it (api.WithBackupSecrets), and actually running a
+		// backup reads them back through the identical *secrets.Manager
+		// value (internal/backup.Runner.Secrets), the one internal/api
+		// deliberately never does itself, see BackupSecretsSetter's own
+		// doc comment for why that split exists. Same nil-interface
+		// hazard as api.WithSecretSetter above: both are skipped
+		// entirely, not passed with a nil secretsManager inside a
+		// non-nil interface value, whenever no master key is configured.
+		opts = append(opts,
+			api.WithBackupSecrets(secretsManager),
+			api.WithBackupRunner(&backup.Runner{
+				Store:    db,
+				Secrets:  secretsManager,
+				Dumper:   &backup.ContainerDumper{Runtime: client},
+				Uploader: backup.S3Uploader{},
+			}),
+		)
 	}
 	if builder != nil {
 		opts = append(opts, api.WithBuilder(builder))

@@ -156,6 +156,7 @@ type Store interface {
 	CertStore
 	StaticSiteStore
 	BackupTargetStore
+	BackupHistoryStore
 }
 
 // SecretSetter is the surface the secrets handler needs from
@@ -226,6 +227,8 @@ type Router struct {
 	staticSites             StaticSiteStore     // always set, same "core Store interface, not an optional plug-in" shape as certs above
 	backupTargets           BackupTargetStore   // always set, same "core Store interface" shape as certs/staticSites above: listing/getting/deleting a backup target needs no secrets configuration, only creating one does
 	backupSecrets           BackupSecretsSetter // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
+	backupHistory           BackupHistoryStore  // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
+	backupRunner            BackupRunner        // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
 }
 
 // Option configures optional Router behavior.
@@ -247,6 +250,16 @@ func WithSecretSetter(s SecretSetter) Option {
 // regardless, since none of those need to write a credential.
 func WithBackupSecrets(s BackupSecretsSetter) Option {
 	return func(rt *Router) { rt.backupSecrets = s }
+}
+
+// WithBackupRunner enables POST /api/v1/databases/{name}/backups.
+// Without one configured (the default), that route returns 501, the
+// same "not configured" shape WithBackupSecrets' absence produces;
+// listing backup history (GET .../backups) works regardless, since it
+// only reads store.BackupHistory rows a runner already wrote in the
+// past, nothing about it needs a live runner today.
+func WithBackupRunner(r BackupRunner) Option {
+	return func(rt *Router) { rt.backupRunner = r }
 }
 
 // WithSessionTTL overrides how long a session cookie stays valid.
@@ -351,6 +364,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		certs:         s,
 		staticSites:   s,
 		backupTargets: s,
+		backupHistory: s,
 		fetch:         gitCheckout,
 		logins:        newLoginLimiter(),
 	}
@@ -535,6 +549,14 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("POST /api/v1/backup-targets", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateBackupTarget))
 	mux.HandleFunc("GET /api/v1/backup-targets/{id}", rt.requireAbility(AbilityRead, rt.handleGetBackupTarget))
 	mux.HandleFunc("DELETE /api/v1/backup-targets/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteBackupTarget))
+
+	// Backup history and manual trigger, per database. Trigger needs
+	// AbilityWriteSensitive: it starts real work against a live bucket
+	// using a previously-stored credential, the same sensitivity class
+	// creating or deleting the backup target itself already carries.
+	// History listing is ordinary AbilityRead.
+	mux.HandleFunc("POST /api/v1/databases/{name}/backups", rt.requireAbility(AbilityWriteSensitive, rt.handleTriggerBackup))
+	mux.HandleFunc("GET /api/v1/databases/{name}/backups", rt.requireAbility(AbilityRead, rt.handleListBackupHistory))
 
 	return mux
 }
