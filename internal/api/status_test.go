@@ -1,11 +1,24 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
+
+// fakeDockerPinger is a hand-written fake for DockerPinger, the same
+// pattern fakeSecretSetter (secrets_test.go) already establishes in
+// this package instead of a mocking framework.
+type fakeDockerPinger struct {
+	err error
+}
+
+func (f *fakeDockerPinger) Ping(_ context.Context) error {
+	return f.err
+}
 
 func TestSystemStatusRoute_RequiresAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
@@ -43,6 +56,49 @@ func TestHandleSystemStatus_NothingConfigured(t *testing.T) {
 	}
 	if got.DataDirTotalBytes != 0 || got.DataDirFreeBytes != 0 {
 		t.Errorf("data dir bytes = (%d, %d), want (0, 0) with no WithDataDir", got.DataDirTotalBytes, got.DataDirFreeBytes)
+	}
+	if got.DockerConnected {
+		t.Error("DockerConnected = true, want false (no WithDockerPinger)")
+	}
+}
+
+func TestHandleSystemStatus_DockerConnected_Healthy(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(nil, testBrand(), db, WithDockerPinger(&fakeDockerPinger{}))
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/system/status", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got systemStatusResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !got.DockerConnected {
+		t.Error("DockerConnected = false, want true (WithDockerPinger configured and healthy)")
+	}
+}
+
+func TestHandleSystemStatus_DockerConnected_Erroring(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(nil, testBrand(), db, WithDockerPinger(&fakeDockerPinger{err: errors.New("daemon unreachable")}))
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/system/status", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got systemStatusResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.DockerConnected {
+		t.Error("DockerConnected = true, want false (WithDockerPinger configured but Ping errors)")
 	}
 }
 

@@ -8,12 +8,11 @@ import (
 // systemStatusResponse is GET /api/v1/system/status's wire shape: a
 // small set of honest configured/not-configured signals for the
 // General settings page, replacing the "nothing here yet" placeholder
-// that page's own comment previously documented. Deliberately narrow:
-// no Docker connectivity check (docker.Runtime has no Ping method,
-// adding one would touch every implementation including the agent
-// side, real new surface, not a wiring fix) and no version string (no
-// build-time version variable exists anywhere in this codebase yet).
-// Both are real, separate follow-ups, not faked here.
+// that page's own comment previously documented. DockerConnected covers
+// daemon connectivity (see DockerPinger and its doc comment on why this
+// isn't a docker.Runtime method); no version string yet (no build-time
+// version variable exists anywhere in this codebase yet), a real,
+// separate follow-up, not faked here.
 type systemStatusResponse struct {
 	SecretsConfigured   bool `json:"secrets_configured"`
 	TelemetryConfigured bool `json:"telemetry_configured"`
@@ -25,17 +24,29 @@ type systemStatusResponse struct {
 	// response" shape this whole endpoint follows.
 	DataDirTotalBytes int64 `json:"data_dir_total_bytes,omitempty"`
 	DataDirFreeBytes  int64 `json:"data_dir_free_bytes,omitempty"`
+	// DockerConnected is true only when a DockerPinger is configured
+	// (WithDockerPinger) AND its Ping call returns nil. Every other
+	// case, no DockerPinger configured at all, or Ping returning an
+	// error, degrades to false rather than surfacing as a request
+	// error: the same "absence, or a failed optional check, is a real
+	// reportable false, never a 5xx" shape SecretsConfigured/
+	// TelemetryConfigured/AlertsConfigured already follow above.
+	DockerConnected bool `json:"docker_connected"`
 }
 
 // handleSystemStatus handles GET /api/v1/system/status. Always 200: an
 // unconfigured optional feature is a real, reportable false, not an
 // error condition, the same reasoning that keeps handleDevMode public
 // and unconditional.
-func (rt *Router) handleSystemStatus(w http.ResponseWriter, _ *http.Request) {
+func (rt *Router) handleSystemStatus(w http.ResponseWriter, r *http.Request) {
 	resp := systemStatusResponse{
 		SecretsConfigured:   rt.secrets != nil,
 		TelemetryConfigured: rt.telemetry != nil,
 		AlertsConfigured:    rt.alertRules != nil,
+	}
+
+	if rt.dockerPinger != nil {
+		resp.DockerConnected = rt.dockerPinger.Ping(r.Context()) == nil
 	}
 
 	if rt.dataDir != "" {

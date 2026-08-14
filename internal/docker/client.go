@@ -46,6 +46,23 @@ func (c *Client) Close() error {
 	return c.cli.Close()
 }
 
+// Ping is a thin liveness check against the Docker daemon, wrapping the
+// underlying SDK client's own Ping. Deliberately a method on the
+// concrete *Client, not a new Runtime method: Runtime has 6+ fake
+// implementations across internal/reconcile's controllers and
+// internal/agent's test files, plus the real client here and the
+// agent-side remote transport, so adding a method there would ripple
+// into all of them for the sake of one read-only health signal that
+// GET /api/v1/system/status needs. internal/api.DockerPinger is the
+// narrow interface that actually consumes this, satisfied structurally
+// by *Client alone.
+func (c *Client) Ping(ctx context.Context) error {
+	if _, err := c.cli.Ping(ctx); err != nil {
+		return fmt.Errorf("docker: ping: %w", err)
+	}
+	return nil
+}
+
 // InspectByName implements Runtime.
 func (c *Client) InspectByName(ctx context.Context, name string) (*ContainerState, error) {
 	f := filters.NewArgs()

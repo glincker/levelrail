@@ -147,23 +147,40 @@ type SecretSetter interface {
 	SetValue(ctx context.Context, serviceName, envKey, plaintext string) error
 }
 
+// DockerPinger is the surface GET /api/v1/system/status needs to report
+// Docker daemon connectivity: a liveness check, nothing else.
+// *docker.Client satisfies this structurally via the Ping method added
+// directly to that concrete type (internal/docker/client.go), not
+// through docker.Runtime: Runtime has 6+ fake implementations across
+// internal/reconcile's controllers and internal/agent's test files,
+// plus the real client and the agent-side remote transport, so adding a
+// method there for the sake of this one read-only health signal would
+// ripple into all of them. This narrow interface is the actual
+// consumer-defined boundary instead, the same shape SecretSetter and
+// TelemetryQuerier already establish for their own single-purpose
+// surfaces.
+type DockerPinger interface {
+	Ping(ctx context.Context) error
+}
+
 // Router wires every internal/api handler onto one http.Handler.
 type Router struct {
-	logger     *slog.Logger
-	brand      *brand.Brand
-	apps       AppStore
-	deploys    DeployStore
-	databases  DatabaseStore
-	auth       AuthStore
-	tokens     TokenStore
-	nodes      NodeStore
-	secrets    SecretSetter     // nil is valid: a control plane with no master key configured serves everything except secret-setting
-	telemetry  TelemetryQuerier // nil is valid: metrics/logs query routes return 501, same shape as secrets above
-	alertRules AlertRules       // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
-	sessions   *sessionStore
-	logins     *loginLimiter
-	sessionTTL time.Duration // 0 means "use defaultSessionTTL", set via WithSessionTTL
-	dataDir    string        // "" means "don't report disk usage", set via WithDataDir
+	logger       *slog.Logger
+	brand        *brand.Brand
+	apps         AppStore
+	deploys      DeployStore
+	databases    DatabaseStore
+	auth         AuthStore
+	tokens       TokenStore
+	nodes        NodeStore
+	secrets      SecretSetter     // nil is valid: a control plane with no master key configured serves everything except secret-setting
+	telemetry    TelemetryQuerier // nil is valid: metrics/logs query routes return 501, same shape as secrets above
+	alertRules   AlertRules       // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
+	sessions     *sessionStore
+	logins       *loginLimiter
+	sessionTTL   time.Duration // 0 means "use defaultSessionTTL", set via WithSessionTTL
+	dataDir      string        // "" means "don't report disk usage", set via WithDataDir
+	dockerPinger DockerPinger  // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
 }
 
 // Option configures optional Router behavior.
@@ -216,6 +233,15 @@ func WithAlertRules(a AlertRules) Option {
 // own absence already has for secret-setting.
 func WithDataDir(path string) Option {
 	return func(rt *Router) { rt.dataDir = path }
+}
+
+// WithDockerPinger enables Docker daemon connectivity reporting on
+// GET /api/v1/system/status. Without one configured (the default), the
+// response's DockerConnected field simply stays false, the same
+// "optional signal, absence is not an error" shape WithDataDir and
+// WithSecretSetter's own absence already have.
+func WithDockerPinger(p DockerPinger) Option {
+	return func(rt *Router) { rt.dockerPinger = p }
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.

@@ -287,7 +287,7 @@ func run(logger *slog.Logger) error {
 
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
-		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler),
+		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -858,7 +858,13 @@ func loadWebhookHandler(ctx context.Context, logger *slog.Logger, b *brand.Brand
 // interface value would panic the first time PUT .../secrets/{key}
 // tried to call a method on it, rather than hitting api.Router's own
 // "not configured" 501 path.
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler) http.Handler {
+//
+// client is always non-nil here: run() returns early on a
+// docker.NewClient error, before rootHandler is ever called, so unlike
+// secretsManager/webhookHandler above, api.WithDockerPinger is applied
+// unconditionally, the same way api.WithTelemetryQuerier and
+// api.WithAlertRules already are for telemetryDB/alertingDB.
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client) http.Handler {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
@@ -868,6 +874,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithAlertRules(alertingDB),
 		api.WithSessionTTL(sessionTTL(logger)),
 		api.WithDataDir(dataDir),
+		api.WithDockerPinger(client),
 	}
 	if secretsManager != nil {
 		opts = append(opts, api.WithSecretSetter(secretsManager))

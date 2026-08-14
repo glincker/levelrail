@@ -381,6 +381,43 @@ func removeIfExists(ctx context.Context, t *testing.T, c *Client, name string) {
 	_ = c.cli.ContainerRemove(ctx, state.ID, container.RemoveOptions{Force: true})
 }
 
+// TestClient_Ping_Live proves Ping succeeds against a real reachable
+// daemon, the case internal/api's DockerConnected field needs: an
+// operator with Docker actually running must see DockerConnected: true
+// on GET /api/v1/system/status, not just "Ping doesn't panic."
+func TestClient_Ping_Live(t *testing.T) {
+	c := liveClient(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	if err := c.Ping(ctx); err != nil {
+		t.Errorf("Ping() error = %v, want nil against a reachable daemon", err)
+	}
+}
+
+// TestClient_Ping_Unreachable proves Ping returns a real, non-nil error
+// when nothing is listening at DOCKER_HOST, the other half of the
+// DockerConnected contract. Deliberately not gated behind liveClient's
+// skip-if-unreachable pattern: unlike every other live test in this
+// file, an unreachable daemon is this test's actual subject, not a
+// reason to skip it. No live daemon needed to observe this: NewClient
+// succeeds even with nothing listening at DOCKER_HOST, since it only
+// negotiates lazily on first real call, the same reasoning
+// TestClient_Logs_NoSuchContainer (logs_test.go) documents.
+func TestClient_Ping_Unreachable(t *testing.T) {
+	t.Setenv("DOCKER_HOST", "unix:///nonexistent/levelrail-ping-test.sock")
+	c, err := NewClient()
+	if err != nil {
+		t.Skipf("could not construct a docker client at all: %v", err)
+	}
+	t.Cleanup(func() { _ = c.Close() })
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	if err := c.Ping(ctx); err == nil {
+		t.Error("Ping() error = nil, want a non-nil error against an unreachable socket")
+	}
+}
+
 // TestClient_Stats_Live proves Stats returns real, sane numbers from a
 // real running container, not just that the API call doesn't error.
 // Independent verification against the raw one-shot response, the same
