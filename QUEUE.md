@@ -26,9 +26,14 @@ those APIs before they merge, the shapes can still change.
       dependency instead. (builder dispatched)
 - [ ] Document + test `internal/reconcile/application`'s `resolveEnv`
       `SecretEnv`-over-`Env` precedence. (quality engineer dispatched)
-- [ ] Deploy-attempt ID scheme + build-log persistence design note
-      (options only, no code, human sign-off required before
-      implementation). (architect dispatched)
+- [x] Deploy-attempt ID scheme + build-log persistence design note.
+      Recommendation: opaque `crypto/rand` ID in a new `deploy_attempts`
+      table (`internal/store`) + a dedicated log table in `telemetry.db`
+      shaped like `internal/telemetry/logs.go`, not live-only and not
+      reusing `log_entries` directly. Full note:
+      `docs-local/research/deploy-attempt-id-and-log-persistence.md`
+      (gitignored, ask the founder to read it, needs sign-off before
+      anyone implements this).
 - [ ] Add a "paste a .env block" bulk-import affordance to
       `EnvEditor.tsx`. (builder dispatched)
 - [ ] Consolidate 6 files' hand-rolled status-badge color classes
