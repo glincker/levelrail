@@ -23,8 +23,8 @@ import { useCreateNodeJoinToken } from '../queries/nodes'
 import { useBrand } from '../hooks/useBrand'
 import type { NodeJoinTokenResponse } from '../types/nodeDetail'
 
-// A dialog, not a wizard: this product's own positioning (CLAUDE.md 1,
-// "lightweight, AI-ready Coolify alternative") and both Coolify's and
+// A dialog, not a wizard: this product's own positioning as a
+// lightweight, AI-ready Coolify alternative, and both Coolify's and
 // Dokploy's own "add server" flows (single screen, no multi-step
 // wizard) back that call, and multi-node is an occasional admin action
 // for the 1-10 machine target audience, not a daily-use flow. One
@@ -54,8 +54,8 @@ export function AddNodeDialog() {
   // (brand.yaml's binary_name); the agent binary follows the same
   // "<binary_name>-agent" convention cmd/levelrail vs cmd/levelrail-agent
   // already uses. Deriving it here instead of writing "levelrail-agent"
-  // literally keeps this file honoring CLAUDE.md section 3: no product
-  // name string hardcoded anywhere under /web.
+  // literally keeps this file honoring the project's brand-indirection
+  // rule: no product name string hardcoded anywhere under /web.
   const agentBinaryName = `${brand.BinaryName}-agent`
   const enrollCommand = created
     ? `APP_CONTROL_PLANE_ADDR=${controlPlaneAddr} APP_JOIN_TOKEN=${created.token} ./${agentBinaryName}`

@@ -8,11 +8,12 @@ import { AddNodeDialog } from '../../components/AddNodeDialog'
 
 // Typed loader primes the Query cache, the component only reads that
 // cache via useNodes() (suspense), mirroring routes/databases/index.tsx
-// exactly. The list is virtualized unconditionally (per CLAUDE.md 7)
-// even though nodes are a 1-10 machine list for this product's own
-// target audience and GET /api/v1/nodes returns everything in one
-// response with no server-side pagination: a follow-the-rule exercise
-// here, not something that will ever visibly matter at this scale.
+// exactly. The list is virtualized unconditionally, per this project's
+// standing rule that every list over 50 items is virtualized, even
+// though nodes are a 1-10 machine list for this product's own target
+// audience and GET /api/v1/nodes returns everything in one response
+// with no server-side pagination: a follow-the-rule exercise here, not
+// something that will ever visibly matter at this scale.
 export const Route = createFileRoute('/nodes/')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(nodeListQueryOptions()),
