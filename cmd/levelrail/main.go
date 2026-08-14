@@ -37,6 +37,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
+	"github.com/GLINCKER/levelrail/internal/reconcile/nodehealth"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -126,6 +127,21 @@ const (
 	// Docker start events, which is driven continuously by the event
 	// stream itself.
 	restartTrackerResyncInterval = 30 * time.Second
+
+	// defaultNodeHeartbeatInterval matches internal/agent's own
+	// defaultHeartbeatInterval (TASKS.md 3.7): how often a connected
+	// node's last_seen_at is touched while its session stream stays
+	// open. Duplicated as a constant here (not imported) purely so this
+	// file's own env-var-with-default convention stays self-contained,
+	// the same reasoning applicationControllerName's own doc comment
+	// gives for a different small duplication.
+	defaultNodeHeartbeatInterval = 15 * time.Second
+	// defaultNodeHeartbeatTimeout is how long since a node's last_seen_at
+	// internal/reconcile/nodehealth treats as stale (three missed
+	// heartbeats at the default interval above): long enough that one
+	// slow tick or a brief GC pause doesn't flip a healthy node Offline,
+	// short enough that a real hang is caught well within a minute.
+	defaultNodeHeartbeatTimeout = 45 * time.Second
 )
 
 func main() {
@@ -249,7 +265,7 @@ func run(logger *slog.Logger) error {
 		return fmt.Errorf("start agent grpc listener: %w", err)
 	}
 	agentGRPCServer := grpc.NewServer(grpc.Creds(agentCreds))
-	agentpb.RegisterAgentServiceServer(agentGRPCServer, agent.NewServer(agentCA, db, agentRegistry, logger))
+	agentpb.RegisterAgentServiceServer(agentGRPCServer, agent.NewServer(agentCA, db, agentRegistry, logger, agent.WithHeartbeatInterval(nodeHeartbeatInterval())))
 	go func() {
 		logger.Info("agent grpc listening", slog.String("addr", agentListener.Addr().String()))
 		if err := agentGRPCServer.Serve(agentListener); err != nil {
@@ -300,7 +316,7 @@ func run(logger *slog.Logger) error {
 
 	engine := reconcile.NewEngine(logger)
 	engine.SetStore(db)
-	engine.SetSource(dynamicSource(db, client, ingressDriver, logger, telemetryDB, secretsManager, agentRegistry))
+	engine.SetSource(dynamicSource(db, client, ingressDriver, logger, telemetryDB, secretsManager, agentRegistry, nodeHeartbeatTimeout()))
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
 	go func() {
@@ -678,6 +694,37 @@ func metricsRetention() time.Duration {
 	return d
 }
 
+// nodeHeartbeatInterval reads APP_NODE_HEARTBEAT_INTERVAL (TASKS.md
+// 3.7), the same env-var-with-default shape as metricsRetention/
+// logsRetention above, applied to how often a connected agent's
+// last_seen_at is touched (internal/agent.WithHeartbeatInterval).
+func nodeHeartbeatInterval() time.Duration {
+	raw := os.Getenv("APP_NODE_HEARTBEAT_INTERVAL")
+	if raw == "" {
+		return defaultNodeHeartbeatInterval
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		return defaultNodeHeartbeatInterval
+	}
+	return d
+}
+
+// nodeHeartbeatTimeout reads APP_NODE_HEARTBEAT_TIMEOUT (TASKS.md 3.7),
+// how long since last_seen_at internal/reconcile/nodehealth treats as
+// stale.
+func nodeHeartbeatTimeout() time.Duration {
+	raw := os.Getenv("APP_NODE_HEARTBEAT_TIMEOUT")
+	if raw == "" {
+		return defaultNodeHeartbeatTimeout
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		return defaultNodeHeartbeatTimeout
+	}
+	return d
+}
+
 func loadBrand() (*brand.Brand, error) {
 	path := os.Getenv("APP_BRAND_FILE")
 	if path == "" {
@@ -941,7 +988,15 @@ func sessionTTL(logger *slog.Logger) time.Duration {
 // if its Transport could be inspected; closing this needs the WireGuard
 // mesh and internal DNS TASKS.md 3.4 builds, not something this task
 // can honestly solve on its own.
-func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.Driver, logger *slog.Logger, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry) reconcile.Source {
+//
+// heartbeatTimeout is TASKS.md 3.7's health check: one
+// nodehealth.Controller per registered node (db.ListNodes, the same
+// "re-derive every pass" treatment every other resource here already
+// gets), independent of whether that node currently has anything placed
+// on it. Unlike the application/database controllers above, a node
+// controller never needs resolveNodeTransport: it only ever touches
+// this control plane's own store, not the node's own Docker daemon.
+func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.Driver, logger *slog.Logger, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry, heartbeatTimeout time.Duration) reconcile.Source {
 	return func(ctx context.Context) ([]reconcile.Controller, error) {
 		services, err := db.ListDesiredServices(ctx)
 		if err != nil {
@@ -951,13 +1006,17 @@ func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.D
 		if err != nil {
 			return nil, fmt.Errorf("list desired databases: %w", err)
 		}
+		nodes, err := db.ListNodes(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("list nodes: %w", err)
+		}
 
 		appOpts := []application.Option{application.WithDeployRecorder(telemetryDB)}
 		if secretsManager != nil {
 			appOpts = append(appOpts, application.WithSecretResolver(secretsManager))
 		}
 
-		controllers := make([]reconcile.Controller, 0, len(services)+len(databases)+1)
+		controllers := make([]reconcile.Controller, 0, len(services)+len(databases)+len(nodes)+1)
 		for _, svc := range services {
 			svcRuntime, err := resolveNodeTransport(runtime, agentRegistry, svc.NodeID)
 			if err != nil {
@@ -975,6 +1034,9 @@ func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.D
 				continue
 			}
 			controllers = append(controllers, database.New(desired.Name, db, dbRuntime))
+		}
+		for _, n := range nodes {
+			controllers = append(controllers, nodehealth.New(n.ID, db, heartbeatTimeout))
 		}
 		controllers = append(controllers, ingressreconcile.New(db, runtime, driver, ingressreconcile.WithLogger(logger)))
 		return controllers, nil
