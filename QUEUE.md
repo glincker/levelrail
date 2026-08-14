@@ -18,26 +18,31 @@ those APIs before they merge, the shapes can still change.
 
 ## In progress
 
-(nothing yet, round 2 not dispatched)
+- [ ] Add a `docker.Runtime` health-check method and wire it into
+      `GET /api/v1/system/status` and the General settings page.
+      Design set: no change to the `Runtime` interface itself (6+ fake
+      implementations would ripple), a `Ping` method on the concrete
+      `*docker.Client` plus a new optional `DockerPinger` Router
+      dependency instead. (builder dispatched)
+- [ ] Document + test `internal/reconcile/application`'s `resolveEnv`
+      `SecretEnv`-over-`Env` precedence. (quality engineer dispatched)
+- [ ] Deploy-attempt ID scheme + build-log persistence design note
+      (options only, no code, human sign-off required before
+      implementation). (architect dispatched)
+- [ ] Add a "paste a .env block" bulk-import affordance to
+      `EnvEditor.tsx`. (builder dispatched)
 
 ## Next up (priority order)
 
-- [ ] Add a `docker.Runtime` health-check method and wire it into
-      `GET /api/v1/system/status` and the General settings page. Done:
-      frontend shows real Docker daemon connectivity instead of
-      omitting it (`status.go`'s own comment names this exact gap).
-- [ ] Document `internal/reconcile/application`'s `resolveEnv` precedence
-      (a `SecretEnv` key silently wins over a literal `Env` entry of the
-      same name) with a doc comment and a unit test. Found by the env-var
-      e2e agent as a real, unintentional-looking gap, not a defect, just
-      undocumented and untested. Small.
-- [ ] Write a short design note deciding the deploy-attempt ID scheme
-      and whether build logs persist for replay or stay live-only
-      (options: telemetry log store vs. a new table). Done:
-      `web/src/queries/deployLogs.ts`'s "assumed backend contract, not
-      implemented" comment gets replaced by a real, agreed contract.
-      Design decision only, no code, until a human signs off on the
-      choice (this is ADR-worthy per CLAUDE.md 7).
+(next round picked once in-progress items land; docker-health-check and
+ListImages-dropdown both touch internal/api/router.go and
+cmd/levelrail/main.go's rootHandler, so ListImages waits for the
+health-check item to merge first to avoid a conflict)
+
+- [ ] Expose `docker.Runtime.ListImages` via a small API route (e.g.
+      `GET /api/v1/apps/{name}/images`) so `DeployTriggerForm` can offer
+      a dropdown of previously built tags instead of a hand-typed
+      image string.
 
 ## Blocked
 
@@ -69,9 +74,18 @@ those APIs before they merge, the shapes can still change.
       `EnvEditor.tsx`, parsed client-side into the existing key/value
       fields (Coolify and Dokploy both support this; current editor is
       add-one-row-at-a-time only).
-- [ ] Add a one-click "restart" action per app (stop+start without a
-      new image tag) so an operator does not have to retype the current
-      image into the deploy trigger form just to force a restart.
+- [ ] **Needs a design decision, not just wiring**: a one-click
+      "restart" action per app turns out not to be a simple frontend
+      task. Checked `internal/reconcile/application/controller.go`'s
+      `Reconcile`: the container name itself is keyed by
+      `ContainerName(serviceName, desired.Image)`, so re-POSTing the
+      exact same image tag to `POST /apps/{name}/deploys` is a genuine
+      no-op, the reconciler sees no diff and does nothing, no restart
+      happens. A real restart needs either a new backend endpoint that
+      force-recreates the container regardless of desired-state diff,
+      or a decision that "restart" isn't a first-class operation this
+      architecture's immutable-container-per-tag design should support
+      at all. Don't dispatch a builder on this until that's decided.
 - [ ] Once the deploy-attempt-log design note lands, add a deploy-history
       list UI with a one-click "rollback to this build" button, reusing
       the existing `POST /api/v1/apps/{name}/deploys` endpoint with an
