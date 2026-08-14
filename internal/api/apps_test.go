@@ -23,6 +23,14 @@ func TestValidateAppResource(t *testing.T) {
 		{name: "missing image", app: appResource{Name: "web", Port: 3000}, wantErr: true},
 		{name: "zero port", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 0}, wantErr: true},
 		{name: "negative port", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: -1}, wantErr: true},
+		{name: "empty strategy falls through to store default", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Strategy: ""}, wantErr: false},
+		{name: "recreate strategy valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Strategy: "recreate"}, wantErr: false},
+		{name: "blue-green strategy valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Strategy: "blue-green"}, wantErr: false},
+		{name: "rolling strategy valid (real spec constant, reconciler-unsupported but not an API validation concern)", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Strategy: "rolling"}, wantErr: false},
+		{name: "unknown strategy rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Strategy: "bogus"}, wantErr: true},
+		{name: "zero replicas falls through to store default", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Replicas: 0}, wantErr: false},
+		{name: "positive replicas valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Replicas: 3}, wantErr: false},
+		{name: "negative replicas rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Replicas: -1}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -152,6 +160,132 @@ func TestHandleCreateApp(t *testing.T) {
 	rt.Handler().ServeHTTP(recMalformed, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{not json`))
 	if recMalformed.Code != http.StatusBadRequest {
 		t.Fatalf("malformed body status = %d, want %d", recMalformed.Code, http.StatusBadRequest)
+	}
+}
+
+// TestHandleCreateApp_StrategyAndReplicas covers both an explicit value
+// and the omitted-field case, which must resolve to store.DefaultDeployStrategy/
+// store.DefaultReplicas exactly like a service saved without these fields
+// always has (store.SaveDesiredService's own defense, not something this
+// handler re-implements).
+func TestHandleCreateApp_StrategyAndReplicas(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	explicit := `{"name":"web","image":"levelrail/web:1","port":3000,"strategy":"recreate","replicas":3}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", explicit))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after create: %v", err)
+	}
+	if svc.Strategy != "recreate" || svc.Replicas != 3 {
+		t.Errorf("saved service = %+v, want strategy=recreate replicas=3", svc)
+	}
+	var got appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Strategy != "recreate" || got.Replicas != 3 {
+		t.Errorf("response = %+v, want strategy=recreate replicas=3", got)
+	}
+
+	// Omitted strategy/replicas must resolve to the store's own defaults,
+	// the same as any other app.yaml-less create today.
+	implicit := `{"name":"web-defaults","image":"levelrail/web:1","port":3000}`
+	recImplicit := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recImplicit, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", implicit))
+	if recImplicit.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", recImplicit.Code, http.StatusCreated, recImplicit.Body.String())
+	}
+	svcDefault, err := db.GetDesiredService(context.Background(), "web-defaults")
+	if err != nil {
+		t.Fatalf("GetDesiredService after implicit create: %v", err)
+	}
+	if svcDefault.Strategy != store.DefaultDeployStrategy || svcDefault.Replicas != store.DefaultReplicas {
+		t.Errorf("saved service = %+v, want strategy=%s replicas=%d", svcDefault, store.DefaultDeployStrategy, store.DefaultReplicas)
+	}
+}
+
+// TestHandleCreateApp_InvalidStrategy_Rejected: a typo'd strategy value
+// must be a 400, not silently coerced to a default or saved verbatim.
+func TestHandleCreateApp_InvalidStrategy_Rejected(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps",
+		`{"name":"web","image":"levelrail/web:1","port":3000,"strategy":"canary"}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	if _, err := db.GetDesiredService(context.Background(), "web"); err == nil {
+		t.Error("an invalid strategy must not have saved a service")
+	}
+}
+
+func TestHandleUpdateApp_StrategyAndReplicas(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	update := `{"name":"web","image":"levelrail/web:1","port":3000,"strategy":"blue-green","replicas":5}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", update))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after update: %v", err)
+	}
+	if svc.Strategy != "blue-green" || svc.Replicas != 5 {
+		t.Errorf("updated service = %+v, want strategy=blue-green replicas=5", svc)
+	}
+}
+
+func TestHandleGetApp_StrategyAndReplicasRoundTrip(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "web", Image: "levelrail/web:1", Port: 3000,
+		Strategy: "recreate", Replicas: 2,
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web", ""))
+	var got appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Strategy != "recreate" || got.Replicas != 2 {
+		t.Errorf("got = %+v, want strategy=recreate replicas=2", got)
+	}
+
+	// A service saved without an explicit strategy/replicas still comes
+	// back with the store's resolved defaults, never empty/zero: see
+	// store.DesiredService's own doc comment on why these two fields are
+	// always resolved.
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "bare", Image: "levelrail/bare:1", Port: 3000}); err != nil {
+		t.Fatalf("seed bare: %v", err)
+	}
+	recBare := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recBare, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/bare", ""))
+	var gotBare appResource
+	if err := json.Unmarshal(recBare.Body.Bytes(), &gotBare); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if gotBare.Strategy != store.DefaultDeployStrategy || gotBare.Replicas != store.DefaultReplicas {
+		t.Errorf("got = %+v, want strategy=%s replicas=%d", gotBare, store.DefaultDeployStrategy, store.DefaultReplicas)
 	}
 }
 

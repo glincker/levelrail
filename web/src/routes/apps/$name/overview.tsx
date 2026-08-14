@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
 import { useDeployStatus } from '../../../queries/deploys'
 import { AppOverview } from '../../../components/AppOverview'
+import { DeployStrategyEditor } from '../../../components/DeployStrategyEditor'
 import { ConditionsPanel } from '../../../components/ConditionsPanel'
 
 // Former "overview" tab of routes/apps/$name.tsx's Tabs component, now a
@@ -20,6 +21,7 @@ function OverviewSection() {
   return (
     <div className="space-y-6">
       <AppOverview app={app} />
+      <DeployStrategyEditor app={app} />
       <ConditionsPanel conditions={conditions} />
     </div>
   )

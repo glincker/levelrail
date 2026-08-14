@@ -1,14 +1,27 @@
-import { SquaresFourIcon } from '@phosphor-icons/react/dist/ssr'
-import type { AppDetail, ServiceProbe } from '../types/appDetail'
+import { SquaresFourIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import type { AppDetail, DeployStrategy, ServiceProbe } from '../types/appDetail'
 import { formatBytes, formatDurationNs, formatNanoCpus } from '../lib/format'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MoveToNodeDialog } from './MoveToNodeDialog'
 
+// Display labels for internal/spec's three strategy constants. "rolling"
+// gets a label of its own rather than being title-cased generically,
+// since it's the one value worth calling out as a problem the moment it's
+// read, not just a name: see the inline warning below.
+const STRATEGY_LABELS: Record<DeployStrategy, string> = {
+  recreate: 'Recreate',
+  'blue-green': 'Blue-green',
+  rolling: 'Rolling',
+}
+
 // Read-only display of an app's current desired state: image, port,
-// resource limits, and health probe config, straight from GET
-// /api/v1/apps/{name}. Domains and env are editable elsewhere
-// (DomainEditor, EnvEditor); everything shown here has no edit affordance
-// on this pass, matching TASKS.md 1.10's scope for this route.
+// resource limits, health probe config, and (as of this pass) deploy
+// strategy and replica count, straight from GET /api/v1/apps/{name}.
+// Domains and env are editable elsewhere (DomainEditor, EnvEditor);
+// strategy/replicas are editable via DeployStrategyEditor, rendered as a
+// sibling card by the overview route rather than inline here, matching
+// how ResourceLimitsEditor/HealthCheckEditor already sit next to this
+// read-only card rather than inside it.
 export function AppOverview({ app }: { app: AppDetail }) {
   return (
     <Card>
@@ -30,6 +43,22 @@ export function AppOverview({ app }: { app: AppDetail }) {
             label="CPU limit"
             value={formatNanoCpus(app.resources?.nano_cpus)}
           />
+          <div>
+            <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Deploy strategy
+            </dt>
+            <dd className="mt-0.5 text-sm text-foreground">
+              {STRATEGY_LABELS[app.strategy] ?? app.strategy}
+              {app.strategy === 'rolling' ? (
+                <span className="mt-1 flex items-center gap-1 text-xs text-destructive">
+                  <WarningIcon className="size-3.5" />
+                  Not supported by the reconciler; the next deploy will fail
+                  until this is changed.
+                </span>
+              ) : null}
+            </dd>
+          </div>
+          <Field label="Replicas" value={String(app.replicas)} />
           {/* Same fallback convention routes/databases/$name.tsx uses for
               the equivalent field: an italic "unassigned" placeholder
               rather than blank space, so an app with no explicit
