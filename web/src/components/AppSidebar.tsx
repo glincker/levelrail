@@ -5,6 +5,7 @@ import {
   DatabaseIcon,
   KeyRoundIcon,
   LogOutIcon,
+  ServerIcon,
   SettingsIcon,
   ShieldIcon,
   UserIcon,
@@ -141,6 +142,23 @@ export function AppSidebar() {
                 >
                   <SettingsIcon />
                   <span>General</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              {/* Infra/admin config, not a deployable resource kind like
+                  Apps/Databases, so it lives in Settings rather than the
+                  primary group above. Multi-node is an occasional admin
+                  action for this product's 1-10 machine target audience
+                  (CLAUDE.md 1), not a daily-use screen, the same reasoning
+                  that keeps Account/Security/API tokens/General down
+                  here instead of promoted to primary nav. */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  render={<Link to="/nodes" />}
+                  isActive={pathname.startsWith('/nodes')}
+                  tooltip="Nodes"
+                >
+                  <ServerIcon />
+                  <span>Nodes</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               {brand.DocsURL ? (
