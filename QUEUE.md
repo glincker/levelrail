@@ -38,13 +38,13 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
 
 ## In progress
 
-(nothing right now; see Done below for what just landed)
+- [ ] Databases detail route gets the same dynamic/contextual sidebar
+      treatment `/apps/$name/*` just got. Claimed by the concurrent
+      session (the one that landed the notification bell/toast
+      consolidation above), starting now.
 
 ## Next up (priority order)
 
-- [ ] Databases detail route gets the same dynamic/contextual sidebar
-      treatment `/apps/$name/*` just got. Deliberately deferred until
-      the Apps pattern had proven itself once; now it has.
 - [ ] MySQL as a third database engine: the creation wizard's step 1
       originally wanted this as a 5th option, dropped because
       `internal/reconcile/database/controller.go` only handles
