@@ -14,9 +14,11 @@ import { CreateBackupTargetDialog } from '../../components/CreateBackupTargetDia
 // body.
 //
 // This page only covers connecting/listing/removing a bucket
-// destination. Triggering an actual backup or viewing backup history
-// has no corresponding endpoint yet, that is separate, later work, so
-// there is nothing here for either of those, deliberately.
+// destination. Triggering an actual backup and viewing its history lives
+// on the database that owns it (components/BackupsSection.tsx, rendered
+// from routes/databases/$name/overview.tsx), not here: a backup target is
+// account-level and can back up more than one database, so its own runs
+// belong on the database's page, not this one.
 export const Route = createFileRoute('/settings/backup-targets')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(backupTargetListQueryOptions()),
