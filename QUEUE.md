@@ -38,24 +38,31 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
 
 ## In progress
 
-- [ ] Surface node health (last-seen/heartbeat) and cordon/drain/
-      workload-capability controls in the Nodes management UI, against
-      the real, verified backend contract (`internal/api/nodes.go`:
-      `GET /nodes/{id}/health`, `POST /nodes/{id}/{cordon,uncordon,drain}`,
-      `PUT /nodes/{id}/workloads`). This also fully covers the
-      build-node-routing item below (there is no separate API surface
-      for "which node will build this", `accepts_build_workloads` is
-      the whole frontend-relevant contract; confirmed via grep, no
-      `SelectBuildNode`-adjacent route exists anywhere in
-      `internal/api`). (builder dispatched)
-- [ ] Redo the "Saved." success-message consolidation (6 files, same
-      scope and design as before, lost uncommitted in the merge-recovery
-      `git reset --hard`, not a design problem, just needs rebuilding).
-      (builder dispatched)
+- [ ] Fix the Base UI "expected a native &lt;button&gt;" console warning
+      firing on every `DialogTrigger render={<Button .../>}` /
+      `DialogTrigger render={trigger}` composition. Confirmed live via
+      browser (`New app` on the apps list, `pm-main`'s dev server,
+      2026-08-13): Base UI logs "A component that acts as a button
+      expected a native &lt;button&gt; because the `nativeButton` prop is
+      true... Use a real &lt;button&gt; in the `render` prop, or set
+      `nativeButton` to `false`." Root cause is composing two Base UI
+      primitives (`Button` wraps `ButtonPrimitive`, `DialogTrigger`
+      expects to control the rendered native element directly) without
+      threading `nativeButton` through. Confirmed systemic via grep, not
+      a one-off: 11 files use this exact
+      `DialogTrigger render={<Button .../>}` pattern
+      (`RevokeTokenDialog`, `DeleteDatabaseDialog`,
+      `CreateAlertRuleDialog`, `CreateTokenDialog`,
+      `DeleteAlertRuleDialog`, `DeleteAppDialog`, `CreateAppDialog`,
+      `DeleteNodeDialog`, `CreateDatabaseDialog`, `AddNodeDialog`,
+      `routes/settings/security.tsx`). Console-warning only in every
+      manual click-test done so far (dialogs open/submit/close
+      correctly), but it's real a11y/semantics drift Base UI itself
+      is flagging, worth a real fix, not a suppress. (builder dispatched)
 
 ## Next up (priority order)
 
-(nothing queued right now; re-triage once the two in-progress items land)
+(nothing else queued right now; re-triage once the in-progress item lands)
 
 ## Resolved by investigation, no build needed
 
@@ -91,6 +98,23 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
 
 ## Done (most recent first)
 
+- [x] Node health/cordon/drain/workload-capability UI: new
+      `/nodes/$id` detail route, `CordonNodeDialog`, `DrainNodeDialog`
+      (target-node picker, renders the real 200/207 partial-success
+      shape), workload-capability `Switch` toggles. `NodeRow` now shows
+      two independent badges (connectivity from `status`, cordon from
+      `schedulable`, confirmed via grep that nothing in the backend
+      actually ever writes `status: "cordoned"`) plus a "Manage" link.
+      Browser-validated end to end against a live backend: created a
+      real app, confirmed the reconciler converged it
+      (`Ready: AlreadyRunning`), confirmed Delete/Node-field/env-save
+      all render correctly on `pm-main`'s own dev server.
+- [x] "Saved." success-message consolidation: new
+      `components/ui/success-message.tsx`, 6 call sites
+      (HealthCheckEditor, DomainEditor, ResourceLimitsEditor, EnvEditor,
+      SecretsEditor, DeployTriggerForm) switched over. Browser-verified:
+      saving an app's env variables renders the shared component's
+      green "Saved." text correctly.
 - [x] Domain-conflict now surfaces as a real 409 naming the conflicting
       domain instead of a generic 500 (`handleCreateApp`/`handleUpdateApp`
       never checked for `store.ErrDomainTaken`, which the backend has
