@@ -16,10 +16,10 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useBrand } from '../../hooks/useBrand'
 
-// Real content for the General settings page (CLAUDE.md section 8's
-// "Frontend pages, one agent per route, against a frozen API contract"
+// Real content for the General settings page (following the project's
+// "frontend pages, one route at a time, against a frozen API contract"
 // parallel-work pattern: Account and Security are separate in-flight
-// agents building out their own placeholder routes, API tokens is
+// passes building out their own placeholder routes, API tokens is
 // already done, this one is General).
 //
 // Everything here reads from the already-warm /api/v1/brand cache via
@@ -27,8 +27,8 @@ import { useBrand } from '../../hooks/useBrand'
 // no new query module needed: this page is read-only display of data
 // that's already fetched. There is deliberately no system-status card
 // here (Docker health, secrets/webhook config, disk, uptime, version):
-// none of that exists as a backend endpoint yet, and CLAUDE.md 7 rules
-// out inventing placeholder data for something not real.
+// none of that exists as a backend endpoint yet, and this repo's own
+// conventions rule out inventing placeholder data for something not real.
 export const Route = createFileRoute('/settings/general')({
   component: GeneralSettingsPage,
 })

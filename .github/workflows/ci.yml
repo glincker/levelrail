@@ -41,14 +41,14 @@ jobs:
         run: scripts/check-coverage.sh coverage.out internal/ 70
 
       # --------------------------------------------------------------------
-      # TODO: changed-file coverage check on PRs (CLAUDE.md section 7:
-      # "Changed-file coverage check on PRs, so new code cannot lower the
-      # bar even if overall coverage passes"). NOT implemented yet.
+      # TODO: changed-file coverage check on PRs, so new code cannot lower
+      # the bar even if overall coverage passes. NOT implemented yet.
       #
       # Deliberately left as a documented gap rather than a step that runs
       # and always reports green, because it can't be verified without a
       # real PR against a real GitHub remote, and this repo does not have
-      # one yet (see CLAUDE.md section 9, open decision 6).
+      # one yet (an open decision still pending: when to create the real
+      # GitHub repo and push).
       #
       # What building it for real requires:
       #   1. A coverage baseline from `main`. A PR run only has the PR's

@@ -18,8 +18,8 @@ import {
 // routes/apps/$name/deploys/$deployId/logs.tsx's live SSE build-log tail.
 // That route follows one in-progress build/deploy's output as it
 // streams; this panel searches a time range of already-persisted
-// container log entries after the fact, "why was this app slow at 3am
-// last Tuesday" (CLAUDE.md 6's Phase 2 exit criterion), so it is a
+// container log entries after the fact, answering "why was this app slow
+// at 3am last Tuesday" without leaving the dashboard, so it is a
 // request/response query through TanStack Query, not a kept-open
 // EventSource. It reuses that route's visual language (monospace rows,
 // stderr highlighted, TanStack Virtual) because that's still the right

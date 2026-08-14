@@ -103,7 +103,7 @@ type ProbeFormValues = HealthFormValues['readiness']
 // interval/timeout are nanosecond time.Duration values on the wire
 // (ServiceProbe's own doc comment in appDetail.ts). The form collects
 // seconds, the same unit app.yaml's own health.readiness.interval: 5s
-// example uses (CLAUDE.md 4.9) and the same unit formatDurationNs
+// example uses in the app spec and the same unit formatDurationNs
 // converts back to for display, so a value round-trips as the same
 // number the operator typed rather than drifting through an
 // intermediate unit.

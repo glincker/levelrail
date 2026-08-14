@@ -34,5 +34,6 @@ node_modules/
 .vscode/
 *.swp
 
-# Agent worktrees (see CLAUDE.md Worktree Hygiene): never versioned
+# Agent worktrees (each holds its own node_modules/.next/.turbo build
+# caches and accumulates fast): never versioned
 .claude/worktrees/

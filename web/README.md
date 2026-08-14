@@ -1,7 +1,7 @@
 # /web
 
 Frontend for the control plane, embedded into the Go binary via `embed.FS`
-per CLAUDE.md 4.1/4.12. React 19, Vite, TypeScript (strict), Tailwind CSS,
+(no Node runtime on the server, no separately hosted frontend). React 19, Vite, TypeScript (strict), Tailwind CSS,
 TanStack Router (file-based routing, per-route code splitting), TanStack
 Query, TanStack Virtual.
 
@@ -27,7 +27,7 @@ npm run preview      # preview the production build locally
 
 `npm run build` also writes `dist/stats.html`, a treemap of final chunk
 sizes (via `rollup-plugin-visualizer`), for keeping an eye on bundle size
-per CLAUDE.md section 7's "bundle size budget in CI" requirement. A CI
+against the route-level code splitting budget enforced in CI. A CI
 script that fails the build on a size regression is not implemented yet.
 
 ## Conventions

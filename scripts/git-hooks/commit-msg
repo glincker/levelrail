@@ -1,10 +1,9 @@
 #!/bin/bash
-# Enforces CLAUDE.md 7's commit conventions at commit time rather than
+# Enforces the project's commit conventions at commit time rather than
 # only in review: conventional-commit format, no em/en dashes, no
-# Co-Authored-By trailer (the parent GLINR CLAUDE.md's "keep commits
-# attributable to a single author" rule). Companion to
-# scripts/git-hooks/pre-commit; installed the same way, see
-# scripts/install-hooks.sh.
+# Co-Authored-By trailer (keeping commits attributable to a single
+# author). Companion to scripts/git-hooks/pre-commit; installed the same
+# way, see scripts/install-hooks.sh.
 set -uo pipefail
 
 msg_file="$1"
@@ -24,7 +23,7 @@ fi
 echo "commit-msg: em dash / en dash sweep"
 if echo "$msg" | grep -q "—\|–"; then
 	echo "em dash or en dash found in commit message."
-	echo "CLAUDE.md: no em dashes or en dashes anywhere. Use commas, periods, parentheses, or colons."
+	echo "No em dashes or en dashes anywhere. Use commas, periods, parentheses, or colons."
 	fail=1
 fi
 

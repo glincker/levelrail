@@ -25,10 +25,9 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
 
-    /* Strict mode, spelled out per CLAUDE.md section 7: "TypeScript strict
-       mode, no any". strict: true already implies the flags below, they are
-       listed explicitly so a future edit narrowing "strict" cannot silently
-       drop one of them. */
+    /* TypeScript strict mode, no any: strict: true already implies the
+       flags below, they are listed explicitly so a future edit narrowing
+       "strict" cannot silently drop one of them. */
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,

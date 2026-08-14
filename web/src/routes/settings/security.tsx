@@ -32,7 +32,8 @@ import {
 
 // Loader-primed the same way routes/settings/tokens.tsx primes
 // tokenListQueryOptions: the component below only ever reads that warm
-// cache via useSuspenseQuery, never fetches in its own body (CLAUDE.md 7).
+// cache via useSuspenseQuery, never fetches data in its own body (no
+// data fetching in component bodies is a project-wide rule).
 export const Route = createFileRoute('/settings/security')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(sessionQueryOptions()),
