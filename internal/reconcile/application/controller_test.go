@@ -455,9 +455,10 @@ func TestController_Reconcile_DoesNotTouchDifferentServiceContainers(t *testing.
 }
 
 func TestController_Reconcile_CreateSucceedsStartFails_HalfSucceeded(t *testing.T) {
-	// The half-succeeded case CLAUDE.md 7 explicitly requires a test
-	// for: create succeeds (a container now exists) but start fails (it
-	// isn't running). This proves Reconcile reports that honestly as a
+	// The half-succeeded case this codebase's testing standard
+	// explicitly requires a test for: create succeeds (a container now
+	// exists) but start fails (it isn't running). This proves Reconcile
+	// reports that honestly as a
 	// failure, and that the next call recovers by restarting the
 	// existing container rather than erroring forever or blindly
 	// recreating it.

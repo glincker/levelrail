@@ -13,7 +13,8 @@
 // Each pass:
 //
 //  1. Reads every node and every placement from the store. Nothing about
-//     the fleet is cached between passes (CLAUDE.md 4.2).
+//     the fleet is cached between passes, the same level-triggered
+//     reconciler contract every controller in this codebase follows.
 //  2. Distributes mesh configuration through internal/network.Coordinator,
 //     which allocates any missing addresses, plans a full mesh, and sends
 //     each node its own config.

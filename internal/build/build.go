@@ -25,9 +25,9 @@ type Result struct {
 
 // ProgressEvent is one structured build progress update, deliberately
 // decoupled from BuildKit's own SolveStatus wire type so callers, a
-// future SSE handler in particular (CLAUDE.md 4.4's build log streaming),
-// don't need to import moby/buildkit/client just to format a build log
-// line for a browser.
+// future SSE handler in particular (the build design's build log
+// streaming requirement), don't need to import moby/buildkit/client
+// just to format a build log line for a browser.
 type ProgressEvent struct {
 	// Step is the build step's name, e.g. "[2/4] RUN go build".
 	Step string

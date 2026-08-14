@@ -37,9 +37,10 @@ type Option func(*Client)
 // exporting to dir on every build. Empty (the default) disables cache
 // import/export entirely, not an empty-but-present cache.
 //
-// This was CLAUDE.md 4.4's "remote cache" scoped honestly for Phase 1's
-// single-node target, before TASKS.md 3.5 added WithCacheRegistry: a
-// cache genuinely shared across dedicated build nodes needs a registry
+// This was the build design's "remote cache" goal scoped honestly for
+// Phase 1's single-node target, before TASKS.md 3.5 added
+// WithCacheRegistry: a cache genuinely shared across dedicated build
+// nodes needs a registry
 // or object-store backend and dedicated build nodes to share it with.
 // WithCacheDir is still useful on its own (fast incremental rebuilds on
 // one node with no registry round trip) and composes with

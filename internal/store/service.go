@@ -159,8 +159,8 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 		// Wrapped with %w, not returned bare: still findable via
 		// errors.As for a *ErrDomainTaken caller that wants the
 		// specific domain/owner, per this method's error-wrapping
-		// convention (CLAUDE.md 7: "errors wrapped with context at
-		// every layer boundary").
+		// convention and the house rule that errors are wrapped with
+		// context at every layer boundary.
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
 

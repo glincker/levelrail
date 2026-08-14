@@ -3,9 +3,9 @@
 -- that replaces Caddy's default file-system storage module
 -- (internal/ingress.FileStorage) for certificates and ACME account
 -- state, exactly the requirement internal/reconcile/ingress/controller.go's
--- own package doc comment already named (CLAUDE.md 4.5: "certificate
--- storage goes in the database so multi-node deployments share cert
--- state"). Every ingress-driving process pointed at this same database
+-- own package doc comment already named: certificate storage goes in
+-- the database so multi-node deployments share cert state. Every
+-- ingress-driving process pointed at this same database
 -- file shares one view of every issued certificate, so two of them
 -- never independently re-obtain a certificate for a domain the other
 -- already has one for.
@@ -31,7 +31,7 @@ CREATE TABLE cert_storage (
 -- abandoned by a holder that crashed without calling Unlock, mirroring
 -- certmagic's own FileStorage doc comment on stale-lock handling; there
 -- is deliberately no staleness logic in SQL here, SQLite migrations are
--- schema only, per CLAUDE.md 4.7.
+-- schema only.
 CREATE TABLE cert_storage_locks (
 	name        TEXT PRIMARY KEY,
 	acquired_at TEXT NOT NULL,

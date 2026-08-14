@@ -15,7 +15,7 @@ import (
 )
 
 // CertStore is the narrow surface SQLiteStorage needs from
-// internal/store's SQLite-backed *store.DB (CLAUDE.md 4.7), so tests can
+// internal/store's SQLite-backed *store.DB, so tests can
 // fake it without a real database. *store.DB satisfies this.
 type CertStore interface {
 	SaveCertStorageValue(ctx context.Context, key string, value []byte) error
@@ -45,11 +45,12 @@ const (
 )
 
 // SQLiteStorage implements certmagic.Storage over internal/store's
-// embedded SQLite (CLAUDE.md 4.7), replacing Caddy's default FileStorage
-// module for certificates and ACME account state. This is the concrete
-// shape CLAUDE.md 4.5 and internal/reconcile/ingress/controller.go's own
-// package doc comment have both already named as the real requirement
-// (TASKS.md 3.6): every ingress-driving process pointed at the same
+// embedded SQLite, replacing Caddy's default FileStorage module for
+// certificates and ACME account state. This is the concrete shape
+// internal/reconcile/ingress/controller.go's own package doc comment
+// already names as the real requirement (TASKS.md 3.6): certificate
+// storage lives in the database so multi-node deployments share cert
+// state, and every ingress-driving process pointed at the same
 // database file sees the same certificates and issuance locks through
 // this type, so two of them never independently re-obtain a certificate
 // for a domain the other already has one for.

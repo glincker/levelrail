@@ -32,7 +32,7 @@ type CacheConfig struct {
 	// that cache blobs are pushed to and pulled from using the same
 	// registry credentials Docker itself already has configured. This
 	// is the actual "remote cache... shared across dedicated build
-	// nodes" CLAUDE.md 4.4 and TASKS.md 3.5 both call for: any build
+	// nodes" the build design and TASKS.md 3.5 both call for: any build
 	// node with network access to the registry gets the same cache,
 	// unlike Dir.
 	RegistryRef string

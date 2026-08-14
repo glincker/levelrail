@@ -25,8 +25,9 @@ import (
 // the admin API's POST /load handler calls, see
 // docs-local/research/caddy-spike.md), without this package ever shelling
 // out to a `caddy` binary or running one as a subprocess or sibling
-// container. CLAUDE.md 4.5 requires this shape specifically: ingress state
-// lives in the control plane's own process, not in something else's.
+// container. The embedded-ingress design requires this shape
+// specifically: ingress state lives in the control plane's own
+// process, not in something else's.
 type Driver struct {
 	logger *slog.Logger
 }

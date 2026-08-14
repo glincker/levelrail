@@ -15,8 +15,8 @@
 // Status stuck at Online forever with nothing to notice otherwise. This
 // controller is that "otherwise": every reconcile pass re-reads
 // LastSeenAt fresh from the store (never cached) and compares it against
-// a timeout, the same level-triggered principle CLAUDE.md 4.2 requires
-// of every controller in this codebase, so a hung connection is
+// a timeout, the same level-triggered principle required of every
+// controller in this codebase, so a hung connection is
 // discovered on the very next resync tick rather than staying silently
 // wrong until someone happens to look.
 package nodehealth
@@ -64,8 +64,8 @@ func WithClock(now func() time.Time) Option {
 }
 
 // New builds a Controller for nodeID. timeout is how long since
-// LastSeenAt is treated as stale; callers read it from an env var
-// (CLAUDE.md 7: "no hardcoded thresholds, use env vars"), this package
+// LastSeenAt is treated as stale; callers read it from an env var, per
+// the house rule against hardcoded thresholds, and this package
 // itself has no opinion on a default.
 func New(nodeID string, st Store, timeout time.Duration, opts ...Option) *Controller {
 	c := &Controller{nodeID: nodeID, store: st, timeout: timeout, now: time.Now}
@@ -108,7 +108,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		// Server.Session's own defer already marked Offline) has
 		// nothing left to converge here, matching every other
 		// controller's "cheap no-op when nothing changed" idempotency
-		// requirement (CLAUDE.md 4.2, this package's own doc comment).
+		// requirement (the reconciler contract, this package's own doc comment).
 		if node.Status == store.NodeStatusOnline {
 			if err := c.store.UpdateNodeStatus(ctx, c.nodeID, store.NodeStatusOffline); err != nil {
 				return unknownResult("MarkOfflineFailed", err.Error()),

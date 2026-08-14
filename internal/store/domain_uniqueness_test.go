@@ -28,8 +28,9 @@ func TestSaveDesiredService_DomainTaken_RejectsWrite(t *testing.T) {
 	}
 
 	// The rejected write must be a no-op: web2 was never created at all,
-	// this is the "operation half-succeeded" case CLAUDE.md 7 requires a
-	// test for, applied to a store write instead of a reconciler.
+	// this is the "operation half-succeeded" case this codebase's
+	// testing standard requires a test for, applied to a store write
+	// instead of a reconciler.
 	if _, err := db.GetDesiredService(ctx, "web2"); !errors.Is(err, ErrServiceNotFound) {
 		t.Errorf("GetDesiredService(web2) error = %v, want ErrServiceNotFound: a rejected domain claim must not partially create the service", err)
 	}
