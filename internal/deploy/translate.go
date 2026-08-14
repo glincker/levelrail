@@ -22,6 +22,13 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		Domains:   svc.Domains,
 		Env:       literalEnv(svc.Env),
 		SecretEnv: secretEnvNames(svc.Env),
+		// Effective*, not the raw field: svc.Strategy/svc.Replicas can be
+		// "" / 0 (unset in app.yaml), and store.DesiredService's own doc
+		// comment on these two fields requires them to always be the
+		// already-resolved value, matching Resources/Health's own
+		// resolve-before-storing shape below.
+		Strategy: svc.EffectiveStrategy(),
+		Replicas: svc.EffectiveReplicas(),
 	}
 
 	if svc.Resources != nil {

@@ -327,3 +327,52 @@ func TestListDesiredServicesByNode(t *testing.T) {
 		t.Errorf("ListDesiredServicesByNode(node-2) = %+v, want empty", gotEmpty)
 	}
 }
+
+func TestSaveDesiredService_StrategyAndReplicas_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := DesiredService{Name: "web", Image: "img:v1", Port: 3000, Strategy: "recreate", Replicas: 3}
+	if err := db.SaveDesiredService(ctx, want); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Strategy != "recreate" {
+		t.Errorf("Strategy = %q, want %q", got.Strategy, "recreate")
+	}
+	if got.Replicas != 3 {
+		t.Errorf("Replicas = %d, want 3", got.Replicas)
+	}
+}
+
+func TestSaveDesiredService_EmptyStrategyAndZeroReplicas_DefaultsPersisted(t *testing.T) {
+	// A caller that never sets these two fields (every caller before
+	// this migration existed, and internal/api's direct-image-registration
+	// path today, which has no strategy/replicas concept yet) must
+	// persist DefaultDeployStrategy/DefaultReplicas, not an empty string
+	// or a zero replica count: DesiredService's own doc comment on these
+	// fields requires them to always be the resolved value, and this is
+	// the store layer's independent defense of that guarantee for any
+	// caller, not just internal/deploy's.
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Strategy != DefaultDeployStrategy {
+		t.Errorf("Strategy = %q, want default %q", got.Strategy, DefaultDeployStrategy)
+	}
+	if got.Replicas != DefaultReplicas {
+		t.Errorf("Replicas = %d, want default %d", got.Replicas, DefaultReplicas)
+	}
+}

@@ -874,3 +874,307 @@ func TestContainerName_DeterministicPerImage(t *testing.T) {
 		t.Errorf("ContainerName(%q) = %q, want it prefixed with the service name", "web", a1)
 	}
 }
+
+func TestReplicaContainerName_Replica0MatchesContainerName(t *testing.T) {
+	got := replicaContainerName("web", "img:v1", 0)
+	want := ContainerName("web", "img:v1")
+	if got != want {
+		t.Errorf("replicaContainerName(_, _, 0) = %q, want exactly ContainerName's own output %q (backward compatibility for every existing single-replica service and internal/reconcile/ingress's own call to the exported ContainerName)", got, want)
+	}
+}
+
+func TestReplicaContainerName_NonZeroIndexIsDistinctAndDeterministic(t *testing.T) {
+	r0 := replicaContainerName("web", "img:v1", 0)
+	r1 := replicaContainerName("web", "img:v1", 1)
+	r1Again := replicaContainerName("web", "img:v1", 1)
+	r2 := replicaContainerName("web", "img:v1", 2)
+
+	if r1 == r0 {
+		t.Errorf("replica 1's name must differ from replica 0's, got %q for both", r1)
+	}
+	if r1 != r1Again {
+		t.Errorf("replicaContainerName is not deterministic for the same index: %q != %q", r1, r1Again)
+	}
+	if r1 == r2 {
+		t.Errorf("replica 1 and replica 2 collided: %q", r1)
+	}
+}
+
+func TestOwnsContainer_RecognizesReplicaSuffix(t *testing.T) {
+	base := ContainerName("web", "img:v1") // e.g. "web-abcd1234"
+	r1 := replicaContainerName("web", "img:v1", 1)
+	r12 := replicaContainerName("web", "img:v1", 12)
+
+	for _, name := range []string{base, r1, r12} {
+		if !ownsContainer("web", name) {
+			t.Errorf("ownsContainer(%q) = false, want true", name)
+		}
+	}
+	if ownsContainer("web", base+"-rabc") {
+		t.Error("ownsContainer accepted a non-numeric replica suffix")
+	}
+	if ownsContainer("web", base+"-r") {
+		t.Error("ownsContainer accepted an empty replica index")
+	}
+	if ownsContainer("web-worker", base) {
+		t.Error("ownsContainer matched a differently-named service's container (the hyphen-prefix collision this check exists to prevent)")
+	}
+}
+
+func TestController_Reconcile_Replicas_FreshDeploy_CreatesAllAndKeepsAllRunning(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Strategy: store.DefaultDeployStrategy, Replicas: 3}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Fatalf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+	if rt.createCalls != 3 {
+		t.Errorf("createCalls = %d, want 3 (one per replica)", rt.createCalls)
+	}
+	if rt.count() != 3 {
+		t.Errorf("container count = %d, want 3", rt.count())
+	}
+	for i := 0; i < 3; i++ {
+		want := replicaContainerName("web", "img:v1", i)
+		found := false
+		for _, name := range rt.names() {
+			if name == want {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("replica %d container %q not found among %v", i, want, rt.names())
+		}
+	}
+}
+
+func TestController_Reconcile_Replicas_AlreadyRunning_NoOp(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Strategy: store.DefaultDeployStrategy, Replicas: 3}
+	for i := 0; i < 3; i++ {
+		rt.seed(replicaContainerName("web", "img:v1", i), true)
+	}
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "AlreadyRunning" {
+		t.Errorf("condition = %+v, want Status=True Reason=AlreadyRunning", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0 (already converged, must be a no-op)", rt.createCalls)
+	}
+}
+
+func TestController_Reconcile_Replicas_ScaleDown_RemovesExcessEvenOnCurrentImage(t *testing.T) {
+	// The scale-down case that isn't just "old image is stale": replica 2
+	// runs the exact same, current image as replicas 0 and 1, but the
+	// desired replica count dropped to 2, so it must still be removed.
+	// staleContainers has no notion of "image is current", only "is this
+	// name in the keep set", which is exactly what makes this case work.
+	rt := newFakeRuntime(0)
+	for i := 0; i < 3; i++ {
+		rt.seed(replicaContainerName("web", "img:v1", i), true)
+	}
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Strategy: store.DefaultDeployStrategy, Replicas: 2}
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue {
+		t.Fatalf("condition = %+v, want Status=True", cond)
+	}
+	if rt.count() != 2 {
+		t.Errorf("container count = %d, want 2 (replica 2 must be removed as excess)", rt.count())
+	}
+	if _, ok := rt.containers[replicaContainerName("web", "img:v1", 2)]; ok {
+		t.Error("excess replica 2 is still present, want it removed")
+	}
+}
+
+func TestController_Reconcile_Recreate_FreshDeploy(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Strategy: store.DefaultDeployStrategy, Replicas: store.DefaultReplicas}
+	desired.Strategy = "recreate"
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Errorf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1", rt.createCalls)
+	}
+}
+
+func TestController_Reconcile_Recreate_AlreadyConverged_NeverStopsAnything(t *testing.T) {
+	// The load-bearing idempotency case: reconcileRecreate's own doc
+	// comment names this as the exact bug a naive
+	// "always stop everything, then start everything" implementation
+	// would have. A resync tick against an already-converged service
+	// must not stop or remove a single container.
+	rt := newFakeRuntime(0)
+	target := ContainerName("web", "img:v1")
+	rt.seed(target, true)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Strategy: "recreate", Replicas: store.DefaultReplicas}
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "AlreadyRunning" {
+		t.Errorf("condition = %+v, want Status=True Reason=AlreadyRunning", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0", rt.createCalls)
+	}
+	if rt.removeCalls != 0 {
+		t.Errorf("removeCalls = %d, want 0 (must never stop/remove an already-converged container)", rt.removeCalls)
+	}
+}
+
+func TestController_Reconcile_Recreate_Redeploy_NoOverlapBetweenOldAndNew(t *testing.T) {
+	// recreate's defining property versus blue-green: the old container
+	// is gone before the new one is created, never coexisting even
+	// briefly. Proven here by asserting exactly one container exists
+	// throughout (the fake is synchronous, so this test can't observe an
+	// instant of true overlap directly, but it can and does assert the
+	// old name is gone and the new name is the only one present
+	// afterward, which blue-green's own redeploy test already
+	// distinguishes by contrast).
+	rt := newFakeRuntime(0)
+	oldTarget := ContainerName("web", "img:v1")
+	rt.seed(oldTarget, true)
+	desired := &store.DesiredService{Name: "web", Image: "img:v2", Port: 80, Strategy: "recreate", Replicas: store.DefaultReplicas}
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Fatalf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+	if rt.count() != 1 {
+		t.Fatalf("container count = %d, want exactly 1", rt.count())
+	}
+	newTarget := ContainerName("web", "img:v2")
+	if _, ok := rt.containers[newTarget]; !ok {
+		t.Errorf("new-image container %q not found among %v", newTarget, rt.names())
+	}
+	if _, ok := rt.containers[oldTarget]; ok {
+		t.Error("old-image container is still present, want it removed before the new one was created")
+	}
+}
+
+func TestController_Reconcile_Recreate_CreateFailsAfterCleanup_HalfSucceeded(t *testing.T) {
+	// The half-succeeded case CLAUDE.md's own testing standard calls
+	// for: recreate has already torn down the old container (a real,
+	// intentional consequence of this strategy, not a bug) by the time
+	// creating the replacement fails. The next reconcile pass retries
+	// create from a clean slate (nothing stale left to confuse it),
+	// which is the correct, safe way to fail partway through this
+	// specific strategy, but it must be a real, visible CreateFailed
+	// condition, not a silently-swallowed error.
+	rt := newFakeRuntime(0)
+	oldTarget := ContainerName("web", "img:v1")
+	rt.seed(oldTarget, true)
+	desired := &store.DesiredService{Name: "web", Image: "img:v2", Port: 80, Strategy: "recreate", Replicas: store.DefaultReplicas}
+	rt.createErr = errors.New("boom")
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want a create failure")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "CreateFailed" {
+		t.Errorf("condition = %+v, want Status=False Reason=CreateFailed", cond)
+	}
+	if _, ok := rt.containers[oldTarget]; ok {
+		t.Error("old container is still present; recreate's own doc comment says cleanup happens before create is attempted")
+	}
+	if rt.count() != 0 {
+		t.Errorf("container count = %d, want 0 (old removed, new failed to create)", rt.count())
+	}
+}
+
+func TestController_Reconcile_Strategy_Rolling_NotYetSupported(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Strategy: "rolling", Replicas: store.DefaultReplicas}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v, want nil (a permanently unsupported strategy is a known, documented state, not a transient failure)", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "StrategyNotSupported" {
+		t.Errorf("condition = %+v, want Status=False Reason=StrategyNotSupported", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0 (must not touch the runtime at all for an unsupported strategy)", rt.createCalls)
+	}
+}
+
+func TestController_Reconcile_Strategy_Unrecognized(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Strategy: "not-a-real-strategy", Replicas: store.DefaultReplicas}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v, want nil", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "StrategyUnrecognized" {
+		t.Errorf("condition = %+v, want Status=False Reason=StrategyUnrecognized", cond)
+	}
+}
+
+func TestController_Reconcile_EmptyStrategyAndZeroReplicas_DefaultsToBlueGreenSingleContainer(t *testing.T) {
+	// A store.DesiredService{} constructed by hand (this package's own
+	// tests before this change, and any future caller that bypasses
+	// store.SaveDesiredService's own defaulting) must behave exactly
+	// like today's single-container blue-green shape, per this
+	// package's Reconcile's own doc comment on why this defaulting is
+	// not redundant with the store layer's.
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80} // Strategy: "", Replicas: 0
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Fatalf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+	if rt.count() != 1 {
+		t.Errorf("container count = %d, want exactly 1 (Replicas: 0 must default to 1, not 0 replicas)", rt.count())
+	}
+	want := ContainerName("web", "img:v1")
+	if _, ok := rt.containers[want]; !ok {
+		t.Errorf("container %q not found, want the same name Strategy/Replicas being unset has always produced", want)
+	}
+}

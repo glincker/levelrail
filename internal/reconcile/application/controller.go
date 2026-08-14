@@ -70,6 +70,30 @@ type DeployRecorder interface {
 
 const defaultReadyBudget = 60 * time.Second
 
+// Deploy strategies this controller actually implements. Values match
+// internal/spec's StrategyRolling/StrategyRecreate/StrategyBlueGreen
+// exactly, kept as this package's own unexported constants rather than
+// importing internal/spec, the same "define locally, don't import a
+// higher-level package's vocabulary" convention store.DesiredService's
+// own Strategy field doc comment already establishes.
+//
+// strategyRolling is a real, named case Reconcile recognizes and
+// reports on (notReady("StrategyNotSupported", ...)), not an
+// unrecognized string that happens to fall through to a default: a
+// service can already save strategy: rolling today (internal/spec's
+// schema has always accepted it), so this controller must say so
+// honestly rather than silently reconciling it as something else. See
+// this package's own doc comment for why rolling specifically (staggered
+// per-replica cutover, partial-success handling) is a larger, separate
+// piece of work than generalizing the existing create-alongside-then-
+// remove-old shape to N replicas (blue-green) or adding a genuinely
+// simpler stop-then-start alternative (recreate).
+const (
+	strategyRolling   = "rolling"
+	strategyRecreate  = "recreate"
+	strategyBlueGreen = "blue-green"
+)
+
 // Controller converges one named service's desired state (read fresh
 // from ServiceStore on every Reconcile, never cached) to a running
 // container.
@@ -148,77 +172,234 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		return notReady("StoreError", err), fmt.Errorf("application/%s: get desired service: %w", c.serviceName, err)
 	}
 
-	target := ContainerName(c.serviceName, desired.Image)
-
-	state, err := c.runtime.InspectByName(ctx, target)
-	if err != nil {
-		return notReady("InspectFailed", err), fmt.Errorf("application/%s: inspect %q: %w", c.serviceName, target, err)
+	// Defensive, not redundant: store.SaveDesiredService already
+	// defaults an empty Strategy/zero Replicas before persisting, but
+	// GetDesiredService's caller here is this package's own tests (and
+	// any future direct store construction) constructing a
+	// store.DesiredService{} literal by hand, which never goes through
+	// SaveDesiredService at all. Reconcile must behave identically to
+	// today's single-container-blue-green shape for every one of those,
+	// the same "this field is never ambiguous regardless of who
+	// constructs the struct" guarantee DesiredService's own doc comment
+	// promises.
+	replicas := desired.Replicas
+	if replicas <= 0 {
+		replicas = store.DefaultReplicas
+	}
+	strategy := desired.Strategy
+	if strategy == "" {
+		strategy = store.DefaultDeployStrategy
 	}
 
-	justDeployed := false
-	switch {
-	case state == nil:
-		if err := c.createAndStart(ctx, target, desired); err != nil {
-			return notReady("CreateFailed", err), fmt.Errorf("application/%s: %w", c.serviceName, err)
-		}
-		justDeployed = true
-	case !state.Running:
-		if err := c.runtime.Start(ctx, state.ID); err != nil {
-			return notReady("StartFailed", err), fmt.Errorf("application/%s: restart %q: %w", c.serviceName, target, err)
-		}
-		justDeployed = true
+	targets := make([]string, replicas)
+	for i := range targets {
+		targets[i] = replicaContainerName(c.serviceName, desired.Image, i)
 	}
 
-	if justDeployed {
-		// Re-inspect: Docker only reports port bindings once a container
-		// is actually running, not at create time.
-		state, err = c.runtime.InspectByName(ctx, target)
+	switch strategy {
+	case strategyBlueGreen:
+		return c.reconcileBlueGreen(ctx, targets, desired)
+	case strategyRecreate:
+		return c.reconcileRecreate(ctx, targets, desired)
+	case strategyRolling:
+		// A real, named case, not a fallthrough: internal/spec's schema
+		// has always accepted strategy: rolling, so a service can
+		// already have this saved. Reported honestly rather than
+		// silently reconciled as something else (this package's own doc
+		// comment on the strategy constants explains why rolling is
+		// separate, larger scope). Not an error: a permanently
+		// unsupported strategy is the same "known, documented block, not
+		// a transient failure that should retry-and-log-error forever"
+		// shape internal/reconcile/database's credentials-blocked case
+		// already establishes for an analogous known gap.
+		return notReady("StrategyNotSupported", fmt.Errorf("deploy strategy %q is not yet implemented", strategy)), nil
+	default:
+		// Reachable only if something bypassed internal/spec's schema
+		// validation (a hand-built DesiredService, or the schema's own
+		// enum drifting from this list): an unrecognized strategy is
+		// reported, never silently treated as blue-green, since guessing
+		// wrong here means guessing wrong about whether it's safe to
+		// remove an old container.
+		return notReady("StrategyUnrecognized", fmt.Errorf("unrecognized deploy strategy %q", strategy)), nil
+	}
+}
+
+// reconcileBlueGreen is today's original single-replica shape (this
+// package's own doc comment: create new alongside old, wait for
+// readiness, then remove every other container), generalized to
+// targets' full replica set: every target is ensured running (and, if
+// freshly started, ready) before any stale container, old-image or
+// excess-replica alike, is removed. The safety property is unchanged
+// from the single-replica case, just applied to a set instead of one
+// container: the new set is fully proven healthy before the old set is
+// torn down, so a bad deploy never has a moment where nothing healthy is
+// serving.
+func (c *Controller) reconcileBlueGreen(ctx context.Context, targets []string, desired *store.DesiredService) (reconcile.Result, error) {
+	anyDeployed := false
+	for _, target := range targets {
+		deployed, err := c.ensureReplicaRunning(ctx, target, desired)
 		if err != nil {
-			return notReady("InspectFailed", err), fmt.Errorf("application/%s: re-inspect %q after start: %w", c.serviceName, target, err)
+			return notReady(deployed.reason, err), fmt.Errorf("application/%s: %w", c.serviceName, err)
 		}
-		if state == nil {
-			return notReady("VanishedAfterStart", nil), fmt.Errorf("application/%s: %q not found immediately after starting it", c.serviceName, target)
-		}
-
-		if err := c.waitReady(ctx, state, desired); err != nil {
-			return notReady("ReadinessFailed", err), fmt.Errorf("application/%s: %w", c.serviceName, err)
-		}
+		anyDeployed = anyDeployed || deployed.justDeployed
 	}
 
-	// Only reached once the current desired container is confirmed
-	// running (and, if just deployed, ready): safe to remove every
-	// other container for this service.
-	if err := c.removeStale(ctx, target); err != nil {
-		// The important fact, a healthy container is serving, is still
-		// true; a stray old container is a real problem but a lesser
-		// one, so Status stays True with a reason that says exactly
-		// what's incomplete, and the error still surfaces (and this
-		// step retries, safely, on the next reconcile).
+	// Only reached once every target in this pass's replica set is
+	// confirmed running (and, for any freshly started, ready): safe to
+	// remove every other container for this service, old-image
+	// containers and any excess replica from a replica-count decrease
+	// alike.
+	if err := c.removeStale(ctx, targets); err != nil {
+		// The important fact, a healthy set is serving, is still true; a
+		// stray old container is a real problem but a lesser one, so
+		// Status stays True with a reason that says exactly what's
+		// incomplete, and the error still surfaces (and this step
+		// retries, safely, on the next reconcile).
 		return reconcile.Result{Conditions: []reconcile.Condition{{
 			Type: "Ready", Status: reconcile.ConditionTrue,
 			Reason: "RunningStaleCleanupFailed", Message: err.Error(),
 		}}}, fmt.Errorf("application/%s: cleanup stale containers: %w", c.serviceName, err)
 	}
 
-	if justDeployed {
-		// Best-effort, secondary to the deploy itself: the container is
-		// already confirmed running (and ready, and stale ones already
-		// cleaned up) by this point, so a metrics-store hiccup is
-		// surfaced through the returned error (which reconcile.Engine
-		// logs) without downgrading Status away from True, the same
-		// "the important fact is still true" shape removeStale's own
-		// error path above already establishes.
-		if c.deployRecorder != nil {
-			if err := c.deployRecorder.RecordDeploy(ctx, c.serviceName, time.Now()); err != nil {
-				return reconcile.Result{Conditions: []reconcile.Condition{{
-					Type: "Ready", Status: reconcile.ConditionTrue,
-					Reason: "DeployedMetricRecordFailed", Message: err.Error(),
-				}}}, fmt.Errorf("application/%s: record deploy metric: %w", c.serviceName, err)
-			}
+	return c.finishReconcile(ctx, anyDeployed)
+}
+
+// reconcileRecreate is the stop-everything-then-start-fresh strategy:
+// simpler than blue-green (no old/new overlap to reason about, no
+// container ever coexists with a different-image sibling), at the cost
+// of a real downtime window between the stop and the new set becoming
+// ready, exactly the tradeoff internal/spec's own strategy enum
+// documents recreate as making.
+//
+// The no-op check at the top is load-bearing, not an optimization: a
+// naive "always stop everything, then start everything" implementation
+// would tear down and restart a perfectly healthy, already-converged
+// replica set on every single resync tick (every reconcile.Engine pass,
+// TASKS.md 1.3's own resyncInterval), which is a permanent recreate-loop
+// bug, not a strategy. Reconcile must be idempotent (this codebase's own
+// reconciler contract), so this only ever stops anything when the
+// desired target set genuinely differs from what is currently running.
+func (c *Controller) reconcileRecreate(ctx context.Context, targets []string, desired *store.DesiredService) (reconcile.Result, error) {
+	allRunning := true
+	for _, target := range targets {
+		state, err := c.runtime.InspectByName(ctx, target)
+		if err != nil {
+			return notReady("InspectFailed", err), fmt.Errorf("application/%s: inspect %q: %w", c.serviceName, target, err)
 		}
-		return ready("Deployed"), nil
+		if state == nil || !state.Running {
+			allRunning = false
+			break
+		}
 	}
-	return ready("AlreadyRunning"), nil
+
+	stale, err := c.staleContainers(ctx, targets)
+	if err != nil {
+		return notReady("InspectFailed", err), fmt.Errorf("application/%s: list stale containers: %w", c.serviceName, err)
+	}
+
+	if allRunning && len(stale) == 0 {
+		return ready("AlreadyRunning"), nil
+	}
+
+	// Genuinely converging: stop and remove every existing container for
+	// this service, old-image and current-image target alike. keep=nil
+	// (not targets) is deliberate: a currently-running target is not
+	// reused/left in place the way blue-green would leave it, recreate's
+	// whole point is that nothing old ever coexists with anything new,
+	// so the "already-running, already-current" targets staleContainers
+	// excluded above still need to go before ensureReplicaRunning
+	// recreates them fresh below.
+	if err := c.removeStale(ctx, nil); err != nil {
+		return notReady("CleanupFailed", err), fmt.Errorf("application/%s: stop existing containers: %w", c.serviceName, err)
+	}
+
+	for _, target := range targets {
+		deployed, err := c.ensureReplicaRunning(ctx, target, desired)
+		if err != nil {
+			return notReady(deployed.reason, err), fmt.Errorf("application/%s: %w", c.serviceName, err)
+		}
+	}
+
+	return c.finishReconcile(ctx, true)
+}
+
+// finishReconcile records the deploy metric (if a real cutover happened
+// this pass) and returns the final Ready condition, the shared tail both
+// reconcileBlueGreen and reconcileRecreate end with.
+func (c *Controller) finishReconcile(ctx context.Context, justDeployed bool) (reconcile.Result, error) {
+	if !justDeployed {
+		return ready("AlreadyRunning"), nil
+	}
+	// Best-effort, secondary to the deploy itself: every target is
+	// already confirmed running (and ready, and stale ones already
+	// cleaned up) by this point, so a metrics-store hiccup is surfaced
+	// through the returned error (which reconcile.Engine logs) without
+	// downgrading Status away from True, the same "the important fact is
+	// still true" shape this package's cleanup-failure paths already
+	// establish.
+	if c.deployRecorder != nil {
+		if err := c.deployRecorder.RecordDeploy(ctx, c.serviceName, time.Now()); err != nil {
+			return reconcile.Result{Conditions: []reconcile.Condition{{
+				Type: "Ready", Status: reconcile.ConditionTrue,
+				Reason: "DeployedMetricRecordFailed", Message: err.Error(),
+			}}}, fmt.Errorf("application/%s: record deploy metric: %w", c.serviceName, err)
+		}
+	}
+	return ready("Deployed"), nil
+}
+
+// replicaOutcome carries ensureReplicaRunning's own condition reason
+// alongside its error, so a caller can build a notReady result with the
+// specific step that failed (CreateFailed/StartFailed/ReadinessFailed/
+// etc.) without ensureReplicaRunning needing to know how its caller
+// constructs a reconcile.Result.
+type replicaOutcome struct {
+	justDeployed bool
+	reason       string
+}
+
+// ensureReplicaRunning is the original single-container "does the right
+// container exist, is it running, is it ready" sequence, unchanged in
+// behavior, extracted so both reconcileBlueGreen and reconcileRecreate
+// share exactly one implementation of it rather than two copies that
+// could drift.
+func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, desired *store.DesiredService) (replicaOutcome, error) {
+	state, err := c.runtime.InspectByName(ctx, target)
+	if err != nil {
+		return replicaOutcome{reason: "InspectFailed"}, fmt.Errorf("inspect %q: %w", target, err)
+	}
+
+	justDeployed := false
+	switch {
+	case state == nil:
+		if err := c.createAndStart(ctx, target, desired); err != nil {
+			return replicaOutcome{reason: "CreateFailed"}, err
+		}
+		justDeployed = true
+	case !state.Running:
+		if err := c.runtime.Start(ctx, state.ID); err != nil {
+			return replicaOutcome{reason: "StartFailed"}, fmt.Errorf("restart %q: %w", target, err)
+		}
+		justDeployed = true
+	}
+
+	if !justDeployed {
+		return replicaOutcome{}, nil
+	}
+
+	// Re-inspect: Docker only reports port bindings once a container is
+	// actually running, not at create time.
+	state, err = c.runtime.InspectByName(ctx, target)
+	if err != nil {
+		return replicaOutcome{reason: "InspectFailed"}, fmt.Errorf("re-inspect %q after start: %w", target, err)
+	}
+	if state == nil {
+		return replicaOutcome{reason: "VanishedAfterStart"}, fmt.Errorf("%q not found immediately after starting it", target)
+	}
+	if err := c.waitReady(ctx, state, desired); err != nil {
+		return replicaOutcome{reason: "ReadinessFailed"}, err
+	}
+	return replicaOutcome{justDeployed: true}, nil
 }
 
 func (c *Controller) createAndStart(ctx context.Context, name string, desired *store.DesiredService) error {
@@ -333,33 +514,67 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 // and stops and removes each. Level-triggered by construction: it
 // re-derives "what's stale" from Docker's current state every call,
 // never from a remembered list of past container names.
-func (c *Controller) removeStale(ctx context.Context, keep string) error {
+// removeStale finds every container for this service other than one of
+// keep and stops and removes each. Level-triggered by construction: it
+// re-derives "what's stale" from Docker's current state every call,
+// never from a remembered list of past container names. keep is
+// typically the full current replica target set (reconcileBlueGreen);
+// an empty keep (reconcileRecreate's own use of the lower-level
+// staleContainers+removeContainers pair below) is a valid way to find
+// literally everything for this service.
+func (c *Controller) removeStale(ctx context.Context, keep []string) error {
+	stale, err := c.staleContainers(ctx, keep)
+	if err != nil {
+		return err
+	}
+	return c.removeContainers(ctx, stale)
+}
+
+// staleContainers lists every container for this service other than one
+// of keep, applying the same ownsContainer boundary check removeStale
+// itself relied on before this was split out: ListByPrefix is a bare
+// string-prefix match, not a service boundary (internal/spec's
+// service-name validation permits hyphens freely, so a service named
+// "web" also prefix-matches containers belonging to a differently-named
+// service like "web-worker"), so only a container whose name is exactly
+// one of this service's own replicaContainerName shapes is ever
+// considered, regardless of whether it's in keep.
+func (c *Controller) staleContainers(ctx context.Context, keep []string) ([]docker.ContainerState, error) {
 	all, err := c.runtime.ListByPrefix(ctx, c.serviceName+"-")
 	if err != nil {
-		return fmt.Errorf("list containers for %s: %w", c.serviceName, err)
+		return nil, fmt.Errorf("list containers for %s: %w", c.serviceName, err)
 	}
 
-	var firstErr error
+	keepSet := make(map[string]bool, len(keep))
+	for _, name := range keep {
+		keepSet[name] = true
+	}
+
+	var stale []docker.ContainerState
 	for _, cs := range all {
-		if cs.Name == keep {
+		if keepSet[cs.Name] || !ownsContainer(c.serviceName, cs.Name) {
 			continue
 		}
-		if !ownsContainer(c.serviceName, cs.Name) {
-			// ListByPrefix is a bare string-prefix match, not a service
-			// boundary: internal/spec's service-name validation permits
-			// hyphens freely, so a service named "web" also
-			// prefix-matches containers belonging to a differently-named
-			// service like "web-worker". Only ever touch a container
-			// whose name is exactly this service's own containerName
-			// shape; anything else found by the prefix scan belongs to
-			// someone else and must be left alone.
-			continue
+		stale = append(stale, cs)
+	}
+	return stale, nil
+}
+
+// removeContainers stops and removes every container in cs, continuing
+// past an individual failure rather than aborting the batch, and
+// returning the first error encountered (if any) once every container
+// has been attempted: one stuck container must not block cleanup of the
+// rest, the same "one broken resource must not block others" principle
+// this codebase's own dynamicSource doc comment already applies to a
+// reconcile pass across services.
+func (c *Controller) removeContainers(ctx context.Context, cs []docker.ContainerState) error {
+	var firstErr error
+	for _, container := range cs {
+		if err := c.runtime.Stop(ctx, container.ID, 10*time.Second); err != nil && firstErr == nil {
+			firstErr = fmt.Errorf("stop stale container %s: %w", container.Name, err)
 		}
-		if err := c.runtime.Stop(ctx, cs.ID, 10*time.Second); err != nil && firstErr == nil {
-			firstErr = fmt.Errorf("stop stale container %s: %w", cs.Name, err)
-		}
-		if err := c.runtime.Remove(ctx, cs.ID, true); err != nil && firstErr == nil {
-			firstErr = fmt.Errorf("remove stale container %s: %w", cs.Name, err)
+		if err := c.runtime.Remove(ctx, container.ID, true); err != nil && firstErr == nil {
+			firstErr = fmt.Errorf("remove stale container %s: %w", container.Name, err)
 		}
 	}
 	return firstErr
@@ -395,22 +610,55 @@ func ContainerName(serviceName, image string) string {
 	return serviceName + "-" + hex.EncodeToString(sum[:])[:hashLen]
 }
 
-// ownsContainer reports whether name is exactly one this service's
-// containerName produces: serviceName + "-" + an hashLen-character hex
-// image hash, nothing more and nothing less. A plain prefix match isn't
-// enough: service names may contain hyphens (internal/spec's nameLike
-// permits them), so a service named "web" string-prefix-matches
+// replicaContainerName is ContainerName generalized to replica index.
+// index 0 returns exactly what ContainerName returns, byte for byte: a
+// single-replica service (every service before this field existed, and
+// every service that never sets replicas going forward) must get the
+// identical name it always has, both so an upgrade never orphans an
+// already-running container under a new name it doesn't recognize, and
+// so internal/reconcile/ingress's own call to the exported ContainerName
+// (its own doc comment: "derive the exact same name to find a service's
+// currently active container") keeps finding the right one without that
+// package needing to know replicas exist at all. Replica index N>0 gets
+// an additional "-rN" suffix; ownsContainer below recognizes both forms.
+func replicaContainerName(serviceName, image string, index int) string {
+	base := ContainerName(serviceName, image)
+	if index == 0 {
+		return base
+	}
+	return base + "-r" + strconv.Itoa(index)
+}
+
+// ownsContainer reports whether name is one this service's
+// replicaContainerName could have produced for some image and replica
+// index: serviceName + "-" + an hashLen-character hex image hash,
+// optionally followed by "-rN" for replica index N>0. A plain prefix
+// match isn't enough: service names may contain hyphens (internal/spec's
+// nameLike permits them), so a service named "web" string-prefix-matches
 // containers belonging to an entirely different, differently-owned
-// service like "web-worker". Without this exact check, removeStale would
-// treat another service's live container as one of "web"'s own stale
-// leftovers and remove it.
+// service like "web-worker". Without this exact check, stale-container
+// cleanup would treat another service's live container as one of "web"'s
+// own stale leftovers and remove it.
 func ownsContainer(serviceName, name string) bool {
 	suffix, ok := strings.CutPrefix(name, serviceName+"-")
-	if !ok || len(suffix) != hashLen {
+	if !ok || len(suffix) < hashLen {
 		return false
 	}
-	for _, r := range suffix {
+	hash, rest := suffix[:hashLen], suffix[hashLen:]
+	for _, r := range hash {
 		if !isHexDigit(r) {
+			return false
+		}
+	}
+	if rest == "" {
+		return true // replica 0: no "-rN" suffix at all
+	}
+	replicaIndex, ok := strings.CutPrefix(rest, "-r")
+	if !ok || replicaIndex == "" {
+		return false
+	}
+	for _, r := range replicaIndex {
+		if r < '0' || r > '9' {
 			return false
 		}
 	}
