@@ -10,6 +10,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { toast } from '@/components/ui/toast'
 import { useDeleteNode } from '../queries/nodes'
 
 // One node's delete action, mirroring DeleteDatabaseDialog's shape:
@@ -75,6 +76,10 @@ export function DeleteNodeDialog({ id, name }: { id: string; name: string }) {
               deleteNode.mutate(id, {
                 onSuccess: () => {
                   setOpen(false)
+                  toast.add({
+                    title: `Node "${name}" deleted.`,
+                    type: 'success',
+                  })
                 },
               })
             }}

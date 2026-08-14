@@ -17,6 +17,7 @@ import {
   SidebarTrigger,
 } from '../components/ui/sidebar'
 import { Separator } from '../components/ui/separator'
+import { Toaster } from '../components/ui/toast'
 
 // Router context carries the QueryClient so every route loader can call
 // queryClient.ensureQueryData / ensureInfiniteQueryData without importing
@@ -61,6 +62,7 @@ function RootLayout() {
     <ThemeProvider>
       <BrandProvider>
         <AppShell />
+        <Toaster />
       </BrandProvider>
     </ThemeProvider>
   )

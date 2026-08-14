@@ -11,6 +11,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { toast } from '@/components/ui/toast'
 import { useDeleteDatabase } from '../queries/databases'
 
 // One database's delete action, split out of the detail route the same
@@ -73,6 +74,10 @@ export function DeleteDatabaseDialog({ name }: { name: string }) {
               deleteDatabase.mutate(name, {
                 onSuccess: () => {
                   setOpen(false)
+                  toast.add({
+                    title: `Database "${name}" deleted.`,
+                    type: 'success',
+                  })
                   void navigate({ to: '/databases' })
                 },
               })
