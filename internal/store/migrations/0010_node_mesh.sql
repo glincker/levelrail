@@ -1,0 +1,43 @@
+-- Phase 3 (TASKS.md 3.4): the two facts about a node that the WireGuard
+-- mesh needs and 0008 had no reason to carry.
+--
+-- Both default to the empty string, which internal/network reads as
+-- "this node has not joined the mesh yet" (network.NodeInfo.Ready).
+-- That is a real, expected, transient state, not a broken row: a node
+-- enrolls (0008's join-token flow) well before it ever brings a
+-- WireGuard device up, and a fleet where one machine enrolled thirty
+-- seconds ago must still be able to mesh the machines that are ready.
+-- Every node that predates this migration therefore reads as "not on
+-- the mesh," which is exactly what it is.
+--
+-- mesh_public_key is the node's WireGuard public key, base64, as wg(8)
+-- prints it. The *private* key is never here and never anywhere else in
+-- this database: it is generated on the node, stays on the node, and
+-- the control plane has no field to put one in
+-- (network.DeviceConfig.PrivateKey is zero on everything that crosses
+-- the wire). That is a property of the protocol shape, not a convention
+-- this schema is trusting a caller to honor.
+--
+-- mesh_address is the node's IP inside the mesh CIDR, allocated by the
+-- control plane (network.AllocateAddress) because a node cannot pick
+-- one for itself without racing another node picking concurrently.
+-- Stored rather than derived by hashing the node ID: hashing collides,
+-- and by the birthday bound it collides at a genuinely small fleet size,
+-- at which point the collision is unfixable without renaming a node.
+-- Once assigned, an address is never revoked or renumbered while the
+-- node exists, because it appears in every other node's AllowedIPs and
+-- in live connection state; allocation is strictly additive.
+--
+-- No UNIQUE constraint on either column, deliberately. Both are
+-- genuinely required to be unique, and internal/network.ValidateInventory
+-- enforces exactly that (ErrDuplicatePublicKey, ErrDuplicateAddress)
+-- before any plan is distributed. A database constraint would add a
+-- second enforcement point that fires later, at write time, with a
+-- driver error instead of the named error the coordinator already
+-- surfaces, and it would make the legitimate case of a rebuilt machine
+-- reporting a fresh key while the old row still holds the old one a
+-- constraint violation rather than an ordinary update. Same reasoning
+-- 0009 gives for not putting a FOREIGN KEY on node_id: the Go layer
+-- already has a better answer than the constraint would give.
+ALTER TABLE nodes ADD COLUMN mesh_public_key TEXT NOT NULL DEFAULT '';
+ALTER TABLE nodes ADD COLUMN mesh_address TEXT NOT NULL DEFAULT '';

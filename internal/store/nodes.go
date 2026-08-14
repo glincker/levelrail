@@ -40,6 +40,21 @@ type Node struct {
 	LastSeenAt      *time.Time
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
+
+	// MeshPublicKey and MeshAddress are TASKS.md 3.4's WireGuard mesh
+	// state (migrations/0010_node_mesh.sql). Both empty means this node
+	// has not joined the mesh yet, which is a normal transient state for
+	// a node that enrolled but has not brought a device up.
+	//
+	// Deliberately plain strings rather than internal/network's Key and
+	// netip.Addr: this package stores rows, and having it import
+	// internal/network to parse and validate them would put the mesh's
+	// own rules (a key is 32 bytes, an address is inside the mesh CIDR)
+	// in two places. internal/network.ValidateInventory is the one place
+	// those rules live; the reconciler that reads these converts and
+	// validates on the way in.
+	MeshPublicKey string
+	MeshAddress   string
 }
 
 // ErrNodeNotFound is returned by GetNode when no node has that ID.
@@ -182,8 +197,41 @@ func (db *DB) TouchNodeLastSeen(ctx context.Context, id string) error {
 	return nil
 }
 
+// UpdateNodeMesh records a node's WireGuard identity and assigned mesh
+// address (TASKS.md 3.4, migrations/0010_node_mesh.sql).
+//
+// Its own narrow updater rather than a field on SaveNode, matching
+// UpdateNodeStatus and TouchNodeLastSeen: SaveNode is insert-only
+// because a node's identity is fixed at enrollment, and mesh state
+// changes on an entirely different schedule (every time the mesh
+// coordinator learns something new about a node) than enrollment does.
+//
+// Returns ErrNodeNotFound if no such node exists, so a coordinator
+// distributing to a node that was deleted mid-pass finds out rather than
+// silently writing nothing.
+func (db *DB) UpdateNodeMesh(ctx context.Context, id, publicKey, address string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE nodes
+		SET mesh_public_key = ?, mesh_address = ?,
+		    updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		WHERE id = ?
+	`, publicKey, address, id)
+	if err != nil {
+		return fmt.Errorf("store: update mesh state for node %q: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: update mesh state for node %q: rows affected: %w", id, err)
+	}
+	if n == 0 {
+		return ErrNodeNotFound
+	}
+	return nil
+}
+
 const nodeSelectColumns = `
-	SELECT id, name, address, status, cert_fingerprint, joined_at, last_seen_at, created_at, updated_at`
+	SELECT id, name, address, status, cert_fingerprint, joined_at, last_seen_at, created_at, updated_at,
+	       mesh_public_key, mesh_address`
 
 func scanNode(scan func(dest ...any) error) (*Node, error) {
 	var (
@@ -193,7 +241,8 @@ func scanNode(scan func(dest ...any) error) (*Node, error) {
 		createdAt, updatedAt string
 	)
 	if err := scan(&n.ID, &n.Name, &n.Address, &status, &n.CertFingerprint,
-		&joinedAt, &lastSeenAt, &createdAt, &updatedAt); err != nil {
+		&joinedAt, &lastSeenAt, &createdAt, &updatedAt,
+		&n.MeshPublicKey, &n.MeshAddress); err != nil {
 		return nil, err
 	}
 	n.Status = NodeStatus(status)
