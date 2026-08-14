@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/card'
 import { Field, FieldError, FieldGroup } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { SuccessMessage } from '@/components/ui/success-message'
 
 const domainSchema = z.object({
   domains: z.array(
@@ -146,9 +147,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
               <AlertDescription>{updateApp.error.message}</AlertDescription>
             </Alert>
           ) : null}
-          {updateApp.isSuccess ? (
-            <p className="text-xs text-green-700 dark:text-green-400">Saved.</p>
-          ) : null}
+          {updateApp.isSuccess ? <SuccessMessage>Saved.</SuccessMessage> : null}
         </form>
       </CardContent>
     </Card>

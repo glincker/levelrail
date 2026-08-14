@@ -22,6 +22,7 @@ import {
   FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { SuccessMessage } from '@/components/ui/success-message'
 import { Switch } from '@/components/ui/switch'
 
 // Unit choice: memory is collected as a single whole-number MiB field
@@ -245,9 +246,7 @@ export function ResourceLimitsEditor({ app }: { app: AppDetail }) {
               <AlertDescription>{updateApp.error.message}</AlertDescription>
             </Alert>
           ) : null}
-          {updateApp.isSuccess ? (
-            <p className="text-xs text-green-700 dark:text-green-400">Saved.</p>
-          ) : null}
+          {updateApp.isSuccess ? <SuccessMessage>Saved.</SuccessMessage> : null}
         </form>
       </CardContent>
     </Card>

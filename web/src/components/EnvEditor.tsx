@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dialog'
 import { Field, FieldError, FieldGroup } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { SuccessMessage } from '@/components/ui/success-message'
 import { Textarea } from '@/components/ui/textarea'
 
 const envSchema = z
@@ -292,9 +293,7 @@ export function EnvEditor({ app }: { app: AppDetail }) {
               <AlertDescription>{updateApp.error.message}</AlertDescription>
             </Alert>
           ) : null}
-          {updateApp.isSuccess ? (
-            <p className="text-xs text-green-700 dark:text-green-400">Saved.</p>
-          ) : null}
+          {updateApp.isSuccess ? <SuccessMessage>Saved.</SuccessMessage> : null}
         </form>
       </CardContent>
     </Card>

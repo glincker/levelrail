@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { SuccessMessage } from '@/components/ui/success-message'
 
 const triggerSchema = z.object({
   image: z.string().trim().min(1, 'Image tag is required'),
@@ -144,9 +145,9 @@ export function DeployTriggerForm({ appName }: { appName: string }) {
           </Alert>
         ) : null}
         {triggerDeploy.isSuccess ? (
-          <p className="mt-3 text-xs text-green-700 dark:text-green-400">
+          <SuccessMessage className="mt-3">
             Deploy triggered. Check the Overview tab for the outcome.
-          </p>
+          </SuccessMessage>
         ) : null}
       </CardContent>
     </Card>

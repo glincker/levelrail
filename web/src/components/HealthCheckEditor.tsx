@@ -28,6 +28,7 @@ import {
   FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { SuccessMessage } from '@/components/ui/success-message'
 import { Switch } from '@/components/ui/switch'
 
 // A probe is either not configured (`null` on the wire, ServiceHealth's own
@@ -217,9 +218,7 @@ export function HealthCheckEditor({ app }: { app: AppDetail }) {
               <AlertDescription>{updateApp.error.message}</AlertDescription>
             </Alert>
           ) : null}
-          {updateApp.isSuccess ? (
-            <p className="text-xs text-green-700 dark:text-green-400">Saved.</p>
-          ) : null}
+          {updateApp.isSuccess ? <SuccessMessage>Saved.</SuccessMessage> : null}
         </form>
       </CardContent>
     </Card>

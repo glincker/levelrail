@@ -19,6 +19,7 @@ import {
   FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { SuccessMessage } from '@/components/ui/success-message'
 import { SecretsNotConfiguredError, useSetSecret } from '../queries/secrets'
 
 const secretSchema = z.object({
@@ -182,9 +183,7 @@ export function SecretsEditor({ appName }: { appName: string }) {
             </Alert>
           ) : null}
           {setSecret.isSuccess ? (
-            <p className="mt-2 text-xs text-green-700 dark:text-green-400">
-              Secret saved.
-            </p>
+            <SuccessMessage className="mt-2">Secret saved.</SuccessMessage>
           ) : null}
         </form>
       </CardContent>
