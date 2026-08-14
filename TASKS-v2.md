@@ -25,25 +25,26 @@ this is the single source of truth for the redesign.
 ## Ground rules (same discipline as TASKS.md, restated because a whole
 new file invites drift)
 
-- Research before build. No implementation agent gets dispatched for the
-  new shell until a wireframe has been reviewed and approved.
+- Research before build. No implementation work starts on the new shell
+  until a wireframe has been reviewed and approved.
 - Real evidence, not vibes: research docs cite actual colors, spacing,
   copy, or structure from what was actually found, not paraphrased
   impressions. Say explicitly when something couldn't be verified.
 - No em dashes (—) or en dashes (–) anywhere, same as every other file
   in this repo.
-- Parallel agents get an explicit, non-overlapping file list per CLAUDE.md
-  8's "give each agent an explicit exit criterion and a list of files it
-  may touch" rule. Collisions get resolved by re-scoping the task list,
-  not by hoping two agents don't touch the same line.
+- Parallel work streams get an explicit, non-overlapping file list, per
+  the standing rule that independent work needs a clear exit criterion
+  and a defined set of files it may touch. Collisions get resolved by
+  re-scoping the task list, not by hoping two streams don't touch the
+  same line.
 - Scope check before adding anything here: Levelrail is Phase 1, single
-  admin, no teams, no RBAC yet (CLAUDE.md 6). A pattern borrowed from
+  admin, no teams, no RBAC yet. A pattern borrowed from
   Vercel/Railway/Linear that assumes multi-tenant/team features doesn't
   belong on this list yet just because the source product has it well
   designed; note it as a Phase 4 candidate instead if it's genuinely
   gated on that scope.
 
-## Phase R: Research (parallel agents, no code changes)
+## Phase R: Research (parallel research streams, no code changes)
 
 - [x] `docs-local/research/dashboard-redesign/vercel-dashboard-analysis.md`:
       done 2026-08-13. Live authenticated dashboard unreachable (login
@@ -107,7 +108,7 @@ new file invites drift)
       semantic status colors (success/warning/info), called out
       explicitly in the wireframe itself since they don't exist in the
       codebase yet. Published, awaiting founder review before any
-      implementation agent touches `web/src` for the shell itself.
+      implementation work touches `web/src` for the shell itself.
 - [ ] Record the approved direction here once reviewed (adjustments,
       sign-off, or a different direction entirely). Blocks Phase 1.
 
@@ -146,11 +147,11 @@ new file invites drift)
       against the real embedded binary (real login, real 200 on
       `/apps`); a from-scratch browser screenshot check hit this
       session's known "script injection timeout" browser-automation
-      issue (independently confirmed by three separate polish agents
+      issue (independently confirmed by three separate polish passes
       earlier in this session, not caused by this change), so this
       was not visually screenshotted, flagged explicitly rather than
       claimed.
-- [x] **Dark mode merged (2026-08-13)**: took the dark-mode agent's two
+- [x] **Dark mode merged (2026-08-13)**: took the dark-mode work's two
       independent, non-conflicting new files as-is
       (`ThemeProvider.tsx`: context + `localStorage['levelrail-theme']`
       persistence + `matchMedia` system-preference sync;
@@ -197,18 +198,18 @@ new file invites drift)
       deploy-history/attempt-listing endpoint to source a `deployId`
       from yet (`internal/api`'s own doc comment: `GET .../deploys`
       returns current reconcile conditions, not an attempt-by-attempt
-      log). Building that is a real, store-schema-sized feature
-      (CLAUDE.md 8's "the database schema" is explicitly on the
-      do-not-parallelize list), not a wiring fix, so it wasn't
-      improvised here. **Follow-up task, not yet started**: a real
+      log). Building that is a real, store-schema-sized feature (the
+      database schema is explicitly on the do-not-parallelize list),
+      not a wiring fix, so it wasn't improvised here. **Follow-up task,
+      not yet started**: a real
       `deploy_attempts` (or similar) table plus a list endpoint, then a
       "recent deploys" UI in the Overview tab linking each entry to its
       build log.
 - [x] **Merge coordination note**: `CreateAlertRuleDialog.tsx` was
-      independently modified by the other concurrent session (email/
+      independently modified by the other concurrent work (email/
       Telegram notification channels, commit `1caabff`) while the
-      observability polish agent's worktree was still based on the
-      prior version. Hand-merged rather than overwritten: kept both the
+      observability polish work was still based on the prior version.
+      Hand-merged rather than overwritten: kept both the
       channel additions (email/Telegram options, per-channel
       destination validation) and the visual additions (kind-select
       icons, dialog title icon), verified together with `tsc --noEmit`
@@ -250,23 +251,23 @@ visual polish.
       tokens (unchanged), General. Three placeholder route files
       created (`routes/settings/{account,security,general}.tsx`) so
       the nav links type-check against real routes (TanStack Router's
-      `Link` types are generated from files on disk) before handing
-      each one to a parallel agent to build out.
+      `Link` types are generated from files on disk) before each was
+      built out as an independent unit of work.
 - [x] **Account page (2026-08-13)**: profile card (read-only username,
       honest that Phase 1's `store.AdminUser` has no other field to
       edit yet) + a real change-password form (React Hook Form + Zod,
       `web/src/queries/account.ts`'s `useChangePassword`) against the
-      new endpoint. Agent live-verified the full contract via curl
-      against the real binary (wrong current password, too-short new
-      password, success, old password rejected afterward, new password
-      accepted) before this was merged.
+      new endpoint. Live-verified the full contract via curl against
+      the real binary (wrong current password, too-short new password,
+      success, old password rejected afterward, new password accepted)
+      before this was merged.
 - [x] **Security page (2026-08-13)**: current-session card (username +
       formatted expiry), a confirm-gated "sign out other sessions"
       action (`web/src/queries/security.ts`), and a static login-
-      protection info panel. Agent live-verified with two real
-      concurrent sessions: revoking others left the caller's own
-      session working and the other one truly dead (401 on every
-      route, not just the session endpoint).
+      protection info panel. Live-verified with two real concurrent
+      sessions: revoking others left the caller's own session working
+      and the other one truly dead (401 on every route, not just the
+      session endpoint).
 - [x] **General page (2026-08-13)**: platform/brand info from the
       already-cached `/api/v1/brand` response, conditional Support/Docs
       links, and an honest "more settings coming later" card.
@@ -274,7 +275,8 @@ visual polish.
       (Docker health, secrets/webhook configured, disk usage, version)
       in this pass; confirmed via `grep` that no hardcoded brand-name
       string exists anywhere in the file, only `brand.Name`/
-      `brand.ShortName` reads, per CLAUDE.md section 3.
+      `brand.ShortName` reads, per the brand indirection rule that no
+      product name string appears anywhere in source code.
 - [x] **Create App dialog (2026-08-13)**: the apps list page had no way
       to create an app at all, not even a button, despite
       `POST /api/v1/apps` always having existed and being fully tested
@@ -282,9 +284,9 @@ visual polish.
       wired into both the list header ("New app" button) and the
       empty-state CTA via one shared component with a `trigger` prop,
       so the empty state stopped being purely descriptive text. On
-      success, navigates straight to the new app's detail page. Agent
-      verified this one the most thoroughly of the four: real curl
-      round-trip (201/400/409 all matched) plus an actual browser
+      success, navigates straight to the new app's detail page. Verified
+      this one the most thoroughly of the four: real curl round-trip
+      (201/400/409 all matched) plus an actual browser
       click-through (`agent-browser`: clicked "New app," filled the
       form, submitted, watched it navigate to the new app; separately
       confirmed the empty-state CTA opens the same dialog, and that a
@@ -295,16 +297,16 @@ visual polish.
 
 Started 2026-08-13, prompted by the founder comparing the "new app" flow
 directly against Coolify's and calling out how much is missing. **This is
-not "chase Coolify's 280 templates"**, CLAUDE.md section 2 already rejects
-that as a non-goal ("ten good ones beat 280 stale ones") and it stays
-rejected here. The real gap is narrower and more concrete: Phase 1's own
-committed scope (CLAUDE.md section 6: "Managed Postgres and Redis as
-first-class resources," "env editor, domain config") had backend support
-that was never fully wired to a UI, or in the database case, had no API
-layer at all.
+not "chase Coolify's 280 templates"**, the non-goals list already rejects
+that ("ten good ones beat 280 stale ones") and it stays rejected here.
+The real gap is narrower and more concrete: Phase 1's own committed scope
+("Managed Postgres and Redis as first-class resources," "env editor,
+domain config") had backend support that was never fully wired to a UI,
+or in the database case, had no API layer at all.
 
-Verified state before this phase (direct file reads, not agent-reported,
-since one research agent's report on this turned out stale on point 7):
+Verified state before this phase (direct file reads, not taken on faith
+from an earlier summary, since one earlier research pass on this turned
+out stale on point 7):
 
 - Env vars and domains: already fully wired (`EnvEditor.tsx`,
   `DomainEditor.tsx`, `SecretsEditor.tsx`, live in `apps/$name.tsx`'s
@@ -339,9 +341,9 @@ since one research agent's report on this turned out stale on point 7):
       `DeleteDatabaseDialog.tsx`, sidebar "Databases" nav item, a
       secondary "New database" button on the apps list header, status
       display on the detail page (`ConditionsPanel`, reused as-is)
-      reading the new status endpoint. Built by an agent against the
-      frozen contract above; reviewed file-by-file, independently
-      re-verified (`tsc -b`, `eslint .`, `prettier --check`, `vite
+      reading the new status endpoint. Built as an independent unit of
+      work against the frozen contract above; reviewed file-by-file,
+      independently re-verified (`tsc -b`, `eslint .`, `prettier --check`, `vite
       build`, plus a real curl round-trip against the running backend:
       create redis, create postgres, list, delete, all matched) before
       merging. Postgres is a selectable engine, not hidden or disabled:
@@ -355,19 +357,20 @@ since one research agent's report on this turned out stale on point 7):
       two new tabs ("Health", "Resources"). Unit conversions documented
       in-code: CPU cores <-> nano_cpus (x1e9), seconds <-> duration
       nanoseconds (x1e9), a whole-number MiB field for memory chosen
-      specifically to keep the byte round-trip lossless. Built by an
-      agent, reviewed file-by-file, independently re-verified (`tsc
-      --noEmit`, `eslint`, `prettier --check`) before merging.
+      specifically to keep the byte round-trip lossless. Built as an
+      independent unit of work, reviewed file-by-file, independently
+      re-verified (`tsc --noEmit`, `eslint`, `prettier --check`) before
+      merging.
       `AppOverview.tsx`'s read-only summary was left in place.
 
 ## Status notes
 
-- 2026-08-13: three research agents dispatched in parallel (Vercel deep
+- 2026-08-13: three research streams run in parallel (Vercel deep
   dive, Railway deep dive, cross-cutting sidebar patterns). A separate,
-  earlier-dispatched pass of five visual-polish agents (dark mode
+  earlier pass of five visual-polish work streams (dark mode
   ThemeProvider, app list, app detail, observability screens,
   auth/settings screens) was already in flight when this redesign was
   scoped; that work is being allowed to land since it improves content
   inside the current shell and is expected to mostly carry forward into
-  the new one, but no further content-polish agents are being dispatched
+  the new one, but no further content-polish work is being started
   until the Phase D wireframe is approved.
