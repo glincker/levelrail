@@ -1123,6 +1123,19 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 				Dumper:   &backup.ContainerDumper{Runtime: client},
 				Uploader: backup.S3Uploader{},
 			}),
+			// The restore counterpart of the backup runner just above:
+			// same secretsManager dependency (a restore resolves the same
+			// stored target credentials a backup wrote), same nil check,
+			// wired from the same client (this control plane's own node's
+			// docker.Runtime, since ContainerRestorer needs
+			// ExecWithInput the same way ContainerDumper above needs
+			// Exec).
+			api.WithRestoreRunner(&backup.RestoreRunner{
+				Store:      db,
+				Secrets:    secretsManager,
+				Downloader: backup.S3Downloader{},
+				Restorer:   &backup.ContainerRestorer{Runtime: client},
+			}),
 		)
 	}
 	if builder != nil {

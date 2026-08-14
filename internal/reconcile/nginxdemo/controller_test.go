@@ -71,6 +71,10 @@ func (f *fakeRuntime) Exec(_ context.Context, _ string, _ []string) (io.ReadClos
 	return nil, errors.New("fakeRuntime: Exec not implemented") // unused by Reconcile
 }
 
+func (f *fakeRuntime) ExecWithInput(_ context.Context, _ string, _ []string, _ io.Reader) (io.ReadCloser, error) {
+	return nil, errors.New("fakeRuntime: ExecWithInput not implemented") // unused by Reconcile
+}
+
 func conditionStatus(t *testing.T, result reconcile.Result) reconcile.ConditionStatus {
 	t.Helper()
 	if len(result.Conditions) != 1 {

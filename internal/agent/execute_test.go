@@ -88,6 +88,13 @@ func (f *execRuntime) Exec(_ context.Context, _ string, _ []string) (io.ReadClos
 	return nil, errors.New("execRuntime: Exec not implemented")
 }
 
+// ExecWithInput is unexercised here for the same reason Exec above is:
+// Execute's dispatch switch has no case for either. Stubbed to satisfy
+// docker.Runtime.
+func (f *execRuntime) ExecWithInput(_ context.Context, _ string, _ []string, _ io.Reader) (io.ReadCloser, error) {
+	return nil, errors.New("execRuntime: ExecWithInput not implemented")
+}
+
 func TestExecute_InspectByName_Found(t *testing.T) {
 	rt := newExecRuntime()
 	rt.inspectState = &docker.ContainerState{ID: "abc", Name: "web-1", Running: true}

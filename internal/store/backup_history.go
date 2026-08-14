@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 )
@@ -76,6 +77,29 @@ func (db *DB) FinishBackupHistory(ctx context.Context, id, status string, sizeBy
 		return ErrBackupHistoryNotFound
 	}
 	return nil
+}
+
+// GetBackupHistory returns the backup attempt with this ID, or
+// ErrBackupHistoryNotFound. Added for the restore path
+// (internal/backup.RestoreRunner): a restore is always initiated by
+// naming a specific past backup attempt, so unlike the forward backup
+// path (which only ever lists history, never looks up one row by ID),
+// restoring needs to resolve exactly one row, including its Status,
+// TargetID, and ObjectKey, before anything else can happen.
+func (db *DB) GetBackupHistory(ctx context.Context, id string) (BackupHistory, error) {
+	var h BackupHistory
+	err := db.QueryRowContext(ctx, `
+		SELECT id, database_name, target_id, object_key, size_bytes, status, error, started_at, finished_at
+		FROM backup_history
+		WHERE id = ?
+	`, id).Scan(&h.ID, &h.DatabaseName, &h.TargetID, &h.ObjectKey, &h.SizeBytes, &h.Status, &h.Error, &h.StartedAt, &h.FinishedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return BackupHistory{}, ErrBackupHistoryNotFound
+	}
+	if err != nil {
+		return BackupHistory{}, fmt.Errorf("store: get backup history %q: %w", id, err)
+	}
+	return h, nil
 }
 
 // ListBackupHistory returns every backup attempt for databaseName,

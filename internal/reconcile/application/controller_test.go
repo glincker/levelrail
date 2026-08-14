@@ -176,6 +176,13 @@ func (f *fakeRuntime) Exec(_ context.Context, _ string, _ []string) (io.ReadClos
 	return nil, errors.New("fakeRuntime: Exec not implemented")
 }
 
+// ExecWithInput is the same no-op stub as Exec above, for the same
+// reason: internal/backup's Restorer is the real caller, exercised by
+// that package's own tests.
+func (f *fakeRuntime) ExecWithInput(_ context.Context, _ string, _ []string, _ io.Reader) (io.ReadCloser, error) {
+	return nil, errors.New("fakeRuntime: ExecWithInput not implemented")
+}
+
 func (f *fakeRuntime) count() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
