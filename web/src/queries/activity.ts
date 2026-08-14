@@ -12,13 +12,12 @@
 // /api/v1/apps/{name}/alerts (queries/alerts.ts) is the same shape, one
 // app's rules. Building either into this bell honestly would mean
 // fetching every app's own sub-resource on an interval, an N+1 fan-out
-// this project's own frontend rule explicitly warns against ("never
-// fetch the full resource graph on page load", CLAUDE.md's frontend
-// section) and exactly the kind of always-on background cost section
-// 4.8 calls out as what makes competitors "heavy." Closing this gap for
-// real is a backend job (a real aggregation endpoint, or a deploy
-// history table per section 1.9's own TODO), not something this pass
-// fakes by polling every app from the browser instead.
+// this project's own frontend rule explicitly warns against (never
+// fetch the full resource graph on page load) and exactly the kind of
+// always-on background cost that makes competitors "heavy." Closing
+// this gap for real is a backend job (a real aggregation endpoint, or a
+// deploy history table), not something this pass fakes by polling every
+// app from the browser instead.
 //
 // nodes.status and certificates.status already carry the two signals
 // this bell surfaces, no derived/inferred state: a node's `status` field
