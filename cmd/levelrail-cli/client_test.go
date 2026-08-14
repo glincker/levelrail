@@ -1,0 +1,150 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"reflect"
+	"testing"
+)
+
+func TestExtractErrorMessage(t *testing.T) {
+	tests := []struct {
+		name string
+		data []byte
+		want string
+	}{
+		{name: "structured error", data: []byte(`{"error":"name is required"}`), want: "name is required"},
+		{name: "empty body", data: []byte(``), want: "(empty response body)"},
+		{name: "non-json body falls back to raw text", data: []byte(`<html>502 Bad Gateway</html>`), want: "<html>502 Bad Gateway</html>"},
+		{name: "json without error field falls back to raw text", data: []byte(`{"other":"x"}`), want: `{"other":"x"}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := extractErrorMessage(tt.data); got != tt.want {
+				t.Errorf("extractErrorMessage(%s) = %q, want %q", tt.data, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPathEscape(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{in: "web", want: "web"},
+		{in: "a/b", want: "a%2Fb"},
+		{in: "50%", want: "50%25"},
+	}
+	for _, tt := range tests {
+		if got := pathEscape(tt.in); got != tt.want {
+			t.Errorf("pathEscape(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}
+
+func TestClient_CreateApp(t *testing.T) {
+	var gotAuth, gotMethod, gotPath string
+	var gotBody appResource
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(gotBody)
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	req := appResource{Name: "web", Image: "levelrail/web:1", Port: 3000}
+	got, err := client.CreateApp(context.Background(), req)
+	if err != nil {
+		t.Fatalf("CreateApp() error = %v", err)
+	}
+	if !reflect.DeepEqual(got, req) {
+		t.Errorf("CreateApp() = %+v, want %+v", got, req)
+	}
+	if gotAuth != "Bearer test-token" {
+		t.Errorf("Authorization header = %q, want %q", gotAuth, "Bearer test-token")
+	}
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %q, want POST", gotMethod)
+	}
+	if gotPath != "/api/v1/apps" {
+		t.Errorf("path = %q, want /api/v1/apps", gotPath)
+	}
+}
+
+func TestClient_APIErrorStatus(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"error":"an app with this name already exists"}`))
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	_, err := client.CreateApp(context.Background(), appResource{Name: "web", Image: "x:1", Port: 3000})
+	if err == nil {
+		t.Fatalf("CreateApp() error = nil, want an error for a 409 response")
+	}
+	var apiErr *apiError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("error type = %T, want *apiError", err)
+	}
+	if apiErr.StatusCode != http.StatusConflict {
+		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusConflict)
+	}
+	if apiErr.Message != "an app with this name already exists" {
+		t.Errorf("Message = %q, want %q", apiErr.Message, "an app with this name already exists")
+	}
+}
+
+func TestClient_NetworkError(t *testing.T) {
+	// A server that's immediately closed guarantees connection refused,
+	// a real transport-level failure rather than an HTTP error status.
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
+	url := srv.URL
+	srv.Close()
+
+	client := NewClient(url, "")
+	_, err := client.ListApps(context.Background())
+	if err == nil {
+		t.Fatalf("ListApps() error = nil, want a network error")
+	}
+	var apiErr *apiError
+	if errors.As(err, &apiErr) {
+		t.Fatalf("error type = *apiError, want a plain network error (exitNetwork path), got %v", err)
+	}
+	if exitCodeForError(err) != exitNetwork {
+		t.Errorf("exitCodeForError() = %d, want exitNetwork", exitCodeForError(err))
+	}
+}
+
+func TestClient_TriggerBuild(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/apps/web/builds" {
+			t.Errorf("path = %q, want /api/v1/apps/web/builds", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		_ = json.NewEncoder(w).Encode(buildTriggerResponse{
+			Image: "levelrail/web:abc123",
+			App:   appResource{Name: "web", Image: "levelrail/web:abc123"},
+		})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.TriggerBuild(context.Background(), "web", buildTriggerRequest{RepoURL: "https://example.com/x.git", Ref: "main", ImageRepo: "levelrail/web"})
+	if err != nil {
+		t.Fatalf("TriggerBuild() error = %v", err)
+	}
+	if got.Image != "levelrail/web:abc123" {
+		t.Errorf("Image = %q, want %q", got.Image, "levelrail/web:abc123")
+	}
+}
