@@ -11,12 +11,54 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+// fakeAttemptStore is a hand-written fake for AttemptStore, the same
+// pattern every other fake in this file already uses.
+type fakeAttemptStore struct {
+	mu      sync.Mutex
+	saved   []store.DeployAttempt
+	saveErr error
+
+	finishedID     string
+	finishedStatus string
+	finishedErrMsg string
+	finishErr      error
+}
+
+func (f *fakeAttemptStore) SaveDeployAttempt(_ context.Context, a store.DeployAttempt) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.saveErr != nil {
+		return f.saveErr
+	}
+	f.saved = append(f.saved, a)
+	return nil
+}
+
+func (f *fakeAttemptStore) FinishDeployAttempt(_ context.Context, id, status string, _ time.Time, errMsg string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.finishedID = id
+	f.finishedStatus = status
+	f.finishedErrMsg = errMsg
+	return f.finishErr
+}
+
+func (f *fakeAttemptStore) snapshot() ([]store.DeployAttempt, string, string, string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.saved, f.finishedID, f.finishedStatus, f.finishedErrMsg
+}
 
 // fakeDeployer is a hand-written fake, not a mocking framework, matching
 // the pattern already used in internal/deploy and
@@ -185,8 +227,22 @@ func testConfig() Config {
 	}
 }
 
+// newTestHandler builds a Handler with attempt tracking disabled
+// (nil AttemptStore, nil Recorder): the majority of this file's tests
+// exercise signature verification and dispatch logic, orthogonal to
+// attempt tracking, and deployAttemptEnabled's own doc comment
+// establishes that nil/nil is a supported, fully-functional
+// configuration (the pre-existing build.SlogProgress behavior), not a
+// degraded one. Tests that specifically cover attempt tracking build
+// their own Handler via newTestHandlerWithAttempts below.
 func newTestHandler(cfg Config, deployer Deployer, fetch fetchFunc) *Handler {
-	h := New(cfg, deployer, discardLogger())
+	h := New(cfg, deployer, nil, nil, discardLogger())
+	h.fetch = fetch
+	return h
+}
+
+func newTestHandlerWithAttempts(cfg Config, deployer Deployer, fetch fetchFunc, attempts AttemptStore, recorder *deploylog.Recorder) *Handler {
+	h := New(cfg, deployer, attempts, recorder, discardLogger())
 	h.fetch = fetch
 	return h
 }
@@ -423,7 +479,7 @@ func TestServeHTTP_DeployFailure_ReturnsServerErrorNotLeaky(t *testing.T) {
 }
 
 func TestNew_NilLoggerDefaultsToSlogDefault(t *testing.T) {
-	h := New(testConfig(), &fakeDeployer{}, nil)
+	h := New(testConfig(), &fakeDeployer{}, nil, nil, nil)
 	if h.log == nil {
 		t.Fatal("New() with a nil logger left h.log nil, want it defaulted")
 	}
@@ -472,5 +528,98 @@ func TestConfig_Branch_Configured(t *testing.T) {
 	}
 	if got := c.targetRef(); got != "refs/heads/release" {
 		t.Errorf("targetRef() = %q, want %q", got, "refs/heads/release")
+	}
+}
+
+// TestServeHTTP_TargetBranch_RecordsDeployAttempt_Succeeded is the third
+// of this task's three real trigger paths: an unattended git push must
+// mint and save a deploy_attempts row just like the two HTTP-triggered
+// paths in internal/api, closing exactly the gap
+// docs-local/research/deploy-attempt-id-and-log-persistence.md frames as
+// the reason persistence matters most ("this product's core loop is
+// unattended webhook deploys").
+func TestServeHTTP_TargetBranch_RecordsDeployAttempt_Succeeded(t *testing.T) {
+	cfg := testConfig()
+	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
+	attempts := &fakeAttemptStore{}
+	recorder := deploylog.NewRecorder(nil, discardLogger())
+	h := newTestHandlerWithAttempts(cfg, deployer, func(_ context.Context, _, _ string) (string, func(), error) {
+		return "/tmp/checkout-dir", func() {}, nil
+	}, attempts, recorder)
+
+	body := pushBody(t, "refs/heads/main", "sha1")
+	rec := doPush(t, h, cfg.Secret, body, sign(cfg.Secret, body))
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body=%s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	saved, finishedID, finishedStatus, finishedErrMsg := attempts.snapshot()
+	if len(saved) != 1 {
+		t.Fatalf("SaveDeployAttempt called %d times, want 1", len(saved))
+	}
+	if saved[0].ServiceName != cfg.ServiceName {
+		t.Errorf("ServiceName = %q, want %q", saved[0].ServiceName, cfg.ServiceName)
+	}
+	if saved[0].Image != cfg.ImageRepo+":sha1" {
+		t.Errorf("Image = %q, want %q", saved[0].Image, cfg.ImageRepo+":sha1")
+	}
+	if saved[0].Status != store.DeployAttemptStatusRunning {
+		t.Errorf("initial Status = %q, want %q", saved[0].Status, store.DeployAttemptStatusRunning)
+	}
+	if finishedID != saved[0].ID {
+		t.Errorf("FinishDeployAttempt id = %q, want the same id SaveDeployAttempt was called with (%q)", finishedID, saved[0].ID)
+	}
+	if finishedStatus != store.DeployAttemptStatusSucceeded {
+		t.Errorf("finished Status = %q, want %q", finishedStatus, store.DeployAttemptStatusSucceeded)
+	}
+	if finishedErrMsg != "" {
+		t.Errorf("finished error = %q, want empty for a succeeded attempt", finishedErrMsg)
+	}
+}
+
+func TestServeHTTP_DeployFailure_RecordsDeployAttempt_Failed(t *testing.T) {
+	cfg := testConfig()
+	deployer := &fakeDeployer{err: errors.New("buildkit: boom")}
+	attempts := &fakeAttemptStore{}
+	recorder := deploylog.NewRecorder(nil, discardLogger())
+	h := newTestHandlerWithAttempts(cfg, deployer, func(_ context.Context, _, _ string) (string, func(), error) {
+		return "/tmp/checkout-dir", func() {}, nil
+	}, attempts, recorder)
+
+	body := pushBody(t, "refs/heads/main", "sha1")
+	rec := doPush(t, h, cfg.Secret, body, sign(cfg.Secret, body))
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusInternalServerError)
+	}
+
+	_, _, finishedStatus, finishedErrMsg := attempts.snapshot()
+	if finishedStatus != store.DeployAttemptStatusFailed {
+		t.Errorf("finished Status = %q, want %q", finishedStatus, store.DeployAttemptStatusFailed)
+	}
+	if finishedErrMsg != "buildkit: boom" {
+		t.Errorf("finished error = %q, want %q", finishedErrMsg, "buildkit: boom")
+	}
+}
+
+// TestServeHTTP_WrongBranch_DoesNotRecordDeployAttempt: a push that
+// never triggers a deploy at all must not create history for one.
+func TestServeHTTP_WrongBranch_DoesNotRecordDeployAttempt(t *testing.T) {
+	cfg := testConfig()
+	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
+	attempts := &fakeAttemptStore{}
+	recorder := deploylog.NewRecorder(nil, discardLogger())
+	h := newTestHandlerWithAttempts(cfg, deployer, func(context.Context, string, string) (string, func(), error) {
+		t.Fatal("fetch should not be called for a non-target branch")
+		return "", nil, nil
+	}, attempts, recorder)
+
+	body := pushBody(t, "refs/heads/feature-x", "sha1")
+	doPush(t, h, cfg.Secret, body, sign(cfg.Secret, body))
+
+	saved, _, _, _ := attempts.snapshot()
+	if len(saved) != 0 {
+		t.Errorf("SaveDeployAttempt called %d times, want 0 for an ignored push", len(saved))
 	}
 }

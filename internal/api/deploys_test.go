@@ -60,6 +60,64 @@ func TestHandleTriggerDeploy(t *testing.T) {
 	}
 }
 
+// TestHandleTriggerDeploy_RecordsDeployAttempt covers this task's own
+// judgment call for the plain image-tag path: it has no real build step
+// (no Dockerfile build happens, see handleTriggerDeploy's own doc
+// comment), but still deserves a deploy_attempts row for history and
+// rollback purposes, the same way the two build-triggering paths do.
+// Unlike those two, there is no build output to persist, so the attempt
+// is saved and immediately finished as succeeded in the same call,
+// rather than started as "running" and finished later by a background
+// build.
+func TestHandleTriggerDeploy_RecordsDeployAttempt(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/deploys", `{"image":"levelrail/web:2"}`))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+
+	attempts, err := db.ListDeployAttempts(ctx, "web")
+	if err != nil {
+		t.Fatalf("ListDeployAttempts() error = %v", err)
+	}
+	if len(attempts) != 1 {
+		t.Fatalf("expected 1 deploy attempt recorded, got %d", len(attempts))
+	}
+	a := attempts[0]
+	if a.Image != "levelrail/web:2" {
+		t.Errorf("Image = %q, want %q", a.Image, "levelrail/web:2")
+	}
+	if a.Status != store.DeployAttemptStatusSucceeded {
+		t.Errorf("Status = %q, want %q", a.Status, store.DeployAttemptStatusSucceeded)
+	}
+	if a.FinishedAt == nil {
+		t.Error("FinishedAt = nil, want set: the plain image-tag path has no build step, so the attempt finishes in the same call it starts")
+	}
+
+	// A second trigger must add a second attempt row, not overwrite the
+	// first: real history, not a single "last deploy" pointer.
+	rec2 := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec2, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/deploys", `{"image":"levelrail/web:3"}`))
+	if rec2.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d", rec2.Code, http.StatusAccepted)
+	}
+	attemptsAfter, err := db.ListDeployAttempts(ctx, "web")
+	if err != nil {
+		t.Fatalf("ListDeployAttempts() error = %v", err)
+	}
+	if len(attemptsAfter) != 2 {
+		t.Fatalf("expected 2 deploy attempts after a second trigger, got %d", len(attemptsAfter))
+	}
+}
+
 func TestHandleDeployHistory(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

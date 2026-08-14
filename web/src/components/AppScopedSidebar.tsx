@@ -2,6 +2,7 @@ import { Link, useRouterState } from '@tanstack/react-router'
 import {
   ArrowLeftIcon,
   SquaresFourIcon,
+  ClockCounterClockwiseIcon,
   GlobeIcon,
   BracketsCurlyIcon,
   HeartbeatIcon,
@@ -25,9 +26,14 @@ import { summarizeAppStatus } from '../lib/appStatus'
 
 // The app-scoped half of AppSidebar's Vercel-style dynamic nav:
 // rendered in place of the global nav whenever the current route
-// is under /apps/$name/*. The 8 items below are the same sections
+// is under /apps/$name/*. The first 8 items below are the same sections
 // routes/apps/$name.tsx's Tabs component used to render in-page (same
 // icons, same order), now real nested routes instead of tab state.
+// "Deploys" (real, row-per-attempt history at /apps/$name/deploys, see
+// that route's own doc comment) is the 9th, added by this task: deploy
+// history is a first-class, non-trivial concern (a list, a per-attempt
+// log viewer, a rollback action), not a fit for the existing Overview
+// section's current-status ConditionsPanel.
 //
 // Reads app name/status from the same query cache routes/apps/$name.tsx's
 // layout route loader already primed (queries/apps.ts, queries/
@@ -79,6 +85,16 @@ export function AppScopedSidebar({ name }: { name: string }) {
               >
                 <SquaresFourIcon />
                 <span>Overview</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={<Link to="/apps/$name/deploys" params={{ name }} />}
+                isActive={pathname.endsWith('/deploys')}
+                tooltip="Deploys"
+              >
+                <ClockCounterClockwiseIcon />
+                <span>Deploys</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>

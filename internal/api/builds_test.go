@@ -11,6 +11,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -32,6 +33,12 @@ func (f *fakeBuilder) Deploy(_ context.Context, req deploy.Request, progress fun
 	f.lastReq = req
 	if progress != nil {
 		progress(build.ProgressEvent{Step: "fake", Completed: true})
+		// A real output-carrying event too (Step-lifecycle events like
+		// the one above have no Log, so internal/deploylog.Recorder never
+		// persists them): TestHandleTriggerBuild_RecordsDeployAttempt_Succeeded
+		// asserts this line actually lands in the persisted deploy log,
+		// proving the recorder is wired through end to end.
+		progress(build.ProgressEvent{Log: "fake build output", Stream: "stdout"})
 	}
 	if f.err != nil {
 		return "", f.err
@@ -267,6 +274,134 @@ func TestHandleTriggerBuild_Success(t *testing.T) {
 	}
 	if resp.App.Name != "web" {
 		t.Errorf("response App.Name = %q, want %q", resp.App.Name, "web")
+	}
+}
+
+// TestHandleTriggerBuild_RecordsDeployAttempt_Succeeded covers the
+// second of the two build-triggering paths: unlike the plain image-tag
+// path (deploys_test.go's TestHandleTriggerDeploy_RecordsDeployAttempt),
+// this one has a real build step, so it should start "running" (backed
+// by the recorder's live fan-out via WithDeployRecorder) and finish
+// "succeeded" once fakeBuilder.Deploy returns.
+func TestHandleTriggerBuild_RecordsDeployAttempt_Succeeded(t *testing.T) {
+	fb := &fakeBuilder{tag: "levelrail/web:abc123"}
+	var fetchCalls []fakeFetchCall
+	cleanupCalled := false
+	db := openTestDB(t)
+	telemetryDB := newTestTelemetryDB(t)
+	recorder := deploylog.NewRecorder(telemetryDB, discardLogger())
+	rt := NewRouter(nil, testBrand(), db, WithBuilder(fb), WithDeployRecorder(recorder))
+	rt.fetch = newFakeFetch(&fetchCalls, t.TempDir(), &cleanupCalled, nil)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
+		`{"repo_url":"https://example.com/web.git","ref":"main"}`))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+
+	attempts, err := db.ListDeployAttempts(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("ListDeployAttempts() error = %v", err)
+	}
+	if len(attempts) != 1 {
+		t.Fatalf("expected 1 deploy attempt, got %d", len(attempts))
+	}
+	a := attempts[0]
+	if a.Status != store.DeployAttemptStatusSucceeded {
+		t.Errorf("Status = %q, want %q", a.Status, store.DeployAttemptStatusSucceeded)
+	}
+	if a.Image != "web:main" {
+		t.Errorf("Image = %q, want %q (ImageRepo:CommitSHA computed before the build, mirroring internal/deploy's own tag construction)", a.Image, "web:main")
+	}
+	if a.FinishedAt == nil {
+		t.Error("FinishedAt = nil, want set")
+	}
+
+	// fakeBuilder.Deploy invokes progress with a real output-carrying
+	// event; confirm it landed in the persisted deploy log, proving the
+	// recorder was actually wired through end to end, not just the
+	// attempt row.
+	got, err := telemetryDB.QueryDeployLog(context.Background(), a.ID)
+	if err != nil {
+		t.Fatalf("QueryDeployLog() error = %v", err)
+	}
+	if len(got) == 0 {
+		t.Fatal("expected at least one persisted log line from the fake builder's progress callback")
+	}
+}
+
+func TestHandleTriggerBuild_RecordsDeployAttempt_Failed(t *testing.T) {
+	fb := &fakeBuilder{err: errors.New("buildkit: boom")}
+	var fetchCalls []fakeFetchCall
+	cleanupCalled := false
+	db := openTestDB(t)
+	recorder := deploylog.NewRecorder(nil, discardLogger())
+	rt := NewRouter(nil, testBrand(), db, WithBuilder(fb), WithDeployRecorder(recorder))
+	rt.fetch = newFakeFetch(&fetchCalls, t.TempDir(), &cleanupCalled, nil)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
+		`{"repo_url":"https://example.com/web.git","ref":"main"}`))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusInternalServerError)
+	}
+
+	attempts, err := db.ListDeployAttempts(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("ListDeployAttempts() error = %v", err)
+	}
+	if len(attempts) != 1 {
+		t.Fatalf("expected 1 deploy attempt even for a failed build, got %d", len(attempts))
+	}
+	if attempts[0].Status != store.DeployAttemptStatusFailed {
+		t.Errorf("Status = %q, want %q", attempts[0].Status, store.DeployAttemptStatusFailed)
+	}
+	if attempts[0].Error != "buildkit: boom" {
+		t.Errorf("Error = %q, want %q", attempts[0].Error, "buildkit: boom")
+	}
+}
+
+func TestHandleTriggerBuild_NoRecorderConfigured_StillRecordsAttemptWithoutLog(t *testing.T) {
+	// No WithDeployRecorder: handleTriggerBuild must still degrade
+	// gracefully (build.SlogProgress fallback, matching this package's
+	// pre-existing behavior) rather than fail the whole request, and
+	// still records the attempt row itself since rt.deployAttempts is
+	// always available (it's part of the core Store interface, not an
+	// optional plug-in).
+	fb := &fakeBuilder{tag: "levelrail/web:abc123"}
+	var fetchCalls []fakeFetchCall
+	cleanupCalled := false
+	rt, db := newTestRouterWithBuilder(t, fb, newFakeFetch(&fetchCalls, t.TempDir(), &cleanupCalled, nil))
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
+		`{"repo_url":"https://example.com/web.git","ref":"main"}`))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+
+	attempts, err := db.ListDeployAttempts(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("ListDeployAttempts() error = %v", err)
+	}
+	if len(attempts) != 1 {
+		t.Fatalf("expected 1 deploy attempt, got %d", len(attempts))
+	}
+	if attempts[0].Status != store.DeployAttemptStatusSucceeded {
+		t.Errorf("Status = %q, want %q", attempts[0].Status, store.DeployAttemptStatusSucceeded)
 	}
 }
 

@@ -41,6 +41,18 @@ type ProgressEvent struct {
 	// Log is a raw output line from the step (stdout/stderr from the
 	// build), empty for step-lifecycle events.
 	Log string
+	// Stream is "stdout" or "stderr" when Log is non-empty, and empty
+	// for a step-lifecycle event (Log == ""), since those never came
+	// from either stream. Added for internal/deploylog.Recorder, so a
+	// persisted/live-streamed build log line can carry the same
+	// stdout/stderr distinction web/src/hooks/useDeployLogStream.ts's
+	// contract already expects (its own doc comment: "distinguishing
+	// stdout/stderr is useful for highlighting failed build steps").
+	// Populated from BuildKit's own VertexLog.Stream (see
+	// relayProgress), 1/2 being BuildKit's stdout/stderr convention; the
+	// docker-image-load phase (loadImage) has no equivalent stream
+	// signal from the Engine API, so it always reports "stdout".
+	Stream string
 }
 
 // SlogProgress adapts a *slog.Logger into a progress func, for callers
@@ -143,9 +155,23 @@ func relayProgress(ch <-chan *bkclient.SolveStatus, progress func(ProgressEvent)
 			}
 		}
 		for _, l := range st.Logs {
-			progress(ProgressEvent{Log: string(l.Data)})
+			progress(ProgressEvent{Log: string(l.Data), Stream: vertexLogStream(l.Stream)})
 		}
 	}
+}
+
+// vertexLogStream converts BuildKit's VertexLog.Stream int (1 = stdout,
+// 2 = stderr, the same convention as Unix file descriptor numbers) into
+// ProgressEvent.Stream's string form. Anything else (0, or a value
+// BuildKit's own protocol doesn't currently define) defaults to
+// "stdout": a build log line always came from one of exactly two real
+// streams, so there is no meaningful third value to represent, only an
+// unset one to default away.
+func vertexLogStream(bkStream int) string {
+	if bkStream == 2 {
+		return "stderr"
+	}
+	return "stdout"
 }
 
 // loadImage reads a `docker save`-style tar from r and loads it into the
@@ -182,7 +208,7 @@ func loadImage(ctx context.Context, docker *dockerclient.Client, r io.Reader, ta
 			return fmt.Errorf("build: docker image load %q: %s", tag, msg.Error)
 		}
 		if msg.Stream != "" {
-			progress(ProgressEvent{Log: msg.Stream})
+			progress(ProgressEvent{Log: msg.Stream, Stream: "stdout"})
 		}
 	}
 }

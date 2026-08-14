@@ -31,6 +31,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
@@ -232,6 +233,18 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
+	// deployRecorder is the one place internal/build.ProgressEvent output
+	// from any of the three real trigger paths becomes both a persisted
+	// row in telemetryDB and a live SSE fan-out (internal/deploylog's own
+	// package doc comment). Constructed once, here, and shared by
+	// reference into both api.Router (via api.WithDeployRecorder, see
+	// rootHandler) and the webhook handler (loadWebhookHandler): a
+	// webhook-triggered build's live output must be visible to a viewer
+	// connected through the HTTP API's SSE route, which only works if
+	// both consumers publish to and read from the exact same in-memory
+	// subscriber set.
+	deployRecorder := deploylog.NewRecorder(telemetryDB, logger)
+
 	alertingDB, err := openAlertingStore(ctx)
 	if err != nil {
 		return err
@@ -308,7 +321,7 @@ func run(logger *slog.Logger) error {
 		}()
 	}
 
-	webhookHandler, err := loadWebhookHandler(logger, b, builder)
+	webhookHandler, err := loadWebhookHandler(logger, b, db, deployRecorder, builder)
 	if err != nil {
 		// Not fatal, the same choice as everything else optional above:
 		// the control plane still starts, serving apps deployed by
@@ -319,7 +332,7 @@ func run(logger *slog.Logger) error {
 
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
-		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder),
+		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder, deployRecorder),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -902,7 +915,15 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 // project's Phase 1 exit criterion is one app deploying from one push), so
 // APP_SERVICE_NAME only needs setting when the app spec declares more
 // than one service; with exactly one, it's the unambiguous default.
-func loadWebhookHandler(logger *slog.Logger, b *brand.Brand, pipeline *deploy.Pipeline) (http.Handler, error) {
+// db and recorder back this task's deploy-attempt tracking
+// (webhook.AttemptStore and *deploylog.Recorder respectively): db is
+// always the real store (never nil here, unlike pipeline), so the
+// webhook handler this function builds always records real deploy
+// history for a triggering push, per
+// docs-local/research/deploy-attempt-id-and-log-persistence.md's own
+// framing that an unattended webhook deploy is exactly the case
+// persistence matters most for.
+func loadWebhookHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, recorder *deploylog.Recorder, pipeline *deploy.Pipeline) (http.Handler, error) {
 	if pipeline == nil {
 		return nil, fmt.Errorf("no builder available (see the earlier \"builder not configured\" warning)")
 	}
@@ -957,7 +978,7 @@ func loadWebhookHandler(logger *slog.Logger, b *brand.Brand, pipeline *deploy.Pi
 		Service:     svc,
 		ImageRepo:   imageRepo,
 	}
-	return webhook.New(cfg, pipeline, logger), nil
+	return webhook.New(cfg, pipeline, db, recorder, logger), nil
 }
 
 // buildCacheOptions reads TASKS.md 3.5's cache-backend env vars and
@@ -1083,7 +1104,16 @@ func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent
 // api.WithImageLister are both applied unconditionally, the same way
 // api.WithTelemetryQuerier and api.WithAlertRules already are for
 // telemetryDB/alertingDB.
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline) http.Handler {
+// deployRecorder is always non-nil (constructed unconditionally in run,
+// unlike builder/secretsManager/webhookHandler which are each
+// independently optional): api.WithDeployRecorder and
+// api.WithDeployLogStore are both applied unconditionally, the same way
+// api.WithTelemetryQuerier and api.WithAlertRules already are for
+// telemetryDB/alertingDB. handleTriggerBuild (internal/api/builds.go)
+// still degrades gracefully to build.SlogProgress if a *caller* passes a
+// nil recorder in some other wiring path (e.g. a test), but production
+// wiring here always has a real one.
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder) http.Handler {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
@@ -1096,6 +1126,8 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDockerPinger(client),
 		api.WithImageLister(client),
 		api.WithCertExpiryWarningWindow(certExpiryWarningWindow(logger)),
+		api.WithDeployLogStore(telemetryDB),
+		api.WithDeployRecorder(deployRecorder),
 	}
 	if secretsManager != nil {
 		opts = append(opts, api.WithSecretSetter(secretsManager))
