@@ -27,6 +27,13 @@ import { Button } from '@/components/ui/button'
 import { useBrand } from '../hooks/useBrand'
 import { useAuthUsername } from '../hooks/useAuthUsername'
 import { useLogout } from '../queries/auth'
+import { AppScopedSidebar } from './AppScopedSidebar'
+
+// Matches /apps/<name> and any nested path under it, capturing <name>.
+// Deliberately excludes the bare /apps list route (no trailing segment)
+// so the list page keeps the global nav, only a specific app's detail
+// tree switches to the scoped one below.
+const APP_SCOPE_PATTERN = /^\/apps\/([^/]+)/
 
 // The shadcn sidebar-07/dashboard-01 shape (docs-local/research/
 // dashboard-redesign/cross-cutting-sidebar-patterns.md), minus the team
@@ -36,14 +43,27 @@ import { useLogout } from '../queries/auth'
 // group (Settings, Docs) sits pinned above the account footer via
 // `mt-auto` on its own SidebarGroup, matching the research's two-zone
 // bottom structure.
+//
+// Vercel-style dynamic/contextual nav (docs/superpowers/specs/
+// 2026-08-14-creation-wizard-and-sidebar-design.md item 2): this single
+// component now has two rendering paths, chosen by the current pathname
+// rather than two separate components swapped in by __root.tsx. That
+// keeps the brand header, account footer, and outer Sidebar/SidebarRail
+// chrome (identical in both modes) written once, and makes the "which
+// mode" decision live in exactly one place (APP_SCOPE_PATTERN below)
+// instead of being duplicated between a parent chooser and this file.
+// Scoped strictly to the Apps detail tree per the spec: Databases' own
+// detail route keeps the global nav for now, as a fast-follow once this
+// pattern is proven once.
 export function AppSidebar() {
   const brand = useBrand()
   const username = useAuthUsername()
   const logout = useLogout()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const scopedAppName = pathname.match(APP_SCOPE_PATTERN)?.[1]
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" variant="floating">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -64,123 +84,128 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  render={<Link to="/apps" />}
-                  isActive={pathname.startsWith('/apps')}
-                  tooltip="Apps"
-                >
-                  <StackIcon />
-                  <span>Apps</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  render={<Link to="/databases" />}
-                  isActive={pathname.startsWith('/databases')}
-                  tooltip="Databases"
-                >
-                  <DatabaseIcon />
-                  <span>Databases</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {scopedAppName ? (
+          <AppScopedSidebar name={decodeURIComponent(scopedAppName)} />
+        ) : (
+          <>
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/apps" />}
+                      isActive={pathname.startsWith('/apps')}
+                      tooltip="Apps"
+                    >
+                      <StackIcon />
+                      <span>Apps</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/databases" />}
+                      isActive={pathname.startsWith('/databases')}
+                      tooltip="Databases"
+                    >
+                      <DatabaseIcon />
+                      <span>Databases</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  {/* Promoted from Settings (design spec item 1,
+                      2026-08-14): multi-node placement is a real
+                      resource kind an operator manages day to day, the
+                      same category as Apps/Databases, not admin
+                      configuration. */}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/nodes" />}
+                      isActive={pathname.startsWith('/nodes')}
+                      tooltip="Nodes"
+                    >
+                      <HardDrivesIcon />
+                      <span>Nodes</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
 
-        {/* Pinned to the bottom of the content area, just above the
-            account footer: the two-zone structure dashboard-01's
-            NavSecondary establishes. mt-auto on the group itself, not a
-            spacer element, so it works regardless of how much primary
-            nav exists above it. A real "Settings" section (account,
-            security, tokens, general), not just the one API-tokens link
-            this group used to hold: Coolify and Dokploy both surface
-            these even before a single app is deployed, and Levelrail's
-            equivalent screens (routes/settings/*) exist now too. */}
-        <SidebarGroup className="mt-auto">
-          <SidebarGroupLabel>Settings</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  render={<Link to="/settings/account" />}
-                  isActive={pathname.startsWith('/settings/account')}
-                  tooltip="Account"
-                >
-                  <UserIcon />
-                  <span>Account</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  render={<Link to="/settings/security" />}
-                  isActive={pathname.startsWith('/settings/security')}
-                  tooltip="Security"
-                >
-                  <ShieldIcon />
-                  <span>Security</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  render={<Link to="/settings/tokens" />}
-                  isActive={pathname.startsWith('/settings/tokens')}
-                  tooltip="API tokens"
-                >
-                  <KeyIcon />
-                  <span>API tokens</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  render={<Link to="/settings/general" />}
-                  isActive={pathname.startsWith('/settings/general')}
-                  tooltip="General"
-                >
-                  <GearIcon />
-                  <span>General</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              {/* Infra/admin config, not a deployable resource kind like
-                  Apps/Databases, so it lives in Settings rather than the
-                  primary group above. Multi-node is an occasional admin
-                  action for this product's 1-10 machine target audience,
-                  not a daily-use screen, the same reasoning that keeps
-                  Account/Security/API tokens/General down here instead of
-                  promoted to primary nav. */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  render={<Link to="/nodes" />}
-                  isActive={pathname.startsWith('/nodes')}
-                  tooltip="Nodes"
-                >
-                  <HardDrivesIcon />
-                  <span>Nodes</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              {brand.DocsURL ? (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    render={
-                      <a
-                        href={brand.DocsURL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      />
-                    }
-                    tooltip="Documentation"
-                  >
-                    <BookOpenIcon />
-                    <span>Documentation</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ) : null}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+            {/* Pinned to the bottom of the content area, just above the
+                account footer: the two-zone structure dashboard-01's
+                NavSecondary establishes. mt-auto on the group itself, not
+                a spacer element, so it works regardless of how much
+                primary nav exists above it. A real "Settings" section
+                (account, security, tokens, general), not just the one
+                API-tokens link this group used to hold: Coolify and
+                Dokploy both surface these even before a single app is
+                deployed, and Levelrail's equivalent screens
+                (routes/settings/*) exist now too. */}
+            <SidebarGroup className="mt-auto">
+              <SidebarGroupLabel>Settings</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/settings/account" />}
+                      isActive={pathname.startsWith('/settings/account')}
+                      tooltip="Account"
+                    >
+                      <UserIcon />
+                      <span>Account</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/settings/security" />}
+                      isActive={pathname.startsWith('/settings/security')}
+                      tooltip="Security"
+                    >
+                      <ShieldIcon />
+                      <span>Security</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/settings/tokens" />}
+                      isActive={pathname.startsWith('/settings/tokens')}
+                      tooltip="API tokens"
+                    >
+                      <KeyIcon />
+                      <span>API tokens</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/settings/general" />}
+                      isActive={pathname.startsWith('/settings/general')}
+                      tooltip="General"
+                    >
+                      <GearIcon />
+                      <span>General</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  {brand.DocsURL ? (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        render={
+                          <a
+                            href={brand.DocsURL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          />
+                        }
+                        tooltip="Documentation"
+                      >
+                        <BookOpenIcon />
+                        <span>Documentation</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ) : null}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
       </SidebarContent>
 
       <SidebarFooter>
