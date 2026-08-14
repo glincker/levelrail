@@ -9,9 +9,10 @@ import (
 )
 
 // UpsertConditions persists every condition from a controller's most
-// recent Reconcile result. CLAUDE.md 4.2 requires status conditions to be
-// "stored and shown in the UI". This is that storage; reconcile.Engine
-// itself only ever held results in memory, lost on restart.
+// recent Reconcile result. Every reconcile must emit a status condition
+// that gets stored and shown in the UI; this is that storage.
+// reconcile.Engine itself only ever held results in memory, lost on
+// restart.
 func (db *DB) UpsertConditions(ctx context.Context, controllerName string, conditions []reconcile.Condition) error {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {

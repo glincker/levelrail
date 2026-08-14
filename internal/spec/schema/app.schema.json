@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://glinr.com/levelrail/schema/app.json",
   "title": "Levelrail app spec",
-  "description": "CLAUDE.md 4.9: the one declarative file a user writes in their repo.",
+  "description": "The one declarative app spec file a user writes in their repo.",
   "type": "object",
   "required": ["version", "services"],
   "additionalProperties": false,

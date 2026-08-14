@@ -13,10 +13,10 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
-// This file (logs.go) is the node-local log store described in
-// CLAUDE.md 4.8 and TASKS.md 2.2: read a container's log stream directly
-// from the Docker Engine API (never the json-file driver's on-disk
-// files), chunk it into batches, index it for full-text search, and flag
+// This file (logs.go) is the node-local log store: read a container's
+// log stream directly (per TASKS.md 2.2) from the Docker Engine API
+// (never the json-file driver's on-disk files), chunk it into batches,
+// index it for full-text search, and flag
 // lines that parse as JSON so a future log viewer (TASKS.md 2.4) can
 // render them distinctly. Lives in the same package and the same
 // telemetry.db as store.go's metric samples: ADR 008 frames metrics and
@@ -27,15 +27,16 @@ import (
 // share both a write cadence (bursty, per-batch writes) and a retention
 // model (a periodic delete-older-than sweep).
 //
-// Compression (CLAUDE.md 4.8's "chunk, compress, index"): deliberately
-// not an explicit step here. FTS5 (see migrations/0002_log_entries.sql)
-// needs plaintext access to message to build and query its token index;
-// compressing message at the row level would mean decompressing before
-// every search, which defeats the point of having an index at all, or
-// storing both a compressed and an uncompressed copy, which is worse
-// than not compressing. What CLAUDE.md 4.8 asks "compress" to solve
-// (don't let a log firehose bloat storage unchecked) is instead solved
-// by: batched writes (fewer, larger transactions, see logBatchMaxLines/
+// Compression (the log store's "chunk, compress, index" design goal):
+// deliberately not an explicit step here. FTS5 (see
+// migrations/0002_log_entries.sql) needs plaintext access to message to
+// build and query its token index; compressing message at the row level
+// would mean decompressing before every search, which defeats the point
+// of having an index at all, or storing both a compressed and an
+// uncompressed copy, which is worse than not compressing. The goal
+// "compress" is meant to solve (don't let a log firehose bloat storage
+// unchecked) is instead solved by: batched writes (fewer, larger
+// transactions, see logBatchMaxLines/
 // logBatchMaxWait below) rather than one write per line, FTS5's
 // external-content mode (log_entries_fts stores token postings only, not
 // a second copy of every message), and the same bounded-retention sweep
@@ -208,7 +209,7 @@ func ftsPhrase(query string) string {
 // RetainLogs deletes every log entry older than cutoff, returning how
 // many rows were removed. Mirrors Retain's shape exactly (same signature
 // pattern, same "caller decides the cutoff, no hardcoded threshold"
-// reasoning per the root CLAUDE.md rule); the FTS index stays in sync
+// house rule); the FTS index stays in sync
 // automatically via log_entries_ad (migrations/0002_log_entries.sql),
 // not because of anything this method does itself.
 func (db *DB) RetainLogs(ctx context.Context, cutoff time.Time) (deleted int64, err error) {

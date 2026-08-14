@@ -8,11 +8,11 @@ import (
 // nameLike matches the pattern service and database keys must follow:
 // lowercase alphanumeric and hyphens, since these become components of
 // Docker container names, network names, and DNS-visible identifiers
-// later (CLAUDE.md 3's brand.ShortName namespacing follows the same
-// shape). The JSON Schema can validate map value shapes but has no way
-// to constrain map keys by pattern in the draft this schema targets
-// without a much less readable propertyNames construct, so this is
-// checked here instead.
+// later (the same shape used for the brand's namespace prefix on those
+// same identifiers). The JSON Schema can validate map value shapes but
+// has no way to constrain map keys by pattern in the draft this schema
+// targets without a much less readable propertyNames construct, so this
+// is checked here instead.
 var nameLike = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 
 // Validate checks rules the JSON Schema can't express: values whose
@@ -85,8 +85,8 @@ func (svc *Service) EffectiveReplicas() int {
 	return svc.Replicas
 }
 
-// EffectiveStrategy returns svc.Strategy, or the CLAUDE.md 6 default
-// (blue-green: "easier to get right than rolling with a single replica")
+// EffectiveStrategy returns svc.Strategy, or the default (blue-green,
+// since it's easier to get right than rolling with a single replica)
 // if unset.
 func (svc *Service) EffectiveStrategy() string {
 	if svc.Strategy == "" {

@@ -14,7 +14,7 @@ import (
 var migrationsFS embed.FS
 
 // migration is one forward-only, numbered schema change. There is no down
-// migration by design (CLAUDE.md 4.7: "versioned and forward-only"). A
+// migration by design: migrations are versioned and forward-only. A
 // bad migration gets fixed by a new migration, never by rewriting history.
 type migration struct {
 	version int

@@ -7,7 +7,8 @@ import (
 )
 
 // EnvVar is one entry in a service's env block. app.yaml allows two
-// shapes for the same field (CLAUDE.md 4.9's example shows both):
+// shapes for the same field, per the app spec's own example, which
+// shows both:
 //
 //	DATABASE_URL: { from: postgres.main.url }
 //	API_KEY:      { secret: true, required: true }
@@ -24,8 +25,8 @@ type EnvVar struct {
 	// "postgres.main.url". Mutually exclusive with Value and Secret.
 	From string
 	// Secret means the operator provides this at deploy time via
-	// Levelrail's own secret storage (CLAUDE.md 4.10), never written to
-	// app.yaml or the git repo.
+	// the platform's own envelope-encrypted secret storage, never
+	// written to app.yaml or the git repo.
 	Secret bool
 	// Required, only meaningful alongside Secret: fail the deploy if no
 	// value has been provided, rather than starting the container with

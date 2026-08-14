@@ -1,8 +1,7 @@
-// Package nginxdemo is the Phase 0 exit criterion from CLAUDE.md: "one
-// controller that keeps a single hardcoded nginx container running. Kill
-// the container by hand, watch it come back." Desired state is hardcoded
-// on purpose: reading desired state from the SQLite store is Phase 1
-// (4.7), not this.
+// Package nginxdemo is the Phase 0 exit criterion: one controller that
+// keeps a single hardcoded nginx container running. Kill the container
+// by hand, watch it come back. Desired state is hardcoded on purpose:
+// reading desired state from the SQLite store is Phase 1, not this.
 package nginxdemo
 
 import (
@@ -25,8 +24,8 @@ const (
 // running." Every Reconcile call re-derives what to do from the runtime's
 // current observed state: it never assumes a previous call finished
 // cleanly, which is what makes it safe to interrupt mid-operation and
-// safe to call again immediately after (CLAUDE.md 4.2: idempotent,
-// level-triggered, safe to interrupt).
+// safe to call again immediately after (reconcilers are idempotent,
+// level-triggered, and safe to interrupt by design).
 type Controller struct {
 	runtime docker.Runtime
 }

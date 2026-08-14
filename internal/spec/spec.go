@@ -1,12 +1,12 @@
-// Package spec parses and validates the app.yaml file described in
-// CLAUDE.md 4.9: the one declarative file a user writes in their repo.
+// Package spec parses and validates the app.yaml file: the one
+// declarative file a user writes in their repo, per the app spec design.
 // Validation happens in two layers. Structural shape (required fields,
 // enums, string patterns, unknown-key rejection) is checked against the
-// embedded JSON Schema (schema/app.schema.json), which CLAUDE.md 4.9
-// explicitly calls for so CI and the deploy-time check share one
-// definition, not two hand-maintained copies that drift. Rules the
-// schema can't express (a field's validity depending on another field's
-// value) are checked by Validate after parsing.
+// embedded JSON Schema (schema/app.schema.json), kept as the single
+// source of truth so CI and the deploy-time check share one definition,
+// not two hand-maintained copies that drift. Rules the schema can't
+// express (a field's validity depending on another field's value) are
+// checked by Validate after parsing.
 package spec
 
 import (
@@ -35,7 +35,8 @@ type Service struct {
 	Strategy  string            `yaml:"strategy,omitempty"`
 }
 
-// Build input types, per CLAUDE.md 4.4 and 4.9.
+// Build input types: the app spec's build.type values, matching the
+// BuildKit-based build detection (Dockerfile, Compose, Railpack, static).
 const (
 	BuildDockerfile = "dockerfile"
 	BuildCompose    = "compose"
@@ -43,9 +44,9 @@ const (
 	BuildStatic     = "static"
 )
 
-// Deploy strategies, per CLAUDE.md 4.9. Blue-green is the effective
-// default (CLAUDE.md 6: "easier to get right than rolling with a single
-// replica"), applied by DefaultStrategy when Strategy is empty, not
+// Deploy strategies, part of the app spec. Blue-green is the effective
+// default, since it's easier to get right than rolling with a single
+// replica, applied by DefaultStrategy when Strategy is empty, not
 // baked into the schema itself.
 const (
 	StrategyRolling   = "rolling"
@@ -82,8 +83,8 @@ type Resources struct {
 	CPU    float64 `yaml:"cpu,omitempty"`
 }
 
-// Supported managed database engines, per CLAUDE.md 6 Phase 1 ("Managed
-// Postgres and Redis as first-class resources").
+// Supported managed database engines: Postgres and Redis ship as
+// first-class resources in the initial release.
 const (
 	EngineFake     = "" // zero value only, never valid; see Validate
 	EnginePostgres = "postgres"

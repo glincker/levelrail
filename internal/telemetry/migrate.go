@@ -14,7 +14,8 @@ import (
 var migrationsFS embed.FS
 
 // migration is one forward-only, numbered schema change, no down
-// migration by design (CLAUDE.md 4.7's convention, applied here too).
+// migration by design (the SQLite state store's own convention,
+// applied here too).
 //
 // This runner is a deliberate near-duplicate of internal/store's own
 // migrate.go rather than a shared package: internal/store is under

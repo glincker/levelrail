@@ -1,6 +1,6 @@
-// Package store is the embedded SQLite state layer described in CLAUDE.md
-// 4.7: WAL mode, modernc.org/sqlite (pure Go, no cgo, keeps cross-compiling
-// the control plane binary trivial), forward-only versioned migrations.
+// Package store is the embedded SQLite state layer: WAL mode,
+// modernc.org/sqlite (pure Go, no cgo, keeps cross-compiling the
+// control plane binary trivial), forward-only versioned migrations.
 package store
 
 import (
