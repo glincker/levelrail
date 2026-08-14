@@ -61,7 +61,14 @@ frontend work must use `@phosphor-icons/react/dist/ssr`, not
       threshold this round (`index-*.js`, currently ~501KB raw). Not
       urgent, but worth a look before it grows further: CLAUDE.md's own
       frontend rule calls for a bundle-size budget, not yet enforced in
-      CI.
+      CI. Quick-checked (concurrent session): nothing obviously wasteful
+      in root-level imports (`routes/__root.tsx`), `BrandIcon`/
+      `@thesvg/react` isn't pulled into the always-loaded chrome, `zod`
+      and `CreateResourceWizard` are already their own split chunks. The
+      overage is marginal (~0.2% over threshold, 146kB gzipped), and a
+      real fix needs actual bundle-composition tooling (a visualizer
+      plugin isn't installed), not a guess. Leaving unclaimed rather than
+      half-fixing it.
 - [ ] A concurrent session merged a real, useful gap-close while this
       round was in flight: a notification bell (`NotificationBell.tsx`,
       polls node/certificate state), a toast-based consolidation
