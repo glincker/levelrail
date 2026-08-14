@@ -1,25 +1,38 @@
-import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
+import { Link } from '@tanstack/react-router'
+import { CaretRightIcon, HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
 import type { NodeResource, NodeStatus } from '../types/nodeDetail'
 import { DeleteNodeDialog } from './DeleteNodeDialog'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import type { VariantProps } from 'class-variance-authority'
 
 // Shared column grid between the sticky header (routes/nodes/index.tsx)
 // and every row below (NodeRow, RowSkeleton), the same convention
-// DATABASE_LIST_GRID and APP_LIST_GRID already establish. Nodes have no
-// detail route (this pass only builds list + add + delete, per the gap
-// this closes), so unlike DatabaseRow/AppRow the row itself is not a
-// Link: the trailing column holds an inline delete action instead of a
-// chevron.
+// DATABASE_LIST_GRID and APP_LIST_GRID already establish. The status
+// column is wider than the original single-badge version to fit two
+// badges side by side (connectivity + schedulable, see the comment on
+// STATUS_BADGE_VARIANT below for why these are two separate signals).
+// Unlike DatabaseRow/AppRow the row itself is not a whole-row Link:
+// cordon/drain/health now genuinely justify a detail route
+// (routes/nodes/$id.tsx), but the trailing column holds a "Manage" link
+// and the delete action as sibling controls rather than nesting a Link
+// around the whole row, which would otherwise nest DeleteNodeDialog's
+// own interactive Dialog trigger inside another interactive element.
 export const NODE_LIST_GRID =
-  'grid grid-cols-[2rem_minmax(0,1.5fr)_7rem_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-3'
+  'grid grid-cols-[2rem_minmax(0,1.5fr)_minmax(9rem,auto)_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-3'
 
-// Sourced from the shared success/warning/destructive/muted variants in
-// badgeVariants (components/ui/badge.tsx) rather than a locally hand-rolled
-// class string. No dot/pulse treatment here (unlike AlertRulesPanel's
-// StateDot): there is no live status endpoint backing this page, status is
-// exactly as fresh as the last list fetch, and a pulsing indicator would
-// imply a liveness this page does not have.
+// Connectivity (Status) and cordon (Schedulable) are two independent
+// axes, not one merged state: internal/store/nodes.go's own doc comment
+// on NodeStatusCordoned confirms nothing in this codebase actually sets
+// status to "cordoned" (the only real writers of UpdateNodeStatus, the
+// node-health controller and the agent's heartbeat handler, only ever
+// write online/offline), and nodeResource's own doc comment in
+// internal/api/nodes.go is explicit that Schedulable is a separate field
+// from Status rather than folded into it. So this row renders two
+// badges: STATUS_BADGE_VARIANT for connectivity, and a second
+// schedulable-driven badge built inline below, both using the shared
+// Badge component's variants (components/ui/badge.tsx) rather than
+// hand-rolled color classes.
 const STATUS_BADGE_VARIANT: Record<
   NodeStatus,
   VariantProps<typeof badgeVariants>['variant']
@@ -61,10 +74,11 @@ export function NodeRow({ node }: { node: NodeResource }) {
         {node.name}
       </span>
 
-      <span className="min-w-0">
+      <span className="flex min-w-0 flex-wrap items-center gap-1">
         <Badge variant={STATUS_BADGE_VARIANT[node.status]}>
           {STATUS_LABEL[node.status]}
         </Badge>
+        {node.schedulable ? null : <Badge variant="warning">Cordoned</Badge>}
       </span>
 
       <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
@@ -75,7 +89,13 @@ export function NodeRow({ node }: { node: NodeResource }) {
         {formatNodeDate(node.last_seen_at)}
       </span>
 
-      <span className="shrink-0 justify-self-end">
+      <span className="flex shrink-0 items-center gap-2 justify-self-end">
+        <Link to="/nodes/$id" params={{ id: node.id }}>
+          <Button type="button" variant="outline" size="sm">
+            Manage
+            <CaretRightIcon className="size-3.5" aria-hidden="true" />
+          </Button>
+        </Link>
         <DeleteNodeDialog id={node.id} name={node.name} />
       </span>
     </div>
@@ -96,7 +116,7 @@ export function RowSkeleton() {
       <div className="h-4 w-16 animate-pulse rounded bg-muted" />
       <div className="h-4 w-24 animate-pulse rounded bg-muted" />
       <div className="h-4 w-24 animate-pulse rounded bg-muted" />
-      <div className="h-6 w-16 animate-pulse justify-self-end rounded bg-muted" />
+      <div className="h-6 w-28 animate-pulse justify-self-end rounded bg-muted" />
     </div>
   )
 }

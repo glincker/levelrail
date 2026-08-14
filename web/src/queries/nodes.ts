@@ -19,12 +19,21 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
-import type { NodeJoinTokenResponse, NodeResource } from '../types/nodeDetail'
+import type {
+  DrainNodeResponse,
+  NodeJoinTokenResponse,
+  NodeResource,
+} from '../types/nodeDetail'
+import type { ReconcileCondition } from '../types/deploy'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { appKeys } from './apps'
+import { databaseKeys } from './databases'
 
 export const nodeKeys = {
   all: ['nodes'] as const,
   list: () => [...nodeKeys.all, 'list'] as const,
+  detail: (id: string) => [...nodeKeys.all, 'detail', id] as const,
+  health: (id: string) => [...nodeKeys.detail(id), 'health'] as const,
 }
 
 // Fetches every node from the control plane API. GET /api/v1/nodes
@@ -64,6 +73,66 @@ export function useNodes() {
 // signal a form's core function must not depend on.
 export function useNodeListOptional() {
   return useQuery({ ...nodeListQueryOptions(), retry: false })
+}
+
+// Fetches a single node for the detail route, GET /api/v1/nodes/{id}
+// (internal/api/nodes.go's handleGetNode).
+export async function fetchNode(id: string): Promise<NodeResource> {
+  const res = await fetch(`/api/v1/nodes/${encodeURIComponent(id)}`)
+  if (res.status === 404) {
+    throw new ApiError(404, `node not found: ${id}`)
+  }
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `fetch node failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as NodeResource
+}
+
+export function nodeDetailQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: nodeKeys.detail(id),
+    queryFn: () => fetchNode(id),
+  })
+}
+
+// Thin wrapper the detail route's component uses, mirroring useDatabase.
+export function useNode(id: string) {
+  return useSuspenseQuery(nodeDetailQueryOptions(id))
+}
+
+// GET /api/v1/nodes/{id}/health (internal/api/nodes.go's
+// handleGetNodeHealth): the node-health controller's stored conditions,
+// same ReconcileCondition[] shape ConditionsPanel already renders for
+// apps and databases. A node whose health controller hasn't reconciled
+// yet gets an empty list, not an error, per that handler's own doc
+// comment, so this normalizes a null body the same way
+// fetchDatabaseStatus already does.
+export async function fetchNodeHealth(
+  id: string,
+): Promise<ReconcileCondition[]> {
+  const res = await fetch(`/api/v1/nodes/${encodeURIComponent(id)}/health`)
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `fetch node health failed: ${res.status}`),
+    )
+  }
+  const body = (await res.json()) as ReconcileCondition[] | null
+  return body ?? []
+}
+
+export function nodeHealthQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: nodeKeys.health(id),
+    queryFn: () => fetchNodeHealth(id),
+  })
+}
+
+export function useNodeHealth(id: string) {
+  return useSuspenseQuery(nodeHealthQueryOptions(id))
 }
 
 // POST /api/v1/nodes/join-tokens (internal/api/nodes.go's
@@ -111,6 +180,154 @@ export function useDeleteNode() {
   return useMutation({
     mutationFn: deleteNode,
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: nodeKeys.list() })
+    },
+  })
+}
+
+// Shared by cordonNode/uncordonNode below: both POST
+// /api/v1/nodes/{id}/cordon and /uncordon (internal/api/nodes.go's
+// handleCordonNode/handleUncordonNode) take no body and return the
+// updated nodeResource, idempotent either direction per those handlers'
+// own doc comments.
+async function setNodeCordon(
+  id: string,
+  cordon: boolean,
+): Promise<NodeResource> {
+  const action = cordon ? 'cordon' : 'uncordon'
+  const res = await fetch(`/api/v1/nodes/${encodeURIComponent(id)}/${action}`, {
+    method: 'POST',
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `${action} node failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as NodeResource
+}
+
+export function cordonNode(id: string): Promise<NodeResource> {
+  return setNodeCordon(id, true)
+}
+
+export function uncordonNode(id: string): Promise<NodeResource> {
+  return setNodeCordon(id, false)
+}
+
+// Both mutations write the returned nodeResource straight into the
+// detail query's cache (mirroring useSetDatabaseNode's own
+// setQueryData-on-success shape) and invalidate the list, since
+// schedulable is shown in both places.
+export function useCordonNode() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: cordonNode,
+    onSuccess: (updated) => {
+      queryClient.setQueryData(nodeKeys.detail(updated.id), updated)
+      void queryClient.invalidateQueries({ queryKey: nodeKeys.list() })
+    },
+  })
+}
+
+export function useUncordonNode() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: uncordonNode,
+    onSuccess: (updated) => {
+      queryClient.setQueryData(nodeKeys.detail(updated.id), updated)
+      void queryClient.invalidateQueries({ queryKey: nodeKeys.list() })
+    },
+  })
+}
+
+// POST /api/v1/nodes/{id}/drain?target_node_id=<id-or-empty>
+// (internal/api/nodes.go's handleDrainNode): moves every app and
+// database placed on id to targetNodeId (empty string is the
+// local/control-plane sentinel, the same convention setDatabaseNode's
+// own node_id already uses). Returns the full DrainNodeResponse rather
+// than throwing on a 207: a partial failure is real data the caller
+// must render (which resources moved, which didn't), not an exception,
+// per drainNodeResponse's own doc comment in the backend. Only a
+// genuine transport/5xx failure (res.ok false and status is neither 200
+// nor 207) throws.
+export async function drainNode({
+  id,
+  targetNodeId,
+}: {
+  id: string
+  targetNodeId: string
+}): Promise<DrainNodeResponse> {
+  const params = new URLSearchParams({ target_node_id: targetNodeId })
+  const res = await fetch(
+    `/api/v1/nodes/${encodeURIComponent(id)}/drain?${params.toString()}`,
+    { method: 'POST' },
+  )
+  if (!res.ok && res.status !== 207) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `drain node failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as DrainNodeResponse
+}
+
+// Draining moves apps and databases onto a different node, so their own
+// list/detail queries go stale too, not just this node's: invalidating
+// appKeys.list()/databaseKeys.list() here (rather than leaving that to
+// whichever route the operator happens to visit next) keeps the apps and
+// databases pages honest about node placement immediately after a drain,
+// the same cross-resource invalidation reasoning useSetDatabaseNode
+// already applies to its own single-resource move.
+export function useDrainNode() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: drainNode,
+    onSuccess: (_result, { id }) => {
+      void queryClient.invalidateQueries({ queryKey: nodeKeys.detail(id) })
+      void queryClient.invalidateQueries({ queryKey: nodeKeys.list() })
+      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+      void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
+    },
+  })
+}
+
+// PUT /api/v1/nodes/{id}/workloads (internal/api/nodes.go's
+// handleSetNodeWorkloads): both fields are always required together,
+// matching setNodeWorkloadsRequest's own doc comment that this is a
+// full replace, never an independent per-field patch.
+export async function setNodeWorkloads({
+  id,
+  acceptsAppWorkloads,
+  acceptsBuildWorkloads,
+}: {
+  id: string
+  acceptsAppWorkloads: boolean
+  acceptsBuildWorkloads: boolean
+}): Promise<NodeResource> {
+  const res = await fetch(`/api/v1/nodes/${encodeURIComponent(id)}/workloads`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      accepts_app_workloads: acceptsAppWorkloads,
+      accepts_build_workloads: acceptsBuildWorkloads,
+    }),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `set node workloads failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as NodeResource
+}
+
+export function useSetNodeWorkloads() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: setNodeWorkloads,
+    onSuccess: (updated) => {
+      queryClient.setQueryData(nodeKeys.detail(updated.id), updated)
       void queryClient.invalidateQueries({ queryKey: nodeKeys.list() })
     },
   })
