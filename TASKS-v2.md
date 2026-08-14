@@ -360,6 +360,68 @@ since one research agent's report on this turned out stale on point 7):
       --noEmit`, `eslint`, `prettier --check`) before merging.
       `AppOverview.tsx`'s read-only summary was left in place.
 
+### Modal-vs-wizard question and node management (2026-08-13)
+
+Founder asked whether a modal is the right shape for app/database
+creation given how many parameters a real resource has, and to compare
+against the local competitor clones (`docs-local/competitor-clones/`)
+before wiring anything.
+
+Research verdict (Coolify Livewire source, Dokploy Next.js source,
+CapRover backend contract, all read directly, not guessed): every one of
+them keeps creation minimal (name + type + at most one or two fields)
+and configures everything else (env vars, domains, health checks,
+resource limits, build source) afterward on the resource's own detail
+page. **Modal confirmed correct, no restructuring done.** This matches
+what Levelrail already had.
+
+One real, structural gap the research did surface: Coolify picks target
+server/node as part of creation, not as a "configure later" field, since
+placement isn't really an editable setting the way an env var is. Acting
+on that required first closing an adjacent gap: Levelrail had zero
+node-management frontend at all (list/add/delete), despite the backend
+(registry, join tokens, real agent enrollment via `cmd/levelrail-agent`)
+having existed since Phase 3.
+
+- [x] **Database node-placement route (2026-08-13, backend, TDD)**:
+      `PUT /api/v1/databases/{name}/node`, mirrors `handleSetAppNode`
+      exactly. Apps had this since TASKS.md 3.3, databases only had the
+      store method (`UpdateDatabaseNode`), no route over it.
+- [x] **Nodes query layer + placement mutations (2026-08-13)**:
+      `web/src/queries/nodes.ts` (list/create-join-token/delete),
+      `web/src/types/nodeDetail.ts`, `useSetAppNode`/`useSetDatabaseNode`
+      added to `queries/apps.ts`/`queries/databases.ts`. Built directly
+      (not delegated) as the frozen contract both frontend agents below
+      depended on.
+- [x] **Nodes management page (2026-08-13)**: list route, `AddNodeDialog`
+      (mints a join token, shows the real copyable enrollment command
+      derived from `cmd/levelrail-agent`'s actual env vars, one-time-
+      credential warning matching `CreateTokenDialog`'s shape),
+      `DeleteNodeDialog` (states plainly that delete only removes the
+      registry row, does not drain the node). Placed in the Settings
+      nav group, not primary: infra/admin config, occasional action for
+      this product's 1-10 machine target audience, not a daily-use
+      screen. Kept to a single dialog, not a wizard, per Coolify/
+      Dokploy's own convention and CLAUDE.md 1's lightweight
+      positioning. Agent caught and avoided a hardcoded "levelrail-agent"
+      string itself, deriving the binary name from `brand.BinaryName`
+      per CLAUDE.md section 3.
+- [x] **Optional node picker in create dialogs (2026-08-13)**: both
+      `CreateAppDialog.tsx` and `CreateDatabaseDialog.tsx` gained a
+      `node` field, rendered only when `useNodeListOptional()` returns a
+      non-empty list (stays completely absent on single-node installs,
+      confirmed byte-for-byte identical JSX otherwise). Create-then-
+      place sequencing: creation and navigation never wait on or depend
+      on the trailing placement call succeeding.
+
+All four pieces built by two parallel agents against the frozen
+query-layer contract (queries/nodes.ts, the placement mutations),
+reviewed file-by-file and independently re-verified (`tsc -b`,
+`eslint .`, `prettier --check`, `vite build`, plus real curl round-trips
+against the running backend: login, list nodes, mint join token) before
+merging. No em/en dashes, no hardcoded brand strings, confirmed via grep
+before every merge.
+
 ## Status notes
 
 - 2026-08-13: three research agents dispatched in parallel (Vercel deep
