@@ -1,17 +1,5 @@
 import { useMemo, useState } from 'react'
 import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-  type LabelProps,
-} from 'recharts'
-import {
   PulseIcon,
   InfoIcon,
   ArrowsClockwiseIcon,
@@ -19,9 +7,15 @@ import {
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
 import { Alert, AlertDescription, AlertTitle } from './ui/alert'
+import { MetricChartCard } from './MetricChartCard'
 import { useMetricSeries } from '../queries/metrics'
-import type { MetricName, MetricSeries } from '../types/metrics'
+import type { MetricName } from '../types/metrics'
 import type { DeployAttempt, DeployAttemptStatus } from '../types/deployAttempt'
+import {
+  type ChartMarker,
+  type ChartUnit,
+  mergeMetricSeries,
+} from '../lib/metricChart'
 import {
   DEFAULT_TIME_RANGE_KEY,
   TIME_RANGE_PRESETS,
@@ -79,8 +73,6 @@ const NOT_YET_COLLECTED = [
   'Container restart count',
   'Build duration',
 ]
-
-type ChartUnit = 'percent' | 'bytes'
 
 interface SeriesConfig {
   metric: MetricName
@@ -141,92 +133,21 @@ const CHART_GROUPS: ChartGroupConfig[] = [
   },
 ]
 
-// Deliberately not lib/format.ts's formatBytes: that formatter treats 0
-// (and negative) as "not set", the right call for an optional resource
-// config field (AppOverview's memory limit), but wrong here, where 0
-// received bytes in a time bucket is a real, meaningful data point, not
-// an absent one.
-function formatByteValue(value: number): string {
-  if (!Number.isFinite(value)) {
-    return '-'
-  }
-  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
-  let v = Math.abs(value)
-  let unitIndex = 0
-  while (v >= 1024 && unitIndex < units.length - 1) {
-    v /= 1024
-    unitIndex += 1
-  }
-  const sign = value < 0 ? '-' : ''
-  const decimals = unitIndex > 0 && v < 10 ? 1 : 0
-  return `${sign}${v.toFixed(decimals)} ${units[unitIndex]}`
-}
-
-function formatMetricValue(unit: ChartUnit, value: number): string {
-  return unit === 'percent' ? `${value.toFixed(1)}%` : formatByteValue(value)
-}
-
-function formatAxisTick(ms: number, spanMs: number): string {
-  const date = new Date(ms)
-  // Longer than ~36h: bare hour:minute stops being enough to tell points
-  // apart across days, so a short date prefix is added.
-  if (spanMs > 36 * 60 * 60 * 1000) {
-    return date.toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-    })
-  }
-  return date.toLocaleTimeString(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-interface ChartRow {
-  t: number
-  primary?: number
-  secondary?: number
-}
-
-function mergeMetricSeries(
-  primary: MetricSeries | undefined,
-  secondary: MetricSeries | undefined,
-): ChartRow[] {
-  const rows = new Map<number, ChartRow>()
-  for (const point of primary?.points ?? []) {
-    const t = Date.parse(point.timestamp)
-    if (Number.isNaN(t)) {
-      continue
-    }
-    rows.set(t, { ...rows.get(t), t, primary: point.value })
-  }
-  for (const point of secondary?.points ?? []) {
-    const t = Date.parse(point.timestamp)
-    if (Number.isNaN(t)) {
-      continue
-    }
-    rows.set(t, { ...rows.get(t), t, secondary: point.value })
-  }
-  return Array.from(rows.values()).sort((a, b) => a.t - b.t)
-}
-
-interface DeployMarker {
-  attempt: DeployAttempt
-  t: number
-}
-
 // resolveDeployMarkers filters appName's real deploy-attempt history
 // (see this file's header comment) down to whatever falls inside the
 // chart's currently resolved visible time range, one marker per
 // attempt, oldest first. This is the real, multi-marker replacement for
 // the old single "Ready" condition approximation: every attempt that
 // was started while the chart is looking gets its own marker, not just
-// the most recent one.
+// the most recent one. Returns MetricChartCard's own generic
+// ChartMarker shape directly (lib/metricChart.ts) rather than a
+// DeployAttempt-specific type, since the chart rendering itself
+// (MetricChartCard.tsx) has no notion of what a "deploy" is.
 function resolveDeployMarkers(
   attempts: DeployAttempt[],
   range: ResolvedTimeRange,
-): DeployMarker[] {
-  const markers: DeployMarker[] = []
+): ChartMarker[] {
+  const markers: ChartMarker[] = []
   for (const attempt of attempts) {
     const t = Date.parse(attempt.started_at)
     if (Number.isNaN(t)) {
@@ -235,7 +156,12 @@ function resolveDeployMarkers(
     if (t < range.from.getTime() || t > range.to.getTime()) {
       continue
     }
-    markers.push({ attempt, t })
+    markers.push({
+      key: attempt.id,
+      t,
+      color: DEPLOY_MARKER_COLOR[attempt.status],
+      tooltip: formatDeployMarkerTooltip(attempt, t),
+    })
   }
   return markers.sort((a, b) => a.t - b.t)
 }
@@ -257,59 +183,10 @@ const DEPLOY_MARKER_STATUS_LABEL: Record<DeployAttemptStatus, string> = {
   running: 'Running',
 }
 
-function formatDeployMarkerTooltip(marker: DeployMarker): string {
-  const statusLabel = DEPLOY_MARKER_STATUS_LABEL[marker.attempt.status]
-  const started = new Date(marker.t).toLocaleString()
-  return `${statusLabel} deploy: ${marker.attempt.image}, started ${started}`
-}
-
-// renderDeployMarkerLabel builds a ReferenceLine `label.content` render
-// function (recharts calls this with the line's own computed x/y,
-// derived from `position: 'insideTop'` below, once per render): a small
-// filled dot at the line's top, colored by status, wrapped in a native
-// SVG <title> so hovering the dot shows the attempt's image tag and
-// start time via the browser's own tooltip. No custom tooltip component
-// exists elsewhere in this codebase's chart code to reuse, and a native
-// <title> needs no extra state, positioning, or dependency to get right.
-function renderDeployMarkerLabel(marker: DeployMarker) {
-  const color = DEPLOY_MARKER_COLOR[marker.attempt.status]
-  const tooltip = formatDeployMarkerTooltip(marker)
-  return function DeployMarkerDot(props: LabelProps) {
-    const cx = typeof props.x === 'number' ? props.x : Number(props.x ?? 0)
-    const cy = typeof props.y === 'number' ? props.y : Number(props.y ?? 0)
-    return (
-      <g>
-        <title>{tooltip}</title>
-        <circle
-          cx={cx}
-          cy={cy}
-          r={4}
-          fill={color}
-          stroke="currentColor"
-          className="text-card"
-          strokeWidth={1.5}
-        />
-      </g>
-    )
-  }
-}
-
-// The most recent value across both series, shown next to the chart
-// title as a "current reading" the way Vercel/Grafana small-multiple
-// panels pair a stat with a sparkline rather than making the reader
-// trace the line to the right edge to find "now".
-function latestReading(
-  rows: ChartRow[],
-  group: ChartGroupConfig,
-): string | null {
-  for (let i = rows.length - 1; i >= 0; i -= 1) {
-    const row = rows[i]
-    const value = row?.primary
-    if (value !== undefined) {
-      return formatMetricValue(group.unit, value)
-    }
-  }
-  return null
+function formatDeployMarkerTooltip(attempt: DeployAttempt, t: number): string {
+  const statusLabel = DEPLOY_MARKER_STATUS_LABEL[attempt.status]
+  const started = new Date(t).toLocaleString()
+  return `${statusLabel} deploy: ${attempt.image}, started ${started}`
 }
 
 function ChartCard({
@@ -321,7 +198,7 @@ function ChartCard({
   appName: string
   group: ChartGroupConfig
   range: ResolvedTimeRange
-  deployMarkers: DeployMarker[]
+  deployMarkers: ChartMarker[]
 }) {
   const primaryQuery = useMetricSeries(appName, group.primary.metric, range)
   // Rules of hooks: this must be called unconditionally on every render
@@ -350,109 +227,20 @@ function ChartCard({
     [primaryQuery.data, secondaryQuery.data, group.secondary],
   )
 
-  const spanMs = range.to.getTime() - range.from.getTime()
-  const current = isLoading || error ? null : latestReading(rows, group)
-
   return (
-    <section className="rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-          <span
-            className="size-2 shrink-0 rounded-full"
-            style={{ backgroundColor: group.primary.color }}
-            aria-hidden="true"
-          />
-          {group.title}
-        </h3>
-        {current !== null ? (
-          <span className="font-mono text-sm font-medium text-foreground">
-            {current}
-          </span>
-        ) : null}
-      </div>
-      {isLoading ? (
-        <p className="mt-6 text-sm text-muted-foreground">Loading...</p>
-      ) : error ? (
-        <p className="mt-6 text-sm text-destructive">{error.message}</p>
-      ) : rows.length === 0 ? (
-        <p className="mt-6 text-sm text-muted-foreground">
-          No data in this range.
-        </p>
-      ) : (
-        <div className="mt-2 h-56">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={rows}
-              margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-              <XAxis
-                dataKey="t"
-                type="number"
-                domain={['dataMin', 'dataMax']}
-                tickFormatter={(t: number) => formatAxisTick(t, spanMs)}
-                tick={{ fontSize: 11 }}
-                stroke="currentColor"
-                className="text-muted-foreground"
-              />
-              <YAxis
-                tickFormatter={(v: number) => formatMetricValue(group.unit, v)}
-                tick={{ fontSize: 11 }}
-                width={64}
-                stroke="currentColor"
-                className="text-muted-foreground"
-              />
-              <Tooltip
-                labelFormatter={(label) =>
-                  new Date(Number(label)).toLocaleString()
-                }
-                formatter={(value) =>
-                  formatMetricValue(group.unit, Number(value))
-                }
-              />
-              {group.secondary ? (
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-              ) : null}
-              {deployMarkers.map((marker) => (
-                <ReferenceLine
-                  key={marker.attempt.id}
-                  x={marker.t}
-                  stroke={DEPLOY_MARKER_COLOR[marker.attempt.status]}
-                  strokeDasharray="4 4"
-                  strokeOpacity={0.7}
-                  label={{
-                    position: 'insideTop',
-                    content: renderDeployMarkerLabel(marker),
-                  }}
-                />
-              ))}
-              <Line
-                type="monotone"
-                dataKey="primary"
-                name={group.primary.label}
-                stroke={group.primary.color}
-                dot={false}
-                strokeWidth={1.5}
-                isAnimationActive={false}
-                connectNulls
-              />
-              {group.secondary ? (
-                <Line
-                  type="monotone"
-                  dataKey="secondary"
-                  name={group.secondary.label}
-                  stroke={group.secondary.color}
-                  dot={false}
-                  strokeWidth={1.5}
-                  isAnimationActive={false}
-                  connectNulls
-                />
-              ) : null}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-    </section>
+    <MetricChartCard
+      title={group.title}
+      unit={group.unit}
+      primaryLabel={group.primary.label}
+      primaryColor={group.primary.color}
+      secondaryLabel={group.secondary?.label}
+      secondaryColor={group.secondary?.color}
+      rows={rows}
+      range={range}
+      markers={deployMarkers}
+      isLoading={isLoading}
+      error={error}
+    />
   )
 }
 
