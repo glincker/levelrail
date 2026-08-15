@@ -265,6 +265,21 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
+	// smtpCfg and deployDispatcher are both computed here, ahead of
+	// loadWebhookHandler and rootHandler just below, rather than down at
+	// their previous spot alongside alertingEngine: both the webhook
+	// handler (a push-triggered deploy) and the HTTP API router (the
+	// plain image-tag and manual-build deploy triggers) are the real
+	// deploy-outcome-notification call sites (wave-2 roadmap item #5),
+	// and both are constructed before alertingEngine ever runs, so
+	// deployDispatcher has to exist this early to be wired into either of
+	// them. alertingNewNotifier below still builds its own smtpCfg
+	// reference from this same variable, not a second
+	// smtpConfigFromEnv() call, so alert-rule and deploy-outcome email
+	// notifications always agree on the same SMTP server.
+	smtpCfg := smtpConfigFromEnv()
+	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, nil, smtpCfg, logger)
+
 	// TASKS.md 3.2: the agent gRPC service. agentRegistry starts empty
 	// and stays that way in this pass, wired to nothing else yet: 3.3
 	// (placement) is what will have dynamicSource actually look nodes
@@ -331,7 +346,7 @@ func run(logger *slog.Logger) error {
 		}()
 	}
 
-	webhookHandler, err := loadWebhookHandler(logger, b, db, deployRecorder, builder)
+	webhookHandler, err := loadWebhookHandler(logger, b, db, deployRecorder, deployDispatcher, builder)
 	if err != nil {
 		// Not fatal, the same choice as everything else optional above:
 		// the control plane still starts, serving apps deployed by
@@ -342,7 +357,7 @@ func run(logger *slog.Logger) error {
 
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
-		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder, deployRecorder, logBroadcaster),
+		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -400,7 +415,6 @@ func run(logger *slog.Logger) error {
 	}()
 
 	alertingFederator := telemetry.NewLocalFederator(telemetryDB)
-	smtpCfg := smtpConfigFromEnv()
 	alertingNewNotifier := func(r alerting.Rule) alerting.Notifier { return alerting.NewNotifier(nil, smtpCfg, r) }
 	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, alertingNewNotifier, logger)
 	go func() {
@@ -933,7 +947,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 // docs-local/research/deploy-attempt-id-and-log-persistence.md's own
 // framing that an unattended webhook deploy is exactly the case
 // persistence matters most for.
-func loadWebhookHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, recorder *deploylog.Recorder, pipeline *deploy.Pipeline) (http.Handler, error) {
+func loadWebhookHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, recorder *deploylog.Recorder, notifier *alerting.DeployDispatcher, pipeline *deploy.Pipeline) (http.Handler, error) {
 	if pipeline == nil {
 		return nil, fmt.Errorf("no builder available (see the earlier \"builder not configured\" warning)")
 	}
@@ -988,7 +1002,7 @@ func loadWebhookHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, recor
 		Service:     svc,
 		ImageRepo:   imageRepo,
 	}
-	return webhook.New(cfg, pipeline, db, recorder, logger), nil
+	return webhook.New(cfg, pipeline, db, recorder, notifier, logger), nil
 }
 
 // buildCacheOptions reads TASKS.md 3.5's cache-backend env vars and
@@ -1129,7 +1143,18 @@ func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent
 // to build.SlogProgress if a *caller* passes a nil recorder in some
 // other wiring path (e.g. a test), but production wiring here always has
 // a real one.
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster) http.Handler {
+//
+// deployDispatcher (wave-2 roadmap item #5, deploy-outcome
+// notifications) is likewise always non-nil here: run() constructs it
+// unconditionally from alertingDB, the same way alertingDB itself is
+// always non-nil. api.WithDeployNotifyTargets(alertingDB) and
+// api.WithDeployNotifier(deployDispatcher) are therefore both applied
+// unconditionally too, wiring the plain image-tag and manual-build
+// deploy triggers (internal/api/deploys.go, internal/api/builds.go) to
+// the same dispatcher already passed to loadWebhookHandler for the
+// push-triggered path, so all three real deploy-trigger call sites fire
+// through one shared instance.
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher) http.Handler {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
@@ -1137,6 +1162,8 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	opts := []api.Option{
 		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
 		api.WithAlertRules(alertingDB),
+		api.WithDeployNotifyTargets(alertingDB),
+		api.WithDeployNotifier(deployDispatcher),
 		api.WithSessionTTL(sessionTTL(logger)),
 		api.WithDataDir(dataDir),
 		api.WithDockerPinger(client),

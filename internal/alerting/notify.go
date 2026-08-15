@@ -164,15 +164,31 @@ type telegramPayload struct {
 // parameter naming the destination chat, which this function extracts
 // and moves into the JSON body Telegram actually requires it in.
 func notifyTelegram(ctx context.Context, client *http.Client, rawURL string, ev Event) error {
-	u, err := url.Parse(rawURL)
+	chatID, err := parseTelegramChatID(rawURL)
 	if err != nil {
-		return fmt.Errorf("alerting: notify: invalid telegram notify_url: %w", err)
-	}
-	chatID := u.Query().Get("chat_id")
-	if chatID == "" {
-		return fmt.Errorf("alerting: notify: telegram notify_url must include a chat_id query parameter")
+		return fmt.Errorf("alerting: notify: %w", err)
 	}
 	return postJSON(ctx, client, rawURL, telegramPayload{ChatID: chatID, Text: summaryText(ev)})
+}
+
+// parseTelegramChatID extracts the chat_id query parameter a Telegram
+// notify_url must carry (notifyTelegram's own doc comment explains why
+// it lives in the query string rather than the body Telegram actually
+// wants it in). Shared by notifyTelegram (alert-rule notifications,
+// this file) and deploy_notify.go's own Telegram send (deploy-outcome
+// notifications): both need the identical parse, and duplicating it
+// would risk the two silently drifting apart on what counts as a valid
+// Telegram notify_url.
+func parseTelegramChatID(rawURL string) (chatID string, err error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid telegram notify_url: %w", err)
+	}
+	chatID = u.Query().Get("chat_id")
+	if chatID == "" {
+		return "", fmt.Errorf("telegram notify_url must include a chat_id query parameter")
+	}
+	return chatID, nil
 }
 
 // summaryText is the human-readable line every simple channel here
@@ -250,15 +266,32 @@ func (n emailNotifier) Notify(_ context.Context, ev Event) error {
 	if ev.Resolved {
 		subject = fmt.Sprintf("[Levelrail][RESOLVED] %s", ev.Rule.Name)
 	}
-	msg := fmt.Sprintf("To: %s\r\nFrom: %s\r\nSubject: %s\r\n\r\n%s\r\n",
-		n.to, n.cfg.From, subject, summaryText(ev))
+	if err := sendPlainEmail(n.cfg, n.to, subject, summaryText(ev)); err != nil {
+		return fmt.Errorf("alerting: notify: %w", err)
+	}
+	return nil
+}
+
+// sendPlainEmail sends a plain-text email via cfg's SMTP server: the raw
+// net/smtp mechanics (PlainAuth, message construction, SendMail) shared
+// by emailNotifier.Notify above (alert-rule notifications) and
+// deploy_notify.go's own email send (deploy-outcome notifications).
+// Callers are responsible for their own "not configured" / "no
+// destination address" checks before calling this (see
+// emailNotifier.Notify above): those error messages are deliberately
+// caller-specific, not generalized into this shared helper, so an
+// operator debugging a misconfigured alert rule sees the exact wording
+// this file already had before that extraction, not a generic one
+// blended across both callers.
+func sendPlainEmail(cfg *SMTPConfig, to, subject, body string) error {
+	msg := fmt.Sprintf("To: %s\r\nFrom: %s\r\nSubject: %s\r\n\r\n%s\r\n", to, cfg.From, subject, body)
 
 	var auth smtp.Auth
-	if n.cfg.Username != "" {
-		auth = smtp.PlainAuth("", n.cfg.Username, n.cfg.Password, n.cfg.Host)
+	if cfg.Username != "" {
+		auth = smtp.PlainAuth("", cfg.Username, cfg.Password, cfg.Host)
 	}
-	if err := smtp.SendMail(n.cfg.Addr, auth, n.cfg.From, []string{n.to}, []byte(msg)); err != nil {
-		return fmt.Errorf("alerting: notify: send email: %w", err)
+	if err := smtp.SendMail(cfg.Addr, auth, cfg.From, []string{to}, []byte(msg)); err != nil {
+		return fmt.Errorf("send email: %w", err)
 	}
 	return nil
 }

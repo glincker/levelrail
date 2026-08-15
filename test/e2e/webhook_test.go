@@ -145,7 +145,7 @@ func TestWebhook_Live_PushToRunningContainer(t *testing.T) {
 		ImageRepo:   imageRepo,
 	}
 	pipeline := deploy.New(buildClient, db)
-	handler := webhook.New(cfg, pipeline, db, recorder, nil)
+	handler := webhook.New(cfg, pipeline, db, recorder, nil, nil)
 
 	payload, err := json.Marshal(struct {
 		Ref   string `json:"ref"`

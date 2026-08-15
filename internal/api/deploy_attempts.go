@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -87,6 +88,19 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 		}
 		if err := rt.deployAttempts.FinishDeployAttempt(finishCtx, id, status, time.Now(), errMsg); err != nil {
 			rt.logger.Error("api: trigger build: finish deploy attempt failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
+			return
+		}
+		// Deploy-outcome notification (wave-2 roadmap item #5), the
+		// build-triggered counterpart to recordPlainDeployAttempt's own
+		// dispatch and internal/webhook.Handler.beginDeployAttempt's
+		// finish closure: fires only once FinishDeployAttempt has
+		// persisted the attempt's terminal status, never for the
+		// in-progress "running" status this closure's caller (Deploy)
+		// hasn't returned from yet.
+		if rt.deployNotifier != nil {
+			rt.deployNotifier.Dispatch(finishCtx, resourceIDForApp(req.ServiceName), alerting.DeployOutcome{
+				AppName: req.ServiceName, Image: image, Succeeded: deployErr == nil, Error: errMsg,
+			})
 		}
 	}
 

@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
@@ -58,6 +59,34 @@ func (f *fakeAttemptStore) snapshot() ([]store.DeployAttempt, string, string, st
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.saved, f.finishedID, f.finishedStatus, f.finishedErrMsg
+}
+
+// fakeDeployNotifier is a hand-written fake for DeployNotifier, the same
+// pattern fakeAttemptStore above already uses: records every Dispatch
+// call so a test can assert on what would have been sent, without a
+// real HTTP server or SMTP connection.
+type fakeDeployNotifier struct {
+	mu    sync.Mutex
+	calls []deployNotifierCall
+}
+
+type deployNotifierCall struct {
+	resourceID string
+	ev         alerting.DeployOutcome
+}
+
+func (f *fakeDeployNotifier) Dispatch(_ context.Context, resourceID string, ev alerting.DeployOutcome) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.calls = append(f.calls, deployNotifierCall{resourceID: resourceID, ev: ev})
+}
+
+func (f *fakeDeployNotifier) snapshot() []deployNotifierCall {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := make([]deployNotifierCall, len(f.calls))
+	copy(out, f.calls)
+	return out
 }
 
 // fakeDeployer is a hand-written fake, not a mocking framework, matching
@@ -236,13 +265,19 @@ func testConfig() Config {
 // degraded one. Tests that specifically cover attempt tracking build
 // their own Handler via newTestHandlerWithAttempts below.
 func newTestHandler(cfg Config, deployer Deployer, fetch fetchFunc) *Handler {
-	h := New(cfg, deployer, nil, nil, discardLogger())
+	h := New(cfg, deployer, nil, nil, nil, discardLogger())
 	h.fetch = fetch
 	return h
 }
 
 func newTestHandlerWithAttempts(cfg Config, deployer Deployer, fetch fetchFunc, attempts AttemptStore, recorder *deploylog.Recorder) *Handler {
-	h := New(cfg, deployer, attempts, recorder, discardLogger())
+	h := New(cfg, deployer, attempts, recorder, nil, discardLogger())
+	h.fetch = fetch
+	return h
+}
+
+func newTestHandlerWithNotifier(cfg Config, deployer Deployer, fetch fetchFunc, attempts AttemptStore, recorder *deploylog.Recorder, notifier DeployNotifier) *Handler {
+	h := New(cfg, deployer, attempts, recorder, notifier, discardLogger())
 	h.fetch = fetch
 	return h
 }
@@ -479,7 +514,7 @@ func TestServeHTTP_DeployFailure_ReturnsServerErrorNotLeaky(t *testing.T) {
 }
 
 func TestNew_NilLoggerDefaultsToSlogDefault(t *testing.T) {
-	h := New(testConfig(), &fakeDeployer{}, nil, nil, nil)
+	h := New(testConfig(), &fakeDeployer{}, nil, nil, nil, nil)
 	if h.log == nil {
 		t.Fatal("New() with a nil logger left h.log nil, want it defaulted")
 	}
@@ -621,5 +656,95 @@ func TestServeHTTP_WrongBranch_DoesNotRecordDeployAttempt(t *testing.T) {
 	saved, _, _, _ := attempts.snapshot()
 	if len(saved) != 0 {
 		t.Errorf("SaveDeployAttempt called %d times, want 0 for an ignored push", len(saved))
+	}
+}
+
+// TestServeHTTP_TargetBranch_DispatchesSucceededNotification: a
+// successful push-triggered deploy fires exactly one deploy-outcome
+// notification, after the deploy_attempts row is already recorded as
+// succeeded (wave-2 roadmap item #5).
+func TestServeHTTP_TargetBranch_DispatchesSucceededNotification(t *testing.T) {
+	cfg := testConfig()
+	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
+	attempts := &fakeAttemptStore{}
+	recorder := deploylog.NewRecorder(nil, discardLogger())
+	notifier := &fakeDeployNotifier{}
+	h := newTestHandlerWithNotifier(cfg, deployer, func(_ context.Context, _, _ string) (string, func(), error) {
+		return "/tmp/checkout-dir", func() {}, nil
+	}, attempts, recorder, notifier)
+
+	body := pushBody(t, "refs/heads/main", "sha1")
+	doPush(t, h, cfg.Secret, body, sign(cfg.Secret, body))
+
+	calls := notifier.snapshot()
+	if len(calls) != 1 {
+		t.Fatalf("Dispatch called %d times, want 1", len(calls))
+	}
+	call := calls[0]
+	if call.resourceID != "service:"+cfg.ServiceName {
+		t.Errorf("resourceID = %q, want %q", call.resourceID, "service:"+cfg.ServiceName)
+	}
+	if call.ev.AppName != cfg.ServiceName {
+		t.Errorf("ev.AppName = %q, want %q", call.ev.AppName, cfg.ServiceName)
+	}
+	if call.ev.Image != cfg.ImageRepo+":sha1" {
+		t.Errorf("ev.Image = %q, want %q", call.ev.Image, cfg.ImageRepo+":sha1")
+	}
+	if !call.ev.Succeeded {
+		t.Error("ev.Succeeded = false, want true for a successful deploy")
+	}
+	if call.ev.Error != "" {
+		t.Errorf("ev.Error = %q, want empty for a succeeded attempt", call.ev.Error)
+	}
+}
+
+// TestServeHTTP_DeployFailure_DispatchesFailedNotification: a failed
+// push-triggered deploy fires a deploy-outcome notification too, with
+// Succeeded=false and the deploy error carried through, not just a
+// succeeded one.
+func TestServeHTTP_DeployFailure_DispatchesFailedNotification(t *testing.T) {
+	cfg := testConfig()
+	deployer := &fakeDeployer{err: errors.New("buildkit: boom")}
+	attempts := &fakeAttemptStore{}
+	recorder := deploylog.NewRecorder(nil, discardLogger())
+	notifier := &fakeDeployNotifier{}
+	h := newTestHandlerWithNotifier(cfg, deployer, func(_ context.Context, _, _ string) (string, func(), error) {
+		return "/tmp/checkout-dir", func() {}, nil
+	}, attempts, recorder, notifier)
+
+	body := pushBody(t, "refs/heads/main", "sha1")
+	doPush(t, h, cfg.Secret, body, sign(cfg.Secret, body))
+
+	calls := notifier.snapshot()
+	if len(calls) != 1 {
+		t.Fatalf("Dispatch called %d times, want 1", len(calls))
+	}
+	if calls[0].ev.Succeeded {
+		t.Error("ev.Succeeded = true, want false for a failed deploy")
+	}
+	if calls[0].ev.Error != "buildkit: boom" {
+		t.Errorf("ev.Error = %q, want %q", calls[0].ev.Error, "buildkit: boom")
+	}
+}
+
+// TestServeHTTP_AttemptTrackingDisabled_NeverDispatches: notifier is
+// configured but attempts/recorder are not, so beginDeployAttempt falls
+// back to its noop finish (deployAttemptEnabled's own doc comment): no
+// deploy_attempts row is ever recorded, and per Handler.notifier's own
+// doc comment this closure is the only place Dispatch is ever called,
+// so it must not fire either.
+func TestServeHTTP_AttemptTrackingDisabled_NeverDispatches(t *testing.T) {
+	cfg := testConfig()
+	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
+	notifier := &fakeDeployNotifier{}
+	h := newTestHandlerWithNotifier(cfg, deployer, func(_ context.Context, _, _ string) (string, func(), error) {
+		return "/tmp/checkout-dir", func() {}, nil
+	}, nil, nil, notifier)
+
+	body := pushBody(t, "refs/heads/main", "sha1")
+	doPush(t, h, cfg.Secret, body, sign(cfg.Secret, body))
+
+	if calls := notifier.snapshot(); len(calls) != 0 {
+		t.Errorf("Dispatch called %d times, want 0 when attempt tracking is disabled", len(calls))
 	}
 }

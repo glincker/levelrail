@@ -37,6 +37,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
@@ -76,6 +77,19 @@ type Deployer interface {
 type AttemptStore interface {
 	SaveDeployAttempt(ctx context.Context, a store.DeployAttempt) error
 	FinishDeployAttempt(ctx context.Context, id, status string, finishedAt time.Time, errMsg string) error
+}
+
+// DeployNotifier is the narrow surface Handler needs to fire a
+// deploy-outcome notification (Slack/Discord/Telegram/generic-webhook/
+// email, wave-2 roadmap item #5) once a push-triggered deploy reaches a
+// terminal state: distinct from this package's own git-integration
+// concern, this is deliberately just "hand the finished outcome to
+// whatever internal/alerting.DeployDispatcher does with it," the same
+// narrow-consumer-interface shape AttemptStore above already uses.
+// *alerting.DeployDispatcher satisfies this structurally. nil is valid:
+// Handler.notifier's own doc comment covers what a nil value does.
+type DeployNotifier interface {
+	Dispatch(ctx context.Context, resourceID string, ev alerting.DeployOutcome)
 }
 
 // Config is everything needed to map a validated GitHub push into a
@@ -138,18 +152,27 @@ type Handler struct {
 	// have nothing to do with attempt tracking, don't need to fake it.
 	attempts AttemptStore
 	recorder *deploylog.Recorder
+	// notifier fires a deploy-outcome notification once beginDeployAttempt's
+	// finish closure has recorded a terminal status. nil (the default,
+	// e.g. this package's own dispatch-logic tests) simply means no
+	// deploy-outcome notification is sent for a push-triggered deploy,
+	// the same "optional signal, absence is not an error" shape every
+	// other optional collaborator in this codebase has, never a panic or
+	// a swallowed error.
+	notifier DeployNotifier
 	log      *slog.Logger
 	fetch    fetchFunc
 }
 
 // New builds a Handler. attempts and recorder may both be nil (see
-// Handler.attempts' own doc comment); log defaults to slog.Default() if
+// Handler.attempts' own doc comment); notifier may be nil (see
+// Handler.notifier's own doc comment); log defaults to slog.Default() if
 // nil.
-func New(cfg Config, deployer Deployer, attempts AttemptStore, recorder *deploylog.Recorder, log *slog.Logger) *Handler {
+func New(cfg Config, deployer Deployer, attempts AttemptStore, recorder *deploylog.Recorder, notifier DeployNotifier, log *slog.Logger) *Handler {
 	if log == nil {
 		log = slog.Default()
 	}
-	return &Handler{cfg: cfg, deployer: deployer, attempts: attempts, recorder: recorder, log: log, fetch: cloneAndCheckout}
+	return &Handler{cfg: cfg, deployer: deployer, attempts: attempts, recorder: recorder, notifier: notifier, log: log, fetch: cloneAndCheckout}
 }
 
 // deployAttemptEnabled reports whether this Handler should record
@@ -221,9 +244,37 @@ func (h *Handler) beginDeployAttempt(ctx context.Context, req deploy.Request) (p
 		}
 		if err := h.attempts.FinishDeployAttempt(finishCtx, id, status, time.Now(), errMsg); err != nil {
 			h.log.Error("webhook: finish deploy attempt failed", "attempt_id", id, "error", err)
+			return
+		}
+		// Deploy-outcome notification (wave-2 roadmap item #5): fires
+		// only now, once FinishDeployAttempt has actually persisted the
+		// attempt's terminal status, never for the in-progress "running"
+		// status this closure's caller (ServeHTTP's call to h.deployer.Deploy)
+		// hasn't returned from yet. h.notifier is nil-valid, see its own
+		// doc comment.
+		if h.notifier != nil {
+			h.notifier.Dispatch(finishCtx, resourceIDForService(req.ServiceName), alerting.DeployOutcome{
+				AppName: req.ServiceName, Image: image, Succeeded: deployErr == nil, Error: errMsg,
+			})
 		}
 	}
 	return progress, finish
+}
+
+// resourceIDForService mirrors internal/api's own resourceIDForApp
+// (telemetry.metrics.go): "service:<name>", the same stable identifier
+// convention used to scope both an app's metrics/logs and its alert
+// rules/deploy-notify-targets to one resource ID. Duplicated as a plain
+// string format here rather than imported, the same
+// applicationControllerName-style choice internal/api/deploys.go's own
+// doc comment already makes for that package's identical duplication of
+// internal/reconcile's controller-name convention: importing
+// internal/api here to reuse one string format would pull that whole
+// package's HTTP-handler surface into this one just for a formatting
+// rule, and if the convention ever changes, both call sites need
+// updating together regardless of which one "owns" it.
+func resourceIDForService(name string) string {
+	return "service:" + name
 }
 
 // pushEvent is the subset of GitHub's push event payload this package

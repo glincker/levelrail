@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -89,6 +90,14 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 // same "must never block the real operation" choice
 // deploy.Pipeline.deployDockerfile's own metrics-recording already
 // makes.
+//
+// This path always finishes as succeeded (recordPlainDeployAttempt's own
+// doc comment: no real build step happens here), so the deploy-outcome
+// notification it dispatches, when rt.deployNotifier is configured, is
+// always a success notification for this trigger path. A future build
+// failure elsewhere in this same attempt's lifecycle isn't possible
+// today, matching FinishDeployAttempt's own hardcoded
+// DeployAttemptStatusSucceeded call just below.
 func (rt *Router) recordPlainDeployAttempt(ctx context.Context, serviceName, image string) {
 	id, err := store.NewDeployAttemptID()
 	if err != nil {
@@ -105,6 +114,12 @@ func (rt *Router) recordPlainDeployAttempt(ctx context.Context, serviceName, ima
 	}
 	if err := rt.deployAttempts.FinishDeployAttempt(ctx, id, store.DeployAttemptStatusSucceeded, time.Now(), ""); err != nil {
 		rt.logger.Error("api: trigger deploy: finish deploy attempt failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
+		return
+	}
+	if rt.deployNotifier != nil {
+		rt.deployNotifier.Dispatch(ctx, resourceIDForApp(serviceName), alerting.DeployOutcome{
+			AppName: serviceName, Image: image, Succeeded: true,
+		})
 	}
 }
 
