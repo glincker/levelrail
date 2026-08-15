@@ -2,11 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { UserIcon } from '@phosphor-icons/react/dist/ssr'
 import { useAuthUsername } from '../../hooks/useAuthUsername'
 import { ChangePasswordCard } from '../../components/ChangePasswordCard'
-import {
-  Field,
-  FieldDescription,
-  FieldLabel,
-} from '../../components/ui/field'
+import { Field, FieldDescription, FieldLabel } from '../../components/ui/field'
 import {
   Card,
   CardContent,

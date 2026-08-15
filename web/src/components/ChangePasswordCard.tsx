@@ -13,7 +13,13 @@ import {
   FieldLabel,
 } from './ui/field'
 import { Alert, AlertDescription, AlertTitle } from './ui/alert'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from './ui/card'
 
 // Split out of routes/settings/account.tsx (see that file's history): a
 // route file that imports 'zod' at module scope defeats TanStack Router's
