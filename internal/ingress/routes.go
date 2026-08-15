@@ -101,6 +101,39 @@ type RoutesOptions struct {
 	// certificate for), and disables the HTTP->HTTPS redirect (see
 	// Server.AutomaticHTTPS).
 	TLS bool
+	// ACMEEnabled, if true (and TLS is true and there's at least one
+	// host), scopes every routed host's single automation policy to a
+	// real ACME issuer (NewACMEIssuer) instead of Caddy's offline
+	// internal issuer. This is the operator-facing toggle
+	// internal/store.IngressSettings.ACMEEnabled drives
+	// (internal/reconcile/ingress reads that row fresh every reconcile
+	// pass and threads it straight through). False, the default,
+	// reproduces this package's original, ADR-005-verified behavior
+	// exactly: every route gets the internal issuer, byte-identical to
+	// before this field existed. There is deliberately no per-host mix
+	// of ACME and internal issuers in this pass: every currently-routed
+	// host shares one automation policy, either all-internal or
+	// all-ACME. Real per-domain granularity is genuine, existing Caddy
+	// capability (AutomationPolicy already supports an ordered list of
+	// policies, "the first policy whose Subjects match a given hostname
+	// wins," see that type's own doc comment) but is an explicit,
+	// deliberately out-of-scope v1 gap, not something this field's
+	// absence of a per-route override quietly forecloses.
+	ACMEEnabled bool
+	// ACMEEmail is the ACME account contact address, passed straight
+	// through to NewACMEIssuer when ACMEEnabled is true. This package
+	// performs no validation on it (empty is accepted structurally);
+	// internal/api's PUT /api/v1/settings/ingress is where "required and
+	// syntactically valid whenever ACME is enabled" is actually
+	// enforced, before a value ever reaches this builder.
+	ACMEEmail string
+	// ACMEDirectoryURL overrides the ACME CA's directory endpoint,
+	// passed straight through to NewACMEIssuer when ACMEEnabled is true.
+	// Empty keeps Caddy's own compiled-in default (Let's Encrypt
+	// production). See ACMEIssuer.CA's own doc comment for why this
+	// package never silently substitutes Let's Encrypt's staging
+	// directory on an operator's behalf.
+	ACMEDirectoryURL string
 	// AdminListen overrides Caddy's admin API bind address. Empty keeps
 	// Caddy's own default (localhost:2019).
 	AdminListen string
@@ -195,8 +228,15 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		// which would otherwise try to bind Caddy's default HTTP port
 		// (80) and needs root.
 		server.AutomaticHTTPS = &AutoHTTPSConfig{DisableRedir: true}
-		cfg.Apps.TLS = internalIssuerTLSApp(allHosts)
-		cfg.Apps.PKI = newInternalPKIApp()
+		if opts.ACMEEnabled {
+			// Real ACME has no local CA for a pki app to manage trust
+			// for, unlike the internal issuer branch below: cfg.Apps.PKI
+			// is deliberately left nil here.
+			cfg.Apps.TLS = acmeIssuerTLSApp(allHosts, opts.ACMEEmail, opts.ACMEDirectoryURL)
+		} else {
+			cfg.Apps.TLS = internalIssuerTLSApp(allHosts)
+			cfg.Apps.PKI = newInternalPKIApp()
+		}
 	}
 
 	return cfg, nil

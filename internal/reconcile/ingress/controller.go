@@ -16,14 +16,29 @@
 // unit of reconciliation for ingress is "all routable services," not one
 // resource.
 //
-// One follow-up this pass deliberately does not build, per ADR 005 and
-// the Phase 1 task breakdown: only Caddy's internal (self-signed,
-// offline) TLS issuer is used. Real ACME against a public domain is
-// explicitly unverified per ADR 005's Verified section and needs a
-// manual spot-check against a real domain later, not blind wiring here.
+// A follow-up this package's own doc comment used to flag as open is now
+// closed: real ACME (ADR 005's Verified section names this exact gap,
+// "must be spot-checked against a real domain... not assumed to follow
+// automatically") is available as an opt-in, platform-wide toggle
+// (store.IngressSettings.ACMEEnabled, read fresh every Reconcile via
+// ServiceStore.GetIngressSettings), not the default: Caddy's internal
+// (self-signed, offline) issuer remains what every route gets unless an
+// operator explicitly turns ACME on through PUT /api/v1/settings/ingress
+// (internal/api), so an upgrading deployment's behavior is unchanged
+// until it opts in. When enabled, every currently-routed host shares one
+// automation policy pointed at real ACME instead of the internal issuer;
+// see internal/ingress.BuildRoutesConfig's own doc comment on
+// RoutesOptions.ACMEEnabled for why this pass deliberately does not mix
+// ACME and internal issuers across different hosts in the same reconcile.
 //
-// Two gaps this package's own doc comment used to flag as open here are
-// now closed, both TASKS.md 3.6:
+// The platform primary domain (store.IngressSettings.PrimaryDomain) is
+// this same settings row's second, independent field: when set, this
+// controller adds one more reverse-proxy route (WithDashboardDial) for
+// the control plane's own dashboard, sharing the same claimedHosts dedup
+// and the same TLS automation policy as every app/static-site route.
+//
+// Two further gaps this package's own doc comment used to flag as open
+// here are also closed, both TASKS.md 3.6:
 //
 //   - Certificate storage no longer has to stay on Caddy's default
 //     file-system storage module (internal/ingress.FileStorage).
@@ -73,9 +88,16 @@ import (
 // running container), so it needs its own listing call, read fresh on
 // every Reconcile exactly like ListDesiredServices, rather than being
 // threaded through the container-service shape as a special case.
+// GetIngressSettings is read fresh on every Reconcile, the same
+// "never cache, re-derive from current state every call" principle
+// ListDesiredServices/ListStaticSites already follow: an operator
+// toggling ACME on or setting a primary domain through PUT
+// /api/v1/settings/ingress (internal/api) must take effect on this
+// controller's very next reconcile pass, not require a restart.
 type ServiceStore interface {
 	ListDesiredServices(ctx context.Context) ([]store.DesiredService, error)
 	ListStaticSites(ctx context.Context) ([]store.StaticSite, error)
+	GetIngressSettings(ctx context.Context) (store.IngressSettings, error)
 }
 
 // Applier is the narrow surface this controller needs from
@@ -100,6 +122,14 @@ const (
 	// reachable off the machine the control plane runs on, so there is
 	// no real exposure to accept in exchange for that.
 	defaultAdminListen = "localhost:2019"
+
+	// dashboardRouteOwner is the pseudo-owner name the platform primary
+	// domain's route claims in claimedHosts (firstDuplicateHost's
+	// "name" parameter), so a conflict with an app or static site domain
+	// logs something more useful than an empty string. Not a real
+	// service or static site name and never looked up against either
+	// table.
+	dashboardRouteOwner = "platform dashboard"
 )
 
 // Controller converges Caddy's config to match every service in
@@ -116,6 +146,13 @@ type Controller struct {
 	listenAddr  string
 	adminListen string
 	storageDir  string
+
+	// dashboardDial is the control plane's own dashboard bind address
+	// (see WithDashboardDial), reverse-proxied to whenever
+	// store.IngressSettings.PrimaryDomain is set. Empty means "no
+	// dashboard route", the default, matching how every currently
+	// existing deployment has no such route today.
+	dashboardDial string
 
 	// certStore, if set via WithCertStore, is built into a
 	// *ingress.SQLiteStorage and registered with ingress.SetActiveCertStorage
@@ -170,6 +207,24 @@ func WithStorageDir(dir string) Option {
 // ingress.SetActiveCertStorage exactly once, not on every Reconcile.
 func WithCertStore(certStore ingress.CertStore) Option {
 	return func(c *Controller) { c.certStore = certStore }
+}
+
+// WithDashboardDial enables routing the control plane's own dashboard
+// through this controller's shared Caddy server whenever an operator
+// sets a primary domain (store.IngressSettings.PrimaryDomain, PUT
+// /api/v1/settings/ingress). dial is a host:port reverse-proxy target
+// for the dashboard's own existing *http.Server (cmd/levelrail's
+// httpAddr(), normalized to a loopback dial address the same way
+// routeFor already normalizes a service container's published port: the
+// dashboard's own bind address is often ":8080", listen-on-every-
+// interface shorthand that isn't itself a valid dial target, so the
+// caller is expected to pass the loopback-normalized form). Without this
+// option (the default), a configured PrimaryDomain is silently not
+// routed: this mirrors every other optional Controller capability in
+// this file (WithCertStore, and so on) failing closed rather than
+// erroring when its prerequisite wiring is absent.
+func WithDashboardDial(dial string) Option {
+	return func(c *Controller) { c.dashboardDial = dial }
 }
 
 // WithLogger overrides the logger used for per-service skip decisions.
@@ -239,6 +294,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list static sites: %w", err)
 	}
+	settings, err := c.store.GetIngressSettings(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: get ingress settings: %w", err)
+	}
 
 	var routes []ingress.ProxyRoute
 	claimedHosts := make(map[string]string, len(services)+len(staticSites)) // host -> owning service/static site, this pass only
@@ -298,15 +357,42 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		staticRoutes = append(staticRoutes, ingress.StaticRoute{Hosts: site.Domains, RootDir: site.RootDir})
 	}
 
+	// Platform primary domain (store.IngressSettings.PrimaryDomain): one
+	// more reverse-proxy route to the control plane's own dashboard,
+	// participating in the exact same claimedHosts dedup and the exact
+	// same TLS automation policy set as every app/static-site route
+	// above (ACME if enabled, internal issuer otherwise). Requires both
+	// a configured PrimaryDomain and WithDashboardDial having been set;
+	// either missing means no dashboard route this pass, the same
+	// "fails closed, not an error" shape a service with no running
+	// container already has.
+	if settings.PrimaryDomain != "" && c.dashboardDial != "" {
+		if owner, host, dup := firstDuplicateHost(dashboardRouteOwner, []string{settings.PrimaryDomain}, claimedHosts); dup {
+			c.logger.WarnContext(ctx, "ingress: platform primary domain is already routed to a service or static site, skipping the dashboard route",
+				slog.String("domain", host),
+				slog.String("already_routed_to", owner),
+			)
+		} else {
+			claimedHosts[settings.PrimaryDomain] = dashboardRouteOwner
+			routes = append(routes, ingress.ProxyRoute{
+				Hosts:       []string{settings.PrimaryDomain},
+				BackendDial: c.dashboardDial,
+			})
+		}
+	}
+
 	cfg, err := ingress.BuildRoutesConfig(ingress.RoutesOptions{
-		ServerName:   c.serverName,
-		ListenAddr:   c.listenAddr,
-		Routes:       routes,
-		StaticRoutes: staticRoutes,
-		TLS:          true,
-		AdminListen:  c.adminListen,
-		StorageDir:   c.storageDir,
-		CertStorage:  c.certStorage,
+		ServerName:       c.serverName,
+		ListenAddr:       c.listenAddr,
+		Routes:           routes,
+		StaticRoutes:     staticRoutes,
+		TLS:              true,
+		AdminListen:      c.adminListen,
+		StorageDir:       c.storageDir,
+		CertStorage:      c.certStorage,
+		ACMEEnabled:      settings.ACMEEnabled,
+		ACMEEmail:        settings.ACMEEmail,
+		ACMEDirectoryURL: settings.ACMEDirectoryURL,
 	})
 	if err != nil {
 		return notReady("BuildConfigFailed", err), fmt.Errorf("ingress: build config: %w", err)

@@ -425,7 +425,7 @@ func run(logger *slog.Logger) error {
 
 	engine := reconcile.NewEngine(logger)
 	engine.SetStore(db)
-	engine.SetSource(dynamicSource(db, client, ingressDriver, logger, telemetryDB, secretsManager, agentRegistry, nodeHeartbeatTimeout(), meshCfg, meshDNSAddr))
+	engine.SetSource(dynamicSource(db, client, ingressDriver, logger, telemetryDB, secretsManager, agentRegistry, nodeHeartbeatTimeout(), meshCfg, meshDNSAddr, dashboardDialAddr(httpAddr())))
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
 	go func() {
@@ -1327,6 +1327,32 @@ func httpAddr() string {
 	return addr
 }
 
+// dashboardDialAddr normalizes httpAddr's listen address (e.g. ":8080",
+// the normal "listen on every interface" shorthand a *http.Server.Addr
+// takes) into a loopback dial address (e.g. "127.0.0.1:8080") the
+// embedded Caddy instance can reverse-proxy to, the same
+// "127.0.0.1:" + port normalization internal/reconcile/ingress's own
+// routeFor already applies to a service container's published host
+// port, for the identical reason given there: Caddy and this control
+// plane's own HTTP server share one process and one loopback interface,
+// so a listen-on-every-interface bind address is never itself a valid
+// single dial target. An address with an explicit, non-empty host (an
+// operator who set APP_HTTP_ADDR to something more specific than
+// ":port") is passed through unchanged rather than overridden, since
+// that host was chosen deliberately. Returns "" (WithDashboardDial's own
+// "no dashboard route" default) if addr doesn't parse as host:port at
+// all, rather than guessing.
+func dashboardDialAddr(addr string) string {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil || port == "" {
+		return ""
+	}
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	return net.JoinHostPort(host, port)
+}
+
 // sessionTTL reads APP_SESSION_TTL as a Go duration string (e.g. "24h",
 // "30m"), following the project's "no hardcoded thresholds, use env
 // vars" rule for the value api.WithSessionTTL configures. Returns 0
@@ -1418,7 +1444,7 @@ func certExpiryWarningWindow(logger *slog.Logger) time.Duration {
 // when it isn't nil, the same "reconciles the whole fleet in one pass"
 // shape the ingress controller already has and for the identical
 // reason: a mesh is a property of the set of nodes, not of any one node.
-func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.Driver, logger *slog.Logger, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry, heartbeatTimeout time.Duration, meshCfg *meshSetup, meshDNSAddr string) reconcile.Source {
+func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.Driver, logger *slog.Logger, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry, heartbeatTimeout time.Duration, meshCfg *meshSetup, meshDNSAddr string, dashboardDial string) reconcile.Source {
 	return func(ctx context.Context) ([]reconcile.Controller, error) {
 		services, err := db.ListDesiredServices(ctx)
 		if err != nil {
@@ -1498,7 +1524,11 @@ func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.D
 		for _, n := range nodes {
 			controllers = append(controllers, nodehealth.New(n.ID, db, heartbeatTimeout))
 		}
-		controllers = append(controllers, ingressreconcile.New(db, runtime, driver, ingressreconcile.WithLogger(logger)))
+		ingressOpts := []ingressreconcile.Option{ingressreconcile.WithLogger(logger)}
+		if dashboardDial != "" {
+			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(dashboardDial))
+		}
+		controllers = append(controllers, ingressreconcile.New(db, runtime, driver, ingressOpts...))
 		if meshCfg != nil {
 			controllers = append(controllers, meshreconcile.New(meshCfg.localNodeID, db, meshCfg.coordinator, meshCfg.resolver, meshreconcile.WithLogger(logger)))
 		}

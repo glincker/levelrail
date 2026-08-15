@@ -184,6 +184,66 @@ func NewInternalIssuer() InternalIssuer {
 	return InternalIssuer{Module: "internal"}
 }
 
+// ACMEIssuer is Caddy's "acme" TLS issuer (tls.issuance.acme): real ACME
+// issuance (Let's Encrypt or any RFC 8555-compatible CA), as opposed to
+// InternalIssuer's fully offline, self-signed certificates. Field names
+// and the "module" value ("acme", resolved within the tls.issuance
+// namespace the same way InternalIssuer's "internal" is, per
+// AutomationPolicy.Issuers' inline_key=module tag) are verified against
+// the vendored source for the pinned caddyserver/caddy/v2 version this
+// module uses (modules/caddytls/acmeissuer.go's ACMEIssuer struct and
+// its CaddyModule ID "tls.issuance.acme"), not guessed: this package
+// intentionally hand-rolls the wire-compatible subset of Caddy's own
+// config types rather than importing them directly (see this file's
+// package doc comment), and ACMEIssuer only needs the three fields an
+// operator-facing settings form actually collects (email, an optional
+// directory URL override, and the module discriminator), not the full
+// surface (challenges config, account key, EAB, and so on) Caddy's own
+// struct exposes for cases this codebase doesn't build a UI for yet.
+//
+// ADR 005's Verified section is explicit that only the internal issuer
+// path was proven end to end by that spike; this type exists to close
+// that named, expected gap (see internal/api/certificates.go's own doc
+// comment referencing the same open item), not to introduce a new
+// architecture decision.
+type ACMEIssuer struct {
+	Module string `json:"module"`
+	// Email is the ACME account contact address, Caddy's own "email"
+	// field verbatim. Not technically required by the ACME protocol
+	// itself, but this codebase's own settings validation
+	// (internal/api) requires a non-empty, syntactically valid address
+	// whenever ACME is enabled: an unreachable ACME account is exactly
+	// the kind of "renewal fails silently" risk this project treats as
+	// its central one to catch before it bites a real user.
+	Email string `json:"email,omitempty"`
+	// CA is Caddy's own "ca" field: the ACME directory endpoint URL.
+	// Empty leaves Caddy's compiled-in default in place, Let's Encrypt's
+	// real production directory
+	// (https://acme-v02.api.letsencrypt.org/directory, per
+	// caddytls.ACMEIssuer's own doc comment). An operator who wants to
+	// avoid Let's Encrypt's production rate limits while testing should
+	// set this explicitly to Let's Encrypt's staging directory
+	// (https://acme-staging-v02.api.letsencrypt.org/directory); this
+	// package does not default to staging on its own, since silently
+	// issuing a staging (browser-untrusted) certificate for what an
+	// operator believes is a production toggle would be a worse
+	// surprise than requiring them to opt in explicitly.
+	CA string `json:"ca,omitempty"`
+}
+
+// NewACMEIssuer returns the JSON shape for Caddy's real ACME issuer
+// module, used as an AutomationPolicy's Issuers entry in place of
+// NewInternalIssuer when an operator has opted into real ACME
+// (internal/store.IngressSettings.ACMEEnabled). directoryURL empty means
+// "use Caddy's own default" (see ACMEIssuer.CA's doc comment); email
+// empty is accepted by this constructor (it does not itself enforce the
+// non-empty rule), since that validation belongs to the caller that owns
+// the operator-facing form (internal/api), not to this low-level config
+// builder.
+func NewACMEIssuer(email, directoryURL string) ACMEIssuer {
+	return ACMEIssuer{Module: "acme", Email: email, CA: directoryURL}
+}
+
 // FileStorage is Caddy's default storage module
 // (caddy.storage.file_system): certificates, ACME account state, and the
 // internal issuer's local CA all live under Root. Caddy's own default,
@@ -346,6 +406,25 @@ func internalIssuerTLSApp(hosts []string) *TLSApp {
 				{
 					Subjects: hosts,
 					Issuers:  []any{NewInternalIssuer()},
+				},
+			},
+		},
+	}
+}
+
+// acmeIssuerTLSApp builds a TLSApp with a single automation policy
+// scoping Caddy's real ACME issuer to hosts. Mirrors
+// internalIssuerTLSApp's shape exactly, swapping NewInternalIssuer for
+// NewACMEIssuer; unlike the internal issuer path, this never pairs with
+// a PKIApp, real ACME has no local CA for Caddy's pki app to manage
+// trust for.
+func acmeIssuerTLSApp(hosts []string, email, directoryURL string) *TLSApp {
+	return &TLSApp{
+		Automation: &Automation{
+			Policies: []AutomationPolicy{
+				{
+					Subjects: hosts,
+					Issuers:  []any{NewACMEIssuer(email, directoryURL)},
 				},
 			},
 		},
