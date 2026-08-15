@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/cronexpr"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -187,6 +188,138 @@ func (rt *Router) handleListBackupHistory(w http.ResponseWriter, r *http.Request
 		out = append(out, toBackupHistoryResource(h))
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// backupScheduleResource is the wire shape for a database's scheduled
+// backup config: which target, on what cron schedule, and how many
+// successful backups to retain. Deliberately its own small type, not a
+// reuse of databaseResource: PUT/DELETE here only ever touch these three
+// fields, so echoing back the full database resource (name, engine,
+// version, node, project) would suggest a caller could change those
+// through this endpoint too, which it cannot.
+type backupScheduleResource struct {
+	DatabaseName string `json:"database_name"`
+	TargetID     string `json:"target_id,omitempty"`
+	Schedule     string `json:"schedule,omitempty"`
+	Retain       int    `json:"retain,omitempty"`
+}
+
+// setBackupScheduleRequest is handleSetBackupSchedule's request body.
+type setBackupScheduleRequest struct {
+	TargetID string `json:"target_id"`
+	Schedule string `json:"schedule"`
+	Retain   int    `json:"retain,omitempty"`
+}
+
+// handleSetBackupSchedule handles
+// PUT /api/v1/databases/{name}/backup-schedule: the missing link wave-2
+// roadmap item 6 closes. internal/spec.Backup has carried Schedule and
+// Retain since app.yaml's first draft, but nothing ever persisted them;
+// this is where an operator (or, eventually, an app.yaml apply path)
+// actually wires a database to a backup_targets row, a cron expression,
+// and a retention count, so internal/backup.Scheduler has something to
+// evaluate on its own tick.
+//
+// The cron expression is validated synchronously here via
+// cronexpr.Parse, the same "validate everything this handler can,
+// before ever writing state" discipline handleTriggerRestore's own doc
+// comment describes: an operator who fat-fingers a schedule string
+// finds out immediately as a 400, not silently on the next scheduler
+// tick, internal/backup.Scheduler.Tick's own "log and skip" handling of
+// an invalid schedule (see that method's doc comment) exists as a
+// defense-in-depth backstop for this check, not as the primary way a
+// mistake gets caught.
+func (rt *Router) handleSetBackupSchedule(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+
+	if _, err := rt.databases.GetDesiredDatabase(r.Context(), name); errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: set backup schedule: load database failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	var req setBackupScheduleRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.TargetID == "" {
+		writeError(w, http.StatusBadRequest, "target_id is required")
+		return
+	}
+	if req.Schedule == "" {
+		writeError(w, http.StatusBadRequest, "schedule is required")
+		return
+	}
+	if _, err := cronexpr.Parse(req.Schedule); err != nil {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid schedule: %s", err.Error()))
+		return
+	}
+	if req.Retain < 0 {
+		writeError(w, http.StatusBadRequest, "retain must not be negative")
+		return
+	}
+
+	if _, err := rt.backupTargets.GetBackupTarget(r.Context(), req.TargetID); errors.Is(err, store.ErrBackupTargetNotFound) {
+		writeError(w, http.StatusNotFound, "backup target not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: set backup schedule: load backup target failed", slog.String("error", err.Error()), slog.String("target_id", req.TargetID))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	if err := rt.databases.SetDatabaseBackupSchedule(r.Context(), name, req.TargetID, req.Schedule, req.Retain); errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: set backup schedule failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, backupScheduleResource{
+		DatabaseName: name,
+		TargetID:     req.TargetID,
+		Schedule:     req.Schedule,
+		Retain:       req.Retain,
+	})
+}
+
+// handleClearBackupSchedule handles
+// DELETE /api/v1/databases/{name}/backup-schedule: the reverse of
+// handleSetBackupSchedule, returning name to its default "no scheduled
+// backup configured" state (store.SetDatabaseBackupSchedule's own "" /
+// "" / 0 sentinel values). This never touches store.BackupHistory rows
+// already written by past scheduled runs, only the going-forward
+// configuration: a database that stops being scheduled keeps its
+// backup history exactly like one that was only ever backed up
+// manually.
+func (rt *Router) handleClearBackupSchedule(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+
+	if _, err := rt.databases.GetDesiredDatabase(r.Context(), name); errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: clear backup schedule: load database failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	if err := rt.databases.SetDatabaseBackupSchedule(r.Context(), name, "", "", 0); errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: clear backup schedule failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // randomBackupHistoryID mirrors randomBackupTargetID's exact shape

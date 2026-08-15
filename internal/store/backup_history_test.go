@@ -110,6 +110,139 @@ func TestListBackupHistory_NewestFirst_ScopedToDatabase(t *testing.T) {
 	}
 }
 
+// TestPruneBackupHistory_KeepsNewestSucceeded is the direct exercise of
+// this feature's own retention scope (see PruneBackupHistory's own doc
+// comment for why this is deliberately narrow): five succeeded backups,
+// keep 2, expect the two newest survive and the three oldest are gone.
+func TestPruneBackupHistory_KeepsNewestSucceeded(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	target := seedBackupTarget(t, db)
+
+	seedSucceeded := func(id, startedAt string) {
+		t.Helper()
+		if err := db.StartBackupHistory(ctx, BackupHistory{
+			ID: id, DatabaseName: "mydb", TargetID: target.ID,
+			ObjectKey: id, StartedAt: startedAt,
+		}); err != nil {
+			t.Fatalf("StartBackupHistory(%s) error = %v", id, err)
+		}
+		if err := db.FinishBackupHistory(ctx, id, BackupStatusSucceeded, 1, "", startedAt); err != nil {
+			t.Fatalf("FinishBackupHistory(%s) error = %v", id, err)
+		}
+	}
+
+	seedSucceeded("bkh_1", "2026-08-14T00:00:00Z")
+	seedSucceeded("bkh_2", "2026-08-14T00:01:00Z")
+	seedSucceeded("bkh_3", "2026-08-14T00:02:00Z")
+	seedSucceeded("bkh_4", "2026-08-14T00:03:00Z")
+	seedSucceeded("bkh_5", "2026-08-14T00:04:00Z")
+
+	deleted, err := db.PruneBackupHistory(ctx, "mydb", 2)
+	if err != nil {
+		t.Fatalf("PruneBackupHistory() error = %v", err)
+	}
+	if deleted != 3 {
+		t.Errorf("deleted = %d, want 3", deleted)
+	}
+
+	got, err := db.ListBackupHistory(ctx, "mydb")
+	if err != nil {
+		t.Fatalf("ListBackupHistory() error = %v", err)
+	}
+	if len(got) != 2 || got[0].ID != "bkh_5" || got[1].ID != "bkh_4" {
+		t.Fatalf("ListBackupHistory(mydb) after prune = %+v, want [bkh_5, bkh_4] (2 newest)", got)
+	}
+}
+
+// TestPruneBackupHistory_NeverTouchesFailedOrRunning: a retain count
+// bounds successful backups only, per PruneBackupHistory's own doc
+// comment; a failed attempt and one still in flight both keep their
+// diagnostic value regardless of how many successful backups exist.
+func TestPruneBackupHistory_NeverTouchesFailedOrRunning(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	target := seedBackupTarget(t, db)
+
+	seed := func(id, status, startedAt string) {
+		t.Helper()
+		if err := db.StartBackupHistory(ctx, BackupHistory{
+			ID: id, DatabaseName: "mydb", TargetID: target.ID,
+			ObjectKey: id, StartedAt: startedAt,
+		}); err != nil {
+			t.Fatalf("StartBackupHistory(%s) error = %v", id, err)
+		}
+		if status != BackupStatusRunning {
+			if err := db.FinishBackupHistory(ctx, id, status, 1, "", startedAt); err != nil {
+				t.Fatalf("FinishBackupHistory(%s) error = %v", id, err)
+			}
+		}
+	}
+
+	seed("bkh_ok1", BackupStatusSucceeded, "2026-08-14T00:00:00Z")
+	seed("bkh_ok2", BackupStatusSucceeded, "2026-08-14T00:01:00Z")
+	seed("bkh_failed", BackupStatusFailed, "2026-08-14T00:02:00Z")
+	seed("bkh_running", BackupStatusRunning, "2026-08-14T00:03:00Z")
+
+	deleted, err := db.PruneBackupHistory(ctx, "mydb", 1)
+	if err != nil {
+		t.Fatalf("PruneBackupHistory() error = %v", err)
+	}
+	if deleted != 1 {
+		t.Errorf("deleted = %d, want 1 (only the older succeeded row)", deleted)
+	}
+
+	got, err := db.ListBackupHistory(ctx, "mydb")
+	if err != nil {
+		t.Fatalf("ListBackupHistory() error = %v", err)
+	}
+	if len(got) != 3 {
+		t.Fatalf("ListBackupHistory(mydb) after prune = %+v, want 3 rows (failed + running + 1 succeeded)", got)
+	}
+	for _, h := range got {
+		if h.ID == "bkh_ok1" {
+			t.Errorf("bkh_ok1 (older succeeded) should have been pruned, still present: %+v", h)
+		}
+	}
+}
+
+// TestPruneBackupHistory_ZeroOrNegativeKeepDeletesNothing: BackupRetain
+// 0 means "keep everything," the meaning migrations/0023's own doc
+// comment establishes for a database that never opted into retention.
+func TestPruneBackupHistory_ZeroOrNegativeKeepDeletesNothing(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	target := seedBackupTarget(t, db)
+
+	if err := db.StartBackupHistory(ctx, BackupHistory{
+		ID: "bkh_1", DatabaseName: "mydb", TargetID: target.ID,
+		ObjectKey: "k1", StartedAt: "2026-08-14T00:00:00Z",
+	}); err != nil {
+		t.Fatalf("StartBackupHistory() error = %v", err)
+	}
+	if err := db.FinishBackupHistory(ctx, "bkh_1", BackupStatusSucceeded, 1, "", "2026-08-14T00:00:00Z"); err != nil {
+		t.Fatalf("FinishBackupHistory() error = %v", err)
+	}
+
+	for _, keep := range []int{0, -1} {
+		deleted, err := db.PruneBackupHistory(ctx, "mydb", keep)
+		if err != nil {
+			t.Fatalf("PruneBackupHistory(keep=%d) error = %v", keep, err)
+		}
+		if deleted != 0 {
+			t.Errorf("PruneBackupHistory(keep=%d) deleted = %d, want 0", keep, deleted)
+		}
+	}
+
+	got, err := db.ListBackupHistory(ctx, "mydb")
+	if err != nil {
+		t.Fatalf("ListBackupHistory() error = %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("ListBackupHistory(mydb) = %+v, want the 1 seeded row untouched", got)
+	}
+}
+
 func mustListOne(t *testing.T, db *DB, databaseName string) BackupHistory {
 	t.Helper()
 	got, err := db.ListBackupHistory(context.Background(), databaseName)

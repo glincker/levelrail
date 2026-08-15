@@ -1,0 +1,68 @@
+-- Wave-2 roadmap item 6: scheduled/cron backups. spec.Backup
+-- (internal/spec/spec.go) has carried Schedule (a cron expression) and
+-- Retain since the app spec's first draft, but until now nothing
+-- persisted them anywhere: app.yaml's databases[].backup block was
+-- parsed into memory and then discarded. This migration is the missing
+-- link, one database to at most one backup_targets row plus a cron
+-- string and a retention count, added as three columns directly on
+-- desired_databases rather than a new table.
+--
+-- That choice follows this table's own precedent, not a fresh one:
+-- node_id (0009_node_placement.sql) and project_id (0022_projects.sql)
+-- both already added a per-database, optional, one-to-one attribute as
+-- a plain ALTER TABLE column on desired_databases instead of a separate
+-- join table, specifically because "which node/project/backup-target
+-- does this database use" is a 1:1 relationship with no need for its
+-- own row identity, history, or independent lifecycle: a new table
+-- would buy nothing here a nullable column doesn't already give for
+-- free, and would just be a second place UpdateDatabaseNode-style
+-- callers would need to join against for every read.
+--
+-- backup_target_id: nullable, with a real foreign key and
+-- ON DELETE SET NULL, deliberately mirroring project_id's own reasoning
+-- (0022_projects.sql), not node_id's (0009_node_placement.sql, no FK at
+-- all): a backup_targets row is always a plain local row in this same
+-- database, never a possibly-disconnected remote resource the way a
+-- node is, so there is no "transient unavailability" concern a hard
+-- constraint would turn into a false failure. Letting SQLite clear this
+-- column automatically when an operator deletes the backup target a
+-- schedule points at is a real correctness win: without it, a deleted
+-- target would leave a schedule silently pointing at nothing, failing
+-- forever the next time it comes due with no visible cause. NULL means
+-- "no scheduled target configured", the same real, permanent, and
+-- default-on-upgrade meaning project_id's own NULL already carries.
+--
+-- backup_schedule: NOT NULL DEFAULT '', not nullable, mirroring node_id's
+-- own convention instead: empty string is itself the meaningful
+-- "no schedule configured" value here, not an unset/default placeholder,
+-- because a cron expression is never legitimately the empty string, so
+-- there is no ambiguity to guard against the way there would be for
+-- project_id (where "" is a database's real, valid name and could
+-- collide with a genuine label). internal/backup.Scheduler's own
+-- ListScheduledDatabases query (internal/store/database.go) filters on
+-- this being non-empty, exactly the same "empty means not participating"
+-- test node_id's own consumers already use.
+--
+-- backup_retain: NOT NULL DEFAULT 0. 0 means "keep every successful
+-- backup, prune nothing", per this feature's own PruneBackupHistory
+-- (internal/store/backup_history.go) and internal/backup.Scheduler's own
+-- doc comment: an operator who sets a schedule but never touches retain
+-- gets exactly today's manual-backup behavior (nothing is ever deleted)
+-- rather than silently losing history to an implicit default.
+--
+-- Every existing database gets backup_target_id NULL, backup_schedule
+-- '', backup_retain 0 on upgrade: zero behavior change, since no
+-- database has ever had a scheduled backup before this migration
+-- existed.
+ALTER TABLE desired_databases ADD COLUMN backup_target_id TEXT REFERENCES backup_targets(id) ON DELETE SET NULL;
+ALTER TABLE desired_databases ADD COLUMN backup_schedule TEXT NOT NULL DEFAULT '';
+ALTER TABLE desired_databases ADD COLUMN backup_retain INTEGER NOT NULL DEFAULT 0;
+
+-- Supports internal/backup.Scheduler.Tick's own ListScheduledDatabases
+-- query (WHERE backup_schedule != '' AND backup_target_id IS NOT NULL,
+-- run once per scheduler tick, every tick, for the lifetime of the
+-- process): the same "index the column your own query shape would use"
+-- reasoning idx_desired_databases_project_id (0022_projects.sql) already
+-- applies, here for a query that runs far more often (once a minute by
+-- default) than a project filter ever does.
+CREATE INDEX idx_desired_databases_backup_schedule ON desired_databases (backup_schedule) WHERE backup_schedule != '';

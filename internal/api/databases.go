@@ -35,15 +35,26 @@ type databaseResource struct {
 	// an existing database via PUT /api/v1/databases/{name}/project
 	// (handleSetDatabaseProject) instead.
 	ProjectID string `json:"project_id,omitempty"`
+	// BackupTargetID, BackupSchedule, BackupRetain: wave-2 roadmap item 6,
+	// scheduled backups. Response-only here, the identical boundary
+	// NodeID/ProjectID already establish: set or clear them via
+	// PUT/DELETE /api/v1/databases/{name}/backup-schedule (backups.go),
+	// never through this resource's own create/update body.
+	BackupTargetID string `json:"backup_target_id,omitempty"`
+	BackupSchedule string `json:"backup_schedule,omitempty"`
+	BackupRetain   int    `json:"backup_retain,omitempty"`
 }
 
 func toDatabaseResource(d store.DesiredDatabase) databaseResource {
 	return databaseResource{
-		Name:      d.Name,
-		Engine:    d.Engine,
-		Version:   d.Version,
-		NodeID:    d.NodeID,
-		ProjectID: d.ProjectID,
+		Name:           d.Name,
+		Engine:         d.Engine,
+		Version:        d.Version,
+		NodeID:         d.NodeID,
+		ProjectID:      d.ProjectID,
+		BackupTargetID: d.BackupTargetID,
+		BackupSchedule: d.BackupSchedule,
+		BackupRetain:   d.BackupRetain,
 	}
 }
 

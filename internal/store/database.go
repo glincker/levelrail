@@ -32,6 +32,22 @@ type DesiredDatabase struct {
 	// identical meaning and identical "SaveDesiredDatabase never writes
 	// it, only UpdateDatabaseProject does" exception below.
 	ProjectID string
+	// BackupTargetID, BackupSchedule, BackupRetain: wave-2 roadmap item 6,
+	// scheduled backups (migrations/0023_scheduled_backups.sql). Same
+	// "SaveDesiredDatabase never writes it, only SetDatabaseBackupSchedule
+	// does" exception NodeID/ProjectID already establish above, applied
+	// to the three columns internal/backup.Scheduler reads every tick.
+	// BackupTargetID is "" when no backup_targets row is configured
+	// (SQL NULL, mirroring ProjectID's own empty-string-means-NULL
+	// convention); BackupSchedule is "" when no cron schedule is set
+	// (SQL '', mirroring NodeID's own empty-string-is-the-real-value
+	// convention, see the migration's own doc comment for why the two
+	// columns deliberately use different null-ness conventions);
+	// BackupRetain is 0, meaning "keep every successful backup, prune
+	// nothing."
+	BackupTargetID string
+	BackupSchedule string
+	BackupRetain   int
 }
 
 // SaveDesiredDatabase creates or fully replaces the desired state for a
@@ -101,12 +117,12 @@ var ErrDatabaseNotFound = errors.New("store: database not found")
 // ErrDatabaseNotFound if no such database has been saved.
 func (db *DB) GetDesiredDatabase(ctx context.Context, name string) (*DesiredDatabase, error) {
 	var d DesiredDatabase
-	var projectID sql.NullString
+	var projectID, backupTargetID sql.NullString
 	err := db.QueryRowContext(ctx, `
-		SELECT name, engine, version, node_id, project_id
+		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain
 		FROM desired_databases
 		WHERE name = ?
-	`, name).Scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID)
+	`, name).Scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrDatabaseNotFound
 	}
@@ -114,6 +130,7 @@ func (db *DB) GetDesiredDatabase(ctx context.Context, name string) (*DesiredData
 		return nil, fmt.Errorf("store: get desired database %q: %w", name, err)
 	}
 	d.ProjectID = projectID.String
+	d.BackupTargetID = backupTargetID.String
 	return &d, nil
 }
 
@@ -139,7 +156,7 @@ func (db *DB) DeleteDesiredDatabase(ctx context.Context, name string) error {
 // ListDesiredDatabases returns every saved database, ordered by name.
 func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, engine, version, node_id, project_id
+		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain
 		FROM desired_databases
 		ORDER BY name
 	`)
@@ -153,11 +170,12 @@ func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, erro
 	var out []DesiredDatabase
 	for rows.Next() {
 		var d DesiredDatabase
-		var projectID sql.NullString
-		if err := rows.Scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID); err != nil {
+		var projectID, backupTargetID sql.NullString
+		if err := rows.Scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain); err != nil {
 			return nil, fmt.Errorf("store: scan desired database row: %w", err)
 		}
 		d.ProjectID = projectID.String
+		d.BackupTargetID = backupTargetID.String
 		out = append(out, d)
 	}
 	if err := rows.Err(); err != nil {
@@ -172,7 +190,7 @@ func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, erro
 // callers.
 func (db *DB) ListDesiredDatabasesByNode(ctx context.Context, nodeID string) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, engine, version, node_id, project_id
+		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain
 		FROM desired_databases
 		WHERE node_id = ?
 		ORDER BY name
@@ -187,15 +205,89 @@ func (db *DB) ListDesiredDatabasesByNode(ctx context.Context, nodeID string) ([]
 	var out []DesiredDatabase
 	for rows.Next() {
 		var d DesiredDatabase
-		var projectID sql.NullString
-		if err := rows.Scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID); err != nil {
+		var projectID, backupTargetID sql.NullString
+		if err := rows.Scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain); err != nil {
 			return nil, fmt.Errorf("store: scan desired database row: %w", err)
 		}
 		d.ProjectID = projectID.String
+		d.BackupTargetID = backupTargetID.String
 		out = append(out, d)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("store: iterate desired database rows: %w", err)
+	}
+	return out, nil
+}
+
+// SetDatabaseBackupSchedule is DesiredDatabase's counterpart to
+// UpdateDatabaseNode/UpdateDatabaseProject: a scheduled backup's config
+// is set through its own endpoint and its own method, the same
+// separation-from-ordinary-desired-state-saves those two already
+// establish, rather than folding it into SaveDesiredDatabase's own
+// whole-record replace. Passing targetID="" and schedule="" (the
+// DELETE /api/v1/databases/{name}/backup-schedule path, retain also
+// forced to 0 by the caller in that case) clears scheduled backups for
+// name entirely: internal/backup.Scheduler's own ListScheduledDatabases
+// query treats an empty schedule exactly like it was never configured,
+// so this is a real "unset," not a sentinel every future caller has to
+// remember to special-case.
+func (db *DB) SetDatabaseBackupSchedule(ctx context.Context, name, targetID, schedule string, retain int) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE desired_databases
+		SET backup_target_id = ?, backup_schedule = ?, backup_retain = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		WHERE name = ?
+	`, sql.NullString{String: targetID, Valid: targetID != ""}, schedule, retain, name)
+	if err != nil {
+		return fmt.Errorf("store: set backup schedule for database %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: set backup schedule for database %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrDatabaseNotFound
+	}
+	return nil
+}
+
+// ListScheduledDatabases returns every database with both a non-empty
+// backup_schedule and a resolved backup_target_id, ordered by name. The
+// two are deliberately required together, not backup_schedule alone: a
+// schedule whose backup_targets row was since deleted
+// (migrations/0023's own ON DELETE SET NULL) can never actually run, and
+// requiring both here means internal/backup.Scheduler.Tick never has to
+// special-case that half-configured state itself, on every tick, for the
+// lifetime of the process. Re-derived fresh on every call, the same
+// "never cache, re-derive every pass" principle dynamicSource
+// (cmd/levelrail/main.go) already applies to which databases exist at
+// all.
+func (db *DB) ListScheduledDatabases(ctx context.Context) ([]DesiredDatabase, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain
+		FROM desired_databases
+		WHERE backup_schedule != '' AND backup_target_id IS NOT NULL
+		ORDER BY name
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("store: list scheduled databases: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var out []DesiredDatabase
+	for rows.Next() {
+		var d DesiredDatabase
+		var projectID, backupTargetID sql.NullString
+		if err := rows.Scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain); err != nil {
+			return nil, fmt.Errorf("store: scan scheduled database row: %w", err)
+		}
+		d.ProjectID = projectID.String
+		d.BackupTargetID = backupTargetID.String
+		out = append(out, d)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate scheduled database rows: %w", err)
 	}
 	return out, nil
 }

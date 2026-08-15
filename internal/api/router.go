@@ -171,6 +171,12 @@ type DatabaseStore interface {
 	// UpdateDatabaseProject is AppStore.UpdateServiceProject's
 	// counterpart (projects.go).
 	UpdateDatabaseProject(ctx context.Context, name, projectID string) error
+	// SetDatabaseBackupSchedule backs
+	// PUT/DELETE /api/v1/databases/{name}/backup-schedule (backups.go):
+	// wave-2 roadmap item 6, scheduled backups. Same "own endpoint, own
+	// store method" separation UpdateDatabaseNode/UpdateDatabaseProject
+	// already establish for their own single-purpose updates.
+	SetDatabaseBackupSchedule(ctx context.Context, name, targetID, schedule string, retain int) error
 }
 
 // ProjectStore is the store surface the projects handlers need
@@ -843,6 +849,20 @@ func (rt *Router) Handler() http.Handler {
 	// History listing is ordinary AbilityRead.
 	mux.HandleFunc("POST /api/v1/databases/{name}/backups", rt.requireAbility(AbilityWriteSensitive, rt.handleTriggerBackup))
 	mux.HandleFunc("GET /api/v1/databases/{name}/backups", rt.requireAbility(AbilityRead, rt.handleListBackupHistory))
+
+	// Scheduled backup config, per database (wave-2 roadmap item 6):
+	// which backup target, cron schedule, and retention count
+	// internal/backup.Scheduler uses for this database, if any.
+	// AbilityWriteSensitive for both PUT and DELETE, the same tier the
+	// manual trigger route above already uses: this is the config that
+	// decides where an unattended, recurring backup ends up, a live
+	// bucket with previously-stored credentials, the identical
+	// sensitivity class. GET reuses handleGetDatabase's own existing
+	// AbilityRead response (databaseResource already carries these three
+	// fields, see that handler's own file), so there is no separate GET
+	// route here.
+	mux.HandleFunc("PUT /api/v1/databases/{name}/backup-schedule", rt.requireAbility(AbilityWriteSensitive, rt.handleSetBackupSchedule))
+	mux.HandleFunc("DELETE /api/v1/databases/{name}/backup-schedule", rt.requireAbility(AbilityWriteSensitive, rt.handleClearBackupSchedule))
 
 	// Restore, per database (restore.go). AbilityRoot, not
 	// AbilityWriteSensitive: see handleTriggerRestore's own doc comment

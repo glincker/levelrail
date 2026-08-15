@@ -149,6 +149,20 @@ const (
 	// slow tick or a brief GC pause doesn't flip a healthy node Offline,
 	// short enough that a real hang is caught well within a minute.
 	defaultNodeHeartbeatTimeout = 45 * time.Second
+
+	// defaultBackupSchedulerInterval is how often internal/backup.Scheduler
+	// checks which databases have a due cron schedule (wave-2 roadmap
+	// item 6), env-overridable via APP_BACKUP_SCHEDULER_INTERVAL
+	// (backupSchedulerInterval below), the project's "no hardcoded
+	// thresholds, use env vars" rule. One minute, not something coarser
+	// like alertEvaluationInterval's 30s: standard 5-field cron
+	// (internal/cronexpr's own doc comment) has no granularity finer
+	// than a minute, so anything longer than a minute here would mean a
+	// schedule like "*/1 * * * *" could never actually fire on time, and
+	// anything shorter buys nothing since no schedule this parser can
+	// express would ever need to be checked more often than once a
+	// minute anyway.
+	defaultBackupSchedulerInterval = 1 * time.Minute
 )
 
 func main() {
@@ -328,6 +342,28 @@ func run(logger *slog.Logger) error {
 		logger.Warn("secrets not configured", slog.String("error", err.Error()))
 	}
 
+	// backupRunner is constructed once, here in run(), not inside
+	// rootHandler where it used to live: wave-2 roadmap item 6
+	// (scheduled backups) needs the exact same *backup.Runner instance
+	// in two places, api.Router's manual trigger path (WithBackupRunner
+	// below, via rootHandler) and the scheduled-backup loop started
+	// further down this function, the same "construct once, share by
+	// reference" reasoning deployRecorder and logBroadcaster already
+	// follow above for their own two-consumer dependencies. nil
+	// whenever secretsManager is nil (no APP_MASTER_KEY configured):
+	// every backup-touching feature, manual or scheduled, shares that
+	// one gate, per rootHandler's own doc comment on why backups need a
+	// master key at all.
+	var backupRunner *backup.Runner
+	if secretsManager != nil {
+		backupRunner = &backup.Runner{
+			Store:    db,
+			Secrets:  secretsManager,
+			Dumper:   &backup.ContainerDumper{Runtime: client},
+			Uploader: backup.S3Uploader{},
+		}
+	}
+
 	builder, closeBuilder, err := loadBuilder(ctx, logger, db, telemetryDB, secretsManager, agentRegistry)
 	if err != nil {
 		// Not fatal, the same choice as everything else optional above:
@@ -357,7 +393,7 @@ func run(logger *slog.Logger) error {
 
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
-		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher),
+		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -422,6 +458,26 @@ func run(logger *slog.Logger) error {
 			logger.Error("alerting engine stopped", slog.String("error", err.Error()))
 		}
 	}()
+
+	// Scheduled backups (wave-2 roadmap item 6): internal/backup.Scheduler
+	// checks, on its own tick, which databases have a due cron schedule
+	// (store.DesiredDatabase's BackupSchedule/BackupTargetID/BackupRetain,
+	// migrations/0023_scheduled_backups.sql) and runs them through the
+	// same backupRunner the manual trigger path (api.WithBackupRunner
+	// above) uses. Gated on backupRunner being non-nil, the identical
+	// "no APP_MASTER_KEY, no backup features at all" boundary rootHandler
+	// already draws for the manual path: a scheduled backup needs the
+	// same stored, decryptable target credentials a manual one does, so
+	// there is nothing for the scheduler to usefully do without one
+	// either.
+	if backupRunner != nil {
+		scheduler := backup.NewScheduler(db, backupRunner, logger)
+		go func() {
+			if err := scheduler.Run(ctx, backupSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+				logger.Error("backup scheduler stopped", slog.String("error", err.Error()))
+			}
+		}()
+	}
 
 	events, errs := client.Events(ctx)
 	go func() {
@@ -1154,7 +1210,19 @@ func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent
 // the same dispatcher already passed to loadWebhookHandler for the
 // push-triggered path, so all three real deploy-trigger call sites fire
 // through one shared instance.
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher) http.Handler {
+//
+// backupRunner is built by run(), not here, unlike everything else this
+// function used to construct inline: wave-2 roadmap item 6's scheduled
+// backup loop (also started in run(), see that function's own comment
+// just above where it calls backup.NewScheduler) needs the exact same
+// *backup.Runner instance this function wires into api.WithBackupRunner,
+// the same "construct once, share by reference" reasoning
+// deployRecorder/logBroadcaster already follow for their own two-
+// consumer dependencies. Its own nil-ness already tracks secretsManager
+// (run() only constructs one when secretsManager != nil), so the nil
+// check just below covers both in one place instead of two independent
+// checks that could drift apart.
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner) http.Handler {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
@@ -1189,12 +1257,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// non-nil interface value, whenever no master key is configured.
 		opts = append(opts,
 			api.WithBackupSecrets(secretsManager),
-			api.WithBackupRunner(&backup.Runner{
-				Store:    db,
-				Secrets:  secretsManager,
-				Dumper:   &backup.ContainerDumper{Runtime: client},
-				Uploader: backup.S3Uploader{},
-			}),
+			api.WithBackupRunner(backupRunner),
 			// The restore counterpart of the backup runner just above:
 			// same secretsManager dependency (a restore resolves the same
 			// stored target credentials a backup wrote), same nil check,
@@ -1221,6 +1284,32 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	}
 	mux.Handle("/", web.Handler())
 	return mux
+}
+
+// backupSchedulerInterval reads APP_BACKUP_SCHEDULER_INTERVAL as a Go
+// duration string, the project's "no hardcoded thresholds, use env
+// vars" rule applied to how often internal/backup.Scheduler checks
+// which databases have a due cron schedule. Returns
+// defaultBackupSchedulerInterval (see that constant's own doc comment
+// for why 1 minute) when unset or unparseable, logging a warning in the
+// latter case, the same shape sessionTTL/certExpiryWarningWindow already
+// use for their own env vars. Unlike those two (which return 0 as a
+// signal for api.Router to apply its own internal default),
+// backup.Scheduler.Run takes interval directly with no built-in
+// fallback of its own, so this function resolves the real value once,
+// here, rather than needing two copies of the same default to stay in
+// sync.
+func backupSchedulerInterval(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_BACKUP_SCHEDULER_INTERVAL")
+	if raw == "" {
+		return defaultBackupSchedulerInterval
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_BACKUP_SCHEDULER_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return defaultBackupSchedulerInterval
+	}
+	return d
 }
 
 func httpAddr() string {

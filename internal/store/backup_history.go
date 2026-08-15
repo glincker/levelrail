@@ -102,6 +102,53 @@ func (db *DB) GetBackupHistory(ctx context.Context, id string) (BackupHistory, e
 	return h, nil
 }
 
+// PruneBackupHistory deletes every succeeded backup_history row for
+// databaseName beyond the newest keep, ordered by started_at, and
+// returns how many rows were removed. Only BackupStatusSucceeded rows
+// are ever eligible: a running or failed attempt carries diagnostic
+// value a retention count was never meant to bound (an operator who
+// sets retain: 7 wants "7 successful backups," not "7 attempts of any
+// kind"), so those are left untouched regardless of how old they are.
+//
+// keep <= 0 deletes nothing and returns (0, nil) without issuing a
+// query: this mirrors store.DesiredDatabase.BackupRetain's own "0 means
+// keep everything" meaning (see migrations/0023's own doc comment) at
+// the one call site that matters, internal/backup.Scheduler, rather than
+// making every caller remember to guard the zero case itself.
+//
+// This is scoped narrowly to what internal/backup.Scheduler's own
+// retention step needs after a successful scheduled run: it prunes
+// store rows only, never the underlying object an Uploader wrote to a
+// backup_targets bucket, which is a real, known, and deliberately
+// undone gap here (deleting that object needs live target credentials
+// resolved through internal/secrets plus a Deleter capability
+// internal/backup does not have today, see that package's own Uploader
+// doc comment) left for a dedicated retention/pruning feature to close
+// properly, not invented speculatively as a side effect of this one.
+func (db *DB) PruneBackupHistory(ctx context.Context, databaseName string, keep int) (int64, error) {
+	if keep <= 0 {
+		return 0, nil
+	}
+
+	res, err := db.ExecContext(ctx, `
+		DELETE FROM backup_history
+		WHERE database_name = ? AND status = ? AND id NOT IN (
+			SELECT id FROM backup_history
+			WHERE database_name = ? AND status = ?
+			ORDER BY started_at DESC
+			LIMIT ?
+		)
+	`, databaseName, BackupStatusSucceeded, databaseName, BackupStatusSucceeded, keep)
+	if err != nil {
+		return 0, fmt.Errorf("store: prune backup history for %q: %w", databaseName, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("store: prune backup history for %q: rows affected: %w", databaseName, err)
+	}
+	return n, nil
+}
+
 // ListBackupHistory returns every backup attempt for databaseName,
 // newest first (migrations/0018's own index is built for exactly this
 // query shape).
