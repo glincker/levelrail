@@ -599,6 +599,12 @@ func TestServeHTTP_TargetBranch_RecordsDeployAttempt_Succeeded(t *testing.T) {
 	if saved[0].Image != cfg.ImageRepo+":sha1" {
 		t.Errorf("Image = %q, want %q", saved[0].Image, cfg.ImageRepo+":sha1")
 	}
+	if saved[0].CommitSHA != "sha1" {
+		t.Errorf("CommitSHA = %q, want %q", saved[0].CommitSHA, "sha1")
+	}
+	if saved[0].Source != store.DeployAttemptSourceWebhook {
+		t.Errorf("Source = %q, want %q", saved[0].Source, store.DeployAttemptSourceWebhook)
+	}
 	if saved[0].Status != store.DeployAttemptStatusRunning {
 		t.Errorf("initial Status = %q, want %q", saved[0].Status, store.DeployAttemptStatusRunning)
 	}

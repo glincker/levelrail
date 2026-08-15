@@ -38,12 +38,14 @@ func TestHandleListDeployAttempts(t *testing.T) {
 	base := time.Now().UTC().Truncate(time.Millisecond)
 	if err := db.SaveDeployAttempt(ctx, store.DeployAttempt{
 		ID: "dep_1", ServiceName: "web", Image: "levelrail/web:1",
+		CommitSHA: "sha1", Source: store.DeployAttemptSourceWebhook,
 		Status: store.DeployAttemptStatusSucceeded, StartedAt: base,
 	}); err != nil {
 		t.Fatalf("seed attempt: %v", err)
 	}
 	if err := db.SaveDeployAttempt(ctx, store.DeployAttempt{
 		ID: "dep_2", ServiceName: "web", Image: "levelrail/web:2",
+		Source: store.DeployAttemptSourceImage,
 		Status: store.DeployAttemptStatusFailed, StartedAt: base.Add(time.Minute),
 	}); err != nil {
 		t.Fatalf("seed attempt: %v", err)
@@ -70,6 +72,12 @@ func TestHandleListDeployAttempts(t *testing.T) {
 	}
 	if got[0].Status != store.DeployAttemptStatusFailed || got[0].Error != "build failed" {
 		t.Errorf("got[0] = %+v, want status=failed error='build failed'", got[0])
+	}
+	if got[0].Source != store.DeployAttemptSourceImage || got[0].CommitSHA != "" {
+		t.Errorf("got[0] source/commit = %q/%q, want %q/empty", got[0].Source, got[0].CommitSHA, store.DeployAttemptSourceImage)
+	}
+	if got[1].Source != store.DeployAttemptSourceWebhook || got[1].CommitSHA != "sha1" {
+		t.Errorf("got[1] source/commit = %q/%q, want %q/sha1", got[1].Source, got[1].CommitSHA, store.DeployAttemptSourceWebhook)
 	}
 	if got[0].FinishedAt == nil {
 		t.Error("got[0].FinishedAt = nil, want set")

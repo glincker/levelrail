@@ -64,6 +64,53 @@ func TestSaveAndGetDeployAttempt(t *testing.T) {
 	}
 }
 
+func TestSaveAndGetDeployAttempt_CommitSHAAndSource(t *testing.T) {
+	tests := []struct {
+		name      string
+		commitSHA string
+		source    string
+	}{
+		{name: "webhook with commit", commitSHA: "abc123", source: DeployAttemptSourceWebhook},
+		{name: "manual build with commit", commitSHA: "def456", source: DeployAttemptSourceManual},
+		{name: "plain image tag, no commit", commitSHA: "", source: DeployAttemptSourceImage},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := openTestDB(t)
+			ctx := context.Background()
+
+			id := "dep_" + tt.source
+			if err := db.SaveDeployAttempt(ctx, DeployAttempt{
+				ID: id, ServiceName: "web", Image: "levelrail/web:tag",
+				CommitSHA: tt.commitSHA, Source: tt.source,
+				Status: DeployAttemptStatusRunning, StartedAt: time.Now().UTC(),
+			}); err != nil {
+				t.Fatalf("SaveDeployAttempt() error = %v", err)
+			}
+
+			got, err := db.GetDeployAttempt(ctx, id)
+			if err != nil {
+				t.Fatalf("GetDeployAttempt() error = %v", err)
+			}
+			if got.CommitSHA != tt.commitSHA {
+				t.Errorf("CommitSHA = %q, want %q", got.CommitSHA, tt.commitSHA)
+			}
+			if got.Source != tt.source {
+				t.Errorf("Source = %q, want %q", got.Source, tt.source)
+			}
+
+			list, err := db.ListDeployAttempts(ctx, "web")
+			if err != nil {
+				t.Fatalf("ListDeployAttempts() error = %v", err)
+			}
+			if len(list) != 1 || list[0].CommitSHA != tt.commitSHA || list[0].Source != tt.source {
+				t.Errorf("ListDeployAttempts() = %+v, want CommitSHA %q and Source %q", list, tt.commitSHA, tt.source)
+			}
+		})
+	}
+}
+
 func TestGetDeployAttempt_NotFound(t *testing.T) {
 	db := openTestDB(t)
 	_, err := db.GetDeployAttempt(context.Background(), "dep_never-saved")
