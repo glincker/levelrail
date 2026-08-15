@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import {
   ArrowLeftIcon,
+  ArrowsInIcon,
+  ArrowsOutIcon,
   DatabaseIcon,
   GitBranchIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -102,6 +104,13 @@ export function CreateResourceWizard({
 }) {
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
+  // Presentation only, independent of `selected`: toggling this must
+  // never remount step 2's form (that's what `key={selected}` below is
+  // actually keyed on), so it lives as its own piece of state rather
+  // than being folded into some combined "step" value. Always starts
+  // compact on a fresh open, same as `selected` starting at null: see
+  // handleOpenChange.
+  const [fullscreen, setFullscreen] = useState(false)
   // Optional convenience, see useDatabaseEnginesOptional's own doc
   // comment: a slow/failed fetch just means step 1 shows the two fixed
   // options without any database cards yet, never a blocked dialog.
@@ -134,6 +143,7 @@ export function CreateResourceWizard({
       // components below already reset their own local form state off
       // this same `open` prop.
       setSelected(null)
+      setFullscreen(false)
     }
   }
 
@@ -152,14 +162,61 @@ export function CreateResourceWizard({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={trigger} />
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent
+        size={fullscreen ? 'fullscreen' : 'default'}
+        // sm:max-w-lg only means something for the centered `default`
+        // popup; passing it while `fullscreen` is active would fight
+        // that variant's own `max-w-none` at the sm breakpoint and up
+        // (twMerge treats `max-w-none` and `sm:max-w-lg` as different
+        // groups, so both would otherwise apply, quietly reimposing a
+        // width cap on what's supposed to fill the viewport).
+        className={fullscreen ? undefined : 'sm:max-w-lg'}
+      >
+        {/* Absolutely positioned against DialogContent itself (same
+            trick dialog.tsx already uses for its own close button), so
+            this sits in the popup's top-right corner in both
+            presentations without needing to duplicate it into both the
+            step 1 and step 2 header markup below. Placed to the close
+            button's left (it occupies right-2 at icon-sm width) rather
+            than replacing it: collapsing back to compact must stay a
+            distinct action from closing the wizard entirely. */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="absolute top-2 right-11"
+          onClick={() => {
+            setFullscreen((prev) => !prev)
+          }}
+          aria-label={
+            fullscreen ? 'Collapse to compact view' : 'Expand to fullscreen'
+          }
+        >
+          {fullscreen ? <ArrowsInIcon /> : <ArrowsOutIcon />}
+        </Button>
         {selected === null ? (
           <>
             <DialogHeader>
-              <DialogTitle>New resource</DialogTitle>
+              <DialogTitle className={fullscreen ? 'text-lg' : undefined}>
+                New resource
+              </DialogTitle>
               <DialogDescription>Pick a starting point.</DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-2 gap-3">
+            {/* Compact stays the existing fixed two-column grid. Full
+                screen earns real breakpoints instead of just letting
+                grid-cols-2 stretch two huge cards across the viewport:
+                the same sm/md/xl breakpoint vocabulary this codebase
+                already uses elsewhere (dl grids in the node/database
+                overview routes), stepped up one column at a time so the
+                grid never jumps straight from 2 to 5 at a single
+                breakpoint. */}
+            <div
+              className={
+                fullscreen
+                  ? 'grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5'
+                  : 'grid grid-cols-2 gap-3'
+              }
+            >
               {options.map((option) => (
                 <button
                   key={option.value}
@@ -181,9 +238,31 @@ export function CreateResourceWizard({
             </div>
           </>
         ) : (
-          <>
+          // `display: contents` when compact makes this wrapper
+          // invisible to layout, so DialogHeader and the field
+          // component below participate directly in DialogContent's own
+          // `grid gap-4` exactly as they did before this wrapper
+          // existed: compact stays byte-for-byte unchanged. Full screen
+          // swaps it for a real flex column that caps line length to a
+          // sane reading width and centers it in the extra space,
+          // because a form's labels and inputs stretched across a whole
+          // viewport are the "narrow content stretched into empty
+          // space" failure mode this is explicitly meant to avoid.
+          <div
+            className={
+              fullscreen
+                ? 'mx-auto flex w-full max-w-2xl flex-col gap-4 py-4'
+                : 'contents'
+            }
+          >
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
+              <DialogTitle
+                className={
+                  fullscreen
+                    ? 'flex items-center gap-2 text-lg'
+                    : 'flex items-center gap-2'
+                }
+              >
                 <Button
                   type="button"
                   variant="ghost"
@@ -209,7 +288,10 @@ export function CreateResourceWizard({
                 both render CreateDatabaseFields: switching the starting
                 point is explicitly allowed to drop whatever was typed
                 for the previous one rather than trying to carry values
-                across two different field sets. */}
+                across two different field sets. Toggling `fullscreen`
+                does not touch `selected`, so it never forces this
+                remount: whatever's been typed survives the presentation
+                switch. */}
             {selected === 'docker-image' ? (
               <CreateAppFields
                 key={selected}
@@ -232,7 +314,7 @@ export function CreateResourceWizard({
                 engine={selected}
               />
             ) : null}
-          </>
+          </div>
         )}
       </DialogContent>
     </Dialog>
