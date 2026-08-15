@@ -81,6 +81,13 @@ var (
 // library's net/mail parser rather than a hand-rolled regex or a new
 // dependency, matching the project rule against pulling in a package
 // for something the standard library already does correctly.
+//
+// ParseAddress alone accepts display-name forms like "Ops <a@b.com>",
+// which certmagic's account registration concatenates verbatim into
+// "mailto:"+email, producing an invalid URI and failing ACME account
+// setup silently. Requiring the parsed address to equal the input
+// rejects those.
+//
 // PrimaryDomain and ACMEDirectoryURL are deliberately unvalidated here:
 // an empty PrimaryDomain is a real, valid "no dashboard route" state
 // (see internal/reconcile/ingress's own WithDashboardDial doc comment),
@@ -97,7 +104,8 @@ func validateIngressSettingsRequest(req ingressSettingsResource) error {
 	if email == "" {
 		return errACMEEmailRequired
 	}
-	if _, err := mail.ParseAddress(email); err != nil {
+	addr, err := mail.ParseAddress(email)
+	if err != nil || addr.Address != email {
 		return errACMEEmailInvalid
 	}
 	return nil

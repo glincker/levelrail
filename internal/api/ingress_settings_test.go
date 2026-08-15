@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -41,6 +43,19 @@ func TestValidateIngressSettingsRequest(t *testing.T) {
 		{
 			name:    "acme enabled, malformed email rejected",
 			req:     ingressSettingsResource{ACMEEnabled: true, ACMEEmail: "not-an-email"},
+			wantErr: errACMEEmailInvalid,
+		},
+		{
+			name:    "acme enabled, bare @ rejected",
+			req:     ingressSettingsResource{ACMEEnabled: true, ACMEEmail: "@"},
+			wantErr: errACMEEmailInvalid,
+		},
+		{
+			// ParseAddress alone accepts this; see
+			// validateIngressSettingsRequest's own doc comment for why
+			// it must still be rejected.
+			name:    "acme enabled, display-name email rejected (breaks Caddy's mailto: contact URI)",
+			req:     ingressSettingsResource{ACMEEnabled: true, ACMEEmail: "Ops <ops@example.com>"},
 			wantErr: errACMEEmailInvalid,
 		},
 		{
@@ -175,6 +190,50 @@ func TestHandleUpdateIngressSettings_CanDisableAndClear(t *testing.T) {
 	}
 	if got != (ingressSettingsResource{}) {
 		t.Errorf("after disable = %+v, want zero value", got)
+	}
+}
+
+// TestHandleUpdateIngressSettings_PlainWriteToken_Forbidden proves PUT
+// /settings/ingress really sits behind AbilityRoot, not just AbilityWrite
+// or AbilityRead: an ACME on/off toggle changes what every currently-
+// routed host's certificate automation does on the control plane's very
+// next ingress reconcile, the same "real infrastructure, not an ordinary
+// per-app write" blast radius TestHandleSystemPrune_PlainWriteToken_Forbidden
+// and TestHandleSetAppNode_PlainWriteToken_Forbidden already draw this
+// exact line for. A token scoped only to AbilityWrite must be rejected
+// with 403, not silently accepted because the route only checked for
+// "any authenticated caller."
+func TestHandleUpdateIngressSettings_PlainWriteToken_Forbidden(t *testing.T) {
+	rt, db := newTestRouter(t)
+	ctx := context.Background()
+
+	const plaintext = "write-scoped-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_write", Name: "writer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWrite}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	body := `{"acme_enabled":true,"acme_email":"ops@example.com"}`
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/settings/ingress", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d: a plain write token must not reach the ACME toggle", rec.Code, http.StatusForbidden)
+	}
+
+	// The row must be untouched by a rejected request.
+	getRec := httptest.NewRecorder()
+	getReq := httptest.NewRequest(http.MethodGet, "/api/v1/settings/ingress", nil)
+	getReq.Header.Set("Authorization", "Bearer "+plaintext)
+	rt.Handler().ServeHTTP(getRec, getReq)
+	var got ingressSettingsResource
+	if err := json.Unmarshal(getRec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.ACMEEnabled {
+		t.Errorf("ACMEEnabled = true after a forbidden update, want the row left unchanged")
 	}
 }
 
