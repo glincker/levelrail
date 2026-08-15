@@ -116,22 +116,20 @@ var ErrDatabaseNotFound = errors.New("store: database not found")
 // GetDesiredDatabase returns the desired state for name, or
 // ErrDatabaseNotFound if no such database has been saved.
 func (db *DB) GetDesiredDatabase(ctx context.Context, name string) (*DesiredDatabase, error) {
-	var d DesiredDatabase
-	var projectID, backupTargetID sql.NullString
-	err := db.QueryRowContext(ctx, `
+	row := db.QueryRowContext(ctx, `
 		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain
 		FROM desired_databases
 		WHERE name = ?
-	`, name).Scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain)
+	`, name)
+
+	d, err := scanDesiredDatabase(row.Scan)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrDatabaseNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("store: get desired database %q: %w", name, err)
 	}
-	d.ProjectID = projectID.String
-	d.BackupTargetID = backupTargetID.String
-	return &d, nil
+	return d, nil
 }
 
 // DeleteDesiredDatabase removes a database's desired state, the same
@@ -169,14 +167,11 @@ func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, erro
 
 	var out []DesiredDatabase
 	for rows.Next() {
-		var d DesiredDatabase
-		var projectID, backupTargetID sql.NullString
-		if err := rows.Scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain); err != nil {
+		d, err := scanDesiredDatabase(rows.Scan)
+		if err != nil {
 			return nil, fmt.Errorf("store: scan desired database row: %w", err)
 		}
-		d.ProjectID = projectID.String
-		d.BackupTargetID = backupTargetID.String
-		out = append(out, d)
+		out = append(out, *d)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("store: iterate desired database rows: %w", err)
@@ -204,14 +199,11 @@ func (db *DB) ListDesiredDatabasesByNode(ctx context.Context, nodeID string) ([]
 
 	var out []DesiredDatabase
 	for rows.Next() {
-		var d DesiredDatabase
-		var projectID, backupTargetID sql.NullString
-		if err := rows.Scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain); err != nil {
+		d, err := scanDesiredDatabase(rows.Scan)
+		if err != nil {
 			return nil, fmt.Errorf("store: scan desired database row: %w", err)
 		}
-		d.ProjectID = projectID.String
-		d.BackupTargetID = backupTargetID.String
-		out = append(out, d)
+		out = append(out, *d)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("store: iterate desired database rows: %w", err)
@@ -277,17 +269,33 @@ func (db *DB) ListScheduledDatabases(ctx context.Context) ([]DesiredDatabase, er
 
 	var out []DesiredDatabase
 	for rows.Next() {
-		var d DesiredDatabase
-		var projectID, backupTargetID sql.NullString
-		if err := rows.Scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain); err != nil {
+		d, err := scanDesiredDatabase(rows.Scan)
+		if err != nil {
 			return nil, fmt.Errorf("store: scan scheduled database row: %w", err)
 		}
-		d.ProjectID = projectID.String
-		d.BackupTargetID = backupTargetID.String
-		out = append(out, d)
+		out = append(out, *d)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("store: iterate scheduled database rows: %w", err)
 	}
 	return out, nil
+}
+
+// scanDesiredDatabase reads the column shape every desired_databases
+// read method queries (GetDesiredDatabase, ListDesiredDatabases,
+// ListDesiredDatabasesByNode, ListScheduledDatabases), via either
+// row.Scan or rows.Scan (same signature), so the nullable-column
+// handling exists exactly once. Mirrors scanDesiredService's shape in
+// service.go, this package's own precedent for the identical problem.
+func scanDesiredDatabase(scan func(dest ...any) error) (*DesiredDatabase, error) {
+	var (
+		d                         DesiredDatabase
+		projectID, backupTargetID sql.NullString
+	)
+	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain); err != nil {
+		return nil, err
+	}
+	d.ProjectID = projectID.String
+	d.BackupTargetID = backupTargetID.String
+	return &d, nil
 }

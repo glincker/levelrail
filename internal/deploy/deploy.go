@@ -186,29 +186,7 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 		return "", fmt.Errorf("deploy: service %q: build: %w", req.ServiceName, err)
 	}
 
-	desired, err := toDesiredService(req.ServiceName, res.Tag, req.Service)
-	if err != nil {
-		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
-	}
-
-	if err := p.store.SaveDesiredService(ctx, desired); err != nil {
-		return "", fmt.Errorf("deploy: service %q: save desired state: %w", req.ServiceName, err)
-	}
-
-	// Best-effort, secondary to the deploy itself: the build already
-	// succeeded and desired state is already saved by this point, so a
-	// metrics-store hiccup is logged, not returned as this Deploy call's
-	// error, the same "must never block the real operation" choice
-	// reconcile.Engine.reconcileOne already makes for persisting
-	// reconcile status.
-	if p.metrics != nil {
-		if err := p.metrics.RecordBuildDuration(ctx, req.ServiceName, res.Duration, time.Now()); err != nil {
-			p.logger.Warn("deploy: record build duration metric failed",
-				slog.String("service", req.ServiceName), slog.String("error", err.Error()))
-		}
-	}
-
-	return res.Tag, nil
+	return p.finishDeploy(ctx, req, res)
 }
 
 // deployRailpack mirrors deployDockerfile's shape exactly, substituting
@@ -250,6 +228,17 @@ func (p *Pipeline) deployRailpack(ctx context.Context, req Request, progress fun
 		return "", fmt.Errorf("deploy: service %q: build: %w", req.ServiceName, err)
 	}
 
+	return p.finishDeploy(ctx, req, res)
+}
+
+// finishDeploy is deployDockerfile and deployRailpack's shared tail once
+// their respective build step has produced res: build type diverges up
+// to this point (a Dockerfile solve vs. a Railpack Definition-based
+// solve, see deployRailpack's own doc comment), but turning a successful
+// build into saved desired state and a recorded build-duration metric is
+// identical either way, so it exists exactly once here rather than
+// duplicated in both callers.
+func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Result) (string, error) {
 	desired, err := toDesiredService(req.ServiceName, res.Tag, req.Service)
 	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
@@ -259,8 +248,12 @@ func (p *Pipeline) deployRailpack(ctx context.Context, req Request, progress fun
 		return "", fmt.Errorf("deploy: service %q: save desired state: %w", req.ServiceName, err)
 	}
 
-	// Best-effort, secondary to the deploy itself: see deployDockerfile's
-	// identical comment on this same choice.
+	// Best-effort, secondary to the deploy itself: the build already
+	// succeeded and desired state is already saved by this point, so a
+	// metrics-store hiccup is logged, not returned as this Deploy call's
+	// error, the same "must never block the real operation" choice
+	// reconcile.Engine.reconcileOne already makes for persisting
+	// reconcile status.
 	if p.metrics != nil {
 		if err := p.metrics.RecordBuildDuration(ctx, req.ServiceName, res.Duration, time.Now()); err != nil {
 			p.logger.Warn("deploy: record build duration metric failed",
