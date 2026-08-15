@@ -393,7 +393,7 @@ func run(logger *slog.Logger) error {
 
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
-		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner),
+		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, agentRegistry),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -1193,9 +1193,14 @@ func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent
 // client is always non-nil here: run() returns early on a
 // docker.NewClient error, before rootHandler is ever called, so unlike
 // secretsManager/webhookHandler/builder above, api.WithDockerPinger,
-// api.WithImageLister, api.WithDockerDiskUsager, and api.WithDockerPruner
-// are all applied unconditionally, the same way api.WithTelemetryQuerier
-// and api.WithAlertRules already are for telemetryDB/alertingDB.
+// api.WithImageLister, api.WithDockerDiskUsager, api.WithDockerPruner,
+// and api.WithExecRuntime are all applied unconditionally, the same way
+// api.WithTelemetryQuerier and api.WithAlertRules already are for
+// telemetryDB/alertingDB. agentRegistry, WithExecRuntime's other
+// dependency, is likewise always non-nil: run() constructs it
+// unconditionally before rootHandler is ever called (a single-node
+// deployment simply never has anything registered in it beyond its own
+// local node), the same status db/telemetryDB/alertingDB already have.
 // deployRecorder and logBroadcaster are both always non-nil (constructed
 // unconditionally in run, unlike builder/secretsManager/webhookHandler
 // which are each independently optional): api.WithDeployRecorder,
@@ -1229,7 +1234,19 @@ func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent
 // (run() only constructs one when secretsManager != nil), so the nil
 // check just below covers both in one place instead of two independent
 // checks that could drift apart.
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner) http.Handler {
+// agentRegistry (new parameter, exec's own addition) is threaded
+// through unconditionally, the same "always available by the time
+// rootHandler is called" status client already has (run() aborts
+// startup if docker.NewClient fails, before agentRegistry is even
+// constructed): api.WithExecRuntime wires
+// resolveNodeTransport(client, agentRegistry, nodeID) in as this
+// package's own NodeRuntimeResolver, so handleExecApp (internal/api/
+// exec.go) can resolve the same local-or-remote docker.Runtime every
+// reconciler controller already resolves per service, without
+// internal/api importing internal/agent.Registry directly (see
+// api.NodeRuntimeResolver's own doc comment for why this stays a
+// closure over resolveNodeTransport instead of a new dependency edge).
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, agentRegistry *agent.Registry) http.Handler {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
@@ -1245,6 +1262,9 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithImageLister(client),
 		api.WithDockerDiskUsager(client),
 		api.WithDockerPruner(client),
+		api.WithExecRuntime(func(nodeID string) (docker.Runtime, error) {
+			return resolveNodeTransport(client, agentRegistry, nodeID)
+		}),
 		api.WithCertExpiryWarningWindow(certExpiryWarningWindow(logger)),
 		api.WithDeployLogStore(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),
