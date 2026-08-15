@@ -232,10 +232,9 @@ export function useSetAppNode() {
 // same image tag is otherwise a genuine reconciler no-op). No request
 // body.
 export async function restartApp(name: string): Promise<AppDetail> {
-  const res = await fetch(
-    `/api/v1/apps/${encodeURIComponent(name)}/restart`,
-    { method: 'POST' },
-  )
+  const res = await fetch(`/api/v1/apps/${encodeURIComponent(name)}/restart`, {
+    method: 'POST',
+  })
   if (!res.ok) {
     throw new ApiError(
       res.status,

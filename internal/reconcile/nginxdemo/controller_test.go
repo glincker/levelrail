@@ -3,6 +3,7 @@ package nginxdemo
 import (
 	"context"
 	"errors"
+	"io"
 	"testing"
 	"time"
 
@@ -64,6 +65,14 @@ func (f *fakeRuntime) Events(_ context.Context) (<-chan docker.Event, <-chan err
 
 func (f *fakeRuntime) EnsureVolume(_ context.Context, _ string) error {
 	return nil // unused by Reconcile
+}
+
+func (f *fakeRuntime) Exec(_ context.Context, _ string, _ []string) (io.ReadCloser, error) {
+	return nil, errors.New("fakeRuntime: Exec not implemented") // unused by Reconcile
+}
+
+func (f *fakeRuntime) ExecWithInput(_ context.Context, _ string, _ []string, _ io.Reader) (io.ReadCloser, error) {
+	return nil, errors.New("fakeRuntime: ExecWithInput not implemented") // unused by Reconcile
 }
 
 func conditionStatus(t *testing.T, result reconcile.Result) reconcile.ConditionStatus {

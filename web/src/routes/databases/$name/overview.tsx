@@ -1,16 +1,27 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useDatabase, useDatabaseStatus } from '../../../queries/databases'
+import { backupTargetListQueryOptions } from '../../../queries/backupTargets'
 import { ConditionsPanel } from '../../../components/ConditionsPanel'
 import { MoveToNodeDialog } from '../../../components/MoveToNodeDialog'
+import { BackupsSection } from '../../../components/BackupsSection'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-// The one real section Databases has today (engine/version/node summary
-// plus reconcile status), formerly rendered directly inside
-// routes/databases/$name.tsx before that file became the layout route.
-// Reads database/conditions from the same query cache the parent
-// layout route's loader already primed (queries/databases.ts), no fetch
-// of its own, mirroring routes/apps/$name/overview.tsx.
+// The one real section Databases has today (engine/version/node summary,
+// reconcile status, and this database's own backups), formerly rendered
+// directly inside routes/databases/$name.tsx before that file became the
+// layout route. Reads database/conditions from the same query cache the
+// parent layout route's loader already primed (queries/databases.ts), no
+// fetch of its own, mirroring routes/apps/$name/overview.tsx.
+//
+// This route's own loader additionally primes backupTargetListQueryOptions
+// (queries/backupTargets.ts): BackupsSection's target picker reads it via
+// useBackupTargets, a useSuspenseQuery call, and there is no ambient
+// <Suspense> boundary anywhere above this route to catch an unprimed one,
+// the same reason every other useSuspenseQuery call in this codebase has
+// a matching loader.
 export const Route = createFileRoute('/databases/$name/overview')({
+  loader: ({ context: { queryClient } }) =>
+    queryClient.ensureQueryData(backupTargetListQueryOptions()),
   component: OverviewSection,
 })
 
@@ -63,6 +74,8 @@ function OverviewSection() {
       </Card>
 
       <ConditionsPanel conditions={conditions} />
+
+      <BackupsSection databaseName={database.name} />
     </div>
   )
 }

@@ -119,7 +119,9 @@ function DeployAttemptRow({
         className="mt-0.5 shrink-0 rounded-full"
       >
         <StatusIcon
-          className={attempt.status === 'running' ? 'size-3 animate-spin' : 'size-3'}
+          className={
+            attempt.status === 'running' ? 'size-3 animate-spin' : 'size-3'
+          }
         />
         {STATUS_LABEL[attempt.status]}
       </Badge>
@@ -158,8 +160,13 @@ function DeployAttemptRow({
             onClick={handleRollback}
             disabled={triggerDeploy.isPending}
           >
-            <ArrowCounterClockwiseIcon className="size-3.5" data-icon="inline-start" />
-            {triggerDeploy.isPending ? 'Rolling back...' : 'Rollback to this build'}
+            <ArrowCounterClockwiseIcon
+              className="size-3.5"
+              data-icon="inline-start"
+            />
+            {triggerDeploy.isPending
+              ? 'Rolling back...'
+              : 'Rollback to this build'}
           </Button>
         ) : null}
       </div>

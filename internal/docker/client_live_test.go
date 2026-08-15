@@ -3,6 +3,8 @@ package docker
 import (
 	"context"
 	"encoding/json"
+	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -268,6 +270,43 @@ func TestClient_Events_Live(t *testing.T) {
 	}
 }
 
+// waitInspectState polls InspectByName(name) until want reports true of
+// the result or timeout expires, returning whatever the last inspect
+// call saw either way.
+//
+// Stop and Remove both wait for the Engine API call itself to complete
+// before returning (this package never treats either as fire-and-forget),
+// but that is a guarantee about the API call, not about every read path
+// against the daemon's own state observing the same result in the same
+// instant: this test asserting on InspectByName immediately after Stop()
+// returned failed intermittently in CI (not once in dozens of local
+// runs) with the container still reporting Running: true, a real,
+// reproducible gap between "the daemon processed the stop" and "a fresh
+// inspect call reflects it," apparently more visible on the
+// containerd-snapshotter-backed daemon CI runs on than a typical local
+// Docker install. Polling here, rather than trusting the first read, is
+// the correct fix: it is the assertion that was too eager, not Stop or
+// Remove themselves.
+func waitInspectState(ctx context.Context, t *testing.T, c *Client, name string, want func(*ContainerState) bool, timeout time.Duration) *ContainerState {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	var last *ContainerState
+	for {
+		state, err := c.InspectByName(ctx, name)
+		if err != nil {
+			t.Fatalf("InspectByName(%q) error = %v", name, err)
+		}
+		last = state
+		if want(state) {
+			return state
+		}
+		if !time.Now().Before(deadline) {
+			return last
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+}
+
 // waitForEvent drains eventCh until it sees an event matching name and
 // action, or the timeout expires. Other events (from unrelated
 // containers on a shared daemon, or events this test doesn't care about)
@@ -290,32 +329,6 @@ func waitForEvent(t *testing.T, eventCh <-chan Event, name string, action EventA
 			}
 		case <-deadline:
 			return Event{}, false
-		}
-	}
-}
-
-// waitForStopped polls InspectByName until the named container reports
-// Running == false, or the timeout expires, in which case it fails the
-// test. Mirrors waitForEvent's deadline/poll shape above and
-// placement_live_test.go's registry.Get polling loop: the same
-// "poll a synchronous state read instead of trusting it after the first
-// call" convention this package already uses for eventual-consistency
-// cases.
-func waitForStopped(ctx context.Context, t *testing.T, c *Client, name string, timeout time.Duration) *ContainerState {
-	t.Helper()
-	deadline := time.After(timeout)
-	for {
-		state, err := c.InspectByName(ctx, name)
-		if err != nil {
-			t.Fatalf("InspectByName(%q) error = %v", name, err)
-		}
-		if state != nil && !state.Running {
-			return state
-		}
-		select {
-		case <-deadline:
-			t.Fatalf("timed out waiting for %q to report stopped, last state: %+v", name, state)
-		case <-time.After(100 * time.Millisecond):
 		}
 	}
 }
@@ -378,27 +391,96 @@ func TestClient_ListByPrefix_Stop_Remove_Live(t *testing.T) {
 	if err := c.Stop(ctx, idA, 5*time.Second); err != nil {
 		t.Fatalf("Stop() error = %v", err)
 	}
-	// Stop()'s underlying ContainerStop call is documented to block until
-	// the container has actually stopped (or the timeout elapses and it's
-	// killed), so a well-behaved daemon should already report Running ==
-	// false here. Some daemon configurations (e.g. containerd-snapshotter)
-	// have shown brief eventual-consistency lag between ContainerStop
-	// returning and the state being queryable, so poll instead of
-	// asserting on the very first read: the reconciler that calls Stop()
-	// in production tolerates the same lag because it's level-triggered
-	// and re-checks on its next pass, so this test should too.
-	waitForStopped(ctx, t, c, nameA, 5*time.Second)
+	stopped := waitInspectState(ctx, t, c, nameA, func(s *ContainerState) bool {
+		return s != nil && !s.Running
+	}, 10*time.Second)
+	if stopped == nil || stopped.Running {
+		t.Fatalf("expected container to exist and not be running after Stop(), got %+v", stopped)
+	}
 
 	if err := c.Remove(ctx, idA, false); err != nil {
 		t.Fatalf("Remove() error = %v", err)
 	}
-	removed, err := c.InspectByName(ctx, nameA)
-	if err != nil {
-		t.Fatalf("InspectByName() after remove error = %v", err)
-	}
+	removed := waitInspectState(ctx, t, c, nameA, func(s *ContainerState) bool {
+		return s == nil
+	}, 10*time.Second)
 	if removed != nil {
 		t.Errorf("expected InspectByName() to return nil after Remove(), got %+v", removed)
 	}
+}
+
+// TestClient_Exec_Live proves Exec actually runs a command inside a
+// real running container via the Engine API's exec facility and streams
+// its real stdout back byte for byte, the exact mechanism
+// internal/backup.ContainerDumper depends on entirely to run
+// pg_dump/mysqldump/redis-cli. Three things are load-bearing enough to
+// prove against a real daemon rather than trust from documentation
+// alone:
+//
+//  1. stdout comes through demultiplexed and uncorrupted.
+//  2. environment variables set at container creation are visible to
+//     the exec'd process without this call passing them again, since
+//     that is exactly what lets postgresDumpCmd/mysqlDumpCmd read
+//     $POSTGRES_USER/$MYSQL_ROOT_PASSWORD without ContainerDumper ever
+//     handling a credential itself.
+//  3. a non-zero exit surfaces as a real error from the stream, not a
+//     silently truncated or empty read, so a caller can tell "the
+//     database is empty" apart from "the dump command failed."
+func TestClient_Exec_Live(t *testing.T) {
+	c := liveClient(t)
+	ctx := context.Background()
+
+	name := "levelrail-test-docker-exec"
+	removeIfExists(ctx, t, c, name)
+	t.Cleanup(func() { removeIfExists(context.Background(), t, c, name) })
+
+	if err := c.ensureImage(ctx, "nginx:alpine"); err != nil {
+		t.Fatalf("ensureImage() error = %v", err)
+	}
+	id, err := c.Create(ctx, ContainerSpec{
+		Name:  name,
+		Image: "nginx:alpine",
+		Env:   map[string]string{"LEVELRAIL_TEST_VAR": "hello-from-container-env"},
+	})
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	if err := c.Start(ctx, id); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+
+	t.Run("stdout streamed back and env inherited", func(t *testing.T) {
+		rc, err := c.Exec(ctx, name, []string{"sh", "-c", `echo "$LEVELRAIL_TEST_VAR"`})
+		if err != nil {
+			t.Fatalf("Exec() error = %v", err)
+		}
+		defer func() { _ = rc.Close() }()
+
+		got, err := io.ReadAll(rc)
+		if err != nil {
+			t.Fatalf("reading Exec() stream error = %v", err)
+		}
+		want := "hello-from-container-env\n"
+		if string(got) != want {
+			t.Errorf("Exec() stdout = %q, want %q (proves the exec'd process inherits the container's own creation-time env, unprompted)", got, want)
+		}
+	})
+
+	t.Run("non-zero exit surfaces as a stream error", func(t *testing.T) {
+		rc, err := c.Exec(ctx, name, []string{"sh", "-c", "echo partial-output; exit 7"})
+		if err != nil {
+			t.Fatalf("Exec() error = %v", err)
+		}
+		defer func() { _ = rc.Close() }()
+
+		_, readErr := io.ReadAll(rc)
+		if readErr == nil {
+			t.Fatal("reading Exec() stream error = nil, want a non-nil error for a command that exited 7")
+		}
+		if !strings.Contains(readErr.Error(), "exited 7") {
+			t.Errorf("Exec() stream error = %v, want it to mention the real exit code (7)", readErr)
+		}
+	})
 }
 
 func removeIfExists(ctx context.Context, t *testing.T, c *Client, name string) {

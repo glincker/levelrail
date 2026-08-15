@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -17,6 +18,7 @@ import (
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/volume"
 	dockerclient "github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/go-connections/nat"
 )
 
@@ -274,6 +276,158 @@ func (c *Client) EnsureVolume(ctx context.Context, name string) error {
 		return fmt.Errorf("docker: ensure volume %q: %w", name, err)
 	}
 	return nil
+}
+
+// execStderrCap bounds how much of a failed exec's stderr Exec captures
+// for the error message it builds. Real diagnostic text from the
+// commands this method is meant for (a bad flag, a rejected connection,
+// an auth failure) is a handful of lines at most; anything beyond this
+// cap almost certainly means the command isn't behaving the way Exec's
+// contract assumes (stdout carries the real payload, stderr is
+// informational only), so capping bounds memory instead of trusting
+// every command to stay well-behaved.
+const execStderrCap = 64 * 1024
+
+// cappedBuffer is a bytes.Buffer that silently drops bytes past limit
+// instead of growing without bound. Used only for the stderr side of
+// Exec's output: losing the tail of an overlong error message is
+// acceptable, the alternative (an unbounded buffer fed by a command this
+// package doesn't control) is not.
+type cappedBuffer struct {
+	buf   bytes.Buffer
+	limit int
+}
+
+func (c *cappedBuffer) Write(p []byte) (int, error) {
+	remaining := c.limit - c.buf.Len()
+	if remaining <= 0 {
+		return len(p), nil // over the cap: report a full write so stdcopy doesn't treat this as a failure, just drop the bytes
+	}
+	if len(p) > remaining {
+		p = p[:remaining]
+	}
+	c.buf.Write(p)
+	return len(p), nil
+}
+
+// Exec implements Runtime. It creates an exec configuration on
+// containerID, attaches to it to actually run cmd, and returns a
+// ReadCloser streaming cmd's stdout back to the caller.
+//
+// Docker's exec attach stream, with no tty (never requested here), is
+// always multiplexed per pkg/stdcopy's frame format even though this
+// call only asks for one logical output: stdout is copied straight
+// through to the pipe this method returns, stderr is captured
+// separately into a capped buffer purely so a non-zero exit has
+// something useful to explain itself with. ContainerExecAttach itself
+// has no notion of exit status, only ContainerExecInspect does, so exit
+// code is checked only after the stream ends, in the background
+// goroutine that drives the copy.
+func (c *Client) Exec(ctx context.Context, containerID string, cmd []string) (io.ReadCloser, error) {
+	execID, attached, err := c.execCreateAttach(ctx, containerID, cmd, false)
+	if err != nil {
+		return nil, err
+	}
+
+	pr, pw := io.Pipe()
+	go c.streamExecOutput(ctx, containerID, execID, cmd, attached, pw)
+	return pr, nil
+}
+
+// ExecWithInput implements Runtime. It is execCreateAttach plus a stdin
+// side: everything Exec does (see Exec's own doc comment for the
+// stdout/stderr/exit-code handling, unchanged here, both methods share
+// streamExecOutput) plus a second goroutine that copies stdin into the
+// exec session's write side and then closes it, the same "close the
+// write half once the reader is exhausted" signal a real pipe or
+// terminal gives a process reading until EOF.
+//
+// The stdin-copy goroutine and streamExecOutput's own stdout-copy
+// goroutine run concurrently, not sequentially: a command that starts
+// producing output before this process has finished writing every byte
+// of stdin (true of psql on a large dump, which echoes NOTICE/COPY
+// progress lines as it goes) would otherwise deadlock, stdin blocked on
+// a full kernel pipe buffer nobody is draining because this method
+// hadn't gotten to the read side yet.
+func (c *Client) ExecWithInput(ctx context.Context, containerID string, cmd []string, stdin io.Reader) (io.ReadCloser, error) {
+	execID, attached, err := c.execCreateAttach(ctx, containerID, cmd, true)
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		_, copyErr := io.Copy(attached.Conn, stdin)
+		// CloseWrite, not Close: the read side (stdout/stderr, drained by
+		// streamExecOutput below) is still in use after this goroutine is
+		// done with the write side, and attached itself is only closed
+		// once, by streamExecOutput's own deferred attached.Close(). A
+		// stdin-side copy failure has nowhere to go but here: the caller
+		// finds out about it indirectly, through the exec'd command's own
+		// reaction to a truncated stdin (a non-zero exit, surfaced by
+		// streamExecOutput the same way every other exec failure already
+		// is), not through a second, separate error path this method
+		// would otherwise need to invent.
+		_ = copyErr
+		_ = attached.CloseWrite()
+	}()
+
+	pr, pw := io.Pipe()
+	go c.streamExecOutput(ctx, containerID, execID, cmd, attached, pw)
+	return pr, nil
+}
+
+// execCreateAttach is Exec and ExecWithInput's shared setup: create an
+// exec configuration on containerID for cmd, then attach to it. Factored
+// out so the two methods' only real difference, whether AttachStdin is
+// set, is a single boolean parameter rather than two near-identical
+// copies of ContainerExecCreate/ContainerExecAttach drifting apart over
+// time.
+func (c *Client) execCreateAttach(ctx context.Context, containerID string, cmd []string, attachStdin bool) (execID string, attached dockertypes.HijackedResponse, err error) {
+	created, err := c.cli.ContainerExecCreate(ctx, containerID, container.ExecOptions{
+		Cmd:          cmd,
+		AttachStdin:  attachStdin,
+		AttachStdout: true,
+		AttachStderr: true,
+	})
+	if err != nil {
+		return "", dockertypes.HijackedResponse{}, fmt.Errorf("docker: exec create %v in %s: %w", cmd, containerID, err)
+	}
+
+	attached, err = c.cli.ContainerExecAttach(ctx, created.ID, container.ExecAttachOptions{})
+	if err != nil {
+		return "", dockertypes.HijackedResponse{}, fmt.Errorf("docker: exec attach %v in %s: %w", cmd, containerID, err)
+	}
+	return created.ID, attached, nil
+}
+
+// streamExecOutput drives the copy from attached's multiplexed stream
+// into pw (stdout) and a capped stderr buffer, then resolves pw's
+// eventual EOF or error based on the exec's real exit code, not merely
+// whether the copy itself errored: a command that writes nothing and
+// exits 1 (a missing binary, a rejected connection before any output)
+// would otherwise look identical to one that succeeded with an empty
+// dump, and that distinction is exactly what a backup caller needs to
+// tell "empty database" apart from "the dump silently failed."
+func (c *Client) streamExecOutput(ctx context.Context, containerID, execID string, cmd []string, attached dockertypes.HijackedResponse, pw *io.PipeWriter) {
+	defer attached.Close()
+
+	stderr := &cappedBuffer{limit: execStderrCap}
+	if _, err := stdcopy.StdCopy(pw, stderr, attached.Reader); err != nil {
+		_ = pw.CloseWithError(fmt.Errorf("docker: exec %v in %s: read output: %w", cmd, containerID, err))
+		return
+	}
+
+	inspect, err := c.cli.ContainerExecInspect(ctx, execID)
+	if err != nil {
+		_ = pw.CloseWithError(fmt.Errorf("docker: exec %v in %s: inspect after completion: %w", cmd, containerID, err))
+		return
+	}
+	if inspect.ExitCode != 0 {
+		_ = pw.CloseWithError(fmt.Errorf("docker: exec %v in %s: exited %d: %s",
+			cmd, containerID, inspect.ExitCode, strings.TrimSpace(stderr.buf.String())))
+		return
+	}
+	_ = pw.Close()
 }
 
 // ensureImage pulls ref if it isn't already present locally. Reconcile

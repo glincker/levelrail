@@ -1,0 +1,203 @@
+package api
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"log/slog"
+	"net/http"
+
+	"github.com/GLINCKER/levelrail/internal/store"
+)
+
+// databaseContainerName mirrors internal/reconcile/database's own
+// containerName ("db-" + dbName), the same duplicate-the-string-format
+// tradeoff databaseControllerName (databases.go) already makes for that
+// package's controller-name convention: a real Go import of
+// internal/reconcile/database from this package would couple the API
+// layer to reconciler internals for the sake of one derived string, and
+// this package's own established pattern is to duplicate a small,
+// stable format instead. If this format ever changes, both copies need
+// updating together; the two existing precedents this mirrors
+// (databaseControllerName here, applicationControllerName for apps) have
+// held stable since this codebase's first release.
+func databaseContainerName(dbName string) string {
+	return "db-" + dbName
+}
+
+// BackupHistoryStore is the store surface the backup history handler
+// needs. GetBackupHistory was added for handleTriggerRestore
+// (restore.go): resolving the one backup attempt a restore names, not
+// just listing every attempt for a database, the same "look up one row
+// by ID" need GetBackupTarget already serves for backup targets.
+type BackupHistoryStore interface {
+	ListBackupHistory(ctx context.Context, databaseName string) ([]store.BackupHistory, error)
+	GetBackupHistory(ctx context.Context, id string) (store.BackupHistory, error)
+}
+
+// BackupRunner is the surface the backup trigger handler needs from
+// internal/backup.Runner: run one backup attempt end to end, from an
+// already-minted history ID through to a finished store.BackupHistory
+// row. *backup.Runner satisfies this structurally; internal/api never
+// imports internal/backup directly (the same reconciler-internals
+// boundary databaseContainerName's own doc comment describes), only this
+// narrow interface, wired in by cmd/levelrail at startup.
+type BackupRunner interface {
+	RunBackup(ctx context.Context, historyID, databaseName, engine, containerName, targetID string) error
+}
+
+// backupHistoryResource is the wire shape for one backup attempt.
+type backupHistoryResource struct {
+	ID           string `json:"id"`
+	DatabaseName string `json:"database_name"`
+	TargetID     string `json:"target_id"`
+	ObjectKey    string `json:"object_key"`
+	SizeBytes    int64  `json:"size_bytes"`
+	Status       string `json:"status"`
+	Error        string `json:"error,omitempty"`
+	StartedAt    string `json:"started_at"`
+	FinishedAt   string `json:"finished_at,omitempty"`
+}
+
+func toBackupHistoryResource(h store.BackupHistory) backupHistoryResource {
+	return backupHistoryResource{
+		ID:           h.ID,
+		DatabaseName: h.DatabaseName,
+		TargetID:     h.TargetID,
+		ObjectKey:    h.ObjectKey,
+		SizeBytes:    h.SizeBytes,
+		Status:       h.Status,
+		Error:        h.Error,
+		StartedAt:    h.StartedAt,
+		FinishedAt:   h.FinishedAt,
+	}
+}
+
+type triggerBackupRequest struct {
+	TargetID string `json:"target_id"`
+}
+
+// handleTriggerBackup handles POST /api/v1/databases/{name}/backups:
+// starts a real backup of name to the target named in the request body
+// and returns as soon as the attempt is recorded and under way
+// (StatusAccepted, not StatusCreated: the work Runner does, a real
+// dump plus a real upload, is not done by the time this handler
+// returns, only started), the same "this returns once desired state is
+// saved, not once it has actually converged" shape handleTriggerDeploy
+// establishes for an app deploy. GET .../backups (handleListBackupHistory
+// below) is how a caller finds out whether it actually finished.
+//
+// AbilityWriteSensitive: this triggers real work against a real bucket
+// using a real, previously-stored credential, the same sensitivity
+// class creating or deleting a backup target itself already carries.
+//
+// Runner.RunBackup runs in a goroutine against context.Background(), not
+// r.Context(): r.Context() is cancelled the moment this handler returns,
+// which would abort the dump and upload within microseconds of starting
+// them on every single call, defeating the entire point of returning
+// before they finish.
+func (rt *Router) handleTriggerBackup(w http.ResponseWriter, r *http.Request) {
+	if rt.backupRunner == nil {
+		writeError(w, http.StatusNotImplemented, "backups are not configured on this control plane (no master key set)")
+		return
+	}
+
+	name := r.PathValue("name")
+
+	db, err := rt.databases.GetDesiredDatabase(r.Context(), name)
+	if errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return
+	}
+	if err != nil {
+		rt.logger.Error("api: trigger backup: load database failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	var req triggerBackupRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.TargetID == "" {
+		writeError(w, http.StatusBadRequest, "target_id is required")
+		return
+	}
+
+	if _, err := rt.backupTargets.GetBackupTarget(r.Context(), req.TargetID); errors.Is(err, store.ErrBackupTargetNotFound) {
+		writeError(w, http.StatusNotFound, "backup target not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: trigger backup: load backup target failed", slog.String("error", err.Error()), slog.String("target_id", req.TargetID))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	historyID, err := randomBackupHistoryID()
+	if err != nil {
+		rt.logger.Error("api: trigger backup: generate id failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	containerName := databaseContainerName(name)
+	go func() { //nolint:gosec // deliberately not r.Context(): it is cancelled the moment this handler returns, which would abort the backup within microseconds of starting it; see this handler's own doc comment
+		if err := rt.backupRunner.RunBackup(context.Background(), historyID, name, db.Engine, containerName, req.TargetID); err != nil {
+			rt.logger.Error("api: backup run failed", slog.String("error", err.Error()), slog.String("id", historyID), slog.String("database", name))
+		}
+	}()
+
+	writeJSON(w, http.StatusAccepted, backupHistoryResource{
+		ID:           historyID,
+		DatabaseName: name,
+		TargetID:     req.TargetID,
+		Status:       store.BackupStatusRunning,
+	})
+}
+
+// handleListBackupHistory handles GET /api/v1/databases/{name}/backups.
+// AbilityRead: this is passive visibility into attempts already made,
+// the same boundary handleListCertificates/handleListStaticSites draw
+// between visibility and mutation elsewhere in this file's sibling
+// handlers.
+func (rt *Router) handleListBackupHistory(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+
+	if _, err := rt.databases.GetDesiredDatabase(r.Context(), name); errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: list backup history: load database failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	history, err := rt.backupHistory.ListBackupHistory(r.Context(), name)
+	if err != nil {
+		rt.logger.Error("api: list backup history failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	out := make([]backupHistoryResource, 0, len(history))
+	for _, h := range history {
+		out = append(out, toBackupHistoryResource(h))
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// randomBackupHistoryID mirrors randomBackupTargetID's exact shape
+// (backup_targets.go), which itself mirrors randomNodeJoinTokenID
+// (internal/api/nodes.go): 9 random bytes, URL-safe base64, a short type
+// prefix. Duplicated rather than shared, the same "different resource,
+// different ID space" reasoning both of those give.
+func randomBackupHistoryID() (string, error) {
+	buf := make([]byte, 9)
+	if _, err := rand.Read(buf); err != nil {
+		return "", fmt.Errorf("api: generate backup history id: %w", err)
+	}
+	return "bkh_" + base64.RawURLEncoding.EncodeToString(buf), nil
+}

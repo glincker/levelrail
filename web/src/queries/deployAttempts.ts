@@ -28,7 +28,10 @@ export async function fetchDeployAttempts(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch deploy attempts failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch deploy attempts failed: ${res.status}`,
+      ),
     )
   }
   const body = (await res.json()) as DeployAttempt[] | null

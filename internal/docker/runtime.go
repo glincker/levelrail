@@ -7,6 +7,7 @@ package docker
 
 import (
 	"context"
+	"io"
 	"time"
 )
 
@@ -176,4 +177,51 @@ type Runtime interface {
 	// semantics (creating by an existing name returns that volume
 	// unchanged rather than failing).
 	EnsureVolume(ctx context.Context, name string) error
+
+	// Exec runs cmd inside the already-running container containerID and
+	// returns its stdout as a stream, using the Engine API's exec
+	// facility (ContainerExecCreate then ContainerExecAttach), the same
+	// two calls `docker exec` itself is built on. This is the one Runtime
+	// method that reaches into a process running inside a container
+	// rather than managing the container's own lifecycle; it exists for
+	// internal/backup's Dumper, which has no other way to run a
+	// database's own native dump tool (pg_dump, mysqldump, redis-cli)
+	// against a live container without shelling out, which is exactly
+	// what every other method on this interface already exists to avoid.
+	//
+	// The returned ReadCloser carries only cmd's stdout. Stderr is
+	// captured by the implementation and, if cmd exits non-zero,
+	// surfaced as the error a later Read returns once the stream ends:
+	// the same "an error can arrive with or after the final bytes"
+	// contract every io.Reader already promises, so a caller only ever
+	// has one place to check for failure instead of a second out-of-band
+	// exit-code field. Close must be called once the caller is done with
+	// the stream, success or failure alike, to release the underlying
+	// exec connection.
+	Exec(ctx context.Context, containerID string, cmd []string) (io.ReadCloser, error)
+
+	// ExecWithInput is Exec plus a stdin stream: it runs cmd inside
+	// containerID exactly as Exec does (same stdout/stderr handling, same
+	// exit-code-becomes-a-trailing-error contract), except cmd's stdin is
+	// wired to stdin instead of being left unattached. This exists for
+	// internal/backup's Restorer, which needs to pipe a downloaded dump
+	// into psql/mysql running inside a live container; Exec itself can't
+	// do this; ContainerExecCreate has to be told AttachStdin: true up
+	// front for the exec session to have a stdin pipe at all, and every
+	// other caller of Exec (ContainerDumper) never needs one, so this is a
+	// second method rather than a third parameter Exec's own existing
+	// call site would otherwise have to grow to accommodate.
+	//
+	// Implementations read stdin to completion (EOF) and then signal
+	// end-of-input to the exec'd process the way closing stdin on a real
+	// terminal would, before returning; a command like psql that reads
+	// until EOF and then exits depends on that signal to ever finish, not
+	// only on stdin's bytes arriving. Callers are not required to provide
+	// a stdin that reaches EOF on its own if the command they're running
+	// doesn't need one; passing an empty reader is equivalent to Exec's
+	// own "nothing attached to stdin" behavior for that command.
+	//
+	// The returned ReadCloser carries stdout, identically to Exec's; Close
+	// must be called once done, same contract.
+	ExecWithInput(ctx context.Context, containerID string, cmd []string, stdin io.Reader) (io.ReadCloser, error)
 }

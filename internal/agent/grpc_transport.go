@@ -8,6 +8,8 @@ package agent
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
@@ -110,6 +112,38 @@ func (t *GRPCTransport) ListByPrefix(ctx context.Context, prefix string) ([]dock
 		return nil, err
 	}
 	return containerStatesFromPB(resp.GetListByPrefix().GetContainers()), nil
+}
+
+// Exec implements Transport (docker.Runtime). Deliberately not wired to
+// the remote agent yet: this is a known, documented gap, not an
+// oversight. docker.Runtime.Exec was added for internal/backup's Dumper,
+// and every other Transport method here fits mux.Call's single
+// request/response shape (or, for Events, its own explicit streaming
+// workaround, see Events' doc comment above); Exec's ReadCloser return
+// needs the same kind of dedicated streaming path Events required, plus
+// a new AgentRequest/AgentResponse op in internal/agent/agentpb, which
+// means a proto change and regeneration, not a small extension of the
+// existing dispatch switch in execute.go. That is real, separate work.
+// Rather than fake it with a call that would silently produce no data or
+// the wrong data, a database backup for a service placed on a remote
+// node fails loudly with this error today; only Local's in-process
+// Transport (this control plane's own node) supports Exec until the
+// wiring above lands.
+func (t *GRPCTransport) Exec(_ context.Context, containerID string, cmd []string) (io.ReadCloser, error) {
+	return nil, fmt.Errorf("agent: remote Exec not implemented over the agent transport (container %q, cmd %v): backups only support databases placed on this control plane's own node today", containerID, cmd)
+}
+
+// ExecWithInput implements Transport (docker.Runtime). Exec's own doc
+// comment applies identically here, and then some: ExecWithInput needs
+// everything Exec would (a dedicated streaming path, a new agentpb op)
+// plus a second stream direction for stdin, so it inherits the same
+// documented gap rather than a new one. A database restore for a service
+// placed on a remote node fails loudly with this error today, the same
+// "fail loudly, never fake it" posture Exec's own doc comment describes,
+// until the wiring above lands; only Local's in-process Transport (this
+// control plane's own node) supports ExecWithInput until then.
+func (t *GRPCTransport) ExecWithInput(_ context.Context, containerID string, cmd []string, _ io.Reader) (io.ReadCloser, error) {
+	return nil, fmt.Errorf("agent: remote ExecWithInput not implemented over the agent transport (container %q, cmd %v): restores only support databases placed on this control plane's own node today", containerID, cmd)
 }
 
 // EnsureVolume implements Transport (docker.Runtime).

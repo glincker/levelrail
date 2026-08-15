@@ -196,6 +196,9 @@ type Store interface {
 	NodeStore
 	CertStore
 	StaticSiteStore
+	BackupTargetStore
+	BackupHistoryStore
+	RestoreHistoryStore
 }
 
 // SecretSetter is the surface the secrets handler needs from
@@ -264,6 +267,12 @@ type Router struct {
 	builder                 Builder             // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
 	fetch                   fetchFunc           // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
 	staticSites             StaticSiteStore     // always set, same "core Store interface, not an optional plug-in" shape as certs above
+	backupTargets           BackupTargetStore   // always set, same "core Store interface" shape as certs/staticSites above: listing/getting/deleting a backup target needs no secrets configuration, only creating one does
+	backupSecrets           BackupSecretsSetter // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
+	backupHistory           BackupHistoryStore  // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
+	backupRunner            BackupRunner        // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
+	restoreHistory          RestoreHistoryStore // always set, same "core Store interface" shape as backupHistory above
+	restoreRunner           RestoreRunner       // nil is valid: POST /api/v1/databases/{name}/restore returns 501, same shape as backupRunner above
 	deployAttempts          DeployAttemptStore  // always set, same "core Store interface" shape as certs/staticSites above
 	deployLogStore          DeployLogStore      // nil is valid: a finished attempt's log route returns 501, same shape as secrets/telemetry/alertRules above
 	deployRecorder          *deploylog.Recorder // nil is valid: an in-progress attempt's live tail returns 501, and handleTriggerBuild falls back to build.SlogProgress with no persisted log, same "not configured" shape as builder/telemetry above
@@ -279,6 +288,35 @@ type Option func(*Router)
 // silently discarding the value.
 func WithSecretSetter(s SecretSetter) Option {
 	return func(rt *Router) { rt.secrets = s }
+}
+
+// WithBackupSecrets enables POST /api/v1/backup-targets. Without one
+// configured (the default), that route returns 501, the same
+// "not configured" shape WithSecretSetter's absence produces; listing,
+// getting, and deleting an already-connected backup target work
+// regardless, since none of those need to write a credential.
+func WithBackupSecrets(s BackupSecretsSetter) Option {
+	return func(rt *Router) { rt.backupSecrets = s }
+}
+
+// WithBackupRunner enables POST /api/v1/databases/{name}/backups.
+// Without one configured (the default), that route returns 501, the
+// same "not configured" shape WithBackupSecrets' absence produces;
+// listing backup history (GET .../backups) works regardless, since it
+// only reads store.BackupHistory rows a runner already wrote in the
+// past, nothing about it needs a live runner today.
+func WithBackupRunner(r BackupRunner) Option {
+	return func(rt *Router) { rt.backupRunner = r }
+}
+
+// WithRestoreRunner enables POST /api/v1/databases/{name}/restore.
+// Without one configured (the default), that route returns 501, the same
+// "not configured" shape WithBackupRunner's absence produces; listing
+// restore history (GET .../restores) works regardless, the same
+// "listing needs no live runner" reasoning WithBackupRunner's own doc
+// comment gives for backup history.
+func WithRestoreRunner(r RestoreRunner) Option {
+	return func(rt *Router) { rt.restoreRunner = r }
 }
 
 // WithSessionTTL overrides how long a session cookie stays valid.
@@ -408,6 +446,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		nodes:          s,
 		certs:          s,
 		staticSites:    s,
+		backupTargets:  s,
+		backupHistory:  s,
+		restoreHistory: s,
 		fetch:          gitCheckout,
 		logins:         newLoginLimiter(),
 	}
@@ -604,6 +645,34 @@ func (rt *Router) Handler() http.Handler {
 	// mutation path for a static site beyond internal/deploy.Pipeline's
 	// own git-push-triggered write.
 	mux.HandleFunc("GET /api/v1/static-sites", rt.requireAbility(AbilityRead, rt.handleListStaticSites))
+
+	// Backup targets (connected S3-compatible buckets a database backup
+	// can be uploaded to). Create and delete need AbilityWriteSensitive:
+	// create because its request body carries live bucket credentials,
+	// delete because it gates access to the same. List/get are ordinary
+	// AbilityRead, the same boundary handleListCertificates/
+	// handleListStaticSites already draw between visibility and mutation.
+	mux.HandleFunc("GET /api/v1/backup-targets", rt.requireAbility(AbilityRead, rt.handleListBackupTargets))
+	mux.HandleFunc("POST /api/v1/backup-targets", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateBackupTarget))
+	mux.HandleFunc("GET /api/v1/backup-targets/{id}", rt.requireAbility(AbilityRead, rt.handleGetBackupTarget))
+	mux.HandleFunc("DELETE /api/v1/backup-targets/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteBackupTarget))
+
+	// Backup history and manual trigger, per database. Trigger needs
+	// AbilityWriteSensitive: it starts real work against a live bucket
+	// using a previously-stored credential, the same sensitivity class
+	// creating or deleting the backup target itself already carries.
+	// History listing is ordinary AbilityRead.
+	mux.HandleFunc("POST /api/v1/databases/{name}/backups", rt.requireAbility(AbilityWriteSensitive, rt.handleTriggerBackup))
+	mux.HandleFunc("GET /api/v1/databases/{name}/backups", rt.requireAbility(AbilityRead, rt.handleListBackupHistory))
+
+	// Restore, per database (restore.go). AbilityRoot, not
+	// AbilityWriteSensitive: see handleTriggerRestore's own doc comment
+	// for why this, alone among every backup-related route, needs the
+	// same top tier as node management and placement. History listing is
+	// ordinary AbilityRead, the same boundary the backup history route
+	// above already draws.
+	mux.HandleFunc("POST /api/v1/databases/{name}/restore", rt.requireAbility(AbilityRoot, rt.handleTriggerRestore))
+	mux.HandleFunc("GET /api/v1/databases/{name}/restores", rt.requireAbility(AbilityRead, rt.handleListRestoreHistory))
 
 	return mux
 }

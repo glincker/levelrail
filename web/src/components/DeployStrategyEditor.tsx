@@ -1,7 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { ArrowsClockwiseIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  ArrowsClockwiseIcon,
+  WarningIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -162,9 +165,9 @@ export function DeployStrategyEditor({ app }: { app: AppDetail }) {
             <Alert variant="destructive">
               <WarningIcon />
               <AlertDescription>
-                This app is set to the "rolling" strategy, which the
-                reconciler does not support and will fail on the next
-                deploy. Switch to Recreate or Blue-green to clear this.
+                This app is set to the "rolling" strategy, which the reconciler
+                does not support and will fail on the next deploy. Switch to
+                Recreate or Blue-green to clear this.
               </AlertDescription>
             </Alert>
           ) : null}

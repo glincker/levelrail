@@ -1,5 +1,9 @@
 import { SquaresFourIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
-import type { AppDetail, DeployStrategy, ServiceProbe } from '../types/appDetail'
+import type {
+  AppDetail,
+  DeployStrategy,
+  ServiceProbe,
+} from '../types/appDetail'
 import { formatBytes, formatDurationNs, formatNanoCpus } from '../lib/format'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MoveToNodeDialog } from './MoveToNodeDialog'

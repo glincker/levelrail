@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"errors"
+	"io"
 	"strconv"
 	"strings"
 	"sync"
@@ -163,6 +164,21 @@ func (f *fakeRuntime) ListImages(_ context.Context, _ string) ([]docker.ImageInf
 
 func (f *fakeRuntime) Events(_ context.Context) (<-chan docker.Event, <-chan error) {
 	return nil, nil
+}
+
+// Exec is unused by this package's own tests: this controller reconciles
+// container lifecycle, never runs a command inside one. internal/backup's
+// Dumper is the real Exec caller, exercised by internal/backup's own
+// tests instead. Stubbed here to satisfy docker.Runtime.
+func (f *fakeRuntime) Exec(_ context.Context, _ string, _ []string) (io.ReadCloser, error) {
+	return nil, errors.New("fakeRuntime: Exec not implemented")
+}
+
+// ExecWithInput is unused for the same reason Exec above is:
+// internal/backup's Restorer is the real caller, exercised by that
+// package's own tests. Stubbed to satisfy docker.Runtime.
+func (f *fakeRuntime) ExecWithInput(_ context.Context, _ string, _ []string, _ io.Reader) (io.ReadCloser, error) {
+	return nil, errors.New("fakeRuntime: ExecWithInput not implemented")
 }
 
 func (f *fakeRuntime) count() int {
