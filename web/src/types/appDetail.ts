@@ -1,8 +1,6 @@
 // Wire type for the app resource, GET/PUT /api/v1/apps/{name} and GET
-// /api/v1/apps (internal/api/apps.go's appResource): the list endpoint
-// returns the same full shape as the detail endpoint, no separate
-// summary projection, so this one type covers both routes. Field names
-// mirror the JSON wire shape directly (snake_case for ServiceResources,
+// /api/v1/apps (internal/api/apps.go's appResource). Field names mirror
+// the JSON wire shape directly (snake_case for ServiceResources,
 // matching appResource's own struct tags) rather than being remapped to
 // camelCase: this is an internal admin dashboard talking to one frozen
 // backend contract, not a public SDK, and a remapping layer would just
@@ -71,4 +69,26 @@ export interface AppDetail {
   // for why a brand-new app is safe to assign a project to at create
   // time in a way an ordinary update is not.
   project_id?: string
+}
+
+// GET /api/v1/apps' own wire shape (internal/api/apps.go's
+// appListResource): AppDetail plus a batched status summary computed
+// from one query across every listed app's conditions
+// (store.GetConditionsForControllers), not present on the detail
+// endpoint's AppDetail. Deliberately its own type rather than an
+// optional field bolted onto AppDetail: GET /api/v1/apps/{name} never
+// sends `status`, so callers of that endpoint should never see it typed
+// as possibly-present.
+export interface AppListEntry extends AppDetail {
+  status: AppStatusSummary
+}
+
+// Mirrors internal/api/apps.go's appStatusSummary exactly. `variant`
+// matches the same three categories web/src/lib/appStatus.ts's
+// summarizeAppStatus already returns for the detail page's status
+// badge, so a list-row dot and the detail-page badge for the same app
+// read as the same status by construction, not by coincidence.
+export interface AppStatusSummary {
+  label: string
+  variant: 'muted' | 'destructive' | 'success'
 }

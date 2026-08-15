@@ -122,6 +122,10 @@ type AppStore interface {
 // DeployStore is the store surface the deploy-history handler needs.
 type DeployStore interface {
 	GetConditions(ctx context.Context, controllerName string) ([]reconcile.Condition, error)
+	// GetConditionsForControllers is handleListApps' batched status
+	// source (apps.go): one query for every app's application
+	// controller, not a GetConditions call per app.
+	GetConditionsForControllers(ctx context.Context, controllerNames []string) (map[string][]reconcile.Condition, error)
 }
 
 // DeployAttemptStore is the store surface real deploy-attempt history

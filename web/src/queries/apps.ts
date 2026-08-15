@@ -10,7 +10,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
-import type { AppDetail, DeployStrategy } from '../types/appDetail'
+import type { AppDetail, AppListEntry, DeployStrategy } from '../types/appDetail'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export const appKeys = {
@@ -20,12 +20,12 @@ export const appKeys = {
 }
 
 // Fetches every app from the control plane API. GET /api/v1/apps
-// (internal/api/apps.go's handleListApps) returns a bare array of the
-// same appResource shape the detail endpoint returns, no cursor and no
-// separate summary projection, so this is the one list fetcher, not a
-// page-at-a-time one: there's nothing server-side yet to paginate
-// against.
-export async function fetchApps(): Promise<AppDetail[]> {
+// (internal/api/apps.go's handleListApps) returns a bare array of
+// appListResource (AppDetail plus a batched status summary, see
+// AppListEntry's own doc comment), no cursor, so this is the one list
+// fetcher, not a page-at-a-time one: there's nothing server-side yet to
+// paginate against.
+export async function fetchApps(): Promise<AppListEntry[]> {
   const res = await fetch('/api/v1/apps')
   if (!res.ok) {
     throw new ApiError(
@@ -33,7 +33,7 @@ export async function fetchApps(): Promise<AppDetail[]> {
       await readErrorMessage(res, `fetch apps failed: ${res.status}`),
     )
   }
-  return (await res.json()) as AppDetail[]
+  return (await res.json()) as AppListEntry[]
 }
 
 // Shared options object between the route loader's
