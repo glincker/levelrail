@@ -7,6 +7,7 @@ package deploy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"path/filepath"
@@ -22,6 +23,15 @@ import (
 // BuildKit connection. *build.Client satisfies this.
 type ImageBuilder interface {
 	Build(ctx context.Context, req build.Request, progress func(build.ProgressEvent)) (*build.Result, error)
+
+	// BuildRailpack builds a service whose build.Type is
+	// spec.BuildRailpack: Railpack's own provider detection replaces a
+	// user-authored Dockerfile, scoped to node and golang only (see
+	// deployRailpack). A separate method, not a build.Request field,
+	// because internal/build's own solve path is genuinely different
+	// (Definition-based, not dockerfile.v0-frontend-based; see
+	// internal/build/railpack.go's package doc comment).
+	BuildRailpack(ctx context.Context, req build.RailpackRequest, progress func(build.ProgressEvent)) (*build.Result, error)
 }
 
 // ServiceStore is the narrow surface this package needs from
@@ -149,7 +159,7 @@ func (p *Pipeline) Deploy(ctx context.Context, req Request, progress func(build.
 	case spec.BuildCompose:
 		return "", fmt.Errorf("deploy: service %q: build.type %q is not yet supported", req.ServiceName, spec.BuildCompose)
 	case spec.BuildRailpack:
-		return "", fmt.Errorf("deploy: service %q: build.type %q is not yet supported", req.ServiceName, spec.BuildRailpack)
+		return p.deployRailpack(ctx, req, progress)
 	default:
 		return "", fmt.Errorf("deploy: service %q: unrecognized build.type %q", req.ServiceName, req.Service.Build.Type)
 	}
@@ -191,6 +201,66 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 	// error, the same "must never block the real operation" choice
 	// reconcile.Engine.reconcileOne already makes for persisting
 	// reconcile status.
+	if p.metrics != nil {
+		if err := p.metrics.RecordBuildDuration(ctx, req.ServiceName, res.Duration, time.Now()); err != nil {
+			p.logger.Warn("deploy: record build duration metric failed",
+				slog.String("service", req.ServiceName), slog.String("error", err.Error()))
+		}
+	}
+
+	return res.Tag, nil
+}
+
+// deployRailpack mirrors deployDockerfile's shape exactly, substituting
+// Railpack's own provider detection for a user-authored Dockerfile: no
+// build.Path to resolve, since there is no Dockerfile to point at. See
+// docs-local/research/railpack-integration-decision.md for why this
+// needs internal/build's separate BuildRailpack method (a different,
+// Definition-based BuildKit solve path) rather than a variant
+// build.Request fed through deployDockerfile's existing p.builder.Build
+// call.
+//
+// This slice supports exactly two Railpack providers, node and golang
+// (docs-local/research/railpack-integration-decision.md's recommendation
+// section): any other provider Railpack itself detects fails loudly here
+// with the service name and the detected provider named explicitly, the
+// same "fail loudly, not silently" pattern validateEnv already
+// establishes for unsupported env resolution, rather than a generic
+// build failure that leaves an operator guessing why.
+func (p *Pipeline) deployRailpack(ctx context.Context, req Request, progress func(build.ProgressEvent)) (string, error) {
+	if err := p.validateEnv(ctx, req.ServiceName, req.Service.Env); err != nil {
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
+
+	tag := req.ImageRepo + ":" + req.CommitSHA
+
+	res, err := p.builder.BuildRailpack(ctx, build.RailpackRequest{
+		SourceDir: req.SourceDir,
+		Tag:       tag,
+	}, progress)
+	if err != nil {
+		var unsupported *build.UnsupportedProviderError
+		if errors.As(err, &unsupported) {
+			provider := unsupported.Provider
+			if provider == "" {
+				provider = "(none detected)"
+			}
+			return "", fmt.Errorf("deploy: service %q: railpack detected provider %q, only node and golang are supported yet", req.ServiceName, provider)
+		}
+		return "", fmt.Errorf("deploy: service %q: build: %w", req.ServiceName, err)
+	}
+
+	desired, err := toDesiredService(req.ServiceName, res.Tag, req.Service)
+	if err != nil {
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
+
+	if err := p.store.SaveDesiredService(ctx, desired); err != nil {
+		return "", fmt.Errorf("deploy: service %q: save desired state: %w", req.ServiceName, err)
+	}
+
+	// Best-effort, secondary to the deploy itself: see deployDockerfile's
+	// identical comment on this same choice.
 	if p.metrics != nil {
 		if err := p.metrics.RecordBuildDuration(ctx, req.ServiceName, res.Duration, time.Now()); err != nil {
 			p.logger.Warn("deploy: record build duration metric failed",
