@@ -299,6 +299,36 @@ func (rt *Router) serveFinishedDeployLog(ctx context.Context, w http.ResponseWri
 		rt.logger.Error("api: deploy log stream: response writer does not support flushing", slog.String("deploy_id", deployID))
 		return
 	}
+
+	// Write one harmless SSE comment line immediately, before the entries
+	// loop below (which, for the zero-log-lines case this function
+	// exists to handle, writes nothing at all). SSE comment lines start
+	// with ':' and are never dispatched as an event (EventSource ignores
+	// them outright, so parseEventPayload in
+	// web/src/hooks/useDeployLogStream.ts never sees this), but writing
+	// it guarantees at least one body byte crosses the wire right away.
+	//
+	// Found by this task's own live browser + network-panel verification:
+	// against Vite's dev proxy, a zero-entries response left the SSE
+	// request showing no status code and no response headers at all in
+	// Chrome's network inspector, for as long as the tab stayed open, and
+	// the frontend's connection badge stayed on "Connecting..." forever,
+	// because WriteHeader+Flush alone (with zero body bytes written) is
+	// not enough to make Node's http-proxy (which Vite's dev server uses
+	// for server.proxy) forward the response headers to the browser: it
+	// only does that on the underlying response's first write() call,
+	// which a header-only, zero-body flush never triggers. Confirmed via
+	// the same live setup against the real production path (the control
+	// plane's own embedded net/http server serving the built frontend
+	// directly, no proxy in front) that this is dev-proxy-only: there,
+	// EventSource.onopen fires immediately off WriteHeader+Flush alone
+	// and the badge correctly reads "Live" within a couple seconds, with
+	// or without this comment line. Writing it unconditionally makes the
+	// zero-entries case behave the same way in both environments instead
+	// of depending on proxy-specific flushing behavior.
+	_, _ = fmt.Fprint(w, ": connected\n\n")
+	flusher.Flush()
+
 	for _, e := range entries {
 		writeSSEEvent(w, sseLogEvent{Line: e.Message, Stream: e.Stream})
 	}
