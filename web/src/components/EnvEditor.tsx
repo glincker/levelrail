@@ -202,6 +202,7 @@ export function EnvEditor({ app }: { app: AppDetail }) {
                       {...register(`vars.${index}.key`)}
                       className="font-mono"
                       placeholder="KEY"
+                      aria-label="Variable name"
                     />
                     <FieldError
                       errors={
@@ -216,6 +217,7 @@ export function EnvEditor({ app }: { app: AppDetail }) {
                       {...register(`vars.${index}.value`)}
                       className="flex-1 font-mono"
                       placeholder="value"
+                      aria-label="Variable value"
                     />
                     <Button
                       type="button"

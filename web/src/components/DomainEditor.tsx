@@ -109,6 +109,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                       {...register(`domains.${index}.value`)}
                       className="font-mono"
                       placeholder="app.example.com"
+                      aria-label="Domain"
                     />
                     <FieldError
                       errors={
