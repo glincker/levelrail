@@ -270,6 +270,43 @@ func TestClient_Events_Live(t *testing.T) {
 	}
 }
 
+// waitInspectState polls InspectByName(name) until want reports true of
+// the result or timeout expires, returning whatever the last inspect
+// call saw either way.
+//
+// Stop and Remove both wait for the Engine API call itself to complete
+// before returning (this package never treats either as fire-and-forget),
+// but that is a guarantee about the API call, not about every read path
+// against the daemon's own state observing the same result in the same
+// instant: this test asserting on InspectByName immediately after Stop()
+// returned failed intermittently in CI (not once in dozens of local
+// runs) with the container still reporting Running: true, a real,
+// reproducible gap between "the daemon processed the stop" and "a fresh
+// inspect call reflects it," apparently more visible on the
+// containerd-snapshotter-backed daemon CI runs on than a typical local
+// Docker install. Polling here, rather than trusting the first read, is
+// the correct fix: it is the assertion that was too eager, not Stop or
+// Remove themselves.
+func waitInspectState(ctx context.Context, t *testing.T, c *Client, name string, want func(*ContainerState) bool, timeout time.Duration) *ContainerState {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	var last *ContainerState
+	for {
+		state, err := c.InspectByName(ctx, name)
+		if err != nil {
+			t.Fatalf("InspectByName(%q) error = %v", name, err)
+		}
+		last = state
+		if want(state) {
+			return state
+		}
+		if !time.Now().Before(deadline) {
+			return last
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+}
+
 // waitForEvent drains eventCh until it sees an event matching name and
 // action, or the timeout expires. Other events (from unrelated
 // containers on a shared daemon, or events this test doesn't care about)
@@ -354,10 +391,9 @@ func TestClient_ListByPrefix_Stop_Remove_Live(t *testing.T) {
 	if err := c.Stop(ctx, idA, 5*time.Second); err != nil {
 		t.Fatalf("Stop() error = %v", err)
 	}
-	stopped, err := c.InspectByName(ctx, nameA)
-	if err != nil {
-		t.Fatalf("InspectByName() after stop error = %v", err)
-	}
+	stopped := waitInspectState(ctx, t, c, nameA, func(s *ContainerState) bool {
+		return s != nil && !s.Running
+	}, 10*time.Second)
 	if stopped == nil || stopped.Running {
 		t.Fatalf("expected container to exist and not be running after Stop(), got %+v", stopped)
 	}
@@ -365,10 +401,9 @@ func TestClient_ListByPrefix_Stop_Remove_Live(t *testing.T) {
 	if err := c.Remove(ctx, idA, false); err != nil {
 		t.Fatalf("Remove() error = %v", err)
 	}
-	removed, err := c.InspectByName(ctx, nameA)
-	if err != nil {
-		t.Fatalf("InspectByName() after remove error = %v", err)
-	}
+	removed := waitInspectState(ctx, t, c, nameA, func(s *ContainerState) bool {
+		return s == nil
+	}, 10*time.Second)
 	if removed != nil {
 		t.Errorf("expected InspectByName() to return nil after Remove(), got %+v", removed)
 	}
