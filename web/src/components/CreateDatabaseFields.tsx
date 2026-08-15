@@ -20,12 +20,17 @@ import { toast } from '@/components/ui/toast'
 import { useCreateDatabase, useSetDatabaseNode } from '../queries/databases'
 import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
 import { useNodeListOptional } from '../queries/nodes'
+import { useProjectListOptional } from '../queries/projects'
 
 // Sentinel for "this control plane's own local node", the implicit
 // default PUT /api/v1/databases/{name}/node's own doc comment
 // establishes (empty node_id). Not a real row in the node list, there
 // is no separate "local" entry the API returns.
 const LOCAL_NODE_VALUE = ''
+
+// Sentinel for "no project", the same reasoning LOCAL_NODE_VALUE
+// documents just above.
+const NO_PROJECT_VALUE = '__none__'
 
 // Matches validateDatabaseResource (internal/api/databases.go): name/
 // engine/version all required. engine is a plain non-empty string, not
@@ -46,6 +51,8 @@ const createDatabaseSchema = z.object({
   // node ids or the local sentinel, so no further validation is needed
   // beyond what the Select already constrains it to.
   node: z.string().optional(),
+  // Optional project id, same shape as node above.
+  project: z.string().optional(),
 })
 
 type CreateDatabaseFormInput = z.input<typeof createDatabaseSchema>
@@ -94,6 +101,11 @@ export function CreateDatabaseFields({
   // than surfacing a loading or error state of its own.
   const nodeList = useNodeListOptional()
   const nodes = nodeList.data ?? []
+  // Optional convenience only, see useProjectListOptional's own doc
+  // comment: a failure or empty list here must never block database
+  // creation.
+  const projectList = useProjectListOptional()
+  const projects = projectList.data ?? []
   // Same optional-convenience treatment for the engine registry: when
   // `engine` is already fixed by the caller (the wizard's step 1), this
   // list is only consulted for the version placeholder below, not for
@@ -106,6 +118,7 @@ export function CreateDatabaseFields({
     engine: engine ?? engines[0]?.id ?? '',
     version: '',
     node: LOCAL_NODE_VALUE,
+    project: NO_PROJECT_VALUE,
   }
   const { control, register, handleSubmit, formState, reset, watch } = useForm<
     CreateDatabaseFormInput,
@@ -134,6 +147,12 @@ export function CreateDatabaseFields({
         name: values.name.trim(),
         engine: values.engine,
         version: values.version.trim(),
+        // Sent directly, same "safe at create time" reasoning
+        // CreateAppFields' own onSubmit comment gives.
+        project_id:
+          values.project === NO_PROJECT_VALUE || !values.project
+            ? undefined
+            : values.project,
       },
       {
         onSuccess: (created) => {
@@ -240,6 +259,35 @@ export function CreateDatabaseFields({
             )}
           />
           <FieldError errors={[formState.errors.node]} />
+        </Field>
+      ) : null}
+
+      {projects.length > 0 ? (
+        <Field>
+          <FieldLabel htmlFor="database-project">Project</FieldLabel>
+          <Controller
+            control={control}
+            name="project"
+            render={({ field }) => (
+              <Select
+                value={field.value ?? NO_PROJECT_VALUE}
+                onValueChange={field.onChange}
+              >
+                <SelectTrigger id="database-project" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_PROJECT_VALUE}>No project</SelectItem>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+          <FieldError errors={[formState.errors.project]} />
         </Field>
       ) : null}
 

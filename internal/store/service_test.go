@@ -279,6 +279,118 @@ func TestSaveDesiredService_RedeployDoesNotResetNodeID(t *testing.T) {
 	}
 }
 
+func TestSaveDesiredService_NewService_DefaultsToNoProject(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.ProjectID != "" {
+		t.Errorf("ProjectID = %q, want empty (no project) for a brand new service", got.ProjectID)
+	}
+}
+
+func TestUpdateServiceProject(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.SaveProject(ctx, Project{ID: "proj_1", Name: "my-saas", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatalf("SaveProject() error = %v", err)
+	}
+	if err := db.UpdateServiceProject(ctx, "web", "proj_1"); err != nil {
+		t.Fatalf("UpdateServiceProject() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.ProjectID != "proj_1" {
+		t.Errorf("ProjectID = %q, want proj_1", got.ProjectID)
+	}
+}
+
+func TestUpdateServiceProject_BackToNoProject(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.SaveProject(ctx, Project{ID: "proj_1", Name: "my-saas", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatalf("SaveProject() error = %v", err)
+	}
+	if err := db.UpdateServiceProject(ctx, "web", "proj_1"); err != nil {
+		t.Fatalf("UpdateServiceProject(proj_1) error = %v", err)
+	}
+	if err := db.UpdateServiceProject(ctx, "web", ""); err != nil {
+		t.Fatalf("UpdateServiceProject(\"\") error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.ProjectID != "" {
+		t.Errorf("ProjectID = %q, want empty after moving back to no project", got.ProjectID)
+	}
+}
+
+func TestUpdateServiceProject_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.UpdateServiceProject(context.Background(), "nonexistent", "proj_1")
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("UpdateServiceProject() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+// TestSaveDesiredService_RedeployDoesNotResetProjectID mirrors
+// TestSaveDesiredService_RedeployDoesNotResetNodeID exactly, for the
+// same reason: internal/deploy.Pipeline calls SaveDesiredService on
+// every ordinary redeploy with no opinion on project membership at all,
+// and that must never silently un-assign a service an operator had
+// explicitly filed under a project.
+func TestSaveDesiredService_RedeployDoesNotResetProjectID(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("initial SaveDesiredService() error = %v", err)
+	}
+	if err := db.SaveProject(ctx, Project{ID: "proj_1", Name: "my-saas", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatalf("SaveProject() error = %v", err)
+	}
+	if err := db.UpdateServiceProject(ctx, "web", "proj_1"); err != nil {
+		t.Fatalf("UpdateServiceProject() error = %v", err)
+	}
+
+	// A redeploy: a new image, same service, no ProjectID opinion at
+	// all (the zero value), exactly what internal/deploy.Pipeline sends.
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("redeploy SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Image != "img:v2" {
+		t.Errorf("Image = %q, want img:v2 (the redeploy itself must still take effect)", got.Image)
+	}
+	if got.ProjectID != "proj_1" {
+		t.Errorf("ProjectID = %q, want proj_1 (a redeploy must not silently un-assign a project)", got.ProjectID)
+	}
+}
+
 // TestListDesiredServicesByNode is TASKS.md 3.7's drain and
 // delete-guard primitive: find what's placed on a node without
 // listing every service and filtering client-side.

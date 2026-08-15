@@ -18,4 +18,9 @@ export interface DatabaseResource {
   engine: string
   version: string
   node_id?: string
+  // project_id: response-only on PUT, the same shape appDetail.ts
+  // documents for AppDetail's own project_id, set via
+  // PUT /api/v1/databases/{name}/project (useSetDatabaseProject) or, at
+  // create time only, POST /api/v1/databases's request body directly.
+  project_id?: string
 }

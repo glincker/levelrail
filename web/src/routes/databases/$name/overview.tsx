@@ -3,7 +3,9 @@ import { useDatabase, useDatabaseStatus } from '../../../queries/databases'
 import { backupTargetListQueryOptions } from '../../../queries/backupTargets'
 import { ConditionsPanel } from '../../../components/ConditionsPanel'
 import { MoveToNodeDialog } from '../../../components/MoveToNodeDialog'
+import { MoveToProjectDialog } from '../../../components/MoveToProjectDialog'
 import { BackupsSection } from '../../../components/BackupsSection'
+import { useProjectListOptional } from '../../../queries/projects'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 // The one real section Databases has today (engine/version/node summary,
@@ -29,6 +31,12 @@ function OverviewSection() {
   const { name } = Route.useParams()
   const { data: database } = useDatabase(name)
   const { data: conditions } = useDatabaseStatus(name)
+  // Optional convenience only, see useProjectListOptional's own doc
+  // comment: resolving project_id to a name is a display nicety.
+  const projectList = useProjectListOptional()
+  const projectName = projectList.data?.find(
+    (p) => p.id === database.project_id,
+  )?.name
 
   return (
     <div className="space-y-6">
@@ -66,6 +74,25 @@ function OverviewSection() {
                   kind="database"
                   name={database.name}
                   currentNodeId={database.node_id}
+                />
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground uppercase">
+                Project
+              </dt>
+              <dd className="mt-1 flex items-center gap-2 text-sm text-foreground">
+                {database.project_id ? (
+                  (projectName ?? database.project_id)
+                ) : (
+                  <span className="text-muted-foreground italic">
+                    no project
+                  </span>
+                )}
+                <MoveToProjectDialog
+                  kind="database"
+                  name={database.name}
+                  currentProjectId={database.project_id}
                 />
               </dd>
             </div>

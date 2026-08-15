@@ -121,10 +121,16 @@ export function useDatabaseStatus(name: string) {
 // separate anyway for the same reason CreateAppRequest is kept separate
 // from AppDetail: the request is what a form collects, the response is
 // what the server may additionally attach.
+// project_id is optional and sent directly in this same create request,
+// the database-kind counterpart to CreateAppRequest's own project_id
+// field: see that type's own doc comment (queries/apps.ts) for why
+// that's safe at create time in a way it isn't through an ordinary
+// update.
 export interface CreateDatabaseRequest {
   name: string
   engine: string
   version: string
+  project_id?: string
 }
 
 // POST /api/v1/databases. Rejects a name that already exists with a 409
@@ -223,6 +229,43 @@ export function useSetDatabaseNode() {
   return useMutation({
     mutationFn: ({ name, nodeId }: { name: string; nodeId: string }) =>
       setDatabaseNode(name, nodeId),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(databaseKeys.detail(updated.name), updated)
+      void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
+    },
+  })
+}
+
+// PUT /api/v1/databases/{name}/project (internal/api/databases.go's
+// handleSetDatabaseProject): the only way an existing database's
+// project assignment changes, the project-kind counterpart to
+// setDatabaseNode above.
+export async function setDatabaseProject(
+  name: string,
+  projectId: string,
+): Promise<DatabaseResource> {
+  const res = await fetch(
+    `/api/v1/databases/${encodeURIComponent(name)}/project`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ project_id: projectId }),
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `set database project failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as DatabaseResource
+}
+
+export function useSetDatabaseProject() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ name, projectId }: { name: string; projectId: string }) =>
+      setDatabaseProject(name, projectId),
     onSuccess: (updated) => {
       queryClient.setQueryData(databaseKeys.detail(updated.name), updated)
       void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })

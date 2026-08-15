@@ -44,6 +44,17 @@ type appResource struct {
 	// already establish for a different resource. Set it via
 	// PUT /api/v1/apps/{name}/node (handleSetAppNode) instead.
 	NodeID string `json:"node_id,omitempty"`
+	// ProjectID is which project (projects.go) this app is filed under,
+	// empty meaning no project. Response-only on PUT (handleUpdateApp
+	// echoes back the existing, unchanged value the same way it already
+	// does for NodeID, never req's), the same "shown but not settable
+	// through the general update endpoint" boundary NodeID establishes,
+	// for the identical reasoning: an ordinary edit must never silently
+	// move an app between projects. handleCreateApp is the one
+	// exception, see that handler's own doc comment for why accepting
+	// it there doesn't violate that boundary. Set it on an existing app
+	// via PUT /api/v1/apps/{name}/project (handleSetAppProject) instead.
+	ProjectID string `json:"project_id,omitempty"`
 }
 
 func toAppResource(svc store.DesiredService) appResource {
@@ -58,6 +69,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		Strategy:  svc.Strategy,
 		Replicas:  svc.Replicas,
 		NodeID:    svc.NodeID,
+		ProjectID: svc.ProjectID,
 	}
 }
 
@@ -143,6 +155,22 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 // comment for why) surfaces as 409 with the real conflicting domain
 // named in the message, the same shape a duplicate name gets, not the
 // generic 500 it fell through to before this was wired up.
+//
+// req.ProjectID is the one exception to appResource's own "ProjectID is
+// response-only" doc comment: a brand new app has no existing project
+// assignment an ordinary write could silently clobber (the concern that
+// keeps ProjectID excluded from handleUpdateApp and from
+// toDesiredService/SaveDesiredService's own INSERT), so accepting it
+// here at create time is safe in a way it wouldn't be on an update. This
+// still goes through UpdateServiceProject after the create succeeds,
+// not through SaveDesiredService's own INSERT (which always writes
+// project_id NULL regardless, store.DB.SaveDesiredService's own doc
+// comment), so store.DB.UpdateServiceProject stays the one and only
+// place project_id is ever actually written, the same narrow-mutation
+// discipline UpdateServiceNode already established; this handler is
+// just a convenience that calls it automatically for the common
+// create-with-a-project case instead of requiring a second client round
+// trip to PUT /api/v1/apps/{name}/project right after creation.
 func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	var req appResource
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -151,6 +179,15 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := validateAppResource(req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err := rt.validateProjectID(r.Context(), req.ProjectID); err != nil {
+		if errors.Is(err, store.ErrProjectNotFound) {
+			writeError(w, http.StatusBadRequest, "unknown project_id")
+			return
+		}
+		rt.logger.Error("api: create app: check project failed", slog.String("error", err.Error()), slog.String("project_id", req.ProjectID))
+		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
@@ -174,6 +211,14 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		rt.logger.Error("api: create app failed", slog.String("error", err.Error()), slog.String("name", req.Name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
+	}
+
+	if req.ProjectID != "" {
+		if err := rt.apps.UpdateServiceProject(r.Context(), req.Name, req.ProjectID); err != nil {
+			rt.logger.Error("api: create app: assign project failed", slog.String("error", err.Error()), slog.String("name", req.Name), slog.String("project_id", req.ProjectID))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
 	}
 	writeJSON(w, http.StatusCreated, req)
 }
@@ -234,13 +279,16 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	// SaveDesiredService never touches node_id (its own doc comment
-	// explains why), so the response reflects existing's placement, not
-	// req's: req.NodeID is always its zero value here anyway (the
-	// client never has a way to set it on this endpoint), but spelling
-	// out "carry the real, unchanged value forward" is clearer than
-	// relying on that zero value happening to look right.
+	// SaveDesiredService never touches node_id or project_id (their own
+	// doc comments explain why), so the response reflects existing's
+	// placement and project, not req's: req.NodeID/req.ProjectID are
+	// always their zero value here anyway (the client never has a way to
+	// set either on this endpoint, unlike handleCreateApp's own
+	// deliberate ProjectID exception), but spelling out "carry the real,
+	// unchanged value forward" is clearer than relying on that zero
+	// value happening to look right.
 	req.NodeID = existing.NodeID
+	req.ProjectID = existing.ProjectID
 	writeJSON(w, http.StatusOK, req)
 }
 
@@ -298,6 +346,59 @@ func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 	svc, err := rt.apps.GetDesiredService(r.Context(), name)
 	if err != nil {
 		rt.logger.Error("api: set app node: reload after update failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toAppResource(*svc))
+}
+
+// setAppProjectRequest is PUT /api/v1/apps/{name}/project's body, the
+// project-kind counterpart to setAppNodeRequest.
+type setAppProjectRequest struct {
+	// ProjectID is which project to move this app into; empty string
+	// moves it back to "no project", the same convention
+	// DesiredService.ProjectID's own doc comment establishes.
+	ProjectID string `json:"project_id"`
+}
+
+// handleSetAppProject handles PUT /api/v1/apps/{name}/project
+// (projects.go): the only way an existing app's project assignment
+// actually changes, see appResource's own ProjectID field doc comment.
+// A non-empty project_id is checked against the real project registry
+// first, the same shape handleSetAppNode already establishes for
+// node_id, so a typo'd or already-deleted project id fails loudly here
+// with a 400 rather than silently being written.
+func (rt *Router) handleSetAppProject(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+
+	var req setAppProjectRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if err := rt.validateProjectID(r.Context(), req.ProjectID); err != nil {
+		if errors.Is(err, store.ErrProjectNotFound) {
+			writeError(w, http.StatusBadRequest, "unknown project_id")
+			return
+		}
+		rt.logger.Error("api: set app project: look up project failed", slog.String("error", err.Error()), slog.String("project_id", req.ProjectID))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	if err := rt.apps.UpdateServiceProject(r.Context(), name, req.ProjectID); errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: set app project failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if err != nil {
+		rt.logger.Error("api: set app project: reload after update failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}

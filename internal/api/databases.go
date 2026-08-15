@@ -30,14 +30,20 @@ type databaseResource struct {
 	Engine  string `json:"engine"`
 	Version string `json:"version"`
 	NodeID  string `json:"node_id,omitempty"`
+	// ProjectID: see appResource's own ProjectID field doc comment,
+	// identical response-only-except-at-create-time boundary. Set it on
+	// an existing database via PUT /api/v1/databases/{name}/project
+	// (handleSetDatabaseProject) instead.
+	ProjectID string `json:"project_id,omitempty"`
 }
 
 func toDatabaseResource(d store.DesiredDatabase) databaseResource {
 	return databaseResource{
-		Name:    d.Name,
-		Engine:  d.Engine,
-		Version: d.Version,
-		NodeID:  d.NodeID,
+		Name:      d.Name,
+		Engine:    d.Engine,
+		Version:   d.Version,
+		NodeID:    d.NodeID,
+		ProjectID: d.ProjectID,
 	}
 }
 
@@ -102,6 +108,13 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 // secrets, not built yet), and reports that refusal as a real condition
 // rather than this endpoint pretending postgres isn't an option. Read it
 // back via GET /api/v1/databases/{name}/status.
+//
+// req.ProjectID is accepted here for the identical reason and through
+// the identical mechanism appResource's own ProjectID field doc comment
+// and handleCreateApp's own doc comment describe: a brand new database
+// has no existing project assignment to clobber, so this handler is
+// allowed to call UpdateDatabaseProject as a trailing step after the
+// create succeeds, while an ordinary PUT-driven update still can't.
 func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
 	var req databaseResource
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -110,6 +123,15 @@ func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := validateDatabaseResource(req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err := rt.validateProjectID(r.Context(), req.ProjectID); err != nil {
+		if errors.Is(err, store.ErrProjectNotFound) {
+			writeError(w, http.StatusBadRequest, "unknown project_id")
+			return
+		}
+		rt.logger.Error("api: create database: check project failed", slog.String("error", err.Error()), slog.String("project_id", req.ProjectID))
+		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
@@ -128,6 +150,14 @@ func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
 		rt.logger.Error("api: create database failed", slog.String("error", err.Error()), slog.String("name", req.Name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
+	}
+
+	if req.ProjectID != "" {
+		if err := rt.databases.UpdateDatabaseProject(r.Context(), req.Name, req.ProjectID); err != nil {
+			rt.logger.Error("api: create database: assign project failed", slog.String("error", err.Error()), slog.String("name", req.Name), slog.String("project_id", req.ProjectID))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
 	}
 	writeJSON(w, http.StatusCreated, req)
 }
@@ -211,6 +241,52 @@ func (rt *Router) handleSetDatabaseNode(w http.ResponseWriter, r *http.Request) 
 	d, err := rt.databases.GetDesiredDatabase(r.Context(), name)
 	if err != nil {
 		rt.logger.Error("api: set database node: reload after update failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toDatabaseResource(*d))
+}
+
+// setDatabaseProjectRequest is PUT /api/v1/databases/{name}/project's
+// body, identical shape to setAppProjectRequest.
+type setDatabaseProjectRequest struct {
+	ProjectID string `json:"project_id"`
+}
+
+// handleSetDatabaseProject handles PUT /api/v1/databases/{name}/project
+// (projects.go), the database counterpart to handleSetAppProject: same
+// unknown-project-id 400, same empty-string-means-no-project convention.
+func (rt *Router) handleSetDatabaseProject(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+
+	var req setDatabaseProjectRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if err := rt.validateProjectID(r.Context(), req.ProjectID); err != nil {
+		if errors.Is(err, store.ErrProjectNotFound) {
+			writeError(w, http.StatusBadRequest, "unknown project_id")
+			return
+		}
+		rt.logger.Error("api: set database project: look up project failed", slog.String("error", err.Error()), slog.String("project_id", req.ProjectID))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	if err := rt.databases.UpdateDatabaseProject(r.Context(), name, req.ProjectID); errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: set database project failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	d, err := rt.databases.GetDesiredDatabase(r.Context(), name)
+	if err != nil {
+		rt.logger.Error("api: set database project: reload after update failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
