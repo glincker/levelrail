@@ -10,7 +10,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
-import type { AppDetail } from '../types/appDetail'
+import type { AppDetail, DeployStrategy } from '../types/appDetail'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export const appKeys = {
@@ -132,10 +132,23 @@ export function useUpdateApp(name: string) {
 // separate and unaffected). The server still runs validateAppResource
 // against whatever arrives, so leaving the rest undefined is safe, not
 // a bypass.
+// strategy/replicas are optional here on purpose: CreateAppFields only
+// renders them as opt-in fields (leaving either blank omits it from the
+// request body entirely), and the server's own validateAppResource
+// (internal/api/apps.go) already treats an omitted/empty strategy and a
+// zero replicas count as "use the store's default"
+// (DefaultDeployStrategy/DefaultReplicas), the exact same fallthrough a
+// service saved without these fields has always had. "rolling" is
+// deliberately excluded from this type: a brand-new app has no existing
+// rolling state to preserve, so there is no honest reason to offer it as
+// a creation-time choice the way DeployStrategyEditor must for an
+// existing one.
 export interface CreateAppRequest {
   name: string
   image: string
   port: number
+  strategy?: Exclude<DeployStrategy, 'rolling'>
+  replicas?: number
 }
 
 // POST /api/v1/apps. Rejects a name that already exists with a 409
