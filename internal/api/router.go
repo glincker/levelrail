@@ -78,6 +78,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -326,6 +327,8 @@ type Router struct {
 	deployLogStore          DeployLogStore            // nil is valid: a finished attempt's log route returns 501, same shape as secrets/telemetry/alertRules above
 	deployRecorder          *deploylog.Recorder       // nil is valid: an in-progress attempt's live tail returns 501, and handleTriggerBuild falls back to build.SlogProgress with no persisted log, same "not configured" shape as builder/telemetry above
 	logBroadcaster          *telemetry.LogBroadcaster // nil is valid: GET /apps/{name}/logs/stream returns 501, same "not configured" shape as deployRecorder above
+	deployNotifyTargets     DeployNotifyTargets       // nil is valid: deploy-notify-target routes return 501, same shape as alertRules above
+	deployNotifier          DeployNotifier            // nil is valid: recordPlainDeployAttempt/beginBuildDeployAttempt simply don't dispatch a deploy-outcome notification, same "optional signal, absence is not an error" shape as dockerPinger above
 }
 
 // Option configures optional Router behavior.
@@ -397,6 +400,44 @@ func WithTelemetryQuerier(q TelemetryQuerier) Option {
 // everything else without an alerting.DB wired in.
 func WithAlertRules(a AlertRules) Option {
 	return func(rt *Router) { rt.alertRules = a }
+}
+
+// DeployNotifier is the narrow surface recordPlainDeployAttempt
+// (deploys.go) and beginBuildDeployAttempt (deploy_attempts.go) need to
+// fire a deploy-outcome notification once a deploy attempt reaches a
+// terminal state. *alerting.DeployDispatcher satisfies this
+// structurally. resourceID is resourceIDForApp(ev.AppName), computed by
+// the caller (see alerting.DeployDispatcher.Dispatch's own doc comment
+// for why it takes resourceID as a parameter rather than importing
+// resourceIDForApp itself).
+type DeployNotifier interface {
+	Dispatch(ctx context.Context, resourceID string, ev alerting.DeployOutcome)
+}
+
+// WithDeployNotifyTargets enables POST/GET
+// /api/v1/apps/{name}/deploy-notify-targets and DELETE
+// .../deploy-notify-targets/{id}: CRUD for deploy-outcome notification
+// destinations, the sibling surface to WithAlertRules for TASKS.md
+// wave-2 deploy-outcome notifications. Without one configured (the
+// default), all three routes return 501, the same "not configured"
+// shape WithAlertRules' own absence produces.
+func WithDeployNotifyTargets(t DeployNotifyTargets) Option {
+	return func(rt *Router) { rt.deployNotifyTargets = t }
+}
+
+// WithDeployNotifier enables the actual send: without one configured
+// (the default), a deploy attempt still finishes and is still recorded
+// exactly as it is today, it just never dispatches a notification, even
+// if WithDeployNotifyTargets has targets configured. Kept as a separate
+// option from WithDeployNotifyTargets on purpose, the same "listing
+// doesn't need a live runner" split WithBackupRunner/WithRestoreRunner
+// already establish: a control plane can serve deploy-notify-target CRUD
+// without necessarily having a dispatcher wired (e.g. in a test), and
+// vice versa cmd/levelrail/main.go always wires both together from the
+// same *alerting.DeployDispatcher, which itself embeds the
+// *alerting.DB that WithDeployNotifyTargets is given.
+func WithDeployNotifier(n DeployNotifier) Option {
+	return func(rt *Router) { rt.deployNotifier = n }
 }
 
 // WithDataDir enables disk-usage reporting on GET /api/v1/system/status.
@@ -694,6 +735,16 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("POST /api/v1/apps/{name}/alerts", rt.requireAbility(AbilityWrite, rt.handleCreateAlertRule))
 	mux.HandleFunc("GET /api/v1/apps/{name}/alerts", rt.requireAbility(AbilityRead, rt.handleListAlertRules))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/alerts/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteAlertRule))
+
+	// Deploy-outcome notifications (wave-2 roadmap item #5): a Slack/
+	// Discord/Telegram/generic-webhook/email ping fired once per deploy
+	// attempt reaching a terminal state, distinct from the threshold/
+	// crashloop alert rules just above (see
+	// internal/alerting/deploy_notify.go's own doc comment). Also fanned
+	// through *alerting.DB when configured (see WithDeployNotifyTargets).
+	mux.HandleFunc("POST /api/v1/apps/{name}/deploy-notify-targets", rt.requireAbility(AbilityWrite, rt.handleCreateDeployNotifyTarget))
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploy-notify-targets", rt.requireAbility(AbilityRead, rt.handleListDeployNotifyTargets))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/deploy-notify-targets/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteDeployNotifyTarget))
 
 	// Prometheus remote read (TASKS.md 2.6). Gated by requireAbility the
 	// same as every other read route, not left open: leaving a metrics
