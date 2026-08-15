@@ -22,9 +22,12 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/webhook"
 )
 
@@ -119,6 +122,19 @@ func TestWebhook_Live_PushToRunningContainer(t *testing.T) {
 
 	db := openLiveStore(t)
 
+	// Real deploy-attempt tracking end to end: a real *telemetry.DB and a
+	// real *deploylog.Recorder, not fakes, so this test proves the
+	// webhook trigger path actually persists a deploy_attempts row and a
+	// real build's log output, not just that the mocked/fake-store unit
+	// tests in internal/webhook and internal/api believe it does.
+	telemetryPath := filepath.Join(t.TempDir(), "telemetry.db")
+	telemetryDB, err := telemetry.Open(context.Background(), telemetryPath)
+	if err != nil {
+		t.Fatalf("telemetry.Open() error = %v", err)
+	}
+	t.Cleanup(func() { _ = telemetryDB.Close() })
+	recorder := deploylog.NewRecorder(telemetryDB, nil)
+
 	const webhookSecret = "test-webhook-secret" //nolint:gosec // fake fixture, this test's own signature check
 	cfg := webhook.Config{
 		Secret:      []byte(webhookSecret),
@@ -129,7 +145,7 @@ func TestWebhook_Live_PushToRunningContainer(t *testing.T) {
 		ImageRepo:   imageRepo,
 	}
 	pipeline := deploy.New(buildClient, db)
-	handler := webhook.New(cfg, pipeline, nil)
+	handler := webhook.New(cfg, pipeline, db, recorder, nil)
 
 	payload, err := json.Marshal(struct {
 		Ref   string `json:"ref"`
@@ -158,6 +174,35 @@ func TestWebhook_Live_PushToRunningContainer(t *testing.T) {
 	}
 	if saved.Image != builtTag {
 		t.Fatalf("saved desired state Image = %q, want %q", saved.Image, builtTag)
+	}
+
+	// This task's own real deploy-attempt history: a row for this push,
+	// persisted in the real store, marked succeeded, plus at least one
+	// real line of BuildKit's own output persisted in the real telemetry
+	// store, proving internal/deploylog.Recorder actually received and
+	// flushed events from a real build, not a fake progress callback.
+	attempts, err := db.ListDeployAttempts(context.Background(), serviceName)
+	if err != nil {
+		t.Fatalf("ListDeployAttempts() error = %v", err)
+	}
+	if len(attempts) != 1 {
+		t.Fatalf("expected 1 deploy attempt recorded for this push, got %d", len(attempts))
+	}
+	if attempts[0].Status != store.DeployAttemptStatusSucceeded {
+		t.Errorf("deploy attempt Status = %q, want %q", attempts[0].Status, store.DeployAttemptStatusSucceeded)
+	}
+	if attempts[0].Image != builtTag {
+		t.Errorf("deploy attempt Image = %q, want %q", attempts[0].Image, builtTag)
+	}
+	if attempts[0].FinishedAt == nil {
+		t.Error("deploy attempt FinishedAt = nil, want set")
+	}
+	logLines, err := telemetryDB.QueryDeployLog(context.Background(), attempts[0].ID)
+	if err != nil {
+		t.Fatalf("QueryDeployLog() error = %v", err)
+	}
+	if len(logLines) == 0 {
+		t.Error("expected at least one persisted build log line for this real build, got none")
 	}
 
 	// This is the actual closure of the loop: a real application

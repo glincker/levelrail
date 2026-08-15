@@ -32,13 +32,16 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // DefaultBranch is used when Config.Branch is empty.
@@ -61,6 +64,18 @@ const maxPayloadBytes = 25 << 20
 // *deploy.Pipeline satisfies this.
 type Deployer interface {
 	Deploy(ctx context.Context, req deploy.Request, progress func(build.ProgressEvent)) (string, error)
+}
+
+// AttemptStore is the narrow store surface Handler needs to record one
+// deploy_attempts row per triggering push: this package is the third
+// (and, per docs-local/research/deploy-attempt-id-and-log-persistence.md's
+// own framing, the most important) of the three real deploy-trigger
+// paths this history exists for. An unattended push-to-deploy that fails
+// with no replayable record defeats the point of having a log viewer at
+// all. *store.DB satisfies this structurally.
+type AttemptStore interface {
+	SaveDeployAttempt(ctx context.Context, a store.DeployAttempt) error
+	FinishDeployAttempt(ctx context.Context, id, status string, finishedAt time.Time, errMsg string) error
 }
 
 // Config is everything needed to map a validated GitHub push into a
@@ -113,16 +128,102 @@ type fetchFunc func(ctx context.Context, repoURL, sha string) (dir string, clean
 type Handler struct {
 	cfg      Config
 	deployer Deployer
+	// attempts and recorder are both nil-valid, together: see
+	// deployAttemptEnabled's own doc comment for why they're gated as a
+	// pair rather than independently. cmd/levelrail/main.go always wires
+	// both (a real *store.DB and a real *deploylog.Recorder shared with
+	// internal/api.Router, see that package's own doc comment for why
+	// the Recorder specifically must be the same instance); nil/nil here
+	// exists mainly so this package's own dispatch-logic tests, which
+	// have nothing to do with attempt tracking, don't need to fake it.
+	attempts AttemptStore
+	recorder *deploylog.Recorder
 	log      *slog.Logger
 	fetch    fetchFunc
 }
 
-// New builds a Handler. log defaults to slog.Default() if nil.
-func New(cfg Config, deployer Deployer, log *slog.Logger) *Handler {
+// New builds a Handler. attempts and recorder may both be nil (see
+// Handler.attempts' own doc comment); log defaults to slog.Default() if
+// nil.
+func New(cfg Config, deployer Deployer, attempts AttemptStore, recorder *deploylog.Recorder, log *slog.Logger) *Handler {
 	if log == nil {
 		log = slog.Default()
 	}
-	return &Handler{cfg: cfg, deployer: deployer, log: log, fetch: cloneAndCheckout}
+	return &Handler{cfg: cfg, deployer: deployer, attempts: attempts, recorder: recorder, log: log, fetch: cloneAndCheckout}
+}
+
+// deployAttemptEnabled reports whether this Handler should record
+// deploy_attempts history for the push it's about to deploy. attempts
+// and recorder are checked together, not independently: a row with no
+// recorder to feed it would have a permanently-empty log with no way to
+// ever change that, and a recorder running with nothing to persist to
+// would fan out live events nobody could reconnect to see a replay of
+// after the fact, either partial state is worse than plainly falling
+// back to the pre-existing build.SlogProgress behavior for this push.
+func (h *Handler) deployAttemptEnabled() bool {
+	return h.attempts != nil && h.recorder != nil
+}
+
+// beginDeployAttempt mints and saves a deploy_attempts row for req (see
+// AttemptStore's own doc comment for why this package needs one at all),
+// and returns the progress func to pass to h.deployer.Deploy plus a
+// finish func the caller must invoke exactly once with Deploy's result,
+// success or failure. When deployAttemptEnabled is false, or minting/
+// saving the row itself fails (logged, not fatal to the deploy: a
+// history-tracking failure must never block the actual deploy this push
+// triggered), this falls back to build.SlogProgress and a no-op finish,
+// the identical behavior this package had before attempt tracking
+// existed.
+//
+// image mirrors internal/deploy's own deployDockerfile tag construction
+// (ImageRepo + ":" + CommitSHA) rather than waiting for Deploy to return
+// it: the tag is fully determined by req before any build I/O happens,
+// so a failed build's history row still shows what tag it was trying to
+// produce, not a blank field.
+func (h *Handler) beginDeployAttempt(ctx context.Context, req deploy.Request) (progress func(build.ProgressEvent), finish func(tag string, deployErr error)) {
+	noop := func(string, error) {}
+	if !h.deployAttemptEnabled() {
+		return build.SlogProgress(h.log), noop
+	}
+
+	id, err := store.NewDeployAttemptID()
+	if err != nil {
+		h.log.Error("webhook: mint deploy attempt id failed", "error", err)
+		return build.SlogProgress(h.log), noop
+	}
+
+	image := req.ImageRepo + ":" + req.CommitSHA
+	if err := h.attempts.SaveDeployAttempt(ctx, store.DeployAttempt{
+		ID: id, ServiceName: req.ServiceName, Image: image,
+		Status: store.DeployAttemptStatusRunning, StartedAt: time.Now(),
+	}); err != nil {
+		h.log.Error("webhook: save deploy attempt failed", "attempt_id", id, "error", err)
+		return build.SlogProgress(h.log), noop
+	}
+
+	h.recorder.Start(id)
+	progress = h.recorder.Progress(id)
+	finish = func(_ string, deployErr error) {
+		// context.Background(), not ctx/r.Context(): this runs after
+		// Deploy has already returned, and must still complete (flush
+		// the log, mark the terminal status) even if the triggering
+		// HTTP request's own context is on its way out, the same
+		// reasoning deploylog.Recorder.flush's own doc comment applies
+		// one layer down.
+		finishCtx := context.Background()
+		h.recorder.Finish(finishCtx, id)
+
+		status := store.DeployAttemptStatusSucceeded
+		errMsg := ""
+		if deployErr != nil {
+			status = store.DeployAttemptStatusFailed
+			errMsg = deployErr.Error()
+		}
+		if err := h.attempts.FinishDeployAttempt(finishCtx, id, status, time.Now(), errMsg); err != nil {
+			h.log.Error("webhook: finish deploy attempt failed", "attempt_id", id, "error", err)
+		}
+	}
+	return progress, finish
 }
 
 // pushEvent is the subset of GitHub's push event payload this package
@@ -199,7 +300,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ImageRepo:   h.cfg.ImageRepo,
 	}
 
-	tag, err := h.deployer.Deploy(r.Context(), req, build.SlogProgress(h.log))
+	progress, finishAttempt := h.beginDeployAttempt(r.Context(), req)
+	tag, err := h.deployer.Deploy(r.Context(), req, progress)
+	finishAttempt(tag, err)
 	if err != nil {
 		h.log.Error("webhook: deploy failed", "commit", ev.After, "service", h.cfg.ServiceName, "error", err)
 		http.Error(w, "deploy failed", http.StatusInternalServerError)

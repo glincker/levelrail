@@ -247,7 +247,9 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		ImageRepo:   imageRepo,
 	}
 
-	tag, err := rt.builder.Deploy(r.Context(), buildReq, build.SlogProgress(rt.logger))
+	progress, finishAttempt := rt.beginBuildDeployAttempt(r.Context(), buildReq)
+	tag, err := rt.builder.Deploy(r.Context(), buildReq, progress)
+	finishAttempt(err)
 	if err != nil {
 		// Non-leaky, matching internal/webhook.Handler.ServeHTTP's own
 		// choice for an identical failure (its own doc comment: "500

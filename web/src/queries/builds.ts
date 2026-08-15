@@ -21,6 +21,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { AppDetail } from '../types/appDetail'
 import { appKeys } from './apps'
 import { deployKeys } from './deploys'
+import { deployAttemptKeys } from './deployAttempts'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export interface TriggerBuildInput {
@@ -71,7 +72,13 @@ export async function triggerBuild(
 // On success, updates both the app detail cache (the response carries
 // the updated AppDetail with its new image, same as useTriggerDeploy)
 // and invalidates the deploy status query, since a successful build
-// changes what the next reconcile reports.
+// changes what the next reconcile reports. Also invalidates the deploy-
+// attempts history list, the same reasoning useTriggerDeploy's own doc
+// comment gives: internal/api/builds.go's handleTriggerBuild now saves a
+// real deploy_attempts row (running, then succeeded/failed) for every
+// build, and a build is exactly the slower, more likely to be watched
+// path where seeing the new row (and its live log link) appear promptly
+// matters most.
 export function useTriggerBuild(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -80,6 +87,9 @@ export function useTriggerBuild(appName: string) {
       queryClient.setQueryData(appKeys.detail(appName), result.app)
       void queryClient.invalidateQueries({
         queryKey: deployKeys.status(appName),
+      })
+      void queryClient.invalidateQueries({
+        queryKey: deployAttemptKeys.list(appName),
       })
     },
   })

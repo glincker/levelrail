@@ -20,6 +20,7 @@ import {
 import type { AppDetail } from '../types/appDetail'
 import type { ReconcileCondition } from '../types/deploy'
 import { appKeys } from './apps'
+import { deployAttemptKeys } from './deployAttempts'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export const deployKeys = {
@@ -82,7 +83,14 @@ export async function triggerDeploy(
 // On success, updates both the app detail cache (the response is the
 // updated AppDetail with its new image) and invalidates the deploy
 // status query, since triggering a deploy changes what the next
-// reconcile reports.
+// reconcile reports. Also invalidates the real deploy-attempts history
+// list (queries/deployAttempts.ts): internal/api/deploys.go's
+// handleTriggerDeploy now saves a real deploy_attempts row on every
+// call (see that handler's own doc comment on why the plain image-tag
+// path gets one too), so a caller watching DeployAttemptsList (the
+// Deploys section, or DeployAttemptsList.tsx's own rollback button
+// reusing this exact mutation) needs its history to refresh the moment
+// a trigger succeeds, not on the next unrelated navigation.
 export function useTriggerDeploy(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -91,6 +99,9 @@ export function useTriggerDeploy(appName: string) {
       queryClient.setQueryData(appKeys.detail(appName), updated)
       void queryClient.invalidateQueries({
         queryKey: deployKeys.status(appName),
+      })
+      void queryClient.invalidateQueries({
+        queryKey: deployAttemptKeys.list(appName),
       })
     },
   })
