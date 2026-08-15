@@ -226,6 +226,8 @@ type Store interface {
 	BackupHistoryStore
 	RestoreHistoryStore
 	ProjectStore
+	IngressSettingsStore
+	DomainStore
 }
 
 // SecretSetter is the surface the secrets handler needs from
@@ -309,13 +311,15 @@ type Router struct {
 	alertRules      AlertRules       // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
 	sessions        *sessionStore
 	logins          *loginLimiter
-	sessionTTL      time.Duration    // 0 means "use defaultSessionTTL", set via WithSessionTTL
-	dataDir         string           // "" means "don't report disk usage", set via WithDataDir
-	dockerPinger    DockerPinger     // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
-	images          ImageLister      // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
-	dockerDiskUsage DockerDiskUsager // nil is valid: GET /system/status omits its docker_disk_usage field, same "optional signal, absence is not an error" shape as dockerPinger above
-	dockerPruner    DockerPruner     // nil is valid: POST /system/prune returns 501, same shape as builder/secrets above
-	certs           CertStore        // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
+	sessionTTL      time.Duration        // 0 means "use defaultSessionTTL", set via WithSessionTTL
+	dataDir         string               // "" means "don't report disk usage", set via WithDataDir
+	dockerPinger    DockerPinger         // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
+	images          ImageLister          // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
+	dockerDiskUsage DockerDiskUsager     // nil is valid: GET /system/status omits its docker_disk_usage field, same "optional signal, absence is not an error" shape as dockerPinger above
+	dockerPruner    DockerPruner         // nil is valid: POST /system/prune returns 501, same shape as builder/secrets above
+	certs           CertStore            // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
+	ingressSettings IngressSettingsStore // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
+	domains         DomainStore          // always set, same shape as ingressSettings above: service_domains is always queryable, empty is a valid, non-error result
 	// certExpiryWarningWindow overrides defaultCertExpiryWarningWindow
 	// for GET /api/v1/certificates's "expiring_soon" threshold. 0 means
 	// "use the default", set via WithCertExpiryWarningWindow.
@@ -567,23 +571,25 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		logger = slog.Default()
 	}
 	rt := &Router{
-		logger:         logger,
-		brand:          b,
-		apps:           s,
-		deploys:        s,
-		deployAttempts: s,
-		databases:      s,
-		auth:           s,
-		tokens:         s,
-		nodes:          s,
-		projects:       s,
-		certs:          s,
-		staticSites:    s,
-		backupTargets:  s,
-		backupHistory:  s,
-		restoreHistory: s,
-		fetch:          gitCheckout,
-		logins:         newLoginLimiter(),
+		logger:          logger,
+		brand:           b,
+		apps:            s,
+		deploys:         s,
+		deployAttempts:  s,
+		databases:       s,
+		auth:            s,
+		tokens:          s,
+		nodes:           s,
+		projects:        s,
+		certs:           s,
+		staticSites:     s,
+		ingressSettings: s,
+		domains:         s,
+		backupTargets:   s,
+		backupHistory:   s,
+		restoreHistory:  s,
+		fetch:           gitCheckout,
+		logins:          newLoginLimiter(),
 	}
 	for _, opt := range opts {
 		opt(rt)
@@ -820,6 +826,28 @@ func (rt *Router) Handler() http.Handler {
 	// expire is ordinary operator visibility, not a fleet-admin
 	// mutation the way the node routes above are.
 	mux.HandleFunc("GET /api/v1/certificates", rt.requireAbility(AbilityRead, rt.handleListCertificates))
+
+	// Ingress settings (ACME toggle, platform primary domain, ADR 005's
+	// own "Verified" section names this exact gap: real ACME issuance
+	// was explicitly unproven, spot-checked against a real domain, not
+	// assumed to follow automatically). GET is AbilityRead, the same
+	// passive-visibility tier as GET /api/v1/certificates above: reading
+	// today's toggle state is ordinary operator visibility. PUT is
+	// AbilityRoot, matching handleSetAppNode/handleDrainNode/POST
+	// /system/prune's own precedent for "real infrastructure, high
+	// blast radius, not an ordinary per-app write": flipping
+	// acme_enabled changes what every currently-routed host's
+	// certificate automation does, fleet-wide, on the very next ingress
+	// reconcile pass, the same class of change node placement and
+	// draining already reserve AbilityRoot for.
+	mux.HandleFunc("GET /api/v1/settings/ingress", rt.requireAbility(AbilityRead, rt.handleGetIngressSettings))
+	mux.HandleFunc("PUT /api/v1/settings/ingress", rt.requireAbility(AbilityRoot, rt.handleUpdateIngressSettings))
+
+	// Domains (centralized cross-app list, web/src/routes/domains):
+	// every service_domains row, AbilityRead like GET /api/v1/apps,
+	// no new ability tier: this is the same data DomainEditor already
+	// exposes per-app, aggregated across every app in one read-only call.
+	mux.HandleFunc("GET /api/v1/domains", rt.requireAbility(AbilityRead, rt.handleListDomains))
 
 	// Static sites (build.type: static): read-only
 	// dashboard visibility for sites served directly by embedded Caddy
