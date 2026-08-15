@@ -24,10 +24,69 @@ permissions:
   contents: read
 
 jobs:
-  build-vet-test:
-    name: Build, vet, test
+  build-vet:
+    name: Build, vet
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: go build
+        run: go build ./...
+
+      - name: go vet
+        run: go vet ./...
+
+  # internal/api alone (over 20 test files, each spinning a real SQLite
+  # store and a real httptest server) used to take longer than every
+  # other package in the module combined, serialized into one job: that
+  # single package was the module's actual critical path. Splitting it
+  # into its own parallel job, rather than trying to make any individual
+  # test faster, is what actually shortens wall-clock time: the two test
+  # jobs below run concurrently, so total CI time is bounded by whichever
+  # one is slower, not their sum.
+  test-api:
+    name: Test (internal/api)
+    runs-on: ubuntu-latest
+    needs: build-vet
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      # See test-rest's identical step below for why this is here.
+      - name: Enable containerd image store for BuildKit's docker exporter
+        run: |
+          sudo mkdir -p /etc/docker
+          echo '{"features":{"containerd-snapshotter":true}}' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
+
+      - name: go test (race detector, coverage profile)
+        run: go test ./internal/api/... -race -coverprofile=coverage-api.out
+
+      - name: Upload coverage profile
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-api
+          path: coverage-api.out
+          retention-days: 1
+
+  test-rest:
+    name: Test (everything else)
+    runs-on: ubuntu-latest
+    needs: build-vet
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -51,14 +110,46 @@ jobs:
           echo '{"features":{"containerd-snapshotter":true}}' | sudo tee /etc/docker/daemon.json
           sudo systemctl restart docker
 
-      - name: go build
-        run: go build ./...
-
-      - name: go vet
-        run: go vet ./...
-
       - name: go test (race detector, coverage profile)
-        run: go test ./... -race -coverprofile=coverage.out
+        run: |
+          PACKAGES=$(go list ./... | grep -v '^github.com/GLINCKER/levelrail/internal/api$')
+          go test $PACKAGES -race -coverprofile=coverage-rest.out
+
+      - name: Upload coverage profile
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-rest
+          path: coverage-rest.out
+          retention-days: 1
+
+  coverage-gate:
+    name: Coverage gate
+    runs-on: ubuntu-latest
+    needs: [test-api, test-rest]
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Download coverage profiles
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: coverage-artifacts
+          merge-multiple: true
+
+      # Both profiles share the same "mode: atomic" header (-race forces
+      # atomic mode regardless of what's requested), and the two test
+      # jobs above cover strictly disjoint package sets, so there is no
+      # overlapping coverage data to sum the way a tool like gocovmerge
+      # would need to for two profiles of the *same* packages. Keeping
+      # one mode line and concatenating every statement-block line from
+      # both is the whole merge.
+      - name: Merge coverage profiles
+        run: |
+          head -n1 coverage-artifacts/coverage-api.out > coverage.out
+          tail -n +2 coverage-artifacts/coverage-api.out >> coverage.out
+          tail -n +2 coverage-artifacts/coverage-rest.out >> coverage.out
 
       - name: Coverage gate (70% for /internal)
         run: scripts/check-coverage.sh coverage.out internal/ 70
