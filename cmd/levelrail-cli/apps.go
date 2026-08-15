@@ -24,6 +24,10 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsGet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy":
 		return runAppsDeploy(prog, args[1:], stdout, stderr, lookupEnv)
+	case "rollback":
+		return runAppsRollback(prog, args[1:], stdout, stderr, lookupEnv)
+	case "restart":
+		return runAppsRestart(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
 		return runAppsStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	case "logs":
@@ -40,7 +44,9 @@ func appsUsage(prog string) string {
   %[1]s apps create [flags]         create an app (existing image, git build, or --file)
   %[1]s apps list [flags]             list apps
   %[1]s apps get <name> [flags]       show one app
-  %[1]s apps deploy <name> [flags]   deploy an image to an existing app (also how rollback works)
+  %[1]s apps deploy <name> [flags]   deploy an image to an existing app
+  %[1]s apps rollback <name> [flags]   redeploy an older image (same endpoint as deploy)
+  %[1]s apps restart <name> [flags]     recreate the running container, no image change
   %[1]s apps status <name> [flags]   show an app's current reconcile conditions
   %[1]s apps logs <name> [flags]     search an app's stored log entries
 

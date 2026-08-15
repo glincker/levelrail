@@ -15,13 +15,19 @@ import (
 // this command does not wait for that to finish, matching the server's
 // own 202 Accepted response. Use "apps status" to watch the reconcile.
 //
-// There is no separate rollback command: handleTriggerDeploy's own doc
+// There is no dedicated rollback endpoint: handleTriggerDeploy's own doc
 // comment documents rollback as exactly this same mechanism run with an
 // older tag ("pointing desired.Image back at an older tag and
 // reconciling converges to it the same way any other redeploy does"),
 // and there is no image-history endpoint this CLI could use to look up
 // "the previous tag" on the caller's behalf, so a caller who wants to
-// roll back must already know the tag and pass it to this same command.
+// roll back must already know the tag either way. "apps rollback"
+// (apps_rollback.go) exists anyway, as a thin, discoverability-only
+// wrapper around this same command for a caller who wants to type
+// "rollback" and get rollback-framed output, the same distinction the
+// web frontend's DeployAttemptsList.tsx already draws between its
+// deploy form and its "Rollback to this build" button (both call the
+// same mutation).
 func runAppsDeploy(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs := flag.NewFlagSet(prog+" apps deploy", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -76,10 +82,11 @@ func appsDeployUsage(prog string) string {
   %[1]s apps deploy <name> --image IMAGE [flags]
 
 Points an existing app's desired image at IMAGE and returns immediately;
-the next reconcile converges the running container to it. There is no
-separate rollback command: redeploying an older, already-known image tag
-with this same command is what a rollback is, so run
-"%[1]s apps deploy <name> --image <older-tag>" to roll back.
+the next reconcile converges the running container to it. Redeploying an
+older, already-known image tag with this same command is what a
+rollback is (there is no separate rollback endpoint); "%[1]s apps
+rollback <name> --image <older-tag>" does exactly this, framed for that
+use.
 
 Flags:
   --image string          image reference to deploy, e.g. registry.example.com/org/app:tag (required)

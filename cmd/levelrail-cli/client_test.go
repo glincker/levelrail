@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -122,6 +123,60 @@ func TestClient_NetworkError(t *testing.T) {
 	}
 	if exitCodeForError(err) != exitNetwork {
 		t.Errorf("exitCodeForError() = %d, want exitNetwork", exitCodeForError(err))
+	}
+}
+
+func TestClient_RestartApp(t *testing.T) {
+	var gotMethod, gotPath, gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(appResource{Name: "web", Image: "levelrail/web:1", Port: 3000})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.RestartApp(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("RestartApp() error = %v", err)
+	}
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %q, want POST", gotMethod)
+	}
+	if gotPath != "/api/v1/apps/web/restart" {
+		t.Errorf("path = %q, want /api/v1/apps/web/restart", gotPath)
+	}
+	if gotBody != "" {
+		t.Errorf("body = %q, want empty (no request body)", gotBody)
+	}
+	if got.Name != "web" {
+		t.Errorf("Name = %q, want %q", got.Name, "web")
+	}
+}
+
+func TestClient_RestartApp_NotFound(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"app not found"}`))
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	_, err := client.RestartApp(context.Background(), "ghost")
+	if err == nil {
+		t.Fatalf("RestartApp() error = nil, want an error for a 404 response")
+	}
+	var apiErr *apiError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("error type = %T, want *apiError", err)
+	}
+	if apiErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusNotFound)
 	}
 }
 

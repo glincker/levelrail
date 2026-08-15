@@ -274,10 +274,27 @@ func (c *Client) TriggerBuild(ctx context.Context, name string, req buildTrigger
 // handler's own doc comment describes: this returns as soon as the
 // desired state is saved, not once a container is actually running it.
 // Also how a rollback is done: deploying an older, already-known tag
-// with this same method (see apps_deploy.go's own usage text).
+// with this same method. "apps rollback" (apps_rollback.go) is a thin,
+// discoverability-only wrapper around this exact method, the same
+// framing the web frontend's DeployAttemptsList.tsx "Rollback to this
+// build" button already uses over useTriggerDeploy: there is no
+// separate rollback endpoint or request shape, only a different CLI
+// command name and message for an operator who wants to type "rollback"
+// rather than "deploy --image <older-tag>".
 func (c *Client) DeployApp(ctx context.Context, name, image string) (appResource, error) {
 	var out appResource
 	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+pathEscape(name)+"/deploys", deployTriggerRequest{Image: image}, &out)
+	return out, err
+}
+
+// RestartApp calls POST /api/v1/apps/{name}/restart: force a running
+// container to be recreated with no image change (internal/api/apps.go's
+// own handleRestartApp). No request body; the response is the app's
+// current desired state, unchanged, the same appResource shape every
+// other app-mutating endpoint in this file returns.
+func (c *Client) RestartApp(ctx context.Context, name string) (appResource, error) {
+	var out appResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+pathEscape(name)+"/restart", nil, &out)
 	return out, err
 }
 

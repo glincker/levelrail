@@ -80,7 +80,9 @@ Usage:
   %[1]s apps create [flags]         create an app
   %[1]s apps list [flags]             list apps
   %[1]s apps get <name> [flags]       show one app
-  %[1]s apps deploy <name> [flags]   deploy an image to an existing app (also how rollback works)
+  %[1]s apps deploy <name> [flags]   deploy an image to an existing app
+  %[1]s apps rollback <name> [flags]   redeploy an older image (same endpoint as deploy)
+  %[1]s apps restart <name> [flags]     recreate the running container, no image change
   %[1]s apps status <name> [flags]   show an app's current reconcile conditions
   %[1]s apps logs <name> [flags]     search an app's stored log entries
   %[1]s databases create [flags]     create a managed database
