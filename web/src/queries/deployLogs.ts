@@ -1,5 +1,5 @@
 // URL construction for the deploy log SSE stream. Deliberately not a
-// TanStack Query fetcher (see hooks/useDeployLogStream.ts for why a live
+// TanStack Query fetcher (see hooks/useLogStream.ts for why a live
 // append-only stream does not go through Query's cache): this module's
 // only job is building the URL the route hands to the hook, kept in its
 // own file for the same reason queries/apps.ts exists, so the URL shape

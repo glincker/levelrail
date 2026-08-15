@@ -10,7 +10,7 @@
 // comment: this call is synchronous and blocking on the server side,
 // the same as internal/webhook.Handler.ServeHTTP's own call into
 // internal/deploy.Pipeline. There is still no backend SSE endpoint for
-// live build progress (web/src/hooks/useDeployLogStream.ts's own doc
+// live build progress (web/src/hooks/useLogStream.ts's own doc
 // comment: its SSE contract is "assumed," not backed by any real
 // internal/api route), so this mutation's pending state is the only
 // "building..." signal a caller gets, the same shape triggerDeploy
