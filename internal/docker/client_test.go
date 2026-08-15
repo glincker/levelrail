@@ -6,8 +6,11 @@ import (
 	"time"
 
 	dockertypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/mount"
+	dockernetwork "github.com/docker/docker/api/types/network"
+	"github.com/docker/go-connections/nat"
 )
 
 func TestToDockerPorts(t *testing.T) {
@@ -168,6 +171,106 @@ func TestToDockerMounts(t *testing.T) {
 			got := toDockerMounts(tt.volumes)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("toDockerMounts() = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBuildHostConfig_DNS(t *testing.T) {
+	tests := []struct {
+		name    string
+		spec    ContainerSpec
+		wantDNS []string
+	}{
+		{
+			name:    "no dns set: omitted, byte-identical to before the field existed",
+			spec:    ContainerSpec{Name: "web"},
+			wantDNS: nil,
+		},
+		{
+			name:    "nil dns: omitted",
+			spec:    ContainerSpec{Name: "web", DNS: nil},
+			wantDNS: nil,
+		},
+		{
+			name:    "empty dns slice: omitted",
+			spec:    ContainerSpec{Name: "web", DNS: []string{}},
+			wantDNS: nil,
+		},
+		{
+			name:    "dns set: passed straight through",
+			spec:    ContainerSpec{Name: "web", DNS: []string{"172.17.0.1"}},
+			wantDNS: []string{"172.17.0.1"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hostConfig := buildHostConfig(tt.spec, nat.PortMap{})
+			if !reflect.DeepEqual(hostConfig.DNS, tt.wantDNS) {
+				t.Errorf("buildHostConfig(%+v).DNS = %+v, want %+v", tt.spec, hostConfig.DNS, tt.wantDNS)
+			}
+			// Every other field buildHostConfig sets must keep behaving
+			// the same regardless of DNS, proving this is additive, not a
+			// rewrite of the existing shape.
+			if hostConfig.RestartPolicy.Name != container.RestartPolicyDisabled {
+				t.Errorf("RestartPolicy = %+v, want disabled", hostConfig.RestartPolicy)
+			}
+		})
+	}
+}
+
+func TestGatewayIPFromNetworkInspect(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     []dockernetwork.IPAMConfig
+		want    string
+		wantErr bool
+	}{
+		{
+			name:    "no entries",
+			cfg:     nil,
+			wantErr: true,
+		},
+		{
+			name:    "one entry with a gateway",
+			cfg:     []dockernetwork.IPAMConfig{{Subnet: "172.17.0.0/16", Gateway: "172.17.0.1"}},
+			want:    "172.17.0.1",
+			wantErr: false,
+		},
+		{
+			name:    "one entry without a gateway",
+			cfg:     []dockernetwork.IPAMConfig{{Subnet: "172.17.0.0/16"}},
+			wantErr: true,
+		},
+		{
+			name: "multiple entries: first with a gateway wins",
+			cfg: []dockernetwork.IPAMConfig{
+				{Subnet: "172.17.0.0/16", Gateway: "172.17.0.1"},
+				{Subnet: "fd00::/64", Gateway: "fd00::1"},
+			},
+			want:    "172.17.0.1",
+			wantErr: false,
+		},
+		{
+			name: "first entry has no gateway, second does",
+			cfg: []dockernetwork.IPAMConfig{
+				{Subnet: "fd00::/64"},
+				{Subnet: "172.17.0.0/16", Gateway: "172.17.0.1"},
+			},
+			want:    "172.17.0.1",
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := gatewayIPFromNetworkInspect(tt.cfg)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("gatewayIPFromNetworkInspect() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Errorf("gatewayIPFromNetworkInspect() = %q, want %q", got, tt.want)
 			}
 		})
 	}

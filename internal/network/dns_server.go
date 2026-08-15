@@ -14,17 +14,24 @@ package network
 // app makes, and no benefit, since the node already has a working
 // resolver configured.
 //
-// Known, deliberate gap: nothing points a container at this server yet.
-// Doing that means adding a DNS field to docker.ContainerSpec, to the
-// agent's protobuf ContainerSpec, and to the Engine API call in
-// internal/docker.Client.Create. That change crosses the agent wire
-// contract, which needs one coherent mental model and a single reviewer
-// end to end rather than several people each touching an uncoordinated
-// slice of it, and it is small and mechanical enough to be worth landing as its
-// own reviewed change rather than buried in this one. Until then this
-// server is reachable and correct but unused by containers; it can be
+// A container can now be pointed at this server: docker.ContainerSpec.DNS,
+// the agent's protobuf ContainerSpec.dns, and internal/docker.Client.Create
+// all carry it through, and every reconcile controller
+// (application/database/nginxdemo) accepts a WithMeshDNSAddr option that
+// sets it. cmd/levelrail/mesh.go's containerDNSAddr is what actually
+// resolves a real address for that option, and it is deliberately
+// conservative about when it will: Docker's DNS HostConfig field and every
+// container's own resolv.conf only ever accept a bare nameserver IP, never
+// "ip:port" (confirmed against a real daemon: an "ip:port" entry passes
+// ContainerCreate uninspected but fails ContainerStart outright), and there
+// is no way to ask a container's resolver to query a non-standard port
+// either. So a running mesh only actually gets wired into containers when
+// its DNS server is bound to :53 (APP_MESH_DNS_ADDR), not the unprivileged
+// default port this package's own tests and a bare `go run` use. Until an
+// operator sets that, this server stays reachable and correct but unused by
+// containers, exactly as before this wiring existed; it can still be
 // queried directly (dig @<mesh-ip> web.<zone>) to verify the mesh is
-// resolving, which is what its test does.
+// resolving, which is what its own test does.
 
 import (
 	"context"

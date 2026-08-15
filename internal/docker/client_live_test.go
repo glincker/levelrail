@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"net"
 	"strings"
 	"testing"
 	"time"
@@ -112,6 +113,106 @@ func TestClient_Create_Live_PortsEnvAndNoRestartPolicy(t *testing.T) {
 	}
 	if raw.HostConfig.RestartPolicy.Name != "no" {
 		t.Errorf("restart policy = %q, want \"no\" (the reconciler owns restart, not Docker)", raw.HostConfig.RestartPolicy.Name)
+	}
+}
+
+// TestClient_BridgeGatewayIP_Live proves BridgeGatewayIP resolves a real,
+// parseable IP against an actual daemon, not just that the Engine API
+// call succeeds. Every Docker installation (Docker Desktop and a plain
+// Linux dockerd alike) has a default "bridge" network with a gateway,
+// so this should never be skipped once liveClient itself didn't skip.
+func TestClient_BridgeGatewayIP_Live(t *testing.T) {
+	c := liveClient(t)
+	ctx := context.Background()
+
+	gateway, err := c.BridgeGatewayIP(ctx)
+	if err != nil {
+		t.Fatalf("BridgeGatewayIP() error = %v", err)
+	}
+	if net.ParseIP(gateway) == nil {
+		t.Fatalf("BridgeGatewayIP() = %q, not a parseable IP", gateway)
+	}
+}
+
+// TestClient_Create_Live_DNS proves ContainerSpec.DNS actually reaches a
+// real, running container's resolv.conf via the Engine API: not just
+// that Create accepts it (Create alone doesn't validate DNS entries at
+// all, discovered while building this field, see dockerNameserverPort's
+// doc comment in cmd/levelrail/mesh.go), but that Start succeeds and the
+// container's actual resolver config carries the address, verified
+// against the raw HostConfig.DNS the same way
+// TestClient_Create_Live_PortsEnvAndNoRestartPolicy verifies env and
+// restart policy independently of this package's own return values.
+//
+// The address here is a bare IP, not "ip:port": that is deliberately the
+// only form ContainerSpec.DNS is ever exercised with, live-verified
+// (mesh.go's dockerNameserverPort doc comment) to be the only form Docker
+// and a container's own resolver accept at all.
+//
+// Also proves the reverse: a spec with no DNS set produces an empty
+// HostConfig.DNS, the same byte-identical-to-before-this-field behavior
+// runtime.go's own doc comment on ContainerSpec.DNS promises.
+func TestClient_Create_Live_DNS(t *testing.T) {
+	c := liveClient(t)
+	ctx := context.Background()
+
+	cases := []struct {
+		name    string
+		dns     []string
+		wantDNS []string
+	}{
+		{name: "levelrail-test-docker-dns-set", dns: []string{"172.17.0.1"}, wantDNS: []string{"172.17.0.1"}},
+		{name: "levelrail-test-docker-dns-unset", dns: nil, wantDNS: nil},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			removeIfExists(ctx, t, c, tc.name)
+			t.Cleanup(func() { removeIfExists(ctx, t, c, tc.name) })
+
+			id, err := c.Create(ctx, ContainerSpec{
+				Name:  tc.name,
+				Image: "nginx:alpine",
+				DNS:   tc.dns,
+			})
+			if err != nil {
+				t.Fatalf("Create() error = %v", err)
+			}
+			if err := c.Start(ctx, id); err != nil {
+				t.Fatalf("Start() error = %v", err)
+			}
+
+			raw, err := c.cli.ContainerInspect(ctx, id)
+			if err != nil {
+				t.Fatalf("raw ContainerInspect() error = %v", err)
+			}
+			if len(raw.HostConfig.DNS) != len(tc.wantDNS) {
+				t.Fatalf("HostConfig.DNS = %v, want %v", raw.HostConfig.DNS, tc.wantDNS)
+			}
+			for i, want := range tc.wantDNS {
+				if raw.HostConfig.DNS[i] != want {
+					t.Errorf("HostConfig.DNS[%d] = %q, want %q", i, raw.HostConfig.DNS[i], want)
+				}
+			}
+
+			// Independent verification: the container's own
+			// /etc/resolv.conf, not just the HostConfig this package's
+			// own Create wrote.
+			rc, err := c.Exec(ctx, id, []string{"cat", "/etc/resolv.conf"})
+			if err != nil {
+				t.Fatalf("Exec(cat /etc/resolv.conf) error = %v", err)
+			}
+			resolvConf, err := io.ReadAll(rc)
+			_ = rc.Close()
+			if err != nil {
+				t.Fatalf("read /etc/resolv.conf: %v", err)
+			}
+			for _, want := range tc.wantDNS {
+				if !strings.Contains(string(resolvConf), "nameserver "+want) {
+					t.Errorf("/etc/resolv.conf = %q, want it to contain %q", resolvConf, "nameserver "+want)
+				}
+			}
+		})
 	}
 }
 

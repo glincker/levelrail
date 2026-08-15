@@ -16,6 +16,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/mount"
+	dockernetwork "github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/volume"
 	dockerclient "github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
@@ -148,19 +149,7 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 		return "", fmt.Errorf("docker: create container %q: %w", spec.Name, err)
 	}
 
-	hostConfig := &container.HostConfig{
-		PortBindings: portBindings,
-		// Explicitly "no": the reconciler, not Docker, decides whether a
-		// dead container comes back. See ContainerSpec's doc comment.
-		RestartPolicy: container.RestartPolicy{Name: container.RestartPolicyDisabled},
-		Mounts:        toDockerMounts(spec.Volumes),
-	}
-	if spec.Resources != nil {
-		hostConfig.Resources = container.Resources{
-			Memory:   spec.Resources.MemoryBytes,
-			NanoCPUs: spec.Resources.NanoCPUs,
-		}
-	}
+	hostConfig := buildHostConfig(spec, portBindings)
 
 	resp, err := c.cli.ContainerCreate(ctx,
 		&container.Config{
@@ -176,6 +165,62 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 		return "", fmt.Errorf("docker: create container %q: %w", spec.Name, err)
 	}
 	return resp.ID, nil
+}
+
+// buildHostConfig turns spec plus its already-computed port bindings into
+// the container.HostConfig Create passes to the Engine API. Factored out
+// of Create so its own now-linear body isn't cluttered by this
+// construction, and so a future caller (none today) could reuse the same
+// spec-to-HostConfig mapping without duplicating it.
+func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.HostConfig {
+	hostConfig := &container.HostConfig{
+		PortBindings: portBindings,
+		// Explicitly "no": the reconciler, not Docker, decides whether a
+		// dead container comes back. See ContainerSpec's doc comment.
+		RestartPolicy: container.RestartPolicy{Name: container.RestartPolicyDisabled},
+		Mounts:        toDockerMounts(spec.Volumes),
+	}
+	if spec.Resources != nil {
+		hostConfig.Resources = container.Resources{
+			Memory:   spec.Resources.MemoryBytes,
+			NanoCPUs: spec.Resources.NanoCPUs,
+		}
+	}
+	if len(spec.DNS) > 0 {
+		hostConfig.DNS = spec.DNS
+	}
+	return hostConfig
+}
+
+// BridgeGatewayIP returns the gateway IP of Docker's default "bridge"
+// network: the address from which a container attached to that network
+// (the default whenever Create's NetworkingConfig is nil, which is every
+// container this Client creates) can reach the host. Used by
+// cmd/levelrail/mesh.go's containerDNSAddr to compute a
+// container-reachable address for the mesh DNS server, since no
+// WireGuard mesh IP is bound to anything yet.
+func (c *Client) BridgeGatewayIP(ctx context.Context) (string, error) {
+	inspect, err := c.cli.NetworkInspect(ctx, "bridge", dockernetwork.InspectOptions{})
+	if err != nil {
+		return "", fmt.Errorf("docker: inspect bridge network: %w", err)
+	}
+	return gatewayIPFromNetworkInspect(inspect.IPAM.Config)
+}
+
+// gatewayIPFromNetworkInspect picks the first non-empty gateway out of
+// cfg, split out of BridgeGatewayIP so it can be table-tested against the
+// handful of shapes IPAM.Config can actually take (no entries, one entry
+// with a gateway, one entry without, several) without a live daemon.
+func gatewayIPFromNetworkInspect(cfg []dockernetwork.IPAMConfig) (string, error) {
+	if len(cfg) == 0 {
+		return "", fmt.Errorf("docker: bridge network has no IPAM config")
+	}
+	for _, c := range cfg {
+		if c.Gateway != "" {
+			return c.Gateway, nil
+		}
+	}
+	return "", fmt.Errorf("docker: bridge network IPAM config has no gateway")
 }
 
 func toDockerPorts(ports []PortBinding) (nat.PortSet, nat.PortMap, error) {

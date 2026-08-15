@@ -878,13 +878,16 @@ func (x *VolumeMount) GetContainerPath() string {
 }
 
 type ContainerSpec struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Image         string                 `protobuf:"bytes,2,opt,name=image,proto3" json:"image,omitempty"`
-	Ports         []*PortBinding         `protobuf:"bytes,3,rep,name=ports,proto3" json:"ports,omitempty"`
-	Env           map[string]string      `protobuf:"bytes,4,rep,name=env,proto3" json:"env,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Resources     *Resources             `protobuf:"bytes,5,opt,name=resources,proto3" json:"resources,omitempty"` // unset means internal/docker.ContainerSpec.Resources == nil
-	Volumes       []*VolumeMount         `protobuf:"bytes,6,rep,name=volumes,proto3" json:"volumes,omitempty"`
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Name      string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Image     string                 `protobuf:"bytes,2,opt,name=image,proto3" json:"image,omitempty"`
+	Ports     []*PortBinding         `protobuf:"bytes,3,rep,name=ports,proto3" json:"ports,omitempty"`
+	Env       map[string]string      `protobuf:"bytes,4,rep,name=env,proto3" json:"env,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Resources *Resources             `protobuf:"bytes,5,opt,name=resources,proto3" json:"resources,omitempty"` // unset means internal/docker.ContainerSpec.Resources == nil
+	Volumes   []*VolumeMount         `protobuf:"bytes,6,rep,name=volumes,proto3" json:"volumes,omitempty"`
+	// DNS mirrors internal/docker.ContainerSpec.DNS. Empty means Docker's
+	// own embedded resolver, unchanged from before this field existed.
+	Dns           []string `protobuf:"bytes,7,rep,name=dns,proto3" json:"dns,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -957,6 +960,13 @@ func (x *ContainerSpec) GetResources() *Resources {
 func (x *ContainerSpec) GetVolumes() []*VolumeMount {
 	if x != nil {
 		return x.Volumes
+	}
+	return nil
+}
+
+func (x *ContainerSpec) GetDns() []string {
+	if x != nil {
+		return x.Dns
 	}
 	return nil
 }
@@ -1827,14 +1837,15 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\tnano_cpus\x18\x02 \x01(\x03R\bnanoCpus\"H\n" +
 	"\vVolumeMount\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12%\n" +
-	"\x0econtainer_path\x18\x02 \x01(\tR\rcontainerPath\"\xde\x02\n" +
+	"\x0econtainer_path\x18\x02 \x01(\tR\rcontainerPath\"\xf0\x02\n" +
 	"\rContainerSpec\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05image\x18\x02 \x01(\tR\x05image\x125\n" +
 	"\x05ports\x18\x03 \x03(\v2\x1f.levelrail.agent.v1.PortBindingR\x05ports\x12<\n" +
 	"\x03env\x18\x04 \x03(\v2*.levelrail.agent.v1.ContainerSpec.EnvEntryR\x03env\x12;\n" +
 	"\tresources\x18\x05 \x01(\v2\x1d.levelrail.agent.v1.ResourcesR\tresources\x129\n" +
-	"\avolumes\x18\x06 \x03(\v2\x1f.levelrail.agent.v1.VolumeMountR\avolumes\x1a6\n" +
+	"\avolumes\x18\x06 \x03(\v2\x1f.levelrail.agent.v1.VolumeMountR\avolumes\x12\x10\n" +
+	"\x03dns\x18\a \x03(\tR\x03dns\x1a6\n" +
 	"\bEnvEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9b\x01\n" +

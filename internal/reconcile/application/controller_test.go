@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -52,6 +53,10 @@ type fakeRuntime struct {
 	createCalls   int
 	removeCalls   int
 	lastCreateEnv map[string]string
+	// lastCreateSpec is the full spec passed to the most recent Create
+	// call, for assertions (like the mesh DNS wiring tests) that need
+	// more than just Env.
+	lastCreateSpec docker.ContainerSpec
 }
 
 func newFakeRuntime(hostPort int) *fakeRuntime {
@@ -85,6 +90,7 @@ func (f *fakeRuntime) Create(_ context.Context, spec docker.ContainerSpec) (stri
 	defer f.mu.Unlock()
 	f.createCalls++
 	f.lastCreateEnv = spec.Env
+	f.lastCreateSpec = spec
 	if f.createErr != nil {
 		return "", f.createErr
 	}
@@ -1325,5 +1331,42 @@ func TestController_Reconcile_EmptyStrategyAndZeroReplicas_DefaultsToBlueGreenSi
 	want := ContainerName("web", "img:v1", "")
 	if _, ok := rt.containers[want]; !ok {
 		t.Errorf("container %q not found, want the same name Strategy/Replicas being unset has always produced", want)
+	}
+}
+
+func TestWithMeshDNSAddr_SetsContainerSpecDNS(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	c := New("web", &fakeStore{svc: desired}, rt, WithMeshDNSAddr("172.17.0.1"))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue {
+		t.Fatalf("condition = %+v, want Status=True", cond)
+	}
+	want := []string{"172.17.0.1"}
+	if got := rt.lastCreateSpec.DNS; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.DNS = %+v, want %+v", got, want)
+	}
+}
+
+// TestWithMeshDNSAddr_NotConfigured_LeavesDNSNil is the regression-safety
+// half of the mesh DNS test: without WithMeshDNSAddr (the default, and
+// every service before this option existed), Create must never see a
+// non-nil DNS field. This is the test that would actually fail if the
+// wiring accidentally set DNS unconditionally instead of gating on
+// meshDNSAddr being configured.
+func TestWithMeshDNSAddr_NotConfigured_LeavesDNSNil(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	c := New("web", &fakeStore{svc: desired}, rt) // no WithMeshDNSAddr
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if got := rt.lastCreateSpec.DNS; got != nil {
+		t.Errorf("created ContainerSpec.DNS = %+v, want nil", got)
 	}
 }

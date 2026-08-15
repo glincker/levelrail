@@ -105,6 +105,7 @@ type Controller struct {
 	readyBudget    time.Duration
 	secretResolver SecretResolver // nil is valid: a service with no secret-backed env vars never needs one
 	deployRecorder DeployRecorder // nil is valid: deploy frequency just isn't recorded
+	meshDNSAddr    string         // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
 }
 
 // Option configures optional Controller behavior.
@@ -140,6 +141,23 @@ func WithSecretResolver(r SecretResolver) Option {
 // before, deploys just aren't measured.
 func WithDeployRecorder(r DeployRecorder) Option {
 	return func(ctrl *Controller) { ctrl.deployRecorder = r }
+}
+
+// WithMeshDNSAddr points every container this controller creates at addr,
+// a bare nameserver IP (never "ip:port": neither Docker's DNS HostConfig
+// field nor a container's own resolv.conf supports a non-standard
+// nameserver port, confirmed live while building this option, see
+// cmd/levelrail/mesh.go's dockerNameserverPort doc comment), as an
+// additional nameserver ahead of whatever Docker's own resolver would
+// otherwise configure (docker.ContainerSpec.DNS). Without one configured
+// (the default, empty string), Reconcile behaves exactly as before this
+// field existed: no DNS override at all. addr is expected to already be a
+// real, container-reachable address (cmd/levelrail/mesh.go's
+// containerDNSAddr resolves Docker's own bridge gateway IP, only once the
+// mesh DNS server is confirmed bound to port 53); this controller does
+// not validate it.
+func WithMeshDNSAddr(addr string) Option {
+	return func(ctrl *Controller) { ctrl.meshDNSAddr = addr }
 }
 
 // New builds a Controller for serviceName.
@@ -410,6 +428,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 
 	spec := toContainerSpec(name, desired)
 	spec.Env = env
+	if c.meshDNSAddr != "" {
+		spec.DNS = []string{c.meshDNSAddr}
+	}
 
 	id, err := c.runtime.Create(ctx, spec)
 	if err != nil {

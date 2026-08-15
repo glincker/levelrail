@@ -38,6 +38,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/brand"
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/network"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -242,7 +243,13 @@ type meshSetup struct {
 	localNodeID string
 	coordinator *network.Coordinator
 	resolver    *network.Resolver
-	close       func()
+	// dnsAddr is the mesh DNS server's actual bound address (host, not
+	// container-reachable, port only meaningful once combined with a
+	// resolved bridge gateway, see containerDNSAddr): DNSServer.Addr's
+	// own doc comment on why a caller needs the port it actually bound
+	// rather than assuming it matches the configured addr verbatim.
+	dnsAddr netip.AddrPort
+	close   func()
 }
 
 // setupMesh brings up this node's mesh device, DNS server, and
@@ -318,6 +325,7 @@ func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string
 		localNodeID: localNodeID,
 		coordinator: coordinator,
 		resolver:    resolver,
+		dnsAddr:     dnsServer.Addr(),
 		close: func() {
 			cancelHeartbeat()
 			if err := dnsServer.Close(); err != nil {
@@ -328,4 +336,78 @@ func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string
 			}
 		},
 	}, nil
+}
+
+// dockerNameserverPort is the only port a container's resolver ever
+// actually queries. Docker's DNS HostConfig field (--dns) and every
+// container's resulting /etc/resolv.conf "nameserver" line both carry a
+// bare IP, never IP:port: confirmed against a real daemon while building
+// this function, ContainerCreate accepts an "ip:port" string without
+// complaint (it isn't validated at create time), but the *start* call
+// that follows rejects it outright ("bad nameserver address ...:5390:
+// ParseAddr(...): unexpected character (at \":5390\")"), which would fail
+// every single container this control plane creates the moment mesh is
+// enabled with the default (non-53) DNS port. There is no resolv.conf
+// syntax or Docker flag that requests a non-standard nameserver port
+// either, so a mesh DNS server bound to anything but 53 cannot be wired
+// into a container's resolver at all, full stop; see containerDNSAddr's
+// own doc comment for what that means in practice.
+const dockerNameserverPort = 53
+
+// containerDNSAddr computes the nameserver IP the reconcile controllers
+// should point every container they create at, so it resolves this
+// node's mesh DNS zone (internal/network/dns_server.go), or "" if that
+// isn't possible right now.
+//
+// No WireGuard mesh interface IP is bound to anything yet
+// (internal/network/device.go's configureLink no-ops without a
+// LinkConfigurator, a separate, out-of-scope gap), and docker.Client.Create
+// attaches every container to Docker's default "bridge" network with no
+// NetworkingConfig, so the mesh DNS server's own wildcard bind address is
+// never itself reachable from inside a container. The address that is
+// reachable is that bridge network's own gateway IP, queried live from
+// the Docker daemon rather than hardcoded (dockerd's bip config can
+// change it).
+//
+// That gateway IP is only useful, though, if the mesh DNS server is
+// actually listening on port 53 at it: dockerNameserverPort's own doc
+// comment is the live-verified reason there is no way to express "query
+// port 5390 instead" anywhere a container's resolver looks. APP_MESH_DNS_ADDR
+// defaults to :5390 specifically so an unprivileged process can bind it
+// (meshDNSAddr's own doc comment), which means in the common,
+// zero-configuration case this function's real job is refusing to wire
+// anything up, correctly, rather than handing every container a
+// nameserver entry that fails to start it. An operator who wants this
+// feature live has to set APP_MESH_DNS_ADDR to bind :53 (and grant the
+// process permission to do so), a real operational tradeoff this
+// function does not paper over.
+//
+// Every other failure (no mesh running, no bound DNS address yet, the
+// bridge gateway lookup itself failing) logs a warning and returns "",
+// never fails the caller: every controller this feeds
+// (application.WithMeshDNSAddr, database.WithMeshDNSAddr,
+// nginxdemo.WithMeshDNSAddr) already treats an empty address as "no DNS
+// override at all," so the mesh-disabled and lookup-failed paths both
+// stay byte-identical to this code's behavior before the mesh DNS field
+// existed: containers fall back to Docker's own embedded resolver.
+func containerDNSAddr(ctx context.Context, client *docker.Client, meshCfg *meshSetup, logger *slog.Logger) string {
+	if meshCfg == nil || !meshCfg.dnsAddr.IsValid() {
+		return ""
+	}
+	if meshCfg.dnsAddr.Port() != dockerNameserverPort {
+		logger.Warn("mesh dns: not bound to port 53, so no container can be pointed at it "+
+			"(neither Docker's DNS config nor a container's own resolver supports a non-standard nameserver port); "+
+			"containers will use Docker's own resolver until APP_MESH_DNS_ADDR is set to bind :53",
+			slog.Int("bound_port", int(meshCfg.dnsAddr.Port())))
+		return ""
+	}
+
+	gateway, err := client.BridgeGatewayIP(ctx)
+	if err != nil {
+		logger.Warn("mesh dns: could not resolve a container-reachable address, containers will use Docker's own resolver",
+			slog.String("error", err.Error()))
+		return ""
+	}
+
+	return gateway
 }

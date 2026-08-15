@@ -27,13 +27,34 @@ const (
 // safe to call again immediately after (reconcilers are idempotent,
 // level-triggered, and safe to interrupt by design).
 type Controller struct {
-	runtime docker.Runtime
+	runtime     docker.Runtime
+	meshDNSAddr string // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+}
+
+// Option configures optional Controller behavior.
+type Option func(*Controller)
+
+// WithMeshDNSAddr points the demo container at addr, a bare nameserver IP
+// (never "ip:port": neither Docker's DNS HostConfig field nor a
+// container's own resolv.conf supports a non-standard nameserver port,
+// confirmed live while building this option, see cmd/levelrail/mesh.go's
+// dockerNameserverPort doc comment), as an additional nameserver ahead of
+// whatever Docker's own resolver would otherwise configure
+// (docker.ContainerSpec.DNS). Without one configured (the default, empty
+// string), Reconcile behaves exactly as before this field existed: no DNS
+// override at all.
+func WithMeshDNSAddr(addr string) Option {
+	return func(c *Controller) { c.meshDNSAddr = addr }
 }
 
 // New builds a Controller against the given Runtime. Pass a fake in
 // tests, the real docker.Client in production.
-func New(runtime docker.Runtime) *Controller {
-	return &Controller{runtime: runtime}
+func New(runtime docker.Runtime, opts ...Option) *Controller {
+	c := &Controller{runtime: runtime}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
 }
 
 // Name implements reconcile.Controller.
@@ -47,7 +68,11 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 
 	if state == nil {
-		id, err := c.runtime.Create(ctx, docker.ContainerSpec{Name: ContainerName, Image: image})
+		spec := docker.ContainerSpec{Name: ContainerName, Image: image}
+		if c.meshDNSAddr != "" {
+			spec.DNS = []string{c.meshDNSAddr}
+		}
+		id, err := c.runtime.Create(ctx, spec)
 		if err != nil {
 			return notReady("CreateFailed", err), fmt.Errorf("nginx-demo: create: %w", err)
 		}

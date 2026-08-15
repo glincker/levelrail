@@ -95,6 +95,13 @@ type ContainerSpec struct {
 	// database controller (TASKS.md 1.8) is the first caller; ordinary
 	// application containers leave this nil.
 	Volumes []VolumeMount
+	// DNS lists nameserver IPs Docker writes into the container's
+	// /etc/resolv.conf, ahead of whatever the daemon would otherwise
+	// configure. Empty/nil is byte-identical to today: only a caller
+	// that resolved a real, container-reachable mesh DNS address
+	// (cmd/levelrail/mesh.go's containerDNSAddr) ever sets this, and
+	// only when the mesh is actually enabled and running.
+	DNS []string
 }
 
 // ImageInfo is one tagged image available locally, used to discover
