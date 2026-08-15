@@ -165,7 +165,7 @@ func TestContainerRestorer_Restore_MySQL_Live(t *testing.T) {
 	if err := rt.Start(ctx, id); err != nil {
 		t.Fatalf("Start() error = %v", err)
 	}
-	waitReady(ctx, t, rt, name, []string{"sh", "-c", `mysql -uroot -p"$MYSQL_ROOT_PASSWORD" leveltest -e "SELECT 1"`}, 60*time.Second)
+	waitMySQLReady(ctx, t, rt, name, []string{"sh", "-c", `mysql -uroot -p"$MYSQL_ROOT_PASSWORD" leveltest -e "SELECT 1"`}, 60*time.Second)
 
 	originalMarker := "levelrail-restore-live-original-mysql-2e7b"
 	seed, err := rt.Exec(ctx, name, []string{"sh", "-c",

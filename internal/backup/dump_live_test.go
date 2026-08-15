@@ -73,6 +73,39 @@ func waitReady(ctx context.Context, t *testing.T, rt docker.Runtime, containerNa
 	t.Fatalf("container %q never became ready within %v: %v", containerName, timeout, lastErr)
 }
 
+// waitMySQLReady is waitReady plus a second confirming probe a moment
+// later, specifically for MySQL: the official mysql:8 image's entrypoint
+// runs a temporary, socket-only mysqld to initialize the data directory
+// and run init scripts (creating MYSQL_DATABASE/MYSQL_USER), then shuts
+// that instance down and starts the real, permanent one on the same
+// socket path. A single successful probe cannot tell those two servers
+// apart: it is possible, and was observed causing real CI failures in
+// TestContainerDumper_Dump_MySQL_Live and
+// TestContainerRestorer_Restore_MySQL_Live (never reproduced locally,
+// where the temporary instance's own window is apparently too narrow to
+// usually land a probe in, but reliably hit on CI's more loaded/slower
+// daemon), for waitReady's own probe to succeed against the temporary
+// instance moments before it exits, with the very next real command
+// (the seed step) then failing to connect at all or losing its
+// connection mid-query as the handoff to the permanent instance happens
+// underneath it.
+//
+// Requiring the same probe to succeed twice, with a real gap in between,
+// is what actually distinguishes the two cases: the temporary instance
+// is gone for good once it shuts down, so a second probe shortly after
+// a first success can only succeed if the server answering it is the
+// stable, permanent one. Postgres and Redis have no equivalent two-phase
+// startup (see postgresDumpCmd's and redisDumpCmd's own doc comments;
+// neither image restarts its own server process during initialization
+// the way MySQL's entrypoint does), so this stays MySQL-specific rather
+// than folded into waitReady itself for every engine.
+func waitMySQLReady(ctx context.Context, t *testing.T, rt docker.Runtime, containerName string, probe []string, timeout time.Duration) {
+	t.Helper()
+	waitReady(ctx, t, rt, containerName, probe, timeout)
+	time.Sleep(2 * time.Second)
+	waitReady(ctx, t, rt, containerName, probe, timeout)
+}
+
 // TestContainerDumper_Dump_Postgres_Live proves the entire Postgres dump
 // path end to end against a real Postgres container, provisioned with
 // exactly the environment internal/reconcile/database's Controller
@@ -185,7 +218,7 @@ func TestContainerDumper_Dump_MySQL_Live(t *testing.T) {
 	// Postgres's own probe: mysqld also runs a temporary init pass
 	// before the real server comes up, so only a query that actually
 	// touches leveltest proves the database this test needs is there.
-	waitReady(ctx, t, rt, name, []string{"sh", "-c", `mysql -uroot -p"$MYSQL_ROOT_PASSWORD" leveltest -e "SELECT 1"`}, 60*time.Second)
+	waitMySQLReady(ctx, t, rt, name, []string{"sh", "-c", `mysql -uroot -p"$MYSQL_ROOT_PASSWORD" leveltest -e "SELECT 1"`}, 60*time.Second)
 
 	seedMarker := "levelrail-live-marker-mysql-3d9a"
 	seed, err := rt.Exec(ctx, name, []string{"sh", "-c",
