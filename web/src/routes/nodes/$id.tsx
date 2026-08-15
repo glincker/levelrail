@@ -12,6 +12,7 @@ import type { NodeStatus } from '../../types/nodeDetail'
 import { ConditionsPanel } from '../../components/ConditionsPanel'
 import { CordonNodeDialog } from '../../components/CordonNodeDialog'
 import { DrainNodeDialog } from '../../components/DrainNodeDialog'
+import { NodeMetricsDashboard } from '../../components/NodeMetricsDashboard'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -36,6 +37,13 @@ import type { VariantProps } from 'class-variance-authority'
 // cordon/drain, delete needed no new state or multi-line result to show,
 // so there was no structural reason to move it, and DeleteNodeDialog.tsx
 // itself is left untouched per this task's own file-boundary note.
+//
+// NodeMetricsDashboard below is this route's other real content:
+// GET /api/v1/nodes/{id}/metrics (internal/api/node_metrics.go), fetched
+// by that component itself once mounted (same "not loader-primed, needs
+// component-local time-range state first" reasoning MetricsDashboard.tsx
+// already documents for the per-app equivalent), not primed in this
+// route's own loader above.
 export const Route = createFileRoute('/nodes/$id')({
   loader: ({ context: { queryClient }, params: { id } }) =>
     Promise.all([
@@ -225,6 +233,8 @@ function NodeDetailPage() {
           ) : null}
         </CardContent>
       </Card>
+
+      <NodeMetricsDashboard nodeId={id} />
 
       <ConditionsPanel conditions={conditions} />
     </div>

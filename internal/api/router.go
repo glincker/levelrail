@@ -652,6 +652,12 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("POST /api/v1/nodes/{id}/cordon", rt.requireAbility(AbilityRoot, rt.handleCordonNode))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/uncordon", rt.requireAbility(AbilityRoot, rt.handleUncordonNode))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/drain", rt.requireAbility(AbilityRoot, rt.handleDrainNode))
+	// Node-level metrics (sum of per-container samples for everything
+	// placed on this node, see handleQueryNodeMetrics's own doc comment
+	// for exactly what that does and doesn't mean): same AbilityRoot
+	// boundary and nil-telemetry 501 shape as every route above, and the
+	// same query-param contract as GET /apps/{name}/metrics above it.
+	mux.HandleFunc("GET /api/v1/nodes/{id}/metrics", rt.requireAbility(AbilityRoot, rt.handleQueryNodeMetrics))
 
 	// Certificates (TLS renewal visibility): this project treats
 	// "a cert renewal fails silently at 3am" as its central
