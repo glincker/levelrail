@@ -1,18 +1,13 @@
 import { useMemo, useState } from 'react'
-import {
-  PulseIcon,
-  InfoIcon,
-  ArrowsClockwiseIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import { Button } from './ui/button'
+import { PulseIcon, InfoIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription, AlertTitle } from './ui/alert'
 import { MetricChartCard } from './MetricChartCard'
+import { TimeRangeControls } from './TimeRangeControls'
 import { useNodeMetricSeries } from '../queries/nodeMetrics'
 import type { NodeMetricName } from '../types/nodeMetrics'
-import { type ChartUnit, mergeMetricSeries } from '../lib/metricChart'
+import { type ChartUnit, useMergedChartQuery } from '../lib/metricChart'
 import {
   DEFAULT_TIME_RANGE_KEY,
-  TIME_RANGE_PRESETS,
   resolveTimeRange,
   type ResolvedTimeRange,
   type TimeRangeKey,
@@ -132,19 +127,10 @@ function NodeChartCard({
     { enabled: Boolean(group.secondary) },
   )
 
-  const isLoading =
-    primaryQuery.isLoading ||
-    (Boolean(group.secondary) && secondaryQuery.isLoading)
-  const error =
-    primaryQuery.error ?? (group.secondary ? secondaryQuery.error : null)
-
-  const rows = useMemo(
-    () =>
-      mergeMetricSeries(
-        primaryQuery.data,
-        group.secondary ? secondaryQuery.data : undefined,
-      ),
-    [primaryQuery.data, secondaryQuery.data, group.secondary],
+  const { rows, isLoading, error } = useMergedChartQuery(
+    primaryQuery,
+    secondaryQuery,
+    Boolean(group.secondary),
   )
 
   return (
@@ -196,42 +182,13 @@ export function NodeMetricsDashboard({ nodeId }: { nodeId: string }) {
             container placed on this node, not a host-level reading.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div
-            role="group"
-            aria-label="Time range"
-            className="inline-flex rounded-md border border-border"
-          >
-            {TIME_RANGE_PRESETS.map((preset) => (
-              <button
-                key={preset.key}
-                type="button"
-                onClick={() => {
-                  setRangeKey(preset.key)
-                }}
-                aria-pressed={rangeKey === preset.key}
-                className={`px-2.5 py-1 text-xs font-medium first:rounded-l-md last:rounded-r-md ${
-                  rangeKey === preset.key
-                    ? 'bg-foreground text-background'
-                    : 'bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setRefreshNonce((n) => n + 1)
-            }}
-          >
-            <ArrowsClockwiseIcon className="size-3.5" aria-hidden="true" />
-            Refresh
-          </Button>
-        </div>
+        <TimeRangeControls
+          rangeKey={rangeKey}
+          onRangeChange={setRangeKey}
+          onRefresh={() => {
+            setRefreshNonce((n) => n + 1)
+          }}
+        />
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
