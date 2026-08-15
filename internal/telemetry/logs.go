@@ -27,6 +27,16 @@ import (
 // share both a write cadence (bursty, per-batch writes) and a retention
 // model (a periodic delete-older-than sweep).
 //
+// LogCollector.StreamOne is also the single point every line passes
+// through on its way in from Docker, which makes it the natural hook for
+// a live viewer, not just the persisted store: when a LogBroadcaster
+// (broadcast.go) is configured, StreamOne publishes each line to it the
+// moment it arrives, before batching or writing it anywhere, so a
+// currently-connected SSE viewer (internal/api's live log route) sees
+// output as fast as this collector itself does, independent of how
+// stale WriteLogBatch's own batching threshold might otherwise make a
+// query against the store.
+//
 // Compression (the log store's "chunk, compress, index" design goal):
 // deliberately not an explicit step here. FTS5 (see
 // migrations/0002_log_entries.sql) needs plaintext access to message to
@@ -262,20 +272,27 @@ type LogSource interface {
 
 // LogCollector streams logs from a caller-supplied set of targets and
 // writes what it receives to a Store, batching writes per
-// logBatchMaxLines/logBatchMaxWait.
+// logBatchMaxLines/logBatchMaxWait, and, when a broadcaster is
+// configured, fans every line out live at the same time (see StreamOne).
 type LogCollector struct {
-	source LogSource
-	store  *DB
-	logger *slog.Logger
+	source      LogSource
+	store       *DB
+	broadcaster *LogBroadcaster
+	logger      *slog.Logger
 }
 
-// NewLogCollector builds a LogCollector. logger defaults to
-// slog.Default() if nil.
-func NewLogCollector(source LogSource, store *DB, logger *slog.Logger) *LogCollector {
+// NewLogCollector builds a LogCollector. broadcaster may be nil: without
+// one, StreamOne still batches and persists every line exactly as
+// before, it just has nowhere to publish a live copy, so a control plane
+// started without one simply has no live log tail (internal/api's live
+// log route returns 501 in that case, the same "not configured" shape
+// this package's own optional dependencies already use elsewhere).
+// logger defaults to slog.Default() if nil.
+func NewLogCollector(source LogSource, store *DB, broadcaster *LogBroadcaster, logger *slog.Logger) *LogCollector {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &LogCollector{source: source, store: store, logger: logger}
+	return &LogCollector{source: source, store: store, broadcaster: broadcaster, logger: logger}
 }
 
 // StreamOne follows target's log stream (Follow: true, from the current
@@ -332,7 +349,20 @@ func (lc *LogCollector) StreamOne(ctx context.Context, target LogTarget) error {
 				flush(ctx)
 				return nil // the stream ended on its own, e.g. the container stopped
 			}
-			batch = append(batch, toLogEntry(target.ResourceID, line))
+			entry := toLogEntry(target.ResourceID, line)
+			// Published before it's ever added to the batch below: a
+			// live subscriber must see this line the instant it arrives,
+			// not delayed behind logBatchMaxLines/logBatchMaxWait, which
+			// exist purely to bound SQLite write frequency and have
+			// nothing to do with how fresh a live view needs to be. This
+			// is the exact same "published immediately, synchronously,
+			// never buffered or batched" choice internal/deploylog.
+			// Recorder.Progress makes for build output, applied here to
+			// container logs.
+			if lc.broadcaster != nil {
+				lc.broadcaster.Publish(entry)
+			}
+			batch = append(batch, entry)
 			if len(batch) >= logBatchMaxLines {
 				flush(ctx)
 			}

@@ -246,6 +246,15 @@ func run(logger *slog.Logger) error {
 	// subscriber set.
 	deployRecorder := deploylog.NewRecorder(telemetryDB, logger)
 
+	// logBroadcaster is deployRecorder's live-fan-out counterpart for app
+	// container logs (internal/telemetry.LogBroadcaster's own doc
+	// comment) rather than build/deploy output. Constructed once, here,
+	// and shared by reference into both logCollector below (the
+	// publishing side: StreamOne publishes every line it receives from
+	// Docker) and api.Router (via api.WithLogBroadcaster, see
+	// rootHandler), the subscribing side an SSE viewer connects to.
+	logBroadcaster := telemetry.NewLogBroadcaster()
+
 	alertingDB, err := openAlertingStore(ctx)
 	if err != nil {
 		return err
@@ -333,7 +342,7 @@ func run(logger *slog.Logger) error {
 
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
-		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder, deployRecorder),
+		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder, deployRecorder, logBroadcaster),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -368,7 +377,7 @@ func run(logger *slog.Logger) error {
 	}()
 	go runMetricsRetentionSweep(ctx, telemetryDB, logger)
 
-	logCollector := telemetry.NewLogCollector(client, telemetryDB, logger)
+	logCollector := telemetry.NewLogCollector(client, telemetryDB, logBroadcaster, logger)
 	go func() {
 		if err := logCollector.Run(ctx, logTargetsResyncInterval, logTargets(db, client)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("telemetry log collector stopped", slog.String("error", err.Error()))
@@ -1110,16 +1119,17 @@ func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent
 // api.WithImageLister are both applied unconditionally, the same way
 // api.WithTelemetryQuerier and api.WithAlertRules already are for
 // telemetryDB/alertingDB.
-// deployRecorder is always non-nil (constructed unconditionally in run,
-// unlike builder/secretsManager/webhookHandler which are each
-// independently optional): api.WithDeployRecorder and
-// api.WithDeployLogStore are both applied unconditionally, the same way
-// api.WithTelemetryQuerier and api.WithAlertRules already are for
-// telemetryDB/alertingDB. handleTriggerBuild (internal/api/builds.go)
-// still degrades gracefully to build.SlogProgress if a *caller* passes a
-// nil recorder in some other wiring path (e.g. a test), but production
-// wiring here always has a real one.
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder) http.Handler {
+// deployRecorder and logBroadcaster are both always non-nil (constructed
+// unconditionally in run, unlike builder/secretsManager/webhookHandler
+// which are each independently optional): api.WithDeployRecorder,
+// api.WithDeployLogStore, and api.WithLogBroadcaster are all applied
+// unconditionally, the same way api.WithTelemetryQuerier and
+// api.WithAlertRules already are for telemetryDB/alertingDB.
+// handleTriggerBuild (internal/api/builds.go) still degrades gracefully
+// to build.SlogProgress if a *caller* passes a nil recorder in some
+// other wiring path (e.g. a test), but production wiring here always has
+// a real one.
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster) http.Handler {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
@@ -1134,6 +1144,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithCertExpiryWarningWindow(certExpiryWarningWindow(logger)),
 		api.WithDeployLogStore(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),
+		api.WithLogBroadcaster(logBroadcaster),
 	}
 	if secretsManager != nil {
 		opts = append(opts, api.WithSecretSetter(secretsManager))

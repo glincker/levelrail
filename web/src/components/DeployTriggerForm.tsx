@@ -162,7 +162,7 @@ type BuildFormValues = z.infer<typeof buildSchema>
 //
 // This request is synchronous and blocking on the server: it does not
 // resolve until the build itself finishes, and there is still no backend
-// SSE endpoint for live build progress (useDeployLogStream.ts's own doc
+// SSE endpoint for live build progress (useLogStream.ts's own doc
 // comment: its SSE contract is "assumed," not backed by a real route).
 // So, like DeployExistingImageForm above, this deliberately has no log
 // viewer or progress bar beyond the mutation's own pending flag, just

@@ -331,7 +331,7 @@ func TestStreamOne_WritesAllLinesAfterStreamCloses(t *testing.T) {
 			},
 		},
 	}
-	lc := NewLogCollector(source, db, nil)
+	lc := NewLogCollector(source, db, nil, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -350,6 +350,64 @@ func TestStreamOne_WritesAllLinesAfterStreamCloses(t *testing.T) {
 	}
 }
 
+func TestStreamOne_PublishesEachLineToBroadcasterAsItArrives(t *testing.T) {
+	db := newTestDB(t)
+	source := &fakeLogSource{
+		lines: map[string][]docker.LogLine{
+			"c1": {
+				{Stream: "stdout", Message: "line one"},
+				{Stream: "stderr", Message: "line two"},
+			},
+		},
+	}
+	broadcaster := NewLogBroadcaster()
+	live, unsubscribe := broadcaster.Subscribe("service:web")
+	defer unsubscribe()
+
+	lc := NewLogCollector(source, db, broadcaster, nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	done := make(chan error, 1)
+	go func() { done <- lc.StreamOne(ctx, LogTarget{ResourceID: "service:web", ContainerID: "c1"}) }()
+
+	var got []LogEntry
+	for len(got) < 2 {
+		select {
+		case entry := <-live:
+			got = append(got, entry)
+		case <-time.After(2 * time.Second):
+			t.Fatalf("timed out waiting for live entries, got %d of 2 so far", len(got))
+		}
+	}
+	if got[0].Message != "line one" || got[0].Stream != "stdout" {
+		t.Errorf("got[0] = %+v, want {line one stdout}", got[0])
+	}
+	if got[1].Message != "line two" || got[1].Stream != "stderr" {
+		t.Errorf("got[1] = %+v, want {line two stderr}", got[1])
+	}
+
+	if err := <-done; err != nil {
+		t.Fatalf("StreamOne() error = %v, want nil", err)
+	}
+}
+
+func TestStreamOne_NilBroadcasterIsTolerated(t *testing.T) {
+	db := newTestDB(t)
+	source := &fakeLogSource{
+		lines: map[string][]docker.LogLine{"c1": {{Stream: "stdout", Message: "line"}}},
+	}
+	lc := NewLogCollector(source, db, nil, nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := lc.StreamOne(ctx, LogTarget{ResourceID: "service:web", ContainerID: "c1"}); err != nil {
+		t.Fatalf("StreamOne() error = %v, want nil (no broadcaster configured must not be an error)", err)
+	}
+}
+
 func TestStreamOne_FlushesOnLineCountThreshold(t *testing.T) {
 	db := newTestDB(t)
 	lines := make([]docker.LogLine, logBatchMaxLines+5)
@@ -357,7 +415,7 @@ func TestStreamOne_FlushesOnLineCountThreshold(t *testing.T) {
 		lines[i] = docker.LogLine{Stream: "stdout", Message: "line"}
 	}
 	source := &fakeLogSource{lines: map[string][]docker.LogLine{"c1": lines}}
-	lc := NewLogCollector(source, db, nil)
+	lc := NewLogCollector(source, db, nil, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -383,7 +441,7 @@ func TestStreamOne_ContextCancelled_FlushesPartialBatch(t *testing.T) {
 	lines := make(chan docker.LogLine)
 	errs := make(chan error)
 	source := &blockingLogSource{lines: lines, errs: errs}
-	lc := NewLogCollector(source, db, nil)
+	lc := NewLogCollector(source, db, nil, nil)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -427,7 +485,7 @@ func TestLogCollectorRun_StartsAndStopsStreamsAsTargetsChange(t *testing.T) {
 			"c1": {{Stream: "stdout", Message: "from c1"}},
 		},
 	}
-	lc := NewLogCollector(source, db, nil)
+	lc := NewLogCollector(source, db, nil, nil)
 
 	var call int
 	targetsFunc := func(context.Context) ([]LogTarget, error) {
@@ -460,7 +518,7 @@ func TestLogCollectorRun_StartsAndStopsStreamsAsTargetsChange(t *testing.T) {
 
 func TestLogCollectorRun_TargetsFuncError_ContinuesToNextResync(t *testing.T) {
 	db := newTestDB(t)
-	lc := NewLogCollector(&fakeLogSource{}, db, nil)
+	lc := NewLogCollector(&fakeLogSource{}, db, nil, nil)
 
 	var call int
 	targetsFunc := func(context.Context) ([]LogTarget, error) {

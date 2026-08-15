@@ -1,34 +1,43 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-// Assumed SSE contract for live build/deploy logs (frontend-plan.md
-// section 2; build log streaming over SSE and live log tailing are both
-// part of the platform's build and frontend design).
-// internal/api/router.go has no log-streaming endpoint yet as of this
-// pass (TASKS.md 1.9 predates the frontend work), so this is written
-// against the documented contract rather than a confirmed one:
+// Generic SSE log-tailing hook, shared by two real backends behind the
+// same wire contract: GET /api/v1/apps/{name}/deploys/{deployId}/logs
+// (one build/deploy attempt's output, internal/api/deploy_attempts.go)
+// and GET /api/v1/apps/{name}/logs/stream (a running app container's
+// live output, internal/api/live_logs.go). Originally written and named
+// for the deploy-log case only (useDeployLogStream/DeployLogLine); when
+// the live app-log endpoint landed with the identical contract, this
+// hook was generalized in place rather than duplicated, since nothing
+// about its connection handling, ring buffer, or pause/resume logic was
+// ever actually deploy-specific, only its name and doc comments were.
+// Both backends hold the connection open indefinitely rather than
+// closing it once they run out of data to send right now (see either
+// handler's own doc comment for why), so this hook's lack of manual
+// reconnect logic is safe for both: EventSource only ever needs to
+// reconnect on a genuine network drop, not as part of normal operation.
 //
-//   GET /api/v1/apps/{name}/deploys/{deployId}/logs
 //   Content-Type: text/event-stream
 //
 // Each event's `data:` payload is EITHER:
 //   - a bare string: the raw log line, no framing, OR
 //   - a JSON object: { "line": string, "stream": "stdout" | "stderr" }
 //
-// The JSON shape is the one this hook prefers once the backend exists,
-// since distinguishing stdout/stderr is useful for highlighting failed
-// build steps (the route colors stderr lines). `parseEventPayload` below
-// tries JSON.parse first and falls back to treating the whole payload as
-// a bare line, so this hook does not hard-fail against either shape.
-// Named SSE events are not used (no `event:` field expected), everything
-// arrives as the default `message` event, since that is the simplest
-// contract to hand-implement server-side with Go's net/http.
+// Both real backends send the JSON shape (sseLogEvent in
+// internal/api/deploy_attempts.go), since distinguishing stdout/stderr is
+// useful for highlighting failed build steps or a crashing app alike.
+// `parseEventPayload` below tries JSON.parse first and falls back to
+// treating the whole payload as a bare line, so this hook does not
+// hard-fail against either shape. Named SSE events are not used (no
+// `event:` field expected), everything arrives as the default `message`
+// event, since that is the simplest contract to hand-implement
+// server-side with Go's net/http.
 //
 // EventSource reconnects on its own after a dropped connection (this
 // clean reconnection behavior, plus being simpler through proxies, is
 // exactly why SSE was chosen over WebSockets), so this hook does not
 // implement any retry/backoff logic itself.
 
-export interface DeployLogLine {
+export interface LogLine {
   /** Monotonic id local to this hook instance, stable virtualization key. */
   id: number
   line: string
@@ -37,9 +46,9 @@ export interface DeployLogLine {
 
 export type LogStreamConnectionState = 'connecting' | 'open' | 'error'
 
-export interface UseDeployLogStreamResult {
+export interface UseLogStreamResult {
   /** Bounded window of the most recent lines, oldest first. */
-  lines: DeployLogLine[]
+  lines: LogLine[]
   connectionState: LogStreamConnectionState
   /** True once the caller has paused (see pause()); ingestion never stops. */
   isPaused: boolean
@@ -51,7 +60,12 @@ export interface UseDeployLogStreamResult {
 
 // Ring buffer sizing per frontend-plan.md section 2: "last 5,000-10,000
 // lines; full history stays queryable from the backend log store per 4.8,
-// this is just the live-tail window."
+// this is just the live-tail window." Shared by both consumers: a
+// long-running app container can realistically produce far more total
+// output over its lifetime than a single build ever does, but the same
+// cap is still the right call for a *live-tail* window specifically
+// (older lines belong to the persisted, searchable store, not this
+// in-memory buffer, for either consumer).
 const MAX_BUFFERED_LINES = 8000
 
 interface ParsedLogEvent {
@@ -91,18 +105,18 @@ function parseEventPayload(raw: string): ParsedLogEvent {
 // Ring buffer implementation choice: a plain array in React state, capped
 // at MAX_BUFFERED_LINES on every append via slice, rather than a
 // ref-backed circular buffer with head/tail pointers. Justification:
-// TanStack Virtual (the consumer, see the logs route) needs stable
+// TanStack Virtual (the consumer, see the logs routes) needs stable
 // by-index access into a plain array for its `count`/`getVirtualItems`
 // API, so a real circular buffer would need to be flattened into an array
 // on every render anyway to hand to the virtualizer, which is the same
 // cost as just capping a plain array directly. At the throughput a build
-// log realistically produces (dozens to low hundreds of lines/second,
-// not a per-frame stream), an O(n) slice at an 8,000-line cap costs
-// low-single-digit microseconds, not a perf concern worth a more complex
-// structure for. State (not a ref) because the route needs each new line
-// to trigger a re-render for the virtualized list anyway.
-export function useDeployLogStream(url: string): UseDeployLogStreamResult {
-  const [lines, setLines] = useState<DeployLogLine[]>([])
+// or app log realistically produces (dozens to low hundreds of lines/
+// second, not a per-frame stream), an O(n) slice at an 8,000-line cap
+// costs low-single-digit microseconds, not a perf concern worth a more
+// complex structure for. State (not a ref) because the route needs each
+// new line to trigger a re-render for the virtualized list anyway.
+export function useLogStream(url: string): UseLogStreamResult {
+  const [lines, setLines] = useState<LogLine[]>([])
   const [connectionState, setConnectionState] =
     useState<LogStreamConnectionState>('connecting')
   const [isPaused, setIsPaused] = useState(false)

@@ -14,16 +14,17 @@ import {
 
 // Historical log search over GET /api/v1/apps/{name}/logs
 // (internal/api/logs.go, TASKS.md 2.3): a full-text query over entries
-// telemetry has already stored, distinct from
-// routes/apps/$name/deploys/$deployId/logs.tsx's live SSE build-log tail.
-// That route follows one in-progress build/deploy's output as it
-// streams; this panel searches a time range of already-persisted
-// container log entries after the fact, answering "why was this app slow
-// at 3am last Tuesday" without leaving the dashboard, so it is a
-// request/response query through TanStack Query, not a kept-open
-// EventSource. It reuses that route's visual language (monospace rows,
-// stderr highlighted, TanStack Virtual) because that's still the right
-// look for a log line, not because it shares any code path with it.
+// telemetry has already stored, distinct from the live SSE tail this
+// panel now sits alongside as the "Search" tab in
+// routes/apps/$name/logs.tsx (components/LiveLogViewer.tsx renders the
+// "Live" tab, following the running container's own output as it
+// streams). This panel searches a time range of already-persisted log
+// entries after the fact, answering "why was this app slow at 3am last
+// Tuesday" without leaving the dashboard, so it is a request/response
+// query through TanStack Query, not a kept-open EventSource. It shares
+// LiveLogViewer's visual language (monospace rows, stderr highlighted,
+// TanStack Virtual) because that's still the right look for a log line,
+// not because it shares any code path with it.
 
 const ROW_HEIGHT_PX = 22
 const SEARCH_DEBOUNCE_MS = 300
@@ -79,7 +80,7 @@ export function LogSearchPanel({ appName }: { appName: string }) {
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Searches stored container log entries in the selected range. Not a
-            live tail; see the build log viewer for that.
+            live tail; see the Live tab for that.
           </p>
         </div>
         <div className="flex items-center gap-2">
