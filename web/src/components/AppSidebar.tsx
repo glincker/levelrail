@@ -11,6 +11,7 @@ import {
   UserIcon,
   CloudArrowUpIcon,
   FolderIcon,
+  GlobeIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
@@ -154,6 +155,23 @@ export function AppSidebar() {
                     >
                       <HardDrivesIcon />
                       <span>Nodes</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  {/* Centralized cross-app domain list plus the
+                      platform-wide ACME/primary-domain settings
+                      (internal/api/ingress_settings.go): the same
+                      "resource an operator browses day to day" category
+                      Apps/Databases/Projects/Nodes already sit in, not
+                      folded under Settings since it aggregates real,
+                      per-app routing state, not account configuration. */}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/domains" />}
+                      isActive={pathname.startsWith('/domains')}
+                      tooltip="Domains"
+                    >
+                      <GlobeIcon />
+                      <span>Domains</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
