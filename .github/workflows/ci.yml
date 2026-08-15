@@ -4,9 +4,17 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - '**/*.md'
+      - 'adr/**'
+      - 'LICENSE'
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - '**/*.md'
+      - 'adr/**'
+      - 'LICENSE'
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -19,6 +27,7 @@ jobs:
   build-vet-test:
     name: Build, vet, test
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -27,6 +36,20 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+
+      # internal/build (see its own doc comment) reaches BuildKit through
+      # dockerd's hijacked connection, the same path `docker buildx
+      # build` uses with the default driver. That path's "docker"
+      # exporter (load the result straight into the local image store)
+      # needs the daemon on containerd-backed storage; the runner's stock
+      # Docker install doesn't have that on by default. Without this, the
+      # BuildKit-dependent tests below fail with `exporter "docker" could
+      # not be found`, not a code problem, a daemon config one.
+      - name: Enable containerd image store for BuildKit's docker exporter
+        run: |
+          sudo mkdir -p /etc/docker
+          echo '{"features":{"containerd-snapshotter":true}}' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
 
       - name: go build
         run: go build ./...
@@ -45,10 +68,8 @@ jobs:
       # the bar even if overall coverage passes. NOT implemented yet.
       #
       # Deliberately left as a documented gap rather than a step that runs
-      # and always reports green, because it can't be verified without a
-      # real PR against a real GitHub remote, and this repo does not have
-      # one yet (an open decision still pending: when to create the real
-      # GitHub repo and push).
+      # and always reports green: it needs a real PR run to build and
+      # verify against, not something to guess at blind.
       #
       # What building it for real requires:
       #   1. A coverage baseline from `main`. A PR run only has the PR's
@@ -75,6 +96,7 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v6

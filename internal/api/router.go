@@ -79,9 +79,11 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/brand"
+	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
 // AppStore is the store surface the apps and deploys handlers need.
@@ -101,11 +103,49 @@ type AppStore interface {
 	// delete-guard primitive (handleDrainNode, handleDeleteNode): find
 	// what's placed on a node without listing every service.
 	ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]store.DesiredService, error)
+	// RestartService is the only way to force a running container to be
+	// recreated without an image change: a redeploy of the same image
+	// tag is otherwise a genuine reconciler no-op (see
+	// internal/reconcile/application.ContainerName's own doc comment).
+	// See store.DB.RestartService's own doc comment for why this is
+	// deliberately excluded from SaveDesiredService's full-record-replace
+	// semantics, the same reasoning UpdateServiceNode already establishes
+	// for NodeID.
+	RestartService(ctx context.Context, name string) error
 }
 
 // DeployStore is the store surface the deploy-history handler needs.
 type DeployStore interface {
 	GetConditions(ctx context.Context, controllerName string) ([]reconcile.Condition, error)
+}
+
+// DeployAttemptStore is the store surface real deploy-attempt history
+// needs: row-per-attempt CRUD, layered alongside DeployStore above
+// rather than replacing it. See handleDeployHistory's own doc comment
+// for why GET /api/v1/apps/{name}/deploys keeps returning reconcile
+// conditions unchanged (an existing, real frontend consumer,
+// web/src/queries/deploys.ts's useDeployStatus, already depends on that
+// shape) while this interface backs a new, additional endpoint,
+// GET /api/v1/apps/{name}/deploy-attempts, instead of overloading the
+// old one. *store.DB satisfies this structurally.
+type DeployAttemptStore interface {
+	SaveDeployAttempt(ctx context.Context, a store.DeployAttempt) error
+	FinishDeployAttempt(ctx context.Context, id, status string, finishedAt time.Time, errMsg string) error
+	GetDeployAttempt(ctx context.Context, id string) (*store.DeployAttempt, error)
+	ListDeployAttempts(ctx context.Context, serviceName string) ([]store.DeployAttempt, error)
+}
+
+// DeployLogStore is the telemetry-side read surface
+// handleDeployLogStream needs to serve a full replay once an attempt has
+// already finished (see that handler's own doc comment for the
+// in-progress-vs-finished split). *telemetry.DB satisfies this
+// structurally. Optional (nil is valid, the same "not configured" shape
+// WithTelemetryQuerier's own absence already has): without one, a
+// finished attempt's log route returns 501; an in-progress attempt's
+// live tail (backed by deployRecorder below, a separate optional field)
+// is unaffected by this one being unset.
+type DeployLogStore interface {
+	QueryDeployLog(ctx context.Context, attemptID string) ([]telemetry.DeployLogEntry, error)
 }
 
 // DatabaseStore is the store surface the databases handlers need, the
@@ -149,6 +189,7 @@ type TokenStore interface {
 type Store interface {
 	AppStore
 	DeployStore
+	DeployAttemptStore
 	DatabaseStore
 	AuthStore
 	TokenStore
@@ -232,6 +273,9 @@ type Router struct {
 	backupRunner            BackupRunner        // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
 	restoreHistory          RestoreHistoryStore // always set, same "core Store interface" shape as backupHistory above
 	restoreRunner           RestoreRunner       // nil is valid: POST /api/v1/databases/{name}/restore returns 501, same shape as backupRunner above
+	deployAttempts          DeployAttemptStore  // always set, same "core Store interface" shape as certs/staticSites above
+	deployLogStore          DeployLogStore      // nil is valid: a finished attempt's log route returns 501, same shape as secrets/telemetry/alertRules above
+	deployRecorder          *deploylog.Recorder // nil is valid: an in-progress attempt's live tail returns 501, and handleTriggerBuild falls back to build.SlogProgress with no persisted log, same "not configured" shape as builder/telemetry above
 }
 
 // Option configures optional Router behavior.
@@ -360,6 +404,31 @@ func WithBuilder(b Builder) Option {
 	return func(rt *Router) { rt.builder = b }
 }
 
+// WithDeployLogStore enables a finished deploy attempt's full log replay
+// on GET /api/v1/apps/{name}/deploys/{deployId}/logs. Without one
+// configured (the default), that route returns 501 for an attempt that
+// has already finished; an in-progress attempt's live tail is unaffected
+// (see WithDeployRecorder). cmd/levelrail/main.go passes the same
+// *telemetry.DB internal/deploylog.Recorder writes to.
+func WithDeployLogStore(s DeployLogStore) Option {
+	return func(rt *Router) { rt.deployLogStore = s }
+}
+
+// WithDeployRecorder enables live build-log fan-out for the manual build
+// trigger (handleTriggerBuild) and the in-progress side of
+// GET /api/v1/apps/{name}/deploys/{deployId}/logs. Without one
+// configured (the default), handleTriggerBuild falls back to
+// build.SlogProgress (no persisted log, matching this package's
+// pre-existing behavior) and the SSE log route returns 501 for any
+// attempt still in progress. r must be the exact same *deploylog.Recorder
+// instance passed to internal/webhook.New when a webhook handler is also
+// wired: see that package's own doc comment for why a shared instance,
+// not two independent ones, is required for a webhook-triggered
+// attempt's live log to be visible through this router's SSE route.
+func WithDeployRecorder(r *deploylog.Recorder) Option {
+	return func(rt *Router) { rt.deployRecorder = r }
+}
+
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
 func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Router {
 	if logger == nil {
@@ -370,6 +439,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		brand:          b,
 		apps:           s,
 		deploys:        s,
+		deployAttempts: s,
 		databases:      s,
 		auth:           s,
 		tokens:         s,
@@ -448,6 +518,29 @@ func (rt *Router) Handler() http.Handler {
 	// Deploys.
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityDeploy, rt.handleTriggerDeploy))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityRead, rt.handleDeployHistory))
+
+	// Restart (handleRestartApp's own doc comment): AbilityDeploy, the
+	// same boundary as the deploy trigger above, since forcing a
+	// container recreation is the same class of action as triggering a
+	// deploy, just without a new image.
+	mux.HandleFunc("POST /api/v1/apps/{name}/restart", rt.requireAbility(AbilityDeploy, rt.handleRestartApp))
+
+	// Real deploy-attempt history (deploy_attempts.go): a row per
+	// trigger call across all three real trigger paths, additional to
+	// (not a replacement for) the reconcile-conditions route above. See
+	// DeployAttemptStore's own doc comment for why this is a separate
+	// endpoint rather than a change to GET .../deploys's existing
+	// response shape. AbilityRead, matching every other passive view of
+	// an app's own state.
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploy-attempts", rt.requireAbility(AbilityRead, rt.handleListDeployAttempts))
+
+	// Deploy-attempt build/log stream (deploy_attempts.go): SSE, serving
+	// either a live tail (attempt still running) or a full persisted
+	// replay (attempt already finished), the exact contract
+	// web/src/hooks/useDeployLogStream.ts was built against. AbilityRead:
+	// this is a read of one attempt's own output, the same sensitivity
+	// as the deploy-attempts list above.
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/logs", rt.requireAbility(AbilityRead, rt.handleDeployLogStream))
 
 	// Manual build trigger (see Builder/WithBuilder above and
 	// handleTriggerBuild's own doc comment): builds an image from a git

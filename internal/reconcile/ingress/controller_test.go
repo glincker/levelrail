@@ -203,7 +203,7 @@ func TestController_Reconcile_NoServicesWithDomains(t *testing.T) {
 
 func TestController_Reconcile_OneServiceRunning_RouteAppears(t *testing.T) {
 	desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Domains: []string{"web.example.com"}}
-	target := application.ContainerName(desired.Name, desired.Image)
+	target := application.ContainerName(desired.Name, desired.Image, "")
 
 	rt := newFakeRuntime()
 	rt.seedRunning(target, 34567)
@@ -239,7 +239,7 @@ func TestController_Reconcile_OneServiceRunning_RouteAppears(t *testing.T) {
 
 func TestController_Reconcile_ContainerNotRunning_SkippedNotFailed(t *testing.T) {
 	desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Domains: []string{"web.example.com"}}
-	target := application.ContainerName(desired.Name, desired.Image)
+	target := application.ContainerName(desired.Name, desired.Image, "")
 
 	rt := newFakeRuntime()
 	rt.seedStopped(target) // container exists but crashed / not started
@@ -282,7 +282,7 @@ func TestController_Reconcile_ContainerMissing_SkippedNotFailed(t *testing.T) {
 
 func TestController_Reconcile_RunningNoPorts_SkippedNotFailed(t *testing.T) {
 	desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Domains: []string{"web.example.com"}}
-	target := application.ContainerName(desired.Name, desired.Image)
+	target := application.ContainerName(desired.Name, desired.Image, "")
 
 	rt := newFakeRuntime()
 	rt.seedRunningNoPorts(target)
@@ -307,7 +307,7 @@ func TestController_Reconcile_RunningNoPorts_SkippedNotFailed(t *testing.T) {
 
 func TestController_Reconcile_InspectError_SkippedNotFailed(t *testing.T) {
 	desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Domains: []string{"web.example.com"}}
-	target := application.ContainerName(desired.Name, desired.Image)
+	target := application.ContainerName(desired.Name, desired.Image, "")
 
 	rt := newFakeRuntime()
 	rt.seedInspectErr(target, errors.New("docker socket hiccup"))
@@ -330,8 +330,8 @@ func TestController_Reconcile_TwoServicesDistinctDomains_BothRouted(t *testing.T
 	api := store.DesiredService{Name: "api", Image: "img:v2", Port: 8080, Domains: []string{"api.example.com"}}
 
 	rt := newFakeRuntime()
-	rt.seedRunning(application.ContainerName(web.Name, web.Image), 11111)
-	rt.seedRunning(application.ContainerName(api.Name, api.Image), 22222)
+	rt.seedRunning(application.ContainerName(web.Name, web.Image, ""), 11111)
+	rt.seedRunning(application.ContainerName(api.Name, api.Image, ""), 22222)
 
 	st := &fakeStore{services: []store.DesiredService{web, api}}
 	applier := &fakeApplier{}
@@ -365,7 +365,7 @@ func TestController_Reconcile_MixedRoutableAndNot(t *testing.T) {
 	noDomains := store.DesiredService{Name: "worker", Image: "img:v3", Port: 0}
 
 	rt := newFakeRuntime()
-	rt.seedRunning(application.ContainerName(web.Name, web.Image), 11111)
+	rt.seedRunning(application.ContainerName(web.Name, web.Image, ""), 11111)
 	// api's container deliberately not seeded: mid-deploy.
 
 	st := &fakeStore{services: []store.DesiredService{web, stillDeploying, noDomains}}
@@ -402,7 +402,7 @@ func TestController_Reconcile_StoreError(t *testing.T) {
 
 func TestController_Reconcile_ApplyFailed(t *testing.T) {
 	desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Domains: []string{"web.example.com"}}
-	target := application.ContainerName(desired.Name, desired.Image)
+	target := application.ContainerName(desired.Name, desired.Image, "")
 
 	rt := newFakeRuntime()
 	rt.seedRunning(target, 34567)

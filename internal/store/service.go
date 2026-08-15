@@ -2,7 +2,9 @@ package store
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -76,6 +78,18 @@ type DesiredService struct {
 	// ambiguous regardless of who constructs the struct.
 	Strategy string
 	Replicas int
+
+	// RestartNonce is opaque and only ever compared for equality, never
+	// interpreted: internal/reconcile/application.ContainerName folds it
+	// into the container name hash (only when non-empty, so a service
+	// that has never been restarted keeps the exact container name it
+	// always has). Changing it is therefore indistinguishable, from the
+	// reconciler's level-triggered point of view, from an image change:
+	// the existing blue-green/recreate cutover logic already handles it
+	// correctly with no new branch. Like NodeID, this is deliberately
+	// excluded from SaveDesiredService's full-record-replace semantics;
+	// only RestartService writes it, see that method's own doc comment.
+	RestartNonce string
 }
 
 // DefaultDeployStrategy and DefaultReplicas mirror internal/spec's
@@ -268,6 +282,40 @@ func (db *DB) UpdateServiceNode(ctx context.Context, name, nodeID string) error 
 	return nil
 }
 
+// RestartService is the only way restart_nonce ever changes: SaveDesiredService's
+// own doc comment (and this field's own doc comment on DesiredService)
+// explains why it's deliberately excluded from that method's
+// full-record-replace semantics, the same reasoning UpdateServiceNode
+// already establishes for NodeID.
+//
+// The generated value is opaque and only ever compared for equality by
+// internal/reconcile/application.ContainerName, never interpreted, so a
+// short random hex string is enough; it does not need to be
+// cryptographically unpredictable the way a session token or API key
+// does, only different from whatever was there before.
+func (db *DB) RestartService(ctx context.Context, name string) error {
+	buf := make([]byte, 8)
+	if _, err := rand.Read(buf); err != nil {
+		return fmt.Errorf("store: restart service %q: generate nonce: %w", name, err)
+	}
+	nonce := hex.EncodeToString(buf)
+
+	res, err := db.ExecContext(ctx, `
+		UPDATE desired_services SET restart_nonce = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, nonce, name)
+	if err != nil {
+		return fmt.Errorf("store: restart service %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: restart service %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrServiceNotFound
+	}
+	return nil
+}
+
 // ErrServiceNotFound is returned by GetDesiredService when no service
 // has that name.
 var ErrServiceNotFound = errors.New("store: service not found")
@@ -276,7 +324,7 @@ var ErrServiceNotFound = errors.New("store: service not found")
 // ErrServiceNotFound if no such service has been saved.
 func (db *DB) GetDesiredService(ctx context.Context, name string) (*DesiredService, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas
+		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce
 		FROM desired_services
 		WHERE name = ?
 	`, name)
@@ -294,7 +342,7 @@ func (db *DB) GetDesiredService(ctx context.Context, name string) (*DesiredServi
 // ListDesiredServices returns every saved service, ordered by name.
 func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas
+		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce
 		FROM desired_services
 		ORDER BY name
 	`)
@@ -329,7 +377,7 @@ func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error)
 // comparison in this package.
 func (db *DB) ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]DesiredService, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas
+		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce
 		FROM desired_services
 		WHERE node_id = ?
 		ORDER BY name
@@ -383,7 +431,7 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 	return nil
 }
 
-// scanDesiredService reads the six-column shape both GetDesiredService
+// scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
 // signature), so the decode-JSON-columns logic exists exactly once.
 func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
@@ -391,7 +439,7 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 		svc                                                        DesiredService
 		domainsJSON, envJSON, secretEnvJSON, resourcesJSON, health string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce); err != nil {
 		return nil, err
 	}
 

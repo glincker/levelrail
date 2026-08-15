@@ -1,0 +1,12 @@
+# Fixture for the internal/build Railpack integration: enough for
+# Railpack's python provider to detect and successfully plan an app (so
+# generateRailpackPlan gets a real, Success: true result), while python
+# is still outside this slice's supportedRailpackProviders (node, golang
+# only). This exercises UnsupportedProviderError's actual path, not a
+# "Railpack could not plan the app at all" failure, which is what an
+# empty/marker-less directory produces instead (see the earlier failed
+# attempt this comment replaces: a bare README.md fixture surfaced as a
+# generic build-plan failure, not an unsupported-provider one, because
+# Railpack hard-fails ValidatePlan when no provider matches anything at
+# all, rather than returning Success: true with an empty provider name).
+flask==3.0.0

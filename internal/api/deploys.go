@@ -1,10 +1,12 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -65,7 +67,45 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rt.recordPlainDeployAttempt(r.Context(), name, req.Image)
+
 	writeJSON(w, http.StatusAccepted, toAppResource(updated))
+}
+
+// recordPlainDeployAttempt saves this task's judgment call for the
+// plain image-tag path: it deserves a deploy_attempts row for history
+// and rollback purposes just like the two build-triggering paths, even
+// though it has no real build step (no Dockerfile build happens, see
+// handleTriggerDeploy's own doc comment) and so nothing worth persisting
+// to the deploy-log store. The row is saved and immediately finished as
+// succeeded in one call, not started as "running" and finished later by
+// a background build: SaveDesiredService above has already fully
+// completed the only work this path does by the time this runs.
+//
+// A failure here (minting the ID, or either store call) is logged, not
+// returned as this handler's own error: the desired-state write already
+// succeeded by this point, so a history-tracking hiccup must not turn an
+// otherwise-successful deploy trigger into a client-visible failure, the
+// same "must never block the real operation" choice
+// deploy.Pipeline.deployDockerfile's own metrics-recording already
+// makes.
+func (rt *Router) recordPlainDeployAttempt(ctx context.Context, serviceName, image string) {
+	id, err := store.NewDeployAttemptID()
+	if err != nil {
+		rt.logger.Error("api: trigger deploy: mint deploy attempt id failed", slog.String("error", err.Error()), slog.String("name", serviceName))
+		return
+	}
+	now := time.Now()
+	if err := rt.deployAttempts.SaveDeployAttempt(ctx, store.DeployAttempt{
+		ID: id, ServiceName: serviceName, Image: image,
+		Status: store.DeployAttemptStatusRunning, StartedAt: now,
+	}); err != nil {
+		rt.logger.Error("api: trigger deploy: save deploy attempt failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
+		return
+	}
+	if err := rt.deployAttempts.FinishDeployAttempt(ctx, id, store.DeployAttemptStatusSucceeded, time.Now(), ""); err != nil {
+		rt.logger.Error("api: trigger deploy: finish deploy attempt failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
+	}
 }
 
 // handleDeployHistory handles GET /api/v1/apps/{name}/deploys. It

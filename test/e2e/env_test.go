@@ -171,7 +171,7 @@ func TestEnv_Live_PlainAndSecretResolveInContainer(t *testing.T) {
 	// internal/reconcile/application/secrets_live_test.go applies. This is
 	// the assertion that actually matters: what the running container's
 	// real environment contains.
-	target := application.ContainerName(serviceName, res.Tag)
+	target := application.ContainerName(serviceName, res.Tag, "")
 	inspect, err := dockerCli.ContainerInspect(buildCtx, target)
 	if err != nil {
 		t.Fatalf("raw ContainerInspect(%q) error = %v", target, err)

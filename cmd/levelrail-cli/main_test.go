@@ -7,6 +7,15 @@ import (
 )
 
 func TestRun_Dispatch(t *testing.T) {
+	// detectLocalGit walks up from the working directory to the nearest
+	// .git (gitdetect.go), so a subtest depending on it finding nothing
+	// ("apps create no flags") is only hermetic if run somewhere with no
+	// ambient repo above it. go test's own working directory is this
+	// package's source directory, which is normally inside a real
+	// checkout; a fresh checkout's "origin" remote (every CI runner has
+	// one) is exactly the case that made this non-hermetic in practice.
+	t.Chdir(t.TempDir())
+
 	tests := []struct {
 		name       string
 		args       []string
@@ -49,6 +58,8 @@ func TestRun_Dispatch(t *testing.T) {
 }
 
 func TestRun_CreateJSONErrorGoesToStdout(t *testing.T) {
+	t.Chdir(t.TempDir())
+
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"apps", "create", "--json"}, &stdout, &stderr, envMap(nil))
 	if got != exitValidation {

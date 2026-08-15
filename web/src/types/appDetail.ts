@@ -25,6 +25,17 @@ export interface ServiceHealth {
   liveness?: ServiceProbe | null
 }
 
+// The three deploy strategy values internal/spec.Service.Strategy
+// accepts (internal/spec/spec.go's StrategyRolling/StrategyRecreate/
+// StrategyBlueGreen). "rolling" is included here because it's a real,
+// readable value a service can already carry (e.g. a hand-edited
+// app.yaml deployed outside this UI), not because it's meant to be
+// offered as a new choice: internal/reconcile/application's controller
+// refuses to run it (documented "unsupported" condition, not a bug),
+// so DeployStrategyEditor deliberately does not let an operator pick it
+// going forward, see that component's own comment.
+export type DeployStrategy = 'rolling' | 'recreate' | 'blue-green'
+
 // Matches internal/api/apps.go's appResource exactly. `domains` and
 // `env` carry `omitempty` on the Go side, so an app with neither set may
 // omit them from the response entirely; callers should treat both as
@@ -36,6 +47,10 @@ export interface ServiceHealth {
 // (handleSetAppNode) rather than through this type, the same
 // response-only convention databaseDetail.ts's DatabaseResource
 // documents for the equivalent field.
+//
+// strategy/replicas carry no `omitempty` on the Go side (appResource's
+// own comment explains why: a real read is always the store's resolved,
+// never-empty/zero value), so both are required here too, not optional.
 export interface AppDetail {
   name: string
   image: string
@@ -44,5 +59,7 @@ export interface AppDetail {
   env?: Record<string, string>
   resources?: ServiceResources | null
   health?: ServiceHealth | null
+  strategy: DeployStrategy
+  replicas: number
   node_id?: string
 }

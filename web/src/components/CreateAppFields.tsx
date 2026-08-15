@@ -41,6 +41,22 @@ const LOCAL_NODE_VALUE = ''
 // from the post-validation submit type (z.output, a real number), so
 // useForm's generic needs both spelled out below, same reasoning that
 // file's own comment gives.
+// Sentinel for "use the store's own default", the same reasoning
+// LOCAL_NODE_VALUE documents for the node field just above: base-ui's
+// Select can't use an empty string as a real item value, and leaving
+// strategy unset entirely is exactly what should happen when an
+// operator doesn't touch this field (validateAppResource,
+// internal/api/apps.go, already treats an empty Strategy as "fall
+// through to store.DefaultDeployStrategy").
+const STRATEGY_DEFAULT_VALUE = '__default__'
+
+// Only recreate/blue-green are offered, matching DeployStrategyEditor's
+// own SELECTABLE_STRATEGIES exactly and for the same reason: "rolling"
+// is a real spec constant the reconciler explicitly refuses to run
+// (internal/reconcile/application's controller, a documented
+// "unsupported" condition, not a bug), and a brand-new app has no
+// existing rolling state that would justify offering it here the way
+// DeployStrategyEditor must for an app that already carries it.
 const createAppSchema = z.object({
   name: z.string().trim().min(1, 'Name is required'),
   image: z.string().trim().min(1, 'Image is required'),
@@ -53,6 +69,20 @@ const createAppSchema = z.object({
   // node ids or the local sentinel, so no further validation is needed
   // beyond what the Select already constrains it to.
   node: z.string().optional(),
+  strategy: z.enum(['recreate', 'blue-green', STRATEGY_DEFAULT_VALUE]),
+  // Left as a plain trimmed string rather than z.coerce.number: an empty
+  // string here means "use store.DefaultReplicas", which a coerced
+  // number field can't represent (Number('') is 0, a real, different
+  // value), so validation into a real optional number happens in
+  // onSubmit below instead, after this schema has confirmed the field is
+  // either blank or a valid positive integer string.
+  replicas: z
+    .string()
+    .trim()
+    .refine(
+      (v) => v === '' || (/^\d+$/.test(v) && Number(v) > 0),
+      'Replicas must be a positive whole number, or left blank for the default',
+    ),
 })
 
 type CreateAppFormInput = z.input<typeof createAppSchema>
@@ -63,6 +93,8 @@ const DEFAULT_VALUES: CreateAppFormInput = {
   image: '',
   port: '',
   node: LOCAL_NODE_VALUE,
+  strategy: STRATEGY_DEFAULT_VALUE,
+  replicas: '',
 }
 
 // The name/image/port(/node) field set and its submit logic, factored
@@ -131,6 +163,16 @@ export function CreateAppFields({
         name: values.name.trim(),
         image: values.image.trim(),
         port: values.port,
+        // Both left undefined (omitted from the request body entirely,
+        // rather than sent as "" / 0) when the operator didn't touch
+        // them, so the server's own default-fallthrough applies exactly
+        // as it does for a service saved with no strategy/replicas at
+        // all.
+        strategy:
+          values.strategy === STRATEGY_DEFAULT_VALUE
+            ? undefined
+            : values.strategy,
+        replicas: values.replicas === '' ? undefined : Number(values.replicas),
       },
       {
         onSuccess: (created) => {
@@ -194,6 +236,44 @@ export function CreateAppFields({
         />
         <FieldError errors={[formState.errors.port]} />
       </Field>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Field>
+          <FieldLabel htmlFor="app-strategy">Deploy strategy</FieldLabel>
+          <Controller
+            control={control}
+            name="strategy"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger id="app-strategy" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={STRATEGY_DEFAULT_VALUE}>
+                    Default (blue-green)
+                  </SelectItem>
+                  <SelectItem value="recreate">Recreate</SelectItem>
+                  <SelectItem value="blue-green">Blue-green</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+          <FieldError errors={[formState.errors.strategy]} />
+        </Field>
+
+        <Field>
+          <FieldLabel htmlFor="app-replicas">Replicas</FieldLabel>
+          <Input
+            id="app-replicas"
+            type="number"
+            step="1"
+            min="1"
+            placeholder="1"
+            {...register('replicas')}
+          />
+          <FieldError errors={[formState.errors.replicas]} />
+        </Field>
+      </div>
 
       {nodes.length > 0 ? (
         <Field>

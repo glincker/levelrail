@@ -26,8 +26,8 @@ func TestController_Reconcile_DuplicateDomain_DefenseInDepthSkipsLoser(t *testin
 	second := store.DesiredService{Name: "web-b", Image: "img:v2", Port: 80, Domains: []string{"shared.example.com"}}
 
 	rt := newFakeRuntime()
-	rt.seedRunning(application.ContainerName(first.Name, first.Image), 11111)
-	rt.seedRunning(application.ContainerName(second.Name, second.Image), 22222)
+	rt.seedRunning(application.ContainerName(first.Name, first.Image, ""), 11111)
+	rt.seedRunning(application.ContainerName(second.Name, second.Image, ""), 22222)
 
 	st := &fakeStore{services: []store.DesiredService{first, second}}
 	applier := &fakeApplier{}
@@ -79,7 +79,7 @@ func (fakeCertStore) ReleaseCertStorageLock(context.Context, string) error { ret
 
 func TestController_WithCertStore_UsesSQLiteStorageInsteadOfFile(t *testing.T) {
 	desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Domains: []string{"web.example.com"}}
-	target := application.ContainerName(desired.Name, desired.Image)
+	target := application.ContainerName(desired.Name, desired.Image, "")
 
 	rt := newFakeRuntime()
 	rt.seedRunning(target, 34567)

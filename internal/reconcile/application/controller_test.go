@@ -323,7 +323,7 @@ func TestController_Reconcile_FreshDeploy_ReadinessFails(t *testing.T) {
 func TestController_Reconcile_AlreadyRunning_NoOp(t *testing.T) {
 	rt := newFakeRuntime(0)
 	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
-	target := ContainerName("web", desired.Image)
+	target := ContainerName("web", desired.Image, "")
 	rt.seed(target, true)
 
 	c := New("web", &fakeStore{svc: desired}, rt)
@@ -343,7 +343,7 @@ func TestController_Reconcile_AlreadyRunning_NoOp(t *testing.T) {
 func TestController_Reconcile_RestartAfterCrash(t *testing.T) {
 	rt := newFakeRuntime(0)
 	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
-	target := ContainerName("web", desired.Image)
+	target := ContainerName("web", desired.Image, "")
 	rt.seed(target, false) // exists, not running: crashed
 
 	c := New("web", &fakeStore{svc: desired}, rt)
@@ -365,7 +365,7 @@ func TestController_Reconcile_Redeploy_CleansUpOldContainer(t *testing.T) {
 	defer srv.Close()
 
 	rt := newFakeRuntime(serverPort(t, srv))
-	oldTarget := ContainerName("web", "img:v1")
+	oldTarget := ContainerName("web", "img:v1", "")
 	rt.seed(oldTarget, true)
 
 	desired := &store.DesiredService{
@@ -383,7 +383,7 @@ func TestController_Reconcile_Redeploy_CleansUpOldContainer(t *testing.T) {
 		t.Errorf("condition = %+v, want Status=True Reason=Deployed", cond)
 	}
 
-	newTarget := ContainerName("web", "img:v2")
+	newTarget := ContainerName("web", "img:v2", "")
 	names := rt.names()
 	if len(names) != 1 || names[0] != newTarget {
 		t.Errorf("containers after redeploy = %v, want exactly [%s] (old must be cleaned up, only after new is healthy)", names, newTarget)
@@ -392,7 +392,7 @@ func TestController_Reconcile_Redeploy_CleansUpOldContainer(t *testing.T) {
 
 func TestController_Reconcile_CleanupFailure_StillReportsReadyButErrors(t *testing.T) {
 	rt := newFakeRuntime(0)
-	oldTarget := ContainerName("web", "img:v1")
+	oldTarget := ContainerName("web", "img:v1", "")
 	rt.seed(oldTarget, true)
 	rt.removeErr = errors.New("permission denied")
 
@@ -441,7 +441,7 @@ func TestController_Reconcile_DoesNotTouchDifferentServiceContainers(t *testing.
 	// treat it as a stale leftover of "web" itself, stopping and
 	// removing an entirely different, live service's container.
 	rt := newFakeRuntime(0)
-	otherServiceContainer := ContainerName("web-worker", "img:v9")
+	otherServiceContainer := ContainerName("web-worker", "img:v9", "")
 	rt.seed(otherServiceContainer, true)
 
 	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
@@ -521,7 +521,7 @@ func TestController_Reconcile_Redeploy_ReadinessFails_OldContainerSurvives(t *te
 	defer srv.Close()
 
 	rt := newFakeRuntime(serverPort(t, srv))
-	oldTarget := ContainerName("web", "img:v1")
+	oldTarget := ContainerName("web", "img:v1", "")
 	rt.seed(oldTarget, true)
 
 	desired := &store.DesiredService{
@@ -560,8 +560,8 @@ func TestOwnsContainer(t *testing.T) {
 		container   string
 		want        bool
 	}{
-		{name: "exact match", serviceName: "web", container: ContainerName("web", "img:v1"), want: true},
-		{name: "different service that happens to prefix-match", serviceName: "web", container: ContainerName("web-worker", "img:v1"), want: false},
+		{name: "exact match", serviceName: "web", container: ContainerName("web", "img:v1", ""), want: true},
+		{name: "different service that happens to prefix-match", serviceName: "web", container: ContainerName("web-worker", "img:v1", ""), want: false},
 		{name: "unrelated name", serviceName: "web", container: "totally-unrelated", want: false},
 		{name: "right prefix, wrong suffix length", serviceName: "web", container: "web-abc", want: false},
 		{name: "right prefix, non-hex suffix", serviceName: "web", container: "web-zzzzzzzz", want: false},
@@ -815,7 +815,7 @@ func TestController_Reconcile_AlreadyRunning_DoesNotRecordDeployMetric(t *testin
 	// deploy, destroying the whole point of the metric.
 	rt := newFakeRuntime(0)
 	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
-	target := ContainerName("web", desired.Image)
+	target := ContainerName("web", desired.Image, "")
 	rt.seed(target, true)
 	recorder := &fakeDeployRecorder{}
 
@@ -876,9 +876,9 @@ func TestWithHTTPClient(t *testing.T) {
 }
 
 func TestContainerName_DeterministicPerImage(t *testing.T) {
-	a1 := ContainerName("web", "img:v1")
-	a2 := ContainerName("web", "img:v1")
-	b := ContainerName("web", "img:v2")
+	a1 := ContainerName("web", "img:v1", "")
+	a2 := ContainerName("web", "img:v1", "")
+	b := ContainerName("web", "img:v2", "")
 
 	if a1 != a2 {
 		t.Errorf("ContainerName is not deterministic: %q != %q for the same inputs", a1, a2)
@@ -891,19 +891,55 @@ func TestContainerName_DeterministicPerImage(t *testing.T) {
 	}
 }
 
+func TestContainerName_EmptyNonce_IsAGoldenValue_NeverChanges(t *testing.T) {
+	// The exact regression this task's own migration comment (0019_restart_nonce.sql)
+	// promises: "every pre-existing, never-restarted service keeps the
+	// exact container name it already has on upgrade". This is checked
+	// against a literal golden string, not just "equals some other call
+	// with the same inputs", because the whole point is that adding
+	// restartNonce as a parameter must not have changed the hash function
+	// itself for the empty-nonce case; a test that only compared two
+	// fresh calls to each other would pass even if both had silently
+	// drifted from what a real, already-running container was named
+	// before this parameter existed.
+	got := ContainerName("web", "img:v1", "")
+	const want = "web-" + "5222ac0e" // sha256("img:v1")[:8], unchanged by this task
+	if got != want {
+		t.Errorf("ContainerName(\"web\", \"img:v1\", \"\") = %q, want golden value %q (an empty nonce must hash identically to before restartNonce existed)", got, want)
+	}
+}
+
+func TestContainerName_NonEmptyNonce_ProducesADifferentName(t *testing.T) {
+	same := ContainerName("web", "img:v1", "")
+	nonce1 := ContainerName("web", "img:v1", "restart-nonce-1")
+	nonce2 := ContainerName("web", "img:v1", "restart-nonce-2")
+
+	if nonce1 == same {
+		t.Errorf("a non-empty nonce produced the same name as no nonce at all: %q", nonce1)
+	}
+	if nonce1 == nonce2 {
+		t.Errorf("two different nonces collided: %q", nonce1)
+	}
+	// Determinism must hold for a non-empty nonce too, the same as it
+	// does for image alone (TestContainerName_DeterministicPerImage).
+	if again := ContainerName("web", "img:v1", "restart-nonce-1"); again != nonce1 {
+		t.Errorf("ContainerName is not deterministic for the same nonce: %q != %q", again, nonce1)
+	}
+}
+
 func TestReplicaContainerName_Replica0MatchesContainerName(t *testing.T) {
-	got := replicaContainerName("web", "img:v1", 0)
-	want := ContainerName("web", "img:v1")
+	got := replicaContainerName("web", "img:v1", "", 0)
+	want := ContainerName("web", "img:v1", "")
 	if got != want {
 		t.Errorf("replicaContainerName(_, _, 0) = %q, want exactly ContainerName's own output %q (backward compatibility for every existing single-replica service and internal/reconcile/ingress's own call to the exported ContainerName)", got, want)
 	}
 }
 
 func TestReplicaContainerName_NonZeroIndexIsDistinctAndDeterministic(t *testing.T) {
-	r0 := replicaContainerName("web", "img:v1", 0)
-	r1 := replicaContainerName("web", "img:v1", 1)
-	r1Again := replicaContainerName("web", "img:v1", 1)
-	r2 := replicaContainerName("web", "img:v1", 2)
+	r0 := replicaContainerName("web", "img:v1", "", 0)
+	r1 := replicaContainerName("web", "img:v1", "", 1)
+	r1Again := replicaContainerName("web", "img:v1", "", 1)
+	r2 := replicaContainerName("web", "img:v1", "", 2)
 
 	if r1 == r0 {
 		t.Errorf("replica 1's name must differ from replica 0's, got %q for both", r1)
@@ -917,9 +953,9 @@ func TestReplicaContainerName_NonZeroIndexIsDistinctAndDeterministic(t *testing.
 }
 
 func TestOwnsContainer_RecognizesReplicaSuffix(t *testing.T) {
-	base := ContainerName("web", "img:v1") // e.g. "web-abcd1234"
-	r1 := replicaContainerName("web", "img:v1", 1)
-	r12 := replicaContainerName("web", "img:v1", 12)
+	base := ContainerName("web", "img:v1", "") // e.g. "web-abcd1234"
+	r1 := replicaContainerName("web", "img:v1", "", 1)
+	r12 := replicaContainerName("web", "img:v1", "", 12)
 
 	for _, name := range []string{base, r1, r12} {
 		if !ownsContainer("web", name) {
@@ -957,7 +993,7 @@ func TestController_Reconcile_Replicas_FreshDeploy_CreatesAllAndKeepsAllRunning(
 		t.Errorf("container count = %d, want 3", rt.count())
 	}
 	for i := 0; i < 3; i++ {
-		want := replicaContainerName("web", "img:v1", i)
+		want := replicaContainerName("web", "img:v1", "", i)
 		found := false
 		for _, name := range rt.names() {
 			if name == want {
@@ -974,7 +1010,7 @@ func TestController_Reconcile_Replicas_AlreadyRunning_NoOp(t *testing.T) {
 	rt := newFakeRuntime(0)
 	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Strategy: store.DefaultDeployStrategy, Replicas: 3}
 	for i := 0; i < 3; i++ {
-		rt.seed(replicaContainerName("web", "img:v1", i), true)
+		rt.seed(replicaContainerName("web", "img:v1", "", i), true)
 	}
 
 	c := New("web", &fakeStore{svc: desired}, rt)
@@ -999,7 +1035,7 @@ func TestController_Reconcile_Replicas_ScaleDown_RemovesExcessEvenOnCurrentImage
 	// name in the keep set", which is exactly what makes this case work.
 	rt := newFakeRuntime(0)
 	for i := 0; i < 3; i++ {
-		rt.seed(replicaContainerName("web", "img:v1", i), true)
+		rt.seed(replicaContainerName("web", "img:v1", "", i), true)
 	}
 	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Strategy: store.DefaultDeployStrategy, Replicas: 2}
 
@@ -1015,7 +1051,7 @@ func TestController_Reconcile_Replicas_ScaleDown_RemovesExcessEvenOnCurrentImage
 	if rt.count() != 2 {
 		t.Errorf("container count = %d, want 2 (replica 2 must be removed as excess)", rt.count())
 	}
-	if _, ok := rt.containers[replicaContainerName("web", "img:v1", 2)]; ok {
+	if _, ok := rt.containers[replicaContainerName("web", "img:v1", "", 2)]; ok {
 		t.Error("excess replica 2 is still present, want it removed")
 	}
 }
@@ -1046,7 +1082,7 @@ func TestController_Reconcile_Recreate_AlreadyConverged_NeverStopsAnything(t *te
 	// would have. A resync tick against an already-converged service
 	// must not stop or remove a single container.
 	rt := newFakeRuntime(0)
-	target := ContainerName("web", "img:v1")
+	target := ContainerName("web", "img:v1", "")
 	rt.seed(target, true)
 	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Strategy: "recreate", Replicas: store.DefaultReplicas}
 
@@ -1077,7 +1113,7 @@ func TestController_Reconcile_Recreate_Redeploy_NoOverlapBetweenOldAndNew(t *tes
 	// afterward, which blue-green's own redeploy test already
 	// distinguishes by contrast).
 	rt := newFakeRuntime(0)
-	oldTarget := ContainerName("web", "img:v1")
+	oldTarget := ContainerName("web", "img:v1", "")
 	rt.seed(oldTarget, true)
 	desired := &store.DesiredService{Name: "web", Image: "img:v2", Port: 80, Strategy: "recreate", Replicas: store.DefaultReplicas}
 
@@ -1093,7 +1129,7 @@ func TestController_Reconcile_Recreate_Redeploy_NoOverlapBetweenOldAndNew(t *tes
 	if rt.count() != 1 {
 		t.Fatalf("container count = %d, want exactly 1", rt.count())
 	}
-	newTarget := ContainerName("web", "img:v2")
+	newTarget := ContainerName("web", "img:v2", "")
 	if _, ok := rt.containers[newTarget]; !ok {
 		t.Errorf("new-image container %q not found among %v", newTarget, rt.names())
 	}
@@ -1112,7 +1148,7 @@ func TestController_Reconcile_Recreate_CreateFailsAfterCleanup_HalfSucceeded(t *
 	// specific strategy, but it must be a real, visible CreateFailed
 	// condition, not a silently-swallowed error.
 	rt := newFakeRuntime(0)
-	oldTarget := ContainerName("web", "img:v1")
+	oldTarget := ContainerName("web", "img:v1", "")
 	rt.seed(oldTarget, true)
 	desired := &store.DesiredService{Name: "web", Image: "img:v2", Port: 80, Strategy: "recreate", Replicas: store.DefaultReplicas}
 	rt.createErr = errors.New("boom")
@@ -1131,6 +1167,103 @@ func TestController_Reconcile_Recreate_CreateFailsAfterCleanup_HalfSucceeded(t *
 	}
 	if rt.count() != 0 {
 		t.Errorf("container count = %d, want 0 (old removed, new failed to create)", rt.count())
+	}
+}
+
+func TestController_Reconcile_Recreate_SameNonce_AlreadyConverged(t *testing.T) {
+	// The idempotency counterpart to the "different nonce forces
+	// recreate" tests below: two reconcile passes with the SAME
+	// RestartNonce (a resync tick, not a fresh restart request) must
+	// stay a genuine no-op, the same guarantee
+	// TestController_Reconcile_Recreate_AlreadyConverged_NeverStopsAnything
+	// already proves for an ordinary redeploy.
+	rt := newFakeRuntime(0)
+	target := ContainerName("web", "img:v1", "restart-nonce-1")
+	rt.seed(target, true)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Strategy: "recreate", Replicas: store.DefaultReplicas, RestartNonce: "restart-nonce-1"}
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "AlreadyRunning" {
+		t.Errorf("condition = %+v, want Status=True Reason=AlreadyRunning", cond)
+	}
+	if rt.createCalls != 0 || rt.removeCalls != 0 {
+		t.Errorf("createCalls = %d, removeCalls = %d, want 0/0 (an unchanged nonce is not a restart request)", rt.createCalls, rt.removeCalls)
+	}
+}
+
+func TestController_Reconcile_Recreate_RestartNonceChanged_ForcesRecreate(t *testing.T) {
+	// The actual restart mechanism this task exists to add: a service
+	// whose image never changed, but whose RestartNonce did (what
+	// store.RestartService does), must not be treated as already
+	// converged. This is the real regression the whole feature guards
+	// against: before RestartNonce fed into ContainerName, re-saving the
+	// exact same image was a genuine no-op, so there was no way to force
+	// a restart at all.
+	rt := newFakeRuntime(0)
+	oldTarget := ContainerName("web", "img:v1", "restart-nonce-1")
+	rt.seed(oldTarget, true)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Strategy: "recreate", Replicas: store.DefaultReplicas, RestartNonce: "restart-nonce-2"}
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Errorf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+	newTarget := ContainerName("web", "img:v1", "restart-nonce-2")
+	if _, ok := rt.containers[newTarget]; !ok {
+		t.Errorf("post-restart container %q not found among %v", newTarget, rt.names())
+	}
+	if _, ok := rt.containers[oldTarget]; ok {
+		t.Error("pre-restart container is still present, want it removed")
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1 (a restart creates exactly one fresh container)", rt.createCalls)
+	}
+}
+
+func TestController_Reconcile_BlueGreen_RestartNonceChanged_ForcesRecreate(t *testing.T) {
+	// Same restart mechanism, proven against blue-green (the default
+	// strategy, and the one most apps run under), mirroring
+	// TestController_Reconcile_Redeploy_CleansUpOldContainer's own shape
+	// for an image change: the new container is created and proven
+	// healthy before the old one is removed, the same safety property a
+	// restart gets for free by reusing this existing cutover logic
+	// rather than a bespoke restart code path.
+	srv := alwaysHealthy()
+	defer srv.Close()
+
+	rt := newFakeRuntime(serverPort(t, srv))
+	oldTarget := ContainerName("web", "img:v1", "restart-nonce-1")
+	rt.seed(oldTarget, true)
+
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80, RestartNonce: "restart-nonce-2",
+		Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/healthz", Interval: 10 * time.Millisecond, Timeout: 200 * time.Millisecond}},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithReadyBudget(2*time.Second))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Errorf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+
+	newTarget := ContainerName("web", "img:v1", "restart-nonce-2")
+	names := rt.names()
+	if len(names) != 1 || names[0] != newTarget {
+		t.Errorf("containers after restart = %v, want exactly [%s] (old removed only after new is healthy)", names, newTarget)
 	}
 }
 
@@ -1189,7 +1322,7 @@ func TestController_Reconcile_EmptyStrategyAndZeroReplicas_DefaultsToBlueGreenSi
 	if rt.count() != 1 {
 		t.Errorf("container count = %d, want exactly 1 (Replicas: 0 must default to 1, not 0 replicas)", rt.count())
 	}
-	want := ContainerName("web", "img:v1")
+	want := ContainerName("web", "img:v1", "")
 	if _, ok := rt.containers[want]; !ok {
 		t.Errorf("container %q not found, want the same name Strategy/Replicas being unset has always produced", want)
 	}

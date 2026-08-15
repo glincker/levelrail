@@ -58,6 +58,15 @@ type discardWriter struct{}
 
 func (discardWriter) Write(p []byte) (int, error) { return len(p), nil }
 
+// discardLogger is the standalone-logger counterpart to newTestRouter's
+// own inline discardWriter usage, for tests (deploy_attempts_test.go's
+// live-fan-out coverage) that need a *slog.Logger to hand to a component
+// built outside NewRouter, e.g. a *deploylog.Recorder constructed
+// directly by the test.
+func discardLogger() *slog.Logger {
+	return slog.New(slog.NewTextHandler(discardWriter{}, nil))
+}
+
 func bootstrapTestAdmin(t *testing.T, db *store.DB) {
 	t.Helper()
 	if err := BootstrapAdmin(context.Background(), db, testAdminUsername, testAdminPassword); err != nil {

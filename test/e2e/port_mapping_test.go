@@ -185,7 +185,7 @@ func TestPortMapping_Live_NonDefaultPortRouting(t *testing.T) {
 		t.Fatalf("running container's image = %q, want the image Build() produced: %q", containers[0].Image, tag)
 	}
 
-	state, err := runtime.InspectByName(buildCtx, application.ContainerName(serviceName, tag))
+	state, err := runtime.InspectByName(buildCtx, application.ContainerName(serviceName, tag, ""))
 	if err != nil {
 		t.Fatalf("InspectByName() error = %v", err)
 	}
