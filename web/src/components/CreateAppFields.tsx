@@ -19,12 +19,18 @@ import {
 import { toast } from '@/components/ui/toast'
 import { useCreateApp, useSetAppNode } from '../queries/apps'
 import { useNodeListOptional } from '../queries/nodes'
+import { useProjectListOptional } from '../queries/projects'
 
 // Sentinel for "this control plane's own local node", the implicit
 // default PUT /api/v1/apps/{name}/node's own doc comment establishes
 // (empty node_id). Not a real row in the node list, there is no
 // separate "local" entry the API returns.
 const LOCAL_NODE_VALUE = ''
+
+// Sentinel for "no project", the same reasoning LOCAL_NODE_VALUE
+// documents just above; base-ui's Select can't use "" as a real item
+// value.
+const NO_PROJECT_VALUE = '__none__'
 
 // Mirrors validateAppResource (internal/api/apps.go) client-side for
 // fast feedback: name and image non-empty, port a positive integer.
@@ -69,6 +75,8 @@ const createAppSchema = z.object({
   // node ids or the local sentinel, so no further validation is needed
   // beyond what the Select already constrains it to.
   node: z.string().optional(),
+  // Optional project id, same shape as node above.
+  project: z.string().optional(),
   strategy: z.enum(['recreate', 'blue-green', STRATEGY_DEFAULT_VALUE]),
   // Left as a plain trimmed string rather than z.coerce.number: an empty
   // string here means "use store.DefaultReplicas", which a coerced
@@ -93,6 +101,7 @@ const DEFAULT_VALUES: CreateAppFormInput = {
   image: '',
   port: '',
   node: LOCAL_NODE_VALUE,
+  project: NO_PROJECT_VALUE,
   strategy: STRATEGY_DEFAULT_VALUE,
   replicas: '',
 }
@@ -137,6 +146,11 @@ export function CreateAppFields({
   // than surfacing a loading or error state of its own.
   const nodeList = useNodeListOptional()
   const nodes = nodeList.data ?? []
+  // Optional convenience only, see useProjectListOptional's own doc
+  // comment: a failure or empty list here must never block app
+  // creation, the project field below is simply not rendered.
+  const projectList = useProjectListOptional()
+  const projects = projectList.data ?? []
   const { control, register, handleSubmit, formState, reset } = useForm<
     CreateAppFormInput,
     unknown,
@@ -173,6 +187,16 @@ export function CreateAppFields({
             ? undefined
             : values.strategy,
         replicas: values.replicas === '' ? undefined : Number(values.replicas),
+        // Unlike node placement, project assignment is sent directly in
+        // this same create request: handleCreateApp's own doc comment
+        // (internal/api/apps.go) explains why that's safe at create
+        // time in a way it isn't through an ordinary update, so there's
+        // no trailing useSetAppProject.mutate() call the way node
+        // placement still needs below.
+        project_id:
+          values.project === NO_PROJECT_VALUE || !values.project
+            ? undefined
+            : values.project,
       },
       {
         onSuccess: (created) => {
@@ -303,6 +327,35 @@ export function CreateAppFields({
             )}
           />
           <FieldError errors={[formState.errors.node]} />
+        </Field>
+      ) : null}
+
+      {projects.length > 0 ? (
+        <Field>
+          <FieldLabel htmlFor="app-project">Project</FieldLabel>
+          <Controller
+            control={control}
+            name="project"
+            render={({ field }) => (
+              <Select
+                value={field.value ?? NO_PROJECT_VALUE}
+                onValueChange={field.onChange}
+              >
+                <SelectTrigger id="app-project" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_PROJECT_VALUE}>No project</SelectItem>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+          <FieldError errors={[formState.errors.project]} />
         </Field>
       ) : null}
 

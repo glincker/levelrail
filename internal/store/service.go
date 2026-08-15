@@ -90,6 +90,20 @@ type DesiredService struct {
 	// excluded from SaveDesiredService's full-record-replace semantics;
 	// only RestartService writes it, see that method's own doc comment.
 	RestartNonce string
+
+	// ProjectID is which store.Project (migrations/0022_projects.sql)
+	// this service is organizationally grouped under; empty string is
+	// "no project", a real, permanent, equally-valid state, not merely
+	// "unset" (see that migration's own comment on why the column is
+	// genuinely nullable rather than reusing NodeID's NOT NULL DEFAULT
+	// '' convention). Like NodeID and RestartNonce, SaveDesiredService
+	// never writes this field, on either an INSERT or an UPDATE: only
+	// UpdateServiceProject does, see that method's own doc comment for
+	// why, and internal/api/apps.go's handleCreateApp for how a create-
+	// time project choice still reaches it without this method's
+	// full-replace semantics being allowed to silently move an
+	// already-placed service between projects.
+	ProjectID string
 }
 
 // DefaultDeployStrategy and DefaultReplicas mirror internal/spec's
@@ -188,8 +202,8 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	}()
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, project_id, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, NULL, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
@@ -282,6 +296,33 @@ func (db *DB) UpdateServiceNode(ctx context.Context, name, nodeID string) error 
 	return nil
 }
 
+// UpdateServiceProject reassigns svc to project projectID ("" for "no
+// project", the same real-and-permanent sentinel DesiredService.
+// ProjectID's own doc comment describes), the only way project_id ever
+// changes: SaveDesiredService's own doc comment explains why it's
+// deliberately excluded from that method's full-record-replace
+// semantics, the same reasoning UpdateServiceNode already establishes
+// for NodeID. An empty projectID is written as SQL NULL, not the empty
+// string node_id uses, because unlike node_id (NOT NULL DEFAULT ''),
+// this column is genuinely nullable (migrations/0022_projects.sql's own
+// comment on why).
+func (db *DB) UpdateServiceProject(ctx context.Context, name, projectID string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE desired_services SET project_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, sql.NullString{String: projectID, Valid: projectID != ""}, name)
+	if err != nil {
+		return fmt.Errorf("store: update project for service %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: update project for service %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrServiceNotFound
+	}
+	return nil
+}
+
 // RestartService is the only way restart_nonce ever changes: SaveDesiredService's
 // own doc comment (and this field's own doc comment on DesiredService)
 // explains why it's deliberately excluded from that method's
@@ -324,7 +365,7 @@ var ErrServiceNotFound = errors.New("store: service not found")
 // ErrServiceNotFound if no such service has been saved.
 func (db *DB) GetDesiredService(ctx context.Context, name string) (*DesiredService, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce
+		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id
 		FROM desired_services
 		WHERE name = ?
 	`, name)
@@ -342,7 +383,7 @@ func (db *DB) GetDesiredService(ctx context.Context, name string) (*DesiredServi
 // ListDesiredServices returns every saved service, ordered by name.
 func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce
+		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id
 		FROM desired_services
 		ORDER BY name
 	`)
@@ -377,7 +418,7 @@ func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error)
 // comparison in this package.
 func (db *DB) ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]DesiredService, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce
+		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id
 		FROM desired_services
 		WHERE node_id = ?
 		ORDER BY name
@@ -438,10 +479,12 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	var (
 		svc                                                        DesiredService
 		domainsJSON, envJSON, secretEnvJSON, resourcesJSON, health string
+		projectID                                                  sql.NullString
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID); err != nil {
 		return nil, err
 	}
+	svc.ProjectID = projectID.String
 
 	if err := json.Unmarshal([]byte(domainsJSON), &svc.Domains); err != nil {
 		return nil, fmt.Errorf("unmarshal domains: %w", err)

@@ -165,6 +165,66 @@ func TestSaveDesiredDatabase_ResaveDoesNotResetNodeID(t *testing.T) {
 	}
 }
 
+func TestUpdateDatabaseProject(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("SaveDesiredDatabase() error = %v", err)
+	}
+	if err := db.SaveProject(ctx, Project{ID: "proj_1", Name: "my-saas", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatalf("SaveProject() error = %v", err)
+	}
+	if err := db.UpdateDatabaseProject(ctx, "main", "proj_1"); err != nil {
+		t.Fatalf("UpdateDatabaseProject() error = %v", err)
+	}
+
+	got, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if got.ProjectID != "proj_1" {
+		t.Errorf("ProjectID = %q, want proj_1", got.ProjectID)
+	}
+}
+
+func TestUpdateDatabaseProject_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.UpdateDatabaseProject(context.Background(), "nonexistent", "proj_1")
+	if !errors.Is(err, ErrDatabaseNotFound) {
+		t.Errorf("UpdateDatabaseProject() error = %v, want ErrDatabaseNotFound", err)
+	}
+}
+
+func TestSaveDesiredDatabase_ResaveDoesNotResetProjectID(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "15"}); err != nil {
+		t.Fatalf("initial save: %v", err)
+	}
+	if err := db.SaveProject(ctx, Project{ID: "proj_1", Name: "my-saas", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatalf("SaveProject() error = %v", err)
+	}
+	if err := db.UpdateDatabaseProject(ctx, "main", "proj_1"); err != nil {
+		t.Fatalf("UpdateDatabaseProject() error = %v", err)
+	}
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("resave: %v", err)
+	}
+
+	got, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if got.Version != "16" {
+		t.Errorf("Version = %q, want 16", got.Version)
+	}
+	if got.ProjectID != "proj_1" {
+		t.Errorf("ProjectID = %q, want proj_1 (a resave must not silently un-assign a project)", got.ProjectID)
+	}
+}
+
 func TestDeleteDesiredDatabase(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

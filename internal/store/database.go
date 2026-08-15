@@ -28,6 +28,10 @@ type DesiredDatabase struct {
 	// meaning and identical "SaveDesiredDatabase never writes it, only
 	// UpdateDatabaseNode does" exception below.
 	NodeID string
+	// ProjectID: see DesiredService.ProjectID's own doc comment,
+	// identical meaning and identical "SaveDesiredDatabase never writes
+	// it, only UpdateDatabaseProject does" exception below.
+	ProjectID string
 }
 
 // SaveDesiredDatabase creates or fully replaces the desired state for a
@@ -36,8 +40,8 @@ type DesiredDatabase struct {
 // SaveDesiredService's own doc comment explains.
 func (db *DB) SaveDesiredDatabase(ctx context.Context, d DesiredDatabase) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO desired_databases (name, engine, version, node_id, updated_at)
-		VALUES (?, ?, ?, '', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_databases (name, engine, version, node_id, project_id, updated_at)
+		VALUES (?, ?, ?, '', NULL, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			engine = excluded.engine,
 			version = excluded.version,
@@ -68,6 +72,27 @@ func (db *DB) UpdateDatabaseNode(ctx context.Context, name, nodeID string) error
 	return nil
 }
 
+// UpdateDatabaseProject is DesiredDatabase's counterpart to
+// UpdateServiceProject: see that method's own doc comment for why an
+// empty projectID is written as SQL NULL, not the empty string node_id
+// uses.
+func (db *DB) UpdateDatabaseProject(ctx context.Context, name, projectID string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE desired_databases SET project_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, sql.NullString{String: projectID, Valid: projectID != ""}, name)
+	if err != nil {
+		return fmt.Errorf("store: update project for database %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: update project for database %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrDatabaseNotFound
+	}
+	return nil
+}
+
 // ErrDatabaseNotFound is returned by GetDesiredDatabase when no database
 // has that name.
 var ErrDatabaseNotFound = errors.New("store: database not found")
@@ -76,17 +101,19 @@ var ErrDatabaseNotFound = errors.New("store: database not found")
 // ErrDatabaseNotFound if no such database has been saved.
 func (db *DB) GetDesiredDatabase(ctx context.Context, name string) (*DesiredDatabase, error) {
 	var d DesiredDatabase
+	var projectID sql.NullString
 	err := db.QueryRowContext(ctx, `
-		SELECT name, engine, version, node_id
+		SELECT name, engine, version, node_id, project_id
 		FROM desired_databases
 		WHERE name = ?
-	`, name).Scan(&d.Name, &d.Engine, &d.Version, &d.NodeID)
+	`, name).Scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrDatabaseNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("store: get desired database %q: %w", name, err)
 	}
+	d.ProjectID = projectID.String
 	return &d, nil
 }
 
@@ -112,7 +139,7 @@ func (db *DB) DeleteDesiredDatabase(ctx context.Context, name string) error {
 // ListDesiredDatabases returns every saved database, ordered by name.
 func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, engine, version, node_id
+		SELECT name, engine, version, node_id, project_id
 		FROM desired_databases
 		ORDER BY name
 	`)
@@ -126,9 +153,11 @@ func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, erro
 	var out []DesiredDatabase
 	for rows.Next() {
 		var d DesiredDatabase
-		if err := rows.Scan(&d.Name, &d.Engine, &d.Version, &d.NodeID); err != nil {
+		var projectID sql.NullString
+		if err := rows.Scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID); err != nil {
 			return nil, fmt.Errorf("store: scan desired database row: %w", err)
 		}
+		d.ProjectID = projectID.String
 		out = append(out, d)
 	}
 	if err := rows.Err(); err != nil {
@@ -143,7 +172,7 @@ func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, erro
 // callers.
 func (db *DB) ListDesiredDatabasesByNode(ctx context.Context, nodeID string) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, engine, version, node_id
+		SELECT name, engine, version, node_id, project_id
 		FROM desired_databases
 		WHERE node_id = ?
 		ORDER BY name
@@ -158,9 +187,11 @@ func (db *DB) ListDesiredDatabasesByNode(ctx context.Context, nodeID string) ([]
 	var out []DesiredDatabase
 	for rows.Next() {
 		var d DesiredDatabase
-		if err := rows.Scan(&d.Name, &d.Engine, &d.Version, &d.NodeID); err != nil {
+		var projectID sql.NullString
+		if err := rows.Scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID); err != nil {
 			return nil, fmt.Errorf("store: scan desired database row: %w", err)
 		}
+		d.ProjectID = projectID.String
 		out = append(out, d)
 	}
 	if err := rows.Err(); err != nil {

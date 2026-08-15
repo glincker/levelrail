@@ -112,6 +112,10 @@ type AppStore interface {
 	// semantics, the same reasoning UpdateServiceNode already establishes
 	// for NodeID.
 	RestartService(ctx context.Context, name string) error
+	// UpdateServiceProject is UpdateServiceNode's project-kind
+	// counterpart (projects.go): same separation-from-ordinary-update
+	// reasoning, see store.DB.UpdateServiceProject's own doc comment.
+	UpdateServiceProject(ctx context.Context, name, projectID string) error
 }
 
 // DeployStore is the store surface the deploy-history handler needs.
@@ -163,6 +167,21 @@ type DatabaseStore interface {
 	// ListDesiredDatabasesByNode is the database-kind counterpart to
 	// AppStore.ListDesiredServicesByNode.
 	ListDesiredDatabasesByNode(ctx context.Context, nodeID string) ([]store.DesiredDatabase, error)
+	// UpdateDatabaseProject is AppStore.UpdateServiceProject's
+	// counterpart (projects.go).
+	UpdateDatabaseProject(ctx context.Context, name, projectID string) error
+}
+
+// ProjectStore is the store surface the projects handlers need
+// (projects.go). See that file's own package doc comment for why a
+// project is deliberately not the start of the deferred Phase 4 teams/
+// RBAC work (repo-plan section 6's own scope note): no owner, no
+// member list, no per-project ability, just create/list/get/delete.
+type ProjectStore interface {
+	SaveProject(ctx context.Context, p store.Project) error
+	GetProject(ctx context.Context, id string) (store.Project, error)
+	ListProjects(ctx context.Context) ([]store.Project, error)
+	DeleteProject(ctx context.Context, id string) error
 }
 
 // AuthStore is the store surface the auth handlers need.
@@ -199,6 +218,7 @@ type Store interface {
 	BackupTargetStore
 	BackupHistoryStore
 	RestoreHistoryStore
+	ProjectStore
 }
 
 // SecretSetter is the surface the secrets handler needs from
@@ -276,6 +296,7 @@ type Router struct {
 	auth            AuthStore
 	tokens          TokenStore
 	nodes           NodeStore
+	projects        ProjectStore
 	secrets         SecretSetter     // nil is valid: a control plane with no master key configured serves everything except secret-setting
 	telemetry       TelemetryQuerier // nil is valid: metrics/logs query routes return 501, same shape as secrets above
 	alertRules      AlertRules       // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
@@ -508,6 +529,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		auth:           s,
 		tokens:         s,
 		nodes:          s,
+		projects:       s,
 		certs:          s,
 		staticSites:    s,
 		backupTargets:  s,
@@ -682,6 +704,30 @@ func (rt *Router) Handler() http.Handler {
 	// routes above); requireAbility already accepts one the same way it
 	// does for every JSON route, this isn't a special case.
 	mux.HandleFunc("POST /api/v1/prometheus/read", rt.requireAbility(AbilityRead, rt.handlePrometheusRead))
+
+	// Projects (projects.go): a lightweight, non-auth organizational
+	// grouping, explicitly not the deferred Phase 4 teams/RBAC work (see
+	// that file's own package doc comment). AbilityRead/AbilityWrite,
+	// the same ordinary boundary apps/databases CRUD already uses, not
+	// AbilityRoot: unlike a node (real infrastructure, TASKS.md 3.1),
+	// creating or deleting a project has no fleet-level consequence.
+	mux.HandleFunc("GET /api/v1/projects", rt.requireAbility(AbilityRead, rt.handleListProjects))
+	mux.HandleFunc("POST /api/v1/projects", rt.requireAbility(AbilityWrite, rt.handleCreateProject))
+	mux.HandleFunc("GET /api/v1/projects/{id}", rt.requireAbility(AbilityRead, rt.handleGetProject))
+	mux.HandleFunc("DELETE /api/v1/projects/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteProject))
+
+	// Move an app/database into (or out of, with project_id: "") a
+	// project: the project-kind counterpart to PUT /apps/{name}/node
+	// and PUT /databases/{name}/node above, same narrow-dedicated-
+	// mutation shape those routes establish (appResource/
+	// databaseResource's own ProjectID field is response-only, exactly
+	// like NodeID, see handleSetAppProject's own doc comment for why).
+	// AbilityWrite, not AbilityRoot: project membership is an ordinary
+	// organizational edit, not infrastructure placement, so it sits at
+	// the same sensitivity as the rest of apps/databases CRUD rather
+	// than the node routes' fleet-level boundary.
+	mux.HandleFunc("PUT /api/v1/apps/{name}/project", rt.requireAbility(AbilityWrite, rt.handleSetAppProject))
+	mux.HandleFunc("PUT /api/v1/databases/{name}/project", rt.requireAbility(AbilityWrite, rt.handleSetDatabaseProject))
 
 	// Nodes (TASKS.md 3.1): fleet-level infrastructure, not scoped to any
 	// one app, so every route here requires AbilityRoot specifically

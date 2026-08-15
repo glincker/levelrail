@@ -536,6 +536,9 @@ func (f *fakeDrainAppStore) ListDesiredServicesByNode(context.Context, string) (
 	return f.services, nil
 }
 func (f *fakeDrainAppStore) RestartService(context.Context, string) error { return nil }
+func (f *fakeDrainAppStore) UpdateServiceProject(context.Context, string, string) error {
+	return nil
+}
 
 type fakeDrainDatabaseStore struct{}
 
@@ -554,6 +557,9 @@ func (fakeDrainDatabaseStore) UpdateDatabaseNode(context.Context, string, string
 }
 func (fakeDrainDatabaseStore) ListDesiredDatabasesByNode(context.Context, string) ([]store.DesiredDatabase, error) {
 	return nil, nil
+}
+func (fakeDrainDatabaseStore) UpdateDatabaseProject(context.Context, string, string) error {
+	return nil
 }
 
 type fakeDrainNodeStore struct {

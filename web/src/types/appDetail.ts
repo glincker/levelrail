@@ -62,4 +62,13 @@ export interface AppDetail {
   strategy: DeployStrategy
   replicas: number
   node_id?: string
+  // project_id carries `omitempty` on the Go side and is response-only
+  // on PUT (internal/api/apps.go's appResource own doc comment): set an
+  // existing app's project via PUT /api/v1/apps/{name}/project
+  // (useSetAppProject), the same node_id shape just above. The one
+  // exception is POST /api/v1/apps (create): that handler accepts
+  // project_id directly in the request body, see its own doc comment
+  // for why a brand-new app is safe to assign a project to at create
+  // time in a way an ordinary update is not.
+  project_id?: string
 }

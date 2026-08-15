@@ -7,6 +7,8 @@ import type {
 import { formatBytes, formatDurationNs, formatNanoCpus } from '../lib/format'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MoveToNodeDialog } from './MoveToNodeDialog'
+import { MoveToProjectDialog } from './MoveToProjectDialog'
+import { useProjectListOptional } from '../queries/projects'
 
 // Display labels for internal/spec's three strategy constants. "rolling"
 // gets a label of its own rather than being title-cased generically,
@@ -27,6 +29,14 @@ const STRATEGY_LABELS: Record<DeployStrategy, string> = {
 // how ResourceLimitsEditor/HealthCheckEditor already sit next to this
 // read-only card rather than inside it.
 export function AppOverview({ app }: { app: AppDetail }) {
+  // Optional convenience only, see useProjectListOptional's own doc
+  // comment: resolving project_id to a human-readable name is a display
+  // nicety, a failed/slow fetch just means the raw id is shown instead.
+  const projectList = useProjectListOptional()
+  const projectName = projectList.data?.find(
+    (p) => p.id === app.project_id,
+  )?.name
+
   return (
     <Card>
       <CardHeader>
@@ -79,6 +89,27 @@ export function AppOverview({ app }: { app: AppDetail }) {
                 kind="app"
                 name={app.name}
                 currentNodeId={app.node_id}
+              />
+            </dd>
+          </div>
+          {/* Project membership is metadata, the same "shown, not a
+              filter" role node placement above already has: an app with
+              no project stays a real, permanent, equally-valid state,
+              never hidden or forced. */}
+          <div>
+            <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Project
+            </dt>
+            <dd className="mt-0.5 flex items-center gap-2 text-sm text-foreground">
+              {app.project_id ? (
+                (projectName ?? app.project_id)
+              ) : (
+                <span className="text-muted-foreground italic">no project</span>
+              )}
+              <MoveToProjectDialog
+                kind="app"
+                name={app.name}
+                currentProjectId={app.project_id}
               />
             </dd>
           </div>

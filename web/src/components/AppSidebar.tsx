@@ -10,6 +10,7 @@ import {
   ShieldIcon,
   UserIcon,
   CloudArrowUpIcon,
+  FolderIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
@@ -122,6 +123,22 @@ export function AppSidebar() {
                     >
                       <DatabaseIcon />
                       <span>Databases</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  {/* Lightweight, non-auth organizational grouping
+                      (repo-plan section 6's Phase 4 note on resisting a
+                      permission matrix: this is deliberately not that),
+                      sitting alongside Apps/Databases since it's the
+                      same "resource an operator browses day to day"
+                      category those two are, not admin configuration. */}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/projects" />}
+                      isActive={pathname.startsWith('/projects')}
+                      tooltip="Projects"
+                    >
+                      <FolderIcon />
+                      <span>Projects</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   {/* Promoted from Settings (design spec item 1,

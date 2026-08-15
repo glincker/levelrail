@@ -143,12 +143,20 @@ export function useUpdateApp(name: string) {
 // rolling state to preserve, so there is no honest reason to offer it as
 // a creation-time choice the way DeployStrategyEditor must for an
 // existing one.
+// project_id is optional and, unlike node placement, sent directly in
+// this same create request: handleCreateApp's own doc comment (internal/
+// api/apps.go) explains why a brand-new app is safe to assign a project
+// to at create time in a way an ordinary PUT update is not, so there's
+// no CreateAppFields-side trailing useSetAppProject.mutate() call the
+// way CreateAppFields still needs for node placement (setAppNode is a
+// deliberately excluded-from-create mutation, project assignment isn't).
 export interface CreateAppRequest {
   name: string
   image: string
   port: number
   strategy?: Exclude<DeployStrategy, 'rolling'>
   replicas?: number
+  project_id?: string
 }
 
 // POST /api/v1/apps. Rejects a name that already exists with a 409
@@ -219,6 +227,41 @@ export function useSetAppNode() {
   return useMutation({
     mutationFn: ({ name, nodeId }: { name: string; nodeId: string }) =>
       setAppNode(name, nodeId),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(appKeys.detail(updated.name), updated)
+      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+    },
+  })
+}
+
+// PUT /api/v1/apps/{name}/project (internal/api/apps.go's
+// handleSetAppProject): the only way an existing app's project
+// assignment changes, the project-kind counterpart to setAppNode above.
+// Empty projectId moves the app back to "no project", the store's
+// established convention for "not filed under any project."
+export async function setAppProject(
+  name: string,
+  projectId: string,
+): Promise<AppDetail> {
+  const res = await fetch(`/api/v1/apps/${encodeURIComponent(name)}/project`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ project_id: projectId }),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `set app project failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as AppDetail
+}
+
+export function useSetAppProject() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ name, projectId }: { name: string; projectId: string }) =>
+      setAppProject(name, projectId),
     onSuccess: (updated) => {
       queryClient.setQueryData(appKeys.detail(updated.name), updated)
       void queryClient.invalidateQueries({ queryKey: appKeys.list() })
