@@ -9,6 +9,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  type LabelProps,
 } from 'recharts'
 import {
   PulseIcon,
@@ -20,7 +21,7 @@ import { Badge } from './ui/badge'
 import { Alert, AlertDescription, AlertTitle } from './ui/alert'
 import { useMetricSeries } from '../queries/metrics'
 import type { MetricName, MetricSeries } from '../types/metrics'
-import type { ReconcileCondition } from '../types/deploy'
+import type { DeployAttempt, DeployAttemptStatus } from '../types/deployAttempt'
 import {
   DEFAULT_TIME_RANGE_KEY,
   TIME_RANGE_PRESETS,
@@ -30,28 +31,46 @@ import {
 } from '../lib/timeRange'
 
 // Per-app metrics dashboard, TASKS.md 2.4, wired against 2.3's real
-// `GET /api/v1/apps/{name}/metrics`. Two honest gaps against the full
-// per-app metrics list the observability phase requires without
-// configuration, deliberately not papered over:
+// `GET /api/v1/apps/{name}/metrics`. One remaining honest gap against
+// the full per-app metrics list the observability phase requires
+// without configuration, deliberately not papered over: only the 7
+// metrics MetricName covers (types/metrics.ts) are actually collected
+// today. Request rate, response time percentiles, error rate, container
+// restart count, and build duration are required per-app metrics but
+// have no collector behind them yet (see types/metrics.ts's comment for
+// exactly why each is missing). NOT_YET_COLLECTED below renders that
+// list as a plain, clearly labeled gap, not as empty or fabricated
+// charts.
 //
-// 1. Only the 7 metrics MetricName covers (types/metrics.ts) are
-//    actually collected today. Request rate, response time percentiles,
-//    error rate, container restart count, build duration, and deploy
-//    frequency are required per-app metrics but have no collector behind
-//    them yet (see types/metrics.ts's comment for exactly why each is
-//    missing). NOT_YET_COLLECTED below renders that list as a plain,
-//    clearly labeled gap, not as empty or fabricated charts.
-// 2. "Deploy markers overlaid on metric charts": GET /api/v1/apps/
-//    {name}/deploys (internal/api/deploys.go's handleDeployHistory) only
-//    ever returns the *current* reconcile condition per (controller,
-//    type) pair, there is no attempt-by-attempt deploy history to plot
-//    as multiple markers across a time range (see
-//    internal/api/deploys.go and queries/deploys.ts's own doc comments).
-//    The honest, real thing available is the app's current "Ready"
-//    condition's LastTransitionTime: at most one marker, shown only
-//    when it falls inside the visible range. resolveDeployMarker below
-//    does exactly that and nothing more. This is a partial
-//    approximation, not a real deploy-history feature.
+// "Deploy markers overlaid on metric charts" (Phase 2's own framing:
+// the feature that makes "which deploy caused this" a visual question
+// instead of an investigation) used to be a single-marker
+// approximation, because GET /api/v1/apps/{name}/deploys
+// (internal/api/deploys.go's handleDeployHistory) only ever returns the
+// *current* reconcile condition per (controller, type) pair, with no
+// attempt-by-attempt history to plot. That gap is closed: this
+// component now reads internal/api/deploy_attempts.go's
+// handleListDeployAttempts (GET /api/v1/apps/{name}/deploy-attempts,
+// wired via queries/deployAttempts.ts), a real row-per-attempt history,
+// newest first, with no pagination. resolveDeployMarkers below filters
+// that list to whatever falls inside the chart's currently resolved
+// visible time range and plots one ReferenceLine per attempt,
+// color-coded by DEPLOY_MARKER_COLOR (green succeeded, red failed, gray
+// running), with a native SVG <title> on each marker's dot so hovering
+// it shows the attempt's image tag and start time.
+//
+// handleDeployHistory/GET /apps/{name}/deploys is deliberately
+// untouched by this change and stays current-status-only: it remains
+// the source for useDeployStatus, ConditionsPanel, and
+// AppScopedSidebar's status badge, a separate concern from
+// deploy_attempts.go's own doc comment explaining why the two endpoints
+// are not merged.
+//
+// Deploy frequency, formerly listed below as an uncollected metric, is
+// now directly computable from the same deploy-attempts list with no
+// new backend work: deployFrequencyLabel below counts attempts whose
+// started_at falls in the visible range, the same filter
+// resolveDeployMarkers already applies for the chart overlay.
 
 const NOT_YET_COLLECTED = [
   'Request rate',
@@ -59,13 +78,7 @@ const NOT_YET_COLLECTED = [
   'Error rate',
   'Container restart count',
   'Build duration',
-  'Deploy frequency',
 ]
-
-// internal/reconcile/application.Controller only ever emits a "Ready"
-// condition type (see internal/reconcile/application/controller.go),
-// matching applicationControllerName's scope in internal/api/deploys.go.
-const READY_CONDITION_TYPE = 'Ready'
 
 type ChartUnit = 'percent' | 'bytes'
 
@@ -197,27 +210,88 @@ function mergeMetricSeries(
   return Array.from(rows.values()).sort((a, b) => a.t - b.t)
 }
 
-// resolveDeployMarker returns the current "Ready" condition's
-// LastTransitionTime as an epoch-ms marker, but only when it falls
-// inside the chart's visible range; otherwise there is nothing honest to
-// draw. See this file's header comment for why this is a single-point
-// approximation, not real deploy history.
-function resolveDeployMarker(
-  conditions: ReconcileCondition[],
+interface DeployMarker {
+  attempt: DeployAttempt
+  t: number
+}
+
+// resolveDeployMarkers filters appName's real deploy-attempt history
+// (see this file's header comment) down to whatever falls inside the
+// chart's currently resolved visible time range, one marker per
+// attempt, oldest first. This is the real, multi-marker replacement for
+// the old single "Ready" condition approximation: every attempt that
+// was started while the chart is looking gets its own marker, not just
+// the most recent one.
+function resolveDeployMarkers(
+  attempts: DeployAttempt[],
   range: ResolvedTimeRange,
-): number | null {
-  const ready = conditions.find((c) => c.Type === READY_CONDITION_TYPE)
-  if (!ready) {
-    return null
+): DeployMarker[] {
+  const markers: DeployMarker[] = []
+  for (const attempt of attempts) {
+    const t = Date.parse(attempt.started_at)
+    if (Number.isNaN(t)) {
+      continue
+    }
+    if (t < range.from.getTime() || t > range.to.getTime()) {
+      continue
+    }
+    markers.push({ attempt, t })
   }
-  const t = Date.parse(ready.LastTransitionTime)
-  if (Number.isNaN(t)) {
-    return null
+  return markers.sort((a, b) => a.t - b.t)
+}
+
+// Deploy markers are color-coded by status so a failed deploy is a
+// visually distinct signal from a routine one, the exact "which deploy
+// caused this" framing CLAUDE.md calls out, matching
+// DeployAttemptsList.tsx's own succeeded/failed/running badge colors so
+// the same status reads the same way in both places.
+const DEPLOY_MARKER_COLOR: Record<DeployAttemptStatus, string> = {
+  succeeded: '#22c55e',
+  failed: '#ef4444',
+  running: '#94a3b8',
+}
+
+const DEPLOY_MARKER_STATUS_LABEL: Record<DeployAttemptStatus, string> = {
+  succeeded: 'Succeeded',
+  failed: 'Failed',
+  running: 'Running',
+}
+
+function formatDeployMarkerTooltip(marker: DeployMarker): string {
+  const statusLabel = DEPLOY_MARKER_STATUS_LABEL[marker.attempt.status]
+  const started = new Date(marker.t).toLocaleString()
+  return `${statusLabel} deploy: ${marker.attempt.image}, started ${started}`
+}
+
+// renderDeployMarkerLabel builds a ReferenceLine `label.content` render
+// function (recharts calls this with the line's own computed x/y,
+// derived from `position: 'insideTop'` below, once per render): a small
+// filled dot at the line's top, colored by status, wrapped in a native
+// SVG <title> so hovering the dot shows the attempt's image tag and
+// start time via the browser's own tooltip. No custom tooltip component
+// exists elsewhere in this codebase's chart code to reuse, and a native
+// <title> needs no extra state, positioning, or dependency to get right.
+function renderDeployMarkerLabel(marker: DeployMarker) {
+  const color = DEPLOY_MARKER_COLOR[marker.attempt.status]
+  const tooltip = formatDeployMarkerTooltip(marker)
+  return function DeployMarkerDot(props: LabelProps) {
+    const cx = typeof props.x === 'number' ? props.x : Number(props.x ?? 0)
+    const cy = typeof props.y === 'number' ? props.y : Number(props.y ?? 0)
+    return (
+      <g>
+        <title>{tooltip}</title>
+        <circle
+          cx={cx}
+          cy={cy}
+          r={4}
+          fill={color}
+          stroke="currentColor"
+          className="text-card"
+          strokeWidth={1.5}
+        />
+      </g>
+    )
   }
-  if (t < range.from.getTime() || t > range.to.getTime()) {
-    return null
-  }
-  return t
 }
 
 // The most recent value across both series, shown next to the chart
@@ -242,12 +316,12 @@ function ChartCard({
   appName,
   group,
   range,
-  deployMarkerMs,
+  deployMarkers,
 }: {
   appName: string
   group: ChartGroupConfig
   range: ResolvedTimeRange
-  deployMarkerMs: number | null
+  deployMarkers: DeployMarker[]
 }) {
   const primaryQuery = useMetricSeries(appName, group.primary.metric, range)
   // Rules of hooks: this must be called unconditionally on every render
@@ -339,19 +413,19 @@ function ChartCard({
               {group.secondary ? (
                 <Legend wrapperStyle={{ fontSize: 11 }} />
               ) : null}
-              {deployMarkerMs !== null ? (
+              {deployMarkers.map((marker) => (
                 <ReferenceLine
-                  x={deployMarkerMs}
-                  stroke="#ef4444"
+                  key={marker.attempt.id}
+                  x={marker.t}
+                  stroke={DEPLOY_MARKER_COLOR[marker.attempt.status]}
                   strokeDasharray="4 4"
+                  strokeOpacity={0.7}
                   label={{
-                    value: 'Deploy',
-                    position: 'insideTopRight',
-                    fontSize: 10,
-                    fill: '#ef4444',
+                    position: 'insideTop',
+                    content: renderDeployMarkerLabel(marker),
                   }}
                 />
-              ) : null}
+              ))}
               <Line
                 type="monotone"
                 dataKey="primary"
@@ -384,10 +458,10 @@ function ChartCard({
 
 export function MetricsDashboard({
   appName,
-  conditions,
+  deployAttempts,
 }: {
   appName: string
-  conditions: ReconcileCondition[]
+  deployAttempts: DeployAttempt[]
 }) {
   const [rangeKey, setRangeKey] = useState<TimeRangeKey>(DEFAULT_TIME_RANGE_KEY)
   // Bumped by the Refresh button to recompute "now" without changing
@@ -402,9 +476,9 @@ export function MetricsDashboard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [rangeKey, refreshNonce],
   )
-  const deployMarkerMs = useMemo(
-    () => resolveDeployMarker(conditions, range),
-    [conditions, range],
+  const deployMarkers = useMemo(
+    () => resolveDeployMarkers(deployAttempts, range),
+    [deployAttempts, range],
   )
 
   return (
@@ -419,9 +493,10 @@ export function MetricsDashboard({
             Metrics
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            As of {range.to.toLocaleTimeString()}.
-            {deployMarkerMs !== null
-              ? " Red dashed line marks the current reconcile's last transition, not a full deploy history (see code comment)."
+            As of {range.to.toLocaleTimeString()}. Deploy frequency:{' '}
+            {deployMarkers.length} in this range.
+            {deployMarkers.length > 0
+              ? ' Dashed lines mark real deploy attempts (green succeeded, red failed, gray running); hover a marker for its image tag and start time.'
               : ''}
           </p>
         </div>
@@ -470,7 +545,7 @@ export function MetricsDashboard({
             appName={appName}
             group={group}
             range={range}
-            deployMarkerMs={deployMarkerMs}
+            deployMarkers={deployMarkers}
           />
         ))}
       </div>
