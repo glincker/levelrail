@@ -264,18 +264,19 @@ type Router struct {
 	// for GET /api/v1/certificates's "expiring_soon" threshold. 0 means
 	// "use the default", set via WithCertExpiryWarningWindow.
 	certExpiryWarningWindow time.Duration
-	builder                 Builder             // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
-	fetch                   fetchFunc           // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
-	staticSites             StaticSiteStore     // always set, same "core Store interface, not an optional plug-in" shape as certs above
-	backupTargets           BackupTargetStore   // always set, same "core Store interface" shape as certs/staticSites above: listing/getting/deleting a backup target needs no secrets configuration, only creating one does
-	backupSecrets           BackupSecretsSetter // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
-	backupHistory           BackupHistoryStore  // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
-	backupRunner            BackupRunner        // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
-	restoreHistory          RestoreHistoryStore // always set, same "core Store interface" shape as backupHistory above
-	restoreRunner           RestoreRunner       // nil is valid: POST /api/v1/databases/{name}/restore returns 501, same shape as backupRunner above
-	deployAttempts          DeployAttemptStore  // always set, same "core Store interface" shape as certs/staticSites above
-	deployLogStore          DeployLogStore      // nil is valid: a finished attempt's log route returns 501, same shape as secrets/telemetry/alertRules above
-	deployRecorder          *deploylog.Recorder // nil is valid: an in-progress attempt's live tail returns 501, and handleTriggerBuild falls back to build.SlogProgress with no persisted log, same "not configured" shape as builder/telemetry above
+	builder                 Builder                   // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
+	fetch                   fetchFunc                 // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
+	staticSites             StaticSiteStore           // always set, same "core Store interface, not an optional plug-in" shape as certs above
+	backupTargets           BackupTargetStore         // always set, same "core Store interface" shape as certs/staticSites above: listing/getting/deleting a backup target needs no secrets configuration, only creating one does
+	backupSecrets           BackupSecretsSetter       // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
+	backupHistory           BackupHistoryStore        // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
+	backupRunner            BackupRunner              // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
+	restoreHistory          RestoreHistoryStore       // always set, same "core Store interface" shape as backupHistory above
+	restoreRunner           RestoreRunner             // nil is valid: POST /api/v1/databases/{name}/restore returns 501, same shape as backupRunner above
+	deployAttempts          DeployAttemptStore        // always set, same "core Store interface" shape as certs/staticSites above
+	deployLogStore          DeployLogStore            // nil is valid: a finished attempt's log route returns 501, same shape as secrets/telemetry/alertRules above
+	deployRecorder          *deploylog.Recorder       // nil is valid: an in-progress attempt's live tail returns 501, and handleTriggerBuild falls back to build.SlogProgress with no persisted log, same "not configured" shape as builder/telemetry above
+	logBroadcaster          *telemetry.LogBroadcaster // nil is valid: GET /apps/{name}/logs/stream returns 501, same "not configured" shape as deployRecorder above
 }
 
 // Option configures optional Router behavior.
@@ -427,6 +428,26 @@ func WithDeployLogStore(s DeployLogStore) Option {
 // attempt's live log to be visible through this router's SSE route.
 func WithDeployRecorder(r *deploylog.Recorder) Option {
 	return func(rt *Router) { rt.deployRecorder = r }
+}
+
+// WithLogBroadcaster enables GET /api/v1/apps/{name}/logs/stream, the
+// live-tailing counterpart to WithTelemetryQuerier's historical
+// GET .../logs. Without one configured (the default), that route
+// returns 501, the same "not configured" shape WithDeployRecorder's
+// absence produces for the in-progress side of a deploy attempt's log.
+// Deliberately a separate option from WithTelemetryQuerier even though
+// both are telemetry-flavored and cmd/levelrail/main.go always
+// configures them together in practice: a control plane could in
+// principle want historical log search without live tailing (or the
+// reverse), and keeping them as two options leaves that possible instead
+// of one silently implying the other. b must be the exact same
+// *telemetry.LogBroadcaster instance passed to
+// telemetry.NewLogCollector: see that constructor's own doc comment for
+// why a shared instance, not two independent ones, is required for a
+// line StreamOne receives from Docker to ever reach a viewer connected
+// through this router's SSE route.
+func WithLogBroadcaster(b *telemetry.LogBroadcaster) Option {
+	return func(rt *Router) { rt.logBroadcaster = b }
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
@@ -589,6 +610,12 @@ func (rt *Router) Handler() http.Handler {
 	// fanned out through a Federator (today, exactly one local source).
 	mux.HandleFunc("GET /api/v1/apps/{name}/metrics", rt.requireAbility(AbilityRead, rt.handleQueryMetrics))
 	mux.HandleFunc("GET /api/v1/apps/{name}/logs", rt.requireAbility(AbilityRead, rt.handleQueryLogs))
+	// Live log tail (additive to the historical search route just above,
+	// see handleLiveLogStream's own doc comment): AbilityRead, the same
+	// passive-visibility boundary as every other view of telemetry data
+	// in this router, including the deploy-log stream at
+	// GET .../deploys/{deployId}/logs above.
+	mux.HandleFunc("GET /api/v1/apps/{name}/logs/stream", rt.requireAbility(AbilityRead, rt.handleLiveLogStream))
 
 	// Alerting (TASKS.md 2.5/2.7): threshold and crashloop rules scoped
 	// to one app, fanned through a *alerting.DB when configured (see

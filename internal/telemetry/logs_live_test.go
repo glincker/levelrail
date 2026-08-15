@@ -89,7 +89,7 @@ func TestLogCollector_Live_RealContainerToRealStore(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = store.Close() })
 
-	collector := NewLogCollector(client, store, nil)
+	collector := NewLogCollector(client, store, nil, nil)
 	streamCtx, cancelStream := context.WithTimeout(ctx, 8*time.Second)
 	defer cancelStream()
 
