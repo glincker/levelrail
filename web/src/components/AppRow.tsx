@@ -5,7 +5,7 @@ import {
   GlobeIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
-import type { AppDetail } from '../types/appDetail'
+import type { AppListEntry, AppStatusSummary } from '../types/appDetail'
 
 // Shared column grid between the sticky header (routes/apps/index.tsx)
 // and every row below (AppRow, RowSkeleton), so header labels line up
@@ -20,21 +20,16 @@ export const APP_LIST_GRID =
 // both key off the app's name, the only identifier appResource actually
 // carries.
 //
-// No live status dot here: appResource has no status field, and
-// rendering one would mean an extra GET /api/v1/apps/{name}/deploys per
-// row (an N+1 fetch for a list that's supposed to stay cheap at 50+
-// rows, per the project's virtualization requirement: every list that
-// can exceed 50 items must be virtualized). The app detail
-// route's ConditionsPanel is where current reconcile status actually
-// lives (green/red/neutral condition badges backed by that endpoint);
-// inventing a placeholder status here would be exactly the kind of
-// fabricated contract this repo's own conventions warn against. This
-// pass only reshapes the presentation of fields the list response
-// already carries (name, image, domains, port): a leading icon for
-// visual scanning, a monospace image tag, a domain pill with an
-// overflow count, and the port, ending in a chevron that signals the
-// whole row is a link.
-export function AppRow({ app }: { app: AppDetail }) {
+// The status dot next to the name is backed by GET /api/v1/apps'
+// batched status field (internal/api/apps.go's appListResource /
+// summarizeAppConditions), not a per-row fetch: one query across every
+// listed app's conditions, computed server-side, so this list stays
+// cheap past 50+ rows the same way the rest of this component already
+// does (per the project's virtualization requirement). The app detail
+// route's ConditionsPanel remains where the full reconcile detail
+// lives; this dot is just the same category/color StatusDot below
+// summarizes, matching web/src/lib/appStatus.ts's summarizeAppStatus.
+export function AppRow({ app }: { app: AppListEntry }) {
   const domain = app.domains?.[0] ?? null
   const extraDomains = (app.domains?.length ?? 0) - 1
 
@@ -48,8 +43,9 @@ export function AppRow({ app }: { app: AppDetail }) {
         <PackageIcon className="size-4" aria-hidden="true" />
       </span>
 
-      <span className="min-w-0 truncate text-sm font-medium text-foreground">
-        {app.name}
+      <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
+        <StatusDot status={app.status} />
+        <span className="truncate">{app.name}</span>
       </span>
 
       <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
@@ -91,6 +87,30 @@ export function AppRow({ app }: { app: AppDetail }) {
         aria-hidden="true"
       />
     </Link>
+  )
+}
+
+// Solid-fill counterpart to badgeVariants' success/destructive/muted
+// backgrounds (components/ui/badge.tsx): a row-scale dot has no room for
+// the badge's own light background + dark text combo, so this maps the
+// same three variants to a single solid dot color instead. title gives
+// mouse users the label as a tooltip; role="img" + aria-label carries
+// the same text to screen readers, since the color alone conveys
+// nothing without it.
+const STATUS_DOT_COLOR: Record<AppStatusSummary['variant'], string> = {
+  success: 'bg-green-500 dark:bg-green-400',
+  destructive: 'bg-destructive',
+  muted: 'bg-muted-foreground/40',
+}
+
+function StatusDot({ status }: { status: AppStatusSummary }) {
+  return (
+    <span
+      className={`size-2 shrink-0 rounded-full ${STATUS_DOT_COLOR[status.variant]}`}
+      role="img"
+      aria-label={status.label}
+      title={status.label}
+    />
   )
 }
 

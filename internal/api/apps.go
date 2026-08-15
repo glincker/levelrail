@@ -133,7 +133,10 @@ func validateAppResource(a appResource) error {
 	return nil
 }
 
-// handleListApps handles GET /api/v1/apps.
+// handleListApps handles GET /api/v1/apps. Status is computed from one
+// batched conditions query (store.GetConditionsForControllers), not a
+// GetConditions call per app: see appListResource's own doc comment for
+// why that matters at 50+ rows.
 func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 	svcs, err := rt.apps.ListDesiredServices(r.Context())
 	if err != nil {
@@ -141,9 +144,24 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	out := make([]appResource, 0, len(svcs))
+
+	controllerNames := make([]string, len(svcs))
+	for i, s := range svcs {
+		controllerNames[i] = applicationControllerName(s.Name)
+	}
+	conditionsByController, err := rt.deploys.GetConditionsForControllers(r.Context(), controllerNames)
+	if err != nil {
+		rt.logger.Error("api: list apps: batch load conditions failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	out := make([]appListResource, 0, len(svcs))
 	for _, s := range svcs {
-		out = append(out, toAppResource(s))
+		out = append(out, appListResource{
+			appResource: toAppResource(s),
+			Status:      summarizeAppConditions(conditionsByController[applicationControllerName(s.Name)]),
+		})
 	}
 	writeJSON(w, http.StatusOK, out)
 }

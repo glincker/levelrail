@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -114,6 +115,66 @@ func TestHandleListApps(t *testing.T) {
 	}
 	if len(got) != 1 || got[0].Name != "web" {
 		t.Fatalf("got %+v, want one app named web", got)
+	}
+}
+
+// TestHandleListApps_Status covers the batched status field
+// (appListResource): one app with a True condition, one with a False
+// condition, and one with no conditions recorded at all, to prove each
+// row gets the right independent category rather than every row
+// collapsing to whatever the first controller's status happened to be
+// (the kind of bug a batched-but-mis-keyed implementation would produce).
+func TestHandleListApps_Status(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	for _, name := range []string{"healthy-app", "broken-app", "pending-app"} {
+		if err := db.SaveDesiredService(ctx, store.DesiredService{
+			Name: name, Image: "levelrail/" + name + ":1", Port: 3000,
+		}); err != nil {
+			t.Fatalf("seed %s: %v", name, err)
+		}
+	}
+	if err := db.UpsertConditions(ctx, "application/healthy-app", []reconcile.Condition{
+		{Type: "Ready", Status: reconcile.ConditionTrue, Reason: "Running"},
+	}); err != nil {
+		t.Fatalf("upsert healthy-app conditions: %v", err)
+	}
+	if err := db.UpsertConditions(ctx, "application/broken-app", []reconcile.Condition{
+		{Type: "Ready", Status: reconcile.ConditionFalse, Reason: "CrashLoop"},
+	}); err != nil {
+		t.Fatalf("upsert broken-app conditions: %v", err)
+	}
+	// pending-app deliberately gets no UpsertConditions call at all.
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got []appListResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got) != 3 {
+		t.Fatalf("got %d apps, want 3", len(got))
+	}
+
+	byName := map[string]appListResource{}
+	for _, a := range got {
+		byName[a.Name] = a
+	}
+
+	if s := byName["healthy-app"].Status; s.Label != "Healthy" || s.Variant != "success" {
+		t.Errorf("healthy-app status = %+v, want Healthy/success", s)
+	}
+	if s := byName["broken-app"].Status; s.Label != "Attention needed" || s.Variant != "destructive" {
+		t.Errorf("broken-app status = %+v, want Attention needed/destructive", s)
+	}
+	if s := byName["pending-app"].Status; s.Label != "No status yet" || s.Variant != "muted" {
+		t.Errorf("pending-app status = %+v, want No status yet/muted", s)
 	}
 }
 

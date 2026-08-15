@@ -113,3 +113,100 @@ func TestUpsertConditions_MultipleConditionTypesForOneController(t *testing.T) {
 		t.Fatalf("expected 2 distinct condition types stored, got %d: %+v", len(got), got)
 	}
 }
+
+func TestGetConditionsForControllers_Empty(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	got, err := db.GetConditionsForControllers(ctx, nil)
+	if err != nil {
+		t.Fatalf("GetConditionsForControllers(nil) error = %v", err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("expected empty map for nil input, got %d entries", len(got))
+	}
+
+	got, err = db.GetConditionsForControllers(ctx, []string{"application/nothing-here"})
+	if err != nil {
+		t.Fatalf("GetConditionsForControllers() error = %v", err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("expected no entry for a controller with no stored conditions, got %+v", got)
+	}
+}
+
+// TestGetConditionsForControllers_MatchesGetConditions is the batched
+// method's core contract: for a mix of controllers with conditions, some
+// with none, and one not even asked for, the batched result for each
+// requested controller must equal what GetConditions would return for it
+// individually, and a controller with no rows must be entirely absent
+// from the map (not present with a nil/empty slice), the same
+// convention GetConditions itself documents.
+func TestGetConditionsForControllers_MatchesGetConditions(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.UpsertConditions(ctx, "application/web", []reconcile.Condition{
+		{Type: "Ready", Status: reconcile.ConditionTrue, Reason: "Running"},
+	}); err != nil {
+		t.Fatalf("upsert application/web: %v", err)
+	}
+	if err := db.UpsertConditions(ctx, "application/api", []reconcile.Condition{
+		{Type: "Ready", Status: reconcile.ConditionFalse, Reason: "CrashLoop"},
+		{Type: "Progressing", Status: reconcile.ConditionUnknown, Reason: "Pending"},
+	}); err != nil {
+		t.Fatalf("upsert application/api: %v", err)
+	}
+	// Deliberately not requested below, proving the batched query is
+	// scoped to controllerNames, not "everything in the table."
+	if err := db.UpsertConditions(ctx, "application/not-requested", []reconcile.Condition{
+		{Type: "Ready", Status: reconcile.ConditionTrue, Reason: "Running"},
+	}); err != nil {
+		t.Fatalf("upsert application/not-requested: %v", err)
+	}
+
+	got, err := db.GetConditionsForControllers(ctx, []string{
+		"application/web", "application/api", "application/worker-no-status",
+	})
+	if err != nil {
+		t.Fatalf("GetConditionsForControllers() error = %v", err)
+	}
+
+	if _, ok := got["application/not-requested"]; ok {
+		t.Error("batched result must not include a controller that wasn't requested")
+	}
+	if _, ok := got["application/worker-no-status"]; ok {
+		t.Error("a requested controller with no stored conditions must be absent from the map, not present with an empty slice")
+	}
+
+	web := got["application/web"]
+	if len(web) != 1 || web[0].Status != reconcile.ConditionTrue || web[0].Reason != "Running" {
+		t.Errorf("application/web = %+v, want one True/Running condition", web)
+	}
+
+	api := got["application/api"]
+	if len(api) != 2 {
+		t.Fatalf("application/api = %+v, want 2 conditions", api)
+	}
+	byType := map[string]reconcile.Condition{}
+	for _, c := range api {
+		byType[c.Type] = c
+	}
+	if byType["Ready"].Status != reconcile.ConditionFalse || byType["Ready"].Reason != "CrashLoop" {
+		t.Errorf("application/api Ready condition = %+v, want False/CrashLoop", byType["Ready"])
+	}
+	if byType["Progressing"].Status != reconcile.ConditionUnknown {
+		t.Errorf("application/api Progressing condition = %+v, want Unknown", byType["Progressing"])
+	}
+
+	// Cross-check against the unbatched method for the same controller,
+	// so a future change to either query can't silently drift the two
+	// apart.
+	individualWeb, err := db.GetConditions(ctx, "application/web")
+	if err != nil {
+		t.Fatalf("GetConditions(application/web): %v", err)
+	}
+	if len(individualWeb) != len(web) || individualWeb[0].Reason != web[0].Reason {
+		t.Errorf("batched result for application/web = %+v, want it to match GetConditions = %+v", web, individualWeb)
+	}
+}
