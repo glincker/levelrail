@@ -24,16 +24,12 @@ import { useApp } from '../queries/apps'
 import { useDeployStatus } from '../queries/deploys'
 import { summarizeAppStatus } from '../lib/appStatus'
 
-// The app-scoped half of AppSidebar's Vercel-style dynamic nav:
-// rendered in place of the global nav whenever the current route
-// is under /apps/$name/*. The first 8 items below are the same sections
-// routes/apps/$name.tsx's Tabs component used to render in-page (same
-// icons, same order), now real nested routes instead of tab state.
-// "Deploys" (real, row-per-attempt history at /apps/$name/deploys, see
-// that route's own doc comment) is the 9th, added by this task: deploy
-// history is a first-class, non-trivial concern (a list, a per-attempt
-// log viewer, a rollback action), not a fit for the existing Overview
-// section's current-status ConditionsPanel.
+// The app-scoped half of AppSidebar's Vercel-style dynamic nav: rendered
+// in place of the global nav whenever the current route is under
+// /apps/$name/*. The 9 section routes are grouped into Deploy
+// (Overview, Deploys, Domains), Configure (Environment, Health,
+// Resources), and Observe (Metrics, Logs, Alerts), matching the
+// SidebarGroupLabel pattern the global sidebar's Settings group uses.
 //
 // Reads app name/status from the same query cache routes/apps/$name.tsx's
 // layout route loader already primed (queries/apps.ts, queries/
@@ -75,6 +71,10 @@ export function AppScopedSidebar({ name }: { name: string }) {
             {status.label}
           </Badge>
         </SidebarGroupLabel>
+      </SidebarGroup>
+
+      <SidebarGroup>
+        <SidebarGroupLabel>Deploy</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem>
@@ -107,6 +107,14 @@ export function AppScopedSidebar({ name }: { name: string }) {
                 <span>Domains</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
+      <SidebarGroup>
+        <SidebarGroupLabel>Configure</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
                 render={<Link to="/apps/$name/environment" params={{ name }} />}
@@ -137,6 +145,14 @@ export function AppScopedSidebar({ name }: { name: string }) {
                 <span>Resources</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
+      <SidebarGroup>
+        <SidebarGroupLabel>Observe</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
                 render={<Link to="/apps/$name/metrics" params={{ name }} />}

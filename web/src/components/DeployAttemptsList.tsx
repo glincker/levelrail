@@ -8,8 +8,13 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon } from '@phosphor-icons/react'
 import type { VariantProps } from 'class-variance-authority'
-import type { DeployAttempt, DeployAttemptStatus } from '../types/deployAttempt'
+import type {
+  DeployAttempt,
+  DeployAttemptSource,
+  DeployAttemptStatus,
+} from '../types/deployAttempt'
 import { useTriggerDeploy } from '../queries/deploys'
+import { formatDeployDuration } from '../lib/deployDuration'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -34,6 +39,12 @@ const STATUS_LABEL: Record<DeployAttemptStatus, string> = {
   succeeded: 'Succeeded',
   failed: 'Failed',
   running: 'Running',
+}
+
+const SOURCE_LABEL: Record<DeployAttemptSource, string> = {
+  webhook: 'Webhook',
+  manual: 'Manual build',
+  image: 'Image',
 }
 
 // DeployAttemptsList renders GET /api/v1/apps/{name}/deploy-attempts'
@@ -127,11 +138,24 @@ function DeployAttemptRow({
       </Badge>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate font-mono text-sm font-medium text-foreground">
-          {attempt.image}
-        </p>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <p className="truncate font-mono text-sm font-medium text-foreground">
+            {attempt.image}
+          </p>
+          {attempt.commit_sha ? (
+            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+              {attempt.commit_sha.slice(0, 7)}
+            </span>
+          ) : null}
+          {attempt.source ? (
+            <Badge variant="outline" className="shrink-0">
+              {SOURCE_LABEL[attempt.source]}
+            </Badge>
+          ) : null}
+        </div>
         <p className="mt-0.5 text-xs text-muted-foreground/70">
-          Started {new Date(attempt.started_at).toLocaleString()}
+          Started {new Date(attempt.started_at).toLocaleString()} ·{' '}
+          {formatDeployDuration(attempt.started_at, attempt.finished_at)}
         </p>
         {attempt.error ? (
           <p className="mt-1 text-xs text-destructive">{attempt.error}</p>
