@@ -69,6 +69,7 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 	image := req.ImageRepo + ":" + req.CommitSHA
 	if err := rt.deployAttempts.SaveDeployAttempt(ctx, store.DeployAttempt{
 		ID: id, ServiceName: req.ServiceName, Image: image,
+		CommitSHA: req.CommitSHA, Source: store.DeployAttemptSourceManual,
 		Status: store.DeployAttemptStatusRunning, StartedAt: time.Now(),
 	}); err != nil {
 		rt.logger.Error("api: trigger build: save deploy attempt failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
@@ -116,6 +117,8 @@ type deployAttemptResource struct {
 	ID          string     `json:"id"`
 	ServiceName string     `json:"service_name"`
 	Image       string     `json:"image"`
+	CommitSHA   string     `json:"commit_sha,omitempty"`
+	Source      string     `json:"source,omitempty"`
 	Status      string     `json:"status"`
 	StartedAt   time.Time  `json:"started_at"`
 	FinishedAt  *time.Time `json:"finished_at,omitempty"`
@@ -127,6 +130,8 @@ func toDeployAttemptResource(a store.DeployAttempt) deployAttemptResource {
 		ID:          a.ID,
 		ServiceName: a.ServiceName,
 		Image:       a.Image,
+		CommitSHA:   a.CommitSHA,
+		Source:      a.Source,
 		Status:      a.Status,
 		StartedAt:   a.StartedAt,
 		FinishedAt:  a.FinishedAt,

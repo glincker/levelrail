@@ -4,6 +4,7 @@ import { useLogStream } from '../../../../../hooks/useLogStream'
 import { buildDeployLogStreamUrl } from '../../../../../queries/deployLogs'
 import { LogConnectionBadge } from '../../../../../components/LogConnectionBadge'
 import { LogTerminal } from '../../../../../components/LogTerminal'
+import { BuildLogHints } from '../../../../../components/BuildLogHints'
 
 // Live Build Log view, frontend-plan.md section 1: the literal target of
 // the rule that the dashboard should not ship the log viewer's bundle.
@@ -47,6 +48,8 @@ function DeployLogsPage() {
         </div>
         <LogConnectionBadge state={connectionState} />
       </header>
+
+      <BuildLogHints lines={lines} />
 
       <LogTerminal
         lines={lines}

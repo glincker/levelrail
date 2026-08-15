@@ -31,6 +31,12 @@ type DeployAttempt struct {
 	// even starts, so a failed build's attempt row still shows what tag
 	// it was trying to produce.
 	Image string
+	// CommitSHA is the git commit this attempt built from, empty for the
+	// plain image-tag trigger path (DeployAttemptSourceImage), which has
+	// no associated commit.
+	CommitSHA string
+	// Source is one of the DeployAttemptSource* constants.
+	Source string
 	// Status is one of the DeployAttemptStatus* constants.
 	Status    string
 	StartedAt time.Time
@@ -57,6 +63,17 @@ const (
 	DeployAttemptStatusRunning   = "running"
 	DeployAttemptStatusSucceeded = "succeeded"
 	DeployAttemptStatusFailed    = "failed"
+)
+
+// Deploy attempt trigger sources, one per real call site: the
+// unattended git-push webhook (internal/webhook), a manual git-source
+// build triggered from the dashboard (internal/api/deploy_attempts.go's
+// beginBuildDeployAttempt), and a plain image-tag redeploy/rollback with
+// no build step (internal/api/deploys.go's recordPlainDeployAttempt).
+const (
+	DeployAttemptSourceWebhook = "webhook"
+	DeployAttemptSourceManual  = "manual"
+	DeployAttemptSourceImage   = "image"
 )
 
 // deployAttemptIDPrefix mirrors internal/api/tokens.go's "tok_" prefix
@@ -92,9 +109,9 @@ func NewDeployAttemptID() (string, error) {
 // primary key constraint rather than silently overwriting history.
 func (db *DB) SaveDeployAttempt(ctx context.Context, a DeployAttempt) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO deploy_attempts (id, service_name, image, status, started_at, finished_at, error)
-		VALUES (?, ?, ?, ?, ?, NULL, NULL)
-	`, a.ID, a.ServiceName, a.Image, a.Status, a.StartedAt.UTC().Format(time.RFC3339Nano))
+		INSERT INTO deploy_attempts (id, service_name, image, commit_sha, source, status, started_at, finished_at, error)
+		VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL)
+	`, a.ID, a.ServiceName, a.Image, a.CommitSHA, a.Source, a.Status, a.StartedAt.UTC().Format(time.RFC3339Nano))
 	if err != nil {
 		return fmt.Errorf("store: save deploy attempt %q: %w", a.ID, err)
 	}
@@ -142,7 +159,7 @@ func (db *DB) FinishDeployAttempt(ctx context.Context, id, status string, finish
 // (serve a full persisted replay), see that handler's own doc comment.
 func (db *DB) GetDeployAttempt(ctx context.Context, id string) (*DeployAttempt, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT id, service_name, image, status, started_at, finished_at, error
+		SELECT id, service_name, image, commit_sha, source, status, started_at, finished_at, error
 		FROM deploy_attempts WHERE id = ?
 	`, id)
 	a, err := scanDeployAttempt(row.Scan)
@@ -165,7 +182,7 @@ func (db *DB) GetDeployAttempt(ctx context.Context, id string) (*DeployAttempt, 
 // here.
 func (db *DB) ListDeployAttempts(ctx context.Context, serviceName string) ([]DeployAttempt, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, service_name, image, status, started_at, finished_at, error
+		SELECT id, service_name, image, commit_sha, source, status, started_at, finished_at, error
 		FROM deploy_attempts
 		WHERE service_name = ?
 		ORDER BY started_at DESC
@@ -195,7 +212,7 @@ func scanDeployAttempt(scan func(dest ...any) error) (*DeployAttempt, error) {
 		startedAt             string
 		finishedAt, errString sql.NullString
 	)
-	if err := scan(&a.ID, &a.ServiceName, &a.Image, &a.Status, &startedAt, &finishedAt, &errString); err != nil {
+	if err := scan(&a.ID, &a.ServiceName, &a.Image, &a.CommitSHA, &a.Source, &a.Status, &startedAt, &finishedAt, &errString); err != nil {
 		return nil, err
 	}
 

@@ -218,6 +218,7 @@ func (h *Handler) beginDeployAttempt(ctx context.Context, req deploy.Request) (p
 	image := req.ImageRepo + ":" + req.CommitSHA
 	if err := h.attempts.SaveDeployAttempt(ctx, store.DeployAttempt{
 		ID: id, ServiceName: req.ServiceName, Image: image,
+		CommitSHA: req.CommitSHA, Source: store.DeployAttemptSourceWebhook,
 		Status: store.DeployAttemptStatusRunning, StartedAt: time.Now(),
 	}); err != nil {
 		h.log.Error("webhook: save deploy attempt failed", "attempt_id", id, "error", err)

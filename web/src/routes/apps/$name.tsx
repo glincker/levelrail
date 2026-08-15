@@ -13,6 +13,7 @@ import { summarizeAppStatus } from '../../lib/appStatus'
 import { DeleteAppDialog } from '../../components/DeleteAppDialog'
 import { DeployTriggerForm } from '../../components/DeployTriggerForm'
 import { RestartAppButton } from '../../components/RestartAppButton'
+import { ConvergenceIndicator } from '../../components/ConvergenceIndicator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 
@@ -75,6 +76,7 @@ function AppDetailLayout() {
         <div className="flex items-center gap-2">
           <h1 className="text-lg font-semibold text-foreground">{app.name}</h1>
           <Badge variant={status.variant}>{status.label}</Badge>
+          <ConvergenceIndicator conditions={conditions} />
         </div>
         <div className="flex items-center gap-2">
           <RestartAppButton name={app.name} />

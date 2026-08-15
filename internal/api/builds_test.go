@@ -318,6 +318,12 @@ func TestHandleTriggerBuild_RecordsDeployAttempt_Succeeded(t *testing.T) {
 	if a.Image != "web:main" {
 		t.Errorf("Image = %q, want %q (ImageRepo:CommitSHA computed before the build, mirroring internal/deploy's own tag construction)", a.Image, "web:main")
 	}
+	if a.CommitSHA != "main" {
+		t.Errorf("CommitSHA = %q, want %q", a.CommitSHA, "main")
+	}
+	if a.Source != store.DeployAttemptSourceManual {
+		t.Errorf("Source = %q, want %q", a.Source, store.DeployAttemptSourceManual)
+	}
 	if a.FinishedAt == nil {
 		t.Error("FinishedAt = nil, want set")
 	}

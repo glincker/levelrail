@@ -107,6 +107,7 @@ func (rt *Router) recordPlainDeployAttempt(ctx context.Context, serviceName, ima
 	now := time.Now()
 	if err := rt.deployAttempts.SaveDeployAttempt(ctx, store.DeployAttempt{
 		ID: id, ServiceName: serviceName, Image: image,
+		Source: store.DeployAttemptSourceImage,
 		Status: store.DeployAttemptStatusRunning, StartedAt: now,
 	}); err != nil {
 		rt.logger.Error("api: trigger deploy: save deploy attempt failed", slog.String("error", err.Error()), slog.String("attempt_id", id))

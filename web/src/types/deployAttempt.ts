@@ -7,10 +7,18 @@
 // underneath its existing consumer).
 export type DeployAttemptStatus = 'running' | 'succeeded' | 'failed'
 
+// Mirrors internal/store.DeployAttemptSource* on the wire: 'webhook' for
+// an unattended git-push build, 'manual' for a dashboard-triggered
+// git-source build, 'image' for a bare image-tag redeploy/rollback with
+// no build step (and so no commit_sha).
+export type DeployAttemptSource = 'webhook' | 'manual' | 'image'
+
 export interface DeployAttempt {
   id: string
   service_name: string
   image: string
+  commit_sha?: string
+  source?: DeployAttemptSource
   status: DeployAttemptStatus
   started_at: string
   finished_at?: string

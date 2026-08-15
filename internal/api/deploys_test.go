@@ -98,6 +98,12 @@ func TestHandleTriggerDeploy_RecordsDeployAttempt(t *testing.T) {
 	if a.Status != store.DeployAttemptStatusSucceeded {
 		t.Errorf("Status = %q, want %q", a.Status, store.DeployAttemptStatusSucceeded)
 	}
+	if a.CommitSHA != "" {
+		t.Errorf("CommitSHA = %q, want empty: a bare image tag isn't tied to a commit", a.CommitSHA)
+	}
+	if a.Source != store.DeployAttemptSourceImage {
+		t.Errorf("Source = %q, want %q", a.Source, store.DeployAttemptSourceImage)
+	}
 	if a.FinishedAt == nil {
 		t.Error("FinishedAt = nil, want set: the plain image-tag path has no build step, so the attempt finishes in the same call it starts")
 	}
