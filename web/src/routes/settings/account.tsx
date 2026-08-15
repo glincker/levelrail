@@ -1,24 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-import {
-  CheckCircleIcon,
-  WarningIcon,
-  UserIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { UserIcon } from '@phosphor-icons/react/dist/ssr'
 import { useAuthUsername } from '../../hooks/useAuthUsername'
-import { useChangePassword } from '../../queries/account'
-import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
+import { ChangePasswordCard } from '../../components/ChangePasswordCard'
 import {
   Field,
   FieldDescription,
-  FieldError,
-  FieldGroup,
   FieldLabel,
 } from '../../components/ui/field'
-import { Alert, AlertDescription, AlertTitle } from '../../components/ui/alert'
 import {
   Card,
   CardContent,
@@ -33,7 +21,11 @@ import {
 // (read-only, Phase 1 has exactly one editable-nothing admin account:
 // single admin user, session auth, no teams or RBAC yet) and
 // change-password (a real form against internal/api/account.go's PUT
-// /api/v1/auth/password).
+// /api/v1/auth/password, see ChangePasswordCard.tsx for the form and its
+// zod schema, kept in their own file rather than inline here so
+// TanStack Router's autoCodeSplitting can cleanly move zod out of the
+// always-loaded main bundle, the same convention LoginForm.tsx and
+// RegisterForm.tsx already establish for /login).
 export const Route = createFileRoute('/settings/account')({
   component: AccountSettingsPage,
 })
@@ -85,160 +77,6 @@ function ProfileCard() {
             email, display name, or avatar.
           </FieldDescription>
         </Field>
-      </CardContent>
-    </Card>
-  )
-}
-
-// Mirrors internal/api/account.go's minPasswordLength (8) exactly, the
-// same client-side head start RegisterForm already established for the
-// same rule: a fast local check for a quicker feedback loop, never a
-// substitute for the server's own check, which still runs and still
-// wins if the two ever drift.
-const MIN_PASSWORD_LENGTH = 8
-
-const changePasswordSchema = z
-  .object({
-    currentPassword: z.string().min(1, 'Current password is required'),
-    newPassword: z
-      .string()
-      .min(
-        MIN_PASSWORD_LENGTH,
-        `New password must be at least ${MIN_PASSWORD_LENGTH} characters`,
-      ),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
-  })
-
-type ChangePasswordValues = z.infer<typeof changePasswordSchema>
-
-// internal/api/account.go's handleChangePassword collapses "no session"
-// and "wrong current password" into the same 401 with the same message,
-// on purpose (its own doc comment cites the password-reconfirmation
-// finding this mirrors), so this form never tries to guess which one
-// happened, it just surfaces the server's message as-is on both 401 and
-// 400.
-function ChangePasswordCard() {
-  const changePassword = useChangePassword()
-  const { register, handleSubmit, formState, reset } =
-    useForm<ChangePasswordValues>({
-      resolver: zodResolver(changePasswordSchema),
-      defaultValues: {
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-      },
-    })
-
-  const onSubmit = handleSubmit((values) => {
-    changePassword.mutate(values, {
-      // Clears the form back to empty on a real success, an event-handler
-      // callback rather than a render-time side effect, the same
-      // "setState in response to the mutation settling, not during
-      // render" shape LoginForm's countdown effect already follows.
-      onSuccess: () => {
-        reset()
-      },
-    })
-  })
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Change password</CardTitle>
-        <CardDescription>
-          Changing your password signs out every other active session for this
-          account. This browser stays signed in.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form
-          onSubmit={(e) => {
-            void onSubmit(e)
-          }}
-          className="space-y-4"
-        >
-          <FieldGroup>
-            <Field
-              data-invalid={formState.errors.currentPassword ? true : undefined}
-            >
-              <FieldLabel htmlFor="account-current-password">
-                Current password
-              </FieldLabel>
-              <Input
-                id="account-current-password"
-                type="password"
-                autoComplete="current-password"
-                aria-invalid={!!formState.errors.currentPassword}
-                {...register('currentPassword')}
-              />
-              <FieldError errors={[formState.errors.currentPassword]} />
-            </Field>
-            <Field
-              data-invalid={formState.errors.newPassword ? true : undefined}
-            >
-              <FieldLabel htmlFor="account-new-password">
-                New password
-              </FieldLabel>
-              <Input
-                id="account-new-password"
-                type="password"
-                autoComplete="new-password"
-                aria-invalid={!!formState.errors.newPassword}
-                {...register('newPassword')}
-              />
-              {formState.errors.newPassword ? (
-                <FieldError errors={[formState.errors.newPassword]} />
-              ) : (
-                <FieldDescription>
-                  At least {MIN_PASSWORD_LENGTH} characters.
-                </FieldDescription>
-              )}
-            </Field>
-            <Field
-              data-invalid={formState.errors.confirmPassword ? true : undefined}
-            >
-              <FieldLabel htmlFor="account-confirm-password">
-                Confirm new password
-              </FieldLabel>
-              <Input
-                id="account-confirm-password"
-                type="password"
-                autoComplete="new-password"
-                aria-invalid={!!formState.errors.confirmPassword}
-                {...register('confirmPassword')}
-              />
-              <FieldError errors={[formState.errors.confirmPassword]} />
-            </Field>
-          </FieldGroup>
-
-          {changePassword.isSuccess ? (
-            <Alert>
-              <CheckCircleIcon />
-              <AlertTitle>Password changed</AlertTitle>
-              <AlertDescription>
-                Your other sessions have been signed out. This one stays signed
-                in.
-              </AlertDescription>
-            </Alert>
-          ) : changePassword.isError ? (
-            <Alert variant="destructive">
-              <WarningIcon />
-              <AlertDescription>
-                {changePassword.error.message}
-              </AlertDescription>
-            </Alert>
-          ) : null}
-
-          <Button type="submit" disabled={changePassword.isPending}>
-            {changePassword.isPending
-              ? 'Changing password...'
-              : 'Change password'}
-          </Button>
-        </form>
       </CardContent>
     </Card>
   )
