@@ -12,6 +12,8 @@
 // keys, so each owns its own useQuery call and only hands the resolved
 // series in here.
 
+import { useMemo } from 'react'
+import type { UseQueryResult } from '@tanstack/react-query'
 import type { MetricSeries } from '../types/metrics'
 
 export type ChartUnit = 'percent' | 'bytes'
@@ -110,4 +112,42 @@ export function latestReading(rows: ChartRow[], unit: ChartUnit): string | null 
     }
   }
   return null
+}
+
+export interface MergedChartQuery {
+  rows: ChartRow[]
+  isLoading: boolean
+  error: Error | null
+}
+
+// The primary/secondary query-merging block shared by MetricsDashboard.tsx's
+// ChartCard and NodeMetricsDashboard.tsx's NodeChartCard: both call two
+// query hooks unconditionally (rules of hooks: `hasSecondary` gates via
+// `enabled` on the query itself, not a conditional hook call, the same
+// pattern both callers' own comments explain), then derive isLoading,
+// error, and the merged rows from them identically, differing only in
+// which query hook produced primaryQuery/secondaryQuery in the first
+// place (useMetricSeries vs useNodeMetricSeries). NodeMetricSeries is
+// structurally compatible with MetricSeries here (same `points` shape,
+// see types/nodeMetrics.ts), the same reasoning mergeMetricSeries above
+// already relies on.
+export function useMergedChartQuery(
+  primaryQuery: UseQueryResult<MetricSeries, Error>,
+  secondaryQuery: UseQueryResult<MetricSeries, Error>,
+  hasSecondary: boolean,
+): MergedChartQuery {
+  const isLoading =
+    primaryQuery.isLoading || (hasSecondary && secondaryQuery.isLoading)
+  const error = primaryQuery.error ?? (hasSecondary ? secondaryQuery.error : null)
+
+  const rows = useMemo(
+    () =>
+      mergeMetricSeries(
+        primaryQuery.data,
+        hasSecondary ? secondaryQuery.data : undefined,
+      ),
+    [primaryQuery.data, secondaryQuery.data, hasSecondary],
+  )
+
+  return { rows, isLoading, error }
 }
