@@ -270,6 +270,161 @@ func TestDeleteDesiredDatabase_DoesNotAffectOtherDatabases(t *testing.T) {
 	}
 }
 
+func TestSetDatabaseBackupSchedule(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("SaveDesiredDatabase() error = %v", err)
+	}
+	target := seedBackupTarget(t, db)
+
+	if err := db.SetDatabaseBackupSchedule(ctx, "main", target.ID, "0 3 * * *", 7); err != nil {
+		t.Fatalf("SetDatabaseBackupSchedule() error = %v", err)
+	}
+
+	got, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if got.BackupTargetID != target.ID {
+		t.Errorf("BackupTargetID = %q, want %q", got.BackupTargetID, target.ID)
+	}
+	if got.BackupSchedule != "0 3 * * *" {
+		t.Errorf("BackupSchedule = %q, want %q", got.BackupSchedule, "0 3 * * *")
+	}
+	if got.BackupRetain != 7 {
+		t.Errorf("BackupRetain = %d, want 7", got.BackupRetain)
+	}
+}
+
+func TestSetDatabaseBackupSchedule_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.SetDatabaseBackupSchedule(context.Background(), "nonexistent", "bkt_1", "0 3 * * *", 7)
+	if !errors.Is(err, ErrDatabaseNotFound) {
+		t.Errorf("SetDatabaseBackupSchedule() error = %v, want ErrDatabaseNotFound", err)
+	}
+}
+
+// TestSetDatabaseBackupSchedule_EmptyClears is the DELETE
+// /api/v1/databases/{name}/backup-schedule path: passing empty targetID
+// and schedule (retain forced to 0 by the caller) must return the
+// database to its pre-scheduled, zero-value state, not merely leave a
+// dangling schedule string with no target.
+func TestSetDatabaseBackupSchedule_EmptyClears(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("SaveDesiredDatabase() error = %v", err)
+	}
+	target := seedBackupTarget(t, db)
+	if err := db.SetDatabaseBackupSchedule(ctx, "main", target.ID, "0 3 * * *", 7); err != nil {
+		t.Fatalf("SetDatabaseBackupSchedule() error = %v", err)
+	}
+
+	if err := db.SetDatabaseBackupSchedule(ctx, "main", "", "", 0); err != nil {
+		t.Fatalf("SetDatabaseBackupSchedule(clear) error = %v", err)
+	}
+
+	got, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if got.BackupTargetID != "" || got.BackupSchedule != "" || got.BackupRetain != 0 {
+		t.Errorf("after clear, got %+v, want all three fields zero-valued", got)
+	}
+}
+
+// TestSetDatabaseBackupSchedule_TargetDeletedClearsColumn exercises
+// migrations/0023's own ON DELETE SET NULL: deleting a backup_targets
+// row a schedule points at must clear backup_target_id automatically,
+// not leave it pointing at nothing.
+func TestSetDatabaseBackupSchedule_TargetDeletedClearsColumn(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("SaveDesiredDatabase() error = %v", err)
+	}
+	target := seedBackupTarget(t, db)
+	if err := db.SetDatabaseBackupSchedule(ctx, "main", target.ID, "0 3 * * *", 7); err != nil {
+		t.Fatalf("SetDatabaseBackupSchedule() error = %v", err)
+	}
+
+	if err := db.DeleteBackupTarget(ctx, target.ID); err != nil {
+		t.Fatalf("DeleteBackupTarget() error = %v", err)
+	}
+
+	got, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if got.BackupTargetID != "" {
+		t.Errorf("BackupTargetID = %q after target delete, want empty (ON DELETE SET NULL)", got.BackupTargetID)
+	}
+	// backup_schedule is untouched by the FK action: only the target
+	// reference is cleared, see SetDatabaseBackupSchedule's own doc
+	// comment and internal/backup.Scheduler's own handling of this
+	// half-configured state.
+	if got.BackupSchedule != "0 3 * * *" {
+		t.Errorf("BackupSchedule = %q after target delete, want it untouched", got.BackupSchedule)
+	}
+}
+
+func TestListScheduledDatabases(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	target := seedBackupTarget(t, db)
+
+	for _, name := range []string{"scheduled", "unscheduled"} {
+		if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: name, Engine: EnginePostgres, Version: "16"}); err != nil {
+			t.Fatalf("SaveDesiredDatabase(%s) error = %v", name, err)
+		}
+	}
+	if err := db.SetDatabaseBackupSchedule(ctx, "scheduled", target.ID, "0 3 * * *", 7); err != nil {
+		t.Fatalf("SetDatabaseBackupSchedule() error = %v", err)
+	}
+
+	got, err := db.ListScheduledDatabases(ctx)
+	if err != nil {
+		t.Fatalf("ListScheduledDatabases() error = %v", err)
+	}
+	if len(got) != 1 || got[0].Name != "scheduled" {
+		t.Fatalf("ListScheduledDatabases() = %+v, want exactly [scheduled]", got)
+	}
+}
+
+// TestListScheduledDatabases_ExcludesHalfConfigured covers the exact
+// scenario ListScheduledDatabases's own doc comment describes: a
+// schedule string survives its target's deletion (the FK action only
+// clears backup_target_id, see TestSetDatabaseBackupSchedule_
+// TargetDeletedClearsColumn above), and that half-configured row must
+// not show up as "scheduled" since it can never actually run.
+func TestListScheduledDatabases_ExcludesHalfConfigured(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	target := seedBackupTarget(t, db)
+
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("SaveDesiredDatabase() error = %v", err)
+	}
+	if err := db.SetDatabaseBackupSchedule(ctx, "main", target.ID, "0 3 * * *", 7); err != nil {
+		t.Fatalf("SetDatabaseBackupSchedule() error = %v", err)
+	}
+	if err := db.DeleteBackupTarget(ctx, target.ID); err != nil {
+		t.Fatalf("DeleteBackupTarget() error = %v", err)
+	}
+
+	got, err := db.ListScheduledDatabases(ctx)
+	if err != nil {
+		t.Fatalf("ListScheduledDatabases() error = %v", err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("ListScheduledDatabases() = %+v, want empty (target deleted, schedule half-configured)", got)
+	}
+}
+
 // TestListDesiredDatabasesByNode is the database-kind counterpart to
 // TestListDesiredServicesByNode (service_test.go), same TASKS.md 3.7
 // drain/delete-guard callers.
