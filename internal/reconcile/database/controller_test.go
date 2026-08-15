@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -52,6 +53,10 @@ type fakeRuntime struct {
 	// test can assert exactly what a controller sent (e.g. which
 	// MYSQL_*/POSTGRES_* keys), not just that Create was called.
 	lastCreateEnv map[string]string
+	// lastCreateSpec is the full spec passed to the most recent Create
+	// call, for assertions (like the mesh DNS wiring tests) that need
+	// more than just Env.
+	lastCreateSpec docker.ContainerSpec
 }
 
 func newFakeRuntime() *fakeRuntime {
@@ -95,6 +100,7 @@ func (f *fakeRuntime) Create(_ context.Context, spec docker.ContainerSpec) (stri
 	defer f.mu.Unlock()
 	f.createCalls++
 	f.lastCreateEnv = spec.Env
+	f.lastCreateSpec = spec
 	if f.createErr != nil {
 		return "", f.createErr
 	}
@@ -594,5 +600,42 @@ func TestVersionOrDefault(t *testing.T) {
 				t.Errorf("versionOrDefault(%q) = %q, want %q", tt.in, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestWithMeshDNSAddr_SetsContainerSpecDNS(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}
+	c := New("main", &fakeStore{db: desired}, rt, WithMeshDNSAddr("172.17.0.1"))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue {
+		t.Fatalf("condition = %+v, want Status=True", cond)
+	}
+	want := []string{"172.17.0.1"}
+	if got := rt.lastCreateSpec.DNS; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.DNS = %+v, want %+v", got, want)
+	}
+}
+
+// TestWithMeshDNSAddr_NotConfigured_LeavesDNSNil is the regression-safety
+// half of the mesh DNS test: without WithMeshDNSAddr (the default, and
+// every database before this option existed), Create must never see a
+// non-nil DNS field. This is the test that would actually fail if the
+// wiring accidentally set DNS unconditionally instead of gating on
+// meshDNSAddr being configured.
+func TestWithMeshDNSAddr_NotConfigured_LeavesDNSNil(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}
+	c := New("main", &fakeStore{db: desired}, rt) // no WithMeshDNSAddr
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if got := rt.lastCreateSpec.DNS; got != nil {
+		t.Errorf("created ContainerSpec.DNS = %+v, want nil", got)
 	}
 }

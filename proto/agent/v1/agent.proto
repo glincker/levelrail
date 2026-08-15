@@ -159,6 +159,9 @@ message ContainerSpec {
   map<string, string> env = 4;
   Resources resources = 5; // unset means internal/docker.ContainerSpec.Resources == nil
   repeated VolumeMount volumes = 6;
+  // DNS mirrors internal/docker.ContainerSpec.DNS. Empty means Docker's
+  // own embedded resolver, unchanged from before this field existed.
+  repeated string dns = 7;
 }
 
 message ContainerState {

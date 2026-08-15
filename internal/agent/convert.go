@@ -102,6 +102,7 @@ func containerSpecToPB(s docker.ContainerSpec) *agentpb.ContainerSpec {
 		Env:       s.Env,
 		Resources: resourcesToPB(s.Resources),
 		Volumes:   volumesToPB(s.Volumes),
+		Dns:       s.DNS,
 	}
 }
 
@@ -116,6 +117,7 @@ func containerSpecFromPB(s *agentpb.ContainerSpec) docker.ContainerSpec {
 		Env:       s.Env,
 		Resources: resourcesFromPB(s.Resources),
 		Volumes:   volumesFromPB(s.Volumes),
+		DNS:       s.Dns,
 	}
 }
 

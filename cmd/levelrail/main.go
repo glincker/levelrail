@@ -415,10 +415,17 @@ func run(logger *slog.Logger) error {
 	if meshCfg != nil {
 		defer meshCfg.close()
 	}
+	// Resolved once at startup, not per reconcile pass: the bridge
+	// gateway IP a container-reachable mesh DNS address depends on
+	// (containerDNSAddr's own doc comment) does not change while this
+	// process runs, so every controller dynamicSource builds below
+	// shares the one lookup instead of each re-querying the Docker
+	// daemon on every tick.
+	meshDNSAddr := containerDNSAddr(ctx, client, meshCfg, logger)
 
 	engine := reconcile.NewEngine(logger)
 	engine.SetStore(db)
-	engine.SetSource(dynamicSource(db, client, ingressDriver, logger, telemetryDB, secretsManager, agentRegistry, nodeHeartbeatTimeout(), meshCfg))
+	engine.SetSource(dynamicSource(db, client, ingressDriver, logger, telemetryDB, secretsManager, agentRegistry, nodeHeartbeatTimeout(), meshCfg, meshDNSAddr))
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
 	go func() {
@@ -1411,7 +1418,7 @@ func certExpiryWarningWindow(logger *slog.Logger) time.Duration {
 // when it isn't nil, the same "reconciles the whole fleet in one pass"
 // shape the ingress controller already has and for the identical
 // reason: a mesh is a property of the set of nodes, not of any one node.
-func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.Driver, logger *slog.Logger, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry, heartbeatTimeout time.Duration, meshCfg *meshSetup) reconcile.Source {
+func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.Driver, logger *slog.Logger, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry, heartbeatTimeout time.Duration, meshCfg *meshSetup, meshDNSAddr string) reconcile.Source {
 	return func(ctx context.Context) ([]reconcile.Controller, error) {
 		services, err := db.ListDesiredServices(ctx)
 		if err != nil {
@@ -1429,6 +1436,9 @@ func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.D
 		appOpts := []application.Option{application.WithDeployRecorder(telemetryDB)}
 		if secretsManager != nil {
 			appOpts = append(appOpts, application.WithSecretResolver(secretsManager))
+		}
+		if meshDNSAddr != "" {
+			appOpts = append(appOpts, application.WithMeshDNSAddr(meshDNSAddr))
 		}
 
 		controllers := make([]reconcile.Controller, 0, len(services)+len(databases)+len(nodes)+1)
@@ -1479,6 +1489,9 @@ func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.D
 				} else if creds != nil {
 					dbOpts = append(dbOpts, database.WithMySQLCredentials(creds))
 				}
+			}
+			if meshDNSAddr != "" {
+				dbOpts = append(dbOpts, database.WithMeshDNSAddr(meshDNSAddr))
 			}
 			controllers = append(controllers, database.New(desired.Name, db, dbRuntime, dbOpts...))
 		}

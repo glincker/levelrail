@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"reflect"
 	"testing"
 	"time"
 
@@ -23,14 +24,19 @@ type fakeRuntime struct {
 	createCalls int
 	startCalls  int
 	startedID   string
+	// lastCreateSpec is the full spec passed to the most recent Create
+	// call, for assertions (like the mesh DNS wiring tests) that need
+	// more than just the call count.
+	lastCreateSpec docker.ContainerSpec
 }
 
 func (f *fakeRuntime) InspectByName(_ context.Context, _ string) (*docker.ContainerState, error) {
 	return f.inspectResult, f.inspectErr
 }
 
-func (f *fakeRuntime) Create(_ context.Context, _ docker.ContainerSpec) (string, error) {
+func (f *fakeRuntime) Create(_ context.Context, spec docker.ContainerSpec) (string, error) {
 	f.createCalls++
+	f.lastCreateSpec = spec
 	if f.createErr != nil {
 		return "", f.createErr
 	}
@@ -218,5 +224,36 @@ func TestController_Reconcile_Idempotent(t *testing.T) {
 
 	if rt.createCalls != 0 || rt.startCalls != 0 {
 		t.Errorf("expected zero create/start calls across repeated reconciles of an already-converged container, got create=%d start=%d", rt.createCalls, rt.startCalls)
+	}
+}
+
+func TestWithMeshDNSAddr_SetsContainerSpecDNS(t *testing.T) {
+	rt := &fakeRuntime{inspectResult: nil}
+	c := New(rt, WithMeshDNSAddr("172.17.0.1"))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	want := []string{"172.17.0.1"}
+	if got := rt.lastCreateSpec.DNS; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.DNS = %+v, want %+v", got, want)
+	}
+}
+
+// TestWithMeshDNSAddr_NotConfigured_LeavesDNSNil is the regression-safety
+// half of the mesh DNS test: without WithMeshDNSAddr (the default, and
+// this controller's own behavior before this option existed), Create
+// must never see a non-nil DNS field. This is the test that would
+// actually fail if the wiring accidentally set DNS unconditionally
+// instead of gating on meshDNSAddr being configured.
+func TestWithMeshDNSAddr_NotConfigured_LeavesDNSNil(t *testing.T) {
+	rt := &fakeRuntime{inspectResult: nil}
+	c := New(rt) // no WithMeshDNSAddr
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if got := rt.lastCreateSpec.DNS; got != nil {
+		t.Errorf("created ContainerSpec.DNS = %+v, want nil", got)
 	}
 }
