@@ -79,10 +79,82 @@ export function matchBuildLogHints(lines: LogLine[]): BuildLogHintMatch[] {
       firstMatch.set(rule.id, found)
     }
   }
+  return buildMatches(firstMatch)
+}
 
+// Immutable so React components can update it with the "adjust state
+// during render" pattern (compare-and-setState) rather than a ref, which
+// eslint's react-hooks/refs rule rejects for reads during render.
+export interface BuildLogHintScanState {
+  lastSeenId: number
+  matchedLines: ReadonlyMap<string, LogLine>
+}
+
+export const initialBuildLogHintScanState: BuildLogHintScanState = {
+  lastSeenId: -1,
+  matchedLines: new Map(),
+}
+
+// scanBuildLogHints is matchBuildLogHints's incremental twin: given the
+// state returned by its own previous call, it only scans lines newer
+// than `prev.lastSeenId` (useLogStream's per-connection line.id), so a
+// long build log doesn't get rescanned in full on every new line.
+export function scanBuildLogHints(
+  lines: LogLine[],
+  prev: BuildLogHintScanState,
+): BuildLogHintScanState {
+  let matchedLines = prev.matchedLines
+  let lastSeenId = prev.lastSeenId
+
+  const latestId = lines.at(-1)?.id ?? -1
+  if (latestId < lastSeenId) {
+    matchedLines = new Map()
+    lastSeenId = -1
+  }
+
+  const unmatchedRules = RULES.filter((rule) => !matchedLines.has(rule.id))
+  if (unmatchedRules.length > 0) {
+    const newLines = linesAfter(lines, lastSeenId)
+    let next: Map<string, LogLine> | undefined
+    for (const rule of unmatchedRules) {
+      const found = newLines.find((line) => rule.pattern.test(line.line))
+      if (found) {
+        next ??= new Map(matchedLines)
+        next.set(rule.id, found)
+      }
+    }
+    if (next) {
+      matchedLines = next
+    }
+  }
+
+  return { lastSeenId: latestId, matchedLines }
+}
+
+export function buildLogHintMatches(
+  state: BuildLogHintScanState,
+): BuildLogHintMatch[] {
+  return buildMatches(state.matchedLines)
+}
+
+function linesAfter(lines: LogLine[], afterId: number): LogLine[] {
+  let start = lines.length
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i]
+    if (!line || line.id <= afterId) {
+      break
+    }
+    start = i
+  }
+  return lines.slice(start)
+}
+
+function buildMatches(
+  matchedLines: ReadonlyMap<string, LogLine>,
+): BuildLogHintMatch[] {
   const matches: BuildLogHintMatch[] = []
   for (const rule of RULES) {
-    const line = firstMatch.get(rule.id)
+    const line = matchedLines.get(rule.id)
     if (!line) {
       continue
     }
