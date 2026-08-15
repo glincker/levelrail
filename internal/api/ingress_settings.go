@@ -48,7 +48,7 @@ func toIngressSettingsResource(s store.IngressSettings) ingressSettingsResource 
 }
 
 // handleGetIngressSettings handles GET /api/v1/settings/ingress: the
-// single platform-wide row (migrations/0023_ingress_settings.sql),
+// single platform-wide row (migrations/0024_ingress_settings.sql),
 // always present, never a 404. A control plane that has never had this
 // page visited returns the seeded default (ACME disabled, no primary
 // domain), not an error, the same "absence is a real, reportable state"

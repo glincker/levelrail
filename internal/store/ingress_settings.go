@@ -7,7 +7,7 @@ import (
 )
 
 // IngressSettings is the platform-wide ingress configuration row
-// (migrations/0023_ingress_settings.sql): whether to obtain real ACME
+// (migrations/0024_ingress_settings.sql): whether to obtain real ACME
 // certificates instead of Caddy's offline internal issuer, and an
 // optional primary domain for the control plane's own dashboard. There
 // is always exactly one of these (id = 1), never zero and never more
