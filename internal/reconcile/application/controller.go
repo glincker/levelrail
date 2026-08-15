@@ -193,7 +193,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 
 	targets := make([]string, replicas)
 	for i := range targets {
-		targets[i] = replicaContainerName(c.serviceName, desired.Image, i)
+		targets[i] = replicaContainerName(c.serviceName, desired.Image, desired.RestartNonce, i)
 	}
 
 	switch strategy {
@@ -605,8 +605,23 @@ const hashLen = 8
 // derive the exact same name to find a service's currently active
 // container, without reimplementing this hash logic a second time and
 // risking the two drifting apart.
-func ContainerName(serviceName, image string) string {
-	sum := sha256.Sum256([]byte(image))
+//
+// restartNonce (store.DesiredService.RestartNonce) is folded into the
+// hash only when non-empty: an empty nonce, the state of every service
+// that has never been restarted, must produce byte-identical output to
+// before this parameter existed, so an upgrade never orphans an
+// already-running container under a name it no longer recognizes. Once
+// non-empty, changing it changes the name, which is what makes a restart
+// (RestartService) indistinguishable from an image change to this
+// controller's existing, already-tested blue-green/recreate cutover
+// logic: no new branch needed, restarting an app is just another kind of
+// desired-state change.
+func ContainerName(serviceName, image, restartNonce string) string {
+	key := image
+	if restartNonce != "" {
+		key = image + "\x00" + restartNonce
+	}
+	sum := sha256.Sum256([]byte(key))
 	return serviceName + "-" + hex.EncodeToString(sum[:])[:hashLen]
 }
 
@@ -621,8 +636,8 @@ func ContainerName(serviceName, image string) string {
 // currently active container") keeps finding the right one without that
 // package needing to know replicas exist at all. Replica index N>0 gets
 // an additional "-rN" suffix; ownsContainer below recognizes both forms.
-func replicaContainerName(serviceName, image string, index int) string {
-	base := ContainerName(serviceName, image)
+func replicaContainerName(serviceName, image, restartNonce string, index int) string {
+	base := ContainerName(serviceName, image, restartNonce)
 	if index == 0 {
 		return base
 	}

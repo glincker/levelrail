@@ -535,6 +535,7 @@ func (f *fakeDrainAppStore) UpdateServiceNode(_ context.Context, name, _ string)
 func (f *fakeDrainAppStore) ListDesiredServicesByNode(context.Context, string) ([]store.DesiredService, error) {
 	return f.services, nil
 }
+func (f *fakeDrainAppStore) RestartService(context.Context, string) error { return nil }
 
 type fakeDrainDatabaseStore struct{}
 

@@ -352,7 +352,7 @@ func firstDuplicateHost(name string, domains []string, claimed map[string]string
 // backend to route right now; the caller skips it for this pass rather
 // than failing the whole reconcile.
 func (c *Controller) routeFor(ctx context.Context, svc store.DesiredService) (ingress.ProxyRoute, bool) {
-	target := application.ContainerName(svc.Name, svc.Image)
+	target := application.ContainerName(svc.Name, svc.Image, svc.RestartNonce)
 
 	state, err := c.runtime.InspectByName(ctx, target)
 	if err != nil {

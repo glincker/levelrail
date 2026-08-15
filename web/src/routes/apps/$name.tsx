@@ -12,6 +12,7 @@ import {
 import { summarizeAppStatus } from '../../lib/appStatus'
 import { DeleteAppDialog } from '../../components/DeleteAppDialog'
 import { DeployTriggerForm } from '../../components/DeployTriggerForm'
+import { RestartAppButton } from '../../components/RestartAppButton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 
@@ -23,8 +24,9 @@ import { Badge } from '@/components/ui/badge'
 // matching the precedent /apps/$name/deploys/$deployId/logs already set
 // as a real nested route rather than in-page tab state. This file is now
 // the layout: it owns the loader (both queries below), the shared page
-// header (app name, status, delete action), and the pinned deploy-trigger
-// form, then renders <Outlet /> for whichever section route is active.
+// header (app name, status, restart/delete actions), and the pinned
+// deploy-trigger form, then renders <Outlet /> for whichever section
+// route is active.
 //
 // Both queries are primed here, matching frontend-plan.md section 3's
 // "cross-cutting" rule that a route's data comes from typed loaders, not
@@ -74,7 +76,10 @@ function AppDetailLayout() {
           <h1 className="text-lg font-semibold text-foreground">{app.name}</h1>
           <Badge variant={status.variant}>{status.label}</Badge>
         </div>
-        <DeleteAppDialog name={app.name} />
+        <div className="flex items-center gap-2">
+          <RestartAppButton name={app.name} />
+          <DeleteAppDialog name={app.name} />
+        </div>
       </div>
 
       {/* Deploy is the single most common action on this page, so it is

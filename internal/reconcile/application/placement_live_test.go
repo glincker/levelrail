@@ -173,7 +173,7 @@ func TestController_Reconcile_Live_ViaRemoteTransport(t *testing.T) {
 	// not the transport this controller itself used, confirming the
 	// container that actually exists in Docker, not just what the
 	// remote path claims exists.
-	target := ContainerName(serviceName, image1)
+	target := ContainerName(serviceName, image1, "")
 	state, err := rt.InspectByName(context.Background(), target)
 	if err != nil {
 		t.Fatalf("InspectByName(%q) error = %v", target, err)

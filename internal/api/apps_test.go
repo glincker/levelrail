@@ -612,3 +612,72 @@ func TestHandleSetAppNode_PlainWriteToken_Forbidden(t *testing.T) {
 		t.Errorf("status = %d, want %d: placement is fleet-level, a plain write token must not reach it", rec.Code, http.StatusForbidden)
 	}
 }
+
+func TestHandleRestartApp_Success(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	before, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/restart", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	after, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if after.RestartNonce == before.RestartNonce {
+		t.Errorf("RestartNonce unchanged by the restart endpoint: %q", after.RestartNonce)
+	}
+	if after.Image != before.Image {
+		t.Errorf("Image changed by a restart: %q, want unchanged %q", after.Image, before.Image)
+	}
+}
+
+func TestHandleRestartApp_UnknownApp_NotFound(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/nonexistent/restart", ""))
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleRestartApp_PlainWriteToken_Forbidden(t *testing.T) {
+	// Restart is a deploy-adjacent action (it forces a real container
+	// recreation), the same ability boundary POST .../deploys and
+	// POST .../builds already draw (AbilityDeploy, not AbilityWrite):
+	// see router.go's registration of this route for why.
+	rt, db := newTestRouter(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	const plaintext = "write-scoped-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_write", Name: "writer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWrite}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/apps/web/restart", strings.NewReader(""))
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d: a plain write token must not be able to force a container recreation", rec.Code, http.StatusForbidden)
+	}
+}

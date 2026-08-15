@@ -101,6 +101,15 @@ type AppStore interface {
 	// delete-guard primitive (handleDrainNode, handleDeleteNode): find
 	// what's placed on a node without listing every service.
 	ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]store.DesiredService, error)
+	// RestartService is the only way to force a running container to be
+	// recreated without an image change: a redeploy of the same image
+	// tag is otherwise a genuine reconciler no-op (see
+	// internal/reconcile/application.ContainerName's own doc comment).
+	// See store.DB.RestartService's own doc comment for why this is
+	// deliberately excluded from SaveDesiredService's full-record-replace
+	// semantics, the same reasoning UpdateServiceNode already establishes
+	// for NodeID.
+	RestartService(ctx context.Context, name string) error
 }
 
 // DeployStore is the store surface the deploy-history handler needs.
@@ -407,6 +416,12 @@ func (rt *Router) Handler() http.Handler {
 	// Deploys.
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityDeploy, rt.handleTriggerDeploy))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityRead, rt.handleDeployHistory))
+
+	// Restart (handleRestartApp's own doc comment): AbilityDeploy, the
+	// same boundary as the deploy trigger above, since forcing a
+	// container recreation is the same class of action as triggering a
+	// deploy, just without a new image.
+	mux.HandleFunc("POST /api/v1/apps/{name}/restart", rt.requireAbility(AbilityDeploy, rt.handleRestartApp))
 
 	// Manual build trigger (see Builder/WithBuilder above and
 	// handleTriggerBuild's own doc comment): builds an image from a git

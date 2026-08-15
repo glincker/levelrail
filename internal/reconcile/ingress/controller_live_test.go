@@ -111,8 +111,8 @@ func TestController_Reconcile_Live(t *testing.T) {
 		t.Fatalf("SaveDesiredService(b) error = %v", err)
 	}
 
-	startAndWaitRunning(longCtx, t, rt, application.ContainerName(serviceA, imageA), imageA)
-	startAndWaitRunning(longCtx, t, rt, application.ContainerName(serviceB, imageB), imageB)
+	startAndWaitRunning(longCtx, t, rt, application.ContainerName(serviceA, imageA, ""), imageA)
+	startAndWaitRunning(longCtx, t, rt, application.ContainerName(serviceB, imageB, ""), imageB)
 
 	caddyPort := freePort(t)
 	caddyAddr := fmt.Sprintf("127.0.0.1:%d", caddyPort)

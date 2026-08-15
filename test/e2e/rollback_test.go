@@ -134,8 +134,8 @@ func TestRollback_Live_ImageSwapBothDirections(t *testing.T) {
 	}
 
 	appCtrl := application.New(serviceName, svcStore, runtime)
-	nameA := application.ContainerName(serviceName, tagA)
-	nameB := application.ContainerName(serviceName, tagB)
+	nameA := application.ContainerName(serviceName, tagA, "")
+	nameB := application.ContainerName(serviceName, tagB, "")
 
 	// Step 3: deploy A. Save desired state pointed at tagA and
 	// reconcile through a real application.Controller, then verify
