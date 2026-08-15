@@ -24,6 +24,8 @@ type fakeStore struct {
 	err            error
 	staticSites    []store.StaticSite
 	staticSitesErr error
+	settings       store.IngressSettings
+	settingsErr    error
 }
 
 func (f *fakeStore) ListDesiredServices(_ context.Context) ([]store.DesiredService, error) {
@@ -38,6 +40,19 @@ func (f *fakeStore) ListStaticSites(_ context.Context) ([]store.StaticSite, erro
 		return nil, f.staticSitesErr
 	}
 	return f.staticSites, nil
+}
+
+// GetIngressSettings returns the zero value (ACME disabled, no primary
+// domain) unless a test explicitly sets f.settings or f.settingsErr:
+// this matches every real, never-configured control plane's actual
+// state (migrations/0023's own seeded row), so existing tests written
+// before this method existed keep exercising the exact same
+// internal-issuer-only, no-dashboard-route path they always have.
+func (f *fakeStore) GetIngressSettings(_ context.Context) (store.IngressSettings, error) {
+	if f.settingsErr != nil {
+		return store.IngressSettings{}, f.settingsErr
+	}
+	return f.settings, nil
 }
 
 // fakeRuntime implements docker.Runtime with an in-memory container set,
