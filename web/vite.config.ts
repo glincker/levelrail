@@ -45,16 +45,21 @@ export default defineConfig({
     }),
     react(),
     tailwindcss(),
-    // Emits web/dist/stats.html on every `npm run build`, a treemap of
-    // final chunk sizes, in service of the route-level code splitting
-    // bundle size budget enforced in CI; this is the visibility half of
-    // that (frontend-plan.md section 2).
-    // A per-chunk size-assertion script that fails CI on regression is
-    // deferred, see the report for this pass.
-    visualizer({
-      filename: 'dist/stats.html',
-      gzipSize: true,
-      brotliSize: true,
-    }),
+    // Emits web/dist/stats.html, a treemap of final chunk sizes, in
+    // service of the route-level code splitting bundle size budget
+    // enforced in CI; this is the visibility half of that (frontend-plan.md
+    // section 2). Gated behind ANALYZE so it doesn't run (and doesn't add
+    // its own build-time cost) on every plain `npm run build`, only on an
+    // explicit `ANALYZE=true npm run build`: the same env-var-gate shape
+    // as APP_DEV_MODE above, just on the build side instead of the dev
+    // server. A per-chunk size-assertion script that fails CI on
+    // regression is deferred, see the report for this pass.
+    process.env.ANALYZE
+      ? visualizer({
+          filename: 'dist/stats.html',
+          gzipSize: true,
+          brotliSize: true,
+        })
+      : null,
   ],
 })
