@@ -294,6 +294,32 @@ func waitForEvent(t *testing.T, eventCh <-chan Event, name string, action EventA
 	}
 }
 
+// waitForStopped polls InspectByName until the named container reports
+// Running == false, or the timeout expires, in which case it fails the
+// test. Mirrors waitForEvent's deadline/poll shape above and
+// placement_live_test.go's registry.Get polling loop: the same
+// "poll a synchronous state read instead of trusting it after the first
+// call" convention this package already uses for eventual-consistency
+// cases.
+func waitForStopped(ctx context.Context, t *testing.T, c *Client, name string, timeout time.Duration) *ContainerState {
+	t.Helper()
+	deadline := time.After(timeout)
+	for {
+		state, err := c.InspectByName(ctx, name)
+		if err != nil {
+			t.Fatalf("InspectByName(%q) error = %v", name, err)
+		}
+		if state != nil && !state.Running {
+			return state
+		}
+		select {
+		case <-deadline:
+			t.Fatalf("timed out waiting for %q to report stopped, last state: %+v", name, state)
+		case <-time.After(100 * time.Millisecond):
+		}
+	}
+}
+
 // TestClient_ListByPrefix_Stop_Remove_Live proves the three primitives
 // the application controller's blue-green cutover depends on: finding
 // every container belonging to a service by name prefix (not just one
@@ -352,13 +378,16 @@ func TestClient_ListByPrefix_Stop_Remove_Live(t *testing.T) {
 	if err := c.Stop(ctx, idA, 5*time.Second); err != nil {
 		t.Fatalf("Stop() error = %v", err)
 	}
-	stopped, err := c.InspectByName(ctx, nameA)
-	if err != nil {
-		t.Fatalf("InspectByName() after stop error = %v", err)
-	}
-	if stopped == nil || stopped.Running {
-		t.Fatalf("expected container to exist and not be running after Stop(), got %+v", stopped)
-	}
+	// Stop()'s underlying ContainerStop call is documented to block until
+	// the container has actually stopped (or the timeout elapses and it's
+	// killed), so a well-behaved daemon should already report Running ==
+	// false here. Some daemon configurations (e.g. containerd-snapshotter)
+	// have shown brief eventual-consistency lag between ContainerStop
+	// returning and the state being queryable, so poll instead of
+	// asserting on the very first read: the reconciler that calls Stop()
+	// in production tolerates the same lag because it's level-triggered
+	// and re-checks on its next pass, so this test should too.
+	waitForStopped(ctx, t, c, nameA, 5*time.Second)
 
 	if err := c.Remove(ctx, idA, false); err != nil {
 		t.Fatalf("Remove() error = %v", err)
