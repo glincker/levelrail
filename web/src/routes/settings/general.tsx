@@ -9,6 +9,7 @@ import {
   GearIcon,
   ShieldCheckIcon,
   SparkleIcon,
+  StackIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Card,
@@ -26,12 +27,13 @@ import {
   systemStatusQueryOptions,
   useSystemStatus,
 } from '../../queries/systemStatus'
-import type { SystemStatus } from '../../queries/systemStatus'
+import type { DockerDiskUsage, SystemStatus } from '../../queries/systemStatus'
 import {
   certificatesQueryOptions,
   useCertificates,
 } from '../../queries/certificates'
 import type { CertificateStatus } from '../../queries/certificates'
+import { CleanUpDockerDialog } from '../../components/CleanUpDockerDialog'
 
 // Real content for the General settings page. Platform info comes from
 // the already-warm /api/v1/brand cache via useBrand() (primed by
@@ -111,6 +113,105 @@ function DiskUsageCard({ status }: { status: SystemStatus }) {
         <p className="text-sm text-muted-foreground">
           {formatBytes(usedBytes)} used of{' '}
           {formatBytes(status.data_dir_total_bytes)} ({usedPercent}%)
+        </p>
+      </CardContent>
+    </Card>
+  )
+}
+
+// dockerUsageRow is one line of DockerDiskUsageCard's breakdown: a
+// resource kind's total size plus how much of that is reclaimable.
+// Reclaimable here follows Docker's own broader "unused" accounting
+// (docker.DiskUsage's own doc comment in internal/docker/prune.go), not
+// the narrower set "Clean up now" actually removes: a tagged-but-unused
+// image counts toward reclaimable here (matching what `docker system
+// df` would show) even though it's a protected rollback target Clean up
+// now will never touch. The card's own footnote below makes that gap
+// explicit rather than letting the numbers imply a bigger cleanup than
+// the button actually performs.
+function DockerUsageRow({
+  label,
+  totalBytes,
+  reclaimableBytes,
+}: {
+  label: string
+  totalBytes: number
+  reclaimableBytes: number
+}) {
+  return (
+    <div className="flex items-center justify-between py-1.5 text-sm">
+      <span className="text-foreground">{label}</span>
+      <span className="text-muted-foreground">
+        {formatBytes(totalBytes)}
+        {reclaimableBytes > 0 ? (
+          <span className="ml-1.5 text-xs">
+            ({formatBytes(reclaimableBytes)} reclaimable)
+          </span>
+        ) : null}
+      </span>
+    </div>
+  )
+}
+
+// DockerDiskUsageCard shows Docker's own storage accounting (images,
+// containers, volumes, build cache) alongside the "Clean up now" action,
+// a different number from DiskUsageCard just above: that one measures
+// the control plane's own data directory, this measures where Docker
+// itself stores state, per docker_disk_usage's own doc comment in
+// queries/systemStatus.ts. Only rendered when the backend actually
+// reported it (docker_disk_usage is omitted on the wire when no Docker
+// connection was established, or the daemon call failed), the same
+// "never show a fabricated 0/0" convention DiskUsageCard already
+// follows.
+function DockerDiskUsageCard({ usage }: { usage: DockerDiskUsage }) {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              <StackIcon className="size-4" />
+            </div>
+            <div>
+              <CardTitle>Docker storage</CardTitle>
+              <CardDescription>
+                Space claimed by images, containers, volumes, and build cache on
+                this daemon.
+              </CardDescription>
+            </div>
+          </div>
+          <CleanUpDockerDialog />
+        </div>
+      </CardHeader>
+      <CardContent className="divide-y divide-border">
+        <DockerUsageRow
+          label="Images"
+          totalBytes={usage.images_total_bytes}
+          reclaimableBytes={usage.images_reclaimable_bytes}
+        />
+        <DockerUsageRow
+          label="Containers"
+          totalBytes={usage.containers_total_bytes}
+          reclaimableBytes={usage.containers_reclaimable_bytes}
+        />
+        <DockerUsageRow
+          label="Volumes"
+          totalBytes={usage.volumes_total_bytes}
+          reclaimableBytes={usage.volumes_reclaimable_bytes}
+        />
+        <DockerUsageRow
+          label="Build cache"
+          totalBytes={usage.build_cache_total_bytes}
+          reclaimableBytes={usage.build_cache_reclaimable_bytes}
+        />
+      </CardContent>
+      <CardContent className="pt-0">
+        <p className="text-xs text-muted-foreground">
+          &ldquo;Reclaimable&rdquo; includes every currently unused resource,
+          Docker&apos;s own accounting. Clean up now is more conservative: it
+          only removes dangling images and anonymous volumes, never a tagged
+          image kept for rollback or a named database volume, so the amount
+          actually freed can be less than the reclaimable figure above.
         </p>
       </CardContent>
     </Card>
@@ -308,6 +409,10 @@ function GeneralSettingsPage() {
       </Card>
 
       <DiskUsageCard status={status} />
+
+      {status.docker_disk_usage ? (
+        <DockerDiskUsageCard usage={status.docker_disk_usage} />
+      ) : null}
 
       <CertificatesCard />
 
