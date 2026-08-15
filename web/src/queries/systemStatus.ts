@@ -14,6 +14,25 @@ export const systemStatusKeys = {
   all: ['system-status'] as const,
 }
 
+// DockerDiskUsage is Docker's own storage accounting (images,
+// containers, volumes, build cache), a materially different number from
+// data_dir_total_bytes/data_dir_free_bytes above: those measure the
+// control plane's own APP_DATA_DIR, this measures where Docker itself
+// stores image layers, container writable layers, and named volumes
+// (internal/api/status.go's dockerDiskUsageResource, sourced from
+// internal/docker's DiskUsage). Optional: omitted when no Docker disk
+// usage reporting is configured, or the underlying daemon call fails.
+export interface DockerDiskUsage {
+  images_total_bytes: number
+  images_reclaimable_bytes: number
+  containers_total_bytes: number
+  containers_reclaimable_bytes: number
+  volumes_total_bytes: number
+  volumes_reclaimable_bytes: number
+  build_cache_total_bytes: number
+  build_cache_reclaimable_bytes: number
+}
+
 export interface SystemStatus {
   secrets_configured: boolean
   telemetry_configured: boolean
@@ -21,6 +40,7 @@ export interface SystemStatus {
   data_dir_total_bytes?: number
   data_dir_free_bytes?: number
   docker_connected: boolean
+  docker_disk_usage?: DockerDiskUsage
 }
 
 export async function fetchSystemStatus(): Promise<SystemStatus> {

@@ -1115,10 +1115,10 @@ func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent
 //
 // client is always non-nil here: run() returns early on a
 // docker.NewClient error, before rootHandler is ever called, so unlike
-// secretsManager/webhookHandler/builder above, api.WithDockerPinger and
-// api.WithImageLister are both applied unconditionally, the same way
-// api.WithTelemetryQuerier and api.WithAlertRules already are for
-// telemetryDB/alertingDB.
+// secretsManager/webhookHandler/builder above, api.WithDockerPinger,
+// api.WithImageLister, api.WithDockerDiskUsager, and api.WithDockerPruner
+// are all applied unconditionally, the same way api.WithTelemetryQuerier
+// and api.WithAlertRules already are for telemetryDB/alertingDB.
 // deployRecorder and logBroadcaster are both always non-nil (constructed
 // unconditionally in run, unlike builder/secretsManager/webhookHandler
 // which are each independently optional): api.WithDeployRecorder,
@@ -1141,6 +1141,8 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDataDir(dataDir),
 		api.WithDockerPinger(client),
 		api.WithImageLister(client),
+		api.WithDockerDiskUsager(client),
+		api.WithDockerPruner(client),
 		api.WithCertExpiryWarningWindow(certExpiryWarningWindow(logger)),
 		api.WithDeployLogStore(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),

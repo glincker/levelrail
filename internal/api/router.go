@@ -240,26 +240,54 @@ type ImageLister interface {
 	ListImages(ctx context.Context, repo string) ([]docker.ImageInfo, error)
 }
 
+// DockerDiskUsager is the surface GET /api/v1/system/status needs for
+// Docker's own storage accounting (images/containers/volumes/build
+// cache), a materially different number from DataDirTotalBytes/
+// DataDirFreeBytes above: see docker.DiskUsage's own doc comment for
+// why. Narrow and single-purpose like DockerPinger, not docker.Runtime,
+// same "adding to Runtime would ripple into 6+ fakes for one read-only
+// signal" reasoning DockerPinger's own doc comment gives. *docker.Client
+// satisfies this structurally via the DiskUsage method added directly to
+// that concrete type (internal/docker/prune.go).
+type DockerDiskUsager interface {
+	DiskUsage(ctx context.Context) (docker.DiskUsage, error)
+}
+
+// DockerPruner is the surface POST /api/v1/system/prune needs: run every
+// cleanup stage internal/docker/prune.go supports and report what
+// happened. Unlike DockerDiskUsager (a read), this is a destructive-ish
+// action, gated at AbilityRoot the same way handleDrainNode is (see
+// router.go's own route registration), so it gets its own interface
+// rather than being folded into DockerDiskUsager: a read and a
+// destructive action deserve independently swappable seams, the same
+// split Builder/ImageLister already have. *docker.Client satisfies this
+// structurally via the Prune method (internal/docker/prune.go).
+type DockerPruner interface {
+	Prune(ctx context.Context, keep []string) docker.PruneResult
+}
+
 // Router wires every internal/api handler onto one http.Handler.
 type Router struct {
-	logger       *slog.Logger
-	brand        *brand.Brand
-	apps         AppStore
-	deploys      DeployStore
-	databases    DatabaseStore
-	auth         AuthStore
-	tokens       TokenStore
-	nodes        NodeStore
-	secrets      SecretSetter     // nil is valid: a control plane with no master key configured serves everything except secret-setting
-	telemetry    TelemetryQuerier // nil is valid: metrics/logs query routes return 501, same shape as secrets above
-	alertRules   AlertRules       // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
-	sessions     *sessionStore
-	logins       *loginLimiter
-	sessionTTL   time.Duration // 0 means "use defaultSessionTTL", set via WithSessionTTL
-	dataDir      string        // "" means "don't report disk usage", set via WithDataDir
-	dockerPinger DockerPinger  // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
-	images       ImageLister   // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
-	certs        CertStore     // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
+	logger          *slog.Logger
+	brand           *brand.Brand
+	apps            AppStore
+	deploys         DeployStore
+	databases       DatabaseStore
+	auth            AuthStore
+	tokens          TokenStore
+	nodes           NodeStore
+	secrets         SecretSetter     // nil is valid: a control plane with no master key configured serves everything except secret-setting
+	telemetry       TelemetryQuerier // nil is valid: metrics/logs query routes return 501, same shape as secrets above
+	alertRules      AlertRules       // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
+	sessions        *sessionStore
+	logins          *loginLimiter
+	sessionTTL      time.Duration    // 0 means "use defaultSessionTTL", set via WithSessionTTL
+	dataDir         string           // "" means "don't report disk usage", set via WithDataDir
+	dockerPinger    DockerPinger     // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
+	images          ImageLister      // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
+	dockerDiskUsage DockerDiskUsager // nil is valid: GET /system/status omits its docker_disk_usage field, same "optional signal, absence is not an error" shape as dockerPinger above
+	dockerPruner    DockerPruner     // nil is valid: POST /system/prune returns 501, same shape as builder/secrets above
+	certs           CertStore        // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
 	// certExpiryWarningWindow overrides defaultCertExpiryWarningWindow
 	// for GET /api/v1/certificates's "expiring_soon" threshold. 0 means
 	// "use the default", set via WithCertExpiryWarningWindow.
@@ -378,6 +406,21 @@ func WithDockerPinger(p DockerPinger) Option {
 // own absence already has.
 func WithImageLister(l ImageLister) Option {
 	return func(rt *Router) { rt.images = l }
+}
+
+// WithDockerDiskUsager enables the docker_disk_usage field on
+// GET /api/v1/system/status. Without one configured (the default), that
+// field is simply omitted, the same "optional signal, absence is not an
+// error" shape WithDockerPinger's own absence already has.
+func WithDockerDiskUsager(u DockerDiskUsager) Option {
+	return func(rt *Router) { rt.dockerDiskUsage = u }
+}
+
+// WithDockerPruner enables POST /api/v1/system/prune. Without one
+// configured (the default), that route returns 501, the same
+// "not configured" shape WithBuilder's own absence produces.
+func WithDockerPruner(p DockerPruner) Option {
+	return func(rt *Router) { rt.dockerPruner = p }
 }
 
 // WithCertExpiryWarningWindow overrides how far ahead of a certificate's
@@ -499,6 +542,12 @@ func (rt *Router) Handler() http.Handler {
 	// signals plus disk usage, AbilityRead like everything else an
 	// authenticated operator can passively view.
 	mux.HandleFunc("GET /api/v1/system/status", rt.requireAbility(AbilityRead, rt.handleSystemStatus))
+	// POST /system/prune deletes real Docker resources (stopped
+	// containers, dangling images, anonymous volumes, unused build
+	// cache) fleet-wide, not scoped to one app: AbilityRoot, the same
+	// gate handleDrainNode uses for its own fleet-wide, no-undo action,
+	// not AbilityWrite (which a narrower, single-app token could hold).
+	mux.HandleFunc("POST /api/v1/system/prune", rt.requireAbility(AbilityRoot, rt.handleSystemPrune))
 
 	// Auth. Login and first-run registration are necessarily public;
 	// everything else requires an existing session.

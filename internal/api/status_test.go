@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
 // fakeDockerPinger is a hand-written fake for DockerPinger, the same
@@ -99,6 +101,90 @@ func TestHandleSystemStatus_DockerConnected_Erroring(t *testing.T) {
 	}
 	if got.DockerConnected {
 		t.Error("DockerConnected = true, want false (WithDockerPinger configured but Ping errors)")
+	}
+}
+
+// fakeDockerDiskUsager is a hand-written fake for DockerDiskUsager,
+// mirroring fakeDockerPinger just above.
+type fakeDockerDiskUsager struct {
+	usage docker.DiskUsage
+	err   error
+}
+
+func (f *fakeDockerDiskUsager) DiskUsage(_ context.Context) (docker.DiskUsage, error) {
+	return f.usage, f.err
+}
+
+func TestHandleSystemStatus_DockerDiskUsage_Reported(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(nil, testBrand(), db, WithDockerDiskUsager(&fakeDockerDiskUsager{
+		usage: docker.DiskUsage{
+			ImagesTotalBytes:           1000,
+			ImagesReclaimableBytes:     200,
+			ContainersTotalBytes:       50,
+			ContainersReclaimableBytes: 10,
+			VolumesTotalBytes:          300,
+			VolumesReclaimableBytes:    30,
+			BuildCacheTotalBytes:       400,
+			BuildCacheReclaimableBytes: 40,
+		},
+	}))
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/system/status", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got systemStatusResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.DockerDiskUsage == nil {
+		t.Fatal("DockerDiskUsage = nil, want populated (WithDockerDiskUsager configured and healthy)")
+	}
+	if got.DockerDiskUsage.ImagesTotalBytes != 1000 || got.DockerDiskUsage.ImagesReclaimableBytes != 200 {
+		t.Errorf("images = %+v, want total=1000 reclaimable=200", got.DockerDiskUsage)
+	}
+	if got.DockerDiskUsage.BuildCacheReclaimableBytes != 40 {
+		t.Errorf("BuildCacheReclaimableBytes = %d, want 40", got.DockerDiskUsage.BuildCacheReclaimableBytes)
+	}
+}
+
+func TestHandleSystemStatus_DockerDiskUsage_ErroringDegradesToOmitted(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(nil, testBrand(), db, WithDockerDiskUsager(&fakeDockerDiskUsager{err: errors.New("daemon unreachable")}))
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/system/status", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got systemStatusResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.DockerDiskUsage != nil {
+		t.Errorf("DockerDiskUsage = %+v, want nil: a failed DiskUsage call must degrade to omitted, never a 5xx", got.DockerDiskUsage)
+	}
+}
+
+func TestHandleSystemStatus_DockerDiskUsage_NotConfigured(t *testing.T) {
+	rt, db := newTestRouter(t) // no WithDockerDiskUsager
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/system/status", ""))
+
+	var got systemStatusResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.DockerDiskUsage != nil {
+		t.Errorf("DockerDiskUsage = %+v, want nil with no WithDockerDiskUsager configured", got.DockerDiskUsage)
 	}
 }
 

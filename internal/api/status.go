@@ -3,6 +3,8 @@ package api
 import (
 	"net/http"
 	"syscall"
+
+	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
 // systemStatusResponse is GET /api/v1/system/status's wire shape: a
@@ -32,6 +34,47 @@ type systemStatusResponse struct {
 	// reportable false, never a 5xx" shape SecretsConfigured/
 	// TelemetryConfigured/AlertsConfigured already follow above.
 	DockerConnected bool `json:"docker_connected"`
+	// DockerDiskUsage is Docker's own storage accounting (images,
+	// containers, volumes, build cache), omitted entirely when no
+	// DockerDiskUsager is configured (WithDockerDiskUsager) or the
+	// underlying DiskUsage call fails: the same "absence, or a failed
+	// optional check, is a real reportable omission, never a 5xx"
+	// shape DockerConnected above already follows. See
+	// dockerDiskUsageResource's own doc comment for why this is a
+	// materially different number from DataDirTotalBytes/
+	// DataDirFreeBytes above: those measure this control plane's own
+	// APP_DATA_DIR, not Docker's storage.
+	DockerDiskUsage *dockerDiskUsageResource `json:"docker_disk_usage,omitempty"`
+}
+
+// dockerDiskUsageResource is docker.DiskUsage's wire shape: an explicit
+// snake_case translation, the same "don't let an internal/docker Go
+// struct's own field names leak onto the wire" convention
+// internal/api/images.go's imageResource/toImageResource already
+// establishes for docker.ImageInfo, rather than marshaling
+// docker.DiskUsage directly.
+type dockerDiskUsageResource struct {
+	ImagesTotalBytes           int64 `json:"images_total_bytes"`
+	ImagesReclaimableBytes     int64 `json:"images_reclaimable_bytes"`
+	ContainersTotalBytes       int64 `json:"containers_total_bytes"`
+	ContainersReclaimableBytes int64 `json:"containers_reclaimable_bytes"`
+	VolumesTotalBytes          int64 `json:"volumes_total_bytes"`
+	VolumesReclaimableBytes    int64 `json:"volumes_reclaimable_bytes"`
+	BuildCacheTotalBytes       int64 `json:"build_cache_total_bytes"`
+	BuildCacheReclaimableBytes int64 `json:"build_cache_reclaimable_bytes"`
+}
+
+func toDockerDiskUsageResource(u docker.DiskUsage) *dockerDiskUsageResource {
+	return &dockerDiskUsageResource{
+		ImagesTotalBytes:           u.ImagesTotalBytes,
+		ImagesReclaimableBytes:     u.ImagesReclaimableBytes,
+		ContainersTotalBytes:       u.ContainersTotalBytes,
+		ContainersReclaimableBytes: u.ContainersReclaimableBytes,
+		VolumesTotalBytes:          u.VolumesTotalBytes,
+		VolumesReclaimableBytes:    u.VolumesReclaimableBytes,
+		BuildCacheTotalBytes:       u.BuildCacheTotalBytes,
+		BuildCacheReclaimableBytes: u.BuildCacheReclaimableBytes,
+	}
 }
 
 // handleSystemStatus handles GET /api/v1/system/status. Always 200: an
@@ -47,6 +90,15 @@ func (rt *Router) handleSystemStatus(w http.ResponseWriter, r *http.Request) {
 
 	if rt.dockerPinger != nil {
 		resp.DockerConnected = rt.dockerPinger.Ping(r.Context()) == nil
+	}
+
+	if rt.dockerDiskUsage != nil {
+		if usage, err := rt.dockerDiskUsage.DiskUsage(r.Context()); err == nil {
+			resp.DockerDiskUsage = toDockerDiskUsageResource(usage)
+		}
+		// An error here degrades to "omitted," the same as DockerConnected
+		// above on a failed Ping: a daemon hiccup on this one read must
+		// never turn the whole status endpoint into a 500.
 	}
 
 	if rt.dataDir != "" {
