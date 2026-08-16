@@ -119,6 +119,82 @@ type logsResponse struct {
 	Entries []logEntryResource `json:"entries"`
 }
 
+// execRequest mirrors internal/api's execRequest (internal/api/exec.go).
+// Command is required server-side and is never shell-interpreted: a
+// caller who wants shell features (pipes, redirection, env expansion)
+// passes Command: "sh", Args: []string{"-c", "..."} explicitly, the same
+// contract the server documents.
+type execRequest struct {
+	Command        string   `json:"command"`
+	Args           []string `json:"args,omitempty"`
+	TimeoutSeconds int      `json:"timeout_seconds,omitempty"`
+}
+
+// execResponse mirrors internal/api's execResponse. ExitCode is always
+// the remote command's real exit code, never a CLI-level sentinel: "apps
+// exec" (apps_exec.go) exits the whole process with this value, which is
+// the entire point of the command.
+type execResponse struct {
+	Stdout    string `json:"stdout"`
+	Stderr    string `json:"stderr,omitempty"`
+	ExitCode  int    `json:"exit_code"`
+	Truncated bool   `json:"truncated,omitempty"`
+}
+
+// domainResource mirrors internal/api's domainResource
+// (internal/api/ingress_settings.go).
+type domainResource struct {
+	Domain      string `json:"domain"`
+	ServiceName string `json:"service_name"`
+}
+
+// backupHistoryResource mirrors internal/api's backupHistoryResource
+// (internal/api/backups.go).
+type backupHistoryResource struct {
+	ID           string `json:"id"`
+	DatabaseName string `json:"database_name"`
+	TargetID     string `json:"target_id"`
+	ObjectKey    string `json:"object_key"`
+	SizeBytes    int64  `json:"size_bytes"`
+	Status       string `json:"status"`
+	Error        string `json:"error,omitempty"`
+	StartedAt    string `json:"started_at"`
+	FinishedAt   string `json:"finished_at,omitempty"`
+}
+
+// triggerBackupRequest mirrors internal/api's triggerBackupRequest.
+type triggerBackupRequest struct {
+	TargetID string `json:"target_id"`
+}
+
+// restoreHistoryResource mirrors internal/api's restoreHistoryResource
+// (internal/api/restore.go).
+type restoreHistoryResource struct {
+	ID              string `json:"id"`
+	DatabaseName    string `json:"database_name"`
+	BackupHistoryID string `json:"backup_history_id"`
+	Status          string `json:"status"`
+	Error           string `json:"error,omitempty"`
+	StartedAt       string `json:"started_at"`
+	FinishedAt      string `json:"finished_at,omitempty"`
+}
+
+// triggerRestoreRequest mirrors internal/api's triggerRestoreRequest.
+type triggerRestoreRequest struct {
+	BackupID string `json:"backup_id"`
+}
+
+// sessionInfoResource mirrors internal/api's sessionInfoResponse
+// (internal/api/account.go)'s wire shape. GetSession below sends this
+// over a plain bearer-token request, which handleGetSession's own doc
+// comment says it will never honor ("deliberately not requireAbility: a
+// bearer token has no session of its own to report on"); see
+// auth_whoami.go's own doc comment for the consequence.
+type sessionInfoResource struct {
+	Username  string `json:"username"`
+	ExpiresAt string `json:"expires_at"`
+}
+
 // databaseResource mirrors internal/api's databaseResource
 // (internal/api/databases.go). NodeID is response-only, the same
 // "shown but not settable through this endpoint" boundary appResource's
@@ -343,6 +419,70 @@ func (c *Client) GetDatabase(ctx context.Context, name string) (databaseResource
 func (c *Client) ListDatabases(ctx context.Context) ([]databaseResource, error) {
 	var out []databaseResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/databases", nil, &out)
+	return out, err
+}
+
+// ExecApp calls POST /api/v1/apps/{name}/exec: runs command (plus args)
+// inside the app's currently running container and returns its
+// stdout/stderr/exit code once it finishes. AbilityRoot-gated
+// server-side (internal/api/exec.go's own doc comment: secrets are
+// injected as plaintext env vars, so exec can read them anyway, and
+// must sit behind the tier that boundary implies).
+func (c *Client) ExecApp(ctx context.Context, name string, req execRequest) (execResponse, error) {
+	var out execResponse
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+pathEscape(name)+"/exec", req, &out)
+	return out, err
+}
+
+// ListDomains calls GET /api/v1/domains: every service_domains row
+// across every app, aggregated in one call.
+func (c *Client) ListDomains(ctx context.Context) ([]domainResource, error) {
+	var out []domainResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/domains", nil, &out)
+	return out, err
+}
+
+// TriggerBackup calls POST /api/v1/databases/{name}/backups: starts a
+// real backup of name to targetID and returns as soon as the attempt is
+// recorded and under way (StatusAccepted server-side), not once the
+// dump and upload actually finish. ListBackups is how a caller finds
+// out whether it did.
+func (c *Client) TriggerBackup(ctx context.Context, name, targetID string) (backupHistoryResource, error) {
+	var out backupHistoryResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+pathEscape(name)+"/backups", triggerBackupRequest{TargetID: targetID}, &out)
+	return out, err
+}
+
+// ListBackups calls GET /api/v1/databases/{name}/backups: the full
+// backup attempt history for one database.
+func (c *Client) ListBackups(ctx context.Context, name string) ([]backupHistoryResource, error) {
+	var out []backupHistoryResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+pathEscape(name)+"/backups", nil, &out)
+	return out, err
+}
+
+// TriggerRestore calls POST /api/v1/databases/{name}/restore: overwrites
+// name's live data in place from a previously succeeded backup attempt.
+// The single most destructive call this Client makes; "backups restore"
+// (backups_restore.go) is the only caller and requires its own explicit
+// confirmation before ever reaching this method.
+func (c *Client) TriggerRestore(ctx context.Context, name, backupID string) (restoreHistoryResource, error) {
+	var out restoreHistoryResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+pathEscape(name)+"/restore", triggerRestoreRequest{BackupID: backupID}, &out)
+	return out, err
+}
+
+// GetSession calls GET /api/v1/auth/session using this Client's bearer
+// token, exactly the same auth mechanism every other method on this
+// type uses. See auth_whoami.go's own doc comment: the server gates
+// this route with requireAuth, session-cookie-only, by explicit design
+// (internal/api/account.go's handleGetSession doc comment), so a call
+// made through this method will reach the server and get back a real,
+// honest 401 "authentication required" for any caller authenticated the
+// way every other command in this CLI is, not a client-side bug.
+func (c *Client) GetSession(ctx context.Context) (sessionInfoResource, error) {
+	var out sessionInfoResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/auth/session", nil, &out)
 	return out, err
 }
 

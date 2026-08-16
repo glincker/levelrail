@@ -133,3 +133,36 @@ func readCredentialsFile(prog string) (credentials, error) {
 	}
 	return creds, nil
 }
+
+// writeCredentialsFile writes creds to the same "key=value" file
+// readCredentialsFile reads, creating configDir(prog) if it doesn't
+// exist yet. "auth login" is this function's only caller: it is the
+// one command in this CLI that produces a credential rather than just
+// consuming one. 0o600 on both the directory and the file, tighter than
+// readCredentialsFile's own comment on the file needing to stay
+// hand-editable: a freshly minted API token is a live credential, not a
+// value that should ever be group- or world-readable by default.
+func writeCredentialsFile(prog string, creds credentials) error {
+	dir, err := configDir(prog)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return fmt.Errorf("create config directory %s: %w", dir, err)
+	}
+	path := filepath.Join(dir, credentialsFileName)
+
+	var sb strings.Builder
+	sb.WriteString("# written by \"" + prog + " auth login\"\n")
+	if creds.apiURL != "" {
+		sb.WriteString(envAPIURL + "=" + creds.apiURL + "\n")
+	}
+	if creds.token != "" {
+		sb.WriteString(envAPIToken + "=" + creds.token + "\n")
+	}
+
+	if err := os.WriteFile(path, []byte(sb.String()), 0o600); err != nil {
+		return fmt.Errorf("write credentials file %s: %w", path, err)
+	}
+	return nil
+}

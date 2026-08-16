@@ -23,6 +23,7 @@ require (
 	github.com/tonistiigi/fsutil v0.0.0-20260717003753-6d9dc2ebad62
 	golang.org/x/crypto v0.55.0
 	golang.org/x/sync v0.22.0
+	golang.org/x/term v0.45.0
 	golang.zx2c4.com/wireguard v0.0.0-20260522210424-ecfc5a8d5446
 	google.golang.org/grpc v1.83.0
 	google.golang.org/protobuf v1.36.12
@@ -266,7 +267,6 @@ require (
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/term v0.45.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	golang.org/x/tools v0.48.0 // indirect
