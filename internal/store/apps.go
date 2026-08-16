@@ -138,7 +138,7 @@ func (db *DB) DeleteApp(ctx context.Context, id string) error {
 // app's member services, for a group-status rollup or a detail view.
 func (db *DB) ListServicesByApp(ctx context.Context, appID string) ([]DesiredService, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, app_id
+		SELECT `+desiredServiceColumns+`
 		FROM desired_services
 		WHERE app_id = ?
 		ORDER BY name
