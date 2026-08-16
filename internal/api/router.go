@@ -335,6 +335,7 @@ type Router struct {
 	backupSecrets           BackupSecretsSetter       // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
 	backupHistory           BackupHistoryStore        // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
 	backupRunner            BackupRunner              // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
+	backupDownloader        BackupDownloader          // nil is valid: GET .../backups/{historyId}/download returns 501, same shape as backupRunner above
 	restoreHistory          RestoreHistoryStore       // always set, same "core Store interface" shape as backupHistory above
 	restoreRunner           RestoreRunner             // nil is valid: POST /api/v1/databases/{name}/restore returns 501, same shape as backupRunner above
 	deployAttempts          DeployAttemptStore        // always set, same "core Store interface" shape as certs/staticSites above
@@ -374,6 +375,16 @@ func WithBackupSecrets(s BackupSecretsSetter) Option {
 // past, nothing about it needs a live runner today.
 func WithBackupRunner(r BackupRunner) Option {
 	return func(rt *Router) { rt.backupRunner = r }
+}
+
+// WithBackupDownloader enables
+// GET /api/v1/databases/{name}/backups/{historyId}/download. Without one
+// configured (the default), that route returns 501, the same
+// "not configured" shape WithBackupRunner's absence produces: both need a
+// live secretsManager to resolve a target's credentials, WithBackupRunner
+// to upload with them, this to download with them.
+func WithBackupDownloader(d BackupDownloader) Option {
+	return func(rt *Router) { rt.backupDownloader = d }
 }
 
 // WithRestoreRunner enables POST /api/v1/databases/{name}/restore.
@@ -881,6 +892,23 @@ func (rt *Router) Handler() http.Handler {
 	// History listing is ordinary AbilityRead.
 	mux.HandleFunc("POST /api/v1/databases/{name}/backups", rt.requireAbility(AbilityWriteSensitive, rt.handleTriggerBackup))
 	mux.HandleFunc("GET /api/v1/databases/{name}/backups", rt.requireAbility(AbilityRead, rt.handleListBackupHistory))
+
+	// Download one succeeded backup's own object, streamed straight to
+	// the browser. AbilityReadSensitive, not AbilityRead: this returns
+	// the actual dump bytes, a full database's worth of content, not
+	// metadata about an attempt the way history listing above does; it's
+	// also not a mutation, so AbilityWriteSensitive (the tier the trigger
+	// route above uses) would overstate it. Not AbilityRoot either,
+	// unlike restore.go's own explicit "single most destructive
+	// endpoint" reasoning for that tier: restore is irreversible,
+	// in-place destruction of live data, a materially worse risk class
+	// than a read-only fetch from a bucket, even though this route is a
+	// genuine full-database exfiltration primitive on the confidentiality
+	// axis. Today every session is implicitly root (requireAbility only
+	// gates scoped bearer/MCP tokens), so this choice mainly matters once
+	// Phase 4 mints scoped automation tokens against this ability tier.
+	// See handleDownloadBackup's own doc comment for the full reasoning.
+	mux.HandleFunc("GET /api/v1/databases/{name}/backups/{historyId}/download", rt.requireAbility(AbilityReadSensitive, rt.handleDownloadBackup))
 
 	// Scheduled backup config, per database (wave-2 roadmap item 6):
 	// which backup target, cron schedule, and retention count
