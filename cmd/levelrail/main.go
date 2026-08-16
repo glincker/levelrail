@@ -1266,6 +1266,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			return resolveNodeTransport(client, agentRegistry, nodeID)
 		}),
 		api.WithCertExpiryWarningWindow(certExpiryWarningWindow(logger)),
+		api.WithPublicHost(publicHost()),
 		api.WithDeployLogStore(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),
 		api.WithLogBroadcaster(logBroadcaster),
@@ -1427,6 +1428,21 @@ func certExpiryWarningWindow(logger *slog.Logger) time.Duration {
 		return 0
 	}
 	return d
+}
+
+// publicHost reads APP_PUBLIC_HOST: the IP address or hostname operators
+// should point a DNS A record at to reach this control plane's embedded
+// ingress (internal/ingress), surfaced through GET
+// /api/v1/apps/{name}/domains/{domain}/check (api.WithPublicHost) so
+// DomainEditor can tell an operator what to actually type at their
+// registrar. No default: this control plane cannot reliably discover its
+// own public-facing address on its own (NAT, a container port mapping, a
+// cloud load balancer all break self-discovery), so an unset value is a
+// real "not configured, guessing from the request" state
+// (api.handleCheckDomain's own advertisedHost fallback), not a value to
+// invent one for here.
+func publicHost() string {
+	return strings.TrimSpace(os.Getenv("APP_PUBLIC_HOST"))
 }
 
 // dynamicSource builds a reconcile.Source that re-lists desired services
