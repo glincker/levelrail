@@ -189,7 +189,7 @@ func TestManager_DeleteAll_ValuesUnreachableAfter(t *testing.T) {
 	}
 }
 
-func TestManager_DeleteAll_RegeneratesAFreshDEKOnNextSet(t *testing.T) {
+func TestManager_DeleteAll_SetValueWorksAgainAfterward(t *testing.T) {
 	m, _ := testManager(t)
 	ctx := context.Background()
 	if err := m.SetValue(ctx, "web", "API_KEY", "value"); err != nil {
@@ -199,11 +199,13 @@ func TestManager_DeleteAll_RegeneratesAFreshDEKOnNextSet(t *testing.T) {
 		t.Fatalf("DeleteAll() error = %v", err)
 	}
 
-	// A fresh SetValue after DeleteAll must work exactly like the first
-	// SetValue ever for this service name: dekFor's own doc comment
-	// says a DEK is generated once and never overwritten, so this only
-	// works if DeleteAll really removed the wrapped DEK row, not just
-	// the value rows.
+	// A functional regression check, not a DEK-deletion proof: this
+	// would pass identically whether DeleteAll actually removed the
+	// wrapped DEK row or only the value rows, since reusing a surviving
+	// DEK to encrypt "new-value" produces the same observable Resolve()
+	// result. TestDeleteServiceSecrets_RemovesValuesAndDEK
+	// (internal/store) is what actually proves the DEK row itself is
+	// gone.
 	if err := m.SetValue(ctx, "web", "API_KEY", "new-value"); err != nil {
 		t.Fatalf("SetValue() after DeleteAll() error = %v", err)
 	}
