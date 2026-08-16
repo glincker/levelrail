@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	dockertypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/build"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/volume"
 )
@@ -63,12 +65,12 @@ func TestIsAnonymousVolumeName(t *testing.T) {
 	}
 }
 
-func containerSummary(id, name string) dockertypes.Container {
-	return dockertypes.Container{ID: id, Names: []string{"/" + name}}
+func containerSummary(id, name string) container.Summary {
+	return container.Summary{ID: id, Names: []string{"/" + name}}
 }
 
 func TestStoppedNotKept(t *testing.T) {
-	all := []dockertypes.Container{
+	all := []container.Summary{
 		containerSummary("c1", "web-abc12345"),
 		containerSummary("c2", "web-abc12345-r1"),
 		containerSummary("c3", "db-main"),
@@ -113,11 +115,11 @@ func TestStoppedNotKept(t *testing.T) {
 func TestContainerSummaryName(t *testing.T) {
 	tests := []struct {
 		name string
-		cs   dockertypes.Container
+		cs   container.Summary
 		want string
 	}{
 		{name: "strips leading slash", cs: containerSummary("c1", "web"), want: "web"},
-		{name: "no names at all", cs: dockertypes.Container{ID: "c1"}, want: ""},
+		{name: "no names at all", cs: container.Summary{ID: "c1"}, want: ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -151,7 +153,7 @@ func TestAggregateDiskUsage(t *testing.T) {
 			{ID: "unused-tagged", Size: unusedTagged, Containers: 0, RepoTags: []string{"app:old"}},
 			{ID: "dangling", Size: dangling, Containers: 0, RepoTags: nil},
 		},
-		Containers: []*dockertypes.Container{
+		Containers: []*container.Summary{
 			{ID: "running", SizeRw: 10, State: "running"},
 			{ID: "stopped", SizeRw: 20, State: "exited"},
 		},
@@ -160,7 +162,7 @@ func TestAggregateDiskUsage(t *testing.T) {
 			{Name: "anon-unused", UsageData: &volume.UsageData{RefCount: 0, Size: 50}},
 			{Name: "no-usage-data-reported"}, // UsageData nil: driver doesn't report size
 		},
-		BuildCache: []*dockertypes.BuildCache{
+		BuildCache: []*build.CacheRecord{
 			{ID: "active", Size: 7, InUse: true},
 			{ID: "idle", Size: 3, InUse: false},
 		},

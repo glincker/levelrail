@@ -138,7 +138,7 @@ func TestController_Reconcile_Live(t *testing.T) {
 func pullIfMissing(ctx context.Context, t *testing.T, cli *dockerclient.Client) error {
 	t.Helper()
 	const ref = "nginx:alpine"
-	_, _, err := cli.ImageInspectWithRaw(ctx, ref)
+	_, err := cli.ImageInspect(ctx, ref)
 	if err == nil {
 		return nil
 	}

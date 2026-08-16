@@ -123,7 +123,7 @@ func TestClient_Build_Live(t *testing.T) {
 	// assertion for the whole spike: it proves the tar-stream export plus
 	// /images/load round trip really works, not just that BuildKit's
 	// Solve call returned without error.
-	inspect, _, err := docker.ImageInspectWithRaw(ctx, tag)
+	inspect, err := docker.ImageInspect(ctx, tag)
 	if err != nil {
 		t.Fatalf("image %q not found after Build(): %v", tag, err)
 	}

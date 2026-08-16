@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/mount"
@@ -279,19 +278,19 @@ func TestGatewayIPFromNetworkInspect(t *testing.T) {
 func TestToContainerState(t *testing.T) {
 	tests := []struct {
 		name    string
-		summary dockertypes.Container
+		summary container.Summary
 		want    ContainerState
 	}{
 		{
 			name: "leading slash trimmed from name",
-			summary: dockertypes.Container{
+			summary: container.Summary{
 				ID: "abc123", Names: []string{"/web-a1b2c3d4"}, Image: "myapp:sha", State: "running",
 			},
 			want: ContainerState{ID: "abc123", Name: "web-a1b2c3d4", Image: "myapp:sha", Running: true},
 		},
 		{
 			name:    "no names at all: empty name, not a panic",
-			summary: dockertypes.Container{ID: "abc123", Names: nil, State: "exited"},
+			summary: container.Summary{ID: "abc123", Names: nil, State: "exited"},
 			want:    ContainerState{ID: "abc123", Name: "", Running: false},
 		},
 	}
@@ -363,20 +362,20 @@ func TestEventTime(t *testing.T) {
 func TestObservedPorts(t *testing.T) {
 	tests := []struct {
 		name  string
-		ports []dockertypes.Port
+		ports []container.Port
 		want  []PortBinding
 	}{
 		{name: "no ports", ports: nil, want: nil},
 		{
 			name: "exposed but not published, skipped",
-			ports: []dockertypes.Port{
+			ports: []container.Port{
 				{PrivatePort: 3000, PublicPort: 0, Type: "tcp"},
 			},
 			want: nil,
 		},
 		{
 			name: "published port kept",
-			ports: []dockertypes.Port{
+			ports: []container.Port{
 				{PrivatePort: 3000, PublicPort: 32768, Type: "tcp"},
 			},
 			want: []PortBinding{
@@ -385,7 +384,7 @@ func TestObservedPorts(t *testing.T) {
 		},
 		{
 			name: "mix of published and unpublished",
-			ports: []dockertypes.Port{
+			ports: []container.Port{
 				{PrivatePort: 3000, PublicPort: 32768, Type: "tcp"},
 				{PrivatePort: 9000, PublicPort: 0, Type: "tcp"},
 			},

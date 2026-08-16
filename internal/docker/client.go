@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	cerrdefs "github.com/containerd/errdefs"
 	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/events"
@@ -98,7 +99,7 @@ func (c *Client) ListByPrefix(ctx context.Context, prefix string) ([]ContainerSt
 	return out, nil
 }
 
-func toContainerState(s dockertypes.Container) *ContainerState {
+func toContainerState(s container.Summary) *ContainerState {
 	name := ""
 	if len(s.Names) > 0 {
 		name = strings.TrimPrefix(s.Names[0], "/")
@@ -112,7 +113,7 @@ func toContainerState(s dockertypes.Container) *ContainerState {
 	}
 }
 
-func observedPorts(ports []dockertypes.Port) []PortBinding {
+func observedPorts(ports []container.Port) []PortBinding {
 	// Docker reports one entry per (IP, port) combination, so a port
 	// published on all interfaces typically appears twice, once for the
 	// IPv4 wildcard and once for IPv6. PortBinding doesn't carry the
@@ -193,7 +194,7 @@ func (c *Client) EnsureNetwork(ctx context.Context, name string) (string, error)
 	if err == nil {
 		return inspect.ID, nil
 	}
-	if !dockerclient.IsErrNotFound(err) {
+	if !cerrdefs.IsNotFound(err) {
 		return "", fmt.Errorf("docker: inspect network %q: %w", name, err)
 	}
 
@@ -207,7 +208,7 @@ func (c *Client) EnsureNetwork(ctx context.Context, name string) (string, error)
 // RemoveNetwork implements Runtime.
 func (c *Client) RemoveNetwork(ctx context.Context, name string) error {
 	if err := c.cli.NetworkRemove(ctx, name); err != nil {
-		if dockerclient.IsErrNotFound(err) {
+		if cerrdefs.IsNotFound(err) {
 			return nil
 		}
 		return fmt.Errorf("docker: remove network %q: %w", name, err)
@@ -578,11 +579,11 @@ func (c *Client) streamExecOutput(ctx context.Context, containerID, execID strin
 // unconditionally on every call would be slow and noisy, so this checks
 // first and only pulls on a genuine local miss.
 func (c *Client) ensureImage(ctx context.Context, ref string) error {
-	_, _, err := c.cli.ImageInspectWithRaw(ctx, ref)
+	_, err := c.cli.ImageInspect(ctx, ref)
 	if err == nil {
 		return nil
 	}
-	if !dockerclient.IsErrNotFound(err) {
+	if !cerrdefs.IsNotFound(err) {
 		return fmt.Errorf("docker: inspect image %q: %w", ref, err)
 	}
 

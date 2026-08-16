@@ -229,7 +229,7 @@ func startAndWaitRunning(ctx context.Context, t *testing.T, rt docker.Runtime, n
 
 func pullIfMissing(ctx context.Context, t *testing.T, cli *dockerclient.Client, ref string) error {
 	t.Helper()
-	_, _, err := cli.ImageInspectWithRaw(ctx, ref)
+	_, err := cli.ImageInspect(ctx, ref)
 	if err == nil {
 		return nil
 	}

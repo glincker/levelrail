@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	dockertypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/build"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
@@ -214,12 +215,12 @@ func isAnonymousVolumeName(name string) bool {
 // internal/reconcile/application.Controller.staleContainers already
 // uses for its own stale-container check, can be unit tested without a
 // real daemon.
-func stoppedNotKept(summaries []dockertypes.Container, keep []string) []dockertypes.Container {
+func stoppedNotKept(summaries []container.Summary, keep []string) []container.Summary {
 	keepSet := make(map[string]bool, len(keep))
 	for _, name := range keep {
 		keepSet[name] = true
 	}
-	var out []dockertypes.Container
+	var out []container.Summary
 	for _, cs := range summaries {
 		if keepSet[containerSummaryName(cs)] {
 			continue
@@ -229,7 +230,7 @@ func stoppedNotKept(summaries []dockertypes.Container, keep []string) []dockerty
 	return out
 }
 
-func containerSummaryName(cs dockertypes.Container) string {
+func containerSummaryName(cs container.Summary) string {
 	if len(cs.Names) == 0 {
 		return ""
 	}
@@ -450,7 +451,7 @@ type PruneBuildCacheResult struct {
 // rather than this call racing a build that happens to be running at the
 // same moment an operator clicks "clean up now."
 func (c *Client) PruneBuildCache(ctx context.Context) (PruneBuildCacheResult, error) {
-	report, err := c.cli.BuildCachePrune(ctx, dockertypes.BuildCachePruneOptions{All: false})
+	report, err := c.cli.BuildCachePrune(ctx, build.CachePruneOptions{All: false})
 	if err != nil {
 		return PruneBuildCacheResult{}, fmt.Errorf("docker: prune build cache: %w", err)
 	}
