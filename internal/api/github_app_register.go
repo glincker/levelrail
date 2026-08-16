@@ -270,11 +270,8 @@ func (rt *Router) handleGitHubAppInstalled(w http.ResponseWriter, r *http.Reques
 		// org that requires admin approval to install an App sends this
 		// same redirect for a still-pending request, and the
 		// installation doesn't exist as a real, readable installation
-		// yet. Reported as a clean 502 either way; this codebase has no
-		// way to distinguish "pending approval" from any other GitHub
-		// API failure here without a live App to test the real response
-		// shape against (see this feature's own report for the honest
-		// callout).
+		// yet. Reported as a clean 502 either way; this can't be
+		// distinguished from any other GitHub API failure here.
 		rt.logger.Error("api: get github app installation failed", slog.String("error", err.Error()), slog.Int64("installation_id", installationID))
 		writeError(w, http.StatusBadGateway, "failed to look up the installation with github; it may still be pending approval")
 		return

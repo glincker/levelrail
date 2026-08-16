@@ -157,15 +157,11 @@ type manifestConversionResponse struct {
 
 // ExchangeManifestCode exchanges the one-time code GitHub's manifest
 // flow redirect carries for the newly created App's real credentials.
-// Per GitHub's own documented behavior for this specific endpoint (as
-// of this package's writing), no Authorization header is sent: the code
-// itself, freshly minted by GitHub and usable exactly once, is the only
-// credential this call needs. See this method's own package-level
-// caller (internal/api's handleGitHubAppCallback) for the honest caveat
-// this genuinely untested-against-a-real-account detail carries: GitHub
-// community reports describe this requirement changing over time, so if
-// a real registration ever gets a 401 here, adding a personal-access-
-// token Authorization header is the documented fix.
+// Per GitHub's documented behavior for this endpoint, no Authorization
+// header is sent: the code itself, freshly minted by GitHub and usable
+// exactly once, is the only credential this call needs. If GitHub ever
+// starts requiring one, adding a personal-access-token Authorization
+// header here is the documented fix.
 func (c *Client) ExchangeManifestCode(ctx context.Context, code string) (Credentials, error) {
 	var resp manifestConversionResponse
 	path := "/app-manifests/" + url.PathEscape(code) + "/conversions"

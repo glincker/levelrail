@@ -25,7 +25,10 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from '@/components/ui/toast'
 import { useIngressSettings } from '../queries/domains'
-import { useDisconnectGitHubApp, useGitHubAppStatus } from '../queries/githubApp'
+import {
+  useDisconnectGitHubApp,
+  useGitHubAppStatus,
+} from '../queries/githubApp'
 
 // Status card for the GitHub App connection: not connected / connected
 // as <account> but not yet installed / connected and installed on
@@ -91,9 +94,9 @@ export function GitHubAppConnectionCard() {
             )}
             {status.connected && !status.installed ? (
               <p className="text-sm text-muted-foreground">
-                The App was created but hasn&apos;t been installed on an
-                account or organization yet. Finish installing it on GitHub
-                to pick repositories.
+                The App was created but hasn&apos;t been installed on an account
+                or organization yet. Finish installing it on GitHub to pick
+                repositories.
               </p>
             ) : null}
             {!status.connected && !hasPrimaryDomain ? (
@@ -110,7 +113,9 @@ export function GitHubAppConnectionCard() {
 
           {status.connected ? (
             <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-              <DialogTrigger render={<Button variant="destructive" size="sm" />}>
+              <DialogTrigger
+                render={<Button variant="destructive" size="sm" />}
+              >
                 Disconnect
               </DialogTrigger>
               <DialogContent className="sm:max-w-sm">

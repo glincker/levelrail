@@ -14,7 +14,7 @@ import (
 var ErrGitHubAppConnectionNotFound = errors.New("store: github app connection not found")
 
 // GitHubAppConnection is the single-row github_app_connections table
-// (migrations/0027_github_app_connection.sql). No secret fields: see
+// (migrations/0030_github_app_connection.sql). No secret fields: see
 // that migration's own comment for why client_secret/webhook_secret/the
 // PEM private key live in internal/secrets instead, under
 // GitHubAppSecretsKey().

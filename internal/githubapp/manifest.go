@@ -94,14 +94,13 @@ func BuildManifest(appName, baseURL string) Manifest {
 
 // AppDisplayName derives a GitHub-App-name-safe, deployment-unique
 // display name from the platform's own brand name and its public
-// domain, e.g. "Levelrail (deploy.example.com)". GitHub App names must
-// be unique across the whole of GitHub, and brandName alone
-// ("Levelrail") is not: every control plane built from this same
-// codebase would otherwise try to register an App with the identical
-// name. Appending the operator's own domain, which is unique by
-// construction (DNS ownership), resolves that without inventing a
-// random suffix that would make the App harder for the operator to
-// recognize in their own GitHub settings.
+// domain, e.g. "<brand> (deploy.example.com)". GitHub App names must be
+// unique across the whole of GitHub, and brandName alone is not: every
+// control plane built from this same codebase would otherwise try to
+// register an App with the identical name. Appending the operator's own
+// domain, which is unique by construction (DNS ownership), resolves
+// that without inventing a random suffix that would make the App harder
+// for the operator to recognize in their own GitHub settings.
 func AppDisplayName(brandName, domain string) string {
 	return fmt.Sprintf("%s (%s)", brandName, domain)
 }

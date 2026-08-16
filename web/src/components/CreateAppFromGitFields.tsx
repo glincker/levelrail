@@ -198,11 +198,19 @@ export function CreateAppFromGitFields({
       })
     },
   })
-  const { register, handleSubmit, formState, reset, control, watch, getValues, setValue } =
-    useForm<FormInput, unknown, FormOutput>({
-      resolver: zodResolver(createAppFromGitSchema),
-      defaultValues: DEFAULT_VALUES,
-    })
+  const {
+    register,
+    handleSubmit,
+    formState,
+    reset,
+    control,
+    watch,
+    getValues,
+    setValue,
+  } = useForm<FormInput, unknown, FormOutput>({
+    resolver: zodResolver(createAppFromGitSchema),
+    defaultValues: DEFAULT_VALUES,
+  })
 
   useEffect(() => {
     if (!open) {

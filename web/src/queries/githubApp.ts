@@ -44,7 +44,10 @@ export async function fetchGitHubAppStatus(): Promise<GitHubAppStatus> {
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch github app status failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch github app status failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as GitHubAppStatus
@@ -98,7 +101,10 @@ export async function fetchGitHubAppRepos(): Promise<GitHubAppRepo[]> {
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch github app repos failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch github app repos failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as GitHubAppRepo[]
@@ -124,7 +130,10 @@ export async function fetchGitHubAppBranches(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch github app branches failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch github app branches failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as GitHubAppBranch[]

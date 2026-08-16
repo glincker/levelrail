@@ -139,7 +139,7 @@ func (s *githubAppRegistrationState) consume(got string) bool {
 // private_key never leave internal/secrets through this or any other
 // response body): AppID and ClientID are the only identity fields
 // echoed back, both non-secret per this feature's own store design
-// (migrations/0027_github_app_connection.sql's own comment).
+// (migrations/0030_github_app_connection.sql's own comment).
 type gitHubAppStatusResource struct {
 	Connected    bool   `json:"connected"`
 	AppID        int64  `json:"app_id,omitempty"`

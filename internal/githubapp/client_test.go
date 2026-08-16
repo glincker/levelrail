@@ -13,11 +13,7 @@ import (
 // newTestClient starts an httptest.Server driven by handler and returns
 // a Client pointed at it. Every test in this file exercises real
 // request construction (method, path, headers, body decoding) against
-// this fake server; none of it reaches the real api.github.com, which
-// is the genuinely untested part this file's own tests cannot cover
-// (see this package's callers in internal/api for the explicit,
-// separate note about what remains unverified until a real GitHub App
-// exists).
+// this fake server; none of it reaches the real api.github.com.
 func newTestClient(t *testing.T, handler http.HandlerFunc) *Client {
 	t.Helper()
 	srv := httptest.NewServer(handler)

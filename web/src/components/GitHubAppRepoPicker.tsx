@@ -83,7 +83,11 @@ export function GitHubAppRepoPicker({
         >
           <SelectTrigger id="github-app-repo" className="w-full">
             <SelectValue
-              placeholder={repos.isLoading ? 'Loading repositories...' : 'Select a repository'}
+              placeholder={
+                repos.isLoading
+                  ? 'Loading repositories...'
+                  : 'Select a repository'
+              }
             />
           </SelectTrigger>
           <SelectContent>
@@ -116,7 +120,9 @@ export function GitHubAppRepoPicker({
           >
             <SelectTrigger id="github-app-branch" className="w-full">
               <SelectValue
-                placeholder={branches.isLoading ? 'Loading branches...' : 'Select a branch'}
+                placeholder={
+                  branches.isLoading ? 'Loading branches...' : 'Select a branch'
+                }
               />
             </SelectTrigger>
             <SelectContent>
