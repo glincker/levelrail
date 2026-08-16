@@ -35,6 +35,17 @@ type ServiceHealth struct {
 	Liveness  *ServiceProbe `json:"liveness,omitempty"`
 }
 
+// ServiceVolume is one named Docker volume an application service's
+// container mounts, the same shape internal/docker.VolumeMount already
+// has for the database controller's own (single, fixed-path) volume.
+// Name is this platform's own volume name (already scoped/prefixed, see
+// internal/reconcile/application's own volume-naming helper), not
+// whatever a compose file's own top-level volumes: key called it.
+type ServiceVolume struct {
+	Name          string `json:"name"`
+	ContainerPath string `json:"container_path"`
+}
+
 // DesiredService is what the application controller reconciles running
 // containers against: an already-resolved image plus what it needs to
 // run. See the migration comment in migrations/0002_desired_services.sql
@@ -56,6 +67,13 @@ type DesiredService struct {
 
 	Resources *ServiceResources
 	Health    *ServiceHealth
+
+	// Volumes are named Docker volumes this service's container mounts
+	// (migrations/0041_service_volumes.sql), previously a
+	// database-controller-only capability. Empty for the ordinary case
+	// (a stateless app), same "declarative, resolved before storing"
+	// shape as Resources/Health above.
+	Volumes []ServiceVolume
 
 	// Labels are arbitrary operator-supplied Docker labels applied to the
 	// service's container at create time (internal/spec.Service.Labels'
@@ -235,6 +253,14 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	if err != nil {
 		return fmt.Errorf("store: marshal labels for service %q: %w", svc.Name, err)
 	}
+	volumes := svc.Volumes
+	if volumes == nil {
+		volumes = []ServiceVolume{}
+	}
+	volumesJSON, err := json.Marshal(volumes)
+	if err != nil {
+		return fmt.Errorf("store: marshal volumes for service %q: %w", svc.Name, err)
+	}
 
 	strategy := svc.Strategy
 	if strategy == "" {
@@ -254,8 +280,8 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	}()
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, labels, project_id, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, NULL, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, labels, volumes, project_id, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, NULL, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
@@ -267,8 +293,9 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 			strategy = excluded.strategy,
 			replicas = excluded.replicas,
 			labels = excluded.labels,
+			volumes = excluded.volumes,
 			updated_at = excluded.updated_at
-	`, svc.Name, svc.Image, svc.Port, string(domainsJSON), string(envJSON), string(secretEnvJSON), string(resourcesJSON), string(healthJSON), strategy, replicas, string(labelsJSON))
+	`, svc.Name, svc.Image, svc.Port, string(domainsJSON), string(envJSON), string(secretEnvJSON), string(resourcesJSON), string(healthJSON), strategy, replicas, string(labelsJSON), string(volumesJSON))
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
@@ -587,18 +614,18 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id"
+const desiredServiceColumns = "name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
 // signature), so the decode-JSON-columns logic exists exactly once.
 func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	var (
-		svc                                                                DesiredService
-		domainsJSON, envJSON, secretEnvJSON, resourcesJSON, health, labels string
-		projectID, storageTargetID, appID                                  sql.NullString
+		svc                                                                        DesiredService
+		domainsJSON, envJSON, secretEnvJSON, resourcesJSON, health, labels, volumes string
+		projectID, storageTargetID, appID                                          sql.NullString
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String
@@ -626,6 +653,9 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	}
 	if err := json.Unmarshal([]byte(labels), &svc.Labels); err != nil {
 		return nil, fmt.Errorf("unmarshal labels: %w", err)
+	}
+	if err := json.Unmarshal([]byte(volumes), &svc.Volumes); err != nil {
+		return nil, fmt.Errorf("unmarshal volumes: %w", err)
 	}
 
 	return &svc, nil

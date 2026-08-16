@@ -76,6 +76,22 @@ func (svc *Service) validate(name string) error {
 		return fmt.Errorf("spec: service %q: %w", name, err)
 	}
 
+	seenVolumeNames := make(map[string]bool, len(svc.Volumes))
+	seenVolumePaths := make(map[string]bool, len(svc.Volumes))
+	for _, v := range svc.Volumes {
+		if !nameLike.MatchString(v.Name) {
+			return fmt.Errorf("spec: service %q: volume name %q must be lowercase alphanumeric and hyphens, starting with a letter", name, v.Name)
+		}
+		if seenVolumeNames[v.Name] {
+			return fmt.Errorf("spec: service %q: duplicate volume name %q", name, v.Name)
+		}
+		seenVolumeNames[v.Name] = true
+		if seenVolumePaths[v.Path] {
+			return fmt.Errorf("spec: service %q: two volumes both mount %q", name, v.Path)
+		}
+		seenVolumePaths[v.Path] = true
+	}
+
 	return nil
 }
 

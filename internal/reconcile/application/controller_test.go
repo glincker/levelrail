@@ -45,14 +45,16 @@ type fakeRuntime struct {
 	nextID     int
 	hostPort   int
 
-	createErr error
-	startErr  error
-	stopErr   error
-	removeErr error
+	createErr       error
+	startErr        error
+	stopErr         error
+	removeErr       error
+	ensureVolumeErr error
 
-	createCalls   int
-	removeCalls   int
-	lastCreateEnv map[string]string
+	createCalls       int
+	removeCalls       int
+	ensureVolumeCalls []string
+	lastCreateEnv     map[string]string
 	// lastCreateSpec is the full spec passed to the most recent Create
 	// call, for assertions (like the mesh DNS wiring tests) that need
 	// more than just Env.
@@ -162,12 +164,11 @@ func (f *fakeRuntime) ListImages(_ context.Context, _ string) ([]docker.ImageInf
 	return nil, nil
 }
 
-// EnsureVolume is a no-op here: this controller's ContainerSpecs never
-// set Volumes, so nothing in this package's tests exercises it. Added
-// purely to keep fakeRuntime satisfying docker.Runtime as that interface
-// grows, the same pattern ListImages and Events above already follow.
-func (f *fakeRuntime) EnsureVolume(_ context.Context, _ string) error {
-	return nil
+func (f *fakeRuntime) EnsureVolume(_ context.Context, name string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.ensureVolumeCalls = append(f.ensureVolumeCalls, name)
+	return f.ensureVolumeErr
 }
 
 func (f *fakeRuntime) Events(_ context.Context) (<-chan docker.Event, <-chan error) {
@@ -1810,5 +1811,79 @@ func TestController_Reconcile_NoLabels_LeavesContainerSpecLabelsNil(t *testing.T
 	}
 	if got := rt.lastCreateSpec.Labels; got != nil {
 		t.Errorf("created ContainerSpec.Labels = %+v, want nil", got)
+	}
+}
+
+func TestController_Reconcile_Volumes_EnsuredAndMountedOnCreate(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Volumes: []store.ServiceVolume{
+			{Name: "app-web-data", ContainerPath: "/var/lib/data"},
+			{Name: "app-web-config", ContainerPath: "/etc/app"},
+		},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue {
+		t.Fatalf("condition = %+v, want Status=True", cond)
+	}
+
+	wantEnsured := []string{"app-web-data", "app-web-config"}
+	if !reflect.DeepEqual(rt.ensureVolumeCalls, wantEnsured) {
+		t.Errorf("EnsureVolume calls = %v, want %v", rt.ensureVolumeCalls, wantEnsured)
+	}
+	wantMounts := []docker.VolumeMount{
+		{Name: "app-web-data", ContainerPath: "/var/lib/data"},
+		{Name: "app-web-config", ContainerPath: "/etc/app"},
+	}
+	if got := rt.lastCreateSpec.Volumes; !reflect.DeepEqual(got, wantMounts) {
+		t.Errorf("created ContainerSpec.Volumes = %+v, want %+v", got, wantMounts)
+	}
+}
+
+func TestController_Reconcile_Volumes_EnsureFails_CreateNeverCalled(t *testing.T) {
+	rt := newFakeRuntime(0)
+	rt.ensureVolumeErr = errors.New("volume driver unavailable")
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Volumes: []store.ServiceVolume{{Name: "app-web-data", ContainerPath: "/var/lib/data"}},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want the volume ensure failure to propagate")
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionFalse {
+		t.Errorf("condition = %+v, want Status=False", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0: a container must never be created before its volumes exist", rt.createCalls)
+	}
+}
+
+// TestController_Reconcile_NoVolumes_LeavesContainerSpecVolumesNil is the
+// regression-safety counterpart, same reasoning
+// TestController_Reconcile_NoLabels_LeavesContainerSpecLabelsNil gives
+// for Labels: every service before this field existed must keep
+// producing a nil ContainerSpec.Volumes.
+func TestController_Reconcile_NoVolumes_LeavesContainerSpecVolumesNil(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if got := rt.lastCreateSpec.Volumes; got != nil {
+		t.Errorf("created ContainerSpec.Volumes = %+v, want nil", got)
+	}
+	if rt.ensureVolumeCalls != nil {
+		t.Errorf("EnsureVolume calls = %v, want none", rt.ensureVolumeCalls)
 	}
 }
