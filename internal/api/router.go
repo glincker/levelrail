@@ -224,6 +224,13 @@ type ProjectStore interface {
 	GetProject(ctx context.Context, id string) (store.Project, error)
 	ListProjects(ctx context.Context) ([]store.Project, error)
 	DeleteProject(ctx context.Context, id string) error
+	// SetProjectEnvVars/ListProjectEnvVars back GET/PUT
+	// /api/v1/projects/{id}/env (project_env.go): shared env vars every
+	// app filed under this project inherits as its resolveEnv base
+	// layer (internal/reconcile/application), full-replace on write, the
+	// same shape PUT /api/v1/apps/{name}'s own env field already has.
+	SetProjectEnvVars(ctx context.Context, projectID string, vars map[string]string) error
+	ListProjectEnvVars(ctx context.Context, projectID string) (map[string]string, error)
 }
 
 // AuthStore is the store surface the auth handlers need.
@@ -1102,6 +1109,12 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("POST /api/v1/projects", rt.requireAbility(AbilityWrite, rt.handleCreateProject))
 	mux.HandleFunc("GET /api/v1/projects/{id}", rt.requireAbility(AbilityRead, rt.handleGetProject))
 	mux.HandleFunc("DELETE /api/v1/projects/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteProject))
+
+	// Shared env vars every app filed under this project inherits
+	// (project_env.go): same AbilityRead/AbilityWrite boundary as the
+	// project CRUD routes just above.
+	mux.HandleFunc("GET /api/v1/projects/{id}/env", rt.requireAbility(AbilityRead, rt.handleGetProjectEnv))
+	mux.HandleFunc("PUT /api/v1/projects/{id}/env", rt.requireAbility(AbilityWrite, rt.handleSetProjectEnv))
 
 	// Move an app/database into (or out of, with project_id: "") a
 	// project: the project-kind counterpart to PUT /apps/{name}/node

@@ -1591,6 +1591,7 @@ func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.D
 		appOpts := []application.Option{
 			application.WithDeployRecorder(telemetryDB),
 			application.WithStorageTargets(db),
+			application.WithProjectEnv(db),
 		}
 		if secretsManager != nil {
 			appOpts = append(appOpts, application.WithSecretResolver(secretsManager))
