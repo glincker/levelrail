@@ -143,6 +143,15 @@ type AppGroupLister interface {
 	ListServicesByApp(ctx context.Context, appID string) ([]store.DesiredService, error)
 }
 
+// AppComposeStore is the store surface POST /api/v1/apps/{name}/compose
+// needs (apps_compose.go): create-or-reuse the owning store.App, then
+// save each of its member services.
+type AppComposeStore interface {
+	SaveApp(ctx context.Context, a store.App) error
+	GetAppByName(ctx context.Context, name string) (store.App, error)
+	SaveDesiredService(ctx context.Context, svc store.DesiredService) error
+}
+
 // DeployStore is the store surface the deploy-history handler needs.
 type DeployStore interface {
 	GetConditions(ctx context.Context, controllerName string) ([]reconcile.Condition, error)
@@ -278,6 +287,7 @@ type TokenStore interface {
 type Store interface {
 	AppStore
 	AppGroupLister
+	AppComposeStore
 	DeployStore
 	DeployAttemptStore
 	DatabaseStore
@@ -402,6 +412,7 @@ type Router struct {
 	brand           *brand.Brand
 	apps            AppStore
 	appGroups       AppGroupLister
+	appCompose      AppComposeStore
 	deploys         DeployStore
 	databases       DatabaseStore
 	auth            AuthStore
@@ -788,6 +799,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		brand:                 b,
 		apps:                  s,
 		appGroups:             s,
+		appCompose:            s,
 		deploys:               s,
 		deployAttempts:        s,
 		databases:             s,
@@ -913,6 +925,12 @@ func (rt *Router) Handler() http.Handler {
 	// store.App, with a worst-condition-wins rollup status. Additive,
 	// read-only; GET /api/v1/apps/{name} above is unchanged.
 	mux.HandleFunc("GET /api/v1/apps/{name}/group", rt.requireAbility(AbilityRead, rt.handleGetAppGroup))
+
+	// Compose ingestion (apps_compose.go): fans a compose.yaml's
+	// services: out into one store.App plus its member services.
+	// AbilityDeploy, the same tier POST .../deploys uses: this creates
+	// and deploys, it's not ordinary config.
+	mux.HandleFunc("POST /api/v1/apps/{name}/compose", rt.requireAbility(AbilityDeploy, rt.handleDeployCompose))
 
 	// Clone: duplicates an app's desired state under a new name.
 	// AbilityWrite, the same gate POST /api/v1/apps itself uses, since a

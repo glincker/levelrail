@@ -619,6 +619,56 @@ func TestSaveDesiredService_RedeployDoesNotResetProjectID(t *testing.T) {
 	}
 }
 
+func TestSaveDesiredService_AppID_WrittenOnInsert(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveApp(ctx, App{ID: "myapp", Name: "myapp", CreatedAt: "2026-08-16T00:00:00Z", UpdatedAt: "2026-08-16T00:00:00Z"}); err != nil {
+		t.Fatalf("SaveApp() error = %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "myapp-web", Image: "img:v1", AppID: "myapp"}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "myapp-web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.AppID != "myapp" {
+		t.Errorf("AppID = %q, want myapp", got.AppID)
+	}
+}
+
+// TestSaveDesiredService_RedeployDoesNotResetAppID mirrors
+// TestSaveDesiredService_RedeployDoesNotResetProjectID: AppID is fixed
+// at creation, an ordinary redeploy carries no opinion on it at all.
+func TestSaveDesiredService_RedeployDoesNotResetAppID(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveApp(ctx, App{ID: "myapp", Name: "myapp", CreatedAt: "2026-08-16T00:00:00Z", UpdatedAt: "2026-08-16T00:00:00Z"}); err != nil {
+		t.Fatalf("SaveApp() error = %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "myapp-web", Image: "img:v1", AppID: "myapp"}); err != nil {
+		t.Fatalf("initial SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "myapp-web", Image: "img:v2"}); err != nil {
+		t.Fatalf("redeploy SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "myapp-web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Image != "img:v2" {
+		t.Errorf("Image = %q, want img:v2 (the redeploy itself must still take effect)", got.Image)
+	}
+	if got.AppID != "myapp" {
+		t.Errorf("AppID = %q, want myapp (a redeploy must not silently un-assign an app)", got.AppID)
+	}
+}
+
 // TestListDesiredServicesByNode is TASKS.md 3.7's drain and
 // delete-guard primitive: find what's placed on a node without
 // listing every service and filtering client-side.
