@@ -9,7 +9,13 @@ import { DialogFooter } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldHint,
+  FieldLabel,
+} from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
 import { useCreateApp } from '../queries/apps'
 import { triggerBuild, type TriggerBuildInput } from '../queries/builds'
@@ -323,6 +329,10 @@ export function CreateAppFromGitFields({
             disabled={locked}
             {...register('port')}
           />
+          <FieldHint>
+            The port your app listens on inside its container, e.g. 3000 for
+            a typical Next.js app.
+          </FieldHint>
           <FieldError errors={[formState.errors.port]} />
         </Field>
       </div>
