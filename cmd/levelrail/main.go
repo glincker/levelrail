@@ -317,14 +317,17 @@ func run(logger *slog.Logger) error {
 	}()
 	defer agentGRPCServer.GracefulStop()
 
-	secretsManager, err := loadSecretsManager(db)
+	secretsManager, err := loadSecretsManager(db, agentDataDir)
 	if err != nil {
 		// Not fatal, the same choice bootstrapAdmin makes above: the
 		// control plane still starts. Every route and reconcile path
 		// touching secrets (PUT .../secrets/{key}, any service declaring
 		// a { secret: true } env var) fails loudly and specifically
-		// instead, rather than this refusing to start at all over a
-		// feature an operator may not be using yet.
+		// instead, rather than this refusing to start at all. This is
+		// now a genuine I/O failure (can't read/write the persisted key
+		// file), not "operator hasn't configured secrets yet": an unset
+		// APP_MASTER_KEY no longer leaves secrets disabled, see
+		// loadSecretsManager.
 		logger.Warn("secrets not configured", slog.String("error", err.Error()))
 	}
 
@@ -652,6 +655,11 @@ func resolveEmailSecret(ctx context.Context, secretsManager *secrets.Manager, en
 const (
 	agentCACertFilename = "agent-ca.crt.pem"
 	agentCAKeyFilename  = "agent-ca.key.pem"
+
+	// masterKeyFilename is the persisted secrets.MasterKey fallback used
+	// when APP_MASTER_KEY isn't set, same data directory as the agent CA
+	// above.
+	masterKeyFilename = "master.key"
 )
 
 // loadOrGenerateAgentCA loads a previously persisted CA from dataDir, or
@@ -921,27 +929,57 @@ func devFixturesFile() string {
 	return path
 }
 
-// loadSecretsManager builds a secrets.Manager from APP_MASTER_KEY (the
-// secrets design allows the master key to be sourced from file, env, or an
-// external KMS interface added later; env is what this control plane
-// supports today).
-// An unset APP_MASTER_KEY is not an error: it returns (nil, nil), the
-// same "feature just isn't configured" shape openStore's directory
-// default and loadBrand's file default don't need, because unlike those,
-// secrets have no sensible zero-config default to fall back to. A
-// generated-on-the-fly key would make every previously-wrapped DEK
-// permanently unwrappable on the next restart, worse than not offering
-// the feature at all.
-func loadSecretsManager(db *store.DB) (*secrets.Manager, error) {
-	serialized := os.Getenv("APP_MASTER_KEY")
-	if serialized == "" {
-		return nil, fmt.Errorf("APP_MASTER_KEY not set")
+// loadSecretsManager builds a secrets.Manager, sourcing the master key
+// from APP_MASTER_KEY when an operator has set one (the explicit-config
+// path production deployments managing their own secret store should
+// use), or loading/generating one persisted in dataDir otherwise, the
+// same loadOrGenerateAgentCA pattern just above: unlike Coolify's
+// separate install-script step (which writes its own key to disk before
+// the app process ever starts), this control plane ships as one binary
+// with no install step to run that generation in ahead of time, so the
+// binary does it itself on first boot instead. Regenerating on every
+// restart instead of persisting would make every previously-wrapped DEK
+// permanently unwrappable, the one thing this must never do.
+func loadSecretsManager(db *store.DB, dataDir string) (*secrets.Manager, error) {
+	if serialized := os.Getenv("APP_MASTER_KEY"); serialized != "" {
+		mk, err := secrets.LoadMasterKey(serialized)
+		if err != nil {
+			return nil, fmt.Errorf("load master key from APP_MASTER_KEY: %w", err)
+		}
+		return secrets.NewManager(db, mk), nil
 	}
-	mk, err := secrets.LoadMasterKey(serialized)
+
+	mk, err := loadOrGenerateMasterKey(dataDir)
 	if err != nil {
-		return nil, fmt.Errorf("load master key: %w", err)
+		return nil, err
 	}
 	return secrets.NewManager(db, mk), nil
+}
+
+// loadOrGenerateMasterKey loads a previously persisted master key from
+// dataDir, or generates and persists a fresh one if none exists yet.
+func loadOrGenerateMasterKey(dataDir string) (*secrets.MasterKey, error) {
+	if err := os.MkdirAll(dataDir, 0o750); err != nil { //nolint:gosec // operator-controlled startup config, not user input
+		return nil, fmt.Errorf("create data dir for master key: %w", err)
+	}
+	keyPath := filepath.Join(dataDir, masterKeyFilename)
+
+	if serialized, err := os.ReadFile(keyPath); err == nil { //nolint:gosec // operator-controlled data directory path, not user input
+		mk, err := secrets.LoadMasterKey(string(serialized))
+		if err != nil {
+			return nil, fmt.Errorf("load persisted master key: %w", err)
+		}
+		return mk, nil
+	}
+
+	mk, err := secrets.GenerateMasterKey()
+	if err != nil {
+		return nil, fmt.Errorf("generate master key: %w", err)
+	}
+	if err := os.WriteFile(keyPath, []byte(mk.String()), 0o600); err != nil { //nolint:gosec // operator-controlled data directory path, not user input
+		return nil, fmt.Errorf("persist master key: %w", err)
+	}
+	return mk, nil
 }
 
 // loadBuilder connects to BuildKit and returns a ready
