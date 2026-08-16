@@ -23,11 +23,11 @@ const STRATEGY_LABELS: Record<DeployStrategy, string> = {
 // Read-only display of an app's current desired state: image, port,
 // resource limits, health probe config, and (as of this pass) deploy
 // strategy and replica count, straight from GET /api/v1/apps/{name}.
-// Domains and env are editable elsewhere (DomainEditor, EnvEditor);
-// strategy/replicas are editable via DeployStrategyEditor, rendered as a
-// sibling card by the overview route rather than inline here, matching
-// how ResourceLimitsEditor/HealthCheckEditor already sit next to this
-// read-only card rather than inside it.
+// Domains and env are editable elsewhere (DomainEditor, EnvEditor); port
+// and strategy/replicas are editable via PortEditor/DeployStrategyEditor,
+// rendered as sibling cards by the overview route rather than inline
+// here, matching how ResourceLimitsEditor/HealthCheckEditor already sit
+// next to this read-only card rather than inside it.
 export function AppOverview({ app }: { app: AppDetail }) {
   // Optional convenience only, see useProjectListOptional's own doc
   // comment: resolving project_id to a human-readable name is a display
