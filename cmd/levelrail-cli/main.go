@@ -66,6 +66,14 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runApps(prog, args[1:], stdout, stderr, lookupEnv)
 	case "databases":
 		return runDatabases(prog, args[1:], stdout, stderr, lookupEnv)
+	case "auth":
+		return runAuth(prog, args[1:], stdout, stderr, lookupEnv)
+	case "tokens":
+		return runTokens(prog, args[1:], stdout, stderr, lookupEnv)
+	case "domains":
+		return runDomains(prog, args[1:], stdout, stderr, lookupEnv)
+	case "backups":
+		return runBackups(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown command %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, rootUsage(prog))
@@ -85,9 +93,15 @@ Usage:
   %[1]s apps restart <name> [flags]     recreate the running container, no image change
   %[1]s apps status <name> [flags]   show an app's current reconcile conditions
   %[1]s apps logs <name> [flags]     search an app's stored log entries
+  %[1]s apps exec <name> -- <cmd> [args...]   run a command in the app's container, exits with its real exit code
   %[1]s databases create [flags]     create a managed database
   %[1]s databases list [flags]         list databases
   %[1]s databases get <name> [flags]   show one database
+  %[1]s domains list [flags]           list every app's domains in one call
+  %[1]s backups list|trigger|restore <database> [flags]   database backup history, manual trigger, and restore
+  %[1]s auth login [flags]             authenticate and persist a new API token
+  %[1]s auth whoami [flags]           show who the current token authenticates as
+  %[1]s tokens create|list|revoke [flags]   manage API tokens (requires a live session, see "%[1]s tokens -h")
 
 Auth and target:
   --token, %[2]s          API token
