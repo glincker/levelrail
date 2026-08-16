@@ -41,13 +41,13 @@ if command -v docker >/dev/null 2>&1; then
 	log "Docker already installed, skipping."
 else
 	log "Docker not found, installing via get.docker.com..."
-	curl -fsSL https://get.docker.com | sh
+	curl -fsSL --proto '=https' --tlsv1.2 https://get.docker.com | sh
 fi
 systemctl enable --now docker
 
 VERSION="${LEVELRAIL_VERSION:-}"
 if [ -z "$VERSION" ]; then
-	VERSION="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null |
+	VERSION="$(curl -fsSL --proto '=https' --tlsv1.2 "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null |
 		grep -m1 '"tag_name"' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')"
 	[ -n "$VERSION" ] || fatal "could not resolve the latest release (none published yet?). Set LEVELRAIL_VERSION=vX.Y.Z to install a specific version."
 fi
@@ -59,9 +59,9 @@ tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
 log "Downloading ${asset} ${VERSION}..."
-curl -fsSL -o "$tmp_dir/$asset" "${base_url}/${asset}" || fatal "download failed: ${base_url}/${asset}"
+curl -fsSL --proto '=https' --tlsv1.2 -o "$tmp_dir/$asset" "${base_url}/${asset}" || fatal "download failed: ${base_url}/${asset}"
 
-if curl -fsSL -o "$tmp_dir/checksums.txt" "${base_url}/checksums.txt" 2>/dev/null; then
+if curl -fsSL --proto '=https' --tlsv1.2 -o "$tmp_dir/checksums.txt" "${base_url}/checksums.txt" 2>/dev/null; then
 	expected="$(grep " ${asset}\$" "$tmp_dir/checksums.txt" | awk '{print $1}')"
 	if [ -n "$expected" ]; then
 		actual="$(sha256sum "$tmp_dir/$asset" | awk '{print $1}')"
