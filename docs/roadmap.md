@@ -108,17 +108,17 @@ are still open. This page describes what's actually true today.
   reconciler is wired to secrets management and backups are
   live-verified, but full parity with Redis and MySQL hasn't been
   confirmed.
-- **Dashboard "rich interactions" phase**: command palette, richer
+- **Dashboard "rich interactions" phase.** Command palette, richer
   empty/loading states, keyboard navigation. Not yet detailed or
   dispatched.
 - **GitHub App/OAuth connect flow.** Fully built (manifest
   self-registration, org/repo/branch picker, installation-token
   minting), but sitting in an open, unmerged, conflicting pull request.
   Not shipped until merged.
-- **Unified env var UI**: a single list combining plain and
+- **Unified env var UI.** A single list combining plain and
   secret-flagged env, with a permanent non-revealable lock for secrets.
   Dispatched, not yet reviewed.
-- **"Restart required" toast** after saving env/health/resource
+- **"Restart required" toast.** Shown after saving env/health/resource
   changes. QA-confirmed, not yet merged.
 - **Per-node disk space metric.** Built, but has no observable value in
   single-node mode. A follow-up to surface local disk via system status
@@ -152,8 +152,8 @@ are still open. This page describes what's actually true today.
 - Redis backup restore. Returns an explicit "not supported" error by
   design, not a silent gap.
 - An explicit "Stop" action for apps, distinct from Delete/Restart.
-- Docker Compose as a deploy target, a template catalog, teams, and the
-  MCP server.
+- Docker Compose as a deploy target, a template catalog, and the MCP
+  server (see above for teams).
 - Live, in-place resource-limit application without a restart. A saved
   health-check or resource-limit change doesn't reconcile into the
   already-running container until a restart forces a new one (the
