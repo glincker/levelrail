@@ -23,6 +23,15 @@ checks) and every content task specifies exact required sections and the
 exact source files/facts each section must be grounded in, so no step is
 "add appropriate content" with nothing underneath it.
 
+**Standing rule for every task that writes into `README.md` or `docs/`:**
+`docs-local/` paths may be used as a *source* to ground facts, but must
+never be *cited by path* in the resulting public file (Task 3 shipped this
+mistake once, caught in code-quality review, fixed -- don't repeat it in
+Tasks 4-8). Describe the sourcing in prose instead, e.g. "grounded in this
+project's own current feature and build status," never a `docs-local/...`
+filename. `docs-local/strategy/marketing-plan.md` (Task 9) is exempt since
+that file itself lives in `docs-local` and is never public.
+
 ---
 
 ## Dependency order
@@ -218,11 +227,14 @@ Structure required:
 ```markdown
 # Comparison
 
-Positioning, not a ranking. All of these projects are worth using --
-this page exists to make the actual technical differences legible, sourced
-from direct research (see `docs-local/research/prior-art-*.md` for the
-full per-project writeups this table is drawn from, at the level of detail
-this project's own research already produced).
+Positioning, not a ranking. All of these projects are worth using. This
+page exists to make the actual technical differences legible, sourced
+from direct research: cloned source, changelogs, and issue trackers for
+each project. Do not cite any `docs-local/` path anywhere in this file --
+that directory is gitignored and never referenced from `/docs` or source
+per CLAUDE.md section 8a, so a path citation would point at nothing for
+anyone without this exact local checkout. Describe the sourcing, don't
+name the file.
 
 ## At a glance
 
