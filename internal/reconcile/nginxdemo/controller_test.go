@@ -73,6 +73,18 @@ func (f *fakeRuntime) EnsureVolume(_ context.Context, _ string) error {
 	return nil // unused by Reconcile
 }
 
+func (f *fakeRuntime) EnsureNetwork(_ context.Context, _ string) (string, error) {
+	return "", nil // unused by Reconcile
+}
+
+func (f *fakeRuntime) RemoveNetwork(_ context.Context, _ string) error {
+	return nil // unused by Reconcile
+}
+
+func (f *fakeRuntime) ListNetworksByPrefix(_ context.Context, _ string) ([]docker.NetworkInfo, error) {
+	return nil, nil // unused by Reconcile
+}
+
 func (f *fakeRuntime) Exec(_ context.Context, _ string, _ []string) (io.ReadCloser, error) {
 	return nil, errors.New("fakeRuntime: Exec not implemented") // unused by Reconcile
 }

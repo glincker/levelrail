@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -80,10 +81,11 @@ type appResource struct {
 	// instead, the same boundary NodeID/ProjectID/StorageTargetID
 	// already establish above.
 	Suspended bool `json:"suspended"`
-	// AppID is which store.App (migrations/0039_apps.sql, stage 1 of
-	// multi-service apps) this service belongs to; empty when none.
-	// Response-only, additive: toDesiredService never reads it, no
-	// stage-1 write path sets it. See GET /api/v1/apps/{name}/group
+	// AppID is which store.App (migrations/0039_apps.sql) this service
+	// belongs to; empty when none. toDesiredService never reads it back
+	// in: it's assigned server-side, via ensureAppLinked (apps_multi.go),
+	// from handleCreateApp here and from POST /api/v1/apps/{name}/deploy-spec
+	// for a fanned-out service. See GET /api/v1/apps/{name}/group
 	// (apps_group.go) for the sibling-services read this enables.
 	AppID string `json:"app_id,omitempty"`
 }
@@ -277,6 +279,18 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
+	// Every app gets a store.App row, single-service or not: see
+	// ensureAppLinked's own doc comment for why this must not be
+	// special-cased away for the common single-service case.
+	appID, err := rt.ensureAppLinked(r.Context(), req.Name, req.Name)
+	if err != nil {
+		rt.logger.Error("api: create app: link to app row failed", slog.String("error", err.Error()), slog.String("name", req.Name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	req.AppID = appID
+
 	writeJSON(w, http.StatusCreated, req)
 }
 
@@ -542,18 +556,64 @@ func (rt *Router) handleStartApp(w http.ResponseWriter, r *http.Request) {
 // handleDeleteApp handles DELETE /api/v1/apps/{name}. See
 // store.DeleteDesiredService's doc comment for the known gap: this
 // removes desired state, it does not itself stop the running container.
+//
+// If the deleted service was the last member of its store.App
+// (migrations/0039_apps.sql), the now-empty App row is deleted too, via
+// deleteAppIfOrphaned below. Without this, a single-service app's App
+// row (set by that migration's own backfill, or by a multi-service
+// deploy's own store.App.ID == store.App.Name convention) would outlive
+// every service that ever belonged to it, and the per-app Docker
+// network internal/reconcile/application.NetworkCleanupController tears
+// down once its App row disappears would never actually go away.
 func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
-	err := rt.apps.DeleteDesiredService(r.Context(), name)
+	existing, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	}
 	if err != nil {
+		rt.logger.Error("api: delete app: load existing failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	appID := existing.AppID
+
+	if err := rt.apps.DeleteDesiredService(r.Context(), name); err != nil {
+		if errors.Is(err, store.ErrServiceNotFound) {
+			writeError(w, http.StatusNotFound, "app not found")
+			return
+		}
 		rt.logger.Error("api: delete app failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+
+	if appID != "" {
+		rt.deleteAppIfOrphaned(r.Context(), appID)
+	}
+
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// deleteAppIfOrphaned deletes the store.App row identified by appID once
+// it has no remaining member services. Best-effort and logged, not
+// surfaced as handleDeleteApp's own error: the service delete above
+// already succeeded, and a stale App row (or, worst case, a network
+// NetworkCleanupController doesn't yet know to remove) is a lesser,
+// self-healing problem, not one that should make an otherwise-successful
+// delete request fail.
+func (rt *Router) deleteAppIfOrphaned(ctx context.Context, appID string) {
+	remaining, err := rt.appGroups.ListServicesByApp(ctx, appID)
+	if err != nil {
+		rt.logger.Error("api: delete app: check remaining siblings failed", slog.String("error", err.Error()), slog.String("app_id", appID))
+		return
+	}
+	if len(remaining) > 0 {
+		return
+	}
+	if err := rt.appGroups.DeleteApp(ctx, appID); err != nil && !errors.Is(err, store.ErrAppNotFound) {
+		rt.logger.Error("api: delete app: delete orphaned app row failed", slog.String("error", err.Error()), slog.String("app_id", appID))
+	}
 }

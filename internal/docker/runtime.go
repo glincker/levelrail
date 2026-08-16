@@ -113,6 +113,22 @@ type ContainerSpec struct {
 	// internal/spec.ValidateLabels for what's rejected before a caller
 	// ever builds a ContainerSpec with this set.
 	Labels map[string]string
+	// Network attaches the container to a non-default Docker network at
+	// create time, with Alias as the name sibling containers on that
+	// network can reach it by (Docker's embedded per-network DNS
+	// resolves it). Nil means Docker's default "bridge" network,
+	// unchanged from every container this codebase created before this
+	// field existed: that network has no embedded DNS, so this is what
+	// makes multi-service apps able to reach each other by name at all.
+	Network *NetworkAttachment
+}
+
+// NetworkAttachment is a container's non-default network attachment:
+// which Docker network to join, and what DNS-resolvable alias sibling
+// containers on that network can reach it by.
+type NetworkAttachment struct {
+	Name  string
+	Alias string
 }
 
 // ImageInfo is one tagged image available locally, used to discover
@@ -141,6 +157,14 @@ type Event struct {
 	Action        EventAction
 	ContainerName string
 	Time          time.Time
+}
+
+// NetworkInfo is one Docker network, trimmed to what
+// ListNetworksByPrefix's caller needs to decide whether it's still
+// wanted.
+type NetworkInfo struct {
+	ID   string
+	Name string
 }
 
 // Runtime is the surface reconcile controllers are allowed to depend on.
@@ -195,6 +219,25 @@ type Runtime interface {
 	// semantics (creating by an existing name returns that volume
 	// unchanged rather than failing).
 	EnsureVolume(ctx context.Context, name string) error
+
+	// EnsureNetwork creates a Docker bridge network named name if it
+	// doesn't already exist, returning its ID either way. Idempotent:
+	// inspect first, create only on a genuine miss, the same shape the
+	// real implementation's ensureImage already uses for images.
+	// Reconcile calls happen often (event-driven plus periodic resync),
+	// so this must be safe to call on every pass, not just the first.
+	EnsureNetwork(ctx context.Context, name string) (id string, err error)
+
+	// RemoveNetwork deletes a Docker network by name. Removing a network
+	// that doesn't exist is not an error: cleanup is level-triggered and
+	// may run against state that's already converged.
+	RemoveNetwork(ctx context.Context, name string) error
+
+	// ListNetworksByPrefix returns every Docker network whose name
+	// starts with prefix, for a reconciler to diff observed networks
+	// against current desired state (internal/reconcile/application's
+	// NetworkCleanupController).
+	ListNetworksByPrefix(ctx context.Context, prefix string) ([]NetworkInfo, error)
 
 	// Exec runs cmd inside the already-running container containerID and
 	// returns its stdout as a stream, using the Engine API's exec

@@ -159,13 +159,79 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 			Labels:       spec.Labels,
 		},
 		hostConfig,
-		nil, nil,
+		toNetworkingConfig(spec.Network), nil,
 		spec.Name,
 	)
 	if err != nil {
 		return "", fmt.Errorf("docker: create container %q: %w", spec.Name, err)
 	}
 	return resp.ID, nil
+}
+
+// toNetworkingConfig builds the ContainerCreate NetworkingConfig argument
+// from n. nil (Docker's default "bridge" network, byte-identical to
+// every container created before ContainerSpec.Network existed) when n
+// is nil or has no name.
+func toNetworkingConfig(n *NetworkAttachment) *dockernetwork.NetworkingConfig {
+	if n == nil || n.Name == "" {
+		return nil
+	}
+	endpoint := &dockernetwork.EndpointSettings{}
+	if n.Alias != "" {
+		endpoint.Aliases = []string{n.Alias}
+	}
+	return &dockernetwork.NetworkingConfig{
+		EndpointsConfig: map[string]*dockernetwork.EndpointSettings{
+			n.Name: endpoint,
+		},
+	}
+}
+
+// EnsureNetwork implements Runtime.
+func (c *Client) EnsureNetwork(ctx context.Context, name string) (string, error) {
+	inspect, err := c.cli.NetworkInspect(ctx, name, dockernetwork.InspectOptions{})
+	if err == nil {
+		return inspect.ID, nil
+	}
+	if !dockerclient.IsErrNotFound(err) {
+		return "", fmt.Errorf("docker: inspect network %q: %w", name, err)
+	}
+
+	resp, err := c.cli.NetworkCreate(ctx, name, dockernetwork.CreateOptions{Driver: "bridge"})
+	if err != nil {
+		return "", fmt.Errorf("docker: create network %q: %w", name, err)
+	}
+	return resp.ID, nil
+}
+
+// RemoveNetwork implements Runtime.
+func (c *Client) RemoveNetwork(ctx context.Context, name string) error {
+	if err := c.cli.NetworkRemove(ctx, name); err != nil {
+		if dockerclient.IsErrNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("docker: remove network %q: %w", name, err)
+	}
+	return nil
+}
+
+// ListNetworksByPrefix implements Runtime.
+func (c *Client) ListNetworksByPrefix(ctx context.Context, prefix string) ([]NetworkInfo, error) {
+	f := filters.NewArgs()
+	f.Add("name", prefix) // Docker's network name filter is a substring match; narrowed by the prefix check below
+	networks, err := c.cli.NetworkList(ctx, dockernetwork.ListOptions{Filters: f})
+	if err != nil {
+		return nil, fmt.Errorf("docker: list networks with prefix %q: %w", prefix, err)
+	}
+
+	out := make([]NetworkInfo, 0, len(networks))
+	for _, n := range networks {
+		if !strings.HasPrefix(n.Name, prefix) {
+			continue
+		}
+		out = append(out, NetworkInfo{ID: n.ID, Name: n.Name})
+	}
+	return out, nil
 }
 
 // buildHostConfig turns spec plus its already-computed port bindings into

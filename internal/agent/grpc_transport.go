@@ -146,6 +146,30 @@ func (t *GRPCTransport) ExecWithInput(_ context.Context, containerID string, cmd
 	return nil, fmt.Errorf("agent: remote ExecWithInput not implemented over the agent transport (container %q, cmd %v): restores only support databases placed on this control plane's own node today", containerID, cmd)
 }
 
+// EnsureNetwork implements Transport (docker.Runtime). Deliberately not
+// wired to the remote agent yet, the same documented gap Exec's own doc
+// comment describes: a new agentpb op and proto regeneration, not a
+// small extension of the existing dispatch switch. Per-app Docker
+// networking (this method's own caller,
+// internal/reconcile/application's Controller) is single-node scope
+// today; a service placed on a remote node fails loudly here rather
+// than silently reconciling without one.
+func (t *GRPCTransport) EnsureNetwork(_ context.Context, name string) (string, error) {
+	return "", fmt.Errorf("agent: remote EnsureNetwork not implemented over the agent transport (network %q): multi-service networking only supports services placed on this control plane's own node today", name)
+}
+
+// RemoveNetwork implements Transport (docker.Runtime). Same documented
+// gap as EnsureNetwork above.
+func (t *GRPCTransport) RemoveNetwork(_ context.Context, name string) error {
+	return fmt.Errorf("agent: remote RemoveNetwork not implemented over the agent transport (network %q): multi-service networking only supports services placed on this control plane's own node today", name)
+}
+
+// ListNetworksByPrefix implements Transport (docker.Runtime). Same
+// documented gap as EnsureNetwork above.
+func (t *GRPCTransport) ListNetworksByPrefix(_ context.Context, prefix string) ([]docker.NetworkInfo, error) {
+	return nil, fmt.Errorf("agent: remote ListNetworksByPrefix not implemented over the agent transport (prefix %q): multi-service networking only supports services placed on this control plane's own node today", prefix)
+}
+
 // EnsureVolume implements Transport (docker.Runtime).
 func (t *GRPCTransport) EnsureVolume(ctx context.Context, name string) error {
 	_, err := t.mux.Call(ctx, &agentpb.AgentRequest{

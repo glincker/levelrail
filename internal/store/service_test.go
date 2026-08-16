@@ -509,6 +509,39 @@ func TestSaveDesiredService_RedeployDoesNotResetStorageTargetID(t *testing.T) {
 	}
 }
 
+func TestUpdateServiceApp(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	app := newTestApp()
+	if err := db.SaveApp(ctx, app); err != nil {
+		t.Fatalf("SaveApp() error = %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.UpdateServiceApp(ctx, "web", app.ID); err != nil {
+		t.Fatalf("UpdateServiceApp() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.AppID != app.ID {
+		t.Errorf("AppID = %q, want %q", got.AppID, app.ID)
+	}
+}
+
+func TestUpdateServiceApp_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.UpdateServiceApp(context.Background(), "nonexistent", "app_1")
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("UpdateServiceApp() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
 func TestUpdateServiceSuspended(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
