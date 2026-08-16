@@ -12,6 +12,16 @@ import { Button } from '@/components/ui/button'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import { useDomainCheck, type DomainCheckStatus } from '../queries/domainCheck'
 
+// The subset of a domain-check result DomainCheckPanel needs to render:
+// shared by domainCheck.ts's per-app DomainCheckResult and domains.ts's
+// platform-level IngressDomainCheckResult, so one panel serves both
+// without either query module depending on the other's types.
+export interface DomainCheckPanelData {
+  expected_host?: string
+  host_inferred?: boolean
+  status: DomainCheckStatus
+}
+
 // One row of the DNS record block below: a label, the value itself
 // (monospace, selectable), and its own copy button. Split out since the
 // record has two independently-copyable fields (Name and Value) and a
@@ -72,22 +82,22 @@ const STATUS_META: Record<
   },
 }
 
-// Sits under one saved domain in DomainEditor: the guidance layer this
-// project's gap analysis called out, an operator who doesn't already
-// know what an A record is has no idea what to actually go do after
-// typing a domain name. Shows the exact record to add and polls GET
-// /api/v1/apps/{name}/domains/{domain}/check (bounded, see
-// queries/domainCheck.ts's own MAX_AUTO_POLL_ATTEMPTS comment) until it
-// resolves, with a manual "Check now" for whenever the auto-poll has
-// already given up or an operator wants an immediate answer.
-export function DomainDnsCheck({
-  appName,
+// The rendering half of the DNS-check guidance layer: the exact record
+// to add and a status badge, driven entirely by props so both the
+// per-app check (DomainDnsCheck below) and the platform-level primary
+// domain check (IngressSettingsCard) render it identically without
+// duplicating this markup.
+export function DomainCheckPanel({
   domain,
+  data,
+  isFetching,
+  onRefetch,
 }: {
-  appName: string
   domain: string
+  data?: DomainCheckPanelData
+  isFetching: boolean
+  onRefetch: () => void
 }) {
-  const { data, isFetching, refetch } = useDomainCheck(appName, domain)
   const meta = data ? STATUS_META[data.status] : undefined
   const StatusIcon = meta?.icon
 
@@ -139,9 +149,7 @@ export function DomainDnsCheck({
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => {
-            void refetch()
-          }}
+          onClick={onRefetch}
           disabled={isFetching}
         >
           <ArrowsClockwiseIcon
@@ -151,5 +159,33 @@ export function DomainDnsCheck({
         </Button>
       </div>
     </div>
+  )
+}
+
+// Sits under one saved domain in DomainEditor: the guidance layer this
+// project's gap analysis called out, an operator who doesn't already
+// know what an A record is has no idea what to actually go do after
+// typing a domain name. Polls GET
+// /api/v1/apps/{name}/domains/{domain}/check (bounded, see
+// queries/domainCheck.ts's own MAX_AUTO_POLL_ATTEMPTS comment) until it
+// resolves, with a manual "Check now" for whenever the auto-poll has
+// already given up or an operator wants an immediate answer.
+export function DomainDnsCheck({
+  appName,
+  domain,
+}: {
+  appName: string
+  domain: string
+}) {
+  const { data, isFetching, refetch } = useDomainCheck(appName, domain)
+  return (
+    <DomainCheckPanel
+      domain={domain}
+      data={data}
+      isFetching={isFetching}
+      onRefetch={() => {
+        void refetch()
+      }}
+    />
   )
 }

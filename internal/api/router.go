@@ -1279,6 +1279,13 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/settings/ingress", rt.requireAbility(AbilityRead, rt.handleGetIngressSettings))
 	mux.HandleFunc("PUT /api/v1/settings/ingress", rt.requireAbility(AbilityRoot, rt.handleUpdateIngressSettings))
 
+	// Platform-level DNS check (ingress_settings.go): runDomainCheck
+	// against the platform's own PrimaryDomain instead of a per-app one.
+	// AbilityRoot, matching PUT /api/v1/settings/ingress just above: the
+	// result speaks directly to whether that endpoint's ACMEEnabled
+	// toggle can actually succeed.
+	mux.HandleFunc("GET /api/v1/settings/ingress/check", rt.requireAbility(AbilityRoot, rt.handleCheckIngressDomain))
+
 	// Domain DNS check (domain_check.go): the guidance layer on top of
 	// domain connection, so DomainEditor can show an operator the exact
 	// DNS record to add and watch it flip to "connected" once it actually

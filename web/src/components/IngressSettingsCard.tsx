@@ -4,7 +4,8 @@ import { z } from 'zod'
 import { GlobeIcon } from '@phosphor-icons/react/dist/ssr'
 import type { CertificateStatus } from '../queries/certificates'
 import type { IngressSettings } from '../queries/domains'
-import { useUpdateIngressSettings } from '../queries/domains'
+import { useIngressDomainCheck, useUpdateIngressSettings } from '../queries/domains'
+import { DomainCheckPanel } from './DomainDnsCheck'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -67,6 +68,41 @@ const ingressSettingsSchema = z
   })
 
 type IngressSettingsFormValues = z.infer<typeof ingressSettingsSchema>
+
+// The platform-level counterpart of DomainEditor's per-app DomainDnsCheck:
+// same DomainCheckPanel rendering, driven by GET
+// /api/v1/settings/ingress/check instead of the per-app route. Also
+// surfaces expected_host/host_inferred directly, since an operator has no
+// other way to see whether this control plane is advertising
+// APP_PUBLIC_HOST or just guessing from how they reached the dashboard,
+// and that distinction decides whether the check result below can be
+// trusted.
+function IngressDomainCheck({ domain }: { domain: string }) {
+  const { data, isFetching, refetch } = useIngressDomainCheck()
+  if (!data?.configured) return null
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span>Advertised as:</span>
+        <code className="font-mono text-foreground">{data.expected_host}</code>
+        <Badge variant={data.host_inferred ? 'muted' : 'success'}>
+          {data.host_inferred
+            ? 'Inferred from your connection'
+            : 'Configured via APP_PUBLIC_HOST'}
+        </Badge>
+      </div>
+      <DomainCheckPanel
+        domain={domain}
+        data={data}
+        isFetching={isFetching}
+        onRefetch={() => {
+          void refetch()
+        }}
+      />
+    </div>
+  )
+}
 
 function toFieldValues(settings: IngressSettings): IngressSettingsFormValues {
   return {
@@ -180,6 +216,9 @@ export function IngressSettingsCard({
                   {certStatusMeta[primaryCert.status].label}
                 </Badge>
               </div>
+            ) : null}
+            {settings.primary_domain ? (
+              <IngressDomainCheck domain={settings.primary_domain} />
             ) : null}
           </FieldGroup>
 

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -245,6 +246,165 @@ func TestHandleUpdateIngressSettings_RequiresAuth(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("status = %d, want %d for an unauthenticated request", rec.Code, http.StatusUnauthorized)
+	}
+}
+
+// TestHandleCheckIngressDomain covers handleCheckIngressDomain's own
+// cases on top of runDomainCheck (already covered exhaustively by
+// domain_check_test.go's TestHandleCheckDomain_* suite against the
+// per-app route): no primary domain configured yet, a configured domain
+// that resolves, one that doesn't, and inferred vs explicit
+// APP_PUBLIC_HOST.
+func TestHandleCheckIngressDomain(t *testing.T) {
+	tests := []struct {
+		name           string
+		primaryDomain  string
+		publicHost     string
+		requestHost    string
+		lookup         func(t *testing.T) lookupHostFunc
+		wantConfigured bool
+		wantStatus     string
+		wantInferred   bool
+	}{
+		{
+			name:           "no primary domain configured",
+			primaryDomain:  "",
+			publicHost:     "203.0.113.10",
+			wantConfigured: false,
+		},
+		{
+			name:          "configured domain resolves",
+			primaryDomain: "dashboard.example.com",
+			publicHost:    "203.0.113.10",
+			lookup: func(t *testing.T) lookupHostFunc {
+				t.Helper()
+				return func(_ context.Context, host string) ([]string, error) {
+					if host != "dashboard.example.com" {
+						t.Errorf("lookupHost called with %q, want %q", host, "dashboard.example.com")
+					}
+					return []string{"203.0.113.10"}, nil
+				}
+			},
+			wantConfigured: true,
+			wantStatus:     domainCheckStatusConnected,
+			wantInferred:   false,
+		},
+		{
+			name:          "configured domain does not resolve",
+			primaryDomain: "dashboard.example.com",
+			publicHost:    "203.0.113.10",
+			lookup: func(t *testing.T) lookupHostFunc {
+				t.Helper()
+				return func(_ context.Context, _ string) ([]string, error) {
+					return nil, errors.New("no such host")
+				}
+			},
+			wantConfigured: true,
+			wantStatus:     domainCheckStatusNotResolving,
+			wantInferred:   false,
+		},
+		{
+			name:          "host inferred when APP_PUBLIC_HOST unset",
+			primaryDomain: "dashboard.example.com",
+			publicHost:    "",
+			requestHost:   "203.0.113.10:8443",
+			lookup: func(t *testing.T) lookupHostFunc {
+				t.Helper()
+				return func(_ context.Context, _ string) ([]string, error) {
+					return []string{"203.0.113.10"}, nil
+				}
+			},
+			wantConfigured: true,
+			wantStatus:     domainCheckStatusConnected,
+			wantInferred:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lookup := func(_ context.Context, _ string) ([]string, error) { return nil, errors.New("no such host") }
+			if tt.lookup != nil {
+				lookup = tt.lookup(t)
+			}
+			rt, db := newTestRouterWithLookupHost(t, tt.publicHost, lookup)
+			cookie := loginTestSession(t, rt, db)
+
+			if tt.primaryDomain != "" {
+				putBody := `{"primary_domain":"` + tt.primaryDomain + `"}`
+				putRec := httptest.NewRecorder()
+				rt.Handler().ServeHTTP(putRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/settings/ingress", putBody))
+				if putRec.Code != http.StatusOK {
+					t.Fatalf("seed primary_domain: status = %d, body = %s", putRec.Code, putRec.Body.String())
+				}
+			}
+
+			req := authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/ingress/check", "")
+			if tt.requestHost != "" {
+				req.Host = tt.requestHost
+			}
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+			}
+
+			var got ingressDomainCheckResponse
+			if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+				t.Fatalf("decode: %v", err)
+			}
+			if got.Configured != tt.wantConfigured {
+				t.Errorf("configured = %v, want %v", got.Configured, tt.wantConfigured)
+			}
+			if !tt.wantConfigured {
+				return
+			}
+			if got.Status != tt.wantStatus {
+				t.Errorf("status = %q, want %q", got.Status, tt.wantStatus)
+			}
+			if got.HostInferred != tt.wantInferred {
+				t.Errorf("host_inferred = %v, want %v", got.HostInferred, tt.wantInferred)
+			}
+			if got.Domain != tt.primaryDomain {
+				t.Errorf("domain = %q, want %q", got.Domain, tt.primaryDomain)
+			}
+		})
+	}
+}
+
+func TestHandleCheckIngressDomain_RequiresAuth(t *testing.T) {
+	rt, _ := newTestRouter(t)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/settings/ingress/check", nil)
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want %d for an unauthenticated request", rec.Code, http.StatusUnauthorized)
+	}
+}
+
+// TestHandleCheckIngressDomain_PlainWriteToken_Forbidden proves the
+// route really sits behind AbilityRoot, matching PUT
+// /api/v1/settings/ingress's own precedent: see that route's forbidden
+// test for why AbilityWrite alone must not be enough here either.
+func TestHandleCheckIngressDomain_PlainWriteToken_Forbidden(t *testing.T) {
+	rt, db := newTestRouterWithLookupHost(t, "203.0.113.10", func(_ context.Context, _ string) ([]string, error) {
+		return []string{"203.0.113.10"}, nil
+	})
+	ctx := context.Background()
+
+	const plaintext = "write-scoped-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_write_check", Name: "writer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWrite}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/settings/ingress/check", nil)
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d: a plain write token must not reach the platform DNS check", rec.Code, http.StatusForbidden)
 	}
 }
 
