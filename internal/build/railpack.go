@@ -19,8 +19,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// This file: TASKS.md's Railpack integration, scoped to exactly two
-// providers (node, golang), per
+// This file: TASKS.md's Railpack integration, scoped to node, golang,
+// and java (see supportedRailpackProviders), per
 // docs-local/research/railpack-integration-decision.md. Railpack
 // (github.com/railwayapp/railpack) is a real, embeddable Go library, not
 // a CLI wrapped by exec.Command: core.GenerateBuildPlan inspects a source
@@ -79,16 +79,26 @@ func (r RailpackRequest) Validate() error {
 	return nil
 }
 
-// supportedRailpackProviders is this slice's entire scope: Node.js and
-// Go, the two providers docs-local/research/
-// railpack-integration-decision.md's recommendation names explicitly.
+// supportedRailpackProviders is this slice's entire scope: Node.js, Go,
+// and Java, per docs-local/research/railpack-integration-decision.md's
+// original node/golang recommendation plus Java added to unblock a
+// Spring Boot guided-picker option in the frontend. Verified against
+// testdata/railpack-java-spring-boot, a real Spring Boot Maven project:
+// Railpack's own detection and GenerateBuildPlan/ConvertPlanToLLB both
+// confirmed correct for it (TestGenerateRailpackPlan/
+// TestNewRailpackSolveOpt). A real live Docker build of that fixture
+// was not completed in this codebase's own CI/dev environment (the
+// same shared-daemon contention that also affects the pre-existing
+// node/golang live tests, not a Java-specific failure), so this rests
+// on the offline plan/LLB verification, not an end-to-end build.
 // Every other provider Railpack itself supports (python, ruby, php,
-// java, rust, deno, elixir, gleam, dotnet, cpp, staticfile, ...) is
+// rust, deno, elixir, gleam, dotnet, cpp, staticfile, ...) is
 // deliberately deferred, not silently accepted: see
 // UnsupportedProviderError.
 var supportedRailpackProviders = map[string]bool{
 	"node":   true,
 	"golang": true,
+	"java":   true,
 }
 
 // UnsupportedProviderError is returned when Railpack's own detection
