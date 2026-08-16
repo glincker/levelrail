@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -371,6 +373,45 @@ func TestHandleSetDatabaseResources_DatabaseNotFound(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/ghost/resources", `{"resources":null}`))
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+// TestHandleSetDatabaseResources_ReadOnlyToken_Forbidden proves PUT
+// /databases/{name}/resources really sits behind AbilityWrite, not just
+// any authenticated caller: a token scoped only to AbilityRead must be
+// rejected with 403, the same real-request proof
+// TestHandleUpdateIngressSettings_PlainWriteToken_Forbidden establishes
+// for its own route rather than relying on router registration alone.
+func TestHandleSetDatabaseResources_ReadOnlyToken_Forbidden(t *testing.T) {
+	rt, db := newTestRouter(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed database: %v", err)
+	}
+
+	const plaintext = "read-scoped-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_read", Name: "reader", TokenHash: hashToken(plaintext), Abilities: []string{AbilityRead}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	body := `{"resources":{"memory_bytes":536870912,"nano_cpus":500000000}}`
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/databases/main/resources", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d: a read-only token must not reach the resources route", rec.Code, http.StatusForbidden)
+	}
+
+	d, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if d.Resources != nil {
+		t.Errorf("stored Resources = %+v, want nil: a rejected request must not touch the row", d.Resources)
 	}
 }
 
