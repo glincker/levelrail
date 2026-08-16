@@ -938,7 +938,7 @@ func NetworkName(prefix, appID string) string {
 // (not a separately looked-up App.Name) as a "<appID>-" prefix off
 // desired.Name is exactly stage 2's "appName-serviceKey" naming
 // convention (apps_group.go's own doc comment) without this controller
-// needing an AppStore dependency just to resolve one name. A service
+// needing an AppLister dependency just to resolve one name. A service
 // whose name doesn't carry that prefix, the common single-service case
 // where the service's own name already equals its app's name (e.g.
 // AppID "web", Name "web"), falls back to its own full name, still a

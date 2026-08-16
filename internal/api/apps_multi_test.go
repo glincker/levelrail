@@ -71,6 +71,21 @@ func TestHandleDeploySpec_Success_CreatesTwoServicesUnderOneApp(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
+	assertDeploySpecAllSucceeded(t, resp)
+
+	if builder.multiCalls != 1 {
+		t.Fatalf("builder.multiCalls = %d, want 1", builder.multiCalls)
+	}
+	assertMultiRequestFromBody(t, builder.lastMultiReq)
+
+	call := fetch.awaitCall(t)
+	if call.repoURL != "https://example.com/org/app.git" || call.ref != "main" {
+		t.Errorf("fetch call = %+v, want repoURL/ref from the request's repo_url/ref", call)
+	}
+}
+
+func assertDeploySpecAllSucceeded(t *testing.T, resp deploySpecResponse) {
+	t.Helper()
 	if !resp.AllSucceeded {
 		t.Errorf("AllSucceeded = false, want true; services = %+v", resp.Services)
 	}
@@ -85,11 +100,10 @@ func TestHandleDeploySpec_Success_CreatesTwoServicesUnderOneApp(t *testing.T) {
 			t.Errorf("service %+v has no image", s)
 		}
 	}
+}
 
-	if builder.multiCalls != 1 {
-		t.Fatalf("builder.multiCalls = %d, want 1", builder.multiCalls)
-	}
-	req := builder.lastMultiReq
+func assertMultiRequestFromBody(t *testing.T, req deploy.MultiRequest) {
+	t.Helper()
 	if req.AppName != "myapp" {
 		t.Errorf("AppName = %q, want %q", req.AppName, "myapp")
 	}
@@ -104,11 +118,6 @@ func TestHandleDeploySpec_Success_CreatesTwoServicesUnderOneApp(t *testing.T) {
 	}
 	if len(req.Services) != 2 {
 		t.Errorf("Services = %+v, want 2 keys (web, worker)", req.Services)
-	}
-
-	call := fetch.awaitCall(t)
-	if call.repoURL != "https://example.com/org/app.git" || call.ref != "main" {
-		t.Errorf("fetch call = %+v, want repoURL/ref from the request's repo_url/ref", call)
 	}
 }
 

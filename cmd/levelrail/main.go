@@ -421,7 +421,20 @@ func run(logger *slog.Logger) error {
 
 	engine := reconcile.NewEngine(logger)
 	engine.SetStore(db)
-	engine.SetSource(dynamicSource(db, client, ingressDriver, logger, telemetryDB, secretsManager, agentRegistry, nodeHeartbeatTimeout(), meshCfg, meshDNSAddr, dashboardDialAddr(httpAddr()), b.ShortName))
+	engine.SetSource(dynamicSource(dynamicSourceDeps{
+		db:               db,
+		runtime:          client,
+		driver:           ingressDriver,
+		logger:           logger,
+		telemetryDB:      telemetryDB,
+		secretsManager:   secretsManager,
+		agentRegistry:    agentRegistry,
+		heartbeatTimeout: nodeHeartbeatTimeout(),
+		meshCfg:          meshCfg,
+		meshDNSAddr:      meshDNSAddr,
+		dashboardDial:    dashboardDialAddr(httpAddr()),
+		networkPrefix:    b.ShortName,
+	}))
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
 	go func() {
@@ -1553,167 +1566,153 @@ func publicHost() string {
 	return strings.TrimSpace(os.Getenv("APP_PUBLIC_HOST"))
 }
 
-// dynamicSource builds a reconcile.Source that re-lists desired services
-// and databases from the store on every call and returns one controller
-// per resource, plus a single ingress controller. Level-triggered by
-// construction, matching every controller it builds: nothing about which
-// apps or databases currently exist is cached here, it's re-derived from
-// the store every pass, so a service or database created or deleted
-// through the HTTP API takes effect on the very next reconcile, no
-// restart needed.
-//
-// secretsManager may be nil (APP_MASTER_KEY unset): application.
-// WithSecretResolver is only applied when it isn't, the same nil-check
-// rootHandler makes for api.WithSecretSetter and for the identical
-// reason. A service with no { secret: true } env vars reconciles
-// exactly the same either way; one that declares any fails loudly with
-// a clear reason instead of silently starting without the variable.
-//
-// telemetryDB is always non-nil (openTelemetryStore has no optional
-// gating, unlike secretsManager above), so application.WithDeployRecorder
-// is applied unconditionally: TASKS.md 2.1's deploy_count metric is
-// recorded for every application controller this Source builds.
-//
-// agentRegistry is TASKS.md 3.3's placement wiring, the first real
-// consumer of the Registry TASKS.md 3.1/3.2 built and left otherwise
-// unused: each service/database's own NodeID (empty string means this
-// control plane's own local node, migrations/0009_node_placement.sql)
-// picks which docker.Runtime its controller gets, resolved fresh via
-// resolveNodeTransport on every pass, the identical "never cache,
-// re-derive every call" principle this function already applies to
-// which services/databases exist at all. The ingress controller is
-// deliberately NOT routed through this: it stays on the local runtime
-// unconditionally, a real, honest, and currently open gap (a service
-// placed on a remote node has no working ingress route yet), because
-// Caddy runs embedded in this one process (the ingress design) and a
+// dynamicSource builds a reconcile.Source that re-lists desired
+// services/databases/nodes from the store on every call, level-triggered
+// by construction. The ingress controller is deliberately not routed
+// through per-node placement: it stays on the local runtime
+// unconditionally, since Caddy runs embedded in this one process and a
 // remote node's container isn't reachable at 127.0.0.1:hostPort from
-// here even if its Transport could be inspected; closing this needs
-// the WireGuard mesh and internal DNS TASKS.md 3.4 builds, not
-// something this task can honestly solve on its own.
+// here (closing this needs the WireGuard mesh, TASKS.md 3.4).
 //
-// heartbeatTimeout is TASKS.md 3.7's health check: one
-// nodehealth.Controller per registered node (db.ListNodes, the same
-// "re-derive every pass" treatment every other resource here already
-// gets), independent of whether that node currently has anything placed
-// on it. Unlike the application/database controllers above, a node
-// controller never needs resolveNodeTransport: it only ever touches
-// this control plane's own store, not the node's own Docker daemon.
-//
-// meshCfg is TASKS.md 3.4's mesh, nil unless APP_MESH_ENABLED=1
-// (setupMesh's own doc comment). A single mesh.Controller is appended
-// when it isn't nil, the same "reconciles the whole fleet in one pass"
-// shape the ingress controller already has and for the identical
-// reason: a mesh is a property of the set of nodes, not of any one node.
-func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.Driver, logger *slog.Logger, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry, heartbeatTimeout time.Duration, meshCfg *meshSetup, meshDNSAddr string, dashboardDial string, networkPrefix string) reconcile.Source {
+// dynamicSourceDeps bundles dynamicSource's wiring dependencies: every
+// field here is fixed for the process lifetime, only the store contents
+// dynamicSource reads change between reconcile passes.
+type dynamicSourceDeps struct {
+	db               *store.DB
+	runtime          docker.Runtime
+	driver           *ingressdriver.Driver
+	logger           *slog.Logger
+	telemetryDB      *telemetry.DB
+	secretsManager   *secrets.Manager
+	agentRegistry    *agent.Registry
+	heartbeatTimeout time.Duration
+	meshCfg          *meshSetup
+	meshDNSAddr      string
+	dashboardDial    string
+	networkPrefix    string
+}
+
+func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 	return func(ctx context.Context) ([]reconcile.Controller, error) {
-		services, err := db.ListDesiredServices(ctx)
+		services, err := deps.db.ListDesiredServices(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("list desired services: %w", err)
 		}
-		databases, err := db.ListDesiredDatabases(ctx)
+		databases, err := deps.db.ListDesiredDatabases(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("list desired databases: %w", err)
 		}
-		nodes, err := db.ListNodes(ctx)
+		nodes, err := deps.db.ListNodes(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("list nodes: %w", err)
 		}
 
-		// application.WithStorageTargets(db) is unconditional, unlike
-		// WithSecretResolver just below: resolving a store.BackupTarget's
-		// own Endpoint/Region/Bucket (db.GetBackupTarget) needs no master
-		// key, only its access_key_id/secret_access_key does. A service
-		// with a StorageTargetID but no secretsManager configured still
-		// fails Reconcile loudly, through resolveStorageEnv's own nil
-		// secretResolver check, the identical "fail loudly, don't start
-		// half-configured" shape SecretEnv already has.
-		appOpts := []application.Option{
-			application.WithDeployRecorder(telemetryDB),
-			application.WithStorageTargets(db),
-			application.WithProjectEnv(db),
-			application.WithNetworkPrefix(networkPrefix),
-		}
-		if secretsManager != nil {
-			appOpts = append(appOpts, application.WithSecretResolver(secretsManager))
-		}
-		if meshDNSAddr != "" {
-			appOpts = append(appOpts, application.WithMeshDNSAddr(meshDNSAddr))
+		controllers := make([]reconcile.Controller, 0, len(services)+len(databases)+len(nodes)+2)
+		controllers = append(controllers, appControllersFor(deps, services)...)
+		controllers = append(controllers, databaseControllersFor(ctx, deps, databases)...)
+		for _, n := range nodes {
+			controllers = append(controllers, nodehealth.New(n.ID, deps.db, deps.heartbeatTimeout))
 		}
 
-		controllers := make([]reconcile.Controller, 0, len(services)+len(databases)+len(nodes)+1)
-		for _, svc := range services {
-			svcRuntime, err := resolveNodeTransport(runtime, agentRegistry, svc.NodeID)
-			if err != nil {
-				logger.Warn("skipping service for this reconcile pass: node transport unavailable",
-					slog.String("service", svc.Name), slog.String("node_id", svc.NodeID), slog.String("error", err.Error()))
-				continue
-			}
-			controllers = append(controllers, application.New(svc.Name, db, svcRuntime, appOpts...))
+		ingressOpts := []ingressreconcile.Option{ingressreconcile.WithLogger(deps.logger)}
+		if deps.dashboardDial != "" {
+			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(deps.dashboardDial))
 		}
-		for _, desired := range databases {
-			dbRuntime, err := resolveNodeTransport(runtime, agentRegistry, desired.NodeID)
-			if err != nil {
-				logger.Warn("skipping database for this reconcile pass: node transport unavailable",
-					slog.String("database", desired.Name), slog.String("node_id", desired.NodeID), slog.String("error", err.Error()))
-				continue
-			}
-			var dbOpts []database.Option
-			switch desired.Engine {
-			case store.EnginePostgres:
-				creds, err := postgresCredentialsFor(ctx, secretsManager, desired.Name)
-				if err != nil {
-					// Not fatal to the whole pass: this one Postgres
-					// database just stays credentials-blocked for this
-					// tick, the same "one broken resource must not
-					// block others" principle this function's own doc
-					// comment already applies to node connectivity
-					// above. It retries on the next pass, since a
-					// transient secrets-store failure (unlike a
-					// permanently-unconfigured secrets manager, which
-					// postgresCredentialsFor itself handles by
-					// returning nil, nil) should recover on its own.
-					logger.Warn("skipping postgres credentials for this reconcile pass",
-						slog.String("database", desired.Name), slog.String("error", err.Error()))
-				} else if creds != nil {
-					dbOpts = append(dbOpts, database.WithPostgresCredentials(creds))
-				}
-			case store.EngineMySQL:
-				// Identical reasoning to the Postgres branch above, see
-				// mysqlCredentialsFor's own doc comment for what makes it
-				// a safe drop-in counterpart rather than a new pattern.
-				creds, err := mysqlCredentialsFor(ctx, secretsManager, desired.Name)
-				if err != nil {
-					logger.Warn("skipping mysql credentials for this reconcile pass",
-						slog.String("database", desired.Name), slog.String("error", err.Error()))
-				} else if creds != nil {
-					dbOpts = append(dbOpts, database.WithMySQLCredentials(creds))
-				}
-			}
-			if meshDNSAddr != "" {
-				dbOpts = append(dbOpts, database.WithMeshDNSAddr(meshDNSAddr))
-			}
-			controllers = append(controllers, database.New(desired.Name, db, dbRuntime, dbOpts...))
-		}
-		for _, n := range nodes {
-			controllers = append(controllers, nodehealth.New(n.ID, db, heartbeatTimeout))
-		}
-		ingressOpts := []ingressreconcile.Option{ingressreconcile.WithLogger(logger)}
-		if dashboardDial != "" {
-			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(dashboardDial))
-		}
-		controllers = append(controllers, ingressreconcile.New(db, runtime, driver, ingressOpts...))
-		// Local runtime unconditionally, the same choice the ingress
-		// controller above already makes and for the identical reason
-		// (that controller's own doc comment): per-app Docker networks
-		// are single-node scope until the WireGuard mesh and internal DNS
-		// (TASKS.md 3.4) exist, so cleanup only ever needs to look at this
-		// control plane's own Docker daemon, never a remote node's.
-		controllers = append(controllers, application.NewNetworkCleanupController(db, runtime, networkPrefix))
-		if meshCfg != nil {
-			controllers = append(controllers, meshreconcile.New(meshCfg.localNodeID, db, meshCfg.coordinator, meshCfg.resolver, meshreconcile.WithLogger(logger)))
+		controllers = append(controllers, ingressreconcile.New(deps.db, deps.runtime, deps.driver, ingressOpts...))
+
+		// Local runtime unconditionally, same reasoning as the ingress
+		// controller above: per-app networks are single-node scope until
+		// the WireGuard mesh (TASKS.md 3.4) exists.
+		controllers = append(controllers, application.NewNetworkCleanupController(deps.db, deps.runtime, deps.networkPrefix))
+
+		if deps.meshCfg != nil {
+			controllers = append(controllers, meshreconcile.New(deps.meshCfg.localNodeID, deps.db, deps.meshCfg.coordinator, deps.meshCfg.resolver, meshreconcile.WithLogger(deps.logger)))
 		}
 		return controllers, nil
 	}
+}
+
+// appControllersFor builds one application.Controller per service,
+// skipping (with a warning) any whose node isn't currently reachable.
+func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) []reconcile.Controller {
+	// application.WithStorageTargets is unconditional, unlike
+	// WithSecretResolver below: resolving a StorageTarget's
+	// endpoint/region/bucket needs no master key, only its access keys
+	// do. A service with a StorageTargetID but no secretsManager still
+	// fails Reconcile loudly rather than starting half-configured.
+	appOpts := []application.Option{
+		application.WithDeployRecorder(deps.telemetryDB),
+		application.WithStorageTargets(deps.db),
+		application.WithProjectEnv(deps.db),
+		application.WithNetworkPrefix(deps.networkPrefix),
+	}
+	if deps.secretsManager != nil {
+		appOpts = append(appOpts, application.WithSecretResolver(deps.secretsManager))
+	}
+	if deps.meshDNSAddr != "" {
+		appOpts = append(appOpts, application.WithMeshDNSAddr(deps.meshDNSAddr))
+	}
+
+	controllers := make([]reconcile.Controller, 0, len(services))
+	for _, svc := range services {
+		svcRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, svc.NodeID)
+		if err != nil {
+			deps.logger.Warn("skipping service for this reconcile pass: node transport unavailable",
+				slog.String("service", svc.Name), slog.String("node_id", svc.NodeID), slog.String("error", err.Error()))
+			continue
+		}
+		controllers = append(controllers, application.New(svc.Name, deps.db, svcRuntime, appOpts...))
+	}
+	return controllers
+}
+
+// databaseControllersFor builds one database.Controller per database,
+// skipping (with a warning) any whose node isn't currently reachable. A
+// database whose engine credentials can't be resolved this pass still
+// gets a controller, just without WithPostgresCredentials/
+// WithMySQLCredentials set: one broken resource must not block others,
+// and it retries fresh on the next pass.
+func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databases []store.DesiredDatabase) []reconcile.Controller {
+	controllers := make([]reconcile.Controller, 0, len(databases))
+	for _, desired := range databases {
+		dbRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, desired.NodeID)
+		if err != nil {
+			deps.logger.Warn("skipping database for this reconcile pass: node transport unavailable",
+				slog.String("database", desired.Name), slog.String("node_id", desired.NodeID), slog.String("error", err.Error()))
+			continue
+		}
+		dbOpts := databaseCredentialOpts(ctx, deps, desired)
+		if deps.meshDNSAddr != "" {
+			dbOpts = append(dbOpts, database.WithMeshDNSAddr(deps.meshDNSAddr))
+		}
+		controllers = append(controllers, database.New(desired.Name, deps.db, dbRuntime, dbOpts...))
+	}
+	return controllers
+}
+
+// databaseCredentialOpts resolves desired's engine-specific credential
+// option, logging and skipping (not failing) on a transient error.
+func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired store.DesiredDatabase) []database.Option {
+	var opts []database.Option
+	switch desired.Engine {
+	case store.EnginePostgres:
+		creds, err := postgresCredentialsFor(ctx, deps.secretsManager, desired.Name)
+		if err != nil {
+			deps.logger.Warn("skipping postgres credentials for this reconcile pass",
+				slog.String("database", desired.Name), slog.String("error", err.Error()))
+		} else if creds != nil {
+			opts = append(opts, database.WithPostgresCredentials(creds))
+		}
+	case store.EngineMySQL:
+		creds, err := mysqlCredentialsFor(ctx, deps.secretsManager, desired.Name)
+		if err != nil {
+			deps.logger.Warn("skipping mysql credentials for this reconcile pass",
+				slog.String("database", desired.Name), slog.String("error", err.Error()))
+		} else if creds != nil {
+			opts = append(opts, database.WithMySQLCredentials(creds))
+		}
+	}
+	return opts
 }
 
 // resolveNodeTransport picks the docker.Runtime a controller for
