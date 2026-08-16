@@ -1,10 +1,15 @@
 # Levelrail
 
+[![CI](https://github.com/glincker/levelrail/actions/workflows/ci.yml/badge.svg)](https://github.com/glincker/levelrail/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/glincker/levelrail)](https://goreportcard.com/report/github.com/glincker/levelrail)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/glincker/levelrail)](go.mod)
 
 Levelrail is a self-hosted deployment platform. Point it at one or more
 Linux boxes and it turns them into a private cloud: push to a git repo,
 get a running app with TLS, logs, metrics, and rollback.
+
+From the team behind [thesvg](https://github.com/glincker/thesvg) (6,400+ brand SVG icons) and [theauth-go](https://github.com/glincker/theauth-go) (OAuth 2.1 auth library for Go).
 
 ## Status
 
@@ -95,17 +100,24 @@ below are the ones that matter for choosing between them.
 
 | Project | Node control | Orchestration | Observability | Ingress |
 | --- | --- | --- | --- | --- |
-| **Levelrail** | Agent (gRPC, dials out) | Custom reconciler over Docker Engine API | Node-local metrics and logs, federated query | Caddy, embedded |
-| Coolify | SSH + Docker CLI | Docker Compose / Swarm | Bolt-on (install Grafana yourself) | Traefik |
-| Dokploy | SSH + Docker CLI | Docker Swarm | Bolt-on | Traefik |
-| CapRover | SSH + Docker CLI | Docker Swarm | Bolt-on | nginx |
-| Dokku | Local Docker CLI, single node | Docker (no orchestration) | Bolt-on | nginx |
-| Kamal | SSH + Docker CLI | None (deploy script, not a control plane) | None built in | Configurable |
+| **Levelrail** | Reverse-dialed gRPC agent, no CLI shelling | Custom Go reconciler over Docker Engine API, level-triggered | Node-local metrics and logs, federated query, all shipped | Embedded Caddy, in-process |
+| Coolify (v4) | SSH plus CLI-shelled `docker`/`docker compose` | Docker Compose per app, Traefik label discovery | Optional bolt-on agent, opt-in | Traefik, separate container |
+| Dokploy | SSH-tunneled Docker Engine API plus CLI-shelled lifecycle ops | Docker Swarm services | Separate Go binary, polling | Traefik, Swarm service |
+| CapRover | Docker Swarm API, even single-node | Docker Swarm services | Optional sibling containers, not built in | nginx, sibling Swarm service |
+| Dokku | Local `dokku` bash entrypoint, no daemon | Custom Bash scheduler over plain `docker` | Not built in | nginx by default, pluggable |
+| Kamal | One-shot SSH CLI, no daemon or agent | None: deploy script, not a control plane | None built in | `kamal-proxy`, standalone container |
+
+Full writeup with per-project detail: [docs/comparison.md](docs/comparison.md).
 
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to propose changes,
 commit conventions, and how to run tests and the linter locally.
+
+## Docs and community
+
+- [docs/](docs/) -- getting started, architecture, app spec reference, roadmap
+- [GitHub Discussions](https://github.com/glincker/levelrail/discussions) -- questions, ideas, show and tell
 
 ## License
 
