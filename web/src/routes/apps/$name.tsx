@@ -68,6 +68,14 @@ function AppDetailLayout() {
   const isViewingDeployLogs = useRouterState({
     select: (s) => s.location.pathname.includes('/deploys/'),
   })
+  // Only /overview and /deploys (the section index, not /deploys/$id/logs
+  // above) are the "Deploy" sidebar group's own sections; every other
+  // section is a Configure/Observe concern, so the card doesn't pin there.
+  const showDeployTrigger = useRouterState({
+    select: (s) =>
+      s.location.pathname.endsWith('/overview') ||
+      s.location.pathname.endsWith('/deploys'),
+  })
   if (isViewingDeployLogs) {
     return <Outlet />
   }
@@ -88,11 +96,7 @@ function AppDetailLayout() {
         </div>
       </div>
 
-      {/* Deploy is the single most common action on this page, so it is
-          pinned above the section outlet rather than scoped inside one
-          section: it applies to the app as a whole, not to one config
-          concern. */}
-      <DeployTriggerForm appName={app.name} />
+      {showDeployTrigger ? <DeployTriggerForm appName={app.name} /> : null}
 
       <Outlet />
     </div>

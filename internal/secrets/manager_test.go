@@ -3,6 +3,7 @@ package secrets
 import (
 	"context"
 	"errors"
+	"sort"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -16,6 +17,7 @@ import (
 type fakeStore struct {
 	deks   map[string][]byte
 	values map[string]map[string][]byte
+	locked map[string]map[string]bool
 	// failGetDEK, if set, makes GetServiceDEK return this error for
 	// every service, standing in for a real database failure distinct
 	// from "not found".
@@ -79,6 +81,52 @@ func (f *fakeStore) HasSecretValue(ctx context.Context, serviceName, envKey stri
 func (f *fakeStore) DeleteServiceSecrets(_ context.Context, serviceName string) error {
 	delete(f.deks, serviceName)
 	delete(f.values, serviceName)
+	return nil
+}
+
+func (f *fakeStore) ListSecretKeys(_ context.Context, serviceName string) ([]store.SecretKeyInfo, error) {
+	byKey, ok := f.values[serviceName]
+	if !ok {
+		return nil, nil
+	}
+	var keys []string
+	for k := range byKey {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	out := make([]store.SecretKeyInfo, len(keys))
+	for i, k := range keys {
+		out[i] = store.SecretKeyInfo{Key: k, Locked: f.locked[serviceName][k]}
+	}
+	return out, nil
+}
+
+func (f *fakeStore) GetSecretKeyLocked(_ context.Context, serviceName, envKey string) (exists, locked bool, err error) {
+	byKey, ok := f.values[serviceName]
+	if !ok {
+		return false, false, nil
+	}
+	if _, ok := byKey[envKey]; !ok {
+		return false, false, nil
+	}
+	return true, f.locked[serviceName][envKey], nil
+}
+
+func (f *fakeStore) SetSecretLocked(_ context.Context, serviceName, envKey string, locked bool) error {
+	byKey, ok := f.values[serviceName]
+	if !ok {
+		return store.ErrSecretValueNotFound
+	}
+	if _, ok := byKey[envKey]; !ok {
+		return store.ErrSecretValueNotFound
+	}
+	if f.locked == nil {
+		f.locked = map[string]map[string]bool{}
+	}
+	if f.locked[serviceName] == nil {
+		f.locked[serviceName] = map[string]bool{}
+	}
+	f.locked[serviceName][envKey] = locked
 	return nil
 }
 
@@ -282,5 +330,104 @@ func TestManager_Resolve_StoreErrorPropagates(t *testing.T) {
 	_, err = m.Resolve(context.Background(), "web", "API_KEY")
 	if err == nil || errors.Is(err, ErrValueNotFound) {
 		t.Errorf("Resolve() error = %v, want a real error distinct from ErrValueNotFound", err)
+	}
+}
+
+func TestManager_ListKeys(t *testing.T) {
+	m, _ := testManager(t)
+	ctx := context.Background()
+	if err := m.SetValue(ctx, "web", "API_KEY", "sk-abc"); err != nil {
+		t.Fatalf("SetValue() error = %v", err)
+	}
+	if err := m.SetValue(ctx, "web", "DB_PASSWORD", "hunter2"); err != nil { //nolint:gosec // fake fixture, not a real credential
+		t.Fatalf("SetValue() error = %v", err)
+	}
+
+	keys, err := m.ListKeys(ctx, "web")
+	if err != nil {
+		t.Fatalf("ListKeys() error = %v", err)
+	}
+	if len(keys) != 2 {
+		t.Fatalf("got %d keys, want 2: %+v", len(keys), keys)
+	}
+}
+
+func TestManager_SetValueGuarded_LockedBlocksOverwriteWithoutFlag(t *testing.T) {
+	m, _ := testManager(t)
+	ctx := context.Background()
+	if err := m.SetValue(ctx, "web", "API_KEY", "sk-original"); err != nil {
+		t.Fatalf("initial SetValue() error = %v", err)
+	}
+	if err := m.SetLocked(ctx, "web", "API_KEY", true); err != nil {
+		t.Fatalf("SetLocked() error = %v", err)
+	}
+
+	err := m.SetValueGuarded(ctx, "web", "API_KEY", "sk-new", false)
+	if !errors.Is(err, ErrSecretLocked) {
+		t.Fatalf("error = %v, want ErrSecretLocked", err)
+	}
+
+	got, err := m.Resolve(ctx, "web", "API_KEY")
+	if err != nil {
+		t.Fatalf("Resolve() error = %v", err)
+	}
+	if got != "sk-original" {
+		t.Errorf("value = %q, want %q: a rejected overwrite must not partially apply", got, "sk-original")
+	}
+}
+
+func TestManager_SetValueGuarded_LockedAllowsOverwriteWithFlag(t *testing.T) {
+	m, _ := testManager(t)
+	ctx := context.Background()
+	if err := m.SetValue(ctx, "web", "API_KEY", "sk-original"); err != nil {
+		t.Fatalf("initial SetValue() error = %v", err)
+	}
+	if err := m.SetLocked(ctx, "web", "API_KEY", true); err != nil {
+		t.Fatalf("SetLocked() error = %v", err)
+	}
+
+	if err := m.SetValueGuarded(ctx, "web", "API_KEY", "sk-new", true); err != nil {
+		t.Fatalf("SetValueGuarded(overwriteLocked=true) error = %v", err)
+	}
+	got, err := m.Resolve(ctx, "web", "API_KEY")
+	if err != nil {
+		t.Fatalf("Resolve() error = %v", err)
+	}
+	if got != "sk-new" {
+		t.Errorf("value = %q, want %q", got, "sk-new")
+	}
+}
+
+func TestManager_SetValueGuarded_UnlockedIgnoresFlag(t *testing.T) {
+	m, _ := testManager(t)
+	ctx := context.Background()
+	if err := m.SetValue(ctx, "web", "API_KEY", "sk-original"); err != nil {
+		t.Fatalf("initial SetValue() error = %v", err)
+	}
+
+	if err := m.SetValueGuarded(ctx, "web", "API_KEY", "sk-new", false); err != nil {
+		t.Fatalf("SetValueGuarded() error = %v", err)
+	}
+	got, err := m.Resolve(ctx, "web", "API_KEY")
+	if err != nil {
+		t.Fatalf("Resolve() error = %v", err)
+	}
+	if got != "sk-new" {
+		t.Errorf("value = %q, want %q", got, "sk-new")
+	}
+}
+
+func TestManager_SetValueGuarded_NewKeyIgnoresFlag(t *testing.T) {
+	m, _ := testManager(t)
+	if err := m.SetValueGuarded(context.Background(), "web", "NEW_KEY", "sk-first", false); err != nil {
+		t.Fatalf("SetValueGuarded() error = %v", err)
+	}
+}
+
+func TestManager_SetLocked_KeyNotFound(t *testing.T) {
+	m, _ := testManager(t)
+	err := m.SetLocked(context.Background(), "web", "GHOST", true)
+	if !errors.Is(err, store.ErrSecretValueNotFound) {
+		t.Errorf("error = %v, want store.ErrSecretValueNotFound", err)
 	}
 }

@@ -284,11 +284,16 @@ type Store interface {
 	PasswordResetTokenStore
 }
 
-// SecretSetter is the surface the secrets handler needs from
-// internal/secrets.Manager (TASKS.md 1.7): set a value, never read one
-// back. *secrets.Manager satisfies this structurally.
+// SecretSetter is the surface the secrets handlers need from
+// internal/secrets.Manager: set a value (with a reversible per-key lock
+// guard), list which keys exist, toggle a key's lock, never read one
+// back. Every other secret-backed feature in this file keeps using
+// Manager's plain SetValue directly, unaffected by this narrower
+// interface.
 type SecretSetter interface {
-	SetValue(ctx context.Context, serviceName, envKey, plaintext string) error
+	SetValueGuarded(ctx context.Context, serviceName, envKey, plaintext string, overwriteLocked bool) error
+	ListKeys(ctx context.Context, serviceName string) ([]store.SecretKeyInfo, error)
+	SetLocked(ctx context.Context, serviceName, envKey string, locked bool) error
 }
 
 // DockerPinger is the surface GET /api/v1/system/status needs to report
@@ -994,6 +999,13 @@ func (rt *Router) Handler() http.Handler {
 	// session) is exactly the kind of exposure envelope encryption
 	// exists to avoid.
 	mux.HandleFunc("PUT /api/v1/apps/{name}/secrets/{key}", rt.requireAbility(AbilityWriteSensitive, rt.handleSetSecret))
+
+	// List known secret keys (never values) and toggle a key's lock.
+	// GET at AbilityRead, matching GET .../git-source's own
+	// GET=Read/PUT=WriteSensitive split just below: a key NAME is no
+	// more sensitive than a git-source's connection config.
+	mux.HandleFunc("GET /api/v1/apps/{name}/secrets", rt.requireAbility(AbilityRead, rt.handleListSecrets))
+	mux.HandleFunc("POST /api/v1/apps/{name}/secrets/{key}/lock", rt.requireAbility(AbilityWriteSensitive, rt.handleSetSecretLock))
 
 	// Git source (TASKS.md 1.7's own deferred follow-up, git_sources.go):
 	// persist a repo/branch/build config per app so a git push can
