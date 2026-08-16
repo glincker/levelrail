@@ -83,6 +83,10 @@ func SignAppJWT(appID int64, privateKeyPEM []byte, now time.Time) (string, error
 	signingInput := base64URLEncode(header) + "." + base64URLEncode(claims)
 
 	digest := sha256.Sum256([]byte(signingInput))
+	// SignPKCS1v15 (a signature scheme) is RS256 itself, GitHub's own
+	// required algorithm, not the encryption padding scheme of the
+	// same family with known padding-oracle weaknesses
+	// (EncryptPKCS1v15/DecryptPKCS1v15, which this never calls).
 	signature, err := rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA256, digest[:])
 	if err != nil {
 		return "", fmt.Errorf("githubapp: sign jwt: %w", err)
