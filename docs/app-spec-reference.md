@@ -46,9 +46,10 @@ databases:
 
 This matches what `internal/spec` actually parses and validates today
 (`internal/spec/testdata/valid_full.yaml` is the equivalent fixture exercised
-by the test suite, minus the `labels` block and the plain-string env entry
-added here). Three additions beyond the example in the project's own
-planning doc, all real and implemented: the `labels` block on a service,
+by the test suite, minus the plain-string env entry added here; the
+fixture already has its own `labels` block). Three additions beyond the
+example in the project's own planning doc, all real and implemented: the
+`labels` block on a service,
 `mysql` as a third supported database engine alongside `postgres` and
 `redis`, and the plain-string shorthand for a literal env value (shown here
 as `LOG_LEVEL`).
