@@ -26,9 +26,8 @@ type EmailSecretsStore interface {
 
 // emailSettingsResource is the wire shape for GET and PUT
 // /api/v1/settings/email. No credential value ever appears in a
-// response: SMTPPasswordSet/SESSecretAccessKeySet report only whether
-// one has been set. On a request, SMTPPassword/SESSecretAccessKey are
-// write-only and optional: empty means "leave whatever is stored alone."
+// response, only SMTPPasswordSet/SESSecretAccessKeySet booleans; on a
+// PUT, an empty credential field means "leave whatever is stored alone."
 type emailSettingsResource struct {
 	Backend               string `json:"backend"`
 	SMTPHost              string `json:"smtp_host,omitempty"`
@@ -134,10 +133,9 @@ func validateEmailSettingsRequest(req emailSettingsResource) error {
 	return nil
 }
 
-// handleUpdateEmailSettings handles PUT /api/v1/settings/email,
-// AbilityRoot-gated (router.go). Credentials are written to
-// internal/secrets before the settings row, so a failed store write
-// leaves only an orphaned, harmless secret rather than a settings row
+// handleUpdateEmailSettings handles PUT /api/v1/settings/email.
+// Credentials are written to internal/secrets before the settings row,
+// so a failed store write leaves an orphaned secret, not a settings row
 // that looks configured but isn't.
 func (rt *Router) handleUpdateEmailSettings(w http.ResponseWriter, r *http.Request) {
 	if rt.emailSecrets == nil {

@@ -170,6 +170,19 @@ func (rt *Router) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Claimed before the password changes, not after: this is the single
+	// atomic point two concurrent requests holding the same token race
+	// on, so at most one can proceed past it (see ClaimPasswordResetToken's
+	// own doc comment).
+	if err := rt.passwordResetTokens.ClaimPasswordResetToken(r.Context(), rec.ID); errors.Is(err, store.ErrPasswordResetTokenAlreadyUsed) {
+		writeError(w, http.StatusBadRequest, errInvalidOrExpiredResetToken.Error())
+		return
+	} else if err != nil {
+		rt.logger.Error("api: reset password: claim token failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
 	admin, err := rt.auth.GetAdminUser(r.Context())
 	if err != nil {
 		rt.logger.Error("api: reset password: load admin user failed", slog.String("error", err.Error()))
@@ -187,12 +200,6 @@ func (rt *Router) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 		rt.logger.Error("api: reset password: save failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
-	}
-
-	// After the password is already changed: a failure here just leaves
-	// the token valid a little longer, logged but not surfaced.
-	if err := rt.passwordResetTokens.MarkPasswordResetTokenUsed(r.Context(), rec.ID); err != nil {
-		rt.logger.Error("api: reset password: mark token used failed", slog.String("error", err.Error()), slog.String("token_id", rec.ID))
 	}
 
 	rt.sessions.revokeAll(admin.Username)

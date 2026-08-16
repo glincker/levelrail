@@ -237,7 +237,7 @@ type EmailSettingsStore interface {
 type PasswordResetTokenStore interface {
 	SavePasswordResetToken(ctx context.Context, t store.PasswordResetToken) error
 	GetPasswordResetTokenByHash(ctx context.Context, hash string) (*store.PasswordResetToken, error)
-	MarkPasswordResetTokenUsed(ctx context.Context, id string) error
+	ClaimPasswordResetToken(ctx context.Context, id string) error
 }
 
 // TokenStore is the store surface the API-token handlers and the

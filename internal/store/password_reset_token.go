@@ -70,14 +70,29 @@ func (db *DB) GetPasswordResetTokenByHash(ctx context.Context, hash string) (*Pa
 	return &t, nil
 }
 
-// MarkPasswordResetTokenUsed sets used_at on the named token, making it
-// permanently unusable for a second reset attempt.
-func (db *DB) MarkPasswordResetTokenUsed(ctx context.Context, id string) error {
-	_, err := db.ExecContext(ctx, `
-		UPDATE password_reset_tokens SET used_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?
+// ErrPasswordResetTokenAlreadyUsed is returned by
+// ClaimPasswordResetToken when the token was already used by a
+// concurrent request.
+var ErrPasswordResetTokenAlreadyUsed = errors.New("store: password reset token already used")
+
+// ClaimPasswordResetToken atomically marks the named token used, only if
+// it hasn't been already: the WHERE clause and rows-affected check make
+// this the single point two concurrent requests holding the same token
+// race on, so at most one can ever proceed to change the password.
+func (db *DB) ClaimPasswordResetToken(ctx context.Context, id string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE password_reset_tokens SET used_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		WHERE id = ? AND used_at IS NULL
 	`, id)
 	if err != nil {
-		return fmt.Errorf("store: mark password reset token %q used: %w", id, err)
+		return fmt.Errorf("store: claim password reset token %q: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: claim password reset token %q: rows affected: %w", id, err)
+	}
+	if n == 0 {
+		return ErrPasswordResetTokenAlreadyUsed
 	}
 	return nil
 }

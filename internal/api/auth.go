@@ -133,11 +133,9 @@ func (s *sessionStore) revokeAll(userID string) {
 	}
 }
 
-// revokeAll deletes every session belonging to username, with no
-// exception: the reset-password counterpart to revokeAllExcept, used
-// where (unlike a password change) there is no "current session" to
-// leave alone, since the requester isn't authenticated at all during a
-// password reset.
+// revokeAll deletes every session belonging to username: the
+// reset-password counterpart to revokeAllExcept, since an unauthenticated
+// reset has no "current session" to leave alone.
 func (s *sessionStore) revokeAll(username string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

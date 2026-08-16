@@ -46,7 +46,7 @@ func TestSaveAndGetPasswordResetToken_RoundTrips(t *testing.T) {
 	}
 }
 
-func TestMarkPasswordResetTokenUsed_SetsUsedAt(t *testing.T) {
+func TestClaimPasswordResetToken_SetsUsedAt(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
 
@@ -57,8 +57,8 @@ func TestMarkPasswordResetTokenUsed_SetsUsedAt(t *testing.T) {
 		t.Fatalf("seed: %v", err)
 	}
 
-	if err := db.MarkPasswordResetTokenUsed(ctx, "prt_1"); err != nil {
-		t.Fatalf("MarkPasswordResetTokenUsed() error = %v", err)
+	if err := db.ClaimPasswordResetToken(ctx, "prt_1"); err != nil {
+		t.Fatalf("ClaimPasswordResetToken() error = %v", err)
 	}
 
 	got, err := db.GetPasswordResetTokenByHash(ctx, "deadbeef")
@@ -66,7 +66,26 @@ func TestMarkPasswordResetTokenUsed_SetsUsedAt(t *testing.T) {
 		t.Fatalf("GetPasswordResetTokenByHash() error = %v", err)
 	}
 	if got.UsedAt == nil {
-		t.Fatal("UsedAt = nil, want set after MarkPasswordResetTokenUsed")
+		t.Fatal("UsedAt = nil, want set after ClaimPasswordResetToken")
+	}
+}
+
+func TestClaimPasswordResetToken_SecondClaimFails(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	now := time.Now().UTC()
+	if err := db.SavePasswordResetToken(ctx, PasswordResetToken{
+		ID: "prt_1", TokenHash: "deadbeef", CreatedAt: now, ExpiresAt: now.Add(30 * time.Minute),
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	if err := db.ClaimPasswordResetToken(ctx, "prt_1"); err != nil {
+		t.Fatalf("first claim: %v", err)
+	}
+	if err := db.ClaimPasswordResetToken(ctx, "prt_1"); !errors.Is(err, ErrPasswordResetTokenAlreadyUsed) {
+		t.Fatalf("second claim error = %v, want ErrPasswordResetTokenAlreadyUsed", err)
 	}
 }
 
