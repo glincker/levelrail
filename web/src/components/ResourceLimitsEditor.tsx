@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import { toast } from '@/components/ui/toast'
+import { useRestartRequiredToast } from '../hooks/useRestartRequiredToast'
 
 // Unit choice: memory is collected as a single whole-number MiB field
 // rather than a "value + unit" pair. formatBytes (lib/format.ts) already
@@ -113,6 +113,7 @@ function toResources(values: ResourcesFormValues): ServiceResources {
 // background refetch stomp unsaved edits in a sibling editor.
 export function ResourceLimitsEditor({ app }: { app: AppDetail }) {
   const updateApp = useUpdateApp(app.name)
+  const notifyRestartRequired = useRestartRequiredToast()
   const { control, register, handleSubmit, formState } =
     useForm<ResourcesFormValues>({
       resolver: zodResolver(resourcesSchema),
@@ -125,7 +126,7 @@ export function ResourceLimitsEditor({ app }: { app: AppDetail }) {
       { ...app, resources: toResources(values) },
       {
         onSuccess: () => {
-          toast.add({ title: 'Resource limits saved.', type: 'success' })
+          notifyRestartRequired(app.name, 'Resource limits saved.')
         },
       },
     )
