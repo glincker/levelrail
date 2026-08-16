@@ -13,29 +13,17 @@ import (
 )
 
 // errGitHubAppNotConnected and errGitHubAppNotInstalled are
-// mintGitHubAppInstallationToken's own sentinels, so its two callers
-// (handleListGitHubAppRepos, handleListGitHubAppBranches) can each map
-// them to the same 409 response without duplicating the
-// errors.Is(store.ErrGitHubAppConnectionNotFound) / "InstallationID ==
-// nil" checks twice.
+// mintGitHubAppInstallationToken's sentinels, mapped to 409 by
+// writeGitHubAppTokenError below.
 var (
 	errGitHubAppNotConnected = errors.New("api: github app is not connected")
 	errGitHubAppNotInstalled = errors.New("api: github app is connected but not installed on any account")
 )
 
-// mintGitHubAppInstallationToken mints a fresh installation access
-// token for this control plane's connected App, on every call: unlike a
-// user session or an API token, installation tokens are short-lived
-// (~1 hour per GitHub's docs) and this package deliberately does not
-// build expiry tracking to cache and reuse one across requests, since
-// repo/branch listing is low-frequency, interactive, human-driven
-// traffic (a settings-page repo picker, not a hot path), and minting one
-// per request is simpler and unambiguously correct where a cache would
-// need its own invalidation logic for comparatively little benefit.
-//
-// The private key is decrypted (rt.githubAppSecrets.Resolve) and held
-// only in the appJWT/privateKeyPEM local variables for the duration of
-// this call; nothing here persists it, logs it, or returns it.
+// mintGitHubAppInstallationToken mints a fresh installation token on
+// every call rather than caching one: installation tokens are
+// short-lived (~1h) and this is low-frequency, human-driven traffic,
+// so a cache would add invalidation complexity for little benefit.
 func (rt *Router) mintGitHubAppInstallationToken(ctx context.Context) (string, error) {
 	conn, err := rt.githubApp.GetGitHubAppConnection(ctx)
 	if errors.Is(err, store.ErrGitHubAppConnectionNotFound) {
@@ -66,10 +54,7 @@ func (rt *Router) mintGitHubAppInstallationToken(ctx context.Context) (string, e
 }
 
 // writeGitHubAppTokenError maps mintGitHubAppInstallationToken's
-// sentinel errors to the 409 responses handleListGitHubAppRepos and
-// handleListGitHubAppBranches both need, and any other error to a
-// logged 500. Shared so the two handlers can't drift on wording or
-// status codes for the same two well-known states.
+// sentinels to 409, everything else to a logged 500.
 func (rt *Router) writeGitHubAppTokenError(w http.ResponseWriter, logMsg string, err error) {
 	if errors.Is(err, errGitHubAppNotConnected) {
 		writeError(w, http.StatusConflict, "no github app is connected")
@@ -90,13 +75,8 @@ type gitHubAppRepoResource struct {
 	OwnerLogin    string `json:"owner_login"`
 	Private       bool   `json:"private"`
 	DefaultBranch string `json:"default_branch"`
-	// CloneURL is constructed from FullName
-	// ("https://github.com/"+full_name+".git") rather than passed
-	// through from GitHub's own repository object: the two are
-	// equivalent for every real GitHub repository, and building it here
-	// keeps internal/githubapp.Repo (and the GitHub API response it
-	// decodes) from needing an extra field this control plane would
-	// otherwise have to keep in sync for no behavioral difference.
+	// CloneURL is derived from FullName, not passed through from
+	// GitHub's response: the two are always equivalent.
 	CloneURL string `json:"clone_url"`
 }
 
@@ -113,18 +93,10 @@ func toGitHubAppRepoResource(r githubapp.Repo) gitHubAppRepoResource {
 
 // handleListGitHubAppRepos handles GET /api/v1/github-app/repos: every
 // repository the connected installation can access, for the frontend's
-// repo picker (feeding CreateAppFromGitFields.tsx's repoUrl field).
-//
-// AbilityReadSensitive, not AbilityRead and not AbilityRoot: this
-// returns real content about a connected external account (which
-// private repositories exist, their names), the same "actual content,
-// not metadata, but not a mutation" class GET .../backups/{id}/download
-// already draws that exact line for (see handleDownloadBackup's own
-// doc comment) -- closer to that than to AbilityRoot, which this
-// package otherwise reserves for changing the connection itself
-// (register/disconnect), a materially different, platform-wide-
-// configuration risk class than reading a list of repo names through an
-// already-established connection.
+// repo picker. AbilityReadSensitive: this discloses real private-repo
+// names, the same class GET .../backups/{id}/download already gates at
+// that tier, not AbilityRoot (reserved for changing the connection
+// itself).
 func (rt *Router) handleListGitHubAppRepos(w http.ResponseWriter, r *http.Request) {
 	if rt.githubAppSecrets == nil {
 		writeError(w, http.StatusNotImplemented, "the github app connection requires a master key to be configured on this control plane")
