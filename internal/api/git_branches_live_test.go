@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"sort"
@@ -68,9 +70,14 @@ func TestListRemoteBranches_Live(t *testing.T) {
 		t.Fatalf("create tag: %v", err)
 	}
 
-	branches, err := listRemoteBranches(context.Background(), srcDir)
+	// listRemoteBranchesUnchecked, not listRemoteBranches: srcDir is a
+	// bare filesystem path with no scheme, which listRemoteBranches
+	// itself now rejects (see TestListRemoteBranches_SchemeRejected).
+	// This test's own purpose is exercising the listing/filtering logic
+	// network-free, not the scheme gate.
+	branches, err := listRemoteBranchesUnchecked(context.Background(), srcDir)
 	if err != nil {
-		t.Fatalf("listRemoteBranches() error = %v", err)
+		t.Fatalf("listRemoteBranchesUnchecked() error = %v", err)
 	}
 
 	sort.Strings(branches)
@@ -91,8 +98,77 @@ func TestListRemoteBranches_Live(t *testing.T) {
 func TestListRemoteBranches_Live_UnreachableRepo(t *testing.T) {
 	nonexistent := filepath.Join(t.TempDir(), "does-not-exist")
 
-	_, err := listRemoteBranches(context.Background(), nonexistent)
+	// listRemoteBranchesUnchecked: see TestListRemoteBranches_Live's own
+	// comment above for why this test uses the scheme-gate-free core
+	// rather than listRemoteBranches itself.
+	_, err := listRemoteBranchesUnchecked(context.Background(), nonexistent)
 	if err == nil {
-		t.Fatal("listRemoteBranches() error = nil, want an error for an unreachable repo")
+		t.Fatal("listRemoteBranchesUnchecked() error = nil, want an error for an unreachable repo")
+	}
+}
+
+// TestListRemoteBranches_SchemeRejected is the live proof for this
+// task's SSRF/local-file finding: go-git's transport client registry
+// registers a "file" transport unconditionally (see
+// errRepoURLSchemeNotAllowed's own doc comment in git_branches.go), so
+// without the scheme gate a file:// repoURL really does read a local
+// git repository on this host, and an http(s):// repoURL against an
+// internal address really does fire a request. This proves the gate
+// rejects every non-http(s) scheme before any transport is
+// constructed: no local repo is ever actually reached (proven by
+// srcDir being a real, listable repo in TestListRemoteBranches_Live
+// above, contrasted with the same path via a file:// URL being
+// rejected here with zero branches returned), and no network call is
+// ever attempted for ssh/git schemes or a malformed URL.
+func TestListRemoteBranches_SchemeRejected(t *testing.T) {
+	srcDir := t.TempDir()
+	if _, err := git.PlainInit(srcDir, false); err != nil {
+		t.Fatalf("PlainInit: %v", err)
+	}
+
+	cases := []struct {
+		name    string
+		repoURL string
+	}{
+		{"file scheme", "file://" + srcDir},
+		{"bare local path, no scheme", srcDir},
+		{"ssh scheme", "ssh://git@internal.example.invalid/repo.git"},
+		{"git scheme", "git://internal.example.invalid/repo.git"},
+		{"malformed URL", "://not a url"},
+		{"empty scheme with host-looking path", "internal.example.invalid/repo.git"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			branches, err := listRemoteBranches(context.Background(), tc.repoURL)
+			if err == nil {
+				t.Fatalf("listRemoteBranches(%q) error = nil, want rejection; branches = %v", tc.repoURL, branches)
+			}
+			if branches != nil {
+				t.Errorf("listRemoteBranches(%q) branches = %v, want nil on rejection", tc.repoURL, branches)
+			}
+		})
+	}
+}
+
+// TestListRemoteBranches_HTTPSchemeStillWorks proves the scheme gate
+// added for the SSRF/local-file finding doesn't collaterally break a
+// real http(s) repo_url: a plain httptest.Server stands in for "some
+// http(s) remote," and this asserts the request really reaches it (the
+// gate lets it through) even though the fake server isn't a real git
+// smart-HTTP backend and the call still ultimately errors.
+func TestListRemoteBranches_HTTPSchemeStillWorks(t *testing.T) {
+	contacted := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		contacted = true
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	_, err := listRemoteBranches(context.Background(), srv.URL+"/some/repo.git")
+	if !contacted {
+		t.Fatal("local http test server was never contacted: the scheme gate blocked a plain http:// URL")
+	}
+	if err == nil {
+		t.Fatal("want an error: the fake server isn't a real git smart-HTTP backend")
 	}
 }

@@ -6,12 +6,26 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"sort"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/storage/memory"
 )
+
+// errRepoURLSchemeNotAllowed is returned by listRemoteBranches when
+// repoURL's scheme isn't http/https. go-git's transport client registry
+// (github.com/go-git/go-git/v5/plumbing/transport/client) registers a
+// "file" transport unconditionally alongside http/https/ssh/git
+// (confirmed by reading that package: not a blank-import side effect,
+// a direct top-level import in client.go), so an unrestricted repoURL
+// would let a caller read local git repos on the control-plane host via
+// a file:// URL, or probe internal network reachability via http(s)://
+// against an internal address. This route's own contract is "a public
+// repo only" (see handleListGitBranches's doc comment); this is what
+// actually enforces that rather than just documenting it.
+var errRepoURLSchemeNotAllowed = fmt.Errorf("repo_url must use http or https")
 
 // listBranchesFunc lists every branch name a git remote advertises, with
 // no clone and no local checkout: exactly what `git ls-remote` does. A
@@ -29,6 +43,28 @@ type listBranchesFunc func(ctx context.Context, repoURL string) ([]string, error
 // same input a caller would otherwise hand-type into repo_url on
 // POST /api/v1/apps/{name}/builds.
 func listRemoteBranches(ctx context.Context, repoURL string) ([]string, error) {
+	parsed, err := url.Parse(repoURL)
+	if err != nil {
+		return nil, fmt.Errorf("api: list branches: %q: %w", repoURL, err)
+	}
+	switch parsed.Scheme {
+	case "http", "https":
+	default:
+		return nil, fmt.Errorf("api: list branches: %q: %w", repoURL, errRepoURLSchemeNotAllowed)
+	}
+	return listRemoteBranchesUnchecked(ctx, repoURL)
+}
+
+// listRemoteBranchesUnchecked is listRemoteBranches's scheme-gate-free
+// core: the actual go-git advertised-refs listing and branch filtering,
+// with no restriction on repoURL's scheme. Never called directly from
+// handler code; kept separate purely so tests can exercise the listing
+// and filtering logic against a local temp-dir repo (a bare filesystem
+// path, no scheme) without a real network dependency, the same
+// tradeoff TestListRemoteBranches_Live's own doc comment already
+// documents, while listRemoteBranches itself stays the only path a real
+// caller-supplied repoURL can ever reach.
+func listRemoteBranchesUnchecked(ctx context.Context, repoURL string) ([]string, error) {
 	remote := git.NewRemote(memory.NewStorage(), &config.RemoteConfig{
 		Name: "origin",
 		URLs: []string{repoURL},

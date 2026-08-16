@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -110,5 +111,33 @@ func TestHandleListGitBranches_RequiresAuth(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/git/branches", strings.NewReader(`{"repo_url":"https://example.com/x.git"}`)))
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
+	}
+}
+
+// TestHandleListGitBranches_PlainWriteToken_Forbidden proves
+// AbilityDeploy is really enforced by a real request, not just router
+// registration: matches TestHandleRestartApp_PlainWriteToken_Forbidden's
+// own established pattern in apps_test.go for the identical ability
+// boundary (AbilityWrite is a real, valid token, just not the tier
+// router.go actually gates POST /api/v1/git/branches at).
+func TestHandleListGitBranches_PlainWriteToken_Forbidden(t *testing.T) {
+	rt, db := newTestRouterWithListBranches(t, func(_ context.Context, _ string) ([]string, error) {
+		t.Fatal("listBranches must not be called when the token's ability is insufficient")
+		return nil, nil
+	})
+	ctx := context.Background()
+	const plaintext = "write-scoped-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_write", Name: "writer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWrite}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/git/branches", strings.NewReader(`{"repo_url":"https://example.com/x.git"}`))
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d: a plain write token must not be able to list a repo's branches", rec.Code, http.StatusForbidden)
 	}
 }
