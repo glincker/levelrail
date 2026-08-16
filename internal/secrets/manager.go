@@ -26,6 +26,7 @@ type Store interface {
 	GetSecretValue(ctx context.Context, serviceName, envKey string) ([]byte, error)
 	SaveSecretValue(ctx context.Context, serviceName, envKey string, ciphertext []byte) error
 	HasSecretValue(ctx context.Context, serviceName, envKey string) (bool, error)
+	DeleteServiceSecrets(ctx context.Context, serviceName string) error
 }
 
 // ErrValueNotFound means no secret value has been set for a given
@@ -118,6 +119,19 @@ func (m *Manager) Exists(ctx context.Context, serviceName, envKey string) (bool,
 		return false, fmt.Errorf("secrets: check value for %q/%q: %w", serviceName, envKey, err)
 	}
 	return ok, nil
+}
+
+// DeleteAll permanently removes every value and the wrapped DEK for
+// serviceName, so nothing set under it (via any past SetValue call) can
+// ever be decrypted again, even if the underlying ciphertext somehow
+// survives elsewhere. For a sentinel key like
+// store.GitHubAppSecretsKey() this deletes the whole logical secret
+// bundle at once, not one field at a time.
+func (m *Manager) DeleteAll(ctx context.Context, serviceName string) error {
+	if err := m.store.DeleteServiceSecrets(ctx, serviceName); err != nil {
+		return fmt.Errorf("secrets: delete all values for %q: %w", serviceName, err)
+	}
+	return nil
 }
 
 // dekFor returns serviceName's raw DEK, generating and persisting a new

@@ -53,6 +53,17 @@ func (f *fakeGitHubAppSecrets) Resolve(_ context.Context, serviceName, envKey st
 	return v, nil
 }
 
+func (f *fakeGitHubAppSecrets) DeleteAll(_ context.Context, serviceName string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for k := range f.values {
+		if strings.HasPrefix(k, serviceName+"|") {
+			delete(f.values, k)
+		}
+	}
+	return nil
+}
+
 var errFakeSecretNotSet = &fakeSecretNotSetError{}
 
 type fakeSecretNotSetError struct{}
@@ -175,6 +186,44 @@ func TestHandleDisconnectGitHubApp(t *testing.T) {
 	rt.Handler().ServeHTTP(statusRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/github-app", ""))
 	if !strings.Contains(statusRec.Body.String(), `"connected":false`) {
 		t.Errorf("status after disconnect = %s, want connected:false", statusRec.Body.String())
+	}
+}
+
+// TestHandleDisconnectGitHubApp_ClearsSecrets proves disconnect really
+// deletes the App's credentials, not just the connection row: a token
+// set under store.GitHubAppSecretsKey() before disconnect must be
+// unresolvable after it, closing the gap where a "disconnected" App's
+// private key would otherwise remain decryptable indefinitely.
+func TestHandleDisconnectGitHubApp_ClearsSecrets(t *testing.T) {
+	secrets := newFakeGitHubAppSecrets()
+	rt, db := newTestRouterWithGitHubApp(t, secrets, &fakeGitHubAppClient{})
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveGitHubAppConnection(ctx, store.GitHubAppConnection{
+		AppID: 42, ClientID: "Iv1.abc", CreatedAt: "2026-08-14T00:00:00Z",
+	}); err != nil {
+		t.Fatalf("seed connection: %v", err)
+	}
+	secretsKey := store.GitHubAppSecretsKey()
+	if err := secrets.SetValue(ctx, secretsKey, "private_key", "test-pem"); err != nil {
+		t.Fatalf("seed private_key: %v", err)
+	}
+	if err := secrets.SetValue(ctx, secretsKey, "client_secret", "test-secret"); err != nil {
+		t.Fatalf("seed client_secret: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/github-app", ""))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want 204, body = %s", rec.Code, rec.Body.String())
+	}
+
+	if _, err := secrets.Resolve(ctx, secretsKey, "private_key"); err == nil {
+		t.Error("private_key still resolvable after disconnect, want it deleted")
+	}
+	if _, err := secrets.Resolve(ctx, secretsKey, "client_secret"); err == nil {
+		t.Error("client_secret still resolvable after disconnect, want it deleted")
 	}
 }
 

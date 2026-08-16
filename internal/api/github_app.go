@@ -43,6 +43,7 @@ type GitHubAppStore interface {
 type GitHubAppSecrets interface {
 	SetValue(ctx context.Context, serviceName, envKey, plaintext string) error
 	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+	DeleteAll(ctx context.Context, serviceName string) error
 }
 
 // GitHubAppClient is the surface internal/api needs from
@@ -193,7 +194,8 @@ func (rt *Router) handleGetGitHubAppStatus(w http.ResponseWriter, r *http.Reques
 // operator who wants the App itself gone from GitHub must delete it
 // from github.com/settings/apps themselves.
 func (rt *Router) handleDisconnectGitHubApp(w http.ResponseWriter, r *http.Request) {
-	err := rt.githubApp.DeleteGitHubAppConnection(r.Context())
+	ctx := r.Context()
+	err := rt.githubApp.DeleteGitHubAppConnection(ctx)
 	if errors.Is(err, store.ErrGitHubAppConnectionNotFound) {
 		writeError(w, http.StatusNotFound, "no github app is connected")
 		return
@@ -203,6 +205,23 @@ func (rt *Router) handleDisconnectGitHubApp(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+
+	// The connection row is gone; the App's client_secret/webhook_secret/
+	// private_key must go with it, not linger decryptable under the same
+	// sentinel key indefinitely (see DeleteAll's own doc comment). A real
+	// connection row is only ever created by handleGitHubAppCallback,
+	// itself gated on rt.githubAppSecrets != nil, but this checks again
+	// rather than assuming: a row can also reach the store directly
+	// (tests, a future migration/import path) without that invariant
+	// holding.
+	if rt.githubAppSecrets != nil {
+		if err := rt.githubAppSecrets.DeleteAll(ctx, store.GitHubAppSecretsKey()); err != nil {
+			rt.logger.Error("api: delete github app secrets failed", slog.String("error", err.Error()))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
