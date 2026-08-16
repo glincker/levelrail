@@ -144,8 +144,12 @@ export function SecretsEditor({ appName }: { appName: string }) {
     )
   }
 
+  // Excludes the 409/locked case: that's shown by the overwrite-confirm
+  // dialog instead, not duplicated here as a redundant inline alert.
   const generalError =
-    setSecret.isError && !(setSecret.error instanceof SecretsNotConfiguredError)
+    setSecret.isError &&
+    !(setSecret.error instanceof SecretsNotConfiguredError) &&
+    !(setSecret.error instanceof ApiError && setSecret.error.status === 409)
       ? setSecret.error.message
       : null
 
