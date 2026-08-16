@@ -217,7 +217,7 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 		ImageRepo:   name,
 	}
 
-	progress, finishAttempt := rt.beginBuildDeployAttempt(r.Context(), buildReq, store.DeployAttemptSourceWebhook)
+	_, progress, finishAttempt := rt.beginBuildDeployAttempt(r.Context(), buildReq, store.DeployAttemptSourceWebhook)
 	tag, err := rt.builder.Deploy(r.Context(), buildReq, progress)
 	finishAttempt(err)
 	if err != nil {

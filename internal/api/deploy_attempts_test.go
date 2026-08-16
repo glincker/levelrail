@@ -462,7 +462,7 @@ func (f *orderCheckAttemptStore) SaveDeployAttempt(ctx context.Context, a store.
 }
 
 func TestBeginBuildDeployAttempt_StartRunsBeforeAttemptIsSaveable(t *testing.T) {
-	rt, db := newTestRouterWithBuilder(t, &fakeBuilder{tag: "web:1"}, nil)
+	rt, db := newTestRouterWithBuilder(t, newFakeBuilder("web:1", nil), nil)
 	recorder := deploylog.NewRecorder(nil, discardLogger())
 	rt.deployRecorder = recorder
 	fake := &orderCheckAttemptStore{DeployAttemptStore: rt.deployAttempts, recorder: recorder}
@@ -473,7 +473,7 @@ func TestBeginBuildDeployAttempt_StartRunsBeforeAttemptIsSaveable(t *testing.T) 
 		t.Fatalf("seed app: %v", err)
 	}
 
-	_, finish := rt.beginBuildDeployAttempt(ctx, deploy.Request{ServiceName: "web", ImageRepo: "web", CommitSHA: "sha1"}, store.DeployAttemptSourceManual)
+	_, _, finish := rt.beginBuildDeployAttempt(ctx, deploy.Request{ServiceName: "web", ImageRepo: "web", CommitSHA: "sha1"}, store.DeployAttemptSourceManual)
 	finish(nil)
 
 	if !fake.startedBeforeSave {
@@ -482,7 +482,7 @@ func TestBeginBuildDeployAttempt_StartRunsBeforeAttemptIsSaveable(t *testing.T) 
 }
 
 func TestBeginBuildDeployAttempt_SaveFails_RecorderDoesNotLeak(t *testing.T) {
-	rt, db := newTestRouterWithBuilder(t, &fakeBuilder{tag: "web:1"}, nil)
+	rt, db := newTestRouterWithBuilder(t, newFakeBuilder("web:1", nil), nil)
 	recorder := deploylog.NewRecorder(nil, discardLogger())
 	rt.deployRecorder = recorder
 	fake := &orderCheckAttemptStore{DeployAttemptStore: rt.deployAttempts, recorder: recorder, saveErr: errors.New("db write failed")}

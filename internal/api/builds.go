@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
@@ -28,28 +30,21 @@ type Builder interface {
 	Deploy(ctx context.Context, req deploy.Request, progress func(build.ProgressEvent)) (string, error)
 }
 
-// fetchFunc fetches repoURL at ref to a local directory, returning the
-// directory and a cleanup func that removes it. Mirrors
-// internal/webhook's own fetchFunc seam exactly (same signature shape,
-// same "overridable in tests, defaults to a real git implementation"
-// story), except ref here is a general git revision (branch, tag, or
-// commit hash, resolved via gitCheckout's own ResolveRevision call)
-// rather than webhook's always-a-full-commit-SHA payload field, since a
-// manual build trigger's most common input is "build my main branch",
-// not a hand-typed SHA.
-type fetchFunc func(ctx context.Context, repoURL, ref string) (dir string, cleanup func(), err error)
+// fetchFunc fetches repoURL at ref to a local directory, authenticating
+// with token when non-empty (see tokenForRepo), and returns the
+// directory and a cleanup func that removes it. ref is a general git
+// revision (branch, tag, or commit hash, resolved via gitCheckout's own
+// ResolveRevision call), unlike internal/webhook's own always-a-full-SHA
+// fetchFunc.
+type fetchFunc func(ctx context.Context, repoURL, ref, token string) (dir string, cleanup func(), err error)
 
 // gitCheckout is the real fetchFunc implementation, the manual-build
-// counterpart to internal/webhook's own cloneAndCheckout. Deliberately
-// duplicated rather than shared through a new common package: the two
-// differ in exactly one meaningful way (ref resolution, see fetchFunc's
-// own doc comment above), and internal/webhook is explicitly this task's
-// reference implementation to read, not a dependency to extend, per this
-// task's own scope note to keep changes to reconciler-adjacent,
-// webhook-adjacent code minimal. See cloneAndCheckout's own doc comment
-// for the full "why a full clone, not shallow" reasoning, which applies
-// unchanged here.
-func gitCheckout(ctx context.Context, repoURL, ref string) (dir string, cleanup func(), err error) {
+// counterpart to internal/webhook's own cloneAndCheckout (see that
+// function's own doc comment for why a full clone, not shallow). token
+// authenticates the same way gitCheckoutWithToken does (git_webhook.go):
+// GitHub's "any username, token as password" scheme, empty meaning an
+// unauthenticated clone.
+func gitCheckout(ctx context.Context, repoURL, ref, token string) (dir string, cleanup func(), err error) {
 	dir, err = os.MkdirTemp("", "levelrail-build-*")
 	if err != nil {
 		return "", nil, fmt.Errorf("api: create temp checkout dir: %w", err)
@@ -60,9 +55,11 @@ func gitCheckout(ctx context.Context, repoURL, ref string) (dir string, cleanup 
 		}
 	}
 
-	repo, err := git.PlainCloneContext(ctx, dir, false, &git.CloneOptions{
-		URL: repoURL,
-	})
+	cloneOpts := &git.CloneOptions{URL: repoURL}
+	if token != "" {
+		cloneOpts.Auth = &githttp.BasicAuth{Username: "x-access-token", Password: token}
+	}
+	repo, err := git.PlainCloneContext(ctx, dir, false, cloneOpts)
 	if err != nil {
 		cleanup()
 		return "", nil, fmt.Errorf("api: clone %q: %w", repoURL, err)
@@ -144,59 +141,56 @@ type triggerBuildRequest struct {
 	Build     triggerBuildBuildInput `json:"build,omitempty"`
 }
 
-// triggerBuildResponse is POST /api/v1/apps/{name}/builds's success body.
-// Its shape depends on build.type. For a container-backed build
-// (dockerfile, railpack), Image is the full image reference that was
-// built (internal/deploy.Pipeline.Deploy's own return value) and App is
-// the app's resulting desired state, the same resource shape
-// GET /api/v1/apps/{name} and handleTriggerDeploy's own response already
-// return. For build.type: static, neither applies: Pipeline.Deploy's own
-// doc comment says static has "no image, no container... its desired
-// state is a store.StaticSite," never store.DesiredService, so there is
-// no updated app to reload, and the string Deploy returns is the local
-// directory the site now serves from, an absolute filesystem path on the
-// control plane host that staticSiteResource's own doc comment already
-// establishes this package never puts in a response body. Image and App
-// are therefore omitempty and unset for a static build; StaticSite is
-// set instead, and only then.
+// triggerBuildResponse is POST /api/v1/apps/{name}/builds's success
+// body: just the deploy_attempts row's id (same "id" tag
+// deployAttemptResource uses), since the build hasn't run yet by the
+// time this returns. Poll GET .../deploy-attempts or tail
+// GET .../deploys/{id}/logs for progress and outcome.
 type triggerBuildResponse struct {
-	Image      string              `json:"image,omitempty"`
-	App        *appResource        `json:"app,omitempty"`
-	StaticSite *staticSiteResource `json:"static_site,omitempty"`
+	ID string `json:"id,omitempty"`
+}
+
+// isGitHubHTTPSRepoURL reports whether repoURL is an https://github.com
+// remote: the only shape a GitHub App installation token can
+// authenticate a clone against.
+func isGitHubHTTPSRepoURL(repoURL string) bool {
+	u, err := url.Parse(repoURL)
+	return err == nil && u.Scheme == "https" && u.Host == "github.com"
+}
+
+// tokenForRepo mints a GitHub App installation token for repoURL when
+// possible, falling back to an empty (unauthenticated) token for any
+// other host or a minting failure: the plain public-repo clone path must
+// keep working regardless.
+func (rt *Router) tokenForRepo(ctx context.Context, repoURL string) string {
+	if !isGitHubHTTPSRepoURL(repoURL) || rt.githubAppSecrets == nil {
+		return ""
+	}
+	token, err := rt.mintGitHubAppInstallationToken(ctx)
+	if err != nil {
+		if !errors.Is(err, errGitHubAppNotConnected) && !errors.Is(err, errGitHubAppNotInstalled) {
+			rt.logger.Warn("api: trigger build: mint github app installation token failed, falling back to an unauthenticated clone", slog.String("error", err.Error()))
+		}
+		return ""
+	}
+	return token
 }
 
 // handleTriggerBuild handles POST /api/v1/apps/{name}/builds: builds an
 // image from a git source and points the app's desired state at the
-// result, through the exact same internal/deploy.Pipeline
-// internal/webhook.Handler.ServeHTTP already calls for a git-push-triggered
-// deploy (see Builder's own doc comment). This is the gap TASKS.md /
-// router.go's own package doc comment names directly: "Wiring an actual
-// 'build then deploy' endpoint is a follow-up once internal/deploy's API
-// is stable" -- for an operator with no working git webhook configured
-// (internal/webhook.Config's own doc comment: deliberately static,
-// single-app configuration), this is the only path from the dashboard
-// into a real build.
+// result, through the same internal/deploy.Pipeline
+// internal/webhook.Handler.ServeHTTP uses for a git-push-triggered
+// deploy (see Builder's own doc comment).
 //
-// Synchronous and blocking, exactly like internal/webhook.Handler.ServeHTTP's
-// own call to Deploy: this handler's HTTP request does not return until
-// the build itself finishes, and build progress is only logged via slog
-// (build.SlogProgress), never streamed back to the caller. This mirrors
-// the reference implementation deliberately rather than inventing new
-// plumbing: web/src/hooks/useDeployLogStream.ts's own doc comment
-// documents that its SSE contract is "assumed," not backed by any real
-// internal/api route, and TASKS-v2.md's own build log lists the
-// deploy-attempt-log design (a deploy_attempts store table plus a
-// dedicated SSE endpoint) as a real, store-schema-sized follow-up that
-// still needs founder sign-off, not something to improvise here. A user
-// triggering a manual build gets a blocking request while it builds
-// (the same UX the webhook path already has, just from a browser
-// instead of GitHub) rather than a progress bar backed by
-// infrastructure that doesn't exist yet.
+// Asynchronous: validates the request, records a deploy_attempts row
+// (beginBuildDeployAttempt), and returns 202 with its id immediately,
+// the same shape handleTriggerBackup already establishes for
+// long-running work. The fetch and build run in a goroutine against
+// context.Background(), not r.Context(), which is cancelled the moment
+// this handler returns.
 //
-// See specServiceFromDesired's own doc comment for the two known,
-// deliberate fidelity losses this reconstruction carries versus the
-// original app.yaml (secret env vars' `required` flag, `{ from: ... }`
-// cross-resource references).
+// See specServiceFromDesired's own doc comment for the fidelity losses
+// this reconstruction carries versus the original app.yaml.
 func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 	if rt.builder == nil {
 		writeError(w, http.StatusNotImplemented, "manual build trigger is not configured on this control plane")
@@ -265,59 +259,47 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 
 	svcSpec := specServiceFromDesired(*existing, spec.Build{Type: buildType, Path: req.Build.Path})
 
-	sourceDir, cleanup, err := rt.fetch(r.Context(), req.RepoURL, req.Ref)
-	if err != nil {
-		rt.logger.Error("api: trigger build: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", req.RepoURL), slog.String("ref", req.Ref))
-		writeError(w, http.StatusBadRequest, "fetching source failed: check repo_url and ref")
-		return
-	}
-	defer cleanup()
-
 	buildReq := deploy.Request{
 		ServiceName: name,
 		Service:     svcSpec,
-		SourceDir:   sourceDir,
 		CommitSHA:   req.Ref,
 		ImageRepo:   imageRepo,
 	}
 
-	progress, finishAttempt := rt.beginBuildDeployAttempt(r.Context(), buildReq, store.DeployAttemptSourceManual)
-	tag, err := rt.builder.Deploy(r.Context(), buildReq, progress)
-	finishAttempt(err)
-	if err != nil {
-		// Non-leaky, matching internal/webhook.Handler.ServeHTTP's own
-		// choice for an identical failure (its own doc comment: "500
-		// with a non-leaky message if the deploy itself fails"): a build
-		// failure can carry internal detail (daemon socket paths,
-		// registry hostnames) that has no business reaching an HTTP
-		// response body, logged here instead.
-		rt.logger.Error("api: trigger build failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", req.RepoURL), slog.String("ref", req.Ref))
-		writeError(w, http.StatusInternalServerError, "build failed")
-		return
-	}
+	id, progress, finishAttempt := rt.beginBuildDeployAttempt(r.Context(), buildReq, store.DeployAttemptSourceManual)
 
-	rt.logger.Info("api: manual build triggered", slog.String("name", name), slog.String("repo_url", req.RepoURL), slog.String("ref", req.Ref), slog.String("build_type", buildType))
+	repoURL, ref := req.RepoURL, req.Ref
+	go func() { //nolint:gosec // deliberately not r.Context(): it is cancelled the moment this handler returns, which would abort the fetch and build within microseconds of starting them; see this handler's own doc comment
+		ctx := context.Background()
+		token := rt.tokenForRepo(ctx, repoURL)
+		sourceDir, cleanup, err := rt.fetch(ctx, repoURL, ref, token)
+		if err != nil {
+			rt.logger.Error("api: trigger build: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", repoURL), slog.String("ref", ref))
+			finishAttempt(err)
+			return
+		}
+		defer cleanup()
+		buildReq.SourceDir = sourceDir
 
-	if buildType == spec.BuildStatic {
-		// No store.DesiredService update happened (deployStatic saves a
-		// store.StaticSite instead, see triggerBuildResponse's own doc
-		// comment), so there is nothing to reload here, and tag is the
-		// served-from directory, not a value this response ever exposes.
-		writeJSON(w, http.StatusAccepted, triggerBuildResponse{
-			StaticSite: &staticSiteResource{Name: name, Domains: svcSpec.Domains},
-		})
-		return
-	}
+		tag, err := rt.builder.Deploy(ctx, buildReq, progress)
+		finishAttempt(err)
+		if err != nil {
+			// Non-leaky, matching internal/webhook.Handler.ServeHTTP's own
+			// choice for an identical failure (its own doc comment: "500
+			// with a non-leaky message if the deploy itself fails"): a
+			// build failure can carry internal detail (daemon socket
+			// paths, registry hostnames) that has no business reaching an
+			// HTTP response body, logged here instead. There's no HTTP
+			// response left to write by this point anyway; the deploy
+			// attempt row (already marked failed by finishAttempt above)
+			// is how a caller learns the outcome.
+			rt.logger.Error("api: trigger build failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", repoURL), slog.String("ref", ref))
+			return
+		}
+		rt.logger.Info("api: manual build triggered", slog.String("name", name), slog.String("repo_url", repoURL), slog.String("ref", ref), slog.String("build_type", buildType), slog.String("tag", tag))
+	}()
 
-	updated, err := rt.apps.GetDesiredService(r.Context(), name)
-	if err != nil {
-		rt.logger.Error("api: trigger build: reload after build failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-
-	updatedResource := toAppResource(*updated)
-	writeJSON(w, http.StatusAccepted, triggerBuildResponse{Image: tag, App: &updatedResource})
+	writeJSON(w, http.StatusAccepted, triggerBuildResponse{ID: id})
 }
 
 // specServiceFromDesired reconstructs the parts of a spec.Service that

@@ -22,17 +22,12 @@ import {
 // since useGitHubAppStatus's cache is the single source of truth for
 // "should this even try to fetch repos."
 //
-// Honest, load-bearing limitation, not covered anywhere else in this
-// UI: selecting a private repository here fills in its clone URL, but
-// actually building it (POST /apps/{name}/builds,
-// internal/api/builds.go) still calls git.PlainCloneContext with no
-// Auth set, the exact same gap this whole feature exists to close for
-// browsing. Wiring the App's installation token into that clone call is
-// a separate, not-yet-built follow-up (see this feature's own
-// implementation notes); today this picker is fully functional for
-// public repositories and for browsing what's accessible, but selecting
-// a private repo and clicking "Build and deploy" will still fail the
-// same way it did before this feature existed.
+// Selecting a private repository here fills in its clone URL, and
+// building it (POST /apps/{name}/builds, internal/api/builds.go)
+// authenticates the clone with a freshly minted installation token for
+// any github.com repo URL when this same App connection exists
+// (tokenForRepo, builds.go), so a private repo picked here actually
+// builds.
 export function GitHubAppRepoPicker({
   onSelect,
 }: {

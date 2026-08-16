@@ -6,24 +6,16 @@
 // shape and a distinct backend route, even though both ultimately update
 // the same app resource.
 //
-// Important framing carried over from handleTriggerBuild's own doc
-// comment: this call is synchronous and blocking on the server side,
-// the same as internal/webhook.Handler.ServeHTTP's own call into
-// internal/deploy.Pipeline. There is still no backend SSE endpoint for
-// live build progress (web/src/hooks/useLogStream.ts's own doc
-// comment: its SSE contract is "assumed," not backed by any real
-// internal/api route), so this mutation's pending state is the only
-// "building..." signal a caller gets, the same shape triggerDeploy
-// already has for its own (much faster) operation, just held open for
-// longer.
+// The build runs asynchronously on the server: handleTriggerBuild
+// returns as soon as the deploy attempt is recorded, well before the
+// build itself has done any work, so this call's response carries only
+// the attempt id, never a built image or an updated app. Poll
+// deployAttemptKeys.list(appName) or tail GET .../deploys/{id}/logs to
+// observe progress and the eventual outcome.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import type { AppDetail } from '../types/appDetail'
-import type { StaticSite } from './staticSites'
-import { appKeys } from './apps'
 import { deployKeys } from './deploys'
 import { deployAttemptKeys } from './deployAttempts'
-import { staticSitesKeys } from './staticSites'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export interface TriggerBuildInput {
@@ -36,21 +28,14 @@ export interface TriggerBuildInput {
   buildPath?: string
 }
 
-// TriggerBuildResult mirrors internal/api/builds.go's own conditional
-// triggerBuildResponse exactly (field name static_site kept snake_case,
-// matching this module's own wire-shape-as-is convention, see
-// types/appDetail.ts's doc comment): a container-backed build
-// (dockerfile, railpack) sets image/app, a build.type: static build
-// sets static_site instead and leaves both of those unset, since a
-// static deploy never touches store.DesiredService and its build has
-// no image (see that Go type's own doc comment for why). Callers must
-// check which one is present rather than assuming app is always there,
-// the same "static is a genuinely different shape" awareness the
-// backend response itself now carries.
+// TriggerBuildResult mirrors internal/api/builds.go's own
+// triggerBuildResponse: id is the deploy_attempts row's own id
+// (deploy_attempts.go's deployAttemptResource uses the same "id" tag for
+// the identical field), empty when attempt recording itself failed
+// (see beginBuildDeployAttempt's own doc comment on why that never
+// blocks the build).
 export interface TriggerBuildResult {
-  image?: string
-  app?: AppDetail
-  static_site?: StaticSite
+  id?: string
 }
 
 export async function triggerBuild(
@@ -83,33 +68,18 @@ export async function triggerBuild(
   return (await res.json()) as TriggerBuildResult
 }
 
-// On success, updates both the app detail cache (the response carries
-// the updated AppDetail with its new image, same as useTriggerDeploy)
-// and invalidates the deploy status query, since a successful build
-// changes what the next reconcile reports. Also invalidates the deploy-
-// attempts history list, the same reasoning useTriggerDeploy's own doc
-// comment gives: internal/api/builds.go's handleTriggerBuild now saves a
-// real deploy_attempts row (running, then succeeded/failed) for every
-// build, and a build is exactly the slower, more likely to be watched
-// path where seeing the new row (and its live log link) appear promptly
-// matters most.
-//
-// A build.type: static result carries no app (see TriggerBuildResult's
-// own doc comment), so the app detail cache is left untouched rather
-// than overwritten with undefined; the static-sites list query is
-// invalidated instead, since that's the resource a static build
-// actually just created or updated.
+// On success, invalidates the deploy status query and the deploy-
+// attempts history list: the build itself hasn't finished yet (see this
+// module's own doc comment), so there is no updated app or static site
+// to write into the cache, only a new "running" deploy_attempts row
+// (this response's own id) for the attempts list and log viewer to pick
+// up. Callers should treat onSuccess as "the build was triggered," not
+// "the build finished."
 export function useTriggerBuild(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: TriggerBuildInput) => triggerBuild(appName, input),
-    onSuccess: (result) => {
-      if (result.app) {
-        queryClient.setQueryData(appKeys.detail(appName), result.app)
-      }
-      if (result.static_site) {
-        void queryClient.invalidateQueries({ queryKey: staticSitesKeys.all })
-      }
+    onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: deployKeys.status(appName),
       })

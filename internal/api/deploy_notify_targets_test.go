@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -41,6 +42,25 @@ func (f *fakeDeployNotifier) snapshot() []fakeDeployNotifierCall {
 	out := make([]fakeDeployNotifierCall, len(f.calls))
 	copy(out, f.calls)
 	return out
+}
+
+// awaitCalls polls snapshot() until it has at least n entries: since
+// handleTriggerBuild's build now runs in a background goroutine
+// (builds.go), Dispatch can land anytime after the HTTP response
+// returns, not necessarily before it.
+func (f *fakeDeployNotifier) awaitCalls(t *testing.T, n int) []fakeDeployNotifierCall {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		calls := f.snapshot()
+		if len(calls) >= n {
+			return calls
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("got %d notifier calls, want at least %d within the deadline", len(calls), n)
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
 }
 
 // newTestRouterWithDeployNotifyTargets wires notification channels too:
@@ -339,8 +359,8 @@ func TestRecordPlainDeployAttempt_NoNotifierConfigured_NoDispatchNoPanic(t *test
 func TestBeginBuildDeployAttempt_DispatchesSucceededNotification(t *testing.T) {
 	db := openTestDB(t)
 	notifier := &fakeDeployNotifier{}
-	rt := NewRouter(nil, testBrand(), db, WithBuilder(&fakeBuilder{tag: "levelrail/web:abc123"}), WithDeployNotifier(notifier))
-	rt.fetch = newFakeFetch(&[]fakeFetchCall{}, "/tmp/checkout-dir", new(bool), nil)
+	rt := NewRouter(nil, testBrand(), db, WithBuilder(newFakeBuilder("levelrail/web:abc123", nil)), WithDeployNotifier(notifier))
+	rt.fetch = newFakeFetch("/tmp/checkout-dir", nil).fetch
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
 
@@ -350,7 +370,7 @@ func TestBeginBuildDeployAttempt_DispatchesSucceededNotification(t *testing.T) {
 		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
 	}
 
-	calls := notifier.snapshot()
+	calls := notifier.awaitCalls(t, 1)
 	if len(calls) != 1 {
 		t.Fatalf("Dispatch called %d times, want 1", len(calls))
 	}
@@ -365,18 +385,18 @@ func TestBeginBuildDeployAttempt_DispatchesSucceededNotification(t *testing.T) {
 func TestBeginBuildDeployAttempt_DispatchesFailedNotification(t *testing.T) {
 	db := openTestDB(t)
 	notifier := &fakeDeployNotifier{}
-	rt := NewRouter(nil, testBrand(), db, WithBuilder(&fakeBuilder{err: errors.New("buildkit: boom")}), WithDeployNotifier(notifier))
-	rt.fetch = newFakeFetch(&[]fakeFetchCall{}, "/tmp/checkout-dir", new(bool), nil)
+	rt := NewRouter(nil, testBrand(), db, WithBuilder(newFakeBuilder("", errors.New("buildkit: boom"))), WithDeployNotifier(notifier))
+	rt.fetch = newFakeFetch("/tmp/checkout-dir", nil).fetch
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds", `{"repo_url":"https://example.com/x.git","ref":"main"}`))
-	if rec.Code != http.StatusInternalServerError {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusInternalServerError, rec.Body.String())
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
 	}
 
-	calls := notifier.snapshot()
+	calls := notifier.awaitCalls(t, 1)
 	if len(calls) != 1 {
 		t.Fatalf("Dispatch called %d times, want 1", len(calls))
 	}

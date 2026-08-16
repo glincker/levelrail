@@ -34,20 +34,21 @@ import (
 // attempt-history list belongs at its own URL instead.
 
 // beginBuildDeployAttempt mints a deploy_attempts row for req (shared by
-// handleTriggerBuild and handleGitPushWebhook) and returns the
+// handleTriggerBuild and handleGitPushWebhook) and returns its id plus the
 // progress/finish funcs for Builder.Deploy. source distinguishes the two
-// callers in the resulting history row. Falls back to SlogProgress and a
-// no-op finish, logged but not returned as an error, if deployRecorder is
-// unconfigured or minting/saving the row fails: a history-tracking
-// failure must never block a build that would otherwise succeed.
-func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Request, source string) (progress func(build.ProgressEvent), finish func(deployErr error)) {
+// callers in the resulting history row. Falls back to an empty id,
+// SlogProgress, and a no-op finish, logged but not returned as an error,
+// if deployRecorder is unconfigured or minting/saving the row fails: a
+// history-tracking failure must never block a build that would otherwise
+// succeed.
+func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Request, source string) (id string, progress func(build.ProgressEvent), finish func(deployErr error)) {
 	noop := func(error) {}
 	fallback := build.SlogProgress(rt.logger)
 
 	id, err := store.NewDeployAttemptID()
 	if err != nil {
 		rt.logger.Error("api: trigger build: mint deploy attempt id failed", slog.String("error", err.Error()))
-		return fallback, noop
+		return "", fallback, noop
 	}
 
 	// Start before SaveDeployAttempt: the row is queryable the instant
@@ -67,7 +68,7 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 		if rt.deployRecorder != nil {
 			rt.deployRecorder.Finish(ctx, id)
 		}
-		return fallback, noop
+		return "", fallback, noop
 	}
 
 	finish = func(deployErr error) {
@@ -94,9 +95,9 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 	}
 
 	if rt.deployRecorder == nil {
-		return fallback, finish
+		return id, fallback, finish
 	}
-	return rt.deployRecorder.Progress(id), finish
+	return id, rt.deployRecorder.Progress(id), finish
 }
 
 // deployAttemptResource is the wire shape for one deploy attempt.
