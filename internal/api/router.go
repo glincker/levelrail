@@ -711,19 +711,17 @@ func (rt *Router) Handler() http.Handler {
 	// deploy, just without a new image.
 	mux.HandleFunc("POST /api/v1/apps/{name}/restart", rt.requireAbility(AbilityDeploy, rt.handleRestartApp))
 
-	// One-off exec (handleExecApp's own doc comment): AbilityDeploy, the
-	// same tier restart and deploy already sit behind, not a higher one.
-	// A caller who already holds AbilityDeploy can push an arbitrary
-	// image and get it running (deploy) or force a recreate that runs
-	// whatever entrypoint that image already has (restart); running one
-	// command inside the container that is already running is a more
-	// direct, faster, and quieter route to the exact same "arbitrary
-	// code execution inside this app's own container" capability
-	// AbilityDeploy already implies, not a materially larger one.
-	// AbilityRoot stays reserved for actions that reach outside a single
-	// app's own container (placement, node admin, restore, prune, see
-	// their own route registrations above/below).
-	mux.HandleFunc("POST /api/v1/apps/{name}/exec", rt.requireAbility(AbilityDeploy, rt.handleExecApp))
+	// One-off exec (handleExecApp's own doc comment): AbilityRoot, not
+	// AbilityDeploy. Secrets are injected as plaintext env vars into a
+	// container at create time (CLAUDE.md 4.10) and this package
+	// deliberately never decrypts one back into a response body anywhere
+	// else, see the secrets route above: "never decrypts a value for a
+	// response body." Exec is the one route that can read them anyway,
+	// by running `env` inside the container, so it must sit behind the
+	// same tier that boundary already implies it needs, not the deploy
+	// tier. AbilityRoot is this project's existing "breaks an assumption
+	// other tiers rely on" boundary (see restore's own reasoning above).
+	mux.HandleFunc("POST /api/v1/apps/{name}/exec", rt.requireAbility(AbilityRoot, rt.handleExecApp))
 
 	// Real deploy-attempt history (deploy_attempts.go): a row per
 	// trigger call across all three real trigger paths, additional to

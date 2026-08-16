@@ -42,11 +42,13 @@ import (
 // Building that is a real follow-up, not something this endpoint
 // pretends to already be.
 //
-// AbilityDeploy (router.go's route registration) rather than
-// AbilityRoot: see that registration's own comment for why running one
-// command inside an app's own already-running container is judged the
-// same sensitivity tier as deploying a new image into it or forcing a
-// restart, not the fleet/node-admin tier AbilityRoot is reserved for.
+// Gated at AbilityRoot (router.go's route registration), not
+// AbilityDeploy: see that registration's own comment. Secrets are
+// injected as plaintext env vars at container-create time and this
+// package otherwise never decrypts one back into a response body
+// anywhere, so exec is the one route that can read them anyway (`env`
+// inside the container), and must sit behind the tier that boundary
+// implies, not the deploy/restart tier.
 
 // defaultExecTimeout bounds how long handleExecApp waits for a command
 // to finish before giving up on it, so a hung command can never hold

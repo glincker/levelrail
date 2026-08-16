@@ -143,10 +143,7 @@ func TestExecAppRoute_RequiresAuth(t *testing.T) {
 }
 
 // TestHandleExecApp_PlainWriteToken_Forbidden proves POST
-// /apps/{name}/exec sits behind AbilityDeploy, not AbilityWrite: the
-// same boundary TestHandleRestartApp_PlainWriteToken_Forbidden already
-// draws for restart (apps_test.go), applied here for the identical
-// reason (router.go's own route registration comment).
+// /apps/{name}/exec sits behind AbilityRoot, not AbilityWrite.
 func TestHandleExecApp_PlainWriteToken_Forbidden(t *testing.T) {
 	fake := &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "c1", Running: true}}
 	rt, db := newTestRouterWithExecRuntime(t, fake)
@@ -166,6 +163,42 @@ func TestHandleExecApp_PlainWriteToken_Forbidden(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusForbidden {
 		t.Errorf("status = %d, want %d: a plain write token must not be able to run commands inside a container", rec.Code, http.StatusForbidden)
+	}
+	if fake.execCalls != 0 {
+		t.Errorf("Exec called %d times, want 0: the ability check must reject before any container work happens", fake.execCalls)
+	}
+}
+
+// TestHandleExecApp_PlainDeployToken_Forbidden proves a token scoped to
+// nothing but AbilityDeploy (the CI/MCP-token shape abilities.go
+// documents as its own use case) cannot run exec either, even though
+// that same token can already trigger a deploy or a restart. Exec sits
+// one tier above those because it is the one route that can read a
+// secret's plaintext back out of the container's own environment
+// (secrets are injected as plaintext env vars at create time, CLAUDE.md
+// 4.10, and this package otherwise never decrypts one into a response
+// body, see the secrets route's own doc comment above its registration
+// in router.go). A plain deploy token running `env` inside the
+// container would otherwise exfiltrate every secret the app holds.
+func TestHandleExecApp_PlainDeployToken_Forbidden(t *testing.T) {
+	fake := &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "c1", Running: true}}
+	rt, db := newTestRouterWithExecRuntime(t, fake)
+	ctx := context.Background()
+	seedExecApp(t, db)
+
+	const plaintext = "deploy-scoped-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_deploy", Name: "deployer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityDeploy}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/apps/web/exec", strings.NewReader(`{"command":"env"}`))
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d: a plain deploy token must not be able to read secrets back out of a container via exec", rec.Code, http.StatusForbidden)
 	}
 	if fake.execCalls != 0 {
 		t.Errorf("Exec called %d times, want 0: the ability check must reject before any container work happens", fake.execCalls)
