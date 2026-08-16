@@ -135,6 +135,14 @@ type AppStore interface {
 	UpdateServiceSuspended(ctx context.Context, name string, suspended bool) error
 }
 
+// AppGroupLister is the store surface GET /api/v1/apps/{name}/group
+// needs (apps_group.go): stage 1 of multi-service apps
+// (migrations/0039_apps.sql), read path only. *store.DB satisfies this
+// structurally.
+type AppGroupLister interface {
+	ListServicesByApp(ctx context.Context, appID string) ([]store.DesiredService, error)
+}
+
 // DeployStore is the store surface the deploy-history handler needs.
 type DeployStore interface {
 	GetConditions(ctx context.Context, controllerName string) ([]reconcile.Condition, error)
@@ -262,6 +270,7 @@ type TokenStore interface {
 // already established for this codebase.
 type Store interface {
 	AppStore
+	AppGroupLister
 	DeployStore
 	DeployAttemptStore
 	DatabaseStore
@@ -385,6 +394,7 @@ type Router struct {
 	logger          *slog.Logger
 	brand           *brand.Brand
 	apps            AppStore
+	appGroups       AppGroupLister
 	deploys         DeployStore
 	databases       DatabaseStore
 	auth            AuthStore
@@ -770,6 +780,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		logger:                logger,
 		brand:                 b,
 		apps:                  s,
+		appGroups:             s,
 		deploys:               s,
 		deployAttempts:        s,
 		databases:             s,
@@ -889,6 +900,12 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/apps/{name}", rt.requireAbility(AbilityRead, rt.handleGetApp))
 	mux.HandleFunc("PUT /api/v1/apps/{name}", rt.requireAbility(AbilityWrite, rt.handleUpdateApp))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}", rt.requireAbility(AbilityWrite, rt.handleDeleteApp))
+
+	// Stage 1 of multi-service apps (migrations/0039_apps.sql,
+	// apps_group.go): a service plus its siblings under the same
+	// store.App, with a worst-condition-wins rollup status. Additive,
+	// read-only; GET /api/v1/apps/{name} above is unchanged.
+	mux.HandleFunc("GET /api/v1/apps/{name}/group", rt.requireAbility(AbilityRead, rt.handleGetAppGroup))
 
 	// Clone: duplicates an app's desired state under a new name.
 	// AbilityWrite, the same gate POST /api/v1/apps itself uses, since a
