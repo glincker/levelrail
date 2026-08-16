@@ -166,19 +166,9 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 		return "", fmt.Errorf("docker: create container %q: %w", spec.Name, err)
 	}
 
-	// spec.Network is attached via a separate NetworkConnect call, not
-	// ContainerCreate's own NetworkingConfig argument: passing endpoint
-	// config (in particular a non-empty Aliases list) directly to
-	// ContainerCreate reproducibly hangs against this project's own
-	// development daemon (Docker Desktop for Mac), waiting on the
-	// create response indefinitely, while the identical attachment via
-	// `docker create --network --network-alias` on the CLI (a
-	// create-then-connect two-step under the hood) returns instantly.
-	// Connecting after create sidesteps whatever that daemon-side
-	// interaction is, and is the more broadly-compatible pattern the
-	// Docker Go SDK's own issue tracker has long recommended over
-	// endpoint config at creation time for exactly this class of
-	// problem.
+	// Connect after create, not via ContainerCreate's own NetworkingConfig
+	// arg: passing endpoint config there reproducibly hung against this
+	// project's dev daemon (see commit message for details).
 	if spec.Network != nil && spec.Network.Name != "" {
 		endpoint := &dockernetwork.EndpointSettings{}
 		if spec.Network.Alias != "" {

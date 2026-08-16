@@ -44,17 +44,9 @@ func TestHandleDeploySpec_NotConfigured(t *testing.T) {
 	}
 }
 
-// TestHandleDeploySpec_Success_CreatesTwoServicesUnderOneApp covers this
-// handler's own HTTP-layer contract: request decoding, fetching source
-// once, forwarding a correctly-built deploy.MultiRequest to the
-// builder, and turning its outcomes into the response shape. Actual
-// store persistence (SaveDesiredService/SaveApp/UpdateServiceApp) is
-// internal/deploy.Pipeline.DeploySpec's own job, already covered end to
-// end by internal/deploy/multi_test.go against a real *store.DB; this
-// package's own tests use a fake Builder for the same reason every
-// other builds.go/apps_multi.go test in this package already does
-// (builds_test.go's own fakeBuilder), so this test does not re-assert
-// store state a fake builder never actually writes.
+// TestHandleDeploySpec_Success_CreatesTwoServicesUnderOneApp covers the
+// HTTP-layer contract with a fake Builder; store persistence is covered
+// separately by internal/deploy/multi_test.go against a real *store.DB.
 func TestHandleDeploySpec_Success_CreatesTwoServicesUnderOneApp(t *testing.T) {
 	builder := &fakeBuilder{tag: "img:sha"}
 	fetch := newFakeFetch("/tmp/checkout", nil)
@@ -114,9 +106,7 @@ func TestHandleDeploySpec_Success_CreatesTwoServicesUnderOneApp(t *testing.T) {
 
 // TestHandleDeploySpec_PartialFailure_StillReturns2xxWithPerServiceErrors
 // proves a partial fan-out failure is reported per-service, not as a
-// whole-request failure: the HTTP request itself succeeded at fanning
-// out, matching deploy.Pipeline.DeploySpec's own "one broken resource
-// must not block the others" contract.
+// whole-request failure.
 func TestHandleDeploySpec_PartialFailure_StillReturns2xxWithPerServiceErrors(t *testing.T) {
 	builder := &fakeBuilder{
 		multiOutcomes: []deploy.ServiceOutcome{
@@ -182,12 +172,8 @@ func TestHandleDeploySpec_NoServices_Rejected(t *testing.T) {
 	}
 }
 
-// TestHandleDeploySpec_SingleServiceDeployStillWorks proves stage 2's
-// fan-out endpoint existing alongside the pre-existing single-service
-// paths (POST /api/v1/apps, POST /api/v1/apps/{name}/builds) doesn't
-// change how either of those behaves: seeding and reading a
-// single-service app through the ordinary path is unaffected by
-// deploy-spec.go's own existence.
+// TestHandleDeploySpec_SingleServiceDeployStillWorks proves the fan-out
+// endpoint existing doesn't change single-service app behavior.
 func TestHandleDeploySpec_SingleServiceDeployStillWorks(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

@@ -135,16 +135,8 @@ type AppStore interface {
 	UpdateServiceSuspended(ctx context.Context, name string, suspended bool) error
 }
 
-// AppGroupLister is the store surface GET /api/v1/apps/{name}/group
-// needs (apps_group.go, stage 1 of multi-service apps,
-// migrations/0039_apps.sql) plus the app create-or-reuse-and-link
-// methods POST /api/v1/apps/{name}/deploy-spec needs (apps_multi.go,
-// stage 2): both read and write live on this one interface rather than
-// two, since every consumer of either is already the same
-// *store.DB-backed field (rt.appGroups) and splitting it would only
-// mean the multi-service write path threading a second, redundant
-// store field through Router for no real isolation benefit. *store.DB
-// satisfies this structurally.
+// AppGroupLister is the store surface the app-group read (apps_group.go)
+// and deploy-spec write (apps_multi.go) handlers need, both on one field.
 type AppGroupLister interface {
 	ListServicesByApp(ctx context.Context, appID string) ([]store.DesiredService, error)
 	GetAppByName(ctx context.Context, name string) (store.App, error)
@@ -916,11 +908,7 @@ func (rt *Router) Handler() http.Handler {
 	// read-only; GET /api/v1/apps/{name} above is unchanged.
 	mux.HandleFunc("GET /api/v1/apps/{name}/group", rt.requireAbility(AbilityRead, rt.handleGetAppGroup))
 
-	// Stage 2 of multi-service apps (apps_multi.go): fans one app.yaml's
-	// services: map out into N independent builds+deploys under one
-	// store.App named {name}. AbilityDeploy, the same gate
-	// POST .../builds already uses for an identical build-and-run action,
-	// just for N services instead of one.
+	// Multi-service fan-out deploy. AbilityDeploy, same gate as .../builds.
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploy-spec", rt.requireAbility(AbilityDeploy, rt.handleDeploySpec))
 
 	// Clone: duplicates an app's desired state under a new name.

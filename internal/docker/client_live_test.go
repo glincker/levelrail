@@ -700,13 +700,8 @@ func TestClient_Stats_Live(t *testing.T) {
 }
 
 // TestClient_EnsureNetwork_Live_IdempotentAndContainerJoins proves
-// EnsureNetwork actually creates a real, inspectable Docker network, is
-// idempotent (a second call for a network that already exists must not
-// error or create a duplicate), and that a container created with
-// ContainerSpec.Network set genuinely joins it and is reachable by its
-// alias, the same "raw inspect independently confirms the wrapper"
-// pattern TestClient_EnsureVolume_Live_IdempotentAndMounted already
-// establishes for volumes.
+// EnsureNetwork is idempotent and a container attached via
+// ContainerSpec.Network genuinely joins and is reachable by its alias.
 func TestClient_EnsureNetwork_Live_IdempotentAndContainerJoins(t *testing.T) {
 	c := liveClient(t)
 	ctx := context.Background()
@@ -822,9 +817,7 @@ func TestClient_ListNetworksByPrefix_Live(t *testing.T) {
 }
 
 // TestClient_RemoveNetwork_Live_IdempotentOnAlreadyGone proves
-// RemoveNetwork actually removes a real network, and is idempotent: a
-// second call after it's already gone must not error, matching
-// RemoveNetwork's own doc comment.
+// RemoveNetwork removes a real network and is idempotent on a repeat call.
 func TestClient_RemoveNetwork_Live_IdempotentOnAlreadyGone(t *testing.T) {
 	c := liveClient(t)
 	ctx := context.Background()

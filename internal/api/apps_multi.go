@@ -15,20 +15,9 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// ensureAppLinked creates-or-reuses a store.App named appName (App.ID ==
-// App.Name, the same convention migrations/0039_apps.sql's own backfill
-// and internal/deploy.Pipeline.DeploySpec's own ensureApp establish) and
-// links serviceName to it. Called from both handleCreateApp (an
-// ordinary single-service app, appName == serviceName) and
-// handleDeploySpec (one call per fanned-out service, same appName,
-// different serviceName each time), so every app this control plane
-// creates, single- or multi-service alike, ends up with a real AppID:
-// internal/reconcile/application's Controller only attaches a
-// per-service container to a Docker network when AppID is set, and
-// skipping that for the common single-service case would mean
-// networking only ever works after an app is upgraded to multi-service,
-// which apps_group.go's own doc comment (and CLAUDE.md's dispatch for
-// this feature) both call out as the wrong shape.
+// ensureAppLinked creates-or-reuses a store.App named appName and links
+// serviceName to it. Called for both single- and multi-service apps so
+// every service has a real AppID for network attachment.
 func (rt *Router) ensureAppLinked(ctx context.Context, appName, serviceName string) (string, error) {
 	app, err := rt.appGroups.GetAppByName(ctx, appName)
 	if errors.Is(err, store.ErrAppNotFound) {
@@ -47,24 +36,16 @@ func (rt *Router) ensureAppLinked(ctx context.Context, appName, serviceName stri
 	return app.ID, nil
 }
 
-// deploySpecRequest is POST /api/v1/apps/{name}/deploy-spec's body: a
-// git source (repo_url, ref) plus a full app.yaml services: map,
-// mirroring triggerBuildRequest's own repo_url/ref shape
-// (handleTriggerBuild, builds.go) but for N services fanned out under
-// one app instead of one already-existing app's own rebuild.
+// deploySpecRequest is POST /api/v1/apps/{name}/deploy-spec's body.
 type deploySpecRequest struct {
 	RepoURL string `json:"repo_url"`
 	Ref     string `json:"ref"`
-	// ImageRepoBase defaults to the app name (the {name} path segment)
-	// when empty, the same default triggerBuildRequest.ImageRepo already
-	// uses for a single service.
+	// ImageRepoBase defaults to the app name when empty.
 	ImageRepoBase string                  `json:"image_repo_base,omitempty"`
 	Services      map[string]spec.Service `json:"services"`
 }
 
-// deploySpecServiceResult is one service key's own outcome:
-// deploy.ServiceOutcome's wire shape, Error as a plain string (never a
-// Go error value) so a partial failure is still valid JSON.
+// deploySpecServiceResult is one service key's outcome.
 type deploySpecServiceResult struct {
 	ServiceKey  string `json:"service_key"`
 	ServiceName string `json:"service_name"`
@@ -72,43 +53,19 @@ type deploySpecServiceResult struct {
 	Error       string `json:"error,omitempty"`
 }
 
-// deploySpecResponse is POST /api/v1/apps/{name}/deploy-spec's success
-// body: one result per service key, in the same deterministic order
-// DeploySpec itself returns them. A per-key Error does not fail the
-// whole HTTP request (still 200/202): the request as a whole succeeded
-// at fanning out, even if one service's own build failed, matching
-// DeploySpec's own "one broken resource must not block the others" doc
-// comment. AllSucceeded lets a caller check the common case (every
-// service deployed) without walking the Services slice itself.
+// deploySpecResponse is one result per service key. A per-key Error does
+// not fail the whole request: a partial failure still fanned out.
 type deploySpecResponse struct {
 	AppID        string                    `json:"app_id"`
 	Services     []deploySpecServiceResult `json:"services"`
 	AllSucceeded bool                      `json:"all_succeeded"`
 }
 
-// handleDeploySpec handles POST /api/v1/apps/{name}/deploy-spec: one
-// app.yaml's services: map becomes N independent builds+deploys under
-// one store.App named {name}. Deliberately synchronous and blocking,
-// unlike handleTriggerBuild's async+attempt-tracking design: that
-// handler exists for a human clicking "deploy" and waiting on a
-// spinner, this one is a fan-out API call whose most useful response IS
-// the per-service partial-failure detail (deploySpecResponse), which an
-// immediate 202-and-poll-later response would only defer, not avoid,
-// while losing the one-request-one-answer shape a caller scripting a
-// multi-service deploy actually wants. Every service builds in sequence
-// (DeploySpec's own doc comment: deterministic key order, not
-// concurrent) before this handler responds, so a large multi-service
-// app.yaml is a genuinely slow request, not just a slow build; revisit
-// this tradeoff if that turns out to matter in practice once a frontend
-// exists to drive this endpoint.
-//
-// A build failure for one service key does not fail the request: see
-// deploySpecResponse's own doc comment. This intentionally does not
-// record deploy_attempts history per service (unlike
-// handleTriggerBuild/webhook's single-service paths): a real per-service
-// attempt log for a fanned-out deploy is a store-schema-sized follow-up
-// (one attempt row per service key sharing one trigger), left as a
-// known, documented gap rather than improvised here.
+// handleDeploySpec handles POST /api/v1/apps/{name}/deploy-spec: fans
+// app.yaml's services: map out into N builds+deploys under one app.
+// Synchronous, unlike handleTriggerBuild: the useful response here is
+// the per-service partial-failure detail, which an async ack would lose.
+// No per-service deploy_attempts history yet (known gap, not improvised).
 func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 	if rt.builder == nil {
 		writeError(w, http.StatusNotImplemented, "manual build trigger is not configured on this control plane")
@@ -152,11 +109,8 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 		imageRepoBase = name
 	}
 
-	// Same AbilityReadSensitive gate handleTriggerBuild's own doc comment
-	// explains: repo_url is fully caller-controlled and need not have
-	// anything to do with this app, so an unscoped token mint here would
-	// let any AbilityDeploy-only caller read any private repo the org's
-	// installation can reach.
+	// Private-repo token requires AbilityReadSensitive, same gate as
+	// handleTriggerBuild, since repo_url is caller-controlled.
 	var token string
 	if rt.callerHasAbility(r, AbilityReadSensitive) {
 		token = rt.tokenForRepo(r.Context(), req.RepoURL)

@@ -65,10 +65,8 @@ type fakeServiceStore struct {
 	saveErr   error
 	saved     store.DesiredService
 	saveCalls int
-	// savedByName additionally tracks every saved service by name, for
-	// multi_test.go's fan-out tests where more than one service is
-	// saved per test and asserting on the single most-recent .saved
-	// value alone can't tell them apart.
+	// savedByName tracks every saved service by name, for fan-out tests
+	// that save more than one service per test.
 	savedByName map[string]store.DesiredService
 }
 
