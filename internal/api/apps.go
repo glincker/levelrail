@@ -64,22 +64,32 @@ type appResource struct {
 	// it there doesn't violate that boundary. Set it on an existing app
 	// via PUT /api/v1/apps/{name}/project (handleSetAppProject) instead.
 	ProjectID string `json:"project_id,omitempty"`
+	// StorageTargetID is which connected backup target (backup_targets.go)
+	// this app's object-storage credentials resolve from, empty meaning
+	// no storage attached. Response-only, the same "shown but not
+	// settable through this endpoint" boundary NodeID/ProjectID already
+	// establish above, for identical reasoning: an ordinary edit must
+	// never silently attach or detach live bucket credentials. Set it via
+	// PUT/DELETE /api/v1/apps/{name}/storage (apps_storage.go's
+	// handleSetAppStorage/handleClearAppStorage) instead.
+	StorageTargetID string `json:"storage_target_id,omitempty"`
 }
 
 func toAppResource(svc store.DesiredService) appResource {
 	return appResource{
-		Name:      svc.Name,
-		Image:     svc.Image,
-		Port:      svc.Port,
-		Domains:   svc.Domains,
-		Env:       svc.Env,
-		Resources: svc.Resources,
-		Health:    svc.Health,
-		Strategy:  svc.Strategy,
-		Replicas:  svc.Replicas,
-		Labels:    svc.Labels,
-		NodeID:    svc.NodeID,
-		ProjectID: svc.ProjectID,
+		Name:            svc.Name,
+		Image:           svc.Image,
+		Port:            svc.Port,
+		Domains:         svc.Domains,
+		Env:             svc.Env,
+		Resources:       svc.Resources,
+		Health:          svc.Health,
+		Strategy:        svc.Strategy,
+		Replicas:        svc.Replicas,
+		Labels:          svc.Labels,
+		NodeID:          svc.NodeID,
+		ProjectID:       svc.ProjectID,
+		StorageTargetID: svc.StorageTargetID,
 	}
 }
 

@@ -75,6 +75,14 @@ export interface AppDetail {
   // for why a brand-new app is safe to assign a project to at create
   // time in a way an ordinary update is not.
   project_id?: string
+  // storage_target_id carries `omitempty` on the Go side and is
+  // response-only (internal/api/apps.go's appResource own doc comment):
+  // which connected backup target (queries/backupTargets.ts) this app's
+  // object-storage credentials resolve from, empty meaning none
+  // attached. Set it via PUT/DELETE /api/v1/apps/{name}/storage
+  // (useSetAppStorage/useClearAppStorage), the same node_id/project_id
+  // shape just above.
+  storage_target_id?: string
 }
 
 // GET /api/v1/apps' own wire shape (internal/api/apps.go's

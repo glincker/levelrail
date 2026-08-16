@@ -14,6 +14,7 @@
 import {
   queryOptions,
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
@@ -51,6 +52,17 @@ export function backupTargetListQueryOptions() {
 
 export function useBackupTargets() {
   return useSuspenseQuery(backupTargetListQueryOptions())
+}
+
+// Non-suspending counterpart to useBackupTargets, mirroring
+// queries/projects.ts's useProjectListOptional exactly and for the
+// identical reason: StorageAttachmentCard renders on the app Overview
+// route, which has no Suspense boundary of its own around this list, so
+// a failure to list backup targets must degrade to "no targets
+// available" (an empty array while loading or on error) rather than
+// crash the whole Overview page.
+export function useBackupTargetsOptional() {
+  return useQuery({ ...backupTargetListQueryOptions(), retry: false })
 }
 
 // POST /api/v1/backup-targets (handleCreateBackupTarget). 501 means the

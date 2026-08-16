@@ -56,6 +56,17 @@ type SecretResolver interface {
 	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
 }
 
+// StorageTargetStore is the narrow surface this controller needs to
+// resolve store.DesiredService.StorageTargetID into a real bucket
+// connection: just the one read, GetBackupTarget, the same "narrow
+// interface at the boundary" shape ServiceStore/SecretResolver already
+// establish. *store.DB satisfies this structurally, the same type that
+// already backs internal/api's own BackupTargetStore for
+// GET/POST/DELETE /api/v1/backup-targets.
+type StorageTargetStore interface {
+	GetBackupTarget(ctx context.Context, id string) (store.BackupTarget, error)
+}
+
 // DeployRecorder is the narrow surface this controller needs to record
 // TASKS.md 2.1's deploy-frequency metric. *telemetry.DB satisfies this
 // structurally; not imported directly, same reasoning ServiceStore/
@@ -103,9 +114,10 @@ type Controller struct {
 	runtime        docker.Runtime
 	httpClient     *http.Client
 	readyBudget    time.Duration
-	secretResolver SecretResolver // nil is valid: a service with no secret-backed env vars never needs one
-	deployRecorder DeployRecorder // nil is valid: deploy frequency just isn't recorded
-	meshDNSAddr    string         // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	secretResolver SecretResolver     // nil is valid: a service with no secret-backed env vars never needs one
+	deployRecorder DeployRecorder     // nil is valid: deploy frequency just isn't recorded
+	meshDNSAddr    string             // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	storageTargets StorageTargetStore // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
 }
 
 // Option configures optional Controller behavior.
@@ -158,6 +170,17 @@ func WithDeployRecorder(r DeployRecorder) Option {
 // not validate it.
 func WithMeshDNSAddr(addr string) Option {
 	return func(ctrl *Controller) { ctrl.meshDNSAddr = addr }
+}
+
+// WithStorageTargets enables container creation to resolve
+// store.DesiredService.StorageTargetID into S3_* env vars (resolveEnv's
+// own doc comment). Without one configured (the default), a service that
+// declares a StorageTargetID fails Reconcile loudly rather than silently
+// starting a container missing the credentials it needs, the same
+// "fail loudly" shape WithSecretResolver's own absence already produces
+// for SecretEnv.
+func WithStorageTargets(s StorageTargetStore) Option {
+	return func(ctrl *Controller) { ctrl.storageTargets = s }
 }
 
 // New builds a Controller for serviceName.
@@ -470,31 +493,134 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 // more deliberate, more authoritative source, and letting it win
 // prevents a leftover plain-text duplicate from silently shadowing a
 // real secret.
+//
+// desired.StorageTargetID's resolved S3_* env vars (resolveStorageEnv)
+// are applied last, after both of the above: the identical "more
+// deliberate, more authoritative source wins" reasoning extended one
+// step further. An operator's own S3_ACCESS_KEY_ID (a literal env var,
+// or even a same-named secret) must never silently shadow the live
+// credential this app was actually attached to, so a storage target's
+// resolved values always take final precedence over anything else
+// declaring the same key, the same way a resolved secret already takes
+// precedence over a plain literal.
 func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredService) (map[string]string, error) {
-	if len(desired.SecretEnv) == 0 {
+	if len(desired.SecretEnv) == 0 && desired.StorageTargetID == "" {
 		return desired.Env, nil
-	}
-	if c.secretResolver == nil {
-		return nil, fmt.Errorf("service declares %d secret-backed env var(s) but no secret resolver is configured", len(desired.SecretEnv))
 	}
 
 	env := make(map[string]string, len(desired.Env)+len(desired.SecretEnv))
 	for k, v := range desired.Env {
 		env[k] = v
 	}
-	for _, key := range desired.SecretEnv {
-		exists, err := c.secretResolver.Exists(ctx, c.serviceName, key)
+
+	if len(desired.SecretEnv) > 0 {
+		if c.secretResolver == nil {
+			return nil, fmt.Errorf("service declares %d secret-backed env var(s) but no secret resolver is configured", len(desired.SecretEnv))
+		}
+		for _, key := range desired.SecretEnv {
+			exists, err := c.secretResolver.Exists(ctx, c.serviceName, key)
+			if err != nil {
+				return nil, fmt.Errorf("check secret %q: %w", key, err)
+			}
+			if !exists {
+				continue
+			}
+			value, err := c.secretResolver.Resolve(ctx, c.serviceName, key)
+			if err != nil {
+				return nil, fmt.Errorf("resolve secret %q: %w", key, err)
+			}
+			env[key] = value
+		}
+	}
+
+	if desired.StorageTargetID != "" {
+		storageEnv, err := c.resolveStorageEnv(ctx, desired.StorageTargetID)
 		if err != nil {
-			return nil, fmt.Errorf("check secret %q: %w", key, err)
+			return nil, fmt.Errorf("resolve storage target env: %w", err)
 		}
-		if !exists {
-			continue
+		for k, v := range storageEnv {
+			env[k] = v
 		}
-		value, err := c.secretResolver.Resolve(ctx, c.serviceName, key)
-		if err != nil {
-			return nil, fmt.Errorf("resolve secret %q: %w", key, err)
-		}
-		env[key] = value
+	}
+
+	return env, nil
+}
+
+// resolveStorageEnv resolves targetID (store.DesiredService.StorageTargetID)
+// into the S3_* env vars an app's container needs to talk to its
+// attached bucket directly, with no AWS SDK config of its own required:
+// the same bucket connection store.BackupTarget already models for
+// database backups (internal/store/backup_target.go), reused here rather
+// than a second, parallel "storage target" concept.
+//
+// Names match the convention already common across self-hosted app
+// images and S3-compatible client libraries (S3_ENDPOINT/S3_BUCKET/
+// S3_REGION/S3_ACCESS_KEY_ID/S3_SECRET_ACCESS_KEY), deliberately not
+// AWS's own generic AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY/AWS_REGION:
+// those names are picked up by any AWS SDK's default credential chain
+// anywhere in the process, including unrelated AWS API calls the app
+// might make with its own separate credentials, which would silently
+// widen this bucket-scoped credential's reach beyond the one bucket it
+// was actually granted. S3_ENDPOINT/S3_REGION are only set when the
+// target actually has one (store.BackupTarget's own doc comment: the
+// "aws" provider leaves Endpoint empty on purpose, since the AWS SDK's
+// own per-region resolver already knows the right host), never written
+// as an empty string a client library might otherwise try to dial.
+const (
+	envKeyS3Endpoint  = "S3_ENDPOINT"
+	envKeyS3Bucket    = "S3_BUCKET"
+	envKeyS3Region    = "S3_REGION"
+	envKeyS3AccessKey = "S3_ACCESS_KEY_ID"
+	envKeyS3SecretKey = "S3_SECRET_ACCESS_KEY"
+)
+
+// StorageEnvKeys are every env var name resolveStorageEnv can inject,
+// built from the same named constants that function assigns below so
+// the two can never drift apart. The single source of truth for any
+// caller needing to know these names ahead of time, e.g. internal/api's
+// GET /api/v1/storage-env-keys, which lets the frontend warn an
+// operator before attaching storage collides with one of their own env
+// vars, instead of hardcoding a second copy of this list in TypeScript.
+var StorageEnvKeys = []string{
+	envKeyS3Endpoint,
+	envKeyS3Bucket,
+	envKeyS3Region,
+	envKeyS3AccessKey,
+	envKeyS3SecretKey,
+}
+
+func (c *Controller) resolveStorageEnv(ctx context.Context, targetID string) (map[string]string, error) {
+	if c.storageTargets == nil {
+		return nil, fmt.Errorf("service declares a storage target but no storage target store is configured")
+	}
+	target, err := c.storageTargets.GetBackupTarget(ctx, targetID)
+	if err != nil {
+		return nil, fmt.Errorf("get backup target %q: %w", targetID, err)
+	}
+
+	if c.secretResolver == nil {
+		return nil, fmt.Errorf("service declares a storage target but no secret resolver is configured")
+	}
+	secretsKey := store.BackupTargetSecretsKey(targetID)
+	accessKeyID, err := c.secretResolver.Resolve(ctx, secretsKey, "access_key_id")
+	if err != nil {
+		return nil, fmt.Errorf("resolve storage target access key: %w", err)
+	}
+	secretAccessKey, err := c.secretResolver.Resolve(ctx, secretsKey, "secret_access_key")
+	if err != nil {
+		return nil, fmt.Errorf("resolve storage target secret key: %w", err)
+	}
+
+	env := map[string]string{
+		envKeyS3Bucket:    target.Bucket,
+		envKeyS3AccessKey: accessKeyID,
+		envKeyS3SecretKey: secretAccessKey,
+	}
+	if target.Endpoint != "" {
+		env[envKeyS3Endpoint] = target.Endpoint
+	}
+	if target.Region != "" {
+		env[envKeyS3Region] = target.Region
 	}
 	return env, nil
 }

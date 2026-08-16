@@ -539,6 +539,9 @@ func (f *fakeDrainAppStore) RestartService(context.Context, string) error { retu
 func (f *fakeDrainAppStore) UpdateServiceProject(context.Context, string, string) error {
 	return nil
 }
+func (f *fakeDrainAppStore) UpdateServiceStorageTarget(context.Context, string, string) error {
+	return nil
+}
 
 type fakeDrainDatabaseStore struct{}
 

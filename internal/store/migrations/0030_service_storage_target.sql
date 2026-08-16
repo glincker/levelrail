@@ -1,0 +1,26 @@
+-- App-to-bucket attachment: reuses backup_targets (0018) as the one S3-
+-- compatible bucket connection concept, rather than inventing a second,
+-- parallel "storage target" resource. An operator connects a bucket once
+-- (settings page, POST /api/v1/backup-targets) and can point it at a
+-- database's scheduled backups (backup_target_id, 0023), a database's
+-- restore source, and now an app's own object-storage credentials,
+-- through the same row.
+--
+-- storage_target_id: nullable, REFERENCES backup_targets(id)
+-- ON DELETE SET NULL, mirroring backup_target_id's own reasoning
+-- (0023_scheduled_backups.sql's own comment) exactly: a backup_targets
+-- row is always a plain local row in this same database, never a
+-- possibly-disconnected remote resource, so a hard constraint carries no
+-- false-failure risk, and letting SQLite clear this column automatically
+-- when the target is deleted is a real correctness win, the same
+-- "silently pointing at nothing" failure backup_target_id's own comment
+-- describes.
+--
+-- Deliberately no uniqueness constraint, unlike public_port (0026): a
+-- bucket is not a scarce host resource the way a port is, so nothing
+-- stops the same backup_targets row from backing a database's scheduled
+-- backups and one or more apps' object storage at once. backup_target_id
+-- on desired_databases already sets this precedent (no UNIQUE there
+-- either), so this column isn't introducing a new sharing model, just
+-- extending the existing one to a second table.
+ALTER TABLE desired_services ADD COLUMN storage_target_id TEXT REFERENCES backup_targets(id) ON DELETE SET NULL;
