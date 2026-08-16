@@ -5,12 +5,13 @@ import type { Icon } from '@phosphor-icons/react'
 import {
   CheckCircleIcon,
   CloudArrowUpIcon,
+  DownloadSimpleIcon,
   SpinnerIcon,
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -31,7 +32,11 @@ import { toast } from '@/components/ui/toast'
 import { formatBytes } from '../lib/format'
 import { ApiError } from '../lib/apiError'
 import { useBackupTargets } from '../queries/backupTargets'
-import { useBackupHistory, useTriggerBackup } from '../queries/backupHistory'
+import {
+  backupDownloadURL,
+  useBackupHistory,
+  useTriggerBackup,
+} from '../queries/backupHistory'
 import { useRestoreHistory } from '../queries/restoreHistory'
 import { RestoreBackupDialog } from './RestoreBackupDialog'
 import type { BackupHistoryRecord, BackupStatus } from '../types/backupHistory'
@@ -216,6 +221,33 @@ function TriggerBackupRow({ databaseName }: { databaseName: string }) {
   )
 }
 
+// One succeeded backup's download action: GET
+// .../backups/{historyId}/download (internal/api/backup_download.go)
+// streams a raw file, not JSON, so this is a plain browser-navigated
+// <a href download>, not a TanStack Query mutation the way
+// RestoreBackupDialog's trigger is. Auth rides along on the same
+// httpOnly session cookie every other same-origin request in this app
+// already relies on (see backupDownloadURL's own doc comment), so no
+// fetch/blob dance is needed here to attach a token.
+function DownloadBackupLink({
+  databaseName,
+  backup,
+}: {
+  databaseName: string
+  backup: BackupHistoryRecord
+}) {
+  return (
+    <a
+      href={backupDownloadURL(databaseName, backup.id)}
+      download
+      className={buttonVariants({ variant: 'outline', size: 'sm' })}
+    >
+      <DownloadSimpleIcon className="size-3.5" aria-hidden="true" />
+      Download
+    </a>
+  )
+}
+
 function BackupHistoryTable({ databaseName }: { databaseName: string }) {
   const { data: targets } = useBackupTargets()
   const { data, isLoading, error } = useBackupHistory(databaseName)
@@ -287,10 +319,16 @@ function BackupHistoryTable({ databaseName }: { databaseName: string }) {
               </TableCell>
               <TableCell>
                 {record.status === 'succeeded' ? (
-                  <RestoreBackupDialog
-                    databaseName={databaseName}
-                    backup={record}
-                  />
+                  <div className="flex items-center gap-2">
+                    <DownloadBackupLink
+                      databaseName={databaseName}
+                      backup={record}
+                    />
+                    <RestoreBackupDialog
+                      databaseName={databaseName}
+                      backup={record}
+                    />
+                  </div>
                 ) : null}
               </TableCell>
             </TableRow>

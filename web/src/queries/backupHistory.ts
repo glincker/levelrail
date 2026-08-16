@@ -54,6 +54,21 @@ export async function fetchBackupHistory(
   return body ?? []
 }
 
+// GET /api/v1/databases/{name}/backups/{historyId}/download
+// (handleDownloadBackup). Not a TanStack Query fetcher: the response is a
+// raw file stream, not JSON, so this is consumed as a plain browser
+// navigation target (an <a href> with a download attribute) rather than
+// through fetch/useQuery. Auth rides along the same way every other
+// same-origin request in this app already does, the httpOnly session
+// cookie (see web/src/lib/authStore.ts), so no token needs to be embedded
+// in the URL.
+export function backupDownloadURL(
+  databaseName: string,
+  historyId: string,
+): string {
+  return `/api/v1/databases/${encodeURIComponent(databaseName)}/backups/${encodeURIComponent(historyId)}/download`
+}
+
 export function backupHistoryListQueryOptions(databaseName: string) {
   return queryOptions({
     queryKey: backupHistoryKeys.list(databaseName),

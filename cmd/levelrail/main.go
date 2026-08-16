@@ -1278,6 +1278,15 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 				Downloader: backup.S3Downloader{},
 				Restorer:   &backup.ContainerRestorer{Runtime: client},
 			}),
+			// The plain-download counterpart of the restore runner above:
+			// same secretsManager dependency and same backup.S3Downloader,
+			// but hands the object stream straight back to internal/api
+			// instead of piping it into a container's stdin.
+			api.WithBackupDownloader(&backup.DownloadRunner{
+				Store:      db,
+				Secrets:    secretsManager,
+				Downloader: backup.S3Downloader{},
+			}),
 		)
 	}
 	if builder != nil {
