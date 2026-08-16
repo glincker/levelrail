@@ -24,8 +24,39 @@ permissions:
   contents: read
 
 jobs:
+  # Gates every other job on which areas actually changed, so a
+  # frontend-only PR doesn't wait on the Go suite and vice versa.
+  changes:
+    name: Detect changed areas
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Filter
+        uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            backend:
+              - '**/*.go'
+              - 'go.mod'
+              - 'go.sum'
+              - '.golangci.yml'
+              - 'scripts/**'
+              - '.github/workflows/**'
+            frontend:
+              - 'web/**'
+              - '.github/workflows/**'
+
   build-vet:
     name: Build, vet
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -50,7 +81,8 @@ jobs:
   test-api:
     name: Test (internal/api)
     runs-on: ubuntu-latest
-    needs: build-vet
+    needs: [changes, build-vet]
+    if: needs.changes.outputs.backend == 'true'
     timeout-minutes: 15
     steps:
       - name: Checkout
@@ -81,7 +113,8 @@ jobs:
   test-rest:
     name: Test (everything else)
     runs-on: ubuntu-latest
-    needs: build-vet
+    needs: [changes, build-vet]
+    if: needs.changes.outputs.backend == 'true'
     timeout-minutes: 10
     steps:
       - name: Checkout
@@ -115,7 +148,8 @@ jobs:
   coverage-gate:
     name: Coverage gate
     runs-on: ubuntu-latest
-    needs: [test-api, test-rest]
+    needs: [changes, test-api, test-rest]
+    if: needs.changes.outputs.backend == 'true'
     timeout-minutes: 5
     steps:
       - name: Checkout
@@ -147,6 +181,8 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     timeout-minutes: 10
     steps:
       - name: Checkout
@@ -161,3 +197,52 @@ jobs:
         uses: golangci/golangci-lint-action@v9
         with:
           version: v2.12
+
+  web-check:
+    name: Web (tsc, eslint)
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci --ignore-scripts
+
+      - name: tsc
+        working-directory: web
+        run: npx tsc --noEmit
+
+      # eslint on the full tree still has a pre-existing backlog (mostly
+      # routeTree.gen.ts-related no-unsafe-* noise, not this PR's doing),
+      # so scope to changed files only, same as the pre-commit hook does.
+      - name: eslint (changed files)
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          [ -z "$base" ] && base="${{ github.event.before }}"
+          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
+            files=$(git -C web ls-files '*.ts' '*.tsx')
+          else
+            # merge-base, not base directly: a PR branch that hasn't
+            # rebased since other work landed on main must not pick up
+            # those unrelated files as "changed".
+            merge_base=$(git merge-base "$base" HEAD)
+            files=$(git diff --name-only --diff-filter=ACM "$merge_base" HEAD -- 'web/*.ts' 'web/*.tsx' | sed 's#^web/##')
+          fi
+          if [ -n "$files" ]; then
+            cd web && echo "$files" | xargs npx eslint
+          else
+            echo "no changed web/*.ts(x) files"
+          fi
