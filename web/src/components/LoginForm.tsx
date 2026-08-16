@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useEffect, useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import { ClockIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { RateLimitError, useLogin } from '../queries/auth'
 import { Button } from './ui/button'
@@ -90,7 +91,15 @@ export function LoginForm() {
           <FieldError errors={[formState.errors.username]} />
         </Field>
         <Field data-invalid={formState.errors.password ? true : undefined}>
-          <FieldLabel htmlFor="login-password">Password</FieldLabel>
+          <div className="flex items-center justify-between">
+            <FieldLabel htmlFor="login-password">Password</FieldLabel>
+            <Link
+              to="/forgot-password"
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Forgot password?
+            </Link>
+          </div>
           <Input
             id="login-password"
             type="password"

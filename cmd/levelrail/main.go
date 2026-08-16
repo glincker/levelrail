@@ -34,6 +34,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/email"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
@@ -279,21 +280,6 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
-	// smtpCfg and deployDispatcher are both computed here, ahead of
-	// loadWebhookHandler and rootHandler just below, rather than down at
-	// their previous spot alongside alertingEngine: both the webhook
-	// handler (a push-triggered deploy) and the HTTP API router (the
-	// plain image-tag and manual-build deploy triggers) are the real
-	// deploy-outcome-notification call sites (wave-2 roadmap item #5),
-	// and both are constructed before alertingEngine ever runs, so
-	// deployDispatcher has to exist this early to be wired into either of
-	// them. alertingNewNotifier below still builds its own smtpCfg
-	// reference from this same variable, not a second
-	// smtpConfigFromEnv() call, so alert-rule and deploy-outcome email
-	// notifications always agree on the same SMTP server.
-	smtpCfg := smtpConfigFromEnv()
-	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, nil, smtpCfg, logger)
-
 	// TASKS.md 3.2: the agent gRPC service. agentRegistry starts empty
 	// and stays that way in this pass, wired to nothing else yet: 3.3
 	// (placement) is what will have dynamicSource actually look nodes
@@ -341,6 +327,13 @@ func run(logger *slog.Logger) error {
 		// feature an operator may not be using yet.
 		logger.Warn("secrets not configured", slog.String("error", err.Error()))
 	}
+
+	// emailSender is shared by alert-rule/deploy-outcome notifications
+	// and the password-reset flow. Always non-nil: a DynamicSender
+	// resolves email_settings (falling back to APP_SMTP_* env vars)
+	// fresh on every send, deferring "not configured" to send time.
+	emailSender := email.NewDynamicSender(emailConfigLoader(db, secretsManager, smtpConfigFromEnv()))
+	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, nil, emailSender, logger)
 
 	// backupRunner is constructed once, here in run(), not inside
 	// rootHandler where it used to live: wave-2 roadmap item 6
@@ -393,7 +386,7 @@ func run(logger *slog.Logger) error {
 
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
-		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, agentRegistry),
+		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, agentRegistry, emailSender),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -458,7 +451,7 @@ func run(logger *slog.Logger) error {
 	}()
 
 	alertingFederator := telemetry.NewLocalFederator(telemetryDB)
-	alertingNewNotifier := func(r alerting.Rule) alerting.Notifier { return alerting.NewNotifier(nil, smtpCfg, r) }
+	alertingNewNotifier := func(r alerting.Rule) alerting.Notifier { return alerting.NewNotifier(nil, emailSender, r) }
 	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, alertingNewNotifier, logger)
 	go func() {
 		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
@@ -567,15 +560,10 @@ func openAlertingStore(ctx context.Context) (*alerting.DB, error) {
 }
 
 // smtpConfigFromEnv reads APP_SMTP_HOST/APP_SMTP_PORT/APP_SMTP_USERNAME/
-// APP_SMTP_PASSWORD/APP_SMTP_FROM for TASKS.md 2.5's email notification
-// channel. There is no sensible zero-config default for an SMTP server
-// (unlike, say, APP_DATA_DIR), so returning nil (both APP_SMTP_HOST and
-// APP_SMTP_FROM unset) is a valid, expected outcome, not an error:
-// alerting.NewNotifier's own doc comment covers what an email-kind rule
-// does with a nil *alerting.SMTPConfig (fails clearly, every time,
-// naming exactly what to set). APP_SMTP_PORT defaults to 587
-// (STARTTLS), the common submission port, not 25.
-func smtpConfigFromEnv() *alerting.SMTPConfig {
+// APP_SMTP_PASSWORD/APP_SMTP_FROM: the pre-existing, env-only SMTP path,
+// kept as emailConfigLoader's fallback for when email_settings has no
+// backend configured. Nil is a valid, expected outcome, not an error.
+func smtpConfigFromEnv() *email.SMTPConfig {
 	host := os.Getenv("APP_SMTP_HOST")
 	from := os.Getenv("APP_SMTP_FROM")
 	if host == "" || from == "" {
@@ -585,13 +573,75 @@ func smtpConfigFromEnv() *alerting.SMTPConfig {
 	if port == "" {
 		port = "587"
 	}
-	return &alerting.SMTPConfig{
+	return &email.SMTPConfig{
 		Addr:     host + ":" + port,
 		Host:     host,
 		Username: os.Getenv("APP_SMTP_USERNAME"),
 		Password: os.Getenv("APP_SMTP_PASSWORD"),
 		From:     from,
 	}
+}
+
+// emailConfigLoader resolves email_settings fresh on every send,
+// decrypting its stored credential through secretsManager, falling back
+// to envFallback when the row's backend is unset.
+func emailConfigLoader(db *store.DB, secretsManager *secrets.Manager, envFallback *email.SMTPConfig) email.ConfigLoader {
+	return func(ctx context.Context) (email.Config, error) {
+		settings, err := db.GetEmailSettings(ctx)
+		if err != nil {
+			return email.Config{}, err
+		}
+
+		switch settings.Backend {
+		case store.EmailBackendSMTP:
+			if secretsManager == nil {
+				return email.Config{}, fmt.Errorf("email settings: smtp backend selected but no master key is configured")
+			}
+			password, err := resolveEmailSecret(ctx, secretsManager, "smtp_password")
+			if err != nil {
+				return email.Config{}, err
+			}
+			return email.Config{Backend: email.BackendSMTP, SMTP: &email.SMTPConfig{
+				Addr:     fmt.Sprintf("%s:%d", settings.SMTPHost, settings.SMTPPort),
+				Host:     settings.SMTPHost,
+				Username: settings.SMTPUsername,
+				Password: password,
+				From:     settings.SMTPFrom,
+			}}, nil
+		case store.EmailBackendSES:
+			if secretsManager == nil {
+				return email.Config{}, fmt.Errorf("email settings: ses backend selected but no master key is configured")
+			}
+			secret, err := resolveEmailSecret(ctx, secretsManager, "ses_secret_access_key")
+			if err != nil {
+				return email.Config{}, err
+			}
+			return email.Config{Backend: email.BackendSES, SES: &email.SESConfig{
+				Region:          settings.SESRegion,
+				AccessKeyID:     settings.SESAccessKeyID,
+				SecretAccessKey: secret,
+				From:            settings.SESFrom,
+			}}, nil
+		default:
+			if envFallback == nil {
+				return email.Config{}, nil // NewSender turns this into email.ErrNotConfigured
+			}
+			return email.Config{Backend: email.BackendSMTP, SMTP: envFallback}, nil
+		}
+	}
+}
+
+// resolveEmailSecret treats "never set" as an empty string rather than
+// an error: a backend can be selected before its credential is saved.
+func resolveEmailSecret(ctx context.Context, secretsManager *secrets.Manager, envKey string) (string, error) {
+	value, err := secretsManager.Resolve(ctx, store.EmailSettingsSecretsKey(), envKey)
+	if errors.Is(err, secrets.ErrValueNotFound) {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return value, nil
 }
 
 // agentCACertFilename/agentCAKeyFilename are TASKS.md 3.2's private CA
@@ -1246,7 +1296,7 @@ func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent
 // internal/api importing internal/agent.Registry directly (see
 // api.NodeRuntimeResolver's own doc comment for why this stays a
 // closure over resolveNodeTransport instead of a new dependency edge).
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, agentRegistry *agent.Registry) http.Handler {
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, agentRegistry *agent.Registry, emailSender email.Sender) http.Handler {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
@@ -1272,9 +1322,16 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDeployLogStore(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),
 		api.WithLogBroadcaster(logBroadcaster),
+		// emailSender is always non-nil (run() builds it unconditionally):
+		// forgot-password always exists, it just fails clearly at send
+		// time when nothing is actually configured.
+		api.WithEmailSender(emailSender),
 	}
 	if secretsManager != nil {
 		opts = append(opts, api.WithSecretSetter(secretsManager))
+		// Email settings' SMTP password / SES secret access key go
+		// through the same secretsManager as everything else here.
+		opts = append(opts, api.WithEmailSecrets(secretsManager))
 		// Git sources (TASKS.md 1.7's own deferred follow-up,
 		// internal/api/git_sources.go, git_webhook.go): a connected
 		// source's deploy token and webhook secret go through the same

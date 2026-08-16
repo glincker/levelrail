@@ -15,6 +15,7 @@ import {
   GithubLogoIcon,
   UsersIcon,
   WebhooksLogoIcon,
+  EnvelopeIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
@@ -275,6 +276,16 @@ export function AppSidebar() {
                     >
                       <UsersIcon />
                       <span>Users</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/settings/email" />}
+                      isActive={pathname.startsWith('/settings/email')}
+                      tooltip="Email"
+                    >
+                      <EnvelopeIcon />
+                      <span>Email</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>

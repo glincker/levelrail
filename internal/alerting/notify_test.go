@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/email"
 )
 
 func TestNotifyGeneric_PostsExpectedPayload(t *testing.T) {
@@ -182,21 +184,30 @@ func TestNotifyTelegram_InvalidURL_Errors(t *testing.T) {
 
 func TestNewNotifier_Email_NoSMTPConfigured_Errors(t *testing.T) {
 	r := Rule{ID: "r1", Name: "high cpu", NotifyURL: "ops@example.com", NotifyKind: NotifyEmail}
-	notifier := NewNotifier(nil, nil, r) // no SMTPConfig
+	notifier := NewNotifier(nil, nil, r) // no email.Sender
 
 	err := notifier.Notify(context.Background(), Event{Rule: r})
 	if err == nil {
-		t.Fatal("Notify() error = nil, want a clear 'not configured' error when no SMTP server is set up")
+		t.Fatal("Notify() error = nil, want a clear 'not configured' error when no email capability is set up")
 	}
 	if !strings.Contains(err.Error(), "not configured") {
 		t.Errorf("error = %q, want it to say email is not configured", err.Error())
 	}
 }
 
+func mustSMTPSender(t *testing.T, cfg email.SMTPConfig) email.Sender {
+	t.Helper()
+	sender, err := email.NewSender(email.Config{Backend: email.BackendSMTP, SMTP: &cfg})
+	if err != nil {
+		t.Fatalf("email.NewSender() error = %v", err)
+	}
+	return sender
+}
+
 func TestNewNotifier_Email_NoDestinationAddress_Errors(t *testing.T) {
-	cfg := &SMTPConfig{Addr: "smtp.example.com:587", Host: "smtp.example.com", From: "alerts@example.com"}
+	sender := mustSMTPSender(t, email.SMTPConfig{Addr: "smtp.example.com:587", Host: "smtp.example.com", From: "alerts@example.com"})
 	r := Rule{ID: "r1", Name: "high cpu", NotifyKind: NotifyEmail} // NotifyURL (the "to" address) left empty
-	notifier := NewNotifier(nil, cfg, r)
+	notifier := NewNotifier(nil, sender, r)
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
 		t.Error("Notify() error = nil, want an error when no destination address is configured")
@@ -205,12 +216,12 @@ func TestNewNotifier_Email_NoDestinationAddress_Errors(t *testing.T) {
 
 func TestNewNotifier_Email_UnreachableServer_ErrorPropagates(t *testing.T) {
 	// Not a real send: no SMTP fixture here, this only proves
-	// emailNotifier actually calls through to net/smtp.SendMail and
+	// emailNotifier actually calls through to email.Sender.Send and
 	// wraps whatever it returns, rather than silently swallowing a
 	// connection failure.
-	cfg := &SMTPConfig{Addr: "127.0.0.1:1", Host: "127.0.0.1", From: "alerts@example.com"}
+	sender := mustSMTPSender(t, email.SMTPConfig{Addr: "127.0.0.1:1", Host: "127.0.0.1", From: "alerts@example.com"})
 	r := Rule{ID: "r1", Name: "high cpu", NotifyURL: "ops@example.com", NotifyKind: NotifyEmail}
-	notifier := NewNotifier(nil, cfg, r)
+	notifier := NewNotifier(nil, sender, r)
 
 	err := notifier.Notify(context.Background(), Event{Rule: r})
 	if err == nil {

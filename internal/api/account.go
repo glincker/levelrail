@@ -110,11 +110,8 @@ func (rt *Router) handleGetSession(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleRevokeOtherSessions handles POST /api/v1/auth/sessions/revoke-others:
-// the standalone, user-triggered version of the same revokeAllExcept
-// rotation handleChangePassword already performs automatically. Exists
-// for the case an operator wants to end other signed-in sessions (a
-// forgotten browser, a shared machine) without also being forced to
-// change their password to get there.
+// the standalone version of handleChangePassword's own session rotation,
+// for ending other sessions without forcing a password change.
 func (rt *Router) handleRevokeOtherSessions(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(sessionCookieName)
 	if err != nil {

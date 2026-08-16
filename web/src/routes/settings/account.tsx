@@ -14,6 +14,8 @@ import {
 // Two independent cards: profile (read-only) and change-password
 // (ChangePasswordCard.tsx, split out so TanStack Router's
 // autoCodeSplitting can keep zod out of the always-loaded main bundle).
+// No separate recovery-email card: the account's own email (User.Email)
+// already covers that, see queries/security.ts's SessionInfo.
 export const Route = createFileRoute('/settings/account')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(sessionQueryOptions()),

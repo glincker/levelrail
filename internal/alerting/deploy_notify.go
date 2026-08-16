@@ -10,6 +10,8 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/email"
 )
 
 // This file is deploy-outcome notifications: a Slack/Discord/Telegram/
@@ -30,13 +32,12 @@ import (
 // separate table, and this file's own functions below for why staying
 // in this package lets deploy-outcome sends reuse notify.go's actual
 // Slack/Discord/Telegram/generic payload shapes and its postJSON/
-// sendPlainEmail/parseTelegramChatID helpers directly, with zero new
-// exports and zero duplicated payload code, rather than either forcing
-// a deploy outcome through alerting.Event/Rule (whose Kind/Firing/
-// LastValue/comparator fields describe a threshold or crashloop
-// evaluation, not "did this deploy succeed") or duplicating four HTTP
-// payload shapes and an SMTP sender in a separate package for the sake
-// of a nominal separation that would buy nothing.
+// parseTelegramChatID helpers directly, with zero new exports and zero
+// duplicated payload code, rather than either forcing a deploy outcome
+// through alerting.Event/Rule (whose Kind/Firing/LastValue/comparator
+// fields describe a threshold or crashloop evaluation, not "did this
+// deploy succeed") or duplicating four HTTP payload shapes in a separate
+// package for the sake of a nominal separation that would buy nothing.
 
 // DeployTarget is a notify destination for deploy-outcome events,
 // scoped to one app (ResourceID, matching Rule.ResourceID's own
@@ -253,10 +254,10 @@ type deployGenericPayload struct {
 // "still notify somebody, diagnosable from the payload shape" reasoning
 // NewNotifier's own doc comment gives. Reuses notify.go's slackPayload/
 // discordPayload/telegramPayload structs, postJSON, parseTelegramChatID,
-// and sendPlainEmail directly (same package, no exports needed): only
-// the message text (summaryDeployText) and the generic JSON shape
-// (deployGenericPayload) are new.
-func sendDeployOutcome(ctx context.Context, client *http.Client, smtpCfg *SMTPConfig, t DeployTarget, ev DeployOutcome) error {
+// directly (same package, no exports needed): only the message text
+// (summaryDeployText) and the generic JSON shape (deployGenericPayload)
+// are new.
+func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Sender, t DeployTarget, ev DeployOutcome) error {
 	if client == nil {
 		client = http.DefaultClient
 	}
@@ -273,8 +274,8 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, smtpCfg *SMTPCo
 		}
 		return postJSON(ctx, client, t.NotifyURL, telegramPayload{ChatID: chatID, Text: summaryDeployText(ev)})
 	case NotifyEmail:
-		if smtpCfg == nil {
-			return fmt.Errorf("alerting: notify deploy outcome: email is not configured on this control plane (set APP_SMTP_HOST, APP_SMTP_FROM, etc.)")
+		if sender == nil {
+			return fmt.Errorf("alerting: notify deploy outcome: email is not configured on this control plane")
 		}
 		if t.NotifyURL == "" {
 			return fmt.Errorf("alerting: notify deploy outcome: no notify_url (destination email address) configured")
@@ -283,7 +284,7 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, smtpCfg *SMTPCo
 		if !ev.Succeeded {
 			subject = fmt.Sprintf("[Levelrail] deploy FAILED: %s", ev.AppName)
 		}
-		if err := sendPlainEmail(smtpCfg, t.NotifyURL, subject, summaryDeployText(ev)); err != nil {
+		if err := sender.Send(ctx, t.NotifyURL, subject, summaryDeployText(ev)); err != nil {
 			return fmt.Errorf("alerting: notify deploy outcome: %w", err)
 		}
 		return nil
@@ -304,25 +305,23 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, smtpCfg *SMTPCo
 // internal/api, the three real deploy-trigger call sites this task's own
 // task description names.
 type DeployDispatcher struct {
-	db      *DB
-	client  *http.Client
-	smtpCfg *SMTPConfig
-	logger  *slog.Logger
+	db     *DB
+	client *http.Client
+	sender email.Sender
+	logger *slog.Logger
 }
 
-// NewDeployDispatcher builds a DeployDispatcher. client defaults to
-// http.DefaultClient if nil (matching NewNotifier's own default);
-// smtpCfg may be nil (an email-kind target then always fails with a
-// clear "not configured" error, matching NewNotifier's own emailNotifier
-// behavior); logger defaults to slog.Default() if nil.
-func NewDeployDispatcher(db *DB, client *http.Client, smtpCfg *SMTPConfig, logger *slog.Logger) *DeployDispatcher {
+// NewDeployDispatcher builds a DeployDispatcher. client and logger
+// default if nil; sender may be nil (an email-kind target then fails
+// with a clear "not configured" error).
+func NewDeployDispatcher(db *DB, client *http.Client, sender email.Sender, logger *slog.Logger) *DeployDispatcher {
 	if client == nil {
 		client = http.DefaultClient
 	}
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &DeployDispatcher{db: db, client: client, smtpCfg: smtpCfg, logger: logger}
+	return &DeployDispatcher{db: db, client: client, sender: sender, logger: logger}
 }
 
 // Dispatch sends ev to every enabled DeployTarget scoped to
@@ -358,7 +357,7 @@ func (d *DeployDispatcher) Dispatch(ctx context.Context, resourceID string, ev D
 		if !t.Enabled {
 			continue
 		}
-		if err := sendDeployOutcome(ctx, d.client, d.smtpCfg, t, ev); err != nil {
+		if err := sendDeployOutcome(ctx, d.client, d.sender, t, ev); err != nil {
 			d.logger.Error("alerting: deploy outcome notification failed",
 				slog.String("target_id", t.ID), slog.String("resource_id", resourceID),
 				slog.String("app_name", ev.AppName), slog.Bool("succeeded", ev.Succeeded),
