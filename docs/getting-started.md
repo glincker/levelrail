@@ -86,6 +86,7 @@ With the control plane running in dev mode and `levelrail-cli` built
 
 ```
 APP_API_TOKEN=dev-root-token ./levelrail-cli apps create \
+  --name your-app \
   --file app.yaml \
   --repo https://github.com/your-org/your-app \
   --image-repo registry.example.com/your-org/your-app
