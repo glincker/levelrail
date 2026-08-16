@@ -106,7 +106,7 @@ func TestClient_Prune_Live_RemovesOnlyGenuineGarbage(t *testing.T) {
 	// references the same content by digest) so the tag disappears but
 	// nothing references the resulting untagged image record, which is
 	// exactly what "dangling" means.
-	inUseImage, _, err := c.cli.ImageInspectWithRaw(ctx, "nginx:alpine")
+	inUseImage, err := c.cli.ImageInspect(ctx, "nginx:alpine")
 	if err != nil {
 		t.Fatalf("inspect nginx:alpine: %v", err)
 	}
@@ -178,10 +178,10 @@ func TestClient_Prune_Live_RemovesOnlyGenuineGarbage(t *testing.T) {
 		t.Errorf("running in-use container was disturbed by Prune: state=%+v err=%v, want it running and untouched", state, err)
 	}
 
-	if _, _, err := c.cli.ImageInspectWithRaw(ctx, inUseImage.ID); err != nil {
+	if _, err := c.cli.ImageInspect(ctx, inUseImage.ID); err != nil {
 		t.Errorf("in-use tagged image's underlying content was removed by Prune: %v, want it to survive (still referenced by a running container)", err)
 	}
-	if _, _, err := c.cli.ImageInspectWithRaw(ctx, "nginx:alpine"); err != nil {
+	if _, err := c.cli.ImageInspect(ctx, "nginx:alpine"); err != nil {
 		t.Errorf("nginx:alpine tag itself was removed by Prune: %v, want a tagged image to never be touched by PruneDanglingImages", err)
 	}
 	danglingStillPresent := false

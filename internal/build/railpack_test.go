@@ -199,7 +199,7 @@ func TestClient_BuildRailpack_Live_Node(t *testing.T) {
 		t.Error("expected at least one ProgressEvent from a real build, got none")
 	}
 
-	inspect, _, err := docker.ImageInspectWithRaw(ctx, tag)
+	inspect, err := docker.ImageInspect(ctx, tag)
 	if err != nil {
 		t.Fatalf("image %q not found after BuildRailpack(): %v", tag, err)
 	}
@@ -235,7 +235,7 @@ func TestClient_BuildRailpack_Live_Go(t *testing.T) {
 		t.Errorf("Result.Tag = %q, want %q", res.Tag, tag)
 	}
 
-	inspect, _, err := docker.ImageInspectWithRaw(ctx, tag)
+	inspect, err := docker.ImageInspect(ctx, tag)
 	if err != nil {
 		t.Fatalf("image %q not found after BuildRailpack(): %v", tag, err)
 	}
@@ -277,7 +277,7 @@ func TestClient_BuildRailpack_Live_Java(t *testing.T) {
 		t.Error("expected at least one ProgressEvent from a real build, got none")
 	}
 
-	inspect, _, err := docker.ImageInspectWithRaw(ctx, tag)
+	inspect, err := docker.ImageInspect(ctx, tag)
 	if err != nil {
 		t.Fatalf("image %q not found after BuildRailpack(): %v", tag, err)
 	}
