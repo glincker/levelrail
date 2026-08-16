@@ -48,6 +48,16 @@ type DesiredDatabase struct {
 	BackupTargetID string
 	BackupSchedule string
 	BackupRetain   int
+	// PubliclyAccessible, PublicPort: whether this database's container
+	// port is bound to a host port so an operator's own database GUI
+	// tool can connect to it directly, not just from inside the Docker
+	// network (migrations/0026_database_public_access.sql). Same
+	// "SaveDesiredDatabase never writes it, only
+	// SetDatabasePublicAccess does" exception NodeID/ProjectID/
+	// BackupSchedule already establish. PublicPort is 0 when
+	// PubliclyAccessible is false (SQL NULL).
+	PubliclyAccessible bool
+	PublicPort         int
 }
 
 // SaveDesiredDatabase creates or fully replaces the desired state for a
@@ -117,7 +127,7 @@ var ErrDatabaseNotFound = errors.New("store: database not found")
 // ErrDatabaseNotFound if no such database has been saved.
 func (db *DB) GetDesiredDatabase(ctx context.Context, name string) (*DesiredDatabase, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain
+		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, publicly_accessible, public_port
 		FROM desired_databases
 		WHERE name = ?
 	`, name)
@@ -154,7 +164,7 @@ func (db *DB) DeleteDesiredDatabase(ctx context.Context, name string) error {
 // ListDesiredDatabases returns every saved database, ordered by name.
 func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain
+		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, publicly_accessible, public_port
 		FROM desired_databases
 		ORDER BY name
 	`)
@@ -185,7 +195,7 @@ func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, erro
 // callers.
 func (db *DB) ListDesiredDatabasesByNode(ctx context.Context, nodeID string) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain
+		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, publicly_accessible, public_port
 		FROM desired_databases
 		WHERE node_id = ?
 		ORDER BY name
@@ -242,6 +252,128 @@ func (db *DB) SetDatabaseBackupSchedule(ctx context.Context, name, targetID, sch
 	return nil
 }
 
+// PublicPortRangeStart and PublicPortRangeEnd bound the host ports
+// auto-assigned by SetDatabasePublicAccess when the caller doesn't
+// request a specific one. Chosen clear of every port this control plane
+// already binds itself (cmd/levelrail's defaultHTTPAddr ":8080",
+// defaultAgentAddr ":9443") and of Caddy's 80/443, so an auto-assigned
+// database port can never collide with the control plane's own
+// listeners.
+const (
+	PublicPortRangeStart = 20000
+	PublicPortRangeEnd   = 20999
+)
+
+// ErrPublicPortInUse is returned by SetDatabasePublicAccess when an
+// explicitly requested port is already assigned to a different
+// database. The unique index migrations/0026 adds on public_port is the
+// hard backstop; this is the friendly error path that avoids ever
+// reaching it in the normal case.
+var ErrPublicPortInUse = errors.New("store: public port already in use by another database")
+
+// ErrPublicPortRangeExhausted is returned by SetDatabasePublicAccess
+// when auto-assignment finds no free port left in
+// [PublicPortRangeStart, PublicPortRangeEnd].
+var ErrPublicPortRangeExhausted = errors.New("store: no free public port available")
+
+// SetDatabasePublicAccess is DesiredDatabase's counterpart to
+// SetDatabaseBackupSchedule: its own endpoint
+// (PUT/DELETE /api/v1/databases/{name}/public-access), its own store
+// method, same separation-from-ordinary-update reasoning. Disabling
+// (enabled=false) always clears public_port back to NULL regardless of
+// requestedPort. Enabling with requestedPort 0 auto-assigns the lowest
+// free port in [PublicPortRangeStart, PublicPortRangeEnd]; a non-zero
+// requestedPort is used as-is if no other database already claims it.
+// Returns the port actually assigned (0 when disabling).
+//
+// Runs inside a transaction so "is this port free" and "claim it" are
+// atomic: db.SetMaxOpenConns(1) (store.go) already serializes every
+// write against this same *sql.DB, so this is a correctness backstop
+// against nothing racing it today, not a fix for an observed bug, the
+// same reasoning claimServiceDomains (service.go) already applies to
+// domain claims.
+func (db *DB) SetDatabasePublicAccess(ctx context.Context, name string, enabled bool, requestedPort int) (int, error) {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, fmt.Errorf("store: set public access for database %q: begin transaction: %w", name, err)
+	}
+	defer func() {
+		_ = tx.Rollback() // no-op if Commit already succeeded
+	}()
+
+	port := 0
+	if enabled {
+		port, err = claimPublicPort(ctx, tx, name, requestedPort)
+		if err != nil {
+			return 0, fmt.Errorf("store: set public access for database %q: %w", name, err)
+		}
+	}
+
+	res, err := tx.ExecContext(ctx, `
+		UPDATE desired_databases
+		SET publicly_accessible = ?, public_port = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		WHERE name = ?
+	`, enabled, sql.NullInt64{Int64: int64(port), Valid: enabled}, name)
+	if err != nil {
+		return 0, fmt.Errorf("store: set public access for database %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("store: set public access for database %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return 0, ErrDatabaseNotFound
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("store: set public access for database %q: commit: %w", name, err)
+	}
+	return port, nil
+}
+
+// claimPublicPort resolves the port SetDatabasePublicAccess should write
+// for name: requestedPort as-is once confirmed free, or the lowest free
+// port in the configured range when requestedPort is 0. name is excluded
+// from the "already in use" check so re-enabling with the same port (or
+// re-saving) never conflicts with a database's own prior claim.
+func claimPublicPort(ctx context.Context, tx *sql.Tx, name string, requestedPort int) (int, error) {
+	rows, err := tx.QueryContext(ctx, `
+		SELECT public_port FROM desired_databases WHERE public_port IS NOT NULL AND name != ?
+	`, name)
+	if err != nil {
+		return 0, fmt.Errorf("list claimed public ports: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	taken := make(map[int]bool)
+	for rows.Next() {
+		var p int
+		if err := rows.Scan(&p); err != nil {
+			return 0, fmt.Errorf("scan claimed public port: %w", err)
+		}
+		taken[p] = true
+	}
+	if err := rows.Err(); err != nil {
+		return 0, fmt.Errorf("iterate claimed public ports: %w", err)
+	}
+
+	if requestedPort != 0 {
+		if taken[requestedPort] {
+			return 0, ErrPublicPortInUse
+		}
+		return requestedPort, nil
+	}
+
+	for p := PublicPortRangeStart; p <= PublicPortRangeEnd; p++ {
+		if !taken[p] {
+			return p, nil
+		}
+	}
+	return 0, ErrPublicPortRangeExhausted
+}
+
 // ListScheduledDatabases returns every database with both a non-empty
 // backup_schedule and a resolved backup_target_id, ordered by name. The
 // two are deliberately required together, not backup_schedule alone: a
@@ -255,7 +387,7 @@ func (db *DB) SetDatabaseBackupSchedule(ctx context.Context, name, targetID, sch
 // all.
 func (db *DB) ListScheduledDatabases(ctx context.Context) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain
+		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, publicly_accessible, public_port
 		FROM desired_databases
 		WHERE backup_schedule != '' AND backup_target_id IS NOT NULL
 		ORDER BY name
@@ -291,11 +423,15 @@ func scanDesiredDatabase(scan func(dest ...any) error) (*DesiredDatabase, error)
 	var (
 		d                         DesiredDatabase
 		projectID, backupTargetID sql.NullString
+		publiclyAccessible        bool
+		publicPort                sql.NullInt64
 	)
-	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain); err != nil {
+	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &publiclyAccessible, &publicPort); err != nil {
 		return nil, err
 	}
 	d.ProjectID = projectID.String
 	d.BackupTargetID = backupTargetID.String
+	d.PubliclyAccessible = publiclyAccessible
+	d.PublicPort = int(publicPort.Int64)
 	return &d, nil
 }

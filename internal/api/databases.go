@@ -43,18 +43,27 @@ type databaseResource struct {
 	BackupTargetID string `json:"backup_target_id,omitempty"`
 	BackupSchedule string `json:"backup_schedule,omitempty"`
 	BackupRetain   int    `json:"backup_retain,omitempty"`
+	// PubliclyAccessible, PublicPort: response-only, the identical
+	// boundary NodeID/ProjectID/BackupTargetID already establish. Set or
+	// clear them via PUT/DELETE /api/v1/databases/{name}/public-access
+	// (database_public_access.go), never through this resource's own
+	// create/update body.
+	PubliclyAccessible bool `json:"publicly_accessible,omitempty"`
+	PublicPort         int  `json:"public_port,omitempty"`
 }
 
 func toDatabaseResource(d store.DesiredDatabase) databaseResource {
 	return databaseResource{
-		Name:           d.Name,
-		Engine:         d.Engine,
-		Version:        d.Version,
-		NodeID:         d.NodeID,
-		ProjectID:      d.ProjectID,
-		BackupTargetID: d.BackupTargetID,
-		BackupSchedule: d.BackupSchedule,
-		BackupRetain:   d.BackupRetain,
+		Name:               d.Name,
+		Engine:             d.Engine,
+		Version:            d.Version,
+		NodeID:             d.NodeID,
+		ProjectID:          d.ProjectID,
+		BackupTargetID:     d.BackupTargetID,
+		BackupSchedule:     d.BackupSchedule,
+		BackupRetain:       d.BackupRetain,
+		PubliclyAccessible: d.PubliclyAccessible,
+		PublicPort:         d.PublicPort,
 	}
 }
 
