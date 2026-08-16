@@ -62,6 +62,19 @@ if ! go build ./... 2>&1; then
 	fail=1
 fi
 
+echo "pre-commit: web (tsc, eslint)"
+staged_web_files=$(git diff --cached --name-only --diff-filter=ACM -- 'web/*.ts' 'web/*.tsx')
+if [ -n "$staged_web_files" ]; then
+	rel_web_files=$(echo "$staged_web_files" | sed 's#^web/##')
+	if ! ( cd web && npx tsc --noEmit ); then
+		fail=1
+	fi
+	# shellcheck disable=SC2086
+	if ! ( cd web && npx eslint $rel_web_files ); then
+		fail=1
+	fi
+fi
+
 if [ "$fail" -ne 0 ]; then
 	echo ""
 	echo "pre-commit checks failed, commit aborted."
