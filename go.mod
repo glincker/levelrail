@@ -16,13 +16,14 @@ require (
 	github.com/docker/docker v27.5.1+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/go-git/go-git/v5 v5.19.2
-	github.com/golang/snappy v0.0.4
+	github.com/golang/snappy v1.0.0
 	github.com/miekg/dns v1.1.72
 	github.com/moby/buildkit v0.32.2
 	github.com/railwayapp/railpack v0.36.4
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/tonistiigi/fsutil v0.0.0-20260717003753-6d9dc2ebad62
 	golang.org/x/crypto v0.55.0
+	golang.org/x/oauth2 v0.36.0
 	golang.org/x/sync v0.22.0
 	golang.org/x/term v0.45.0
 	golang.zx2c4.com/wireguard v0.0.0-20260522210424-ecfc5a8d5446
@@ -266,7 +267,6 @@ require (
 	golang.org/x/exp v0.0.0-20260811152304-ee035b5b010f // indirect
 	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
-	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
