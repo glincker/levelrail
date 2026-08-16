@@ -33,12 +33,19 @@ export function LogTerminal({
   pause,
   resume,
   heightClassName = 'h-[65vh]',
+  emptyStateMessage = 'Waiting for log output...',
+  emptyStatePulse = true,
 }: {
   lines: LogLine[]
   isPaused: boolean
   pause: () => void
   resume: () => void
   heightClassName?: string
+  emptyStateMessage?: string
+  // False for a state that will never resolve into output (e.g. an
+  // image-sourced deploy, which has no build step to wait on): the
+  // pulsing dot otherwise implies output is still coming.
+  emptyStatePulse?: boolean
 }) {
   const parentRef = useRef<HTMLDivElement>(null)
   // Distinguishes a scroll event caused by the auto-scroll effect below
@@ -111,8 +118,10 @@ export function LogTerminal({
       >
         {lines.length === 0 ? (
           <p className="flex items-center gap-2 px-3 py-2 text-neutral-500">
-            <span className="size-1.5 animate-pulse rounded-full bg-neutral-500" />
-            Waiting for log output...
+            <span
+              className={`size-1.5 rounded-full bg-neutral-500 ${emptyStatePulse ? 'animate-pulse' : ''}`}
+            />
+            {emptyStateMessage}
           </p>
         ) : (
           <div
