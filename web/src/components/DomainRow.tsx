@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { GlobeIcon, CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
+import { certStatusMeta } from '../lib/certStatus'
 import type { CertificateStatus } from '../queries/certificates'
 import type { Domain } from '../queries/domains'
 
@@ -10,15 +11,6 @@ import type { Domain } from '../queries/domains'
 // establishes for the apps list.
 export const DOMAIN_LIST_GRID =
   'grid grid-cols-[2rem_minmax(0,1.5fr)_minmax(0,1fr)_8rem_1rem] items-center gap-3'
-
-const certStatusMeta: Record<
-  CertificateStatus['status'],
-  { label: string; variant: 'success' | 'warning' | 'destructive' }
-> = {
-  healthy: { label: 'Healthy', variant: 'success' },
-  expiring_soon: { label: 'Expiring soon', variant: 'warning' },
-  expired: { label: 'Expired', variant: 'destructive' },
-}
 
 // This page is deliberately read-mostly: editing a domain (add/remove)
 // stays on the owning app's own Domains tab (DomainEditor.tsx), reached
