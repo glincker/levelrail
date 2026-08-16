@@ -73,6 +73,13 @@ type appResource struct {
 	// PUT/DELETE /api/v1/apps/{name}/storage (apps_storage.go's
 	// handleSetAppStorage/handleClearAppStorage) instead.
 	StorageTargetID string `json:"storage_target_id,omitempty"`
+	// Suspended is whether the app is stopped (POST .../stop), the
+	// reconciler's own containers-only teardown, distinct from delete.
+	// Response-only: set it via POST/DELETE-shaped
+	// /api/v1/apps/{name}/stop and /start (handleStopApp/handleStartApp)
+	// instead, the same boundary NodeID/ProjectID/StorageTargetID
+	// already establish above.
+	Suspended bool `json:"suspended"`
 }
 
 func toAppResource(svc store.DesiredService) appResource {
@@ -90,6 +97,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		NodeID:          svc.NodeID,
 		ProjectID:       svc.ProjectID,
 		StorageTargetID: svc.StorageTargetID,
+		Suspended:       svc.Suspended,
 	}
 }
 
@@ -468,6 +476,56 @@ func (rt *Router) handleRestartApp(w http.ResponseWriter, r *http.Request) {
 	svc, err := rt.apps.GetDesiredService(r.Context(), name)
 	if err != nil {
 		rt.logger.Error("api: restart app: reload after restart failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toAppResource(*svc))
+}
+
+// handleStopApp handles POST /api/v1/apps/{name}/stop: sets Suspended,
+// distinct from handleDeleteApp, which removes desired state entirely.
+// No request body. The reconciler (not this handler) is what actually
+// stops containers, on its next pass; see
+// store.DesiredService.Suspended's own doc comment.
+func (rt *Router) handleStopApp(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+
+	if err := rt.apps.UpdateServiceSuspended(r.Context(), name, true); errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: stop app failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if err != nil {
+		rt.logger.Error("api: stop app: reload after stop failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toAppResource(*svc))
+}
+
+// handleStartApp handles POST /api/v1/apps/{name}/start: clears
+// Suspended, letting the reconciler bring containers back on its next
+// pass. No request body.
+func (rt *Router) handleStartApp(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+
+	if err := rt.apps.UpdateServiceSuspended(r.Context(), name, false); errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: start app failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if err != nil {
+		rt.logger.Error("api: start app: reload after start failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}

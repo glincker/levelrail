@@ -15,6 +15,9 @@ export function summarizeAppStatus(conditions: ReconcileCondition[]): {
   if (conditions.length === 0) {
     return { label: 'No status yet', variant: 'muted' }
   }
+  if (conditions.some((c) => c.Reason === 'Suspended')) {
+    return { label: 'Stopped', variant: 'muted' }
+  }
   if (conditions.some((c) => c.Status === 'False')) {
     return { label: 'Attention needed', variant: 'destructive' }
   }

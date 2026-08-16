@@ -509,6 +509,72 @@ func TestSaveDesiredService_RedeployDoesNotResetStorageTargetID(t *testing.T) {
 	}
 }
 
+func TestUpdateServiceSuspended(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.UpdateServiceSuspended(ctx, "web", true); err != nil {
+		t.Fatalf("UpdateServiceSuspended(true) error = %v", err)
+	}
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !got.Suspended {
+		t.Error("Suspended = false, want true")
+	}
+
+	if err := db.UpdateServiceSuspended(ctx, "web", false); err != nil {
+		t.Fatalf("UpdateServiceSuspended(false) error = %v", err)
+	}
+	got, err = db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Suspended {
+		t.Error("Suspended = true, want false")
+	}
+}
+
+func TestUpdateServiceSuspended_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.UpdateServiceSuspended(context.Background(), "nonexistent", true)
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("UpdateServiceSuspended() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+// TestSaveDesiredService_RedeployDoesNotResetSuspended mirrors
+// TestSaveDesiredService_RedeployDoesNotResetStorageTargetID: an
+// ordinary redeploy must not silently un-stop a stopped app.
+func TestSaveDesiredService_RedeployDoesNotResetSuspended(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("initial SaveDesiredService() error = %v", err)
+	}
+	if err := db.UpdateServiceSuspended(ctx, "web", true); err != nil {
+		t.Fatalf("UpdateServiceSuspended() error = %v", err)
+	}
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("redeploy SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !got.Suspended {
+		t.Error("Suspended = false, want true (a redeploy must not silently resume a stopped app)")
+	}
+}
+
 // TestSaveDesiredService_RedeployDoesNotResetProjectID mirrors
 // TestSaveDesiredService_RedeployDoesNotResetNodeID exactly, for the
 // same reason: internal/deploy.Pipeline calls SaveDesiredService on

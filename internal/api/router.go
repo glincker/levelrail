@@ -127,6 +127,12 @@ type AppStore interface {
 	// UpdateServiceProject, see store.DB.UpdateServiceStorageTarget's own
 	// doc comment.
 	UpdateServiceStorageTarget(ctx context.Context, name, storageTargetID string) error
+	// UpdateServiceSuspended backs POST /api/v1/apps/{name}/stop and
+	// .../start (handleStopApp/handleStartApp): same
+	// separation-from-ordinary-update reasoning as UpdateServiceNode/
+	// UpdateServiceProject/UpdateServiceStorageTarget, see
+	// store.DB.UpdateServiceSuspended's own doc comment.
+	UpdateServiceSuspended(ctx context.Context, name string, suspended bool) error
 }
 
 // DeployStore is the store surface the deploy-history handler needs.
@@ -902,6 +908,12 @@ func (rt *Router) Handler() http.Handler {
 	// container recreation is the same class of action as triggering a
 	// deploy, just without a new image.
 	mux.HandleFunc("POST /api/v1/apps/{name}/restart", rt.requireAbility(AbilityDeploy, rt.handleRestartApp))
+
+	// Stop/start (handleStopApp/handleStartApp's own doc comments): same
+	// AbilityDeploy tier as restart above, the same class of lifecycle
+	// action.
+	mux.HandleFunc("POST /api/v1/apps/{name}/stop", rt.requireAbility(AbilityDeploy, rt.handleStopApp))
+	mux.HandleFunc("POST /api/v1/apps/{name}/start", rt.requireAbility(AbilityDeploy, rt.handleStartApp))
 
 	// One-off exec (handleExecApp's own doc comment): AbilityRoot, not
 	// AbilityDeploy. Secrets are injected as plaintext env vars into a
