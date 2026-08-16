@@ -38,7 +38,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Filter
-        uses: dorny/paths-filter@v4
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
           filters: |
@@ -223,7 +223,7 @@ jobs:
 
       - name: tsc
         working-directory: web
-        run: npx tsc --noEmit
+        run: npm exec --no -- tsc --noEmit
 
       # eslint on the full tree still has a pre-existing backlog (mostly
       # routeTree.gen.ts-related no-unsafe-* noise, not this PR's doing),
@@ -242,7 +242,7 @@ jobs:
             files=$(git diff --name-only --diff-filter=ACM "$merge_base" HEAD -- 'web/*.ts' 'web/*.tsx' | sed 's#^web/##')
           fi
           if [ -n "$files" ]; then
-            cd web && echo "$files" | xargs npx eslint
+            cd web && echo "$files" | xargs npm exec --no -- eslint
           else
             echo "no changed web/*.ts(x) files"
           fi
