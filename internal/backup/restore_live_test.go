@@ -236,3 +236,107 @@ func TestContainerRestorer_Restore_MySQL_Live(t *testing.T) {
 		t.Errorf("unrelated_table still exists after restore (output %q), want the overwrite fully replaced", goneOut)
 	}
 }
+
+// TestContainerRestorer_Restore_Redis_Live proves the write-then-stop-then-
+// start restore path against a real Redis container: seed a key, dump it
+// via ContainerDumper (already proven live by
+// TestContainerDumper_Dump_Redis_Live), overwrite that key and add another,
+// restore from the captured RDB, then query the live server directly and
+// confirm the original key is back and the overwrite is gone, proving the
+// dump.rdb write plus stop/start reload actually took effect, not just that
+// Restore() returned nil.
+func TestContainerRestorer_Restore_Redis_Live(t *testing.T) {
+	rt := liveRuntime(t)
+	ctx := context.Background()
+
+	const name = "levelrail-test-restore-redis"
+	removeContainerIfExists(ctx, t, rt, name)
+	t.Cleanup(func() { removeContainerIfExists(context.Background(), t, rt, name) })
+
+	id, err := rt.Create(ctx, docker.ContainerSpec{
+		Name:  name,
+		Image: "redis:7",
+	})
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	if err := rt.Start(ctx, id); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	waitReady(ctx, t, rt, name, []string{"redis-cli", "PING"}, 15*time.Second)
+
+	originalMarker := "levelrail-restore-live-original-redis-4d6e"
+	seed, err := rt.Exec(ctx, name, []string{"redis-cli", "SET", "restore_probe", originalMarker})
+	if err != nil {
+		t.Fatalf("Exec() seed error = %v", err)
+	}
+	if _, err := io.Copy(io.Discard, seed); err != nil {
+		t.Fatalf("seeding original data: %v", err)
+	}
+	_ = seed.Close()
+
+	d := &ContainerDumper{Runtime: rt}
+	dumpStream, err := d.Dump(ctx, store.EngineRedis, name)
+	if err != nil {
+		t.Fatalf("Dump() error = %v", err)
+	}
+	var dumpBuf bytes.Buffer
+	if _, err := io.Copy(&dumpBuf, dumpStream); err != nil {
+		t.Fatalf("reading Dump() stream error = %v", err)
+	}
+	_ = dumpStream.Close()
+	if !strings.Contains(dumpBuf.String(), originalMarker) {
+		t.Fatalf("captured dump does not contain the original marker %q, test setup is broken", originalMarker)
+	}
+
+	// Overwrite: delete the seeded key and set a different one, proving a
+	// real, distinguishable change happened before restore runs.
+	overwriteMarker := "levelrail-restore-live-overwritten-redis-9f2c"
+	overwrite, err := rt.Exec(ctx, name, []string{"sh", "-c",
+		"redis-cli DEL restore_probe && redis-cli SET unrelated_key " + overwriteMarker,
+	})
+	if err != nil {
+		t.Fatalf("Exec() overwrite error = %v", err)
+	}
+	if _, err := io.Copy(io.Discard, overwrite); err != nil {
+		t.Fatalf("overwriting data: %v", err)
+	}
+	_ = overwrite.Close()
+
+	r := &ContainerRestorer{Runtime: rt}
+	if err := r.Restore(ctx, store.EngineRedis, name, bytes.NewReader(dumpBuf.Bytes())); err != nil {
+		t.Fatalf("Restore() error = %v", err)
+	}
+
+	// Restore stops and restarts the container; give redis-server a moment
+	// to finish loading dump.rdb and accept connections again before
+	// probing it, the same reasoning waitReady's own polling loop exists
+	// for after Create/Start.
+	waitReady(ctx, t, rt, name, []string{"redis-cli", "PING"}, 15*time.Second)
+
+	check, err := rt.Exec(ctx, name, []string{"redis-cli", "GET", "restore_probe"})
+	if err != nil {
+		t.Fatalf("Exec() post-restore check error = %v", err)
+	}
+	checkOut, err := io.ReadAll(check)
+	_ = check.Close()
+	if err != nil {
+		t.Fatalf("reading post-restore check: %v", err)
+	}
+	if !strings.Contains(string(checkOut), originalMarker) {
+		t.Errorf("restore_probe after restore = %q, want it to contain the original marker %q", checkOut, originalMarker)
+	}
+
+	goneCheck, err := rt.Exec(ctx, name, []string{"redis-cli", "EXISTS", "unrelated_key"})
+	if err != nil {
+		t.Fatalf("Exec() overwrite-gone check error = %v", err)
+	}
+	goneOut, err := io.ReadAll(goneCheck)
+	_ = goneCheck.Close()
+	if err != nil {
+		t.Fatalf("reading overwrite-gone check: %v", err)
+	}
+	if !strings.Contains(string(goneOut), "0") {
+		t.Errorf("unrelated_key EXISTS = %q, want \"0\" (gone), restore should have replaced it with the pre-overwrite snapshot", goneOut)
+	}
+}

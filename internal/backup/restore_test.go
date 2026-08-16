@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -53,25 +54,151 @@ func TestContainerRestorer_Restore_MySQL(t *testing.T) {
 	}
 }
 
-// TestContainerRestorer_Restore_Redis_Unsupported proves Redis restore
-// fails loudly and identifiably (ErrRedisRestoreNotSupported), never
-// silently succeeding or silently no-oping: an RDB snapshot piped into a
-// live Redis the way this method pipes SQL into psql/mysql would not do
-// anything close to a restore, so the honest behavior is a clear,
-// checkable error, not an attempt.
-func TestContainerRestorer_Restore_Redis_Unsupported(t *testing.T) {
-	rt := &fakeExecRuntime{}
+// TestContainerRestorer_Restore_Redis proves the write-then-stop-then-start
+// sequence: the dump is streamed onto /data/dump.rdb via ExecWithInput
+// while the container is still running, then the container is stopped and
+// started (by ID, from InspectByName) so Redis reloads the RDB file at its
+// next startup, in that exact order.
+func TestContainerRestorer_Restore_Redis(t *testing.T) {
+	rt := &fakeExecRuntime{
+		inspectState: &docker.ContainerState{ID: "container-id-123"},
+	}
 	r := &ContainerRestorer{Runtime: rt}
 
-	err := r.Restore(context.Background(), store.EngineRedis, "db-cache", strings.NewReader("REDIS0011..."))
+	dump := "REDIS0011..."
+	if err := r.Restore(context.Background(), store.EngineRedis, "db-cache", strings.NewReader(dump)); err != nil {
+		t.Fatalf("Restore() error = %v", err)
+	}
+
+	if rt.gotInputContainer != "db-cache" {
+		t.Errorf("ExecWithInput container = %q, want %q", rt.gotInputContainer, "db-cache")
+	}
+	wantCmd := []string{"sh", "-c", "cat > /data/dump.rdb"}
+	if !reflect.DeepEqual(rt.gotInputCmd, wantCmd) {
+		t.Errorf("ExecWithInput cmd = %v, want %v", rt.gotInputCmd, wantCmd)
+	}
+	if rt.gotStdin != dump {
+		t.Errorf("stdin = %q, want %q", rt.gotStdin, dump)
+	}
+	if rt.gotStopID != "container-id-123" {
+		t.Errorf("Stop id = %q, want %q", rt.gotStopID, "container-id-123")
+	}
+	if rt.gotStartID != "container-id-123" {
+		t.Errorf("Start id = %q, want %q", rt.gotStartID, "container-id-123")
+	}
+	wantOrder := []string{"Exec", "ExecWithInput", "InspectByName", "Stop", "Start"}
+	if !reflect.DeepEqual(rt.callOrder, wantOrder) {
+		t.Errorf("call order = %v, want %v", rt.callOrder, wantOrder)
+	}
+	wantDisableSaveCmd := []string{"redis-cli", "CONFIG", "SET", "save", ""}
+	if !reflect.DeepEqual(rt.gotCmd, wantDisableSaveCmd) {
+		t.Errorf("Exec cmd = %v, want %v", rt.gotCmd, wantDisableSaveCmd)
+	}
+}
+
+// TestContainerRestorer_Restore_Redis_DisableSaveError proves a failure
+// disabling save points (the Exec call) aborts before the RDB is even
+// written, and before Stop/Start run: this call has to happen and
+// succeed first, see restoreRedis's own doc comment for why (Redis's own
+// SIGTERM-triggered save would otherwise overwrite the restored RDB file
+// with the live pre-restore state on the way down).
+func TestContainerRestorer_Restore_Redis_DisableSaveError(t *testing.T) {
+	wantErr := errors.New("exec: command exited 1")
+	rt := &fakeExecRuntime{err: wantErr, inspectState: &docker.ContainerState{ID: "container-id-123"}}
+	r := &ContainerRestorer{Runtime: rt}
+
+	err := r.Restore(context.Background(), store.EngineRedis, "db-cache", strings.NewReader("x"))
 	if err == nil {
-		t.Fatal("Restore() error = nil, want ErrRedisRestoreNotSupported for redis")
+		t.Fatal("Restore() error = nil, want the wrapped Exec error")
 	}
-	if !errors.Is(err, ErrRedisRestoreNotSupported) {
-		t.Errorf("Restore() error = %v, want it to wrap ErrRedisRestoreNotSupported", err)
+	if !errors.Is(err, wantErr) {
+		t.Errorf("Restore() error = %v, want it to wrap %v", err, wantErr)
 	}
-	if rt.execWithInputCalls != 0 {
-		t.Errorf("ExecWithInput called %d times for redis, want 0", rt.execWithInputCalls)
+	if !reflect.DeepEqual(rt.callOrder, []string{"Exec"}) {
+		t.Errorf("call order = %v, want only Exec, ExecWithInput/Stop/Start must not run", rt.callOrder)
+	}
+}
+
+func TestContainerRestorer_Restore_Redis_ExecWithInputError(t *testing.T) {
+	wantErr := errors.New("exec: command exited 1")
+	rt := &fakeExecRuntime{execWithInputErr: wantErr, inspectState: &docker.ContainerState{ID: "container-id-123"}}
+	r := &ContainerRestorer{Runtime: rt}
+
+	err := r.Restore(context.Background(), store.EngineRedis, "db-cache", strings.NewReader("x"))
+	if err == nil {
+		t.Fatal("Restore() error = nil, want the wrapped ExecWithInput error")
+	}
+	if !errors.Is(err, wantErr) {
+		t.Errorf("Restore() error = %v, want it to wrap %v", err, wantErr)
+	}
+	if !reflect.DeepEqual(rt.callOrder, []string{"Exec", "ExecWithInput"}) {
+		t.Errorf("call order = %v, want Exec then ExecWithInput only, Stop/Start must not run", rt.callOrder)
+	}
+}
+
+func TestContainerRestorer_Restore_Redis_InspectError(t *testing.T) {
+	wantErr := errors.New("inspect: connection refused")
+	rt := &fakeExecRuntime{inspectErr: wantErr}
+	r := &ContainerRestorer{Runtime: rt}
+
+	err := r.Restore(context.Background(), store.EngineRedis, "db-cache", strings.NewReader("x"))
+	if err == nil {
+		t.Fatal("Restore() error = nil, want the wrapped InspectByName error")
+	}
+	if !errors.Is(err, wantErr) {
+		t.Errorf("Restore() error = %v, want it to wrap %v", err, wantErr)
+	}
+	if !reflect.DeepEqual(rt.callOrder, []string{"Exec", "ExecWithInput", "InspectByName"}) {
+		t.Errorf("call order = %v, want Exec, ExecWithInput, InspectByName only, Stop/Start must not run", rt.callOrder)
+	}
+}
+
+func TestContainerRestorer_Restore_Redis_NotFound(t *testing.T) {
+	rt := &fakeExecRuntime{inspectState: nil}
+	r := &ContainerRestorer{Runtime: rt}
+
+	err := r.Restore(context.Background(), store.EngineRedis, "db-cache", strings.NewReader("x"))
+	if err == nil {
+		t.Fatal("Restore() error = nil, want an error when the restore target container doesn't exist")
+	}
+	if !reflect.DeepEqual(rt.callOrder, []string{"Exec", "ExecWithInput", "InspectByName"}) {
+		t.Errorf("call order = %v, want Exec, ExecWithInput, InspectByName only, Stop/Start must not run", rt.callOrder)
+	}
+}
+
+func TestContainerRestorer_Restore_Redis_StopError(t *testing.T) {
+	wantErr := errors.New("stop: timeout")
+	rt := &fakeExecRuntime{stopErr: wantErr, inspectState: &docker.ContainerState{ID: "container-id-123"}}
+	r := &ContainerRestorer{Runtime: rt}
+
+	err := r.Restore(context.Background(), store.EngineRedis, "db-cache", strings.NewReader("x"))
+	if err == nil {
+		t.Fatal("Restore() error = nil, want the wrapped Stop error")
+	}
+	if !errors.Is(err, wantErr) {
+		t.Errorf("Restore() error = %v, want it to wrap %v", err, wantErr)
+	}
+	wantOrder := []string{"Exec", "ExecWithInput", "InspectByName", "Stop"}
+	if !reflect.DeepEqual(rt.callOrder, wantOrder) {
+		t.Errorf("call order = %v, want %v, Start must not run after a failed Stop", rt.callOrder, wantOrder)
+	}
+}
+
+func TestContainerRestorer_Restore_Redis_StartError(t *testing.T) {
+	wantErr := errors.New("start: no such container")
+	rt := &fakeExecRuntime{startErr: wantErr, inspectState: &docker.ContainerState{ID: "container-id-123"}}
+	r := &ContainerRestorer{Runtime: rt}
+
+	err := r.Restore(context.Background(), store.EngineRedis, "db-cache", strings.NewReader("x"))
+	if err == nil {
+		t.Fatal("Restore() error = nil, want the wrapped Start error")
+	}
+	if !errors.Is(err, wantErr) {
+		t.Errorf("Restore() error = %v, want it to wrap %v", err, wantErr)
+	}
+	wantOrder := []string{"Exec", "ExecWithInput", "InspectByName", "Stop", "Start"}
+	if !reflect.DeepEqual(rt.callOrder, wantOrder) {
+		t.Errorf("call order = %v, want %v", rt.callOrder, wantOrder)
 	}
 }
 
