@@ -364,6 +364,7 @@ type Router struct {
 	certExpiryWarningWindow time.Duration
 	builder                 Builder                   // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
 	fetch                   fetchFunc                 // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
+	listBranches            listBranchesFunc          // remote branch lister for handleListGitBranches; always non-nil, defaulted to listRemoteBranches in NewRouter, overridable in this package's own tests
 	staticSites             StaticSiteStore           // always set, same "core Store interface, not an optional plug-in" shape as certs above
 	backupTargets           BackupTargetStore         // always set, same "core Store interface" shape as certs/staticSites above: listing/getting/deleting a backup target needs no secrets configuration, only creating one does
 	backupSecrets           BackupSecretsSetter       // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
@@ -648,6 +649,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		backupHistory:   s,
 		restoreHistory:  s,
 		fetch:           gitCheckout,
+		listBranches:    listRemoteBranches,
 		logins:          newLoginLimiter(),
 	}
 	for _, opt := range opts {
@@ -772,6 +774,14 @@ func (rt *Router) Handler() http.Handler {
 	// configured. AbilityDeploy, the same boundary as the image-tag
 	// trigger above: this also ultimately writes desired state.
 	mux.HandleFunc("POST /api/v1/apps/{name}/builds", rt.requireAbility(AbilityDeploy, rt.handleTriggerBuild))
+
+	// Branch listing for an arbitrary public git remote (handleListGitBranches's
+	// own doc comment): not scoped to an existing app, since the create-app-
+	// from-git wizard needs this before an app exists to attach a build
+	// to. AbilityDeploy, the same tier the build trigger above requires:
+	// listing what a repo could be built from is a strict subset of
+	// actually triggering that build.
+	mux.HandleFunc("POST /api/v1/git/branches", rt.requireAbility(AbilityDeploy, rt.handleListGitBranches))
 
 	// Previously-built image tags for this app's repo, so the deploy
 	// trigger form can offer a dropdown instead of a hand-typed tag

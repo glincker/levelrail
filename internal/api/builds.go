@@ -97,13 +97,21 @@ func gitCheckout(ctx context.Context, repoURL, ref string) (dir string, cleanup 
 // triggerBuildRequest, matching the same two fields app.yaml's own
 // build: block has (internal/spec.Build): type and path.
 type triggerBuildBuildInput struct {
-	// Type defaults to spec.BuildDockerfile when empty: this is the only
-	// build type internal/deploy.Pipeline.Deploy actually performs a
-	// build for today (its own switch statement returns a clear "not yet
-	// supported" error for compose/railpack/static), so defaulting to
-	// the one that works is more useful than forcing every caller to
-	// spell it out.
+	// Type defaults to spec.BuildDockerfile when empty. handleTriggerBuild
+	// accepts every build.type internal/deploy.Pipeline.Deploy actually
+	// performs a build for (dockerfile, railpack, static); only compose
+	// (and any unrecognized value) is rejected, since Pipeline's own
+	// switch statement still returns a clear "not yet supported" error
+	// for that one.
 	Type string `json:"type,omitempty"`
+	// Path is only meaningful for build.type: dockerfile (the Dockerfile
+	// location, relative to the checkout root) and build.type: static
+	// (the built output directory to serve, relative to the checkout
+	// root; see internal/deploy/static.go's deployStatic). It has no
+	// meaning for build.type: railpack, whose own build.RailpackRequest
+	// carries no path field at all (Railpack's provider detection always
+	// runs against the checkout root), so handleTriggerBuild rejects a
+	// railpack request that sets one rather than silently ignoring it.
 	Path string `json:"path,omitempty"`
 }
 
@@ -136,14 +144,25 @@ type triggerBuildRequest struct {
 	Build     triggerBuildBuildInput `json:"build,omitempty"`
 }
 
-// triggerBuildResponse is POST /api/v1/apps/{name}/builds's success body:
-// the full image reference that was built (internal/deploy.Pipeline.Deploy's
-// own return value) plus the app's resulting desired state, the same
-// resource shape GET /api/v1/apps/{name} and handleTriggerDeploy's own
-// response already return.
+// triggerBuildResponse is POST /api/v1/apps/{name}/builds's success body.
+// Its shape depends on build.type. For a container-backed build
+// (dockerfile, railpack), Image is the full image reference that was
+// built (internal/deploy.Pipeline.Deploy's own return value) and App is
+// the app's resulting desired state, the same resource shape
+// GET /api/v1/apps/{name} and handleTriggerDeploy's own response already
+// return. For build.type: static, neither applies: Pipeline.Deploy's own
+// doc comment says static has "no image, no container... its desired
+// state is a store.StaticSite," never store.DesiredService, so there is
+// no updated app to reload, and the string Deploy returns is the local
+// directory the site now serves from, an absolute filesystem path on the
+// control plane host that staticSiteResource's own doc comment already
+// establishes this package never puts in a response body. Image and App
+// are therefore omitempty and unset for a static build; StaticSite is
+// set instead, and only then.
 type triggerBuildResponse struct {
-	Image string      `json:"image"`
-	App   appResource `json:"app"`
+	Image      string              `json:"image,omitempty"`
+	App        *appResource        `json:"app,omitempty"`
+	StaticSite *staticSiteResource `json:"static_site,omitempty"`
 }
 
 // handleTriggerBuild handles POST /api/v1/apps/{name}/builds: builds an
@@ -215,12 +234,27 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 	if buildType == "" {
 		buildType = spec.BuildDockerfile
 	}
-	if buildType != spec.BuildDockerfile {
+	switch buildType {
+	case spec.BuildDockerfile, spec.BuildRailpack, spec.BuildStatic:
+		// Supported: internal/deploy.Pipeline.Deploy has a real case for
+		// each of these three.
+	case spec.BuildCompose:
 		// Fails before any git I/O: a build type internal/deploy.Pipeline
 		// can never build is a fixed fact about this control plane's
 		// current capability, not something a valid repo_url/ref could
 		// ever fix, so there's nothing worth cloning first to find out.
 		writeError(w, http.StatusNotImplemented, fmt.Sprintf("build.type %q is not yet supported for a manual build trigger", buildType))
+		return
+	default:
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("build.type %q is not recognized", buildType))
+		return
+	}
+	if buildType == spec.BuildRailpack && req.Build.Path != "" {
+		// See triggerBuildBuildInput.Path's own doc comment: railpack has
+		// no path concept at all, so a caller-supplied one here is a
+		// mistake worth failing loudly on, not a value that would
+		// otherwise be silently discarded by deployRailpack.
+		writeError(w, http.StatusBadRequest, "build.path is not meaningful for build.type \"railpack\"")
 		return
 	}
 
@@ -262,6 +296,19 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rt.logger.Info("api: manual build triggered", slog.String("name", name), slog.String("repo_url", req.RepoURL), slog.String("ref", req.Ref), slog.String("build_type", buildType))
+
+	if buildType == spec.BuildStatic {
+		// No store.DesiredService update happened (deployStatic saves a
+		// store.StaticSite instead, see triggerBuildResponse's own doc
+		// comment), so there is nothing to reload here, and tag is the
+		// served-from directory, not a value this response ever exposes.
+		writeJSON(w, http.StatusAccepted, triggerBuildResponse{
+			StaticSite: &staticSiteResource{Name: name, Domains: svcSpec.Domains},
+		})
+		return
+	}
+
 	updated, err := rt.apps.GetDesiredService(r.Context(), name)
 	if err != nil {
 		rt.logger.Error("api: trigger build: reload after build failed", slog.String("error", err.Error()), slog.String("name", name))
@@ -269,8 +316,8 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rt.logger.Info("api: manual build triggered", slog.String("name", name), slog.String("repo_url", req.RepoURL), slog.String("ref", req.Ref), slog.String("tag", tag))
-	writeJSON(w, http.StatusAccepted, triggerBuildResponse{Image: tag, App: toAppResource(*updated)})
+	updatedResource := toAppResource(*updated)
+	writeJSON(w, http.StatusAccepted, triggerBuildResponse{Image: tag, App: &updatedResource})
 }
 
 // specServiceFromDesired reconstructs the parts of a spec.Service that

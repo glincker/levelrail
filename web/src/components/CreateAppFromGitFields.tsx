@@ -14,6 +14,14 @@ import { toast } from '@/components/ui/toast'
 import { appKeys, useCreateApp } from '../queries/apps'
 import { triggerBuild, type TriggerBuildInput } from '../queries/builds'
 import { deployKeys } from '../queries/deploys'
+import { staticSitesKeys } from '../queries/staticSites'
+import { GitBuildSourceFields } from './GitBuildSourceFields'
+
+// Build packs this form offers, matching GitBuildSourceFields' own
+// BUILD_PACKS list of what POST /api/v1/apps/{name}/builds actually
+// supports: dockerfile, railpack, static. See that component's doc
+// comment for why Nixpacks and compose are never offered.
+const BUILD_TYPES = ['dockerfile', 'railpack', 'static'] as const
 
 // Matches validateAppResource (internal/api/apps.go) for the fields
 // this form actually collects on the create-app side, plus the git
@@ -22,7 +30,9 @@ import { deployKeys } from '../queries/deploys'
 // DeployTriggerForm.tsx's own buildSchema for repoUrl/ref/imageRepo/
 // dockerfilePath, since this is the same request shape, just fired
 // once right after creating the app record instead of against an
-// app that already exists.
+// app that already exists. buildType is new: this form used to fire
+// every build as an implicit build.type: dockerfile, matching what
+// handleTriggerBuild used to reject everything else as.
 const createAppFromGitSchema = z.object({
   name: z.string().trim().min(1, 'Name is required'),
   port: z.coerce
@@ -32,11 +42,12 @@ const createAppFromGitSchema = z.object({
   repoUrl: z.string().trim().min(1, 'Repository URL is required'),
   ref: z.string().trim().min(1, 'Branch, tag, or commit is required'),
   imageRepo: z.string().trim(),
+  buildType: z.enum(BUILD_TYPES),
   dockerfilePath: z.string().trim(),
 })
 
-type FormInput = z.input<typeof createAppFromGitSchema>
-type FormOutput = z.output<typeof createAppFromGitSchema>
+export type FormInput = z.input<typeof createAppFromGitSchema>
+export type FormOutput = z.output<typeof createAppFromGitSchema>
 
 const DEFAULT_VALUES: FormInput = {
   name: '',
@@ -44,15 +55,32 @@ const DEFAULT_VALUES: FormInput = {
   repoUrl: '',
   ref: '',
   imageRepo: '',
+  buildType: 'dockerfile',
   dockerfilePath: '',
 }
 
+// build.path is only ever sent for build.type: dockerfile: railpack has
+// no path concept at all (handleTriggerBuild rejects one being set, see
+// internal/api/builds.go's triggerBuildBuildInput.Path doc comment), and
+// static's own build.path (the output subdirectory to serve) isn't
+// exposed by this form yet, see GitBuildSourceFields' own doc comment
+// for why. image_repo is only meaningful for a container-backed build
+// (deployStatic never reads req.ImageRepo), so it's omitted for static
+// too, matching GitBuildSourceFields not even rendering that field in
+// that case.
 function buildInputFrom(values: FormOutput): TriggerBuildInput {
   return {
     repoUrl: values.repoUrl.trim(),
     ref: values.ref.trim(),
-    imageRepo: values.imageRepo.trim() || undefined,
-    buildPath: values.dockerfilePath.trim() || undefined,
+    imageRepo:
+      values.buildType === 'static'
+        ? undefined
+        : values.imageRepo.trim() || undefined,
+    buildType: values.buildType,
+    buildPath:
+      values.buildType === 'dockerfile'
+        ? values.dockerfilePath.trim() || undefined
+        : undefined,
   }
 }
 
@@ -153,20 +181,27 @@ export function CreateAppFromGitFields({
     mutationFn: ({ name, input }: { name: string; input: TriggerBuildInput }) =>
       triggerBuild(name, input),
     onSuccess: (result, variables) => {
-      queryClient.setQueryData(appKeys.detail(variables.name), result.app)
+      // A build.type: static result carries no app (see
+      // TriggerBuildResult's own doc comment in queries/builds.ts): the
+      // app detail cache is left untouched rather than overwritten with
+      // undefined, and the static-sites list is invalidated instead,
+      // the same split useTriggerBuild's own onSuccess makes.
+      if (result.app) {
+        queryClient.setQueryData(appKeys.detail(variables.name), result.app)
+      }
+      if (result.static_site) {
+        void queryClient.invalidateQueries({ queryKey: staticSitesKeys.all })
+      }
       void queryClient.invalidateQueries({
         queryKey: deployKeys.status(variables.name),
       })
     },
   })
-  const { register, handleSubmit, formState, reset } = useForm<
-    FormInput,
-    unknown,
-    FormOutput
-  >({
-    resolver: zodResolver(createAppFromGitSchema),
-    defaultValues: DEFAULT_VALUES,
-  })
+  const { register, handleSubmit, formState, reset, control, watch, getValues, setValue } =
+    useForm<FormInput, unknown, FormOutput>({
+      resolver: zodResolver(createAppFromGitSchema),
+      defaultValues: DEFAULT_VALUES,
+    })
 
   useEffect(() => {
     if (!open) {
@@ -255,61 +290,15 @@ export function CreateAppFromGitFields({
         </Field>
       </div>
 
-      <Field>
-        <FieldLabel htmlFor="git-app-repo-url">Repository URL</FieldLabel>
-        <Input
-          id="git-app-repo-url"
-          className="font-mono"
-          placeholder="https://github.com/you/app.git"
-          autoComplete="off"
-          spellCheck={false}
-          {...register('repoUrl')}
-        />
-        <FieldError errors={[formState.errors.repoUrl]} />
-      </Field>
-
-      <Field>
-        <FieldLabel htmlFor="git-app-ref">Branch, tag, or commit</FieldLabel>
-        <Input
-          id="git-app-ref"
-          className="font-mono"
-          placeholder="main"
-          autoComplete="off"
-          spellCheck={false}
-          {...register('ref')}
-        />
-        <FieldError errors={[formState.errors.ref]} />
-      </Field>
-
-      <div className="flex flex-col gap-4 sm:flex-row">
-        <Field className="flex-1">
-          <FieldLabel htmlFor="git-app-image-repo">
-            Image name (optional)
-          </FieldLabel>
-          <Input
-            id="git-app-image-repo"
-            className="font-mono"
-            placeholder="defaults to the app name"
-            autoComplete="off"
-            spellCheck={false}
-            {...register('imageRepo')}
-          />
-        </Field>
-
-        <Field className="flex-1">
-          <FieldLabel htmlFor="git-app-dockerfile-path">
-            Dockerfile path (optional)
-          </FieldLabel>
-          <Input
-            id="git-app-dockerfile-path"
-            className="font-mono"
-            placeholder="./Dockerfile"
-            autoComplete="off"
-            spellCheck={false}
-            {...register('dockerfilePath')}
-          />
-        </Field>
-      </div>
+      <GitBuildSourceFields
+        control={control}
+        register={register}
+        formState={formState}
+        getValues={getValues}
+        setValue={setValue}
+        watch={watch}
+        disabled={locked}
+      />
 
       {buildMutation.isPending ? (
         <Alert>

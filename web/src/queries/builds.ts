@@ -19,9 +19,11 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { AppDetail } from '../types/appDetail'
+import type { StaticSite } from './staticSites'
 import { appKeys } from './apps'
 import { deployKeys } from './deploys'
 import { deployAttemptKeys } from './deployAttempts'
+import { staticSitesKeys } from './staticSites'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export interface TriggerBuildInput {
@@ -34,9 +36,21 @@ export interface TriggerBuildInput {
   buildPath?: string
 }
 
+// TriggerBuildResult mirrors internal/api/builds.go's own conditional
+// triggerBuildResponse exactly (field name static_site kept snake_case,
+// matching this module's own wire-shape-as-is convention, see
+// types/appDetail.ts's doc comment): a container-backed build
+// (dockerfile, railpack) sets image/app, a build.type: static build
+// sets static_site instead and leaves both of those unset, since a
+// static deploy never touches store.DesiredService and its build has
+// no image (see that Go type's own doc comment for why). Callers must
+// check which one is present rather than assuming app is always there,
+// the same "static is a genuinely different shape" awareness the
+// backend response itself now carries.
 export interface TriggerBuildResult {
-  image: string
-  app: AppDetail
+  image?: string
+  app?: AppDetail
+  static_site?: StaticSite
 }
 
 export async function triggerBuild(
@@ -79,12 +93,23 @@ export async function triggerBuild(
 // build, and a build is exactly the slower, more likely to be watched
 // path where seeing the new row (and its live log link) appear promptly
 // matters most.
+//
+// A build.type: static result carries no app (see TriggerBuildResult's
+// own doc comment), so the app detail cache is left untouched rather
+// than overwritten with undefined; the static-sites list query is
+// invalidated instead, since that's the resource a static build
+// actually just created or updated.
 export function useTriggerBuild(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: TriggerBuildInput) => triggerBuild(appName, input),
     onSuccess: (result) => {
-      queryClient.setQueryData(appKeys.detail(appName), result.app)
+      if (result.app) {
+        queryClient.setQueryData(appKeys.detail(appName), result.app)
+      }
+      if (result.static_site) {
+        void queryClient.invalidateQueries({ queryKey: staticSitesKeys.all })
+      }
       void queryClient.invalidateQueries({
         queryKey: deployKeys.status(appName),
       })

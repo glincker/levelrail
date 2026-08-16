@@ -547,6 +547,191 @@ func TestHandleTriggerBuild_RequiresAuth(t *testing.T) {
 	}
 }
 
+// TestHandleTriggerBuild_RailpackAccepted proves the manual build trigger
+// no longer rejects build.type: railpack: internal/deploy.Pipeline.Deploy
+// has a real deployRailpack case, only handleTriggerBuild's own
+// pre-fetch rejection was blocking it. Response shape mirrors the
+// dockerfile-type success case (Image, App), since railpack is
+// container-backed exactly like dockerfile.
+func TestHandleTriggerBuild_RailpackAccepted(t *testing.T) {
+	fb := &fakeBuilder{tag: "levelrail/web:railpack1"}
+	var fetchCalls []fakeFetchCall
+	cleanupCalled := false
+	rt, db := newTestRouterWithBuilder(t, fb, newFakeFetch(&fetchCalls, t.TempDir(), &cleanupCalled, nil))
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
+		`{"repo_url":"https://example.com/web.git","ref":"main","build":{"type":"railpack"}}`))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+	if fb.calls != 1 {
+		t.Fatalf("builder called %d times, want 1", fb.calls)
+	}
+	if fb.lastReq.Service.Build.Type != "railpack" {
+		t.Errorf("Service.Build.Type = %q, want %q", fb.lastReq.Service.Build.Type, "railpack")
+	}
+
+	var resp triggerBuildResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if resp.Image != "levelrail/web:railpack1" {
+		t.Errorf("response Image = %q, want %q", resp.Image, "levelrail/web:railpack1")
+	}
+	if resp.App == nil || resp.App.Name != "web" {
+		t.Errorf("response App = %+v, want a non-nil app named %q", resp.App, "web")
+	}
+	if resp.StaticSite != nil {
+		t.Errorf("response StaticSite = %+v, want nil for a railpack build", resp.StaticSite)
+	}
+}
+
+// TestHandleTriggerBuild_RailpackWithPathRejected proves a caller-supplied
+// build.path for build.type: railpack fails loudly rather than being
+// silently discarded: build.RailpackRequest (internal/deploy's own
+// deployRailpack) has no path field at all, so a value here would
+// otherwise vanish with no signal to the caller that it did nothing.
+func TestHandleTriggerBuild_RailpackWithPathRejected(t *testing.T) {
+	fb := &fakeBuilder{tag: "levelrail/web:railpack1"}
+	var fetchCalls []fakeFetchCall
+	cleanupCalled := false
+	rt, db := newTestRouterWithBuilder(t, fb, newFakeFetch(&fetchCalls, t.TempDir(), &cleanupCalled, nil))
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
+		`{"repo_url":"https://example.com/web.git","ref":"main","build":{"type":"railpack","path":"./Dockerfile"}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	if len(fetchCalls) != 0 {
+		t.Errorf("fetch called %d times, want 0: a railpack build.path must be rejected before any git I/O", len(fetchCalls))
+	}
+	if fb.calls != 0 {
+		t.Errorf("builder called %d times, want 0", fb.calls)
+	}
+}
+
+// TestHandleTriggerBuild_StaticAccepted proves the manual build trigger
+// no longer rejects build.type: static, and that its response shape is
+// the conditional one triggerBuildResponse's own doc comment describes:
+// StaticSite set, Image and App both absent, since deployStatic never
+// touches store.DesiredService and its returned string is a local
+// filesystem path this package never exposes (see staticSiteResource's
+// own doc comment).
+func TestHandleTriggerBuild_StaticAccepted(t *testing.T) {
+	// fakeBuilder.Deploy returns an absolute-looking path, exactly the
+	// shape internal/deploy.Pipeline.deployStatic really returns (the
+	// served-from directory, not an image tag): proves the handler never
+	// leaks it into the response regardless of what the underlying
+	// builder happens to hand back.
+	fb := &fakeBuilder{tag: "/var/lib/levelrail-data/static-sites/web/main"}
+	var fetchCalls []fakeFetchCall
+	cleanupCalled := false
+	rt, db := newTestRouterWithBuilder(t, fb, newFakeFetch(&fetchCalls, t.TempDir(), &cleanupCalled, nil))
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Domains: []string{"web.example.com"}}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
+		`{"repo_url":"https://example.com/web.git","ref":"main","build":{"type":"static"}}`))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+	if fb.calls != 1 {
+		t.Fatalf("builder called %d times, want 1", fb.calls)
+	}
+	if fb.lastReq.Service.Build.Type != "static" {
+		t.Errorf("Service.Build.Type = %q, want %q", fb.lastReq.Service.Build.Type, "static")
+	}
+
+	body := rec.Body.String()
+	if strings.Contains(body, "var/lib/levelrail-data") {
+		t.Errorf("response body leaked the static site's local filesystem path: %s", body)
+	}
+
+	var resp triggerBuildResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if resp.Image != "" {
+		t.Errorf("response Image = %q, want empty for a static build", resp.Image)
+	}
+	if resp.App != nil {
+		t.Errorf("response App = %+v, want nil for a static build", resp.App)
+	}
+	if resp.StaticSite == nil {
+		t.Fatal("response StaticSite = nil, want set for a static build")
+	}
+	if resp.StaticSite.Name != "web" {
+		t.Errorf("response StaticSite.Name = %q, want %q", resp.StaticSite.Name, "web")
+	}
+	if len(resp.StaticSite.Domains) != 1 || resp.StaticSite.Domains[0] != "web.example.com" {
+		t.Errorf("response StaticSite.Domains = %v, want [web.example.com]", resp.StaticSite.Domains)
+	}
+}
+
+// TestHandleTriggerBuild_ComposeStillRejected proves build.type: compose
+// specifically (not every non-dockerfile type, now that railpack and
+// static are accepted above) still gets the original 501, matching
+// internal/deploy.Pipeline.Deploy's own compose case, which still
+// returns "not yet supported".
+func TestHandleTriggerBuild_ComposeStillRejected(t *testing.T) {
+	fb := &fakeBuilder{tag: "levelrail/web:abc123"}
+	var fetchCalls []fakeFetchCall
+	cleanupCalled := false
+	rt, db := newTestRouterWithBuilder(t, fb, newFakeFetch(&fetchCalls, t.TempDir(), &cleanupCalled, nil))
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
+		`{"repo_url":"https://example.com/web.git","ref":"main","build":{"type":"compose"}}`))
+	if rec.Code != http.StatusNotImplemented {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusNotImplemented, rec.Body.String())
+	}
+	if fb.calls != 0 {
+		t.Errorf("builder called %d times, want 0", fb.calls)
+	}
+}
+
+// TestHandleTriggerBuild_UnrecognizedBuildTypeRejected proves a
+// build.type this control plane has never heard of fails as a plain 400
+// (a caller mistake), distinct from compose's 501 (a real, named
+// capability gap).
+func TestHandleTriggerBuild_UnrecognizedBuildTypeRejected(t *testing.T) {
+	fb := &fakeBuilder{tag: "levelrail/web:abc123"}
+	var fetchCalls []fakeFetchCall
+	cleanupCalled := false
+	rt, db := newTestRouterWithBuilder(t, fb, newFakeFetch(&fetchCalls, t.TempDir(), &cleanupCalled, nil))
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
+		`{"repo_url":"https://example.com/web.git","ref":"main","build":{"type":"nixpacks"}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	if fb.calls != 0 {
+		t.Errorf("builder called %d times, want 0", fb.calls)
+	}
+}
+
 func TestHandleTriggerBuild_InvalidBody(t *testing.T) {
 	rt, db := newTestRouterWithBuilder(t, &fakeBuilder{}, nil)
 	cookie := loginTestSession(t, rt, db)
