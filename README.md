@@ -9,15 +9,15 @@ Levelrail is a self-hosted deployment platform. Point it at one or more
 Linux boxes and it turns them into a private cloud: push to a git repo,
 get a running app with TLS, logs, metrics, and rollback.
 
-From the team behind [thesvg](https://github.com/glincker/thesvg) (6,400+ brand SVG icons) and [theauth-go](https://github.com/glincker/theauth-go) (OAuth 2.1 auth library for Go).
-
 ## Status
 
-Early, active development. The control plane and node agent run
-single-node today; multi-node support (agent enrollment, WireGuard mesh,
-node placement) is in progress. There is no stable release yet and the
+Early, active development. Single-node and multi-node both run today:
+agent enrollment, the WireGuard mesh, internal DNS, and node
+placement/cordon/drain are built. There is no stable release yet and the
 project is not ready for production workloads. APIs, the app spec format,
 and the on-disk data layout can all still change without notice.
+
+From the team behind [thesvg](https://github.com/glincker/thesvg) (6,400+ brand SVG icons) and [theauth-go](https://github.com/glincker/theauth-go) (OAuth 2.1 auth library for Go).
 
 ## Why not Coolify or Dokploy
 
