@@ -27,6 +27,9 @@ type Store interface {
 	SaveSecretValue(ctx context.Context, serviceName, envKey string, ciphertext []byte) error
 	HasSecretValue(ctx context.Context, serviceName, envKey string) (bool, error)
 	DeleteServiceSecrets(ctx context.Context, serviceName string) error
+	ListSecretKeys(ctx context.Context, serviceName string) ([]store.SecretKeyInfo, error)
+	GetSecretKeyLocked(ctx context.Context, serviceName, envKey string) (exists, locked bool, err error)
+	SetSecretLocked(ctx context.Context, serviceName, envKey string, locked bool) error
 }
 
 // ErrValueNotFound means no secret value has been set for a given
@@ -35,6 +38,13 @@ type Store interface {
 // service) or a missing ciphertext (DEK exists, this particular key
 // doesn't): callers only need to know "nothing to resolve", not which.
 var ErrValueNotFound = errors.New("secrets: value not found")
+
+// ErrSecretLocked is returned by SetValueGuarded when overwriting an
+// existing, locked value without overwriteLocked=true. Unlike
+// ErrValueNotFound this is not "nothing to do", it's "something exists
+// and refused to be replaced" -- callers (internal/api) should surface
+// it as a 409, not a generic 500.
+var ErrSecretLocked = errors.New("secrets: value is locked")
 
 // Manager combines a MasterKey with a Store to provide per-app envelope
 // encryption end to end: generate-or-reuse a service's DEK, encrypt a
@@ -72,6 +82,45 @@ func (m *Manager) SetValue(ctx context.Context, serviceName, envKey, plaintext s
 
 	if err := m.store.SaveSecretValue(ctx, serviceName, envKey, ciphertext); err != nil {
 		return fmt.Errorf("secrets: save value for %q/%q: %w", serviceName, envKey, err)
+	}
+	return nil
+}
+
+// SetValueGuarded is SetValue with a reversible per-key overwrite guard:
+// if a value already exists for (serviceName, envKey) and is locked,
+// this returns ErrSecretLocked without writing anything, unless
+// overwriteLocked is true. Only the general app-secrets path
+// (internal/api's SecretSetter) needs this; every other secret-backed
+// feature (OAuth client secrets, email SMTP password, backup
+// credentials, git source tokens, database passwords, the GitHub App's
+// own secrets) keeps calling the plain SetValue above, unaffected.
+func (m *Manager) SetValueGuarded(ctx context.Context, serviceName, envKey, plaintext string, overwriteLocked bool) error {
+	exists, locked, err := m.store.GetSecretKeyLocked(ctx, serviceName, envKey)
+	if err != nil {
+		return fmt.Errorf("secrets: check locked state for %q/%q: %w", serviceName, envKey, err)
+	}
+	if exists && locked && !overwriteLocked {
+		return ErrSecretLocked
+	}
+	return m.SetValue(ctx, serviceName, envKey, plaintext)
+}
+
+// ListKeys returns every secret key set for serviceName with its locked
+// state, never a value.
+func (m *Manager) ListKeys(ctx context.Context, serviceName string) ([]store.SecretKeyInfo, error) {
+	keys, err := m.store.ListSecretKeys(ctx, serviceName)
+	if err != nil {
+		return nil, fmt.Errorf("secrets: list keys for %q: %w", serviceName, err)
+	}
+	return keys, nil
+}
+
+// SetLocked toggles (serviceName, envKey)'s locked flag, reversible in
+// either direction. Returns store.ErrSecretValueNotFound if no value has
+// been set for that key yet.
+func (m *Manager) SetLocked(ctx context.Context, serviceName, envKey string, locked bool) error {
+	if err := m.store.SetSecretLocked(ctx, serviceName, envKey, locked); err != nil {
+		return fmt.Errorf("secrets: set locked for %q/%q: %w", serviceName, envKey, err)
 	}
 	return nil
 }
