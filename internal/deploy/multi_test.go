@@ -78,6 +78,24 @@ func TestDeploySpec_TwoServices_CreatesAppAndLinksBoth(t *testing.T) {
 	if err != nil {
 		t.Fatalf("DeploySpec() error = %v", err)
 	}
+	assertTwoServiceOutcomes(t, outcomes)
+
+	app, ok := apps.apps["myapp"]
+	if !ok {
+		t.Fatal("no app row named myapp was created")
+	}
+	if app.ID != "myapp" {
+		t.Errorf("app.ID = %q, want %q (ID == Name convention)", app.ID, "myapp")
+	}
+	assertBothServicesLinkedToApp(t, apps, app.ID)
+
+	if svcStore.savedByName["myapp-web"].Image == "" || svcStore.savedByName["myapp-worker"].Image == "" {
+		t.Errorf("savedByName = %+v, want both services saved with an image", svcStore.savedByName)
+	}
+}
+
+func assertTwoServiceOutcomes(t *testing.T, outcomes []ServiceOutcome) {
+	t.Helper()
 	if len(outcomes) != 2 {
 		t.Fatalf("outcomes = %+v, want 2", outcomes)
 	}
@@ -93,26 +111,17 @@ func TestDeploySpec_TwoServices_CreatesAppAndLinksBoth(t *testing.T) {
 	if outcomes[0].ServiceName != "myapp-web" || outcomes[1].ServiceName != "myapp-worker" {
 		t.Errorf("ServiceNames = [%s, %s], want [myapp-web, myapp-worker]", outcomes[0].ServiceName, outcomes[1].ServiceName)
 	}
+}
 
-	app, ok := apps.apps["myapp"]
-	if !ok {
-		t.Fatal("no app row named myapp was created")
-	}
-	if app.ID != "myapp" {
-		t.Errorf("app.ID = %q, want %q (ID == Name convention)", app.ID, "myapp")
-	}
-
+func assertBothServicesLinkedToApp(t *testing.T, apps *fakeAppStore, appID string) {
+	t.Helper()
 	if len(apps.updateServiceAppCalls) != 2 {
 		t.Fatalf("updateServiceAppCalls = %+v, want 2", apps.updateServiceAppCalls)
 	}
 	for _, call := range apps.updateServiceAppCalls {
-		if call.appID != app.ID {
-			t.Errorf("UpdateServiceApp call %+v, want appID %q", call, app.ID)
+		if call.appID != appID {
+			t.Errorf("UpdateServiceApp call %+v, want appID %q", call, appID)
 		}
-	}
-
-	if svcStore.savedByName["myapp-web"].Image == "" || svcStore.savedByName["myapp-worker"].Image == "" {
-		t.Errorf("savedByName = %+v, want both services saved with an image", svcStore.savedByName)
 	}
 }
 

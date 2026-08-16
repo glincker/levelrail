@@ -76,6 +76,11 @@ const maxPayloadBytes = 25 << 20
 // picking its own number.
 const MaxPayloadBytes = maxPayloadBytes
 
+const (
+	errWriteResponseBody = "webhook: failed to write response body"
+	errDeployFailed      = "deploy failed"
+)
+
 // Deployer is the narrow surface this package needs from
 // internal/deploy.Pipeline, so tests can fake it without a real BuildKit
 // connection or Docker daemon, the same narrow-interface pattern
@@ -141,16 +146,9 @@ type Config struct {
 	Service     spec.Service
 	ImageRepo   string
 
-	// Services, when non-empty, switches a triggering push from a
-	// single-service Deploy call to a multi-service DeploySpec fan-out
-	// (deploy.MultiRequest): ServiceName above becomes the app name every
-	// fanned-out service links to, and ImageRepo above becomes the image
-	// repo base every fanned-out service tags under. This is still
-	// single-app, env-var-configured Config, exactly like every other
-	// field here (the package doc comment's own scope boundary): Services
-	// is one more static, operator-configured value, not a per-push
-	// choice, so it does not reopen the "no multi-tenant registry" design
-	// decision that comment already makes.
+	// Services, when non-empty, switches a push to a multi-service
+	// DeploySpec fan-out: ServiceName becomes the app name, ImageRepo the
+	// image repo base every fanned-out service tags under.
 	Services map[string]spec.Service
 }
 
@@ -379,7 +377,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.log.Info("webhook: ignoring push to non-target branch", "ref", ev.Ref, "want_ref", wantRef)
 		w.WriteHeader(http.StatusOK)
 		if _, err := fmt.Fprintf(w, "ignored: push to %q, deploys trigger on %q only\n", ev.Ref, wantRef); err != nil {
-			h.log.Warn("webhook: failed to write response body", "error", err)
+			h.log.Warn(errWriteResponseBody, "error", err)
 		}
 		return
 	}
@@ -389,7 +387,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	sourceDir, cleanup, err := h.fetch(r.Context(), h.cfg.RepoURL, ev.After)
 	if err != nil {
 		h.log.Error("webhook: fetching source failed", "commit", ev.After, "repo_url", h.cfg.RepoURL, "error", err)
-		http.Error(w, "deploy failed", http.StatusInternalServerError)
+		http.Error(w, errDeployFailed, http.StatusInternalServerError)
 		return
 	}
 	defer cleanup()
@@ -412,26 +410,20 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	finishAttempt(tag, err)
 	if err != nil {
 		h.log.Error("webhook: deploy failed", "commit", ev.After, "service", h.cfg.ServiceName, "error", err)
-		http.Error(w, "deploy failed", http.StatusInternalServerError)
+		http.Error(w, errDeployFailed, http.StatusInternalServerError)
 		return
 	}
 
 	h.log.Info("webhook: deploy triggered", "commit", ev.After, "service", h.cfg.ServiceName, "tag", tag)
 	w.WriteHeader(http.StatusOK)
 	if _, err := fmt.Fprintf(w, "deploy triggered: %s\n", tag); err != nil {
-		h.log.Warn("webhook: failed to write response body", "error", err)
+		h.log.Warn(errWriteResponseBody, "error", err)
 	}
 }
 
-// deployMulti is ServeHTTP's multi-service branch, taken only when
-// Config.Services is non-empty: fans out to deploy.Pipeline.DeploySpec
-// instead of a single Deploy call. Deliberately does not record
-// deploy_attempts history per service, the same documented gap
-// internal/api's handleDeploySpec doc comment already accepts for the
-// identical reason (a real per-service attempt log is a store-schema-
-// sized follow-up, not something to improvise here); build progress is
-// only logged via slog, matching this method's caller's own existing
-// choice for a plain deploy failure.
+// deployMulti is ServeHTTP's multi-service branch, taken when
+// Config.Services is non-empty. No per-service deploy_attempts history
+// yet, same known gap as internal/api's handleDeploySpec.
 func (h *Handler) deployMulti(w http.ResponseWriter, r *http.Request, ev PushEvent, sourceDir string) {
 	progress := func(serviceKey string, e build.ProgressEvent) {
 		h.log.Info("webhook: multi-service build progress", "service_key", serviceKey, "step", e.Step, "completed", e.Completed)
@@ -446,7 +438,7 @@ func (h *Handler) deployMulti(w http.ResponseWriter, r *http.Request, ev PushEve
 	}, progress)
 	if err != nil {
 		h.log.Error("webhook: multi-service deploy failed", "commit", ev.After, "app", h.cfg.ServiceName, "error", err)
-		http.Error(w, "deploy failed", http.StatusInternalServerError)
+		http.Error(w, errDeployFailed, http.StatusInternalServerError)
 		return
 	}
 
@@ -466,7 +458,7 @@ func (h *Handler) deployMulti(w http.ResponseWriter, r *http.Request, ev PushEve
 	}
 	w.WriteHeader(status)
 	if _, err := fmt.Fprintf(w, "multi-service deploy triggered: %d service(s), all_succeeded=%t\n", len(outcomes), allSucceeded); err != nil {
-		h.log.Warn("webhook: failed to write response body", "error", err)
+		h.log.Warn(errWriteResponseBody, "error", err)
 	}
 }
 

@@ -114,11 +114,8 @@ type fakeDeployer struct {
 	calls   int
 	lastReq deploy.Request
 
-	// multiCalls, lastMultiReq, multiOutcomes, and multiErr back
-	// DeploySpec, mirroring internal/api's own fakeBuilder fake exactly
-	// (same shape, same reasoning): multiOutcomes takes priority when
-	// non-nil, otherwise DeploySpec synthesizes one successful
-	// ServiceOutcome per service key from tag.
+	// multiOutcomes/multiErr back DeploySpec, same fake shape as
+	// internal/api's fakeBuilder.
 	multiCalls    int
 	lastMultiReq  deploy.MultiRequest
 	multiOutcomes []deploy.ServiceOutcome
