@@ -9,9 +9,11 @@ import (
 )
 
 // PasswordResetToken is one outstanding forgot-password reset attempt.
-// TokenHash is the only form of the token ever persisted.
+// TokenHash is the only form of the token ever persisted. UserID names
+// which user's password this token can reset.
 type PasswordResetToken struct {
 	ID        string
+	UserID    string
 	TokenHash string
 	CreatedAt time.Time
 	ExpiresAt time.Time
@@ -25,9 +27,9 @@ var ErrPasswordResetTokenNotFound = errors.New("store: password reset token not 
 // SavePasswordResetToken inserts a new reset-token row.
 func (db *DB) SavePasswordResetToken(ctx context.Context, t PasswordResetToken) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO password_reset_tokens (id, token_hash, created_at, expires_at, used_at)
-		VALUES (?, ?, ?, ?, ?)
-	`, t.ID, t.TokenHash, formatTime(t.CreatedAt), formatTime(t.ExpiresAt), formatTimePtr(t.UsedAt))
+		INSERT INTO password_reset_tokens (id, user_id, token_hash, created_at, expires_at, used_at)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, t.ID, t.UserID, t.TokenHash, formatTime(t.CreatedAt), formatTime(t.ExpiresAt), formatTimePtr(t.UsedAt))
 	if err != nil {
 		return fmt.Errorf("store: save password reset token %q: %w", t.ID, err)
 	}
@@ -45,9 +47,9 @@ func (db *DB) GetPasswordResetTokenByHash(ctx context.Context, hash string) (*Pa
 		usedAt    sql.NullString
 	)
 	err := db.QueryRowContext(ctx, `
-		SELECT id, token_hash, created_at, expires_at, used_at
+		SELECT id, user_id, token_hash, created_at, expires_at, used_at
 		FROM password_reset_tokens WHERE token_hash = ?
-	`, hash).Scan(&t.ID, &t.TokenHash, &createdAt, &expiresAt, &usedAt)
+	`, hash).Scan(&t.ID, &t.UserID, &t.TokenHash, &createdAt, &expiresAt, &usedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrPasswordResetTokenNotFound
 	}

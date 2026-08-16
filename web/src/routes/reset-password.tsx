@@ -48,7 +48,7 @@ function ResetPasswordPage() {
         <CardHeader>
           <CardTitle>Set a new password</CardTitle>
           <CardDescription>
-            Choose a new password for the admin account.
+            Choose a new password for your account.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

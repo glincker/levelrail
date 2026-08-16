@@ -84,27 +84,25 @@ func tokenFromResetEmail(t *testing.T, body string) string {
 	return token
 }
 
+func forgotPasswordBody(email string) string {
+	return `{"email":"` + email + `"}`
+}
+
 func TestHandleForgotPassword_AlwaysReturns204(t *testing.T) {
 	tests := []struct {
 		name  string
-		setup func(t *testing.T, rt *Router, db *store.DB)
+		setup func(t *testing.T, db *store.DB)
 	}{
-		{name: "no admin bootstrapped", setup: func(_ *testing.T, _ *Router, _ *store.DB) {}},
-		{name: "admin with no recovery email", setup: func(t *testing.T, _ *Router, db *store.DB) { bootstrapTestAdmin(t, db) }},
-		{name: "admin with recovery email but no sender configured", setup: func(t *testing.T, _ *Router, db *store.DB) {
-			bootstrapTestAdmin(t, db)
-			if err := db.UpdateAdminEmail(context.Background(), "ops@example.com"); err != nil {
-				t.Fatalf("UpdateAdminEmail: %v", err)
-			}
-		}},
+		{name: "unknown email", setup: func(_ *testing.T, _ *store.DB) {}},
+		{name: "known email, no sender configured", setup: func(t *testing.T, db *store.DB) { bootstrapTestAdmin(t, db) }},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rt, db := newTestRouter(t) // no WithEmailSender: nil is valid
-			tt.setup(t, rt, db)
+			tt.setup(t, db)
 
 			rec := httptest.NewRecorder()
-			rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", nil))
+			rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", strings.NewReader(forgotPasswordBody(testAdminUsername))))
 			if rec.Code != http.StatusNoContent {
 				t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNoContent, rec.Body.String())
 			}
@@ -115,22 +113,13 @@ func TestHandleForgotPassword_AlwaysReturns204(t *testing.T) {
 	}
 }
 
-func TestHandleForgotPassword_NoAdminOrNoEmail_NeverSends(t *testing.T) {
+func TestHandleForgotPassword_UnknownEmail_NeverSends(t *testing.T) {
 	sender := newFakeEmailSender()
-	rt, db := newTestRouterWithEmailSender(t, sender)
-	// No admin bootstrapped at all.
+	rt, _ := newTestRouterWithEmailSender(t, sender)
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", nil))
+	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", strings.NewReader(forgotPasswordBody("nobody@example.com"))))
 	if rec.Code != http.StatusNoContent {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNoContent)
-	}
-	assertNoSend(t, sender.calls)
-
-	bootstrapTestAdmin(t, db) // admin exists now, but still no email on file
-	rec2 := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec2, httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", nil))
-	if rec2.Code != http.StatusNoContent {
-		t.Fatalf("status = %d, want %d", rec2.Code, http.StatusNoContent)
 	}
 	assertNoSend(t, sender.calls)
 }
@@ -139,22 +128,28 @@ func TestHandleForgotPassword_SendsWhenConfigured(t *testing.T) {
 	sender := newFakeEmailSender()
 	rt, db := newTestRouterWithEmailSender(t, sender)
 	bootstrapTestAdmin(t, db)
-	if err := db.UpdateAdminEmail(context.Background(), "ops@example.com"); err != nil {
-		t.Fatalf("UpdateAdminEmail: %v", err)
-	}
 
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", nil))
+	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", strings.NewReader(forgotPasswordBody(testAdminUsername))))
 	if rec.Code != http.StatusNoContent {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNoContent)
 	}
 
 	call := waitForSend(t, sender.calls)
-	if call.to != "ops@example.com" {
-		t.Errorf("sent to %q, want ops@example.com", call.to)
+	if call.to != testAdminUsername {
+		t.Errorf("sent to %q, want %q", call.to, testAdminUsername)
 	}
 	if !strings.Contains(call.body, "token=") {
 		t.Errorf("body has no reset link: %s", call.body)
+	}
+}
+
+func TestHandleForgotPassword_MissingEmail(t *testing.T) {
+	rt, _ := newTestRouter(t)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", strings.NewReader(`{"email":""}`)))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusBadRequest)
 	}
 }
 
@@ -164,7 +159,7 @@ func TestHandleForgotPassword_RateLimited(t *testing.T) {
 	var lastCode int
 	for i := 0; i < 5; i++ {
 		rec := httptest.NewRecorder()
-		rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", nil))
+		rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", strings.NewReader(forgotPasswordBody(testAdminUsername))))
 		lastCode = rec.Code
 	}
 	if lastCode != http.StatusTooManyRequests {
@@ -176,14 +171,11 @@ func TestHandleResetPassword_FullRoundTrip(t *testing.T) {
 	sender := newFakeEmailSender()
 	rt, db := newTestRouterWithEmailSender(t, sender)
 	bootstrapTestAdmin(t, db)
-	if err := db.UpdateAdminEmail(context.Background(), "ops@example.com"); err != nil {
-		t.Fatalf("UpdateAdminEmail: %v", err)
-	}
 
 	// A pre-existing session, to prove reset revokes it.
 	oldCookie := loginTestSession(t, rt, db)
 
-	rt.Handler().ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", nil))
+	rt.Handler().ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", strings.NewReader(forgotPasswordBody(testAdminUsername))))
 	call := waitForSend(t, sender.calls)
 	token := tokenFromResetEmail(t, call.body)
 
@@ -271,11 +263,15 @@ func TestHandleResetPassword_UnknownToken_GenericError(t *testing.T) {
 func TestHandleResetPassword_ExpiredToken_SameGenericError(t *testing.T) {
 	rt, db := newTestRouter(t)
 	bootstrapTestAdmin(t, db)
+	user, err := db.GetUserByEmail(context.Background(), testAdminUsername)
+	if err != nil {
+		t.Fatalf("GetUserByEmail: %v", err)
+	}
 
 	const plaintext = "expired-token-value" //nolint:gosec // fake fixture, not a real credential
 	now := time.Now().UTC()
 	if err := db.SavePasswordResetToken(context.Background(), store.PasswordResetToken{
-		ID: "prt_expired", TokenHash: hashToken(plaintext), CreatedAt: now.Add(-time.Hour), ExpiresAt: now.Add(-time.Minute),
+		ID: "prt_expired", UserID: user.ID, TokenHash: hashToken(plaintext), CreatedAt: now.Add(-time.Hour), ExpiresAt: now.Add(-time.Minute),
 	}); err != nil {
 		t.Fatalf("seed expired token: %v", err)
 	}

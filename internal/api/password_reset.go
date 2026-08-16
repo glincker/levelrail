@@ -33,19 +33,35 @@ func randomPasswordResetTokenID() (string, error) {
 	return passwordResetTokenIDPrefix + base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
-// forgotPasswordLimiterKey scopes the rate limit to the client IP alone:
-// unlike login, there's no username in the request to key on (exactly
-// one admin account exists to reset).
-func forgotPasswordLimiterKey(r *http.Request) string {
-	return "forgot-password|" + clientIP(r)
+// forgotPasswordLimiterKey scopes the rate limit to (client IP, email),
+// the same pairing loginLimiterKey uses: one target account being
+// hammered from one IP shouldn't exhaust every other account's budget
+// behind a shared NAT/office IP.
+func forgotPasswordLimiterKey(r *http.Request, email string) string {
+	return "forgot-password|" + clientIP(r) + "|" + email
 }
 
-// handleForgotPassword handles POST /api/v1/auth/forgot-password. No
-// body is required: there's exactly one admin account. The lookup and
-// send run in a detached background goroutine after the response is
-// already committed, so timing never reveals admin/email/send state.
+type forgotPasswordRequest struct {
+	Email string `json:"email"`
+}
+
+// handleForgotPassword handles POST /api/v1/auth/forgot-password. The
+// lookup and send run in a detached background goroutine after the
+// response is already committed, so timing never reveals whether the
+// email matched an account, has no password reset need (OAuth-only, no
+// password set), or send succeeded/failed.
 func (rt *Router) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
-	key := forgotPasswordLimiterKey(r)
+	var req forgotPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.Email == "" {
+		writeError(w, http.StatusBadRequest, "email is required")
+		return
+	}
+
+	key := forgotPasswordLimiterKey(r, req.Email)
 	if ok, retryAfter := rt.forgotPassword.allow(key); !ok {
 		w.Header().Set("Retry-After", fmt.Sprintf("%.0f", retryAfter.Seconds()))
 		writeError(w, http.StatusTooManyRequests, "too many requests, try again later")
@@ -53,7 +69,7 @@ func (rt *Router) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 	}
 	rt.forgotPassword.recordFailure(key)
 
-	go rt.sendPasswordResetEmail(context.Background())
+	go rt.sendPasswordResetEmail(context.Background(), req.Email)
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -61,22 +77,19 @@ func (rt *Router) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 // sendPasswordResetEmail is handleForgotPassword's background half.
 // Every early return is a real, expected outcome, never surfaced to a
 // caller: the HTTP response was already written by the time this runs.
-func (rt *Router) sendPasswordResetEmail(ctx context.Context) {
+func (rt *Router) sendPasswordResetEmail(ctx context.Context, email string) {
 	ctx, cancel := context.WithTimeout(ctx, passwordResetSendTimeout)
 	defer cancel()
 
-	admin, err := rt.auth.GetAdminUser(ctx)
+	user, err := rt.auth.GetUserByEmail(ctx, email)
 	if err != nil {
-		if !errors.Is(err, store.ErrAdminNotFound) {
-			rt.logger.Error("api: forgot password: load admin user failed", slog.String("error", err.Error()))
+		if !errors.Is(err, store.ErrUserNotFound) {
+			rt.logger.Error("api: forgot password: load user failed", slog.String("error", err.Error()))
 		}
 		return
 	}
-	if admin.Email == "" {
-		return
-	}
 	if rt.emailSender == nil {
-		rt.logger.Warn("api: forgot password: no admin email capability configured on this control plane")
+		rt.logger.Warn("api: forgot password: no email capability configured on this control plane")
 		return
 	}
 
@@ -94,6 +107,7 @@ func (rt *Router) sendPasswordResetEmail(ctx context.Context) {
 	now := time.Now().UTC()
 	rec := store.PasswordResetToken{
 		ID:        id,
+		UserID:    user.ID,
 		TokenHash: hashToken(plaintext),
 		CreatedAt: now,
 		ExpiresAt: now.Add(passwordResetTokenTTL),
@@ -106,10 +120,10 @@ func (rt *Router) sendPasswordResetEmail(ctx context.Context) {
 	url := rt.passwordResetURL(ctx, plaintext)
 	subject := fmt.Sprintf("[%s] Reset your password", rt.brand.Name)
 	body := fmt.Sprintf(
-		"A password reset was requested for your %s admin account.\n\nReset your password: %s\n\nThis link expires in %d minutes. If you didn't request this, you can safely ignore this email.",
+		"A password reset was requested for your %s account.\n\nReset your password: %s\n\nThis link expires in %d minutes. If you didn't request this, you can safely ignore this email.",
 		rt.brand.Name, url, int(passwordResetTokenTTL.Minutes()),
 	)
-	if err := rt.emailSender.Send(ctx, admin.Email, subject, body); err != nil {
+	if err := rt.emailSender.Send(ctx, user.Email, subject, body); err != nil {
 		rt.logger.Error("api: forgot password: send email failed", slog.String("error", err.Error()))
 	}
 }
@@ -183,25 +197,19 @@ func (rt *Router) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	admin, err := rt.auth.GetAdminUser(r.Context())
-	if err != nil {
-		rt.logger.Error("api: reset password: load admin user failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-
 	newHash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
 		rt.logger.Error("api: reset password: hash new password failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	if err := rt.auth.UpsertAdminUser(r.Context(), admin.Username, string(newHash)); err != nil {
+	newHashStr := string(newHash)
+	if err := rt.auth.UpdateUserPasswordHash(r.Context(), rec.UserID, &newHashStr); err != nil {
 		rt.logger.Error("api: reset password: save failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
-	rt.sessions.revokeAll(admin.Username)
+	rt.sessions.revokeAll(rec.UserID)
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -40,8 +40,7 @@ function ForgotPasswordPage() {
         <CardHeader>
           <CardTitle>Reset your password</CardTitle>
           <CardDescription>
-            We'll email a reset link to the admin account's recovery address, if
-            one is on file.
+            We'll email a reset link if the address matches an account.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

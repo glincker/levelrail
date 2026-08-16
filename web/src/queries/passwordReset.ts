@@ -5,11 +5,15 @@
 import { useMutation } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
-// Always 204 by design (handleForgotPassword never reveals whether an
-// admin or recovery email exists), so there is nothing to distinguish
-// in a successful response.
-export async function forgotPassword(): Promise<void> {
-  const res = await fetch('/api/v1/auth/forgot-password', { method: 'POST' })
+// Always 204 by design (handleForgotPassword never reveals whether the
+// email matched an account), so there is nothing to distinguish in a
+// successful response.
+export async function forgotPassword(email: string): Promise<void> {
+  const res = await fetch('/api/v1/auth/forgot-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
   if (!res.ok) {
     throw new ApiError(
       res.status,
@@ -19,7 +23,7 @@ export async function forgotPassword(): Promise<void> {
 }
 
 export function useForgotPassword() {
-  return useMutation<void, ApiError>({ mutationFn: forgotPassword })
+  return useMutation<void, ApiError, string>({ mutationFn: forgotPassword })
 }
 
 export interface ResetPasswordArgs {

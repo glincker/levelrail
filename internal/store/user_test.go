@@ -15,12 +15,12 @@ func TestCreateAndGetUser_RoundTrip(t *testing.T) {
 
 	hash := "bcrypt-hash"
 	want := User{
-		ID:          "user_abc123",
-		Email:       "founder@example.com",
-		DisplayName: "Founder",
+		ID:           "user_abc123",
+		Email:        "founder@example.com",
+		DisplayName:  "Founder",
 		PasswordHash: &hash,
-		IsFirstUser: true,
-		CreatedAt:   time.Now().UTC().Truncate(time.Second),
+		IsFirstUser:  true,
+		CreatedAt:    time.Now().UTC().Truncate(time.Second),
 	}
 	if err := db.CreateUser(ctx, want); err != nil {
 		t.Fatalf("CreateUser() error = %v", err)

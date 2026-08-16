@@ -19,10 +19,12 @@ func TestGetPasswordResetTokenByHash_NotFound(t *testing.T) {
 func TestSaveAndGetPasswordResetToken_RoundTrips(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
+	user := seedTestUser(t, db, "user_1", "user1@example.com")
 
 	now := time.Now().UTC().Truncate(time.Millisecond)
 	want := PasswordResetToken{
 		ID:        "prt_1",
+		UserID:    user.ID,
 		TokenHash: "deadbeef",
 		CreatedAt: now,
 		ExpiresAt: now.Add(30 * time.Minute),
@@ -35,8 +37,8 @@ func TestSaveAndGetPasswordResetToken_RoundTrips(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetPasswordResetTokenByHash() error = %v", err)
 	}
-	if got.ID != want.ID || got.TokenHash != want.TokenHash {
-		t.Errorf("got %+v, want ID/TokenHash matching %+v", got, want)
+	if got.ID != want.ID || got.UserID != want.UserID || got.TokenHash != want.TokenHash {
+		t.Errorf("got %+v, want ID/UserID/TokenHash matching %+v", got, want)
 	}
 	if !got.CreatedAt.Equal(want.CreatedAt) || !got.ExpiresAt.Equal(want.ExpiresAt) {
 		t.Errorf("got CreatedAt=%v ExpiresAt=%v, want %v / %v", got.CreatedAt, got.ExpiresAt, want.CreatedAt, want.ExpiresAt)
@@ -49,10 +51,11 @@ func TestSaveAndGetPasswordResetToken_RoundTrips(t *testing.T) {
 func TestClaimPasswordResetToken_SetsUsedAt(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
+	user := seedTestUser(t, db, "user_1", "user1@example.com")
 
 	now := time.Now().UTC()
 	if err := db.SavePasswordResetToken(ctx, PasswordResetToken{
-		ID: "prt_1", TokenHash: "deadbeef", CreatedAt: now, ExpiresAt: now.Add(30 * time.Minute),
+		ID: "prt_1", UserID: user.ID, TokenHash: "deadbeef", CreatedAt: now, ExpiresAt: now.Add(30 * time.Minute),
 	}); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
@@ -73,10 +76,11 @@ func TestClaimPasswordResetToken_SetsUsedAt(t *testing.T) {
 func TestClaimPasswordResetToken_SecondClaimFails(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
+	user := seedTestUser(t, db, "user_1", "user1@example.com")
 
 	now := time.Now().UTC()
 	if err := db.SavePasswordResetToken(ctx, PasswordResetToken{
-		ID: "prt_1", TokenHash: "deadbeef", CreatedAt: now, ExpiresAt: now.Add(30 * time.Minute),
+		ID: "prt_1", UserID: user.ID, TokenHash: "deadbeef", CreatedAt: now, ExpiresAt: now.Add(30 * time.Minute),
 	}); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
@@ -92,9 +96,10 @@ func TestClaimPasswordResetToken_SecondClaimFails(t *testing.T) {
 func TestSavePasswordResetToken_DuplicateHashRejected(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
+	user := seedTestUser(t, db, "user_1", "user1@example.com")
 	now := time.Now().UTC()
 
-	tok := PasswordResetToken{ID: "prt_1", TokenHash: "same-hash", CreatedAt: now, ExpiresAt: now.Add(time.Hour)}
+	tok := PasswordResetToken{ID: "prt_1", UserID: user.ID, TokenHash: "same-hash", CreatedAt: now, ExpiresAt: now.Add(time.Hour)}
 	if err := db.SavePasswordResetToken(ctx, tok); err != nil {
 		t.Fatalf("first save: %v", err)
 	}

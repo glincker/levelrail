@@ -108,3 +108,24 @@ func (rt *Router) handleGetSession(w http.ResponseWriter, r *http.Request) {
 		ExpiresAt:   sess.expiresAt.UTC().Format(time.RFC3339),
 	})
 }
+
+// handleRevokeOtherSessions handles POST /api/v1/auth/sessions/revoke-others:
+// the standalone, user-triggered version of the same revokeAllExcept
+// rotation handleChangePassword already performs automatically. Exists
+// for the case an operator wants to end other signed-in sessions (a
+// forgotten browser, a shared machine) without also being forced to
+// change their password to get there.
+func (rt *Router) handleRevokeOtherSessions(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+	userID, ok := rt.sessions.lookup(cookie.Value)
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+	rt.sessions.revokeAllExcept(userID, cookie.Value)
+	w.WriteHeader(http.StatusNoContent)
+}
