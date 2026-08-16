@@ -37,6 +37,15 @@ type appResource struct {
 	// service saved without these fields has always had.
 	Strategy string `json:"strategy"`
 	Replicas int    `json:"replicas"`
+	// Labels are arbitrary operator-supplied Docker labels applied to
+	// the app's container at create time (internal/spec.Service.Labels'
+	// wire counterpart), exposed on the general create/update endpoints
+	// rather than a dedicated one: this is fairly static, low-frequency-
+	// change config, not something needing its own PUT the way a
+	// restart nonce or backup schedule does. validateAppResource runs
+	// internal/spec.ValidateLabels against it, the same reserved-prefix
+	// and sanity-limit rules app.yaml-sourced labels get.
+	Labels map[string]string `json:"labels,omitempty"`
 	// NodeID is TASKS.md 3.3's placement (empty means this control
 	// plane's own local node). Response-only: toDesiredService below
 	// never reads it, the same "shown but not settable through this
@@ -68,6 +77,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		Health:    svc.Health,
 		Strategy:  svc.Strategy,
 		Replicas:  svc.Replicas,
+		Labels:    svc.Labels,
 		NodeID:    svc.NodeID,
 		ProjectID: svc.ProjectID,
 	}
@@ -84,6 +94,7 @@ func (a appResource) toDesiredService() store.DesiredService {
 		Health:    a.Health,
 		Strategy:  a.Strategy,
 		Replicas:  a.Replicas,
+		Labels:    a.Labels,
 	}
 }
 
@@ -129,6 +140,9 @@ func validateAppResource(a appResource) error {
 	// negative count is nonsensical.
 	if a.Replicas < 0 {
 		return errors.New("replicas must not be negative")
+	}
+	if err := spec.ValidateLabels(a.Labels); err != nil {
+		return err
 	}
 	return nil
 }

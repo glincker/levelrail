@@ -102,6 +102,17 @@ type ContainerSpec struct {
 	// (cmd/levelrail/mesh.go's containerDNSAddr) ever sets this, and
 	// only when the mesh is actually enabled and running.
 	DNS []string
+	// Labels are applied to the container verbatim via the Engine API's
+	// own label mechanism (container.Config.Labels), operator-supplied
+	// custom Docker labels (internal/spec.Service.Labels, an escape
+	// hatch for external tooling that keys off container labels). This
+	// package stays spec-agnostic (same reasoning as Image being a
+	// plain string, not something spec-aware, this struct's own doc
+	// comment above): it trusts Labels arrived here already validated,
+	// the same way it already trusts Env and every other field. See
+	// internal/spec.ValidateLabels for what's rejected before a caller
+	// ever builds a ContainerSpec with this set.
+	Labels map[string]string
 }
 
 // ImageInfo is one tagged image available locally, used to discover

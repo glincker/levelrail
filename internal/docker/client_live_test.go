@@ -52,10 +52,11 @@ func TestClient_Create_Live_PortsEnvAndNoRestartPolicy(t *testing.T) {
 	t.Cleanup(func() { removeIfExists(ctx, t, c, name) })
 
 	id, err := c.Create(ctx, ContainerSpec{
-		Name:  name,
-		Image: "nginx:alpine",
-		Ports: []PortBinding{{ContainerPort: 80}}, // HostPort 0: let Docker assign one
-		Env:   map[string]string{"LEVELRAIL_TEST": "1"},
+		Name:   name,
+		Image:  "nginx:alpine",
+		Ports:  []PortBinding{{ContainerPort: 80}}, // HostPort 0: let Docker assign one
+		Env:    map[string]string{"LEVELRAIL_TEST": "1"},
+		Labels: map[string]string{"team": "platform"},
 	})
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
@@ -113,6 +114,9 @@ func TestClient_Create_Live_PortsEnvAndNoRestartPolicy(t *testing.T) {
 	}
 	if raw.HostConfig.RestartPolicy.Name != "no" {
 		t.Errorf("restart policy = %q, want \"no\" (the reconciler owns restart, not Docker)", raw.HostConfig.RestartPolicy.Name)
+	}
+	if raw.Config.Labels["team"] != "platform" {
+		t.Errorf("label team = %q, want %q", raw.Config.Labels["team"], "platform")
 	}
 }
 

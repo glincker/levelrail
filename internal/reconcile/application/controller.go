@@ -707,9 +707,10 @@ func isHexDigit(r rune) bool {
 
 func toContainerSpec(name string, desired *store.DesiredService) docker.ContainerSpec {
 	spec := docker.ContainerSpec{
-		Name:  name,
-		Image: desired.Image,
-		Env:   desired.Env,
+		Name:   name,
+		Image:  desired.Image,
+		Env:    desired.Env,
+		Labels: desired.Labels,
 	}
 	if desired.Port != 0 {
 		spec.Ports = []docker.PortBinding{{ContainerPort: desired.Port}}

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -32,6 +33,9 @@ func TestValidateAppResource(t *testing.T) {
 		{name: "zero replicas falls through to store default", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Replicas: 0}, wantErr: false},
 		{name: "positive replicas valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Replicas: 3}, wantErr: false},
 		{name: "negative replicas rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Replicas: -1}, wantErr: true},
+		{name: "custom labels valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Labels: map[string]string{"team": "platform"}}, wantErr: false},
+		{name: "reserved-prefix label rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Labels: map[string]string{spec.ReservedLabelPrefix + "managed": "true"}}, wantErr: true},
+		{name: "empty label key rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Labels: map[string]string{"": "x"}}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -268,6 +272,52 @@ func TestHandleCreateApp_StrategyAndReplicas(t *testing.T) {
 	}
 	if svcDefault.Strategy != store.DefaultDeployStrategy || svcDefault.Replicas != store.DefaultReplicas {
 		t.Errorf("saved service = %+v, want strategy=%s replicas=%d", svcDefault, store.DefaultDeployStrategy, store.DefaultReplicas)
+	}
+}
+
+func TestHandleCreateApp_Labels(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"web","image":"levelrail/web:1","port":3000,"labels":{"team":"platform","tier":"frontend"}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after create: %v", err)
+	}
+	if svc.Labels["team"] != "platform" || svc.Labels["tier"] != "frontend" || len(svc.Labels) != 2 {
+		t.Errorf("saved labels = %+v, want map[team:platform tier:frontend]", svc.Labels)
+	}
+	var got appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Labels["team"] != "platform" || got.Labels["tier"] != "frontend" {
+		t.Errorf("response labels = %+v, want map[team:platform tier:frontend]", got.Labels)
+	}
+}
+
+// TestHandleCreateApp_ReservedLabelPrefix_Rejected proves the collision-
+// prevention rule is enforced through the general create endpoint too,
+// not only through app.yaml parsing: a custom label under
+// spec.ReservedLabelPrefix must never be accepted, since it's this
+// platform's own reserved namespace.
+func TestHandleCreateApp_ReservedLabelPrefix_Rejected(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"web","image":"levelrail/web:1","port":3000,"labels":{"` + spec.ReservedLabelPrefix + `managed":"true"}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", body))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	if _, err := db.GetDesiredService(context.Background(), "web"); err == nil {
+		t.Error("a reserved-prefix label must not have saved a service")
 	}
 }
 

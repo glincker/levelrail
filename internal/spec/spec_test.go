@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -54,6 +55,9 @@ func TestParse_ValidFull(t *testing.T) {
 	}
 	if web.Strategy != StrategyRolling {
 		t.Errorf("Strategy = %q, want %q", web.Strategy, StrategyRolling)
+	}
+	if web.Labels["team"] != "platform" || web.Labels["tier"] != "frontend" || len(web.Labels) != 2 {
+		t.Errorf("Labels = %+v, want map[team:platform tier:frontend]", web.Labels)
 	}
 
 	dbURL, ok := web.Env["DATABASE_URL"]
@@ -276,6 +280,27 @@ services:
 			wantErrSubstr: "name must be lowercase alphanumeric",
 		},
 		{
+			name: "label key uses the reserved prefix",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, labels: { "platform-reserved.foo": "x" } }
+`,
+			wantErrSubstr: "uses the reserved prefix",
+		},
+		{
+			name: "too many labels",
+			yaml: `
+version: 1
+services:
+  web:
+    build: { type: dockerfile }
+    port: 8080
+    labels: {` + manyLabelsYAML(MaxLabels+1) + `}
+`,
+			wantErrSubstr: "at most",
+		},
+		{
 			// Caught by the schema's engine enum before Validate's own
 			// (currently unreachable while the two stay in sync, kept
 			// anyway per the same reasoning as the strategy check in
@@ -308,5 +333,87 @@ func TestParse_InvalidYAML(t *testing.T) {
 	_, err := Parse([]byte("not: valid: yaml: at: all: [[["))
 	if err == nil {
 		t.Fatal("Parse() error = nil for malformed YAML, want an error")
+	}
+}
+
+// manyLabelsYAML builds n "keyN: valueN" YAML flow-map entries, used by
+// TestParse_Invalid's "too many labels" case to exceed MaxLabels without
+// hand-writing dozens of lines.
+func manyLabelsYAML(n int) string {
+	var b strings.Builder
+	for i := 0; i < n; i++ {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		fmt.Fprintf(&b, "key%d: value%d", i, i)
+	}
+	return b.String()
+}
+
+func TestValidateLabels(t *testing.T) {
+	tests := []struct {
+		name          string
+		labels        map[string]string
+		wantErr       bool
+		wantErrSubstr string
+	}{
+		{name: "nil is valid", labels: nil, wantErr: false},
+		{name: "empty is valid", labels: map[string]string{}, wantErr: false},
+		{name: "ordinary labels valid", labels: map[string]string{"team": "platform", "env": "prod"}, wantErr: false},
+		{
+			name:          "empty key rejected",
+			labels:        map[string]string{"": "x"},
+			wantErr:       true,
+			wantErrSubstr: "must not be empty",
+		},
+		{
+			name:          "reserved prefix rejected",
+			labels:        map[string]string{ReservedLabelPrefix + "managed": "true"},
+			wantErr:       true,
+			wantErrSubstr: "reserved prefix",
+		},
+		{
+			name:          "key over the length limit rejected",
+			labels:        map[string]string{strings.Repeat("k", MaxLabelKeyLength+1): "x"},
+			wantErr:       true,
+			wantErrSubstr: "exceeds",
+		},
+		{
+			name:          "value over the length limit rejected",
+			labels:        map[string]string{"key": strings.Repeat("v", MaxLabelValueLength+1)},
+			wantErr:       true,
+			wantErrSubstr: "exceeds",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateLabels(tt.labels)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ValidateLabels() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErrSubstr != "" && (err == nil || !strings.Contains(err.Error(), tt.wantErrSubstr)) {
+				t.Errorf("ValidateLabels() error = %v, want it to contain %q", err, tt.wantErrSubstr)
+			}
+		})
+	}
+}
+
+// TestValidateLabels_ReservedPrefixNeverOverridable proves the collision
+// scenario this feature exists to prevent can't happen: any custom label
+// key inside ReservedLabelPrefix's namespace, however it's spelled, is
+// rejected outright rather than silently accepted and later colliding
+// with a bookkeeping label this platform might add under that prefix.
+func TestValidateLabels_ReservedPrefixNeverOverridable(t *testing.T) {
+	candidates := []string{
+		ReservedLabelPrefix + "managed",
+		ReservedLabelPrefix + "service",
+		ReservedLabelPrefix + "x",
+	}
+	for _, key := range candidates {
+		t.Run(key, func(t *testing.T) {
+			if err := ValidateLabels(map[string]string{key: "attacker-controlled"}); err == nil {
+				t.Fatalf("ValidateLabels(%q) = nil error, want rejection of a reserved-namespace key", key)
+			}
+		})
 	}
 }

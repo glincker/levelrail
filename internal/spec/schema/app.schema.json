@@ -37,7 +37,11 @@
           "additionalProperties": { "$ref": "#/$defs/envValue" }
         },
         "replicas": { "type": "integer", "minimum": 1 },
-        "strategy": { "enum": ["rolling", "recreate", "blue-green"] }
+        "strategy": { "enum": ["rolling", "recreate", "blue-green"] },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
       }
     },
     "build": {

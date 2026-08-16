@@ -29,6 +29,7 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		// resolve-before-storing shape below.
 		Strategy: svc.EffectiveStrategy(),
 		Replicas: svc.EffectiveReplicas(),
+		Labels:   svc.Labels,
 	}
 
 	if svc.Resources != nil {
