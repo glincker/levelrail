@@ -44,13 +44,14 @@ const FIXED_OPTIONS: WizardOptionDef[] = [
   {
     value: 'docker-image',
     label: 'Docker image',
-    description: 'Already have a built image ready to run.',
+    description:
+      "You've already built an image and pushed it somewhere Docker can pull it from.",
     icon: <BrandIcon name="docker" className="size-6" />,
   },
   {
     value: 'dockerfile-git',
-    label: 'Dockerfile from git',
-    description: 'Build an image from a Dockerfile in a repo.',
+    label: 'Deploy from git',
+    description: "Point us at your repository, we'll build and deploy it for you.",
     // No brand mark for this one: git itself isn't one of the four
     // vendored @thesvg/react logos (BrandIcon.tsx's own doc comment),
     // so this uses the same Phosphor icon DeployTriggerForm.tsx's
@@ -126,7 +127,7 @@ export function CreateResourceWizard({
       return {
         value: engine.id,
         label: engine.label,
-        description: `A managed ${engine.label} database.`,
+        description: `A managed ${engine.label} database, set up and ready to use automatically.`,
         icon: brandName ? (
           <BrandIcon name={brandName} className="size-6" />
         ) : (
@@ -157,6 +158,20 @@ export function CreateResourceWizard({
         ? 'New app from an image'
         : 'New app from a git repo'
       : `New ${engines.find((e) => e.id === selected)?.label ?? selected} database`
+    : ''
+
+  // One-sentence, plain-language framing of what's about to happen,
+  // specific to the picked path: a first-time user shouldn't have to
+  // infer it from the fields alone. The app.yaml aside only applies to
+  // the two app paths, since a database has no spec-file equivalent.
+  const appYamlAside =
+    "Already deploying this app from an app.yaml in a connected repo? That happens automatically, you don't need to add it here."
+  const selectedDescription = selected
+    ? selected === 'docker-image'
+      ? `Point this at an image you've already built and pushed to a registry Docker can pull from, like Docker Hub or GHCR. ${appYamlAside}`
+      : selected === 'dockerfile-git'
+        ? `We'll create your app, then build and deploy it straight from your repository. This usually takes a minute or two. ${appYamlAside}`
+        : "We'll set this database up on your server and connect it automatically, no manual configuration needed."
     : ''
 
   return (
@@ -276,11 +291,7 @@ export function CreateResourceWizard({
                 </Button>
                 {selectedTitle}
               </DialogTitle>
-              <DialogDescription>
-                {isFixedOption(selected)
-                  ? 'Apps deployed from an app.yaml spec in a connected repo show up automatically instead.'
-                  : 'The reconciler provisions it on the target node.'}
-              </DialogDescription>
+              <DialogDescription>{selectedDescription}</DialogDescription>
             </DialogHeader>
             {/* key={selected} forces a fresh mount (and so a blank
                 form) whenever the picked option changes, including

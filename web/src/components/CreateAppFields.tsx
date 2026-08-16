@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -8,7 +8,7 @@ import { DialogFooter } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Field, FieldError, FieldLabel } from '@/components/ui/field'
+import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
 import {
   Select,
   SelectContent,
@@ -151,6 +151,12 @@ export function CreateAppFields({
   // creation, the project field below is simply not rendered.
   const projectList = useProjectListOptional()
   const projects = projectList.data ?? []
+  // Strategy/replicas/node/project are real fields but not ones a
+  // first-time deploy needs to touch, so they start collapsed. Not reset
+  // on close: the wizard's own step-2 branch unmounts this component
+  // entirely when the dialog closes (see CreateResourceWizard.tsx), so a
+  // fresh open already gets a fresh useState(false) here.
+  const [showAdvanced, setShowAdvanced] = useState(false)
   const { control, register, handleSubmit, formState, reset } = useForm<
     CreateAppFormInput,
     unknown,
@@ -245,6 +251,11 @@ export function CreateAppFields({
           placeholder="e.g. ghcr.io/you/app:latest"
           {...register('image')}
         />
+        <FieldHint>
+          The image to run, including a tag. Don&rsquo;t have one built yet?
+          Pick the git option in step 1 instead and we&rsquo;ll build it for
+          you.
+        </FieldHint>
         <FieldError errors={[formState.errors.image]} />
       </Field>
 
@@ -258,105 +269,145 @@ export function CreateAppFields({
           placeholder="e.g. 3000"
           {...register('port')}
         />
+        <FieldHint>
+          The port your app listens on inside its container, e.g. 3000 for a
+          typical Next.js app.
+        </FieldHint>
         <FieldError errors={[formState.errors.port]} />
       </Field>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field>
-          <FieldLabel htmlFor="app-strategy">Deploy strategy</FieldLabel>
-          <Controller
-            control={control}
-            name="strategy"
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger id="app-strategy" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={STRATEGY_DEFAULT_VALUE}>
-                    Default (blue-green)
-                  </SelectItem>
-                  <SelectItem value="recreate">Recreate</SelectItem>
-                  <SelectItem value="blue-green">Blue-green</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          <FieldError errors={[formState.errors.strategy]} />
-        </Field>
-
-        <Field>
-          <FieldLabel htmlFor="app-replicas">Replicas</FieldLabel>
-          <Input
-            id="app-replicas"
-            type="number"
-            step="1"
-            min="1"
-            placeholder="1"
-            {...register('replicas')}
-          />
-          <FieldError errors={[formState.errors.replicas]} />
-        </Field>
-      </div>
-
-      {nodes.length > 0 ? (
-        <Field>
-          <FieldLabel htmlFor="app-node">Node</FieldLabel>
-          <Controller
-            control={control}
-            name="node"
-            render={({ field }) => (
-              <Select
-                value={field.value ?? LOCAL_NODE_VALUE}
-                onValueChange={field.onChange}
-              >
-                <SelectTrigger id="app-node" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={LOCAL_NODE_VALUE}>
-                    This control plane (local)
-                  </SelectItem>
-                  {nodes.map((node) => (
-                    <SelectItem key={node.id} value={node.id}>
-                      {node.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-          <FieldError errors={[formState.errors.node]} />
-        </Field>
+      {nodes.length > 0 || projects.length > 0 ? (
+        <button
+          type="button"
+          onClick={() => {
+            setShowAdvanced((prev) => !prev)
+          }}
+          aria-expanded={showAdvanced}
+          className="w-fit text-xs font-medium text-muted-foreground hover:text-foreground"
+        >
+          {showAdvanced ? 'Hide advanced options' : 'Show advanced options'}
+        </button>
       ) : null}
 
-      {projects.length > 0 ? (
-        <Field>
-          <FieldLabel htmlFor="app-project">Project</FieldLabel>
-          <Controller
-            control={control}
-            name="project"
-            render={({ field }) => (
-              <Select
-                value={field.value ?? NO_PROJECT_VALUE}
-                onValueChange={field.onChange}
-              >
-                <SelectTrigger id="app-project" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_PROJECT_VALUE}>No project</SelectItem>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-          <FieldError errors={[formState.errors.project]} />
-        </Field>
+      {showAdvanced ? (
+        <div className="space-y-4 rounded-lg border border-dashed border-border p-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel htmlFor="app-strategy">Deploy strategy</FieldLabel>
+              <Controller
+                control={control}
+                name="strategy"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger id="app-strategy" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={STRATEGY_DEFAULT_VALUE}>
+                        Default (blue-green)
+                      </SelectItem>
+                      <SelectItem value="recreate">Recreate</SelectItem>
+                      <SelectItem value="blue-green">Blue-green</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <FieldHint>
+                How new versions roll out. Blue-green starts the new version
+                alongside the old one and switches traffic over once it&rsquo;s
+                healthy.
+              </FieldHint>
+              <FieldError errors={[formState.errors.strategy]} />
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="app-replicas">Replicas</FieldLabel>
+              <Input
+                id="app-replicas"
+                type="number"
+                step="1"
+                min="1"
+                placeholder="1"
+                {...register('replicas')}
+              />
+              <FieldHint>
+                How many copies of your app run at once. Leave blank to run
+                just one.
+              </FieldHint>
+              <FieldError errors={[formState.errors.replicas]} />
+            </Field>
+          </div>
+
+          {nodes.length > 0 ? (
+            <Field>
+              <FieldLabel htmlFor="app-node">Node</FieldLabel>
+              <Controller
+                control={control}
+                name="node"
+                render={({ field }) => (
+                  <Select
+                    value={field.value ?? LOCAL_NODE_VALUE}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger id="app-node" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={LOCAL_NODE_VALUE}>
+                        This control plane (local)
+                      </SelectItem>
+                      {nodes.map((node) => (
+                        <SelectItem key={node.id} value={node.id}>
+                          {node.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <FieldHint>
+                Which server this runs on. Leave it on local unless
+                you&rsquo;ve added another server to manage.
+              </FieldHint>
+              <FieldError errors={[formState.errors.node]} />
+            </Field>
+          ) : null}
+
+          {projects.length > 0 ? (
+            <Field>
+              <FieldLabel htmlFor="app-project">Project</FieldLabel>
+              <Controller
+                control={control}
+                name="project"
+                render={({ field }) => (
+                  <Select
+                    value={field.value ?? NO_PROJECT_VALUE}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger id="app-project" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_PROJECT_VALUE}>
+                        No project
+                      </SelectItem>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <FieldHint>
+                Optional grouping to keep related apps and databases
+                together.
+              </FieldHint>
+              <FieldError errors={[formState.errors.project]} />
+            </Field>
+          ) : null}
+        </div>
       ) : null}
 
       {createApp.isError ? (

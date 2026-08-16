@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -153,6 +153,10 @@ export function CreateDatabaseFields({
   // (queries/systemStatus.ts). Only ever used to decide whether to show
   // the credentials warning below, never to gate submission.
   const systemStatus = useSystemStatusOptional()
+  // Node/project placement is a real option but not one a first-time
+  // database needs, so it starts collapsed. Not reset on close, same
+  // reasoning as CreateAppFields.tsx's identical toggle.
+  const [showAdvanced, setShowAdvanced] = useState(false)
   const defaultValues: CreateDatabaseFormInput = {
     name: '',
     engine: engine ?? engines[0]?.id ?? '',
@@ -311,64 +315,91 @@ export function CreateDatabaseFields({
         <FieldError errors={[formState.errors.version]} />
       </Field>
 
-      {nodes.length > 0 ? (
-        <Field>
-          <FieldLabel htmlFor="database-node">Node</FieldLabel>
-          <Controller
-            control={control}
-            name="node"
-            render={({ field }) => (
-              <Select
-                value={field.value ?? LOCAL_NODE_VALUE}
-                onValueChange={field.onChange}
-              >
-                <SelectTrigger id="database-node" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={LOCAL_NODE_VALUE}>
-                    This control plane (local)
-                  </SelectItem>
-                  {nodes.map((node) => (
-                    <SelectItem key={node.id} value={node.id}>
-                      {node.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-          <FieldError errors={[formState.errors.node]} />
-        </Field>
+      {nodes.length > 0 || projects.length > 0 ? (
+        <button
+          type="button"
+          onClick={() => {
+            setShowAdvanced((prev) => !prev)
+          }}
+          aria-expanded={showAdvanced}
+          className="w-fit text-xs font-medium text-muted-foreground hover:text-foreground"
+        >
+          {showAdvanced ? 'Hide advanced options' : 'Show advanced options'}
+        </button>
       ) : null}
 
-      {projects.length > 0 ? (
-        <Field>
-          <FieldLabel htmlFor="database-project">Project</FieldLabel>
-          <Controller
-            control={control}
-            name="project"
-            render={({ field }) => (
-              <Select
-                value={field.value ?? NO_PROJECT_VALUE}
-                onValueChange={field.onChange}
-              >
-                <SelectTrigger id="database-project" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_PROJECT_VALUE}>No project</SelectItem>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-          <FieldError errors={[formState.errors.project]} />
-        </Field>
+      {showAdvanced ? (
+        <div className="space-y-4 rounded-lg border border-dashed border-border p-3">
+          {nodes.length > 0 ? (
+            <Field>
+              <FieldLabel htmlFor="database-node">Node</FieldLabel>
+              <Controller
+                control={control}
+                name="node"
+                render={({ field }) => (
+                  <Select
+                    value={field.value ?? LOCAL_NODE_VALUE}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger id="database-node" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={LOCAL_NODE_VALUE}>
+                        This control plane (local)
+                      </SelectItem>
+                      {nodes.map((node) => (
+                        <SelectItem key={node.id} value={node.id}>
+                          {node.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <FieldHint>
+                Which server this runs on. Leave it on local unless
+                you&rsquo;ve added another server to manage.
+              </FieldHint>
+              <FieldError errors={[formState.errors.node]} />
+            </Field>
+          ) : null}
+
+          {projects.length > 0 ? (
+            <Field>
+              <FieldLabel htmlFor="database-project">Project</FieldLabel>
+              <Controller
+                control={control}
+                name="project"
+                render={({ field }) => (
+                  <Select
+                    value={field.value ?? NO_PROJECT_VALUE}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger id="database-project" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_PROJECT_VALUE}>
+                        No project
+                      </SelectItem>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <FieldHint>
+                Optional grouping to keep related apps and databases
+                together.
+              </FieldHint>
+              <FieldError errors={[formState.errors.project]} />
+            </Field>
+          ) : null}
+        </div>
       ) : null}
 
       {createDatabase.isError ? (

@@ -86,6 +86,9 @@ export function GitBuildSourceFields({
   // after editing the URL re-triggers a fresh fetch, since the query key
   // is the URL itself.
   const [loadedRepoUrl, setLoadedRepoUrl] = useState<string | null>(null)
+  // Image name / Dockerfile path are overrides most first-time users
+  // never need to touch, so they start collapsed. See the toggle below.
+  const [showAdvanced, setShowAdvanced] = useState(false)
   const branchesQuery = useGitBranches(loadedRepoUrl)
   const branches = branchesQuery.data ?? []
 
@@ -175,71 +178,96 @@ export function GitBuildSourceFields({
         <FieldError errors={[formState.errors.ref]} />
       </Field>
 
-      <div className="flex flex-col gap-4 sm:flex-row">
-        <Field className="flex-1">
-          <FieldLabel htmlFor="git-app-build-type">Build pack</FieldLabel>
-          <Controller
-            control={control}
-            name="buildType"
-            render={({ field }) => (
-              <Select
-                value={field.value}
-                onValueChange={field.onChange}
-                disabled={disabled}
-              >
-                <SelectTrigger id="git-app-build-type" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {BUILD_PACKS.map((p) => (
-                    <SelectItem key={p.value} value={p.value}>
-                      {p.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-          <FieldDescription>
-            Railpack auto-detects Node and Go projects with no Dockerfile.
-            Static serves the checkout directly, no container.
-          </FieldDescription>
-        </Field>
-
-        {buildType !== 'static' ? (
-          <Field className="flex-1">
-            <FieldLabel htmlFor="git-app-image-repo">
-              Image name (optional)
-            </FieldLabel>
-            <Input
-              id="git-app-image-repo"
-              className="font-mono"
-              placeholder="defaults to the app name"
-              autoComplete="off"
-              spellCheck={false}
+      <Field>
+        <FieldLabel htmlFor="git-app-build-type">Build pack</FieldLabel>
+        <Controller
+          control={control}
+          name="buildType"
+          render={({ field }) => (
+            <Select
+              value={field.value}
+              onValueChange={field.onChange}
               disabled={disabled}
-              {...register('imageRepo')}
-            />
-          </Field>
-        ) : null}
+            >
+              <SelectTrigger id="git-app-build-type" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {BUILD_PACKS.map((p) => (
+                  <SelectItem key={p.value} value={p.value}>
+                    {p.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        <FieldDescription>
+          Dockerfile builds from your own Dockerfile. Railpack auto-detects
+          Node and Go projects and builds one for you. Static serves the
+          checkout directly, with no container at all.
+        </FieldDescription>
+      </Field>
 
-        {buildType === 'dockerfile' ? (
-          <Field className="flex-1">
-            <FieldLabel htmlFor="git-app-dockerfile-path">
-              Dockerfile path (optional)
-            </FieldLabel>
-            <Input
-              id="git-app-dockerfile-path"
-              className="font-mono"
-              placeholder="./Dockerfile"
-              autoComplete="off"
-              spellCheck={false}
-              disabled={disabled}
-              {...register('dockerfilePath')}
-            />
-          </Field>
-        ) : null}
-      </div>
+      {buildType !== 'static' ? (
+        <div>
+          <button
+            type="button"
+            onClick={() => {
+              setShowAdvanced((prev) => !prev)
+            }}
+            aria-expanded={showAdvanced}
+            disabled={disabled}
+            className="w-fit text-xs font-medium text-muted-foreground hover:text-foreground"
+          >
+            {showAdvanced ? 'Hide advanced options' : 'Show advanced options'}
+          </button>
+
+          {showAdvanced ? (
+            <div className="mt-3 flex flex-col gap-4 rounded-lg border border-dashed border-border p-3 sm:flex-row">
+              <Field className="flex-1">
+                <FieldLabel htmlFor="git-app-image-repo">
+                  Image name (optional)
+                </FieldLabel>
+                <Input
+                  id="git-app-image-repo"
+                  className="font-mono"
+                  placeholder="defaults to the app name"
+                  autoComplete="off"
+                  spellCheck={false}
+                  disabled={disabled}
+                  {...register('imageRepo')}
+                />
+                <FieldDescription>
+                  The name given to the built image. Leave blank to use the
+                  app name.
+                </FieldDescription>
+              </Field>
+
+              {buildType === 'dockerfile' ? (
+                <Field className="flex-1">
+                  <FieldLabel htmlFor="git-app-dockerfile-path">
+                    Dockerfile path (optional)
+                  </FieldLabel>
+                  <Input
+                    id="git-app-dockerfile-path"
+                    className="font-mono"
+                    placeholder="./Dockerfile"
+                    autoComplete="off"
+                    spellCheck={false}
+                    disabled={disabled}
+                    {...register('dockerfilePath')}
+                  />
+                  <FieldDescription>
+                    Where the Dockerfile lives in your repo. Leave blank if
+                    it&rsquo;s at the root.
+                  </FieldDescription>
+                </Field>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </>
   )
 }
