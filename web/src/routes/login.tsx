@@ -18,6 +18,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Button } from '../components/ui/button'
 import { LoginForm } from '../components/LoginForm'
 import { RegisterForm } from '../components/RegisterForm'
+import { OAuthButtons } from '../components/OAuthButtons'
+import { OAuthErrorBanner } from '../components/OAuthErrorBanner'
 
 // Matches internal/api/devmode.go's devModeUsername/devModePassword
 // exactly (also the same pair dev-fixtures.yml documents at the repo
@@ -99,6 +101,7 @@ function LoginPage() {
           {brandLabel}
         </span>
       </div>
+      <OAuthErrorBanner />
       <Card className="w-full max-w-sm shadow-sm">
         <CardHeader>
           <CardTitle>
@@ -106,11 +109,11 @@ function LoginPage() {
           </CardTitle>
           <CardDescription>
             {isRegister
-              ? 'Create the one admin account for this instance. Registration is for the first admin only.'
-              : 'Enter your admin credentials to continue.'}
+              ? 'Create the first account for this instance. Registration is for the first account only.'
+              : 'Enter your credentials to continue.'}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <Tabs value={tab} onValueChange={handleTabChange}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="sign-in">Sign in</TabsTrigger>
@@ -123,6 +126,7 @@ function LoginPage() {
               <RegisterForm onSwitchToSignIn={() => setTab('sign-in')} />
             </TabsContent>
           </Tabs>
+          <OAuthButtons />
         </CardContent>
       </Card>
       {devMode.data?.enabled ? (

@@ -1,8 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { CheckCircleIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { useChangePassword } from '../queries/account'
+import { useSession } from '../queries/security'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import {
@@ -42,23 +44,32 @@ import {
 // wins if the two ever drift.
 const MIN_PASSWORD_LENGTH = 8
 
-const changePasswordSchema = z
-  .object({
-    currentPassword: z.string().min(1, 'Current password is required'),
-    newPassword: z
-      .string()
-      .min(
-        MIN_PASSWORD_LENGTH,
-        `New password must be at least ${MIN_PASSWORD_LENGTH} characters`,
-      ),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
-  })
+// currentPassword is required only when the account already has a
+// password (an OAuth-only account has none to reconfirm, see
+// internal/api/account.go's handleChangePassword).
+function buildChangePasswordSchema(requireCurrentPassword: boolean) {
+  return z
+    .object({
+      currentPassword: requireCurrentPassword
+        ? z.string().min(1, 'Current password is required')
+        : z.string(),
+      newPassword: z
+        .string()
+        .min(
+          MIN_PASSWORD_LENGTH,
+          `New password must be at least ${MIN_PASSWORD_LENGTH} characters`,
+        ),
+      confirmPassword: z.string(),
+    })
+    .refine((data) => data.newPassword === data.confirmPassword, {
+      message: 'Passwords do not match',
+      path: ['confirmPassword'],
+    })
+}
 
-type ChangePasswordValues = z.infer<typeof changePasswordSchema>
+type ChangePasswordValues = z.infer<
+  ReturnType<typeof buildChangePasswordSchema>
+>
 
 // internal/api/account.go's handleChangePassword collapses "no session"
 // and "wrong current password" into the same 401 with the same message,
@@ -68,9 +79,14 @@ type ChangePasswordValues = z.infer<typeof changePasswordSchema>
 // 400.
 export function ChangePasswordCard() {
   const changePassword = useChangePassword()
+  const { data: session } = useSession()
+  const schema = useMemo(
+    () => buildChangePasswordSchema(session.has_password),
+    [session.has_password],
+  )
   const { register, handleSubmit, formState, reset } =
     useForm<ChangePasswordValues>({
-      resolver: zodResolver(changePasswordSchema),
+      resolver: zodResolver(schema),
       defaultValues: {
         currentPassword: '',
         newPassword: '',
@@ -93,10 +109,13 @@ export function ChangePasswordCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Change password</CardTitle>
+        <CardTitle>
+          {session.has_password ? 'Change password' : 'Set a password'}
+        </CardTitle>
         <CardDescription>
-          Changing your password signs out every other active session for this
-          account. This browser stays signed in.
+          {session.has_password
+            ? 'Changing your password signs out every other active session for this account. This browser stays signed in.'
+            : 'This account currently signs in through OAuth only. Setting a password adds a second way to sign in.'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -107,6 +126,7 @@ export function ChangePasswordCard() {
           className="space-y-4"
         >
           <FieldGroup>
+            {session.has_password ? (
             <Field
               data-invalid={formState.errors.currentPassword ? true : undefined}
             >
@@ -122,6 +142,7 @@ export function ChangePasswordCard() {
               />
               <FieldError errors={[formState.errors.currentPassword]} />
             </Field>
+            ) : null}
             <Field
               data-invalid={formState.errors.newPassword ? true : undefined}
             >
@@ -180,8 +201,10 @@ export function ChangePasswordCard() {
 
           <Button type="submit" disabled={changePassword.isPending}>
             {changePassword.isPending
-              ? 'Changing password...'
-              : 'Change password'}
+              ? 'Saving...'
+              : session.has_password
+                ? 'Change password'
+                : 'Set password'}
           </Button>
         </form>
       </CardContent>

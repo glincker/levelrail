@@ -13,11 +13,12 @@ import {
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
-// Matches internal/api/account.go's sessionInfoResponse exactly.
-// expires_at is RFC3339, formatted for display by the component, not
-// here: this module only fetches and types, it does not format.
+// Matches internal/api/account.go's sessionInfoResponse. expires_at is
+// RFC3339, formatted for display by the component, not here.
 export interface SessionInfo {
   username: string
+  display_name: string
+  has_password: boolean
   expires_at: string
 }
 

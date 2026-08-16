@@ -13,6 +13,7 @@ import {
   FolderIcon,
   GlobeIcon,
   GithubLogoIcon,
+  UsersIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
@@ -241,6 +242,26 @@ export function AppSidebar() {
                     >
                       <GithubLogoIcon />
                       <span>GitHub App</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/settings/oauth" />}
+                      isActive={pathname.startsWith('/settings/oauth')}
+                      tooltip="OAuth sign-in"
+                    >
+                      <KeyIcon />
+                      <span>OAuth sign-in</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/settings/users" />}
+                      isActive={pathname.startsWith('/settings/users')}
+                      tooltip="Users"
+                    >
+                      <UsersIcon />
+                      <span>Users</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
