@@ -1,0 +1,98 @@
+name: "[Bug] Bug report"
+description: Report something in Levelrail that isn't working as expected
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill out all required fields so it can be triaged quickly.
+
+        If you believe you've found a **security vulnerability**, do NOT file a public issue. See [SECURITY.md](https://github.com/glincker/levelrail/blob/main/SECURITY.md) instead.
+
+  - type: input
+    id: version
+    attributes:
+      label: Levelrail version or commit SHA
+      placeholder: "v0.x.y or a git commit SHA"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: topology
+    attributes:
+      label: Single node or multi-node
+      options:
+        - Single node
+        - Multi-node
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component affected
+      options:
+        - Control plane (reconciler, store, API)
+        - Node agent
+        - Ingress / TLS (Caddy)
+        - Build (BuildKit, Railpack)
+        - Secrets
+        - Frontend / dashboard
+        - CLI
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: To reproduce
+      description: Numbered steps to reproduce the behavior.
+      placeholder: |
+        1. Run '...'
+        2. Configure '...'
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / output
+      description: Relevant log output or error messages. Please redact secrets, tokens, and domain names if they're sensitive.
+      render: text
+    validations:
+      required: false
+
+  - type: input
+    id: os
+    attributes:
+      label: OS / distro
+      placeholder: "Ubuntu 24.04, Debian 12, etc."
+    validations:
+      required: false
+
+  - type: input
+    id: docker_version
+    attributes:
+      label: Docker version
+      description: Output of `docker version --format '{{.Server.Version}}'`.
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Anything else that might help track this down.
+    validations:
+      required: false

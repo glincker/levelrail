@@ -1,0 +1,41 @@
+name: "[Feature] Feature request"
+description: Suggest an addition or change to Levelrail
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before submitting, please check the [open issues](https://github.com/glincker/levelrail/issues) and [roadmap](https://github.com/glincker/levelrail/blob/main/docs/roadmap.md) to confirm this isn't already requested or planned.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the problem or limitation you're running into. Focus on the problem before jumping to a solution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What you'd like to see happen, as concretely as you can describe it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any other approaches you thought about and why they don't fit as well.
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Anything else relevant, links, prior art in other tools, screenshots.
+    validations:
+      required: false

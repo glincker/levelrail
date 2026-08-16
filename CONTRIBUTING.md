@@ -26,6 +26,9 @@ that aren't always obvious from the code alone.
 - State what the PR does not do. If it's a partial implementation
   (e.g. it lays the groundwork but doesn't wire up the UI yet), say so
   explicitly in the description.
+- Opening a PR shows the default template. For a type-specific one
+  (feature, fix, refactor, docs), append `?template=feature.md` (or
+  `fix.md`, `refactor.md`, `docs.md`) to the compare/PR URL.
 
 ## Running tests
 

@@ -1,0 +1,29 @@
+name: "[Security] Security advisory"
+description: STOP, do not report security vulnerabilities here. Read this first.
+title: "[Security] "
+labels: ["invalid"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # Do NOT report security vulnerabilities in a public issue
+
+        Public GitHub issues are visible to everyone, including potential attackers. Disclosing a vulnerability here before a fix is available puts every self-hosted instance at risk.
+
+        ## How to report a vulnerability
+
+        Use [GitHub's private vulnerability reporting](https://github.com/glincker/levelrail/security/advisories/new). This keeps the report confidential until a fix is published. See [SECURITY.md](https://github.com/glincker/levelrail/blob/main/SECURITY.md) for what to include and what to expect.
+
+        Given the platform's scope, particularly relevant areas: secret handling (`internal/secrets`), agent enrollment and certificate validation, container escape surface in the Docker integration, and the install path.
+
+        ---
+
+        If you arrived here by accident and don't have a security report, please close this issue and open a [bug report](https://github.com/glincker/levelrail/issues/new?template=bug_report.yml) or [feature request](https://github.com/glincker/levelrail/issues/new?template=feature_request.yml) instead.
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmation
+      options:
+        - label: I understand I should NOT provide vulnerability details in this public form. I will use the GitHub Security Advisories link above instead.
+          required: true
