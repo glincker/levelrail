@@ -239,6 +239,7 @@ type Store interface {
 	ProjectStore
 	IngressSettingsStore
 	DomainStore
+	GitSourceStore
 }
 
 // SecretSetter is the surface the secrets handler needs from
@@ -379,6 +380,9 @@ type Router struct {
 	logBroadcaster          *telemetry.LogBroadcaster // nil is valid: GET /apps/{name}/logs/stream returns 501, same "not configured" shape as deployRecorder above
 	deployNotifyTargets     DeployNotifyTargets       // nil is valid: deploy-notify-target routes return 501, same shape as alertRules above
 	deployNotifier          DeployNotifier            // nil is valid: recordPlainDeployAttempt/beginBuildDeployAttempt simply don't dispatch a deploy-outcome notification, same "optional signal, absence is not an error" shape as dockerPinger above
+	gitSources              GitSourceStore            // always set, same "core Store interface" shape as backupTargets above: listing/getting/deleting a git source needs no secrets configuration, only connecting one does
+	gitSourceSecrets        GitSourceSecrets          // nil is valid: PUT /apps/{name}/git-source and the git-push webhook route both return 501, same shape as backupSecrets above
+	gitSourceFetch          gitSourceFetchFunc        // git-source fetcher for handleGitPushWebhook; always non-nil, defaulted to gitCheckoutWithToken in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape fetch/listBranches above already use
 }
 
 // Option configures optional Router behavior.
@@ -400,6 +404,17 @@ func WithSecretSetter(s SecretSetter) Option {
 // regardless, since none of those need to write a credential.
 func WithBackupSecrets(s BackupSecretsSetter) Option {
 	return func(rt *Router) { rt.backupSecrets = s }
+}
+
+// WithGitSourceSecrets enables PUT /api/v1/apps/{name}/git-source and
+// the git-push webhook route POST /api/v1/webhooks/github/{name}
+// (git_sources.go, git_webhook.go). Without one configured (the
+// default), both routes return 501, the same "not configured" shape
+// WithBackupSecrets' absence produces; listing, getting, and deleting an
+// already-connected git source work regardless (git_sources.go's own
+// handlers), since none of those need to resolve a credential.
+func WithGitSourceSecrets(s GitSourceSecrets) Option {
+	return func(rt *Router) { rt.gitSourceSecrets = s }
 }
 
 // WithBackupRunner enables POST /api/v1/databases/{name}/backups.
@@ -648,8 +663,10 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		backupTargets:   s,
 		backupHistory:   s,
 		restoreHistory:  s,
+		gitSources:      s,
 		fetch:           gitCheckout,
 		listBranches:    listRemoteBranches,
+		gitSourceFetch:  gitCheckoutWithToken,
 		logins:          newLoginLimiter(),
 	}
 	for _, opt := range opts {
@@ -817,6 +834,27 @@ func (rt *Router) Handler() http.Handler {
 	// session) is exactly the kind of exposure envelope encryption
 	// exists to avoid.
 	mux.HandleFunc("PUT /api/v1/apps/{name}/secrets/{key}", rt.requireAbility(AbilityWriteSensitive, rt.handleSetSecret))
+
+	// Git source (TASKS.md 1.7's own deferred follow-up, git_sources.go):
+	// persist a repo/branch/build config per app so a git push can
+	// auto-deploy it, the multi-app evolution of internal/webhook's own
+	// single-app, env-var-configured Config. AbilityWriteSensitive for
+	// PUT/DELETE, matching PUT .../secrets/{key} above: connecting a repo
+	// accepts an optional live deploy token in the same request body.
+	mux.HandleFunc("GET /api/v1/apps/{name}/git-source", rt.requireAbility(AbilityRead, rt.handleGetGitSource))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/git-source", rt.requireAbility(AbilityWriteSensitive, rt.handleSetGitSource))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/git-source", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteGitSource))
+
+	// Git push webhook (git_webhook.go), the per-app-URL evolution of the
+	// original static POST /webhook (still mounted separately by
+	// cmd/levelrail/main.go for the single-app, env-var-configured path).
+	// Deliberately unauthenticated, like that route: GitHub cannot
+	// present a session or API token, so this is not wrapped in
+	// requireAbility. Its own per-app HMAC signature check (the secret
+	// generated at connect time, PUT .../git-source above) is what stands
+	// in for auth here, the same trust boundary internal/webhook.Handler's
+	// own doc comment establishes for the single-app path.
+	mux.HandleFunc("POST /api/v1/webhooks/github/{name}", rt.handleGitPushWebhook)
 
 	// Telemetry query (TASKS.md 2.3): metrics and logs for one app,
 	// fanned out through a Federator (today, exactly one local source).

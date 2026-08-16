@@ -281,7 +281,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		ImageRepo:   imageRepo,
 	}
 
-	progress, finishAttempt := rt.beginBuildDeployAttempt(r.Context(), buildReq)
+	progress, finishAttempt := rt.beginBuildDeployAttempt(r.Context(), buildReq, store.DeployAttemptSourceManual)
 	tag, err := rt.builder.Deploy(r.Context(), buildReq, progress)
 	finishAttempt(err)
 	if err != nil {

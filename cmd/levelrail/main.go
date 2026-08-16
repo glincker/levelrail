@@ -1272,6 +1272,13 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	}
 	if secretsManager != nil {
 		opts = append(opts, api.WithSecretSetter(secretsManager))
+		// Git sources (TASKS.md 1.7's own deferred follow-up,
+		// internal/api/git_sources.go, git_webhook.go): a connected
+		// source's deploy token and webhook secret go through the same
+		// secretsManager as everything else in this block, same nil-
+		// interface hazard, same "skipped entirely without a master key"
+		// shape.
+		opts = append(opts, api.WithGitSourceSecrets(secretsManager))
 		// Backup targets and running a real backup both need
 		// secretsManager: creating a target writes its credentials
 		// through it (api.WithBackupSecrets), and actually running a

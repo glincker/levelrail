@@ -33,12 +33,16 @@ import (
 // endpoint's shape in place would silently break all three. A real
 // attempt-history list belongs at its own URL instead.
 
-// beginBuildDeployAttempt mints and saves a deploy_attempts row for
-// req (handleTriggerBuild's manual git-source build path, the other of
-// the two real trigger paths that runs an actual build, alongside
-// internal/webhook's own identical beginDeployAttempt), and returns the
-// progress func to pass to Builder.Deploy plus a finish func the caller
-// must invoke exactly once with Deploy's error, success or failure.
+// beginBuildDeployAttempt mints and saves a deploy_attempts row for req
+// (handleTriggerBuild's manual git-source build path and
+// handleGitPushWebhook's git-push-triggered path, git_webhook.go, the
+// two real trigger paths in this package that run an actual build,
+// alongside internal/webhook's own identical beginDeployAttempt for the
+// original single-app path), and returns the progress func to pass to
+// Builder.Deploy plus a finish func the caller must invoke exactly once
+// with Deploy's error, success or failure. source is one of the
+// store.DeployAttemptSource* constants, distinguishing the two callers
+// in the resulting history row.
 //
 // If rt.deployRecorder is nil (WithDeployRecorder not configured), this
 // falls back to build.SlogProgress, this package's pre-existing
@@ -56,7 +60,7 @@ import (
 // (ImageRepo + ":" + CommitSHA), computed here before the build runs so
 // a failed build's history row still shows what tag it was trying to
 // produce.
-func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Request) (progress func(build.ProgressEvent), finish func(deployErr error)) {
+func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Request, source string) (progress func(build.ProgressEvent), finish func(deployErr error)) {
 	noop := func(error) {}
 	fallback := build.SlogProgress(rt.logger)
 
@@ -69,7 +73,7 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 	image := req.ImageRepo + ":" + req.CommitSHA
 	if err := rt.deployAttempts.SaveDeployAttempt(ctx, store.DeployAttempt{
 		ID: id, ServiceName: req.ServiceName, Image: image,
-		CommitSHA: req.CommitSHA, Source: store.DeployAttemptSourceManual,
+		CommitSHA: req.CommitSHA, Source: source,
 		Status: store.DeployAttemptStatusRunning, StartedAt: time.Now(),
 	}); err != nil {
 		rt.logger.Error("api: trigger build: save deploy attempt failed", slog.String("attempt_id", id), slog.String("error", err.Error()))

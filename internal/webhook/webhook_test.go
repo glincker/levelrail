@@ -120,7 +120,7 @@ func sign(secret, body []byte) string {
 
 func pushBody(t *testing.T, ref, after string) []byte {
 	t.Helper()
-	b, err := json.Marshal(pushEvent{Ref: ref, After: after})
+	b, err := json.Marshal(PushEvent{Ref: ref, After: after})
 	if err != nil {
 		t.Fatalf("marshal push event: %v", err)
 	}
