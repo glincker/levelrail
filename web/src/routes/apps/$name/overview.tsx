@@ -3,6 +3,7 @@ import { useApp } from '../../../queries/apps'
 import { useDeployStatus } from '../../../queries/deploys'
 import { AppOverviewHero } from '../../../components/AppOverviewHero'
 import { AppOverview } from '../../../components/AppOverview'
+import { PortEditor } from '../../../components/PortEditor'
 import { DeployStrategyEditor } from '../../../components/DeployStrategyEditor'
 import { ConditionsPanel } from '../../../components/ConditionsPanel'
 import { GitSourceCard } from '../../../components/GitSourceCard'
@@ -35,6 +36,7 @@ function OverviewSection() {
       <AppOverview app={app} />
       <GitSourceCard app={app} />
       <StorageAttachmentCard app={app} />
+      <PortEditor app={app} />
       <DeployStrategyEditor app={app} />
       <ConditionsPanel conditions={conditions} />
     </div>
