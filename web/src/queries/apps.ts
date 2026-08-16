@@ -387,6 +387,59 @@ export function useRestartApp() {
   })
 }
 
+// POST /api/v1/apps/{name}/stop and .../start (internal/api/apps.go's
+// handleStopApp/handleStartApp): sets/clears Suspended, distinct from
+// delete (which removes desired state entirely). The reconciler, not
+// this request, is what actually stops or starts containers. No request
+// body.
+async function stopApp(name: string): Promise<AppDetail> {
+  const res = await fetch(`/api/v1/apps/${encodeURIComponent(name)}/stop`, {
+    method: 'POST',
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `stop app failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as AppDetail
+}
+
+async function startApp(name: string): Promise<AppDetail> {
+  const res = await fetch(`/api/v1/apps/${encodeURIComponent(name)}/start`, {
+    method: 'POST',
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `start app failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as AppDetail
+}
+
+export function useStopApp() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: stopApp,
+    onSuccess: (updated) => {
+      queryClient.setQueryData(appKeys.detail(updated.name), updated)
+      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+    },
+  })
+}
+
+export function useStartApp() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: startApp,
+    onSuccess: (updated) => {
+      queryClient.setQueryData(appKeys.detail(updated.name), updated)
+      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+    },
+  })
+}
+
 // POST /api/v1/apps/{name}/clone (internal/api/apps_clone.go's
 // handleCloneApp): duplicates name's desired state under newName. See
 // that handler's own doc comment for exactly what does and doesn't

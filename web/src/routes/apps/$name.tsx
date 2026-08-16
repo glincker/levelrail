@@ -14,6 +14,7 @@ import { CloneAppDialog } from '../../components/CloneAppDialog'
 import { DeleteAppDialog } from '../../components/DeleteAppDialog'
 import { DeployTriggerForm } from '../../components/DeployTriggerForm'
 import { RestartAppButton } from '../../components/RestartAppButton'
+import { StopStartAppButton } from '../../components/StopStartAppButton'
 import { ConvergenceIndicator } from '../../components/ConvergenceIndicator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -80,6 +81,7 @@ function AppDetailLayout() {
           <ConvergenceIndicator conditions={conditions} />
         </div>
         <div className="flex items-center gap-2">
+          <StopStartAppButton name={app.name} suspended={app.suspended} />
           <RestartAppButton name={app.name} />
           <CloneAppDialog name={app.name} />
           <DeleteAppDialog name={app.name} />

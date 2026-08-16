@@ -396,6 +396,65 @@ func TestController_Reconcile_Redeploy_CleansUpOldContainer(t *testing.T) {
 	}
 }
 
+func TestController_Reconcile_Suspended_RemovesRunningContainers(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Suspended: true}
+	target := ContainerName("web", desired.Image, "")
+	rt.seed(target, true)
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionUnknown || cond.Reason != "Suspended" {
+		t.Errorf("condition = %+v, want Status=Unknown Reason=Suspended", cond)
+	}
+	if names := rt.names(); len(names) != 0 {
+		t.Errorf("containers after suspend = %v, want none", names)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0 (suspend must never create a container)", rt.createCalls)
+	}
+}
+
+func TestController_Reconcile_Suspended_RemoveFails_ReportsNotReady(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Suspended: true}
+	target := ContainerName("web", desired.Image, "")
+	rt.seed(target, true)
+	rt.removeErr = errors.New("permission denied")
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want the removal failure to surface: a suspend that failed to stop the container must not be reported as done")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "SuspendFailed" {
+		t.Errorf("condition = %+v, want Status=False Reason=SuspendFailed", cond)
+	}
+}
+
+func TestController_Reconcile_Suspended_NoContainers_NoOp(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Suspended: true}
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionUnknown || cond.Reason != "Suspended" {
+		t.Errorf("condition = %+v, want Status=Unknown Reason=Suspended", cond)
+	}
+	if names := rt.names(); len(names) != 0 {
+		t.Errorf("containers after suspend = %v, want none", names)
+	}
+}
+
 func TestController_Reconcile_CleanupFailure_StillReportsReadyButErrors(t *testing.T) {
 	rt := newFakeRuntime(0)
 	oldTarget := ContainerName("web", "img:v1", "")

@@ -83,6 +83,11 @@ export interface AppDetail {
   // (useSetAppStorage/useClearAppStorage), the same node_id/project_id
   // shape just above.
   storage_target_id?: string
+  // suspended is response-only (internal/api/apps.go's appResource own
+  // doc comment): set it via POST /api/v1/apps/{name}/stop and .../start
+  // (useStopApp/useStartApp), the same node_id/project_id shape above.
+  // No omitempty on the Go side (always present, never ambiguous).
+  suspended: boolean
 }
 
 // GET /api/v1/apps' own wire shape (internal/api/apps.go's

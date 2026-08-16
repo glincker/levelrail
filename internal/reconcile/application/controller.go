@@ -213,6 +213,17 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		return notReady("StoreError", err), fmt.Errorf("application/%s: get desired service: %w", c.serviceName, err)
 	}
 
+	// Suspended is an operator-requested stop (DesiredService.Suspended's
+	// own doc comment): converge to zero containers and return early,
+	// same containers-only teardown removeStale already performs after a
+	// deploy, just with keep=nil instead of the new replica set.
+	if desired.Suspended {
+		if err := c.removeStale(ctx, nil); err != nil {
+			return notReady("SuspendFailed", err), fmt.Errorf("application/%s: suspend: remove containers: %w", c.serviceName, err)
+		}
+		return unknownResult("Suspended"), nil
+	}
+
 	// Defensive, not redundant: store.SaveDesiredService already
 	// defaults an empty Strategy/zero Replicas before persisting, but
 	// GetDesiredService's caller here is this package's own tests (and
