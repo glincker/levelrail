@@ -157,17 +157,12 @@ func linkServiceToApp(t *testing.T, db *DB, serviceName, appID string) {
 	}
 }
 
-// TestDeleteApp_CascadesToServices is the real regression
-// desired_services.app_id's "ON DELETE CASCADE" foreign key
-// (migrations/0039_apps.sql) exists to guarantee, the mirror image of
-// TestDeleteProject_ServiceBecomesProjectLess's SET NULL behavior: an
-// app owns its services' lifecycle, so deleting it must delete every
-// service that belonged to it, not leave them orphaned.
-func TestDeleteApp_CascadesToServices(t *testing.T) {
-	db := openTestDB(t)
+// seedAppWithWebWorker saves app plus a "web"/"worker" service pair
+// linked to it, the shared fixture TestDeleteApp_CascadesToServices and
+// TestListServicesByApp both build on.
+func seedAppWithWebWorker(t *testing.T, db *DB, app App) {
+	t.Helper()
 	ctx := context.Background()
-
-	app := newTestApp()
 	if err := db.SaveApp(ctx, app); err != nil {
 		t.Fatalf("SaveApp() error = %v", err)
 	}
@@ -179,6 +174,19 @@ func TestDeleteApp_CascadesToServices(t *testing.T) {
 	}
 	linkServiceToApp(t, db, "web", app.ID)
 	linkServiceToApp(t, db, "worker", app.ID)
+}
+
+// TestDeleteApp_CascadesToServices is the real regression
+// desired_services.app_id's "ON DELETE CASCADE" foreign key
+// (migrations/0039_apps.sql) exists to guarantee, the mirror image of
+// TestDeleteProject_ServiceBecomesProjectLess's SET NULL behavior: an
+// app owns its services' lifecycle, so deleting it must delete every
+// service that belonged to it, not leave them orphaned.
+func TestDeleteApp_CascadesToServices(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	app := newTestApp()
+	seedAppWithWebWorker(t, db, app)
 
 	if err := db.DeleteApp(ctx, app.ID); err != nil {
 		t.Fatalf("DeleteApp() error = %v", err)
@@ -195,22 +203,11 @@ func TestDeleteApp_CascadesToServices(t *testing.T) {
 func TestListServicesByApp(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
-
 	app := newTestApp()
-	if err := db.SaveApp(ctx, app); err != nil {
-		t.Fatalf("SaveApp() error = %v", err)
-	}
-	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
-		t.Fatalf("SaveDesiredService(web) error = %v", err)
-	}
-	if err := db.SaveDesiredService(ctx, DesiredService{Name: "worker", Image: "img:v1", Port: 9090}); err != nil {
-		t.Fatalf("SaveDesiredService(worker) error = %v", err)
-	}
+	seedAppWithWebWorker(t, db, app)
 	if err := db.SaveDesiredService(ctx, DesiredService{Name: "unrelated", Image: "img:v1", Port: 7070}); err != nil {
 		t.Fatalf("SaveDesiredService(unrelated) error = %v", err)
 	}
-	linkServiceToApp(t, db, "web", app.ID)
-	linkServiceToApp(t, db, "worker", app.ID)
 
 	got, err := db.ListServicesByApp(ctx, app.ID)
 	if err != nil {

@@ -33,6 +33,23 @@ func TestAppGroupRoute_RequiresAuth(t *testing.T) {
 	}
 }
 
+// getAppGroup issues an authenticated GET against path and decodes a
+// 200 response as appGroupResource, failing the test on any other
+// status or a malformed body.
+func getAppGroup(t *testing.T, rt *Router, cookie *http.Cookie, path string) appGroupResource {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, path, ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	var got appGroupResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	return got
+}
+
 func TestHandleGetAppGroup_NotFound(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -57,16 +74,7 @@ func TestHandleGetAppGroup_ServiceWithNoApp(t *testing.T) {
 		t.Fatalf("seed SaveDesiredService: %v", err)
 	}
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/solo/group", ""))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
-
-	var got appGroupResource
-	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
+	got := getAppGroup(t, rt, cookie, "/api/v1/apps/solo/group")
 	if got.AppID != "" {
 		t.Errorf("AppID = %q, want empty", got.AppID)
 	}
@@ -113,16 +121,7 @@ func TestHandleGetAppGroup_MultiServiceApp(t *testing.T) {
 		t.Fatalf("upsert worker conditions: %v", err)
 	}
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/group", ""))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
-
-	var got appGroupResource
-	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
+	got := getAppGroup(t, rt, cookie, "/api/v1/apps/web/group")
 	if got.AppID != app.ID {
 		t.Errorf("AppID = %q, want %q", got.AppID, app.ID)
 	}
