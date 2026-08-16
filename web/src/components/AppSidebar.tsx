@@ -12,6 +12,7 @@ import {
   CloudArrowUpIcon,
   FolderIcon,
   GlobeIcon,
+  GithubLogoIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
@@ -230,6 +231,16 @@ export function AppSidebar() {
                     >
                       <CloudArrowUpIcon />
                       <span>Backup targets</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/settings/github-app" />}
+                      isActive={pathname.startsWith('/settings/github-app')}
+                      tooltip="GitHub App"
+                    >
+                      <GithubLogoIcon />
+                      <span>GitHub App</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>

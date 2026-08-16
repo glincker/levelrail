@@ -82,6 +82,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -240,6 +241,7 @@ type Store interface {
 	IngressSettingsStore
 	DomainStore
 	GitSourceStore
+	GitHubAppStore
 }
 
 // SecretSetter is the surface the secrets handler needs from
@@ -378,26 +380,30 @@ type Router struct {
 	// for GET /api/v1/certificates's "expiring_soon" threshold. 0 means
 	// "use the default", set via WithCertExpiryWarningWindow.
 	certExpiryWarningWindow time.Duration
-	builder                 Builder                   // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
-	fetch                   fetchFunc                 // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
-	listBranches            listBranchesFunc          // remote branch lister for handleListGitBranches; always non-nil, defaulted to listRemoteBranches in NewRouter, overridable in this package's own tests
-	staticSites             StaticSiteStore           // always set, same "core Store interface, not an optional plug-in" shape as certs above
-	backupTargets           BackupTargetStore         // always set, same "core Store interface" shape as certs/staticSites above: listing/getting/deleting a backup target needs no secrets configuration, only creating one does
-	backupSecrets           BackupSecretsSetter       // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
-	backupHistory           BackupHistoryStore        // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
-	backupRunner            BackupRunner              // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
-	backupDownloader        BackupDownloader          // nil is valid: GET .../backups/{historyId}/download returns 501, same shape as backupRunner above
-	restoreHistory          RestoreHistoryStore       // always set, same "core Store interface" shape as backupHistory above
-	restoreRunner           RestoreRunner             // nil is valid: POST /api/v1/databases/{name}/restore returns 501, same shape as backupRunner above
-	deployAttempts          DeployAttemptStore        // always set, same "core Store interface" shape as certs/staticSites above
-	deployLogStore          DeployLogStore            // nil is valid: a finished attempt's log route returns 501, same shape as secrets/telemetry/alertRules above
-	deployRecorder          *deploylog.Recorder       // nil is valid: an in-progress attempt's live tail returns 501, and handleTriggerBuild falls back to build.SlogProgress with no persisted log, same "not configured" shape as builder/telemetry above
-	logBroadcaster          *telemetry.LogBroadcaster // nil is valid: GET /apps/{name}/logs/stream returns 501, same "not configured" shape as deployRecorder above
-	deployNotifyTargets     DeployNotifyTargets       // nil is valid: deploy-notify-target routes return 501, same shape as alertRules above
-	deployNotifier          DeployNotifier            // nil is valid: recordPlainDeployAttempt/beginBuildDeployAttempt simply don't dispatch a deploy-outcome notification, same "optional signal, absence is not an error" shape as dockerPinger above
-	gitSources              GitSourceStore            // always set, same "core Store interface" shape as backupTargets above: listing/getting/deleting a git source needs no secrets configuration, only connecting one does
-	gitSourceSecrets        GitSourceSecrets          // nil is valid: PUT /apps/{name}/git-source and the git-push webhook route both return 501, same shape as backupSecrets above
-	gitSourceFetch          gitSourceFetchFunc        // git-source fetcher for handleGitPushWebhook; always non-nil, defaulted to gitCheckoutWithToken in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape fetch/listBranches above already use
+	builder                 Builder                     // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
+	fetch                   fetchFunc                   // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
+	listBranches            listBranchesFunc            // remote branch lister for handleListGitBranches; always non-nil, defaulted to listRemoteBranches in NewRouter, overridable in this package's own tests
+	staticSites             StaticSiteStore             // always set, same "core Store interface, not an optional plug-in" shape as certs above
+	backupTargets           BackupTargetStore           // always set, same "core Store interface" shape as certs/staticSites above: listing/getting/deleting a backup target needs no secrets configuration, only creating one does
+	backupSecrets           BackupSecretsSetter         // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
+	backupHistory           BackupHistoryStore          // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
+	backupRunner            BackupRunner                // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
+	backupDownloader        BackupDownloader            // nil is valid: GET .../backups/{historyId}/download returns 501, same shape as backupRunner above
+	restoreHistory          RestoreHistoryStore         // always set, same "core Store interface" shape as backupHistory above
+	restoreRunner           RestoreRunner               // nil is valid: POST /api/v1/databases/{name}/restore returns 501, same shape as backupRunner above
+	deployAttempts          DeployAttemptStore          // always set, same "core Store interface" shape as certs/staticSites above
+	deployLogStore          DeployLogStore              // nil is valid: a finished attempt's log route returns 501, same shape as secrets/telemetry/alertRules above
+	deployRecorder          *deploylog.Recorder         // nil is valid: an in-progress attempt's live tail returns 501, and handleTriggerBuild falls back to build.SlogProgress with no persisted log, same "not configured" shape as builder/telemetry above
+	logBroadcaster          *telemetry.LogBroadcaster   // nil is valid: GET /apps/{name}/logs/stream returns 501, same "not configured" shape as deployRecorder above
+	deployNotifyTargets     DeployNotifyTargets         // nil is valid: deploy-notify-target routes return 501, same shape as alertRules above
+	deployNotifier          DeployNotifier              // nil is valid: recordPlainDeployAttempt/beginBuildDeployAttempt simply don't dispatch a deploy-outcome notification, same "optional signal, absence is not an error" shape as dockerPinger above
+	gitSources              GitSourceStore              // always set, same "core Store interface" shape as backupTargets above: listing/getting/deleting a git source needs no secrets configuration, only connecting one does
+	gitSourceSecrets        GitSourceSecrets            // nil is valid: PUT /apps/{name}/git-source and the git-push webhook route both return 501, same shape as backupSecrets above
+	gitSourceFetch          gitSourceFetchFunc          // git-source fetcher for handleGitPushWebhook; always non-nil, defaulted to gitCheckoutWithToken in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape fetch/listBranches above already use
+	githubApp               GitHubAppStore              // always set, same "core Store interface" shape as backupTargets/certs above: the connection row/its absence is always queryable, no secrets configuration needed just to read status
+	githubAppSecrets        GitHubAppSecrets            // nil is valid: every github-app route that needs it (register/start, callback, installed, repos, branches) returns 501, same shape as backupSecrets above
+	githubAppClient         GitHubAppClient             // always set (NewRouter defaults it to a real *githubapp.Client, which needs no configuration to construct), overridable in this package's own tests the same way fetch is
+	githubAppState          *githubAppRegistrationState // always set (NewRouter constructs one unconditionally); purely in-memory bookkeeping, see its own doc comment
 }
 
 // Option configures optional Router behavior.
@@ -422,14 +428,19 @@ func WithBackupSecrets(s BackupSecretsSetter) Option {
 }
 
 // WithGitSourceSecrets enables PUT /api/v1/apps/{name}/git-source and
-// the git-push webhook route POST /api/v1/webhooks/github/{name}
-// (git_sources.go, git_webhook.go). Without one configured (the
-// default), both routes return 501, the same "not configured" shape
-// WithBackupSecrets' absence produces; listing, getting, and deleting an
-// already-connected git source work regardless (git_sources.go's own
-// handlers), since none of those need to resolve a credential.
+// the git-push webhook route. Without one configured (the default),
+// both return 501; listing/getting/deleting a git source works
+// regardless, since neither needs to resolve a credential.
 func WithGitSourceSecrets(s GitSourceSecrets) Option {
 	return func(rt *Router) { rt.gitSourceSecrets = s }
+}
+
+// WithGitHubAppSecrets enables the GitHub App routes that read or write
+// a credential (manifest callback, installation callback, repo/branch
+// listing). Without one configured, those return 501; GET/DELETE
+// /api/v1/github-app work regardless.
+func WithGitHubAppSecrets(s GitHubAppSecrets) Option {
+	return func(rt *Router) { rt.githubAppSecrets = s }
 }
 
 // WithBackupRunner enables POST /api/v1/databases/{name}/backups.
@@ -693,6 +704,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		backupHistory:   s,
 		restoreHistory:  s,
 		gitSources:      s,
+		githubApp:       s,
+		githubAppClient: githubapp.NewClient(),
+		githubAppState:  newGitHubAppRegistrationState(),
 		fetch:           gitCheckout,
 		listBranches:    listRemoteBranches,
 		gitSourceFetch:  gitCheckoutWithToken,
@@ -1040,6 +1054,38 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("POST /api/v1/backup-targets", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateBackupTarget))
 	mux.HandleFunc("GET /api/v1/backup-targets/{id}", rt.requireAbility(AbilityRead, rt.handleGetBackupTarget))
 	mux.HandleFunc("DELETE /api/v1/backup-targets/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteBackupTarget))
+
+	// GitHub App connection: the manifest-based registration flow,
+	// installation, and repo/branch browsing through it
+	// (internal/api/github_app.go, github_app_register.go,
+	// github_app_repos.go). Every route that reads or mutates the
+	// connection itself (status, register/start, callback, installed,
+	// disconnect) is AbilityRoot, matching PUT /api/v1/settings/ingress's
+	// own precedent above rather than the plain AbilityRead most other
+	// GET routes use: this is platform-wide configuration with a real
+	// external-account relationship behind it (an installed GitHub App
+	// can read a private repository's contents), the same "real
+	// infrastructure, high blast radius" class ingress settings and node
+	// placement already reserve this tier for, not an ordinary per-app
+	// read. register/start, callback, and installed are all real,
+	// full-page browser navigations (GitHub's manifest flow is
+	// inherently that, not a fetch call), not XHR/fetch calls: a session
+	// cookie is implicitly AbilityRoot (requireAbility's own doc
+	// comment), so the operator's own logged-in browser satisfies this
+	// gate the same way it satisfies every other AbilityRoot route.
+	//
+	// Repo and branch listing are the one exception, at
+	// AbilityReadSensitive: see handleListGitHubAppRepos's own doc
+	// comment for why reading already-connected repo/branch names is a
+	// materially different (lower) risk class than changing the
+	// connection itself.
+	mux.HandleFunc("GET /api/v1/github-app", rt.requireAbility(AbilityRoot, rt.handleGetGitHubAppStatus))
+	mux.HandleFunc("DELETE /api/v1/github-app", rt.requireAbility(AbilityRoot, rt.handleDisconnectGitHubApp))
+	mux.HandleFunc("GET /api/v1/github-app/register/start", rt.requireAbility(AbilityRoot, rt.handleStartGitHubAppRegistration))
+	mux.HandleFunc("GET /api/v1/github-app/callback", rt.requireAbility(AbilityRoot, rt.handleGitHubAppCallback))
+	mux.HandleFunc("GET /api/v1/github-app/installed", rt.requireAbility(AbilityRoot, rt.handleGitHubAppInstalled))
+	mux.HandleFunc("GET /api/v1/github-app/repos", rt.requireAbility(AbilityReadSensitive, rt.handleListGitHubAppRepos))
+	mux.HandleFunc("GET /api/v1/github-app/repos/{owner}/{repo}/branches", rt.requireAbility(AbilityReadSensitive, rt.handleListGitHubAppBranches))
 
 	// Backup history and manual trigger, per database. Trigger needs
 	// AbilityWriteSensitive: it starts real work against a live bucket

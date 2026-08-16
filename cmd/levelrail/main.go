@@ -1315,6 +1315,21 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 				Secrets:    secretsManager,
 				Downloader: backup.S3Downloader{},
 			}),
+			// GitHub App connection (TASKS.md-adjacent, "Connect GitHub
+			// App"): the manifest callback writes client_secret/
+			// webhook_secret/private_key through secretsManager right
+			// after code exchange, and the installation callback plus
+			// repo/branch listing all resolve the private key back out
+			// to sign a JWT, the same secretsManager.Resolve dependency
+			// api.WithRestoreRunner/api.WithBackupDownloader already
+			// have above, just called directly from internal/api instead
+			// of through a separate runner type: see
+			// api.GitHubAppSecrets's own doc comment for why this one
+			// feature reads as well as writes through internal/api
+			// itself. Same nil-interface hazard, same "skip entirely
+			// when no master key is configured" reasoning as every
+			// other secretsManager-dependent option in this block.
+			api.WithGitHubAppSecrets(secretsManager),
 		)
 	}
 	if builder != nil {
