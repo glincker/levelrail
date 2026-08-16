@@ -8,11 +8,13 @@
 //     container.
 //   - Uploader (uploader.go): writes a stream to a configured
 //     destination bucket.
+//   - Deleter (deleter.go): removes a single object from a configured
+//     destination bucket, used by Scheduler's retention pruning.
 //
 // Runner (runner.go) is the only piece that talks to store and
-// internal/secrets; Dumper and Uploader implementations know nothing
-// about either, so each is independently testable with a fake on the
-// other side of its interface.
+// internal/secrets; Dumper, Uploader, and Deleter implementations know
+// nothing about either, so each is independently testable with a fake
+// on the other side of its interface.
 package backup
 
 import (
@@ -52,6 +54,14 @@ type Destination struct {
 // produce exactly that many bytes.
 type Uploader interface {
 	Upload(ctx context.Context, dest Destination, key string, r io.Reader, size int64) error
+}
+
+// Deleter removes a single object from a Destination, the inverse of
+// Uploader. Implementations must treat deleting a key that is already
+// gone (or never existed) as success, not an error: S3-compatible
+// DeleteObject calls are naturally idempotent this way.
+type Deleter interface {
+	Delete(ctx context.Context, dest Destination, key string) error
 }
 
 // Dumper produces a database dump as a stream, for a single managed

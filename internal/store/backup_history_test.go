@@ -138,12 +138,12 @@ func TestPruneBackupHistory_KeepsNewestSucceeded(t *testing.T) {
 	seedSucceeded("bkh_4", "2026-08-14T00:03:00Z")
 	seedSucceeded("bkh_5", "2026-08-14T00:04:00Z")
 
-	deleted, err := db.PruneBackupHistory(ctx, "mydb", 2)
+	pruned, err := db.PruneBackupHistory(ctx, "mydb", 2)
 	if err != nil {
 		t.Fatalf("PruneBackupHistory() error = %v", err)
 	}
-	if deleted != 3 {
-		t.Errorf("deleted = %d, want 3", deleted)
+	if len(pruned) != 3 {
+		t.Errorf("pruned = %d, want 3", len(pruned))
 	}
 
 	got, err := db.ListBackupHistory(ctx, "mydb")
@@ -152,6 +152,43 @@ func TestPruneBackupHistory_KeepsNewestSucceeded(t *testing.T) {
 	}
 	if len(got) != 2 || got[0].ID != "bkh_5" || got[1].ID != "bkh_4" {
 		t.Fatalf("ListBackupHistory(mydb) after prune = %+v, want [bkh_5, bkh_4] (2 newest)", got)
+	}
+}
+
+// TestPruneBackupHistory_ReturnsPrunedTargetAndObjectKey proves the new
+// return shape carries the actually-deleted rows' TargetID/ObjectKey,
+// not just a count: internal/backup.Scheduler needs both to delete the
+// matching object from the target bucket after a store-level prune.
+func TestPruneBackupHistory_ReturnsPrunedTargetAndObjectKey(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	target := seedBackupTarget(t, db)
+
+	seedSucceeded := func(id, objectKey, startedAt string) {
+		t.Helper()
+		if err := db.StartBackupHistory(ctx, BackupHistory{
+			ID: id, DatabaseName: "mydb", TargetID: target.ID,
+			ObjectKey: objectKey, StartedAt: startedAt,
+		}); err != nil {
+			t.Fatalf("StartBackupHistory(%s) error = %v", id, err)
+		}
+		if err := db.FinishBackupHistory(ctx, id, BackupStatusSucceeded, 1, "", startedAt); err != nil {
+			t.Fatalf("FinishBackupHistory(%s) error = %v", id, err)
+		}
+	}
+
+	seedSucceeded("bkh_1", "mydb/mydb-1.dump", "2026-08-14T00:00:00Z")
+	seedSucceeded("bkh_2", "mydb/mydb-2.dump", "2026-08-14T00:01:00Z")
+
+	pruned, err := db.PruneBackupHistory(ctx, "mydb", 1)
+	if err != nil {
+		t.Fatalf("PruneBackupHistory() error = %v", err)
+	}
+	if len(pruned) != 1 {
+		t.Fatalf("pruned = %+v, want 1 row", pruned)
+	}
+	if pruned[0].TargetID != target.ID || pruned[0].ObjectKey != "mydb/mydb-1.dump" {
+		t.Errorf("pruned[0] = %+v, want TargetID=%q ObjectKey=%q", pruned[0], target.ID, "mydb/mydb-1.dump")
 	}
 }
 
@@ -184,12 +221,12 @@ func TestPruneBackupHistory_NeverTouchesFailedOrRunning(t *testing.T) {
 	seed("bkh_failed", BackupStatusFailed, "2026-08-14T00:02:00Z")
 	seed("bkh_running", BackupStatusRunning, "2026-08-14T00:03:00Z")
 
-	deleted, err := db.PruneBackupHistory(ctx, "mydb", 1)
+	pruned, err := db.PruneBackupHistory(ctx, "mydb", 1)
 	if err != nil {
 		t.Fatalf("PruneBackupHistory() error = %v", err)
 	}
-	if deleted != 1 {
-		t.Errorf("deleted = %d, want 1 (only the older succeeded row)", deleted)
+	if len(pruned) != 1 {
+		t.Errorf("pruned = %d, want 1 (only the older succeeded row)", len(pruned))
 	}
 
 	got, err := db.ListBackupHistory(ctx, "mydb")
@@ -225,12 +262,12 @@ func TestPruneBackupHistory_ZeroOrNegativeKeepDeletesNothing(t *testing.T) {
 	}
 
 	for _, keep := range []int{0, -1} {
-		deleted, err := db.PruneBackupHistory(ctx, "mydb", keep)
+		pruned, err := db.PruneBackupHistory(ctx, "mydb", keep)
 		if err != nil {
 			t.Fatalf("PruneBackupHistory(keep=%d) error = %v", keep, err)
 		}
-		if deleted != 0 {
-			t.Errorf("PruneBackupHistory(keep=%d) deleted = %d, want 0", keep, deleted)
+		if len(pruned) != 0 {
+			t.Errorf("PruneBackupHistory(keep=%d) pruned = %d, want 0", keep, len(pruned))
 		}
 	}
 

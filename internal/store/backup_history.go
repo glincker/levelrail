@@ -102,36 +102,52 @@ func (db *DB) GetBackupHistory(ctx context.Context, id string) (BackupHistory, e
 	return h, nil
 }
 
+// PrunedBackup is one backup_history row PruneBackupHistory removed:
+// its TargetID and ObjectKey, enough for a caller (internal/backup.
+// Scheduler) to also delete the object those pointed to in the target
+// bucket. PruneBackupHistory itself only removes the store row.
+type PrunedBackup struct {
+	TargetID  string
+	ObjectKey string
+}
+
 // PruneBackupHistory deletes every succeeded backup_history row for
 // databaseName beyond the newest keep, ordered by started_at, and
-// returns how many rows were removed. Only BackupStatusSucceeded rows
-// are ever eligible: a running or failed attempt carries diagnostic
-// value a retention count was never meant to bound (an operator who
-// sets retain: 7 wants "7 successful backups," not "7 attempts of any
-// kind"), so those are left untouched regardless of how old they are.
+// returns the TargetID/ObjectKey of every row removed. Only
+// BackupStatusSucceeded rows are ever eligible: a running or failed
+// attempt carries diagnostic value a retention count was never meant to
+// bound (an operator who sets retain: 7 wants "7 successful backups,"
+// not "7 attempts of any kind"), so those are left untouched regardless
+// of how old they are.
 //
-// keep <= 0 deletes nothing and returns (0, nil) without issuing a
+// keep <= 0 deletes nothing and returns (nil, nil) without issuing a
 // query: this mirrors store.DesiredDatabase.BackupRetain's own "0 means
 // keep everything" meaning (see migrations/0023's own doc comment) at
 // the one call site that matters, internal/backup.Scheduler, rather than
 // making every caller remember to guard the zero case itself.
 //
-// This is scoped narrowly to what internal/backup.Scheduler's own
-// retention step needs after a successful scheduled run: it prunes
-// store rows only, never the underlying object an Uploader wrote to a
-// backup_targets bucket, which is a real, known, and deliberately
-// undone gap here (deleting that object needs live target credentials
-// resolved through internal/secrets plus a Deleter capability
-// internal/backup does not have today, see that package's own Uploader
-// doc comment) left for a dedicated retention/pruning feature to close
-// properly, not invented speculatively as a side effect of this one.
-func (db *DB) PruneBackupHistory(ctx context.Context, databaseName string, keep int) (int64, error) {
+// Runs as a SELECT of the rows about to be removed followed by a DELETE
+// in the same transaction, rather than a single DELETE ... RETURNING:
+// this codebase's SQLite driver (modernc.org/sqlite) is not used with
+// RETURNING anywhere else, so this avoids relying on unproven support.
+// The transaction ensures the two statements observe the identical row
+// set even though db.SetMaxOpenConns(1) (store.go) already serializes
+// writes against this *sql.DB.
+func (db *DB) PruneBackupHistory(ctx context.Context, databaseName string, keep int) ([]PrunedBackup, error) {
 	if keep <= 0 {
-		return 0, nil
+		return nil, nil
 	}
 
-	res, err := db.ExecContext(ctx, `
-		DELETE FROM backup_history
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("store: prune backup history for %q: begin transaction: %w", databaseName, err)
+	}
+	defer func() {
+		_ = tx.Rollback() // no-op if Commit already succeeded
+	}()
+
+	rows, err := tx.QueryContext(ctx, `
+		SELECT id, target_id, object_key FROM backup_history
 		WHERE database_name = ? AND status = ? AND id NOT IN (
 			SELECT id FROM backup_history
 			WHERE database_name = ? AND status = ?
@@ -140,13 +156,45 @@ func (db *DB) PruneBackupHistory(ctx context.Context, databaseName string, keep 
 		)
 	`, databaseName, BackupStatusSucceeded, databaseName, BackupStatusSucceeded, keep)
 	if err != nil {
-		return 0, fmt.Errorf("store: prune backup history for %q: %w", databaseName, err)
+		return nil, fmt.Errorf("store: prune backup history for %q: select stale rows: %w", databaseName, err)
 	}
-	n, err := res.RowsAffected()
-	if err != nil {
-		return 0, fmt.Errorf("store: prune backup history for %q: rows affected: %w", databaseName, err)
+
+	type staleRow struct {
+		id     string
+		pruned PrunedBackup
 	}
-	return n, nil
+	var stale []staleRow
+	for rows.Next() {
+		var s staleRow
+		if err := rows.Scan(&s.id, &s.pruned.TargetID, &s.pruned.ObjectKey); err != nil {
+			_ = rows.Close()
+			return nil, fmt.Errorf("store: prune backup history for %q: scan stale row: %w", databaseName, err)
+		}
+		stale = append(stale, s)
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return nil, fmt.Errorf("store: prune backup history for %q: iterate stale rows: %w", databaseName, err)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, fmt.Errorf("store: prune backup history for %q: close stale rows: %w", databaseName, err)
+	}
+
+	for _, s := range stale {
+		if _, err := tx.ExecContext(ctx, `DELETE FROM backup_history WHERE id = ?`, s.id); err != nil {
+			return nil, fmt.Errorf("store: prune backup history for %q: delete %q: %w", databaseName, s.id, err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("store: prune backup history for %q: commit: %w", databaseName, err)
+	}
+
+	out := make([]PrunedBackup, len(stale))
+	for i, s := range stale {
+		out[i] = s.pruned
+	}
+	return out, nil
 }
 
 // ListBackupHistory returns every backup attempt for databaseName,
