@@ -20,7 +20,7 @@ in the rest of the Kubernetes runtime.
 Every controller is idempotent and level-triggered, never edge-triggered.
 `Reconcile` never assumes it's continuing a previous partial operation: it
 re-derives what to do entirely from current observed state on every call.
-That's what makes a reconciler safe to interrupt and safe to retry, calling
+That's what makes a reconciler safe to interrupt and safe to retry: calling
 it again after a half-finished attempt converges correctly instead of
 double-applying or corrupting state. Every reconcile also emits a status
 condition with a reason string, so a failed convergence shows up in the UI
@@ -45,7 +45,7 @@ in-process one: node enrollment (one-time join tokens exchanged for a
 client certificate), a real `levelrail-agent` binary, and cross-node
 service placement all work today. Reconcilers and everything above the
 transport boundary don't know or care which implementation they're talking
-to, which is what keeps single-node and multi-node the same code path.
+to: that's what keeps single-node and multi-node the same code path.
 
 Also shipped in this layer: a WireGuard mesh (`internal/network`, built on
 `wireguard-go`) that gives every node a peer and internal DNS names that
@@ -93,7 +93,7 @@ Package: `internal/store` (see `internal/store/store.go`,
 `internal/store/database.go`, `internal/store/migrate.go`).
 
 State is embedded SQLite in WAL mode, opened via `modernc.org/sqlite`
-(pure Go, no cgo), which is what keeps cross-compiling the control plane
+(pure Go, no cgo). That's what keeps cross-compiling the control plane
 binary simple. Schema changes go through embedded, versioned, forward-only
 migrations.
 
@@ -153,7 +153,8 @@ naming plainly rather than leaving implicit:
 - Multi-service apps: every app today is exactly one container; the
   app-spec schema allows multiple services per app, but the deploy path
   only ever drives one.
-- Teams, RBAC, and an audit log: there's a single admin user today, and
-  API tokens carry fixed scopes rather than per-user permissions.
+- Teams, RBAC, and an audit log: there's a single admin user today, API
+  tokens carry fixed scopes rather than per-user permissions, and no
+  audit log exists anywhere in the codebase.
 - An install/upgrade path for Levelrail itself (packaging, a systemd
   unit, a documented upgrade script).
