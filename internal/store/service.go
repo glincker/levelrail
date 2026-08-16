@@ -410,6 +410,29 @@ func (db *DB) UpdateServiceStorageTarget(ctx context.Context, name, storageTarge
 	return nil
 }
 
+// UpdateServiceApp assigns svc to app appID, the only way
+// desired_services.app_id ever changes outside migrations/0039_apps.sql's
+// own backfill: SaveDesiredService's own doc comment explains why this
+// is deliberately excluded from that method's full-record-replace
+// semantics, the same reasoning UpdateServiceNode/UpdateServiceProject
+// already establish for NodeID/ProjectID.
+func (db *DB) UpdateServiceApp(ctx context.Context, name, appID string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE desired_services SET app_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, appID, name)
+	if err != nil {
+		return fmt.Errorf("store: update app for service %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: update app for service %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrServiceNotFound
+	}
+	return nil
+}
+
 // UpdateServiceSuspended is the only way suspended ever changes, the
 // same "own single-purpose setter, excluded from SaveDesiredService"
 // reasoning UpdateServiceNode/UpdateServiceProject/
