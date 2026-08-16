@@ -33,12 +33,18 @@ func randomPasswordResetTokenID() (string, error) {
 	return passwordResetTokenIDPrefix + base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
-// forgotPasswordLimiterKey scopes the rate limit to (client IP, email),
-// the same pairing loginLimiterKey uses: one target account being
-// hammered from one IP shouldn't exhaust every other account's budget
-// behind a shared NAT/office IP.
-func forgotPasswordLimiterKey(r *http.Request, email string) string {
-	return "forgot-password|" + clientIP(r) + "|" + email
+// forgotPasswordIPKey and forgotPasswordEmailKey are two independent
+// budgets, both must allow a request through: per-email (so one email
+// being probed from many IPs still gets capped) and per-IP alone (so
+// one IP can't bypass the per-email cap by cycling through a list of
+// known/guessed emails, which would otherwise turn this endpoint into
+// an unmetered email-bombing relay against arbitrary accounts).
+func forgotPasswordIPKey(r *http.Request) string {
+	return "forgot-password-ip|" + clientIP(r)
+}
+
+func forgotPasswordEmailKey(r *http.Request, email string) string {
+	return "forgot-password-email|" + clientIP(r) + "|" + email
 }
 
 type forgotPasswordRequest struct {
@@ -48,8 +54,7 @@ type forgotPasswordRequest struct {
 // handleForgotPassword handles POST /api/v1/auth/forgot-password. The
 // lookup and send run in a detached background goroutine after the
 // response is already committed, so timing never reveals whether the
-// email matched an account, has no password reset need (OAuth-only, no
-// password set), or send succeeded/failed.
+// email matched an account or whether the send succeeded.
 func (rt *Router) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var req forgotPasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -61,13 +66,21 @@ func (rt *Router) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := forgotPasswordLimiterKey(r, req.Email)
-	if ok, retryAfter := rt.forgotPassword.allow(key); !ok {
+	ipKey := forgotPasswordIPKey(r)
+	emailKey := forgotPasswordEmailKey(r, req.Email)
+	okIP, retryAfterIP := rt.forgotPasswordByIP.allow(ipKey)
+	okEmail, retryAfterEmail := rt.forgotPasswordByEmail.allow(emailKey)
+	if !okIP || !okEmail {
+		retryAfter := retryAfterIP
+		if retryAfterEmail > retryAfter {
+			retryAfter = retryAfterEmail
+		}
 		w.Header().Set("Retry-After", fmt.Sprintf("%.0f", retryAfter.Seconds()))
 		writeError(w, http.StatusTooManyRequests, "too many requests, try again later")
 		return
 	}
-	rt.forgotPassword.recordFailure(key)
+	rt.forgotPasswordByIP.recordFailure(ipKey)
+	rt.forgotPasswordByEmail.recordFailure(emailKey)
 
 	go rt.sendPasswordResetEmail(context.Background(), req.Email)
 

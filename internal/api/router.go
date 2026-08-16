@@ -449,7 +449,8 @@ type Router struct {
 	emailSecrets              EmailSecretsStore           // nil is valid: PUT /api/v1/settings/email returns 501
 	emailSender               email.Sender                // nil is valid: forgot-password still returns its generic success response
 	passwordResetTokens       PasswordResetTokenStore     // always set, same shape as backupTargets above
-	forgotPassword            *loginLimiter               // distinct instance from logins above: separate attempt budgets
+	forgotPasswordByIP        *loginLimiter               // per-IP forgot-password budget, distinct from logins above
+	forgotPasswordByEmail     *loginLimiter               // per-(IP,email) forgot-password budget; both this and forgotPasswordByIP must allow a request
 }
 
 // Option configures optional Router behavior.
@@ -755,40 +756,41 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		logger = slog.Default()
 	}
 	rt := &Router{
-		logger:              logger,
-		brand:               b,
-		apps:                s,
-		deploys:             s,
-		deployAttempts:      s,
-		databases:           s,
-		auth:                s,
-		tokens:              s,
-		nodes:               s,
-		projects:            s,
-		certs:               s,
-		staticSites:         s,
-		ingressSettings:     s,
-		domains:             s,
-		lookupHost:          defaultLookupHost,
-		domainChecks:        newDomainCheckCache(),
-		backupTargets:       s,
-		backupHistory:       s,
-		restoreHistory:      s,
-		gitSources:          s,
-		githubApp:           s,
-		githubAppClient:     githubapp.NewClient(),
-		githubAppState:      newGitHubAppRegistrationState(),
-		fetch:               gitCheckout,
-		listBranches:        listRemoteBranches,
-		gitSourceFetch:      gitCheckoutWithToken,
-		logins:              newLoginLimiter(),
-		oauthSettings:       s,
-		oauthIdentities:     s,
-		oauthState:          newOAuthStateStore(),
-		oauthClientFactory:  defaultOAuthClientFactory,
-		emailSettings:       s,
-		passwordResetTokens: s,
-		forgotPassword:      newLoginLimiter(),
+		logger:                logger,
+		brand:                 b,
+		apps:                  s,
+		deploys:               s,
+		deployAttempts:        s,
+		databases:             s,
+		auth:                  s,
+		tokens:                s,
+		nodes:                 s,
+		projects:              s,
+		certs:                 s,
+		staticSites:           s,
+		ingressSettings:       s,
+		domains:               s,
+		lookupHost:            defaultLookupHost,
+		domainChecks:          newDomainCheckCache(),
+		backupTargets:         s,
+		backupHistory:         s,
+		restoreHistory:        s,
+		gitSources:            s,
+		githubApp:             s,
+		githubAppClient:       githubapp.NewClient(),
+		githubAppState:        newGitHubAppRegistrationState(),
+		fetch:                 gitCheckout,
+		listBranches:          listRemoteBranches,
+		gitSourceFetch:        gitCheckoutWithToken,
+		logins:                newLoginLimiter(),
+		oauthSettings:         s,
+		oauthIdentities:       s,
+		oauthState:            newOAuthStateStore(),
+		oauthClientFactory:    defaultOAuthClientFactory,
+		emailSettings:         s,
+		passwordResetTokens:   s,
+		forgotPasswordByIP:    newLoginLimiter(),
+		forgotPasswordByEmail: newLoginLimiter(),
 	}
 	for _, opt := range opts {
 		opt(rt)

@@ -167,6 +167,26 @@ func TestHandleForgotPassword_RateLimited(t *testing.T) {
 	}
 }
 
+// TestHandleForgotPassword_RateLimited_CannotBeBypassedByVaryingEmail
+// proves the per-IP budget (forgotPasswordByIP) catches an attacker
+// cycling through many different emails from one IP, which the
+// per-(IP,email) budget alone would never trigger on since each new
+// email starts its own fresh count.
+func TestHandleForgotPassword_RateLimited_CannotBeBypassedByVaryingEmail(t *testing.T) {
+	rt, _ := newTestRouter(t)
+
+	var lastCode int
+	for i := 0; i < 5; i++ {
+		rec := httptest.NewRecorder()
+		email := "victim" + string(rune('0'+i)) + "@example.com"
+		rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", strings.NewReader(forgotPasswordBody(email))))
+		lastCode = rec.Code
+	}
+	if lastCode != http.StatusTooManyRequests {
+		t.Errorf("status of 5th request with a distinct email each time = %d, want %d (per-IP budget must still cap total volume)", lastCode, http.StatusTooManyRequests)
+	}
+}
+
 func TestHandleResetPassword_FullRoundTrip(t *testing.T) {
 	sender := newFakeEmailSender()
 	rt, db := newTestRouterWithEmailSender(t, sender)
