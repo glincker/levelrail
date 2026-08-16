@@ -1,10 +1,12 @@
 package deploy
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 func TestParseMemoryBytes(t *testing.T) {
@@ -180,6 +182,24 @@ func TestToDesiredService_LabelsPassThrough(t *testing.T) {
 	}
 	if got.Labels["team"] != "platform" || len(got.Labels) != 1 {
 		t.Errorf("Labels = %+v, want map[team:platform]", got.Labels)
+	}
+}
+
+func TestToDesiredService_VolumesGetPlatformPrefixedNames(t *testing.T) {
+	svc := spec.Service{Port: 8080, Volumes: []spec.Volume{
+		{Name: "data", Path: "/var/lib/data"},
+		{Name: "config", Path: "/etc/app"},
+	}}
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	want := []store.ServiceVolume{
+		{Name: "app-web-data", ContainerPath: "/var/lib/data"},
+		{Name: "app-web-config", ContainerPath: "/etc/app"},
+	}
+	if !reflect.DeepEqual(got.Volumes, want) {
+		t.Errorf("Volumes = %+v, want %+v", got.Volumes, want)
 	}
 }
 

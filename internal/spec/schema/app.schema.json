@@ -41,7 +41,20 @@
         "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" }
+        },
+        "volumes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/volume" }
         }
+      }
+    },
+    "volume": {
+      "type": "object",
+      "required": ["name", "path"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 }
       }
     },
     "build": {

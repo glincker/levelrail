@@ -59,6 +59,9 @@ func TestParse_ValidFull(t *testing.T) {
 	if web.Labels["team"] != "platform" || web.Labels["tier"] != "frontend" || len(web.Labels) != 2 {
 		t.Errorf("Labels = %+v, want map[team:platform tier:frontend]", web.Labels)
 	}
+	if len(web.Volumes) != 1 || web.Volumes[0].Name != "data" || web.Volumes[0].Path != "/var/lib/data" {
+		t.Errorf("Volumes = %+v, want [{data /var/lib/data}]", web.Volumes)
+	}
 
 	dbURL, ok := web.Env["DATABASE_URL"]
 	if !ok || dbURL.From != "postgres.main.url" || dbURL.Value != "" || dbURL.Secret {
@@ -287,6 +290,34 @@ services:
   web: { build: { type: dockerfile }, port: 8080, labels: { "platform-reserved.foo": "x" } }
 `,
 			wantErrSubstr: "uses the reserved prefix",
+		},
+		{
+			name: "duplicate volume name within a service",
+			yaml: `
+version: 1
+services:
+  web:
+    build: { type: dockerfile }
+    port: 8080
+    volumes:
+      - { name: data, path: /var/lib/data }
+      - { name: data, path: /var/lib/other }
+`,
+			wantErrSubstr: "duplicate volume name",
+		},
+		{
+			name: "two volumes mount the same path",
+			yaml: `
+version: 1
+services:
+  web:
+    build: { type: dockerfile }
+    port: 8080
+    volumes:
+      - { name: data, path: /var/lib/data }
+      - { name: other, path: /var/lib/data }
+`,
+			wantErrSubstr: "both mount",
 		},
 		{
 			name: "too many labels",

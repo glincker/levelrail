@@ -481,6 +481,12 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		return fmt.Errorf("resolve env: %w", err)
 	}
 
+	for _, v := range desired.Volumes {
+		if err := c.runtime.EnsureVolume(ctx, v.Name); err != nil {
+			return fmt.Errorf("ensure volume %q: %w", v.Name, err)
+		}
+	}
+
 	spec := toContainerSpec(name, desired)
 	spec.Env = env
 	if c.meshDNSAddr != "" {
@@ -895,6 +901,9 @@ func toContainerSpec(name string, desired *store.DesiredService) docker.Containe
 			MemoryBytes: desired.Resources.MemoryBytes,
 			NanoCPUs:    desired.Resources.NanoCPUs,
 		}
+	}
+	for _, v := range desired.Volumes {
+		spec.Volumes = append(spec.Volumes, docker.VolumeMount{Name: v.Name, ContainerPath: v.ContainerPath})
 	}
 	return spec
 }

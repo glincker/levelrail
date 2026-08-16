@@ -48,7 +48,24 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		d.Health = &health
 	}
 
+	if len(svc.Volumes) > 0 {
+		d.Volumes = make([]store.ServiceVolume, len(svc.Volumes))
+		for i, v := range svc.Volumes {
+			d.Volumes[i] = store.ServiceVolume{Name: volumeName(name, v.Name), ContainerPath: v.Path}
+		}
+	}
+
 	return d, nil
+}
+
+// volumeName turns a service's own logical volume name (spec.Volume.Name,
+// scoped to that one service, two services can each use "data") into a
+// real, globally-unique Docker volume name, mirroring
+// internal/reconcile/database's own dataVolumeName convention ("db-" +
+// name + "-data") one level up: "app-" + service name + "-" + the
+// logical name.
+func volumeName(serviceName, logicalName string) string {
+	return "app-" + serviceName + "-" + logicalName
 }
 
 func literalEnv(env map[string]spec.EnvVar) map[string]string {

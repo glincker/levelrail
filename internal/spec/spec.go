@@ -41,6 +41,20 @@ type Service struct {
 	// notably, any key under ReservedLabelPrefix, kept open for this
 	// platform's own bookkeeping labels.
 	Labels map[string]string `yaml:"labels,omitempty"`
+
+	// Volumes are named Docker volumes this service's container mounts,
+	// previously a database-only capability. Name is a logical name
+	// scoped to this service, not a global Docker volume name (see
+	// internal/deploy's translation into store.ServiceVolume for the
+	// actual, platform-prefixed name); two services can each declare a
+	// volume named "data" without colliding.
+	Volumes []Volume `yaml:"volumes,omitempty"`
+}
+
+// Volume is one entry under a service's volumes:.
+type Volume struct {
+	Name string `yaml:"name"`
+	Path string `yaml:"path"`
 }
 
 // Build input types: the app spec's build.type values, matching the

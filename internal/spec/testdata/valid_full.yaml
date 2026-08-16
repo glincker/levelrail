@@ -21,6 +21,9 @@ services:
     labels:
       team: platform
       tier: frontend
+    volumes:
+      - name: data
+        path: /var/lib/data
 databases:
   main:
     engine: postgres
