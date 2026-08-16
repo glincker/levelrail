@@ -32,7 +32,7 @@ jobs:
         run: npm run build
 
       - name: Upload dist
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: web-dist
           path: web/dist
@@ -71,7 +71,7 @@ jobs:
         run: go build -tags embedweb -o "levelrail-linux-${{ matrix.goarch }}" ./cmd/levelrail
 
       - name: Upload binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: binary-${{ matrix.goarch }}
           path: levelrail-linux-${{ matrix.goarch }}

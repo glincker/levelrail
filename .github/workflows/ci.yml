@@ -104,7 +104,7 @@ jobs:
         run: go test ./internal/api/... -short -timeout=10m -coverprofile=coverage-api.out
 
       - name: Upload coverage profile
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-api
           path: coverage-api.out
@@ -139,7 +139,7 @@ jobs:
           go test $PACKAGES -short -coverprofile=coverage-rest.out
 
       - name: Upload coverage profile
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-rest
           path: coverage-rest.out
