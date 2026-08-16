@@ -9,10 +9,10 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// AppStore is the narrow surface NetworkCleanupController needs from
+// AppLister is the narrow surface NetworkCleanupController needs from
 // internal/store: every currently-desired app. *store.DB satisfies this
 // structurally.
-type AppStore interface {
+type AppLister interface {
 	ListApps(ctx context.Context) ([]store.App, error)
 }
 
@@ -37,7 +37,7 @@ type AppStore interface {
 // deletes it once removing a service leaves the App with no other
 // members) or its cascade, means the network is actually orphaned.
 type NetworkCleanupController struct {
-	apps    AppStore
+	apps    AppLister
 	runtime docker.Runtime
 	prefix  string
 }
@@ -46,7 +46,7 @@ type NetworkCleanupController struct {
 // is the same value passed to every Controller's WithNetworkPrefix
 // (typically brand.Brand.ShortName): both must agree, or this will
 // never find the networks the per-service controllers actually create.
-func NewNetworkCleanupController(apps AppStore, runtime docker.Runtime, prefix string) *NetworkCleanupController {
+func NewNetworkCleanupController(apps AppLister, runtime docker.Runtime, prefix string) *NetworkCleanupController {
 	return &NetworkCleanupController{apps: apps, runtime: runtime, prefix: prefix}
 }
 

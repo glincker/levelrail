@@ -257,7 +257,7 @@ func TestNetworkCleanupController_RemovesOrphanedNetworks(t *testing.T) {
 	rt.networks["acme-app-long-gone"] = "net-2"
 	rt.networks["unrelated-network"] = "net-3" // no matching prefix, never touched
 
-	apps := &fakeAppStore{apps: []store.App{{ID: "still-here", Name: "still-here"}}}
+	apps := &fakeAppLister{apps: []store.App{{ID: "still-here", Name: "still-here"}}}
 	c := NewNetworkCleanupController(apps, rt, "acme")
 
 	result, err := c.Reconcile(context.Background())
@@ -285,7 +285,7 @@ func TestNetworkCleanupController_RemovesOrphanedNetworks(t *testing.T) {
 // must be a cheap no-op, not an error.
 func TestNetworkCleanupController_NothingToClean(t *testing.T) {
 	rt := newFakeRuntime(0)
-	apps := &fakeAppStore{}
+	apps := &fakeAppLister{}
 	c := NewNetworkCleanupController(apps, rt, "acme")
 
 	result, err := c.Reconcile(context.Background())
@@ -308,7 +308,7 @@ func TestNetworkCleanupController_RemoveFails_HalfSucceeded(t *testing.T) {
 	rt.networks["acme-app-gone-2"] = "net-2"
 	rt.removeNetworkErr = errors.New("network has active endpoints")
 
-	apps := &fakeAppStore{}
+	apps := &fakeAppLister{}
 	c := NewNetworkCleanupController(apps, rt, "acme")
 
 	result, err := c.Reconcile(context.Background())
@@ -321,13 +321,13 @@ func TestNetworkCleanupController_RemoveFails_HalfSucceeded(t *testing.T) {
 	}
 }
 
-// fakeAppStore is a hand-written fake for AppStore.
-type fakeAppStore struct {
+// fakeAppLister is a hand-written fake for AppLister.
+type fakeAppLister struct {
 	apps []store.App
 	err  error
 }
 
-func (f *fakeAppStore) ListApps(_ context.Context) ([]store.App, error) {
+func (f *fakeAppLister) ListApps(_ context.Context) ([]store.App, error) {
 	return f.apps, f.err
 }
 

@@ -179,7 +179,7 @@ func vertexLogStream(bkStream int) string {
 // `docker load` CLI command uses internally. r is exhausted, but not
 // closed, by this function; the caller owns closing the pipe.
 func loadImage(ctx context.Context, docker *dockerclient.Client, r io.Reader, tag string, progress func(ProgressEvent)) error {
-	resp, err := docker.ImageLoad(ctx, r, false)
+	resp, err := docker.ImageLoad(ctx, r, dockerclient.ImageLoadWithQuiet(false))
 	if err != nil {
 		return fmt.Errorf("build: load image %q into docker: %w", tag, err)
 	}

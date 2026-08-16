@@ -76,6 +76,11 @@ const maxPayloadBytes = 25 << 20
 // picking its own number.
 const MaxPayloadBytes = maxPayloadBytes
 
+const (
+	errWriteResponseBody = "webhook: failed to write response body"
+	errDeployFailed      = "deploy failed"
+)
+
 // Deployer is the narrow surface this package needs from
 // internal/deploy.Pipeline, so tests can fake it without a real BuildKit
 // connection or Docker daemon, the same narrow-interface pattern
@@ -379,7 +384,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.log.Info("webhook: ignoring push to non-target branch", "ref", ev.Ref, "want_ref", wantRef)
 		w.WriteHeader(http.StatusOK)
 		if _, err := fmt.Fprintf(w, "ignored: push to %q, deploys trigger on %q only\n", ev.Ref, wantRef); err != nil {
-			h.log.Warn("webhook: failed to write response body", "error", err)
+			h.log.Warn(errWriteResponseBody, "error", err)
 		}
 		return
 	}
@@ -389,7 +394,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	sourceDir, cleanup, err := h.fetch(r.Context(), h.cfg.RepoURL, ev.After)
 	if err != nil {
 		h.log.Error("webhook: fetching source failed", "commit", ev.After, "repo_url", h.cfg.RepoURL, "error", err)
-		http.Error(w, "deploy failed", http.StatusInternalServerError)
+		http.Error(w, errDeployFailed, http.StatusInternalServerError)
 		return
 	}
 	defer cleanup()
@@ -412,14 +417,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	finishAttempt(tag, err)
 	if err != nil {
 		h.log.Error("webhook: deploy failed", "commit", ev.After, "service", h.cfg.ServiceName, "error", err)
-		http.Error(w, "deploy failed", http.StatusInternalServerError)
+		http.Error(w, errDeployFailed, http.StatusInternalServerError)
 		return
 	}
 
 	h.log.Info("webhook: deploy triggered", "commit", ev.After, "service", h.cfg.ServiceName, "tag", tag)
 	w.WriteHeader(http.StatusOK)
 	if _, err := fmt.Fprintf(w, "deploy triggered: %s\n", tag); err != nil {
-		h.log.Warn("webhook: failed to write response body", "error", err)
+		h.log.Warn(errWriteResponseBody, "error", err)
 	}
 }
 
@@ -446,7 +451,7 @@ func (h *Handler) deployMulti(w http.ResponseWriter, r *http.Request, ev PushEve
 	}, progress)
 	if err != nil {
 		h.log.Error("webhook: multi-service deploy failed", "commit", ev.After, "app", h.cfg.ServiceName, "error", err)
-		http.Error(w, "deploy failed", http.StatusInternalServerError)
+		http.Error(w, errDeployFailed, http.StatusInternalServerError)
 		return
 	}
 
@@ -466,7 +471,7 @@ func (h *Handler) deployMulti(w http.ResponseWriter, r *http.Request, ev PushEve
 	}
 	w.WriteHeader(status)
 	if _, err := fmt.Fprintf(w, "multi-service deploy triggered: %d service(s), all_succeeded=%t\n", len(outcomes), allSucceeded); err != nil {
-		h.log.Warn("webhook: failed to write response body", "error", err)
+		h.log.Warn(errWriteResponseBody, "error", err)
 	}
 }
 
