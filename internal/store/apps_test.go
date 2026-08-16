@@ -239,15 +239,16 @@ func TestListServicesByApp_NoMatches(t *testing.T) {
 	}
 }
 
-// TestMigration0030_BackfillsExistingServices applies every migration
-// up to (not including) 0030 by hand, inserts a desired_services row
-// the way a pre-0030 database would have one, then applies 0030 and
-// checks the backfill: the founder-approved design requires this to be
-// pure SQL inside the migration itself, not an application-layer step,
-// so this test exercises the migration file directly rather than
+// TestAppsMigration_BackfillsExistingServices applies every migration
+// except the apps one by hand, inserts a desired_services row the way a
+// pre-apps-migration database would have one, then applies the apps
+// migration and checks the backfill: the founder-approved design
+// requires this to be pure SQL inside the migration itself, not an
+// application-layer step, so this test exercises the migration file
+// directly rather than
 // through store.Open (which would apply every migration in one pass,
 // leaving nothing to backfill).
-func TestMigration0030_BackfillsExistingServices(t *testing.T) {
+func TestAppsMigration_BackfillsExistingServices(t *testing.T) {
 	ctx := context.Background()
 	path := filepath.Join(t.TempDir(), "levelrail.db")
 
@@ -278,18 +279,23 @@ func TestMigration0030_BackfillsExistingServices(t *testing.T) {
 		t.Fatalf("loadMigrations() error = %v", err)
 	}
 
-	var m30 *migration
+	// Matched by name, not a hardcoded version number: this file has
+	// already been renumbered once (0030 -> 0037) as other concurrently
+	// merged migrations claimed 0030-0036, and a hardcoded version here
+	// would silently start testing the wrong migration on the next
+	// renumber instead of failing loudly.
+	var appsMigration *migration
 	for i, m := range migrations {
-		if m.version == 30 {
-			m30 = &migrations[i]
+		if m.name == "apps" {
+			appsMigration = &migrations[i]
 			continue
 		}
 		if err := db.applyMigration(ctx, m); err != nil {
 			t.Fatalf("apply migration %04d_%s: %v", m.version, m.name, err)
 		}
 	}
-	if m30 == nil {
-		t.Fatal("migration 0030 not found among embedded migrations")
+	if appsMigration == nil {
+		t.Fatal("apps migration not found among embedded migrations")
 	}
 
 	if _, err := db.ExecContext(ctx, `
@@ -299,8 +305,8 @@ func TestMigration0030_BackfillsExistingServices(t *testing.T) {
 		t.Fatalf("insert pre-migration desired_services row: %v", err)
 	}
 
-	if err := db.applyMigration(ctx, *m30); err != nil {
-		t.Fatalf("apply migration 0030: %v", err)
+	if err := db.applyMigration(ctx, *appsMigration); err != nil {
+		t.Fatalf("apply apps migration: %v", err)
 	}
 
 	app, err := db.GetAppByName(ctx, "legacy-web")
