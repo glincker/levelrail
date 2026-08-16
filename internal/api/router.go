@@ -213,9 +213,14 @@ type ProjectStore interface {
 
 // AuthStore is the store surface the auth handlers need.
 type AuthStore interface {
-	GetAdminUser(ctx context.Context) (*store.AdminUser, error)
-	UpsertAdminUser(ctx context.Context, username, passwordHash string) error
-	CreateAdminUser(ctx context.Context, username, passwordHash string) error
+	GetUserByEmail(ctx context.Context, email string) (*store.User, error)
+	GetUserByID(ctx context.Context, id string) (*store.User, error)
+	CreateUser(ctx context.Context, u store.User) error
+	UpdateUserPasswordHash(ctx context.Context, id string, hash *string) error
+	UpdateUserLastLogin(ctx context.Context, id string, when time.Time) error
+	CountUsers(ctx context.Context) (int, error)
+	ListUsers(ctx context.Context) ([]store.User, error)
+	DeleteUser(ctx context.Context, id string) error
 }
 
 // TokenStore is the store surface the API-token handlers and the
@@ -250,6 +255,8 @@ type Store interface {
 	DomainStore
 	GitSourceStore
 	GitHubAppStore
+	OAuthSettingsStore
+	OAuthIdentityStore
 }
 
 // SecretSetter is the surface the secrets handler needs from
@@ -412,6 +419,11 @@ type Router struct {
 	githubAppSecrets        GitHubAppSecrets            // nil is valid: every github-app route that needs it (register/start, callback, installed, repos, branches) returns 501, same shape as backupSecrets above
 	githubAppClient         GitHubAppClient             // always set (NewRouter defaults it to a real *githubapp.Client, which needs no configuration to construct), overridable in this package's own tests the same way fetch is
 	githubAppState          *githubAppRegistrationState // always set (NewRouter constructs one unconditionally); purely in-memory bookkeeping, see its own doc comment
+	oauthSettings           OAuthSettingsStore          // always set, same "core Store interface" shape as ingressSettings above: both provider rows always exist (migrations/0030's own seeded rows)
+	oauthIdentities         OAuthIdentityStore          // always set, same shape as oauthSettings above
+	oauthSecrets            OAuthSecrets                // nil is valid: every /auth/oauth/... sign-in route and PUT /settings/oauth/{provider} return 501/501, same "not configured" shape as gitSourceSecrets above
+	oauthState              *oauthStateStore            // built in NewRouter unconditionally, the same "always present, not an Option" shape sessions itself has
+	oauthClientFactory      oauthClientFactory          // defaulted to defaultOAuthClientFactory in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape fetch/listBranches/gitSourceFetch above already use
 }
 
 // Option configures optional Router behavior.
@@ -719,6 +731,10 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		listBranches:    listRemoteBranches,
 		gitSourceFetch:  gitCheckoutWithToken,
 		logins:          newLoginLimiter(),
+		oauthSettings:      s,
+		oauthIdentities:    s,
+		oauthState:         newOAuthStateStore(),
+		oauthClientFactory: defaultOAuthClientFactory,
 	}
 	for _, opt := range opts {
 		opt(rt)
@@ -761,6 +777,26 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("PUT /api/v1/auth/password", rt.requireAuth(rt.handleChangePassword))
 	mux.HandleFunc("GET /api/v1/auth/session", rt.requireAuth(rt.handleGetSession))
 	mux.HandleFunc("POST /api/v1/auth/sessions/revoke-others", rt.requireAuth(rt.handleRevokeOtherSessions))
+
+	// Multi-user: an already-authenticated user creating another
+	// local-password user (see handleRegister's own doc comment), and a
+	// read-only "who has access" listing.
+	mux.HandleFunc("POST /api/v1/auth/users", rt.requireAuth(rt.handleCreateUser))
+	mux.HandleFunc("GET /api/v1/users", rt.requireAbility(AbilityRead, rt.handleListUsers))
+	mux.HandleFunc("DELETE /api/v1/users/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteUser))
+
+	// OAuth sign-in (Google, GitHub). /providers, /start, /callback are
+	// all necessarily public; /link/start is requireAuth-gated (see its
+	// own doc comment).
+	mux.HandleFunc("GET /api/v1/auth/oauth/providers", rt.handleListPublicOAuthProviders)
+	mux.HandleFunc("GET /api/v1/auth/oauth/{provider}/start", rt.handleOAuthStart)
+	mux.HandleFunc("GET /api/v1/auth/oauth/{provider}/callback", rt.handleOAuthCallback)
+	mux.HandleFunc("GET /api/v1/auth/oauth/{provider}/link/start", rt.requireAuth(rt.handleOAuthLinkStart))
+
+	// OAuth settings: GET is AbilityRead, PUT is AbilityRoot, matching
+	// /api/v1/settings/ingress's own tiers.
+	mux.HandleFunc("GET /api/v1/settings/oauth", rt.requireAbility(AbilityRead, rt.handleListOAuthSettings))
+	mux.HandleFunc("PUT /api/v1/settings/oauth/{provider}", rt.requireAbility(AbilityRoot, rt.handleUpdateOAuthProviderSettings))
 
 	// API tokens: session-only, deliberately never bearer-token
 	// authenticated. A token cannot mint or revoke another token on its

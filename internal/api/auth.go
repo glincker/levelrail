@@ -33,20 +33,17 @@ const sessionCookieName = "session_token"
 // directory and loadBrand's file path already use.
 const defaultSessionTTL = 24 * time.Hour
 
-// session is one logged-in admin session.
+// session is one logged-in session, identified by the real user it
+// belongs to. Multiple distinct users can each hold any number of live
+// sessions; every session grants the same access (see requireAbility).
 type session struct {
-	username  string
+	userID    string
 	expiresAt time.Time
 }
 
 // sessionStore is a server-side, in-memory session table: the cookie
 // carries only an opaque token, this map is the sole place that token
-// resolves to a username. This phase scopes auth to a single admin user
-// with session auth, explicitly not JWT/OAuth, so nothing more
-// elaborate than this is built here. In-memory is an accepted tradeoff
-// for this pass: a restart invalidates every session, which just means
-// logging in again, not a correctness problem for a single-node control
-// plane.
+// resolves to a user ID. In-memory: a restart invalidates every session.
 type sessionStore struct {
 	mu       sync.Mutex
 	sessions map[string]session
@@ -63,13 +60,13 @@ func newSessionStore(ttl time.Duration) *sessionStore {
 	return &sessionStore{sessions: make(map[string]session), ttl: ttl}
 }
 
-func (s *sessionStore) create(username string) (string, error) {
+func (s *sessionStore) create(userID string) (string, error) {
 	token, err := randomToken()
 	if err != nil {
 		return "", fmt.Errorf("api: generate session token: %w", err)
 	}
 	s.mu.Lock()
-	s.sessions[token] = session{username: username, expiresAt: time.Now().Add(s.ttl)}
+	s.sessions[token] = session{userID: userID, expiresAt: time.Now().Add(s.ttl)}
 	s.mu.Unlock()
 	return token, nil
 }
@@ -85,11 +82,11 @@ func (s *sessionStore) lookup(token string) (string, bool) {
 		delete(s.sessions, token)
 		return "", false
 	}
-	return sess.username, true
+	return sess.userID, true
 }
 
 // get returns the full session record for token, used where a caller
-// needs more than lookup's username (e.g. handleGetSession also wants
+// needs more than lookup's user ID (e.g. handleGetSession also wants
 // expiresAt). Same liveness/expiry handling as lookup.
 func (s *sessionStore) get(token string) (session, bool) {
 	s.mu.Lock()
@@ -111,17 +108,26 @@ func (s *sessionStore) revoke(token string) {
 	s.mu.Unlock()
 }
 
-// revokeAllExcept deletes every session belonging to username other than
-// keepToken. Used by handleChangePassword: rotating every other session
-// on a password change (docs-local/research/competitor-onboarding-auth-
-// ux.md finding 6, "rotate/invalidate all sessions on password change")
-// without logging the caller themselves out of the request that just
-// made the change.
-func (s *sessionStore) revokeAllExcept(username, keepToken string) {
+// revokeAllExcept deletes every session belonging to userID other than
+// keepToken, scoped strictly to that one user: revoking their sessions
+// must never touch another user's.
+func (s *sessionStore) revokeAllExcept(userID, keepToken string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for token, sess := range s.sessions {
-		if token != keepToken && sess.username == username {
+		if token != keepToken && sess.userID == userID {
+			delete(s.sessions, token)
+		}
+	}
+}
+
+// revokeAll deletes every session belonging to userID, unlike
+// revokeAllExcept which always spares one token.
+func (s *sessionStore) revokeAll(userID string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for token, sess := range s.sessions {
+		if sess.userID == userID {
 			delete(s.sessions, token)
 		}
 	}
@@ -135,76 +141,97 @@ func randomToken() (string, error) {
 	return base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
+// randomOpaqueID generates an opaque, URL-safe identifier with the given
+// prefix, the same shape store.NewDeployAttemptID/randomTokenID use.
+// Kept private to this package: only internal/api mints user/identity IDs.
+func randomOpaqueID(prefix string) (string, error) {
+	buf := make([]byte, 9)
+	if _, err := rand.Read(buf); err != nil {
+		return "", fmt.Errorf("api: generate %sid: %w", prefix, err)
+	}
+	return prefix + base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
 type loginRequest struct {
-	Username string `json:"username"`
+	Email    string `json:"username"`
 	Password string `json:"password"`
 }
 
 type loginResponse struct {
-	Username string `json:"username"`
+	Email       string `json:"username"`
+	DisplayName string `json:"display_name"`
 }
 
-// handleLogin verifies a username/password against the single admin
-// account and, on success, sets a session cookie. Deliberately returns
-// the same generic "invalid credentials" message whether the username
-// doesn't match, the admin account doesn't exist yet, or the password is
-// wrong, so the response never tells an attacker which case they hit.
-//
-// Rate limited per (client IP, attempted username) via rt.logins: a
-// locked-out key is rejected before any bcrypt comparison even runs
-// (bcrypt is deliberately slow, and running it anyway on a
-// known-locked-out request would just burn CPU on a request that was
-// always going to fail), and every failure path below (unknown admin,
-// wrong username, wrong password) counts against the limiter, not just
-// wrong-password specifically, so probing for a valid username costs
-// the same as guessing its password.
+// handleLogin verifies an email/password against the users table and,
+// on success, sets a session cookie. The wire field stays "username"
+// (loginRequest.Email's json tag) for existing callers; email is simply
+// what it means now. Same generic "invalid credentials" for unknown
+// email or wrong password.
 func (rt *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.Username == "" || req.Password == "" {
+	if req.Email == "" || req.Password == "" {
 		writeError(w, http.StatusBadRequest, "username and password are required")
 		return
 	}
 
-	key := loginLimiterKey(r, req.Username)
+	key := loginLimiterKey(r, req.Email)
 	if ok, retryAfter := rt.logins.allow(key); !ok {
 		w.Header().Set("Retry-After", fmt.Sprintf("%.0f", retryAfter.Seconds()))
 		writeError(w, http.StatusTooManyRequests, "too many failed attempts, try again later")
 		return
 	}
 
-	admin, err := rt.auth.GetAdminUser(r.Context())
-	if errors.Is(err, store.ErrAdminNotFound) {
+	user, err := rt.auth.GetUserByEmail(r.Context(), req.Email)
+	if errors.Is(err, store.ErrUserNotFound) {
 		rt.logins.recordFailure(key)
 		writeError(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: login: load admin user failed", slog.String("error", err.Error()))
+		rt.logger.Error("api: login: load user failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-
-	if admin.Username != req.Username {
+	if user.PasswordHash == nil {
+		// No password to check against: treat like a wrong password so
+		// the response never reveals which sign-in methods an account has.
 		rt.logins.recordFailure(key)
 		writeError(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(admin.PasswordHash), []byte(req.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(*user.PasswordHash), []byte(req.Password)); err != nil {
 		rt.logins.recordFailure(key)
 		writeError(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 	rt.logins.recordSuccess(key)
 
-	token, err := rt.sessions.create(admin.Username)
-	if err != nil {
-		rt.logger.Error("api: login: create session failed", slog.String("error", err.Error()), slog.String("username", admin.Username))
+	if err := rt.establishSession(w, r.Context(), *user); err != nil {
+		rt.logger.Error("api: login: establish session failed", slog.String("error", err.Error()), slog.String("user_id", user.ID))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
+	}
+	writeJSON(w, http.StatusOK, loginResponse{Email: user.Email, DisplayName: user.DisplayName})
+}
+
+// establishSession is the one place a session cookie gets created and
+// last_login_at gets stamped: handleLogin, handleRegister, and the OAuth
+// callback handlers all funnel through this, so every sign-in path
+// shares identical session properties by construction.
+func (rt *Router) establishSession(w http.ResponseWriter, ctx context.Context, user store.User) error {
+	token, err := rt.sessions.create(user.ID)
+	if err != nil {
+		return fmt.Errorf("create session: %w", err)
+	}
+
+	// Best-effort: last_login_at is an observability nicety for the Users
+	// settings page, never something a sign-in should fail over.
+	if err := rt.auth.UpdateUserLastLogin(ctx, user.ID, time.Now()); err != nil {
+		rt.logger.Warn("api: update last_login_at failed", slog.String("error", err.Error()), slog.String("user_id", user.ID))
 	}
 
 	// Secure is intentional even though this HTTP listener itself speaks
@@ -225,7 +252,7 @@ func (rt *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 		Expires:  time.Now().Add(rt.sessions.ttl),
 	})
-	writeJSON(w, http.StatusOK, loginResponse{Username: admin.Username})
+	return nil
 }
 
 // handleLogout revokes the session named by the request's cookie, if
@@ -263,15 +290,11 @@ func (rt *Router) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 }
 
 // requireAbility wraps a handler so it only runs for a request
-// authenticated either by a valid session (treated as implicitly
-// AbilityRoot: this phase has exactly one human identity, the
-// admin, so there is nothing narrower to scope a session to) or a
-// bearer token whose stored abilities grant required. This is what lets
-// an MCP-issued or CLI-issued token be provably restricted to, say,
-// AbilityRead: hasAbility is checked on every call against the token's
-// row read fresh from the store, never a cached decision, matching
-// Coolify's own "re-evaluate policies fresh" rule
-// (docs-local/research/competitor-onboarding-auth-ux.md).
+// authenticated either by a valid session (implicitly AbilityRoot) or a
+// bearer token whose stored abilities grant required. A session grants
+// full access unconditionally: not because there's only one identity
+// (any number of users can exist now), but because there's no per-user
+// role model yet (RBAC is Phase 4).
 func (rt *Router) requireAbility(required string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if rt.hasValidSession(r) {
@@ -323,21 +346,21 @@ func (rt *Router) requireAbility(required string, next http.HandlerFunc) http.Ha
 // requireAbility can check it without duplicating the cookie-lookup
 // dance.
 func (rt *Router) hasValidSession(r *http.Request) bool {
-	_, ok := rt.currentSessionUsername(r)
+	_, ok := rt.currentSessionUserID(r)
 	return ok
 }
 
-// currentSessionUsername returns the username and session token a
-// request's session cookie resolves to, if any. handleChangePassword
-// needs both: the username to re-verify the current password against,
-// and the token so revokeAllExcept can leave this one session alone.
-func (rt *Router) currentSessionUsername(r *http.Request) (username string, ok bool) {
+// currentSessionUserID returns the user ID and session token a request's
+// session cookie resolves to, if any. handleChangePassword needs both:
+// the user ID to load the account being changed, and the token so
+// revokeAllExcept can leave this one session alone.
+func (rt *Router) currentSessionUserID(r *http.Request) (userID string, ok bool) {
 	c, err := r.Cookie(sessionCookieName)
 	if err != nil {
 		return "", false
 	}
-	username, ok = rt.sessions.lookup(c.Value)
-	return username, ok
+	userID, ok = rt.sessions.lookup(c.Value)
+	return userID, ok
 }
 
 // bearerToken extracts the token from a "Bearer <token>" Authorization
@@ -367,35 +390,21 @@ func hashToken(plaintext string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// handleRegister handles POST /api/v1/auth/register: the interactive,
-// UI-driven counterpart to BootstrapAdmin's env-var path. Coexists with
-// it rather than replacing it (a scripted/CI install still sets
-// APP_ADMIN_USERNAME/APP_ADMIN_PASSWORD and never touches this route);
-// this exists for an operator who starts the binary with neither env
-// var set and expects a real first-run screen, per
-// docs-local/research/competitor-onboarding-auth-ux.md's synthesis
-// (finding 1: reuse one registration form for the first-run case, gated
-// server-side on "does an admin row exist," never a hardcoded default
-// credential).
-//
-// Gated at the mutation layer, not just by an earlier caller-side check:
-// this calls store.CreateAdminUser, a plain INSERT with no ON CONFLICT
-// clause, so admin_user's own PRIMARY KEY constraint (id = 1) is what
-// actually decides between two concurrent registration attempts, not a
-// GetAdminUser check performed moments earlier that both requests could
-// otherwise pass (a read-then-write race a route-level check alone
-// cannot close, since both reads can observe "not found" before either
-// write lands). Once an admin exists, every subsequent call 409s,
-// permanently: there is no "invite a second user" story in Phase 1
-// ("single admin user... no teams, no RBAC yet"), and re-registering is
-// not how a forgotten password gets reset (see the recovery-path task).
+// handleRegister handles POST /api/v1/auth/register: creates the very
+// first user of a genuinely empty instance, nothing else. Every
+// subsequent user comes from OAuth (oauth.go) or an authenticated caller
+// via POST /api/v1/auth/users: open self-registration is too big a risk
+// once this control plane is internet-reachable, with no invite system
+// to bound it. Gated at the mutation layer via
+// ux_users_single_first_user (migrations/0030), closing the
+// two-concurrent-registrations race.
 func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.Username == "" || req.Password == "" {
+	if req.Email == "" || req.Password == "" {
 		writeError(w, http.StatusBadRequest, "username and password are required")
 		return
 	}
@@ -410,63 +419,87 @@ func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	if err := rt.auth.CreateAdminUser(r.Context(), req.Username, string(hash)); errors.Is(err, store.ErrAdminAlreadyExists) {
-		writeError(w, http.StatusConflict, "an admin account already exists")
+
+	id, err := randomOpaqueID("user_")
+	if err != nil {
+		rt.logger.Error("api: register: generate user id failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	hashStr := string(hash)
+	user := store.User{
+		ID:           id,
+		Email:        req.Email,
+		DisplayName:  req.Email,
+		PasswordHash: &hashStr,
+		IsFirstUser:  true,
+		CreatedAt:    time.Now(),
+	}
+	if err := rt.auth.CreateUser(r.Context(), user); errors.Is(err, store.ErrFirstUserExists) {
+		writeError(w, http.StatusConflict, "an account already exists; sign in instead")
+		return
+	} else if errors.Is(err, store.ErrUserEmailExists) {
+		writeError(w, http.StatusConflict, "an account already exists; sign in instead")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: register: save admin failed", slog.String("error", err.Error()))
+		rt.logger.Error("api: register: save user failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
-	token, err := rt.sessions.create(req.Username)
-	if err != nil {
-		rt.logger.Error("api: register: create session failed", slog.String("error", err.Error()))
+	if err := rt.establishSession(w, r.Context(), user); err != nil {
+		rt.logger.Error("api: register: establish session failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	http.SetCookie(w, &http.Cookie{
-		Name:     sessionCookieName,
-		Value:    token,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-		Expires:  time.Now().Add(rt.sessions.ttl),
-	})
-	writeJSON(w, http.StatusCreated, loginResponse{Username: req.Username})
+	writeJSON(w, http.StatusCreated, loginResponse{Email: user.Email, DisplayName: user.DisplayName})
 }
 
-// minPasswordLength matches the project's "no hardcoded thresholds"
-// rule as closely as a fixed minimum reasonably can: unlike a
-// tunable operational limit (a timeout, a retry count), a minimum
-// password length is a security floor, not a deployment-specific
-// preference, so it stays a constant rather than an env var.
+// minPasswordLength is a security floor, not a deployment preference,
+// so it stays a constant rather than an env var.
 const minPasswordLength = 8
 
-// BootstrapAdmin ensures a single admin account exists, creating one
-// from username/password if none does yet. It is a no-op once an admin
-// exists: cmd/levelrail/main.go calls this on every startup, and only
-// the very first call (empty admin_user table) actually writes anything,
-// so re-running it with the same env vars after a restart never resets a
-// password the operator has since changed.
+// BootstrapAdmin ensures at least one user exists, creating one from
+// username/password if none does yet. No-op once any user exists, so a
+// restart with the same env vars never resets a changed password.
+// username becomes the new user's email verbatim (no "@" required),
+// matching migrations/0030's backfill leniency for a pre-existing
+// admin_user row.
 func BootstrapAdmin(ctx context.Context, s AuthStore, username, password string) error {
-	_, err := s.GetAdminUser(ctx)
-	if err == nil {
+	n, err := s.CountUsers(ctx)
+	if err != nil {
+		return fmt.Errorf("api: bootstrap admin: count existing: %w", err)
+	}
+	if n > 0 {
 		return nil // already bootstrapped
 	}
-	if !errors.Is(err, store.ErrAdminNotFound) {
-		return fmt.Errorf("api: bootstrap admin: check existing: %w", err)
-	}
 	if username == "" || password == "" {
-		return fmt.Errorf("api: bootstrap admin: no admin account exists and no username/password were provided")
+		return fmt.Errorf("api: bootstrap admin: no user account exists and no username/password were provided")
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("api: bootstrap admin: hash password: %w", err)
 	}
-	if err := s.UpsertAdminUser(ctx, username, string(hash)); err != nil {
+	id, err := randomOpaqueID("user_")
+	if err != nil {
+		return fmt.Errorf("api: bootstrap admin: generate user id: %w", err)
+	}
+	hashStr := string(hash)
+	user := store.User{
+		ID:           id,
+		Email:        username,
+		DisplayName:  username,
+		PasswordHash: &hashStr,
+		IsFirstUser:  true,
+		CreatedAt:    time.Now(),
+	}
+	if err := s.CreateUser(ctx, user); err != nil {
+		// Losing a concurrent bootstrap race isn't a real failure: "at
+		// least one user exists" is what this function promises either way.
+		if errors.Is(err, store.ErrFirstUserExists) || errors.Is(err, store.ErrUserEmailExists) {
+			return nil
+		}
 		return fmt.Errorf("api: bootstrap admin: save: %w", err)
 	}
 	return nil

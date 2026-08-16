@@ -3,13 +3,10 @@ package api
 import (
 	"bytes"
 	"context"
-	"errors"
 	"log/slog"
 	"testing"
 
 	"golang.org/x/crypto/bcrypt"
-
-	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 func TestMaybeBootstrapDevAdmin_Disabled_NoOp(t *testing.T) {
@@ -21,8 +18,8 @@ func TestMaybeBootstrapDevAdmin_Disabled_NoOp(t *testing.T) {
 		t.Fatalf("maybeBootstrapDevAdmin() error = %v", err)
 	}
 
-	if _, err := db.GetAdminUser(ctx); !errors.Is(err, store.ErrAdminNotFound) {
-		t.Errorf("GetAdminUser() error = %v, want ErrAdminNotFound (disabled must not create an account)", err)
+	if n, err := db.CountUsers(ctx); err != nil || n != 0 {
+		t.Errorf("CountUsers() = (%d, %v), want (0, nil) (disabled must not create an account)", n, err)
 	}
 }
 
@@ -35,14 +32,17 @@ func TestMaybeBootstrapDevAdmin_Enabled_CreatesDevAdmin(t *testing.T) {
 		t.Fatalf("maybeBootstrapDevAdmin() error = %v", err)
 	}
 
-	got, err := db.GetAdminUser(ctx)
+	got, err := db.GetUserByEmail(ctx, devModeUsername)
 	if err != nil {
-		t.Fatalf("GetAdminUser() error = %v", err)
+		t.Fatalf("GetUserByEmail() error = %v", err)
 	}
-	if got.Username != devModeUsername {
-		t.Errorf("username = %q, want %q", got.Username, devModeUsername)
+	if got.Email != devModeUsername {
+		t.Errorf("email = %q, want %q", got.Email, devModeUsername)
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(got.PasswordHash), []byte(devModePassword)); err != nil {
+	if got.PasswordHash == nil {
+		t.Fatal("PasswordHash = nil, want a bcrypt hash")
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(*got.PasswordHash), []byte(devModePassword)); err != nil {
 		t.Errorf("stored hash does not verify against the fixed dev password: %v", err)
 	}
 }
@@ -52,20 +52,25 @@ func TestMaybeBootstrapDevAdmin_Enabled_DoesNotClobberExistingAdmin(t *testing.T
 	ctx := context.Background()
 	logger := slog.New(slog.NewTextHandler(bytes.NewBuffer(nil), nil))
 
-	if err := db.UpsertAdminUser(ctx, "admin", "real-hash"); err != nil {
-		t.Fatalf("seed UpsertAdminUser() error = %v", err)
+	seeded := storeUserForTest(t, db, "admin")
+	realHash := "real-hash"
+	if err := db.UpdateUserPasswordHash(ctx, seeded.ID, &realHash); err != nil {
+		t.Fatalf("seed UpdateUserPasswordHash() error = %v", err)
 	}
 
 	if err := maybeBootstrapDevAdmin(ctx, db, logger, true); err != nil {
 		t.Fatalf("maybeBootstrapDevAdmin() error = %v", err)
 	}
 
-	got, err := db.GetAdminUser(ctx)
+	got, err := db.GetUserByEmail(ctx, "admin")
 	if err != nil {
-		t.Fatalf("GetAdminUser() error = %v", err)
+		t.Fatalf("GetUserByEmail() error = %v", err)
 	}
-	if got.Username != "admin" || got.PasswordHash != "real-hash" {
-		t.Errorf("got %+v, want the pre-existing admin left untouched (BootstrapAdmin is a no-op once any admin exists)", got)
+	if got.Email != "admin" || got.PasswordHash == nil || *got.PasswordHash != "real-hash" {
+		t.Errorf("got %+v, want the pre-existing admin left untouched (BootstrapAdmin is a no-op once any user exists)", got)
+	}
+	if n, err := db.CountUsers(ctx); err != nil || n != 1 {
+		t.Errorf("CountUsers() = (%d, %v), want (1, nil): dev bootstrap must not have added a second user", n, err)
 	}
 }
 
