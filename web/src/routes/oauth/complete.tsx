@@ -14,7 +14,7 @@ export const Route = createFileRoute('/oauth/complete')({
       redirect({ to: '/login', throw: true })
       return
     }
-    redirect({ to: '/apps', throw: true })
+    redirect({ to: '/', throw: true })
   },
   component: () => null,
 })

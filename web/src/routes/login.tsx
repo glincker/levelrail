@@ -42,12 +42,13 @@ type LoginTab = 'sign-in' | 'register'
 // auto-detection, not an oversight (see TASKS.md's note on this task for
 // the full reasoning).
 //
-// Already-authenticated visitors get bounced to /apps: this route's own
-// job is only ever reached when there's no session to speak of.
+// Already-authenticated visitors get bounced to the dashboard: this
+// route's own job is only ever reached when there's no session to speak
+// of.
 export const Route = createFileRoute('/login')({
   beforeLoad: () => {
     if (getStoredUsername() !== null) {
-      redirect({ to: '/apps', throw: true })
+      redirect({ to: '/', throw: true })
     }
   },
   // The login screen needs branding before a session exists, per the
