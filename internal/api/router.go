@@ -171,6 +171,18 @@ type AppComposeStore interface {
 	SaveDesiredService(ctx context.Context, svc store.DesiredService) error
 }
 
+// ComposeSecretStore is the surface POST /api/v1/apps/{name}/compose
+// needs to resolve a compose file's SERVICE_ magic vars
+// (compose.ResolveMagicVars): a canonical generate-once-per-app value
+// (Resolve/SetValue keyed by the app's own name, a synthetic bucket
+// distinct from any real service), plus one SetValue per real service
+// that references it, since internal/secrets.Manager itself is keyed
+// per real service, not per app.
+type ComposeSecretStore interface {
+	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+	SetValue(ctx context.Context, serviceName, envKey, plaintext string) error
+}
+
 // DeployStore is the store surface the deploy-history handler needs.
 type DeployStore interface {
 	GetConditions(ctx context.Context, controllerName string) ([]reconcile.Condition, error)
@@ -438,9 +450,10 @@ type Router struct {
 	tokens          TokenStore
 	nodes           NodeStore
 	projects        ProjectStore
-	secrets         SecretSetter     // nil is valid: a control plane with no master key configured serves everything except secret-setting
-	telemetry       TelemetryQuerier // nil is valid: metrics/logs query routes return 501, same shape as secrets above
-	alertRules      AlertRules       // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
+	secrets         SecretSetter       // nil is valid: a control plane with no master key configured serves everything except secret-setting
+	composeSecrets  ComposeSecretStore // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
+	telemetry       TelemetryQuerier   // nil is valid: metrics/logs query routes return 501, same shape as secrets above
+	alertRules      AlertRules         // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
 	sessions        *sessionStore
 	logins          *loginLimiter
 	sessionTTL      time.Duration        // 0 means "use defaultSessionTTL", set via WithSessionTTL
@@ -536,6 +549,15 @@ func WithBackupSecrets(s BackupSecretsSetter) Option {
 // configured (the default), that route returns 501; GET works regardless.
 func WithEmailSecrets(s EmailSecretsStore) Option {
 	return func(rt *Router) { rt.emailSecrets = s }
+}
+
+// WithComposeSecrets enables POST /api/v1/apps/{name}/compose to
+// resolve a compose file's generatable SERVICE_ magic vars. Without one
+// configured (the default), that endpoint still works for compose files
+// with no such vars, and fails with a clear error for ones that need
+// one.
+func WithComposeSecrets(s ComposeSecretStore) Option {
+	return func(rt *Router) { rt.composeSecrets = s }
 }
 
 // WithEmailSender enables the actual send behind

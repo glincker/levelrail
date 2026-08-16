@@ -1,12 +1,17 @@
 package api
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -45,10 +50,28 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	secretEnv, unresolved, err := compose.ResolveMagicVars(file, rt.generateComposeSecret(r.Context(), name), rt.persistComposeSecret(r.Context(), name))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if len(unresolved) > 0 {
+		msgs := make([]string, len(unresolved))
+		for i, u := range unresolved {
+			msgs[i] = u.String()
+		}
+		writeError(w, http.StatusBadRequest, "unresolved template variable(s), no default and not auto-generatable: "+strings.Join(msgs, "; "))
+		return
+	}
+
 	services, err := compose.ToDesiredServices(name, file)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
+	}
+	for i := range services {
+		key := strings.TrimPrefix(services[i].Name, name+"-")
+		services[i].SecretEnv = append(services[i].SecretEnv, secretEnv[key]...)
 	}
 
 	now := time.Now().UTC().Format(time.RFC3339)
@@ -67,4 +90,54 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, composeDeployResponse{AppID: name, Services: out})
+}
+
+// generateComposeSecret resolves one compose.ResolveMagicVars
+// generatable value: reuses whatever was already generated for this
+// app + kind/key (Resolve keyed by appName, a synthetic bucket distinct
+// from any real service, matching store.EmailSettingsSecretsKey's own
+// non-service-key convention), or generates and persists a fresh one on
+// first use. Without rt.composeSecrets configured, any compose file
+// needing a generated value fails loudly rather than deploying with a
+// broken literal token.
+func (rt *Router) generateComposeSecret(ctx context.Context, appName string) func(kind, key string, length int) (string, error) {
+	return func(kind, key string, length int) (string, error) {
+		if rt.composeSecrets == nil {
+			return "", fmt.Errorf("this compose file needs a generated secret (SERVICE_%s_%s) but no secrets master key is configured", kind, key)
+		}
+		storageKey := composeSecretStorageKey(kind, key)
+		val, err := rt.composeSecrets.Resolve(ctx, appName, storageKey)
+		if err == nil {
+			return val, nil
+		}
+		if !errors.Is(err, secrets.ErrValueNotFound) {
+			return "", fmt.Errorf("resolve existing value for SERVICE_%s_%s: %w", kind, key, err)
+		}
+		val, err = compose.GenerateValue(kind, length)
+		if err != nil {
+			return "", err
+		}
+		if err := rt.composeSecrets.SetValue(ctx, appName, storageKey, val); err != nil {
+			return "", fmt.Errorf("save generated value for SERVICE_%s_%s: %w", kind, key, err)
+		}
+		return val, nil
+	}
+}
+
+// persistComposeSecret writes a magic var's resolved value into the
+// real per-service secret location the application controller's own
+// secret resolver reads from at container-create time
+// (internal/reconcile/application's WithSecretResolver, keyed by the
+// real service name, not by an app-wide magic-var key).
+func (rt *Router) persistComposeSecret(ctx context.Context, appName string) func(serviceKey, envKey, value string) error {
+	return func(serviceKey, envKey, value string) error {
+		if rt.composeSecrets == nil {
+			return fmt.Errorf("no secrets master key configured")
+		}
+		return rt.composeSecrets.SetValue(ctx, appName+"-"+serviceKey, envKey, value)
+	}
+}
+
+func composeSecretStorageKey(kind, key string) string {
+	return "compose_" + strings.ToLower(kind) + "_" + strings.ToLower(key)
 }
