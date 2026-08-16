@@ -49,6 +49,9 @@ import (
 type DeployTarget struct {
 	ID         string
 	ResourceID string
+	// ChannelID attaches an already-connected NotificationChannel; empty
+	// for legacy rows, which use NotifyURL/NotifyKind below directly.
+	ChannelID  string
 	NotifyURL  string
 	NotifyKind NotifyKind
 	Enabled    bool
@@ -78,21 +81,32 @@ func (db *DB) SaveDeployTarget(ctx context.Context, t DeployTarget) error {
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO deploy_notify_targets (
-			id, resource_id, notify_url, notify_kind, enabled, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?)
+			id, resource_id, channel_id, notify_url, notify_kind, enabled, created_at, updated_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (id) DO UPDATE SET
 			resource_id = excluded.resource_id,
+			channel_id = excluded.channel_id,
 			notify_url = excluded.notify_url,
 			notify_kind = excluded.notify_kind,
 			enabled = excluded.enabled,
 			updated_at = excluded.updated_at
 	`,
-		t.ID, t.ResourceID, t.NotifyURL, string(t.NotifyKind), boolToInt(t.Enabled), now, now,
+		t.ID, t.ResourceID, nullIfEmpty(t.ChannelID), t.NotifyURL, string(t.NotifyKind), boolToInt(t.Enabled), now, now,
 	)
 	if err != nil {
 		return fmt.Errorf("alerting: save deploy target %q: %w", t.ID, err)
 	}
 	return nil
+}
+
+// nullIfEmpty converts "" to a real SQL NULL: channel_id is a nullable
+// FK, and an empty string would fail the constraint instead of meaning
+// "no channel attached" (sql.ErrNoRows for FK id "" never exists).
+func nullIfEmpty(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
 }
 
 // ErrDeployTargetNotFound is returned by GetDeployTarget when no target
@@ -102,7 +116,7 @@ var ErrDeployTargetNotFound = errors.New("alerting: deploy target not found")
 // GetDeployTarget returns the deploy target with this ID, or
 // ErrDeployTargetNotFound.
 func (db *DB) GetDeployTarget(ctx context.Context, id string) (*DeployTarget, error) {
-	row := db.QueryRowContext(ctx, deployTargetSelectColumns+` FROM deploy_notify_targets WHERE id = ?`, id)
+	row := db.QueryRowContext(ctx, deployTargetSelectColumns+` WHERE t.id = ?`, id)
 	t, err := scanDeployTarget(row.Scan)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrDeployTargetNotFound
@@ -121,7 +135,7 @@ func (db *DB) GetDeployTarget(ctx context.Context, id string) (*DeployTarget, er
 // operator can see and re-enable a paused one) and by Dispatch below
 // (which filters to enabled targets itself).
 func (db *DB) ListDeployTargetsForResource(ctx context.Context, resourceID string) ([]DeployTarget, error) {
-	rows, err := db.QueryContext(ctx, deployTargetSelectColumns+` FROM deploy_notify_targets WHERE resource_id = ? ORDER BY created_at`, resourceID)
+	rows, err := db.QueryContext(ctx, deployTargetSelectColumns+` WHERE t.resource_id = ? ORDER BY t.created_at`, resourceID)
 	if err != nil {
 		return nil, fmt.Errorf("alerting: list deploy targets for resource %q: %w", resourceID, err)
 	}
@@ -151,20 +165,32 @@ func (db *DB) DeleteDeployTarget(ctx context.Context, id string) error {
 	return nil
 }
 
+// deployTargetSelectColumns resolves the *effective* notify_url/
+// notify_kind via COALESCE: the attached channel's values when set,
+// this row's own columns otherwise (legacy rows, or a deleted channel).
 const deployTargetSelectColumns = `
-	SELECT id, resource_id, notify_url, notify_kind, enabled`
+	SELECT t.id, t.resource_id, t.channel_id,
+		COALESCE(c.notify_url, t.notify_url), COALESCE(c.kind, t.notify_kind),
+		t.enabled, c.enabled
+	FROM deploy_notify_targets t
+	LEFT JOIN notification_channels c ON c.id = t.channel_id`
 
 func scanDeployTarget(scan func(dest ...any) error) (*DeployTarget, error) {
 	var (
-		t          DeployTarget
-		notifyKind string
-		enabledInt int
+		t              DeployTarget
+		channelID      sql.NullString
+		notifyKind     string
+		enabledInt     int
+		channelEnabled sql.NullInt64
 	)
-	if err := scan(&t.ID, &t.ResourceID, &t.NotifyURL, &notifyKind, &enabledInt); err != nil {
+	if err := scan(&t.ID, &t.ResourceID, &channelID, &t.NotifyURL, &notifyKind, &enabledInt, &channelEnabled); err != nil {
 		return nil, err
 	}
+	t.ChannelID = channelID.String
 	t.NotifyKind = NotifyKind(notifyKind)
-	t.Enabled = enabledInt != 0
+	// A disabled channel silences every target attached to it too, not
+	// just ones explicitly disabled themselves.
+	t.Enabled = enabledInt != 0 && (!channelEnabled.Valid || channelEnabled.Int64 != 0)
 	return &t, nil
 }
 

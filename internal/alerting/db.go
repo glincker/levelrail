@@ -55,5 +55,8 @@ func dsn(path string) string {
 	q := url.Values{}
 	q.Add("_pragma", "busy_timeout(5000)")
 	q.Add("_pragma", "journal_mode(WAL)")
+	// notification_channels' channel_id FK (migrations/0004) needs this on
+	// to actually clear on delete, matching internal/store's own pragma.
+	q.Add("_pragma", "foreign_keys(ON)")
 	return "file:" + path + "?" + q.Encode()
 }

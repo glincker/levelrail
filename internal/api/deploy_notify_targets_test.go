@@ -43,14 +43,25 @@ func (f *fakeDeployNotifier) snapshot() []fakeDeployNotifierCall {
 	return out
 }
 
-// newTestRouterWithDeployNotifyTargets is newTestRouterWithAlerting's
-// sibling for the deploy-notify-target CRUD handlers specifically.
+// newTestRouterWithDeployNotifyTargets wires notification channels too:
+// creating a target now attaches an already-connected channel by ID.
 func newTestRouterWithDeployNotifyTargets(t *testing.T) (*Router, *store.DB, *alerting.DB) {
 	t.Helper()
 	db := openTestDB(t)
 	adb := newTestAlertingDB(t)
-	rt := NewRouter(nil, testBrand(), db, WithDeployNotifyTargets(adb))
+	rt := NewRouter(nil, testBrand(), db, WithDeployNotifyTargets(adb), WithNotificationChannels(adb))
 	return rt, db, adb
+}
+
+// seedNotificationChannel saves a ready-to-attach channel directly
+// through the store layer, the same split every other seed* helper uses.
+func seedNotificationChannel(t *testing.T, adb *alerting.DB, id string, kind alerting.NotifyKind, notifyURL string) {
+	t.Helper()
+	if err := adb.SaveNotificationChannel(context.Background(), alerting.NotificationChannel{
+		ID: id, Name: id, Kind: kind, NotifyURL: notifyURL, Enabled: true,
+	}); err != nil {
+		t.Fatalf("seed notification channel %q: %v", id, err)
+	}
 }
 
 func TestDeployNotifyTargetRoutes_NotConfigured(t *testing.T) {
@@ -61,7 +72,7 @@ func TestDeployNotifyTargetRoutes_NotConfigured(t *testing.T) {
 	tests := []struct {
 		method, target, body string
 	}{
-		{http.MethodPost, "/api/v1/apps/web/deploy-notify-targets", `{"notify_url":"https://example.com/hook","notify_kind":"slack","enabled":true}`},
+		{http.MethodPost, "/api/v1/apps/web/deploy-notify-targets", `{"channel_id":"chn_1","enabled":true}`},
 		{http.MethodGet, "/api/v1/apps/web/deploy-notify-targets", ""},
 		{http.MethodDelete, "/api/v1/apps/web/deploy-notify-targets/whatever", ""},
 	}
@@ -77,11 +88,12 @@ func TestDeployNotifyTargetRoutes_NotConfigured(t *testing.T) {
 }
 
 func TestHandleCreateDeployNotifyTarget_Success(t *testing.T) {
-	rt, db, _ := newTestRouterWithDeployNotifyTargets(t)
+	rt, db, adb := newTestRouterWithDeployNotifyTargets(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
+	seedNotificationChannel(t, adb, "chn_1", alerting.NotifySlack, "https://example.com/hook")
 
-	body := `{"notify_url":"https://example.com/hook","notify_kind":"slack","enabled":true}`
+	body := `{"channel_id":"chn_1","enabled":true}`
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/deploy-notify-targets", body))
 	if rec.Code != http.StatusCreated {
@@ -98,16 +110,20 @@ func TestHandleCreateDeployNotifyTarget_Success(t *testing.T) {
 	if got.ResourceID != "service:web" {
 		t.Errorf("ResourceID = %q, want %q", got.ResourceID, "service:web")
 	}
+	if got.ChannelID != "chn_1" {
+		t.Errorf("ChannelID = %q, want %q", got.ChannelID, "chn_1")
+	}
 	if got.NotifyURL != "https://example.com/hook" || got.NotifyKind != "slack" || !got.Enabled {
-		t.Errorf("got = %+v, want matching fields from the request body", got)
+		t.Errorf("got = %+v, want notify_url/notify_kind resolved from the attached channel", got)
 	}
 }
 
 func TestHandleCreateDeployNotifyTarget_AppNotFound(t *testing.T) {
-	rt, db, _ := newTestRouterWithDeployNotifyTargets(t)
+	rt, db, adb := newTestRouterWithDeployNotifyTargets(t)
 	cookie := loginTestSession(t, rt, db)
+	seedNotificationChannel(t, adb, "chn_1", alerting.NotifySlack, "https://example.com/hook")
 
-	body := `{"notify_url":"https://example.com/hook","notify_kind":"slack","enabled":true}`
+	body := `{"channel_id":"chn_1","enabled":true}`
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/ghost/deploy-notify-targets", body))
 	if rec.Code != http.StatusNotFound {
@@ -116,16 +132,17 @@ func TestHandleCreateDeployNotifyTarget_AppNotFound(t *testing.T) {
 }
 
 func TestHandleCreateDeployNotifyTarget_ValidationFailures(t *testing.T) {
-	rt, db, _ := newTestRouterWithDeployNotifyTargets(t)
+	rt, db, adb := newTestRouterWithDeployNotifyTargets(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
+	seedNotificationChannel(t, adb, "chn_1", alerting.NotifySlack, "https://example.com/hook")
 
 	tests := []struct {
 		name string
 		body string
 	}{
-		{"missing notify_url", `{"notify_kind":"slack","enabled":true}`},
-		{"bad notify_kind", `{"notify_url":"https://example.com/hook","notify_kind":"bogus","enabled":true}`},
+		{"missing channel_id", `{"enabled":true}`},
+		{"unknown channel_id", `{"channel_id":"chn_ghost","enabled":true}`},
 		{"malformed body", `{not json`},
 	}
 	for _, tt := range tests {
@@ -140,11 +157,12 @@ func TestHandleCreateDeployNotifyTarget_ValidationFailures(t *testing.T) {
 }
 
 func TestHandleCreateDeployNotifyTarget_ResourceIDNotCallerSuppliable(t *testing.T) {
-	rt, db, _ := newTestRouterWithDeployNotifyTargets(t)
+	rt, db, adb := newTestRouterWithDeployNotifyTargets(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
+	seedNotificationChannel(t, adb, "chn_1", alerting.NotifySlack, "https://example.com/hook")
 
-	body := `{"notify_url":"https://example.com/hook","notify_kind":"slack","enabled":true,"resource_id":"service:someone-elses-app"}`
+	body := `{"channel_id":"chn_1","enabled":true,"resource_id":"service:someone-elses-app"}`
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/deploy-notify-targets", body))
 	if rec.Code != http.StatusCreated {
