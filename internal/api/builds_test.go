@@ -188,6 +188,63 @@ func newTestRouterWithBuilder(t *testing.T, builder Builder, fetch *fakeFetch) (
 	return rt, db
 }
 
+// seedWebApp saves the standard "web" desired service fixture nearly
+// every build-trigger test needs before POSTing.
+func seedWebApp(t *testing.T, db *store.DB) {
+	t.Helper()
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+}
+
+// postTriggerBuildAccepted POSTs body to the build-trigger route, fails
+// the test unless the response is 202, and decodes the deploy attempt id.
+// Returns the raw recorder too, for callers that also need to inspect the
+// response body (e.g. asserting a secret was never echoed back).
+func postTriggerBuildAccepted(t *testing.T, rt *Router, cookie *http.Cookie, body string) (*httptest.ResponseRecorder, triggerBuildResponse) {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds", body))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+	var resp triggerBuildResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	return rec, resp
+}
+
+// postTriggerBuildBearerAccepted is postTriggerBuildAccepted's bearer-token
+// counterpart, for tests exercising a scoped API token instead of a
+// session cookie.
+func postTriggerBuildBearerAccepted(t *testing.T, rt *Router, bearerToken, body string) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/apps/web/builds", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+bearerToken)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+	return rec
+}
+
+// newPrivateRepoAuthRouter builds a Router wired with a connected,
+// installed GitHub App (seedInstalledGitHubApp) and a fake installation
+// token client, the shared setup every PrivateRepoAuth test in this file
+// needs before exercising tokenForRepo's own gating logic.
+func newPrivateRepoAuthRouter(t *testing.T, fb *fakeBuilder, fetch *fakeFetch, fakeClient *fakeGitHubAppClient) (*Router, *store.DB) {
+	t.Helper()
+	fakeSecrets := newFakeGitHubAppSecrets()
+	db := openTestDB(t)
+	rt := NewRouter(nil, testBrand(), db, WithBuilder(fb), WithGitHubAppSecrets(fakeSecrets))
+	rt.githubAppClient = fakeClient
+	rt.fetch = fetch.fetch
+	seedInstalledGitHubApp(t, db, fakeSecrets)
+	return rt, db
+}
+
 func TestHandleTriggerBuild_NotConfigured(t *testing.T) {
 	// No WithBuilder: the route must return 501, the same "not
 	// configured" shape WithSecretSetter/WithTelemetryQuerier/
@@ -195,9 +252,7 @@ func TestHandleTriggerBuild_NotConfigured(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds", `{"repo_url":"https://example.com/x.git","ref":"main"}`))
@@ -221,9 +276,7 @@ func TestHandleTriggerBuild_MissingRepoURL(t *testing.T) {
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	rt, db := newTestRouterWithBuilder(t, fb, nil)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds", `{"ref":"main"}`))
@@ -237,9 +290,7 @@ func TestHandleTriggerBuild_MissingRef(t *testing.T) {
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	rt, db := newTestRouterWithBuilder(t, fb, nil)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds", `{"repo_url":"https://example.com/x.git"}`))
@@ -254,9 +305,7 @@ func TestHandleTriggerBuild_UnsupportedBuildType(t *testing.T) {
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
@@ -291,17 +340,7 @@ func TestHandleTriggerBuild_Success(t *testing.T) {
 		t.Fatalf("seed app: %v", err)
 	}
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://example.com/web.git","ref":"main","build":{"path":"./Dockerfile"}}`))
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
-
-	var resp triggerBuildResponse
-	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
+	_, resp := postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main","build":{"path":"./Dockerfile"}}`)
 	if resp.ID == "" {
 		t.Fatal("response ID is empty, want a deploy attempt id returned immediately")
 	}
@@ -394,12 +433,7 @@ func TestHandleTriggerBuild_PreservesCustomLabels(t *testing.T) {
 		t.Fatalf("seed app: %v", err)
 	}
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://example.com/web.git","ref":"main","build":{"path":"./Dockerfile"}}`))
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
+	postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main","build":{"path":"./Dockerfile"}}`)
 
 	got := fb.awaitCall(t).Service.Labels
 	want := map[string]string{"team": "infra", "tier": "backend"}
@@ -446,20 +480,9 @@ func TestHandleTriggerBuild_RecordsDeployAttempt_Succeeded(t *testing.T) {
 	rt := NewRouter(nil, testBrand(), db, WithBuilder(fb), WithDeployRecorder(recorder))
 	rt.fetch = fetch.fetch
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://example.com/web.git","ref":"main"}`))
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
-	var resp triggerBuildResponse
-	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
+	_, resp := postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main"}`)
 
 	// Immediately after the handler returns, before the build goroutine
 	// has necessarily run at all, the attempt row must already exist and
@@ -510,20 +533,9 @@ func TestHandleTriggerBuild_RecordsDeployAttempt_Failed(t *testing.T) {
 	rt := NewRouter(nil, testBrand(), db, WithBuilder(fb), WithDeployRecorder(recorder))
 	rt.fetch = fetch.fetch
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://example.com/web.git","ref":"main"}`))
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
-	var resp triggerBuildResponse
-	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
+	_, resp := postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main"}`)
 
 	attempt := awaitDeployAttemptFinished(t, db, resp.ID)
 	if attempt.Status != store.DeployAttemptStatusFailed {
@@ -546,20 +558,9 @@ func TestHandleTriggerBuild_NoRecorderConfigured_StillRecordsAttemptWithoutLog(t
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://example.com/web.git","ref":"main"}`))
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
-	var resp triggerBuildResponse
-	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
+	_, resp := postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main"}`)
 
 	attempt := awaitDeployAttemptFinished(t, db, resp.ID)
 	if attempt.Status != store.DeployAttemptStatusSucceeded {
@@ -572,16 +573,9 @@ func TestHandleTriggerBuild_DefaultBuildTypeAndImageRepoOverride(t *testing.T) {
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://example.com/web.git","ref":"main","image_repo":"custom-repo"}`))
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
+	postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main","image_repo":"custom-repo"}`)
 	got := fb.awaitCall(t)
 	if got.ImageRepo != "custom-repo" {
 		t.Errorf("ImageRepo = %q, want %q", got.ImageRepo, "custom-repo")
@@ -596,24 +590,13 @@ func TestHandleTriggerBuild_FetchFailure(t *testing.T) {
 	fetch := newFakeFetch("", errors.New("clone failed: repository not found"))
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://example.com/ghost.git","ref":"main"}`))
 	// A fetch failure is only discoverable once the background goroutine
 	// runs it, after the response has already gone out as 202: unlike
 	// the old synchronous handler, this is no longer a 400 the caller
 	// sees directly.
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
-	var resp triggerBuildResponse
-	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
+	_, resp := postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/ghost.git","ref":"main"}`)
 
 	attempt := awaitDeployAttemptFinished(t, db, resp.ID)
 	if attempt.Status != store.DeployAttemptStatusFailed {
@@ -627,22 +610,11 @@ func TestHandleTriggerBuild_BuildFailure_ReturnsAcceptedNotLeaky(t *testing.T) {
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://example.com/web.git","ref":"main"}`))
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
+	rec, resp := postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main"}`)
 	if strings.Contains(rec.Body.String(), "secret-thing") {
 		t.Errorf("response body leaked internal error detail: %q", rec.Body.String())
-	}
-	var resp triggerBuildResponse
-	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v", err)
 	}
 
 	// The build failure detail is only ever visible in the deploy
@@ -678,16 +650,9 @@ func TestHandleTriggerBuild_RailpackAccepted(t *testing.T) {
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://example.com/web.git","ref":"main","build":{"type":"railpack"}}`))
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
+	postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main","build":{"type":"railpack"}}`)
 	got := fb.awaitCall(t)
 	if got.Service.Build.Type != "railpack" {
 		t.Errorf("Service.Build.Type = %q, want %q", got.Service.Build.Type, "railpack")
@@ -704,9 +669,7 @@ func TestHandleTriggerBuild_RailpackWithPathRejected(t *testing.T) {
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
@@ -732,12 +695,7 @@ func TestHandleTriggerBuild_StaticAccepted(t *testing.T) {
 		t.Fatalf("seed app: %v", err)
 	}
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://example.com/web.git","ref":"main","build":{"type":"static"}}`))
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
+	rec, _ := postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main","build":{"type":"static"}}`)
 	got := fb.awaitCall(t)
 	if got.Service.Build.Type != "static" {
 		t.Errorf("Service.Build.Type = %q, want %q", got.Service.Build.Type, "static")
@@ -759,9 +717,7 @@ func TestHandleTriggerBuild_ComposeStillRejected(t *testing.T) {
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
@@ -781,9 +737,7 @@ func TestHandleTriggerBuild_UnrecognizedBuildTypeRejected(t *testing.T) {
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
@@ -797,9 +751,7 @@ func TestHandleTriggerBuild_UnrecognizedBuildTypeRejected(t *testing.T) {
 func TestHandleTriggerBuild_InvalidBody(t *testing.T) {
 	rt, db := newTestRouterWithBuilder(t, newFakeBuilder("", nil), nil)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds", `not json`))
@@ -839,24 +791,12 @@ func TestIsGitHubHTTPSRepoURL(t *testing.T) {
 func TestHandleTriggerBuild_PrivateRepoAuth_MintsAndUsesToken(t *testing.T) {
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
-	fakeSecrets := newFakeGitHubAppSecrets()
 	fakeClient := &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
-	db := openTestDB(t)
-	rt := NewRouter(nil, testBrand(), db, WithBuilder(fb), WithGitHubAppSecrets(fakeSecrets))
-	rt.githubAppClient = fakeClient
-	rt.fetch = fetch.fetch
+	rt, db := newPrivateRepoAuthRouter(t, fb, fetch, fakeClient)
 	cookie := loginTestSession(t, rt, db)
-	seedInstalledGitHubApp(t, db, fakeSecrets)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://github.com/acme/widgets.git","ref":"main"}`))
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
+	rec, resp := postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://github.com/acme/widgets.git","ref":"main"}`)
 
 	fc := fetch.awaitCall(t)
 	if fc.token != "ghs_installtoken" {
@@ -867,11 +807,6 @@ func TestHandleTriggerBuild_PrivateRepoAuth_MintsAndUsesToken(t *testing.T) {
 	}
 	if fakeClient.gotInstallID != 7 {
 		t.Errorf("MintInstallationToken called with installationID = %d, want 7", fakeClient.gotInstallID)
-	}
-
-	var resp triggerBuildResponse
-	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v", err)
 	}
 	if strings.Contains(rec.Body.String(), "ghs_installtoken") {
 		t.Error("response body leaked the installation token, must never be echoed back")
@@ -890,31 +825,17 @@ func TestHandleTriggerBuild_PrivateRepoAuth_MintsAndUsesToken(t *testing.T) {
 func TestHandleTriggerBuild_PrivateRepoAuth_DeployOnlyTokenNeverMintsToken(t *testing.T) {
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
-	fakeSecrets := newFakeGitHubAppSecrets()
 	fakeClient := &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
-	db := openTestDB(t)
-	rt := NewRouter(nil, testBrand(), db, WithBuilder(fb), WithGitHubAppSecrets(fakeSecrets))
-	rt.githubAppClient = fakeClient
-	rt.fetch = fetch.fetch
-	ctx := context.Background()
-	seedInstalledGitHubApp(t, db, fakeSecrets)
-	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	rt, db := newPrivateRepoAuthRouter(t, fb, fetch, fakeClient)
+	seedWebApp(t, db)
 	const plaintext = "deploy-scoped-token" //nolint:gosec // fake fixture, not a real credential
-	if err := db.SaveAPIToken(ctx, store.APIToken{
+	if err := db.SaveAPIToken(context.Background(), store.APIToken{
 		ID: "tok_deploy", Name: "deployer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityDeploy}, CreatedAt: time.Now(),
 	}); err != nil {
 		t.Fatalf("seed token: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/apps/web/builds", strings.NewReader(`{"repo_url":"https://github.com/acme/widgets.git","ref":"main"}`))
-	req.Header.Set("Authorization", "Bearer "+plaintext)
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
+	postTriggerBuildBearerAccepted(t, rt, plaintext, `{"repo_url":"https://github.com/acme/widgets.git","ref":"main"}`)
 
 	fc := fetch.awaitCall(t)
 	if fc.token != "" {
@@ -933,31 +854,17 @@ func TestHandleTriggerBuild_PrivateRepoAuth_DeployOnlyTokenNeverMintsToken(t *te
 func TestHandleTriggerBuild_PrivateRepoAuth_ReadSensitiveTokenMintsToken(t *testing.T) {
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
-	fakeSecrets := newFakeGitHubAppSecrets()
 	fakeClient := &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
-	db := openTestDB(t)
-	rt := NewRouter(nil, testBrand(), db, WithBuilder(fb), WithGitHubAppSecrets(fakeSecrets))
-	rt.githubAppClient = fakeClient
-	rt.fetch = fetch.fetch
-	ctx := context.Background()
-	seedInstalledGitHubApp(t, db, fakeSecrets)
-	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	rt, db := newPrivateRepoAuthRouter(t, fb, fetch, fakeClient)
+	seedWebApp(t, db)
 	const plaintext = "read-sensitive-token" //nolint:gosec // fake fixture, not a real credential
-	if err := db.SaveAPIToken(ctx, store.APIToken{
+	if err := db.SaveAPIToken(context.Background(), store.APIToken{
 		ID: "tok_rs", Name: "ci", TokenHash: hashToken(plaintext), Abilities: []string{AbilityDeploy, AbilityReadSensitive}, CreatedAt: time.Now(),
 	}); err != nil {
 		t.Fatalf("seed token: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/apps/web/builds", strings.NewReader(`{"repo_url":"https://github.com/acme/widgets.git","ref":"main"}`))
-	req.Header.Set("Authorization", "Bearer "+plaintext)
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
+	postTriggerBuildBearerAccepted(t, rt, plaintext, `{"repo_url":"https://github.com/acme/widgets.git","ref":"main"}`)
 
 	fc := fetch.awaitCall(t)
 	if fc.token != "ghs_installtoken" {
@@ -976,16 +883,9 @@ func TestHandleTriggerBuild_PrivateRepoAuth_NotConnectedFallsBackUnauthenticated
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://github.com/acme/widgets.git","ref":"main"}`))
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
+	postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://github.com/acme/widgets.git","ref":"main"}`)
 
 	fc := fetch.awaitCall(t)
 	if fc.token != "" {
@@ -1000,24 +900,12 @@ func TestHandleTriggerBuild_PrivateRepoAuth_NotConnectedFallsBackUnauthenticated
 func TestHandleTriggerBuild_PrivateRepoAuth_NonGitHubHostNeverMintsToken(t *testing.T) {
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
-	fakeSecrets := newFakeGitHubAppSecrets()
 	fakeClient := &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
-	db := openTestDB(t)
-	rt := NewRouter(nil, testBrand(), db, WithBuilder(fb), WithGitHubAppSecrets(fakeSecrets))
-	rt.githubAppClient = fakeClient
-	rt.fetch = fetch.fetch
+	rt, db := newPrivateRepoAuthRouter(t, fb, fetch, fakeClient)
 	cookie := loginTestSession(t, rt, db)
-	seedInstalledGitHubApp(t, db, fakeSecrets)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://gitlab.com/acme/widgets.git","ref":"main"}`))
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
+	postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://gitlab.com/acme/widgets.git","ref":"main"}`)
 
 	fc := fetch.awaitCall(t)
 	if fc.token != "" {
@@ -1037,24 +925,12 @@ func TestHandleTriggerBuild_PrivateRepoAuth_NonGitHubHostNeverMintsToken(t *test
 func TestHandleTriggerBuild_PrivateRepoAuth_MintErrorFallsBackUnauthenticated(t *testing.T) {
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
-	fakeSecrets := newFakeGitHubAppSecrets()
 	fakeClient := &fakeGitHubAppClient{mintErr: errFakeSecretNotSet}
-	db := openTestDB(t)
-	rt := NewRouter(nil, testBrand(), db, WithBuilder(fb), WithGitHubAppSecrets(fakeSecrets))
-	rt.githubAppClient = fakeClient
-	rt.fetch = fetch.fetch
+	rt, db := newPrivateRepoAuthRouter(t, fb, fetch, fakeClient)
 	cookie := loginTestSession(t, rt, db)
-	seedInstalledGitHubApp(t, db, fakeSecrets)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://github.com/acme/widgets.git","ref":"main"}`))
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
+	postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://github.com/acme/widgets.git","ref":"main"}`)
 
 	fc := fetch.awaitCall(t)
 	if fc.token != "" {
