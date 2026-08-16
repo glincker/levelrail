@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { Link } from '@tanstack/react-router'
 import { BellRingingIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Table,
@@ -29,9 +30,9 @@ import type { AlertRule } from '../types/alerts'
 // is no API endpoint that returns "the log lines attached to the most
 // recent firing event" back to this dashboard, only to the outbound
 // webhook payload, so a firing crashloop rule below links to this app's
-// own live/historical log view (LogSearchPanel, #log-search) instead of
-// trying to reconstruct or fabricate the exact lines that fired. That is
-// the real, buildable thing this API surface supports today.
+// own live/historical log view (/apps/$name/logs) instead of trying to
+// reconstruct or fabricate the exact lines that fired. That is the real,
+// buildable thing this API surface supports today.
 
 const STATE_LABEL = {
   firing: 'Firing',
@@ -179,12 +180,13 @@ function RuleRow({ appName, rule }: { appName: string; rule: AlertRule }) {
             {STATE_LABEL[state]}
           </Badge>
           {showLogsLink ? (
-            <a
-              href="#log-search"
+            <Link
+              to="/apps/$name/logs"
+              params={{ name: appName }}
               className="text-xs text-primary underline underline-offset-2"
             >
               View logs
-            </a>
+            </Link>
           ) : null}
         </div>
       </TableCell>
