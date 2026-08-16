@@ -70,7 +70,7 @@ func (rt *Router) handleStartGitHubAppRegistration(w http.ResponseWriter, r *htt
 	}
 
 	appName := githubapp.AppDisplayName(rt.brand.Name, strings.TrimPrefix(baseURL, "https://"))
-	manifestJSON, err := json.Marshal(githubapp.BuildManifest(appName, baseURL))
+	manifestJSON, err := json.Marshal(githubapp.BuildManifest(appName, baseURL, rt.githubAppManifestConfig))
 	if err != nil {
 		rt.logger.Error("api: marshal github app manifest failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")

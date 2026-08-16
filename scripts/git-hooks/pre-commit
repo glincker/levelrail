@@ -62,7 +62,7 @@ if ! go build ./... 2>&1; then
 	fail=1
 fi
 
-echo "pre-commit: web (tsc, eslint)"
+echo "pre-commit: web (tsc, eslint, prettier)"
 staged_web_files=$(git diff --cached --name-only --diff-filter=ACM -- 'web/*.ts' 'web/*.tsx')
 if [ -n "$staged_web_files" ]; then
 	rel_web_files=$(echo "$staged_web_files" | sed 's#^web/##')
@@ -73,6 +73,32 @@ if [ -n "$staged_web_files" ]; then
 	if ! ( cd web && npx eslint $rel_web_files ); then
 		fail=1
 	fi
+	# shellcheck disable=SC2086
+	if ! ( cd web && npx prettier --check $rel_web_files ); then
+		echo "not prettier-formatted (run: npx prettier --write <file>, inside web/)"
+		fail=1
+	fi
+fi
+
+# Phosphor-only UI icons (ADR 014): lucide-react must never appear in a
+# staged file, the same rule this repo's own PM/QA re-verification loop
+# has manually grepped for on every dispatched change tonight. This
+# script itself is excluded from the sweep, the same reason the em/en
+# dash sweep above excludes it: the check's own source line contains the
+# literal string it's searching for.
+echo "pre-commit: lucide-react sweep (this repo is Phosphor-only, ADR 014)"
+staged_all_files=$(git diff --cached --name-only --diff-filter=ACM | grep -v '^scripts/git-hooks/pre-commit$')
+lucide_hits=""
+for f in $staged_all_files; do
+	[ -f "$f" ] || continue
+	if grep -l "lucide-react" "$f" >/dev/null 2>&1; then
+		lucide_hits="$lucide_hits $f"
+	fi
+done
+if [ -n "$lucide_hits" ]; then
+	echo "lucide-react import found in:$lucide_hits"
+	echo "This repo is Phosphor-icons only (@phosphor-icons/react/dist/ssr, ADR 014)."
+	fail=1
 fi
 
 if [ "$fail" -ne 0 ]; then

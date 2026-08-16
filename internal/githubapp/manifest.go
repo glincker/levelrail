@@ -61,18 +61,21 @@ type HookAttributes struct {
 // public, reachable origin (https://<primary domain>, no trailing
 // slash): every URL below is baseURL plus a fixed, already-routed path.
 //
-// Permissions requested: contents:read (clone access and branch
-// listing, the two things internal/githubapp.Client actually calls) and
-// metadata:read (GitHub's own baseline permission, implicitly required
-// by nearly every other read scope and requestable at zero additional
-// operator-visible risk). No write permissions, no webhook events
-// (DefaultEvents is empty: nothing in this codebase processes a webhook
-// delivery yet). Public is false: this App is registered for one
-// operator's own account/org, not for other GitHub users to discover
-// and install. RequestOAuthOnInstall is false: this integration only
-// ever authenticates as the App/installation, never as the installing
-// GitHub user, so there is no use for a user-level OAuth token.
-func BuildManifest(appName, baseURL string) Manifest {
+// cfg supplies the permissions and webhook events requested
+// (ManifestConfig's own doc comment covers why these two are the
+// config-driven fields and nothing else here is). HookAttributes.Active
+// stays false regardless of cfg.DefaultEvents: no route in this
+// codebase handles a delivery to hook_attributes.url yet (see this
+// package's own doc comment), so activating it would just mean GitHub
+// sends webhooks into a 404. DefaultEvents can still be configured in
+// advance of that route existing; it has no effect until Active is
+// wired to it alongside the real handler. Public is false: this App is
+// registered for one operator's own account/org, not for other GitHub
+// users to discover and install. RequestOAuthOnInstall is false: this
+// integration only ever authenticates as the App/installation, never as
+// the installing GitHub user, so there is no use for a user-level OAuth
+// token.
+func BuildManifest(appName, baseURL string, cfg ManifestConfig) Manifest {
 	return Manifest{
 		Name: appName,
 		URL:  baseURL,
@@ -80,14 +83,11 @@ func BuildManifest(appName, baseURL string) Manifest {
 			URL:    baseURL + "/api/v1/github-app/webhook",
 			Active: false,
 		},
-		RedirectURL:   baseURL + "/api/v1/github-app/callback",
-		SetupURL:      baseURL + "/api/v1/github-app/installed",
-		Public:        false,
-		DefaultEvents: []string{},
-		DefaultPermissions: map[string]string{
-			"contents": "read",
-			"metadata": "read",
-		},
+		RedirectURL:           baseURL + "/api/v1/github-app/callback",
+		SetupURL:              baseURL + "/api/v1/github-app/installed",
+		Public:                false,
+		DefaultEvents:         cfg.DefaultEvents,
+		DefaultPermissions:    cfg.DefaultPermissions,
 		RequestOAuthOnInstall: false,
 	}
 }

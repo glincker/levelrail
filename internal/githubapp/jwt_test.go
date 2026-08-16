@@ -148,3 +148,23 @@ func TestSignAppJWT_PKCS8Key(t *testing.T) {
 		t.Errorf("SignAppJWT() token = %q, want 3 dot-separated segments", token)
 	}
 }
+
+func TestValidatePrivateKeyPEM_ValidKey(t *testing.T) {
+	_, pemBytes := testRSAKeyPEM(t)
+	if err := ValidatePrivateKeyPEM(pemBytes); err != nil {
+		t.Errorf("ValidatePrivateKeyPEM() error = %v, want nil for a real key", err)
+	}
+}
+
+func TestValidatePrivateKeyPEM_NotPEM(t *testing.T) {
+	if err := ValidatePrivateKeyPEM([]byte("not a pem block")); err == nil {
+		t.Error("ValidatePrivateKeyPEM() error = nil, want an error for non-PEM input")
+	}
+}
+
+func TestValidatePrivateKeyPEM_NonRSAKey(t *testing.T) {
+	block := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: []byte("not a key at all")})
+	if err := ValidatePrivateKeyPEM(block); err == nil {
+		t.Error("ValidatePrivateKeyPEM() error = nil, want an error for a non-key PEM block")
+	}
+}
