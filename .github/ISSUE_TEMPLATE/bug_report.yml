@@ -1,7 +1,7 @@
 name: "[Bug] Bug report"
 description: Report something in Levelrail that isn't working as expected
 title: "[Bug] "
-labels: ["bug"]
+labels: ["type/fix", "needs-triage"]
 body:
   - type: markdown
     attributes:

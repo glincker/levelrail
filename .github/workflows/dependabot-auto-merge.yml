@@ -1,33 +1,19 @@
 name: Dependabot auto-merge
 
-# Enables GitHub's native auto-merge on Dependabot PRs that pass our
-# safety bands, so they merge themselves once CI is green. CI is the
-# real safety net; this only decides which PRs are allowed to wait for it
-# unattended.
-#
-# Auto-merged: any patch update, any github-actions bump (build/CI
-# tooling, not runtime security surface), any minor/major update on a
-# dependency that isn't security-relevant.
-#
-# Held for review (labeled needs-review, commented): minor or major
-# bumps on a security-relevant dependency (TLS/ACME, crypto, the agent's
-# mTLS transport, secrets encryption, WireGuard) -- read the release
-# notes before shipping those regardless of semver band.
-#
-# Modeled on theauth-go's dependabot-auto-merge.yml, adapted to
-# levelrail's own dependency graph.
+# Auto-merges once CI passes: patch updates, github-actions bumps, and
+# minor bumps on non-security-relevant deps. Holds for review: any major
+# bump, and any bump at all on a security-relevant dependency.
 
 on:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
 
-permissions:
-  contents: write
-  pull-requests: write
-
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     if: github.event.pull_request.user.login == 'dependabot[bot]' && !github.event.pull_request.draft
     steps:
       - name: Fetch dependency metadata
@@ -51,7 +37,9 @@ jobs:
             "github.com/coreos/go-oidc" \
             "go.step.sm/crypto" \
             "github.com/smallstep/" \
-            "github.com/google/go-tpm"; do
+            "github.com/google/go-tpm" \
+            "github.com/docker/docker" \
+            "github.com/moby/"; do
             if [[ "$names" == *"$pattern"* ]]; then
               security_relevant=true
               break
@@ -64,22 +52,28 @@ jobs:
           steps.meta.outputs.package-ecosystem == 'github_actions' ||
           steps.meta.outputs.package-ecosystem == 'github-actions' ||
           steps.meta.outputs.update-type == 'version-update:semver-patch' ||
-          (steps.meta.outputs.update-type != 'version-update:semver-patch' &&
+          (steps.meta.outputs.update-type == 'version-update:semver-minor' &&
            steps.classify.outputs.security-relevant == 'false')
         run: gh pr merge --auto --squash --delete-branch "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Label security-relevant bumps for manual review
+      - name: Label major or security-relevant bumps for manual review
         if: |
           steps.meta.outputs.package-ecosystem != 'github_actions' &&
           steps.meta.outputs.package-ecosystem != 'github-actions' &&
           steps.meta.outputs.update-type != 'version-update:semver-patch' &&
-          steps.classify.outputs.security-relevant == 'true'
+          (steps.meta.outputs.update-type == 'version-update:semver-major' ||
+           steps.classify.outputs.security-relevant == 'true')
         run: |
           gh pr edit "$PR_URL" --add-label "needs-review"
-          gh pr comment "$PR_URL" --body "This bumps a security-relevant dependency (TLS/ACME, crypto, agent transport, secrets, or WireGuard) by more than a patch version. Not auto-merging, release notes worth a read before this ships."
+          if [ "${{ steps.meta.outputs.update-type }}" = "version-update:semver-major" ]; then
+            reason="a major version bump; breaking changes are expected and CI passing doesn't guarantee nothing else broke"
+          else
+            reason="a security-relevant dependency (TLS/ACME, crypto, agent transport, secrets, WireGuard, or the Docker/Moby container client)"
+          fi
+          gh pr comment "$PR_URL" --body "This is $reason. Not auto-merging, read the release notes before shipping it."
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

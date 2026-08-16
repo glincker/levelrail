@@ -1,0 +1,23 @@
+name: labels
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/labels.yml
+      - .github/workflows/labels.yml
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: EndBug/label-sync@7753e99e1e64188c24d7deede343c5a63e7c0d39 # v2.3.3
+        with:
+          config-file: .github/labels.yml
+          delete-other-labels: false

@@ -1,0 +1,155 @@
+# Label taxonomy synced by .github/workflows/labels.yml.
+# Format consumed by EndBug/label-sync.
+
+# ---- type ------------------------------------------------------------
+- name: "type/feature"
+  color: "0e8a16"
+  description: New capability or ergonomic improvement
+- name: "type/fix"
+  color: "d73a4a"
+  description: Bug fix
+- name: "type/perf"
+  color: "fbca04"
+  description: Performance work
+- name: "type/refactor"
+  color: "c2e0c6"
+  description: Internal change with no behavior delta
+- name: "type/docs"
+  color: "0075ca"
+  description: Documentation only
+- name: "type/test"
+  color: "bfd4f2"
+  description: Tests and fixtures
+- name: "type/chore"
+  color: "cccccc"
+  description: Tooling, CI, release plumbing
+- name: "type/security"
+  color: "5319e7"
+  description: Security-related, non-vulnerability
+
+# ---- area (matches /internal, /cmd, /web layout) ----------------------
+- name: "area/reconciler"
+  color: "1d76db"
+  description: internal/reconcile
+- name: "area/agent"
+  color: "1d76db"
+  description: internal/agent, cmd/levelrail-agent
+- name: "area/api"
+  color: "1d76db"
+  description: internal/api
+- name: "area/store"
+  color: "1d76db"
+  description: internal/store (SQLite, migrations)
+- name: "area/build"
+  color: "1d76db"
+  description: internal/build (BuildKit, Railpack)
+- name: "area/deploy"
+  color: "1d76db"
+  description: internal/deploy, internal/deploylog
+- name: "area/ingress"
+  color: "1d76db"
+  description: internal/ingress (Caddy)
+- name: "area/network"
+  color: "1d76db"
+  description: internal/network (WireGuard mesh)
+- name: "area/docker"
+  color: "1d76db"
+  description: internal/docker (Engine API client)
+- name: "area/secrets"
+  color: "1d76db"
+  description: internal/secrets (envelope encryption)
+- name: "area/telemetry"
+  color: "1d76db"
+  description: internal/telemetry (metrics, logs)
+- name: "area/webhook"
+  color: "1d76db"
+  description: internal/webhook (git push receiver)
+- name: "area/backup"
+  color: "1d76db"
+  description: internal/backup
+- name: "area/alerting"
+  color: "1d76db"
+  description: internal/alerting
+- name: "area/email"
+  color: "1d76db"
+  description: internal/email
+- name: "area/github-app"
+  color: "1d76db"
+  description: internal/githubapp
+- name: "area/spec"
+  color: "1d76db"
+  description: internal/spec (app.yaml parsing)
+- name: "area/brand"
+  color: "1d76db"
+  description: internal/brand, brand.yaml
+- name: "area/cli"
+  color: "1d76db"
+  description: cmd/levelrail-cli
+- name: "area/frontend"
+  color: "1d76db"
+  description: web/
+- name: "area/ci"
+  color: "1d76db"
+  description: .github/, scripts/
+- name: "area/docs"
+  color: "1d76db"
+  description: docs/, adr/
+
+# ---- status ------------------------------------------------------------
+- name: "needs-triage"
+  color: "ededed"
+- name: "needs-repro"
+  color: "ededed"
+- name: "needs-design"
+  color: "ededed"
+- name: "needs-review"
+  color: "fbca04"
+  description: Held for manual review before merge
+- name: "blocked"
+  color: "b60205"
+- name: "stale"
+  color: "cccccc"
+
+# ---- priority ------------------------------------------------------------
+- name: "priority/critical"
+  color: "b60205"
+- name: "priority/high"
+  color: "d93f0b"
+- name: "priority/medium"
+  color: "fbca04"
+- name: "priority/low"
+  color: "c5def5"
+
+# ---- pr size (auto-applied by size-labeler) -----------------------------
+- name: "size/xs"
+  color: "c2e0c6"
+  description: "< 10 lines changed"
+- name: "size/s"
+  color: "bfd4f2"
+  description: "10-49 lines changed"
+- name: "size/m"
+  color: "fbca04"
+  description: "50-199 lines changed"
+- name: "size/l"
+  color: "d93f0b"
+  description: "200-499 lines changed"
+- name: "size/xl"
+  color: "b60205"
+  description: "500+ lines changed, consider splitting"
+
+# ---- community -----------------------------------------------------------
+- name: "good first issue"
+  color: "7057ff"
+  description: Good for newcomers
+- name: "help wanted"
+  color: "008672"
+- name: "discussion"
+  color: "d4c5f9"
+- name: "wontfix"
+  color: "ffffff"
+- name: "duplicate"
+  color: "cfd3d7"
+- name: "invalid"
+  color: "e4e669"
+- name: "question"
+  color: "d876e3"
