@@ -34,11 +34,25 @@ type fakeAttemptStore struct {
 	finishedStatus string
 	finishedErrMsg string
 	finishErr      error
+
+	// recorder, when set, lets SaveDeployAttempt check whether
+	// Recorder.Start already registered the attempt it's about to save:
+	// see TestBeginDeployAttempt_StartRunsBeforeAttemptIsSaveable.
+	recorder          *deploylog.Recorder
+	startedBeforeSave bool
+	lastAttemptedID   string // set on every call, success or failure
 }
 
 func (f *fakeAttemptStore) SaveDeployAttempt(_ context.Context, a store.DeployAttempt) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	f.lastAttemptedID = a.ID
+	if f.recorder != nil {
+		if _, _, unsubscribe, ok := f.recorder.Snapshot(a.ID); ok {
+			f.startedBeforeSave = true
+			unsubscribe()
+		}
+	}
 	if f.saveErr != nil {
 		return f.saveErr
 	}
@@ -641,6 +655,62 @@ func TestServeHTTP_DeployFailure_RecordsDeployAttempt_Failed(t *testing.T) {
 	}
 	if finishedErrMsg != "buildkit: boom" {
 		t.Errorf("finished error = %q, want %q", finishedErrMsg, "buildkit: boom")
+	}
+}
+
+// TestBeginDeployAttempt_StartRunsBeforeAttemptIsSaveable proves
+// beginDeployAttempt calls Recorder.Start strictly before
+// SaveDeployAttempt makes the attempt ID visible to a GET: a client can
+// only ever discover an ID after SaveDeployAttempt returns, so if Start
+// ran after that, a request landing right then would miss the live tail.
+func TestBeginDeployAttempt_StartRunsBeforeAttemptIsSaveable(t *testing.T) {
+	cfg := testConfig()
+	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
+	recorder := deploylog.NewRecorder(nil, discardLogger())
+	attempts := &fakeAttemptStore{recorder: recorder}
+	h := newTestHandlerWithAttempts(cfg, deployer, func(_ context.Context, _, _ string) (string, func(), error) {
+		return "/tmp/checkout-dir", func() {}, nil
+	}, attempts, recorder)
+
+	body := pushBody(t, "refs/heads/main", "sha1")
+	rec := doPush(t, h, cfg.Secret, body, sign(cfg.Secret, body))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body=%s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	if !attempts.startedBeforeSave {
+		t.Error("recorder.Snapshot(id) was not yet ok during SaveDeployAttempt: Start ran after the row became visible to a GET")
+	}
+}
+
+// TestBeginDeployAttempt_SaveFails_RecorderDoesNotLeak proves a failed
+// SaveDeployAttempt cleans up the Recorder.Start registration made just
+// before it, rather than leaving a permanently active, never-Finished
+// entry behind.
+func TestBeginDeployAttempt_SaveFails_RecorderDoesNotLeak(t *testing.T) {
+	cfg := testConfig()
+	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
+	recorder := deploylog.NewRecorder(nil, discardLogger())
+	attempts := &fakeAttemptStore{recorder: recorder, saveErr: errors.New("db write failed")}
+	h := newTestHandlerWithAttempts(cfg, deployer, func(_ context.Context, _, _ string) (string, func(), error) {
+		return "/tmp/checkout-dir", func() {}, nil
+	}, attempts, recorder)
+
+	body := pushBody(t, "refs/heads/main", "sha1")
+	doPush(t, h, cfg.Secret, body, sign(cfg.Secret, body))
+
+	if deployer.calls != 1 {
+		t.Fatalf("deployer called %d times, want 1 (attempt-tracking failures must not block the deploy)", deployer.calls)
+	}
+	attempts.mu.Lock()
+	id := attempts.lastAttemptedID
+	attempts.mu.Unlock()
+	if id == "" {
+		t.Fatal("SaveDeployAttempt was never called")
+	}
+	if _, _, unsubscribe, ok := recorder.Snapshot(id); ok {
+		unsubscribe()
+		t.Error("recorder still has an active entry for id after SaveDeployAttempt failed: Start's registration leaked instead of being cleaned up by Finish")
 	}
 }
 

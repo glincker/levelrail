@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -432,4 +434,72 @@ func (f *fakeDeployLogStore) QueryDeployLog(_ context.Context, attemptID string)
 		out = append(out, telemetry.DeployLogEntry{AttemptID: attemptID, Stream: e.Stream, Message: e.Message})
 	}
 	return out, nil
+}
+
+// orderCheckAttemptStore wraps a real DeployAttemptStore and, during
+// SaveDeployAttempt, snapshots whether recorder already knows the
+// attempt being saved. A GET can only ever discover an attempt ID after
+// SaveDeployAttempt returns, so this proves beginBuildDeployAttempt calls
+// Recorder.Start strictly before that, not just usually.
+type orderCheckAttemptStore struct {
+	DeployAttemptStore
+	recorder          *deploylog.Recorder
+	saveErr           error
+	lastID            string
+	startedBeforeSave bool
+}
+
+func (f *orderCheckAttemptStore) SaveDeployAttempt(ctx context.Context, a store.DeployAttempt) error {
+	f.lastID = a.ID
+	if _, _, unsubscribe, ok := f.recorder.Snapshot(a.ID); ok {
+		f.startedBeforeSave = true
+		unsubscribe()
+	}
+	if f.saveErr != nil {
+		return f.saveErr
+	}
+	return f.DeployAttemptStore.SaveDeployAttempt(ctx, a)
+}
+
+func TestBeginBuildDeployAttempt_StartRunsBeforeAttemptIsSaveable(t *testing.T) {
+	rt, db := newTestRouterWithBuilder(t, &fakeBuilder{tag: "web:1"}, nil)
+	recorder := deploylog.NewRecorder(nil, discardLogger())
+	rt.deployRecorder = recorder
+	fake := &orderCheckAttemptStore{DeployAttemptStore: rt.deployAttempts, recorder: recorder}
+	rt.deployAttempts = fake
+
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	_, finish := rt.beginBuildDeployAttempt(ctx, deploy.Request{ServiceName: "web", ImageRepo: "web", CommitSHA: "sha1"}, store.DeployAttemptSourceManual)
+	finish(nil)
+
+	if !fake.startedBeforeSave {
+		t.Error("recorder.Snapshot(id) was not yet ok during SaveDeployAttempt: Start ran after the row became visible to a GET, reopening the race a client could hit right after the save")
+	}
+}
+
+func TestBeginBuildDeployAttempt_SaveFails_RecorderDoesNotLeak(t *testing.T) {
+	rt, db := newTestRouterWithBuilder(t, &fakeBuilder{tag: "web:1"}, nil)
+	recorder := deploylog.NewRecorder(nil, discardLogger())
+	rt.deployRecorder = recorder
+	fake := &orderCheckAttemptStore{DeployAttemptStore: rt.deployAttempts, recorder: recorder, saveErr: errors.New("db write failed")}
+	rt.deployAttempts = fake
+
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	rt.beginBuildDeployAttempt(ctx, deploy.Request{ServiceName: "web", ImageRepo: "web", CommitSHA: "sha1"}, store.DeployAttemptSourceManual)
+
+	if fake.lastID == "" {
+		t.Fatal("SaveDeployAttempt was never called")
+	}
+	if _, _, unsubscribe, ok := recorder.Snapshot(fake.lastID); ok {
+		unsubscribe()
+		t.Error("recorder still has an active entry for id after SaveDeployAttempt failed: Start's registration leaked instead of being cleaned up by Finish")
+	}
 }
