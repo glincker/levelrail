@@ -59,6 +59,12 @@ export interface AppDetail {
   health?: ServiceHealth | null
   strategy: DeployStrategy
   replicas: number
+  // Custom Docker labels applied to the container at create time
+  // (internal/api/apps.go's appResource.Labels), an escape hatch for
+  // external tooling that keys off container labels. Carries
+  // `omitempty` on the Go side, same optional-map convention `env`
+  // already establishes above.
+  labels?: Record<string, string>
   node_id?: string
   // project_id carries `omitempty` on the Go side and is response-only
   // on PUT (internal/api/apps.go's appResource own doc comment): set an

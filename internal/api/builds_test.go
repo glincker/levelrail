@@ -277,6 +277,63 @@ func TestHandleTriggerBuild_Success(t *testing.T) {
 	}
 }
 
+// TestHandleTriggerBuild_PreservesCustomLabels is a regression test:
+// specServiceFromDesired originally reconstructed every field a manual
+// rebuild's request body doesn't repeat (env, secret env, resources,
+// health) except Labels, so a service with custom labels set through
+// the create/update API or LabelsEditor.tsx would have them silently
+// dropped the next time someone triggered POST .../builds, since that
+// path does a full-replace SaveDesiredService like every other write.
+func TestHandleTriggerBuild_PreservesCustomLabels(t *testing.T) {
+	fb := &fakeBuilder{tag: "web-repo:main"}
+	var fetchCalls []fakeFetchCall
+	checkoutDir := t.TempDir()
+	rt, db := newTestRouterWithBuilder(t, fb, newFakeFetch(&fetchCalls, checkoutDir, new(bool), nil))
+	cookie := loginTestSession(t, rt, db)
+
+	seed := store.DesiredService{
+		Name:   "web",
+		Image:  "levelrail/web:old",
+		Port:   3000,
+		Labels: map[string]string{"team": "infra", "tier": "backend"},
+	}
+	if err := db.SaveDesiredService(context.Background(), seed); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
+		`{"repo_url":"https://example.com/web.git","ref":"main","build":{"path":"./Dockerfile"}}`))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+
+	if fb.calls != 1 {
+		t.Fatalf("builder called %d times, want 1", fb.calls)
+	}
+	got := fb.lastReq.Service.Labels
+	want := map[string]string{"team": "infra", "tier": "backend"}
+	if len(got) != len(want) {
+		t.Fatalf("Service.Labels = %+v, want %+v", got, want)
+	}
+	for k, v := range want {
+		if got[k] != v {
+			t.Errorf("Service.Labels[%q] = %q, want %q", k, got[k], v)
+		}
+	}
+
+	// The stored desired state itself must also still carry the labels
+	// after the rebuild's own SaveDesiredService write, not just the
+	// build request in flight.
+	stored, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService: %v", err)
+	}
+	if len(stored.Labels) != len(want) {
+		t.Fatalf("stored Labels = %+v, want %+v", stored.Labels, want)
+	}
+}
+
 // TestHandleTriggerBuild_RecordsDeployAttempt_Succeeded covers the
 // second of the two build-triggering paths: unlike the plain image-tag
 // path (deploys_test.go's TestHandleTriggerDeploy_RecordsDeployAttempt),

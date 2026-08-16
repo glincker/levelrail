@@ -172,6 +172,17 @@ func TestToDesiredService_FullySpecified(t *testing.T) {
 	}
 }
 
+func TestToDesiredService_LabelsPassThrough(t *testing.T) {
+	svc := spec.Service{Port: 8080, Labels: map[string]string{"team": "platform"}}
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.Labels["team"] != "platform" || len(got.Labels) != 1 {
+		t.Errorf("Labels = %+v, want map[team:platform]", got.Labels)
+	}
+}
+
 func TestToDesiredService_MinimalNoResourcesOrHealth(t *testing.T) {
 	got, err := toDesiredService("web", "img:sha", spec.Service{Port: 8080})
 	if err != nil {

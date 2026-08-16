@@ -33,6 +33,14 @@ type Service struct {
 	Env       map[string]EnvVar `yaml:"env,omitempty"`
 	Replicas  int               `yaml:"replicas,omitempty"`
 	Strategy  string            `yaml:"strategy,omitempty"`
+	// Labels are arbitrary operator-supplied Docker labels applied to the
+	// service's container at create time, an escape hatch for tooling
+	// this platform doesn't know about (a monitoring agent or log
+	// shipper that keys off container labels, a homegrown script, and
+	// so on). See ValidateLabels (labels.go) for what's rejected:
+	// notably, any key under ReservedLabelPrefix, kept open for this
+	// platform's own bookkeeping labels.
+	Labels map[string]string `yaml:"labels,omitempty"`
 }
 
 // Build input types: the app spec's build.type values, matching the

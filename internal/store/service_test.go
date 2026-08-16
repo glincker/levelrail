@@ -461,6 +461,50 @@ func TestSaveDesiredService_StrategyAndReplicas_RoundTrip(t *testing.T) {
 	}
 }
 
+func TestSaveDesiredService_Labels_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := DesiredService{
+		Name: "web", Image: "img:v1", Port: 3000,
+		Labels: map[string]string{"team": "platform", "tier": "frontend"},
+	}
+	if err := db.SaveDesiredService(ctx, want); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !reflect.DeepEqual(got.Labels, want.Labels) {
+		t.Errorf("Labels = %+v, want %+v", got.Labels, want.Labels)
+	}
+}
+
+func TestSaveDesiredService_NilLabels_RoundTripsToEmptyNonNilMap(t *testing.T) {
+	// Mirrors nonNilMap's Env guarantee: a service saved with no labels
+	// at all reads back a non-nil (if empty) map, one less nil-check for
+	// every caller (internal/api's appResource, the frontend editor).
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Labels == nil {
+		t.Fatal("Labels = nil, want a non-nil empty map")
+	}
+	if len(got.Labels) != 0 {
+		t.Errorf("Labels = %+v, want empty", got.Labels)
+	}
+}
+
 func TestSaveDesiredService_EmptyStrategyAndZeroReplicas_DefaultsPersisted(t *testing.T) {
 	// A caller that never sets these two fields (every caller before
 	// this migration existed, and internal/api's direct-image-registration

@@ -57,6 +57,18 @@ type DesiredService struct {
 	Resources *ServiceResources
 	Health    *ServiceHealth
 
+	// Labels are arbitrary operator-supplied Docker labels applied to the
+	// service's container at create time (internal/spec.Service.Labels'
+	// storage home, migrations/0027_service_labels.sql). Already
+	// validated by the time a DesiredService exists: internal/spec.
+	// ValidateLabels runs at every input boundary (app.yaml parsing,
+	// the HTTP API's validateAppResource), so this package and
+	// internal/docker both trust it's collision-free with this
+	// platform's own reserved label namespace by the time it gets here,
+	// the same "resolve/validate once, store the resolved form" shape
+	// Resources/Health already follow.
+	Labels map[string]string
+
 	// NodeID is which node (internal/store's own nodes table, TASKS.md
 	// 3.1) this service should run on. Empty string is the explicit
 	// "this control plane's own local node" value (TASKS.md 3.3's own
@@ -183,6 +195,10 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	if err != nil {
 		return fmt.Errorf("store: marshal health for service %q: %w", svc.Name, err)
 	}
+	labelsJSON, err := json.Marshal(nonNilMap(svc.Labels))
+	if err != nil {
+		return fmt.Errorf("store: marshal labels for service %q: %w", svc.Name, err)
+	}
 
 	strategy := svc.Strategy
 	if strategy == "" {
@@ -202,8 +218,8 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	}()
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, project_id, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, NULL, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, labels, project_id, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, NULL, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
@@ -214,8 +230,9 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 			health = excluded.health,
 			strategy = excluded.strategy,
 			replicas = excluded.replicas,
+			labels = excluded.labels,
 			updated_at = excluded.updated_at
-	`, svc.Name, svc.Image, svc.Port, string(domainsJSON), string(envJSON), string(secretEnvJSON), string(resourcesJSON), string(healthJSON), strategy, replicas)
+	`, svc.Name, svc.Image, svc.Port, string(domainsJSON), string(envJSON), string(secretEnvJSON), string(resourcesJSON), string(healthJSON), strategy, replicas, string(labelsJSON))
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
@@ -365,7 +382,7 @@ var ErrServiceNotFound = errors.New("store: service not found")
 // ErrServiceNotFound if no such service has been saved.
 func (db *DB) GetDesiredService(ctx context.Context, name string) (*DesiredService, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id
+		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels
 		FROM desired_services
 		WHERE name = ?
 	`, name)
@@ -383,7 +400,7 @@ func (db *DB) GetDesiredService(ctx context.Context, name string) (*DesiredServi
 // ListDesiredServices returns every saved service, ordered by name.
 func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id
+		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels
 		FROM desired_services
 		ORDER BY name
 	`)
@@ -418,7 +435,7 @@ func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error)
 // comparison in this package.
 func (db *DB) ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]DesiredService, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id
+		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels
 		FROM desired_services
 		WHERE node_id = ?
 		ORDER BY name
@@ -477,11 +494,11 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 // signature), so the decode-JSON-columns logic exists exactly once.
 func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	var (
-		svc                                                        DesiredService
-		domainsJSON, envJSON, secretEnvJSON, resourcesJSON, health string
-		projectID                                                  sql.NullString
+		svc                                                                 DesiredService
+		domainsJSON, envJSON, secretEnvJSON, resourcesJSON, health, labels string
+		projectID                                                          sql.NullString
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String
@@ -504,6 +521,9 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 		if err := json.Unmarshal([]byte(health), &svc.Health); err != nil {
 			return nil, fmt.Errorf("unmarshal health: %w", err)
 		}
+	}
+	if err := json.Unmarshal([]byte(labels), &svc.Labels); err != nil {
+		return nil, fmt.Errorf("unmarshal labels: %w", err)
 	}
 
 	return &svc, nil

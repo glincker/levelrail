@@ -156,6 +156,7 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 			Image:        spec.Image,
 			ExposedPorts: exposedPorts,
 			Env:          toDockerEnv(spec.Env),
+			Labels:       spec.Labels,
 		},
 		hostConfig,
 		nil, nil,

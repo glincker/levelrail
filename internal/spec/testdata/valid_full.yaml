@@ -18,6 +18,9 @@ services:
       API_KEY: { secret: true, required: true }
     replicas: 2
     strategy: rolling
+    labels:
+      team: platform
+      tier: frontend
 databases:
   main:
     engine: postgres

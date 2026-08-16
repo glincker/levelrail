@@ -313,6 +313,7 @@ func specServiceFromDesired(svc store.DesiredService, buildCfg spec.Build) spec.
 		Build:   buildCfg,
 		Domains: svc.Domains,
 		Port:    svc.Port,
+		Labels:  svc.Labels,
 	}
 	if len(svc.Env) > 0 || len(svc.SecretEnv) > 0 {
 		out.Env = make(map[string]spec.EnvVar, len(svc.Env)+len(svc.SecretEnv))

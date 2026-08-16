@@ -1370,3 +1370,48 @@ func TestWithMeshDNSAddr_NotConfigured_LeavesDNSNil(t *testing.T) {
 		t.Errorf("created ContainerSpec.DNS = %+v, want nil", got)
 	}
 }
+
+// TestController_Reconcile_CustomLabels_LandOnCreatedContainer proves
+// store.DesiredService.Labels (internal/spec.Service.Labels' resolved
+// storage form) actually reaches docker.Runtime.Create, the same
+// "assert on the fake's recorded ContainerSpec" pattern
+// TestWithMeshDNSAddr_SetsContainerSpecDNS already establishes for DNS.
+func TestController_Reconcile_CustomLabels_LandOnCreatedContainer(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Labels: map[string]string{"team": "platform", "tier": "frontend"},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue {
+		t.Fatalf("condition = %+v, want Status=True", cond)
+	}
+	want := map[string]string{"team": "platform", "tier": "frontend"}
+	if got := rt.lastCreateSpec.Labels; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Labels = %+v, want %+v", got, want)
+	}
+}
+
+// TestController_Reconcile_NoLabels_LeavesContainerSpecLabelsNil is the
+// regression-safety counterpart, same reasoning
+// TestWithMeshDNSAddr_NotConfigured_LeavesDNSNil documents for DNS: every
+// service before this field existed must keep producing a nil
+// ContainerSpec.Labels, not an accidental empty-but-non-nil map that
+// would change what a real docker.Client.Create sends the Engine API.
+func TestController_Reconcile_NoLabels_LeavesContainerSpecLabelsNil(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if got := rt.lastCreateSpec.Labels; got != nil {
+		t.Errorf("created ContainerSpec.Labels = %+v, want nil", got)
+	}
+}
