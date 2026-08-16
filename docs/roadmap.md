@@ -43,6 +43,9 @@ are still open. This page describes what's actually true today.
 - Deploy strategies: rolling, recreate, and blue-green, plus replica
   support.
 - One-shot container `exec`, gated to root-level API tokens.
+- Whole-chain live end-to-end test covering push equivalent, build,
+  container, and HTTPS response. Doesn't yet exercise rollback, the
+  real webhook path, multi-service, multi-node, or real ACME.
 
 **Observability**
 
