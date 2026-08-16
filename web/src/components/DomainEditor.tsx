@@ -1,11 +1,16 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useFieldArray, useForm } from 'react-hook-form'
+import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
+import { useMemo } from 'react'
 import { GlobeIcon, PlusIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
+import { useCertificates } from '../queries/certificates'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { DomainDnsCheck } from './DomainDnsCheck'
+import { certStatusMeta } from '../lib/certStatus'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -23,6 +28,9 @@ import {
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
 
+const DOMAIN_PATTERN =
+  /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/i
+
 const domainSchema = z.object({
   domains: z.array(
     z.object({
@@ -30,10 +38,7 @@ const domainSchema = z.object({
         .string()
         .trim()
         .min(1, 'Domain is required')
-        .regex(
-          /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/i,
-          'Enter a valid domain, e.g. app.example.com',
-        ),
+        .regex(DOMAIN_PATTERN, 'Enter a valid domain, e.g. app.example.com'),
     }),
   ),
 })
@@ -44,31 +49,34 @@ function toFieldValues(domains?: string[]): { value: string }[] {
   return (domains ?? []).map((value) => ({ value }))
 }
 
-// A simple add/remove list bound to AppDetail.domains, saved via PUT
-// /api/v1/apps/{name} (internal/api/apps.go's handleUpdateApp). That
-// handler is a full replace, not a patch, so every submit here spreads
-// the current `app` and swaps only `domains`, sending the complete
-// resource back rather than a domains-only body.
-//
-// `values` + `resetOptions.keepDirtyValues` (rather than a manual
-// useEffect/reset) is what keeps this safe to render next to
-// EnvEditor: both editors share the same AppDetail prop, and a
-// successful save in one must not silently discard unsaved edits
-// sitting in the other. keepDirtyValues re-syncs untouched fields to
-// fresh server data while leaving anything the operator has actually
-// edited alone.
+// Guided add flow: each domain row shows its DNS record status inline
+// (reused DomainDnsCheck) and TLS status once saved, instead of both
+// being a separate panel shown only after the fact.
 export function DomainEditor({ app }: { app: AppDetail }) {
   const updateApp = useUpdateApp(app.name)
+  const { data: certificates } = useCertificates()
   const { control, register, handleSubmit, formState } =
     useForm<DomainFormValues>({
       resolver: zodResolver(domainSchema),
       values: { domains: toFieldValues(app.domains) },
+      // keepDirtyValues re-syncs untouched fields on save without
+      // discarding edits still in progress here or in EnvEditor.
       resetOptions: { keepDirtyValues: true },
     })
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'domains',
   })
+  const watchedDomains = useWatch({ control, name: 'domains' }) ?? []
+  const debouncedDomains = useDebouncedValue(watchedDomains, 400)
+  const savedDomains = useMemo(() => new Set(app.domains ?? []), [app.domains])
+  const certByDomain = useMemo(() => {
+    const m = new Map<string, (typeof certificates)[number]>()
+    for (const cert of certificates) {
+      m.set(cert.domain, cert)
+    }
+    return m
+  }, [certificates])
 
   const onSubmit = handleSubmit((values) => {
     updateApp.mutate(
@@ -115,37 +123,64 @@ export function DomainEditor({ app }: { app: AppDetail }) {
               No domains configured.
             </p>
           ) : (
-            <FieldGroup className="gap-2">
-              {fields.map((field, index) => (
-                <Field key={field.id} orientation="horizontal">
-                  <div className="flex-1">
-                    <Input
-                      {...register(`domains.${index}.value`)}
-                      className="font-mono"
-                      placeholder="app.example.com"
-                      aria-label="Domain"
-                    />
-                    <FieldError
-                      errors={
-                        formState.errors.domains?.[index]?.value
-                          ? [formState.errors.domains[index]?.value]
-                          : undefined
-                      }
-                    />
+            <FieldGroup className="gap-3">
+              {fields.map((field, index) => {
+                const domain = debouncedDomains[index]?.value?.trim() ?? ''
+                const isValidDomain = DOMAIN_PATTERN.test(domain)
+                const isSaved = savedDomains.has(domain)
+                const cert = isSaved ? certByDomain.get(domain) : undefined
+
+                return (
+                  <div key={field.id} className="space-y-2">
+                    <Field orientation="horizontal">
+                      <div className="flex-1">
+                        <Input
+                          {...register(`domains.${index}.value`)}
+                          className="font-mono"
+                          placeholder="app.example.com"
+                          aria-label="Domain"
+                        />
+                        <FieldError
+                          errors={
+                            formState.errors.domains?.[index]?.value
+                              ? [formState.errors.domains[index]?.value]
+                              : undefined
+                          }
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => {
+                          remove(index)
+                        }}
+                      >
+                        <XIcon />
+                        <span className="sr-only">Remove domain</span>
+                      </Button>
+                    </Field>
+
+                    {isValidDomain ? (
+                      <div className="space-y-1.5 pl-1">
+                        <DomainDnsCheck appName={app.name} domain={domain} />
+                        {isSaved ? (
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>TLS certificate:</span>
+                            {cert ? (
+                              <Badge variant={certStatusMeta[cert.status].variant}>
+                                {certStatusMeta[cert.status].label}
+                              </Badge>
+                            ) : (
+                              <Badge variant="muted">Provisioning</Badge>
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => {
-                      remove(index)
-                    }}
-                  >
-                    <XIcon />
-                    <span className="sr-only">Remove domain</span>
-                  </Button>
-                </Field>
-              ))}
+                )
+              })}
             </FieldGroup>
           )}
           <div className="flex items-center gap-2 pt-1">
@@ -170,14 +205,6 @@ export function DomainEditor({ app }: { app: AppDetail }) {
             </Alert>
           ) : null}
         </form>
-
-        {app.domains && app.domains.length > 0 ? (
-          <div className="mt-4 space-y-2">
-            {app.domains.map((domain) => (
-              <DomainDnsCheck key={domain} appName={app.name} domain={domain} />
-            ))}
-          </div>
-        ) : null}
       </CardContent>
     </Card>
   )
