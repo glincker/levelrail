@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { GlobeIcon, PlusIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
+import { DomainDnsCheck } from './DomainDnsCheck'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -169,6 +170,14 @@ export function DomainEditor({ app }: { app: AppDetail }) {
             </Alert>
           ) : null}
         </form>
+
+        {app.domains && app.domains.length > 0 ? (
+          <div className="mt-4 space-y-2">
+            {app.domains.map((domain) => (
+              <DomainDnsCheck key={domain} appName={app.name} domain={domain} />
+            ))}
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   )

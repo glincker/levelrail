@@ -359,6 +359,21 @@ type Router struct {
 	certs           CertStore            // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
 	ingressSettings IngressSettingsStore // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
 	domains         DomainStore          // always set, same shape as ingressSettings above: service_domains is always queryable, empty is a valid, non-error result
+	// publicHost is APP_PUBLIC_HOST: the IP or hostname operators should
+	// point a DNS record at to reach this control plane's embedded
+	// ingress. "" means "not configured", set via WithPublicHost;
+	// handleCheckDomain (domain_check.go) falls back to the request's own
+	// Host header in that case, see advertisedHost's own doc comment.
+	publicHost string
+	// lookupHost resolves a hostname's A/AAAA addresses for
+	// handleCheckDomain; always non-nil, defaulted to defaultLookupHost
+	// (a thin net.DefaultResolver.LookupHost wrapper) in NewRouter,
+	// overridable in this package's own tests the same way fetch and
+	// listBranches already are.
+	lookupHost lookupHostFunc
+	// domainChecks rate-limits handleCheckDomain's real DNS lookups per
+	// domain; always non-nil, constructed in NewRouter.
+	domainChecks *domainCheckCache
 	// certExpiryWarningWindow overrides defaultCertExpiryWarningWindow
 	// for GET /api/v1/certificates's "expiring_soon" threshold. 0 means
 	// "use the default", set via WithCertExpiryWarningWindow.
@@ -582,6 +597,18 @@ func WithCertExpiryWarningWindow(d time.Duration) Option {
 	return func(rt *Router) { rt.certExpiryWarningWindow = d }
 }
 
+// WithPublicHost sets the IP or hostname GET
+// /api/v1/apps/{name}/domains/{domain}/check tells an operator to point
+// their DNS record at (domain_check.go's advertisedHost). Without one
+// configured (the default), that handler falls back to a best-effort
+// guess from the request's own Host header instead of failing: this
+// package never reads the environment directly, cmd/levelrail/main.go
+// reads APP_PUBLIC_HOST and passes it here, the same shape
+// WithCertExpiryWarningWindow already follows for its own env var.
+func WithPublicHost(host string) Option {
+	return func(rt *Router) { rt.publicHost = host }
+}
+
 // WithBuilder enables POST /api/v1/apps/{name}/builds: a manual build
 // trigger for an operator with no working git webhook configured (see
 // internal/webhook.Config's own doc comment on why that path is
@@ -660,6 +687,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		staticSites:     s,
 		ingressSettings: s,
 		domains:         s,
+		lookupHost:      defaultLookupHost,
+		domainChecks:    newDomainCheckCache(),
 		backupTargets:   s,
 		backupHistory:   s,
 		restoreHistory:  s,
@@ -977,6 +1006,13 @@ func (rt *Router) Handler() http.Handler {
 	// draining already reserve AbilityRoot for.
 	mux.HandleFunc("GET /api/v1/settings/ingress", rt.requireAbility(AbilityRead, rt.handleGetIngressSettings))
 	mux.HandleFunc("PUT /api/v1/settings/ingress", rt.requireAbility(AbilityRoot, rt.handleUpdateIngressSettings))
+
+	// Domain DNS check (domain_check.go): the guidance layer on top of
+	// domain connection, so DomainEditor can show an operator the exact
+	// DNS record to add and watch it flip to "connected" once it actually
+	// resolves. AbilityRead, same passive-visibility tier as GET
+	// /apps/{name}/git-source: a live DNS lookup, no write.
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/check", rt.requireAbility(AbilityRead, rt.handleCheckDomain))
 
 	// Domains (centralized cross-app list, web/src/routes/domains):
 	// every service_domains row, AbilityRead like GET /api/v1/apps,
