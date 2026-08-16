@@ -2,21 +2,18 @@ package backup
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// ErrRedisRestoreNotSupported is ContainerRestorer.Restore's result for
-// store.EngineRedis: a real, deliberate gap, not an oversight. See
-// redisRestoreUnsupported's own doc comment below for why a correct
-// Redis restore needs more than piping bytes into a running command the
-// way Postgres and MySQL both allow, and why that "more" isn't built
-// here yet.
-var ErrRedisRestoreNotSupported = errors.New("backup: restore: redis restore is not supported yet")
+// redisStopTimeout bounds how long Stop waits for Redis to exit cleanly
+// during a restore before forcing it, the same shutdown window a rolling
+// deploy would give any container.
+const redisStopTimeout = 10 * time.Second
 
 // Restorer applies a previously taken dump back onto a live database
 // container, the exact reverse of Dumper: instead of producing a stream
@@ -49,14 +46,16 @@ type ContainerRestorer struct {
 
 // Restore implements Restorer.
 func (r *ContainerRestorer) Restore(ctx context.Context, engine, containerName string, dump io.Reader) error {
+	if engine == store.EngineRedis {
+		return r.restoreRedis(ctx, containerName, dump)
+	}
+
 	var cmd []string
 	switch engine {
 	case store.EnginePostgres:
 		cmd = postgresRestoreCmd
 	case store.EngineMySQL:
 		cmd = mysqlRestoreCmd
-	case store.EngineRedis:
-		return fmt.Errorf("%w: an RDB snapshot can only be loaded by the Redis server itself at its own startup, not piped into a live instance; restoring %q would need either a documented maintenance-window restart with the RDB file swapped in first, or driving Redis's own replication protocol to load it live, neither of which is implemented here", ErrRedisRestoreNotSupported, containerName)
 	default:
 		// Mirrors ContainerDumper.Dump's own reasoning for its identical
 		// default branch: a genuinely unknown engine reaching here means
@@ -85,6 +84,79 @@ func (r *ContainerRestorer) Restore(ctx context.Context, engine, containerName s
 		return fmt.Errorf("backup: restore %s container %q: %w", engine, containerName, err)
 	}
 	return nil
+}
+
+// restoreRedis loads an RDB snapshot the only way Redis actually supports
+// one: write it to disk as /data/dump.rdb while the container is still
+// running, then stop and start the container so Redis loads it during its
+// own startup sequence, the unconditional-at-boot RDB load that applies
+// whenever AOF isn't configured (see redisDataPath's own callers in
+// internal/reconcile/database.Controller, which never set one).
+//
+// Before writing, this clears Redis's own save points for the running
+// session (CONFIG SET save "", not persisted to disk, reverts on the
+// restart below). Without this, Redis's own SIGTERM handler performs its
+// configured snapshot on the way down whenever any save point exists
+// (true by default for this image), overwriting the dump.rdb this method
+// just wrote with the live pre-restore state a split second before the
+// process actually exits: a real failure mode caught by
+// TestContainerRestorer_Restore_Redis_Live, not a hypothetical one.
+func (r *ContainerRestorer) restoreRedis(ctx context.Context, containerName string, dump io.Reader) error {
+	if err := r.drainExec(ctx, containerName, redisDisableSaveCmd); err != nil {
+		return fmt.Errorf("backup: restore redis container %q: disable save points: %w", containerName, err)
+	}
+
+	rc, err := r.Runtime.ExecWithInput(ctx, containerName, redisRestoreWriteCmd, dump)
+	if err != nil {
+		return fmt.Errorf("backup: restore redis container %q: write dump.rdb: %w", containerName, err)
+	}
+	writeErr := func() error {
+		defer func() { _ = rc.Close() }()
+		_, err := io.Copy(io.Discard, rc)
+		return err
+	}()
+	if writeErr != nil {
+		return fmt.Errorf("backup: restore redis container %q: write dump.rdb: %w", containerName, writeErr)
+	}
+
+	state, err := r.Runtime.InspectByName(ctx, containerName)
+	if err != nil {
+		return fmt.Errorf("backup: restore redis container %q: inspect: %w", containerName, err)
+	}
+	if state == nil {
+		return fmt.Errorf("backup: restore redis container %q: not found", containerName)
+	}
+
+	if err := r.Runtime.Stop(ctx, state.ID, redisStopTimeout); err != nil {
+		return fmt.Errorf("backup: restore redis container %q: stop: %w", containerName, err)
+	}
+	if err := r.Runtime.Start(ctx, state.ID); err != nil {
+		return fmt.Errorf("backup: restore redis container %q: start: %w", containerName, err)
+	}
+	return nil
+}
+
+// redisRestoreWriteCmd streams ExecWithInput's stdin straight onto disk
+// as the RDB file Redis loads at its next startup, the write half of
+// restoreRedis's write-then-stop-then-start sequence.
+var redisRestoreWriteCmd = []string{"sh", "-c", "cat > /data/dump.rdb"}
+
+// redisDisableSaveCmd clears every configured save point for the
+// current session only, see restoreRedis's own doc comment for why.
+var redisDisableSaveCmd = []string{"redis-cli", "CONFIG", "SET", "save", ""}
+
+// drainExec runs cmd via Exec and discards its output, surfacing only
+// whether it failed: used for restoreRedis steps that don't need the
+// command's own stdout, mirroring Restore's own drain-then-check
+// handling of psql/mysql's status output above.
+func (r *ContainerRestorer) drainExec(ctx context.Context, containerName string, cmd []string) error {
+	rc, err := r.Runtime.Exec(ctx, containerName, cmd)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = rc.Close() }()
+	_, err = io.Copy(io.Discard, rc)
+	return err
 }
 
 // postgresRestoreCmd is pg_dump's plain-SQL output (see dump.go's own

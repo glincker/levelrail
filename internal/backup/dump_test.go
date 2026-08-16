@@ -35,10 +35,28 @@ type fakeExecRuntime struct {
 	gotInputCmd        []string
 	gotStdin           string
 	execWithInputCalls int
+	// execWithInputErr, when set, fails ExecWithInput specifically without
+	// also failing Exec (err above fails both, since Redis restore now
+	// calls Exec for CONFIG SET before ExecWithInput for the RDB write,
+	// and some restore_test.go cases need to fail one without the other).
+	execWithInputErr error
+
+	// Redis restore path: InspectByName/Stop/Start recorded calls plus a
+	// callOrder log so restore_test.go can assert the exact
+	// write-then-stop-then-start sequence, not just that each call
+	// happened.
+	inspectState *docker.ContainerState
+	inspectErr   error
+	stopErr      error
+	startErr     error
+	gotStopID    string
+	gotStartID   string
+	callOrder    []string
 }
 
 func (f *fakeExecRuntime) Exec(_ context.Context, containerID string, cmd []string) (io.ReadCloser, error) {
 	f.execCalls++
+	f.callOrder = append(f.callOrder, "Exec")
 	f.gotContainer = containerID
 	f.gotCmd = cmd
 	if f.err != nil {
@@ -55,12 +73,16 @@ func (f *fakeExecRuntime) Exec(_ context.Context, containerID string, cmd []stri
 // return.
 func (f *fakeExecRuntime) ExecWithInput(_ context.Context, containerID string, cmd []string, stdin io.Reader) (io.ReadCloser, error) {
 	f.execWithInputCalls++
+	f.callOrder = append(f.callOrder, "ExecWithInput")
 	f.gotInputContainer = containerID
 	f.gotInputCmd = cmd
 	stdinBytes, readErr := io.ReadAll(stdin)
 	f.gotStdin = string(stdinBytes)
 	if readErr != nil {
 		return nil, readErr
+	}
+	if f.execWithInputErr != nil {
+		return nil, f.execWithInputErr
 	}
 	if f.err != nil {
 		return nil, f.err
@@ -69,12 +91,17 @@ func (f *fakeExecRuntime) ExecWithInput(_ context.Context, containerID string, c
 }
 
 func (f *fakeExecRuntime) InspectByName(context.Context, string) (*docker.ContainerState, error) {
-	return nil, nil
+	f.callOrder = append(f.callOrder, "InspectByName")
+	return f.inspectState, f.inspectErr
 }
 func (f *fakeExecRuntime) Create(context.Context, docker.ContainerSpec) (string, error) {
 	return "", nil
 }
-func (f *fakeExecRuntime) Start(context.Context, string) error { return nil }
+func (f *fakeExecRuntime) Start(_ context.Context, id string) error {
+	f.callOrder = append(f.callOrder, "Start")
+	f.gotStartID = id
+	return f.startErr
+}
 func (f *fakeExecRuntime) Events(context.Context) (<-chan docker.Event, <-chan error) {
 	return nil, nil
 }
@@ -84,9 +111,13 @@ func (f *fakeExecRuntime) ListImages(context.Context, string) ([]docker.ImageInf
 func (f *fakeExecRuntime) ListByPrefix(context.Context, string) ([]docker.ContainerState, error) {
 	return nil, nil
 }
-func (f *fakeExecRuntime) Stop(context.Context, string, time.Duration) error { return nil }
-func (f *fakeExecRuntime) Remove(context.Context, string, bool) error        { return nil }
-func (f *fakeExecRuntime) EnsureVolume(context.Context, string) error        { return nil }
+func (f *fakeExecRuntime) Stop(_ context.Context, id string, _ time.Duration) error {
+	f.callOrder = append(f.callOrder, "Stop")
+	f.gotStopID = id
+	return f.stopErr
+}
+func (f *fakeExecRuntime) Remove(context.Context, string, bool) error { return nil }
+func (f *fakeExecRuntime) EnsureVolume(context.Context, string) error { return nil }
 
 func TestContainerDumper_Dump_Postgres(t *testing.T) {
 	rt := &fakeExecRuntime{content: "postgres-dump-bytes"}
