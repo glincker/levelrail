@@ -137,7 +137,7 @@ Query).
 
 The frontend builds to static assets and is embedded into the control
 plane binary via `embed.FS`, so there's no separate Node process to run in
-production, one binary is the whole deployment. Route-level code splitting
+production alongside it. Route-level code splitting
 keeps, for example, the log viewer's bundle out of the initial dashboard
 load. Live build logs and app log tailing use server-sent events rather
 than websockets, because SSE reconnects cleanly through proxies without
