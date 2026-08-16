@@ -133,6 +133,21 @@ func (s *sessionStore) revokeAll(userID string) {
 	}
 }
 
+// revokeAll deletes every session belonging to username, with no
+// exception: the reset-password counterpart to revokeAllExcept, used
+// where (unlike a password change) there is no "current session" to
+// leave alone, since the requester isn't authenticated at all during a
+// password reset.
+func (s *sessionStore) revokeAll(username string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for token, sess := range s.sessions {
+		if sess.username == username {
+			delete(s.sessions, token)
+		}
+	}
+}
+
 func randomToken() (string, error) {
 	buf := make([]byte, 32)
 	if _, err := rand.Read(buf); err != nil {

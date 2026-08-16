@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/smtp"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/email"
 )
 
 // Event is what a firing (or resolved) rule hands to a Notifier: enough
@@ -53,37 +54,22 @@ func (n httpNotifier) Notify(ctx context.Context, ev Event) error {
 	return n.build(ctx, n.client, n.url, ev)
 }
 
-// SMTPConfig is the server-wide (not per-rule) configuration
-// notifyEmail's Notifier needs. Unlike NotifyURL, there is no sensible
-// zero-config default for an SMTP server, the same reasoning
-// internal/secrets' master key has no default: a control plane that
-// hasn't set one gets a clear, documented "not configured" error rather
-// than silently trying (and failing) to connect somewhere.
-type SMTPConfig struct {
-	// Addr is host:port, e.g. "smtp.example.com:587".
-	Addr     string
-	Host     string // just the host part of Addr, for PlainAuth's identity check
-	Username string
-	Password string
-	From     string
-}
-
 // NewNotifier builds the right Notifier for r.NotifyKind. An unknown or
 // empty NotifyKind falls back to NotifyGeneric rather than erroring: a
 // rule with a typo'd notify_kind should still get *a* notification,
 // diagnosable from the payload shape, rather than silently notifying no
 // one.
 //
-// smtpCfg is nil when no SMTP server is configured (the default): a rule
-// with NotifyKind == NotifyEmail still gets a Notifier, one whose Notify
-// always returns a clear "email is not configured" error rather than a
-// nil-pointer panic or a silently dropped notification.
-func NewNotifier(client *http.Client, smtpCfg *SMTPConfig, r Rule) Notifier {
+// sender is nil when no email capability is configured (the default): a
+// rule with NotifyKind == NotifyEmail still gets a Notifier, one whose
+// Notify always returns a clear "email is not configured" error rather
+// than a nil-pointer panic or a silently dropped notification.
+func NewNotifier(client *http.Client, sender email.Sender, r Rule) Notifier {
 	if client == nil {
 		client = http.DefaultClient
 	}
 	if r.NotifyKind == NotifyEmail {
-		return emailNotifier{cfg: smtpCfg, to: r.NotifyURL}
+		return emailNotifier{sender: sender, to: r.NotifyURL}
 	}
 
 	build := notifyGeneric
@@ -237,12 +223,12 @@ func postJSON(ctx context.Context, client *http.Client, url string, payload any)
 	return nil
 }
 
-// emailNotifier sends one Event as a plain-text email via net/smtp.
-// Unlike every other Notifier here, its transport is SMTP, not HTTP: it
-// doesn't fit httpNotifier's notifyFunc shape (a URL plus a JSON body),
-// so it implements Notifier directly instead.
+// emailNotifier sends one Event as a plain-text email via an
+// email.Sender. Unlike every other Notifier here, its transport isn't
+// HTTP: it doesn't fit httpNotifier's notifyFunc shape (a URL plus a
+// JSON body), so it implements Notifier directly instead.
 type emailNotifier struct {
-	cfg *SMTPConfig // nil means "no SMTP server configured"
+	sender email.Sender // nil means "no email capability configured"
 	// to is r.NotifyURL: not a URL for this channel, the destination
 	// email address, the same "NotifyURL is generically 'the
 	// destination', interpreted per channel" reasoning notifyTelegram
@@ -250,13 +236,9 @@ type emailNotifier struct {
 	to string
 }
 
-// Notify implements Notifier. net/smtp.SendMail has no context.Context
-// parameter to plumb ctx's cancellation through; a hung SMTP connection
-// therefore isn't cancellable the way an HTTP notifier's request is,
-// a real, documented limitation, not an oversight.
-func (n emailNotifier) Notify(_ context.Context, ev Event) error {
-	if n.cfg == nil {
-		return fmt.Errorf("alerting: notify: email is not configured on this control plane (set APP_SMTP_HOST, APP_SMTP_FROM, etc.)")
+func (n emailNotifier) Notify(ctx context.Context, ev Event) error {
+	if n.sender == nil {
+		return fmt.Errorf("alerting: notify: email is not configured on this control plane")
 	}
 	if n.to == "" {
 		return fmt.Errorf("alerting: notify: no notify_url (destination email address) configured")
@@ -266,32 +248,8 @@ func (n emailNotifier) Notify(_ context.Context, ev Event) error {
 	if ev.Resolved {
 		subject = fmt.Sprintf("[Levelrail][RESOLVED] %s", ev.Rule.Name)
 	}
-	if err := sendPlainEmail(n.cfg, n.to, subject, summaryText(ev)); err != nil {
+	if err := n.sender.Send(ctx, n.to, subject, summaryText(ev)); err != nil {
 		return fmt.Errorf("alerting: notify: %w", err)
-	}
-	return nil
-}
-
-// sendPlainEmail sends a plain-text email via cfg's SMTP server: the raw
-// net/smtp mechanics (PlainAuth, message construction, SendMail) shared
-// by emailNotifier.Notify above (alert-rule notifications) and
-// deploy_notify.go's own email send (deploy-outcome notifications).
-// Callers are responsible for their own "not configured" / "no
-// destination address" checks before calling this (see
-// emailNotifier.Notify above): those error messages are deliberately
-// caller-specific, not generalized into this shared helper, so an
-// operator debugging a misconfigured alert rule sees the exact wording
-// this file already had before that extraction, not a generic one
-// blended across both callers.
-func sendPlainEmail(cfg *SMTPConfig, to, subject, body string) error {
-	msg := fmt.Sprintf("To: %s\r\nFrom: %s\r\nSubject: %s\r\n\r\n%s\r\n", to, cfg.From, subject, body)
-
-	var auth smtp.Auth
-	if cfg.Username != "" {
-		auth = smtp.PlainAuth("", cfg.Username, cfg.Password, cfg.Host)
-	}
-	if err := smtp.SendMail(cfg.Addr, auth, cfg.From, []string{to}, []byte(msg)); err != nil {
-		return fmt.Errorf("send email: %w", err)
 	}
 	return nil
 }

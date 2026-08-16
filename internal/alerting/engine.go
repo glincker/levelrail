@@ -50,11 +50,11 @@ type Engine struct {
 }
 
 // NewEngine builds an Engine. newNotifier defaults to alerting.NewNotifier
-// with the standard http.DefaultClient-backed Notifier and no SMTP server
-// configured (an email-kind rule then always fails with a clear "not
-// configured" error) if nil. A caller that does have SMTP configured
-// (cmd/levelrail/main.go, from APP_SMTP_* env vars) passes its own
-// closure capturing a real *SMTPConfig instead; tests override it the
+// with the standard http.DefaultClient-backed Notifier and no email
+// capability configured (an email-kind rule then always fails with a
+// clear "not configured" error) if nil. A caller that does have email
+// configured (cmd/levelrail/main.go, via internal/email) passes its own
+// closure capturing a real email.Sender instead; tests override it the
 // same way to capture Notify calls without a real HTTP server.
 func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker *RestartTracker, newNotifier func(Rule) Notifier, logger *slog.Logger) *Engine {
 	if newNotifier == nil {

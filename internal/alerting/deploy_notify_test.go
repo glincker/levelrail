@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/email"
 )
 
 func newTestDeployNotifyDB(t *testing.T) *DB {
@@ -237,9 +239,12 @@ func TestSendDeployOutcome_Email_NoSMTPConfigured_Errors(t *testing.T) {
 }
 
 func TestSendDeployOutcome_Email_NoDestinationAddress_Errors(t *testing.T) {
-	cfg := &SMTPConfig{Addr: "smtp.example.com:587", Host: "smtp.example.com", From: "alerts@example.com"}
+	sender, err := email.NewSender(email.Config{Backend: email.BackendSMTP, SMTP: &email.SMTPConfig{Addr: "smtp.example.com:587", Host: "smtp.example.com", From: "alerts@example.com"}})
+	if err != nil {
+		t.Fatalf("email.NewSender() error = %v", err)
+	}
 	target := DeployTarget{NotifyKind: NotifyEmail, Enabled: true} // NotifyURL left empty
-	if err := sendDeployOutcome(context.Background(), nil, cfg, target, DeployOutcome{AppName: "web"}); err == nil {
+	if err := sendDeployOutcome(context.Background(), nil, sender, target, DeployOutcome{AppName: "web"}); err == nil {
 		t.Error("sendDeployOutcome() error = nil, want an error when no destination address is configured")
 	}
 }
