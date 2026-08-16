@@ -284,15 +284,21 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 	}
 	defer func() { _ = resp.Body.Close() }()
 
+	return decodeResponse(resp, out)
+}
+
+// decodeResponse reads resp's body, mapping a non-2xx status to
+// *apiError and otherwise JSON-decoding into out. Shared by do() and any
+// method (DeployCompose) that must build its own *http.Request because
+// its body isn't JSON.
+func decodeResponse(resp *http.Response, out any) error {
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("read response body: %w", err)
 	}
-
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return &apiError{StatusCode: resp.StatusCode, Message: extractErrorMessage(data)}
 	}
-
 	if out != nil && len(data) > 0 {
 		if err := json.Unmarshal(data, out); err != nil {
 			return fmt.Errorf("decode response body: %w", err)
@@ -360,6 +366,41 @@ func (c *Client) TriggerBuild(ctx context.Context, name string, req buildTrigger
 func (c *Client) DeployApp(ctx context.Context, name, image string) (appResource, error) {
 	var out appResource
 	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+pathEscape(name)+"/deploys", deployTriggerRequest{Image: image}, &out)
+	return out, err
+}
+
+// composeDeployResult mirrors internal/api's composeDeployResponse
+// (internal/api/apps_compose.go).
+type composeDeployResult struct {
+	AppID    string        `json:"app_id"`
+	Services []appResource `json:"services"`
+}
+
+// DeployCompose calls POST /api/v1/apps/{name}/compose with composeYAML
+// as the raw request body. Unlike every other Client method, this
+// doesn't go through do(): handleDeployCompose (internal/api/apps_compose.go)
+// reads the body directly via io.ReadAll and parses it as a compose.yaml
+// document, so the body must be sent as-is, not JSON-marshaled, with
+// Content-Type: text/yaml instead of do()'s hardcoded application/json.
+func (c *Client) DeployCompose(ctx context.Context, name string, composeYAML []byte) (composeDeployResult, error) {
+	var out composeDeployResult
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/v1/apps/"+pathEscape(name)+"/compose", bytes.NewReader(composeYAML)) //nolint:gosec // c.baseURL is the operator-supplied --api-url/APP_API_URL target, same as do()
+	if err != nil {
+		return out, fmt.Errorf("build request: %w", err)
+	}
+	req.Header.Set("Content-Type", "text/yaml")
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+
+	resp, err := c.hc.Do(req) //nolint:gosec // same target as do()
+	if err != nil {
+		return out, fmt.Errorf("request %s %s: %w", http.MethodPost, req.URL.String(), err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	err = decodeResponse(resp, &out)
 	return out, err
 }
 
