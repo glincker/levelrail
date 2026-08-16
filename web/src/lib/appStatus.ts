@@ -26,10 +26,8 @@ export function summarizeAppStatus(conditions: ReconcileCondition[]): {
 }
 
 // Solid-fill counterpart to badgeVariants' success/destructive/muted
-// backgrounds (components/ui/badge.tsx): a dot has no room for the
-// badge's own light background + dark text combo, so this maps the same
-// three variants to a single solid color instead. Shared between
-// AppRow's StatusDot and DashboardOverview's decorative row dot.
+// backgrounds: a dot has no room for the badge's own light-background/
+// dark-text combo, so this maps the same variants to one solid color.
 export const STATUS_DOT_COLOR: Record<AppStatusSummary['variant'], string> = {
   success: 'bg-green-500 dark:bg-green-400',
   destructive: 'bg-destructive',
