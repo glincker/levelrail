@@ -49,8 +49,8 @@ const FIXED_OPTIONS: WizardOptionDef[] = [
   },
   {
     value: 'dockerfile-git',
-    label: 'Dockerfile from git',
-    description: 'Build an image from a Dockerfile in a repo.',
+    label: 'Build from git',
+    description: 'Dockerfile, auto-detect (Railpack), or a static site.',
     // No brand mark for this one: git itself isn't one of the four
     // vendored @thesvg/react logos (BrandIcon.tsx's own doc comment),
     // so this uses the same Phosphor icon DeployTriggerForm.tsx's

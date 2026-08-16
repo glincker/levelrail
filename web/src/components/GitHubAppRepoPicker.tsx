@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import { GithubLogoIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Select,
@@ -14,13 +15,12 @@ import {
   useGitHubAppStatus,
 } from '../queries/githubApp'
 
-// A repo+branch picker fed by the connected GitHub App installation,
-// an alternative to hand-typing a repository URL in
-// CreateAppFromGitFields.tsx. Only rendered once the App is connected
-// and installed (see that file's own usage); this component itself
-// still checks status again rather than trusting a caller-passed flag,
-// since useGitHubAppStatus's cache is the single source of truth for
-// "should this even try to fetch repos."
+// A repo+branch picker fed by the connected GitHub App installation, an
+// alternative to hand-typing a repository URL in
+// CreateAppFromGitFields.tsx. Always rendered: when no App connection
+// exists yet it renders a short CTA pointing at the connect flow instead
+// of the picker, rather than disappearing and leaving the git fields
+// below with no explanation for why there's no picker.
 //
 // Selecting a private repository here fills in its clone URL, and
 // building it (POST /apps/{name}/builds, internal/api/builds.go)
@@ -56,7 +56,21 @@ export function GitHubAppRepoPicker({
   }, [repos.data])
 
   if (!enabled) {
-    return null
+    return (
+      <div className="flex items-start gap-2 rounded-lg border border-dashed border-border p-3 text-sm text-muted-foreground">
+        <GithubLogoIcon className="mt-0.5 size-4 shrink-0" />
+        <p>
+          Paste a public repository URL below, or{' '}
+          <Link
+            to="/settings/github-app"
+            className="text-primary underline underline-offset-2"
+          >
+            connect GitHub
+          </Link>{' '}
+          for private-repo access and a repo picker here.
+        </p>
+      </div>
+    )
   }
 
   return (
