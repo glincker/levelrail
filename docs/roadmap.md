@@ -1,6 +1,7 @@
 # Roadmap
 
-Status as of 2026-08-16, not the aspirational plan. See CLAUDE.md in the
+Status as of 2026-08-16 (refreshed against current `main`), not the
+aspirational plan. See CLAUDE.md in the
 repo for the full phase-by-phase design doc if you want the long version.
 The build has moved further and less linearly than that phase plan
 implies: parts of Phase 3 (multi-node, the WireGuard mesh) are shipped
@@ -20,15 +21,19 @@ are still open. This page describes what's actually true today.
 - BuildKit-based Dockerfile builds with local cache and live build-log
   streaming over SSE.
 - Railpack auto-detection for Node.js and Go.
-- Static-site builds (`build.type: static`), though without a frontend
-  surface yet to configure them.
+- Static-site builds (`build.type: static`), with a frontend surface to
+  configure them (a static tab in the git build-source picker) and a
+  dashboard card listing existing static sites.
 - Git webhook receiver with HMAC-SHA256 signature verification, branch
   gating, and SHA-pinned fetch (no `git` CLI shelling).
 - Persisted per-app git source and multi-app GitHub webhook support,
   with per-app HMAC secrets and PAT auth.
+- GitHub App connect flow: manifest self-registration, org/repo/branch
+  picker, and installation-token minting, wired in by default.
 - Embedded Caddy ingress with automatic TLS and domain routing. TLS
-  today comes from an internal, self-signed issuer, not a public ACME
-  provider (see Not started).
+  today defaults to an internal, self-signed issuer; a public ACME
+  issuer exists and is toggleable but is still unverified against a
+  live domain (see In progress).
 - Envelope encryption for secrets, with env injection at
   container-create time.
 - Managed Redis as a first-class, volume-backed resource. Managed
@@ -43,9 +48,19 @@ are still open. This page describes what's actually true today.
 - Deploy strategies: rolling, recreate, and blue-green, plus replica
   support.
 - One-shot container `exec`, gated to root-level API tokens.
-- Whole-chain live end-to-end test covering push equivalent, build,
-  container, and HTTPS response. Doesn't yet exercise rollback, the
-  real webhook path, multi-service, multi-node, or real ACME.
+- Explicit Stop/Start actions for apps, distinct from Delete/Restart:
+  the reconciler tears down containers on stop and brings them back on
+  start without touching desired state.
+- `install.sh` (curl-pipe-sh) and a systemd unit for the control plane
+  itself, safe to re-run as an upgrade path.
+- `levelrail migrate coolify` CLI command: pulls every app off a live
+  Coolify instance and either writes app.yaml files or applies them
+  directly to a target Levelrail instance.
+- Live end-to-end test suite: whole-chain push-to-HTTPS, rollback in
+  both directions, the real git webhook path, database reconciliation,
+  non-default port routing, and node placement. Doesn't yet exercise
+  multi-service fan-out, a full multi-node mesh, or real ACME against
+  a live domain.
 
 **Observability**
 
@@ -68,6 +83,9 @@ are still open. This page describes what's actually true today.
 - Node-level metrics dashboard.
 - TLS certificate renewal visibility.
 - Docker disk, image, and volume pruning from the dashboard.
+- Control-plane data-directory disk usage (total/free bytes) surfaced
+  in Settings > General, alongside Docker's own image/volume/build-cache
+  accounting.
 
 **Multi-node**
 
@@ -98,9 +116,19 @@ are still open. This page describes what's actually true today.
 - App clone.
 - Database public-accessibility toggle with host port exposure.
 - Scheduled/cron backups to S3-compatible storage, with backup history,
-  restore (Postgres and MySQL live-verified, Redis restore unsupported
-  by design), and browser download of backup files.
+  restore (Postgres, MySQL, and Redis all live-verified, including
+  Redis's stop-write-start RDB reload path), and browser download of
+  backup files.
 - Accessibility fixes (ARIA labels on row inputs).
+- Environment variable editing: a row-by-row table and a raw
+  paste/format "developer view" for plain vars, both listing secret
+  keys inline as write-only and lockable for visibility, with actual
+  secret values set through a separate Secrets card. Not a single
+  unified list the way it was originally scoped, but the write-only/
+  lock behavior for secrets is real.
+- "Restart required" toast after saving a health-check or
+  resource-limit change, with a one-click restart action. Env changes
+  don't trigger it.
 
 ## In progress
 
@@ -111,53 +139,39 @@ are still open. This page describes what's actually true today.
 - **Dashboard "rich interactions" phase.** Command palette, richer
   empty/loading states, keyboard navigation. Not yet detailed or
   dispatched.
-- **GitHub App/OAuth connect flow.** Fully built (manifest
-  self-registration, org/repo/branch picker, installation-token
-  minting), but sitting in an open, unmerged, conflicting pull request.
-  Not shipped until merged.
-- **Unified env var UI.** A single list combining plain and
-  secret-flagged env, with a permanent non-revealable lock for secrets.
-  Dispatched, not yet reviewed.
-- **"Restart required" toast.** Shown after saving env/health/resource
-  changes. QA-confirmed, not yet merged.
-- **Per-node disk space metric.** Built, but has no observable value in
-  single-node mode. A follow-up to surface local disk via system status
-  is dispatched, not yet reviewed.
 - **Database backup-schedule UI.** The backend route exists; the
   frontend is parked pending a gap-scan review.
-- **Multi-service apps.** A design proposal for the real fix (a
-  dedicated apps table, per-service partial-failure deploys) has
-  landed, but implementation hasn't started, pending a decision on two
-  open questions.
-- **Coolify/Dokploy migration tooling.** Design proposal landed,
-  awaiting review, no code written.
-- **Install/upgrade packaging** (a curl-pipe-sh installer plus a
-  systemd unit). Research and a recommendation have landed, awaiting
-  sign-off, nothing built yet.
+- **Multi-service apps.** Backend fan-out is real: an `apps` table
+  links N desired services under one app, and
+  `POST /api/v1/apps/{name}/deploy-spec` fans a `services:` map out
+  into independent per-service builds and deploys, each tracked
+  separately. The git webhook handler auto-fans-out too, when a
+  `Services` map is configured on it. But the actual per-app
+  git-source webhook path used for real connected repos still looks
+  up exactly one service, and there's no frontend for any of this. Not
+  end-to-end yet.
+- **Dokploy migration tooling.** Coolify migration shipped (see Done);
+  Dokploy has no code written yet.
+- **Real public ACME.** The Caddy ACME issuer type, a settings toggle,
+  and form validation are all built and wired end to end (Settings >
+  Domains). Only unit-tested against the config shape so far, not
+  spot-checked against a real domain issuing a real cert, the exact
+  gap ADR 005 named at Phase 0.
 
 ## Not started
 
-- Real public ACME certificates, issued against a live domain rather
-  than the current internal, self-signed issuer.
-- Multi-service apps end-to-end. Every app today is exactly one
-  container. The app-spec schema allows a services map, but the deploy
-  path only ever drives a single service.
 - Team/multi-user access, RBAC, and an audit log. There's a hard single
   admin user, API tokens scope abilities rather than human users, and
   no audit log exists anywhere.
 - Preview environments per pull request. Depends on multi-service
-  support landing first.
-- An install and upgrade path for the product itself (see In progress
-  for the packaging work already underway).
-- Redis backup restore. Returns an explicit "not supported" error by
-  design, not a silent gap.
-- An explicit "Stop" action for apps, distinct from Delete/Restart.
+  support landing end-to-end first.
 - Docker Compose as a deploy target, a template catalog, and the MCP
-  server (see above for teams).
+  server.
 - Live, in-place resource-limit application without a restart. A saved
   health-check or resource-limit change doesn't reconcile into the
   already-running container until a restart forces a new one (the
-  "restart required" toast above is the in-flight fix).
+  shipped "restart required" toast is the operator-facing workaround,
+  not a fix to the underlying gap).
 
 ## Explicitly out of scope
 
