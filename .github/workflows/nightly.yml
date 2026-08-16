@@ -12,8 +12,34 @@ permissions:
   contents: read
 
 jobs:
+  check-activity:
+    name: Check for recent commits
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      has-commits: ${{ steps.check.outputs.has-commits }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      # Skip the run entirely on a quiet day (manual dispatch always
+      # runs regardless, for an on-demand full check).
+      - name: Check for commits in the last 24h
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "has-commits=true" >> "$GITHUB_OUTPUT"
+          else
+            count=$(git log --since="24 hours ago" --oneline | wc -l)
+            echo "has-commits=$([ "$count" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          fi
+
   full-test:
     name: Full test suite (race, no -short)
+    needs: check-activity
+    if: needs.check-activity.outputs.has-commits == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
