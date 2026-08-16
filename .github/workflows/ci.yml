@@ -246,3 +246,39 @@ jobs:
           else
             echo "no changed web/*.ts(x) files"
           fi
+
+  # A single, always-running status branch protection can require. The
+  # jobs above are conditionally skipped per changed area, and a
+  # required check that never runs blocks merging forever, so this is
+  # the one check that's actually always required: success if every job
+  # that *was* supposed to run for this PR passed, skipped jobs excused.
+  ci-required:
+    name: CI required
+    runs-on: ubuntu-latest
+    needs: [changes, build-vet, test-api, test-rest, coverage-gate, lint, web-check]
+    if: always()
+    timeout-minutes: 3
+    steps:
+      - name: Evaluate required jobs
+        run: |
+          if [ "${{ needs.changes.result }}" != "success" ]; then
+            echo "changes: ${{ needs.changes.result }} (required)"
+            exit 1
+          fi
+          backend="${{ needs.changes.outputs.backend }}"
+          frontend="${{ needs.changes.outputs.frontend }}"
+          fail=0
+          check() {
+            if [ "$3" = "true" ] && [ "$2" != "success" ]; then
+              echo "$1: $2 (required)"
+              fail=1
+            fi
+          }
+          check "build-vet" "${{ needs.build-vet.result }}" "$backend"
+          check "test-api" "${{ needs.test-api.result }}" "$backend"
+          check "test-rest" "${{ needs.test-rest.result }}" "$backend"
+          check "coverage-gate" "${{ needs.coverage-gate.result }}" "$backend"
+          check "lint" "${{ needs.lint.result }}" "$backend"
+          check "web-check" "${{ needs.web-check.result }}" "$frontend"
+          [ "$fail" -eq 0 ] || exit 1
+          echo "all required jobs for this PR passed"

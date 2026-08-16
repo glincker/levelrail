@@ -1,0 +1,84 @@
+# actions/labeler config: type/* from the branch name (CONTRIBUTING.md's
+# own type/short-description convention), area/* from which part of the
+# tree changed.
+
+type/feature:
+  - head-branch: ['^feat/']
+type/fix:
+  - head-branch: ['^fix/']
+type/perf:
+  - head-branch: ['^perf/']
+type/refactor:
+  - head-branch: ['^refactor/']
+type/docs:
+  - head-branch: ['^docs/']
+  - changed-files:
+      - any-glob-to-any-file: ['docs/**', '*.md']
+type/test:
+  - head-branch: ['^test/']
+type/chore:
+  - head-branch: ['^chore/']
+
+area/reconciler:
+  - changed-files:
+      - any-glob-to-any-file: ['internal/reconcile/**']
+area/agent:
+  - changed-files:
+      - any-glob-to-any-file: ['internal/agent/**', 'cmd/levelrail-agent/**']
+area/api:
+  - changed-files:
+      - any-glob-to-any-file: ['internal/api/**']
+area/store:
+  - changed-files:
+      - any-glob-to-any-file: ['internal/store/**']
+area/build:
+  - changed-files:
+      - any-glob-to-any-file: ['internal/build/**']
+area/deploy:
+  - changed-files:
+      - any-glob-to-any-file: ['internal/deploy/**', 'internal/deploylog/**']
+area/ingress:
+  - changed-files:
+      - any-glob-to-any-file: ['internal/ingress/**']
+area/network:
+  - changed-files:
+      - any-glob-to-any-file: ['internal/network/**']
+area/docker:
+  - changed-files:
+      - any-glob-to-any-file: ['internal/docker/**']
+area/secrets:
+  - changed-files:
+      - any-glob-to-any-file: ['internal/secrets/**']
+area/telemetry:
+  - changed-files:
+      - any-glob-to-any-file: ['internal/telemetry/**', 'internal/prompb/**']
+area/webhook:
+  - changed-files:
+      - any-glob-to-any-file: ['internal/webhook/**']
+area/backup:
+  - changed-files:
+      - any-glob-to-any-file: ['internal/backup/**']
+area/alerting:
+  - changed-files:
+      - any-glob-to-any-file: ['internal/alerting/**']
+area/email:
+  - changed-files:
+      - any-glob-to-any-file: ['internal/email/**']
+area/github-app:
+  - changed-files:
+      - any-glob-to-any-file: ['internal/githubapp/**']
+area/spec:
+  - changed-files:
+      - any-glob-to-any-file: ['internal/spec/**']
+area/brand:
+  - changed-files:
+      - any-glob-to-any-file: ['internal/brand/**', 'brand.yaml']
+area/cli:
+  - changed-files:
+      - any-glob-to-any-file: ['cmd/levelrail-cli/**']
+area/frontend:
+  - changed-files:
+      - any-glob-to-any-file: ['web/**']
+area/ci:
+  - changed-files:
+      - any-glob-to-any-file: ['.github/**', 'scripts/**']

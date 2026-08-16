@@ -94,3 +94,10 @@ supersedes.
 
 Use the issue templates. For security issues, see
 [SECURITY.md](SECURITY.md) instead of opening a public issue.
+
+## Labels
+
+`type/*` and `size/*` are applied automatically (from the branch name,
+changed files, and diff size, see `.github/labeler.yml`). `area/*` is
+also automatic, matching whichever part of `/internal`, `/cmd`, or
+`/web` a PR touches. The full taxonomy lives in `.github/labels.yml`.

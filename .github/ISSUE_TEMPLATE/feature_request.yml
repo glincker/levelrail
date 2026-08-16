@@ -1,7 +1,7 @@
 name: "[Feature] Feature request"
 description: Suggest an addition or change to Levelrail
 title: "[Feature] "
-labels: ["enhancement"]
+labels: ["type/feature", "needs-triage"]
 body:
   - type: markdown
     attributes:
