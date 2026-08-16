@@ -34,3 +34,17 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, apiError{Error: msg})
 }
+
+// internalError logs err against context plus any extra fields, then
+// writes this package's standard 500 "internal error" response: full
+// detail server-side, a generic message client-side, one place instead
+// of re-typing both halves at every call site.
+func (rt *Router) internalError(w http.ResponseWriter, context string, err error, extra ...slog.Attr) {
+	attrs := make([]any, 0, len(extra)+1)
+	attrs = append(attrs, slog.String("error", err.Error()))
+	for _, a := range extra {
+		attrs = append(attrs, a)
+	}
+	rt.logger.Error(context, attrs...)
+	writeError(w, http.StatusInternalServerError, "internal error")
+}

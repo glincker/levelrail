@@ -21,4 +21,7 @@ CREATE INDEX idx_desired_services_app_id ON desired_services (app_id);
 INSERT INTO apps (id, name, project_id, created_at, updated_at)
 SELECT name, name, project_id, updated_at, updated_at FROM desired_services;
 
-UPDATE desired_services SET app_id = name;
+-- No WHERE clause is correct here, not an oversight: this is a one-time
+-- migration backfill, meant to touch every row that exists at the
+-- moment it runs (every pre-existing service becomes its own app).
+UPDATE desired_services SET app_id = name; -- NOSONAR

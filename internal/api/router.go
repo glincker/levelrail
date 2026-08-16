@@ -135,11 +135,11 @@ type AppStore interface {
 	UpdateServiceSuspended(ctx context.Context, name string, suspended bool) error
 }
 
-// AppGroupStore is the store surface GET /api/v1/apps/{name}/group
+// AppGroupLister is the store surface GET /api/v1/apps/{name}/group
 // needs (apps_group.go): stage 1 of multi-service apps
 // (migrations/0039_apps.sql), read path only. *store.DB satisfies this
 // structurally.
-type AppGroupStore interface {
+type AppGroupLister interface {
 	ListServicesByApp(ctx context.Context, appID string) ([]store.DesiredService, error)
 }
 
@@ -270,7 +270,7 @@ type TokenStore interface {
 // already established for this codebase.
 type Store interface {
 	AppStore
-	AppGroupStore
+	AppGroupLister
 	DeployStore
 	DeployAttemptStore
 	DatabaseStore
@@ -394,7 +394,7 @@ type Router struct {
 	logger          *slog.Logger
 	brand           *brand.Brand
 	apps            AppStore
-	appGroups       AppGroupStore
+	appGroups       AppGroupLister
 	deploys         DeployStore
 	databases       DatabaseStore
 	auth            AuthStore

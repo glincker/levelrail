@@ -35,8 +35,7 @@ func (rt *Router) handleGetAppGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get app group: get service failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get app group: get service failed", err, slog.String("name", name))
 		return
 	}
 
@@ -44,8 +43,7 @@ func (rt *Router) handleGetAppGroup(w http.ResponseWriter, r *http.Request) {
 	if svc.AppID != "" {
 		services, err = rt.appGroups.ListServicesByApp(r.Context(), svc.AppID)
 		if err != nil {
-			rt.logger.Error("api: get app group: list services failed", slog.String("error", err.Error()), slog.String("app_id", svc.AppID))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "api: get app group: list services failed", err, slog.String("app_id", svc.AppID))
 			return
 		}
 	}
@@ -56,8 +54,7 @@ func (rt *Router) handleGetAppGroup(w http.ResponseWriter, r *http.Request) {
 	}
 	conditionsByController, err := rt.deploys.GetConditionsForControllers(r.Context(), controllerNames)
 	if err != nil {
-		rt.logger.Error("api: get app group: batch load conditions failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get app group: batch load conditions failed", err)
 		return
 	}
 
