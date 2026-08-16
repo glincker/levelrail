@@ -114,15 +114,6 @@ function DiskUsageCard({ status }: { status: SystemStatus }) {
   )
 }
 
-// dockerUsageRow is one line of DockerDiskUsageCard's breakdown: a
-// resource kind's total size plus how much of that is reclaimable.
-// Reclaimable here follows Docker's own broader "unused" accounting
-// (docker.DiskUsage's own doc comment in internal/docker/prune.go), not
-// the narrower set "Clean up now" actually removes: a tagged-but-unused
-// image counts toward reclaimable here (matching what `docker system
-// df` would show) even though it's a protected rollback target Clean up
-// now will never touch. The card's own footnote below makes that gap
-// explicit rather than letting the numbers imply a bigger cleanup than
 // the button actually performs.
 function DockerUsageRow({
   label,
@@ -148,16 +139,6 @@ function DockerUsageRow({
   )
 }
 
-// DockerDiskUsageCard shows Docker's own storage accounting (images,
-// containers, volumes, build cache) alongside the "Clean up now" action,
-// a different number from DiskUsageCard just above: that one measures
-// the control plane's own data directory, this measures where Docker
-// itself stores state, per docker_disk_usage's own doc comment in
-// queries/systemStatus.ts. Only rendered when the backend actually
-// reported it (docker_disk_usage is omitted on the wire when no Docker
-// connection was established, or the daemon call failed), the same
-// "never show a fabricated 0/0" convention DiskUsageCard already
-// follows.
 function DockerDiskUsageCard({ usage }: { usage: DockerDiskUsage }) {
   return (
     <Card>
