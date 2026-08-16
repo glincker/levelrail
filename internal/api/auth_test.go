@@ -23,15 +23,18 @@ func TestBootstrapAdmin_CreatesWhenNoneExists(t *testing.T) {
 		t.Fatalf("BootstrapAdmin() error = %v", err)
 	}
 
-	got, err := db.GetAdminUser(ctx)
+	got, err := db.GetUserByEmail(ctx, "admin")
 	if err != nil {
-		t.Fatalf("GetAdminUser() error = %v", err)
+		t.Fatalf("GetUserByEmail() error = %v", err)
 	}
-	if got.Username != "admin" {
-		t.Errorf("Username = %q, want %q", got.Username, "admin")
+	if got.Email != "admin" {
+		t.Errorf("Email = %q, want %q", got.Email, "admin")
 	}
-	if got.PasswordHash == "" || got.PasswordHash == "s3cret-password" {
-		t.Errorf("PasswordHash = %q, want a bcrypt hash, not empty or the raw password", got.PasswordHash)
+	if got.PasswordHash == nil || *got.PasswordHash == "" || *got.PasswordHash == "s3cret-password" {
+		t.Errorf("PasswordHash = %v, want a bcrypt hash, not empty or the raw password", got.PasswordHash)
+	}
+	if !got.IsFirstUser {
+		t.Error("IsFirstUser = false, want true for the bootstrap user")
 	}
 }
 
@@ -42,9 +45,9 @@ func TestBootstrapAdmin_NoOpWhenAlreadyExists(t *testing.T) {
 	if err := BootstrapAdmin(ctx, db, "admin", "first-password"); err != nil {
 		t.Fatalf("first BootstrapAdmin() error = %v", err)
 	}
-	first, err := db.GetAdminUser(ctx)
+	first, err := db.GetUserByEmail(ctx, "admin")
 	if err != nil {
-		t.Fatalf("GetAdminUser() error = %v", err)
+		t.Fatalf("GetUserByEmail() error = %v", err)
 	}
 
 	// A second call with different credentials, e.g. env vars still set
@@ -53,13 +56,16 @@ func TestBootstrapAdmin_NoOpWhenAlreadyExists(t *testing.T) {
 	if err := BootstrapAdmin(ctx, db, "someone-else", "second-password"); err != nil {
 		t.Fatalf("second BootstrapAdmin() error = %v", err)
 	}
-	second, err := db.GetAdminUser(ctx)
+	second, err := db.GetUserByEmail(ctx, "admin")
 	if err != nil {
-		t.Fatalf("GetAdminUser() error = %v", err)
+		t.Fatalf("GetUserByEmail() error = %v", err)
 	}
 
-	if second.Username != first.Username || second.PasswordHash != first.PasswordHash {
+	if second.Email != first.Email || *second.PasswordHash != *first.PasswordHash {
 		t.Errorf("second bootstrap changed the admin account: before = %+v, after = %+v", first, second)
+	}
+	if _, err := db.GetUserByEmail(ctx, "someone-else"); !errors.Is(err, store.ErrUserNotFound) {
+		t.Error("second bootstrap must not have created a second user")
 	}
 }
 
@@ -81,8 +87,8 @@ func TestBootstrapAdmin_MissingCredentialsErrors(t *testing.T) {
 			if err := BootstrapAdmin(ctx, db, tt.username, tt.password); err == nil {
 				t.Fatal("BootstrapAdmin() error = nil, want an error for missing credentials")
 			}
-			if _, err := db.GetAdminUser(ctx); !errors.Is(err, store.ErrAdminNotFound) {
-				t.Errorf("GetAdminUser() error = %v, want ErrAdminNotFound (no partial bootstrap)", err)
+			if n, err := db.CountUsers(ctx); err != nil || n != 0 {
+				t.Errorf("CountUsers() = (%d, %v), want (0, nil) (no partial bootstrap)", n, err)
 			}
 		})
 	}
@@ -346,15 +352,20 @@ func TestHandleRegister_Success(t *testing.T) {
 		t.Error("expected a non-empty session cookie to be set on successful registration")
 	}
 
-	admin, err := db.GetAdminUser(context.Background())
+	admin, err := db.GetUserByEmail(context.Background(), "admin")
 	if err != nil {
-		t.Fatalf("GetAdminUser() error = %v", err)
+		t.Fatalf("GetUserByEmail() error = %v", err)
 	}
-	if admin.Username != "admin" {
-		t.Errorf("admin.Username = %q, want %q", admin.Username, "admin")
+	if admin.Email != "admin" {
+		t.Errorf("admin.Email = %q, want %q", admin.Email, "admin")
+	}
+	if !admin.IsFirstUser {
+		t.Error("IsFirstUser = false, want true for the very first registration")
 	}
 }
 
+// TestHandleRegister_AlreadyBootstrapped_Conflict proves /auth/register
+// only ever creates the first user: once any user exists, it always 409s.
 func TestHandleRegister_AlreadyBootstrapped_Conflict(t *testing.T) {
 	rt, db := newTestRouter(t)
 	bootstrapTestAdmin(t, db)
@@ -368,14 +379,17 @@ func TestHandleRegister_AlreadyBootstrapped_Conflict(t *testing.T) {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusConflict)
 	}
 
-	// The original admin must survive untouched: a second registration
-	// attempt must never overwrite the existing account.
-	admin, err := db.GetAdminUser(context.Background())
+	// The original admin must survive untouched, and no second user must
+	// have been created under the new request's email.
+	admin, err := db.GetUserByEmail(context.Background(), testAdminUsername)
 	if err != nil {
-		t.Fatalf("GetAdminUser() error = %v", err)
+		t.Fatalf("GetUserByEmail() error = %v", err)
 	}
-	if admin.Username != testAdminUsername {
-		t.Errorf("admin.Username = %q, want the original %q, want it unchanged", admin.Username, testAdminUsername)
+	if admin.Email != testAdminUsername {
+		t.Errorf("admin.Email = %q, want the original %q, want it unchanged", admin.Email, testAdminUsername)
+	}
+	if _, err := db.GetUserByEmail(context.Background(), "someone-else"); !errors.Is(err, store.ErrUserNotFound) {
+		t.Error("a rejected registration must not have created a second user")
 	}
 }
 
@@ -390,8 +404,8 @@ func TestHandleRegister_ShortPasswordRejected(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusBadRequest)
 	}
-	if _, err := db.GetAdminUser(context.Background()); !errors.Is(err, store.ErrAdminNotFound) {
-		t.Error("a rejected registration must not have created an admin row")
+	if n, err := db.CountUsers(context.Background()); err != nil || n != 0 {
+		t.Errorf("CountUsers() = (%d, %v), want (0, nil): a rejected registration must not have created a user", n, err)
 	}
 }
 
@@ -448,10 +462,11 @@ func TestHandleRegister_ConcurrentRequests_OnlyOneWins(t *testing.T) {
 		t.Errorf("created = %d successful registrations out of %d concurrent attempts, want exactly 1", created, n)
 	}
 
-	// Exactly one admin row must exist, not zero, not many: admin_user's
-	// own CHECK (id = 1) constraint enforces this at the schema level
-	// too, this proves the API layer converges to the same invariant.
-	if _, err := db.GetAdminUser(context.Background()); err != nil {
-		t.Errorf("GetAdminUser() error = %v, want exactly one admin to exist after the race", err)
+	// Exactly one user row must exist, not zero, not many:
+	// ux_users_single_first_user (migrations/0035_users.sql) enforces
+	// this at the schema level too, this proves the API layer converges
+	// to the same invariant.
+	if n, err := db.CountUsers(context.Background()); err != nil || n != 1 {
+		t.Errorf("CountUsers() = (%d, %v), want (1, nil) after the race", n, err)
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
@@ -77,7 +78,7 @@ func TestGenerateRandomPassword_LengthAndUniqueness(t *testing.T) {
 	}
 }
 
-func TestRecoverAdminUser_SetsPasswordThatVerifies(t *testing.T) {
+func TestRecoverAdminUser_CreatesUserWhenNoneExists(t *testing.T) {
 	db := openRecoverAdminTestDB(t)
 	ctx := context.Background()
 
@@ -85,35 +86,45 @@ func TestRecoverAdminUser_SetsPasswordThatVerifies(t *testing.T) {
 		t.Fatalf("recoverAdminUser() error = %v", err)
 	}
 
-	got, err := db.GetAdminUser(ctx)
+	got, err := db.GetUserByEmail(ctx, "admin")
 	if err != nil {
-		t.Fatalf("GetAdminUser() error = %v", err)
+		t.Fatalf("GetUserByEmail() error = %v", err)
 	}
-	if got.Username != "admin" {
-		t.Errorf("username = %q, want %q", got.Username, "admin")
+	if got.PasswordHash == nil {
+		t.Fatal("PasswordHash = nil, want a bcrypt hash")
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(got.PasswordHash), []byte("correct horse battery staple")); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(*got.PasswordHash), []byte("correct horse battery staple")); err != nil {
 		t.Errorf("stored hash does not verify against the password just set: %v", err)
+	}
+	if got.IsFirstUser {
+		t.Error("IsFirstUser = true, want false: recovery must not claim first-user status")
 	}
 }
 
-func TestRecoverAdminUser_OverwritesExistingAdmin(t *testing.T) {
+func TestRecoverAdminUser_ResetsExistingUsersPassword(t *testing.T) {
 	db := openRecoverAdminTestDB(t)
 	ctx := context.Background()
 
-	if err := db.UpsertAdminUser(ctx, "admin", "stale-hash"); err != nil {
-		t.Fatalf("seed UpsertAdminUser() error = %v", err)
+	seeded := store.User{ID: "user_1", Email: "admin", DisplayName: "admin", CreatedAt: time.Now()}
+	if err := db.CreateUser(ctx, seeded); err != nil {
+		t.Fatalf("seed CreateUser() error = %v", err)
 	}
 
 	if err := recoverAdminUser(ctx, db, "admin", "new-password-123"); err != nil {
 		t.Fatalf("recoverAdminUser() error = %v", err)
 	}
 
-	got, err := db.GetAdminUser(ctx)
+	got, err := db.GetUserByEmail(ctx, "admin")
 	if err != nil {
-		t.Fatalf("GetAdminUser() error = %v", err)
+		t.Fatalf("GetUserByEmail() error = %v", err)
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(got.PasswordHash), []byte("new-password-123")); err != nil {
+	if got.ID != seeded.ID {
+		t.Errorf("ID = %q, want unchanged %q (must reset in place, not create a duplicate)", got.ID, seeded.ID)
+	}
+	if got.PasswordHash == nil {
+		t.Fatal("PasswordHash = nil, want a bcrypt hash")
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(*got.PasswordHash), []byte("new-password-123")); err != nil {
 		t.Errorf("stored hash does not verify against the new password: %v", err)
 	}
 }
@@ -141,9 +152,9 @@ func TestRunRecoverAdmin_GeneratesAndPrintsPasswordWhenOmitted(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 
-	got, err := db.GetAdminUser(ctx)
+	got, err := db.GetUserByEmail(ctx, "admin")
 	if err != nil {
-		t.Fatalf("GetAdminUser() error = %v", err)
+		t.Fatalf("GetUserByEmail() error = %v", err)
 	}
 
 	output := stdout.String()
@@ -165,7 +176,10 @@ func TestRunRecoverAdmin_GeneratesAndPrintsPasswordWhenOmitted(t *testing.T) {
 		rest = rest[:nl]
 	}
 	printed := strings.TrimSpace(rest)
-	if err := bcrypt.CompareHashAndPassword([]byte(got.PasswordHash), []byte(printed)); err != nil {
+	if got.PasswordHash == nil {
+		t.Fatal("PasswordHash = nil, want a bcrypt hash")
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(*got.PasswordHash), []byte(printed)); err != nil {
 		t.Errorf("printed password does not verify against the stored hash: %v", err)
 	}
 }
@@ -193,11 +207,14 @@ func TestRunRecoverAdmin_UsesExplicitPasswordWithoutPrintingIt(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 
-	got, err := db.GetAdminUser(ctx)
+	got, err := db.GetUserByEmail(ctx, "admin")
 	if err != nil {
-		t.Fatalf("GetAdminUser() error = %v", err)
+		t.Fatalf("GetUserByEmail() error = %v", err)
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(got.PasswordHash), []byte("explicit-pass-1")); err != nil {
+	if got.PasswordHash == nil {
+		t.Fatal("PasswordHash = nil, want a bcrypt hash")
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(*got.PasswordHash), []byte("explicit-pass-1")); err != nil {
 		t.Errorf("stored hash does not verify against the explicit password: %v", err)
 	}
 }

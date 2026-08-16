@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -100,4 +101,34 @@ func loginTestSession(t *testing.T, rt *Router, db *store.DB) *http.Cookie {
 	}
 	t.Fatal("login setup: no session cookie returned")
 	return nil
+}
+
+// storeUserForTest inserts a plain, no-password user row directly (not
+// through a handler): the OAuth-only-account, multi-user, and
+// account-linking tests all need a user that didn't come through
+// handleRegister/handleLogin's password path.
+func storeUserForTest(t *testing.T, db *store.DB, email string) store.User {
+	t.Helper()
+	id, err := randomOpaqueID("user_")
+	if err != nil {
+		t.Fatalf("randomOpaqueID() error = %v", err)
+	}
+	u := store.User{ID: id, Email: email, DisplayName: email, CreatedAt: time.Now()}
+	if err := db.CreateUser(context.Background(), u); err != nil {
+		t.Fatalf("CreateUser(%q) error = %v", email, err)
+	}
+	return u
+}
+
+// sessionCookieForTest mints a real session for userID directly through
+// rt.sessions (not through a login handler, since some test users have
+// no password to log in with) and wraps it as the http.Cookie
+// authedRequest expects.
+func sessionCookieForTest(t *testing.T, rt *Router, userID string) *http.Cookie {
+	t.Helper()
+	token, err := rt.sessions.create(userID)
+	if err != nil {
+		t.Fatalf("sessions.create(%q) error = %v", userID, err)
+	}
+	return &http.Cookie{Name: sessionCookieName, Value: token} //nolint:gosec // request cookie, not a response Set-Cookie
 }

@@ -23,11 +23,14 @@ func TestHandleChangePassword_Success(t *testing.T) {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNoContent, rec.Body.String())
 	}
 
-	admin, err := db.GetAdminUser(context.Background())
+	admin, err := db.GetUserByEmail(context.Background(), testAdminUsername)
 	if err != nil {
-		t.Fatalf("GetAdminUser() error = %v", err)
+		t.Fatalf("GetUserByEmail() error = %v", err)
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(admin.PasswordHash), []byte("a-new-strong-password")); err != nil {
+	if admin.PasswordHash == nil {
+		t.Fatal("PasswordHash = nil, want a bcrypt hash")
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(*admin.PasswordHash), []byte("a-new-strong-password")); err != nil {
 		t.Errorf("stored hash does not verify against the new password: %v", err)
 	}
 
@@ -51,11 +54,14 @@ func TestHandleChangePassword_WrongCurrentPassword(t *testing.T) {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusUnauthorized, rec.Body.String())
 	}
 
-	admin, err := db.GetAdminUser(context.Background())
+	admin, err := db.GetUserByEmail(context.Background(), testAdminUsername)
 	if err != nil {
-		t.Fatalf("GetAdminUser() error = %v", err)
+		t.Fatalf("GetUserByEmail() error = %v", err)
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(admin.PasswordHash), []byte(testAdminPassword)); err != nil {
+	if admin.PasswordHash == nil {
+		t.Fatal("PasswordHash = nil, want a bcrypt hash")
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(*admin.PasswordHash), []byte(testAdminPassword)); err != nil {
 		t.Errorf("password was changed despite a wrong current_password: %v", err)
 	}
 }
@@ -69,6 +75,35 @@ func TestHandleChangePassword_NewPasswordTooShort(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/auth/password", body))
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+// TestHandleChangePassword_OAuthOnlyAccount_SetsFirstPasswordWithoutCurrent
+// proves an account with no password yet can set one without supplying
+// current_password: the live session is proof enough.
+func TestHandleChangePassword_OAuthOnlyAccount_SetsFirstPasswordWithoutCurrent(t *testing.T) {
+	rt, db := newTestRouter(t)
+	ctx := context.Background()
+
+	user := storeUserForTest(t, db, "oauth-only@example.com")
+	cookie := sessionCookieForTest(t, rt, user.ID)
+
+	body := `{"current_password":"","new_password":"a-new-strong-password"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/auth/password", body))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNoContent, rec.Body.String())
+	}
+
+	got, err := db.GetUserByID(ctx, user.ID)
+	if err != nil {
+		t.Fatalf("GetUserByID() error = %v", err)
+	}
+	if got.PasswordHash == nil {
+		t.Fatal("PasswordHash = nil, want a bcrypt hash after setting a first password")
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(*got.PasswordHash), []byte("a-new-strong-password")); err != nil {
+		t.Errorf("stored hash does not verify against the new password: %v", err)
 	}
 }
 
@@ -140,8 +175,11 @@ func TestHandleGetSession_Success(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if got.Username != testAdminUsername {
-		t.Errorf("Username = %q, want %q", got.Username, testAdminUsername)
+	if got.Email != testAdminUsername {
+		t.Errorf("Email = %q, want %q", got.Email, testAdminUsername)
+	}
+	if !got.HasPassword {
+		t.Error("HasPassword = false, want true for a password-based account")
 	}
 	expiresAt, err := time.Parse(time.RFC3339, got.ExpiresAt)
 	if err != nil {

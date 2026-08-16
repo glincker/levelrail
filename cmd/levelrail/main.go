@@ -1280,6 +1280,10 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// interface hazard, same "skipped entirely without a master key"
 		// shape.
 		opts = append(opts, api.WithGitSourceSecrets(secretsManager))
+		// OAuth provider client secrets (Google/GitHub sign-in): same
+		// secretsManager, same nil-interface hazard as everything else in
+		// this block.
+		opts = append(opts, api.WithOAuthSecrets(secretsManager))
 		// Backup targets and running a real backup both need
 		// secretsManager: creating a target writes its credentials
 		// through it (api.WithBackupSecrets), and actually running a

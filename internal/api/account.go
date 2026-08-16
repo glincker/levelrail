@@ -15,26 +15,19 @@ type changePasswordRequest struct {
 	NewPassword     string `json:"new_password"`
 }
 
-// handleChangePassword handles PUT /api/v1/auth/password: session-only
-// (requireAuth, never requireAbility), the same "a credential can never
-// modify credentials on its own behalf" rule token management already
-// follows, applied here to the admin's own password. Requires the
-// current password to be re-supplied and verified, not just a valid
-// session, matching the password-reconfirmation principle
-// docs-local/research/competitor-onboarding-auth-ux.md finding 5
-// establishes for destructive account changes.
-//
-// On success, every other live session for this admin is revoked
-// (finding 6: rotate sessions on password change) except the one that
-// made this request, so changing your password from one browser doesn't
-// also sign you out of it.
+// handleChangePassword handles PUT /api/v1/auth/password: session-only,
+// the caller's own password. CurrentPassword is required and verified
+// only when the account already has one; an OAuth-only account
+// (PasswordHash nil) skips that check and just sets its first password,
+// the live session already being proof enough. On success every other
+// live session for this user is revoked.
 func (rt *Router) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(sessionCookieName)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "authentication required")
 		return
 	}
-	username, ok := rt.sessions.lookup(cookie.Value)
+	userID, ok := rt.sessions.lookup(cookie.Value)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "authentication required")
 		return
@@ -50,15 +43,17 @@ func (rt *Router) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	admin, err := rt.auth.GetAdminUser(r.Context())
+	user, err := rt.auth.GetUserByID(r.Context(), userID)
 	if err != nil {
-		rt.logger.Error("api: change password: load admin user failed", slog.String("error", err.Error()))
+		rt.logger.Error("api: change password: load user failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(admin.PasswordHash), []byte(req.CurrentPassword)); err != nil {
-		writeError(w, http.StatusUnauthorized, "current password is incorrect")
-		return
+	if user.PasswordHash != nil {
+		if err := bcrypt.CompareHashAndPassword([]byte(*user.PasswordHash), []byte(req.CurrentPassword)); err != nil {
+			writeError(w, http.StatusUnauthorized, "current password is incorrect")
+			return
+		}
 	}
 
 	newHash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
@@ -67,25 +62,28 @@ func (rt *Router) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	if err := rt.auth.UpsertAdminUser(r.Context(), username, string(newHash)); err != nil {
+	newHashStr := string(newHash)
+	if err := rt.auth.UpdateUserPasswordHash(r.Context(), userID, &newHashStr); err != nil {
 		rt.logger.Error("api: change password: save failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
-	rt.sessions.revokeAllExcept(username, cookie.Value)
+	rt.sessions.revokeAllExcept(userID, cookie.Value)
 	w.WriteHeader(http.StatusNoContent)
 }
 
 type sessionInfoResponse struct {
-	Username  string `json:"username"`
-	ExpiresAt string `json:"expires_at"`
+	Email       string `json:"username"`
+	DisplayName string `json:"display_name"`
+	HasPassword bool   `json:"has_password"`
+	ExpiresAt   string `json:"expires_at"`
 }
 
-// handleGetSession handles GET /api/v1/auth/session: the security
-// settings screen's read model for "you are signed in as X, until Y."
-// Session-only like every other handler in this file, deliberately not
-// requireAbility: a bearer token has no session of its own to report on.
+// handleGetSession handles GET /api/v1/auth/session: "signed in as X,
+// until Y." Email stays under the "username" wire key for frontend
+// compatibility. HasPassword lets the account page decide whether
+// "change password" needs a current-password field.
 func (rt *Router) handleGetSession(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(sessionCookieName)
 	if err != nil {
@@ -97,9 +95,17 @@ func (rt *Router) handleGetSession(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "authentication required")
 		return
 	}
+	user, err := rt.auth.GetUserByID(r.Context(), sess.userID)
+	if err != nil {
+		rt.logger.Error("api: get session: load user failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
 	writeJSON(w, http.StatusOK, sessionInfoResponse{
-		Username:  sess.username,
-		ExpiresAt: sess.expiresAt.UTC().Format(time.RFC3339),
+		Email:       user.Email,
+		DisplayName: user.DisplayName,
+		HasPassword: user.PasswordHash != nil,
+		ExpiresAt:   sess.expiresAt.UTC().Format(time.RFC3339),
 	})
 }
 
@@ -115,11 +121,11 @@ func (rt *Router) handleRevokeOtherSessions(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusUnauthorized, "authentication required")
 		return
 	}
-	username, ok := rt.sessions.lookup(cookie.Value)
+	userID, ok := rt.sessions.lookup(cookie.Value)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "authentication required")
 		return
 	}
-	rt.sessions.revokeAllExcept(username, cookie.Value)
+	rt.sessions.revokeAllExcept(userID, cookie.Value)
 	w.WriteHeader(http.StatusNoContent)
 }

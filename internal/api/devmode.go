@@ -17,7 +17,7 @@ const (
 	devModePassword = "dev"
 )
 
-// maybeBootstrapDevAdmin is maybeBootstrapDevAdmin's testable core:
+// maybeBootstrapDevAdmin is MaybeBootstrapDevAdmin's testable core:
 // MaybeBootstrapDevAdmin below supplies the real devModeEnabled() gate,
 // tests supply enabled directly. When enabled is false this is a pure
 // no-op; requireAuth and the real login handler are never touched, this

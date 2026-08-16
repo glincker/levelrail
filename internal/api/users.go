@@ -1,0 +1,162 @@
+package api
+
+import (
+	"encoding/json"
+	"errors"
+	"log/slog"
+	"net/http"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/store"
+	"golang.org/x/crypto/bcrypt"
+)
+
+// userResource is the wire shape for a user in list/create responses:
+// never PasswordHash, only whether one is set.
+type userResource struct {
+	ID          string     `json:"id"`
+	Email       string     `json:"email"`
+	DisplayName string     `json:"display_name"`
+	HasPassword bool       `json:"has_password"`
+	Providers   []string   `json:"providers"`
+	IsFirstUser bool       `json:"is_first_user"`
+	CreatedAt   time.Time  `json:"created_at"`
+	LastLoginAt *time.Time `json:"last_login_at,omitempty"`
+}
+
+func toUserResource(u store.User, providers []string) userResource {
+	return userResource{
+		ID:          u.ID,
+		Email:       u.Email,
+		DisplayName: u.DisplayName,
+		HasPassword: u.PasswordHash != nil,
+		Providers:   providers,
+		IsFirstUser: u.IsFirstUser,
+		CreatedAt:   u.CreatedAt,
+		LastLoginAt: u.LastLoginAt,
+	}
+}
+
+// handleListUsers handles GET /api/v1/users: every account with access
+// to this control plane. AbilityRead, the same tier GET /api/v1/apps
+// uses: this is who has access, not a credential.
+func (rt *Router) handleListUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := rt.auth.ListUsers(r.Context())
+	if err != nil {
+		rt.logger.Error("api: list users failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	out := make([]userResource, 0, len(users))
+	for _, u := range users {
+		identities, err := rt.oauthIdentities.ListOAuthIdentitiesForUser(r.Context(), u.ID)
+		if err != nil {
+			rt.logger.Warn("api: list oauth identities for user failed", slog.String("user_id", u.ID), slog.String("error", err.Error()))
+			identities = nil
+		}
+		providers := make([]string, 0, len(identities))
+		for _, i := range identities {
+			providers = append(providers, i.Provider)
+		}
+		out = append(out, toUserResource(u, providers))
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+type createUserRequest struct {
+	Email       string `json:"email"`
+	DisplayName string `json:"display_name"`
+	Password    string `json:"password"`
+}
+
+// handleCreateUser handles POST /api/v1/auth/users: how every user after
+// the first gets created, now that POST /auth/register only ever creates
+// the first (see that handler's doc comment). Session-only: any
+// already-signed-in user may call this, since every user has identical
+// access in this phase.
+func (rt *Router) handleCreateUser(w http.ResponseWriter, r *http.Request) {
+	var req createUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.Email == "" || req.Password == "" {
+		writeError(w, http.StatusBadRequest, "email and password are required")
+		return
+	}
+	if len(req.Password) < minPasswordLength {
+		writeError(w, http.StatusBadRequest, "password must be at least 8 characters")
+		return
+	}
+	displayName := req.DisplayName
+	if displayName == "" {
+		displayName = req.Email
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		rt.logger.Error("api: create user: hash password failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	id, err := randomOpaqueID("user_")
+	if err != nil {
+		rt.logger.Error("api: create user: generate id failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	hashStr := string(hash)
+	user := store.User{
+		ID:           id,
+		Email:        req.Email,
+		DisplayName:  displayName,
+		PasswordHash: &hashStr,
+		CreatedAt:    time.Now(),
+	}
+	if err := rt.auth.CreateUser(r.Context(), user); errors.Is(err, store.ErrUserEmailExists) {
+		writeError(w, http.StatusConflict, "a user with this email already exists")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: create user: save failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, toUserResource(user, nil))
+}
+
+// handleDeleteUser handles DELETE /api/v1/users/{id}: AbilityRoot, same
+// tier as node deletion. Refuses self-deletion (a footgun) and deleting
+// the last remaining user (would lock everyone out). Session revocation
+// happens only after the store delete succeeds.
+func (rt *Router) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if callerID, ok := rt.currentSessionUserID(r); ok && callerID == id {
+		writeError(w, http.StatusBadRequest, "cannot remove your own account")
+		return
+	}
+
+	n, err := rt.auth.CountUsers(r.Context())
+	if err != nil {
+		rt.logger.Error("api: delete user: count users failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	if n <= 1 {
+		writeError(w, http.StatusBadRequest, "cannot remove the last remaining user")
+		return
+	}
+
+	if err := rt.auth.DeleteUser(r.Context(), id); errors.Is(err, store.ErrUserNotFound) {
+		writeError(w, http.StatusNotFound, "user not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: delete user failed", slog.String("user_id", id), slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	rt.sessions.revokeAll(id)
+	w.WriteHeader(http.StatusNoContent)
+}

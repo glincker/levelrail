@@ -93,9 +93,9 @@ func TestMarkNodeJoinTokenUsed_NotFound(t *testing.T) {
 }
 
 // TestMarkNodeJoinTokenUsed_ConcurrentCallers_OnlyOneSucceeds is the
-// same concurrency-safety proof TestCreateAdminUser_ConcurrentCallers_
-// OnlySucceeds (admin_test.go) already established for a different
-// single-use resource: the conditional UPDATE, not a caller-side
+// same concurrency-safety proof TestCreateUser_SecondFirstUser_Rejected
+// (user_test.go) already established for a different single-use
+// resource: the conditional UPDATE, not a caller-side
 // check-then-act, is what has to decide between racing exchange
 // attempts on the same join token.
 func TestMarkNodeJoinTokenUsed_ConcurrentCallers_OnlyOneSucceeds(t *testing.T) {

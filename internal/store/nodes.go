@@ -104,7 +104,7 @@ var ErrNodeNameTaken = errors.New("store: node name already taken")
 // (via nodeNameExists) to distinguish ErrNodeNameTaken from a genuine,
 // unrelated database error, rather than parsing the driver's own error
 // type: the same "let the constraint decide, then classify by
-// re-checking" shape CreateAdminUser's own doc comment already
+// re-checking" shape store.CreateUser's own doc comment already
 // establishes for a different unique-constraint conflict.
 func (db *DB) SaveNode(ctx context.Context, n Node) error {
 	_, err := db.ExecContext(ctx, `
