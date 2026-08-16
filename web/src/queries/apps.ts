@@ -125,13 +125,13 @@ export function useUpdateApp(name: string) {
 
 // Request body for POST /api/v1/apps (internal/api/apps.go's
 // handleCreateApp), deliberately narrower than the full appResource
-// shape AppDetail models: domains/env/resources/health are real fields
-// the endpoint accepts, but CreateAppDialog only ever collects
+// shape AppDetail models: env/resources/health are real fields the
+// endpoint accepts, but CreateAppDialog only ever collects
 // name/image/port (a manually-created app here is the "already have a
-// built image" path in the app spec's model, the git-push spec path is
-// separate and unaffected). The server still runs validateAppResource
-// against whatever arrives, so leaving the rest undefined is safe, not
-// a bypass.
+// built image" path in the app spec's model). domains is included since
+// CreateAppFromGitFields collects one optional domain up front; the
+// server still runs validateAppResource against whatever arrives, so
+// leaving the rest undefined is safe, not a bypass.
 // strategy/replicas are optional here on purpose: CreateAppFields only
 // renders them as opt-in fields (leaving either blank omits it from the
 // request body entirely), and the server's own validateAppResource
@@ -157,6 +157,7 @@ export interface CreateAppRequest {
   strategy?: Exclude<DeployStrategy, 'rolling'>
   replicas?: number
   project_id?: string
+  domains?: string[]
 }
 
 // POST /api/v1/apps. Rejects a name that already exists with a 409

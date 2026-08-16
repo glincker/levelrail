@@ -9,7 +9,13 @@ import { DialogFooter } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldHint,
+  FieldLabel,
+} from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
 import { useCreateApp } from '../queries/apps'
 import { triggerBuild, type TriggerBuildInput } from '../queries/builds'
@@ -18,11 +24,17 @@ import { deployAttemptKeys } from '../queries/deployAttempts'
 import { GitBuildSourceFields } from './GitBuildSourceFields'
 import { GitHubAppRepoPicker } from './GitHubAppRepoPicker'
 
-// Build packs this form offers, matching GitBuildSourceFields' own
-// BUILD_PACKS list of what POST /api/v1/apps/{name}/builds actually
-// supports: dockerfile, railpack, static. See that component's doc
-// comment for why Nixpacks and compose are never offered.
+// Build packs this form offers, matching GitBuildSourceFields' own tab
+// picker for what POST /api/v1/apps/{name}/builds actually supports:
+// dockerfile, railpack, static. See that component's doc comment for
+// why Nixpacks and compose are never offered.
 const BUILD_TYPES = ['dockerfile', 'railpack', 'static'] as const
+
+// Same pattern DomainEditor.tsx validates a domain row against; kept as
+// a local copy rather than exported/imported from there since this form
+// only ever needs one domain, not that component's add/remove list.
+const DOMAIN_PATTERN =
+  /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/i
 
 // Matches validateAppResource (internal/api/apps.go) for the fields
 // this form actually collects on the create-app side, plus the git
@@ -45,6 +57,13 @@ const createAppFromGitSchema = z.object({
   imageRepo: z.string().trim(),
   buildType: z.enum(BUILD_TYPES),
   dockerfilePath: z.string().trim(),
+  domain: z
+    .string()
+    .trim()
+    .refine(
+      (v) => v === '' || DOMAIN_PATTERN.test(v),
+      'Enter a valid domain, e.g. app.example.com',
+    ),
 })
 
 export type FormInput = z.input<typeof createAppFromGitSchema>
@@ -56,8 +75,9 @@ const DEFAULT_VALUES: FormInput = {
   repoUrl: '',
   ref: '',
   imageRepo: '',
-  buildType: 'dockerfile',
+  buildType: 'railpack',
   dockerfilePath: '',
+  domain: '',
 }
 
 // build.path is only ever sent for build.type: dockerfile: railpack has
@@ -226,14 +246,27 @@ export function CreateAppFromGitFields({
     buildMutation.mutate(
       { name, input: buildInputFrom(values) },
       {
-        onSuccess: () => {
+        onSuccess: (result) => {
           onCreated()
           toast.add({
             title: `App "${name}" created, build triggered.`,
-            description: 'Check the app page for the build outcome.',
+            description: 'Watching the build log now.',
             type: 'success',
           })
-          void navigate({ to: '/apps/$name', params: { name } })
+          // result.id is the deploy attempt id (queries/builds.ts's own
+          // doc comment: empty only if attempt recording itself failed,
+          // which never blocks the build). Land on its live log view
+          // instead of the plain app page, the same "watch it happen"
+          // landing DeployAttemptsList's own Logs link gives an
+          // already-existing app's rebuild.
+          if (result.id) {
+            void navigate({
+              to: '/apps/$name/deploys/$deployId/logs',
+              params: { name, deployId: result.id },
+            })
+          } else {
+            void navigate({ to: '/apps/$name', params: { name } })
+          }
         },
       },
     )
@@ -253,6 +286,7 @@ export function CreateAppFromGitFields({
         name: values.name.trim(),
         image: `${values.name.trim()}:${PENDING_BUILD_TAG}`,
         port: values.port,
+        domains: values.domain.trim() ? [values.domain.trim()] : undefined,
       },
       {
         onSuccess: (created) => {
@@ -319,6 +353,25 @@ export function CreateAppFromGitFields({
         watch={watch}
         disabled={locked}
       />
+
+      <Field>
+        <FieldLabel htmlFor="git-app-domain">Domain (optional)</FieldLabel>
+        <Input
+          id="git-app-domain"
+          className="font-mono"
+          placeholder="app.example.com"
+          autoComplete="off"
+          spellCheck={false}
+          disabled={locked}
+          {...register('domain')}
+        />
+        <FieldError errors={[formState.errors.domain]} />
+        <FieldDescription>
+          Routed once its DNS record points here. A TLS certificate is
+          issued automatically, or add this later from the app&apos;s
+          Domains tab.
+        </FieldDescription>
+      </Field>
 
       {buildMutation.isPending ? (
         <Alert>

@@ -20,24 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useGitBranches } from '../queries/gitBranches'
 import type { FormInput, FormOutput } from './CreateAppFromGitFields'
-
-// Build packs POST /api/v1/apps/{name}/builds actually supports for a
-// manual, git-source build trigger (internal/api/builds.go's
-// handleTriggerBuild): dockerfile, railpack, and static, the three
-// build.type cases internal/deploy.Pipeline.Deploy has a real case for.
-// Deliberately not Nixpacks (this project uses Railpack instead, see
-// CLAUDE.md 4.4) and not compose (internal/deploy's own compose case
-// still returns "not yet supported"): this UI never offers a choice the
-// backend can't act on, the same "no UI for capability that doesn't
-// exist server-side" rule this session's other build-related work
-// already follows.
-const BUILD_PACKS = [
-  { value: 'dockerfile', label: 'Dockerfile' },
-  { value: 'railpack', label: 'Railpack' },
-  { value: 'static', label: 'Static site' },
-] as const
 
 // GitBuildSourceFields is CreateAppFromGitFields' git-source input
 // group: repository URL, a real branch picker backed by
@@ -184,29 +169,51 @@ export function GitBuildSourceFields({
           control={control}
           name="buildType"
           render={({ field }) => (
-            <Select
+            <Tabs
               value={field.value}
-              onValueChange={field.onChange}
-              disabled={disabled}
+              onValueChange={(v: unknown) => {
+                if (v === 'railpack' || v === 'dockerfile' || v === 'static') {
+                  field.onChange(v)
+                }
+              }}
             >
-              <SelectTrigger id="git-app-build-type" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {BUILD_PACKS.map((p) => (
-                  <SelectItem key={p.value} value={p.value}>
-                    {p.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              {/* Only these three tabs: the three build.type cases
+                  internal/deploy.Pipeline.Deploy actually has a case for
+                  (internal/api/builds.go's handleTriggerBuild). No Nixpacks
+                  (this project uses Railpack instead, see CLAUDE.md 4.4)
+                  and no Compose (internal/deploy's own compose case still
+                  returns "not yet supported"). Same order and tab layout
+                  GitSourceCard.tsx already uses for this exact choice. */}
+              <TabsList id="git-app-build-type" className="grid w-full grid-cols-3">
+                <TabsTrigger value="railpack" disabled={disabled}>
+                  Auto-detect
+                </TabsTrigger>
+                <TabsTrigger value="dockerfile" disabled={disabled}>
+                  Dockerfile
+                </TabsTrigger>
+                <TabsTrigger value="static" disabled={disabled}>
+                  Static site
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="railpack" className="pt-2">
+                <FieldDescription>
+                  Recommended. Detects Node, Go, and Java projects and builds
+                  them automatically, no Dockerfile needed.
+                </FieldDescription>
+              </TabsContent>
+              <TabsContent value="dockerfile" className="pt-2">
+                <FieldDescription>
+                  Builds from a Dockerfile in the repository.
+                </FieldDescription>
+              </TabsContent>
+              <TabsContent value="static" className="pt-2">
+                <FieldDescription>
+                  Serves the checkout directly, no container.
+                </FieldDescription>
+              </TabsContent>
+            </Tabs>
           )}
         />
-        <FieldDescription>
-          Dockerfile builds from your own Dockerfile. Railpack auto-detects
-          Node and Go projects and builds one for you. Static serves the
-          checkout directly, with no container at all.
-        </FieldDescription>
       </Field>
 
       {buildType !== 'static' ? (
