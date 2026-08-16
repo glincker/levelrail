@@ -33,6 +33,11 @@ func TestGenerateRailpackPlan(t *testing.T) {
 			wantProvider: "golang",
 		},
 		{
+			name:         "spring boot fixture detected as java",
+			req:          RailpackRequest{SourceDir: "testdata/railpack-java-spring-boot", Tag: "levelrail-railpack:java"},
+			wantProvider: "java",
+		},
+		{
 			name:      "unsupported: python detected but out of scope",
 			req:       RailpackRequest{SourceDir: "testdata/railpack-unsupported", Tag: "levelrail-railpack:unsupported"},
 			wantUnsup: "python",
@@ -107,6 +112,7 @@ func TestNewRailpackSolveOpt(t *testing.T) {
 	}{
 		{name: "node plan", dir: "testdata/railpack-node", tag: "levelrail-railpack:node"},
 		{name: "go plan", dir: "testdata/railpack-go", tag: "levelrail-railpack:go"},
+		{name: "java plan", dir: "testdata/railpack-java-spring-boot", tag: "levelrail-railpack:java"},
 	}
 
 	for _, tt := range tests {
@@ -227,6 +233,48 @@ func TestClient_BuildRailpack_Live_Go(t *testing.T) {
 	}
 	if res.Tag != tag {
 		t.Errorf("Result.Tag = %q, want %q", res.Tag, tag)
+	}
+
+	inspect, _, err := docker.ImageInspectWithRaw(ctx, tag)
+	if err != nil {
+		t.Fatalf("image %q not found after BuildRailpack(): %v", tag, err)
+	}
+	if inspect.ID == "" {
+		t.Error("inspected image has an empty ID")
+	}
+}
+
+// TestClient_BuildRailpack_Live_Java is TestClient_BuildRailpack_Live_Node's
+// twin for the java provider: builds testdata/railpack-java-spring-boot,
+// a real Maven-managed Spring Boot app, through Railpack's own detection
+// and BuildKit's Go client, proving java support works end to end rather
+// than only passing the supportedRailpackProviders string check.
+func TestClient_BuildRailpack_Live_Java(t *testing.T) {
+	docker, bk := liveRailpackClient(t)
+
+	tag := "levelrail-railpack-spike:java-test"
+	t.Cleanup(func() {
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		_, _ = docker.ImageRemove(cleanupCtx, tag, image.RemoveOptions{Force: true})
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	progress := &collectProgress{}
+	res, err := bk.BuildRailpack(ctx, RailpackRequest{
+		SourceDir: "testdata/railpack-java-spring-boot",
+		Tag:       tag,
+	}, progress.fn())
+	if err != nil {
+		t.Fatalf("BuildRailpack() error = %v", err)
+	}
+	if res.Tag != tag {
+		t.Errorf("Result.Tag = %q, want %q", res.Tag, tag)
+	}
+	if progress.count() == 0 {
+		t.Error("expected at least one ProgressEvent from a real build, got none")
 	}
 
 	inspect, _, err := docker.ImageInspectWithRaw(ctx, tag)

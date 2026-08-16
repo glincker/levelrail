@@ -15,14 +15,9 @@ import {
   FieldHint,
   FieldLabel,
 } from '@/components/ui/field'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from '@/components/ui/toast'
+import { BrandIcon, type BrandIconName } from '@/components/BrandIcon'
 import {
   useDeleteGitSource,
   useGitSource,
@@ -45,9 +40,22 @@ import type { GitSourceBuildType, GitSourceResource } from '../types/gitSource'
 // so this component's only chance to show it is the PUT response the
 // instant a repo is first connected.
 const BUILD_PACKS: { value: GitSourceBuildType; label: string }[] = [
+  { value: 'railpack', label: 'Auto-detect (Railpack)' },
   { value: 'dockerfile', label: 'Dockerfile' },
-  { value: 'railpack', label: 'Railpack' },
   { value: 'static', label: 'Static site' },
+]
+
+// Frameworks/languages the auto-detect build pack actually supports,
+// shown next to the "Auto-detect" tab so this is a guided picker rather
+// than a dropdown asking the operator to already know what Railpack is.
+// Mirrors internal/build/railpack.go's supportedRailpackProviders
+// exactly: node covers React and Next.js (both are the node provider,
+// no separate entry), golang is go, and java covers Spring Boot, the
+// framework this list exists to name.
+const AUTO_DETECT_STACKS: { icon: BrandIconName; label: string }[] = [
+  { icon: 'node', label: 'Node.js (React, Next.js, ...)' },
+  { icon: 'go', label: 'Go' },
+  { icon: 'java', label: 'Java (Spring Boot)' },
 ]
 
 interface FormState {
@@ -58,8 +66,11 @@ interface FormState {
   token: string
 }
 
+// Auto-detect is the default and recommended choice: most repos need no
+// build configuration at all beyond picking their language, so a blank
+// connect form should not default to the manual Dockerfile path.
 function emptyForm(): FormState {
-  return { repoUrl: '', branch: '', buildType: 'dockerfile', buildPath: '', token: '' }
+  return { repoUrl: '', branch: '', buildType: 'railpack', buildPath: '', token: '' }
 }
 
 function formFromResource(g: GitSourceResource): FormState {
@@ -260,63 +271,87 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
               />
             </Field>
 
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <Field className="flex-1">
-                <FieldLabel htmlFor="git-source-branch">Branch</FieldLabel>
-                <Input
-                  id="git-source-branch"
-                  className="font-mono"
-                  placeholder="main"
-                  autoComplete="off"
-                  spellCheck={false}
-                  value={form.branch}
-                  onChange={(e) => { setForm({ ...form, branch: e.target.value }) }}
-                  disabled={setGitSource.isPending}
-                />
-              </Field>
+            <Field>
+              <FieldLabel htmlFor="git-source-branch">Branch</FieldLabel>
+              <Input
+                id="git-source-branch"
+                className="font-mono"
+                placeholder="main"
+                autoComplete="off"
+                spellCheck={false}
+                value={form.branch}
+                onChange={(e) => { setForm({ ...form, branch: e.target.value }) }}
+                disabled={setGitSource.isPending}
+              />
+            </Field>
 
-              <Field className="flex-1">
-                <FieldLabel htmlFor="git-source-build-type">Build pack</FieldLabel>
-                <Select
-                  value={form.buildType}
-                  onValueChange={(v: string | null) => {
-                    if (v) {
-                      setForm({ ...form, buildType: v as GitSourceBuildType })
-                    }
-                  }}
-                  disabled={setGitSource.isPending}
-                >
-                  <SelectTrigger id="git-source-build-type" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {BUILD_PACKS.map((p) => (
-                      <SelectItem key={p.value} value={p.value}>
-                        {p.label}
-                      </SelectItem>
+            <Field>
+              <FieldLabel htmlFor="git-source-build-type">Build pack</FieldLabel>
+              <Tabs
+                value={form.buildType}
+                onValueChange={(v: unknown) => {
+                  if (v === 'railpack' || v === 'dockerfile' || v === 'static') {
+                    setForm({ ...form, buildType: v })
+                  }
+                }}
+              >
+                <TabsList id="git-source-build-type" className="grid w-full grid-cols-3">
+                  <TabsTrigger value="railpack" disabled={setGitSource.isPending}>
+                    Auto-detect
+                  </TabsTrigger>
+                  <TabsTrigger value="dockerfile" disabled={setGitSource.isPending}>
+                    Dockerfile
+                  </TabsTrigger>
+                  <TabsTrigger value="static" disabled={setGitSource.isPending}>
+                    Static site
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="railpack" className="space-y-2 pt-2">
+                  <FieldDescription>
+                    Recommended. Levelrail detects your framework from the
+                    repository and builds it automatically, no Dockerfile
+                    needed.
+                  </FieldDescription>
+                  <div className="flex flex-wrap gap-2">
+                    {AUTO_DETECT_STACKS.map((stack) => (
+                      <span
+                        key={stack.icon}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-input bg-muted/50 px-2 py-1 text-xs text-muted-foreground"
+                      >
+                        <BrandIcon name={stack.icon} className="size-3.5" />
+                        {stack.label}
+                      </span>
                     ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-            </div>
+                  </div>
+                </TabsContent>
 
-            {form.buildType === 'dockerfile' ? (
-              <Field>
-                <FieldLabel htmlFor="git-source-build-path">
-                  Dockerfile path (optional)
-                </FieldLabel>
-                <Input
-                  id="git-source-build-path"
-                  className="font-mono"
-                  placeholder="./Dockerfile"
-                  autoComplete="off"
-                  spellCheck={false}
-                  value={form.buildPath}
-                  onChange={(e) => { setForm({ ...form, buildPath: e.target.value }) }}
-                  disabled={setGitSource.isPending}
-                />
-              </Field>
-            ) : null}
+                <TabsContent value="dockerfile" className="pt-2">
+                  <Field>
+                    <FieldLabel htmlFor="git-source-build-path">
+                      Dockerfile path (optional)
+                    </FieldLabel>
+                    <Input
+                      id="git-source-build-path"
+                      className="font-mono"
+                      placeholder="./Dockerfile"
+                      autoComplete="off"
+                      spellCheck={false}
+                      value={form.buildPath}
+                      onChange={(e) => { setForm({ ...form, buildPath: e.target.value }) }}
+                      disabled={setGitSource.isPending}
+                    />
+                  </Field>
+                </TabsContent>
+
+                <TabsContent value="static" className="pt-2">
+                  <FieldDescription>
+                    Served directly by the embedded Caddy ingress, no
+                    container.
+                  </FieldDescription>
+                </TabsContent>
+              </Tabs>
+            </Field>
 
             <Field>
               <FieldLabel htmlFor="git-source-token">
