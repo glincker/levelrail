@@ -328,24 +328,10 @@ func run(logger *slog.Logger) error {
 		logger.Warn("secrets not configured", slog.String("error", err.Error()))
 	}
 
-	// emailSender is the one shared email.Sender both alert-rule/
-	// deploy-outcome notifications (alertingNewNotifier below,
-	// deployDispatcher just below) and the password-reset flow
-	// (api.WithEmailSender, rootHandler) send through: a *email.DynamicSender
-	// resolves the platform-wide email_settings row (with secretsManager
-	// decrypting its stored credential) fresh on every send, falling back
-	// to APP_SMTP_* env vars when no backend is configured through that
-	// row (smtpConfigFromEnv's own return value below). Built here,
-	// ahead of loadWebhookHandler and rootHandler, for the same reason
-	// deployDispatcher previously had to be: both the webhook handler and
-	// the HTTP API router are real deploy-outcome-notification call
-	// sites, constructed before alertingEngine ever runs.
-	//
-	// Always non-nil regardless of configuration: a DynamicSender defers
-	// "is anything actually configured" to Send time (email.ErrNotConfigured),
-	// so every consumer below can depend on it unconditionally rather
-	// than threading a second nil-check through alertingNewNotifier,
-	// deployDispatcher, and rootHandler alike.
+	// emailSender is shared by alert-rule/deploy-outcome notifications
+	// and the password-reset flow. Always non-nil: a DynamicSender
+	// resolves email_settings (falling back to APP_SMTP_* env vars)
+	// fresh on every send, deferring "not configured" to send time.
 	emailSender := email.NewDynamicSender(emailConfigLoader(db, secretsManager, smtpConfigFromEnv()))
 	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, nil, emailSender, logger)
 
@@ -574,16 +560,9 @@ func openAlertingStore(ctx context.Context) (*alerting.DB, error) {
 }
 
 // smtpConfigFromEnv reads APP_SMTP_HOST/APP_SMTP_PORT/APP_SMTP_USERNAME/
-// APP_SMTP_PASSWORD/APP_SMTP_FROM: the pre-existing, env-only SMTP
-// configuration path, kept as emailConfigLoader's fallback for whenever
-// the platform-wide email_settings row (store.EmailSettings, PUT
-// /api/v1/settings/email) has no backend configured, so an existing
-// deployment relying on these env vars keeps working exactly as it did
-// before that settings row existed. Returning nil (both APP_SMTP_HOST
-// and APP_SMTP_FROM unset) is a valid, expected outcome, not an error:
-// email.ErrNotConfigured is what a caller sees in that case, the same
-// clear "not configured" failure mode this always had. APP_SMTP_PORT
-// defaults to 587 (STARTTLS), the common submission port, not 25.
+// APP_SMTP_PASSWORD/APP_SMTP_FROM: the pre-existing, env-only SMTP path,
+// kept as emailConfigLoader's fallback for when email_settings has no
+// backend configured. Nil is a valid, expected outcome, not an error.
 func smtpConfigFromEnv() *email.SMTPConfig {
 	host := os.Getenv("APP_SMTP_HOST")
 	from := os.Getenv("APP_SMTP_FROM")
@@ -603,15 +582,9 @@ func smtpConfigFromEnv() *email.SMTPConfig {
 	}
 }
 
-// emailConfigLoader builds the email.ConfigLoader emailSender (run())
-// resolves fresh on every send: the platform-wide email_settings row if
-// it names a backend, decrypting its stored credential through
-// secretsManager, falling back to envFallback (smtpConfigFromEnv's
-// return value) when the row's backend is unset. secretsManager may be
-// nil (no APP_MASTER_KEY): a settings-row backend then fails clearly
-// rather than silently sending with an empty credential, the same
-// "clear, documented not configured error" standard this package already
-// holds every optional capability to.
+// emailConfigLoader resolves email_settings fresh on every send,
+// decrypting its stored credential through secretsManager, falling back
+// to envFallback when the row's backend is unset.
 func emailConfigLoader(db *store.DB, secretsManager *secrets.Manager, envFallback *email.SMTPConfig) email.ConfigLoader {
 	return func(ctx context.Context) (email.Config, error) {
 		settings, err := db.GetEmailSettings(ctx)
@@ -658,12 +631,8 @@ func emailConfigLoader(db *store.DB, secretsManager *secrets.Manager, envFallbac
 	}
 }
 
-// resolveEmailSecret reads one of email_settings' two credential fields
-// back from secretsManager, treating "never set" (secrets.ErrValueNotFound)
-// as an empty string rather than an error: a backend can be selected
-// before its credential is ever saved (validateEmailSettingsRequest's own
-// doc comment), and the resulting empty-password send failing at the
-// SMTP/SES layer is a clearer signal than this loader failing first.
+// resolveEmailSecret treats "never set" as an empty string rather than
+// an error: a backend can be selected before its credential is saved.
 func resolveEmailSecret(ctx context.Context, secretsManager *secrets.Manager, envKey string) (string, error) {
 	value, err := secretsManager.Resolve(ctx, store.EmailSettingsSecretsKey(), envKey)
 	if errors.Is(err, secrets.ErrValueNotFound) {
@@ -1353,20 +1322,15 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDeployLogStore(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),
 		api.WithLogBroadcaster(logBroadcaster),
-		// emailSender is always non-nil here (run() builds it
-		// unconditionally, see emailConfigLoader's own doc comment on
-		// why a *email.DynamicSender never needs a nil check): the
-		// forgot-password route always exists, it just fails clearly at
-		// send time when nothing is actually configured.
+		// emailSender is always non-nil (run() builds it unconditionally):
+		// forgot-password always exists, it just fails clearly at send
+		// time when nothing is actually configured.
 		api.WithEmailSender(emailSender),
 	}
 	if secretsManager != nil {
 		opts = append(opts, api.WithSecretSetter(secretsManager))
-		// Email settings (PUT /api/v1/settings/email): the SMTP
-		// password / SES secret access key go through the same
-		// secretsManager as everything else in this block, same nil-
-		// interface hazard, same "skipped entirely without a master
-		// key" shape.
+		// Email settings' SMTP password / SES secret access key go
+		// through the same secretsManager as everything else here.
 		opts = append(opts, api.WithEmailSecrets(secretsManager))
 		// Git sources (TASKS.md 1.7's own deferred follow-up,
 		// internal/api/git_sources.go, git_webhook.go): a connected

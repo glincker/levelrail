@@ -10,39 +10,25 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// EmailSettings' internal/secrets envKeys: the two credential fields
-// that never appear in a settings-table column or an API response, the
-// same "credential goes through internal/secrets, never a plaintext
-// column" reasoning store.BackupTargetSecretsKey's own doc comment
-// establishes for a backup target's credentials.
+// The two credential envKeys email settings are stored under in
+// internal/secrets, never as plaintext settings-table columns.
 const (
-	emailSecretsSMTPPasswordKey    = "smtp_password"         //nolint:gosec // an internal/secrets envKey name, not a credential value
-	emailSecretsSESSecretAccessKey = "ses_secret_access_key" //nolint:gosec // an internal/secrets envKey name, not a credential value
+	emailSecretsSMTPPasswordKey    = "smtp_password"         //nolint:gosec // an envKey name, not a credential value
+	emailSecretsSESSecretAccessKey = "ses_secret_access_key" //nolint:gosec // an envKey name, not a credential value
 )
 
 // EmailSecretsStore is the surface the email settings handlers need from
-// internal/secrets.Manager: set a credential value, and check whether
-// one is already set, without ever reading its plaintext back through
-// this interface. *secrets.Manager satisfies this structurally, the same
-// "narrow, consumer-defined boundary" shape BackupSecretsSetter already
-// establishes.
+// internal/secrets.Manager. *secrets.Manager satisfies this structurally.
 type EmailSecretsStore interface {
 	SetValue(ctx context.Context, serviceName, envKey, plaintext string) error
 	Exists(ctx context.Context, serviceName, envKey string) (bool, error)
 }
 
 // emailSettingsResource is the wire shape for GET and PUT
-// /api/v1/settings/email. No credential value ever appears here, request
-// or response: SMTPPasswordSet/SESSecretAccessKeySet on the response
-// side report only whether one has been set, the same "settings form
-// needs to show connection is configured without ever redisplaying the
-// secret" precedent backup_targets.go's own doc comment establishes for
-// createBackupTargetRequest. On the request side, SMTPPassword/
-// SESSecretAccessKey are write-only: present and non-empty means "set
-// or replace this credential," empty or omitted means "leave whatever is
-// already stored alone" (see handleUpdateEmailSettings), so an operator
-// tweaking the SMTP host doesn't have to re-type a password on every
-// save.
+// /api/v1/settings/email. No credential value ever appears in a
+// response: SMTPPasswordSet/SESSecretAccessKeySet report only whether
+// one has been set. On a request, SMTPPassword/SESSecretAccessKey are
+// write-only and optional: empty means "leave whatever is stored alone."
 type emailSettingsResource struct {
 	Backend               string `json:"backend"`
 	SMTPHost              string `json:"smtp_host,omitempty"`
@@ -73,12 +59,9 @@ func toEmailSettingsResource(s store.EmailSettings, smtpPasswordSet, sesSecretSe
 	}
 }
 
-// handleGetEmailSettings handles GET /api/v1/settings/email. Never
-// returns a credential's value, only whether one is set: if rt.emailSecrets
-// is nil (no master key configured on this control plane), both "is set"
-// flags simply report false, the same "optional signal, absence is not
-// an error" shape WithDockerPinger's own absence already has, rather
-// than failing the whole request.
+// handleGetEmailSettings handles GET /api/v1/settings/email. If
+// rt.emailSecrets is nil (no master key configured), the "is set" flags
+// simply report false rather than failing the request.
 func (rt *Router) handleGetEmailSettings(w http.ResponseWriter, r *http.Request) {
 	settings, err := rt.emailSettings.GetEmailSettings(r.Context())
 	if err != nil {
@@ -118,13 +101,8 @@ var (
 )
 
 // validateEmailSettingsRequest enforces the structural fields a chosen
-// backend needs to function at all. It deliberately does not require the
-// credential fields (SMTPPassword/SESSecretAccessKey) even on the very
-// first save: internal/email.NewSender surfaces a clear error at send
-// time if a backend is selected with no credential ever stored, the same
-// "always succeeds at the store layer, the first real send is what
-// actually proves it works" boundary validateCreateBackupTargetRequest's
-// own doc comment describes for a bucket's credentials.
+// backend needs. It does not require a credential even on first save:
+// internal/email.NewSender surfaces a clear error at send time instead.
 func validateEmailSettingsRequest(req emailSettingsResource) error {
 	switch req.Backend {
 	case "", store.EmailBackendSMTP, store.EmailBackendSES:
@@ -156,16 +134,11 @@ func validateEmailSettingsRequest(req emailSettingsResource) error {
 	return nil
 }
 
-// handleUpdateEmailSettings handles PUT /api/v1/settings/email.
-// AbilityRoot (router.go's own registration comment): this is real
-// infrastructure configuration, the same blast-radius tier PUT
-// /api/v1/settings/ingress already occupies.
-//
-// Credentials are written to internal/secrets before the settings row,
-// the same ordering handleCreateBackupTarget's own doc comment explains
-// and for the identical reason: if the store write then fails, the
-// result is an orphaned, harmless secret rather than a settings row that
-// looks configured but has no working credential behind it.
+// handleUpdateEmailSettings handles PUT /api/v1/settings/email,
+// AbilityRoot-gated (router.go). Credentials are written to
+// internal/secrets before the settings row, so a failed store write
+// leaves only an orphaned, harmless secret rather than a settings row
+// that looks configured but isn't.
 func (rt *Router) handleUpdateEmailSettings(w http.ResponseWriter, r *http.Request) {
 	if rt.emailSecrets == nil {
 		writeError(w, http.StatusNotImplemented, "email settings are not configured on this control plane (no master key set)")

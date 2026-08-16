@@ -1,13 +1,7 @@
--- Forgot-password reset tokens: a short-lived, single-use,
--- cryptographically random token whose SHA-256 hash (never the raw
--- token) is persisted, the same hashing convention api_tokens.token_hash
--- already establishes for bearer API tokens (internal/api's hashToken).
---
--- used_at is nullable and set exactly once, at successful reset: a
--- second attempt with the same token is rejected because used_at is no
--- longer NULL, not because the row is deleted, so a reused token is
--- diagnosable from this table rather than looking identical to one that
--- never existed.
+-- Forgot-password reset tokens: only the SHA-256 hash is ever persisted
+-- (the same convention api_tokens.token_hash establishes). used_at is
+-- set once, at successful reset, so a replayed token is rejected rather
+-- than deleted outright.
 CREATE TABLE password_reset_tokens (
     id         TEXT PRIMARY KEY,
     token_hash TEXT NOT NULL UNIQUE,

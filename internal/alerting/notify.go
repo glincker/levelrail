@@ -60,10 +60,8 @@ func (n httpNotifier) Notify(ctx context.Context, ev Event) error {
 // diagnosable from the payload shape, rather than silently notifying no
 // one.
 //
-// sender is nil when no email capability is configured (the default): a
-// rule with NotifyKind == NotifyEmail still gets a Notifier, one whose
-// Notify always returns a clear "email is not configured" error rather
-// than a nil-pointer panic or a silently dropped notification.
+// sender may be nil (no email capability configured): an email-kind
+// rule then always fails with a clear "not configured" error.
 func NewNotifier(client *http.Client, sender email.Sender, r Rule) Notifier {
 	if client == nil {
 		client = http.DefaultClient

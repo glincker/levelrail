@@ -206,10 +206,7 @@ func TestValidateEmailSettingsRequest(t *testing.T) {
 }
 
 // TestHandleUpdateEmailSettings_PlainWriteToken_Forbidden proves PUT
-// /settings/email really sits behind AbilityRoot, not just AbilityWrite:
-// the same "real infrastructure, not an ordinary per-app write" blast
-// radius TestHandleUpdateIngressSettings_PlainWriteToken_Forbidden
-// already draws this exact line for.
+// /settings/email sits behind AbilityRoot, not just AbilityWrite.
 func TestHandleUpdateEmailSettings_PlainWriteToken_Forbidden(t *testing.T) {
 	secrets := newFakeEmailSecretsStore()
 	rt, db := newTestRouterWithEmailSecrets(t, secrets)
@@ -241,9 +238,7 @@ func TestHandleUpdateEmailSettings_PlainWriteToken_Forbidden(t *testing.T) {
 }
 
 // TestHandleUpdateEmailSettings_RootToken_Succeeds is the positive half
-// of the ability gate above: a token actually holding AbilityRoot must
-// be able to write, proving the gate checks for root specifically, not
-// merely rejecting everything.
+// of the ability gate above: a real root token must succeed.
 func TestHandleUpdateEmailSettings_RootToken_Succeeds(t *testing.T) {
 	secrets := newFakeEmailSecretsStore()
 	rt, db := newTestRouterWithEmailSecrets(t, secrets)
@@ -267,15 +262,9 @@ func TestHandleUpdateEmailSettings_RootToken_Succeeds(t *testing.T) {
 }
 
 // TestHandleUpdateEmailSettings_RealSecretsManager_RoundTripsThroughEncryption
-// is the whole-chain proof (not a fake) that the SMTP password and SES
-// secret access key this handler writes actually go through
-// internal/secrets' envelope encryption: a real master key, a real
-// store, a real secrets.Manager. It verifies both directions: the value
-// PUT accepts comes back out exactly via secretsManager.Resolve, and the
-// bytes actually persisted in service_secret_values are real ciphertext
-// (never equal to, and never containing, the plaintext), the same "only
-// ciphertext ever reaches disk" property
-// TestController_Reconcile_Live_SecretEnv verifies for app secrets.
+// is the whole-chain proof (a real master key and secrets.Manager, not a
+// fake) that the credentials this handler writes actually round-trip
+// through envelope encryption, and that only ciphertext reaches disk.
 func TestHandleUpdateEmailSettings_RealSecretsManager_RoundTripsThroughEncryption(t *testing.T) {
 	db := openTestDB(t)
 	mk, err := secrets.GenerateMasterKey()

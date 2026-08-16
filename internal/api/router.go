@@ -226,18 +226,14 @@ type AuthStore interface {
 
 // EmailSettingsStore is the store surface GET/PUT
 // /api/v1/settings/email need: the single platform-wide row, always
-// present, the same "core Store interface, not an optional plug-in"
-// shape IngressSettingsStore already establishes for its own singleton
-// row.
+// present, the same shape IngressSettingsStore has for its own row.
 type EmailSettingsStore interface {
 	GetEmailSettings(ctx context.Context) (store.EmailSettings, error)
 	UpdateEmailSettings(ctx context.Context, s store.EmailSettings) error
 }
 
 // PasswordResetTokenStore is the store surface the forgot-password flow
-// needs: always set, part of the core Store interface, the same shape
-// BackupTargetStore already establishes (listing/getting a row needs no
-// secrets configuration, only sending the email that names one does).
+// needs: always set, part of the core Store interface.
 type PasswordResetTokenStore interface {
 	SavePasswordResetToken(ctx context.Context, t store.PasswordResetToken) error
 	GetPasswordResetTokenByHash(ctx context.Context, hash string) (*store.PasswordResetToken, error)
@@ -449,11 +445,11 @@ type Router struct {
 	oauthSecrets              OAuthSecrets                // nil is valid: every /auth/oauth/... sign-in route and PUT /settings/oauth/{provider} return 501/501, same "not configured" shape as gitSourceSecrets above
 	oauthState                *oauthStateStore            // built in NewRouter unconditionally, the same "always present, not an Option" shape sessions itself has
 	oauthClientFactory        oauthClientFactory          // defaulted to defaultOAuthClientFactory in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape fetch/listBranches/gitSourceFetch above already use
-	emailSettings             EmailSettingsStore          // always set, same "core Store interface" shape as ingressSettings above: the settings row always exists (migrations/0031's own seeded row)
-	emailSecrets              EmailSecretsStore           // nil is valid: PUT /api/v1/settings/email returns 501, same shape as backupSecrets above
-	emailSender               email.Sender                // nil is valid: POST /api/v1/auth/forgot-password still returns its generic success response, it just never actually sends anything, same "optional signal, absence is not an error" shape dockerPinger's own absence already has
-	passwordResetTokens       PasswordResetTokenStore     // always set, same "core Store interface" shape as backupTargets above
-	forgotPassword            *loginLimiter               // rate limiter for POST /api/v1/auth/forgot-password, a distinct instance from logins above: the two endpoints must not share one attempt budget
+	emailSettings             EmailSettingsStore          // always set, same shape as ingressSettings above
+	emailSecrets              EmailSecretsStore           // nil is valid: PUT /api/v1/settings/email returns 501
+	emailSender               email.Sender                // nil is valid: forgot-password still returns its generic success response
+	passwordResetTokens       PasswordResetTokenStore     // always set, same shape as backupTargets above
+	forgotPassword            *loginLimiter               // distinct instance from logins above: separate attempt budgets
 }
 
 // Option configures optional Router behavior.
@@ -478,19 +474,14 @@ func WithBackupSecrets(s BackupSecretsSetter) Option {
 }
 
 // WithEmailSecrets enables PUT /api/v1/settings/email. Without one
-// configured (the default), that route returns 501, the same
-// "not configured" shape WithBackupSecrets' absence produces; GET works
-// regardless, reporting whatever structural settings and credential
-// "is one set" flags already exist.
+// configured (the default), that route returns 501; GET works regardless.
 func WithEmailSecrets(s EmailSecretsStore) Option {
 	return func(rt *Router) { rt.emailSecrets = s }
 }
 
 // WithEmailSender enables the actual send behind
-// POST /api/v1/auth/forgot-password. Without one configured (the
-// default), that route still returns its generic success response, it
-// just never actually sends an email: see handleForgotPassword's own
-// doc comment for why that response must stay identical either way.
+// POST /api/v1/auth/forgot-password. Without one, that route still
+// returns its generic success response, it just never sends anything.
 func WithEmailSender(s email.Sender) Option {
 	return func(rt *Router) { rt.emailSender = s }
 }
@@ -861,11 +852,8 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/settings/oauth", rt.requireAbility(AbilityRead, rt.handleListOAuthSettings))
 	mux.HandleFunc("PUT /api/v1/settings/oauth/{provider}", rt.requireAbility(AbilityRoot, rt.handleUpdateOAuthProviderSettings))
 
-	// Forgot/reset password: necessarily unauthenticated, the same as
-	// login/register above, gated instead by a possession factor (the
-	// token itself, emailed to the account's own address) rather than a
-	// session or ability. Rate limited per (client IP, email)
-	// (forgotPasswordLimiterKey), a distinct budget from rt.logins.
+	// Forgot/reset password: necessarily unauthenticated, gated by
+	// possession of the emailed token instead of a session or ability.
 	mux.HandleFunc("POST /api/v1/auth/forgot-password", rt.handleForgotPassword)
 	mux.HandleFunc("POST /api/v1/auth/reset-password", rt.handleResetPassword)
 
@@ -1152,15 +1140,8 @@ func (rt *Router) Handler() http.Handler {
 	// /apps/{name}/git-source: a live DNS lookup, no write.
 	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/check", rt.requireAbility(AbilityRead, rt.handleCheckDomain))
 
-	// Email settings (backend choice plus SMTP/SES connection details):
-	// the same precedent as ingress settings just above. GET is
-	// AbilityRead, ordinary operator visibility into the current
-	// configuration (never including a credential's value, see
-	// emailSettingsResource's own doc comment). PUT is AbilityRoot,
-	// matching PUT /api/v1/settings/ingress exactly: this is real
-	// infrastructure configuration (which email backend both alert
-	// notifications and password-reset links actually go through), not
-	// an ordinary per-app write.
+	// Email settings: same precedent as ingress settings just above.
+	// GET is AbilityRead; PUT is AbilityRoot, real infrastructure config.
 	mux.HandleFunc("GET /api/v1/settings/email", rt.requireAbility(AbilityRead, rt.handleGetEmailSettings))
 	mux.HandleFunc("PUT /api/v1/settings/email", rt.requireAbility(AbilityRoot, rt.handleUpdateEmailSettings))
 

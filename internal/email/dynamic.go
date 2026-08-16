@@ -5,21 +5,12 @@ import (
 	"fmt"
 )
 
-// ConfigLoader resolves the current Config on every call: an operator's
-// settings can change at runtime (the platform-wide settings row PUT
-// /api/v1/settings/email writes to), and this package never caches a
-// decision across calls, the same "re-evaluate fresh, never a cached
-// decision" rule internal/api's requireAbility already applies to a
-// bearer token's abilities.
+// ConfigLoader resolves the current Config on every call, never cached:
+// settings can change at runtime.
 type ConfigLoader func(ctx context.Context) (Config, error)
 
-// DynamicSender adapts a ConfigLoader into a Sender: every Send call
-// resolves the current Config first, so a control plane whose operator
-// just changed the email settings picks that up on the very next send,
-// no restart required. cmd/levelrail/main.go builds the one real
-// ConfigLoader (settings row, falling back to APP_SMTP_* env vars) and
-// shares a single *DynamicSender between internal/alerting and
-// internal/api.
+// DynamicSender adapts a ConfigLoader into a Sender, so a settings
+// change takes effect on the very next send with no restart required.
 type DynamicSender struct {
 	load ConfigLoader
 }

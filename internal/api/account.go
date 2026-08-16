@@ -108,4 +108,3 @@ func (rt *Router) handleGetSession(w http.ResponseWriter, r *http.Request) {
 		ExpiresAt:   sess.expiresAt.UTC().Format(time.RFC3339),
 	})
 }
-

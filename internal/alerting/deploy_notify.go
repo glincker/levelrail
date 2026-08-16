@@ -311,11 +311,9 @@ type DeployDispatcher struct {
 	logger *slog.Logger
 }
 
-// NewDeployDispatcher builds a DeployDispatcher. client defaults to
-// http.DefaultClient if nil (matching NewNotifier's own default); sender
-// may be nil (an email-kind target then always fails with a clear "not
-// configured" error, matching NewNotifier's own emailNotifier behavior);
-// logger defaults to slog.Default() if nil.
+// NewDeployDispatcher builds a DeployDispatcher. client and logger
+// default if nil; sender may be nil (an email-kind target then fails
+// with a clear "not configured" error).
 func NewDeployDispatcher(db *DB, client *http.Client, sender email.Sender, logger *slog.Logger) *DeployDispatcher {
 	if client == nil {
 		client = http.DefaultClient

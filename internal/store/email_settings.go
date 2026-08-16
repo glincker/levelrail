@@ -5,11 +5,8 @@ import (
 	"fmt"
 )
 
-// Email backends store.EmailSettings.Backend accepts (migrations/0031's
-// own CHECK constraint). Empty string means "unset": internal/email's
-// caller falls back to APP_SMTP_* env vars if those are set, or has no
-// email capability at all, matching the migration's own upgrade-safe
-// default.
+// Email backends store.EmailSettings.Backend accepts. Empty string means
+// "unset": the caller falls back to APP_SMTP_* env vars if set.
 const (
 	EmailBackendSMTP = "smtp"
 	EmailBackendSES  = "ses"
@@ -17,23 +14,15 @@ const (
 
 // EmailSettingsSecretsKey is the internal/secrets serviceName the
 // platform-wide email settings' credentials are stored under (envKeys
-// "smtp_password" and "ses_secret_access_key"). A function, not a
-// constant format string inlined at each call site, the same reasoning
-// BackupTargetSecretsKey's own doc comment gives: a fixed sentinel
-// rather than a per-row ID, since there is exactly one email settings
-// row, ever.
+// "smtp_password" and "ses_secret_access_key").
 func EmailSettingsSecretsKey() string {
 	return "email-settings"
 }
 
 // EmailSettings is the single platform-wide email-sending configuration
-// row (migrations/0031_email_settings.sql). No credential fields here:
-// see that migration's own doc comment for why the SMTP password and SES
-// secret access key go through internal/secrets instead.
+// row. No credential fields: those go through internal/secrets instead.
 type EmailSettings struct {
-	// Backend is "", EmailBackendSMTP, or EmailBackendSES. "" means no
-	// backend is configured through this settings row (a caller may
-	// still fall back to env vars, see internal/email's own callers).
+	// Backend is "", EmailBackendSMTP, or EmailBackendSES.
 	Backend        string
 	SMTPHost       string
 	SMTPPort       int
@@ -45,9 +34,7 @@ type EmailSettings struct {
 }
 
 // GetEmailSettings returns the single email_settings row. Always
-// succeeds against a migrated database: the migration itself inserts the
-// row (id = 1), the same "no not-found case" shape GetIngressSettings
-// already establishes for its own singleton row.
+// succeeds: the migration itself inserts the row (id = 1).
 func (db *DB) GetEmailSettings(ctx context.Context) (EmailSettings, error) {
 	var s EmailSettings
 	err := db.QueryRowContext(ctx, `
@@ -64,11 +51,7 @@ func (db *DB) GetEmailSettings(ctx context.Context) (EmailSettings, error) {
 }
 
 // UpdateEmailSettings replaces the single email_settings row in full,
-// the same "whole record is always written as a whole" convention
-// UpdateIngressSettings already establishes for its own singleton row.
-// internal/api's PUT /api/v1/settings/email is expected to have already
-// validated s; this method performs no validation of its own beyond what
-// the schema itself enforces (the backend CHECK constraint).
+// the same whole-record convention UpdateIngressSettings uses.
 func (db *DB) UpdateEmailSettings(ctx context.Context, s EmailSettings) error {
 	_, err := db.ExecContext(ctx, `
 		UPDATE email_settings

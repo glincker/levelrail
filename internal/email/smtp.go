@@ -6,11 +6,8 @@ import (
 	"net/smtp"
 )
 
-// smtpSender sends via net/smtp, moved here unchanged from
-// alerting.sendPlainEmail (this package's predecessor). net/smtp.SendMail
-// has no context.Context parameter to plumb ctx's cancellation through: a
-// hung SMTP connection isn't cancellable the way an HTTP send is, a real,
-// documented limitation, not an oversight.
+// smtpSender sends via net/smtp. net/smtp.SendMail takes no
+// context.Context, so a hung connection isn't cancellable via ctx.
 type smtpSender struct {
 	cfg SMTPConfig
 }
