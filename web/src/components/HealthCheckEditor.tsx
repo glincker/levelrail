@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import { toast } from '@/components/ui/toast'
+import { useRestartRequiredToast } from '../hooks/useRestartRequiredToast'
 
 // A probe is either not configured (`null` on the wire, ServiceHealth's own
 // type) or fully configured with a path and optional interval/timeout/
@@ -151,6 +151,7 @@ function toProbe(values: ProbeFormValues): ServiceProbe | null {
 // out unsaved edits sitting in this one.
 export function HealthCheckEditor({ app }: { app: AppDetail }) {
   const updateApp = useUpdateApp(app.name)
+  const notifyRestartRequired = useRestartRequiredToast()
   const { control, register, handleSubmit, formState } =
     useForm<HealthFormValues>({
       resolver: zodResolver(healthSchema),
@@ -172,7 +173,7 @@ export function HealthCheckEditor({ app }: { app: AppDetail }) {
       },
       {
         onSuccess: () => {
-          toast.add({ title: 'Health checks saved.', type: 'success' })
+          notifyRestartRequired(app.name, 'Health checks saved.')
         },
       },
     )
