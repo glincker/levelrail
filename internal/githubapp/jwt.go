@@ -95,6 +95,16 @@ func SignAppJWT(appID int64, privateKeyPEM []byte, now time.Time) (string, error
 	return signingInput + "." + base64URLEncode(signature), nil
 }
 
+// ValidatePrivateKeyPEM reports whether pemBytes parses as an RSA
+// private key, without returning the parsed key itself: callers that
+// only need to confirm a pasted key is usable before storing it (the
+// manual-entry connect flow) have no reason to hold the parsed key in
+// memory any longer than parseRSAPrivateKeyPEM's own call frame does.
+func ValidatePrivateKeyPEM(pemBytes []byte) error {
+	_, err := parseRSAPrivateKeyPEM(pemBytes)
+	return err
+}
+
 // parseRSAPrivateKeyPEM decodes a PEM block and parses it as an RSA
 // private key, trying PKCS#1 first (the format GitHub's own
 // app-manifest conversion API documents its "pem" response field as:

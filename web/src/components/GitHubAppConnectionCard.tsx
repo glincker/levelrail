@@ -14,6 +14,9 @@ import {
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import {
   Dialog,
   DialogContent,
@@ -26,6 +29,7 @@ import {
 import { toast } from '@/components/ui/toast'
 import { useIngressSettings } from '../queries/domains'
 import {
+  useConnectGitHubAppManually,
   useDisconnectGitHubApp,
   useGitHubAppStatus,
 } from '../queries/githubApp'
@@ -41,21 +45,25 @@ import {
 // comment covers this in full). A fetch/XHR call cannot drive that
 // sequence; only a real navigation can.
 //
-// Requires a primary domain to be configured first
-// (store.IngressSettings.PrimaryDomain, PUT /api/v1/settings/ingress):
-// GitHub needs a real, reachable https callback URL, and there is no
-// meaningful fallback for "not configured yet" the backend could
-// substitute (see internal/api's githubAppBaseURL doc comment). This
-// card checks that client-side too, so the operator sees why the button
-// is disabled instead of clicking through into a 409 on GitHub's own
-// domain.
+// Two connect paths, side by side, matching Coolify's own GitHub App
+// screen (Automated vs Manual installation): the automated manifest
+// flow needs a real, publicly reachable primary domain, since GitHub's
+// own servers redirect there for the lifetime of the App registration,
+// not just for this browser session (see githubAppBaseURL's own doc
+// comment on the backend). An operator whose domain isn't live yet, or
+// who prefers creating the App by hand on github.com, uses the manual
+// dialog instead: same end state (a connected App), no domain required
+// to save the credentials, since ManualConnectDialog itself never talks
+// to GitHub, it only stores what the operator already has.
 export function GitHubAppConnectionCard() {
   const { data: status } = useGitHubAppStatus()
   const { data: ingressSettings } = useIngressSettings()
   const disconnect = useDisconnectGitHubApp()
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [manualOpen, setManualOpen] = useState(false)
 
   const hasPrimaryDomain = Boolean(ingressSettings.primary_domain)
+  const baseURL = status.base_url ?? ''
 
   return (
     <Card>
@@ -106,7 +114,20 @@ export function GitHubAppConnectionCard() {
                 <a href="/settings/general" className="underline">
                   ingress settings
                 </a>{' '}
-                first: GitHub needs a real, reachable callback URL.
+                first for automated setup, or connect manually below.
+              </p>
+            ) : null}
+            {!status.connected && hasPrimaryDomain && baseURL ? (
+              <p className="flex items-start gap-1.5 text-sm text-amber-700 dark:text-amber-400">
+                <WarningIcon className="mt-0.5 size-3.5 shrink-0" />
+                <span>
+                  Automated setup registers a callback at{' '}
+                  <code className="font-mono">{baseURL}</code>. GitHub redirects
+                  there for the life of the App, so this instance must actually
+                  be publicly reachable at that address before you continue, not
+                  just wherever you&apos;re viewing this page from right now. If
+                  that&apos;s not live yet, use manual setup instead.
+                </span>
               </p>
             ) : null}
           </div>
@@ -168,20 +189,262 @@ export function GitHubAppConnectionCard() {
               </DialogContent>
             </Dialog>
           ) : (
-            <Button
-              type="button"
-              size="sm"
-              disabled={!hasPrimaryDomain}
-              onClick={() => {
-                window.location.href = '/api/v1/github-app/register/start'
-              }}
-            >
-              <GithubLogoIcon className="size-4" />
-              Add GitHub App
-            </Button>
+            <div className="flex shrink-0 items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setManualOpen(true)}
+              >
+                Connect manually
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={!hasPrimaryDomain}
+                onClick={() => {
+                  window.location.href = '/api/v1/github-app/register/start'
+                }}
+              >
+                <GithubLogoIcon className="size-4" />
+                Add GitHub App
+              </Button>
+            </div>
           )}
         </div>
       </CardContent>
+      <ManualConnectDialog open={manualOpen} onOpenChange={setManualOpen} />
     </Card>
+  )
+}
+
+// ManualConnectDialog is Coolify's "Manual installation" card, adapted
+// to a dialog: an operator creates the App themselves at
+// github.com/settings/apps/new (no manifest, no redirect back here) and
+// pastes the resulting credentials in directly. Every field GitHub's
+// own App "General" settings page shows. installation_id/account_login
+// are optional: an App saved without them still connects (status.installed
+// stays false), the same two-step shape the automated flow's own
+// install-after-create step has, see handleConnectGitHubAppManually's
+// own doc comment.
+function ManualConnectDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const connect = useConnectGitHubAppManually()
+  const [appID, setAppID] = useState('')
+  const [clientID, setClientID] = useState('')
+  const [clientSecret, setClientSecret] = useState('')
+  const [webhookSecret, setWebhookSecret] = useState('')
+  const [privateKey, setPrivateKey] = useState('')
+  const [installationID, setInstallationID] = useState('')
+  const [accountLogin, setAccountLogin] = useState('')
+
+  function resetForm() {
+    setAppID('')
+    setClientID('')
+    setClientSecret('')
+    setWebhookSecret('')
+    setPrivateKey('')
+    setInstallationID('')
+    setAccountLogin('')
+  }
+
+  const appIDNum = Number(appID)
+  const canSubmit =
+    appID.trim() !== '' &&
+    Number.isFinite(appIDNum) &&
+    appIDNum > 0 &&
+    clientID.trim() !== '' &&
+    clientSecret.trim() !== '' &&
+    webhookSecret.trim() !== '' &&
+    privateKey.trim() !== ''
+
+  function handleSubmit() {
+    if (!canSubmit) {
+      return
+    }
+    const installationIDNum = installationID.trim()
+      ? Number(installationID)
+      : undefined
+    connect.mutate(
+      {
+        app_id: appIDNum,
+        client_id: clientID.trim(),
+        client_secret: clientSecret,
+        webhook_secret: webhookSecret,
+        private_key: privateKey,
+        installation_id:
+          installationIDNum !== undefined && Number.isFinite(installationIDNum)
+            ? installationIDNum
+            : undefined,
+        account_login: accountLogin.trim() || undefined,
+      },
+      {
+        onSuccess: () => {
+          toast.add({ title: 'GitHub App connected.', type: 'success' })
+          resetForm()
+          onOpenChange(false)
+        },
+        onError: (error) => {
+          toast.add({
+            title: 'Could not connect the GitHub App.',
+            description: error.message,
+            type: 'error',
+          })
+        },
+      },
+    )
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) {
+          resetForm()
+        }
+        onOpenChange(next)
+      }}
+    >
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Connect a GitHub App manually</DialogTitle>
+          <DialogDescription>
+            Create the App yourself at{' '}
+            <a
+              href="https://github.com/settings/apps/new"
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              github.com/settings/apps/new
+            </a>
+            , then paste the resulting credentials here. No primary domain
+            required to save these: only automated setup needs one.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
+          <Field>
+            <FieldLabel htmlFor="gh-app-id">App ID</FieldLabel>
+            <Input
+              id="gh-app-id"
+              type="number"
+              inputMode="numeric"
+              value={appID}
+              onChange={(e) => {
+                setAppID(e.target.value)
+              }}
+              placeholder="123456"
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="gh-client-id">Client ID</FieldLabel>
+            <Input
+              id="gh-client-id"
+              value={clientID}
+              onChange={(e) => {
+                setClientID(e.target.value)
+              }}
+              placeholder="Iv1.abc123def456"
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="gh-client-secret">Client secret</FieldLabel>
+            <Input
+              id="gh-client-secret"
+              type="password"
+              value={clientSecret}
+              onChange={(e) => {
+                setClientSecret(e.target.value)
+              }}
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="gh-webhook-secret">Webhook secret</FieldLabel>
+            <Input
+              id="gh-webhook-secret"
+              type="password"
+              value={webhookSecret}
+              onChange={(e) => {
+                setWebhookSecret(e.target.value)
+              }}
+            />
+            <FieldDescription>
+              The value you set as the App&apos;s own webhook secret on GitHub,
+              not generated here.
+            </FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="gh-private-key">Private key (.pem)</FieldLabel>
+            <Textarea
+              id="gh-private-key"
+              value={privateKey}
+              onChange={(e) => {
+                setPrivateKey(e.target.value)
+              }}
+              placeholder="-----BEGIN RSA PRIVATE KEY-----"
+              rows={6}
+              className="font-mono text-xs"
+            />
+            <FieldDescription>
+              Generated once on the App&apos;s General page on GitHub and
+              downloaded as a .pem file. Paste its full contents.
+            </FieldDescription>
+          </Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Field>
+              <FieldLabel htmlFor="gh-installation-id">
+                Installation ID (optional)
+              </FieldLabel>
+              <Input
+                id="gh-installation-id"
+                type="number"
+                inputMode="numeric"
+                value={installationID}
+                onChange={(e) => {
+                  setInstallationID(e.target.value)
+                }}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="gh-account-login">
+                Account login (optional)
+              </FieldLabel>
+              <Input
+                id="gh-account-login"
+                value={accountLogin}
+                onChange={(e) => {
+                  setAccountLogin(e.target.value)
+                }}
+                placeholder="octocat"
+              />
+            </Field>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              resetForm()
+              onOpenChange(false)
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={!canSubmit || connect.isPending}
+            onClick={handleSubmit}
+          >
+            {connect.isPending ? 'Connecting...' : 'Connect'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

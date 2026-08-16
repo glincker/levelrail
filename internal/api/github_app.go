@@ -147,6 +147,13 @@ type gitHubAppStatusResource struct {
 	Installed    bool   `json:"installed"`
 	AccountLogin string `json:"account_login,omitempty"`
 	CreatedAt    string `json:"created_at,omitempty"`
+	// BaseURL is githubAppBaseURL's own result, empty when no primary
+	// domain is configured yet. Surfaced here so the frontend can show
+	// exactly what host the automated flow's callback/webhook URLs will
+	// point at before the operator clicks through to GitHub, rather than
+	// discovering a domain mismatch only after GitHub redirects back to
+	// an address that isn't this running instance.
+	BaseURL string `json:"base_url,omitempty"`
 }
 
 // handleGetGitHubAppStatus handles GET /api/v1/github-app: the
@@ -157,9 +164,15 @@ type gitHubAppStatusResource struct {
 // same tier as PUT /api/v1/settings/ingress rather than the plain
 // AbilityRead visibility tier most other GET routes use.
 func (rt *Router) handleGetGitHubAppStatus(w http.ResponseWriter, r *http.Request) {
-	conn, err := rt.githubApp.GetGitHubAppConnection(r.Context())
+	ctx := r.Context()
+	// Ignored error: an unconfigured primary domain is a real, common
+	// state (surfaced to the frontend as an empty BaseURL, not a 500),
+	// not a store failure worth logging.
+	baseURL, _ := rt.githubAppBaseURL(ctx)
+
+	conn, err := rt.githubApp.GetGitHubAppConnection(ctx)
 	if errors.Is(err, store.ErrGitHubAppConnectionNotFound) {
-		writeJSON(w, http.StatusOK, gitHubAppStatusResource{Connected: false})
+		writeJSON(w, http.StatusOK, gitHubAppStatusResource{Connected: false, BaseURL: baseURL})
 		return
 	}
 	if err != nil {
@@ -173,6 +186,7 @@ func (rt *Router) handleGetGitHubAppStatus(w http.ResponseWriter, r *http.Reques
 		AppID:     conn.AppID,
 		ClientID:  conn.ClientID,
 		CreatedAt: conn.CreatedAt,
+		BaseURL:   baseURL,
 	}
 	if conn.InstallationID != nil {
 		resource.Installed = true

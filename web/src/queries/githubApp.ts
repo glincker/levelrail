@@ -21,6 +21,7 @@ import {
 } from '@tanstack/react-query'
 import type {
   GitHubAppBranch,
+  GitHubAppManualConnectRequest,
   GitHubAppRepo,
   GitHubAppStatus,
 } from '../types/githubApp'
@@ -81,6 +82,42 @@ export function useDisconnectGitHubApp() {
   const queryClient = useQueryClient()
   return useMutation<void, ApiError, void>({
     mutationFn: disconnectGitHubApp,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: githubAppKeys.all })
+    },
+  })
+}
+
+// PUT /api/v1/github-app/manual (handleConnectGitHubAppManually): the
+// alternative to the automated manifest flow (register/start above),
+// for an operator who created the App by hand on github.com, or whose
+// primary domain isn't configured/reachable yet.
+export async function connectGitHubAppManually(
+  req: GitHubAppManualConnectRequest,
+): Promise<GitHubAppStatus> {
+  const res = await fetch('/api/v1/github-app/manual', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `connect github app manually failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as GitHubAppStatus
+}
+
+export function useConnectGitHubAppManually() {
+  const queryClient = useQueryClient()
+  return useMutation<void, ApiError, GitHubAppManualConnectRequest>({
+    mutationFn: async (req) => {
+      await connectGitHubAppManually(req)
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: githubAppKeys.all })
     },
