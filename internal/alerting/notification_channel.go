@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/email"
 )
 
 // NotificationChannel is a global, connect-once notify destination
@@ -134,7 +136,7 @@ func scanNotificationChannel(scan func(dest ...any) error) (*NotificationChannel
 
 // sendTestNotification sends a fixed connectivity-check message via
 // kind, reusing sendDeployOutcome's own per-channel payload logic.
-func sendTestNotification(ctx context.Context, client *http.Client, smtpCfg *SMTPConfig, kind NotifyKind, notifyURL string) error {
+func sendTestNotification(ctx context.Context, client *http.Client, sender email.Sender, kind NotifyKind, notifyURL string) error {
 	if client == nil {
 		client = http.DefaultClient
 	}
@@ -152,13 +154,13 @@ func sendTestNotification(ctx context.Context, client *http.Client, smtpCfg *SMT
 		}
 		return postJSON(ctx, client, notifyURL, telegramPayload{ChatID: chatID, Text: testText})
 	case NotifyEmail:
-		if smtpCfg == nil {
-			return fmt.Errorf("alerting: test notification: email is not configured on this control plane (set APP_SMTP_HOST, APP_SMTP_FROM, etc.)")
+		if sender == nil {
+			return fmt.Errorf("alerting: test notification: email is not configured on this control plane")
 		}
 		if notifyURL == "" {
 			return fmt.Errorf("alerting: test notification: no destination email address configured")
 		}
-		if err := sendPlainEmail(smtpCfg, notifyURL, "[Levelrail] test notification", testText); err != nil {
+		if err := sender.Send(ctx, notifyURL, "[Levelrail] test notification", testText); err != nil {
 			return fmt.Errorf("alerting: test notification: %w", err)
 		}
 		return nil
@@ -168,8 +170,9 @@ func sendTestNotification(ctx context.Context, client *http.Client, smtpCfg *SMT
 }
 
 // SendTest fires a real test notification through kind/notifyURL,
-// reusing this dispatcher's own HTTP client and SMTP config so a passing
-// test predicts a real deploy notification will send the same way.
+// reusing this dispatcher's own HTTP client and email sender so a
+// passing test predicts a real deploy notification will send the same
+// way.
 func (d *DeployDispatcher) SendTest(ctx context.Context, kind NotifyKind, notifyURL string) error {
-	return sendTestNotification(ctx, d.client, d.smtpCfg, kind, notifyURL)
+	return sendTestNotification(ctx, d.client, d.sender, kind, notifyURL)
 }
