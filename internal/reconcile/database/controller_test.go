@@ -791,3 +791,49 @@ func TestPortsMatch(t *testing.T) {
 		})
 	}
 }
+
+// TestController_Reconcile_Resources_ReachesContainerSpec confirms
+// desired.Resources converts into ContainerSpec.Resources exactly like
+// application.toContainerSpec's own conversion, the same
+// MemoryBytes/NanoCPUs field-for-field mapping.
+func TestController_Reconcile_Resources_ReachesContainerSpec(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{
+		Name:    "main",
+		Engine:  store.EngineRedis,
+		Version: "7",
+		Resources: &store.ServiceResources{
+			MemoryBytes: 512 * 1024 * 1024,
+			NanoCPUs:    500_000_000,
+		},
+	}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	want := &docker.Resources{MemoryBytes: 512 * 1024 * 1024, NanoCPUs: 500_000_000}
+	if got := rt.lastCreateSpec.Resources; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Resources = %+v, want %+v", got, want)
+	}
+}
+
+// TestController_Reconcile_Resources_NilLeavesContainerSpecResourcesNil is
+// the regression-safety half: every database saved before this field
+// existed has a nil Resources, and this must keep producing a nil
+// ContainerSpec.Resources, i.e. an unbounded container, identical to
+// today's behavior.
+func TestController_Reconcile_Resources_NilLeavesContainerSpecResourcesNil(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"} // Resources unset
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	if got := rt.lastCreateSpec.Resources; got != nil {
+		t.Errorf("created ContainerSpec.Resources = %+v, want nil", got)
+	}
+}

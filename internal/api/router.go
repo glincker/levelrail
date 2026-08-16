@@ -821,6 +821,15 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/project", rt.requireAbility(AbilityWrite, rt.handleSetAppProject))
 	mux.HandleFunc("PUT /api/v1/databases/{name}/project", rt.requireAbility(AbilityWrite, rt.handleSetDatabaseProject))
 
+	// Set (or clear, with a nil body field) a database's resource limits:
+	// databaseResource's own Resources field doc comment explains why
+	// this is a dedicated route rather than folded into handleUpdateApp's
+	// general-PUT equivalent, which has no database counterpart.
+	// AbilityWrite, the same ordinary-config-edit sensitivity as the
+	// project routes just above, not AbilityRoot: a resource cap is not
+	// fleet-level placement.
+	mux.HandleFunc("PUT /api/v1/databases/{name}/resources", rt.requireAbility(AbilityWrite, rt.handleSetDatabaseResources))
+
 	// Nodes (TASKS.md 3.1): fleet-level infrastructure, not scoped to any
 	// one app, so every route here requires AbilityRoot specifically
 	// rather than AbilityRead/AbilityWrite: minting a join token or

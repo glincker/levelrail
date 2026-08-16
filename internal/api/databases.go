@@ -50,6 +50,15 @@ type databaseResource struct {
 	// create/update body.
 	PubliclyAccessible bool `json:"publicly_accessible,omitempty"`
 	PublicPort         int  `json:"public_port,omitempty"`
+	// Resources: unlike NodeID/ProjectID/the backup fields above, this is
+	// ordinary desired state, the same appResource.Resources field
+	// carries for apps, not a response-only/dedicated-route field. There
+	// is no PUT /api/v1/databases/{name} to carry it the way
+	// handleUpdateApp carries appResource.Resources, though, so it is set
+	// through its own dedicated route instead:
+	// PUT /api/v1/databases/{name}/resources (handleSetDatabaseResources),
+	// mirroring the node/project routes' shape rather than appResource's.
+	Resources *store.ServiceResources `json:"resources,omitempty"`
 }
 
 func toDatabaseResource(d store.DesiredDatabase) databaseResource {
@@ -64,6 +73,7 @@ func toDatabaseResource(d store.DesiredDatabase) databaseResource {
 		BackupRetain:       d.BackupRetain,
 		PubliclyAccessible: d.PubliclyAccessible,
 		PublicPort:         d.PublicPort,
+		Resources:          d.Resources,
 	}
 }
 
@@ -311,6 +321,58 @@ func (rt *Router) handleSetDatabaseProject(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	writeJSON(w, http.StatusOK, toDatabaseResource(*d))
+}
+
+// setDatabaseResourcesRequest is PUT /api/v1/databases/{name}/resources's
+// body.
+type setDatabaseResourcesRequest struct {
+	Resources *store.ServiceResources `json:"resources"`
+}
+
+// handleSetDatabaseResources handles PUT /api/v1/databases/{name}/resources.
+// databaseResource's own Resources field doc comment explains why this is
+// a dedicated route rather than folded into a general PUT
+// /databases/{name}: no such route exists for databases, unlike
+// handleUpdateApp for apps. SaveDesiredDatabase's own ON CONFLICT clause
+// never touches node_id/project_id/the backup columns (only
+// engine/version/resources/updated_at), so passing existing straight
+// through with only Resources replaced is safe: nothing else on the row
+// moves.
+func (rt *Router) handleSetDatabaseResources(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+
+	var req setDatabaseResourcesRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	existing, err := rt.databases.GetDesiredDatabase(r.Context(), name)
+	if errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return
+	}
+	if err != nil {
+		rt.logger.Error("api: set database resources: check existing failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	desired := *existing
+	desired.Resources = req.Resources
+	if err := rt.databases.SaveDesiredDatabase(r.Context(), desired); err != nil {
+		rt.logger.Error("api: set database resources failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	updated, err := rt.databases.GetDesiredDatabase(r.Context(), name)
+	if err != nil {
+		rt.logger.Error("api: set database resources: reload after update failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toDatabaseResource(*updated))
 }
 
 // handleDatabaseStatus handles GET /api/v1/databases/{name}/status: the
