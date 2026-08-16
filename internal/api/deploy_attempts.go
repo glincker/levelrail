@@ -33,33 +33,13 @@ import (
 // endpoint's shape in place would silently break all three. A real
 // attempt-history list belongs at its own URL instead.
 
-// beginBuildDeployAttempt mints and saves a deploy_attempts row for req
-// (handleTriggerBuild's manual git-source build path and
-// handleGitPushWebhook's git-push-triggered path, git_webhook.go, the
-// two real trigger paths in this package that run an actual build,
-// alongside internal/webhook's own identical beginDeployAttempt for the
-// original single-app path), and returns the progress func to pass to
-// Builder.Deploy plus a finish func the caller must invoke exactly once
-// with Deploy's error, success or failure. source is one of the
-// store.DeployAttemptSource* constants, distinguishing the two callers
-// in the resulting history row.
-//
-// If rt.deployRecorder is nil (WithDeployRecorder not configured), this
-// falls back to build.SlogProgress, this package's pre-existing
-// behavior, but still records the attempt row via rt.deployAttempts
-// (always available: it's part of the core Store interface, not an
-// optional plug-in, see DeployAttemptStore's own doc comment), just with
-// no persisted log content, the same "degrade the log, not the history"
-// choice deployAttemptEnabled makes one layer down in internal/webhook.
-// If minting or saving the row itself fails, this degrades further to a
-// no-op finish and SlogProgress, logged but not returned as this
-// request's own error: a history-tracking failure must never block a
-// build that would otherwise succeed.
-//
-// image mirrors internal/deploy's own deployDockerfile tag construction
-// (ImageRepo + ":" + CommitSHA), computed here before the build runs so
-// a failed build's history row still shows what tag it was trying to
-// produce.
+// beginBuildDeployAttempt mints a deploy_attempts row for req (shared by
+// handleTriggerBuild and handleGitPushWebhook) and returns the
+// progress/finish funcs for Builder.Deploy. source distinguishes the two
+// callers in the resulting history row. Falls back to SlogProgress and a
+// no-op finish, logged but not returned as an error, if deployRecorder is
+// unconfigured or minting/saving the row fails: a history-tracking
+// failure must never block a build that would otherwise succeed.
 func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Request, source string) (progress func(build.ProgressEvent), finish func(deployErr error)) {
 	noop := func(error) {}
 	fallback := build.SlogProgress(rt.logger)
@@ -70,6 +50,13 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 		return fallback, noop
 	}
 
+	// Start before SaveDeployAttempt: the row is queryable the instant
+	// SaveDeployAttempt returns, so a racing GET must never see id before
+	// Start has registered it. Finish below cleans up on a failed save.
+	if rt.deployRecorder != nil {
+		rt.deployRecorder.Start(id)
+	}
+
 	image := req.ImageRepo + ":" + req.CommitSHA
 	if err := rt.deployAttempts.SaveDeployAttempt(ctx, store.DeployAttempt{
 		ID: id, ServiceName: req.ServiceName, Image: image,
@@ -77,6 +64,9 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 		Status: store.DeployAttemptStatusRunning, StartedAt: time.Now(),
 	}); err != nil {
 		rt.logger.Error("api: trigger build: save deploy attempt failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
+		if rt.deployRecorder != nil {
+			rt.deployRecorder.Finish(ctx, id)
+		}
 		return fallback, noop
 	}
 
@@ -95,13 +85,7 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 			rt.logger.Error("api: trigger build: finish deploy attempt failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
 			return
 		}
-		// Deploy-outcome notification (wave-2 roadmap item #5), the
-		// build-triggered counterpart to recordPlainDeployAttempt's own
-		// dispatch and internal/webhook.Handler.beginDeployAttempt's
-		// finish closure: fires only once FinishDeployAttempt has
-		// persisted the attempt's terminal status, never for the
-		// in-progress "running" status this closure's caller (Deploy)
-		// hasn't returned from yet.
+		// Fires only after FinishDeployAttempt persists the terminal status.
 		if rt.deployNotifier != nil {
 			rt.deployNotifier.Dispatch(finishCtx, resourceIDForApp(req.ServiceName), alerting.DeployOutcome{
 				AppName: req.ServiceName, Image: image, Succeeded: deployErr == nil, Error: errMsg,
@@ -112,7 +96,6 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 	if rt.deployRecorder == nil {
 		return fallback, finish
 	}
-	rt.deployRecorder.Start(id)
 	return rt.deployRecorder.Progress(id), finish
 }
 
@@ -188,55 +171,13 @@ type sseLogEvent struct {
 }
 
 // handleDeployLogStream handles
-// GET /api/v1/apps/{name}/deploys/{deployId}/logs: an SSE stream serving
-// one deploy attempt's build/log output, live or replayed depending on
-// whether the attempt has finished by the time this request lands. Both
-// cases are real requirements, not just the live one: deploys in this
-// product are frequently unattended (a git push webhook), so a user
-// typically opens this view *after* a deploy already finished, and needs
-// the exact same output a live viewer would have seen, not an empty
-// "nothing here" response just because they weren't watching in real
-// time.
-//
-//   - Finished attempt (attempt.FinishedAt set): served entirely from
-//     the persisted store (rt.deployLogStore.QueryDeployLog) in one
-//     shot, then the response stays open (writing nothing further)
-//     until the client disconnects. 501 if no DeployLogStore is
-//     configured (WithDeployLogStore).
-//   - In-progress attempt: served from rt.deployRecorder.Snapshot, which
-//     atomically returns every line so far plus a live channel for
-//     everything after (see that method's own doc comment for the
-//     race-free guarantee). The response stays open, flushing each new
-//     line as it arrives, until the client disconnects
-//     (r.Context().Done()); once the live channel itself closes (Finish
-//     was called, meaning the attempt ended), nothing more will ever
-//     arrive on it, but the response still doesn't return, for the same
-//     reason as the finished-attempt case below. 501 if no Recorder is
-//     configured (WithDeployRecorder). If the recorder has no record of
-//     this attempt at all (Snapshot's ok=false: e.g. the control plane
-//     restarted mid-deploy and lost its in-memory state, a known,
-//     accepted gap this task does not build crash-recovery for), this
-//     falls back to the persisted store the same way a finished attempt
-//     would, so a viewer at least sees whatever was flushed before the
-//     restart instead of an empty response.
-//
-// Neither branch ever returns right after its one real burst of data:
-// both hold the connection open (blocking on the client disconnecting)
-// instead. This was found by this task's own live browser verification,
-// not designed upfront: a real EventSource client (the frontend's
-// useDeployLogStream.ts) reconnects automatically the moment the server
-// closes the connection, the same behavior that hook's own doc comment
-// cites as a reason SSE was chosen over WebSockets in the first place.
-// An earlier version of this handler returned immediately after its
-// burst, which closed the response; the browser observed that as a
-// dropped connection, reconnected within its default retry interval,
-// landed back in the very same branch, and got the *entire* persisted
-// log again, appended onto whatever was already rendered (that hook's
-// onmessage handler has no concept of "this is a replay, clear first,"
-// it only ever appends). Watched live, the log view's line count kept
-// growing and the same lines kept repeating every few seconds for as
-// long as the tab stayed open. Holding the connection open once there's
-// nothing more to send avoids ever triggering that reconnect at all.
+// GET /api/v1/apps/{name}/deploys/{deployId}/logs: an SSE stream of one
+// deploy attempt's build/log output, live from rt.deployRecorder if still
+// running or replayed from rt.deployLogStore if already finished. 501 if
+// the relevant store isn't configured. Neither branch returns after its
+// burst: both hold the connection open until the client disconnects, so
+// a reconnecting EventSource never replays and duplicates what it
+// already rendered.
 func (rt *Router) handleDeployLogStream(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	deployID := r.PathValue("deployId")
@@ -262,12 +203,8 @@ func (rt *Router) handleDeployLogStream(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	// Prevents an attempt ID from one app being viewed through another
-	// app's URL: attempt IDs are opaque and globally unique
-	// (store.NewDeployAttemptID), but the route is app-scoped, so a
-	// mismatch here means the caller has the wrong app name for this
-	// attempt, treated as "not found" rather than a silent cross-app
-	// leak.
+	// Attempt IDs are globally unique but the route is app-scoped: a
+	// mismatch here is treated as not-found, not a cross-app leak.
 	if attempt.ServiceName != name {
 		writeError(w, http.StatusNotFound, "deploy attempt not found")
 		return
@@ -280,31 +217,12 @@ func (rt *Router) handleDeployLogStream(w http.ResponseWriter, r *http.Request) 
 	rt.serveLiveDeployLog(w, r, deployID)
 }
 
-// serveFinishedDeployLog writes attemptID's full persisted log as one
-// SSE burst, then holds the connection open (writing nothing further)
-// until ctx is done (the client disconnects, e.g. navigates away),
-// rather than returning immediately after the burst.
-//
-// This blocking-instead-of-closing shape is deliberate, found by this
-// task's own live browser verification, not a hypothetical: a real
-// EventSource client reconnects automatically after the server closes
-// the connection (the same behavior useDeployLogStream.ts's own doc
-// comment cites as a reason SSE was chosen over WebSockets in the first
-// place), and this handler previously returned right after the burst,
-// which closed the HTTP response. The browser observed that as a
-// dropped connection and reconnected within its default retry interval,
-// landing back in this same finished-attempt branch, which replayed the
-// entire persisted log again and appended it to whatever the client had
-// already rendered (useDeployLogStream.ts's onmessage handler has no
-// concept of "this is a replay, clear first," it only ever appends).
-// The result, confirmed live: the log view's line count kept growing
-// and the same lines kept repeating, roughly every 3 seconds, for as
-// long as the tab stayed open. Keeping the connection open after a
-// finished attempt's one real burst means the server never closes it,
-// so the browser's EventSource has nothing to reconnect from and stays
-// in its normal "open" state indefinitely, exactly matching what an
-// already-finished, nothing-more-to-say stream should look like from a
-// client's point of view.
+// serveFinishedDeployLog writes attemptID's full persisted log as one SSE
+// burst, then holds the connection open (writing nothing further) until
+// ctx is done, rather than returning immediately: an EventSource
+// reconnects automatically when the server closes the connection, which
+// would replay this same burst and duplicate it onto whatever the client
+// already rendered (onmessage only ever appends).
 func (rt *Router) serveFinishedDeployLog(ctx context.Context, w http.ResponseWriter, deployID string) {
 	if rt.deployLogStore == nil {
 		writeError(w, http.StatusNotImplemented, "deploy log storage is not configured on this control plane")
@@ -323,32 +241,12 @@ func (rt *Router) serveFinishedDeployLog(ctx context.Context, w http.ResponseWri
 		return
 	}
 
-	// Write one harmless SSE comment line immediately, before the entries
-	// loop below (which, for the zero-log-lines case this function
-	// exists to handle, writes nothing at all). SSE comment lines start
-	// with ':' and are never dispatched as an event (EventSource ignores
-	// them outright, so parseEventPayload in
-	// web/src/hooks/useDeployLogStream.ts never sees this), but writing
-	// it guarantees at least one body byte crosses the wire right away.
-	//
-	// Found by this task's own live browser + network-panel verification:
-	// against Vite's dev proxy, a zero-entries response left the SSE
-	// request showing no status code and no response headers at all in
-	// Chrome's network inspector, for as long as the tab stayed open, and
-	// the frontend's connection badge stayed on "Connecting..." forever,
-	// because WriteHeader+Flush alone (with zero body bytes written) is
-	// not enough to make Node's http-proxy (which Vite's dev server uses
-	// for server.proxy) forward the response headers to the browser: it
-	// only does that on the underlying response's first write() call,
-	// which a header-only, zero-body flush never triggers. Confirmed via
-	// the same live setup against the real production path (the control
-	// plane's own embedded net/http server serving the built frontend
-	// directly, no proxy in front) that this is dev-proxy-only: there,
-	// EventSource.onopen fires immediately off WriteHeader+Flush alone
-	// and the badge correctly reads "Live" within a couple seconds, with
-	// or without this comment line. Writing it unconditionally makes the
-	// zero-entries case behave the same way in both environments instead
-	// of depending on proxy-specific flushing behavior.
+	// A zero-body WriteHeader+Flush never reaches the browser through
+	// Vite's dev proxy (Node's http-proxy only forwards headers on the
+	// underlying response's first write()), leaving EventSource.onopen
+	// stuck pending. This SSE comment line (ignored by EventSource, never
+	// reaching parseEventPayload) guarantees a body byte crosses the wire
+	// immediately, in dev and production alike.
 	_, _ = fmt.Fprint(w, ": connected\n\n")
 	flusher.Flush()
 
@@ -384,6 +282,10 @@ func (rt *Router) serveLiveDeployLog(w http.ResponseWriter, r *http.Request, dep
 		rt.logger.Error("api: deploy log stream: response writer does not support flushing", slog.String("deploy_id", deployID))
 		return
 	}
+
+	// Same zero-body-flush gap serveFinishedDeployLog already fixed:
+	// write one byte so the browser confirms the connection is open.
+	_, _ = fmt.Fprint(w, ": connected\n\n")
 	for _, ev := range lines {
 		writeSSEEvent(w, sseLogEvent{Line: ev.Line, Stream: ev.Stream})
 	}
@@ -395,17 +297,10 @@ func (rt *Router) serveLiveDeployLog(w http.ResponseWriter, r *http.Request, dep
 			return
 		case ev, chOpen := <-live:
 			if !chOpen {
-				// The attempt finished: Recorder.Finish closed this
-				// channel. Every line was already delivered live above
-				// (or is in the persisted store if one was dropped, see
-				// Progress's own doc comment on the bounded subscriber
-				// buffer), so there is nothing left to send, but the
-				// connection stays open rather than returning here for
-				// the identical reason serveFinishedDeployLog does: an
-				// EventSource client would otherwise reconnect, land in
-				// serveFinishedDeployLog's now-finished branch, and get
-				// a full duplicate replay of everything it just watched
-				// live.
+				// Recorder.Finish closed this channel: the attempt ended
+				// and every line was already delivered above. Stay open
+				// for the same reconnect-avoidance reason as
+				// serveFinishedDeployLog.
 				<-r.Context().Done()
 				return
 			}

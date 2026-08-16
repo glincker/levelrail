@@ -203,33 +203,17 @@ func New(cfg Config, deployer Deployer, attempts AttemptStore, recorder *deployl
 }
 
 // deployAttemptEnabled reports whether this Handler should record
-// deploy_attempts history for the push it's about to deploy. attempts
-// and recorder are checked together, not independently: a row with no
-// recorder to feed it would have a permanently-empty log with no way to
-// ever change that, and a recorder running with nothing to persist to
-// would fan out live events nobody could reconnect to see a replay of
-// after the fact, either partial state is worse than plainly falling
-// back to the pre-existing build.SlogProgress behavior for this push.
+// deploy_attempts history for the push it's about to deploy: attempts and
+// recorder must both be set, or history/log state would be permanently
+// half-populated.
 func (h *Handler) deployAttemptEnabled() bool {
 	return h.attempts != nil && h.recorder != nil
 }
 
-// beginDeployAttempt mints and saves a deploy_attempts row for req (see
-// AttemptStore's own doc comment for why this package needs one at all),
-// and returns the progress func to pass to h.deployer.Deploy plus a
-// finish func the caller must invoke exactly once with Deploy's result,
-// success or failure. When deployAttemptEnabled is false, or minting/
-// saving the row itself fails (logged, not fatal to the deploy: a
-// history-tracking failure must never block the actual deploy this push
-// triggered), this falls back to build.SlogProgress and a no-op finish,
-// the identical behavior this package had before attempt tracking
-// existed.
-//
-// image mirrors internal/deploy's own deployDockerfile tag construction
-// (ImageRepo + ":" + CommitSHA) rather than waiting for Deploy to return
-// it: the tag is fully determined by req before any build I/O happens,
-// so a failed build's history row still shows what tag it was trying to
-// produce, not a blank field.
+// beginDeployAttempt mints a deploy_attempts row for req and returns the
+// progress/finish funcs for h.deployer.Deploy. Falls back to
+// build.SlogProgress and a no-op finish, logged but not fatal, if
+// deployAttemptEnabled is false or minting/saving the row fails.
 func (h *Handler) beginDeployAttempt(ctx context.Context, req deploy.Request) (progress func(build.ProgressEvent), finish func(tag string, deployErr error)) {
 	noop := func(string, error) {}
 	if !h.deployAttemptEnabled() {
@@ -242,6 +226,11 @@ func (h *Handler) beginDeployAttempt(ctx context.Context, req deploy.Request) (p
 		return build.SlogProgress(h.log), noop
 	}
 
+	// Start before SaveDeployAttempt: the row is queryable the instant
+	// SaveDeployAttempt returns, so a racing GET must never see id before
+	// Start has registered it. Finish below cleans up on a failed save.
+	h.recorder.Start(id)
+
 	image := req.ImageRepo + ":" + req.CommitSHA
 	if err := h.attempts.SaveDeployAttempt(ctx, store.DeployAttempt{
 		ID: id, ServiceName: req.ServiceName, Image: image,
@@ -249,18 +238,14 @@ func (h *Handler) beginDeployAttempt(ctx context.Context, req deploy.Request) (p
 		Status: store.DeployAttemptStatusRunning, StartedAt: time.Now(),
 	}); err != nil {
 		h.log.Error("webhook: save deploy attempt failed", "attempt_id", id, "error", err)
+		h.recorder.Finish(ctx, id)
 		return build.SlogProgress(h.log), noop
 	}
 
-	h.recorder.Start(id)
 	progress = h.recorder.Progress(id)
 	finish = func(_ string, deployErr error) {
-		// context.Background(), not ctx/r.Context(): this runs after
-		// Deploy has already returned, and must still complete (flush
-		// the log, mark the terminal status) even if the triggering
-		// HTTP request's own context is on its way out, the same
-		// reasoning deploylog.Recorder.flush's own doc comment applies
-		// one layer down.
+		// Background, not ctx: must still flush and finish even if the
+		// triggering request's own context is on its way out.
 		finishCtx := context.Background()
 		h.recorder.Finish(finishCtx, id)
 
@@ -274,12 +259,7 @@ func (h *Handler) beginDeployAttempt(ctx context.Context, req deploy.Request) (p
 			h.log.Error("webhook: finish deploy attempt failed", "attempt_id", id, "error", err)
 			return
 		}
-		// Deploy-outcome notification (wave-2 roadmap item #5): fires
-		// only now, once FinishDeployAttempt has actually persisted the
-		// attempt's terminal status, never for the in-progress "running"
-		// status this closure's caller (ServeHTTP's call to h.deployer.Deploy)
-		// hasn't returned from yet. h.notifier is nil-valid, see its own
-		// doc comment.
+		// Fires only after FinishDeployAttempt persists the terminal status.
 		if h.notifier != nil {
 			h.notifier.Dispatch(finishCtx, resourceIDForService(req.ServiceName), alerting.DeployOutcome{
 				AppName: req.ServiceName, Image: image, Succeeded: deployErr == nil, Error: errMsg,
