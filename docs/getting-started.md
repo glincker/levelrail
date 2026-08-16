@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- Go 1.25+
+- Go 1.26+
 - Docker (the control plane and agent talk to the Docker Engine API
   directly, they never shell out to the `docker` CLI, but a running
   Docker daemon is required)

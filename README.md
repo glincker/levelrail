@@ -72,7 +72,7 @@ so the code path is the same whether you're running one node or ten.
 
 ## Building and running locally
 
-Requires Go 1.25+ and Docker.
+Requires Go 1.26+ and Docker.
 
 ```
 # control plane
