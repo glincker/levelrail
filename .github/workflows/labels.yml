@@ -8,13 +8,12 @@ on:
       - .github/workflows/labels.yml
   workflow_dispatch:
 
-permissions:
-  issues: write
-  contents: read
-
 jobs:
   sync:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6

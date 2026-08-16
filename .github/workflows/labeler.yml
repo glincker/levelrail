@@ -4,14 +4,13 @@ on:
   pull_request_target:
     types: [opened, reopened, synchronize]
 
-permissions:
-  contents: read
-  pull-requests: write
-
 jobs:
   path-and-branch:
     name: type/area labels
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     timeout-minutes: 5
     steps:
       - uses: actions/labeler@v7
@@ -22,6 +21,9 @@ jobs:
   size:
     name: size label
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     timeout-minutes: 5
     steps:
       - uses: pascalgn/size-label-action@56b489b027932ec0cf60438a1a5f1a19c8fc71ff # v0.5.7
