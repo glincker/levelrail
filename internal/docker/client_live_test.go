@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/container"
+	dockernetwork "github.com/docker/docker/api/types/network"
 )
 
 // liveClient returns a Client connected to a real daemon, or skips the
@@ -695,5 +696,155 @@ func TestClient_Stats_Live(t *testing.T) {
 	_ = rawReader.Body.Close()
 	if raw.MemoryStats.Usage == 0 {
 		t.Error("raw MemoryStats.Usage = 0, this test's own assumptions are wrong, not just the wrapper")
+	}
+}
+
+// TestClient_EnsureNetwork_Live_IdempotentAndContainerJoins proves
+// EnsureNetwork actually creates a real, inspectable Docker network, is
+// idempotent (a second call for a network that already exists must not
+// error or create a duplicate), and that a container created with
+// ContainerSpec.Network set genuinely joins it and is reachable by its
+// alias, the same "raw inspect independently confirms the wrapper"
+// pattern TestClient_EnsureVolume_Live_IdempotentAndMounted already
+// establishes for volumes.
+func TestClient_EnsureNetwork_Live_IdempotentAndContainerJoins(t *testing.T) {
+	c := liveClient(t)
+	ctx := context.Background()
+
+	netName := "levelrail-test-docker-network"
+	containerName := "levelrail-test-docker-network-member"
+
+	removeIfExists(ctx, t, c, containerName)
+	t.Cleanup(func() { removeIfExists(context.Background(), t, c, containerName) })
+	t.Cleanup(func() { _ = c.cli.NetworkRemove(context.Background(), netName) })
+
+	id1, err := c.EnsureNetwork(ctx, netName)
+	if err != nil {
+		t.Fatalf("EnsureNetwork() first call error = %v", err)
+	}
+	if id1 == "" {
+		t.Fatal("EnsureNetwork() first call returned an empty network ID")
+	}
+
+	// Idempotent: calling it again for a network that already exists
+	// must not error, and must return the same network ID rather than
+	// creating a second one.
+	id2, err := c.EnsureNetwork(ctx, netName)
+	if err != nil {
+		t.Fatalf("EnsureNetwork() second call error = %v, want nil (idempotent)", err)
+	}
+	if id2 != id1 {
+		t.Errorf("EnsureNetwork() second call ID = %q, want %q (same network reused, not recreated)", id2, id1)
+	}
+
+	rawNet, err := c.cli.NetworkInspect(ctx, netName, dockernetwork.InspectOptions{})
+	if err != nil {
+		t.Fatalf("raw NetworkInspect() error = %v", err)
+	}
+	if rawNet.Name != netName {
+		t.Errorf("network name = %q, want %q", rawNet.Name, netName)
+	}
+	if rawNet.Driver != "bridge" {
+		t.Errorf("network driver = %q, want %q", rawNet.Driver, "bridge")
+	}
+
+	cid, err := c.Create(ctx, ContainerSpec{
+		Name:  containerName,
+		Image: "nginx:alpine",
+		Network: &NetworkAttachment{
+			Name:  netName,
+			Alias: "web",
+		},
+	})
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	if err := c.Start(ctx, cid); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+
+	raw, err := c.cli.ContainerInspect(ctx, cid)
+	if err != nil {
+		t.Fatalf("raw ContainerInspect() error = %v", err)
+	}
+	endpoint, ok := raw.NetworkSettings.Networks[netName]
+	if !ok {
+		t.Fatalf("container not attached to network %q, attached to: %+v", netName, raw.NetworkSettings.Networks)
+	}
+	found := false
+	for _, alias := range endpoint.Aliases {
+		if alias == "web" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("container's aliases on %q = %v, want to include %q", netName, endpoint.Aliases, "web")
+	}
+}
+
+// TestClient_ListNetworksByPrefix_Live proves ListNetworksByPrefix finds
+// real networks matching a prefix and genuinely filters out ones that
+// don't, not just that it returns without erroring.
+func TestClient_ListNetworksByPrefix_Live(t *testing.T) {
+	c := liveClient(t)
+	ctx := context.Background()
+
+	matching := "levelrail-test-prefix-app-abc123"
+	nonMatching := "levelrail-test-otherprefix-app-xyz789"
+
+	t.Cleanup(func() { _ = c.cli.NetworkRemove(context.Background(), matching) })
+	t.Cleanup(func() { _ = c.cli.NetworkRemove(context.Background(), nonMatching) })
+
+	if _, err := c.EnsureNetwork(ctx, matching); err != nil {
+		t.Fatalf("EnsureNetwork(matching) error = %v", err)
+	}
+	if _, err := c.EnsureNetwork(ctx, nonMatching); err != nil {
+		t.Fatalf("EnsureNetwork(nonMatching) error = %v", err)
+	}
+
+	networks, err := c.ListNetworksByPrefix(ctx, "levelrail-test-prefix-")
+	if err != nil {
+		t.Fatalf("ListNetworksByPrefix() error = %v", err)
+	}
+
+	foundMatching := false
+	for _, n := range networks {
+		if n.Name == nonMatching {
+			t.Errorf("ListNetworksByPrefix() returned %q, which does not share the queried prefix", nonMatching)
+		}
+		if n.Name == matching {
+			foundMatching = true
+		}
+	}
+	if !foundMatching {
+		t.Errorf("ListNetworksByPrefix() = %+v, want it to include %q", networks, matching)
+	}
+}
+
+// TestClient_RemoveNetwork_Live_IdempotentOnAlreadyGone proves
+// RemoveNetwork actually removes a real network, and is idempotent: a
+// second call after it's already gone must not error, matching
+// RemoveNetwork's own doc comment.
+func TestClient_RemoveNetwork_Live_IdempotentOnAlreadyGone(t *testing.T) {
+	c := liveClient(t)
+	ctx := context.Background()
+
+	netName := "levelrail-test-docker-network-remove"
+
+	if _, err := c.EnsureNetwork(ctx, netName); err != nil {
+		t.Fatalf("EnsureNetwork() error = %v", err)
+	}
+
+	if err := c.RemoveNetwork(ctx, netName); err != nil {
+		t.Fatalf("RemoveNetwork() first call error = %v", err)
+	}
+
+	if _, err := c.cli.NetworkInspect(ctx, netName, dockernetwork.InspectOptions{}); err == nil {
+		t.Error("network still inspectable after RemoveNetwork(), want it gone")
+	}
+
+	// Idempotent: removing an already-removed network must not error.
+	if err := c.RemoveNetwork(ctx, netName); err != nil {
+		t.Errorf("RemoveNetwork() second call (already gone) error = %v, want nil (idempotent)", err)
 	}
 }

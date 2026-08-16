@@ -88,13 +88,19 @@ type deploySpecResponse struct {
 
 // handleDeploySpec handles POST /api/v1/apps/{name}/deploy-spec: one
 // app.yaml's services: map becomes N independent builds+deploys under
-// one store.App named {name}. Synchronous and blocking, the same
-// tradeoff handleTriggerBuild's own doc comment already accepts for an
-// identical reason (no build-progress-streaming infrastructure exists
-// yet): every service builds in sequence (DeploySpec's own doc comment:
-// deterministic key order, not concurrent) before this handler
-// responds, so a large multi-service app.yaml is a genuinely slow
-// request, not just a slow build.
+// one store.App named {name}. Deliberately synchronous and blocking,
+// unlike handleTriggerBuild's async+attempt-tracking design: that
+// handler exists for a human clicking "deploy" and waiting on a
+// spinner, this one is a fan-out API call whose most useful response IS
+// the per-service partial-failure detail (deploySpecResponse), which an
+// immediate 202-and-poll-later response would only defer, not avoid,
+// while losing the one-request-one-answer shape a caller scripting a
+// multi-service deploy actually wants. Every service builds in sequence
+// (DeploySpec's own doc comment: deterministic key order, not
+// concurrent) before this handler responds, so a large multi-service
+// app.yaml is a genuinely slow request, not just a slow build; revisit
+// this tradeoff if that turns out to matter in practice once a frontend
+// exists to drive this endpoint.
 //
 // A build failure for one service key does not fail the request: see
 // deploySpecResponse's own doc comment. This intentionally does not
@@ -146,7 +152,17 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 		imageRepoBase = name
 	}
 
-	sourceDir, cleanup, err := rt.fetch(r.Context(), req.RepoURL, req.Ref)
+	// Same AbilityReadSensitive gate handleTriggerBuild's own doc comment
+	// explains: repo_url is fully caller-controlled and need not have
+	// anything to do with this app, so an unscoped token mint here would
+	// let any AbilityDeploy-only caller read any private repo the org's
+	// installation can reach.
+	var token string
+	if rt.callerHasAbility(r, AbilityReadSensitive) {
+		token = rt.tokenForRepo(r.Context(), req.RepoURL)
+	}
+
+	sourceDir, cleanup, err := rt.fetch(r.Context(), req.RepoURL, req.Ref, token)
 	if err != nil {
 		rt.logger.Error("api: deploy spec: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", req.RepoURL), slog.String("ref", req.Ref))
 		writeError(w, http.StatusBadRequest, "fetching source failed: check repo_url and ref")

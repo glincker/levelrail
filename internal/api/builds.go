@@ -28,6 +28,13 @@ import (
 // builds. *deploy.Pipeline satisfies this structurally.
 type Builder interface {
 	Deploy(ctx context.Context, req deploy.Request, progress func(build.ProgressEvent)) (string, error)
+	// DeploySpec is the multi-service fan-out entry point
+	// (apps_multi.go's handleDeploySpec), *deploy.Pipeline's own
+	// DeploySpec method: N independent Deploy calls under one app,
+	// partial-failure tolerant. Same "one real Pipeline satisfies every
+	// Builder-shaped interface" reasoning this interface's own doc
+	// comment already gives for Deploy.
+	DeploySpec(ctx context.Context, req deploy.MultiRequest, progress func(serviceKey string, ev build.ProgressEvent)) ([]deploy.ServiceOutcome, error)
 }
 
 // fetchFunc fetches repoURL at ref to a local directory, authenticating

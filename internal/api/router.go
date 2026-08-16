@@ -136,11 +136,20 @@ type AppStore interface {
 }
 
 // AppGroupLister is the store surface GET /api/v1/apps/{name}/group
-// needs (apps_group.go): stage 1 of multi-service apps
-// (migrations/0039_apps.sql), read path only. *store.DB satisfies this
-// structurally.
+// needs (apps_group.go, stage 1 of multi-service apps,
+// migrations/0039_apps.sql) plus the app create-or-reuse-and-link
+// methods POST /api/v1/apps/{name}/deploy-spec needs (apps_multi.go,
+// stage 2): both read and write live on this one interface rather than
+// two, since every consumer of either is already the same
+// *store.DB-backed field (rt.appGroups) and splitting it would only
+// mean the multi-service write path threading a second, redundant
+// store field through Router for no real isolation benefit. *store.DB
+// satisfies this structurally.
 type AppGroupLister interface {
 	ListServicesByApp(ctx context.Context, appID string) ([]store.DesiredService, error)
+	GetAppByName(ctx context.Context, name string) (store.App, error)
+	SaveApp(ctx context.Context, a store.App) error
+	UpdateServiceApp(ctx context.Context, serviceName, appID string) error
 }
 
 // DeployStore is the store surface the deploy-history handler needs.
@@ -906,6 +915,13 @@ func (rt *Router) Handler() http.Handler {
 	// store.App, with a worst-condition-wins rollup status. Additive,
 	// read-only; GET /api/v1/apps/{name} above is unchanged.
 	mux.HandleFunc("GET /api/v1/apps/{name}/group", rt.requireAbility(AbilityRead, rt.handleGetAppGroup))
+
+	// Stage 2 of multi-service apps (apps_multi.go): fans one app.yaml's
+	// services: map out into N independent builds+deploys under one
+	// store.App named {name}. AbilityDeploy, the same gate
+	// POST .../builds already uses for an identical build-and-run action,
+	// just for N services instead of one.
+	mux.HandleFunc("POST /api/v1/apps/{name}/deploy-spec", rt.requireAbility(AbilityDeploy, rt.handleDeploySpec))
 
 	// Clone: duplicates an app's desired state under a new name.
 	// AbilityWrite, the same gate POST /api/v1/apps itself uses, since a

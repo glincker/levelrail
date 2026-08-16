@@ -159,32 +159,37 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 			Labels:       spec.Labels,
 		},
 		hostConfig,
-		toNetworkingConfig(spec.Network), nil,
+		nil, nil,
 		spec.Name,
 	)
 	if err != nil {
 		return "", fmt.Errorf("docker: create container %q: %w", spec.Name, err)
 	}
-	return resp.ID, nil
-}
 
-// toNetworkingConfig builds the ContainerCreate NetworkingConfig argument
-// from n. nil (Docker's default "bridge" network, byte-identical to
-// every container created before ContainerSpec.Network existed) when n
-// is nil or has no name.
-func toNetworkingConfig(n *NetworkAttachment) *dockernetwork.NetworkingConfig {
-	if n == nil || n.Name == "" {
-		return nil
+	// spec.Network is attached via a separate NetworkConnect call, not
+	// ContainerCreate's own NetworkingConfig argument: passing endpoint
+	// config (in particular a non-empty Aliases list) directly to
+	// ContainerCreate reproducibly hangs against this project's own
+	// development daemon (Docker Desktop for Mac), waiting on the
+	// create response indefinitely, while the identical attachment via
+	// `docker create --network --network-alias` on the CLI (a
+	// create-then-connect two-step under the hood) returns instantly.
+	// Connecting after create sidesteps whatever that daemon-side
+	// interaction is, and is the more broadly-compatible pattern the
+	// Docker Go SDK's own issue tracker has long recommended over
+	// endpoint config at creation time for exactly this class of
+	// problem.
+	if spec.Network != nil && spec.Network.Name != "" {
+		endpoint := &dockernetwork.EndpointSettings{}
+		if spec.Network.Alias != "" {
+			endpoint.Aliases = []string{spec.Network.Alias}
+		}
+		if err := c.cli.NetworkConnect(ctx, spec.Network.Name, resp.ID, endpoint); err != nil {
+			return "", fmt.Errorf("docker: connect container %q to network %q: %w", spec.Name, spec.Network.Name, err)
+		}
 	}
-	endpoint := &dockernetwork.EndpointSettings{}
-	if n.Alias != "" {
-		endpoint.Aliases = []string{n.Alias}
-	}
-	return &dockernetwork.NetworkingConfig{
-		EndpointsConfig: map[string]*dockernetwork.EndpointSettings{
-			n.Name: endpoint,
-		},
-	}
+
+	return resp.ID, nil
 }
 
 // EnsureNetwork implements Runtime.

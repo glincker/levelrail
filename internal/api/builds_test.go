@@ -33,6 +33,49 @@ type fakeBuilder struct {
 	lastReq deploy.Request
 
 	notify chan deploy.Request
+
+	// multiOutcomes/multiErr back DeploySpec, apps_multi_test.go's own
+	// fake surface: handleDeploySpec calls it synchronously (no
+	// goroutine, see that handler's own doc comment), so unlike Deploy
+	// above there's no notify channel to synchronize a test against --
+	// the mutex-guarded fields are read right after ServeHTTP returns.
+	multiCalls    int
+	lastMultiReq  deploy.MultiRequest
+	multiOutcomes []deploy.ServiceOutcome
+	multiErr      error
+}
+
+func (f *fakeBuilder) DeploySpec(_ context.Context, req deploy.MultiRequest, progress func(serviceKey string, ev build.ProgressEvent)) ([]deploy.ServiceOutcome, error) {
+	f.mu.Lock()
+	f.multiCalls++
+	f.lastMultiReq = req
+	f.mu.Unlock()
+	if f.multiErr != nil {
+		return nil, f.multiErr
+	}
+	if progress != nil {
+		for key := range req.Services {
+			progress(key, build.ProgressEvent{Step: "fake", Completed: true})
+		}
+	}
+	if f.multiOutcomes != nil {
+		return f.multiOutcomes, nil
+	}
+	// No explicit outcomes configured: synthesize one success per
+	// service key using f.tag, the same "Deploy always succeeds with
+	// f.tag" default every other fakeBuilder-using test already relies
+	// on, so a test that only cares about the fan-out mechanics (not a
+	// specific per-service outcome) doesn't have to spell out
+	// multiOutcomes itself.
+	outcomes := make([]deploy.ServiceOutcome, 0, len(req.Services))
+	for key := range req.Services {
+		outcomes = append(outcomes, deploy.ServiceOutcome{
+			ServiceKey:  key,
+			ServiceName: req.AppName + "-" + key,
+			Image:       f.tag,
+		})
+	}
+	return outcomes, nil
 }
 
 func newFakeBuilder(tag string, err error) *fakeBuilder {

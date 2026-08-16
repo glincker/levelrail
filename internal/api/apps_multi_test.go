@@ -57,8 +57,8 @@ func TestHandleDeploySpec_NotConfigured(t *testing.T) {
 // store state a fake builder never actually writes.
 func TestHandleDeploySpec_Success_CreatesTwoServicesUnderOneApp(t *testing.T) {
 	builder := &fakeBuilder{tag: "img:sha"}
-	var fetchCalls []fakeFetchCall
-	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch(&fetchCalls, "/tmp/checkout", new(bool), nil))
+	fetch := newFakeFetch("/tmp/checkout", nil)
+	rt, db := newTestRouterWithBuilder(t, builder, fetch)
 	cookie := loginTestSession(t, rt, db)
 
 	rec := httptest.NewRecorder()
@@ -106,8 +106,9 @@ func TestHandleDeploySpec_Success_CreatesTwoServicesUnderOneApp(t *testing.T) {
 		t.Errorf("Services = %+v, want 2 keys (web, worker)", req.Services)
 	}
 
-	if len(fetchCalls) != 1 || fetchCalls[0].repoURL != "https://example.com/org/app.git" || fetchCalls[0].ref != "main" {
-		t.Errorf("fetchCalls = %+v, want one call for the request's repo_url/ref", fetchCalls)
+	call := fetch.awaitCall(t)
+	if call.repoURL != "https://example.com/org/app.git" || call.ref != "main" {
+		t.Errorf("fetch call = %+v, want repo_url/ref from the request", call)
 	}
 }
 
@@ -123,8 +124,7 @@ func TestHandleDeploySpec_PartialFailure_StillReturns2xxWithPerServiceErrors(t *
 			{ServiceKey: "worker", ServiceName: "myapp-worker", Err: errors.New("worker build failed")},
 		},
 	}
-	var fetchCalls []fakeFetchCall
-	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch(&fetchCalls, "/tmp/checkout", new(bool), nil))
+	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch("/tmp/checkout", nil))
 	cookie := loginTestSession(t, rt, db)
 
 	rec := httptest.NewRecorder()
@@ -160,7 +160,7 @@ func TestHandleDeploySpec_PartialFailure_StillReturns2xxWithPerServiceErrors(t *
 
 func TestHandleDeploySpec_MissingRepoURL_Rejected(t *testing.T) {
 	builder := &fakeBuilder{tag: "img:sha"}
-	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch(&[]fakeFetchCall{}, "/tmp/checkout", new(bool), nil))
+	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch("/tmp/checkout", nil))
 	cookie := loginTestSession(t, rt, db)
 
 	rec := httptest.NewRecorder()
@@ -172,7 +172,7 @@ func TestHandleDeploySpec_MissingRepoURL_Rejected(t *testing.T) {
 
 func TestHandleDeploySpec_NoServices_Rejected(t *testing.T) {
 	builder := &fakeBuilder{tag: "img:sha"}
-	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch(&[]fakeFetchCall{}, "/tmp/checkout", new(bool), nil))
+	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch("/tmp/checkout", nil))
 	cookie := loginTestSession(t, rt, db)
 
 	rec := httptest.NewRecorder()
