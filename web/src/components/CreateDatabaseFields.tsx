@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -21,6 +21,20 @@ import { useCreateDatabase, useSetDatabaseNode } from '../queries/databases'
 import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
 import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
+import { useSystemStatusOptional } from '../queries/systemStatus'
+
+// Engines whose reconciler branch (internal/reconcile/database/
+// controller.go's Reconcile switch) refuses to start the container
+// without generated credentials, reported as the CredentialsNotConfigured
+// condition (ConditionsPanel.tsx's own reason-specific translation).
+// Redis is deliberately excluded: it reconciles unconditionally, no
+// secrets master key involved, see that controller's own package doc
+// comment. Mirrors store.EnginePostgres/store.EngineMySQL by value
+// rather than importing them, the same "plain non-empty string, not a
+// literal union" reasoning createDatabaseSchema's own comment gives for
+// why this file doesn't hardcode a second typed copy of the engine
+// registry.
+const CREDENTIALED_ENGINES = new Set(['postgres', 'mysql'])
 
 // Sentinel for "this control plane's own local node", the implicit
 // default PUT /api/v1/databases/{name}/node's own doc comment
@@ -64,11 +78,20 @@ type CreateDatabaseFormOutput = z.output<typeof createDatabaseSchema>
 // dialog and CreateResourceWizard's step 2 Postgres/Redis paths.
 //
 // Honesty note carried over from the original component's own doc
-// comment: creating a postgres database always succeeds here, but the
-// reconciler cannot actually start Postgres yet (no secrets management
-// built). Postgres is not hidden or disabled as an option, since the
-// backend genuinely accepts it; the real reconcile condition is visible
-// on the detail page's status panel instead of being faked away here.
+// comment, updated now that secrets management (TASKS.md 1.7) exists:
+// creating a postgres or mysql database always succeeds here, but the
+// reconciler still refuses to start either one until the control plane
+// has a secrets master key configured (internal/reconcile/database/
+// controller.go's credentialsBlockedResult). Neither engine is hidden or
+// disabled as an option, since the backend genuinely accepts the
+// desired state either way; the inline warning below surfaces the risk
+// up front instead of only after the fact on the detail page's status
+// panel (ConditionsPanel.tsx's own CredentialsNotConfigured
+// translation), and creation is never blocked on it, matching this
+// codebase's level-triggered "create now, converges later" design (see
+// the database controller's own package doc comment: 4.2 in the root
+// plan document, reconcilers are idempotent and safe to interrupt, never
+// a reason to gate creation on a fixable operator-side prerequisite).
 export function CreateDatabaseFields({
   open,
   onCreated,
@@ -113,6 +136,11 @@ export function CreateDatabaseFields({
   // suggested" rather than blocking the form.
   const engineList = useDatabaseEnginesOptional()
   const engines = engineList.data ?? []
+  // Optional convenience, same degrade-gracefully treatment as the
+  // lists above: see useSystemStatusOptional's own doc comment
+  // (queries/systemStatus.ts). Only ever used to decide whether to show
+  // the credentials warning below, never to gate submission.
+  const systemStatus = useSystemStatusOptional()
   const defaultValues: CreateDatabaseFormInput = {
     name: '',
     engine: engine ?? engines[0]?.id ?? '',
@@ -184,6 +212,32 @@ export function CreateDatabaseFields({
       }}
       className="space-y-4"
     >
+      {CREDENTIALED_ENGINES.has(watchedEngine) &&
+      systemStatus.data?.secrets_configured === false ? (
+        // Warning, not a gate: submission below is never disabled on
+        // this. See the "Honesty note" comment above for why creating
+        // now and converging once the operator fixes the master key is
+        // the intended behavior here, not a bug to work around. No
+        // "warning" tone exists in badgeVariants/alertVariants, so this
+        // reuses the same amber-precedent classes AddNodeDialog.tsx and
+        // CreateTokenDialog.tsx already established for exactly this
+        // gap.
+        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+          <WarningIcon className="mt-0.5 size-4 shrink-0" />
+          <p className="text-sm">
+            No secrets master key is configured on this control plane.
+            This database will be created but won&rsquo;t start until one
+            is configured.{' '}
+            <Link
+              to="/settings/general"
+              className="underline underline-offset-2"
+            >
+              Configure it in Settings &gt; General
+            </Link>
+            .
+          </p>
+        </div>
+      ) : null}
       <Field>
         <FieldLabel htmlFor="database-name">Name</FieldLabel>
         <Input
