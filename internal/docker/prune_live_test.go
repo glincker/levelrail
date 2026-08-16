@@ -39,6 +39,9 @@ import (
 // return values, so the test can't pass by trusting the same code path
 // it's meant to be checking.
 func TestClient_Prune_Live_RemovesOnlyGenuineGarbage(t *testing.T) {
+	if testing.Short() {
+		t.Skip("flaky under concurrent Docker daemon load on shared CI runners, covered by the nightly full suite")
+	}
 	c := liveClient(t)
 	ctx := context.Background()
 

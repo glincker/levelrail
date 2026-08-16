@@ -1,0 +1,63 @@
+name: Nightly full suite
+
+# The thorough run ci.yml's PR/push lane skips (-race, no -short): the
+# safety net for concurrency bugs and the flaky-under-load tests, without
+# blocking every PR on it.
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  check-activity:
+    name: Check for recent commits
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      has-commits: ${{ steps.check.outputs.has-commits }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      # Skip the run entirely on a quiet day (manual dispatch always
+      # runs regardless, for an on-demand full check).
+      - name: Check for commits in the last 24h
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "has-commits=true" >> "$GITHUB_OUTPUT"
+          else
+            count=$(git log --since="24 hours ago" --oneline | wc -l)
+            echo "has-commits=$([ "$count" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          fi
+
+  full-test:
+    name: Full test suite (race, no -short)
+    needs: check-activity
+    if: needs.check-activity.outputs.has-commits == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      # Same reasoning as ci.yml's identical step: the BuildKit-dependent
+      # tests need the daemon on containerd-backed storage.
+      - name: Enable containerd image store for BuildKit's docker exporter
+        run: |
+          sudo mkdir -p /etc/docker
+          echo '{"features":{"containerd-snapshotter":true}}' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
+
+      - name: go test (race detector, full suite)
+        run: go test ./... -race -timeout=40m

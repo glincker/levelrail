@@ -100,6 +100,9 @@ func TestCollectOnce_EmptyTargets_NoOp(t *testing.T) {
 }
 
 func TestRun_CallsTargetsFuncFreshEveryTick(t *testing.T) {
+	if testing.Short() {
+		t.Skip("tight 10ms tick timing is flaky under load on shared CI runners, covered by the nightly full suite")
+	}
 	db := newTestDB(t)
 	source := &fakeStatsSource{stats: map[string]docker.ContainerStats{"c1": {CPUPercent: 1}}}
 	c := NewCollector(source, db, 10*time.Millisecond, nil)

@@ -1,0 +1,85 @@
+name: Dependabot auto-merge
+
+# Enables GitHub's native auto-merge on Dependabot PRs that pass our
+# safety bands, so they merge themselves once CI is green. CI is the
+# real safety net; this only decides which PRs are allowed to wait for it
+# unattended.
+#
+# Auto-merged: any patch update, any github-actions bump (build/CI
+# tooling, not runtime security surface), any minor/major update on a
+# dependency that isn't security-relevant.
+#
+# Held for review (labeled needs-review, commented): minor or major
+# bumps on a security-relevant dependency (TLS/ACME, crypto, the agent's
+# mTLS transport, secrets encryption, WireGuard) -- read the release
+# notes before shipping those regardless of semver band.
+#
+# Modeled on theauth-go's dependabot-auto-merge.yml, adapted to
+# levelrail's own dependency graph.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && !github.event.pull_request.draft
+    steps:
+      - name: Fetch dependency metadata
+        id: meta
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Classify security relevance
+        id: classify
+        run: |
+          names="${{ steps.meta.outputs.dependency-names }}"
+          security_relevant=false
+          for pattern in \
+            "filippo.io/" \
+            "golang.org/x/crypto" \
+            "github.com/caddyserver/" \
+            "golang.zx2c4.com/wireguard" \
+            "google.golang.org/grpc" \
+            "github.com/go-jose/go-jose" \
+            "github.com/coreos/go-oidc" \
+            "go.step.sm/crypto" \
+            "github.com/smallstep/" \
+            "github.com/google/go-tpm"; do
+            if [[ "$names" == *"$pattern"* ]]; then
+              security_relevant=true
+              break
+            fi
+          done
+          echo "security-relevant=$security_relevant" >> "$GITHUB_OUTPUT"
+
+      - name: Enable auto-merge on safe updates
+        if: |
+          steps.meta.outputs.package-ecosystem == 'github_actions' ||
+          steps.meta.outputs.package-ecosystem == 'github-actions' ||
+          steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+          (steps.meta.outputs.update-type != 'version-update:semver-patch' &&
+           steps.classify.outputs.security-relevant == 'false')
+        run: gh pr merge --auto --squash --delete-branch "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Label security-relevant bumps for manual review
+        if: |
+          steps.meta.outputs.package-ecosystem != 'github_actions' &&
+          steps.meta.outputs.package-ecosystem != 'github-actions' &&
+          steps.meta.outputs.update-type != 'version-update:semver-patch' &&
+          steps.classify.outputs.security-relevant == 'true'
+        run: |
+          gh pr edit "$PR_URL" --add-label "needs-review"
+          gh pr comment "$PR_URL" --body "This bumps a security-relevant dependency (TLS/ACME, crypto, agent transport, secrets, or WireGuard) by more than a patch version. Not auto-merging, release notes worth a read before this ships."
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
