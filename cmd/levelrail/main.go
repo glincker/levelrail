@@ -1511,7 +1511,18 @@ func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.D
 			return nil, fmt.Errorf("list nodes: %w", err)
 		}
 
-		appOpts := []application.Option{application.WithDeployRecorder(telemetryDB)}
+		// application.WithStorageTargets(db) is unconditional, unlike
+		// WithSecretResolver just below: resolving a store.BackupTarget's
+		// own Endpoint/Region/Bucket (db.GetBackupTarget) needs no master
+		// key, only its access_key_id/secret_access_key does. A service
+		// with a StorageTargetID but no secretsManager configured still
+		// fails Reconcile loudly, through resolveStorageEnv's own nil
+		// secretResolver check, the identical "fail loudly, don't start
+		// half-configured" shape SecretEnv already has.
+		appOpts := []application.Option{
+			application.WithDeployRecorder(telemetryDB),
+			application.WithStorageTargets(db),
+		}
 		if secretsManager != nil {
 			appOpts = append(appOpts, application.WithSecretResolver(secretsManager))
 		}

@@ -117,6 +117,14 @@ type AppStore interface {
 	// counterpart (projects.go): same separation-from-ordinary-update
 	// reasoning, see store.DB.UpdateServiceProject's own doc comment.
 	UpdateServiceProject(ctx context.Context, name, projectID string) error
+	// UpdateServiceStorageTarget backs PUT/DELETE
+	// /api/v1/apps/{name}/storage (apps_storage.go): which store.BackupTarget
+	// (already-established interface, BackupTargetStore below) this app's
+	// own object-storage credentials resolve from. Same
+	// separation-from-ordinary-update reasoning as UpdateServiceNode/
+	// UpdateServiceProject, see store.DB.UpdateServiceStorageTarget's own
+	// doc comment.
+	UpdateServiceStorageTarget(ctx context.Context, name, storageTargetID string) error
 }
 
 // DeployStore is the store surface the deploy-history handler needs.
@@ -1102,6 +1110,27 @@ func (rt *Router) Handler() http.Handler {
 	// above already draws.
 	mux.HandleFunc("POST /api/v1/databases/{name}/restore", rt.requireAbility(AbilityRoot, rt.handleTriggerRestore))
 	mux.HandleFunc("GET /api/v1/databases/{name}/restores", rt.requireAbility(AbilityRead, rt.handleListRestoreHistory))
+
+	// Object-storage attachment, per app (apps_storage.go): which
+	// connected backup_targets bucket (the same S3-compatible connection
+	// a database's scheduled backups can already point at, reused rather
+	// than a second "storage target" concept) this app's own container
+	// gets S3_* credentials injected from at container-create time.
+	// AbilityWriteSensitive for both PUT and DELETE, the same tier
+	// scheduled backups and database public access above already use:
+	// this changes which live bucket credentials an app's own container
+	// receives, the identical sensitivity class. GET reuses
+	// handleGetApp's own existing AbilityRead response (appResource
+	// carries storage_target_id), the same "no separate GET route"
+	// reasoning the backup-schedule/public-access routes above already
+	// apply.
+	mux.HandleFunc("PUT /api/v1/apps/{name}/storage", rt.requireAbility(AbilityWriteSensitive, rt.handleSetAppStorage))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/storage", rt.requireAbility(AbilityWriteSensitive, rt.handleClearAppStorage))
+	// Read-only, not scoped to any one app: the static list of env var
+	// names attaching storage can inject, backed by
+	// application.StorageEnvKeys rather than a hardcoded list, see
+	// handleListStorageEnvKeys' own doc comment.
+	mux.HandleFunc("GET /api/v1/storage-env-keys", rt.requireAbility(AbilityRead, rt.handleListStorageEnvKeys))
 
 	return mux
 }

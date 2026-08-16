@@ -116,6 +116,25 @@ type DesiredService struct {
 	// full-replace semantics being allowed to silently move an
 	// already-placed service between projects.
 	ProjectID string
+
+	// StorageTargetID is which store.BackupTarget (migrations/0018_backup_targets.sql)
+	// this app's own object-storage credentials resolve from
+	// (migrations/0030_service_storage_target.sql): the same bucket
+	// connection an operator may already use for a database's scheduled
+	// backups, reused rather than duplicated as a second "storage
+	// target" concept. Empty string is "no storage attached", a real,
+	// permanent, equally-valid state, not merely "unset" (SQL NULL,
+	// mirroring ProjectID's own empty-string-means-NULL convention just
+	// above, for the identical reasoning: unlike NodeID, there is no
+	// meaningful non-empty default this could fall back to). Like
+	// NodeID/ProjectID/RestartNonce, SaveDesiredService never writes this
+	// field, on either an INSERT or an UPDATE: only
+	// UpdateServiceStorageTarget does, see that method's own doc comment
+	// for why. internal/reconcile/application's controller resolves the
+	// target's Endpoint/Region/Bucket plus its credentials (internal/secrets,
+	// store.BackupTargetSecretsKey) into env vars at container-create
+	// time when this is non-empty.
+	StorageTargetID string
 }
 
 // DefaultDeployStrategy and DefaultReplicas mirror internal/spec's
@@ -340,6 +359,40 @@ func (db *DB) UpdateServiceProject(ctx context.Context, name, projectID string) 
 	return nil
 }
 
+// UpdateServiceStorageTarget reassigns svc's object-storage credential
+// source to storageTargetID ("" for "no storage attached"), the only way
+// storage_target_id ever changes: SaveDesiredService's own doc comment
+// explains why it's deliberately excluded from that method's
+// full-record-replace semantics, the same reasoning UpdateServiceNode/
+// UpdateServiceProject already establish for their own single-purpose
+// updates. An empty storageTargetID is written as SQL NULL, not the
+// empty string node_id uses, the same reasoning UpdateServiceProject's
+// own doc comment gives: this column is genuinely nullable, mirroring
+// backup_target_id's own convention on desired_databases
+// (migrations/0023_scheduled_backups.sql) rather than node_id's.
+//
+// Deliberately does not validate storageTargetID against backup_targets
+// itself: that check belongs to the caller (internal/api's
+// handleSetAppStorage), the same "own endpoint validates, this method
+// just writes" boundary UpdateServiceProject leaves to
+// handleSetAppProject's own validateProjectID call.
+func (db *DB) UpdateServiceStorageTarget(ctx context.Context, name, storageTargetID string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE desired_services SET storage_target_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, sql.NullString{String: storageTargetID, Valid: storageTargetID != ""}, name)
+	if err != nil {
+		return fmt.Errorf("store: update storage target for service %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: update storage target for service %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrServiceNotFound
+	}
+	return nil
+}
+
 // RestartService is the only way restart_nonce ever changes: SaveDesiredService's
 // own doc comment (and this field's own doc comment on DesiredService)
 // explains why it's deliberately excluded from that method's
@@ -382,7 +435,7 @@ var ErrServiceNotFound = errors.New("store: service not found")
 // ErrServiceNotFound if no such service has been saved.
 func (db *DB) GetDesiredService(ctx context.Context, name string) (*DesiredService, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels
+		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id
 		FROM desired_services
 		WHERE name = ?
 	`, name)
@@ -400,7 +453,7 @@ func (db *DB) GetDesiredService(ctx context.Context, name string) (*DesiredServi
 // ListDesiredServices returns every saved service, ordered by name.
 func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels
+		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id
 		FROM desired_services
 		ORDER BY name
 	`)
@@ -435,7 +488,7 @@ func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error)
 // comparison in this package.
 func (db *DB) ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]DesiredService, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels
+		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id
 		FROM desired_services
 		WHERE node_id = ?
 		ORDER BY name
@@ -494,14 +547,15 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 // signature), so the decode-JSON-columns logic exists exactly once.
 func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	var (
-		svc                                                                 DesiredService
+		svc                                                                DesiredService
 		domainsJSON, envJSON, secretEnvJSON, resourcesJSON, health, labels string
-		projectID                                                          sql.NullString
+		projectID, storageTargetID                                         sql.NullString
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String
+	svc.StorageTargetID = storageTargetID.String
 
 	if err := json.Unmarshal([]byte(domainsJSON), &svc.Domains); err != nil {
 		return nil, fmt.Errorf("unmarshal domains: %w", err)

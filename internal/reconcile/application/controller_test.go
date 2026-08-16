@@ -779,6 +779,241 @@ func TestController_ResolveEnv_SecretWinsOnKeyCollision(t *testing.T) {
 	}
 }
 
+// fakeStorageTargetStore is a hand-written fake for StorageTargetStore,
+// the same pattern every other fake in this file uses: a set of
+// pre-seeded store.BackupTarget rows, standing in for a real *store.DB
+// without a real database.
+type fakeStorageTargetStore struct {
+	targets map[string]store.BackupTarget
+	err     error
+	calls   int
+}
+
+func (f *fakeStorageTargetStore) GetBackupTarget(_ context.Context, id string) (store.BackupTarget, error) {
+	f.calls++
+	if f.err != nil {
+		return store.BackupTarget{}, f.err
+	}
+	target, ok := f.targets[id]
+	if !ok {
+		return store.BackupTarget{}, store.ErrBackupTargetNotFound
+	}
+	return target, nil
+}
+
+func TestController_Reconcile_NoStorageTarget_Unaffected(t *testing.T) {
+	// A service with no StorageTargetID must reconcile identically
+	// whether or not WithStorageTargets/WithSecretResolver are
+	// configured, and must never pay any cost (a lookup call) for either.
+	rt := newFakeRuntime(0)
+	storageStore := &fakeStorageTargetStore{targets: map[string]store.BackupTarget{}}
+	secretResolver := newFakeSecretResolver(nil)
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Env: map[string]string{"NODE_ENV": "production"},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithStorageTargets(storageStore), WithSecretResolver(secretResolver))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue {
+		t.Errorf("condition = %+v, want Status=True", cond)
+	}
+	if storageStore.calls != 0 {
+		t.Errorf("GetBackupTarget calls = %d, want 0: a service with no StorageTargetID must never look one up", storageStore.calls)
+	}
+	for _, key := range []string{"S3_BUCKET", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY", "S3_ENDPOINT", "S3_REGION"} {
+		if _, exists := rt.lastCreateEnv[key]; exists {
+			t.Errorf("container env contains %s, want it absent: no storage target is attached", key)
+		}
+	}
+	if got := rt.lastCreateEnv["NODE_ENV"]; got != "production" {
+		t.Errorf("container env NODE_ENV = %q, want the literal value preserved", got)
+	}
+}
+
+func TestController_Reconcile_StorageTarget_Injected_MergedIntoContainerEnv(t *testing.T) {
+	rt := newFakeRuntime(0)
+	storageStore := &fakeStorageTargetStore{targets: map[string]store.BackupTarget{
+		"bkt_1": {ID: "bkt_1", Name: "app-bucket", Provider: store.BackupProviderR2, Endpoint: "https://r2.example.com", Region: "auto", Bucket: "app-data"},
+	}}
+	secretResolver := newFakeSecretResolver(map[string]string{
+		"backup-target/bkt_1/access_key_id":     "AKIA_REAL",
+		"backup-target/bkt_1/secret_access_key": "sk-real-secret",
+	})
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Env:             map[string]string{"NODE_ENV": "production"},
+		StorageTargetID: "bkt_1",
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithStorageTargets(storageStore), WithSecretResolver(secretResolver))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue {
+		t.Errorf("condition = %+v, want Status=True", cond)
+	}
+
+	want := map[string]string{
+		"NODE_ENV":             "production",
+		"S3_BUCKET":            "app-data",
+		"S3_ENDPOINT":          "https://r2.example.com",
+		"S3_REGION":            "auto",
+		"S3_ACCESS_KEY_ID":     "AKIA_REAL",
+		"S3_SECRET_ACCESS_KEY": "sk-real-secret",
+	}
+	for k, wantV := range want {
+		if gotV := rt.lastCreateEnv[k]; gotV != wantV {
+			t.Errorf("container env %s = %q, want %q", k, gotV, wantV)
+		}
+	}
+}
+
+// TestController_Reconcile_StorageTarget_AWSProviderOmitsEndpointAndRegion
+// proves resolveStorageEnv's own doc comment: an "aws" provider target
+// with no Endpoint/Region set (store.BackupTarget's own documented
+// meaning for that provider) must not inject an empty S3_ENDPOINT/
+// S3_REGION some S3-compatible client library would otherwise try to
+// dial or misinterpret.
+func TestController_Reconcile_StorageTarget_AWSProviderOmitsEndpointAndRegion(t *testing.T) {
+	rt := newFakeRuntime(0)
+	storageStore := &fakeStorageTargetStore{targets: map[string]store.BackupTarget{
+		"bkt_1": {ID: "bkt_1", Name: "app-bucket", Provider: store.BackupProviderAWS, Bucket: "app-data"},
+	}}
+	secretResolver := newFakeSecretResolver(map[string]string{
+		"backup-target/bkt_1/access_key_id":     "AKIA_REAL",
+		"backup-target/bkt_1/secret_access_key": "sk-real-secret",
+	})
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		StorageTargetID: "bkt_1",
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithStorageTargets(storageStore), WithSecretResolver(secretResolver))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	for _, key := range []string{"S3_ENDPOINT", "S3_REGION"} {
+		if _, exists := rt.lastCreateEnv[key]; exists {
+			t.Errorf("container env contains %s, want it absent for an aws-provider target with no explicit endpoint/region", key)
+		}
+	}
+	if got := rt.lastCreateEnv["S3_BUCKET"]; got != "app-data" {
+		t.Errorf("container env S3_BUCKET = %q, want app-data", got)
+	}
+}
+
+func TestController_Reconcile_StorageTarget_NoStorageTargetStoreConfigured_FailsLoudly(t *testing.T) {
+	rt := newFakeRuntime(0)
+	secretResolver := newFakeSecretResolver(map[string]string{
+		"backup-target/bkt_1/access_key_id":     "AKIA_REAL",
+		"backup-target/bkt_1/secret_access_key": "sk-real-secret",
+	})
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		StorageTargetID: "bkt_1",
+	}
+	// No WithStorageTargets.
+	c := New("web", &fakeStore{svc: desired}, rt, WithSecretResolver(secretResolver))
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want a failure: a storage target with no store configured must never silently start a container missing its credentials")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse {
+		t.Errorf("condition = %+v, want Status=False", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0", rt.createCalls)
+	}
+}
+
+func TestController_Reconcile_StorageTarget_NoSecretResolverConfigured_FailsLoudly(t *testing.T) {
+	rt := newFakeRuntime(0)
+	storageStore := &fakeStorageTargetStore{targets: map[string]store.BackupTarget{
+		"bkt_1": {ID: "bkt_1", Name: "app-bucket", Provider: store.BackupProviderR2, Endpoint: "https://r2.example.com", Bucket: "app-data"},
+	}}
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		StorageTargetID: "bkt_1",
+	}
+	// No WithSecretResolver.
+	c := New("web", &fakeStore{svc: desired}, rt, WithStorageTargets(storageStore))
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want a failure: a storage target with no secret resolver configured must never silently start a container missing its credentials")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse {
+		t.Errorf("condition = %+v, want Status=False", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0", rt.createCalls)
+	}
+}
+
+func TestController_Reconcile_StorageTarget_UnknownTarget_FailsLoudly(t *testing.T) {
+	rt := newFakeRuntime(0)
+	storageStore := &fakeStorageTargetStore{targets: map[string]store.BackupTarget{}} // empty: bkt_1 doesn't exist
+	secretResolver := newFakeSecretResolver(nil)
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		StorageTargetID: "bkt_1",
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithStorageTargets(storageStore), WithSecretResolver(secretResolver))
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want the backup target lookup failure to propagate")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse {
+		t.Errorf("condition = %+v, want Status=False", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0", rt.createCalls)
+	}
+}
+
+// TestController_ResolveEnv_StorageTargetWinsOnKeyCollision pins down
+// resolveEnv's documented final-precedence rule directly: a storage
+// target's resolved S3_* values must win over both a same-named literal
+// env var and a same-named resolved secret, deterministically, every
+// time.
+func TestController_ResolveEnv_StorageTargetWinsOnKeyCollision(t *testing.T) {
+	storageStore := &fakeStorageTargetStore{targets: map[string]store.BackupTarget{
+		"bkt_1": {ID: "bkt_1", Bucket: "real-bucket"},
+	}}
+	secretResolver := newFakeSecretResolver(map[string]string{
+		"web/S3_BUCKET":                         "secret-shadow-value",
+		"backup-target/bkt_1/access_key_id":     "AKIA_REAL",
+		"backup-target/bkt_1/secret_access_key": "sk-real-secret",
+	})
+	desired := &store.DesiredService{
+		Name:            "web",
+		Env:             map[string]string{"S3_BUCKET": "operator-typo-value"},
+		SecretEnv:       []string{"S3_BUCKET"},
+		StorageTargetID: "bkt_1",
+	}
+	c := New("web", &fakeStore{}, newFakeRuntime(0), WithStorageTargets(storageStore), WithSecretResolver(secretResolver))
+
+	got, err := c.resolveEnv(context.Background(), desired)
+	if err != nil {
+		t.Fatalf("resolveEnv() error = %v", err)
+	}
+	if got["S3_BUCKET"] != "real-bucket" {
+		t.Errorf("resolveEnv()[S3_BUCKET] = %q, want the storage target's own value (real-bucket) to win over both the literal and the secret", got["S3_BUCKET"])
+	}
+}
+
 // fakeDeployRecorder is a hand-written fake for DeployRecorder, same
 // pattern as fakeSecretResolver above.
 type fakeDeployRecorder struct {

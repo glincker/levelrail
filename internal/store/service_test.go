@@ -353,6 +353,162 @@ func TestUpdateServiceProject_NotFound(t *testing.T) {
 	}
 }
 
+// TestUpdateServiceStorageTarget mirrors TestUpdateServiceProject exactly,
+// for the app-to-bucket attachment column added alongside it
+// (migrations/0030_service_storage_target.sql): same nullable,
+// FK-backed, non-unique column shape, just pointed at backup_targets
+// instead of projects.
+func TestUpdateServiceStorageTarget(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.SaveBackupTarget(ctx, BackupTarget{ID: "bkt_1", Name: "main-bucket", Provider: BackupProviderR2, Endpoint: "https://r2.example.com", Bucket: "app-data", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatalf("SaveBackupTarget() error = %v", err)
+	}
+	if err := db.UpdateServiceStorageTarget(ctx, "web", "bkt_1"); err != nil {
+		t.Fatalf("UpdateServiceStorageTarget() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.StorageTargetID != "bkt_1" {
+		t.Errorf("StorageTargetID = %q, want bkt_1", got.StorageTargetID)
+	}
+}
+
+// TestUpdateServiceStorageTarget_MultipleAppsShareOneTarget proves the
+// deliberate "no uniqueness constraint" decision
+// (migrations/0030_service_storage_target.sql's own comment): a bucket is
+// not a scarce host resource the way public_port is, so two apps
+// attaching the same backup target must both succeed.
+func TestUpdateServiceStorageTarget_MultipleAppsShareOneTarget(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveBackupTarget(ctx, BackupTarget{ID: "bkt_1", Name: "shared-bucket", Provider: BackupProviderR2, Endpoint: "https://r2.example.com", Bucket: "shared", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatalf("SaveBackupTarget() error = %v", err)
+	}
+	for _, name := range []string{"web", "worker"} {
+		if err := db.SaveDesiredService(ctx, DesiredService{Name: name, Image: "img:v1", Port: 8080}); err != nil {
+			t.Fatalf("SaveDesiredService(%s) error = %v", name, err)
+		}
+		if err := db.UpdateServiceStorageTarget(ctx, name, "bkt_1"); err != nil {
+			t.Fatalf("UpdateServiceStorageTarget(%s) error = %v, want both apps to attach the same target successfully", name, err)
+		}
+	}
+
+	for _, name := range []string{"web", "worker"} {
+		got, err := db.GetDesiredService(ctx, name)
+		if err != nil {
+			t.Fatalf("GetDesiredService(%s) error = %v", name, err)
+		}
+		if got.StorageTargetID != "bkt_1" {
+			t.Errorf("%s StorageTargetID = %q, want bkt_1", name, got.StorageTargetID)
+		}
+	}
+}
+
+func TestUpdateServiceStorageTarget_BackToNoStorage(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.SaveBackupTarget(ctx, BackupTarget{ID: "bkt_1", Name: "main-bucket", Provider: BackupProviderR2, Endpoint: "https://r2.example.com", Bucket: "app-data", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatalf("SaveBackupTarget() error = %v", err)
+	}
+	if err := db.UpdateServiceStorageTarget(ctx, "web", "bkt_1"); err != nil {
+		t.Fatalf("UpdateServiceStorageTarget(bkt_1) error = %v", err)
+	}
+	if err := db.UpdateServiceStorageTarget(ctx, "web", ""); err != nil {
+		t.Fatalf("UpdateServiceStorageTarget(\"\") error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.StorageTargetID != "" {
+		t.Errorf("StorageTargetID = %q, want empty after detaching", got.StorageTargetID)
+	}
+}
+
+func TestUpdateServiceStorageTarget_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.UpdateServiceStorageTarget(context.Background(), "nonexistent", "bkt_1")
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("UpdateServiceStorageTarget() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+// TestUpdateServiceStorageTarget_TargetDeletedClearsColumn proves the FK
+// ON DELETE SET NULL actually behaves the way
+// migrations/0030_service_storage_target.sql's own comment claims: an
+// operator deleting a connected bucket must not leave an app silently
+// pointing at a storage_target_id that no longer resolves to anything.
+func TestUpdateServiceStorageTarget_TargetDeletedClearsColumn(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.SaveBackupTarget(ctx, BackupTarget{ID: "bkt_1", Name: "main-bucket", Provider: BackupProviderR2, Endpoint: "https://r2.example.com", Bucket: "app-data", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatalf("SaveBackupTarget() error = %v", err)
+	}
+	if err := db.UpdateServiceStorageTarget(ctx, "web", "bkt_1"); err != nil {
+		t.Fatalf("UpdateServiceStorageTarget() error = %v", err)
+	}
+	if err := db.DeleteBackupTarget(ctx, "bkt_1"); err != nil {
+		t.Fatalf("DeleteBackupTarget() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.StorageTargetID != "" {
+		t.Errorf("StorageTargetID = %q, want empty after the target it pointed at was deleted", got.StorageTargetID)
+	}
+}
+
+// TestSaveDesiredService_RedeployDoesNotResetStorageTargetID mirrors
+// TestSaveDesiredService_RedeployDoesNotResetProjectID exactly, for the
+// same reason: an ordinary redeploy must never silently detach an app's
+// object storage.
+func TestSaveDesiredService_RedeployDoesNotResetStorageTargetID(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("initial SaveDesiredService() error = %v", err)
+	}
+	if err := db.SaveBackupTarget(ctx, BackupTarget{ID: "bkt_1", Name: "main-bucket", Provider: BackupProviderR2, Endpoint: "https://r2.example.com", Bucket: "app-data", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatalf("SaveBackupTarget() error = %v", err)
+	}
+	if err := db.UpdateServiceStorageTarget(ctx, "web", "bkt_1"); err != nil {
+		t.Fatalf("UpdateServiceStorageTarget() error = %v", err)
+	}
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("redeploy SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.StorageTargetID != "bkt_1" {
+		t.Errorf("StorageTargetID = %q, want bkt_1 (a redeploy must not silently detach storage)", got.StorageTargetID)
+	}
+}
+
 // TestSaveDesiredService_RedeployDoesNotResetProjectID mirrors
 // TestSaveDesiredService_RedeployDoesNotResetNodeID exactly, for the
 // same reason: internal/deploy.Pipeline calls SaveDesiredService on

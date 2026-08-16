@@ -269,6 +269,96 @@ export function useSetAppProject() {
   })
 }
 
+// PUT /api/v1/apps/{name}/storage (internal/api/apps_storage.go's
+// handleSetAppStorage): attaches an already-connected backup target (the
+// same S3-compatible bucket connection a database's scheduled backups can
+// already point at, queries/backupTargets.ts) to this app as its
+// object-storage credential source. Response is deliberately narrow
+// (appStorageResource, just app_name/storage_target_id), not a full
+// AppDetail, the same shape setDatabasePublicAccess's own response
+// already establishes for its own dedicated endpoint, so the cache is
+// patched directly below rather than replaced wholesale.
+export interface AppStorageResource {
+  app_name: string
+  storage_target_id?: string
+}
+
+export async function setAppStorage(
+  name: string,
+  storageTargetId: string,
+): Promise<AppStorageResource> {
+  const res = await fetch(`/api/v1/apps/${encodeURIComponent(name)}/storage`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ storage_target_id: storageTargetId }),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `set app storage failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as AppStorageResource
+}
+
+export function useSetAppStorage() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      name,
+      storageTargetId,
+    }: {
+      name: string
+      storageTargetId: string
+    }) => setAppStorage(name, storageTargetId),
+    onSuccess: (result) => {
+      queryClient.setQueryData(
+        appKeys.detail(result.app_name),
+        (existing: AppDetail | undefined) =>
+          existing && {
+            ...existing,
+            storage_target_id: result.storage_target_id,
+          },
+      )
+      void queryClient.invalidateQueries({
+        queryKey: appKeys.detail(result.app_name),
+      })
+    },
+  })
+}
+
+// DELETE /api/v1/apps/{name}/storage (handleClearAppStorage): detaches
+// whatever backup target this app currently resolves object-storage
+// credentials from. 204, no body, so the cache is patched directly from
+// the name this mutation was called with, mirroring
+// clearDatabasePublicAccess's own shape (queries/databases.ts).
+export async function clearAppStorage(name: string): Promise<void> {
+  const res = await fetch(`/api/v1/apps/${encodeURIComponent(name)}/storage`, {
+    method: 'DELETE',
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `clear app storage failed: ${res.status}`),
+    )
+  }
+}
+
+export function useClearAppStorage() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (name: string) => clearAppStorage(name),
+    onSuccess: (_data, name) => {
+      queryClient.setQueryData(
+        appKeys.detail(name),
+        (existing: AppDetail | undefined) =>
+          existing && { ...existing, storage_target_id: undefined },
+      )
+      void queryClient.invalidateQueries({ queryKey: appKeys.detail(name) })
+    },
+  })
+}
+
 // POST /api/v1/apps/{name}/restart (internal/api/apps.go's
 // handleRestartApp): force a running container to be recreated with no
 // image change, the only way to do that at all today (re-deploying the
