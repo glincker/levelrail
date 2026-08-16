@@ -112,6 +112,90 @@ func (db *DB) HasSecretValue(ctx context.Context, serviceName, envKey string) (b
 	return true, nil
 }
 
+// SecretKeyInfo is one secret key known for a service, with its locked
+// state, never a value.
+type SecretKeyInfo struct {
+	Key    string
+	Locked bool
+}
+
+// ListSecretKeys returns every secret key set for serviceName, ordered
+// by key, each with its locked state. Never touches ciphertext: the
+// caller (internal/api's GET /apps/{name}/secrets) can safely return
+// this straight to a browser.
+func (db *DB) ListSecretKeys(ctx context.Context, serviceName string) ([]SecretKeyInfo, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT env_key, locked FROM service_secret_values
+		WHERE service_name = ? ORDER BY env_key
+	`, serviceName)
+	if err != nil {
+		return nil, fmt.Errorf("store: list secret keys for %q: %w", serviceName, err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var keys []SecretKeyInfo
+	for rows.Next() {
+		var info SecretKeyInfo
+		var locked int
+		if err := rows.Scan(&info.Key, &locked); err != nil {
+			return nil, fmt.Errorf("store: scan secret key for %q: %w", serviceName, err)
+		}
+		info.Locked = locked != 0
+		keys = append(keys, info)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: list secret keys for %q: %w", serviceName, err)
+	}
+	return keys, nil
+}
+
+// GetSecretKeyLocked reports whether (serviceName, envKey) has a value
+// set and, if so, whether it's locked. exists is false when no value
+// has ever been set for that key; locked is only meaningful when exists
+// is true.
+func (db *DB) GetSecretKeyLocked(ctx context.Context, serviceName, envKey string) (exists, locked bool, err error) {
+	var lockedInt int
+	scanErr := db.QueryRowContext(ctx, `
+		SELECT locked FROM service_secret_values WHERE service_name = ? AND env_key = ?
+	`, serviceName, envKey).Scan(&lockedInt)
+	if errors.Is(scanErr, sql.ErrNoRows) {
+		return false, false, nil
+	}
+	if scanErr != nil {
+		return false, false, fmt.Errorf("store: get secret key locked state for %q/%q: %w", serviceName, envKey, scanErr)
+	}
+	return true, lockedInt != 0, nil
+}
+
+// SetSecretLocked sets (serviceName, envKey)'s locked flag, either
+// direction: unlike Coolify's permanent lock, this is meant to be
+// reversible. Returns ErrSecretValueNotFound if no value has been set
+// for that key yet, matching GetSecretValue's own not-found sentinel:
+// locking is a property of a value that already exists, not something
+// pre-settable before one does.
+func (db *DB) SetSecretLocked(ctx context.Context, serviceName, envKey string, locked bool) error {
+	lockedInt := 0
+	if locked {
+		lockedInt = 1
+	}
+	res, err := db.ExecContext(ctx, `
+		UPDATE service_secret_values SET locked = ? WHERE service_name = ? AND env_key = ?
+	`, lockedInt, serviceName, envKey)
+	if err != nil {
+		return fmt.Errorf("store: set secret locked for %q/%q: %w", serviceName, envKey, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: set secret locked for %q/%q: %w", serviceName, envKey, err)
+	}
+	if n == 0 {
+		return ErrSecretValueNotFound
+	}
+	return nil
+}
+
 // DeleteServiceSecrets removes every value and the wrapped DEK for
 // serviceName, in a transaction. Deleting the DEK itself (not just the
 // value rows) matters: any ciphertext that somehow survives elsewhere

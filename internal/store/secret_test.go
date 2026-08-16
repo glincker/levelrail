@@ -195,3 +195,128 @@ func TestSaveServiceDEK_TwoServicesGetIndependentDEKs(t *testing.T) {
 		t.Error("two different services got the same DEK bytes, want independent per-app keys")
 	}
 }
+
+func TestListSecretKeys(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveServiceDEK(ctx, "web", []byte("dek")); err != nil {
+		t.Fatalf("SaveServiceDEK() error = %v", err)
+	}
+	if err := db.SaveSecretValue(ctx, "web", "API_KEY", []byte("ct1")); err != nil {
+		t.Fatalf("SaveSecretValue() error = %v", err)
+	}
+	if err := db.SaveSecretValue(ctx, "web", "DB_PASSWORD", []byte("ct2")); err != nil {
+		t.Fatalf("SaveSecretValue() error = %v", err)
+	}
+
+	keys, err := db.ListSecretKeys(ctx, "web")
+	if err != nil {
+		t.Fatalf("ListSecretKeys() error = %v", err)
+	}
+	want := []SecretKeyInfo{
+		{Key: "API_KEY", Locked: false},
+		{Key: "DB_PASSWORD", Locked: false},
+	}
+	if len(keys) != len(want) {
+		t.Fatalf("got %d keys, want %d: %+v", len(keys), len(want), keys)
+	}
+	for i, k := range keys {
+		if k != want[i] {
+			t.Errorf("keys[%d] = %+v, want %+v", i, k, want[i])
+		}
+	}
+}
+
+func TestListSecretKeys_Empty(t *testing.T) {
+	db := openTestDB(t)
+	keys, err := db.ListSecretKeys(context.Background(), "ghost")
+	if err != nil {
+		t.Fatalf("ListSecretKeys() error = %v", err)
+	}
+	if len(keys) != 0 {
+		t.Errorf("got %d keys, want 0", len(keys))
+	}
+}
+
+func TestSetSecretLocked(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveServiceDEK(ctx, "web", []byte("dek")); err != nil {
+		t.Fatalf("SaveServiceDEK() error = %v", err)
+	}
+	if err := db.SaveSecretValue(ctx, "web", "API_KEY", []byte("ct1")); err != nil {
+		t.Fatalf("SaveSecretValue() error = %v", err)
+	}
+
+	if err := db.SetSecretLocked(ctx, "web", "API_KEY", true); err != nil {
+		t.Fatalf("SetSecretLocked(true) error = %v", err)
+	}
+	keys, err := db.ListSecretKeys(ctx, "web")
+	if err != nil {
+		t.Fatalf("ListSecretKeys() error = %v", err)
+	}
+	if len(keys) != 1 || !keys[0].Locked {
+		t.Fatalf("got %+v, want one locked key", keys)
+	}
+
+	// Reversible: unlocking must work too, not just locking.
+	if err := db.SetSecretLocked(ctx, "web", "API_KEY", false); err != nil {
+		t.Fatalf("SetSecretLocked(false) error = %v", err)
+	}
+	keys, err = db.ListSecretKeys(ctx, "web")
+	if err != nil {
+		t.Fatalf("ListSecretKeys() error = %v", err)
+	}
+	if len(keys) != 1 || keys[0].Locked {
+		t.Fatalf("got %+v, want unlocked key", keys)
+	}
+}
+
+func TestSetSecretLocked_KeyNotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.SetSecretLocked(context.Background(), "web", "GHOST_KEY", true)
+	if !errors.Is(err, ErrSecretValueNotFound) {
+		t.Errorf("error = %v, want ErrSecretValueNotFound", err)
+	}
+}
+
+func TestGetSecretKeyLocked(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveServiceDEK(ctx, "web", []byte("dek")); err != nil {
+		t.Fatalf("SaveServiceDEK() error = %v", err)
+	}
+	if err := db.SaveSecretValue(ctx, "web", "API_KEY", []byte("ct1")); err != nil {
+		t.Fatalf("SaveSecretValue() error = %v", err)
+	}
+
+	exists, locked, err := db.GetSecretKeyLocked(ctx, "web", "API_KEY")
+	if err != nil {
+		t.Fatalf("GetSecretKeyLocked() error = %v", err)
+	}
+	if !exists || locked {
+		t.Errorf("exists=%v locked=%v, want exists=true locked=false", exists, locked)
+	}
+
+	if err := db.SetSecretLocked(ctx, "web", "API_KEY", true); err != nil {
+		t.Fatalf("SetSecretLocked() error = %v", err)
+	}
+	exists, locked, err = db.GetSecretKeyLocked(ctx, "web", "API_KEY")
+	if err != nil {
+		t.Fatalf("GetSecretKeyLocked() error = %v", err)
+	}
+	if !exists || !locked {
+		t.Errorf("exists=%v locked=%v, want exists=true locked=true", exists, locked)
+	}
+}
+
+func TestGetSecretKeyLocked_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	exists, locked, err := db.GetSecretKeyLocked(context.Background(), "web", "GHOST")
+	if err != nil {
+		t.Fatalf("GetSecretKeyLocked() error = %v", err)
+	}
+	if exists || locked {
+		t.Errorf("exists=%v locked=%v, want both false", exists, locked)
+	}
+}
