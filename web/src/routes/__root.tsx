@@ -1,17 +1,21 @@
+import * as React from 'react'
 import type { QueryClient } from '@tanstack/react-query'
 import {
   createRootRouteWithContext,
   Outlet,
   redirect,
 } from '@tanstack/react-router'
+import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
 import { getStoredUsername } from '../lib/authStore'
 import { useAuthUsername } from '../hooks/useAuthUsername'
 import { brandQueryOptions } from '../queries/brand'
 import { BrandProvider } from '../components/BrandProvider'
 import { AppSidebar } from '../components/AppSidebar'
+import { CommandPalette } from '../components/CommandPalette'
 import { NotificationBell } from '../components/NotificationBell'
 import { ThemeProvider } from '../components/ThemeProvider'
 import { ThemeToggle } from '../components/ThemeToggle'
+import { Button } from '../components/ui/button'
 import {
   SidebarInset,
   SidebarProvider,
@@ -79,6 +83,7 @@ function RootLayout() {
 // change to it.
 function AppShell() {
   const username = useAuthUsername()
+  const [commandPaletteOpen, setCommandPaletteOpen] = React.useState(false)
 
   if (!username) {
     return <Outlet />
@@ -87,10 +92,27 @@ function AppShell() {
   return (
     <SidebarProvider>
       <AppSidebar />
+      <CommandPalette
+        open={commandPaletteOpen}
+        onOpenChange={setCommandPaletteOpen}
+      />
       <SidebarInset>
         <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-56 justify-start text-muted-foreground"
+            onClick={() => setCommandPaletteOpen(true)}
+          >
+            <MagnifyingGlassIcon />
+            <span className="flex-1 text-left">Search...</span>
+            <kbd className="rounded border border-border bg-muted px-1 text-xs">
+              ⌘K
+            </kbd>
+          </Button>
           <div className="ml-auto flex items-center gap-2">
             <NotificationBell />
             <ThemeToggle />

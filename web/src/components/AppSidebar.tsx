@@ -4,19 +4,11 @@ import {
   StackIcon,
   BookOpenIcon,
   DatabaseIcon,
-  KeyIcon,
   SignOutIcon,
   HardDrivesIcon,
   GearIcon,
-  ShieldIcon,
-  UserIcon,
-  CloudArrowUpIcon,
   FolderIcon,
   GlobeIcon,
-  GithubLogoIcon,
-  UsersIcon,
-  WebhooksLogoIcon,
-  EnvelopeIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
@@ -197,116 +189,21 @@ export function AppSidebar() {
                 account footer: the two-zone structure dashboard-01's
                 NavSecondary establishes. mt-auto on the group itself, not
                 a spacer element, so it works regardless of how much
-                primary nav exists above it. A real "Settings" section
-                (account, security, tokens, general), not just the one
-                API-tokens link this group used to hold: Coolify and
-                Dokploy both surface these even before a single app is
-                deployed, and Levelrail's equivalent screens
-                (routes/settings/*) exist now too. */}
+                primary nav exists above it. Single entry point into the
+                settings hub (routes/settings/index.tsx) rather than
+                listing every settings page here. */}
             <SidebarGroup className="mt-auto">
               <SidebarGroupLabel>Settings</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      render={<Link to="/settings/account" />}
-                      isActive={pathname.startsWith('/settings/account')}
-                      tooltip="Account"
-                    >
-                      <UserIcon />
-                      <span>Account</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/settings/security" />}
-                      isActive={pathname.startsWith('/settings/security')}
-                      tooltip="Security"
-                    >
-                      <ShieldIcon />
-                      <span>Security</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/settings/tokens" />}
-                      isActive={pathname.startsWith('/settings/tokens')}
-                      tooltip="API tokens"
-                    >
-                      <KeyIcon />
-                      <span>API tokens</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/settings/backup-targets" />}
-                      isActive={pathname.startsWith('/settings/backup-targets')}
-                      tooltip="Backup targets"
-                    >
-                      <CloudArrowUpIcon />
-                      <span>Backup targets</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/settings/notification-channels" />}
-                      isActive={pathname.startsWith(
-                        '/settings/notification-channels',
-                      )}
-                      tooltip="Notification channels"
-                    >
-                      <WebhooksLogoIcon />
-                      <span>Notification channels</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/settings/github-app" />}
-                      isActive={pathname.startsWith('/settings/github-app')}
-                      tooltip="GitHub App"
-                    >
-                      <GithubLogoIcon />
-                      <span>GitHub App</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/settings/oauth" />}
-                      isActive={pathname.startsWith('/settings/oauth')}
-                      tooltip="OAuth sign-in"
-                    >
-                      <KeyIcon />
-                      <span>OAuth sign-in</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/settings/users" />}
-                      isActive={pathname.startsWith('/settings/users')}
-                      tooltip="Users"
-                    >
-                      <UsersIcon />
-                      <span>Users</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/settings/email" />}
-                      isActive={pathname.startsWith('/settings/email')}
-                      tooltip="Email"
-                    >
-                      <EnvelopeIcon />
-                      <span>Email</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/settings/general" />}
-                      isActive={pathname.startsWith('/settings/general')}
-                      tooltip="General"
+                      render={<Link to="/settings" />}
+                      isActive={pathname.startsWith('/settings')}
+                      tooltip="Settings"
                     >
                       <GearIcon />
-                      <span>General</span>
+                      <span>Settings</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   {brand.DocsURL ? (
