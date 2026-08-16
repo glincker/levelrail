@@ -80,6 +80,12 @@ type appResource struct {
 	// instead, the same boundary NodeID/ProjectID/StorageTargetID
 	// already establish above.
 	Suspended bool `json:"suspended"`
+	// AppID is which store.App (migrations/0039_apps.sql, stage 1 of
+	// multi-service apps) this service belongs to; empty when none.
+	// Response-only, additive: toDesiredService never reads it, no
+	// stage-1 write path sets it. See GET /api/v1/apps/{name}/group
+	// (apps_group.go) for the sibling-services read this enables.
+	AppID string `json:"app_id,omitempty"`
 }
 
 func toAppResource(svc store.DesiredService) appResource {
@@ -98,6 +104,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		ProjectID:       svc.ProjectID,
 		StorageTargetID: svc.StorageTargetID,
 		Suspended:       svc.Suspended,
+		AppID:           svc.AppID,
 	}
 }
 

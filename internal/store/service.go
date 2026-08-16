@@ -144,6 +144,14 @@ type DesiredService struct {
 	// SaveDesiredService never writes this field: only
 	// UpdateServiceSuspended does.
 	Suspended bool
+
+	// AppID is which store.App (migrations/0039_apps.sql) this service
+	// belongs to; empty string means none. Stage 1 of multi-service
+	// apps: this is populated only by that migration's backfill, and
+	// SaveDesiredService never writes it (no stage-1 caller assigns a
+	// service to an app), so a service created after the migration has
+	// an empty AppID until a later stage adds a setter.
+	AppID string
 }
 
 // DefaultDeployStrategy and DefaultReplicas mirror internal/spec's
@@ -348,7 +356,7 @@ func (db *DB) UpdateServiceNode(ctx context.Context, name, nodeID string) error 
 // deliberately excluded from that method's full-record-replace
 // semantics, the same reasoning UpdateServiceNode already establishes
 // for NodeID. An empty projectID is written as SQL NULL, not the empty
-// string node_id uses, because unlike node_id (NOT NULL DEFAULT ''),
+// string node_id uses, because unlike node_id (NOT NULL DEFAULT ”),
 // this column is genuinely nullable (migrations/0022_projects.sql's own
 // comment on why).
 func (db *DB) UpdateServiceProject(ctx context.Context, name, projectID string) error {
@@ -469,7 +477,7 @@ var ErrServiceNotFound = errors.New("store: service not found")
 // ErrServiceNotFound if no such service has been saved.
 func (db *DB) GetDesiredService(ctx context.Context, name string) (*DesiredService, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended
+		SELECT ` + desiredServiceColumns + `
 		FROM desired_services
 		WHERE name = ?
 	`, name)
@@ -487,7 +495,7 @@ func (db *DB) GetDesiredService(ctx context.Context, name string) (*DesiredServi
 // ListDesiredServices returns every saved service, ordered by name.
 func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended
+		SELECT ` + desiredServiceColumns + `
 		FROM desired_services
 		ORDER BY name
 	`)
@@ -522,7 +530,7 @@ func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error)
 // comparison in this package.
 func (db *DB) ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]DesiredService, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended
+		SELECT ` + desiredServiceColumns + `
 		FROM desired_services
 		WHERE node_id = ?
 		ORDER BY name
@@ -576,6 +584,11 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 	return nil
 }
 
+// desiredServiceColumns is the column list every desired_services SELECT
+// in this package shares, kept in one place so scanDesiredService's
+// destination order and each query's column order can never drift apart.
+const desiredServiceColumns = "name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id"
+
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
 // signature), so the decode-JSON-columns logic exists exactly once.
@@ -583,13 +596,14 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	var (
 		svc                                                                DesiredService
 		domainsJSON, envJSON, secretEnvJSON, resourcesJSON, health, labels string
-		projectID, storageTargetID                                         sql.NullString
+		projectID, storageTargetID, appID                                  sql.NullString
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String
 	svc.StorageTargetID = storageTargetID.String
+	svc.AppID = appID.String
 
 	if err := json.Unmarshal([]byte(domainsJSON), &svc.Domains); err != nil {
 		return nil, fmt.Errorf("unmarshal domains: %w", err)
