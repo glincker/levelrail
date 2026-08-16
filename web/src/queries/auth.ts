@@ -113,7 +113,7 @@ export function useLogin() {
     mutationFn: ({ username, password }) => login(username, password),
     onSuccess: (user) => {
       setStoredUsername(user.username)
-      void navigate({ to: '/apps' })
+      void navigate({ to: '/' })
     },
   })
 }
@@ -124,7 +124,7 @@ export function useRegister() {
     mutationFn: ({ username, password }) => register(username, password),
     onSuccess: (user) => {
       setStoredUsername(user.username)
-      void navigate({ to: '/apps' })
+      void navigate({ to: '/' })
     },
   })
 }
