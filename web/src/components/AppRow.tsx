@@ -6,6 +6,7 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import type { AppListEntry, AppStatusSummary } from '../types/appDetail'
+import { STATUS_DOT_COLOR } from '../lib/appStatus'
 
 // Shared column grid between the sticky header (routes/apps/index.tsx)
 // and every row below (AppRow, RowSkeleton), so header labels line up
@@ -90,20 +91,10 @@ export function AppRow({ app }: { app: AppListEntry }) {
   )
 }
 
-// Solid-fill counterpart to badgeVariants' success/destructive/muted
-// backgrounds (components/ui/badge.tsx): a row-scale dot has no room for
-// the badge's own light background + dark text combo, so this maps the
-// same three variants to a single solid dot color instead. title gives
-// mouse users the label as a tooltip; role="img" + aria-label carries
-// the same text to screen readers, since the color alone conveys
-// nothing without it.
-const STATUS_DOT_COLOR: Record<AppStatusSummary['variant'], string> = {
-  success: 'bg-green-500 dark:bg-green-400',
-  destructive: 'bg-destructive',
-  muted: 'bg-muted-foreground/40',
-}
-
-function StatusDot({ status }: { status: AppStatusSummary }) {
+// title gives mouse users the label as a tooltip; role="img" +
+// aria-label carries the same text to screen readers, since the dot's
+// color alone conveys nothing without it.
+export function StatusDot({ status }: { status: AppStatusSummary }) {
   return (
     <span
       className={`size-2 shrink-0 rounded-full ${STATUS_DOT_COLOR[status.variant]}`}

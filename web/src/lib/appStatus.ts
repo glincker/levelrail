@@ -1,6 +1,7 @@
 import type { badgeVariants } from '@/components/ui/badge'
 import type { VariantProps } from 'class-variance-authority'
 import type { ReconcileCondition } from '../types/deploy'
+import type { AppStatusSummary } from '../types/appDetail'
 
 // Shared between routes/apps/$name.tsx (page header) and
 // AppScopedSidebar.tsx (sidebar app-info block): both render the same
@@ -22,4 +23,15 @@ export function summarizeAppStatus(conditions: ReconcileCondition[]): {
     return { label: 'Healthy', variant: 'success' }
   }
   return { label: 'Reconciling', variant: 'muted' }
+}
+
+// Solid-fill counterpart to badgeVariants' success/destructive/muted
+// backgrounds (components/ui/badge.tsx): a dot has no room for the
+// badge's own light background + dark text combo, so this maps the same
+// three variants to a single solid color instead. Shared between
+// AppRow's StatusDot and DashboardOverview's decorative row dot.
+export const STATUS_DOT_COLOR: Record<AppStatusSummary['variant'], string> = {
+  success: 'bg-green-500 dark:bg-green-400',
+  destructive: 'bg-destructive',
+  muted: 'bg-muted-foreground/40',
 }

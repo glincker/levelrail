@@ -1,5 +1,6 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import {
+  GaugeIcon,
   StackIcon,
   BookOpenIcon,
   DatabaseIcon,
@@ -84,7 +85,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
-              render={<Link to="/apps" />}
+              render={<Link to="/" />}
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
@@ -110,6 +111,16 @@ export function AppSidebar() {
             <SidebarGroup>
               <SidebarGroupContent>
                 <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/" />}
+                      isActive={pathname === '/'}
+                      tooltip="Dashboard"
+                    >
+                      <GaugeIcon />
+                      <span>Dashboard</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       render={<Link to="/apps" />}
