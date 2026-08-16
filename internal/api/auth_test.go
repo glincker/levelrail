@@ -463,7 +463,7 @@ func TestHandleRegister_ConcurrentRequests_OnlyOneWins(t *testing.T) {
 	}
 
 	// Exactly one user row must exist, not zero, not many:
-	// ux_users_single_first_user (migrations/0030_users.sql) enforces
+	// ux_users_single_first_user (migrations/0035_users.sql) enforces
 	// this at the schema level too, this proves the API layer converges
 	// to the same invariant.
 	if n, err := db.CountUsers(context.Background()); err != nil || n != 1 {

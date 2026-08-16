@@ -248,7 +248,7 @@ func TestDeleteUser_NotFound(t *testing.T) {
 	}
 }
 
-// TestMigration_LegacyAdminUserBecomesFirstUser proves migrations/0030's
+// TestMigration_LegacyAdminUserBecomesFirstUser proves migrations/0035's
 // admin_user -> users backfill against the real migration SQL: applies
 // every migration before 0030, seeds a legacy admin_user row with a
 // bare username (no "@"), then applies 0030 and checks the result.
@@ -282,20 +282,22 @@ func TestMigration_LegacyAdminUserBecomesFirstUser(t *testing.T) {
 
 	var usersMigration *migration
 	for i := range migrations {
-		m := migrations[i]
-		if m.version == 30 {
+		if migrations[i].name == "users" {
 			usersMigration = &migrations[i]
-			continue
+			break
 		}
-		if m.version > 30 {
+	}
+	if usersMigration == nil {
+		t.Fatal("users migration not found")
+	}
+	for i := range migrations {
+		m := migrations[i]
+		if m.version >= usersMigration.version {
 			continue
 		}
 		if err := db.applyMigration(ctx, m); err != nil {
 			t.Fatalf("apply migration %d: %v", m.version, err)
 		}
-	}
-	if usersMigration == nil {
-		t.Fatal("migration 0030 not found")
 	}
 
 	if _, err := db.ExecContext(ctx, `

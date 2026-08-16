@@ -419,7 +419,7 @@ type Router struct {
 	githubAppSecrets        GitHubAppSecrets            // nil is valid: every github-app route that needs it (register/start, callback, installed, repos, branches) returns 501, same shape as backupSecrets above
 	githubAppClient         GitHubAppClient             // always set (NewRouter defaults it to a real *githubapp.Client, which needs no configuration to construct), overridable in this package's own tests the same way fetch is
 	githubAppState          *githubAppRegistrationState // always set (NewRouter constructs one unconditionally); purely in-memory bookkeeping, see its own doc comment
-	oauthSettings           OAuthSettingsStore          // always set, same "core Store interface" shape as ingressSettings above: both provider rows always exist (migrations/0030's own seeded rows)
+	oauthSettings           OAuthSettingsStore          // always set, same "core Store interface" shape as ingressSettings above: both provider rows always exist (migrations/0035's own seeded rows)
 	oauthIdentities         OAuthIdentityStore          // always set, same shape as oauthSettings above
 	oauthSecrets            OAuthSecrets                // nil is valid: every /auth/oauth/... sign-in route and PUT /settings/oauth/{provider} return 501/501, same "not configured" shape as gitSourceSecrets above
 	oauthState              *oauthStateStore            // built in NewRouter unconditionally, the same "always present, not an Option" shape sessions itself has

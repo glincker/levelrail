@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// OAuth provider names the migrations/0030_users.sql CHECK constraints
+// OAuth provider names the migrations/0035_users.sql CHECK constraints
 // accept. Fixed pair, no other providers (Phase 4 scope).
 const (
 	OAuthProviderGoogle = "google"
@@ -17,7 +17,7 @@ const (
 
 // OAuthIdentity is one linked external account. Uniqueness (at most one
 // per provider per user, never linked to two users) is enforced by
-// migrations/0030's own indexes, not application code.
+// migrations/0035's own indexes, not application code.
 type OAuthIdentity struct {
 	ID             string
 	UserID         string
@@ -31,7 +31,7 @@ type OAuthIdentity struct {
 var ErrOAuthIdentityNotFound = errors.New("store: oauth identity not found")
 
 // ErrOAuthIdentityAlreadyLinked is SaveOAuthIdentity's failure mode when
-// either unique index (migrations/0030) would be violated.
+// either unique index (migrations/0035) would be violated.
 var ErrOAuthIdentityAlreadyLinked = errors.New("store: oauth identity already linked")
 
 // SaveOAuthIdentity inserts a new linked identity, insert-only, never an

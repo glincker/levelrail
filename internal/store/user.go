@@ -9,7 +9,7 @@ import (
 )
 
 // User is a real, individually-identified account
-// (migrations/0030_users.sql). Every user has identical access, no role
+// (migrations/0035_users.sql). Every user has identical access, no role
 // field. PasswordHash is nil for an OAuth-only user. IsFirstUser is
 // display-only.
 type User struct {
@@ -72,7 +72,7 @@ func (db *DB) GetUserByID(ctx context.Context, id string) (*User, error) {
 
 // GetUserByEmail returns the user with this email, or ErrUserNotFound.
 // The stored value isn't always a syntactically valid email: a
-// pre-migration bare username migrates in unchanged (migrations/0030).
+// pre-migration bare username migrates in unchanged (migrations/0035).
 func (db *DB) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	row := db.QueryRowContext(ctx, `
 		SELECT id, email, display_name, password_hash, is_first_user, created_at, last_login_at
@@ -151,7 +151,7 @@ func (db *DB) UpdateUserLastLogin(ctx context.Context, id string, when time.Time
 	return rowsAffectedOrNotFound(res, ErrUserNotFound, "update user %q last login", id)
 }
 
-// DeleteUser removes a user row; the FK cascade (migrations/0030) takes
+// DeleteUser removes a user row; the FK cascade (migrations/0035) takes
 // any linked OAuth identities with it. Guards like "not the last user"
 // live in internal/api/users.go, not here.
 func (db *DB) DeleteUser(ctx context.Context, id string) error {
@@ -190,13 +190,6 @@ func scanUser(scan func(dest ...any) error) (*User, error) {
 		return nil, fmt.Errorf("parse last_login_at: %w", err)
 	}
 	return &u, nil
-}
-
-func nullableString(s *string) sql.NullString {
-	if s == nil {
-		return sql.NullString{}
-	}
-	return sql.NullString{String: *s, Valid: true}
 }
 
 // rowsAffectedOrNotFound translates "zero rows changed" into notFound,

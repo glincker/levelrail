@@ -7,7 +7,7 @@ import (
 )
 
 // OAuthProviderSettings is one row of oauth_provider_settings
-// (migrations/0030_users.sql), one per known provider, always present
+// (migrations/0035_users.sql), one per known provider, always present
 // (seeded by the migration), so Get/List never 404 for a valid provider.
 type OAuthProviderSettings struct {
 	Provider           string

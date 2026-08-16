@@ -396,7 +396,7 @@ func hashToken(plaintext string) string {
 // via POST /api/v1/auth/users: open self-registration is too big a risk
 // once this control plane is internet-reachable, with no invite system
 // to bound it. Gated at the mutation layer via
-// ux_users_single_first_user (migrations/0030), closing the
+// ux_users_single_first_user (migrations/0035), closing the
 // two-concurrent-registrations race.
 func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
@@ -463,7 +463,7 @@ const minPasswordLength = 8
 // username/password if none does yet. No-op once any user exists, so a
 // restart with the same env vars never resets a changed password.
 // username becomes the new user's email verbatim (no "@" required),
-// matching migrations/0030's backfill leniency for a pre-existing
+// matching migrations/0035's backfill leniency for a pre-existing
 // admin_user row.
 func BootstrapAdmin(ctx context.Context, s AuthStore, username, password string) error {
 	n, err := s.CountUsers(ctx)

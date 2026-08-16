@@ -119,7 +119,7 @@ func TestListOAuthIdentitiesForUser(t *testing.T) {
 }
 
 // TestDeleteUser_CascadesOAuthIdentities proves the FK ON DELETE CASCADE
-// (migrations/0030): removing a user must not orphan their linked
+// (migrations/0035): removing a user must not orphan their linked
 // identities.
 func TestDeleteUser_CascadesOAuthIdentities(t *testing.T) {
 	db := openTestDB(t)
