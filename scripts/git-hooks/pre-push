@@ -1,9 +1,7 @@
 #!/bin/bash
-# The heavier gate scripts/git-hooks/pre-commit deliberately skips: a
-# full test run with the same race detector and coverage threshold CI
-# enforces (.github/workflows/ci.yml), so a clean local push should never
-# fail CI on test or coverage grounds. Slower than pre-commit on purpose,
-# this only has to run once per push, not once per commit.
+# The heavier gate pre-commit skips: a full -race test run plus the
+# coverage threshold. Runs the thorough check CI's PR lane no longer
+# does, once per push rather than once per commit.
 set -uo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
@@ -18,8 +16,10 @@ if ! go build ./... 2>&1; then
 fi
 
 if [ "$fail" -eq 0 ]; then
-	echo "pre-push: go test -race (with coverage)"
-	if ! go test ./... -race -coverprofile="$coverage_out" 2>&1; then
+	# -short skips the tests marked testing.Short() (flaky under load,
+	# covered by nightly.yml instead); -race stays on.
+	echo "pre-push: go test -race -short (with coverage)"
+	if ! go test ./... -race -short -coverprofile="$coverage_out" 2>&1; then
 		fail=1
 	fi
 fi
