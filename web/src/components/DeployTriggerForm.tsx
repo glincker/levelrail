@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { useNavigate } from '@tanstack/react-router'
 import { GitBranchIcon, RocketIcon } from '@phosphor-icons/react/dist/ssr'
 import { useTriggerDeploy } from '../queries/deploys'
 import { useTriggerBuild } from '../queries/builds'
@@ -163,10 +164,11 @@ type BuildFormValues = z.infer<typeof buildSchema>
 // The build itself runs asynchronously on the server: this mutation
 // resolves as soon as the deploy attempt is recorded, not once the build
 // finishes (see queries/builds.ts's own doc comment), so its pending
-// state is only ever brief. There is still no in-page log viewer or
-// progress bar here; the Overview tab's deploy history is where the
-// attempt's outcome shows up once it lands.
+// state is only ever brief. A successful trigger navigates to that
+// attempt's live log view (the same route DeployAttemptsList's own
+// "Logs" link uses), rather than leaving the operator to go find it.
 function BuildFromSourceForm({ appName }: { appName: string }) {
+  const navigate = useNavigate()
   const triggerBuild = useTriggerBuild(appName)
   const { register, handleSubmit, formState, reset } = useForm<BuildFormValues>(
     {
@@ -189,13 +191,22 @@ function BuildFromSourceForm({ appName }: { appName: string }) {
         buildPath: values.dockerfilePath.trim() || undefined,
       },
       {
-        onSuccess: () => {
+        onSuccess: (result) => {
           reset({ repoUrl: '', ref: '', imageRepo: '', dockerfilePath: '' })
           toast.add({
             title: 'Build triggered.',
-            description: 'Check the Overview tab for the outcome.',
+            description: 'Watching the build log now.',
             type: 'success',
           })
+          // See CreateAppFromGitFields.tsx's identical navigation for
+          // why result.id can be empty (attempt recording itself
+          // failed) and what that means here.
+          if (result.id) {
+            void navigate({
+              to: '/apps/$name/deploys/$deployId/logs',
+              params: { name: appName, deployId: result.id },
+            })
+          }
         },
       },
     )
