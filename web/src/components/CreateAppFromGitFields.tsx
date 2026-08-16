@@ -240,14 +240,27 @@ export function CreateAppFromGitFields({
     buildMutation.mutate(
       { name, input: buildInputFrom(values) },
       {
-        onSuccess: () => {
+        onSuccess: (result) => {
           onCreated()
           toast.add({
             title: `App "${name}" created, build triggered.`,
-            description: 'Check the app page for the build outcome.',
+            description: 'Watching the build log now.',
             type: 'success',
           })
-          void navigate({ to: '/apps/$name', params: { name } })
+          // result.id is the deploy attempt id (queries/builds.ts's own
+          // doc comment: empty only if attempt recording itself failed,
+          // which never blocks the build). Land on its live log view
+          // instead of the plain app page, the same "watch it happen"
+          // landing DeployAttemptsList's own Logs link gives an
+          // already-existing app's rebuild.
+          if (result.id) {
+            void navigate({
+              to: '/apps/$name/deploys/$deployId/logs',
+              params: { name, deployId: result.id },
+            })
+          } else {
+            void navigate({ to: '/apps/$name', params: { name } })
+          }
         },
       },
     )
