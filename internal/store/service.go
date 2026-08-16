@@ -164,11 +164,12 @@ type DesiredService struct {
 	Suspended bool
 
 	// AppID is which store.App (migrations/0039_apps.sql) this service
-	// belongs to; empty string means none. Stage 1 of multi-service
-	// apps: this is populated only by that migration's backfill, and
-	// SaveDesiredService never writes it (no stage-1 caller assigns a
-	// service to an app), so a service created after the migration has
-	// an empty AppID until a later stage adds a setter.
+	// belongs to; empty string means none. SaveDesiredService only
+	// writes it on first INSERT, never on an ON CONFLICT update, the
+	// same "an ordinary edit must never silently move it" invariant
+	// NodeID/ProjectID/StorageTargetID/Suspended already have (via
+	// their own dedicated Update* setters); a service's AppID is fixed
+	// at creation.
 	AppID string
 }
 
@@ -280,8 +281,8 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	}()
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, labels, volumes, project_id, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, NULL, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, labels, volumes, project_id, app_id, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, NULL, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
@@ -295,7 +296,7 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 			labels = excluded.labels,
 			volumes = excluded.volumes,
 			updated_at = excluded.updated_at
-	`, svc.Name, svc.Image, svc.Port, string(domainsJSON), string(envJSON), string(secretEnvJSON), string(resourcesJSON), string(healthJSON), strategy, replicas, string(labelsJSON), string(volumesJSON))
+	`, svc.Name, svc.Image, svc.Port, string(domainsJSON), string(envJSON), string(secretEnvJSON), string(resourcesJSON), string(healthJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), sql.NullString{String: svc.AppID, Valid: svc.AppID != ""})
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
