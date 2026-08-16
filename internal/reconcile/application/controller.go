@@ -67,6 +67,15 @@ type StorageTargetStore interface {
 	GetBackupTarget(ctx context.Context, id string) (store.BackupTarget, error)
 }
 
+// ProjectEnvStore is the narrow surface this controller needs to
+// resolve store.DesiredService.ProjectID into that project's shared env
+// vars (resolveEnv's own doc comment on precedence). *store.DB satisfies
+// this structurally, the same type that already backs internal/api's
+// own project env endpoints.
+type ProjectEnvStore interface {
+	ListProjectEnvVars(ctx context.Context, projectID string) (map[string]string, error)
+}
+
 // DeployRecorder is the narrow surface this controller needs to record
 // TASKS.md 2.1's deploy-frequency metric. *telemetry.DB satisfies this
 // structurally; not imported directly, same reasoning ServiceStore/
@@ -118,6 +127,7 @@ type Controller struct {
 	deployRecorder DeployRecorder     // nil is valid: deploy frequency just isn't recorded
 	meshDNSAddr    string             // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
 	storageTargets StorageTargetStore // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
+	projectEnv     ProjectEnvStore    // nil is valid: project vars are just skipped, see WithProjectEnv
 }
 
 // Option configures optional Controller behavior.
@@ -181,6 +191,17 @@ func WithMeshDNSAddr(addr string) Option {
 // for SecretEnv.
 func WithStorageTargets(s StorageTargetStore) Option {
 	return func(ctrl *Controller) { ctrl.storageTargets = s }
+}
+
+// WithProjectEnv enables resolving store.DesiredService.ProjectID's
+// shared env vars as resolveEnv's base layer. Unlike WithSecretResolver/
+// WithStorageTargets, a service with a ProjectID but no ProjectEnvStore
+// configured does not fail Reconcile: a project is purely an
+// organizational label (internal/api/projects.go's own doc comment), so
+// assigning one must never be able to break an otherwise-healthy
+// service's deploys, project vars are just silently skipped.
+func WithProjectEnv(s ProjectEnvStore) Option {
+	return func(ctrl *Controller) { ctrl.projectEnv = s }
 }
 
 // New builds a Controller for serviceName.
@@ -514,12 +535,29 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 // resolved values always take final precedence over anything else
 // declaring the same key, the same way a resolved secret already takes
 // precedence over a plain literal.
+//
+// desired.ProjectID's shared env vars (WithProjectEnv) are the opposite
+// end: applied first, as the base layer, so this service's own Env
+// (and everything above) freely overrides a same-named project default
+// rather than the other way around.
 func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredService) (map[string]string, error) {
-	if len(desired.SecretEnv) == 0 && desired.StorageTargetID == "" {
+	hasProjectEnv := desired.ProjectID != "" && c.projectEnv != nil
+	if len(desired.SecretEnv) == 0 && desired.StorageTargetID == "" && !hasProjectEnv {
 		return desired.Env, nil
 	}
 
 	env := make(map[string]string, len(desired.Env)+len(desired.SecretEnv))
+
+	if hasProjectEnv {
+		projectVars, err := c.projectEnv.ListProjectEnvVars(ctx, desired.ProjectID)
+		if err != nil {
+			return nil, fmt.Errorf("resolve project env vars: %w", err)
+		}
+		for k, v := range projectVars {
+			env[k] = v
+		}
+	}
+
 	for k, v := range desired.Env {
 		env[k] = v
 	}
