@@ -218,7 +218,7 @@ func postTriggerBuildAccepted(t *testing.T, rt *Router, cookie *http.Cookie, bod
 // postTriggerBuildBearerAccepted is postTriggerBuildAccepted's bearer-token
 // counterpart, for tests exercising a scoped API token instead of a
 // session cookie.
-func postTriggerBuildBearerAccepted(t *testing.T, rt *Router, bearerToken, body string) *httptest.ResponseRecorder {
+func postTriggerBuildBearerAccepted(t *testing.T, rt *Router, bearerToken, body string) {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/apps/web/builds", strings.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+bearerToken)
@@ -227,7 +227,6 @@ func postTriggerBuildBearerAccepted(t *testing.T, rt *Router, bearerToken, body 
 	if rec.Code != http.StatusAccepted {
 		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
 	}
-	return rec
 }
 
 // newPrivateRepoAuthRouter builds a Router wired with a connected,
