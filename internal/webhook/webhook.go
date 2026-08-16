@@ -83,6 +83,10 @@ const MaxPayloadBytes = maxPayloadBytes
 // *deploy.Pipeline satisfies this.
 type Deployer interface {
 	Deploy(ctx context.Context, req deploy.Request, progress func(build.ProgressEvent)) (string, error)
+	// DeploySpec is the multi-service fan-out entry point, exercised only
+	// when Config.Services is non-empty (see Config's own doc comment).
+	// Same *deploy.Pipeline satisfies both methods.
+	DeploySpec(ctx context.Context, req deploy.MultiRequest, progress func(serviceKey string, ev build.ProgressEvent)) ([]deploy.ServiceOutcome, error)
 }
 
 // AttemptStore is the narrow store surface Handler needs to record one
@@ -131,10 +135,23 @@ type Config struct {
 	// Defaults to DefaultBranch when empty.
 	Branch string
 	// ServiceName, Service, and ImageRepo are passed straight through to
-	// deploy.Request; see internal/deploy for what each means.
+	// deploy.Request; see internal/deploy for what each means. Ignored
+	// when Services (below) is non-empty.
 	ServiceName string
 	Service     spec.Service
 	ImageRepo   string
+
+	// Services, when non-empty, switches a triggering push from a
+	// single-service Deploy call to a multi-service DeploySpec fan-out
+	// (deploy.MultiRequest): ServiceName above becomes the app name every
+	// fanned-out service links to, and ImageRepo above becomes the image
+	// repo base every fanned-out service tags under. This is still
+	// single-app, env-var-configured Config, exactly like every other
+	// field here (the package doc comment's own scope boundary): Services
+	// is one more static, operator-configured value, not a per-push
+	// choice, so it does not reopen the "no multi-tenant registry" design
+	// decision that comment already makes.
+	Services map[string]spec.Service
 }
 
 func (c Config) branch() string {
@@ -377,6 +394,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer cleanup()
 
+	if len(h.cfg.Services) > 0 {
+		h.deployMulti(w, r, ev, sourceDir)
+		return
+	}
+
 	req := deploy.Request{
 		ServiceName: h.cfg.ServiceName,
 		Service:     h.cfg.Service,
@@ -397,6 +419,53 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.log.Info("webhook: deploy triggered", "commit", ev.After, "service", h.cfg.ServiceName, "tag", tag)
 	w.WriteHeader(http.StatusOK)
 	if _, err := fmt.Fprintf(w, "deploy triggered: %s\n", tag); err != nil {
+		h.log.Warn("webhook: failed to write response body", "error", err)
+	}
+}
+
+// deployMulti is ServeHTTP's multi-service branch, taken only when
+// Config.Services is non-empty: fans out to deploy.Pipeline.DeploySpec
+// instead of a single Deploy call. Deliberately does not record
+// deploy_attempts history per service, the same documented gap
+// internal/api's handleDeploySpec doc comment already accepts for the
+// identical reason (a real per-service attempt log is a store-schema-
+// sized follow-up, not something to improvise here); build progress is
+// only logged via slog, matching this method's caller's own existing
+// choice for a plain deploy failure.
+func (h *Handler) deployMulti(w http.ResponseWriter, r *http.Request, ev PushEvent, sourceDir string) {
+	progress := func(serviceKey string, e build.ProgressEvent) {
+		h.log.Info("webhook: multi-service build progress", "service_key", serviceKey, "step", e.Step, "completed", e.Completed)
+	}
+
+	outcomes, err := h.deployer.DeploySpec(r.Context(), deploy.MultiRequest{
+		AppName:       h.cfg.ServiceName,
+		Services:      h.cfg.Services,
+		SourceDir:     sourceDir,
+		CommitSHA:     ev.After,
+		ImageRepoBase: h.cfg.ImageRepo,
+	}, progress)
+	if err != nil {
+		h.log.Error("webhook: multi-service deploy failed", "commit", ev.After, "app", h.cfg.ServiceName, "error", err)
+		http.Error(w, "deploy failed", http.StatusInternalServerError)
+		return
+	}
+
+	allSucceeded := true
+	for _, o := range outcomes {
+		if o.Err != nil {
+			allSucceeded = false
+			h.log.Error("webhook: multi-service deploy: service failed", "commit", ev.After, "service", o.ServiceName, "error", o.Err.Error())
+			continue
+		}
+		h.log.Info("webhook: multi-service deploy: service triggered", "commit", ev.After, "service", o.ServiceName, "tag", o.Image)
+	}
+
+	status := http.StatusOK
+	if !allSucceeded {
+		status = http.StatusMultiStatus
+	}
+	w.WriteHeader(status)
+	if _, err := fmt.Fprintf(w, "multi-service deploy triggered: %d service(s), all_succeeded=%t\n", len(outcomes), allSucceeded); err != nil {
 		h.log.Warn("webhook: failed to write response body", "error", err)
 	}
 }

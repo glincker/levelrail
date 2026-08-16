@@ -38,9 +38,14 @@ func (f *fakeRuntime) ListImages(context.Context, string) ([]docker.ImageInfo, e
 func (f *fakeRuntime) ListByPrefix(context.Context, string) ([]docker.ContainerState, error) {
 	return nil, nil
 }
-func (f *fakeRuntime) Stop(context.Context, string, time.Duration) error { return nil }
-func (f *fakeRuntime) Remove(context.Context, string, bool) error        { return nil }
-func (f *fakeRuntime) EnsureVolume(context.Context, string) error        { return nil }
+func (f *fakeRuntime) Stop(context.Context, string, time.Duration) error     { return nil }
+func (f *fakeRuntime) Remove(context.Context, string, bool) error            { return nil }
+func (f *fakeRuntime) EnsureVolume(context.Context, string) error            { return nil }
+func (f *fakeRuntime) EnsureNetwork(context.Context, string) (string, error) { return "", nil }
+func (f *fakeRuntime) RemoveNetwork(context.Context, string) error           { return nil }
+func (f *fakeRuntime) ListNetworksByPrefix(context.Context, string) ([]docker.NetworkInfo, error) {
+	return nil, nil
+}
 func (f *fakeRuntime) Exec(context.Context, string, []string) (io.ReadCloser, error) {
 	return nil, errors.New("fakeRuntime: Exec not implemented")
 }

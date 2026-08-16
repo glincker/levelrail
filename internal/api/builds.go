@@ -28,6 +28,13 @@ import (
 // builds. *deploy.Pipeline satisfies this structurally.
 type Builder interface {
 	Deploy(ctx context.Context, req deploy.Request, progress func(build.ProgressEvent)) (string, error)
+	// DeploySpec is handleDeploySpec's (apps_multi.go) own narrow need:
+	// the multi-service fan-out entry point. Same *deploy.Pipeline
+	// satisfies both methods, so this stays one interface rather than a
+	// second router field, the same "one concrete type, one interface"
+	// shape every other narrow store/builder interface in this codebase
+	// already follows.
+	DeploySpec(ctx context.Context, req deploy.MultiRequest, progress func(serviceKey string, ev build.ProgressEvent)) ([]deploy.ServiceOutcome, error)
 }
 
 // fetchFunc fetches repoURL at ref to a local directory, authenticating

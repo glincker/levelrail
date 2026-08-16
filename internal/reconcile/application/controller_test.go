@@ -59,10 +59,23 @@ type fakeRuntime struct {
 	// call, for assertions (like the mesh DNS wiring tests) that need
 	// more than just Env.
 	lastCreateSpec docker.ContainerSpec
+
+	// networks, ensureNetworkCalls, ensureNetworkErr, removeNetworkErr,
+	// and callOrder back the per-app networking tests: networks tracks
+	// which names EnsureNetwork has (idempotently) created, callOrder
+	// records "network:<name>" and "create:<name>" in the order this
+	// fake actually saw them so a test can assert the network exists
+	// before the container that needs it does.
+	networks           map[string]string
+	ensureNetworkCalls int
+	ensureNetworkErr   error
+	removeNetworkErr   error
+	removedNetworks    []string
+	callOrder          []string
 }
 
 func newFakeRuntime(hostPort int) *fakeRuntime {
-	return &fakeRuntime{containers: map[string]*docker.ContainerState{}, hostPort: hostPort}
+	return &fakeRuntime{containers: map[string]*docker.ContainerState{}, networks: map[string]string{}, hostPort: hostPort}
 }
 
 func (f *fakeRuntime) seed(name string, running bool) {
@@ -93,6 +106,7 @@ func (f *fakeRuntime) Create(_ context.Context, spec docker.ContainerSpec) (stri
 	f.createCalls++
 	f.lastCreateEnv = spec.Env
 	f.lastCreateSpec = spec
+	f.callOrder = append(f.callOrder, "create:"+spec.Name)
 	if f.createErr != nil {
 		return "", f.createErr
 	}
@@ -169,6 +183,50 @@ func (f *fakeRuntime) EnsureVolume(_ context.Context, name string) error {
 	defer f.mu.Unlock()
 	f.ensureVolumeCalls = append(f.ensureVolumeCalls, name)
 	return f.ensureVolumeErr
+}
+
+// EnsureNetwork is stateful, unlike EnsureVolume above: this package's
+// own networking tests need to assert idempotency (calling it twice for
+// the same name must not create it twice) and ordering (a network
+// exists before the container that needs it is created), which a plain
+// no-op can't exercise.
+func (f *fakeRuntime) EnsureNetwork(_ context.Context, name string) (string, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.ensureNetworkCalls++
+	if f.ensureNetworkErr != nil {
+		return "", f.ensureNetworkErr
+	}
+	if id, ok := f.networks[name]; ok {
+		return id, nil
+	}
+	f.callOrder = append(f.callOrder, "network:"+name)
+	id := "net-" + name
+	f.networks[name] = id
+	return id, nil
+}
+
+func (f *fakeRuntime) RemoveNetwork(_ context.Context, name string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.removeNetworkErr != nil {
+		return f.removeNetworkErr
+	}
+	delete(f.networks, name)
+	f.removedNetworks = append(f.removedNetworks, name)
+	return nil
+}
+
+func (f *fakeRuntime) ListNetworksByPrefix(_ context.Context, prefix string) ([]docker.NetworkInfo, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var out []docker.NetworkInfo
+	for name, id := range f.networks {
+		if strings.HasPrefix(name, prefix) {
+			out = append(out, docker.NetworkInfo{ID: id, Name: name})
+		}
+	}
+	return out, nil
 }
 
 func (f *fakeRuntime) Events(_ context.Context) (<-chan docker.Event, <-chan error) {

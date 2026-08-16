@@ -128,6 +128,7 @@ type Controller struct {
 	meshDNSAddr    string             // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
 	storageTargets StorageTargetStore // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
 	projectEnv     ProjectEnvStore    // nil is valid: project vars are just skipped, see WithProjectEnv
+	networkPrefix  string             // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
 }
 
 // Option configures optional Controller behavior.
@@ -202,6 +203,19 @@ func WithStorageTargets(s StorageTargetStore) Option {
 // service's deploys, project vars are just silently skipped.
 func WithProjectEnv(s ProjectEnvStore) Option {
 	return func(ctrl *Controller) { ctrl.projectEnv = s }
+}
+
+// WithNetworkPrefix sets the Docker network naming prefix
+// (NetworkName's own doc comment) every per-app network this
+// Controller creates uses: callers pass brand.Brand.ShortName,
+// following the same "pass the resolved value in, don't import
+// internal/brand here" convention internal/network.WithShortName
+// already establishes, since brand.ShortName is runtime-configurable
+// and this package (like internal/spec.ReservedLabelPrefix) has no
+// business depending on that config directly. Without one configured
+// (the default, empty string), defaultNetworkPrefix is used instead.
+func WithNetworkPrefix(prefix string) Option {
+	return func(ctrl *Controller) { ctrl.networkPrefix = prefix }
 }
 
 // New builds a Controller for serviceName.
@@ -491,6 +505,13 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	spec.Env = env
 	if c.meshDNSAddr != "" {
 		spec.DNS = []string{c.meshDNSAddr}
+	}
+	if desired.AppID != "" {
+		networkName := NetworkName(c.networkPrefix, desired.AppID)
+		if _, err := c.runtime.EnsureNetwork(ctx, networkName); err != nil {
+			return fmt.Errorf("ensure network %q: %w", networkName, err)
+		}
+		spec.Network = &docker.NetworkAttachment{Name: networkName, Alias: serviceAlias(desired)}
 	}
 
 	id, err := c.runtime.Create(ctx, spec)
@@ -884,6 +905,49 @@ func ownsContainer(serviceName, name string) bool {
 
 func isHexDigit(r rune) bool {
 	return (r >= '0' && r <= '9') || (r >= 'a' && r <= 'f')
+}
+
+// defaultNetworkPrefix is used when WithNetworkPrefix is never called,
+// or called with "": a fixed, brand-independent fallback, the same
+// reasoning internal/spec.ReservedLabelPrefix's own doc comment gives
+// for not deriving a validation/naming boundary from brand.ShortName
+// (runtime-configurable, so a value that can change between deploys
+// must never be the only thing standing between "reachable by its old
+// name" and "reachable by its new one").
+const defaultNetworkPrefix = "platform"
+
+// NetworkName derives the per-app Docker network name every service
+// belonging to appID shares: "<prefix>-app-<appID>". Exported so
+// NetworkCleanupController (network_cleanup.go) can derive the exact
+// same name a running app's containers are actually attached to,
+// without reimplementing this naming rule a second time and risking the
+// two drifting apart, the same reasoning ContainerName's own doc
+// comment already gives for internal/reconcile/ingress's identical
+// reuse of that function.
+func NetworkName(prefix, appID string) string {
+	if prefix == "" {
+		prefix = defaultNetworkPrefix
+	}
+	return prefix + "-app-" + appID
+}
+
+// serviceAlias picks the name a sibling service on desired's per-app
+// network can reach it by. Every App this codebase produces (the
+// migrations/0039_apps.sql backfill, and internal/api's own
+// ensureAppLinked) has App.ID == App.Name, so stripping desired.AppID
+// (not a separately looked-up App.Name) as a "<appID>-" prefix off
+// desired.Name is exactly stage 2's "appName-serviceKey" naming
+// convention (apps_group.go's own doc comment) without this controller
+// needing an AppStore dependency just to resolve one name. A service
+// whose name doesn't carry that prefix, the common single-service case
+// where the service's own name already equals its app's name (e.g.
+// AppID "web", Name "web"), falls back to its own full name, still a
+// plausible, stable name a sibling could use to reach it.
+func serviceAlias(desired *store.DesiredService) string {
+	if alias, ok := strings.CutPrefix(desired.Name, desired.AppID+"-"); ok && alias != "" {
+		return alias
+	}
+	return desired.Name
 }
 
 func toContainerSpec(name string, desired *store.DesiredService) docker.ContainerSpec {

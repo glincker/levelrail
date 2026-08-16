@@ -65,11 +65,35 @@ type fakeServiceStore struct {
 	saveErr   error
 	saved     store.DesiredService
 	saveCalls int
+
+	// savedByName accumulates every SaveDesiredService call, keyed by
+	// name, for internal/deploy's own DeploySpec tests (multi_test.go),
+	// which fan out N saves in one call; every single-Deploy test in this
+	// file only ever checks `saved` (the most recent), unaffected by this
+	// addition.
+	savedByName map[string]store.DesiredService
+	// failOnName, when non-empty, makes SaveDesiredService return saveErr
+	// only for that one service name (every other name succeeds),
+	// letting a DeploySpec test simulate one service's own save failing
+	// while its siblings still succeed. Every existing single-Deploy test
+	// in this file leaves this empty, so saveErr keeps applying
+	// unconditionally for them, unchanged from before this field existed.
+	failOnName string
 }
 
 func (f *fakeServiceStore) SaveDesiredService(_ context.Context, svc store.DesiredService) error {
 	f.saveCalls++
 	f.saved = svc
+	if f.savedByName == nil {
+		f.savedByName = map[string]store.DesiredService{}
+	}
+	f.savedByName[svc.Name] = svc
+	if f.failOnName != "" {
+		if svc.Name == f.failOnName {
+			return f.saveErr
+		}
+		return nil
+	}
 	return f.saveErr
 }
 

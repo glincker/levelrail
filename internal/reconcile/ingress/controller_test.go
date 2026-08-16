@@ -131,6 +131,14 @@ func (f *fakeRuntime) Stop(_ context.Context, _ string, _ time.Duration) error {
 func (f *fakeRuntime) Remove(_ context.Context, _ string, _ bool) error        { return nil }
 func (f *fakeRuntime) EnsureVolume(_ context.Context, _ string) error          { return nil }
 
+func (f *fakeRuntime) EnsureNetwork(_ context.Context, _ string) (string, error) {
+	return "", nil
+}
+func (f *fakeRuntime) RemoveNetwork(_ context.Context, _ string) error { return nil }
+func (f *fakeRuntime) ListNetworksByPrefix(_ context.Context, _ string) ([]docker.NetworkInfo, error) {
+	return nil, nil
+}
+
 // Exec is unused by this package's tests: the ingress controller never
 // runs a command inside a container, only manages container lifecycle
 // and reads observed state. Stubbed to satisfy docker.Runtime.

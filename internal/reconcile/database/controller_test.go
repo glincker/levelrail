@@ -92,6 +92,23 @@ func (f *fakeRuntime) EnsureVolume(_ context.Context, name string) error {
 	return nil
 }
 
+// EnsureNetwork/RemoveNetwork/ListNetworksByPrefix are no-ops here: this
+// controller never attaches a database container to a per-app network,
+// only internal/reconcile/application's Controller does. Added purely
+// to keep fakeRuntime satisfying docker.Runtime as that interface
+// grows, the same pattern EnsureVolume above already follows.
+func (f *fakeRuntime) EnsureNetwork(_ context.Context, _ string) (string, error) {
+	return "", nil
+}
+
+func (f *fakeRuntime) RemoveNetwork(_ context.Context, _ string) error {
+	return nil
+}
+
+func (f *fakeRuntime) ListNetworksByPrefix(_ context.Context, _ string) ([]docker.NetworkInfo, error) {
+	return nil, nil
+}
+
 func (f *fakeRuntime) InspectByName(_ context.Context, name string) (*docker.ContainerState, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -759,9 +776,9 @@ func TestController_Reconcile_PublicAccess_AlreadyMatching_NoOp(t *testing.T) {
 
 func TestPortsMatch(t *testing.T) {
 	tests := []struct {
-		name             string
+		name              string
 		observed, desired []docker.PortBinding
-		want             bool
+		want              bool
 	}{
 		{name: "both nil", observed: nil, desired: nil, want: true},
 		{

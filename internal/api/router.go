@@ -133,14 +133,33 @@ type AppStore interface {
 	// UpdateServiceProject/UpdateServiceStorageTarget, see
 	// store.DB.UpdateServiceSuspended's own doc comment.
 	UpdateServiceSuspended(ctx context.Context, name string, suspended bool) error
+	// UpdateServiceApp is stage 2 of multi-service apps
+	// (migrations/0039_apps.sql)'s own service-side setter: which
+	// store.App a service belongs to. Same separation-from-ordinary-
+	// update reasoning as UpdateServiceNode/UpdateServiceProject/
+	// UpdateServiceStorageTarget/UpdateServiceSuspended, see
+	// store.DB.UpdateServiceApp's own doc comment. Called from
+	// ensureAppLinked (apps_multi.go), the shared create-or-reuse-and-link
+	// path both handleCreateApp (an ordinary single-service app) and
+	// handleDeploySpec (a multi-service fan-out) go through.
+	UpdateServiceApp(ctx context.Context, name, appID string) error
 }
 
 // AppGroupLister is the store surface GET /api/v1/apps/{name}/group
-// needs (apps_group.go): stage 1 of multi-service apps
-// (migrations/0039_apps.sql), read path only. *store.DB satisfies this
-// structurally.
+// (apps_group.go) and the app-linking write path (apps_multi.go's
+// ensureAppLinked, apps.go's deleteAppIfOrphaned) need: stage 1 of
+// multi-service apps (migrations/0039_apps.sql) started this as a
+// read-only interface; stage 2 (per-app Docker networking) added the
+// store.App CRUD every create/delete path needs to keep that App row's
+// lifecycle in sync with its member services, since
+// internal/reconcile/application.NetworkCleanupController diffs
+// exactly the App rows this interface reports against Docker's own
+// observed networks. *store.DB satisfies this structurally.
 type AppGroupLister interface {
 	ListServicesByApp(ctx context.Context, appID string) ([]store.DesiredService, error)
+	DeleteApp(ctx context.Context, id string) error
+	SaveApp(ctx context.Context, a store.App) error
+	GetAppByName(ctx context.Context, name string) (store.App, error)
 }
 
 // DeployStore is the store surface the deploy-history handler needs.
@@ -980,6 +999,13 @@ func (rt *Router) Handler() http.Handler {
 	// configured. AbilityDeploy, the same boundary as the image-tag
 	// trigger above: this also ultimately writes desired state.
 	mux.HandleFunc("POST /api/v1/apps/{name}/builds", rt.requireAbility(AbilityDeploy, rt.handleTriggerBuild))
+
+	// Multi-service fan-out (handleDeploySpec's own doc comment,
+	// apps_multi.go): one app.yaml's services: map, built and deployed as
+	// N independent services under one store.App named {name}. Same
+	// AbilityDeploy boundary as the manual build trigger above: this also
+	// ultimately writes desired state.
+	mux.HandleFunc("POST /api/v1/apps/{name}/deploy-spec", rt.requireAbility(AbilityDeploy, rt.handleDeploySpec))
 
 	// Branch listing for an arbitrary public git remote (handleListGitBranches's
 	// own doc comment): not scoped to an existing app, since the create-app-

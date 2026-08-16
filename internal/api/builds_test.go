@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -33,6 +34,44 @@ type fakeBuilder struct {
 	lastReq deploy.Request
 
 	notify chan deploy.Request
+
+	// multiCalls, lastMultiReq, multiOutcomes, and multiErr back
+	// DeploySpec, apps_multi_test.go's own fake surface: multiOutcomes
+	// (set explicitly) takes priority when non-nil, otherwise DeploySpec
+	// synthesizes one successful ServiceOutcome per service key from tag,
+	// the same default-success shape Deploy above already has via tag/err.
+	// DeploySpec is called synchronously from handleDeploySpec (unlike
+	// Deploy above), so these need no mutex.
+	multiCalls    int
+	lastMultiReq  deploy.MultiRequest
+	multiOutcomes []deploy.ServiceOutcome
+	multiErr      error
+}
+
+func (f *fakeBuilder) DeploySpec(_ context.Context, req deploy.MultiRequest, progress func(string, build.ProgressEvent)) ([]deploy.ServiceOutcome, error) {
+	f.multiCalls++
+	f.lastMultiReq = req
+	if f.multiErr != nil {
+		return nil, f.multiErr
+	}
+	if f.multiOutcomes != nil {
+		return f.multiOutcomes, nil
+	}
+
+	keys := make([]string, 0, len(req.Services))
+	for k := range req.Services {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	out := make([]deploy.ServiceOutcome, 0, len(keys))
+	for _, k := range keys {
+		if progress != nil {
+			progress(k, build.ProgressEvent{Step: "fake", Completed: true})
+		}
+		out = append(out, deploy.ServiceOutcome{ServiceKey: k, ServiceName: req.AppName + "-" + k, Image: f.tag})
+	}
+	return out, nil
 }
 
 func newFakeBuilder(tag string, err error) *fakeBuilder {

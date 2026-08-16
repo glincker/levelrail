@@ -88,6 +88,21 @@ func (f *execRuntime) Exec(_ context.Context, _ string, _ []string) (io.ReadClos
 	return nil, errors.New("execRuntime: Exec not implemented")
 }
 
+// EnsureNetwork/RemoveNetwork/ListNetworksByPrefix are unexercised here
+// for the same reason Exec above is: Execute's dispatch switch has no
+// case for any of them yet. Stubbed to satisfy docker.Runtime.
+func (f *execRuntime) EnsureNetwork(_ context.Context, _ string) (string, error) {
+	return "", nil
+}
+
+func (f *execRuntime) RemoveNetwork(_ context.Context, _ string) error {
+	return nil
+}
+
+func (f *execRuntime) ListNetworksByPrefix(_ context.Context, _ string) ([]docker.NetworkInfo, error) {
+	return nil, nil
+}
+
 // ExecWithInput is unexercised here for the same reason Exec above is:
 // Execute's dispatch switch has no case for either. Stubbed to satisfy
 // docker.Runtime.
