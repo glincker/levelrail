@@ -446,6 +446,33 @@ func (c *Client) execCreateAttach(ctx context.Context, containerID string, cmd [
 	return created.ID, attached, nil
 }
 
+// ExecExitError is the trailing error Exec's and ExecWithInput's
+// returned io.ReadCloser produce, once their stream ends, when cmd
+// exited non-zero inside the container: see Runtime.Exec's own doc
+// comment for why an exit code is folded into the error a later Read
+// returns rather than carried as a second out-of-band field. Every
+// caller before this type existed (internal/backup's Dumper and
+// Restorer) only ever needed "err != nil means the dump/restore
+// failed," so ExitCode and Stderr lived only inside the error's
+// formatted message, unrecoverable except by parsing text. This type
+// keeps that exact message (Error() reproduces streamExecOutput's
+// original format string byte for byte, so nothing that already checks
+// err != nil or matches on message substrings, e.g. client_live_test.go's
+// "exited 7" check, changes behavior) while making ExitCode and Stderr
+// recoverable via errors.As, for a caller like internal/api's exec
+// endpoint that has to report a real exit code and stderr back to an
+// HTTP client instead of only "the command failed."
+type ExecExitError struct {
+	Cmd       []string
+	Container string
+	ExitCode  int
+	Stderr    string
+}
+
+func (e *ExecExitError) Error() string {
+	return fmt.Sprintf("docker: exec %v in %s: exited %d: %s", e.Cmd, e.Container, e.ExitCode, e.Stderr)
+}
+
 // streamExecOutput drives the copy from attached's multiplexed stream
 // into pw (stdout) and a capped stderr buffer, then resolves pw's
 // eventual EOF or error based on the exec's real exit code, not merely
@@ -469,8 +496,12 @@ func (c *Client) streamExecOutput(ctx context.Context, containerID, execID strin
 		return
 	}
 	if inspect.ExitCode != 0 {
-		_ = pw.CloseWithError(fmt.Errorf("docker: exec %v in %s: exited %d: %s",
-			cmd, containerID, inspect.ExitCode, strings.TrimSpace(stderr.buf.String())))
+		_ = pw.CloseWithError(&ExecExitError{
+			Cmd:       cmd,
+			Container: containerID,
+			ExitCode:  inspect.ExitCode,
+			Stderr:    strings.TrimSpace(stderr.buf.String()),
+		})
 		return
 	}
 	_ = pw.Close()

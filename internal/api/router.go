@@ -306,6 +306,32 @@ type DockerPruner interface {
 	Prune(ctx context.Context, keep []string) docker.PruneResult
 }
 
+// NodeRuntimeResolver picks the docker.Runtime that owns a given
+// nodeID: the control plane's own local Docker daemon for "" (the
+// store's established "empty NodeID means this control plane's own
+// local node" convention, store.DesiredService.NodeID's own doc
+// comment), or a connected remote agent's Transport for anything else.
+// This is a func type, not an interface, the same pattern fetchFunc
+// (builds.go) already establishes for a single-method seam: the real
+// implementation is cmd/levelrail/main.go's own resolveNodeTransport
+// (used identically by every reconciler controller to pick which node's
+// Runtime it drives), passed in as a closure over that function's own
+// registry rather than this package importing internal/agent.Registry
+// directly.
+//
+// handleExecApp (exec.go) is the first internal/api handler that needs
+// live, per-request node routing: DockerPinger/ImageLister/
+// DockerDiskUsager/DockerPruner above are all fixed to this control
+// plane's own local daemon, a deliberate choice their own doc comments
+// explain (adding a method to docker.Runtime itself would ripple into
+// every one of Runtime's 6+ fake implementations across
+// internal/reconcile and internal/agent's test files, for the sake of
+// one read-only or narrowly-scoped signal). Exec has the opposite
+// requirement: it must reach whichever node the target app's container
+// is actually running on, so it needs the resolver, not a fixed
+// Runtime.
+type NodeRuntimeResolver func(nodeID string) (docker.Runtime, error)
+
 // Router wires every internal/api handler onto one http.Handler.
 type Router struct {
 	logger          *slog.Logger
@@ -328,6 +354,7 @@ type Router struct {
 	images          ImageLister          // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
 	dockerDiskUsage DockerDiskUsager     // nil is valid: GET /system/status omits its docker_disk_usage field, same "optional signal, absence is not an error" shape as dockerPinger above
 	dockerPruner    DockerPruner         // nil is valid: POST /system/prune returns 501, same shape as builder/secrets above
+	execRuntime     NodeRuntimeResolver  // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
 	certs           CertStore            // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
 	ingressSettings IngressSettingsStore // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
 	domains         DomainStore          // always set, same shape as ingressSettings above: service_domains is always queryable, empty is a valid, non-error result
@@ -517,6 +544,16 @@ func WithDockerPruner(p DockerPruner) Option {
 	return func(rt *Router) { rt.dockerPruner = p }
 }
 
+// WithExecRuntime enables POST /apps/{name}/exec (exec.go's
+// handleExecApp). Without one configured (the default), that route
+// returns 501, the same "not configured" shape WithDockerPruner's
+// absence produces: a control plane can run every other route with no
+// resolver wired in, exec is the one action that needs live node
+// routing (NodeRuntimeResolver's own doc comment).
+func WithExecRuntime(r NodeRuntimeResolver) Option {
+	return func(rt *Router) { rt.execRuntime = r }
+}
+
 // WithCertExpiryWarningWindow overrides how far ahead of a certificate's
 // expiry GET /api/v1/certificates starts reporting "expiring_soon"
 // instead of "healthy" (see statusForExpiry). Without one configured (or
@@ -698,6 +735,18 @@ func (rt *Router) Handler() http.Handler {
 	// container recreation is the same class of action as triggering a
 	// deploy, just without a new image.
 	mux.HandleFunc("POST /api/v1/apps/{name}/restart", rt.requireAbility(AbilityDeploy, rt.handleRestartApp))
+
+	// One-off exec (handleExecApp's own doc comment): AbilityRoot, not
+	// AbilityDeploy. Secrets are injected as plaintext env vars into a
+	// container at create time (CLAUDE.md 4.10) and this package
+	// deliberately never decrypts one back into a response body anywhere
+	// else, see the secrets route above: "never decrypts a value for a
+	// response body." Exec is the one route that can read them anyway,
+	// by running `env` inside the container, so it must sit behind the
+	// same tier that boundary already implies it needs, not the deploy
+	// tier. AbilityRoot is this project's existing "breaks an assumption
+	// other tiers rely on" boundary (see restore's own reasoning above).
+	mux.HandleFunc("POST /api/v1/apps/{name}/exec", rt.requireAbility(AbilityRoot, rt.handleExecApp))
 
 	// Real deploy-attempt history (deploy_attempts.go): a row per
 	// trigger call across all three real trigger paths, additional to

@@ -10,6 +10,7 @@ import {
   PulseIcon,
   ScrollIcon,
   BellIcon,
+  TerminalIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   SidebarGroup,
@@ -181,6 +182,16 @@ export function AppScopedSidebar({ name }: { name: string }) {
               >
                 <BellIcon />
                 <span>Alerts</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={<Link to="/apps/$name/exec" params={{ name }} />}
+                isActive={pathname.endsWith('/exec')}
+                tooltip="Exec"
+              >
+                <TerminalIcon />
+                <span>Exec</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
