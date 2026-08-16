@@ -7,7 +7,7 @@
 // query primed by the settings/general route's own loader, not a
 // public/optional one.
 
-import { queryOptions, useSuspenseQuery } from '@tanstack/react-query'
+import { queryOptions, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export const systemStatusKeys = {
@@ -71,4 +71,15 @@ export function systemStatusQueryOptions() {
 
 export function useSystemStatus() {
   return useSuspenseQuery(systemStatusQueryOptions())
+}
+
+// Not suspense: same "must never block this form's core function"
+// reasoning useDatabaseEnginesOptional (queries/databaseEngines.ts)
+// already establishes for a different call site that isn't the
+// settings/general route itself. A slow/failed fetch here just means
+// the caller can't tell yet whether secrets are configured, so it
+// simply withholds the warning it would otherwise show rather than
+// blocking or erroring.
+export function useSystemStatusOptional() {
+  return useQuery({ ...systemStatusQueryOptions(), retry: false })
 }
