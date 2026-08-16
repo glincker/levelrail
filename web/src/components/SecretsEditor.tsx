@@ -2,7 +2,12 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { EyeIcon, EyeSlashIcon, LockIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  EyeIcon,
+  EyeSlashIcon,
+  LockIcon,
+  LockOpenIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,6 +18,14 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   Field,
   FieldError,
   FieldGroup,
@@ -20,7 +33,13 @@ import {
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
-import { SecretsNotConfiguredError, useSetSecret } from '../queries/secrets'
+import { ApiError } from '../lib/apiError'
+import {
+  SecretsNotConfiguredError,
+  useSecretKeys,
+  useSetSecret,
+  useSetSecretLock,
+} from '../queries/secrets'
 
 const secretSchema = z.object({
   key: z.string().trim().min(1, 'Key is required'),
@@ -45,6 +64,12 @@ export function SecretsEditor({ appName }: { appName: string }) {
   const [revealValue, setRevealValue] = useState(false)
   const [notConfigured, setNotConfigured] = useState(false)
   const setSecret = useSetSecret(appName)
+  const secretKeysQuery = useSecretKeys(appName)
+  const setSecretLock = useSetSecretLock(appName)
+  const [pendingOverwrite, setPendingOverwrite] = useState<{
+    key: string
+    value: string
+  } | null>(null)
   const { register, handleSubmit, formState, reset } =
     useForm<SecretFormValues>({
       resolver: zodResolver(secretSchema),
@@ -63,11 +88,33 @@ export function SecretsEditor({ appName }: { appName: string }) {
         onError: (error) => {
           if (error instanceof SecretsNotConfiguredError) {
             setNotConfigured(true)
+            return
+          }
+          if (error instanceof ApiError && error.status === 409) {
+            setPendingOverwrite({
+              key: values.key.trim(),
+              value: values.value,
+            })
           }
         },
       },
     )
   })
+
+  const confirmOverwrite = () => {
+    if (!pendingOverwrite) return
+    setSecret.mutate(
+      { ...pendingOverwrite, overwriteLocked: true },
+      {
+        onSuccess: () => {
+          reset({ key: '', value: '' })
+          setRevealValue(false)
+          setPendingOverwrite(null)
+          toast.add({ title: 'Secret saved.', type: 'success' })
+        },
+      },
+    )
+  }
 
   // Once a 501 has been seen, the server-side gap is not something a
   // different key/value or a retry fixes: hide the form entirely
@@ -97,8 +144,12 @@ export function SecretsEditor({ appName }: { appName: string }) {
     )
   }
 
+  // Excludes the 409/locked case: that's shown by the overwrite-confirm
+  // dialog instead, not duplicated here as a redundant inline alert.
   const generalError =
-    setSecret.isError && !(setSecret.error instanceof SecretsNotConfiguredError)
+    setSecret.isError &&
+    !(setSecret.error instanceof SecretsNotConfiguredError) &&
+    !(setSecret.error instanceof ApiError && setSecret.error.status === 409)
       ? setSecret.error.message
       : null
 
@@ -116,6 +167,35 @@ export function SecretsEditor({ appName }: { appName: string }) {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {secretKeysQuery.data && secretKeysQuery.data.length > 0 ? (
+          <ul className="mb-4 space-y-1 rounded-md border border-border p-2">
+            {secretKeysQuery.data.map((k) => (
+              <li
+                key={k.key}
+                className="flex items-center justify-between gap-2 rounded px-2 py-1 text-sm"
+              >
+                <span className="font-mono">{k.key}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  disabled={setSecretLock.isPending}
+                  onClick={() => {
+                    setSecretLock.mutate({ key: k.key, locked: !k.locked })
+                  }}
+                  aria-label={k.locked ? `Unlock ${k.key}` : `Lock ${k.key}`}
+                  aria-pressed={k.locked}
+                >
+                  {k.locked ? (
+                    <LockIcon className="size-4" />
+                  ) : (
+                    <LockOpenIcon className="size-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
         <form
           onSubmit={(e) => {
             void onSubmit(e)
@@ -185,6 +265,41 @@ export function SecretsEditor({ appName }: { appName: string }) {
           ) : null}
         </form>
       </CardContent>
+      <Dialog
+        open={pendingOverwrite !== null}
+        onOpenChange={(next) => {
+          if (!next) setPendingOverwrite(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{pendingOverwrite?.key} is locked</DialogTitle>
+            <DialogDescription>
+              Overwrite its value anyway? This cannot be undone: the previous
+              value is not recoverable once replaced.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setPendingOverwrite(null)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={setSecret.isPending}
+              onClick={confirmOverwrite}
+            >
+              {setSecret.isPending ? 'Saving...' : 'Overwrite'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }
