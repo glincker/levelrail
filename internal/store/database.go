@@ -63,7 +63,7 @@ type DesiredDatabase struct {
 	// Resources caps this database's memory and CPU, the same
 	// *ServiceResources type and JSON-column storage
 	// DesiredService.Resources already establishes (migrations/
-	// 0027_desired_databases_resources.sql mirrors 0002's reasoning).
+	// 0028_desired_databases_resources.sql mirrors 0002's reasoning).
 	// Unlike NodeID/ProjectID/the backup fields above, this is ordinary
 	// desired state: SaveDesiredDatabase writes it on every save, the
 	// same "whole record, not a special exception" treatment
