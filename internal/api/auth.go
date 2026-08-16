@@ -341,6 +341,32 @@ func (rt *Router) requireAbility(required string, next http.HandlerFunc) http.Ha
 	}
 }
 
+// callerHasAbility reports whether r's caller holds ability, the same
+// session-or-token resolution requireAbility uses to gate a whole route,
+// but usable mid-handler to gate one narrower action inside an
+// already-authorized request (e.g. a route gated at AbilityDeploy that
+// wants to additionally require AbilityReadSensitive before disclosing
+// private data). A lookup failure, revoked, or expired token all resolve
+// to false: this gates something tighter than the route itself, so it
+// must never fail open.
+func (rt *Router) callerHasAbility(r *http.Request, ability string) bool {
+	if rt.hasValidSession(r) {
+		return true
+	}
+	token, ok := bearerToken(r)
+	if !ok {
+		return false
+	}
+	rec, err := rt.tokens.GetAPITokenByHash(r.Context(), hashToken(token))
+	if err != nil {
+		return false
+	}
+	if rec.RevokedAt != nil || (rec.ExpiresAt != nil && time.Now().After(*rec.ExpiresAt)) {
+		return false
+	}
+	return hasAbility(rec.Abilities, ability)
+}
+
 // hasValidSession reports whether r carries a session cookie that
 // resolves to a live session. Factored out of requireAuth so
 // requireAbility can check it without duplicating the cookie-lookup

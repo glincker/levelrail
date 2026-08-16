@@ -160,14 +160,12 @@ type BuildFormValues = z.infer<typeof buildSchema>
 // asked for on every submission rather than being a one-time setting a
 // later call could omit.
 //
-// This request is synchronous and blocking on the server: it does not
-// resolve until the build itself finishes, and there is still no backend
-// SSE endpoint for live build progress (useLogStream.ts's own doc
-// comment: its SSE contract is "assumed," not backed by a real route).
-// So, like DeployExistingImageForm above, this deliberately has no log
-// viewer or progress bar beyond the mutation's own pending flag, just
-// held open for however long a real build takes rather than the
-// near-instant image-tag swap.
+// The build itself runs asynchronously on the server: this mutation
+// resolves as soon as the deploy attempt is recorded, not once the build
+// finishes (see queries/builds.ts's own doc comment), so its pending
+// state is only ever brief. There is still no in-page log viewer or
+// progress bar here; the Overview tab's deploy history is where the
+// attempt's outcome shows up once it lands.
 function BuildFromSourceForm({ appName }: { appName: string }) {
   const triggerBuild = useTriggerBuild(appName)
   const { register, handleSubmit, formState, reset } = useForm<BuildFormValues>(
@@ -191,10 +189,10 @@ function BuildFromSourceForm({ appName }: { appName: string }) {
         buildPath: values.dockerfilePath.trim() || undefined,
       },
       {
-        onSuccess: (result) => {
+        onSuccess: () => {
           reset({ repoUrl: '', ref: '', imageRepo: '', dockerfilePath: '' })
           toast.add({
-            title: `Built ${result.image}.`,
+            title: 'Build triggered.',
             description: 'Check the Overview tab for the outcome.',
             type: 'success',
           })
@@ -287,11 +285,7 @@ function BuildFromSourceForm({ appName }: { appName: string }) {
       </form>
       {triggerBuild.isPending ? (
         <Alert className="mt-3">
-          <AlertDescription>
-            Building from source. This request stays open until the build
-            finishes, there is no live progress log yet, so this can take a
-            while for a real image.
-          </AlertDescription>
+          <AlertDescription>Triggering the build...</AlertDescription>
         </Alert>
       ) : null}
       {triggerBuild.isError ? (

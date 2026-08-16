@@ -7,30 +7,39 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
+	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// fakeBuilder is a hand-written fake for Builder, the same pattern
-// internal/webhook's own fakeDeployer already establishes for the
-// identical interface shape (this package deliberately mirrors it rather
-// than importing internal/webhook's test-only type, since Go doesn't
-// export test helpers across packages).
+// fakeBuilder is a hand-written fake for Builder. calls/lastReq stay
+// plain, mutex-guarded fields for git_webhook_test.go's synchronous
+// &fakeBuilder{} literals. notify (set only via newFakeBuilder) is for
+// this file's own async callers: handleTriggerBuild now calls Deploy
+// from a background goroutine, so a test has to synchronize on
+// something real rather than reading calls/lastReq directly.
 type fakeBuilder struct {
 	tag string
 	err error
 
+	mu      sync.Mutex
 	calls   int
 	lastReq deploy.Request
+
+	notify chan deploy.Request
+}
+
+func newFakeBuilder(tag string, err error) *fakeBuilder {
+	return &fakeBuilder{tag: tag, err: err, notify: make(chan deploy.Request, 4)}
 }
 
 func (f *fakeBuilder) Deploy(_ context.Context, req deploy.Request, progress func(build.ProgressEvent)) (string, error) {
-	f.calls++
-	f.lastReq = req
 	if progress != nil {
 		progress(build.ProgressEvent{Step: "fake", Completed: true})
 		// A real output-carrying event too (Step-lifecycle events like
@@ -40,29 +49,125 @@ func (f *fakeBuilder) Deploy(_ context.Context, req deploy.Request, progress fun
 		// proving the recorder is wired through end to end.
 		progress(build.ProgressEvent{Log: "fake build output", Stream: "stdout"})
 	}
+	f.mu.Lock()
+	f.calls++
+	f.lastReq = req
+	f.mu.Unlock()
+	if f.notify != nil {
+		f.notify <- req
+	}
 	if f.err != nil {
 		return "", f.err
 	}
 	return f.tag, nil
 }
 
-// fakeFetchCall records one call's arguments, so a test can assert what a
-// handler passed through without a real git clone.
-type fakeFetchCall struct {
-	repoURL string
-	ref     string
+// awaitCall waits up to a short deadline for Deploy to have been called,
+// rather than a fixed sleep: handleTriggerBuild starts it in a goroutine
+// specifically so the HTTP response doesn't wait for it, so a test
+// asserting it happened has to synchronize on something real.
+func (f *fakeBuilder) awaitCall(t *testing.T) deploy.Request {
+	t.Helper()
+	select {
+	case req := <-f.notify:
+		return req
+	case <-time.After(2 * time.Second):
+		t.Fatal("Deploy was not called within the deadline")
+		return deploy.Request{}
+	}
 }
 
-// newFakeFetch returns a fetchFunc that records every call into calls and
-// returns dir/cleanup/err, the same "hand-written fake, not a framework"
-// pattern internal/webhook/webhook_test.go's own fetchFunc fakes use.
-func newFakeFetch(calls *[]fakeFetchCall, dir string, cleanupCalled *bool, err error) fetchFunc {
-	return func(_ context.Context, repoURL, ref string) (string, func(), error) {
-		*calls = append(*calls, fakeFetchCall{repoURL: repoURL, ref: ref})
+// assertNotCalled checks, without blocking, that Deploy has not been
+// called: safe to use right after ServeHTTP returns only when the
+// handler is known to have rejected the request before ever starting the
+// build goroutine (no goroutine means nothing can race with this read).
+func (f *fakeBuilder) assertNotCalled(t *testing.T) {
+	t.Helper()
+	select {
+	case req := <-f.notify:
+		t.Errorf("Deploy called unexpectedly with %+v, want not called", req)
+	default:
+	}
+}
+
+// fakeFetchCall records one call's arguments, so a test can assert what
+// the build goroutine passed through without a real git clone.
+type fakeFetchCall struct {
+	repoURL, ref, token string
+}
+
+// fakeFetch is a hand-written fetchFunc fake: fetch now runs inside
+// handleTriggerBuild's background goroutine, so both the call record and
+// the cleanup signal go over buffered channels rather than plain fields,
+// the same reasoning fakeBuilder's own doc comment gives.
+type fakeFetch struct {
+	dir string
+	err error
+
+	calls    chan fakeFetchCall
+	cleanups chan struct{}
+}
+
+func newFakeFetch(dir string, err error) *fakeFetch {
+	return &fakeFetch{dir: dir, err: err, calls: make(chan fakeFetchCall, 4), cleanups: make(chan struct{}, 4)}
+}
+
+func (f *fakeFetch) fetch(_ context.Context, repoURL, ref, token string) (string, func(), error) {
+	f.calls <- fakeFetchCall{repoURL: repoURL, ref: ref, token: token}
+	if f.err != nil {
+		return "", nil, f.err
+	}
+	return f.dir, func() { f.cleanups <- struct{}{} }, nil
+}
+
+func (f *fakeFetch) awaitCall(t *testing.T) fakeFetchCall {
+	t.Helper()
+	select {
+	case c := <-f.calls:
+		return c
+	case <-time.After(2 * time.Second):
+		t.Fatal("fetch was not called within the deadline")
+		return fakeFetchCall{}
+	}
+}
+
+func (f *fakeFetch) assertNotCalled(t *testing.T) {
+	t.Helper()
+	select {
+	case c := <-f.calls:
+		t.Errorf("fetch called unexpectedly with %+v, want not called", c)
+	default:
+	}
+}
+
+func (f *fakeFetch) awaitCleanup(t *testing.T) {
+	t.Helper()
+	select {
+	case <-f.cleanups:
+	case <-time.After(2 * time.Second):
+		t.Fatal("fetch cleanup was not called within the deadline")
+	}
+}
+
+// awaitDeployAttemptFinished polls db for id's attempt until FinishedAt is
+// set, since handleTriggerBuild's build now runs in a background
+// goroutine and the test otherwise has no way to know when finishAttempt
+// (deploy_attempts.go) has actually persisted the terminal status.
+func awaitDeployAttemptFinished(t *testing.T, db *store.DB, id string) store.DeployAttempt {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		a, err := db.GetDeployAttempt(context.Background(), id)
 		if err != nil {
-			return "", nil, err
+			t.Fatalf("GetDeployAttempt(%q) error = %v", id, err)
 		}
-		return dir, func() { *cleanupCalled = true }, nil
+		if a.FinishedAt != nil {
+			return *a
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("deploy attempt %q did not finish within the deadline", id)
+		}
+		time.Sleep(5 * time.Millisecond)
 	}
 }
 
@@ -73,13 +178,69 @@ func newFakeFetch(calls *[]fakeFetchCall, dir string, cleanupCalled *bool, err e
 // I/O, the same reasoning internal/webhook.Handler.fetch stays
 // unexported and is only ever set through that package's own
 // newTestHandler helper.
-func newTestRouterWithBuilder(t *testing.T, builder Builder, fetch fetchFunc) (*Router, *store.DB) {
+func newTestRouterWithBuilder(t *testing.T, builder Builder, fetch *fakeFetch) (*Router, *store.DB) {
 	t.Helper()
 	db := openTestDB(t)
 	rt := NewRouter(nil, testBrand(), db, WithBuilder(builder))
 	if fetch != nil {
-		rt.fetch = fetch
+		rt.fetch = fetch.fetch
 	}
+	return rt, db
+}
+
+// seedWebApp saves the standard "web" desired service fixture nearly
+// every build-trigger test needs before POSTing.
+func seedWebApp(t *testing.T, db *store.DB) {
+	t.Helper()
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+}
+
+// postTriggerBuildAccepted POSTs body to the build-trigger route, fails
+// the test unless the response is 202, and decodes the deploy attempt id.
+// Returns the raw recorder too, for callers that also need to inspect the
+// response body (e.g. asserting a secret was never echoed back).
+func postTriggerBuildAccepted(t *testing.T, rt *Router, cookie *http.Cookie, body string) (*httptest.ResponseRecorder, triggerBuildResponse) {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds", body))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+	var resp triggerBuildResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	return rec, resp
+}
+
+// postTriggerBuildBearerAccepted is postTriggerBuildAccepted's bearer-token
+// counterpart, for tests exercising a scoped API token instead of a
+// session cookie.
+func postTriggerBuildBearerAccepted(t *testing.T, rt *Router, bearerToken, body string) {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/apps/web/builds", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+bearerToken)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+}
+
+// newPrivateRepoAuthRouter builds a Router wired with a connected,
+// installed GitHub App (seedInstalledGitHubApp) and a fake installation
+// token client, the shared setup every PrivateRepoAuth test in this file
+// needs before exercising tokenForRepo's own gating logic.
+func newPrivateRepoAuthRouter(t *testing.T, fb *fakeBuilder, fetch *fakeFetch, fakeClient *fakeGitHubAppClient) (*Router, *store.DB) {
+	t.Helper()
+	fakeSecrets := newFakeGitHubAppSecrets()
+	db := openTestDB(t)
+	rt := NewRouter(nil, testBrand(), db, WithBuilder(fb), WithGitHubAppSecrets(fakeSecrets))
+	rt.githubAppClient = fakeClient
+	rt.fetch = fetch.fetch
+	seedInstalledGitHubApp(t, db, fakeSecrets)
 	return rt, db
 }
 
@@ -90,9 +251,7 @@ func TestHandleTriggerBuild_NotConfigured(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds", `{"repo_url":"https://example.com/x.git","ref":"main"}`))
@@ -102,7 +261,7 @@ func TestHandleTriggerBuild_NotConfigured(t *testing.T) {
 }
 
 func TestHandleTriggerBuild_AppNotFound(t *testing.T) {
-	rt, db := newTestRouterWithBuilder(t, &fakeBuilder{tag: "levelrail/web:abc123"}, nil)
+	rt, db := newTestRouterWithBuilder(t, newFakeBuilder("levelrail/web:abc123", nil), nil)
 	cookie := loginTestSession(t, rt, db)
 
 	rec := httptest.NewRecorder()
@@ -113,50 +272,39 @@ func TestHandleTriggerBuild_AppNotFound(t *testing.T) {
 }
 
 func TestHandleTriggerBuild_MissingRepoURL(t *testing.T) {
-	fb := &fakeBuilder{tag: "levelrail/web:abc123"}
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	rt, db := newTestRouterWithBuilder(t, fb, nil)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds", `{"ref":"main"}`))
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
 	}
-	if fb.calls != 0 {
-		t.Errorf("builder called %d times, want 0 for a rejected request", fb.calls)
-	}
+	fb.assertNotCalled(t)
 }
 
 func TestHandleTriggerBuild_MissingRef(t *testing.T) {
-	fb := &fakeBuilder{tag: "levelrail/web:abc123"}
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	rt, db := newTestRouterWithBuilder(t, fb, nil)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds", `{"repo_url":"https://example.com/x.git"}`))
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
 	}
-	if fb.calls != 0 {
-		t.Errorf("builder called %d times, want 0 for a rejected request", fb.calls)
-	}
+	fb.assertNotCalled(t)
 }
 
 func TestHandleTriggerBuild_UnsupportedBuildType(t *testing.T) {
-	fb := &fakeBuilder{tag: "levelrail/web:abc123"}
-	var fetchCalls []fakeFetchCall
-	cleanupCalled := false
-	rt, db := newTestRouterWithBuilder(t, fb, newFakeFetch(&fetchCalls, t.TempDir(), &cleanupCalled, nil))
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
@@ -164,20 +312,15 @@ func TestHandleTriggerBuild_UnsupportedBuildType(t *testing.T) {
 	if rec.Code != http.StatusNotImplemented {
 		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusNotImplemented, rec.Body.String())
 	}
-	if len(fetchCalls) != 0 {
-		t.Errorf("fetch called %d times, want 0: an unsupported build type must fail before any git I/O", len(fetchCalls))
-	}
-	if fb.calls != 0 {
-		t.Errorf("builder called %d times, want 0", fb.calls)
-	}
+	fetch.assertNotCalled(t)
+	fb.assertNotCalled(t)
 }
 
 func TestHandleTriggerBuild_Success(t *testing.T) {
-	fb := &fakeBuilder{tag: "web-repo:main"}
-	var fetchCalls []fakeFetchCall
-	cleanupCalled := false
+	fb := newFakeBuilder("web-repo:main", nil)
 	checkoutDir := t.TempDir()
-	rt, db := newTestRouterWithBuilder(t, fb, newFakeFetch(&fetchCalls, checkoutDir, &cleanupCalled, nil))
+	fetch := newFakeFetch(checkoutDir, nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
 
 	seed := store.DesiredService{
@@ -196,30 +339,23 @@ func TestHandleTriggerBuild_Success(t *testing.T) {
 		t.Fatalf("seed app: %v", err)
 	}
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://example.com/web.git","ref":"main","build":{"path":"./Dockerfile"}}`))
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	_, resp := postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main","build":{"path":"./Dockerfile"}}`)
+	if resp.ID == "" {
+		t.Fatal("response ID is empty, want a deploy attempt id returned immediately")
 	}
 
-	if len(fetchCalls) != 1 {
-		t.Fatalf("fetch called %d times, want 1", len(fetchCalls))
+	fc := fetch.awaitCall(t)
+	if fc.repoURL != "https://example.com/web.git" {
+		t.Errorf("fetch repoURL = %q, want %q", fc.repoURL, "https://example.com/web.git")
 	}
-	if fetchCalls[0].repoURL != "https://example.com/web.git" {
-		t.Errorf("fetch repoURL = %q, want %q", fetchCalls[0].repoURL, "https://example.com/web.git")
+	if fc.ref != "main" {
+		t.Errorf("fetch ref = %q, want %q", fc.ref, "main")
 	}
-	if fetchCalls[0].ref != "main" {
-		t.Errorf("fetch ref = %q, want %q", fetchCalls[0].ref, "main")
-	}
-	if !cleanupCalled {
-		t.Error("fetch cleanup was not called after a successful build, checkout dir would leak")
+	if fc.token != "" {
+		t.Errorf("fetch token = %q, want empty (no github app configured)", fc.token)
 	}
 
-	if fb.calls != 1 {
-		t.Fatalf("builder called %d times, want 1", fb.calls)
-	}
-	got := fb.lastReq
+	got := fb.awaitCall(t)
 	if got.ServiceName != "web" {
 		t.Errorf("ServiceName = %q, want %q", got.ServiceName, "web")
 	}
@@ -265,16 +401,11 @@ func TestHandleTriggerBuild_Success(t *testing.T) {
 		t.Errorf("Service.Health = %+v, want Readiness.Path=/healthz", got.Service.Health)
 	}
 
-	var resp triggerBuildResponse
-	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v", err)
+	attempt := awaitDeployAttemptFinished(t, db, resp.ID)
+	if attempt.Status != store.DeployAttemptStatusSucceeded {
+		t.Errorf("attempt Status = %q, want %q", attempt.Status, store.DeployAttemptStatusSucceeded)
 	}
-	if resp.Image != "web-repo:main" {
-		t.Errorf("response Image = %q, want %q", resp.Image, "web-repo:main")
-	}
-	if resp.App.Name != "web" {
-		t.Errorf("response App.Name = %q, want %q", resp.App.Name, "web")
-	}
+	fetch.awaitCleanup(t)
 }
 
 // TestHandleTriggerBuild_PreservesCustomLabels is a regression test:
@@ -285,10 +416,10 @@ func TestHandleTriggerBuild_Success(t *testing.T) {
 // dropped the next time someone triggered POST .../builds, since that
 // path does a full-replace SaveDesiredService like every other write.
 func TestHandleTriggerBuild_PreservesCustomLabels(t *testing.T) {
-	fb := &fakeBuilder{tag: "web-repo:main"}
-	var fetchCalls []fakeFetchCall
+	fb := newFakeBuilder("web-repo:main", nil)
 	checkoutDir := t.TempDir()
-	rt, db := newTestRouterWithBuilder(t, fb, newFakeFetch(&fetchCalls, checkoutDir, new(bool), nil))
+	fetch := newFakeFetch(checkoutDir, nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
 
 	seed := store.DesiredService{
@@ -301,17 +432,9 @@ func TestHandleTriggerBuild_PreservesCustomLabels(t *testing.T) {
 		t.Fatalf("seed app: %v", err)
 	}
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://example.com/web.git","ref":"main","build":{"path":"./Dockerfile"}}`))
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
+	postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main","build":{"path":"./Dockerfile"}}`)
 
-	if fb.calls != 1 {
-		t.Fatalf("builder called %d times, want 1", fb.calls)
-	}
-	got := fb.lastReq.Service.Labels
+	got := fb.awaitCall(t).Service.Labels
 	want := map[string]string{"team": "infra", "tier": "backend"}
 	if len(got) != len(want) {
 		t.Fatalf("Service.Labels = %+v, want %+v", got, want)
@@ -324,7 +447,13 @@ func TestHandleTriggerBuild_PreservesCustomLabels(t *testing.T) {
 
 	// The stored desired state itself must also still carry the labels
 	// after the rebuild's own SaveDesiredService write, not just the
-	// build request in flight.
+	// build request in flight. Deploy runs asynchronously, so wait for
+	// the store write internal/deploy.Pipeline.Deploy performs (here,
+	// fakeBuilder never touches the store, so this only proves the seed
+	// value survived, but a real builder would have overwritten it by
+	// the time the deploy attempt finishes; fake builds never persist,
+	// so this asserts the seed itself was never clobbered by this
+	// request's own SaveDesiredService, which it never calls).
 	stored, err := db.GetDesiredService(context.Background(), "web")
 	if err != nil {
 		t.Fatalf("GetDesiredService: %v", err)
@@ -337,38 +466,35 @@ func TestHandleTriggerBuild_PreservesCustomLabels(t *testing.T) {
 // TestHandleTriggerBuild_RecordsDeployAttempt_Succeeded covers the
 // second of the two build-triggering paths: unlike the plain image-tag
 // path (deploys_test.go's TestHandleTriggerDeploy_RecordsDeployAttempt),
-// this one has a real build step, so it should start "running" (backed
-// by the recorder's live fan-out via WithDeployRecorder) and finish
+// this one has a real build step, so it should start "running" (visible
+// immediately in the response and in GET .../deploy-attempts, backed by
+// the recorder's live fan-out via WithDeployRecorder) and finish
 // "succeeded" once fakeBuilder.Deploy returns.
 func TestHandleTriggerBuild_RecordsDeployAttempt_Succeeded(t *testing.T) {
-	fb := &fakeBuilder{tag: "levelrail/web:abc123"}
-	var fetchCalls []fakeFetchCall
-	cleanupCalled := false
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
 	db := openTestDB(t)
 	telemetryDB := newTestTelemetryDB(t)
 	recorder := deploylog.NewRecorder(telemetryDB, discardLogger())
 	rt := NewRouter(nil, testBrand(), db, WithBuilder(fb), WithDeployRecorder(recorder))
-	rt.fetch = newFakeFetch(&fetchCalls, t.TempDir(), &cleanupCalled, nil)
+	rt.fetch = fetch.fetch
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://example.com/web.git","ref":"main"}`))
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
+	_, resp := postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main"}`)
 
-	attempts, err := db.ListDeployAttempts(context.Background(), "web")
+	// Immediately after the handler returns, before the build goroutine
+	// has necessarily run at all, the attempt row must already exist and
+	// be "running": that is the entire point of returning early.
+	running, err := db.GetDeployAttempt(context.Background(), resp.ID)
 	if err != nil {
-		t.Fatalf("ListDeployAttempts() error = %v", err)
+		t.Fatalf("GetDeployAttempt() error = %v", err)
 	}
-	if len(attempts) != 1 {
-		t.Fatalf("expected 1 deploy attempt, got %d", len(attempts))
+	if running.Status != store.DeployAttemptStatusRunning {
+		t.Errorf("Status immediately after response = %q, want %q", running.Status, store.DeployAttemptStatusRunning)
 	}
-	a := attempts[0]
+
+	a := awaitDeployAttemptFinished(t, db, resp.ID)
 	if a.Status != store.DeployAttemptStatusSucceeded {
 		t.Errorf("Status = %q, want %q", a.Status, store.DeployAttemptStatusSucceeded)
 	}
@@ -399,38 +525,25 @@ func TestHandleTriggerBuild_RecordsDeployAttempt_Succeeded(t *testing.T) {
 }
 
 func TestHandleTriggerBuild_RecordsDeployAttempt_Failed(t *testing.T) {
-	fb := &fakeBuilder{err: errors.New("buildkit: boom")}
-	var fetchCalls []fakeFetchCall
-	cleanupCalled := false
+	fb := newFakeBuilder("", errors.New("buildkit: boom"))
+	fetch := newFakeFetch(t.TempDir(), nil)
 	db := openTestDB(t)
 	recorder := deploylog.NewRecorder(nil, discardLogger())
 	rt := NewRouter(nil, testBrand(), db, WithBuilder(fb), WithDeployRecorder(recorder))
-	rt.fetch = newFakeFetch(&fetchCalls, t.TempDir(), &cleanupCalled, nil)
+	rt.fetch = fetch.fetch
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://example.com/web.git","ref":"main"}`))
-	if rec.Code != http.StatusInternalServerError {
-		t.Fatalf("status = %d, want %d", rec.Code, http.StatusInternalServerError)
-	}
+	_, resp := postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main"}`)
 
-	attempts, err := db.ListDeployAttempts(context.Background(), "web")
-	if err != nil {
-		t.Fatalf("ListDeployAttempts() error = %v", err)
+	attempt := awaitDeployAttemptFinished(t, db, resp.ID)
+	if attempt.Status != store.DeployAttemptStatusFailed {
+		t.Errorf("Status = %q, want %q", attempt.Status, store.DeployAttemptStatusFailed)
 	}
-	if len(attempts) != 1 {
-		t.Fatalf("expected 1 deploy attempt even for a failed build, got %d", len(attempts))
+	if attempt.Error != "buildkit: boom" {
+		t.Errorf("Error = %q, want %q", attempt.Error, "buildkit: boom")
 	}
-	if attempts[0].Status != store.DeployAttemptStatusFailed {
-		t.Errorf("Status = %q, want %q", attempts[0].Status, store.DeployAttemptStatusFailed)
-	}
-	if attempts[0].Error != "buildkit: boom" {
-		t.Errorf("Error = %q, want %q", attempts[0].Error, "buildkit: boom")
-	}
+	fetch.awaitCleanup(t)
 }
 
 func TestHandleTriggerBuild_NoRecorderConfigured_StillRecordsAttemptWithoutLog(t *testing.T) {
@@ -440,105 +553,85 @@ func TestHandleTriggerBuild_NoRecorderConfigured_StillRecordsAttemptWithoutLog(t
 	// still records the attempt row itself since rt.deployAttempts is
 	// always available (it's part of the core Store interface, not an
 	// optional plug-in).
-	fb := &fakeBuilder{tag: "levelrail/web:abc123"}
-	var fetchCalls []fakeFetchCall
-	cleanupCalled := false
-	rt, db := newTestRouterWithBuilder(t, fb, newFakeFetch(&fetchCalls, t.TempDir(), &cleanupCalled, nil))
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://example.com/web.git","ref":"main"}`))
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
+	_, resp := postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main"}`)
 
-	attempts, err := db.ListDeployAttempts(context.Background(), "web")
-	if err != nil {
-		t.Fatalf("ListDeployAttempts() error = %v", err)
-	}
-	if len(attempts) != 1 {
-		t.Fatalf("expected 1 deploy attempt, got %d", len(attempts))
-	}
-	if attempts[0].Status != store.DeployAttemptStatusSucceeded {
-		t.Errorf("Status = %q, want %q", attempts[0].Status, store.DeployAttemptStatusSucceeded)
+	attempt := awaitDeployAttemptFinished(t, db, resp.ID)
+	if attempt.Status != store.DeployAttemptStatusSucceeded {
+		t.Errorf("Status = %q, want %q", attempt.Status, store.DeployAttemptStatusSucceeded)
 	}
 }
 
 func TestHandleTriggerBuild_DefaultBuildTypeAndImageRepoOverride(t *testing.T) {
-	fb := &fakeBuilder{tag: "custom-repo:main"}
-	var fetchCalls []fakeFetchCall
-	cleanupCalled := false
-	rt, db := newTestRouterWithBuilder(t, fb, newFakeFetch(&fetchCalls, t.TempDir(), &cleanupCalled, nil))
+	fb := newFakeBuilder("custom-repo:main", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://example.com/web.git","ref":"main","image_repo":"custom-repo"}`))
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main","image_repo":"custom-repo"}`)
+	got := fb.awaitCall(t)
+	if got.ImageRepo != "custom-repo" {
+		t.Errorf("ImageRepo = %q, want %q", got.ImageRepo, "custom-repo")
 	}
-	if fb.lastReq.ImageRepo != "custom-repo" {
-		t.Errorf("ImageRepo = %q, want %q", fb.lastReq.ImageRepo, "custom-repo")
-	}
-	if fb.lastReq.Service.Build.Type != "dockerfile" {
-		t.Errorf("Service.Build.Type = %q, want default %q", fb.lastReq.Service.Build.Type, "dockerfile")
+	if got.Service.Build.Type != "dockerfile" {
+		t.Errorf("Service.Build.Type = %q, want default %q", got.Service.Build.Type, "dockerfile")
 	}
 }
 
 func TestHandleTriggerBuild_FetchFailure(t *testing.T) {
-	fb := &fakeBuilder{tag: "levelrail/web:abc123"}
-	var fetchCalls []fakeFetchCall
-	cleanupCalled := false
-	rt, db := newTestRouterWithBuilder(t, fb, newFakeFetch(&fetchCalls, "", &cleanupCalled, errors.New("clone failed: repository not found")))
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
+	fetch := newFakeFetch("", errors.New("clone failed: repository not found"))
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://example.com/ghost.git","ref":"main"}`))
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	// A fetch failure is only discoverable once the background goroutine
+	// runs it, after the response has already gone out as 202: unlike
+	// the old synchronous handler, this is no longer a 400 the caller
+	// sees directly.
+	_, resp := postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/ghost.git","ref":"main"}`)
+
+	attempt := awaitDeployAttemptFinished(t, db, resp.ID)
+	if attempt.Status != store.DeployAttemptStatusFailed {
+		t.Errorf("Status = %q, want %q", attempt.Status, store.DeployAttemptStatusFailed)
 	}
-	if fb.calls != 0 {
-		t.Errorf("builder called %d times, want 0 when fetch fails", fb.calls)
-	}
+	fb.assertNotCalled(t)
 }
 
-func TestHandleTriggerBuild_BuildFailure_ReturnsServerErrorNotLeaky(t *testing.T) {
-	fb := &fakeBuilder{err: errors.New("buildkit: internal socket path /var/run/secret-thing failed")}
-	var fetchCalls []fakeFetchCall
-	cleanupCalled := false
-	rt, db := newTestRouterWithBuilder(t, fb, newFakeFetch(&fetchCalls, t.TempDir(), &cleanupCalled, nil))
+func TestHandleTriggerBuild_BuildFailure_ReturnsAcceptedNotLeaky(t *testing.T) {
+	fb := newFakeBuilder("", errors.New("buildkit: internal socket path /var/run/secret-thing failed"))
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://example.com/web.git","ref":"main"}`))
-	if rec.Code != http.StatusInternalServerError {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusInternalServerError, rec.Body.String())
-	}
+	rec, resp := postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main"}`)
 	if strings.Contains(rec.Body.String(), "secret-thing") {
 		t.Errorf("response body leaked internal error detail: %q", rec.Body.String())
 	}
-	if !cleanupCalled {
-		t.Error("cleanup was not called after a failed build, checkout dir would leak")
+
+	// The build failure detail is only ever visible in the deploy
+	// attempt row (an operator-facing surface, not a raw API response
+	// body), matching internal/webhook.Handler.ServeHTTP's own "500 with
+	// a non-leaky message" reasoning for an identical failure.
+	attempt := awaitDeployAttemptFinished(t, db, resp.ID)
+	if attempt.Status != store.DeployAttemptStatusFailed {
+		t.Errorf("Status = %q, want %q", attempt.Status, store.DeployAttemptStatusFailed)
 	}
+	if attempt.Error != "buildkit: internal socket path /var/run/secret-thing failed" {
+		t.Errorf("Error = %q, want the full error persisted in the attempt row", attempt.Error)
+	}
+	fetch.awaitCleanup(t)
 }
 
 func TestHandleTriggerBuild_RequiresAuth(t *testing.T) {
-	rt, _ := newTestRouterWithBuilder(t, &fakeBuilder{}, nil)
+	rt, _ := newTestRouterWithBuilder(t, newFakeBuilder("", nil), nil)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/apps/web/builds", strings.NewReader(`{"repo_url":"x","ref":"main"}`)))
@@ -550,44 +643,18 @@ func TestHandleTriggerBuild_RequiresAuth(t *testing.T) {
 // TestHandleTriggerBuild_RailpackAccepted proves the manual build trigger
 // no longer rejects build.type: railpack: internal/deploy.Pipeline.Deploy
 // has a real deployRailpack case, only handleTriggerBuild's own
-// pre-fetch rejection was blocking it. Response shape mirrors the
-// dockerfile-type success case (Image, App), since railpack is
-// container-backed exactly like dockerfile.
+// pre-fetch rejection was blocking it.
 func TestHandleTriggerBuild_RailpackAccepted(t *testing.T) {
-	fb := &fakeBuilder{tag: "levelrail/web:railpack1"}
-	var fetchCalls []fakeFetchCall
-	cleanupCalled := false
-	rt, db := newTestRouterWithBuilder(t, fb, newFakeFetch(&fetchCalls, t.TempDir(), &cleanupCalled, nil))
+	fb := newFakeBuilder("levelrail/web:railpack1", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://example.com/web.git","ref":"main","build":{"type":"railpack"}}`))
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
-	if fb.calls != 1 {
-		t.Fatalf("builder called %d times, want 1", fb.calls)
-	}
-	if fb.lastReq.Service.Build.Type != "railpack" {
-		t.Errorf("Service.Build.Type = %q, want %q", fb.lastReq.Service.Build.Type, "railpack")
-	}
-
-	var resp triggerBuildResponse
-	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
-	if resp.Image != "levelrail/web:railpack1" {
-		t.Errorf("response Image = %q, want %q", resp.Image, "levelrail/web:railpack1")
-	}
-	if resp.App == nil || resp.App.Name != "web" {
-		t.Errorf("response App = %+v, want a non-nil app named %q", resp.App, "web")
-	}
-	if resp.StaticSite != nil {
-		t.Errorf("response StaticSite = %+v, want nil for a railpack build", resp.StaticSite)
+	postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main","build":{"type":"railpack"}}`)
+	got := fb.awaitCall(t)
+	if got.Service.Build.Type != "railpack" {
+		t.Errorf("Service.Build.Type = %q, want %q", got.Service.Build.Type, "railpack")
 	}
 }
 
@@ -597,14 +664,11 @@ func TestHandleTriggerBuild_RailpackAccepted(t *testing.T) {
 // deployRailpack) has no path field at all, so a value here would
 // otherwise vanish with no signal to the caller that it did nothing.
 func TestHandleTriggerBuild_RailpackWithPathRejected(t *testing.T) {
-	fb := &fakeBuilder{tag: "levelrail/web:railpack1"}
-	var fetchCalls []fakeFetchCall
-	cleanupCalled := false
-	rt, db := newTestRouterWithBuilder(t, fb, newFakeFetch(&fetchCalls, t.TempDir(), &cleanupCalled, nil))
+	fb := newFakeBuilder("levelrail/web:railpack1", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
@@ -612,72 +676,33 @@ func TestHandleTriggerBuild_RailpackWithPathRejected(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
 	}
-	if len(fetchCalls) != 0 {
-		t.Errorf("fetch called %d times, want 0: a railpack build.path must be rejected before any git I/O", len(fetchCalls))
-	}
-	if fb.calls != 0 {
-		t.Errorf("builder called %d times, want 0", fb.calls)
-	}
+	fetch.assertNotCalled(t)
+	fb.assertNotCalled(t)
 }
 
 // TestHandleTriggerBuild_StaticAccepted proves the manual build trigger
-// no longer rejects build.type: static, and that its response shape is
-// the conditional one triggerBuildResponse's own doc comment describes:
-// StaticSite set, Image and App both absent, since deployStatic never
-// touches store.DesiredService and its returned string is a local
-// filesystem path this package never exposes (see staticSiteResource's
-// own doc comment).
+// no longer rejects build.type: static.
 func TestHandleTriggerBuild_StaticAccepted(t *testing.T) {
 	// fakeBuilder.Deploy returns an absolute-looking path, exactly the
 	// shape internal/deploy.Pipeline.deployStatic really returns (the
-	// served-from directory, not an image tag): proves the handler never
-	// leaks it into the response regardless of what the underlying
-	// builder happens to hand back.
-	fb := &fakeBuilder{tag: "/var/lib/levelrail-data/static-sites/web/main"}
-	var fetchCalls []fakeFetchCall
-	cleanupCalled := false
-	rt, db := newTestRouterWithBuilder(t, fb, newFakeFetch(&fetchCalls, t.TempDir(), &cleanupCalled, nil))
+	// served-from directory, not an image tag).
+	fb := newFakeBuilder("/var/lib/levelrail-data/static-sites/web/main", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
 	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Domains: []string{"web.example.com"}}); err != nil {
 		t.Fatalf("seed app: %v", err)
 	}
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
-		`{"repo_url":"https://example.com/web.git","ref":"main","build":{"type":"static"}}`))
-	if rec.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
-	}
-	if fb.calls != 1 {
-		t.Fatalf("builder called %d times, want 1", fb.calls)
-	}
-	if fb.lastReq.Service.Build.Type != "static" {
-		t.Errorf("Service.Build.Type = %q, want %q", fb.lastReq.Service.Build.Type, "static")
+	rec, _ := postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main","build":{"type":"static"}}`)
+	got := fb.awaitCall(t)
+	if got.Service.Build.Type != "static" {
+		t.Errorf("Service.Build.Type = %q, want %q", got.Service.Build.Type, "static")
 	}
 
 	body := rec.Body.String()
 	if strings.Contains(body, "var/lib/levelrail-data") {
 		t.Errorf("response body leaked the static site's local filesystem path: %s", body)
-	}
-
-	var resp triggerBuildResponse
-	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
-	if resp.Image != "" {
-		t.Errorf("response Image = %q, want empty for a static build", resp.Image)
-	}
-	if resp.App != nil {
-		t.Errorf("response App = %+v, want nil for a static build", resp.App)
-	}
-	if resp.StaticSite == nil {
-		t.Fatal("response StaticSite = nil, want set for a static build")
-	}
-	if resp.StaticSite.Name != "web" {
-		t.Errorf("response StaticSite.Name = %q, want %q", resp.StaticSite.Name, "web")
-	}
-	if len(resp.StaticSite.Domains) != 1 || resp.StaticSite.Domains[0] != "web.example.com" {
-		t.Errorf("response StaticSite.Domains = %v, want [web.example.com]", resp.StaticSite.Domains)
 	}
 }
 
@@ -687,14 +712,11 @@ func TestHandleTriggerBuild_StaticAccepted(t *testing.T) {
 // internal/deploy.Pipeline.Deploy's own compose case, which still
 // returns "not yet supported".
 func TestHandleTriggerBuild_ComposeStillRejected(t *testing.T) {
-	fb := &fakeBuilder{tag: "levelrail/web:abc123"}
-	var fetchCalls []fakeFetchCall
-	cleanupCalled := false
-	rt, db := newTestRouterWithBuilder(t, fb, newFakeFetch(&fetchCalls, t.TempDir(), &cleanupCalled, nil))
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
@@ -702,9 +724,7 @@ func TestHandleTriggerBuild_ComposeStillRejected(t *testing.T) {
 	if rec.Code != http.StatusNotImplemented {
 		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusNotImplemented, rec.Body.String())
 	}
-	if fb.calls != 0 {
-		t.Errorf("builder called %d times, want 0", fb.calls)
-	}
+	fb.assertNotCalled(t)
 }
 
 // TestHandleTriggerBuild_UnrecognizedBuildTypeRejected proves a
@@ -712,14 +732,11 @@ func TestHandleTriggerBuild_ComposeStillRejected(t *testing.T) {
 // (a caller mistake), distinct from compose's 501 (a real, named
 // capability gap).
 func TestHandleTriggerBuild_UnrecognizedBuildTypeRejected(t *testing.T) {
-	fb := &fakeBuilder{tag: "levelrail/web:abc123"}
-	var fetchCalls []fakeFetchCall
-	cleanupCalled := false
-	rt, db := newTestRouterWithBuilder(t, fb, newFakeFetch(&fetchCalls, t.TempDir(), &cleanupCalled, nil))
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
@@ -727,21 +744,196 @@ func TestHandleTriggerBuild_UnrecognizedBuildTypeRejected(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
 	}
-	if fb.calls != 0 {
-		t.Errorf("builder called %d times, want 0", fb.calls)
-	}
+	fb.assertNotCalled(t)
 }
 
 func TestHandleTriggerBuild_InvalidBody(t *testing.T) {
-	rt, db := newTestRouterWithBuilder(t, &fakeBuilder{}, nil)
+	rt, db := newTestRouterWithBuilder(t, newFakeBuilder("", nil), nil)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
+	seedWebApp(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds", `not json`))
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusBadRequest)
 	}
+}
+
+// TestIsGitHubHTTPSRepoURL covers the host/scheme matching tokenForRepo
+// relies on to decide whether minting a GitHub App installation token is
+// even worth attempting.
+func TestIsGitHubHTTPSRepoURL(t *testing.T) {
+	cases := []struct {
+		url  string
+		want bool
+	}{
+		{"https://github.com/acme/widgets.git", true},
+		{"https://github.com/acme/widgets", true},
+		{"http://github.com/acme/widgets.git", false},
+		{"https://gitlab.com/acme/widgets.git", false},
+		{"git@github.com:acme/widgets.git", false},
+		{"not a url", false},
+		{"", false},
+	}
+	for _, c := range cases {
+		if got := isGitHubHTTPSRepoURL(c.url); got != c.want {
+			t.Errorf("isGitHubHTTPSRepoURL(%q) = %v, want %v", c.url, got, c.want)
+		}
+	}
+}
+
+// TestHandleTriggerBuild_PrivateRepoAuth_MintsAndUsesToken proves the
+// real security-relevant fix this task adds: a github.com repo, with a
+// connected and installed GitHub App, gets its clone authenticated with
+// a freshly minted installation token, exactly the credential
+// GitHubAppRepoPicker.tsx's own picker implies is already wired in.
+func TestHandleTriggerBuild_PrivateRepoAuth_MintsAndUsesToken(t *testing.T) {
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	fakeClient := &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
+	rt, db := newPrivateRepoAuthRouter(t, fb, fetch, fakeClient)
+	cookie := loginTestSession(t, rt, db)
+	seedWebApp(t, db)
+
+	rec, resp := postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://github.com/acme/widgets.git","ref":"main"}`)
+
+	fc := fetch.awaitCall(t)
+	if fc.token != "ghs_installtoken" {
+		t.Errorf("fetch token = %q, want the minted installation token %q", fc.token, "ghs_installtoken")
+	}
+	if fc.repoURL != "https://github.com/acme/widgets.git" {
+		t.Errorf("fetch repoURL = %q, want %q", fc.repoURL, "https://github.com/acme/widgets.git")
+	}
+	if fakeClient.gotInstallID != 7 {
+		t.Errorf("MintInstallationToken called with installationID = %d, want 7", fakeClient.gotInstallID)
+	}
+	if strings.Contains(rec.Body.String(), "ghs_installtoken") {
+		t.Error("response body leaked the installation token, must never be echoed back")
+	}
+	awaitDeployAttemptFinished(t, db, resp.ID)
+}
+
+// TestHandleTriggerBuild_PrivateRepoAuth_DeployOnlyTokenNeverMintsToken
+// proves AbilityDeploy alone (this route's own gate) is not enough to
+// authorize minting a live GitHub App installation token: repoURL is
+// fully caller-controlled and need not have anything to do with the app
+// being built, so an unscoped mint here would let a CI token meant only
+// to trigger builds read any private repo the org's installation can
+// reach. The build itself still succeeds (AbilityDeploy is enough to
+// trigger a build), just against an unauthenticated clone.
+func TestHandleTriggerBuild_PrivateRepoAuth_DeployOnlyTokenNeverMintsToken(t *testing.T) {
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	fakeClient := &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
+	rt, db := newPrivateRepoAuthRouter(t, fb, fetch, fakeClient)
+	seedWebApp(t, db)
+	const plaintext = "deploy-scoped-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(context.Background(), store.APIToken{
+		ID: "tok_deploy", Name: "deployer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityDeploy}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	postTriggerBuildBearerAccepted(t, rt, plaintext, `{"repo_url":"https://github.com/acme/widgets.git","ref":"main"}`)
+
+	fc := fetch.awaitCall(t)
+	if fc.token != "" {
+		t.Errorf("fetch token = %q, want empty: a plain deploy token must not mint or use a live installation token", fc.token)
+	}
+	if fakeClient.gotInstallID != 0 {
+		t.Errorf("MintInstallationToken called with installationID = %d, want 0 (never called)", fakeClient.gotInstallID)
+	}
+}
+
+// TestHandleTriggerBuild_PrivateRepoAuth_ReadSensitiveTokenMintsToken
+// proves the fix isn't overly restrictive: a bearer token explicitly
+// scoped with AbilityReadSensitive (not just a session) still gets a
+// minted installation token, the same tier handleListGitHubAppRepos
+// itself requires for the equivalent disclosure.
+func TestHandleTriggerBuild_PrivateRepoAuth_ReadSensitiveTokenMintsToken(t *testing.T) {
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	fakeClient := &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
+	rt, db := newPrivateRepoAuthRouter(t, fb, fetch, fakeClient)
+	seedWebApp(t, db)
+	const plaintext = "read-sensitive-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(context.Background(), store.APIToken{
+		ID: "tok_rs", Name: "ci", TokenHash: hashToken(plaintext), Abilities: []string{AbilityDeploy, AbilityReadSensitive}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	postTriggerBuildBearerAccepted(t, rt, plaintext, `{"repo_url":"https://github.com/acme/widgets.git","ref":"main"}`)
+
+	fc := fetch.awaitCall(t)
+	if fc.token != "ghs_installtoken" {
+		t.Errorf("fetch token = %q, want the minted installation token: a token explicitly scoped with AbilityReadSensitive should still get one", fc.token)
+	}
+}
+
+// TestHandleTriggerBuild_PrivateRepoAuth_NotConnectedFallsBackUnauthenticated
+// proves a github.com repo URL with no GitHub App connected at all still
+// clones (unauthenticated, the pre-existing behavior for a public repo)
+// rather than failing the build outright: tokenForRepo's own doc comment
+// is explicit that a manual build trigger's fetch must never hard-fail
+// only because GitHub App auth isn't configured.
+func TestHandleTriggerBuild_PrivateRepoAuth_NotConnectedFallsBackUnauthenticated(t *testing.T) {
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
+	cookie := loginTestSession(t, rt, db)
+	seedWebApp(t, db)
+
+	postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://github.com/acme/widgets.git","ref":"main"}`)
+
+	fc := fetch.awaitCall(t)
+	if fc.token != "" {
+		t.Errorf("fetch token = %q, want empty (no github app connection exists at all)", fc.token)
+	}
+}
+
+// TestHandleTriggerBuild_PrivateRepoAuth_NonGitHubHostNeverMintsToken
+// proves a non-github.com repo URL never even attempts to mint a token,
+// even with a fully connected and installed GitHub App: a token minted
+// for GitHub can never authenticate a clone against a different host.
+func TestHandleTriggerBuild_PrivateRepoAuth_NonGitHubHostNeverMintsToken(t *testing.T) {
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	fakeClient := &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
+	rt, db := newPrivateRepoAuthRouter(t, fb, fetch, fakeClient)
+	cookie := loginTestSession(t, rt, db)
+	seedWebApp(t, db)
+
+	postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://gitlab.com/acme/widgets.git","ref":"main"}`)
+
+	fc := fetch.awaitCall(t)
+	if fc.token != "" {
+		t.Errorf("fetch token = %q, want empty for a non-github.com host", fc.token)
+	}
+	if fakeClient.gotInstallID != 0 {
+		t.Errorf("MintInstallationToken was called (installationID = %d), want never called for a non-github.com host", fakeClient.gotInstallID)
+	}
+}
+
+// TestHandleTriggerBuild_PrivateRepoAuth_MintErrorFallsBackUnauthenticated
+// proves a real minting error (private key resolve failure, upstream
+// GitHub error, anything other than "not connected"/"not installed")
+// still degrades to an unauthenticated clone rather than failing the
+// whole build: tokenForRepo's own doc comment is explicit that the
+// public-repo path must keep working regardless.
+func TestHandleTriggerBuild_PrivateRepoAuth_MintErrorFallsBackUnauthenticated(t *testing.T) {
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	fakeClient := &fakeGitHubAppClient{mintErr: errFakeSecretNotSet}
+	rt, db := newPrivateRepoAuthRouter(t, fb, fetch, fakeClient)
+	cookie := loginTestSession(t, rt, db)
+	seedWebApp(t, db)
+
+	postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://github.com/acme/widgets.git","ref":"main"}`)
+
+	fc := fetch.awaitCall(t)
+	if fc.token != "" {
+		t.Errorf("fetch token = %q, want empty after a minting error", fc.token)
+	}
+	fb.awaitCall(t)
 }

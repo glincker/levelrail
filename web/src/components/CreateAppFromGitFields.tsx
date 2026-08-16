@@ -11,10 +11,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
-import { appKeys, useCreateApp } from '../queries/apps'
+import { useCreateApp } from '../queries/apps'
 import { triggerBuild, type TriggerBuildInput } from '../queries/builds'
 import { deployKeys } from '../queries/deploys'
-import { staticSitesKeys } from '../queries/staticSites'
+import { deployAttemptKeys } from '../queries/deployAttempts'
 import { GitBuildSourceFields } from './GitBuildSourceFields'
 import { GitHubAppRepoPicker } from './GitHubAppRepoPicker'
 
@@ -106,11 +106,13 @@ export const PENDING_BUILD_TAG = 'pending-build'
 //      leaving the field looking like a real, working image tag if the
 //      next step never completes.
 //   2. POST /api/v1/apps/{name}/builds (handleTriggerBuild), which
-//      builds the image and, on success, overwrites the app's desired
-//      image via internal/deploy.Pipeline.deployDockerfile's own
+//      triggers the build and returns immediately (the build itself runs
+//      asynchronously on the server, see queries/builds.ts's own doc
+//      comment). Once it finishes, it overwrites the app's desired image
+//      via internal/deploy.Pipeline.deployDockerfile's own
 //      store.SaveDesiredService call (internal/deploy/deploy.go): the
-//      placeholder from step 1 is only ever visible for however long
-//      the build takes, or left in place if the build fails.
+//      placeholder from step 1 stays visible until then, or is left in
+//      place if the build fails.
 //
 // No prior precedent for this exact two-step sequencing exists anywhere
 // in the codebase (grepped internal/api, internal/deploy,
@@ -157,11 +159,12 @@ export function CreateAppFromGitFields({
    *  form's local state on close. See CreateAppFields's identical prop
    *  for the full reasoning. */
   open: boolean
-  /** Called once the build has succeeded and navigation to the app's
-   *  detail page has been kicked off. Not called on a build failure:
-   *  the app record already exists by then (step 1 succeeded), so the
-   *  dialog stays open and the same submit button retries the build
-   *  rather than dead-ending. */
+  /** Called once the build has been triggered (not once it has
+   *  finished, see queries/builds.ts's own doc comment) and navigation
+   *  to the app's detail page has been kicked off. Not called if
+   *  triggering the build itself fails: the app record already exists
+   *  by then (step 1 succeeded), so the dialog stays open and the same
+   *  submit button retries rather than dead-ending. */
   onCreated: () => void
 }) {
   const navigate = useNavigate()
@@ -181,20 +184,16 @@ export function CreateAppFromGitFields({
   const buildMutation = useMutation({
     mutationFn: ({ name, input }: { name: string; input: TriggerBuildInput }) =>
       triggerBuild(name, input),
-    onSuccess: (result, variables) => {
-      // A build.type: static result carries no app (see
-      // TriggerBuildResult's own doc comment in queries/builds.ts): the
-      // app detail cache is left untouched rather than overwritten with
-      // undefined, and the static-sites list is invalidated instead,
-      // the same split useTriggerBuild's own onSuccess makes.
-      if (result.app) {
-        queryClient.setQueryData(appKeys.detail(variables.name), result.app)
-      }
-      if (result.static_site) {
-        void queryClient.invalidateQueries({ queryKey: staticSitesKeys.all })
-      }
+    onSuccess: (_result, variables) => {
+      // The build hasn't finished yet at this point (see
+      // queries/builds.ts's own doc comment), so there is no updated app
+      // or static site to write into the cache: invalidate instead, the
+      // same split useTriggerBuild's own onSuccess makes.
       void queryClient.invalidateQueries({
         queryKey: deployKeys.status(variables.name),
+      })
+      void queryClient.invalidateQueries({
+        queryKey: deployAttemptKeys.list(variables.name),
       })
     },
   })
@@ -230,7 +229,8 @@ export function CreateAppFromGitFields({
         onSuccess: () => {
           onCreated()
           toast.add({
-            title: `App "${name}" created and built.`,
+            title: `App "${name}" created, build triggered.`,
+            description: 'Check the app page for the build outcome.',
             type: 'success',
           })
           void navigate({ to: '/apps/$name', params: { name } })
@@ -318,10 +318,7 @@ export function CreateAppFromGitFields({
 
       {buildMutation.isPending ? (
         <Alert>
-          <AlertDescription>
-            Building from source. This can take a while for a real image, there
-            is no live progress log yet.
-          </AlertDescription>
+          <AlertDescription>Triggering the build...</AlertDescription>
         </Alert>
       ) : null}
 
@@ -336,8 +333,9 @@ export function CreateAppFromGitFields({
         <Alert variant="destructive">
           <WarningIcon />
           <AlertDescription>
-            App created, but the build failed: {buildMutation.error.message}.
-            Fix the fields above and submit again to retry the build.
+            App created, but triggering the build failed:{' '}
+            {buildMutation.error.message}. Fix the fields above and submit
+            again to retry.
           </AlertDescription>
         </Alert>
       ) : null}
