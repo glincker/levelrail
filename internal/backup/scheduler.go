@@ -23,7 +23,7 @@ import (
 // dependency.
 type ScheduleStore interface {
 	ListScheduledDatabases(ctx context.Context) ([]store.DesiredDatabase, error)
-	PruneBackupHistory(ctx context.Context, databaseName string, keep int) (int64, error)
+	PruneBackupHistory(ctx context.Context, databaseName string, keep int) ([]store.PrunedBackup, error)
 }
 
 // ScheduledBackupRunner is the surface Scheduler needs to actually run a
@@ -40,6 +40,12 @@ type ScheduleStore interface {
 // block rather than separate manual/scheduled config shapes.
 type ScheduledBackupRunner interface {
 	RunBackup(ctx context.Context, historyID, databaseName, engine, containerName, targetID string) error
+	// ResolveDestination resolves a backup target ID into a live
+	// Destination (*Runner.ResolveDestination, runner.go), the same
+	// resolution RunBackup does internally before every upload. Needed
+	// separately here because retention pruning deletes objects for a
+	// pruned row's own TargetID after a run, not during one.
+	ResolveDestination(ctx context.Context, targetID string) (Destination, error)
 }
 
 // Scheduler periodically checks which databases have a due cron
@@ -92,7 +98,14 @@ type ScheduledBackupRunner interface {
 type Scheduler struct {
 	Store  ScheduleStore
 	Runner ScheduledBackupRunner
-	Logger *slog.Logger
+	// Deleter removes the bucket object behind each pruned backup_history
+	// row after a successful retention prune. nil disables object
+	// deletion entirely (store rows still get pruned), the same
+	// optional-capability shape this codebase already uses elsewhere
+	// (e.g. backupRunner itself being nil when no master key is
+	// configured, cmd/levelrail/main.go).
+	Deleter Deleter
+	Logger  *slog.Logger
 	// Now returns the current time, the same testable-clock field
 	// Runner.Now already establishes in runner.go: production code
 	// leaves it nil and Tick falls back to time.Now, tests set it for
@@ -105,14 +118,16 @@ type Scheduler struct {
 
 // NewScheduler builds a Scheduler ready to Tick or Run. logger defaults
 // to slog.Default() if nil, the same convention alerting.NewEngine
-// already establishes for its own logger parameter.
-func NewScheduler(store ScheduleStore, runner ScheduledBackupRunner, logger *slog.Logger) *Scheduler {
+// already establishes for its own logger parameter. deleter may be nil
+// (see Scheduler.Deleter's own doc comment).
+func NewScheduler(store ScheduleStore, runner ScheduledBackupRunner, deleter Deleter, logger *slog.Logger) *Scheduler {
 	if logger == nil {
 		logger = slog.Default()
 	}
 	return &Scheduler{
 		Store:   store,
 		Runner:  runner,
+		Deleter: deleter,
 		Logger:  logger,
 		nextRun: make(map[string]time.Time),
 	}
@@ -215,10 +230,12 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 
 // runScheduled runs one database's due backup and, on success, prunes
 // its backup_history rows back down to BackupRetain (0 means keep
-// everything, see PruneBackupHistory's own doc comment). A pruning
-// failure is logged, not returned as this call's own error: the backup
-// itself already succeeded and is already durably recorded, so losing
-// the chance to prune old rows this one time is a materially smaller
+// everything, see PruneBackupHistory's own doc comment), then
+// best-effort deletes the pruned rows' bucket objects via Deleter. A
+// pruning failure, or an individual object delete failure, is logged,
+// not returned as this call's own error: the backup itself already
+// succeeded and is already durably recorded, so losing the chance to
+// clean up old rows or objects this one time is a materially smaller
 // problem than a backup that ran fine somehow being reported as failed
 // because bookkeeping cleanup afterward didn't go perfectly, the same
 // "don't let a secondary concern's failure mask the primary result"
@@ -238,19 +255,53 @@ func (s *Scheduler) runScheduled(ctx context.Context, d store.DesiredDatabase) e
 	}
 
 	if d.BackupRetain > 0 {
-		deleted, pruneErr := s.Store.PruneBackupHistory(ctx, d.Name, d.BackupRetain)
+		pruned, pruneErr := s.Store.PruneBackupHistory(ctx, d.Name, d.BackupRetain)
 		if pruneErr != nil {
 			s.log().Error("backup: scheduled retention prune failed",
 				slog.String("database", d.Name), slog.String("error", pruneErr.Error()))
 			return nil
 		}
-		if deleted > 0 {
+		if len(pruned) > 0 {
 			s.log().Info("backup: scheduled retention pruned old backup history rows",
-				slog.String("database", d.Name), slog.Int64("deleted", deleted))
+				slog.String("database", d.Name), slog.Int("deleted", len(pruned)))
+			s.deletePrunedObjects(ctx, d.Name, pruned)
 		}
 	}
 
 	return nil
+}
+
+// deletePrunedObjects best-effort deletes the bucket object behind every
+// row PruneBackupHistory just removed: matching this method's own caller
+// (runScheduled), a failure here is logged and never turns an
+// already-successful backup+prune into a reported failure. Destinations
+// are resolved once per distinct TargetID and reused across rows sharing
+// it, since a database's schedule normally points at one target for its
+// whole pruned batch.
+func (s *Scheduler) deletePrunedObjects(ctx context.Context, databaseName string, pruned []store.PrunedBackup) {
+	if s.Deleter == nil {
+		return
+	}
+
+	destinations := make(map[string]Destination, 1)
+	for _, p := range pruned {
+		dest, ok := destinations[p.TargetID]
+		if !ok {
+			var err error
+			dest, err = s.Runner.ResolveDestination(ctx, p.TargetID)
+			if err != nil {
+				s.log().Error("backup: scheduled retention delete: resolve destination failed",
+					slog.String("database", databaseName), slog.String("target_id", p.TargetID), slog.String("error", err.Error()))
+				continue
+			}
+			destinations[p.TargetID] = dest
+		}
+
+		if err := s.Deleter.Delete(ctx, dest, p.ObjectKey); err != nil {
+			s.log().Error("backup: scheduled retention delete failed",
+				slog.String("database", databaseName), slog.String("object_key", p.ObjectKey), slog.String("error", err.Error()))
+		}
+	}
 }
 
 // Run calls Tick on interval until ctx is done, matching the shape of

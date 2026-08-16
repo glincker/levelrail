@@ -22,7 +22,7 @@ type fakeScheduleStore struct {
 		database string
 		keep     int
 	}
-	pruneReturn int64
+	pruneReturn []store.PrunedBackup
 	pruneErr    error
 }
 
@@ -33,7 +33,7 @@ func (f *fakeScheduleStore) ListScheduledDatabases(context.Context) ([]store.Des
 	return f.dbs, nil
 }
 
-func (f *fakeScheduleStore) PruneBackupHistory(_ context.Context, databaseName string, keep int) (int64, error) {
+func (f *fakeScheduleStore) PruneBackupHistory(_ context.Context, databaseName string, keep int) ([]store.PrunedBackup, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.pruned = append(f.pruned, struct {
@@ -41,7 +41,7 @@ func (f *fakeScheduleStore) PruneBackupHistory(_ context.Context, databaseName s
 		keep     int
 	}{databaseName, keep})
 	if f.pruneErr != nil {
-		return 0, f.pruneErr
+		return nil, f.pruneErr
 	}
 	return f.pruneReturn, nil
 }
@@ -55,6 +55,10 @@ type fakeScheduledRunner struct {
 		historyID, database, engine, container, targetID string
 	}
 	failFor map[string]error
+
+	resolveCalls  []string
+	resolveErr    error
+	resolveResult Destination
 }
 
 func (f *fakeScheduledRunner) RunBackup(_ context.Context, historyID, databaseName, engine, containerName, targetID string) error {
@@ -69,6 +73,38 @@ func (f *fakeScheduledRunner) RunBackup(_ context.Context, historyID, databaseNa
 		}
 	}
 	return nil
+}
+
+func (f *fakeScheduledRunner) ResolveDestination(_ context.Context, targetID string) (Destination, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.resolveCalls = append(f.resolveCalls, targetID)
+	if f.resolveErr != nil {
+		return Destination{}, f.resolveErr
+	}
+	return f.resolveResult, nil
+}
+
+// fakeDeleter is Scheduler's own fake for Deleter: records every call,
+// and can be told to fail so tests can prove a delete failure is logged
+// rather than turning a successful run into a reported failure.
+type fakeDeleter struct {
+	mu    sync.Mutex
+	calls []struct {
+		dest Destination
+		key  string
+	}
+	err error
+}
+
+func (f *fakeDeleter) Delete(_ context.Context, dest Destination, key string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.calls = append(f.calls, struct {
+		dest Destination
+		key  string
+	}{dest, key})
+	return f.err
 }
 
 func scheduledDB(name, schedule string, retain int) store.DesiredDatabase {
@@ -88,7 +124,7 @@ func TestScheduler_Tick_FirstSightingArmsWithoutFiring(t *testing.T) {
 	now := time.Date(2026, 8, 15, 3, 0, 0, 0, time.UTC)
 	fakeStore := &fakeScheduleStore{dbs: []store.DesiredDatabase{scheduledDB("main", "0 3 * * *", 0)}}
 	runner := &fakeScheduledRunner{}
-	s := NewScheduler(fakeStore, runner, nil)
+	s := NewScheduler(fakeStore, runner, nil, nil)
 	s.Now = func() time.Time { return now }
 
 	if err := s.Tick(context.Background()); err != nil {
@@ -106,7 +142,7 @@ func TestScheduler_Tick_FirstSightingArmsWithoutFiring(t *testing.T) {
 func TestScheduler_Tick_FiresOnceDue(t *testing.T) {
 	fakeStore := &fakeScheduleStore{dbs: []store.DesiredDatabase{scheduledDB("main", "0 3 * * *", 0)}}
 	runner := &fakeScheduledRunner{}
-	s := NewScheduler(fakeStore, runner, nil)
+	s := NewScheduler(fakeStore, runner, nil, nil)
 
 	armAt := time.Date(2026, 8, 15, 1, 0, 0, 0, time.UTC)
 	s.Now = func() time.Time { return armAt }
@@ -145,7 +181,7 @@ func TestScheduler_Tick_FiresOnceDue(t *testing.T) {
 func TestScheduler_Tick_NotYetDueDoesNotFire(t *testing.T) {
 	fakeStore := &fakeScheduleStore{dbs: []store.DesiredDatabase{scheduledDB("main", "0 3 * * *", 0)}}
 	runner := &fakeScheduledRunner{}
-	s := NewScheduler(fakeStore, runner, nil)
+	s := NewScheduler(fakeStore, runner, nil, nil)
 
 	s.Now = func() time.Time { return time.Date(2026, 8, 15, 1, 0, 0, 0, time.UTC) }
 	if err := s.Tick(context.Background()); err != nil {
@@ -167,7 +203,7 @@ func TestScheduler_Tick_NotYetDueDoesNotFire(t *testing.T) {
 func TestScheduler_Tick_RetentionPrunedAfterSuccess(t *testing.T) {
 	fakeStore := &fakeScheduleStore{dbs: []store.DesiredDatabase{scheduledDB("main", "0 3 * * *", 7)}}
 	runner := &fakeScheduledRunner{}
-	s := NewScheduler(fakeStore, runner, nil)
+	s := NewScheduler(fakeStore, runner, nil, nil)
 
 	s.Now = func() time.Time { return time.Date(2026, 8, 15, 1, 0, 0, 0, time.UTC) }
 	_ = s.Tick(context.Background())
@@ -184,6 +220,117 @@ func TestScheduler_Tick_RetentionPrunedAfterSuccess(t *testing.T) {
 	}
 }
 
+// TestScheduler_Tick_DeletesPrunedObjects proves the actual gap this
+// feature closes: every row PruneBackupHistory returns must have its
+// bucket object deleted too, via Runner.ResolveDestination + Deleter,
+// not just the backup_history row.
+func TestScheduler_Tick_DeletesPrunedObjects(t *testing.T) {
+	fakeStore := &fakeScheduleStore{
+		dbs: []store.DesiredDatabase{scheduledDB("main", "0 3 * * *", 7)},
+		pruneReturn: []store.PrunedBackup{
+			{TargetID: "bkt_1", ObjectKey: "main/main-1.dump"},
+			{TargetID: "bkt_1", ObjectKey: "main/main-2.dump"},
+		},
+	}
+	runner := &fakeScheduledRunner{resolveResult: Destination{Bucket: "levelrail-backups"}}
+	deleter := &fakeDeleter{}
+	s := NewScheduler(fakeStore, runner, deleter, nil)
+
+	s.Now = func() time.Time { return time.Date(2026, 8, 15, 1, 0, 0, 0, time.UTC) }
+	_ = s.Tick(context.Background())
+	s.Now = func() time.Time { return time.Date(2026, 8, 15, 3, 0, 0, 0, time.UTC) }
+	if err := s.Tick(context.Background()); err != nil {
+		t.Fatalf("Tick() error = %v", err)
+	}
+
+	if len(deleter.calls) != 2 {
+		t.Fatalf("delete calls = %d, want 2", len(deleter.calls))
+	}
+	if deleter.calls[0].key != "main/main-1.dump" || deleter.calls[1].key != "main/main-2.dump" {
+		t.Errorf("delete calls = %+v, want keys main/main-1.dump then main/main-2.dump", deleter.calls)
+	}
+	if deleter.calls[0].dest.Bucket != "levelrail-backups" {
+		t.Errorf("delete dest = %+v, want the resolved Destination, not a zero value", deleter.calls[0].dest)
+	}
+	// Both pruned rows share targetID bkt_1, so ResolveDestination
+	// should be resolved once and reused, not called per row.
+	if len(runner.resolveCalls) != 1 || runner.resolveCalls[0] != "bkt_1" {
+		t.Errorf("resolveCalls = %+v, want exactly one call for bkt_1 (cached across rows sharing a target)", runner.resolveCalls)
+	}
+}
+
+// TestScheduler_Tick_DeleteFailureDoesNotFailTick is the half-succeeded
+// case this feature must handle: the backup ran, the DB rows were
+// pruned, but deleting the bucket object failed. That failure must be
+// logged, never turn an already-successful backup+prune into a reported
+// Tick error.
+func TestScheduler_Tick_DeleteFailureDoesNotFailTick(t *testing.T) {
+	fakeStore := &fakeScheduleStore{
+		dbs:         []store.DesiredDatabase{scheduledDB("main", "0 3 * * *", 7)},
+		pruneReturn: []store.PrunedBackup{{TargetID: "bkt_1", ObjectKey: "main/main-1.dump"}},
+	}
+	runner := &fakeScheduledRunner{}
+	deleter := &fakeDeleter{err: errors.New("bucket unreachable")}
+	s := NewScheduler(fakeStore, runner, deleter, nil)
+
+	s.Now = func() time.Time { return time.Date(2026, 8, 15, 1, 0, 0, 0, time.UTC) }
+	_ = s.Tick(context.Background())
+	s.Now = func() time.Time { return time.Date(2026, 8, 15, 3, 0, 0, 0, time.UTC) }
+	if err := s.Tick(context.Background()); err != nil {
+		t.Fatalf("Tick() error = %v, want nil (a delete failure must not fail Tick)", err)
+	}
+
+	if len(deleter.calls) != 1 {
+		t.Fatalf("delete calls = %d, want 1 (attempted despite the eventual failure)", len(deleter.calls))
+	}
+}
+
+// TestScheduler_Tick_ResolveDestinationFailureDoesNotFailTick covers the
+// other half of resolving a target before deleting: a failure to resolve
+// credentials for a pruned row's target must also be logged and
+// swallowed, not propagated as a Tick error.
+func TestScheduler_Tick_ResolveDestinationFailureDoesNotFailTick(t *testing.T) {
+	fakeStore := &fakeScheduleStore{
+		dbs:         []store.DesiredDatabase{scheduledDB("main", "0 3 * * *", 7)},
+		pruneReturn: []store.PrunedBackup{{TargetID: "bkt_1", ObjectKey: "main/main-1.dump"}},
+	}
+	runner := &fakeScheduledRunner{resolveErr: errors.New("target not found")}
+	deleter := &fakeDeleter{}
+	s := NewScheduler(fakeStore, runner, deleter, nil)
+
+	s.Now = func() time.Time { return time.Date(2026, 8, 15, 1, 0, 0, 0, time.UTC) }
+	_ = s.Tick(context.Background())
+	s.Now = func() time.Time { return time.Date(2026, 8, 15, 3, 0, 0, 0, time.UTC) }
+	if err := s.Tick(context.Background()); err != nil {
+		t.Fatalf("Tick() error = %v, want nil (a resolve failure must not fail Tick)", err)
+	}
+	if len(deleter.calls) != 0 {
+		t.Fatalf("delete calls = %d, want 0 (never called once its destination failed to resolve)", len(deleter.calls))
+	}
+}
+
+// TestScheduler_Tick_NilDeleterSkipsDeleteWithoutFailing: Deleter is an
+// optional capability (see Scheduler.Deleter's own doc comment); a
+// Scheduler with none configured must still prune store rows fine and
+// must not panic or fail Tick trying to delete objects.
+func TestScheduler_Tick_NilDeleterSkipsDeleteWithoutFailing(t *testing.T) {
+	fakeStore := &fakeScheduleStore{
+		dbs:         []store.DesiredDatabase{scheduledDB("main", "0 3 * * *", 7)},
+		pruneReturn: []store.PrunedBackup{{TargetID: "bkt_1", ObjectKey: "main/main-1.dump"}},
+	}
+	s := NewScheduler(fakeStore, &fakeScheduledRunner{}, nil, nil)
+
+	s.Now = func() time.Time { return time.Date(2026, 8, 15, 1, 0, 0, 0, time.UTC) }
+	_ = s.Tick(context.Background())
+	s.Now = func() time.Time { return time.Date(2026, 8, 15, 3, 0, 0, 0, time.UTC) }
+	if err := s.Tick(context.Background()); err != nil {
+		t.Fatalf("Tick() error = %v, want nil", err)
+	}
+	if len(fakeStore.pruned) != 1 {
+		t.Fatalf("prune calls = %d, want 1 (store pruning must still happen with no Deleter configured)", len(fakeStore.pruned))
+	}
+}
+
 // TestScheduler_Tick_RetainZeroSkipsPrune: BackupRetain 0 means "keep
 // everything," so a successful run must never call PruneBackupHistory at
 // all, not call it with keep=0 and rely on that method's own no-op
@@ -193,7 +340,7 @@ func TestScheduler_Tick_RetentionPrunedAfterSuccess(t *testing.T) {
 func TestScheduler_Tick_RetainZeroSkipsPrune(t *testing.T) {
 	fakeStore := &fakeScheduleStore{dbs: []store.DesiredDatabase{scheduledDB("main", "0 3 * * *", 0)}}
 	runner := &fakeScheduledRunner{}
-	s := NewScheduler(fakeStore, runner, nil)
+	s := NewScheduler(fakeStore, runner, nil, nil)
 
 	s.Now = func() time.Time { return time.Date(2026, 8, 15, 1, 0, 0, 0, time.UTC) }
 	_ = s.Tick(context.Background())
@@ -213,7 +360,7 @@ func TestScheduler_Tick_RetainZeroSkipsPrune(t *testing.T) {
 func TestScheduler_Tick_FailedRunSkipsPrune(t *testing.T) {
 	fakeStore := &fakeScheduleStore{dbs: []store.DesiredDatabase{scheduledDB("main", "0 3 * * *", 7)}}
 	runner := &fakeScheduledRunner{failFor: map[string]error{"main": errors.New("dump failed")}}
-	s := NewScheduler(fakeStore, runner, nil)
+	s := NewScheduler(fakeStore, runner, nil, nil)
 
 	s.Now = func() time.Time { return time.Date(2026, 8, 15, 1, 0, 0, 0, time.UTC) }
 	_ = s.Tick(context.Background())
@@ -237,7 +384,7 @@ func TestScheduler_Tick_InvalidScheduleSkipsWithoutFailingTick(t *testing.T) {
 		scheduledDB("ok", "0 3 * * *", 0),
 	}}
 	runner := &fakeScheduledRunner{}
-	s := NewScheduler(fakeStore, runner, nil)
+	s := NewScheduler(fakeStore, runner, nil, nil)
 	s.Now = func() time.Time { return time.Date(2026, 8, 15, 1, 0, 0, 0, time.UTC) }
 
 	if err := s.Tick(context.Background()); err != nil {
@@ -267,7 +414,7 @@ func TestScheduler_Tick_InvalidScheduleSkipsWithoutFailingTick(t *testing.T) {
 func TestScheduler_Tick_ForgetsUnscheduledDatabase(t *testing.T) {
 	fakeStore := &fakeScheduleStore{dbs: []store.DesiredDatabase{scheduledDB("main", "0 3 * * *", 0)}}
 	runner := &fakeScheduledRunner{}
-	s := NewScheduler(fakeStore, runner, nil)
+	s := NewScheduler(fakeStore, runner, nil, nil)
 	s.Now = func() time.Time { return time.Date(2026, 8, 15, 1, 0, 0, 0, time.UTC) }
 	if err := s.Tick(context.Background()); err != nil {
 		t.Fatalf("Tick() error = %v", err)
@@ -298,7 +445,7 @@ func TestScheduler_Tick_ForgetsUnscheduledDatabase(t *testing.T) {
 // swallowed the way an individual database's invalid schedule is.
 func TestScheduler_Tick_ListErrorPropagates(t *testing.T) {
 	fakeStore := &fakeScheduleStore{listErr: errors.New("db unavailable")}
-	s := NewScheduler(fakeStore, &fakeScheduledRunner{}, nil)
+	s := NewScheduler(fakeStore, &fakeScheduledRunner{}, nil, nil)
 
 	if err := s.Tick(context.Background()); err == nil {
 		t.Fatal("Tick() error = nil, want the store's list error wrapped")
@@ -312,7 +459,7 @@ func TestScheduler_Tick_ListErrorPropagates(t *testing.T) {
 // convention.
 func TestScheduler_Run_StopsOnContextCancel(t *testing.T) {
 	fakeStore := &fakeScheduleStore{}
-	s := NewScheduler(fakeStore, &fakeScheduledRunner{}, nil)
+	s := NewScheduler(fakeStore, &fakeScheduledRunner{}, nil, nil)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)

@@ -471,7 +471,7 @@ func run(logger *slog.Logger) error {
 	// there is nothing for the scheduler to usefully do without one
 	// either.
 	if backupRunner != nil {
-		scheduler := backup.NewScheduler(db, backupRunner, logger)
+		scheduler := backup.NewScheduler(db, backupRunner, backup.S3Deleter{}, logger)
 		go func() {
 			if err := scheduler.Run(ctx, backupSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 				logger.Error("backup scheduler stopped", slog.String("error", err.Error()))

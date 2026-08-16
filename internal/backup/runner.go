@@ -105,19 +105,9 @@ func (r *Runner) RunBackup(ctx context.Context, historyID, databaseName, engine,
 // three levels of error handling around the history bookkeeping above
 // and below it.
 func (r *Runner) runDumpAndUpload(ctx context.Context, databaseName, engine, containerName, targetID, objectKey string) (int64, error) {
-	target, err := r.Store.GetBackupTarget(ctx, targetID)
+	dest, err := r.ResolveDestination(ctx, targetID)
 	if err != nil {
-		return 0, fmt.Errorf("get backup target %q: %w", targetID, err)
-	}
-
-	secretsKey := store.BackupTargetSecretsKey(targetID)
-	accessKeyID, err := r.Secrets.Resolve(ctx, secretsKey, "access_key_id")
-	if err != nil {
-		return 0, fmt.Errorf("resolve access key id for target %q: %w", targetID, err)
-	}
-	secretAccessKey, err := r.Secrets.Resolve(ctx, secretsKey, "secret_access_key")
-	if err != nil {
-		return 0, fmt.Errorf("resolve secret access key for target %q: %w", targetID, err)
+		return 0, err
 	}
 
 	dump, err := r.Dumper.Dump(ctx, engine, containerName)
@@ -129,18 +119,41 @@ func (r *Runner) runDumpAndUpload(ctx context.Context, databaseName, engine, con
 	}()
 
 	counted := &countingReader{r: dump}
-	dest := Destination{
+	if err := r.Uploader.Upload(ctx, dest, objectKey, counted, -1); err != nil {
+		return counted.n, fmt.Errorf("upload backup for %q to target %q: %w", databaseName, targetID, err)
+	}
+	return counted.n, nil
+}
+
+// ResolveDestination resolves targetID's stored config and live secrets
+// into a Destination, the same lookup runDumpAndUpload does before every
+// Upload call. Exported so Scheduler can resolve the identical
+// Destination for a Deleter when pruning old backups for the same
+// target.
+func (r *Runner) ResolveDestination(ctx context.Context, targetID string) (Destination, error) {
+	target, err := r.Store.GetBackupTarget(ctx, targetID)
+	if err != nil {
+		return Destination{}, fmt.Errorf("get backup target %q: %w", targetID, err)
+	}
+
+	secretsKey := store.BackupTargetSecretsKey(targetID)
+	accessKeyID, err := r.Secrets.Resolve(ctx, secretsKey, "access_key_id")
+	if err != nil {
+		return Destination{}, fmt.Errorf("resolve access key id for target %q: %w", targetID, err)
+	}
+	secretAccessKey, err := r.Secrets.Resolve(ctx, secretsKey, "secret_access_key")
+	if err != nil {
+		return Destination{}, fmt.Errorf("resolve secret access key for target %q: %w", targetID, err)
+	}
+
+	return Destination{
 		Provider:        target.Provider,
 		Endpoint:        target.Endpoint,
 		Region:          target.Region,
 		Bucket:          target.Bucket,
 		AccessKeyID:     accessKeyID,
 		SecretAccessKey: secretAccessKey,
-	}
-	if err := r.Uploader.Upload(ctx, dest, objectKey, counted, -1); err != nil {
-		return counted.n, fmt.Errorf("upload backup for %q to target %q: %w", databaseName, targetID, err)
-	}
-	return counted.n, nil
+	}, nil
 }
 
 // countingReader wraps a Dumper's stream so RunBackup can report
