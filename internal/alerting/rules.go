@@ -69,9 +69,15 @@ type Rule struct {
 	RestartCountThreshold int
 	RestartWindow         time.Duration
 
+	// ChannelID attaches an already-connected NotificationChannel; empty
+	// for legacy rules, which use NotifyURL/NotifyKind below directly.
+	ChannelID  string
 	NotifyURL  string
 	NotifyKind NotifyKind
 
+	// Enabled reflects both this rule's own flag and, once resolved by a
+	// read (GetRule/ListRules*), its attached channel's: a disabled
+	// channel silences the rule too.
 	Enabled bool
 
 	// Evaluation state, read-only from a caller's perspective: only the
@@ -111,9 +117,9 @@ func (db *DB) SaveRule(ctx context.Context, r Rule) error {
 			id, name, kind, resource_id,
 			metric, comparator, threshold, for_duration_seconds,
 			restart_count_threshold, restart_window_seconds,
-			notify_url, notify_kind, enabled,
+			channel_id, notify_url, notify_kind, enabled,
 			created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (id) DO UPDATE SET
 			name = excluded.name,
 			kind = excluded.kind,
@@ -124,6 +130,7 @@ func (db *DB) SaveRule(ctx context.Context, r Rule) error {
 			for_duration_seconds = excluded.for_duration_seconds,
 			restart_count_threshold = excluded.restart_count_threshold,
 			restart_window_seconds = excluded.restart_window_seconds,
+			channel_id = excluded.channel_id,
 			notify_url = excluded.notify_url,
 			notify_kind = excluded.notify_kind,
 			enabled = excluded.enabled,
@@ -132,7 +139,7 @@ func (db *DB) SaveRule(ctx context.Context, r Rule) error {
 		r.ID, r.Name, string(r.Kind), r.ResourceID,
 		r.Metric, string(r.Comparator), r.Threshold, int64(r.ForDuration.Seconds()),
 		r.RestartCountThreshold, int64(r.RestartWindow.Seconds()),
-		r.NotifyURL, string(r.NotifyKind), boolToInt(r.Enabled),
+		nullIfEmpty(r.ChannelID), r.NotifyURL, string(r.NotifyKind), boolToInt(r.Enabled),
 		now, now,
 	)
 	if err != nil {
@@ -143,7 +150,7 @@ func (db *DB) SaveRule(ctx context.Context, r Rule) error {
 
 // GetRule returns the rule with this ID, or ErrRuleNotFound.
 func (db *DB) GetRule(ctx context.Context, id string) (*Rule, error) {
-	row := db.QueryRowContext(ctx, ruleSelectColumns+` FROM alert_rules WHERE id = ?`, id)
+	row := db.QueryRowContext(ctx, ruleSelectColumns+` WHERE r.id = ?`, id)
 	r, err := scanRule(row.Scan)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrRuleNotFound
@@ -156,7 +163,7 @@ func (db *DB) GetRule(ctx context.Context, id string) (*Rule, error) {
 
 // ListRules returns every rule, ordered by name.
 func (db *DB) ListRules(ctx context.Context) ([]Rule, error) {
-	rows, err := db.QueryContext(ctx, ruleSelectColumns+` FROM alert_rules ORDER BY name`)
+	rows, err := db.QueryContext(ctx, ruleSelectColumns+` ORDER BY r.name`)
 	if err != nil {
 		return nil, fmt.Errorf("alerting: list rules: %w", err)
 	}
@@ -181,7 +188,7 @@ func (db *DB) ListRules(ctx context.Context) ([]Rule, error) {
 // not evaluated-but-not-notified, so a paused rule doesn't even pay for
 // a metrics query.
 func (db *DB) ListEnabledRules(ctx context.Context) ([]Rule, error) {
-	rows, err := db.QueryContext(ctx, ruleSelectColumns+` FROM alert_rules WHERE enabled = 1 ORDER BY name`)
+	rows, err := db.QueryContext(ctx, ruleSelectColumns+` WHERE r.enabled = 1 ORDER BY r.name`)
 	if err != nil {
 		return nil, fmt.Errorf("alerting: list enabled rules: %w", err)
 	}
@@ -208,7 +215,7 @@ func (db *DB) ListEnabledRules(ctx context.Context) ([]Rule, error) {
 // idx_alert_rules_resource (migrations/0001_alert_rules.sql) for
 // exactly this lookup.
 func (db *DB) ListRulesForResource(ctx context.Context, resourceID string) ([]Rule, error) {
-	rows, err := db.QueryContext(ctx, ruleSelectColumns+` FROM alert_rules WHERE resource_id = ? ORDER BY name`, resourceID)
+	rows, err := db.QueryContext(ctx, ruleSelectColumns+` WHERE r.resource_id = ? ORDER BY r.name`, resourceID)
 	if err != nil {
 		return nil, fmt.Errorf("alerting: list rules for resource %q: %w", resourceID, err)
 	}
@@ -262,12 +269,19 @@ func (db *DB) UpdateState(ctx context.Context, id string, pendingSince, firingSi
 	return nil
 }
 
+// ruleSelectColumns resolves the *effective* notify_url/notify_kind via
+// COALESCE, mirroring deployTargetSelectColumns (deploy_notify.go)
+// exactly: the attached channel's values when set, this row's own
+// columns otherwise (legacy rows, or a deleted channel).
 const ruleSelectColumns = `
-	SELECT id, name, kind, resource_id,
-		metric, comparator, threshold, for_duration_seconds,
-		restart_count_threshold, restart_window_seconds,
-		notify_url, notify_kind, enabled,
-		pending_since, firing, firing_since, last_evaluated_at, last_value`
+	SELECT r.id, r.name, r.kind, r.resource_id,
+		r.metric, r.comparator, r.threshold, r.for_duration_seconds,
+		r.restart_count_threshold, r.restart_window_seconds,
+		r.channel_id, COALESCE(c.notify_url, r.notify_url), COALESCE(c.kind, r.notify_kind),
+		r.enabled, c.enabled,
+		r.pending_since, r.firing, r.firing_since, r.last_evaluated_at, r.last_value
+	FROM alert_rules r
+	LEFT JOIN notification_channels c ON c.id = r.channel_id`
 
 func scanRule(scan func(dest ...any) error) (*Rule, error) {
 	var (
@@ -275,7 +289,9 @@ func scanRule(scan func(dest ...any) error) (*Rule, error) {
 		kind, comparator, notifyKind string
 		forDurationSeconds           int64
 		restartWindowSeconds         int64
+		channelID                    sql.NullString
 		enabledInt, firingInt        int
+		channelEnabled               sql.NullInt64
 		pendingSince, firingSince    sql.NullString
 		lastEvaluatedAt              sql.NullString
 		lastValue                    sql.NullFloat64
@@ -284,7 +300,8 @@ func scanRule(scan func(dest ...any) error) (*Rule, error) {
 		&r.ID, &r.Name, &kind, &r.ResourceID,
 		&r.Metric, &comparator, &r.Threshold, &forDurationSeconds,
 		&r.RestartCountThreshold, &restartWindowSeconds,
-		&r.NotifyURL, &notifyKind, &enabledInt,
+		&channelID, &r.NotifyURL, &notifyKind,
+		&enabledInt, &channelEnabled,
 		&pendingSince, &firingInt, &firingSince, &lastEvaluatedAt, &lastValue,
 	)
 	if err != nil {
@@ -294,9 +311,12 @@ func scanRule(scan func(dest ...any) error) (*Rule, error) {
 	r.Kind = Kind(kind)
 	r.Comparator = Comparator(comparator)
 	r.NotifyKind = NotifyKind(notifyKind)
+	r.ChannelID = channelID.String
 	r.ForDuration = time.Duration(forDurationSeconds) * time.Second
 	r.RestartWindow = time.Duration(restartWindowSeconds) * time.Second
-	r.Enabled = enabledInt != 0
+	// A disabled channel silences every rule attached to it too, not
+	// just ones explicitly disabled themselves.
+	r.Enabled = enabledInt != 0 && (!channelEnabled.Valid || channelEnabled.Int64 != 0)
 	r.Firing = firingInt != 0
 
 	pendingT, err := parseNullableTime(pendingSince)

@@ -26,14 +26,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Field, FieldError, FieldLabel } from '@/components/ui/field'
+import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
 import { useCreateAlertRule } from '../queries/alerts'
+import { useNotificationChannelsOptional } from '../queries/notificationChannels'
+import { CHANNEL_KIND_LABEL } from './notificationChannelKind'
 import type {
   AlertRuleKind,
   Comparator,
   CreateAlertRuleRequest,
-  NotifyKind,
 } from '../types/alerts'
 
 // Sanity-check regex for a Go `time.Duration` string ("2m", "30s",
@@ -62,27 +63,6 @@ const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
   { value: '<=', label: '<= (less or equal)' },
 ]
 
-const NOTIFY_KIND_OPTIONS: { value: NotifyKind; label: string }[] = [
-  { value: 'generic', label: 'Generic webhook' },
-  { value: 'slack', label: 'Slack' },
-  { value: 'discord', label: 'Discord' },
-  { value: 'telegram', label: 'Telegram' },
-  { value: 'email', label: 'Email' },
-]
-
-// Notify destination placeholder/validation differ by channel: every
-// channel but email expects a webhook URL in this field (internal/
-// alerting/notify.go's httpNotifier), email expects a plain destination
-// address (internal/alerting's emailNotifier doc comment: NotifyURL is
-// generically "the destination," interpreted per channel).
-const NOTIFY_DESTINATION_PLACEHOLDER: Record<NotifyKind, string> = {
-  generic: 'https://example.com/webhook',
-  slack: 'https://hooks.slack.com/services/...',
-  discord: 'https://discord.com/api/webhooks/...',
-  telegram: 'https://api.telegram.org/bot<token>/sendMessage?chat_id=...',
-  email: 'ops@example.com',
-}
-
 // One flat form model covering both rule kinds rather than a
 // zod.discriminatedUnion, so every field stays registered regardless of
 // the selected kind (matching EnvEditor's plain-object-plus-superRefine
@@ -99,28 +79,10 @@ const createAlertRuleSchema = z
     forDuration: z.string().trim(),
     restartCountThreshold: z.coerce.number({ error: 'Must be a number' }),
     restartWindow: z.string().trim(),
-    notifyUrl: z.string().trim(),
-    notifyKind: z.enum(['generic', 'slack', 'discord', 'telegram', 'email']),
+    channelId: z.string(),
     enabled: z.boolean(),
   })
   .superRefine((data, ctx) => {
-    if (data.notifyUrl) {
-      const isValid =
-        data.notifyKind === 'email'
-          ? z.email().safeParse(data.notifyUrl).success
-          : z.url().safeParse(data.notifyUrl).success
-      if (!isValid) {
-        ctx.addIssue({
-          code: 'custom',
-          message:
-            data.notifyKind === 'email'
-              ? 'Must be a valid email address'
-              : 'Must be a valid URL',
-          path: ['notifyUrl'],
-        })
-      }
-    }
-
     if (data.kind === 'threshold') {
       if (!data.metric) {
         ctx.addIssue({
@@ -184,8 +146,7 @@ const DEFAULT_VALUES: CreateAlertRuleFormInput = {
   forDuration: '2m',
   restartCountThreshold: 5,
   restartWindow: '5m',
-  notifyUrl: '',
-  notifyKind: 'generic',
+  channelId: '',
   enabled: true,
 }
 
@@ -199,6 +160,8 @@ const DEFAULT_VALUES: CreateAlertRuleFormInput = {
 export function CreateAlertRuleDialog({ appName }: { appName: string }) {
   const [open, setOpen] = useState(false)
   const createRule = useCreateAlertRule(appName)
+  const channelsQuery = useNotificationChannelsOptional()
+  const channels = channelsQuery.data ?? []
   const { control, register, handleSubmit, formState, reset, watch } = useForm<
     CreateAlertRuleFormInput,
     unknown,
@@ -208,7 +171,6 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
     defaultValues: DEFAULT_VALUES,
   })
   const kind = watch('kind')
-  const notifyKind = watch('notifyKind')
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -222,8 +184,7 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
     const req: CreateAlertRuleRequest = {
       name: values.name.trim(),
       kind: values.kind,
-      notify_url: values.notifyUrl.trim() || undefined,
-      notify_kind: values.notifyUrl.trim() ? values.notifyKind : undefined,
+      channel_id: values.channelId || undefined,
       enabled: values.enabled,
     }
     if (values.kind === 'threshold') {
@@ -396,39 +357,41 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
           )}
 
           <Field>
-            <FieldLabel htmlFor="rule-notify-url">
-              {notifyKind === 'email'
-                ? 'Notify email address (optional)'
-                : 'Notify URL (optional)'}
+            <FieldLabel htmlFor="rule-channel">
+              Notify channel (optional)
             </FieldLabel>
-            <Input
-              id="rule-notify-url"
-              placeholder={NOTIFY_DESTINATION_PLACEHOLDER[notifyKind]}
-              {...register('notifyUrl')}
-            />
-            <FieldError errors={[formState.errors.notifyUrl]} />
-          </Field>
-
-          <Field>
-            <FieldLabel htmlFor="rule-notify-kind">Notify channel</FieldLabel>
-            <Controller
-              control={control}
-              name="notifyKind"
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="rule-notify-kind" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {NOTIFY_KIND_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
+            {channels.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No channels connected yet. Connect one from Settings &rarr;
+                Notification channels first.
+              </p>
+            ) : (
+              <>
+                <Controller
+                  control={control}
+                  name="channelId"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="rule-channel" className="w-full">
+                        <SelectValue placeholder="Choose a connected channel" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {channels.map((channel) => (
+                          <SelectItem key={channel.id} value={channel.id}>
+                            {channel.name} ({CHANNEL_KIND_LABEL[channel.kind]})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <FieldDescription>
+                  Reuses a channel connection from Settings &rarr;
+                  Notification channels; leave unset to create the rule
+                  without a notify destination.
+                </FieldDescription>
+              </>
+            )}
           </Field>
 
           <Field orientation="horizontal">

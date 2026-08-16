@@ -43,6 +43,7 @@ type ruleResource struct {
 	Name       string `json:"name"`
 	Kind       string `json:"kind"`
 	ResourceID string `json:"resource_id,omitempty"`
+	ChannelID  string `json:"channel_id,omitempty"`
 
 	// Threshold-kind fields, ignored (left at zero value) for a
 	// crashloop-kind rule, mirroring alerting.Rule's own shape.
@@ -77,6 +78,7 @@ func toRuleResource(r alerting.Rule) ruleResource {
 		Name:                  r.Name,
 		Kind:                  string(r.Kind),
 		ResourceID:            r.ResourceID,
+		ChannelID:             r.ChannelID,
 		Metric:                r.Metric,
 		Comparator:            string(r.Comparator),
 		Threshold:             r.Threshold,
@@ -132,6 +134,7 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 		ForDuration:           forDuration,
 		RestartCountThreshold: a.RestartCountThreshold,
 		RestartWindow:         restartWindow,
+		ChannelID:             a.ChannelID,
 		NotifyURL:             a.NotifyURL,
 		NotifyKind:            alerting.NotifyKind(a.NotifyKind),
 		Enabled:               a.Enabled,
@@ -217,13 +220,39 @@ func (rt *Router) handleCreateAlertRule(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Validated against the real registry first, same as
+	// handleCreateDeployNotifyTarget does for its own channel_id.
+	if rule.ChannelID != "" {
+		if rt.notificationChannels == nil {
+			writeError(w, http.StatusNotImplemented, "notification channels are not configured on this control plane")
+			return
+		}
+		if _, err := rt.notificationChannels.GetNotificationChannel(r.Context(), rule.ChannelID); errors.Is(err, alerting.ErrNotificationChannelNotFound) {
+			writeError(w, http.StatusBadRequest, "unknown channel_id")
+			return
+		} else if err != nil {
+			rt.logger.Error("api: create alert rule: look up channel failed", slog.String("error", err.Error()), slog.String("channel_id", rule.ChannelID))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+	}
+
 	if err := rt.alertRules.SaveRule(r.Context(), rule); err != nil {
 		rt.logger.Error("api: create alert rule failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("rule_id", id))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, toRuleResource(rule))
+	// Re-fetched so the response carries resolved notify_url/notify_kind,
+	// which rule itself doesn't have until read back through the join.
+	saved, err := rt.alertRules.GetRule(r.Context(), id)
+	if err != nil {
+		rt.logger.Error("api: create alert rule: reload after save failed", slog.String("error", err.Error()), slog.String("rule_id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, toRuleResource(*saved))
 }
 
 // handleListAlertRules handles GET /api/v1/apps/{name}/alerts

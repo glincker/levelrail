@@ -119,6 +119,13 @@ func (e *Engine) Tick(ctx context.Context) error {
 // notification doesn't leave the rule's stored state inconsistent with
 // reality, only the operator momentarily uninformed.
 func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool) {
+	// r.Enabled is already resolved against its attached channel
+	// (scanRule): a disabled channel silences the rule the same way
+	// DeployDispatcher.Dispatch skips a target with a disabled channel.
+	if !r.Enabled {
+		return
+	}
+
 	ev := Event{Rule: r, Resolved: resolved}
 	if r.Kind == KindCrashloop && !resolved {
 		ev.LogLines = e.fetchRecentLogLines(ctx, r.ResourceID)

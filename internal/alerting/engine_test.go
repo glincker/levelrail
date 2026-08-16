@@ -273,6 +273,97 @@ func TestEngine_Tick_MetricsQueryError_OtherRulesStillEvaluated(t *testing.T) {
 	}
 }
 
+// TestEngine_Tick_MixedLegacyAndChannelRules_BothDispatch proves a
+// legacy (no ChannelID) rule and a channel-attached rule both fire from
+// one Tick, each resolving its own NotifyURL correctly, mirroring
+// TestDeployDispatcher_Dispatch_MixedLegacyAndChannelTargets. Uses the
+// real *DB as RuleStore, not fakeRuleStore, since the channel resolution
+// under test happens in the SQL join, not in Go logic a fake could
+// stand in for.
+func TestEngine_Tick_MixedLegacyAndChannelRules_BothDispatch(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveNotificationChannel(ctx, NotificationChannel{ID: "chn_1", Name: "Team Slack", Kind: NotifySlack, NotifyURL: "https://hooks.slack.com/x", Enabled: true}); err != nil {
+		t.Fatalf("seed channel: %v", err)
+	}
+	legacy := Rule{ID: "r_legacy", Kind: KindThreshold, ResourceID: "service:web", Metric: "cpu_percent",
+		Comparator: GreaterThan, Threshold: 80, NotifyURL: "https://legacy.example.com/hook", NotifyKind: NotifyDiscord, Enabled: true}
+	channelAttached := Rule{ID: "r_channel", Kind: KindThreshold, ResourceID: "service:web", Metric: "cpu_percent",
+		Comparator: GreaterThan, Threshold: 80, ChannelID: "chn_1", Enabled: true}
+	if err := db.SaveRule(ctx, legacy); err != nil {
+		t.Fatalf("seed legacy rule: %v", err)
+	}
+	if err := db.SaveRule(ctx, channelAttached); err != nil {
+		t.Fatalf("seed channel-attached rule: %v", err)
+	}
+
+	metrics := &fakeMetricsSource{samples: []telemetry.Sample{{Timestamp: time.Now(), Value: 95}}}
+	spy := &spyNotifier{}
+	engine := NewEngine(db, metrics, nil, nil, func(Rule) Notifier { return spy }, nil)
+
+	if err := engine.Tick(ctx); err != nil {
+		t.Fatalf("Tick() error = %v", err)
+	}
+
+	calls := spy.calls()
+	if len(calls) != 2 {
+		t.Fatalf("Notify called %d times, want 2 (one per rule)", len(calls))
+	}
+
+	var gotLegacyURL, gotChannelURL string
+	for _, ev := range calls {
+		switch ev.Rule.ID {
+		case "r_legacy":
+			gotLegacyURL = ev.Rule.NotifyURL
+		case "r_channel":
+			gotChannelURL = ev.Rule.NotifyURL
+		}
+	}
+	if gotLegacyURL != "https://legacy.example.com/hook" {
+		t.Errorf("legacy rule NotifyURL = %q, want its own column unchanged", gotLegacyURL)
+	}
+	if gotChannelURL != "https://hooks.slack.com/x" {
+		t.Errorf("channel-attached rule NotifyURL = %q, want resolved from chn_1", gotChannelURL)
+	}
+}
+
+// TestEngine_Tick_DisabledChannel_SilencesRule proves a rule attached to
+// a disabled channel still evaluates (state is tracked) but never
+// dispatches, mirroring the deploy-target silencing property at the
+// evaluator level rather than just the DB-read level.
+func TestEngine_Tick_DisabledChannel_SilencesRule(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveNotificationChannel(ctx, NotificationChannel{ID: "chn_1", Name: "Paused", Kind: NotifyGeneric, NotifyURL: "https://example.com/hook", Enabled: false}); err != nil {
+		t.Fatalf("seed channel: %v", err)
+	}
+	r := Rule{ID: "r1", Kind: KindThreshold, ResourceID: "service:web", Metric: "cpu_percent",
+		Comparator: GreaterThan, Threshold: 80, ChannelID: "chn_1", Enabled: true}
+	if err := db.SaveRule(ctx, r); err != nil {
+		t.Fatalf("seed rule: %v", err)
+	}
+
+	metrics := &fakeMetricsSource{samples: []telemetry.Sample{{Timestamp: time.Now(), Value: 95}}}
+	spy := &spyNotifier{}
+	engine := NewEngine(db, metrics, nil, nil, func(Rule) Notifier { return spy }, nil)
+
+	if err := engine.Tick(ctx); err != nil {
+		t.Fatalf("Tick() error = %v", err)
+	}
+	if calls := spy.calls(); len(calls) != 0 {
+		t.Errorf("Notify called %d times for a rule attached to a disabled channel, want 0", len(calls))
+	}
+	got, err := db.GetRule(ctx, "r1")
+	if err != nil {
+		t.Fatalf("GetRule() error = %v", err)
+	}
+	if !got.Firing {
+		t.Error("Firing = false, want true: evaluation state must still be tracked even while silenced")
+	}
+}
+
 func TestEngine_Run_StopsOnContextCancel(t *testing.T) {
 	rules := newFakeRuleStore()
 	engine := newTestEngine(rules, &fakeMetricsSource{}, &fakeLogsSource{}, NewRestartTracker(), &spyNotifier{})
