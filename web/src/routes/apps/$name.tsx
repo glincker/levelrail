@@ -72,6 +72,19 @@ function AppDetailLayout() {
     return <Outlet />
   }
 
+  // Bare /apps/$name always redirects to /overview (see index.tsx), so
+  // the app root itself never renders here -- only /overview and
+  // /deploys (the section index, not /deploys/$id/logs, already
+  // excluded above) are the "Deploy" sidebar group's own sections. Every
+  // other section (Domains, Environment, Health, Resources, Metrics,
+  // Logs, Alerts, Exec) is a Configure/Observe concern, not a deploy
+  // action, so the card no longer pins there.
+  const showDeployTrigger = useRouterState({
+    select: (s) =>
+      s.location.pathname.endsWith('/overview') ||
+      s.location.pathname.endsWith('/deploys'),
+  })
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
@@ -88,11 +101,7 @@ function AppDetailLayout() {
         </div>
       </div>
 
-      {/* Deploy is the single most common action on this page, so it is
-          pinned above the section outlet rather than scoped inside one
-          section: it applies to the app as a whole, not to one config
-          concern. */}
-      <DeployTriggerForm appName={app.name} />
+      {showDeployTrigger ? <DeployTriggerForm appName={app.name} /> : null}
 
       <Outlet />
     </div>
