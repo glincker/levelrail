@@ -16,6 +16,7 @@ import { triggerBuild, type TriggerBuildInput } from '../queries/builds'
 import { deployKeys } from '../queries/deploys'
 import { staticSitesKeys } from '../queries/staticSites'
 import { GitBuildSourceFields } from './GitBuildSourceFields'
+import { GitHubAppRepoPicker } from './GitHubAppRepoPicker'
 
 // Build packs this form offers, matching GitBuildSourceFields' own
 // BUILD_PACKS list of what POST /api/v1/apps/{name}/builds actually
@@ -197,11 +198,19 @@ export function CreateAppFromGitFields({
       })
     },
   })
-  const { register, handleSubmit, formState, reset, control, watch, getValues, setValue } =
-    useForm<FormInput, unknown, FormOutput>({
-      resolver: zodResolver(createAppFromGitSchema),
-      defaultValues: DEFAULT_VALUES,
-    })
+  const {
+    register,
+    handleSubmit,
+    formState,
+    reset,
+    control,
+    watch,
+    getValues,
+    setValue,
+  } = useForm<FormInput, unknown, FormOutput>({
+    resolver: zodResolver(createAppFromGitSchema),
+    defaultValues: DEFAULT_VALUES,
+  })
 
   useEffect(() => {
     if (!open) {
@@ -289,6 +298,13 @@ export function CreateAppFromGitFields({
           <FieldError errors={[formState.errors.port]} />
         </Field>
       </div>
+
+      <GitHubAppRepoPicker
+        onSelect={(repoUrl, ref) => {
+          setValue('repoUrl', repoUrl, { shouldValidate: true })
+          setValue('ref', ref, { shouldValidate: true })
+        }}
+      />
 
       <GitBuildSourceFields
         control={control}

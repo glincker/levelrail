@@ -1315,6 +1315,12 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 				Secrets:    secretsManager,
 				Downloader: backup.S3Downloader{},
 			}),
+			// GitHub App connection: reads and writes through
+			// secretsManager directly rather than a separate runner
+			// type, see api.GitHubAppSecrets's own doc comment for why.
+			// Same nil-interface hazard as every other
+			// secretsManager-dependent option in this block.
+			api.WithGitHubAppSecrets(secretsManager),
 		)
 	}
 	if builder != nil {

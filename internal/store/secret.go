@@ -111,3 +111,33 @@ func (db *DB) HasSecretValue(ctx context.Context, serviceName, envKey string) (b
 	}
 	return true, nil
 }
+
+// DeleteServiceSecrets removes every value and the wrapped DEK for
+// serviceName, in a transaction. Deleting the DEK itself (not just the
+// value rows) matters: any ciphertext that somehow survives elsewhere
+// (a backup, a replication lag) becomes permanently unrecoverable once
+// its DEK is gone, rather than merely inaccessible through this API.
+// Idempotent: a serviceName with no rows in either table is not an
+// error, matching DeleteDesiredService's own "delete is idempotent"
+// convention.
+func (db *DB) DeleteServiceSecrets(ctx context.Context, serviceName string) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: delete service secrets for %q: begin transaction: %w", serviceName, err)
+	}
+	defer func() {
+		_ = tx.Rollback() // no-op if Commit already succeeded
+	}()
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM service_secret_values WHERE service_name = ?`, serviceName); err != nil {
+		return fmt.Errorf("store: delete service secret values for %q: %w", serviceName, err)
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM service_secrets WHERE service_name = ?`, serviceName); err != nil {
+		return fmt.Errorf("store: delete service DEK for %q: %w", serviceName, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: delete service secrets for %q: commit: %w", serviceName, err)
+	}
+	return nil
+}

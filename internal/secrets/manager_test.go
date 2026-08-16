@@ -76,6 +76,12 @@ func (f *fakeStore) HasSecretValue(ctx context.Context, serviceName, envKey stri
 	return true, nil
 }
 
+func (f *fakeStore) DeleteServiceSecrets(_ context.Context, serviceName string) error {
+	delete(f.deks, serviceName)
+	delete(f.values, serviceName)
+	return nil
+}
+
 func testManager(t *testing.T) (*Manager, *fakeStore) {
 	t.Helper()
 	mk, err := GenerateMasterKey()
@@ -158,6 +164,57 @@ func TestManager_Resolve_ServiceHasDEKButNotThisKey(t *testing.T) {
 
 	if _, err := m.Resolve(ctx, "web", "OTHER_KEY"); !errors.Is(err, ErrValueNotFound) {
 		t.Errorf("Resolve() error = %v, want ErrValueNotFound", err)
+	}
+}
+
+func TestManager_DeleteAll_ValuesUnreachableAfter(t *testing.T) {
+	m, _ := testManager(t)
+	ctx := context.Background()
+	if err := m.SetValue(ctx, "web", "API_KEY", "value"); err != nil {
+		t.Fatalf("SetValue() error = %v", err)
+	}
+	if err := m.SetValue(ctx, "web", "OTHER_KEY", "other"); err != nil {
+		t.Fatalf("SetValue() error = %v", err)
+	}
+
+	if err := m.DeleteAll(ctx, "web"); err != nil {
+		t.Fatalf("DeleteAll() error = %v", err)
+	}
+
+	if _, err := m.Resolve(ctx, "web", "API_KEY"); !errors.Is(err, ErrValueNotFound) {
+		t.Errorf("Resolve(API_KEY) after DeleteAll() error = %v, want ErrValueNotFound", err)
+	}
+	if _, err := m.Resolve(ctx, "web", "OTHER_KEY"); !errors.Is(err, ErrValueNotFound) {
+		t.Errorf("Resolve(OTHER_KEY) after DeleteAll() error = %v, want ErrValueNotFound", err)
+	}
+}
+
+func TestManager_DeleteAll_SetValueWorksAgainAfterward(t *testing.T) {
+	m, _ := testManager(t)
+	ctx := context.Background()
+	if err := m.SetValue(ctx, "web", "API_KEY", "value"); err != nil {
+		t.Fatalf("SetValue() error = %v", err)
+	}
+	if err := m.DeleteAll(ctx, "web"); err != nil {
+		t.Fatalf("DeleteAll() error = %v", err)
+	}
+
+	// A functional regression check, not a DEK-deletion proof: this
+	// would pass identically whether DeleteAll actually removed the
+	// wrapped DEK row or only the value rows, since reusing a surviving
+	// DEK to encrypt "new-value" produces the same observable Resolve()
+	// result. TestDeleteServiceSecrets_RemovesValuesAndDEK
+	// (internal/store) is what actually proves the DEK row itself is
+	// gone.
+	if err := m.SetValue(ctx, "web", "API_KEY", "new-value"); err != nil {
+		t.Fatalf("SetValue() after DeleteAll() error = %v", err)
+	}
+	got, err := m.Resolve(ctx, "web", "API_KEY")
+	if err != nil {
+		t.Fatalf("Resolve() after re-SetValue() error = %v", err)
+	}
+	if got != "new-value" {
+		t.Errorf("Resolve() = %q, want %q", got, "new-value")
 	}
 }
 

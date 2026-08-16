@@ -1,0 +1,352 @@
+package githubapp
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strconv"
+	"time"
+)
+
+// defaultBaseURL is api.github.com's REST API root. Overridable
+// (Client.BaseURL) so tests can point this at an httptest.Server
+// instead of making real network calls.
+const defaultBaseURL = "https://api.github.com"
+
+// apiVersion is the value GitHub's REST API docs currently document for
+// the X-GitHub-Api-Version header
+// (https://docs.github.com/en/rest/about-the-rest-api/api-versions):
+// 2022-11-28, the version GitHub introduced when they added this header
+// requirement and have kept current since. Sent on every request this
+// client makes, per GitHub's own recommendation to always pin an
+// explicit version rather than floating on whatever the default is.
+const apiVersion = "2022-11-28"
+
+// Client is a small, purpose-built GitHub REST API client covering only
+// what this control plane needs: manifest code exchange, installation
+// lookup, installation token minting, and repository/branch listing.
+// Not a general-purpose GitHub SDK.
+type Client struct {
+	HTTP    *http.Client
+	BaseURL string
+}
+
+// NewClient returns a Client pointed at the real api.github.com, with a
+// bounded per-request timeout: every call this client makes is a single
+// small JSON request/response, not a long-lived stream, so a generous
+// fixed timeout (rather than relying solely on ctx) guards against a
+// hung connection blocking an HTTP handler indefinitely.
+func NewClient() *Client {
+	return &Client{
+		HTTP:    &http.Client{Timeout: 20 * time.Second},
+		BaseURL: defaultBaseURL,
+	}
+}
+
+// apiError is returned for any non-2xx GitHub API response. Carries the
+// status code (callers, e.g. internal/api's installation lookup, branch
+// on this to distinguish "not found" from "server error") and a
+// truncated body snippet for logs. GitHub error response bodies are
+// ordinary JSON describing what went wrong with the request, never an
+// echo of request credentials, so including a snippet here is safe;
+// callers still only log the wrapped error's Error() string, never a
+// full raw body.
+type apiError struct {
+	StatusCode int
+	Body       string
+}
+
+func (e *apiError) Error() string {
+	return fmt.Sprintf("githubapp: github api returned %d: %s", e.StatusCode, e.Body)
+}
+
+// maxErrorBodySnippet caps how much of an error response body apiError
+// retains, so a misbehaving upstream can't inflate a log line
+// unboundedly.
+const maxErrorBodySnippet = 512
+
+// do issues a request against every endpoint this client calls: every
+// one of them is a GET or a POST with no JSON request body (path/query
+// parameters and the Authorization header carry everything each call
+// needs), so this deliberately takes no body parameter rather than
+// carrying one every current call site would pass as nil; a future
+// endpoint that does need one is a small, explicit addition here, not a
+// speculative parameter kept for its own sake.
+func (c *Client) do(ctx context.Context, method, path string, authHeader string, out any) error {
+	req, err := http.NewRequestWithContext(ctx, method, c.baseURL()+path, nil)
+	if err != nil {
+		return fmt.Errorf("githubapp: build request: %w", err)
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("X-GitHub-Api-Version", apiVersion)
+	if authHeader != "" {
+		req.Header.Set("Authorization", authHeader)
+	}
+
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return fmt.Errorf("githubapp: request %s %s: %w", method, path, err)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		snippet, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySnippet))
+		return &apiError{StatusCode: resp.StatusCode, Body: string(snippet)}
+	}
+
+	if out == nil {
+		return nil
+	}
+	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
+		return fmt.Errorf("githubapp: decode response for %s %s: %w", method, path, err)
+	}
+	return nil
+}
+
+func (c *Client) baseURL() string {
+	if c.BaseURL != "" {
+		return c.BaseURL
+	}
+	return defaultBaseURL
+}
+
+// Credentials is ExchangeManifestCode's result: the real App identity
+// and its three secrets, plus a couple of non-secret display fields
+// (Slug, HTMLURL) internal/api uses to build the immediate
+// install-prompt redirect. The caller (internal/api's
+// handleGitHubAppCallback) must encrypt ClientSecret/WebhookSecret/
+// PrivateKeyPEM through internal/secrets.Manager before this value goes
+// out of scope; this type itself does nothing to protect them, the same
+// "plaintext exists only transiently in memory, on this one path" shape
+// every other secret-bearing request/response type in this codebase
+// already has (createBackupTargetRequest, internal/api's own
+// SecretSetter callers).
+type Credentials struct {
+	AppID         int64
+	ClientID      string
+	ClientSecret  string
+	WebhookSecret string
+	PrivateKeyPEM string
+	Slug          string
+	HTMLURL       string
+}
+
+// manifestConversionResponse mirrors the subset of GitHub's "Create a
+// GitHub App from a manifest" response
+// (POST /app-manifests/{code}/conversions) this client actually reads.
+// GitHub's real response includes many more fields (permissions,
+// events, owner, installations_count, ...); only fields this control
+// plane persists are decoded, everything else is silently ignored by
+// encoding/json, the standard "narrow decode struct" shape used
+// throughout this codebase's other external-API clients
+// (internal/backup's S3 response handling included).
+type manifestConversionResponse struct {
+	ID            int64  `json:"id"`
+	ClientID      string `json:"client_id"`
+	ClientSecret  string `json:"client_secret"`
+	WebhookSecret string `json:"webhook_secret"`
+	PEM           string `json:"pem"`
+	Slug          string `json:"slug"`
+	HTMLURL       string `json:"html_url"`
+}
+
+// ExchangeManifestCode exchanges the one-time code GitHub's manifest
+// flow redirect carries for the newly created App's real credentials.
+// Per GitHub's documented behavior for this endpoint, no Authorization
+// header is sent: the code itself, freshly minted by GitHub and usable
+// exactly once, is the only credential this call needs. If GitHub ever
+// starts requiring one, adding a personal-access-token Authorization
+// header here is the documented fix.
+func (c *Client) ExchangeManifestCode(ctx context.Context, code string) (Credentials, error) {
+	var resp manifestConversionResponse
+	path := "/app-manifests/" + url.PathEscape(code) + "/conversions"
+	if err := c.do(ctx, http.MethodPost, path, "", &resp); err != nil {
+		return Credentials{}, err
+	}
+	return Credentials{
+		AppID:         resp.ID,
+		ClientID:      resp.ClientID,
+		ClientSecret:  resp.ClientSecret,
+		WebhookSecret: resp.WebhookSecret,
+		PrivateKeyPEM: resp.PEM,
+		Slug:          resp.Slug,
+		HTMLURL:       resp.HTMLURL,
+	}, nil
+}
+
+// InstallationInfo is GetInstallation's result: just enough of GitHub's
+// Installation object to record who the App is installed for
+// (AccountLogin) and to defend against a cross-App installation_id
+// (AppID, checked by the caller against the App's own stored ID before
+// trusting this installation at all: see handleGitHubAppInstalled's own
+// doc comment for why that check exists).
+type InstallationInfo struct {
+	ID           int64
+	AppID        int64
+	AccountLogin string
+}
+
+type installationResponse struct {
+	ID    int64 `json:"id"`
+	AppID int64 `json:"app_id"`
+	// Account is either a user or an organization in GitHub's schema;
+	// both shapes carry "login" at the top level, so decoding just that
+	// one field works for either.
+	Account struct {
+		Login string `json:"login"`
+	} `json:"account"`
+}
+
+// GetInstallation looks up an installation by ID, authenticated as the
+// App itself (appJWT, from SignAppJWT) rather than as the installation:
+// this is the one call in this client that happens before an
+// installation access token exists to use instead.
+func (c *Client) GetInstallation(ctx context.Context, appJWT string, installationID int64) (InstallationInfo, error) {
+	var resp installationResponse
+	path := "/app/installations/" + strconv.FormatInt(installationID, 10)
+	if err := c.do(ctx, http.MethodGet, path, "Bearer "+appJWT, &resp); err != nil {
+		return InstallationInfo{}, err
+	}
+	return InstallationInfo{ID: resp.ID, AppID: resp.AppID, AccountLogin: resp.Account.Login}, nil
+}
+
+// InstallationToken is MintInstallationToken's result: a short-lived
+// (~1 hour per GitHub's docs) credential scoped to exactly one
+// installation. internal/api mints a fresh one per repo/branch-listing
+// request rather than caching and reusing one across requests: see
+// ListInstallationRepos/ListBranches's own callers in internal/api for
+// why that's the deliberate, simpler choice here.
+type InstallationToken struct {
+	Token     string
+	ExpiresAt time.Time
+}
+
+type installationTokenResponse struct {
+	Token     string `json:"token"`
+	ExpiresAt string `json:"expires_at"`
+}
+
+// MintInstallationToken exchanges an App-level JWT for a short-lived
+// installation access token, authenticated as the App
+// (Authorization: Bearer <appJWT>), the same scheme GetInstallation
+// uses and the last call in this client that needs the App JWT rather
+// than the resulting installation token.
+func (c *Client) MintInstallationToken(ctx context.Context, appJWT string, installationID int64) (InstallationToken, error) {
+	var resp installationTokenResponse
+	path := "/app/installations/" + strconv.FormatInt(installationID, 10) + "/access_tokens"
+	if err := c.do(ctx, http.MethodPost, path, "Bearer "+appJWT, &resp); err != nil {
+		return InstallationToken{}, err
+	}
+	expiresAt, err := time.Parse(time.RFC3339, resp.ExpiresAt)
+	if err != nil {
+		return InstallationToken{}, fmt.Errorf("githubapp: parse installation token expires_at %q: %w", resp.ExpiresAt, err)
+	}
+	return InstallationToken{Token: resp.Token, ExpiresAt: expiresAt}, nil
+}
+
+// Repo is one repository this control plane's GitHub App installation
+// can access, the subset of GitHub's Repository object internal/api's
+// repo picker actually needs.
+type Repo struct {
+	FullName      string
+	Name          string
+	OwnerLogin    string
+	Private       bool
+	DefaultBranch string
+	HTMLURL       string
+}
+
+type repoResponse struct {
+	FullName string `json:"full_name"`
+	Name     string `json:"name"`
+	Owner    struct {
+		Login string `json:"login"`
+	} `json:"owner"`
+	Private       bool   `json:"private"`
+	DefaultBranch string `json:"default_branch"`
+	HTMLURL       string `json:"html_url"`
+}
+
+type listRepositoriesResponse struct {
+	TotalCount   int            `json:"total_count"`
+	Repositories []repoResponse `json:"repositories"`
+}
+
+// listPerPage is the page size used for every paginated list call this
+// client makes: GitHub's own documented maximum, so pagination finishes
+// in as few round trips as possible.
+const listPerPage = 100
+
+// listPageCap bounds how many pages ListInstallationRepos/ListBranches
+// will ever fetch (100 * 20 = 2000 items), a safety valve against an
+// unbounded loop if GitHub's pagination signal is ever misread; no
+// operator-realistic installation or repository is expected to actually
+// hit this.
+const listPageCap = 20
+
+// ListInstallationRepos lists every repository accessible to token
+// (an installation access token from MintInstallationToken), across as
+// many pages as GitHub returns full pages for.
+func (c *Client) ListInstallationRepos(ctx context.Context, token string) ([]Repo, error) {
+	var out []Repo
+	for page := 1; page <= listPageCap; page++ {
+		var resp listRepositoriesResponse
+		path := fmt.Sprintf("/installation/repositories?per_page=%d&page=%d", listPerPage, page)
+		if err := c.do(ctx, http.MethodGet, path, "Bearer "+token, &resp); err != nil {
+			return nil, err
+		}
+		for _, r := range resp.Repositories {
+			out = append(out, Repo{
+				FullName:      r.FullName,
+				Name:          r.Name,
+				OwnerLogin:    r.Owner.Login,
+				Private:       r.Private,
+				DefaultBranch: r.DefaultBranch,
+				HTMLURL:       r.HTMLURL,
+			})
+		}
+		if len(resp.Repositories) < listPerPage {
+			break
+		}
+	}
+	return out, nil
+}
+
+// Branch is one branch of one repository.
+type Branch struct {
+	Name      string
+	CommitSHA string
+}
+
+type branchResponse struct {
+	Name   string `json:"name"`
+	Commit struct {
+		SHA string `json:"sha"`
+	} `json:"commit"`
+}
+
+// ListBranches lists every branch of owner/repo, authenticated with an
+// installation access token the same way ListInstallationRepos is.
+func (c *Client) ListBranches(ctx context.Context, token, owner, repo string) ([]Branch, error) {
+	var out []Branch
+	for page := 1; page <= listPageCap; page++ {
+		var resp []branchResponse
+		path := fmt.Sprintf("/repos/%s/%s/branches?per_page=%d&page=%d",
+			url.PathEscape(owner), url.PathEscape(repo), listPerPage, page)
+		if err := c.do(ctx, http.MethodGet, path, "Bearer "+token, &resp); err != nil {
+			return nil, err
+		}
+		for _, b := range resp {
+			out = append(out, Branch{Name: b.Name, CommitSHA: b.Commit.SHA})
+		}
+		if len(resp) < listPerPage {
+			break
+		}
+	}
+	return out, nil
+}
