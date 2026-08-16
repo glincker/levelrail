@@ -20,17 +20,12 @@ import { toast } from '@/components/ui/toast'
 import { useCreateApp, useSetAppNode } from '../queries/apps'
 import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
-
-// Sentinel for "this control plane's own local node", the implicit
-// default PUT /api/v1/apps/{name}/node's own doc comment establishes
-// (empty node_id). Not a real row in the node list, there is no
-// separate "local" entry the API returns.
-const LOCAL_NODE_VALUE = ''
-
-// Sentinel for "no project", the same reasoning LOCAL_NODE_VALUE
-// documents just above; base-ui's Select can't use "" as a real item
-// value.
-const NO_PROJECT_VALUE = '__none__'
+import {
+  LOCAL_NODE_VALUE,
+  NO_PROJECT_VALUE,
+  NodeSelectField,
+  ProjectSelectField,
+} from './PlacementFields'
 
 // Mirrors validateAppResource (internal/api/apps.go) client-side for
 // fast feedback: name and image non-empty, port a positive integer.
@@ -338,75 +333,33 @@ export function CreateAppFields({
             </Field>
           </div>
 
-          {nodes.length > 0 ? (
-            <Field>
-              <FieldLabel htmlFor="app-node">Node</FieldLabel>
-              <Controller
-                control={control}
-                name="node"
-                render={({ field }) => (
-                  <Select
-                    value={field.value ?? LOCAL_NODE_VALUE}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger id="app-node" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={LOCAL_NODE_VALUE}>
-                        This control plane (local)
-                      </SelectItem>
-                      {nodes.map((node) => (
-                        <SelectItem key={node.id} value={node.id}>
-                          {node.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+          <Controller
+            control={control}
+            name="node"
+            render={({ field }) => (
+              <NodeSelectField
+                idPrefix="app"
+                nodes={nodes}
+                value={field.value ?? LOCAL_NODE_VALUE}
+                onValueChange={field.onChange}
+                error={[formState.errors.node]}
               />
-              <FieldHint>
-                Which server this runs on. Leave it on local unless
-                you&rsquo;ve added another server to manage.
-              </FieldHint>
-              <FieldError errors={[formState.errors.node]} />
-            </Field>
-          ) : null}
+            )}
+          />
 
-          {projects.length > 0 ? (
-            <Field>
-              <FieldLabel htmlFor="app-project">Project</FieldLabel>
-              <Controller
-                control={control}
-                name="project"
-                render={({ field }) => (
-                  <Select
-                    value={field.value ?? NO_PROJECT_VALUE}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger id="app-project" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NO_PROJECT_VALUE}>
-                        No project
-                      </SelectItem>
-                      {projects.map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+          <Controller
+            control={control}
+            name="project"
+            render={({ field }) => (
+              <ProjectSelectField
+                idPrefix="app"
+                projects={projects}
+                value={field.value ?? NO_PROJECT_VALUE}
+                onValueChange={field.onChange}
+                error={[formState.errors.project]}
               />
-              <FieldHint>
-                Optional grouping to keep related apps and databases
-                together.
-              </FieldHint>
-              <FieldError errors={[formState.errors.project]} />
-            </Field>
-          ) : null}
+            )}
+          />
         </div>
       ) : null}
 

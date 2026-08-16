@@ -22,6 +22,12 @@ import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
 import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
 import { useSystemStatusOptional } from '../queries/systemStatus'
+import {
+  LOCAL_NODE_VALUE,
+  NO_PROJECT_VALUE,
+  NodeSelectField,
+  ProjectSelectField,
+} from './PlacementFields'
 
 // Engines whose reconciler branch (internal/reconcile/database/
 // controller.go's Reconcile switch) refuses to start the container
@@ -47,16 +53,6 @@ const DOCKER_HUB_OFFICIAL_IMAGE: Record<string, string> = {
   mysql: 'mysql',
   redis: 'redis',
 }
-
-// Sentinel for "this control plane's own local node", the implicit
-// default PUT /api/v1/databases/{name}/node's own doc comment
-// establishes (empty node_id). Not a real row in the node list, there
-// is no separate "local" entry the API returns.
-const LOCAL_NODE_VALUE = ''
-
-// Sentinel for "no project", the same reasoning LOCAL_NODE_VALUE
-// documents just above.
-const NO_PROJECT_VALUE = '__none__'
 
 // Matches validateDatabaseResource (internal/api/databases.go): name/
 // engine/version all required. engine is a plain non-empty string, not
@@ -330,75 +326,33 @@ export function CreateDatabaseFields({
 
       {showAdvanced ? (
         <div className="space-y-4 rounded-lg border border-dashed border-border p-3">
-          {nodes.length > 0 ? (
-            <Field>
-              <FieldLabel htmlFor="database-node">Node</FieldLabel>
-              <Controller
-                control={control}
-                name="node"
-                render={({ field }) => (
-                  <Select
-                    value={field.value ?? LOCAL_NODE_VALUE}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger id="database-node" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={LOCAL_NODE_VALUE}>
-                        This control plane (local)
-                      </SelectItem>
-                      {nodes.map((node) => (
-                        <SelectItem key={node.id} value={node.id}>
-                          {node.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+          <Controller
+            control={control}
+            name="node"
+            render={({ field }) => (
+              <NodeSelectField
+                idPrefix="database"
+                nodes={nodes}
+                value={field.value ?? LOCAL_NODE_VALUE}
+                onValueChange={field.onChange}
+                error={[formState.errors.node]}
               />
-              <FieldHint>
-                Which server this runs on. Leave it on local unless
-                you&rsquo;ve added another server to manage.
-              </FieldHint>
-              <FieldError errors={[formState.errors.node]} />
-            </Field>
-          ) : null}
+            )}
+          />
 
-          {projects.length > 0 ? (
-            <Field>
-              <FieldLabel htmlFor="database-project">Project</FieldLabel>
-              <Controller
-                control={control}
-                name="project"
-                render={({ field }) => (
-                  <Select
-                    value={field.value ?? NO_PROJECT_VALUE}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger id="database-project" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NO_PROJECT_VALUE}>
-                        No project
-                      </SelectItem>
-                      {projects.map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+          <Controller
+            control={control}
+            name="project"
+            render={({ field }) => (
+              <ProjectSelectField
+                idPrefix="database"
+                projects={projects}
+                value={field.value ?? NO_PROJECT_VALUE}
+                onValueChange={field.onChange}
+                error={[formState.errors.project]}
               />
-              <FieldHint>
-                Optional grouping to keep related apps and databases
-                together.
-              </FieldHint>
-              <FieldError errors={[formState.errors.project]} />
-            </Field>
-          ) : null}
+            )}
+          />
         </div>
       ) : null}
 
