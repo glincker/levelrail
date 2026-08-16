@@ -12,6 +12,7 @@ import {
   EnvelopeIcon,
   GearIcon,
   GlobeIcon,
+  ArrowCircleUpIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Card, CardHeader, CardTitle, CardDescription } from '../../components/ui/card'
 
@@ -115,6 +116,12 @@ const sections: SettingsSection[] = [
         icon: GlobeIcon,
         title: 'Domains',
         description: 'Platform ingress: dashboard domain and ACME certificates.',
+      },
+      {
+        to: '/settings/updates',
+        icon: ArrowCircleUpIcon,
+        title: 'Updates',
+        description: 'Current version and available releases.',
       },
     ],
   },

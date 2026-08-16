@@ -35,14 +35,9 @@ import {
 import type { CertificateStatus } from '../../queries/certificates'
 import { CleanUpDockerDialog } from '../../components/CleanUpDockerDialog'
 
-// Real content for the General settings page. Platform info comes from
-// the already-warm /api/v1/brand cache via useBrand() (primed by
-// routes/__root.tsx's loader). The status card below closes the gap
-// this file's own prior comment named ("no system-status card here...
-// none of that exists as a backend endpoint yet"), including Docker
-// daemon connectivity. Still deliberately missing: a build version
-// string, no build-time version variable exists anywhere in this
-// codebase yet, not faked here.
+// Platform info comes from the already-warm /api/v1/brand cache via
+// useBrand() (primed by routes/__root.tsx's loader). Build version lives
+// on its own page, Settings > Updates, not duplicated here.
 export const Route = createFileRoute('/settings/general')({
   loader: ({ context: { queryClient } }) =>
     Promise.all([
