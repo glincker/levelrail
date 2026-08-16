@@ -67,10 +67,18 @@ func newFakeRuntime() *fakeRuntime {
 }
 
 func (f *fakeRuntime) seed(name, image string, running bool) {
+	f.seedWithPorts(name, image, running, nil)
+}
+
+// seedWithPorts is seed plus an observed Ports value, for tests that need
+// a running container with specific published ports already in place
+// (the public-access port-diff tests below), mirroring what a real
+// InspectByName would report for an already-running container.
+func (f *fakeRuntime) seedWithPorts(name, image string, running bool, ports []docker.PortBinding) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.nextID++
-	f.containers[name] = &docker.ContainerState{ID: strconv.Itoa(f.nextID), Name: name, Image: image, Running: running}
+	f.containers[name] = &docker.ContainerState{ID: strconv.Itoa(f.nextID), Name: name, Image: image, Running: running, Ports: ports}
 }
 
 func (f *fakeRuntime) EnsureVolume(_ context.Context, name string) error {
@@ -637,5 +645,149 @@ func TestWithMeshDNSAddr_NotConfigured_LeavesDNSNil(t *testing.T) {
 	}
 	if got := rt.lastCreateSpec.DNS; got != nil {
 		t.Errorf("created ContainerSpec.DNS = %+v, want nil", got)
+	}
+}
+
+// TestController_Reconcile_PublicAccess_FreshDeploy_SetsPortBinding is
+// the fake-runtime proof that PubliclyAccessible/PublicPort
+// (migrations/0026_database_public_access.sql) actually reaches the
+// created ContainerSpec: engine's own container port bound to the host
+// port SetDatabasePublicAccess assigned. The live-Docker counterpart
+// (controller_live_test.go) proves the same thing against a real daemon.
+func TestController_Reconcile_PublicAccess_FreshDeploy_SetsPortBinding(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{
+		Name: "main", Engine: store.EngineRedis, Version: "7",
+		PubliclyAccessible: true, PublicPort: 16379,
+	}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Errorf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+
+	want := []docker.PortBinding{{ContainerPort: redisContainerPort, HostPort: 16379}}
+	if got := rt.lastCreateSpec.Ports; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Ports = %+v, want %+v", got, want)
+	}
+}
+
+// TestController_Reconcile_PublicAccess_NotConfigured_LeavesPortsNil is
+// the regression-safety half, the same shape
+// TestWithMeshDNSAddr_NotConfigured_LeavesDNSNil already establishes for
+// mesh DNS: every database before PubliclyAccessible existed, and every
+// database that never enables it, must produce a byte-identical
+// ContainerSpec.Ports (nil) to before this field existed.
+func TestController_Reconcile_PublicAccess_NotConfigured_LeavesPortsNil(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if got := rt.lastCreateSpec.Ports; got != nil {
+		t.Errorf("created ContainerSpec.Ports = %+v, want nil", got)
+	}
+}
+
+// TestController_Reconcile_PublicAccess_ChangedWhileRunning_ReplacesInPlace
+// proves the fix reconcileEngine's own switch needed: a database already
+// running with the old port configuration (here, none at all) must be
+// replaced, not silently left alone, when desired state now wants a
+// different one. Before this case existed, only an image change ever
+// triggered a replace, so a public-access toggle on an already-running
+// database would have been permanently ignored.
+func TestController_Reconcile_PublicAccess_ChangedWhileRunning_ReplacesInPlace(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.seed(containerName("main"), "redis:7", true) // running, no published ports yet
+
+	desired := &store.DesiredDatabase{
+		Name: "main", Engine: store.EngineRedis, Version: "7",
+		PubliclyAccessible: true, PublicPort: 16379,
+	}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Errorf("condition = %+v, want Status=True Reason=Deployed (a port change must be applied, not ignored)", cond)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1: a port-only change must still go through replaceContainer", rt.createCalls)
+	}
+	if got := rt.count(); got != 1 {
+		t.Errorf("container count = %d, want 1: replace, not blue-green", got)
+	}
+}
+
+// TestController_Reconcile_PublicAccess_AlreadyMatching_NoOp is the
+// no-op counterpart: a running container whose observed ports already
+// equal desired must not be replaced on every reconcile pass, the same
+// level-triggered-but-idempotent requirement
+// TestController_Reconcile_Redis_AlreadyRunning_NoOp already establishes
+// for the plain no-public-access case.
+func TestController_Reconcile_PublicAccess_AlreadyMatching_NoOp(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.seedWithPorts(containerName("main"), "redis:7", true, []docker.PortBinding{
+		{ContainerPort: redisContainerPort, HostPort: 16379, Protocol: "tcp"},
+	})
+
+	desired := &store.DesiredDatabase{
+		Name: "main", Engine: store.EngineRedis, Version: "7",
+		PubliclyAccessible: true, PublicPort: 16379,
+	}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue || cond.Reason != "AlreadyRunning" {
+		t.Errorf("condition = %+v, want Status=True Reason=AlreadyRunning", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0: matching ports must be a no-op", rt.createCalls)
+	}
+}
+
+func TestPortsMatch(t *testing.T) {
+	tests := []struct {
+		name             string
+		observed, desired []docker.PortBinding
+		want             bool
+	}{
+		{name: "both nil", observed: nil, desired: nil, want: true},
+		{
+			name:     "identical binding",
+			observed: []docker.PortBinding{{ContainerPort: 6379, HostPort: 16379, Protocol: "tcp"}},
+			desired:  []docker.PortBinding{{ContainerPort: 6379, HostPort: 16379}},
+			want:     true, // empty Protocol normalizes to "tcp"
+		},
+		{
+			name:     "different host port",
+			observed: []docker.PortBinding{{ContainerPort: 6379, HostPort: 16379, Protocol: "tcp"}},
+			desired:  []docker.PortBinding{{ContainerPort: 6379, HostPort: 16380}},
+			want:     false,
+		},
+		{
+			name:     "observed has a binding, desired has none",
+			observed: []docker.PortBinding{{ContainerPort: 6379, HostPort: 16379, Protocol: "tcp"}},
+			desired:  nil,
+			want:     false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := portsMatch(tt.observed, tt.desired); got != tt.want {
+				t.Errorf("portsMatch(%+v, %+v) = %v, want %v", tt.observed, tt.desired, got, tt.want)
+			}
+		})
 	}
 }

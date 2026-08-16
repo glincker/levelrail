@@ -23,4 +23,13 @@ export interface DatabaseResource {
   // PUT /api/v1/databases/{name}/project (useSetDatabaseProject) or, at
   // create time only, POST /api/v1/databases's request body directly.
   project_id?: string
+  // publicly_accessible, public_port: response-only, the identical
+  // boundary node_id/project_id already establish. Set or clear via
+  // PUT/DELETE /api/v1/databases/{name}/public-access
+  // (useSetDatabasePublicAccess/useClearDatabasePublicAccess,
+  // queries/databases.ts). public_port carries `omitempty` on the Go
+  // side (internal/api/databases.go's databaseResource), so it's absent
+  // entirely, not 0, whenever publicly_accessible is false.
+  publicly_accessible?: boolean
+  public_port?: number
 }

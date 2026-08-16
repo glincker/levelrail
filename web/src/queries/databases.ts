@@ -272,3 +272,111 @@ export function useSetDatabaseProject() {
     },
   })
 }
+
+// Response shape for PUT/DELETE /api/v1/databases/{name}/public-access
+// (internal/api/database_public_access.go's databasePublicAccessResource):
+// only the three fields that endpoint actually changes, not the full
+// DatabaseResource, mirroring that handler's own "deliberately its own
+// small type" reasoning.
+export interface DatabasePublicAccessResource {
+  database_name: string
+  publicly_accessible: boolean
+  public_port?: number
+}
+
+// PUT /api/v1/databases/{name}/public-access. port omitted or 0 means
+// "auto-assign the next free port" (store.SetDatabasePublicAccess's own
+// default); a specific port is validated server-side against the
+// 1024-65535 range and the control plane's own reserved ports before
+// being persisted.
+export async function setDatabasePublicAccess(
+  name: string,
+  port?: number,
+): Promise<DatabasePublicAccessResource> {
+  const res = await fetch(
+    `/api/v1/databases/${encodeURIComponent(name)}/public-access`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(port ? { port } : {}),
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `set database public access failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as DatabasePublicAccessResource
+}
+
+// On success, patches the cached DatabaseResource directly (the same
+// "don't wait on a refetch" reasoning useSetDatabaseNode already
+// follows) rather than replacing it wholesale: the PUT response only
+// carries the three public-access fields, not the full resource shape.
+export function useSetDatabasePublicAccess() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ name, port }: { name: string; port?: number }) =>
+      setDatabasePublicAccess(name, port),
+    onSuccess: (result) => {
+      queryClient.setQueryData(
+        databaseKeys.detail(result.database_name),
+        (existing: DatabaseResource | undefined) =>
+          existing && {
+            ...existing,
+            publicly_accessible: result.publicly_accessible,
+            public_port: result.public_port,
+          },
+      )
+      void queryClient.invalidateQueries({
+        queryKey: databaseKeys.detail(result.database_name),
+      })
+    },
+  })
+}
+
+// DELETE /api/v1/databases/{name}/public-access
+// (handleClearDatabasePublicAccess): returns the database to
+// internal-network-only. 204, no body, so the cache is patched directly
+// from the name this mutation was called with rather than a server
+// response.
+export async function clearDatabasePublicAccess(name: string): Promise<void> {
+  const res = await fetch(
+    `/api/v1/databases/${encodeURIComponent(name)}/public-access`,
+    { method: 'DELETE' },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `clear database public access failed: ${res.status}`,
+      ),
+    )
+  }
+}
+
+export function useClearDatabasePublicAccess() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (name: string) => clearDatabasePublicAccess(name),
+    onSuccess: (_data, name) => {
+      queryClient.setQueryData(
+        databaseKeys.detail(name),
+        (existing: DatabaseResource | undefined) =>
+          existing && {
+            ...existing,
+            publicly_accessible: false,
+            public_port: undefined,
+          },
+      )
+      void queryClient.invalidateQueries({
+        queryKey: databaseKeys.detail(name),
+      })
+    },
+  })
+}

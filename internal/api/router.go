@@ -181,6 +181,13 @@ type DatabaseStore interface {
 	// store method" separation UpdateDatabaseNode/UpdateDatabaseProject
 	// already establish for their own single-purpose updates.
 	SetDatabaseBackupSchedule(ctx context.Context, name, targetID, schedule string, retain int) error
+	// SetDatabasePublicAccess backs
+	// PUT/DELETE /api/v1/databases/{name}/public-access
+	// (database_public_access.go): the same "own endpoint, own store
+	// method" separation SetDatabaseBackupSchedule already establishes,
+	// applied to whether this database's container port is bound to a
+	// host port. Returns the port actually assigned (0 when disabling).
+	SetDatabasePublicAccess(ctx context.Context, name string, enabled bool, requestedPort int) (int, error)
 }
 
 // ProjectStore is the store surface the projects handlers need
@@ -902,6 +909,20 @@ func (rt *Router) Handler() http.Handler {
 	// route here.
 	mux.HandleFunc("PUT /api/v1/databases/{name}/backup-schedule", rt.requireAbility(AbilityWriteSensitive, rt.handleSetBackupSchedule))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}/backup-schedule", rt.requireAbility(AbilityWriteSensitive, rt.handleClearBackupSchedule))
+
+	// Public/host-exposed access, per database
+	// (database_public_access.go): whether this database's container
+	// port is bound to a host port so an operator's own database GUI
+	// tool can connect directly. AbilityWriteSensitive for both PUT and
+	// DELETE, the same tier scheduled backups above already use: this
+	// changes real network exposure, the identical sensitivity class as
+	// where an unattended backup ends up. GET reuses handleGetDatabase's
+	// own existing AbilityRead response (databaseResource already
+	// carries publicly_accessible/public_port), the same "no separate
+	// GET route" reasoning the backup-schedule routes above already
+	// apply.
+	mux.HandleFunc("PUT /api/v1/databases/{name}/public-access", rt.requireAbility(AbilityWriteSensitive, rt.handleSetDatabasePublicAccess))
+	mux.HandleFunc("DELETE /api/v1/databases/{name}/public-access", rt.requireAbility(AbilityWriteSensitive, rt.handleClearDatabasePublicAccess))
 
 	// Restore, per database (restore.go). AbilityRoot, not
 	// AbilityWriteSensitive: see handleTriggerRestore's own doc comment

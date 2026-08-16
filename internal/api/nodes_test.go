@@ -564,6 +564,9 @@ func (fakeDrainDatabaseStore) UpdateDatabaseProject(context.Context, string, str
 func (fakeDrainDatabaseStore) SetDatabaseBackupSchedule(context.Context, string, string, string, int) error {
 	return nil
 }
+func (fakeDrainDatabaseStore) SetDatabasePublicAccess(context.Context, string, bool, int) (int, error) {
+	return 0, nil
+}
 
 type fakeDrainNodeStore struct {
 	node *store.Node

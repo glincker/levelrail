@@ -11,7 +11,13 @@
 // Redis can run safely with no password configured. That is not the
 // recommended production posture, but it is not an active vulnerability
 // the way unauthenticated Postgres is, so this controller reconciles
-// Redis for real: create, mount its volume, start, report Ready.
+// Redis for real: create, mount its volume, start, report Ready. That
+// "not an active vulnerability" reasoning assumes internal-network-only
+// reachability; PubliclyAccessible (migrations/0026_database_public_access.sql)
+// breaks that assumption for a passwordless Redis, so the operator UI
+// carries an explicit warning when enabling it rather than this
+// controller silently refusing, matching the project's operator-trust
+// posture elsewhere (no built-in service mesh or per-resource firewall).
 //
 // Postgres cannot run safely without credentials: database auth needs
 // the same envelope-encrypted secret storage the secrets design specifies
@@ -35,6 +41,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -48,6 +55,18 @@ const (
 	redisDataPath    = "/data"
 	postgresDataPath = "/var/lib/postgresql/data"
 	mysqlDataPath    = "/var/lib/mysql"
+)
+
+// Container ports each engine's image listens on, used to publish the
+// right port when a database's desired state has PubliclyAccessible set
+// (store.DesiredDatabase, migrations/0026_database_public_access.sql).
+// This is real per-engine behavior, not data, so it lives here rather
+// than in database_engines.yaml, the same "identity/display metadata
+// only" boundary that registry's own doc comment already draws.
+const (
+	redisContainerPort    = 6379
+	postgresContainerPort = 5432
+	mysqlContainerPort    = 3306
 )
 
 const defaultStopTimeout = 10 * time.Second
@@ -162,7 +181,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 
 	switch desired.Engine {
 	case store.EngineRedis:
-		return c.reconcileEngine(ctx, desired, nil, redisDataPath)
+		return c.reconcileEngine(ctx, desired, nil, redisDataPath, redisContainerPort)
 
 	case store.EnginePostgres:
 		if c.postgresCreds == nil {
@@ -176,7 +195,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"POSTGRES_USER":     c.postgresCreds.Username,
 			"POSTGRES_PASSWORD": c.postgresCreds.Password,
 		}
-		return c.reconcileEngine(ctx, desired, env, postgresDataPath)
+		return c.reconcileEngine(ctx, desired, env, postgresDataPath, postgresContainerPort)
 
 	case store.EngineMySQL:
 		if c.mysqlCreds == nil {
@@ -197,7 +216,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"MYSQL_USER":          c.mysqlCreds.Username,
 			"MYSQL_PASSWORD":      c.mysqlCreds.Password,
 		}
-		return c.reconcileEngine(ctx, desired, env, mysqlDataPath)
+		return c.reconcileEngine(ctx, desired, env, mysqlDataPath, mysqlContainerPort)
 
 	default:
 		err := fmt.Errorf("unrecognized engine %q", desired.Engine)
@@ -209,7 +228,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 // and by Postgres once credentials are supplied. It ensures the
 // database's data volume exists, then ensures the right container exists
 // and is running.
-func (c *Controller) reconcileEngine(ctx context.Context, desired *store.DesiredDatabase, env map[string]string, dataPath string) (reconcile.Result, error) {
+func (c *Controller) reconcileEngine(ctx context.Context, desired *store.DesiredDatabase, env map[string]string, dataPath string, containerPort int) (reconcile.Result, error) {
 	image := desired.Engine + ":" + versionOrDefault(desired.Version)
 	target := containerName(c.dbName)
 	volName := dataVolumeName(c.dbName)
@@ -232,6 +251,16 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	if c.meshDNSAddr != "" {
 		spec.DNS = []string{c.meshDNSAddr}
 	}
+	// PubliclyAccessible/PublicPort (migrations/0026_database_public_access.sql):
+	// bind the engine's own container port to the host port
+	// SetDatabasePublicAccess already assigned, so an operator's own
+	// database GUI tool can reach it directly. Nil/empty otherwise,
+	// byte-identical to every database before this field existed:
+	// internal-network-only, the same as an application container that
+	// declares no port.
+	if desired.PubliclyAccessible && desired.PublicPort != 0 {
+		spec.Ports = []docker.PortBinding{{ContainerPort: containerPort, HostPort: desired.PublicPort}}
+	}
 
 	justDeployed := false
 	switch {
@@ -246,6 +275,23 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		// comment for why a database controller cannot use
 		// application.Controller's create-alongside-then-remove-old
 		// blue-green pattern.
+		if err := c.replaceContainer(ctx, state, spec); err != nil {
+			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+		}
+		justDeployed = true
+
+	case state.Running && !portsMatch(state.Ports, spec.Ports):
+		// Docker bakes a container's published ports into its create-time
+		// HostConfig; toggling public access or changing the assigned
+		// port can't be applied to a running container in place, so this
+		// takes the same sequential replace path an image change does.
+		// Only compared while state.Running: a stopped container reports
+		// no observed ports at all (docker.ContainerState.Ports' own doc
+		// comment), so there is nothing meaningful to diff against desired
+		// here; the !state.Running case below just restarts it as-is,
+		// a known gap if desired ports changed while it happened to be
+		// crashed (see this package's own test for the corresponding
+		// live-Docker proof of the running-container path).
 		if err := c.replaceContainer(ctx, state, spec); err != nil {
 			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
 		}
@@ -298,6 +344,30 @@ func (c *Controller) replaceContainer(ctx context.Context, old *docker.Container
 		return fmt.Errorf("remove %q before replace: %w", old.Name, err)
 	}
 	return c.createAndStart(ctx, spec)
+}
+
+// portsMatch reports whether observed (a running container's actual
+// published ports, docker.ContainerState.Ports) and desired (the
+// ContainerSpec.Ports this controller would create) describe the same
+// set of bindings, so reconcileEngine knows whether a public-access
+// toggle or port change needs a replace. Protocol is normalized ("" and
+// "tcp" are the same binding): spec.Ports built by this package never
+// sets Protocol explicitly, while Docker's own observed ports always
+// report a concrete one.
+func portsMatch(observed, desired []docker.PortBinding) bool {
+	return reflect.DeepEqual(normalizedPortSet(observed), normalizedPortSet(desired))
+}
+
+func normalizedPortSet(ports []docker.PortBinding) map[docker.PortBinding]bool {
+	set := make(map[docker.PortBinding]bool, len(ports))
+	for _, p := range ports {
+		proto := p.Protocol
+		if proto == "" {
+			proto = "tcp"
+		}
+		set[docker.PortBinding{ContainerPort: p.ContainerPort, HostPort: p.HostPort, Protocol: proto}] = true
+	}
+	return set
 }
 
 func versionOrDefault(v string) string {
