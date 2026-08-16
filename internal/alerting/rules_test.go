@@ -251,6 +251,78 @@ func TestUpdateState_PersistsAndDoesNotTouchConfig(t *testing.T) {
 	}
 }
 
+// TestRule_ResolvesFromChannel proves a channel-attached rule resolves
+// its NotifyURL/NotifyKind from the channel, not its own columns.
+func TestRule_ResolvesFromChannel(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveNotificationChannel(ctx, NotificationChannel{ID: "chn_1", Name: "Team Slack", Kind: NotifySlack, NotifyURL: "https://hooks.slack.com/x", Enabled: true}); err != nil {
+		t.Fatalf("SaveNotificationChannel() error = %v", err)
+	}
+	r := Rule{ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web", Metric: "cpu_percent", Comparator: GreaterThan, Threshold: 80, ChannelID: "chn_1", Enabled: true}
+	if err := db.SaveRule(ctx, r); err != nil {
+		t.Fatalf("SaveRule() error = %v", err)
+	}
+
+	got, err := db.GetRule(ctx, "r1")
+	if err != nil {
+		t.Fatalf("GetRule() error = %v", err)
+	}
+	if got.NotifyURL != "https://hooks.slack.com/x" || got.NotifyKind != NotifySlack {
+		t.Errorf("GetRule() = %+v, want NotifyURL/NotifyKind resolved from the attached channel", *got)
+	}
+}
+
+// TestRule_BackwardCompat_NoChannelID proves a legacy rule (no
+// ChannelID) resolves from its own NotifyURL/NotifyKind columns,
+// mirroring TestDeployTarget_BackwardCompat_NoChannelID.
+func TestRule_BackwardCompat_NoChannelID(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+
+	r := Rule{ID: "r1", Name: "legacy", Kind: KindThreshold, ResourceID: "service:web", Metric: "cpu_percent", Comparator: GreaterThan, Threshold: 80,
+		NotifyURL: "https://legacy.example.com/hook", NotifyKind: NotifyDiscord, Enabled: true}
+	if err := db.SaveRule(ctx, r); err != nil {
+		t.Fatalf("SaveRule() error = %v", err)
+	}
+
+	got, err := db.GetRule(ctx, "r1")
+	if err != nil {
+		t.Fatalf("GetRule() error = %v", err)
+	}
+	if got.ChannelID != "" {
+		t.Errorf("ChannelID = %q, want empty for a legacy row", got.ChannelID)
+	}
+	if got.NotifyURL != "https://legacy.example.com/hook" || got.NotifyKind != NotifyDiscord {
+		t.Errorf("GetRule() = %+v, want the row's own legacy NotifyURL/NotifyKind unchanged", *got)
+	}
+}
+
+// TestRule_DisabledChannel_SilencesRule proves a disabled channel
+// silences an attached rule even if the rule is itself enabled,
+// mirroring TestDeployTarget_DisabledChannel_SilencesTarget.
+func TestRule_DisabledChannel_SilencesRule(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveNotificationChannel(ctx, NotificationChannel{ID: "chn_1", Name: "Paused", Kind: NotifyGeneric, NotifyURL: "https://example.com/hook", Enabled: false}); err != nil {
+		t.Fatalf("SaveNotificationChannel() error = %v", err)
+	}
+	r := Rule{ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web", Metric: "cpu_percent", Comparator: GreaterThan, Threshold: 80, ChannelID: "chn_1", Enabled: true}
+	if err := db.SaveRule(ctx, r); err != nil {
+		t.Fatalf("SaveRule() error = %v", err)
+	}
+
+	got, err := db.GetRule(ctx, "r1")
+	if err != nil {
+		t.Fatalf("GetRule() error = %v", err)
+	}
+	if got.Enabled {
+		t.Error("Enabled = true, want false: the attached channel itself is disabled")
+	}
+}
+
 func TestUpdateState_ClearsFiring(t *testing.T) {
 	db := newTestDB(t)
 	ctx := context.Background()

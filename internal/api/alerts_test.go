@@ -31,14 +31,16 @@ func newTestAlertingDB(t *testing.T) *alerting.DB {
 	return db
 }
 
-// newTestRouterWithAlerting is newTestRouter plus a wired AlertRules,
-// for the alert-rule handlers specifically.
+// newTestRouterWithAlerting is newTestRouter plus a wired AlertRules and
+// NotificationChannels, the same pairing
+// newTestRouterWithDeployNotifyTargets uses: creating a rule with a
+// channel_id needs the channel registry to validate against.
 func newTestRouterWithAlerting(t *testing.T) (*Router, *store.DB, *alerting.DB) {
 	t.Helper()
 	db := openTestDB(t)
 	adb := newTestAlertingDB(t)
 	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
-	rt := NewRouter(logger, testBrand(), db, WithAlertRules(adb))
+	rt := NewRouter(logger, testBrand(), db, WithAlertRules(adb), WithNotificationChannels(adb))
 	return rt, db, adb
 }
 
@@ -166,6 +168,55 @@ func TestHandleCreateAlertRule_IDNotCallerSuppliable(t *testing.T) {
 	}
 	if got.ID == "attacker-chosen-id" {
 		t.Error("ID = attacker-chosen-id, want a server-generated ID, caller-supplied id must be ignored")
+	}
+}
+
+// TestHandleCreateAlertRule_ChannelIDSuccess mirrors
+// TestHandleCreateDeployNotifyTarget_Success: creating a rule with a
+// channel_id resolves notify_url/notify_kind from that channel in the
+// response.
+func TestHandleCreateAlertRule_ChannelIDSuccess(t *testing.T) {
+	rt, db, adb := newTestRouterWithAlerting(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	if err := adb.SaveNotificationChannel(context.Background(), alerting.NotificationChannel{
+		ID: "chn_1", Name: "chn_1", Kind: alerting.NotifySlack, NotifyURL: "https://example.com/hook", Enabled: true,
+	}); err != nil {
+		t.Fatalf("seed notification channel: %v", err)
+	}
+
+	body := `{"name":"high cpu","kind":"threshold","metric":"cpu_percent","comparator":">","threshold":80,"channel_id":"chn_1","enabled":true}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/alerts", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	var got ruleResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.ChannelID != "chn_1" {
+		t.Errorf("ChannelID = %q, want %q", got.ChannelID, "chn_1")
+	}
+	if got.NotifyURL != "https://example.com/hook" || got.NotifyKind != "slack" {
+		t.Errorf("got = %+v, want notify_url/notify_kind resolved from the attached channel", got)
+	}
+}
+
+// TestHandleCreateAlertRule_UnknownChannelID mirrors
+// TestHandleCreateDeployNotifyTarget_ValidationFailures' "unknown
+// channel_id" case.
+func TestHandleCreateAlertRule_UnknownChannelID(t *testing.T) {
+	rt, db, _ := newTestRouterWithAlerting(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	body := `{"name":"high cpu","kind":"threshold","metric":"cpu_percent","comparator":">","threshold":80,"channel_id":"chn_ghost"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/alerts", body))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
 	}
 }
 

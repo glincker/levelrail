@@ -32,6 +32,10 @@ export interface AlertRule {
   restart_count_threshold: number
   restart_window?: string
 
+  // notify_url/notify_kind are the *resolved* values: the attached
+  // channel's own when channel_id is set, this rule's legacy columns
+  // otherwise (rules created before notification channels existed).
+  channel_id?: string
   notify_url?: string
   notify_kind?: NotifyKind
   enabled: boolean
@@ -61,6 +65,7 @@ export interface CreateAlertRuleRequest {
   for_duration?: string
   restart_count_threshold?: number
   restart_window?: string
+  channel_id?: string
   notify_url?: string
   notify_kind?: NotifyKind
   enabled: boolean
