@@ -8,7 +8,7 @@ import { DialogFooter } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Field, FieldError, FieldLabel } from '@/components/ui/field'
+import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
 import {
   Select,
   SelectContent,
@@ -35,6 +35,18 @@ import { useSystemStatusOptional } from '../queries/systemStatus'
 // why this file doesn't hardcode a second typed copy of the engine
 // registry.
 const CREDENTIALED_ENGINES = new Set(['postgres', 'mysql'])
+
+// Presentation-only mapping to Docker Hub's official image slug for
+// engine ids that have one, used solely to build the version field's
+// "see available tags" link below. Not a source of truth for which
+// engines exist (that's the /api/v1/database-engines registry this
+// file already reads via useDatabaseEnginesOptional), so an id with no
+// entry here just means the link is omitted, never a broken one.
+const DOCKER_HUB_OFFICIAL_IMAGE: Record<string, string> = {
+  postgres: 'postgres',
+  mysql: 'mysql',
+  redis: 'redis',
+}
 
 // Sentinel for "this control plane's own local node", the implicit
 // default PUT /api/v1/databases/{name}/node's own doc comment
@@ -269,6 +281,11 @@ export function CreateDatabaseFields({
               </Select>
             )}
           />
+          <FieldHint>
+            Postgres or MySQL suit relational data that needs joins and
+            transactions. Redis has no credentials to configure and suits
+            caching, queues, and other ephemeral state.
+          </FieldHint>
           <FieldError errors={[formState.errors.engine]} />
         </Field>
       )}
@@ -282,6 +299,15 @@ export function CreateDatabaseFields({
           }
           {...register('version')}
         />
+        {DOCKER_HUB_OFFICIAL_IMAGE[watchedEngine] ? (
+          <FieldHint
+            href={`https://hub.docker.com/_/${DOCKER_HUB_OFFICIAL_IMAGE[watchedEngine]}/tags`}
+            linkText="See available versions"
+          >
+            A major version like &quot;16&quot;, matching an image tag that
+            actually exists.
+          </FieldHint>
+        ) : null}
         <FieldError errors={[formState.errors.version]} />
       </Field>
 

@@ -8,6 +8,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { EmptyState } from '@/components/ui/empty-state'
 import { DeleteBackupTargetDialog } from './DeleteBackupTargetDialog'
 import { PROVIDER_LABEL } from './backupTargetProvider'
 import type { BackupTarget } from '../types/backupTarget'
@@ -24,20 +25,12 @@ function formatDate(iso: string): string {
 export function BackupTargetTable({ targets }: { targets: BackupTarget[] }) {
   if (targets.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border px-6 py-12 text-center">
-        <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-          <CloudArrowUpIcon className="size-5" />
-        </div>
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-foreground">
-            No backup targets connected
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Connect an S3-compatible bucket to use as a backup destination for
-            managed databases.
-          </p>
-        </div>
-      </div>
+      <EmptyState
+        className="py-12"
+        icon={<CloudArrowUpIcon className="size-5" />}
+        title="No backup targets connected"
+        description="Connect an S3-compatible bucket (AWS S3, Cloudflare R2, or any other S3-compatible endpoint) to use as a backup destination for managed databases."
+      />
     )
   }
 
