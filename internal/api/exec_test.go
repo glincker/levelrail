@@ -62,6 +62,13 @@ func (f *fakeExecAppRuntime) ListByPrefix(context.Context, string) ([]docker.Con
 func (f *fakeExecAppRuntime) Stop(context.Context, string, time.Duration) error { return nil }
 func (f *fakeExecAppRuntime) Remove(context.Context, string, bool) error        { return nil }
 func (f *fakeExecAppRuntime) EnsureVolume(context.Context, string) error        { return nil }
+func (f *fakeExecAppRuntime) EnsureNetwork(context.Context, string) (string, error) {
+	return "", nil
+}
+func (f *fakeExecAppRuntime) RemoveNetwork(context.Context, string) error { return nil }
+func (f *fakeExecAppRuntime) ListNetworksByPrefix(context.Context, string) ([]docker.NetworkInfo, error) {
+	return nil, nil
+}
 
 var _ docker.Runtime = (*fakeExecAppRuntime)(nil)
 

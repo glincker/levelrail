@@ -87,6 +87,13 @@ func (f *fakeExecRuntime) ListByPrefix(context.Context, string) ([]docker.Contai
 func (f *fakeExecRuntime) Stop(context.Context, string, time.Duration) error { return nil }
 func (f *fakeExecRuntime) Remove(context.Context, string, bool) error        { return nil }
 func (f *fakeExecRuntime) EnsureVolume(context.Context, string) error        { return nil }
+func (f *fakeExecRuntime) EnsureNetwork(context.Context, string) (string, error) {
+	return "", nil
+}
+func (f *fakeExecRuntime) RemoveNetwork(context.Context, string) error { return nil }
+func (f *fakeExecRuntime) ListNetworksByPrefix(context.Context, string) ([]docker.NetworkInfo, error) {
+	return nil, nil
+}
 
 func TestContainerDumper_Dump_Postgres(t *testing.T) {
 	rt := &fakeExecRuntime{content: "postgres-dump-bytes"}

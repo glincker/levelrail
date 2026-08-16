@@ -58,6 +58,17 @@ type BuildMetricsRecorder interface {
 	RecordBuildDuration(ctx context.Context, serviceName string, d time.Duration, at time.Time) error
 }
 
+// AppStore is the narrow surface DeploySpec needs to create-or-reuse a
+// store.App and link each fanned-out service to it. *store.DB satisfies
+// this structurally. Optional: nil (the default) means DeploySpec
+// itself is unavailable (see its own doc comment), not that a caller
+// still expecting single-service Deploy calls needs to change.
+type AppStore interface {
+	SaveApp(ctx context.Context, a store.App) error
+	GetAppByName(ctx context.Context, name string) (store.App, error)
+	UpdateServiceApp(ctx context.Context, serviceName, appID string) error
+}
+
 // Option configures optional Pipeline behavior.
 type Option func(*Pipeline)
 
@@ -85,6 +96,14 @@ func WithBuildMetricsRecorder(recorder BuildMetricsRecorder) Option {
 // recording failure. Defaults to slog.Default().
 func WithLogger(logger *slog.Logger) Option {
 	return func(p *Pipeline) { p.logger = logger }
+}
+
+// WithAppStore enables DeploySpec, the multi-service fan-out entry
+// point (see that method's own doc comment). Without one configured
+// (the default), DeploySpec fails loudly rather than fanning out
+// services with no way to link them to an app row.
+func WithAppStore(s AppStore) Option {
+	return func(p *Pipeline) { p.apps = s }
 }
 
 // Request is one deploy attempt for a single service.
@@ -121,6 +140,8 @@ type Pipeline struct {
 	// feature.
 	staticSites   StaticSiteStore
 	staticRootDir string
+
+	apps AppStore // nil is valid: every method except DeploySpec ignores it, see WithAppStore
 }
 
 // New builds a Pipeline.

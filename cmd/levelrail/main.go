@@ -418,7 +418,7 @@ func run(logger *slog.Logger) error {
 
 	engine := reconcile.NewEngine(logger)
 	engine.SetStore(db)
-	engine.SetSource(dynamicSource(db, client, ingressDriver, logger, telemetryDB, secretsManager, agentRegistry, nodeHeartbeatTimeout(), meshCfg, meshDNSAddr, dashboardDialAddr(httpAddr())))
+	engine.SetSource(dynamicSource(db, client, ingressDriver, logger, telemetryDB, secretsManager, agentRegistry, nodeHeartbeatTimeout(), meshCfg, meshDNSAddr, dashboardDialAddr(httpAddr()), b.ShortName))
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
 	go func() {
@@ -1030,6 +1030,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deploy.WithLogger(logger),
 		deploy.WithStaticSiteStore(db),
 		deploy.WithStaticRootDir(staticSitesDir),
+		deploy.WithAppStore(db),
 	}
 	if secretsManager != nil {
 		deployOpts = append(deployOpts, deploy.WithSecretChecker(secretsManager))
@@ -1565,7 +1566,7 @@ func publicHost() string {
 // when it isn't nil, the same "reconciles the whole fleet in one pass"
 // shape the ingress controller already has and for the identical
 // reason: a mesh is a property of the set of nodes, not of any one node.
-func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.Driver, logger *slog.Logger, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry, heartbeatTimeout time.Duration, meshCfg *meshSetup, meshDNSAddr string, dashboardDial string) reconcile.Source {
+func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.Driver, logger *slog.Logger, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry, heartbeatTimeout time.Duration, meshCfg *meshSetup, meshDNSAddr string, dashboardDial string, networkPrefix string) reconcile.Source {
 	return func(ctx context.Context) ([]reconcile.Controller, error) {
 		services, err := db.ListDesiredServices(ctx)
 		if err != nil {
@@ -1591,6 +1592,7 @@ func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.D
 		appOpts := []application.Option{
 			application.WithDeployRecorder(telemetryDB),
 			application.WithStorageTargets(db),
+			application.WithNetworkPrefix(networkPrefix),
 		}
 		if secretsManager != nil {
 			appOpts = append(appOpts, application.WithSecretResolver(secretsManager))
@@ -1661,6 +1663,13 @@ func dynamicSource(db *store.DB, runtime docker.Runtime, driver *ingressdriver.D
 			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(dashboardDial))
 		}
 		controllers = append(controllers, ingressreconcile.New(db, runtime, driver, ingressOpts...))
+	// Local runtime unconditionally, the same choice the ingress
+	// controller above already makes and for the identical reason
+	// (that controller's own doc comment): per-app Docker networks
+	// are single-node scope until the WireGuard mesh and internal DNS
+	// (TASKS.md 3.4) exist, so cleanup only ever needs to look at this
+	// control plane's own Docker daemon, never a remote node's.
+	controllers = append(controllers, application.NewNetworkCleanupController(db, runtime, networkPrefix))
 		if meshCfg != nil {
 			controllers = append(controllers, meshreconcile.New(meshCfg.localNodeID, db, meshCfg.coordinator, meshCfg.resolver, meshreconcile.WithLogger(logger)))
 		}
