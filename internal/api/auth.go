@@ -210,7 +210,7 @@ func (rt *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	rt.logins.recordSuccess(key)
 
-	if err := rt.establishSession(w, r.Context(), *user); err != nil {
+	if err := rt.establishSession(r.Context(), w, *user); err != nil {
 		rt.logger.Error("api: login: establish session failed", slog.String("error", err.Error()), slog.String("user_id", user.ID))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
@@ -222,7 +222,7 @@ func (rt *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
 // last_login_at gets stamped: handleLogin, handleRegister, and the OAuth
 // callback handlers all funnel through this, so every sign-in path
 // shares identical session properties by construction.
-func (rt *Router) establishSession(w http.ResponseWriter, ctx context.Context, user store.User) error {
+func (rt *Router) establishSession(ctx context.Context, w http.ResponseWriter, user store.User) error {
 	token, err := rt.sessions.create(user.ID)
 	if err != nil {
 		return fmt.Errorf("create session: %w", err)
@@ -447,7 +447,7 @@ func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := rt.establishSession(w, r.Context(), user); err != nil {
+	if err := rt.establishSession(r.Context(), w, user); err != nil {
 		rt.logger.Error("api: register: establish session failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return

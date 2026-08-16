@@ -25,7 +25,7 @@ type NodeJoinToken struct {
 	// atomic conditional UPDATE, not by application code checking this
 	// field first: two concurrent exchange attempts racing on the same
 	// token must not both succeed, the identical concurrency hazard
-	// CreateAdminUser's own doc comment documents for first-run
+	// store.CreateUser's own doc comment documents for first-run
 	// registration.
 	UsedAt *time.Time
 }

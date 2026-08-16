@@ -227,7 +227,7 @@ func (rt *Router) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := rt.establishSession(w, r.Context(), user); err != nil {
+	if err := rt.establishSession(r.Context(), w, user); err != nil {
 		rt.logger.Error("api: oauth callback: establish session failed", slog.String("error", err.Error()))
 		redirectOAuthError(w, r, "internal_error")
 		return

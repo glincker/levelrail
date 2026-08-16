@@ -74,8 +74,9 @@ func (f *fakeOAuthClient) FetchUserInfo(_ context.Context, _ *oauth2.Token) (oau
 // enableOAuthProviderForTest turns a provider on with a fake client
 // secret already stored, the minimum a real /start call needs to get
 // past its own "is this configured and enabled" checks.
-func enableOAuthProviderForTest(t *testing.T, rt *Router, provider string, allowedDomain string) {
+func enableOAuthProviderForTest(t *testing.T, rt *Router, allowedDomain string) {
 	t.Helper()
+	const provider = store.OAuthProviderGoogle
 	if rt.oauthSecrets == nil {
 		rt.oauthSecrets = newFakeOAuthSecrets()
 	}
@@ -119,7 +120,7 @@ func startOAuthFlow(t *testing.T, rt *Router, path string, cookie *http.Cookie) 
 
 func TestHandleListPublicOAuthProviders_RevealsOnlyEnabledBooleans(t *testing.T) {
 	rt, _ := newTestRouter(t)
-	enableOAuthProviderForTest(t, rt, store.OAuthProviderGoogle, "")
+	enableOAuthProviderForTest(t, rt, "")
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/providers", nil))
@@ -182,7 +183,7 @@ func TestHandleOAuthStart_DisabledProvider(t *testing.T) {
 
 func TestHandleOAuthStart_Success_RedirectsWithState(t *testing.T) {
 	rt, _ := newTestRouter(t)
-	enableOAuthProviderForTest(t, rt, store.OAuthProviderGoogle, "")
+	enableOAuthProviderForTest(t, rt, "")
 
 	state := startOAuthFlow(t, rt, "/api/v1/auth/oauth/google/start", nil)
 	if state == "" {
@@ -192,7 +193,7 @@ func TestHandleOAuthStart_Success_RedirectsWithState(t *testing.T) {
 
 func TestHandleOAuthCallback_MissingStateOrCode(t *testing.T) {
 	rt, _ := newTestRouter(t)
-	enableOAuthProviderForTest(t, rt, store.OAuthProviderGoogle, "")
+	enableOAuthProviderForTest(t, rt, "")
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/callback", nil))
@@ -201,7 +202,7 @@ func TestHandleOAuthCallback_MissingStateOrCode(t *testing.T) {
 
 func TestHandleOAuthCallback_InvalidState(t *testing.T) {
 	rt, _ := newTestRouter(t)
-	enableOAuthProviderForTest(t, rt, store.OAuthProviderGoogle, "")
+	enableOAuthProviderForTest(t, rt, "")
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/callback?state=not-real&code=abc", nil))
@@ -213,7 +214,7 @@ func TestHandleOAuthCallback_InvalidState(t *testing.T) {
 // callback must not authenticate a second request.
 func TestHandleOAuthCallback_StateIsSingleUse(t *testing.T) {
 	rt, _ := newTestRouter(t)
-	enableOAuthProviderForTest(t, rt, store.OAuthProviderGoogle, "")
+	enableOAuthProviderForTest(t, rt, "")
 	rt.oauthClientFactory = func(string, store.OAuthProviderSettings, string, string) (oauthProviderClient, error) {
 		return &fakeOAuthClient{userInfo: oauthUserInfo{ProviderUserID: "g1", Email: "new@example.com", DisplayName: "New"}}, nil
 	}
@@ -233,7 +234,7 @@ func TestHandleOAuthCallback_StateIsSingleUse(t *testing.T) {
 
 func TestHandleOAuthCallback_NewIdentity_AutoProvisionsUser(t *testing.T) {
 	rt, db := newTestRouter(t)
-	enableOAuthProviderForTest(t, rt, store.OAuthProviderGoogle, "")
+	enableOAuthProviderForTest(t, rt, "")
 	rt.oauthClientFactory = func(string, store.OAuthProviderSettings, string, string) (oauthProviderClient, error) {
 		return &fakeOAuthClient{userInfo: oauthUserInfo{ProviderUserID: "google-sub-1", Email: "brandnew@example.com", DisplayName: "Brand New"}}, nil
 	}
@@ -273,7 +274,7 @@ func TestHandleOAuthCallback_NewIdentity_AutoProvisionsUser(t *testing.T) {
 
 func TestHandleOAuthCallback_ExistingIdentity_SignsInSameUser(t *testing.T) {
 	rt, db := newTestRouter(t)
-	enableOAuthProviderForTest(t, rt, store.OAuthProviderGoogle, "")
+	enableOAuthProviderForTest(t, rt, "")
 	rt.oauthClientFactory = func(string, store.OAuthProviderSettings, string, string) (oauthProviderClient, error) {
 		return &fakeOAuthClient{userInfo: oauthUserInfo{ProviderUserID: "google-sub-2", Email: "returning@example.com", DisplayName: "Returning"}}, nil
 	}
@@ -306,7 +307,7 @@ func TestHandleOAuthCallback_ExistingIdentity_SignsInSameUser(t *testing.T) {
 
 func TestHandleOAuthCallback_DomainNotAllowed_Rejected(t *testing.T) {
 	rt, db := newTestRouter(t)
-	enableOAuthProviderForTest(t, rt, store.OAuthProviderGoogle, "allowed.example.com")
+	enableOAuthProviderForTest(t, rt, "allowed.example.com")
 	rt.oauthClientFactory = func(string, store.OAuthProviderSettings, string, string) (oauthProviderClient, error) {
 		return &fakeOAuthClient{userInfo: oauthUserInfo{ProviderUserID: "g-outside", Email: "someone@notallowed.com", DisplayName: "Outsider"}}, nil
 	}
@@ -326,7 +327,7 @@ func TestHandleOAuthCallback_DomainNotAllowed_Rejected(t *testing.T) {
 // already owned by a different user must never get silently attached.
 func TestHandleOAuthCallback_EmailBelongsToExistingAccount_Rejected(t *testing.T) {
 	rt, db := newTestRouter(t)
-	enableOAuthProviderForTest(t, rt, store.OAuthProviderGoogle, "")
+	enableOAuthProviderForTest(t, rt, "")
 	rt.oauthClientFactory = func(string, store.OAuthProviderSettings, string, string) (oauthProviderClient, error) {
 		return &fakeOAuthClient{userInfo: oauthUserInfo{ProviderUserID: "attacker-google-id", Email: "victim@example.com", DisplayName: "Attacker Claiming To Be Victim"}}, nil
 	}
@@ -359,7 +360,7 @@ func TestHandleOAuthCallback_EmailBelongsToExistingAccount_Rejected(t *testing.T
 
 func TestHandleOAuthLinkStart_RequiresSession(t *testing.T) {
 	rt, _ := newTestRouter(t)
-	enableOAuthProviderForTest(t, rt, store.OAuthProviderGoogle, "")
+	enableOAuthProviderForTest(t, rt, "")
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/link/start", nil))
@@ -373,7 +374,7 @@ func TestHandleOAuthLinkStart_RequiresSession(t *testing.T) {
 // session up front, unlike sign-in which never links by email alone.
 func TestHandleOAuthCallback_LinkPurpose_AttachesIdentityToAuthenticatedUser(t *testing.T) {
 	rt, db := newTestRouter(t)
-	enableOAuthProviderForTest(t, rt, store.OAuthProviderGoogle, "")
+	enableOAuthProviderForTest(t, rt, "")
 	rt.oauthClientFactory = func(string, store.OAuthProviderSettings, string, string) (oauthProviderClient, error) {
 		return &fakeOAuthClient{userInfo: oauthUserInfo{ProviderUserID: "link-me", Email: "whatever-the-provider-reports@example.com", DisplayName: "Whatever"}}, nil
 	}
@@ -406,7 +407,7 @@ func TestHandleOAuthCallback_LinkPurpose_AttachesIdentityToAuthenticatedUser(t *
 
 func TestHandleOAuthCallback_LinkPurpose_AlreadyLinkedToAnotherUser_Rejected(t *testing.T) {
 	rt, db := newTestRouter(t)
-	enableOAuthProviderForTest(t, rt, store.OAuthProviderGoogle, "")
+	enableOAuthProviderForTest(t, rt, "")
 	rt.oauthClientFactory = func(string, store.OAuthProviderSettings, string, string) (oauthProviderClient, error) {
 		return &fakeOAuthClient{userInfo: oauthUserInfo{ProviderUserID: "already-taken", Email: "x@example.com", DisplayName: "X"}}, nil
 	}
