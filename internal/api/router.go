@@ -657,6 +657,13 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("PUT /api/v1/apps/{name}", rt.requireAbility(AbilityWrite, rt.handleUpdateApp))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}", rt.requireAbility(AbilityWrite, rt.handleDeleteApp))
 
+	// Clone: duplicates an app's desired state under a new name.
+	// AbilityWrite, the same gate POST /api/v1/apps itself uses, since a
+	// clone is a creation shaped as "copy {name}" rather than "start
+	// from scratch": handleCloneApp's own doc comment covers what does
+	// and doesn't carry over.
+	mux.HandleFunc("POST /api/v1/apps/{name}/clone", rt.requireAbility(AbilityWrite, rt.handleCloneApp))
+
 	// Placement (TASKS.md 3.3): AbilityRoot, not AbilityWrite, matching
 	// the sensitivity of the standalone node routes above: moving a
 	// service between physical machines is infrastructure placement,

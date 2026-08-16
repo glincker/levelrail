@@ -297,6 +297,48 @@ export function useRestartApp() {
   })
 }
 
+// POST /api/v1/apps/{name}/clone (internal/api/apps_clone.go's
+// handleCloneApp): duplicates name's desired state under newName. See
+// that handler's own doc comment for exactly what does and doesn't
+// carry over (image/port/env/secret-env-names/resources/health/
+// strategy/replicas/project_id do, domains/secret-values/node_id
+// deliberately don't). Rejects a newName that already exists with a 409,
+// the same conflict shape createApp above already surfaces.
+export async function cloneApp(
+  name: string,
+  newName: string,
+): Promise<AppDetail> {
+  const res = await fetch(`/api/v1/apps/${encodeURIComponent(name)}/clone`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ new_name: newName }),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `clone app failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as AppDetail
+}
+
+// Mirrors useCreateApp's cache-write shape exactly: the 201 response is
+// the new clone's canonical AppDetail, written straight into its own
+// detail query's cache so navigating to /apps/$name right after cloning
+// has data immediately, and the list query is invalidated so /apps
+// picks up the new row.
+export function useCloneApp() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ name, newName }: { name: string; newName: string }) =>
+      cloneApp(name, newName),
+    onSuccess: (cloned) => {
+      queryClient.setQueryData(appKeys.detail(cloned.name), cloned)
+      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+    },
+  })
+}
+
 // DELETE /api/v1/apps/{name} (internal/api/apps.go's handleDeleteApp).
 // Same known gap the backend doc comment names: removes desired state,
 // does not itself stop or remove a running container, mirroring

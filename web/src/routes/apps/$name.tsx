@@ -10,6 +10,7 @@ import {
   useDeployStatus,
 } from '../../queries/deploys'
 import { summarizeAppStatus } from '../../lib/appStatus'
+import { CloneAppDialog } from '../../components/CloneAppDialog'
 import { DeleteAppDialog } from '../../components/DeleteAppDialog'
 import { DeployTriggerForm } from '../../components/DeployTriggerForm'
 import { RestartAppButton } from '../../components/RestartAppButton'
@@ -25,7 +26,7 @@ import { Badge } from '@/components/ui/badge'
 // matching the precedent /apps/$name/deploys/$deployId/logs already set
 // as a real nested route rather than in-page tab state. This file is now
 // the layout: it owns the loader (both queries below), the shared page
-// header (app name, status, restart/delete actions), and the pinned
+// header (app name, status, restart/clone/delete actions), and the pinned
 // deploy-trigger form, then renders <Outlet /> for whichever section
 // route is active.
 //
@@ -80,6 +81,7 @@ function AppDetailLayout() {
         </div>
         <div className="flex items-center gap-2">
           <RestartAppButton name={app.name} />
+          <CloneAppDialog name={app.name} />
           <DeleteAppDialog name={app.name} />
         </div>
       </div>
