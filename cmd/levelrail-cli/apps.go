@@ -24,6 +24,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsGet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy":
 		return runAppsDeploy(prog, args[1:], stdout, stderr, lookupEnv)
+	case "deploy-compose":
+		return runAppsDeployCompose(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rollback":
 		return runAppsRollback(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restart":
@@ -47,6 +49,7 @@ func appsUsage(prog string) string {
   %[1]s apps list [flags]             list apps
   %[1]s apps get <name> [flags]       show one app
   %[1]s apps deploy <name> [flags]   deploy an image to an existing app
+  %[1]s apps deploy-compose <name> --file compose.yaml [flags]   deploy a Docker Compose file as an app
   %[1]s apps rollback <name> [flags]   redeploy an older image (same endpoint as deploy)
   %[1]s apps restart <name> [flags]     recreate the running container, no image change
   %[1]s apps status <name> [flags]   show an app's current reconcile conditions

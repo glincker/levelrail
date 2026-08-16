@@ -180,6 +180,80 @@ func TestClient_RestartApp_NotFound(t *testing.T) {
 	}
 }
 
+func TestClient_DeployCompose(t *testing.T) {
+	composeYAML := []byte("services:\n  web:\n    image: nginx:latest\n")
+	var gotAuth, gotMethod, gotPath, gotContentType string
+	var gotBody []byte
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		gotContentType = r.Header.Get("Content-Type")
+		b, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatalf("read request body: %v", err)
+		}
+		gotBody = b
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(composeDeployResult{
+			AppID:    "myapp",
+			Services: []appResource{{Name: "web", Image: "nginx:latest", Port: 80}},
+		})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.DeployCompose(context.Background(), "myapp", composeYAML)
+	if err != nil {
+		t.Fatalf("DeployCompose() error = %v", err)
+	}
+	if gotAuth != "Bearer test-token" {
+		t.Errorf("Authorization header = %q, want %q", gotAuth, "Bearer test-token")
+	}
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %q, want POST", gotMethod)
+	}
+	if gotPath != "/api/v1/apps/myapp/compose" {
+		t.Errorf("path = %q, want /api/v1/apps/myapp/compose", gotPath)
+	}
+	if gotContentType != "text/yaml" {
+		t.Errorf("Content-Type = %q, want text/yaml", gotContentType)
+	}
+	if !reflect.DeepEqual(gotBody, composeYAML) {
+		t.Errorf("body = %q, want raw YAML %q, not JSON-encoded", gotBody, composeYAML)
+	}
+	want := composeDeployResult{AppID: "myapp", Services: []appResource{{Name: "web", Image: "nginx:latest", Port: 80}}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("DeployCompose() = %+v, want %+v", got, want)
+	}
+}
+
+func TestClient_DeployCompose_APIError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"invalid compose file"}`))
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	_, err := client.DeployCompose(context.Background(), "myapp", []byte("not: valid: yaml: :"))
+	if err == nil {
+		t.Fatalf("DeployCompose() error = nil, want an error for a 400 response")
+	}
+	var apiErr *apiError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("error type = %T, want *apiError", err)
+	}
+	if apiErr.StatusCode != http.StatusBadRequest {
+		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusBadRequest)
+	}
+	if apiErr.Message != "invalid compose file" {
+		t.Errorf("Message = %q, want %q", apiErr.Message, "invalid compose file")
+	}
+}
+
 func TestClient_TriggerBuild(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/apps/web/builds" {
