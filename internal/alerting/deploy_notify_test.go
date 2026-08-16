@@ -292,6 +292,46 @@ func TestDeployDispatcher_Dispatch_SendsToEnabledTargetsOnly(t *testing.T) {
 	}
 }
 
+// TestDeployDispatcher_Dispatch_MixedLegacyAndChannelTargets proves a
+// legacy (no ChannelID) target and a channel-attached target on the
+// same app both fire correctly from one Dispatch call.
+func TestDeployDispatcher_Dispatch_MixedLegacyAndChannelTargets(t *testing.T) {
+	db := newTestDeployNotifyDB(t)
+	ctx := context.Background()
+
+	var legacyHit, channelHit bool
+	legacySrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		legacyHit = true
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer legacySrv.Close()
+	channelSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		channelHit = true
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer channelSrv.Close()
+
+	if err := db.SaveNotificationChannel(ctx, NotificationChannel{ID: "chn_1", Name: "Team Slack", Kind: NotifyGeneric, NotifyURL: channelSrv.URL, Enabled: true}); err != nil {
+		t.Fatalf("seed channel: %v", err)
+	}
+	if err := db.SaveDeployTarget(ctx, DeployTarget{ID: "dnt_legacy", ResourceID: "service:web", NotifyURL: legacySrv.URL, NotifyKind: NotifyGeneric, Enabled: true}); err != nil {
+		t.Fatalf("seed legacy target: %v", err)
+	}
+	if err := db.SaveDeployTarget(ctx, DeployTarget{ID: "dnt_channel", ResourceID: "service:web", ChannelID: "chn_1", Enabled: true}); err != nil {
+		t.Fatalf("seed channel-attached target: %v", err)
+	}
+
+	dispatcher := NewDeployDispatcher(db, nil, nil, nil)
+	dispatcher.Dispatch(ctx, "service:web", DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
+
+	if !legacyHit {
+		t.Error("legacy target never received a request")
+	}
+	if !channelHit {
+		t.Error("channel-attached target never received a request")
+	}
+}
+
 func TestDeployDispatcher_Dispatch_NoTargets_NoPanic(t *testing.T) {
 	db := newTestDeployNotifyDB(t)
 	dispatcher := NewDeployDispatcher(db, nil, nil, nil)

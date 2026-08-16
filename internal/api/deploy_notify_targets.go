@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -12,21 +11,12 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// This file is deploy-outcome notification targets: a Slack/Discord/
-// Telegram/generic-webhook/email destination that fires once per deploy
-// attempt reaching a terminal state, distinct from this package's
-// existing alert-rule CRUD (alerts.go) the same way
-// internal/alerting/deploy_notify.go's own package-level doc comment
-// distinguishes the two. Mirrors alerts.go's own handler shape closely
-// (narrow store interface, wire resource type, create/list/delete
-// handlers, app-ownership check on delete) on purpose: an operator who
-// already knows how to configure an alert rule's notify channel should
-// find this surface immediately familiar.
+// This file is per-app deploy-outcome notification targets, distinct
+// from alert-rule CRUD (alerts.go). Mirrors its handler shape.
 
 // DeployNotifyTargets is the surface the deploy-notify-target handlers
 // need from internal/alerting.DB. *alerting.DB satisfies this
-// structurally, the same "narrow consumer-defined interface" convention
-// AlertRules already establishes in this package.
+// structurally, the same convention AlertRules already establishes.
 type DeployNotifyTargets interface {
 	SaveDeployTarget(ctx context.Context, t alerting.DeployTarget) error
 	GetDeployTarget(ctx context.Context, id string) (*alerting.DeployTarget, error)
@@ -35,14 +25,12 @@ type DeployNotifyTargets interface {
 }
 
 // deployTargetResource is the wire shape for a deploy notify target.
-// ID and ResourceID are never caller-supplied, the same reasoning
-// ruleResource's own doc comment gives for its own ID/ResourceID
-// fields: ID is always generated server-side
-// (alerting.NewDeployTargetID), ResourceID is always derived from the
-// app name in the URL (resourceIDForApp), never taken from the body.
+// ID/ResourceID are always server-assigned, never taken from the body.
+// NotifyURL/NotifyKind are always the *resolved* values, response-only.
 type deployTargetResource struct {
 	ID         string `json:"id,omitempty"`
 	ResourceID string `json:"resource_id,omitempty"`
+	ChannelID  string `json:"channel_id,omitempty"`
 	NotifyURL  string `json:"notify_url,omitempty"`
 	NotifyKind string `json:"notify_kind,omitempty"`
 	Enabled    bool   `json:"enabled"`
@@ -52,37 +40,29 @@ func toDeployTargetResource(t alerting.DeployTarget) deployTargetResource {
 	return deployTargetResource{
 		ID:         t.ID,
 		ResourceID: t.ResourceID,
+		ChannelID:  t.ChannelID,
 		NotifyURL:  t.NotifyURL,
 		NotifyKind: string(t.NotifyKind),
 		Enabled:    t.Enabled,
 	}
 }
 
-// toDeployTarget converts a request body into an alerting.DeployTarget,
-// validating it along the way. id and resourceID are assigned by the
-// caller (handleCreateDeployNotifyTarget), never taken from the
-// resource itself.
-func (d deployTargetResource) toDeployTarget(id, resourceID string) (alerting.DeployTarget, error) {
-	if d.NotifyURL == "" {
-		return alerting.DeployTarget{}, errors.New("notify_url is required")
-	}
+// createDeployTargetRequest is POST .../deploy-notify-targets' request
+// body: attach an already-connected channel by ID, not a fresh URL.
+type createDeployTargetRequest struct {
+	ChannelID string `json:"channel_id"`
+	Enabled   bool   `json:"enabled"`
+}
 
-	kind := alerting.NotifyKind(d.NotifyKind)
-	switch kind {
-	case "", alerting.NotifyGeneric, alerting.NotifySlack, alerting.NotifyDiscord, alerting.NotifyTelegram, alerting.NotifyEmail:
-		// valid (including empty, which NewNotifier-style dispatch treats
-		// as NotifyGeneric); anything else is rejected below.
-	default:
-		return alerting.DeployTarget{}, fmt.Errorf("notify_kind must be one of %q, %q, %q, %q, %q",
-			alerting.NotifyGeneric, alerting.NotifySlack, alerting.NotifyDiscord, alerting.NotifyTelegram, alerting.NotifyEmail)
+func (req createDeployTargetRequest) toDeployTarget(id, resourceID string) (alerting.DeployTarget, error) {
+	if req.ChannelID == "" {
+		return alerting.DeployTarget{}, errors.New("channel_id is required")
 	}
-
 	return alerting.DeployTarget{
 		ID:         id,
 		ResourceID: resourceID,
-		NotifyURL:  d.NotifyURL,
-		NotifyKind: kind,
-		Enabled:    d.Enabled,
+		ChannelID:  req.ChannelID,
+		Enabled:    req.Enabled,
 	}, nil
 }
 
@@ -108,7 +88,7 @@ func (rt *Router) handleCreateDeployNotifyTarget(w http.ResponseWriter, r *http.
 		return
 	}
 
-	var req deployTargetResource
+	var req createDeployTargetRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
@@ -127,13 +107,37 @@ func (rt *Router) handleCreateDeployNotifyTarget(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// Validated against the real registry first, same as
+	// handleSetAppStorage does for storage_target_id.
+	if rt.notificationChannels == nil {
+		writeError(w, http.StatusNotImplemented, "notification channels are not configured on this control plane")
+		return
+	}
+	if _, err := rt.notificationChannels.GetNotificationChannel(r.Context(), target.ChannelID); errors.Is(err, alerting.ErrNotificationChannelNotFound) {
+		writeError(w, http.StatusBadRequest, "unknown channel_id")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: create deploy notify target: look up channel failed", slog.String("error", err.Error()), slog.String("channel_id", target.ChannelID))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
 	if err := rt.deployNotifyTargets.SaveDeployTarget(r.Context(), target); err != nil {
 		rt.logger.Error("api: create deploy notify target failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("target_id", id))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, toDeployTargetResource(target))
+	// Re-fetched so the response carries resolved notify_url/notify_kind,
+	// which target itself doesn't have until read back through the join.
+	saved, err := rt.deployNotifyTargets.GetDeployTarget(r.Context(), id)
+	if err != nil {
+		rt.logger.Error("api: create deploy notify target: reload after save failed", slog.String("error", err.Error()), slog.String("target_id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, toDeployTargetResource(*saved))
 }
 
 // handleListDeployNotifyTargets handles

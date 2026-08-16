@@ -14,6 +14,7 @@ import {
   GlobeIcon,
   GithubLogoIcon,
   UsersIcon,
+  WebhooksLogoIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
@@ -232,6 +233,18 @@ export function AppSidebar() {
                     >
                       <CloudArrowUpIcon />
                       <span>Backup targets</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/settings/notification-channels" />}
+                      isActive={pathname.startsWith(
+                        '/settings/notification-channels',
+                      )}
+                      tooltip="Notification channels"
+                    >
+                      <WebhooksLogoIcon />
+                      <span>Notification channels</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
