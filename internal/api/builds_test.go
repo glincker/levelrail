@@ -879,6 +879,92 @@ func TestHandleTriggerBuild_PrivateRepoAuth_MintsAndUsesToken(t *testing.T) {
 	awaitDeployAttemptFinished(t, db, resp.ID)
 }
 
+// TestHandleTriggerBuild_PrivateRepoAuth_DeployOnlyTokenNeverMintsToken
+// proves AbilityDeploy alone (this route's own gate) is not enough to
+// authorize minting a live GitHub App installation token: repoURL is
+// fully caller-controlled and need not have anything to do with the app
+// being built, so an unscoped mint here would let a CI token meant only
+// to trigger builds read any private repo the org's installation can
+// reach. The build itself still succeeds (AbilityDeploy is enough to
+// trigger a build), just against an unauthenticated clone.
+func TestHandleTriggerBuild_PrivateRepoAuth_DeployOnlyTokenNeverMintsToken(t *testing.T) {
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	fakeSecrets := newFakeGitHubAppSecrets()
+	fakeClient := &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
+	db := openTestDB(t)
+	rt := NewRouter(nil, testBrand(), db, WithBuilder(fb), WithGitHubAppSecrets(fakeSecrets))
+	rt.githubAppClient = fakeClient
+	rt.fetch = fetch.fetch
+	ctx := context.Background()
+	seedInstalledGitHubApp(t, db, fakeSecrets)
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	const plaintext = "deploy-scoped-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_deploy", Name: "deployer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityDeploy}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/apps/web/builds", strings.NewReader(`{"repo_url":"https://github.com/acme/widgets.git","ref":"main"}`))
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+
+	fc := fetch.awaitCall(t)
+	if fc.token != "" {
+		t.Errorf("fetch token = %q, want empty: a plain deploy token must not mint or use a live installation token", fc.token)
+	}
+	if fakeClient.gotInstallID != 0 {
+		t.Errorf("MintInstallationToken called with installationID = %d, want 0 (never called)", fakeClient.gotInstallID)
+	}
+}
+
+// TestHandleTriggerBuild_PrivateRepoAuth_ReadSensitiveTokenMintsToken
+// proves the fix isn't overly restrictive: a bearer token explicitly
+// scoped with AbilityReadSensitive (not just a session) still gets a
+// minted installation token, the same tier handleListGitHubAppRepos
+// itself requires for the equivalent disclosure.
+func TestHandleTriggerBuild_PrivateRepoAuth_ReadSensitiveTokenMintsToken(t *testing.T) {
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	fakeSecrets := newFakeGitHubAppSecrets()
+	fakeClient := &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
+	db := openTestDB(t)
+	rt := NewRouter(nil, testBrand(), db, WithBuilder(fb), WithGitHubAppSecrets(fakeSecrets))
+	rt.githubAppClient = fakeClient
+	rt.fetch = fetch.fetch
+	ctx := context.Background()
+	seedInstalledGitHubApp(t, db, fakeSecrets)
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	const plaintext = "read-sensitive-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_rs", Name: "ci", TokenHash: hashToken(plaintext), Abilities: []string{AbilityDeploy, AbilityReadSensitive}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/apps/web/builds", strings.NewReader(`{"repo_url":"https://github.com/acme/widgets.git","ref":"main"}`))
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+
+	fc := fetch.awaitCall(t)
+	if fc.token != "ghs_installtoken" {
+		t.Errorf("fetch token = %q, want the minted installation token: a token explicitly scoped with AbilityReadSensitive should still get one", fc.token)
+	}
+}
+
 // TestHandleTriggerBuild_PrivateRepoAuth_NotConnectedFallsBackUnauthenticated
 // proves a github.com repo URL with no GitHub App connected at all still
 // clones (unauthenticated, the pre-existing behavior for a public repo)

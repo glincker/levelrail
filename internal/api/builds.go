@@ -268,10 +268,24 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 
 	id, progress, finishAttempt := rt.beginBuildDeployAttempt(r.Context(), buildReq, store.DeployAttemptSourceManual)
 
+	// AbilityDeploy alone (this route's own gate) is not enough to
+	// authorize minting a live GitHub App installation token: repoURL is
+	// fully caller-controlled and need not have anything to do with this
+	// app, so an unscoped mint here would let any AbilityDeploy-only
+	// caller (e.g. a CI token meant only to trigger builds) read any
+	// private repo the org's installation can reach, the exact class of
+	// disclosure handleListGitHubAppRepos already gates at
+	// AbilityReadSensitive for the same reason. Checked once, in request
+	// scope, before the goroutine below outlives r.
+	allowPrivateRepoAuth := rt.callerHasAbility(r, AbilityReadSensitive)
+
 	repoURL, ref := req.RepoURL, req.Ref
 	go func() { //nolint:gosec // deliberately not r.Context(): it is cancelled the moment this handler returns, which would abort the fetch and build within microseconds of starting them; see this handler's own doc comment
 		ctx := context.Background()
-		token := rt.tokenForRepo(ctx, repoURL)
+		var token string
+		if allowPrivateRepoAuth {
+			token = rt.tokenForRepo(ctx, repoURL)
+		}
 		sourceDir, cleanup, err := rt.fetch(ctx, repoURL, ref, token)
 		if err != nil {
 			rt.logger.Error("api: trigger build: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", repoURL), slog.String("ref", ref))
