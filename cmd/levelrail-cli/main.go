@@ -74,6 +74,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runDomains(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backups":
 		return runBackups(prog, args[1:], stdout, stderr, lookupEnv)
+	case "migrate":
+		return runMigrate(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown command %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, rootUsage(prog))
@@ -102,6 +104,7 @@ Usage:
   %[1]s auth login [flags]             authenticate and persist a new API token
   %[1]s auth whoami [flags]           show who the current token authenticates as
   %[1]s tokens create|list|revoke [flags]   manage API tokens (requires a live session, see "%[1]s tokens -h")
+  %[1]s migrate coolify --url URL --token TOKEN [flags]   migrate apps from a Coolify instance
 
 Auth and target:
   --token, %[2]s          API token

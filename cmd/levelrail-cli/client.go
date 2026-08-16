@@ -486,6 +486,20 @@ func (c *Client) GetSession(ctx context.Context) (sessionInfoResource, error) {
 	return out, err
 }
 
+// setSecretRequest mirrors internal/api's setSecretRequest
+// (internal/api/secrets.go).
+type setSecretRequest struct {
+	Value string `json:"value"`
+}
+
+// SetSecret calls PUT /api/v1/apps/{name}/secrets/{key}. No response
+// body beyond the status (internal/api/secrets.go's handleSetSecret
+// returns 204 on success), matching that handler's own doc comment on
+// why a secret's value is never echoed back.
+func (c *Client) SetSecret(ctx context.Context, name, key, value string) error {
+	return c.do(ctx, http.MethodPut, "/api/v1/apps/"+pathEscape(name)+"/secrets/"+pathEscape(key), setSecretRequest{Value: value}, nil)
+}
+
 // pathEscape guards against a name containing characters that would
 // otherwise change the request's URL shape (a "/" turning one path
 // segment into two, for instance). Server-side validation is the real
