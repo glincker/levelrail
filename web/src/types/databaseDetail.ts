@@ -11,6 +11,9 @@
 // create/edit affordance for it yet (no PUT /databases/{name}/node
 // route), so this type exists to display it, never to send it back.
 
+import type { ServiceResources } from './appDetail'
+export type { ServiceResources } from './appDetail'
+
 export type DatabaseEngine = 'postgres' | 'redis' | 'mysql'
 
 export interface DatabaseResource {
@@ -32,4 +35,13 @@ export interface DatabaseResource {
   // entirely, not 0, whenever publicly_accessible is false.
   publicly_accessible?: boolean
   public_port?: number
+  // resources: internal/store.ServiceResources reused verbatim by
+  // DesiredDatabase (same as DesiredService), so this imports
+  // appDetail.ts's ServiceResources rather than redeclaring an identical
+  // shape. Set via PUT /api/v1/databases/{name}/resources
+  // (useSetDatabaseResources): databases have no general
+  // PUT /databases/{name} the way AppDetail.resources gets set through
+  // handleUpdateApp, so this field is settable only through its own
+  // dedicated route.
+  resources?: ServiceResources | null
 }

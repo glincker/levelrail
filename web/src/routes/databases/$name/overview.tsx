@@ -9,12 +9,13 @@ import { DatabasePublicAccessCard } from '../../../components/DatabasePublicAcce
 import { useProjectListOptional } from '../../../queries/projects'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-// The one real section Databases has today (engine/version/node summary,
-// reconcile status, and this database's own backups), formerly rendered
-// directly inside routes/databases/$name.tsx before that file became the
-// layout route. Reads database/conditions from the same query cache the
-// parent layout route's loader already primed (queries/databases.ts), no
-// fetch of its own, mirroring routes/apps/$name/overview.tsx.
+// The first of Databases's two real sections (engine/version/node
+// summary, reconcile status, and this database's own backups; resources.tsx
+// is the other), formerly rendered directly inside
+// routes/databases/$name.tsx before that file became the layout route.
+// Reads database/conditions from the same query cache the parent layout
+// route's loader already primed (queries/databases.ts), no fetch of its
+// own, mirroring routes/apps/$name/overview.tsx.
 //
 // This route's own loader additionally primes backupTargetListQueryOptions
 // (queries/backupTargets.ts): BackupsSection's target picker reads it via

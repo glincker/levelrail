@@ -51,6 +51,57 @@ func TestSaveAndGetDesiredDatabase_MySQL(t *testing.T) {
 	}
 }
 
+func TestSaveAndGetDesiredDatabase_Resources(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := DesiredDatabase{
+		Name:    "main",
+		Engine:  EnginePostgres,
+		Version: "16",
+		Resources: &ServiceResources{
+			MemoryBytes: 512 * 1024 * 1024,
+			NanoCPUs:    500_000_000,
+		},
+	}
+	if err := db.SaveDesiredDatabase(ctx, want); err != nil {
+		t.Fatalf("SaveDesiredDatabase() error = %v", err)
+	}
+
+	got, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if got.Resources == nil {
+		t.Fatalf("Resources = nil, want %+v", want.Resources)
+	}
+	if *got.Resources != *want.Resources {
+		t.Errorf("Resources = %+v, want %+v", got.Resources, want.Resources)
+	}
+}
+
+// TestSaveAndGetDesiredDatabase_ResourcesNil confirms today's behavior
+// (no resources column existed before this field) is unchanged for a
+// database that never sets one: Resources round-trips as nil, not a
+// zero-value *ServiceResources.
+func TestSaveAndGetDesiredDatabase_ResourcesNil(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "16"}
+	if err := db.SaveDesiredDatabase(ctx, want); err != nil {
+		t.Fatalf("SaveDesiredDatabase() error = %v", err)
+	}
+
+	got, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if got.Resources != nil {
+		t.Errorf("Resources = %+v, want nil", got.Resources)
+	}
+}
+
 func TestSaveDesiredDatabase_UpsertReplacesNotAccumulates(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

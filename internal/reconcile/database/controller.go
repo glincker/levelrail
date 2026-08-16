@@ -261,6 +261,12 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	if desired.PubliclyAccessible && desired.PublicPort != 0 {
 		spec.Ports = []docker.PortBinding{{ContainerPort: containerPort, HostPort: desired.PublicPort}}
 	}
+	if desired.Resources != nil {
+		spec.Resources = &docker.Resources{
+			MemoryBytes: desired.Resources.MemoryBytes,
+			NanoCPUs:    desired.Resources.NanoCPUs,
+		}
+	}
 
 	justDeployed := false
 	switch {

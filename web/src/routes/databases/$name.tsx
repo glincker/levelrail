@@ -16,10 +16,10 @@ import { Badge } from '@/components/ui/badge'
 // page itself (header, Overview card, ConditionsPanel). It is now the
 // layout: it owns the loader (both queries below) and the shared page
 // header (database name, status, delete action), then renders <Outlet />
-// for the one section route (overview.tsx) that exists today. Unlike
-// apps/$name.tsx there is no pinned deploy-trigger form here: databases
-// have no equivalent per-resource action that applies across every
-// section, and there is only one section anyway.
+// for whichever section route (overview.tsx, resources.tsx) is active.
+// Unlike apps/$name.tsx there is no pinned deploy-trigger form here:
+// databases have no equivalent per-resource action that applies across
+// every section.
 //
 // Both queries are primed here, matching apps/$name.tsx's own reasoning:
 // the database resource itself (GET /api/v1/databases/{name}) and its

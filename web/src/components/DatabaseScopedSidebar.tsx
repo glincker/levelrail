@@ -1,5 +1,9 @@
 import { Link, useRouterState } from '@tanstack/react-router'
-import { ArrowLeftIcon, SquaresFourIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  ArrowLeftIcon,
+  SquaresFourIcon,
+  CpuIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -16,16 +20,17 @@ import { summarizeDatabaseStatus } from '../lib/databaseStatus'
 // direct structural sibling of AppScopedSidebar.tsx: rendered in place of
 // the global nav whenever the current route is under /databases/$name/*.
 //
-// Deliberately one nav item, not eight: Databases has exactly one real
-// section today (Overview, which already folds in the engine/version/node
-// summary and ConditionsPanel's reconcile status). There is no
-// domains/environment/health/resources/metrics/logs/alerts equivalent for
-// a database resource, and no frontend connection-string/credentials
-// display exists to justify a second nested route either (grepped for
-// one, the only "credentials" hit in the whole frontend is the unrelated
-// change-password flow; cmd/levelrail's database_credentials.go is a CLI
-// subcommand, not a web UI surface). A one-item nav that looks sparse is
-// more honest than padding this out to match Apps's section count.
+// Two nav items, not eight: Databases has two real sections today
+// (Overview, which folds in the engine/version/node summary and
+// ConditionsPanel's reconcile status, plus Resources for memory/CPU
+// limits). There is still no domains/environment/health/metrics/logs/
+// alerts equivalent for a database resource, and no frontend
+// connection-string/credentials display exists to justify further
+// nested routes either (grepped for one, the only "credentials" hit in
+// the whole frontend is the unrelated change-password flow;
+// cmd/levelrail's database_credentials.go is a CLI subcommand, not a web
+// UI surface). A short nav that looks sparse is more honest than padding
+// this out to match Apps's section count.
 //
 // Reads database name/status from the same query cache
 // routes/databases/$name.tsx's layout route loader already primed
@@ -77,6 +82,18 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
               >
                 <SquaresFourIcon />
                 <span>Overview</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={
+                  <Link to="/databases/$name/resources" params={{ name }} />
+                }
+                isActive={pathname.endsWith('/resources')}
+                tooltip="Resources"
+              >
+                <CpuIcon />
+                <span>Resources</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

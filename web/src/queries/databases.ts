@@ -9,7 +9,10 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
-import type { DatabaseResource } from '../types/databaseDetail'
+import type {
+  DatabaseResource,
+  ServiceResources,
+} from '../types/databaseDetail'
 import type { ReconcileCondition } from '../types/deploy'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
@@ -377,6 +380,55 @@ export function useClearDatabasePublicAccess() {
       void queryClient.invalidateQueries({
         queryKey: databaseKeys.detail(name),
       })
+    },
+  })
+}
+
+// PUT /api/v1/databases/{name}/resources
+// (internal/api/databases.go's handleSetDatabaseResources): the database
+// counterpart to queries/apps.ts's useUpdateApp for its own `resources`
+// field, but as a dedicated route rather than a general replace, since
+// databases have no PUT /databases/{name} (see handleSetDatabaseResources'
+// own doc comment on the backend). resources: null clears a
+// previously-set limit, matching setDatabaseBackupSchedule's own
+// clear-by-explicit-empty-value convention.
+export async function setDatabaseResources(
+  name: string,
+  resources: ServiceResources | null,
+): Promise<DatabaseResource> {
+  const res = await fetch(
+    `/api/v1/databases/${encodeURIComponent(name)}/resources`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resources }),
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `set database resources failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as DatabaseResource
+}
+
+export function useSetDatabaseResources() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      name,
+      resources,
+    }: {
+      name: string
+      resources: ServiceResources | null
+    }) => setDatabaseResources(name, resources),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(databaseKeys.detail(updated.name), updated)
+      void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
     },
   })
 }

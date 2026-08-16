@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -47,6 +49,7 @@ func TestDatabaseRoutes_RequireAuth(t *testing.T) {
 		{http.MethodDelete, "/api/v1/databases/main"},
 		{http.MethodGet, "/api/v1/databases/main/status"},
 		{http.MethodPut, "/api/v1/databases/main/node"},
+		{http.MethodPut, "/api/v1/databases/main/resources"},
 	}
 	for _, r := range routes {
 		t.Run(r.method+" "+r.target, func(t *testing.T) {
@@ -290,6 +293,125 @@ func TestHandleSetDatabaseNode_DatabaseNotFound(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/ghost/node", `{"node_id":""}`))
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleSetDatabaseResources_Success(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed database: %v", err)
+	}
+
+	body := `{"resources":{"memory_bytes":536870912,"nano_cpus":500000000}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/resources", body))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got databaseResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Resources == nil || got.Resources.MemoryBytes != 536870912 || got.Resources.NanoCPUs != 500000000 {
+		t.Errorf("Resources = %+v, want {MemoryBytes:536870912 NanoCPUs:500000000}", got.Resources)
+	}
+
+	d, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if d.Resources == nil || d.Resources.MemoryBytes != 536870912 || d.Resources.NanoCPUs != 500000000 {
+		t.Errorf("stored Resources = %+v, want {MemoryBytes:536870912 NanoCPUs:500000000}", d.Resources)
+	}
+	// Engine/Version must survive the round trip unchanged: this endpoint
+	// only ever touches Resources, never the rest of the record.
+	if d.Engine != store.EngineRedis || d.Version != "7" {
+		t.Errorf("Engine/Version = %q/%q, want unchanged redis/7", d.Engine, d.Version)
+	}
+}
+
+// TestHandleSetDatabaseResources_NilClears confirms a request with no
+// resources field (or an explicit null) clears a previously-set limit
+// back to nil, the same full-replace semantics setDatabaseNode/
+// setDatabaseProject already establish for their own fields.
+func TestHandleSetDatabaseResources_NilClears(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{
+		Name: "main", Engine: store.EngineRedis, Version: "7",
+		Resources: &store.ServiceResources{MemoryBytes: 1024, NanoCPUs: 1000},
+	}); err != nil {
+		t.Fatalf("seed database: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/resources", `{"resources":null}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	d, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if d.Resources != nil {
+		t.Errorf("stored Resources = %+v, want nil", d.Resources)
+	}
+}
+
+func TestHandleSetDatabaseResources_DatabaseNotFound(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/ghost/resources", `{"resources":null}`))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+// TestHandleSetDatabaseResources_ReadOnlyToken_Forbidden proves PUT
+// /databases/{name}/resources really sits behind AbilityWrite, not just
+// any authenticated caller: a token scoped only to AbilityRead must be
+// rejected with 403, the same real-request proof
+// TestHandleUpdateIngressSettings_PlainWriteToken_Forbidden establishes
+// for its own route rather than relying on router registration alone.
+func TestHandleSetDatabaseResources_ReadOnlyToken_Forbidden(t *testing.T) {
+	rt, db := newTestRouter(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed database: %v", err)
+	}
+
+	const plaintext = "read-scoped-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_read", Name: "reader", TokenHash: hashToken(plaintext), Abilities: []string{AbilityRead}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	body := `{"resources":{"memory_bytes":536870912,"nano_cpus":500000000}}`
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/databases/main/resources", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d: a read-only token must not reach the resources route", rec.Code, http.StatusForbidden)
+	}
+
+	d, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if d.Resources != nil {
+		t.Errorf("stored Resources = %+v, want nil: a rejected request must not touch the row", d.Resources)
 	}
 }
 
