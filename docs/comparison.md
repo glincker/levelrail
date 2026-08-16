@@ -1,10 +1,10 @@
 # Comparison
 
-Positioning, not a ranking. All of these projects are worth using, this
+Positioning, not a ranking. All of these projects are worth using. This
 page exists to make the actual technical differences legible, sourced
-from direct research (see `docs-local/research/prior-art-*.md` for the
-full per-project writeups this table is drawn from, at the level of detail
-this project's own research already produced).
+from direct competitor research (cloned source, changelogs, and issue
+trackers for each project, read at the level of detail this project's
+own research already produced).
 
 ## At a glance
 
@@ -12,10 +12,10 @@ this project's own research already produced).
 | --- | --- | --- | --- | --- | --- | --- |
 | Coolify (v4) | SSH plus CLI-shelled `docker`/`docker compose` via `instant_remote_process()`, every remote operation is a heredoc of shell commands over SSH | Docker Compose per app, cutover via Traefik label discovery (`rolling_update()`) | Optional bolted-on agent ("Sentinel"), opt-in, separately installed | Traefik, separate long-lived container, auto-discovers containers via Docker labels | Not stated in research | Nixpacks or Dockerfile (per-app config column) |
 | Dokploy | SSH-tunneled Docker Engine API (via `dockerode`) for the core deploy call; CLI shelled over an `ssh2` exec channel for lifecycle ops, cleanup, and the build pipeline | Docker Swarm services: `service.update()`/`createService()`, Swarm's native `UpdateConfig`/`RollbackConfig`/`FailureAction: rollback` | Separate Go binary (`apps/monitoring`), polling ticker, container stats default every 60s | Traefik, run as a Swarm service on the shared overlay network | Not stated in research | Not stated in research |
-| CapRover | Docker Swarm API via `dockerode`; `DockerApi.initSwarm()` runs even on a single node | Docker Swarm services, `AUTO` update order (stop-first if volumes mounted, start-first otherwise) | Optional sibling containers (NetData, GoAccess), not built into core | nginx, sibling Swarm service; config written to a `.fut` file, validated with `nginx -t`, then `SIGHUP`-reloaded | Not stated in research | Not stated in research (only "build the image, tag it with a version number") |
+| CapRover | Docker Swarm API via `dockerode`; `DockerApi.initSwarm()` runs even on a single node | Docker Swarm services, `AUTO` update order (stop-first if volumes mounted, start-first otherwise) | Optional sibling containers (NetData, GoAccess), not built into core | nginx, sibling Swarm service; config written to a `.fut` file, validated with `nginx -t`, then `SIGHUP`-reloaded | Not stated in research | Not stated in research |
 | Dokku | SSH/git push triggers the local `dokku` bash entrypoint directly on the host; no persistent daemon, no separate node agent | Custom Bash scheduler (`scheduler-docker-local`) driving plain `docker` containers, no Swarm | Not stated in research | nginx by default (pluggable per-app: Caddy, HAProxy, Traefik, OpenResty), config rendered via `sigil` and reloaded with `nginx -s reload` | Not stated in research | Herokuish buildpacks (Heroku-style `app.json`/`Procfile`) or a Dockerfile |
 | Kamal | One-shot SSH CLI session per command, no daemon, no agent, state re-derived live from `docker ps`/`docker inspect` every invocation | None: no scheduler or daemon. CLI runs `docker run` per host; `kamal-proxy` performs an in-memory atomic target swap after its own HTTP health probe | None built in; `kamal-proxy` exposes a bare Prometheus metrics port to scrape yourself, no query API | `kamal-proxy`, one standalone Go container per server, atomic in-process routing table update | MIT | Dockerfile-based build step (buildpacks requested via community PR, not shipped) |
-| Levelrail | Reverse-dialed gRPC agent with mTLS; no CLI shelling anywhere, Docker Engine API wrapper only | Custom Go reconciler over the Docker Engine API, level-triggered, blue-green default strategy, rolling/recreate also supported | Node-local metrics (15s resolution) and full-text log store, federated query API, threshold alerting with multi-channel notifications, crashloop detection, Prometheus remote-read, all shipped | Embedded Caddy, driven in-process via its admin API; automatic internal-issuer TLS works today, public ACME against a live domain is a named open gap | Apache 2.0 (settled project decision, not itself part of the competitor research corpus) | BuildKit-based Dockerfile builds with local cache, Railpack auto-detection (Node.js/Go), static-site serving |
+| Levelrail | Reverse-dialed gRPC agent with mTLS; no CLI shelling anywhere, Docker Engine API wrapper only | Custom Go reconciler over the Docker Engine API, level-triggered, blue-green default strategy, rolling/recreate also supported | Node-local metrics (15s resolution) and full-text log store, federated query API, threshold alerting with multi-channel notifications, crashloop detection, Prometheus remote-read, all shipped | Embedded Caddy, driven in-process via its admin API; automatic internal-issuer TLS works today, public ACME against a live domain is a named open gap | Apache 2.0 (this project's own settled decision) | BuildKit-based Dockerfile builds with local cache, Railpack auto-detection (Node.js/Go), static-site serving |
 
 ## Levelrail vs Coolify
 
@@ -23,7 +23,7 @@ Coolify v4 drives every managed node over SSH, shelling `docker`/`docker compose
 
 ## Levelrail vs Dokploy
 
-Dokploy is a thin control surface over Docker Swarm: its rolling update, rollback, and cross-node routing are all Swarm's own mechanisms, and a deployment is marked "done" the instant the Swarm API call returns, before there's any evidence the new task is actually healthy. Levelrail's reconciler owns cutover, rollback, and node placement directly rather than delegating to a cluster orchestrator, and a status condition is only written once the new container's readiness probe passes. Dokploy's own most-discussed GitHub issues cluster around networking and ingress fragility on Swarm's routing mesh plus a separately-configured Traefik container (Traefik breaking on restart, gateway timeouts on worker-node replicas), the exact failure class Levelrail's embedded, in-process Caddy plus its own WireGuard mesh are built to avoid.
+Dokploy is a thin control surface over Docker Swarm: its rolling update, rollback, and cross-node routing are all Swarm's own mechanisms, and a deployment is marked "done" the instant the Swarm API call returns, before there's any evidence the new task is actually healthy. Levelrail's reconciler owns cutover, rollback, and node placement directly rather than delegating to a cluster orchestrator, and a status condition is only written once the new container's readiness probe passes. Dokploy's own most-discussed GitHub issues cluster around networking and ingress fragility on Swarm's routing mesh plus a separately-configured Traefik container (Traefik breaking on restart, gateway timeouts on worker-node replicas). That is the exact failure class Levelrail's embedded, in-process Caddy plus its own WireGuard mesh are built to avoid.
 
 ## Levelrail vs CapRover
 
@@ -31,7 +31,7 @@ CapRover also standardizes on Docker Swarm, even for a single-node install, and 
 
 ## Levelrail vs Dokku
 
-Dokku actually gets the deploy ordering right: new container up, health checks pass, proxy config regenerated and validated, then the old container is stopped. It also has genuinely zero idle cost since there is no persistent daemon at all, every command is a fresh SSH/git-triggered bash invocation. The tradeoff is that Dokku cannot do anything proactive between commands: no event-stream consumption, no background reconciliation, and its boot-time container recovery script is an admitted "temporary hack" the maintainers have carried since a years-old issue. Its default scheduler also has no rollback command whatsoever (rollback only exists on the newer, opt-in Kubernetes-backed scheduler). Levelrail's agent streams Docker events continuously rather than triggering only on command, and rollback with pinned images is available from Phase 1, not deferred to an alternate scheduler.
+Dokku actually gets the deploy ordering right: new container up, health checks pass, proxy config regenerated and validated, then the old container is stopped. It also has genuinely zero idle cost since there is no persistent daemon at all; every command is a fresh SSH/git-triggered bash invocation. The tradeoff is that Dokku cannot do anything proactive between commands: no event-stream consumption, no background reconciliation, and its boot-time container recovery script is an admitted "temporary hack" the maintainers have carried since a years-old issue. Its default scheduler also has no rollback command whatsoever (rollback only exists on the newer, opt-in Kubernetes-backed scheduler). Levelrail's agent streams Docker events continuously rather than triggering only on command, and rollback with pinned images is available from Phase 1, not deferred to an alternate scheduler.
 
 ## Levelrail vs Kamal
 
@@ -39,7 +39,7 @@ Kamal is the deliberate outlier in this set: no daemon, no agent, no database, j
 
 ## What Levelrail doesn't do (yet)
 
-Grounded in the project's own feature inventory (`docs-local/research/feature-inventory-2026-08-15.md`), not the original phase plan, since the inventory found the actual build is further along in places (multi-node and the WireGuard mesh are shipped, not "not started"). The real gaps as of that inventory:
+Grounded in this project's own current feature and build status, not the original phase plan, since the actual build is further along in places than that plan suggests (multi-node and the WireGuard mesh are shipped, not "not started"). The real gaps as of today:
 
 - **Real public ACME certificates.** TLS today is issued by an internal, self-signed issuer; certs against a live domain via a public ACME provider are a named open gap.
 - **Multi-service apps end-to-end.** The app spec's `services` map accepts more than one service, but the deploy path only ever runs a single `spec.Service` per app today. Don't describe Levelrail as supporting a web-plus-worker app in one deploy yet; a design for the real fix has landed but implementation hasn't started.
