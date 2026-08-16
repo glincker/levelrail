@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
+import { ArrowSquareOutIcon } from '@phosphor-icons/react/dist/ssr'
 
 import { cn } from '@/lib/utils'
 import { Label } from '@/components/ui/label'
@@ -141,6 +142,46 @@ function FieldDescription({ className, ...props }: React.ComponentProps<'p'>) {
   )
 }
 
+// A FieldDescription that can additionally carry a link to somewhere a
+// first-time user finds the value being asked for (a GitHub token
+// scope, a DNS record type) or the tradeoff between the choices offered
+// (an engine picker). Extends FieldDescription's own markup rather than
+// introducing a second, parallel description primitive: same tag, same
+// muted-text styling, same `[&>a]` underline treatment, just with an
+// external-link affordance appended when `href` is given. Renders
+// exactly like FieldDescription when `href` is omitted.
+function FieldHint({
+  children,
+  href,
+  linkText = 'Learn more',
+  className,
+  ...props
+}: React.ComponentProps<'p'> & {
+  children?: ReactNode
+  href?: string
+  linkText?: string
+}) {
+  return (
+    <FieldDescription className={className} {...props}>
+      {children}
+      {href ? (
+        <>
+          {children ? ' ' : null}
+          <a
+            href={href}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="inline-flex items-center gap-0.5"
+          >
+            {linkText}
+            <ArrowSquareOutIcon className="size-3" aria-hidden="true" />
+          </a>
+        </>
+      ) : null}
+    </FieldDescription>
+  )
+}
+
 function FieldSeparator({
   children,
   className,
@@ -226,6 +267,7 @@ export {
   Field,
   FieldLabel,
   FieldDescription,
+  FieldHint,
   FieldError,
   FieldGroup,
   FieldLegend,

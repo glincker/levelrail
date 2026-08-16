@@ -13,6 +13,7 @@ import { APP_LIST_GRID, AppRow, RowSkeleton } from '../../components/AppRow'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
 import { StaticSitesCard } from '../../components/StaticSitesCard'
 import { Button } from '../../components/ui/button'
+import { EmptyState } from '../../components/ui/empty-state'
 
 // Typed loader primes the Query cache, the component only reads that
 // cache via useSuspenseQuery against the same key (no data fetching in
@@ -101,26 +102,21 @@ function AppListPage() {
         </div>
       </div>
       {apps.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-16 text-center">
-          <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <PackageIcon className="size-5" aria-hidden="true" />
-          </span>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-foreground">No apps yet</p>
-            <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-              Apps deployed from an app.yaml spec in a connected repo will show
-              up here, or create one directly if you already have a built image.
-            </p>
-          </div>
-          <CreateResourceWizard
-            trigger={
-              <Button size="sm">
-                <PlusIcon />
-                New app
-              </Button>
-            }
-          />
-        </div>
+        <EmptyState
+          icon={<PackageIcon className="size-5" />}
+          title="No apps yet"
+          description="Deploy your first app to get started: push to a connected git repo, or create one directly if you already have a built image."
+          action={
+            <CreateResourceWizard
+              trigger={
+                <Button size="sm">
+                  <PlusIcon />
+                  New app
+                </Button>
+              }
+            />
+          }
+        />
       ) : (
         <div
           ref={parentRef}

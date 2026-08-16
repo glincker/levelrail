@@ -13,7 +13,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Field, FieldError, FieldGroup } from '@/components/ui/field'
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldHint,
+} from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
 
@@ -96,6 +101,14 @@ export function DomainEditor({ app }: { app: AppDetail }) {
           }}
           className="space-y-3"
         >
+          <FieldHint
+            href="https://developers.cloudflare.com/dns/manage-dns-records/reference/dns-record-types/"
+            linkText="DNS record types explained"
+          >
+            Point an A record at this server&apos;s IP address (or a CNAME at
+            its hostname), then a TLS certificate is issued automatically
+            once it resolves.
+          </FieldHint>
           {fields.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No domains configured.

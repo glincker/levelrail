@@ -11,6 +11,7 @@ import {
 } from '../../components/DatabaseRow'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
 import { Button } from '../../components/ui/button'
+import { EmptyState } from '../../components/ui/empty-state'
 
 // Typed loader primes the Query cache, the component only reads that
 // cache via useSuspenseQuery against the same key, mirroring
@@ -77,28 +78,21 @@ function DatabaseListPage() {
         </div>
       </div>
       {databases.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-16 text-center">
-          <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <DatabaseIcon className="size-5" aria-hidden="true" />
-          </span>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-foreground">
-              No databases yet
-            </p>
-            <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-              Create a managed Postgres or Redis database and reference it from
-              an app&apos;s environment.
-            </p>
-          </div>
-          <CreateResourceWizard
-            trigger={
-              <Button size="sm">
-                <PlusIcon />
-                New database
-              </Button>
-            }
-          />
-        </div>
+        <EmptyState
+          icon={<DatabaseIcon className="size-5" />}
+          title="No databases yet"
+          description="Create a managed Postgres, MySQL, or Redis database and reference it from an app's environment, credentials are injected automatically."
+          action={
+            <CreateResourceWizard
+              trigger={
+                <Button size="sm">
+                  <PlusIcon />
+                  New database
+                </Button>
+              }
+            />
+          }
+        />
       ) : (
         <div
           ref={parentRef}

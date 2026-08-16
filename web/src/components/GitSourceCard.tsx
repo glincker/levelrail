@@ -9,7 +9,12 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldHint,
+  FieldLabel,
+} from '@/components/ui/field'
 import {
   Select,
   SelectContent,
@@ -330,6 +335,14 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
               <FieldDescription>
                 Sent once, encrypted at rest. Never shown again after saving.
               </FieldDescription>
+              <FieldHint
+                href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens"
+                linkText="How do I create one?"
+              >
+                Needs the <code className="text-xs">repo</code> scope (classic
+                token) or Contents: Read-only permission (fine-grained token)
+                so this control plane can clone the repository over HTTPS.
+              </FieldHint>
             </Field>
 
             <div className="flex gap-2">

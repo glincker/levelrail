@@ -5,6 +5,7 @@ import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
 import { nodeListQueryOptions, useNodes } from '../../queries/nodes'
 import { NODE_LIST_GRID, NodeRow, RowSkeleton } from '../../components/NodeRow'
 import { AddNodeDialog } from '../../components/AddNodeDialog'
+import { EmptyState } from '../../components/ui/empty-state'
 
 // Typed loader primes the Query cache, the component only reads that
 // cache via useNodes() (suspense), mirroring routes/databases/index.tsx
@@ -64,20 +65,12 @@ function NodeListPage() {
         </div>
       </div>
       {nodes.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-16 text-center">
-          <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <HardDrivesIcon className="size-5" aria-hidden="true" />
-          </span>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-foreground">No nodes yet</p>
-            <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-              A node is a second machine running Docker workloads for this
-              control plane. Add one to spread apps and databases across more
-              than a single server.
-            </p>
-          </div>
-          <AddNodeDialog />
-        </div>
+        <EmptyState
+          icon={<HardDrivesIcon className="size-5" />}
+          title="Running on this single control plane node"
+          description="Join another machine as a node to scale out: spread apps and databases across more than one server, isolate builds from production workloads, or add capacity without resizing this box."
+          action={<AddNodeDialog />}
+        />
       ) : (
         <div
           ref={parentRef}
