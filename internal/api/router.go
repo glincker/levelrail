@@ -162,14 +162,6 @@ type AppGroupLister interface {
 	GetAppByName(ctx context.Context, name string) (store.App, error)
 }
 
-// AppGroupLister is the store surface GET /api/v1/apps/{name}/group
-// needs (apps_group.go): stage 1 of multi-service apps
-// (migrations/0039_apps.sql), read path only. *store.DB satisfies this
-// structurally.
-type AppGroupLister interface {
-	ListServicesByApp(ctx context.Context, appID string) ([]store.DesiredService, error)
-}
-
 // DeployStore is the store surface the deploy-history handler needs.
 type DeployStore interface {
 	GetConditions(ctx context.Context, controllerName string) ([]reconcile.Condition, error)
