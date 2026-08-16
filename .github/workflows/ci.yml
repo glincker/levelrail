@@ -258,11 +258,9 @@ jobs:
             echo "no changed web/*.ts(x) files"
           fi
 
-  # A single, always-running status branch protection can require. The
-  # jobs above are conditionally skipped per changed area, and a
-  # required check that never runs blocks merging forever, so this is
-  # the one check that's actually always required: success if every job
-  # that *was* supposed to run for this PR passed, skipped jobs excused.
+  # The one check branch protection requires: a skipped job can't be
+  # required directly (blocks forever), so this always runs and passes
+  # only if every job that was supposed to run for this PR did.
   ci-required:
     name: CI required
     runs-on: ubuntu-latest
