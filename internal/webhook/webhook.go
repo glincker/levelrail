@@ -18,6 +18,15 @@
 // standards warn against.
 // A second app arriving is the trigger to revisit this, not a hypothesis
 // about one arriving.
+//
+// That second app has now arrived: internal/api's own multi-app git
+// source registry (git_sources.go, git_webhook.go) reuses this package's
+// verified signature/payload logic (VerifySignature, ParsePushEvent,
+// MaxPayloadBytes, Config.TargetRef) rather than duplicating it, but
+// lives in internal/api because turning a stored app back into a full
+// spec.Service already lives there too (specServiceFromDesired). Handler
+// and Config above are unchanged and still back the original single-app,
+// env-var-configured path.
 package webhook
 
 import (
@@ -26,6 +35,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -57,6 +67,14 @@ const DefaultBranch = "main"
 // request can force this handler to buffer before signature
 // verification even runs.
 const maxPayloadBytes = 25 << 20
+
+// MaxPayloadBytes is maxPayloadBytes, exported so a per-app git source
+// webhook receiver outside this package (internal/api's multi-app
+// route, TASKS.md 1.7's follow-up: see that package's own git_webhook.go
+// doc comment for why the multi-app handler lives there instead of here)
+// applies GitHub's own protocol size limit identically, rather than
+// picking its own number.
+const MaxPayloadBytes = maxPayloadBytes
 
 // Deployer is the narrow surface this package needs from
 // internal/deploy.Pipeline, so tests can fake it without a real BuildKit
@@ -128,6 +146,15 @@ func (c Config) branch() string {
 
 func (c Config) targetRef() string {
 	return "refs/heads/" + c.branch()
+}
+
+// TargetRef is targetRef, exported so a per-app Config resolved outside
+// this package (internal/api's multi-app webhook route) can compute the
+// identical "refs/heads/<branch>" ref-matching target this package's own
+// ServeHTTP already checks pushes against, without duplicating
+// DefaultBranch's fallback logic a second time.
+func (c Config) TargetRef() string {
+	return c.targetRef()
 }
 
 // fetchFunc fetches repoURL at sha to a local directory, returning the
@@ -278,12 +305,38 @@ func resourceIDForService(name string) string {
 	return "service:" + name
 }
 
-// pushEvent is the subset of GitHub's push event payload this package
+// PushEvent is the subset of GitHub's push event payload this package
 // needs. See
 // https://docs.github.com/en/webhooks/webhook-events-and-payloads#push.
-type pushEvent struct {
+// Exported (renamed from the pre-existing unexported pushEvent) so
+// internal/api's multi-app webhook route can decode the identical
+// payload shape through ParsePushEvent below, rather than redeclaring
+// it.
+type PushEvent struct {
 	Ref   string `json:"ref"`
 	After string `json:"after"`
+}
+
+// ErrPushEventFieldsMissing is returned by ParsePushEvent when body
+// decodes as valid JSON but is missing ref or after, distinct from a
+// json.Unmarshal failure so ServeHTTP (and internal/api's multi-app
+// equivalent) can keep reporting the two cases with their own, more
+// specific messages.
+var ErrPushEventFieldsMissing = errors.New("webhook: payload missing ref or after")
+
+// ParsePushEvent decodes body as a GitHub push event payload, requiring
+// both Ref and After to be non-empty (see ServeHTTP's own doc comment:
+// only the commit SHA and target ref matter to this package, everything
+// else in GitHub's much larger push payload is ignored).
+func ParsePushEvent(body []byte) (PushEvent, error) {
+	var ev PushEvent
+	if err := json.Unmarshal(body, &ev); err != nil {
+		return PushEvent{}, fmt.Errorf("webhook: malformed payload: %w", err)
+	}
+	if ev.After == "" || ev.Ref == "" {
+		return ev, ErrPushEventFieldsMissing
+	}
+	return ev, nil
 }
 
 // ServeHTTP implements http.Handler. Response codes: 200 for a
@@ -312,15 +365,15 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var ev pushEvent
-	if err := json.Unmarshal(body, &ev); err != nil {
+	ev, err := ParsePushEvent(body)
+	if err != nil {
+		if errors.Is(err, ErrPushEventFieldsMissing) {
+			h.log.Warn("webhook: payload missing ref or after", "ref", ev.Ref, "after", ev.After)
+			http.Error(w, "malformed payload: missing ref or after", http.StatusBadRequest)
+			return
+		}
 		h.log.Warn("webhook: malformed payload", "error", err)
 		http.Error(w, "malformed payload", http.StatusBadRequest)
-		return
-	}
-	if ev.After == "" || ev.Ref == "" {
-		h.log.Warn("webhook: payload missing ref or after", "ref", ev.Ref, "after", ev.After)
-		http.Error(w, "malformed payload: missing ref or after", http.StatusBadRequest)
 		return
 	}
 
@@ -369,13 +422,22 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // verifySignature checks header against an HMAC-SHA256 of body keyed by
-// h.cfg.Secret, GitHub's X-Hub-Signature-256 scheme
+// h.cfg.Secret. See VerifySignature's own doc comment for the actual
+// verification logic, extracted as a free function so a per-app secret
+// resolved outside this package (internal/api's multi-app webhook route)
+// can verify without needing a Handler value.
+func (h *Handler) verifySignature(body []byte, header string) bool {
+	return VerifySignature(h.cfg.Secret, body, header)
+}
+
+// VerifySignature checks header against an HMAC-SHA256 of body keyed by
+// secret, GitHub's X-Hub-Signature-256 scheme
 // (docs.github.com/webhooks: "validating-webhook-deliveries"). Comparison
 // uses hmac.Equal, constant-time by construction, rather than a plain
 // byte-slice or string comparison, since a timing-observable comparison
 // here would let an attacker recover a valid signature byte by byte.
-func (h *Handler) verifySignature(body []byte, header string) bool {
-	if len(h.cfg.Secret) == 0 {
+func VerifySignature(secret, body []byte, header string) bool {
+	if len(secret) == 0 {
 		// An empty configured secret can never produce a valid
 		// signature: refuse rather than degrade to "any signature
 		// passes."
@@ -390,7 +452,7 @@ func (h *Handler) verifySignature(body []byte, header string) bool {
 	if err != nil {
 		return false
 	}
-	mac := hmac.New(sha256.New, h.cfg.Secret)
+	mac := hmac.New(sha256.New, secret)
 	mac.Write(body) // hash.Hash.Write never returns an error.
 	expected := mac.Sum(nil)
 	return hmac.Equal(sig, expected)
