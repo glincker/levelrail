@@ -68,22 +68,17 @@ function AppDetailLayout() {
   const isViewingDeployLogs = useRouterState({
     select: (s) => s.location.pathname.includes('/deploys/'),
   })
-  if (isViewingDeployLogs) {
-    return <Outlet />
-  }
-
-  // Bare /apps/$name always redirects to /overview (see index.tsx), so
-  // the app root itself never renders here -- only /overview and
-  // /deploys (the section index, not /deploys/$id/logs, already
-  // excluded above) are the "Deploy" sidebar group's own sections. Every
-  // other section (Domains, Environment, Health, Resources, Metrics,
-  // Logs, Alerts, Exec) is a Configure/Observe concern, not a deploy
-  // action, so the card no longer pins there.
+  // Only /overview and /deploys (the section index, not /deploys/$id/logs
+  // above) are the "Deploy" sidebar group's own sections; every other
+  // section is a Configure/Observe concern, so the card doesn't pin there.
   const showDeployTrigger = useRouterState({
     select: (s) =>
       s.location.pathname.endsWith('/overview') ||
       s.location.pathname.endsWith('/deploys'),
   })
+  if (isViewingDeployLogs) {
+    return <Outlet />
+  }
 
   return (
     <div className="space-y-6">
