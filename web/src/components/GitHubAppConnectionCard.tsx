@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import {
   CheckCircleIcon,
   GithubLogoIcon,
@@ -111,9 +112,9 @@ export function GitHubAppConnectionCard() {
               <p className="flex items-center gap-1.5 text-sm text-amber-700 dark:text-amber-400">
                 <WarningIcon className="size-3.5" />
                 Set a primary domain in{' '}
-                <a href="/settings/general" className="underline">
-                  ingress settings
-                </a>{' '}
+                <Link to="/domains" className="underline">
+                  domain settings
+                </Link>{' '}
                 first for automated setup, or connect manually below.
               </p>
             ) : null}
@@ -125,8 +126,22 @@ export function GitHubAppConnectionCard() {
                   <code className="font-mono">{baseURL}</code>. GitHub redirects
                   there for the life of the App, so this instance must actually
                   be publicly reachable at that address before you continue, not
-                  just wherever you&apos;re viewing this page from right now. If
-                  that&apos;s not live yet, use manual setup instead.
+                  just wherever you&apos;re viewing this page from right now.
+                  Change it in{' '}
+                  <Link to="/domains" className="underline">
+                    domain settings
+                  </Link>{' '}
+                  if that&apos;s not where this instance actually lives, or use{' '}
+                  manual setup instead. See GitHub&apos;s own{' '}
+                  <a
+                    href="https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app-from-a-manifest"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline"
+                  >
+                    manifest flow docs
+                  </a>{' '}
+                  for why the callback has to be a real, reachable address.
                 </span>
               </p>
             ) : null}

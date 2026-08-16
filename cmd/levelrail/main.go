@@ -35,6 +35,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/githubapp"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
@@ -60,6 +61,12 @@ const (
 	// defaultBrandFile is the same "relative default, env override"
 	// pattern as defaultDataDir.
 	defaultBrandFile = "./brand.yaml"
+	// defaultGitHubAppManifestFile is the same "relative default, env
+	// override" pattern as defaultBrandFile, for the optional GitHub App
+	// manifest permissions/events file (internal/githubapp.ManifestConfig).
+	// Unlike brand.yaml, absence is not an error: loadGitHubAppManifestConfig
+	// falls back to githubapp.DefaultManifestConfig().
+	defaultGitHubAppManifestFile = "./github-app-manifest.yaml"
 	// defaultDevFixturesFile is the same "relative default, env
 	// override" pattern as defaultBrandFile, for the optional dev-mode
 	// fixture tokens file (internal/api/devfixtures.go). Only ever read
@@ -932,6 +939,14 @@ func loadBrand() (*brand.Brand, error) {
 	return brand.Load(path)
 }
 
+func loadGitHubAppManifestConfig() (githubapp.ManifestConfig, error) {
+	path := os.Getenv("APP_GITHUB_APP_MANIFEST_FILE")
+	if path == "" {
+		path = defaultGitHubAppManifestFile
+	}
+	return githubapp.LoadManifestConfig(path)
+}
+
 // devFixturesFile resolves the path MaybeSeedDevFixturesFromFile reads,
 // the same default-plus-env-override shape as loadBrand above.
 func devFixturesFile() string {
@@ -1440,6 +1455,11 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	}
 	if builder != nil {
 		opts = append(opts, api.WithBuilder(builder))
+	}
+	if manifestCfg, err := loadGitHubAppManifestConfig(); err != nil {
+		logger.Error("load github app manifest config failed, using defaults", slog.String("error", err.Error()))
+	} else {
+		opts = append(opts, api.WithGitHubAppManifestConfig(manifestCfg))
 	}
 
 	mux := http.NewServeMux()

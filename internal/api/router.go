@@ -498,6 +498,7 @@ type Router struct {
 	githubAppSecrets          GitHubAppSecrets            // nil is valid: every github-app route that needs it (register/start, callback, installed, repos, branches) returns 501, same shape as backupSecrets above
 	githubAppClient           GitHubAppClient             // always set (NewRouter defaults it to a real *githubapp.Client, which needs no configuration to construct), overridable in this package's own tests the same way fetch is
 	githubAppState            *githubAppRegistrationState // always set (NewRouter constructs one unconditionally); purely in-memory bookkeeping, see its own doc comment
+	githubAppManifestConfig   githubapp.ManifestConfig    // always set, defaulted to githubapp.DefaultManifestConfig() in NewRouter, overridable via WithGitHubAppManifestConfig: the permissions/events a fresh App registration requests
 	oauthSettings             OAuthSettingsStore          // always set, same "core Store interface" shape as ingressSettings above: both provider rows always exist (migrations/0035's own seeded rows)
 	oauthIdentities           OAuthIdentityStore          // always set, same shape as oauthSettings above
 	oauthSecrets              OAuthSecrets                // nil is valid: every /auth/oauth/... sign-in route and PUT /settings/oauth/{provider} return 501/501, same "not configured" shape as gitSourceSecrets above
@@ -559,6 +560,15 @@ func WithGitSourceSecrets(s GitSourceSecrets) Option {
 // /api/v1/github-app work regardless.
 func WithGitHubAppSecrets(s GitHubAppSecrets) Option {
 	return func(rt *Router) { rt.githubAppSecrets = s }
+}
+
+// WithGitHubAppManifestConfig overrides the permissions/events a fresh
+// App registration requests (githubapp.BuildManifest's own doc
+// comment). Without one configured, NewRouter defaults to
+// githubapp.DefaultManifestConfig(), the same request this codebase has
+// always sent.
+func WithGitHubAppManifestConfig(cfg githubapp.ManifestConfig) Option {
+	return func(rt *Router) { rt.githubAppManifestConfig = cfg }
 }
 
 // WithBackupRunner enables POST /api/v1/databases/{name}/backups.
@@ -814,43 +824,44 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		logger = slog.Default()
 	}
 	rt := &Router{
-		logger:                logger,
-		brand:                 b,
-		apps:                  s,
-		appGroups:             s,
-		appCompose:            s,
-		deploys:               s,
-		deployAttempts:        s,
-		databases:             s,
-		auth:                  s,
-		tokens:                s,
-		nodes:                 s,
-		projects:              s,
-		certs:                 s,
-		staticSites:           s,
-		ingressSettings:       s,
-		domains:               s,
-		lookupHost:            defaultLookupHost,
-		domainChecks:          newDomainCheckCache(),
-		backupTargets:         s,
-		backupHistory:         s,
-		restoreHistory:        s,
-		gitSources:            s,
-		githubApp:             s,
-		githubAppClient:       githubapp.NewClient(),
-		githubAppState:        newGitHubAppRegistrationState(),
-		fetch:                 gitCheckout,
-		listBranches:          listRemoteBranches,
-		gitSourceFetch:        gitCheckoutWithToken,
-		logins:                newLoginLimiter(),
-		oauthSettings:         s,
-		oauthIdentities:       s,
-		oauthState:            newOAuthStateStore(),
-		oauthClientFactory:    defaultOAuthClientFactory,
-		emailSettings:         s,
-		passwordResetTokens:   s,
-		forgotPasswordByIP:    newLoginLimiter(),
-		forgotPasswordByEmail: newLoginLimiter(),
+		logger:                  logger,
+		brand:                   b,
+		apps:                    s,
+		appGroups:               s,
+		appCompose:              s,
+		deploys:                 s,
+		deployAttempts:          s,
+		databases:               s,
+		auth:                    s,
+		tokens:                  s,
+		nodes:                   s,
+		projects:                s,
+		certs:                   s,
+		staticSites:             s,
+		ingressSettings:         s,
+		domains:                 s,
+		lookupHost:              defaultLookupHost,
+		domainChecks:            newDomainCheckCache(),
+		backupTargets:           s,
+		backupHistory:           s,
+		restoreHistory:          s,
+		gitSources:              s,
+		githubApp:               s,
+		githubAppClient:         githubapp.NewClient(),
+		githubAppState:          newGitHubAppRegistrationState(),
+		githubAppManifestConfig: githubapp.DefaultManifestConfig(),
+		fetch:                   gitCheckout,
+		listBranches:            listRemoteBranches,
+		gitSourceFetch:          gitCheckoutWithToken,
+		logins:                  newLoginLimiter(),
+		oauthSettings:           s,
+		oauthIdentities:         s,
+		oauthState:              newOAuthStateStore(),
+		oauthClientFactory:      defaultOAuthClientFactory,
+		emailSettings:           s,
+		passwordResetTokens:     s,
+		forgotPasswordByIP:      newLoginLimiter(),
+		forgotPasswordByEmail:   newLoginLimiter(),
 	}
 	for _, opt := range opts {
 		opt(rt)
