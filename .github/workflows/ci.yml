@@ -55,7 +55,7 @@ jobs:
     name: Test (internal/api)
     runs-on: ubuntu-latest
     needs: build-vet
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -72,8 +72,19 @@ jobs:
           echo '{"features":{"containerd-snapshotter":true}}' | sudo tee /etc/docker/daemon.json
           sudo systemctl restart docker
 
+      # -timeout=25m overrides go test's own default 10-minute test-binary
+      # timeout, which panics the whole run regardless of this job's own
+      # timeout-minutes above it. internal/api's test count has grown
+      # substantially this session (dozens of new files, most exercising
+      # a real bcrypt.CompareHashAndPassword per authenticated-session
+      # test via loginTestSession), and the package has already been
+      # observed to take 10-11 minutes even on an otherwise-clean CI run;
+      # under real runner contention the suite has hit the bare 10-minute
+      # default and self-terminated with a panic, not a real test
+      # failure. 25m leaves real margin under this job's own 30-minute
+      # ceiling.
       - name: go test (race detector, coverage profile)
-        run: go test ./internal/api/... -race -coverprofile=coverage-api.out
+        run: go test ./internal/api/... -race -timeout=25m -coverprofile=coverage-api.out
 
       - name: Upload coverage profile
         uses: actions/upload-artifact@v4
