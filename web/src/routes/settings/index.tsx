@@ -15,6 +15,7 @@ import {
   GlobeIcon,
   ArrowCircleUpIcon,
   ClockCounterClockwiseIcon,
+  PackageIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Card, CardHeader, CardTitle, CardDescription } from '../../components/ui/card'
 
@@ -101,6 +102,12 @@ const sections: SettingsSection[] = [
         icon: CloudArrowUpIcon,
         title: 'Backup targets',
         description: 'S3-compatible buckets for managed database backups.',
+      },
+      {
+        to: '/settings/registry-credentials',
+        icon: PackageIcon,
+        title: 'Registry credentials',
+        description: 'Pull private images with build.type: image.',
       },
       {
         to: '/settings/email',

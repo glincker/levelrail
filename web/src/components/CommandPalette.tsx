@@ -19,6 +19,9 @@ import {
   EnvelopeIcon,
   GearIcon,
   MagnifyingGlassIcon,
+  PackageIcon,
+  ArrowCircleUpIcon,
+  ClockCounterClockwiseIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { DialogPortal, DialogOverlay, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -47,12 +50,15 @@ const STATIC_ENTRIES: ResultItem[] = [
   { key: 'settings-security', label: 'Security', group: 'Settings', icon: <ShieldIcon />, to: '/settings/security' },
   { key: 'settings-tokens', label: 'API tokens', group: 'Settings', icon: <KeyIcon />, to: '/settings/tokens' },
   { key: 'settings-backup-targets', label: 'Backup targets', group: 'Settings', icon: <CloudArrowUpIcon />, to: '/settings/backup-targets' },
+  { key: 'settings-registry-credentials', label: 'Registry credentials', group: 'Settings', icon: <PackageIcon />, to: '/settings/registry-credentials' },
   { key: 'settings-notification-channels', label: 'Notification channels', group: 'Settings', icon: <WebhooksLogoIcon />, to: '/settings/notification-channels' },
   { key: 'settings-github-app', label: 'GitHub App', group: 'Settings', icon: <GithubLogoIcon />, to: '/settings/github-app' },
   { key: 'settings-oauth', label: 'OAuth sign-in', group: 'Settings', icon: <KeyIcon />, to: '/settings/oauth' },
   { key: 'settings-users', label: 'Users', group: 'Settings', icon: <UsersIcon />, to: '/settings/users' },
   { key: 'settings-email', label: 'Email', group: 'Settings', icon: <EnvelopeIcon />, to: '/settings/email' },
   { key: 'settings-general', label: 'General', group: 'Settings', icon: <GearIcon />, to: '/settings/general' },
+  { key: 'settings-updates', label: 'Updates', group: 'Settings', icon: <ArrowCircleUpIcon />, to: '/settings/updates' },
+  { key: 'settings-audit-log', label: 'Audit log', group: 'Settings', icon: <ClockCounterClockwiseIcon />, to: '/settings/audit-log' },
 ]
 
 function ResultRow({

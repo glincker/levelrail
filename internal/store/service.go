@@ -57,6 +57,15 @@ type DesiredService struct {
 	Port    int
 	Domains []string
 	Env     map[string]string
+	// RegistryCredentialID is which store.RegistryCredential
+	// (migrations/0046_registry_credentials.sql) to authenticate with
+	// when pulling Image, resolved by internal/docker at container-
+	// create time; empty string means an unauthenticated (public) pull.
+	// A normal deploy-time field, unlike NodeID/ProjectID/
+	// StorageTargetID below: SaveDesiredService writes it on every
+	// call, the same as Image itself, since it comes from the same
+	// app.yaml build.type: image block.
+	RegistryCredentialID string
 	// SecretEnv names env vars whose values live in secret storage
 	// (internal/secrets, TASKS.md 1.7), resolved and decrypted by the
 	// application controller immediately before container creation.
@@ -281,8 +290,8 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	}()
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, labels, volumes, project_id, app_id, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, NULL, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, labels, volumes, registry_credential_id, project_id, app_id, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, NULL, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
@@ -295,8 +304,9 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 			replicas = excluded.replicas,
 			labels = excluded.labels,
 			volumes = excluded.volumes,
+			registry_credential_id = excluded.registry_credential_id,
 			updated_at = excluded.updated_at
-	`, svc.Name, svc.Image, svc.Port, string(domainsJSON), string(envJSON), string(secretEnvJSON), string(resourcesJSON), string(healthJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), sql.NullString{String: svc.AppID, Valid: svc.AppID != ""})
+	`, svc.Name, svc.Image, svc.Port, string(domainsJSON), string(envJSON), string(secretEnvJSON), string(resourcesJSON), string(healthJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""})
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
@@ -638,18 +648,18 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes"
+const desiredServiceColumns = "name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
 // signature), so the decode-JSON-columns logic exists exactly once.
 func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	var (
-		svc                                                                        DesiredService
+		svc                                                                         DesiredService
 		domainsJSON, envJSON, secretEnvJSON, resourcesJSON, health, labels, volumes string
-		projectID, storageTargetID, appID                                          sql.NullString
+		projectID, storageTargetID, appID                                           sql.NullString
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String

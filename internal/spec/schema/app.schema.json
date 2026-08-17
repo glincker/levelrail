@@ -64,7 +64,8 @@
       "properties": {
         "type": { "enum": ["dockerfile", "compose", "railpack", "static", "image"] },
         "path": { "type": "string", "minLength": 1 },
-        "image": { "type": "string", "minLength": 1 }
+        "image": { "type": "string", "minLength": 1 },
+        "registryCredential": { "type": "string", "minLength": 1 }
       }
     },
     "health": {
