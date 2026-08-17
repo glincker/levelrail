@@ -166,6 +166,42 @@ func TestPlanFromFlags(t *testing.T) {
 			wantErr: "only supports",
 		},
 		{
+			name:  "file mode image build type success",
+			flags: createFlags{file: "app.yaml", port: 3000},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildImage, Image: "registry.example.com/org/web:v1"}, Port: 3000},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.Build != nil {
+					t.Errorf("Build = %+v, want nil for the image path: no build is triggered", p.Build)
+				}
+				want := appResource{Name: "web", Image: "registry.example.com/org/web:v1", Port: 3000}
+				if !reflect.DeepEqual(p.CreateBody, want) {
+					t.Errorf("CreateBody = %+v, want %+v", p.CreateBody, want)
+				}
+			},
+		},
+		{
+			name:  "file mode image build type missing build.image rejected",
+			flags: createFlags{file: "app.yaml"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildImage}, Port: 3000},
+			}},
+			wantErr: "no build.image set",
+		},
+		{
+			name:  "file mode image build type does not require repo or image-repo",
+			flags: createFlags{file: "app.yaml"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildImage, Image: "registry.example.com/org/web:v1"}, Port: 3000},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.CreateBody.Image != "registry.example.com/org/web:v1" {
+					t.Errorf("CreateBody.Image = %q, want the build.image value passed straight through", p.CreateBody.Image)
+				}
+			},
+		},
+		{
 			name:  "file mode secret env vars rejected",
 			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git"},
 			fileSpec: &spec.Spec{Services: map[string]spec.Service{
