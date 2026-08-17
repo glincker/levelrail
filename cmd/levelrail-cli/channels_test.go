@@ -22,7 +22,7 @@ func TestRun_ChannelsList(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"channels", "list", "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"channels", "list", "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -54,7 +54,7 @@ func TestRun_ChannelsCreate_NotifyURL(t *testing.T) {
 	got := run("levelrail-cli-test", []string{
 		"channels", "create", "--name", "Team Slack", "--kind", "slack",
 		"--notify-url", "https://hooks.slack.com/x", "--api-url", srv.URL,
-	}, &stdout, &stderr, envMap(nil))
+	}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -91,7 +91,7 @@ func TestRun_ChannelsCreate_PushoverFlags(t *testing.T) {
 		"channels", "create", "--name", "My Phone", "--kind", "pushover",
 		"--pushover-user-key", "user-key-456", "--pushover-api-token", "app-token-123",
 		"--api-url", srv.URL,
-	}, &stdout, &stderr, envMap(nil))
+	}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -113,7 +113,7 @@ func TestRun_ChannelsCreate_PushoverFlags(t *testing.T) {
 
 func TestRun_ChannelsCreate_MissingDestination(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"channels", "create", "--name", "x", "--kind", "pushover"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"channels", "create", "--name", "x", "--kind", "pushover"}, &stdout, &stderr, envMap())
 	if got != exitValidation {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitValidation, stdout.String(), stderr.String())
 	}
@@ -131,7 +131,7 @@ func TestRun_ChannelsDelete(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"channels", "delete", "chn_1", "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"channels", "delete", "chn_1", "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -149,7 +149,7 @@ func TestRun_ChannelsTest(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"channels", "test", "chn_1", "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"channels", "test", "chn_1", "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -160,7 +160,7 @@ func TestRun_ChannelsTest(t *testing.T) {
 
 func TestRun_Channels_Help(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"channels", "-h"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"channels", "-h"}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d", got, exitOK)
 	}

@@ -30,6 +30,10 @@ type (
 	deployTriggerRequest     = apiclient.DeployTriggerRequest
 	triggerBackupRequest     = apiclient.TriggerBackupRequest
 	triggerRestoreRequest    = apiclient.TriggerRestoreRequest
+
+	notificationChannelResource      = apiclient.NotificationChannelResource
+	createNotificationChannelRequest = apiclient.CreateNotificationChannelRequest
+	testNotificationChannelRequest   = apiclient.TestNotificationChannelRequest
 )
 
 // NewClient builds a Client. See apiclient.NewClient.
