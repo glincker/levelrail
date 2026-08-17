@@ -6,13 +6,30 @@ import (
 	"sort"
 )
 
-// migrationReport is "migrate coolify"'s full result: every application
-// Coolify reported, either successfully mapped or flagged as needing
-// manual review, plus whether --apply was used.
+// migrationReport is a "migrate <source>" command's full result: every
+// application the source reported, either successfully mapped or flagged
+// as needing manual review, plus whether --apply was used. Shared by
+// migrate_coolify.go and migrate_dokploy.go; exactly one of
+// CoolifyURL/DokployURL is set per run.
 type migrationReport struct {
-	CoolifyURL string      `json:"coolify_url"`
+	CoolifyURL string      `json:"coolify_url,omitempty"`
+	DokployURL string      `json:"dokploy_url,omitempty"`
 	Apps       []mappedApp `json:"apps"`
 	Applied    bool        `json:"applied"`
+}
+
+func (r migrationReport) sourceLabel() string {
+	if r.DokployURL != "" {
+		return "Dokploy"
+	}
+	return "Coolify"
+}
+
+func (r migrationReport) sourceURL() string {
+	if r.DokployURL != "" {
+		return r.DokployURL
+	}
+	return r.CoolifyURL
 }
 
 func (r migrationReport) cleanApps() []mappedApp {
@@ -48,7 +65,7 @@ func printMigrationReportHuman(out io.Writer, r migrationReport, prog, outDir st
 	clean := r.cleanApps()
 	blocking := r.blockingApps()
 
-	_, _ = fmt.Fprintf(out, "migrated %d of %d Coolify application(s) from %s\n\n", len(clean), len(r.Apps), r.CoolifyURL)
+	_, _ = fmt.Fprintf(out, "migrated %d of %d %s application(s) from %s\n\n", len(clean), len(r.Apps), r.sourceLabel(), r.sourceURL())
 
 	if len(clean) > 0 {
 		_, _ = fmt.Fprintln(out, "migrated:")
