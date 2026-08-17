@@ -1459,6 +1459,10 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			// secretsManager, same nil-interface hazard as everything else
 			// in this block.
 			api.WithTwoFactorSecrets(secretsManager),
+			// GitLab App connection: same secretsManager, same
+			// nil-interface hazard, the OAuth-Application counterpart of
+			// the GitHub App connection just above.
+			api.WithGitLabAppSecrets(secretsManager),
 		)
 	}
 	if builder != nil {

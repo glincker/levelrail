@@ -271,67 +271,101 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 		branch = webhook.DefaultBranch
 	}
 
-	key := store.GitSourceSecretsKey(name)
-
-	_, err = rt.gitSources.GetGitSource(r.Context(), name)
-	creating := errors.Is(err, store.ErrGitSourceNotFound)
-	if err != nil && !creating {
-		rt.logger.Error("api: set git source: load existing failed", slog.String("error", err.Error()), slog.String("name", name))
+	result, err := rt.connectGitSource(r.Context(), name, connectGitSourceParams{
+		RepoURL: req.RepoURL, Branch: branch, BuildType: buildType, BuildPath: req.BuildPath, Token: req.Token,
+	})
+	if err != nil {
+		rt.logger.Error("api: set git source failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
+	}
+
+	status := http.StatusOK
+	if result.Creating {
+		status = http.StatusCreated
+	}
+	rt.logger.Info("api: git source connected", slog.String("name", name), slog.String("repo_url", req.RepoURL), slog.Bool("creating", result.Creating))
+	writeJSON(w, status, result.Resource)
+}
+
+// connectGitSourceParams is connectGitSource's already-validated input:
+// every field a caller derives its own way (a hand-typed form for
+// handleSetGitSource, a picked GitLab project for
+// handleUseGitLabProjectAsSource) before reaching this shared step.
+type connectGitSourceParams struct {
+	RepoURL   string
+	Branch    string
+	BuildType string
+	BuildPath string
+	// Token is optional; empty means "leave whatever is currently
+	// stored unchanged" on an update, matching setGitSourceRequest's own
+	// Token field.
+	Token string
+}
+
+// connectGitSourceResult is connectGitSource's return: the resource to
+// send back (WebhookSecret populated only when Creating is true) plus
+// whether this call created a new git source or updated an existing one,
+// so each caller can pick its own HTTP status for that distinction.
+type connectGitSourceResult struct {
+	Resource gitSourceResource
+	Creating bool
+}
+
+// connectGitSource is the one place a repository actually becomes an
+// app's connected git source: generates a webhook secret on first
+// connect, stores the optional deploy token, and persists the
+// store.GitSource row. handleSetGitSource (the manual connect form) and
+// handleUseGitLabProjectAsSource (GitLab's "use project as source"
+// action) both call this rather than each reimplementing the connect
+// logic, so a GitLab-originated source ends up in exactly the same
+// store.GitSource shape, behind the exact same webhook receiver, as a
+// hand-typed one.
+func (rt *Router) connectGitSource(ctx context.Context, name string, p connectGitSourceParams) (connectGitSourceResult, error) {
+	key := store.GitSourceSecretsKey(name)
+
+	_, err := rt.gitSources.GetGitSource(ctx, name)
+	creating := errors.Is(err, store.ErrGitSourceNotFound)
+	if err != nil && !creating {
+		return connectGitSourceResult{}, fmt.Errorf("load existing git source: %w", err)
 	}
 
 	var webhookSecretPlain string
 	if creating {
 		webhookSecretPlain, err = randomWebhookSecret()
 		if err != nil {
-			rt.logger.Error("api: set git source: generate webhook secret failed", slog.String("error", err.Error()), slog.String("name", name))
-			writeError(w, http.StatusInternalServerError, "internal error")
-			return
+			return connectGitSourceResult{}, fmt.Errorf("generate webhook secret: %w", err)
 		}
-		if err := rt.gitSourceSecrets.SetValue(r.Context(), key, gitSourceSecretKey, webhookSecretPlain); err != nil {
-			rt.logger.Error("api: set git source: save webhook secret failed", slog.String("error", err.Error()), slog.String("name", name))
-			writeError(w, http.StatusInternalServerError, "internal error")
-			return
+		if err := rt.gitSourceSecrets.SetValue(ctx, key, gitSourceSecretKey, webhookSecretPlain); err != nil {
+			return connectGitSourceResult{}, fmt.Errorf("save webhook secret: %w", err)
 		}
 	}
-	if req.Token != "" {
-		if err := rt.gitSourceSecrets.SetValue(r.Context(), key, gitSourceTokenKey, req.Token); err != nil {
-			rt.logger.Error("api: set git source: save deploy token failed", slog.String("error", err.Error()), slog.String("name", name))
-			writeError(w, http.StatusInternalServerError, "internal error")
-			return
+	if p.Token != "" {
+		if err := rt.gitSourceSecrets.SetValue(ctx, key, gitSourceTokenKey, p.Token); err != nil {
+			return connectGitSourceResult{}, fmt.Errorf("save deploy token: %w", err)
 		}
 	}
 
-	if err := rt.gitSources.SaveGitSource(r.Context(), store.GitSource{
-		ServiceName: name, RepoURL: req.RepoURL, Branch: branch, BuildType: buildType, BuildPath: req.BuildPath,
+	if err := rt.gitSources.SaveGitSource(ctx, store.GitSource{
+		ServiceName: name, RepoURL: p.RepoURL, Branch: p.Branch, BuildType: p.BuildType, BuildPath: p.BuildPath,
 	}); err != nil {
-		rt.logger.Error("api: set git source: save failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
+		return connectGitSourceResult{}, fmt.Errorf("save git source: %w", err)
 	}
 
-	saved, err := rt.gitSources.GetGitSource(r.Context(), name)
+	saved, err := rt.gitSources.GetGitSource(ctx, name)
 	if err != nil {
-		rt.logger.Error("api: set git source: reload failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
+		return connectGitSourceResult{}, fmt.Errorf("reload git source: %w", err)
 	}
-	hasToken, err := rt.gitSourceSecrets.Exists(r.Context(), key, gitSourceTokenKey)
+	hasToken, err := rt.gitSourceSecrets.Exists(ctx, key, gitSourceTokenKey)
 	if err != nil {
-		rt.logger.Error("api: set git source: check token failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
+		return connectGitSourceResult{}, fmt.Errorf("check deploy token: %w", err)
 	}
 
 	resource := toGitSourceResource(*saved, hasToken)
-	status := http.StatusOK
 	if creating {
-		status = http.StatusCreated
 		resource.WebhookSecret = webhookSecretPlain
 	}
-	rt.logger.Info("api: git source connected", slog.String("name", name), slog.String("repo_url", req.RepoURL), slog.Bool("creating", creating))
-	writeJSON(w, status, resource)
+	return connectGitSourceResult{Resource: resource, Creating: creating}, nil
 }
 
 // handleDeleteGitSource handles DELETE /api/v1/apps/{name}/git-source.
