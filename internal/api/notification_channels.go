@@ -69,11 +69,11 @@ type createNotificationChannelRequest struct {
 func validateNotifyKind(kind string) (alerting.NotifyKind, error) {
 	k := alerting.NotifyKind(kind)
 	switch k {
-	case alerting.NotifyGeneric, alerting.NotifySlack, alerting.NotifyDiscord, alerting.NotifyTelegram, alerting.NotifyEmail:
+	case alerting.NotifyGeneric, alerting.NotifySlack, alerting.NotifyDiscord, alerting.NotifyTelegram, alerting.NotifyEmail, alerting.NotifyPushover:
 		return k, nil
 	default:
-		return "", fmt.Errorf("kind must be one of %q, %q, %q, %q, %q",
-			alerting.NotifyGeneric, alerting.NotifySlack, alerting.NotifyDiscord, alerting.NotifyTelegram, alerting.NotifyEmail)
+		return "", fmt.Errorf("kind must be one of %q, %q, %q, %q, %q, %q",
+			alerting.NotifyGeneric, alerting.NotifySlack, alerting.NotifyDiscord, alerting.NotifyTelegram, alerting.NotifyEmail, alerting.NotifyPushover)
 	}
 }
 

@@ -153,6 +153,12 @@ func sendTestNotification(ctx context.Context, client *http.Client, sender email
 			return fmt.Errorf("alerting: test notification: %w", err)
 		}
 		return postJSON(ctx, client, notifyURL, telegramPayload{ChatID: chatID, Text: testText})
+	case NotifyPushover:
+		token, user, err := parsePushoverCreds(notifyURL)
+		if err != nil {
+			return fmt.Errorf("alerting: test notification: %w", err)
+		}
+		return postJSON(ctx, client, notifyURL, pushoverPayload{Token: token, User: user, Message: testText})
 	case NotifyEmail:
 		if sender == nil {
 			return fmt.Errorf("alerting: test notification: email is not configured on this control plane")

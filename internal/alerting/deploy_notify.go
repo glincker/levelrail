@@ -273,6 +273,12 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 			return fmt.Errorf("alerting: notify deploy outcome: %w", err)
 		}
 		return postJSON(ctx, client, t.NotifyURL, telegramPayload{ChatID: chatID, Text: summaryDeployText(ev)})
+	case NotifyPushover:
+		token, user, err := parsePushoverCreds(t.NotifyURL)
+		if err != nil {
+			return fmt.Errorf("alerting: notify deploy outcome: %w", err)
+		}
+		return postJSON(ctx, client, t.NotifyURL, pushoverPayload{Token: token, User: user, Message: summaryDeployText(ev), Title: ev.AppName})
 	case NotifyEmail:
 		if sender == nil {
 			return fmt.Errorf("alerting: notify deploy outcome: email is not configured on this control plane")

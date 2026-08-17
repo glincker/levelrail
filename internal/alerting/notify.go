@@ -78,6 +78,8 @@ func NewNotifier(client *http.Client, sender email.Sender, r Rule) Notifier {
 		build = notifyDiscord
 	case NotifyTelegram:
 		build = notifyTelegram
+	case NotifyPushover:
+		build = notifyPushover
 	}
 	return httpNotifier{client: client, url: r.NotifyURL, build: build}
 }
@@ -153,6 +155,43 @@ func notifyTelegram(ctx context.Context, client *http.Client, rawURL string, ev 
 		return fmt.Errorf("alerting: notify: %w", err)
 	}
 	return postJSON(ctx, client, rawURL, telegramPayload{ChatID: chatID, Text: summaryText(ev)})
+}
+
+// pushoverPayload is the Pushover Message API's request body
+// (https://pushover.net/api). Title is omitted when empty, so a plain
+// message still sends without an empty title line.
+type pushoverPayload struct {
+	Token   string `json:"token"`
+	User    string `json:"user"`
+	Message string `json:"message"`
+	Title   string `json:"title,omitempty"`
+}
+
+// notifyPushover parses token/user out of rawURL's query string, the
+// same convention notifyTelegram uses for chat_id, then posts to rawURL
+// (Pushover's fixed messages.json endpoint, carrying those two query
+// params) exactly as notifyTelegram posts to its own rawURL.
+func notifyPushover(ctx context.Context, client *http.Client, rawURL string, ev Event) error {
+	token, user, err := parsePushoverCreds(rawURL)
+	if err != nil {
+		return fmt.Errorf("alerting: notify: %w", err)
+	}
+	return postJSON(ctx, client, rawURL, pushoverPayload{Token: token, User: user, Message: summaryText(ev), Title: ev.Rule.Name})
+}
+
+// parsePushoverCreds extracts the token and user query parameters a
+// Pushover notify_url must carry (see notifyPushover's own doc comment).
+func parsePushoverCreds(rawURL string) (token, user string, err error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", "", fmt.Errorf("invalid pushover notify_url: %w", err)
+	}
+	token = u.Query().Get("token")
+	user = u.Query().Get("user")
+	if token == "" || user == "" {
+		return "", "", fmt.Errorf("pushover notify_url must include token and user query parameters")
+	}
+	return token, user, nil
 }
 
 // parseTelegramChatID extracts the chat_id query parameter a Telegram
