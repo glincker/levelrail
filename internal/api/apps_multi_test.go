@@ -84,6 +84,46 @@ func TestHandleDeploySpec_Success_CreatesTwoServicesUnderOneApp(t *testing.T) {
 	}
 }
 
+// TestHandleDeploySpec_ImageBuildTypeAccepted proves build.type: image
+// reaches the builder rather than being rejected by this handler's own
+// per-service switch, alongside a sibling service that still needs a
+// real build: the whole point of supporting it here (rather than only
+// through the single-service, no-git POST /apps/{name}/deploys path) is
+// that one app.yaml can mix a prebuilt-image service with others that
+// don't.
+func TestHandleDeploySpec_ImageBuildTypeAccepted(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	fetch := newFakeFetch("/tmp/checkout", nil)
+	rt, db := newTestRouterWithBuilder(t, builder, fetch)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{
+		"repo_url": "https://example.com/org/app.git",
+		"ref": "main",
+		"services": {
+			"web": {"build": {"type": "dockerfile", "path": "./web/Dockerfile"}, "port": 3000},
+			"cache-admin": {"build": {"type": "image", "image": "ghcr.io/org/cache-admin:v1"}, "port": 8081}
+		}
+	}`
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	if builder.multiCalls != 1 {
+		t.Fatalf("builder.multiCalls = %d, want 1: build.type image must not be rejected before reaching the builder", builder.multiCalls)
+	}
+
+	var resp deploySpecResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !resp.AllSucceeded {
+		t.Errorf("AllSucceeded = false, want true; services = %+v", resp.Services)
+	}
+}
+
 func assertDeploySpecAllSucceeded(t *testing.T, resp deploySpecResponse) {
 	t.Helper()
 	if !resp.AllSucceeded {

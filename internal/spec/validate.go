@@ -56,6 +56,15 @@ func (svc *Service) validate(name string) error {
 	if svc.Build.Type == BuildCompose && svc.Build.Path == "" {
 		return fmt.Errorf("spec: service %q: build.path is required for build.type: compose", name)
 	}
+	if svc.Build.Type == BuildImage && svc.Build.Image == "" {
+		return fmt.Errorf("spec: service %q: build.image is required for build.type: image", name)
+	}
+	if svc.Build.Type != BuildImage && svc.Build.Image != "" {
+		return fmt.Errorf("spec: service %q: build.image is only meaningful for build.type: image", name)
+	}
+	if svc.Build.Type == BuildImage && svc.Build.Path != "" {
+		return fmt.Errorf("spec: service %q: build.path is not meaningful for build.type: image, there is nothing to build", name)
+	}
 
 	if svc.Build.Type != BuildStatic && svc.Port == 0 {
 		return fmt.Errorf("spec: service %q: port is required unless build.type is %q", name, BuildStatic)

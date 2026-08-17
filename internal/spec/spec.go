@@ -58,12 +58,16 @@ type Volume struct {
 }
 
 // Build input types: the app spec's build.type values, matching the
-// BuildKit-based build detection (Dockerfile, Compose, Railpack, static).
+// BuildKit-based build detection (Dockerfile, Compose, Railpack, static)
+// plus one non-build type: a prebuilt image already sitting in a
+// registry, deployed as-is with no build step at all (see Build.Image
+// and internal/deploy's deployImage).
 const (
 	BuildDockerfile = "dockerfile"
 	BuildCompose    = "compose"
 	BuildRailpack   = "railpack"
 	BuildStatic     = "static"
+	BuildImage      = "image"
 )
 
 // Deploy strategies, part of the app spec. Blue-green is the effective
@@ -83,6 +87,12 @@ const DefaultReplicas = 1
 type Build struct {
 	Type string `yaml:"type"`
 	Path string `yaml:"path,omitempty"`
+	// Image is a full registry reference (e.g.
+	// "ghcr.io/org/app:v1.2.3"), only meaningful for build.type: image:
+	// a CI pipeline (or anything else) already built and pushed this
+	// exact image, so there is nothing for this control plane to build,
+	// only to deploy as-is. See internal/deploy's deployImage.
+	Image string `yaml:"image,omitempty"`
 }
 
 // Health holds a service's readiness and liveness probe configuration.

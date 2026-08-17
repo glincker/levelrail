@@ -149,6 +149,13 @@ func dockerfileService() spec.Service {
 	}
 }
 
+func imageService() spec.Service {
+	return spec.Service{
+		Build: spec.Build{Type: spec.BuildImage, Image: "ghcr.io/org/app:v1.2.3"},
+		Port:  3000,
+	}
+}
+
 func railpackService() spec.Service {
 	// No build.Path: unlike spec.BuildDockerfile, spec.BuildRailpack has
 	// no user-authored file to point at, Railpack's own detection reads
@@ -238,6 +245,65 @@ func TestPipeline_Deploy_SaveFailure(t *testing.T) {
 	}, nil)
 	if err == nil {
 		t.Fatal("Deploy() error = nil, want the save error to propagate")
+	}
+}
+
+func TestPipeline_Deploy_Image_Success(t *testing.T) {
+	builder := &fakeBuilder{result: &build.Result{Tag: "should-never-be-used"}}
+	svcStore := &fakeServiceStore{}
+	p := New(builder, svcStore)
+
+	tag, err := p.Deploy(context.Background(), Request{
+		ServiceName: "web",
+		Service:     imageService(),
+		// SourceDir/CommitSHA/ImageRepo deliberately left unset: a
+		// build.type: image deploy needs none of them, there is no
+		// checkout and no tag this platform mints.
+	}, nil)
+	if err != nil {
+		t.Fatalf("Deploy() error = %v", err)
+	}
+	if tag != "ghcr.io/org/app:v1.2.3" {
+		t.Errorf("tag = %q, want %q", tag, "ghcr.io/org/app:v1.2.3")
+	}
+
+	if builder.calls != 0 || builder.railpackCalls != 0 {
+		t.Errorf("builder called (Build=%d, BuildRailpack=%d), want 0: build.type: image never builds anything", builder.calls, builder.railpackCalls)
+	}
+
+	if svcStore.saveCalls != 1 {
+		t.Fatalf("SaveDesiredService called %d times, want 1", svcStore.saveCalls)
+	}
+	if svcStore.saved.Name != "web" || svcStore.saved.Image != "ghcr.io/org/app:v1.2.3" || svcStore.saved.Port != 3000 {
+		t.Errorf("saved = %+v, want Name=web Image=ghcr.io/org/app:v1.2.3 Port=3000", svcStore.saved)
+	}
+}
+
+func TestPipeline_Deploy_Image_SaveFailure(t *testing.T) {
+	builder := &fakeBuilder{}
+	svcStore := &fakeServiceStore{saveErr: errors.New("disk full")}
+	p := New(builder, svcStore)
+
+	_, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: imageService()}, nil)
+	if err == nil {
+		t.Fatal("Deploy() error = nil, want the save error to propagate")
+	}
+}
+
+func TestPipeline_Deploy_Image_UnresolvedEnv_Rejected(t *testing.T) {
+	builder := &fakeBuilder{}
+	svcStore := &fakeServiceStore{}
+	p := New(builder, svcStore)
+
+	svc := imageService()
+	svc.Env = map[string]spec.EnvVar{"DATABASE_URL": {From: "postgres.main.url"}}
+
+	_, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: svc}, nil)
+	if err == nil {
+		t.Fatal("Deploy() error = nil, want the unresolved env error to propagate")
+	}
+	if svcStore.saveCalls != 0 {
+		t.Errorf("SaveDesiredService called %d times, want 0: env validation must run before saving", svcStore.saveCalls)
 	}
 }
 
