@@ -60,12 +60,14 @@ type BuildTriggerRequest struct {
 
 // BuildTriggerRequestBuild is BuildTriggerRequest's nested build.* input
 // (internal/api/builds.go's triggerBuildBuildInput), matching the same
-// two fields app.yaml's own build: block has. Type left empty defaults
-// server-side to a Dockerfile build, the only kind internal/deploy.Pipeline
-// actually performs today.
+// fields app.yaml's own build: block has. Type left empty defaults
+// server-side to a Dockerfile build. Image is only meaningful for
+// Type == "image": a prebuilt registry reference deployed as-is, no
+// repo/ref/build needed.
 type BuildTriggerRequestBuild struct {
-	Type string `json:"type,omitempty"`
-	Path string `json:"path,omitempty"`
+	Type  string `json:"type,omitempty"`
+	Path  string `json:"path,omitempty"`
+	Image string `json:"image,omitempty"`
 }
 
 // BuildTriggerResponse mirrors internal/api's triggerBuildResponse: the
