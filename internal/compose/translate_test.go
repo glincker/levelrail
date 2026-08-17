@@ -59,6 +59,34 @@ services:
 	}
 }
 
+func TestToDesiredServices_DomainsPropagate(t *testing.T) {
+	f, err := Parse([]byte(`
+x-levelrail-domains:
+  web: app.example.com
+services:
+  web:
+    image: nginx:1.27
+  worker:
+    image: worker:latest
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	got, err := ToDesiredServices("myapp", f)
+	if err != nil {
+		t.Fatalf("ToDesiredServices() error = %v", err)
+	}
+	sort.Slice(got, func(i, j int) bool { return got[i].Name < got[j].Name })
+
+	if !reflect.DeepEqual(got[0].Domains, []string{"app.example.com"}) {
+		t.Errorf("web.Domains = %+v, want [app.example.com]", got[0].Domains)
+	}
+	if len(got[1].Domains) != 0 {
+		t.Errorf("worker.Domains = %+v, want none", got[1].Domains)
+	}
+}
+
 func TestToDesiredServices_InvalidFileFails(t *testing.T) {
 	f, err := Parse([]byte(`
 services:

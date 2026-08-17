@@ -11,6 +11,7 @@ import (
 type rawFile struct {
 	Version  string                `yaml:"version"`
 	Services map[string]rawService `yaml:"services"`
+	Domains  map[string]string     `yaml:"x-levelrail-domains"`
 }
 
 type rawService struct {

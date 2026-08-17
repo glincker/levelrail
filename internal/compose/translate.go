@@ -36,6 +36,9 @@ func ToDesiredServices(appName string, f *File) ([]store.DesiredService, error) 
 			d.Port = p.ContainerPort
 			break
 		}
+		if domain := f.Domains[key]; domain != "" {
+			d.Domains = []string{domain}
+		}
 		for _, v := range svc.Volumes {
 			d.Volumes = append(d.Volumes, store.ServiceVolume{
 				Name:          volumeName(appName, key, v.Name),

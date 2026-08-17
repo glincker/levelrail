@@ -62,6 +62,12 @@ func ResolveMagicVars(
 
 			if len(vars) == 1 && vars[0].Token == value {
 				v := vars[0]
+				if v.Kind == "FQDN" {
+					if url, ok := resolveFQDN(f, svcKey); ok {
+						newEnv[envKey] = url
+						continue
+					}
+				}
 				if v.Generatable {
 					val, genErr := resolveGenerated(generated, v, generate)
 					if genErr != nil {
@@ -83,6 +89,12 @@ func ResolveMagicVars(
 
 			resolved := value
 			for _, v := range vars {
+				if v.Kind == "FQDN" {
+					if url, ok := resolveFQDN(f, svcKey); ok {
+						resolved = strings.Replace(resolved, v.Token, url, 1)
+						continue
+					}
+				}
 				if !v.Generatable && v.HasDefault {
 					resolved = strings.Replace(resolved, v.Token, v.Default, 1)
 					continue
@@ -95,6 +107,19 @@ func ResolveMagicVars(
 		f.Services[svcKey] = svc
 	}
 	return secretEnv, unresolved, nil
+}
+
+// resolveFQDN resolves ${SERVICE_FQDN_*} to the referencing service's
+// own assigned domain (x-levelrail-domains), ignoring the token's own
+// key suffix: FQDN almost always means "my own public URL," and that's
+// a per-service fact, not a value shared across services the way a
+// generated secret's (kind, key) is.
+func resolveFQDN(f *File, svcKey string) (string, bool) {
+	domain, ok := f.Domains[svcKey]
+	if !ok || domain == "" {
+		return "", false
+	}
+	return "https://" + domain, true
 }
 
 func resolveGenerated(cache map[string]string, v MagicVar, generate func(kind, key string, length int) (string, error)) (string, error) {
