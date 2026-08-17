@@ -36,6 +36,9 @@ func TestBootstrapAdmin_CreatesWhenNoneExists(t *testing.T) {
 	if !got.IsFirstUser {
 		t.Error("IsFirstUser = false, want true for the bootstrap user")
 	}
+	if len(got.Abilities) != 1 || got.Abilities[0] != AbilityRoot {
+		t.Errorf("Abilities = %v, want [%q] for the bootstrap admin", got.Abilities, AbilityRoot)
+	}
 }
 
 func TestBootstrapAdmin_NoOpWhenAlreadyExists(t *testing.T) {

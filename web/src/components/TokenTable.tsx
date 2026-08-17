@@ -9,24 +9,13 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { RevokeTokenDialog } from './RevokeTokenDialog'
-import type { Ability, TokenResource } from '../types/token'
+import { ABILITY_BADGE_VARIANT } from '../types/token'
+import type { TokenResource } from '../types/token'
 
 // Revoked tokens are never hidden from this list (GET /api/v1/auth/tokens
 // keeps returning them per tokens.go's own doc comment on
 // handleListTokens), so "revoked" is a row state this table renders
 // distinctly, not a filter it applies.
-
-const ABILITY_BADGE_VARIANT: Record<
-  Ability,
-  'default' | 'outline' | 'destructive' | 'muted'
-> = {
-  read: 'outline',
-  'read:sensitive': 'outline',
-  write: 'default',
-  'write:sensitive': 'default',
-  deploy: 'default',
-  root: 'destructive',
-}
 
 function formatDate(iso: string | undefined, fallback: string): string {
   return iso ? new Date(iso).toLocaleString() : fallback

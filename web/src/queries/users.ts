@@ -8,6 +8,7 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import type { Ability } from '../types/token'
 
 export interface UserResource {
   id: string
@@ -15,6 +16,7 @@ export interface UserResource {
   display_name: string
   has_password: boolean
   providers: string[]
+  abilities: Ability[]
   is_first_user: boolean
   created_at: string
   last_login_at?: string
@@ -24,6 +26,7 @@ export interface CreateUserRequest {
   email: string
   display_name?: string
   password: string
+  abilities: Ability[]
 }
 
 export const userKeys = {
@@ -50,8 +53,9 @@ export function useUsers() {
   return useSuspenseQuery(userListQueryOptions())
 }
 
-// POST /api/v1/auth/users: any authenticated user may create another
-// local-password user (internal/api/handleCreateUser's own doc comment).
+// POST /api/v1/auth/users: AbilityRoot-gated (internal/api/handleCreateUser's
+// own doc comment). The caller picks the new user's Abilities, so only a
+// root caller may hand out any subset of them.
 export async function createUser(
   req: CreateUserRequest,
 ): Promise<UserResource> {
@@ -95,6 +99,47 @@ export function useDeleteUser() {
   const queryClient = useQueryClient()
   return useMutation<void, ApiError, string>({
     mutationFn: deleteUser,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: userKeys.list() })
+    },
+  })
+}
+
+export interface UpdateUserAbilitiesRequest {
+  id: string
+  abilities: Ability[]
+}
+
+// PUT /api/v1/users/{id}/abilities: AbilityRoot-gated, and the handler
+// itself refuses id === the caller's own user (handleUpdateUserAbilities's
+// own doc comment, the self-lockout guard). This fetcher has no notion of
+// "is this me": EditUserAbilitiesDialog is responsible for never rendering
+// its trigger on the caller's own row, and the server enforces the rule
+// regardless.
+export async function updateUserAbilities(
+  req: UpdateUserAbilitiesRequest,
+): Promise<UserResource> {
+  const res = await fetch(
+    `/api/v1/users/${encodeURIComponent(req.id)}/abilities`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ abilities: req.abilities }),
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `update user abilities failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as UserResource
+}
+
+export function useUpdateUserAbilities() {
+  const queryClient = useQueryClient()
+  return useMutation<UserResource, ApiError, UpdateUserAbilitiesRequest>({
+    mutationFn: updateUserAbilities,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: userKeys.list() })
     },

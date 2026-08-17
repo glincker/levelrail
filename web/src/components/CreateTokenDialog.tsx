@@ -20,7 +20,6 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -28,48 +27,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-  FieldTitle,
-} from '@/components/ui/field'
+import { Field, FieldError, FieldLabel } from '@/components/ui/field'
+import { AbilitiesField } from './AbilitiesField'
 import { useCreateToken } from '../queries/tokens'
-import type { Ability, CreateTokenResponse } from '../types/token'
-
-// Ability picker copy, one line each, per Coolify's checkbox model
-// (docs-local/research/competitor-onboarding-auth-ux.md finding 9): a
-// small, legible permission surface, not a permission matrix.
-const ABILITY_OPTIONS: { value: Ability; label: string; hint: string }[] = [
-  {
-    value: 'read',
-    label: 'Read',
-    hint: 'List and view apps, deploys, domains.',
-  },
-  {
-    value: 'read:sensitive',
-    label: 'Read sensitive',
-    hint: 'Read env vars and other sensitive fields.',
-  },
-  {
-    value: 'write',
-    label: 'Write',
-    hint: 'Edit app config, domains, env vars.',
-  },
-  {
-    value: 'write:sensitive',
-    label: 'Write sensitive',
-    hint: 'Set secret values. Separate from Write: a token scoped to plain Write cannot touch secrets.',
-  },
-  { value: 'deploy', label: 'Deploy', hint: 'Trigger deploys and rollbacks.' },
-  {
-    value: 'root',
-    label: 'Root',
-    hint: 'Everything below. Exclusive of every other ability.',
-  },
-]
+import type { CreateTokenResponse } from '../types/token'
 
 // Expiration options translate directly to expires_in_days on submit.
 // 'never' sends no expires_in_days field at all (matches Dokploy's real
@@ -105,22 +66,6 @@ const createTokenSchema = z.object({
 })
 
 type CreateTokenFormValues = z.infer<typeof createTokenSchema>
-
-// Coolify's own exclusivity rule (finding 9 / abilities.go's
-// validateAbilities): selecting root clears every other checkbox;
-// selecting any other checkbox clears root if it was set. Root is never
-// left combined with anything else, matching what the server would
-// reject anyway, rather than letting the UI produce an invalid
-// combination for validateAbilities to bounce back as a 400.
-function toggleAbility(current: Ability[], ability: Ability): Ability[] {
-  if (ability === 'root') {
-    return current.includes('root') ? [] : ['root']
-  }
-  const withoutRoot = current.filter((a) => a !== 'root')
-  return withoutRoot.includes(ability)
-    ? withoutRoot.filter((a) => a !== ability)
-    : [...withoutRoot, ability]
-}
 
 export function CreateTokenDialog() {
   const [open, setOpen] = useState(false)
@@ -271,54 +216,17 @@ export function CreateTokenDialog() {
                 />
               </Field>
 
-              <Field>
-                <FieldLabel>Abilities</FieldLabel>
-                <Controller
-                  control={control}
-                  name="abilities"
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      {ABILITY_OPTIONS.map((option) => {
-                        const rootSelected = field.value.includes('root')
-                        const disabled = rootSelected && option.value !== 'root'
-                        return (
-                          // Boxed checkbox-card pattern: FieldLabel wrapping
-                          // a Field is what field.tsx's own classes are
-                          // built for (has-[>[data-slot=field]]:border,
-                          // has-data-checked:border-primary/30), so each
-                          // ability gets a bordered row that highlights on
-                          // selection instead of a bare checkbox + text
-                          // line. Same implicit label-wraps-control click
-                          // target as before (still one <label>, Checkbox
-                          // still a descendant), just with the visual
-                          // weight the ability picker's own doc comment
-                          // above calls for.
-                          <FieldLabel key={option.value}>
-                            <Field orientation="horizontal">
-                              <Checkbox
-                                checked={field.value.includes(option.value)}
-                                disabled={disabled}
-                                onCheckedChange={() => {
-                                  field.onChange(
-                                    toggleAbility(field.value, option.value),
-                                  )
-                                }}
-                              />
-                              <FieldContent>
-                                <FieldTitle>{option.label}</FieldTitle>
-                                <FieldDescription className="text-xs">
-                                  {option.hint}
-                                </FieldDescription>
-                              </FieldContent>
-                            </Field>
-                          </FieldLabel>
-                        )
-                      })}
-                    </div>
-                  )}
-                />
-                <FieldError errors={[formState.errors.abilities]} />
-              </Field>
+              <Controller
+                control={control}
+                name="abilities"
+                render={({ field }) => (
+                  <AbilitiesField
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={formState.errors.abilities}
+                  />
+                )}
+              />
 
               {createToken.isError ? (
                 <Alert variant="destructive">

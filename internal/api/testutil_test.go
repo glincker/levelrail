@@ -120,6 +120,22 @@ func storeUserForTest(t *testing.T, db *store.DB, email string) store.User {
 	return u
 }
 
+// storeUserWithAbilitiesForTest is storeUserForTest plus an explicit
+// Abilities value, for tests exercising requireAbility's session branch
+// against a user who is deliberately not root.
+func storeUserWithAbilitiesForTest(t *testing.T, db *store.DB, email string, abilities []string) store.User {
+	t.Helper()
+	id, err := randomOpaqueID("user_")
+	if err != nil {
+		t.Fatalf("randomOpaqueID() error = %v", err)
+	}
+	u := store.User{ID: id, Email: email, DisplayName: email, Abilities: abilities, CreatedAt: time.Now()}
+	if err := db.CreateUser(context.Background(), u); err != nil {
+		t.Fatalf("CreateUser(%q) error = %v", email, err)
+	}
+	return u
+}
+
 // sessionCookieForTest mints a real session for userID directly through
 // rt.sessions (not through a login handler, since some test users have
 // no password to log in with) and wraps it as the http.Cookie
