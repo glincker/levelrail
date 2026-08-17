@@ -326,6 +326,16 @@ type TokenStore interface {
 	TouchAPITokenLastUsed(ctx context.Context, id string) error
 }
 
+// AuditStore is the store surface requireAbility's audit hook
+// (internal/api/auth.go) and GET /api/v1/audit-log (audit.go) need:
+// insert-only recording plus newest-first, cursor-paginated reading.
+// Always set, the same "core Store interface, not an optional plug-in"
+// shape certs/staticSites/backupTargets already have.
+type AuditStore interface {
+	SaveAuditEntry(ctx context.Context, e store.AuditEntry) error
+	ListAuditEntries(ctx context.Context, limit int, before *time.Time) ([]store.AuditEntry, error)
+}
+
 // Store is the full surface NewRouter needs. *store.DB satisfies it
 // structurally, same pattern internal/reconcile/application.ServiceStore
 // already established for this codebase.
@@ -354,6 +364,7 @@ type Store interface {
 	EmailSettingsStore
 	PasswordResetTokenStore
 	RecoveryCodeStore
+	AuditStore
 }
 
 // SecretSetter is the surface the secrets handlers need from
@@ -549,6 +560,7 @@ type Router struct {
 	passwordResetTokens       PasswordResetTokenStore     // always set, same shape as backupTargets above
 	forgotPasswordByIP        *loginLimiter               // per-IP forgot-password budget, distinct from logins above
 	forgotPasswordByEmail     *loginLimiter               // per-(IP,email) forgot-password budget; both this and forgotPasswordByIP must allow a request
+	auditLog                  AuditStore                  // always set, same "core Store interface" shape as backupTargets/certs above: requireAbility's audit hook (auth.go) writes through this on every request, GET /api/v1/audit-log (audit.go) reads through it
 }
 
 // Option configures optional Router behavior.
@@ -924,6 +936,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		forgotPasswordByEmail:   newLoginLimiter(),
 		fetchLatestRelease:      defaultFetchLatestRelease,
 		updatesCache:            newUpdatesCache(),
+		auditLog:                s,
 	}
 	for _, opt := range opts {
 		opt(rt)
@@ -1489,6 +1502,14 @@ func (rt *Router) Handler() http.Handler {
 	// application.StorageEnvKeys rather than a hardcoded list, see
 	// handleListStorageEnvKeys' own doc comment.
 	mux.HandleFunc("GET /api/v1/storage-env-keys", rt.requireAbility(AbilityRead, rt.handleListStorageEnvKeys))
+
+	// Audit log (audit.go): who did what, across every session and API
+	// token, docs/comparison.md's own "no audit log exists anywhere in
+	// the codebase" gap. AbilityRoot, the same tier as the node and
+	// GitHub App routes above: this is operational data about every
+	// other identity on this control plane, not an ordinary per-app
+	// read.
+	mux.HandleFunc("GET /api/v1/audit-log", rt.requireAbility(AbilityRoot, rt.handleListAuditLog))
 
 	return mux
 }
