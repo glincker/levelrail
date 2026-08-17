@@ -240,7 +240,7 @@ jobs:
       # info does not), a false positive on the file, not a real defect.
       - name: Generate routeTree.gen.ts
         working-directory: web
-        run: npx vite build
+        run: npm exec --no -- vite build
 
       - name: tsc
         working-directory: web
