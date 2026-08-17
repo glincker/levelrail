@@ -36,6 +36,10 @@ type (
 	testNotificationChannelRequest   = apiclient.TestNotificationChannelRequest
 	logDrainResource                 = apiclient.LogDrainResource
 	setLogDrainRequest               = apiclient.SetLogDrainRequest
+
+	scheduledTaskResource    = apiclient.ScheduledTaskResource
+	scheduledTaskRequest     = apiclient.ScheduledTaskRequest
+	scheduledTaskRunResource = apiclient.ScheduledTaskRunResource
 )
 
 // NewClient builds a Client. See apiclient.NewClient.
