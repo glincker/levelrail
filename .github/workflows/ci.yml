@@ -232,6 +232,16 @@ jobs:
         working-directory: web
         run: npm ci --ignore-scripts
 
+      # routeTree.gen.ts is gitignored and only ever generated as a side
+      # effect of running Vite (dev or build), via the tanstackRouter
+      # plugin. Without it, any new route file's loader context types
+      # resolve to something typescript-eslint's typed rules flag as
+      # unsafe (tsc itself tolerates the gap, eslint's stricter type
+      # info does not), a false positive on the file, not a real defect.
+      - name: Generate routeTree.gen.ts
+        working-directory: web
+        run: npx vite build
+
       - name: tsc
         working-directory: web
         run: npm exec --no -- tsc --noEmit
