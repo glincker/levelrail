@@ -181,9 +181,41 @@ func (p *Pipeline) Deploy(ctx context.Context, req Request, progress func(build.
 		return "", fmt.Errorf("deploy: service %q: build.type %q is not yet supported", req.ServiceName, spec.BuildCompose)
 	case spec.BuildRailpack:
 		return p.deployRailpack(ctx, req, progress)
+	case spec.BuildImage:
+		return p.deployImage(ctx, req)
 	default:
 		return "", fmt.Errorf("deploy: service %q: unrecognized build.type %q", req.ServiceName, req.Service.Build.Type)
 	}
+}
+
+// deployImage handles build.type: image (spec.BuildImage): req.Service.
+// Build.Image is already a complete, published registry reference, so
+// this skips BuildKit entirely and saves it as the service's desired
+// image directly, the same store.DesiredService shape finishDeploy
+// produces from a real build, picked up by the application controller's
+// next reconcile exactly like any other completed build.
+//
+// Public images only: internal/docker's own pull path
+// (Client.ensureImage) passes an empty image.PullOptions{}, so there is
+// no private-registry credential mechanism anywhere in this codebase yet
+// to reuse here. A private ref will simply fail to pull at reconcile
+// time with Docker's own auth error, the same failure mode any other
+// build type hits pulling a private base image today.
+func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error) {
+	if err := p.validateEnv(ctx, req.ServiceName, req.Service.Env); err != nil {
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
+
+	desired, err := toDesiredService(req.ServiceName, req.Service.Build.Image, req.Service)
+	if err != nil {
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
+
+	if err := p.store.SaveDesiredService(ctx, desired); err != nil {
+		return "", fmt.Errorf("deploy: service %q: save desired state: %w", req.ServiceName, err)
+	}
+
+	return req.Service.Build.Image, nil
 }
 
 func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress func(build.ProgressEvent)) (string, error) {
