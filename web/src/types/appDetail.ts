@@ -34,6 +34,18 @@ export interface ServiceHealth {
 // going forward, see that component's own comment.
 export type DeployStrategy = 'rolling' | 'recreate' | 'blue-green'
 
+// Matches internal/store's LogDrainType exactly: the two sink protocols
+// internal/telemetry.DrainForwarder knows how to build.
+export type LogDrainType = 'http' | 'syslog'
+
+// Matches internal/store's LogDrain exactly (internal/api/apps.go's
+// appResource.LogDrain, JSON-tagged the same way).
+export interface LogDrain {
+  type: LogDrainType
+  target: string
+  enabled: boolean
+}
+
 // Matches internal/api/apps.go's appResource exactly. `domains` and
 // `env` carry `omitempty` on the Go side, so an app with neither set may
 // omit them from the response entirely; callers should treat both as
@@ -88,6 +100,14 @@ export interface AppDetail {
   // (useStopApp/useStartApp), the same node_id/project_id shape above.
   // No omitempty on the Go side (always present, never ambiguous).
   suspended: boolean
+  // log_drain carries `omitempty` on the Go side and is response-only
+  // (internal/api/apps.go's appResource own doc comment): forwards this
+  // app's container logs to an external HTTP or syslog sink, additive
+  // to the built-in node-local log store. undefined means none
+  // configured. Set it via PUT/DELETE /api/v1/apps/{name}/log-drain
+  // (useSetLogDrain/useClearLogDrain), the same node_id/project_id/
+  // storage_target_id shape above.
+  log_drain?: LogDrain | null
 }
 
 // GET /api/v1/apps' own wire shape (internal/api/apps.go's
