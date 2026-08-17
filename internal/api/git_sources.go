@@ -110,10 +110,12 @@ type setGitSourceRequest struct {
 	// Branch defaults to webhook.DefaultBranch when empty.
 	Branch string `json:"branch,omitempty"`
 	// BuildType defaults to spec.BuildDockerfile when empty; must be one
-	// of the three build.type values internal/deploy.Pipeline.Deploy has
-	// a real case for (dockerfile, railpack, static), the same set
-	// triggerBuildBuildInput.Type already restricts a manual build
-	// trigger to.
+	// of dockerfile, railpack, or static. build.type: image is rejected
+	// (normalizeGitSourceBuildType): a connected git source redeploys on
+	// every push, but an image-type service has no build step to redeploy
+	// with, only a fixed, already-pushed reference that a new commit
+	// can't change, so pinning one here would silently do nothing useful
+	// on the next push.
 	BuildType string `json:"build_type,omitempty"`
 	BuildPath string `json:"build_path,omitempty"`
 	// Token is an optional git hosting personal access token for a
@@ -129,13 +131,16 @@ type setGitSourceRequest struct {
 }
 
 // normalizeGitSourceBuildType mirrors handleTriggerBuild's own build.type
-// validation (builds.go) exactly: empty defaults to dockerfile, compose
-// is rejected as not-yet-supported (internal/deploy.Pipeline.Deploy has
-// no real case for it), anything else unrecognized is a 400. A separate
-// copy rather than a shared helper: builds.go's version is embedded
-// directly in that handler's larger validation flow, and the two request
-// shapes differ (BuildType/BuildPath as top-level fields here, a nested
-// Build sub-object there), the same "two fetchFuncs, one per caller"
+// validation (builds.go) for the types a git source can meaningfully
+// redeploy on every push: empty defaults to dockerfile, compose is
+// rejected as not-yet-supported (internal/deploy.Pipeline.Deploy has no
+// real case for it), image is rejected because a persistent git source
+// has nothing to redeploy for it (see setGitSourceRequest.BuildType's own
+// doc comment), anything else unrecognized is a 400. A separate copy
+// rather than a shared helper: builds.go's version is embedded directly
+// in that handler's larger validation flow, and the two request shapes
+// differ (BuildType/BuildPath as top-level fields here, a nested Build
+// sub-object there), the same "two fetchFuncs, one per caller"
 // duplication builds.go's own gitCheckout doc comment already accepts
 // for an analogous pair.
 func normalizeGitSourceBuildType(buildType string) (string, error) {
@@ -147,6 +152,8 @@ func normalizeGitSourceBuildType(buildType string) (string, error) {
 		return buildType, nil
 	case spec.BuildCompose:
 		return "", fmt.Errorf("build_type %q is not yet supported for a git source", buildType)
+	case spec.BuildImage:
+		return "", fmt.Errorf("build_type %q is not supported for a git source: a pinned image has nothing to rebuild on push, use POST /api/v1/apps/{name}/deploys to redeploy it directly", buildType)
 	default:
 		return "", fmt.Errorf("build_type %q is not recognized", buildType)
 	}

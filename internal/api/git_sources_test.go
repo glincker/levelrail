@@ -132,6 +132,25 @@ func TestHandleSetGitSource_RejectsComposeBuildType(t *testing.T) {
 	}
 }
 
+// TestHandleSetGitSource_RejectsImageBuildType proves a persistent git
+// source cannot be pointed at build.type: image: a pinned image has no
+// build to redeploy on the next push, so this must fail loudly rather
+// than silently connect a webhook that would never do anything useful.
+func TestHandleSetGitSource_RejectsImageBuildType(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source", `{"repo_url":"https://github.com/org/web.git","build_type":"image"}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "/deploys") {
+		t.Errorf("body = %s, want it to point callers at POST .../deploys", rec.Body.String())
+	}
+}
+
 func TestHandleSetGitSource_Create_Success(t *testing.T) {
 	secrets := newFakeGitSourceSecrets()
 	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
@@ -363,6 +382,7 @@ func TestNormalizeGitSourceBuildType(t *testing.T) {
 		{name: "railpack", in: "railpack", want: "railpack"},
 		{name: "static", in: "static", want: "static"},
 		{name: "compose rejected", in: "compose", wantErr: true},
+		{name: "image rejected", in: "image", wantErr: true},
 		{name: "unrecognized rejected", in: "nixpacks", wantErr: true},
 	}
 	for _, tt := range tests {
