@@ -45,12 +45,14 @@ func (d *ContainerDumper) Dump(ctx context.Context, engine, containerName string
 		cmd = mysqlDumpCmd
 	case store.EngineRedis:
 		cmd = redisDumpCmd
+	case store.EngineMongoDB:
+		cmd = mongoDumpCmd
 	default:
 		// A genuinely unknown engine, not a known-but-unsupported one:
-		// store.EnginePostgres/EngineRedis/EngineMySQL is the complete
-		// list internal/reconcile/database's controller itself
-		// recognizes, so reaching this branch means engine came from
-		// somewhere that skipped that validation, not a real gap in
+		// store.EnginePostgres/EngineRedis/EngineMySQL/EngineMongoDB is
+		// the complete list internal/reconcile/database's controller
+		// itself recognizes, so reaching this branch means engine came
+		// from somewhere that skipped that validation, not a real gap in
 		// dump coverage.
 		return nil, fmt.Errorf("backup: dump: unrecognized engine %q", engine)
 	}
@@ -146,3 +148,22 @@ var mysqlDumpCmd = []string{"sh", "-c", `exec mysqldump -uroot -p"$MYSQL_ROOT_PA
 // consequence of the controller's own current scope rather than a gap
 // hidden here.
 var redisDumpCmd = []string{"redis-cli", "--rdb", "-"}
+
+// mongoDumpCmd runs mongodump inside a MongoDB database container,
+// authenticating off the container's own inherited environment the same
+// way postgresDumpCmd/mysqlDumpCmd do: MONGO_INITDB_ROOT_USERNAME/
+// MONGO_INITDB_ROOT_PASSWORD are the only credentials env vars this
+// codebase's own controller sets (internal/reconcile/database's
+// Controller, see MongoDBCredentials' own doc comment), and the
+// official mongo image's entrypoint uses them to create that root user
+// on first boot, exactly what mongodump authenticates as here.
+//
+// --archive with no path writes the archive format to stdout instead of
+// a directory of BSON files, mongodump's own documented mechanism for
+// streaming a dump through a pipe (the same reason redis-cli's --rdb -
+// exists above): a single self-contained stream this package's Dumper
+// interface can hand back as an io.ReadCloser, restorable with
+// `mongorestore --archive` on the way back in (see mongoRestoreCmd in
+// restore.go), with no intermediate directory either side ever needs to
+// materialize.
+var mongoDumpCmd = []string{"sh", "-c", `exec mongodump --archive --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin`}

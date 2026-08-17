@@ -28,7 +28,7 @@ func TestSupportedDatabaseEngines_LoadsRealEmbeddedRegistry(t *testing.T) {
 		byID[e.ID] = e
 	}
 
-	for _, want := range []string{EnginePostgres, EngineRedis, EngineMySQL} {
+	for _, want := range []string{EnginePostgres, EngineRedis, EngineMySQL, EngineMongoDB} {
 		if _, ok := byID[want]; !ok {
 			t.Errorf("registry missing expected engine %q", want)
 		}
@@ -43,7 +43,8 @@ func TestIsSupportedEngine(t *testing.T) {
 		{EnginePostgres, true},
 		{EngineRedis, true},
 		{EngineMySQL, true},
-		{"mongodb", false},
+		{EngineMongoDB, true},
+		{"cassandra", false},
 		{"", false},
 	}
 	for _, tt := range tests {
@@ -74,6 +75,7 @@ func TestSupportedEngines_MatchReconcilerCases(t *testing.T) {
 		EnginePostgres: true,
 		EngineRedis:    true,
 		EngineMySQL:    true,
+		EngineMongoDB:  true,
 	}
 
 	engines, err := SupportedDatabaseEngines()

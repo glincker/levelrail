@@ -558,9 +558,96 @@ func TestController_Reconcile_MySQL_WithCredentials_SetsRootAndUserEnv(t *testin
 	}
 }
 
+func TestController_Reconcile_MongoDB_AlwaysCredentialsBlocked(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineMongoDB, Version: "7"}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v, want nil: credentials-blocked is a documented permanent state, not a transient failure", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "CredentialsNotConfigured" {
+		t.Errorf("condition = %+v, want Status=False Reason=CredentialsNotConfigured", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0: must never start an unauthenticated mongodb container", rt.createCalls)
+	}
+	if rt.ensureVolumeCalls != 0 {
+		t.Errorf("ensureVolumeCalls = %d, want 0: must not touch Docker at all while blocked", rt.ensureVolumeCalls)
+	}
+}
+
+func TestController_Reconcile_MongoDB_WithCredentials_Reconciles(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineMongoDB, Version: "7"}
+	c := New("main", &fakeStore{db: desired}, rt, WithMongoDBCredentials(&MongoDBCredentials{
+		Username: "levelrail",
+		Password: "s3cret",
+	}))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Errorf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1", rt.createCalls)
+	}
+}
+
+func TestController_Reconcile_MongoDB_WithCredentials_SetsRootEnv(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineMongoDB, Version: "7"}
+	c := New("main", &fakeStore{db: desired}, rt, WithMongoDBCredentials(&MongoDBCredentials{
+		Username: "levelrail",
+		Password: "s3cret",
+	}))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	env := rt.lastCreateEnv
+	if env["MONGO_INITDB_ROOT_USERNAME"] != "levelrail" {
+		t.Errorf("MONGO_INITDB_ROOT_USERNAME = %q, want %q", env["MONGO_INITDB_ROOT_USERNAME"], "levelrail")
+	}
+	if env["MONGO_INITDB_ROOT_PASSWORD"] != "s3cret" {
+		t.Errorf("MONGO_INITDB_ROOT_PASSWORD = %q, want %q", env["MONGO_INITDB_ROOT_PASSWORD"], "s3cret")
+	}
+}
+
+// TestController_Reconcile_MongoDB_UsesOfficialMongoImage guards
+// dockerImageFor's one real mapping: the registry id is "mongodb" (see
+// database_engines.yaml), but Docker Hub's official image is "mongo",
+// not "mongodb". Getting this wrong means every MongoDB database fails
+// to start with an image-not-found error, not a credentials block, so
+// this is worth its own explicit test rather than trusting the env-var
+// assertions above to have caught it (they don't inspect the image name
+// at all).
+func TestController_Reconcile_MongoDB_UsesOfficialMongoImage(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineMongoDB, Version: "7"}
+	c := New("main", &fakeStore{db: desired}, rt, WithMongoDBCredentials(&MongoDBCredentials{
+		Username: "levelrail",
+		Password: "s3cret",
+	}))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if rt.lastCreateSpec.Image != "mongo:7" {
+		t.Errorf("created image = %q, want %q", rt.lastCreateSpec.Image, "mongo:7")
+	}
+}
+
 func TestController_Reconcile_UnknownEngine(t *testing.T) {
 	rt := newFakeRuntime()
-	desired := &store.DesiredDatabase{Name: "main", Engine: "mongodb", Version: "7"}
+	desired := &store.DesiredDatabase{Name: "main", Engine: "cassandra", Version: "5"}
 	c := New("main", &fakeStore{db: desired}, rt)
 
 	result, err := c.Reconcile(context.Background())

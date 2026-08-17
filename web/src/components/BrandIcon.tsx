@@ -3,6 +3,7 @@ import DiscordLogo from '@thesvg/react/discord'
 import DockerLogo from '@thesvg/react/docker'
 import GoLogo from '@thesvg/react/go'
 import JavaLogo from '@thesvg/react/java'
+import MongodbLogo from '@thesvg/react/mongodb'
 import MysqlLogo from '@thesvg/react/mysql'
 import NodedotjsLogo from '@thesvg/react/nodedotjs'
 import PostgresqlLogo from '@thesvg/react/postgresql'
@@ -18,6 +19,7 @@ export type BrandIconName =
   | 'postgres'
   | 'redis'
   | 'mysql'
+  | 'mongodb'
   | 'node'
   | 'go'
   | 'java'
@@ -33,6 +35,7 @@ const BRAND_ICONS: Record<
   postgres: PostgresqlLogo,
   redis: RedisLogo,
   mysql: MysqlLogo,
+  mongodb: MongodbLogo,
   node: NodedotjsLogo,
   go: GoLogo,
   java: JavaLogo,
@@ -50,6 +53,7 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'postgres',
   'redis',
   'mysql',
+  'mongodb',
   'node',
   'go',
   'java',

@@ -5,20 +5,26 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 )
 
-// engineParamPostgres and engineParamRedis mirror internal/store's own
-// EnginePostgres/EngineRedis constants (internal/store/database.go),
-// the only two engines validateDatabaseResource (internal/api/databases.go)
-// accepts today. Redeclared here rather than imported, the same
-// documented-wire-contract-only boundary client.go's own wire-shape
-// types already keep: this binary must depend on what the API accepts,
-// not on internal/store's Go constants.
+// engineParam* mirror internal/store's own Engine* constants
+// (internal/store/database.go), the engines validateDatabaseResource
+// (internal/api/databases.go) accepts today. Redeclared here rather
+// than imported, the same documented-wire-contract-only boundary
+// client.go's own wire-shape types already keep: this binary must
+// depend on what the API accepts, not on internal/store's Go constants.
 const (
 	engineParamPostgres = "postgres"
 	engineParamRedis    = "redis"
+	engineParamMySQL    = "mysql"
+	engineParamMongoDB  = "mongodb"
 )
+
+// supportedEngineParams is every engineParam* above, in the order they
+// should be listed in an error or usage message.
+var supportedEngineParams = []string{engineParamPostgres, engineParamRedis, engineParamMySQL, engineParamMongoDB}
 
 // createDatabaseFlags is runDatabasesCreate's raw, unvalidated input;
 // planDatabaseCreate's plain-data counterpart to apps_create.go's own
@@ -48,8 +54,8 @@ func planDatabaseCreate(f createDatabaseFlags) (databaseResource, error) {
 	if len(missing) > 0 {
 		return databaseResource{}, newValidationError("missing required flag(s): %s", strings.Join(missing, ", "))
 	}
-	if f.engine != engineParamPostgres && f.engine != engineParamRedis {
-		return databaseResource{}, newValidationError("--engine must be %q or %q", engineParamPostgres, engineParamRedis)
+	if !slices.Contains(supportedEngineParams, f.engine) {
+		return databaseResource{}, newValidationError("--engine must be one of %s", strings.Join(supportedEngineParams, ", "))
 	}
 	return databaseResource{Name: f.name, Engine: f.engine, Version: f.version}, nil
 }
@@ -67,7 +73,7 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 	var tokenFlag, apiURLFlag, name, engine, version string
 	var jsonOut bool
 	fs.StringVar(&name, "name", "", "database name (required)")
-	fs.StringVar(&engine, "engine", "", "database engine: postgres or redis (required)")
+	fs.StringVar(&engine, "engine", "", "database engine: "+strings.Join(supportedEngineParams, ", ")+" (required)")
 	fs.StringVar(&version, "version", "", "engine version, e.g. \"16\" (required)")
 	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
@@ -117,7 +123,7 @@ directly.
 
 Flags:
   --name string           database name (required)
-  --engine string        database engine: postgres or redis (required)
+  --engine string        database engine: postgres, redis, mysql, or mongodb (required)
   --version string      engine version, e.g. "16" (required)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)

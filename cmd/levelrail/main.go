@@ -1698,8 +1698,8 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 // skipping (with a warning) any whose node isn't currently reachable. A
 // database whose engine credentials can't be resolved this pass still
 // gets a controller, just without WithPostgresCredentials/
-// WithMySQLCredentials set: one broken resource must not block others,
-// and it retries fresh on the next pass.
+// WithMySQLCredentials/WithMongoDBCredentials set: one broken resource
+// must not block others, and it retries fresh on the next pass.
 func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databases []store.DesiredDatabase) []reconcile.Controller {
 	controllers := make([]reconcile.Controller, 0, len(databases))
 	for _, desired := range databases {
@@ -1738,6 +1738,14 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 				slog.String("database", desired.Name), slog.String("error", err.Error()))
 		} else if creds != nil {
 			opts = append(opts, database.WithMySQLCredentials(creds))
+		}
+	case store.EngineMongoDB:
+		creds, err := mongoCredentialsFor(ctx, deps.secretsManager, desired.Name)
+		if err != nil {
+			deps.logger.Warn("skipping mongodb credentials for this reconcile pass",
+				slog.String("database", desired.Name), slog.String("error", err.Error()))
+		} else if creds != nil {
+			opts = append(opts, database.WithMongoDBCredentials(creds))
 		}
 	}
 	return opts

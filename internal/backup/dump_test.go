@@ -180,6 +180,33 @@ func TestContainerDumper_Dump_MySQL(t *testing.T) {
 	}
 }
 
+func TestContainerDumper_Dump_MongoDB(t *testing.T) {
+	rt := &fakeExecRuntime{content: "mongo-dump-bytes"}
+	d := &ContainerDumper{Runtime: rt}
+
+	rc, err := d.Dump(context.Background(), store.EngineMongoDB, "db-mydb")
+	if err != nil {
+		t.Fatalf("Dump() error = %v", err)
+	}
+	defer func() { _ = rc.Close() }()
+
+	if rt.gotContainer != "db-mydb" {
+		t.Errorf("container = %q, want %q", rt.gotContainer, "db-mydb")
+	}
+	wantCmd := []string{"sh", "-c", `exec mongodump --archive --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin`}
+	if !reflect.DeepEqual(rt.gotCmd, wantCmd) {
+		t.Errorf("cmd = %v, want %v", rt.gotCmd, wantCmd)
+	}
+
+	got, err := io.ReadAll(rc)
+	if err != nil {
+		t.Fatalf("ReadAll() error = %v", err)
+	}
+	if string(got) != "mongo-dump-bytes" {
+		t.Errorf("content = %q, want %q", got, "mongo-dump-bytes")
+	}
+}
+
 func TestContainerDumper_Dump_Redis(t *testing.T) {
 	rt := &fakeExecRuntime{content: "rdb-bytes"}
 	d := &ContainerDumper{Runtime: rt}
@@ -211,7 +238,7 @@ func TestContainerDumper_Dump_UnknownEngine(t *testing.T) {
 	rt := &fakeExecRuntime{}
 	d := &ContainerDumper{Runtime: rt}
 
-	_, err := d.Dump(context.Background(), "mongodb", "db-mydb")
+	_, err := d.Dump(context.Background(), "cassandra", "db-mydb")
 	if err == nil {
 		t.Fatal("Dump() error = nil, want an error for an unrecognized engine")
 	}

@@ -194,6 +194,75 @@ func TestMySQLCredentialsFor_SamedDatabaseName_DistinctFromPostgresCredentials(t
 	}
 }
 
+func TestMongoCredentialsFor_NilSecretsManager_ReturnsNil(t *testing.T) {
+	creds, err := mongoCredentialsFor(context.Background(), nil, "main")
+	if err != nil {
+		t.Fatalf("mongoCredentialsFor() error = %v", err)
+	}
+	if creds != nil {
+		t.Errorf("creds = %+v, want nil (no secrets manager configured)", creds)
+	}
+}
+
+func TestMongoCredentialsFor_GeneratesOnFirstCall(t *testing.T) {
+	mgr := newTestSecretsManager(t)
+
+	creds, err := mongoCredentialsFor(context.Background(), mgr, "main")
+	if err != nil {
+		t.Fatalf("mongoCredentialsFor() error = %v", err)
+	}
+	if creds == nil {
+		t.Fatal("creds = nil, want a real credentials value")
+	}
+	if creds.Username == "" {
+		t.Error("Username is empty")
+	}
+	if creds.Password == "" {
+		t.Error("Password is empty")
+	}
+}
+
+func TestMongoCredentialsFor_ReusesExistingPasswordOnSecondCall(t *testing.T) {
+	mgr := newTestSecretsManager(t)
+	ctx := context.Background()
+
+	first, err := mongoCredentialsFor(ctx, mgr, "main")
+	if err != nil {
+		t.Fatalf("first call error = %v", err)
+	}
+
+	second, err := mongoCredentialsFor(ctx, mgr, "main")
+	if err != nil {
+		t.Fatalf("second call error = %v", err)
+	}
+
+	if first.Password != second.Password {
+		t.Errorf("Password changed between calls: %q != %q, a reconcile pass must never rotate a running database's password out from under it", first.Password, second.Password)
+	}
+}
+
+func TestMongoCredentialsFor_SameDatabaseName_DistinctFromOtherEngines(t *testing.T) {
+	mgr := newTestSecretsManager(t)
+	ctx := context.Background()
+
+	mongo, err := mongoCredentialsFor(ctx, mgr, "main")
+	if err != nil {
+		t.Fatalf("mongoCredentialsFor(main) error = %v", err)
+	}
+	mysql, err := mysqlCredentialsFor(ctx, mgr, "main")
+	if err != nil {
+		t.Fatalf("mysqlCredentialsFor(main) error = %v", err)
+	}
+	pg, err := postgresCredentialsFor(ctx, mgr, "main")
+	if err != nil {
+		t.Fatalf("postgresCredentialsFor(main) error = %v", err)
+	}
+
+	if mongo.Password == mysql.Password || mongo.Password == pg.Password {
+		t.Error("mongodb credentials for a database name share a password with another engine's, storage keys must not collide")
+	}
+}
+
 func TestGenerateRandomPassword_ReturnsNonEmptyUniqueValues(t *testing.T) {
 	a, err := generateRandomPassword()
 	if err != nil {
