@@ -36,6 +36,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsLogs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "exec":
 		return runAppsExec(prog, args[1:], stdout, stderr, lookupEnv)
+	case "log-drain":
+		return runAppsLogDrain(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsUsage(prog))
@@ -55,6 +57,7 @@ func appsUsage(prog string) string {
   %[1]s apps status <name> [flags]   show an app's current reconcile conditions
   %[1]s apps logs <name> [flags]     search an app's stored log entries
   %[1]s apps exec <name> -- <cmd> [args...]   run a command in the app's container, exits with its real exit code
+  %[1]s apps log-drain get|set|clear <name> [flags]   configure an external log drain
 
 Run "%[1]s apps <subcommand> -h" for a subcommand's own flags.
 `, prog)
