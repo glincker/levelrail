@@ -1,0 +1,9 @@
+version: 1
+services:
+  web:
+    build:
+      type: image
+      image: ghcr.io/example/app:1.2.3
+    port: 8080
+    domains:
+      - app.example.com

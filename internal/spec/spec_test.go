@@ -154,6 +154,23 @@ func TestParse_ValidStatic_NoPortRequired(t *testing.T) {
 	}
 }
 
+func TestParse_ValidImage(t *testing.T) {
+	s, err := Parse(readTestdata(t, "valid_image.yaml"))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	web := s.Services["web"]
+	if web.Build.Type != BuildImage {
+		t.Errorf("Build.Type = %q, want %q", web.Build.Type, BuildImage)
+	}
+	if web.Build.Image != "ghcr.io/example/app:1.2.3" {
+		t.Errorf("Build.Image = %q, want ghcr.io/example/app:1.2.3", web.Build.Image)
+	}
+	if web.Port != 8080 {
+		t.Errorf("Port = %d, want 8080", web.Port)
+	}
+}
+
 // TestParse_Invalid covers errors from both validation layers: schema
 // (structural shape) and Validate (semantic, cross-field/cross-service).
 // Schema error messages come from the library and aren't asserted on
@@ -283,6 +300,24 @@ services:
   docs: { build: { type: static }, port: 8080 }
 `,
 			wantErrSubstr: "port must not be set when build.type is",
+		},
+		{
+			name: "image build type missing image",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: image }, port: 8080 }
+`,
+			wantErrSubstr: "build.image is required for build.type: image",
+		},
+		{
+			name: "build.image set for a non-image build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile, image: ghcr.io/example/app:1 }, port: 8080 }
+`,
+			wantErrSubstr: "build.image is only meaningful for build.type: image",
 		},
 		{
 			name: "duplicate domain across services",
