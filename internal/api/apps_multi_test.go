@@ -121,6 +121,42 @@ func assertMultiRequestFromBody(t *testing.T, req deploy.MultiRequest) {
 	}
 }
 
+// TestHandleDeploySpec_ImageServiceAccepted proves a service declaring
+// build.type: image passes through to internal/deploy.Pipeline.DeploySpec
+// unchanged, alongside a normal dockerfile service in the same fan-out:
+// req.Services is a full spec.Service map already (see deploySpecRequest's
+// own doc comment), so this handler needs no per-field reconstruction the
+// way handleTriggerBuild's narrower triggerBuildBuildInput does.
+func TestHandleDeploySpec_ImageServiceAccepted(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	fetch := newFakeFetch("/tmp/checkout", nil)
+	rt, db := newTestRouterWithBuilder(t, builder, fetch)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{
+		"repo_url": "https://example.com/org/app.git",
+		"ref": "main",
+		"services": {
+			"web": {"build": {"type": "dockerfile", "path": "./web/Dockerfile"}, "port": 3000},
+			"cache": {"build": {"type": "image", "image": "redis:7-alpine"}, "port": 6379}
+		}
+	}`
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	cacheSvc, ok := builder.lastMultiReq.Services["cache"]
+	if !ok {
+		t.Fatal("Services has no \"cache\" key")
+	}
+	if cacheSvc.Build.Type != "image" || cacheSvc.Build.Image != "redis:7-alpine" {
+		t.Errorf("cache service Build = %+v, want Type=image Image=redis:7-alpine", cacheSvc.Build)
+	}
+}
+
 // TestHandleDeploySpec_PartialFailure_StillReturns2xxWithPerServiceErrors
 // proves a partial fan-out failure is reported per-service, not as a
 // whole-request failure: the HTTP request itself succeeded at fanning

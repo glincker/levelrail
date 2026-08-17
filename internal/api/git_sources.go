@@ -110,10 +110,10 @@ type setGitSourceRequest struct {
 	// Branch defaults to webhook.DefaultBranch when empty.
 	Branch string `json:"branch,omitempty"`
 	// BuildType defaults to spec.BuildDockerfile when empty; must be one
-	// of the three build.type values internal/deploy.Pipeline.Deploy has
-	// a real case for (dockerfile, railpack, static), the same set
-	// triggerBuildBuildInput.Type already restricts a manual build
-	// trigger to.
+	// of dockerfile, railpack, or static. See
+	// normalizeGitSourceBuildType's own doc comment for why build.type:
+	// image is deliberately narrower here than triggerBuildBuildInput.Type
+	// allows for a one-shot manual build trigger.
 	BuildType string `json:"build_type,omitempty"`
 	BuildPath string `json:"build_path,omitempty"`
 	// Token is an optional git hosting personal access token for a
@@ -129,15 +129,21 @@ type setGitSourceRequest struct {
 }
 
 // normalizeGitSourceBuildType mirrors handleTriggerBuild's own build.type
-// validation (builds.go) exactly: empty defaults to dockerfile, compose
-// is rejected as not-yet-supported (internal/deploy.Pipeline.Deploy has
-// no real case for it), anything else unrecognized is a 400. A separate
-// copy rather than a shared helper: builds.go's version is embedded
-// directly in that handler's larger validation flow, and the two request
-// shapes differ (BuildType/BuildPath as top-level fields here, a nested
-// Build sub-object there), the same "two fetchFuncs, one per caller"
-// duplication builds.go's own gitCheckout doc comment already accepts
-// for an analogous pair.
+// validation (builds.go): empty defaults to dockerfile, compose is
+// rejected as not-yet-supported (internal/deploy.Pipeline.Deploy has no
+// real case for it), anything else unrecognized is a 400. Unlike
+// builds.go, build.type: image is also rejected here even though
+// internal/deploy.Pipeline.Deploy does have a case for it: a connected
+// git source is a persistent, webhook-driven redeploy trigger, and
+// store.GitSource has no column to persist an image reference across
+// pushes, only build_type/build_path. A pinned image needs no push
+// trigger at all; use POST /api/v1/apps/{name}/deploys directly. A
+// separate copy rather than a shared helper: builds.go's version is
+// embedded directly in that handler's larger validation flow, and the
+// two request shapes differ (BuildType/BuildPath as top-level fields
+// here, a nested Build sub-object there), the same "two fetchFuncs, one
+// per caller" duplication builds.go's own gitCheckout doc comment
+// already accepts for an analogous pair.
 func normalizeGitSourceBuildType(buildType string) (string, error) {
 	if buildType == "" {
 		return spec.BuildDockerfile, nil
@@ -147,6 +153,8 @@ func normalizeGitSourceBuildType(buildType string) (string, error) {
 		return buildType, nil
 	case spec.BuildCompose:
 		return "", fmt.Errorf("build_type %q is not yet supported for a git source", buildType)
+	case spec.BuildImage:
+		return "", fmt.Errorf("build_type %q needs no build; deploy it directly with POST /api/v1/apps/{name}/deploys instead of connecting a git source", buildType)
 	default:
 		return "", fmt.Errorf("build_type %q is not recognized", buildType)
 	}

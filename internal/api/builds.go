@@ -116,7 +116,16 @@ type triggerBuildBuildInput struct {
 	// carries no path field at all (Railpack's provider detection always
 	// runs against the checkout root), so handleTriggerBuild rejects a
 	// railpack request that sets one rather than silently ignoring it.
+	// Same rejection for build.type: image, which has no path concept
+	// either.
 	Path string `json:"path,omitempty"`
+	// Image is required for, and only meaningful for, build.type: image:
+	// the registry reference internal/deploy.Pipeline.deployImage saves
+	// as this service's desired image directly, no build step. repo_url/
+	// ref above are still cloned as usual even for this type (the
+	// checkout is simply unused), the same "no special-casing per type"
+	// shape this handler already gives every other build.type.
+	Image string `json:"image,omitempty"`
 }
 
 // triggerBuildRequest is POST /api/v1/apps/{name}/builds's body: a git
@@ -236,9 +245,9 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		buildType = spec.BuildDockerfile
 	}
 	switch buildType {
-	case spec.BuildDockerfile, spec.BuildRailpack, spec.BuildStatic:
+	case spec.BuildDockerfile, spec.BuildRailpack, spec.BuildStatic, spec.BuildImage:
 		// Supported: internal/deploy.Pipeline.Deploy has a real case for
-		// each of these three.
+		// each of these four.
 	case spec.BuildCompose:
 		// Fails before any git I/O: a build type internal/deploy.Pipeline
 		// can never build is a fixed fact about this control plane's
@@ -258,13 +267,21 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "build.path is not meaningful for build.type \"railpack\"")
 		return
 	}
+	if buildType == spec.BuildImage && req.Build.Path != "" {
+		writeError(w, http.StatusBadRequest, "build.path is not meaningful for build.type \"image\"")
+		return
+	}
+	if buildType == spec.BuildImage && req.Build.Image == "" {
+		writeError(w, http.StatusBadRequest, "build.image is required for build.type \"image\"")
+		return
+	}
 
 	imageRepo := req.ImageRepo
 	if imageRepo == "" {
 		imageRepo = name
 	}
 
-	svcSpec := specServiceFromDesired(*existing, spec.Build{Type: buildType, Path: req.Build.Path})
+	svcSpec := specServiceFromDesired(*existing, spec.Build{Type: buildType, Path: req.Build.Path, Image: req.Build.Image})
 
 	buildReq := deploy.Request{
 		ServiceName: name,

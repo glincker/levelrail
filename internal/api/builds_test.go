@@ -745,6 +745,69 @@ func TestHandleTriggerBuild_StaticAccepted(t *testing.T) {
 	}
 }
 
+// TestHandleTriggerBuild_ImageAccepted proves the manual build trigger
+// accepts build.type: image and passes build.image through to
+// internal/deploy.Pipeline unchanged; repo_url/ref are still fetched
+// (this handler treats every build.type identically at the fetch step),
+// even though internal/deploy.Pipeline.deployImage never reads the
+// checkout it produces.
+func TestHandleTriggerBuild_ImageAccepted(t *testing.T) {
+	fb := newFakeBuilder("ghcr.io/example/app:1.2.3", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
+	cookie := loginTestSession(t, rt, db)
+	seedWebApp(t, db)
+
+	postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main","build":{"type":"image","image":"ghcr.io/example/app:1.2.3"}}`)
+	got := fb.awaitCall(t)
+	if got.Service.Build.Type != "image" {
+		t.Errorf("Service.Build.Type = %q, want %q", got.Service.Build.Type, "image")
+	}
+	if got.Service.Build.Image != "ghcr.io/example/app:1.2.3" {
+		t.Errorf("Service.Build.Image = %q, want %q", got.Service.Build.Image, "ghcr.io/example/app:1.2.3")
+	}
+}
+
+// TestHandleTriggerBuild_ImageWithPathRejected mirrors
+// TestHandleTriggerBuild_RailpackWithPathRejected: build.type: image has
+// no path concept either.
+func TestHandleTriggerBuild_ImageWithPathRejected(t *testing.T) {
+	fb := newFakeBuilder("ghcr.io/example/app:1.2.3", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
+	cookie := loginTestSession(t, rt, db)
+	seedWebApp(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
+		`{"repo_url":"https://example.com/web.git","ref":"main","build":{"type":"image","image":"ghcr.io/example/app:1.2.3","path":"./Dockerfile"}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	fetch.assertNotCalled(t)
+	fb.assertNotCalled(t)
+}
+
+// TestHandleTriggerBuild_ImageWithoutImageRejected proves build.image is
+// required for build.type: image, not silently deployed with an empty
+// image reference.
+func TestHandleTriggerBuild_ImageWithoutImageRejected(t *testing.T) {
+	fb := newFakeBuilder("ghcr.io/example/app:1.2.3", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
+	cookie := loginTestSession(t, rt, db)
+	seedWebApp(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
+		`{"repo_url":"https://example.com/web.git","ref":"main","build":{"type":"image"}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	fetch.assertNotCalled(t)
+	fb.assertNotCalled(t)
+}
+
 // TestHandleTriggerBuild_ComposeStillRejected proves build.type: compose
 // specifically (not every non-dockerfile type, now that railpack and
 // static are accepted above) still gets the original 501, matching

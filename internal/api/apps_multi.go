@@ -130,7 +130,7 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 	}
 	for key, svc := range req.Services {
 		switch svc.Build.Type {
-		case spec.BuildDockerfile, spec.BuildRailpack, spec.BuildStatic:
+		case spec.BuildDockerfile, spec.BuildRailpack, spec.BuildStatic, spec.BuildImage:
 			// Supported.
 		case spec.BuildCompose:
 			writeError(w, http.StatusNotImplemented, fmt.Sprintf("service %q: build.type %q is not yet supported for a multi-service deploy", key, svc.Build.Type))
