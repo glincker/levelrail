@@ -95,8 +95,15 @@ func TestDrainForwarder_ForwardsPublishedLines(t *testing.T) {
 	broadcaster.Publish(LogEntry{ResourceID: "service:web", Stream: "stdout", Message: "world"})
 	broadcaster.Publish(LogEntry{ResourceID: "service:other", Stream: "stdout", Message: "not for us"})
 
-	drainCancel() // triggers forwardOne's shutdown flush
+	// Waited out via drainBatchMaxWait's own periodic flush, not
+	// triggered by cancelling drainCtx: cancelling races forwardOne's
+	// select against its own not-yet-drained channel (ctx.Done() and a
+	// ready channel read can both be selectable at once, with no
+	// ordering guarantee between them), so asserting on the *shutdown*
+	// flush's line count would be asserting on a real race, not this
+	// forwarder's actual delivery guarantee.
 	waitForLineCount(t, sink, 2)
+	drainCancel()
 
 	if got := sink.lineCount(); got != 2 {
 		t.Fatalf("sink received %d lines, want 2", got)
@@ -130,7 +137,7 @@ func waitForSubscriber(t *testing.T, b *LogBroadcaster, resourceID string) {
 
 func waitForLineCount(t *testing.T, sink *fakeSink, want int) {
 	t.Helper()
-	deadline := time.Now().Add(2 * time.Second)
+	deadline := time.Now().Add(drainBatchMaxWait + time.Second)
 	for time.Now().Before(deadline) {
 		if sink.lineCount() >= want {
 			return
