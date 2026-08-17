@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -215,14 +216,76 @@ func TestTokenRoutes_RequireAuth(t *testing.T) {
 
 // --- requireAbility, exercised through a real gated route (GET /apps) ---
 
-func TestRequireAbility_SessionGrantsAccessRegardlessOfAbility(t *testing.T) {
+// TestRequireAbility_RootSessionCanAccessAnything replaces the old
+// TestRequireAbility_SessionGrantsAccessRegardlessOfAbility: a session no
+// longer bypasses the ability check by virtue of being a session, it
+// passes here because loginTestSession's admin is bootstrapped with
+// AbilityRoot (BootstrapAdmin's own doc comment), the same as a
+// root-scoped bearer token. Exercised against both an AbilityRead route
+// and an AbilityRoot route, so this isn't just AbilityRead getting lucky.
+func TestRequireAbility_RootSessionCanAccessAnything(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps", ""))
 	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d: a session must always be treated as implicitly root", rec.Code, http.StatusOK)
+		t.Fatalf("GET /apps status = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	victim := storeUserForTest(t, db, "victim@example.com")
+	recRoot := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recRoot, authedRequest(t, cookie, http.MethodDelete, "/api/v1/users/"+victim.ID, ""))
+	if recRoot.Code != http.StatusNoContent {
+		t.Fatalf("DELETE /users/{id} status = %d, want %d, body = %s", recRoot.Code, http.StatusNoContent, recRoot.Body.String())
+	}
+}
+
+// TestRequireAbility_NonRootSessionWithoutRequiredAbility_Forbidden
+// proves a session is now checked against its own user's Abilities, not
+// treated as implicitly root: a session whose user holds only
+// AbilityRead gets 403 on AbilityWrite/AbilityDeploy/AbilityRoot routes.
+func TestRequireAbility_NonRootSessionWithoutRequiredAbility_Forbidden(t *testing.T) {
+	tests := []struct {
+		name   string
+		method string
+		path   string
+		body   string
+	}{
+		{"AbilityWrite route (create app)", http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`},
+		{"AbilityDeploy route (trigger deploy)", http.MethodPost, "/api/v1/apps/web/deploys", `{}`},
+		{"AbilityRoot route (delete user)", http.MethodDelete, "/api/v1/users/user_someone", ""},
+	}
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			bootstrapTestAdmin(t, db)
+			reader := storeUserWithAbilitiesForTest(t, db, fmt.Sprintf("reader-%d@example.com", i), []string{AbilityRead})
+			cookie := sessionCookieForTest(t, rt, reader.ID)
+
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, tt.method, tt.path, tt.body))
+			if rec.Code != http.StatusForbidden {
+				t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusForbidden, rec.Body.String())
+			}
+		})
+	}
+}
+
+// TestRequireAbility_SessionWithExactRequiredAbility_Succeeds proves a
+// session holding exactly the required ability (not root) is let
+// through, the session-branch equivalent of
+// TestRequireAbility_BearerTokenWithMatchingAbility above.
+func TestRequireAbility_SessionWithExactRequiredAbility_Succeeds(t *testing.T) {
+	rt, db := newTestRouter(t)
+	bootstrapTestAdmin(t, db)
+	writer := storeUserWithAbilitiesForTest(t, db, "writer@example.com", []string{AbilityWrite})
+	cookie := sessionCookieForTest(t, rt, writer.ID)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
 	}
 }
 

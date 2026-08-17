@@ -284,6 +284,7 @@ type AuthStore interface {
 	CountUsers(ctx context.Context) (int, error)
 	ListUsers(ctx context.Context) ([]store.User, error)
 	DeleteUser(ctx context.Context, id string) error
+	UpdateUserAbilities(ctx context.Context, id string, abilities []string) error
 	EnableUserTOTP(ctx context.Context, id string, confirmedAt time.Time) error
 	DisableUserTOTP(ctx context.Context, id string) error
 }
@@ -1013,12 +1014,19 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("POST /api/v1/auth/2fa/recovery-codes/regenerate", rt.requireAuth(rt.handleRegenerateRecoveryCodes))
 	mux.HandleFunc("POST /api/v1/auth/2fa/verify", rt.handleVerifyTwoFactor)
 
-	// Multi-user: an already-authenticated user creating another
-	// local-password user (see handleRegister's own doc comment), and a
-	// read-only "who has access" listing.
-	mux.HandleFunc("POST /api/v1/auth/users", rt.requireAuth(rt.handleCreateUser))
+	// Multi-user: creating another local-password user (see
+	// handleRegister's own doc comment) is AbilityRoot, not merely
+	// requireAuth: the caller also picks the new user's Abilities, so
+	// anyone able to reach this route can mint access at any tier,
+	// themselves included, only a root caller may do that. Listing stays
+	// AbilityRead, same tier as every other passive view.
+	mux.HandleFunc("POST /api/v1/auth/users", rt.requireAbility(AbilityRoot, rt.handleCreateUser))
 	mux.HandleFunc("GET /api/v1/users", rt.requireAbility(AbilityRead, rt.handleListUsers))
 	mux.HandleFunc("DELETE /api/v1/users/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteUser))
+	// PUT .../abilities is AbilityRoot like the delete route above, and
+	// refuses self-edits inside the handler (self-lockout guard): a root
+	// caller may change any other user's abilities, never their own.
+	mux.HandleFunc("PUT /api/v1/users/{id}/abilities", rt.requireAbility(AbilityRoot, rt.handleUpdateUserAbilities))
 
 	// OAuth sign-in (Google, GitHub). /providers, /start, /callback are
 	// all necessarily public; /link/start is requireAuth-gated (see its

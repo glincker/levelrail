@@ -19,6 +19,7 @@ type userResource struct {
 	DisplayName string     `json:"display_name"`
 	HasPassword bool       `json:"has_password"`
 	Providers   []string   `json:"providers"`
+	Abilities   []string   `json:"abilities"`
 	IsFirstUser bool       `json:"is_first_user"`
 	CreatedAt   time.Time  `json:"created_at"`
 	LastLoginAt *time.Time `json:"last_login_at,omitempty"`
@@ -31,6 +32,7 @@ func toUserResource(u store.User, providers []string) userResource {
 		DisplayName: u.DisplayName,
 		HasPassword: u.PasswordHash != nil,
 		Providers:   providers,
+		Abilities:   u.Abilities,
 		IsFirstUser: u.IsFirstUser,
 		CreatedAt:   u.CreatedAt,
 		LastLoginAt: u.LastLoginAt,
@@ -65,16 +67,19 @@ func (rt *Router) handleListUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 type createUserRequest struct {
-	Email       string `json:"email"`
-	DisplayName string `json:"display_name"`
-	Password    string `json:"password"`
+	Email       string   `json:"email"`
+	DisplayName string   `json:"display_name"`
+	Password    string   `json:"password"`
+	Abilities   []string `json:"abilities"`
 }
 
 // handleCreateUser handles POST /api/v1/auth/users: how every user after
 // the first gets created, now that POST /auth/register only ever creates
-// the first (see that handler's doc comment). Session-only: any
-// already-signed-in user may call this, since every user has identical
-// access in this phase.
+// the first (see that handler's doc comment). AbilityRoot-gated (see
+// router.go's registration): the caller picks the new user's Abilities,
+// so only a caller who already has every ability may hand out any subset
+// of them. Abilities is required, no default: the root caller must
+// explicitly choose what the new account can do.
 func (rt *Router) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	var req createUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -87,6 +92,10 @@ func (rt *Router) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(req.Password) < minPasswordLength {
 		writeError(w, http.StatusBadRequest, "password must be at least 8 characters")
+		return
+	}
+	if err := validateAbilities(req.Abilities); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	displayName := req.DisplayName
@@ -112,6 +121,7 @@ func (rt *Router) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 		Email:        req.Email,
 		DisplayName:  displayName,
 		PasswordHash: &hashStr,
+		Abilities:    req.Abilities,
 		CreatedAt:    time.Now(),
 	}
 	if err := rt.auth.CreateUser(r.Context(), user); errors.Is(err, store.ErrUserEmailExists) {
@@ -124,6 +134,51 @@ func (rt *Router) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, toUserResource(user, nil))
+}
+
+type updateUserAbilitiesRequest struct {
+	Abilities []string `json:"abilities"`
+}
+
+// handleUpdateUserAbilities handles PUT /api/v1/users/{id}/abilities:
+// AbilityRoot-gated (see router.go's registration). Refuses editing the
+// caller's own abilities outright: this is the one rule that prevents a
+// root user from ever locking themselves out, accidentally or via a bug
+// elsewhere, so it stays this simple rather than growing into a
+// last-root-user quorum system.
+func (rt *Router) handleUpdateUserAbilities(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if callerID, ok := rt.currentSessionUserID(r); ok && callerID == id {
+		writeError(w, http.StatusBadRequest, "you cannot change your own abilities: ask another root user")
+		return
+	}
+
+	var req updateUserAbilitiesRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if err := validateAbilities(req.Abilities); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := rt.auth.UpdateUserAbilities(r.Context(), id, req.Abilities); errors.Is(err, store.ErrUserNotFound) {
+		writeError(w, http.StatusNotFound, "user not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: update user abilities failed", slog.String("user_id", id), slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	user, err := rt.auth.GetUserByID(r.Context(), id)
+	if err != nil {
+		rt.logger.Error("api: update user abilities: reload failed", slog.String("user_id", id), slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toUserResource(*user, nil))
 }
 
 // handleDeleteUser handles DELETE /api/v1/users/{id}: AbilityRoot, same

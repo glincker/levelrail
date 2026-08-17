@@ -20,6 +20,75 @@ export const ABILITIES: Ability[] = [
   'root',
 ]
 
+// Shared badge coloring for an ability chip: TokenTable (a token's own
+// Abilities) and UserTable (a user's own Abilities) both render the same
+// strings, so they share one variant map instead of each picking colors
+// independently.
+export const ABILITY_BADGE_VARIANT: Record<
+  Ability,
+  'default' | 'outline' | 'destructive' | 'muted'
+> = {
+  read: 'outline',
+  'read:sensitive': 'outline',
+  write: 'default',
+  'write:sensitive': 'default',
+  deploy: 'default',
+  root: 'destructive',
+}
+
+// Ability picker copy, one line each: a small, legible permission
+// surface, not a permission matrix. Shared by
+// CreateTokenDialog (an api_tokens row), CreateUserDialog, and
+// EditUserAbilitiesDialog (a users row) via components/AbilitiesField.tsx:
+// internal/api/abilities.go's validateAbilities is the same function for
+// both, so the picker's data lives in one place, not two. Kept in this
+// plain data file, not the component file, so AbilitiesField.tsx only
+// ever exports a component (react-refresh/only-export-components).
+export const ABILITY_OPTIONS: { value: Ability; label: string; hint: string }[] = [
+  {
+    value: 'read',
+    label: 'Read',
+    hint: 'List and view apps, deploys, domains.',
+  },
+  {
+    value: 'read:sensitive',
+    label: 'Read sensitive',
+    hint: 'Read env vars and other sensitive fields.',
+  },
+  {
+    value: 'write',
+    label: 'Write',
+    hint: 'Edit app config, domains, env vars.',
+  },
+  {
+    value: 'write:sensitive',
+    label: 'Write sensitive',
+    hint: 'Set secret values. Separate from Write: a token scoped to plain Write cannot touch secrets.',
+  },
+  { value: 'deploy', label: 'Deploy', hint: 'Trigger deploys and rollbacks.' },
+  {
+    value: 'root',
+    label: 'Root',
+    hint: 'Everything below. Exclusive of every other ability.',
+  },
+]
+
+// Mirrors abilities.go's own validateAbilities exclusivity rule:
+// selecting root clears every other checkbox;
+// selecting any other checkbox clears root if it was set. Root is never
+// left combined with anything else, matching what the server would
+// reject anyway, rather than letting the UI produce an invalid
+// combination for validateAbilities to bounce back as a 400.
+export function toggleAbility(current: Ability[], ability: Ability): Ability[] {
+  if (ability === 'root') {
+    return current.includes('root') ? [] : ['root']
+  }
+  const withoutRoot = current.filter((a) => a !== 'root')
+  return withoutRoot.includes(ability)
+    ? withoutRoot.filter((a) => a !== ability)
+    : [...withoutRoot, ability]
+}
+
 // Matches tokenResource exactly: `token` (the plaintext secret) is
 // deliberately absent here, it only ever appears on
 // CreateTokenResponse, and only in the one response that mints it.

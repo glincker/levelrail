@@ -19,6 +19,7 @@ func TestCreateAndGetUser_RoundTrip(t *testing.T) {
 		Email:        "founder@example.com",
 		DisplayName:  "Founder",
 		PasswordHash: &hash,
+		Abilities:    []string{"read", "deploy"},
 		IsFirstUser:  true,
 		CreatedAt:    time.Now().UTC().Truncate(time.Second),
 	}
@@ -35,6 +36,9 @@ func TestCreateAndGetUser_RoundTrip(t *testing.T) {
 	}
 	if byID.PasswordHash == nil || *byID.PasswordHash != hash {
 		t.Errorf("PasswordHash = %v, want %q", byID.PasswordHash, hash)
+	}
+	if len(byID.Abilities) != 2 || byID.Abilities[0] != "read" || byID.Abilities[1] != "deploy" {
+		t.Errorf("Abilities = %v, want %v", byID.Abilities, want.Abilities)
 	}
 
 	byEmail, err := db.GetUserByEmail(ctx, want.Email)
@@ -405,5 +409,119 @@ func TestMigration_NoLegacyAdmin_NoFirstUser(t *testing.T) {
 
 	if _, err := db.getFirstUser(ctx); !errors.Is(err, ErrUserNotFound) {
 		t.Fatalf("fresh database already has a first user: %v", err)
+	}
+}
+
+func TestUpdateUserAbilities(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	u := User{ID: "user_1", Email: "a@example.com", DisplayName: "A", Abilities: []string{"read"}, CreatedAt: time.Now().UTC()}
+	if err := db.CreateUser(ctx, u); err != nil {
+		t.Fatalf("CreateUser() error = %v", err)
+	}
+
+	if err := db.UpdateUserAbilities(ctx, u.ID, []string{"root"}); err != nil {
+		t.Fatalf("UpdateUserAbilities() error = %v", err)
+	}
+	got, err := db.GetUserByID(ctx, u.ID)
+	if err != nil {
+		t.Fatalf("GetUserByID() error = %v", err)
+	}
+	if len(got.Abilities) != 1 || got.Abilities[0] != "root" {
+		t.Errorf("Abilities = %v, want [root]", got.Abilities)
+	}
+}
+
+func TestUpdateUserAbilities_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.UpdateUserAbilities(ctx, "does-not-exist", []string{"root"}); !errors.Is(err, ErrUserNotFound) {
+		t.Errorf("UpdateUserAbilities() error = %v, want ErrUserNotFound", err)
+	}
+}
+
+// TestMigration_0045_BackfillsExistingUsersToRoot proves
+// migrations/0045_user_abilities.sql against the real migration SQL: a
+// user row inserted before 0045 runs (so it never had an abilities
+// value of its own) ends up with exactly ["root"] once 0045 applies.
+// Every user that existed before this migration has always had
+// unconditional full access, so silently downgrading that on upgrade
+// would lock existing operators out of their own control plane.
+func TestMigration_0045_BackfillsExistingUsersToRoot(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "pre-abilities.db")
+
+	sqlDB, err := sql.Open("sqlite", dsn(path))
+	if err != nil {
+		t.Fatalf("sql.Open() error = %v", err)
+	}
+	db := &DB{DB: sqlDB}
+	t.Cleanup(func() {
+		_ = db.Close()
+	})
+
+	if _, err := db.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS schema_migrations (
+			version    INTEGER PRIMARY KEY,
+			name       TEXT NOT NULL,
+			applied_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		)
+	`); err != nil {
+		t.Fatalf("create schema_migrations: %v", err)
+	}
+
+	migrations, err := loadMigrations()
+	if err != nil {
+		t.Fatalf("loadMigrations() error = %v", err)
+	}
+
+	var abilitiesMigration *migration
+	for i := range migrations {
+		if migrations[i].name == "user_abilities" {
+			abilitiesMigration = &migrations[i]
+			break
+		}
+	}
+	if abilitiesMigration == nil {
+		t.Fatal("user_abilities migration not found")
+	}
+	for i := range migrations {
+		m := migrations[i]
+		if m.version >= abilitiesMigration.version {
+			continue
+		}
+		if err := db.applyMigration(ctx, m); err != nil {
+			t.Fatalf("apply migration %d: %v", m.version, err)
+		}
+	}
+
+	if _, err := db.ExecContext(ctx, `
+		INSERT INTO users (id, email, display_name, password_hash, is_first_user, created_at, last_login_at)
+		VALUES ('user_pre_migration', 'pre-migration@example.com', 'Pre Migration', 'bcrypt-hash-value', 1, '2026-01-01T00:00:00.000000000Z', NULL)
+	`); err != nil {
+		t.Fatalf("seed pre-migration user: %v", err)
+	}
+
+	if err := db.applyMigration(ctx, *abilitiesMigration); err != nil {
+		t.Fatalf("apply user_abilities migration: %v", err)
+	}
+	for i := range migrations {
+		m := migrations[i]
+		if m.version <= abilitiesMigration.version {
+			continue
+		}
+		if err := db.applyMigration(ctx, m); err != nil {
+			t.Fatalf("apply migration %d: %v", m.version, err)
+		}
+	}
+
+	got, err := db.GetUserByEmail(ctx, "pre-migration@example.com")
+	if err != nil {
+		t.Fatalf("GetUserByEmail() error = %v", err)
+	}
+	if len(got.Abilities) != 1 || got.Abilities[0] != "root" {
+		t.Errorf("Abilities = %v, want [root] for a pre-migration user", got.Abilities)
 	}
 }

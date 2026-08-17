@@ -272,10 +272,19 @@ func (rt *Router) completeOAuthSignin(ctx context.Context, provider string, sett
 	if err != nil {
 		return store.User{}, err
 	}
+	// A brand new OAuth signup is never the first user (that path is
+	// exclusively BootstrapAdmin/handleRegister's job, both gated to
+	// run once). Least-privilege default: AbilityRead, not root and
+	// not empty: an empty Abilities value would fail every ability
+	// check including AbilityRead itself (hasAbility's own contract),
+	// locking a freshly auto-provisioned account out of the entire
+	// app rather than just out of anything sensitive. An existing root
+	// user grants more via PUT /api/v1/users/{id}/abilities.
 	user := store.User{
 		ID:          id,
 		Email:       info.Email,
 		DisplayName: info.DisplayName,
+		Abilities:   []string{AbilityRead},
 		CreatedAt:   time.Now(),
 	}
 	if err := rt.auth.CreateUser(ctx, user); err != nil {

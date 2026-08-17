@@ -309,11 +309,10 @@ func (rt *Router) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 }
 
 // requireAbility wraps a handler so it only runs for a request
-// authenticated either by a valid session (implicitly AbilityRoot) or a
-// bearer token whose stored abilities grant required. A session grants
-// full access unconditionally: not because there's only one identity
-// (any number of users can exist now), but because there's no per-user
-// role model yet (RBAC is Phase 4).
+// authenticated either by a valid session whose user's own Abilities
+// grant required, or a bearer token whose stored abilities grant
+// required: both branches call the same hasAbility(abilities, required)
+// check store.User.Abilities and store.APIToken.Abilities share.
 //
 // For any required ability above AbilityRead, this is also the single
 // place an audit_log row gets written (audit.go's recordAudit): every
@@ -322,11 +321,29 @@ func (rt *Router) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 // every route by construction instead of needing a call added to each
 // handler individually. The hook only ever observes, after the real
 // decision above it already ran; it never influences whether a request
-// passes or fails.
+// passes or fails, and it still records a rejection (a 403 from the
+// ability check below) the same as it records any other status.
 func (rt *Router) requireAbility(required string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if userID, ok := rt.currentSessionUserID(r); ok {
-			rt.callAudited(w, r, required, "session", userID, "", next)
+			gated := func(w http.ResponseWriter, r *http.Request) {
+				user, err := rt.auth.GetUserByID(r.Context(), userID)
+				if errors.Is(err, store.ErrUserNotFound) {
+					writeError(w, http.StatusForbidden, "your account lacks the required ability")
+					return
+				}
+				if err != nil {
+					rt.logger.Error("api: session ability lookup failed", slog.String("error", err.Error()))
+					writeError(w, http.StatusInternalServerError, "internal error")
+					return
+				}
+				if !hasAbility(user.Abilities, required) {
+					writeError(w, http.StatusForbidden, "your account lacks the required ability")
+					return
+				}
+				next(w, r)
+			}
+			rt.callAudited(w, r, required, "session", userID, "", gated)
 			return
 		}
 
@@ -395,12 +412,16 @@ func (rt *Router) callAudited(w http.ResponseWriter, r *http.Request, required, 
 // but usable mid-handler to gate one narrower action inside an
 // already-authorized request (e.g. a route gated at AbilityDeploy that
 // wants to additionally require AbilityReadSensitive before disclosing
-// private data). A lookup failure, revoked, or expired token all resolve
-// to false: this gates something tighter than the route itself, so it
-// must never fail open.
+// private data). A lookup failure, revoked, or expired token, or a
+// session user lacking ability, all resolve to false: this gates
+// something tighter than the route itself, so it must never fail open.
 func (rt *Router) callerHasAbility(r *http.Request, ability string) bool {
-	if rt.hasValidSession(r) {
-		return true
+	if userID, ok := rt.currentSessionUserID(r); ok {
+		user, err := rt.auth.GetUserByID(r.Context(), userID)
+		if err != nil {
+			return false
+		}
+		return hasAbility(user.Abilities, ability)
 	}
 	token, ok := bearerToken(r)
 	if !ok {
@@ -472,7 +493,9 @@ func hashToken(plaintext string) string {
 // once this control plane is internet-reachable, with no invite system
 // to bound it. Gated at the mutation layer via
 // ux_users_single_first_user (migrations/0035), closing the
-// two-concurrent-registrations race.
+// two-concurrent-registrations race. This is the very first admin, the
+// same as BootstrapAdmin's user, so it gets AbilityRoot for the same
+// reason: no one else exists yet to grant it.
 func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -507,6 +530,7 @@ func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
 		Email:        req.Email,
 		DisplayName:  req.Email,
 		PasswordHash: &hashStr,
+		Abilities:    []string{AbilityRoot},
 		IsFirstUser:  true,
 		CreatedAt:    time.Now(),
 	}
@@ -535,7 +559,8 @@ func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
 const minPasswordLength = 8
 
 // BootstrapAdmin ensures at least one user exists, creating one from
-// username/password if none does yet. No-op once any user exists, so a
+// username/password if none does yet, with AbilityRoot: it's the only
+// user on the instance, so it has to be. No-op once any user exists, so a
 // restart with the same env vars never resets a changed password.
 // username becomes the new user's email verbatim (no "@" required),
 // matching migrations/0035's backfill leniency for a pre-existing
@@ -566,6 +591,7 @@ func BootstrapAdmin(ctx context.Context, s AuthStore, username, password string)
 		Email:        username,
 		DisplayName:  username,
 		PasswordHash: &hashStr,
+		Abilities:    []string{AbilityRoot},
 		IsFirstUser:  true,
 		CreatedAt:    time.Now(),
 	}

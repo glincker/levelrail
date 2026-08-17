@@ -263,6 +263,9 @@ func TestHandleOAuthCallback_NewIdentity_AutoProvisionsUser(t *testing.T) {
 	if user.PasswordHash != nil {
 		t.Error("auto-provisioned OAuth user must have no password")
 	}
+	if len(user.Abilities) != 1 || user.Abilities[0] != AbilityRead {
+		t.Errorf("Abilities = %v, want [%s]: an empty value would fail every ability check including AbilityRead itself, locking this account out of the whole app", user.Abilities, AbilityRead)
+	}
 	identity, err := db.GetOAuthIdentity(context.Background(), store.OAuthProviderGoogle, "google-sub-1")
 	if err != nil {
 		t.Fatalf("GetOAuthIdentity() error = %v", err)

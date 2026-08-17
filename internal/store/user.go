@@ -3,22 +3,27 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 )
 
 // User is a real, individually-identified account
-// (migrations/0035_users.sql). Every user has identical access, no role
-// field. PasswordHash is nil for an OAuth-only user. IsFirstUser is
-// display-only. TOTPEnabled/TOTPConfirmedAt come from
-// migrations/0042_user_totp.sql; the TOTP secret itself is not on this
-// struct, it lives in internal/secrets keyed by UserTOTPSecretsKey(ID).
+// (migrations/0035_users.sql). PasswordHash is nil for an OAuth-only
+// user. IsFirstUser is display-only. TOTPEnabled/TOTPConfirmedAt come
+// from migrations/0042_user_totp.sql; the TOTP secret itself is not on
+// this struct, it lives in internal/secrets keyed by
+// UserTOTPSecretsKey(ID). Abilities (migrations/0045_user_abilities.sql)
+// is the same shape and validation (internal/api's validateAbilities) as
+// APIToken.Abilities: a session now carries real, checkable scoping
+// instead of every session being treated as implicitly root.
 type User struct {
 	ID              string
 	Email           string
 	DisplayName     string
 	PasswordHash    *string
+	Abilities       []string
 	IsFirstUser     bool
 	CreatedAt       time.Time
 	LastLoginAt     *time.Time
@@ -46,10 +51,14 @@ func (db *DB) CreateUser(ctx context.Context, u User) error {
 	if u.IsFirstUser {
 		isFirst = 1
 	}
-	_, err := db.ExecContext(ctx, `
-		INSERT INTO users (id, email, display_name, password_hash, is_first_user, created_at, last_login_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`, u.ID, u.Email, u.DisplayName, nullableString(u.PasswordHash), isFirst, formatTime(u.CreatedAt), formatTimePtr(u.LastLoginAt))
+	abilitiesJSON, err := json.Marshal(nonNilSlice(u.Abilities))
+	if err != nil {
+		return fmt.Errorf("store: marshal abilities for user %q: %w", u.ID, err)
+	}
+	_, err = db.ExecContext(ctx, `
+		INSERT INTO users (id, email, display_name, password_hash, abilities, is_first_user, created_at, last_login_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, u.ID, u.Email, u.DisplayName, nullableString(u.PasswordHash), string(abilitiesJSON), isFirst, formatTime(u.CreatedAt), formatTimePtr(u.LastLoginAt))
 	if err == nil {
 		return nil
 	}
@@ -68,7 +77,7 @@ func (db *DB) CreateUser(ctx context.Context, u User) error {
 // userColumns is the shared SELECT column list every user-row reader
 // below uses, so scanUser's argument order never drifts from what a
 // given query actually asked for.
-const userColumns = `id, email, display_name, password_hash, is_first_user, created_at, last_login_at, totp_enabled, totp_confirmed_at`
+const userColumns = `id, email, display_name, password_hash, abilities, is_first_user, created_at, last_login_at, totp_enabled, totp_confirmed_at`
 
 // GetUserByID returns the user with this ID, or ErrUserNotFound.
 func (db *DB) GetUserByID(ctx context.Context, id string) (*User, error) {
@@ -133,6 +142,25 @@ func (db *DB) UpdateUserPasswordHash(ctx context.Context, id string, hash *strin
 		return fmt.Errorf("store: update user %q password: %w", id, err)
 	}
 	return rowsAffectedOrNotFound(res, ErrUserNotFound, "update user %q password", id)
+}
+
+// UpdateUserAbilities replaces a user's Abilities wholesale, the same
+// "fixed at mint time except this one field" shape api_tokens uses for
+// LastUsedAt/RevokedAt. Validation (validateAbilities) is the caller's
+// job (internal/api), not this layer's. Returns ErrUserNotFound if id
+// doesn't exist.
+func (db *DB) UpdateUserAbilities(ctx context.Context, id string, abilities []string) error {
+	abilitiesJSON, err := json.Marshal(nonNilSlice(abilities))
+	if err != nil {
+		return fmt.Errorf("store: marshal abilities for user %q: %w", id, err)
+	}
+	res, err := db.ExecContext(ctx, `
+		UPDATE users SET abilities = ? WHERE id = ?
+	`, string(abilitiesJSON), id)
+	if err != nil {
+		return fmt.Errorf("store: update user %q abilities: %w", id, err)
+	}
+	return rowsAffectedOrNotFound(res, ErrUserNotFound, "update user %q abilities", id)
 }
 
 // UpdateUserLastLogin stamps last_login_at, called once per successful
@@ -202,13 +230,14 @@ func scanUser(scan func(dest ...any) error) (*User, error) {
 	var (
 		u               User
 		passwordHash    sql.NullString
+		abilitiesJSON   string
 		isFirst         int
 		createdAt       string
 		lastLoginNull   sql.NullString
 		totpEnabled     int
 		totpConfirmedAt sql.NullString
 	)
-	if err := scan(&u.ID, &u.Email, &u.DisplayName, &passwordHash, &isFirst, &createdAt, &lastLoginNull, &totpEnabled, &totpConfirmedAt); err != nil {
+	if err := scan(&u.ID, &u.Email, &u.DisplayName, &passwordHash, &abilitiesJSON, &isFirst, &createdAt, &lastLoginNull, &totpEnabled, &totpConfirmedAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrUserNotFound
 		}
@@ -216,6 +245,9 @@ func scanUser(scan func(dest ...any) error) (*User, error) {
 	}
 	if passwordHash.Valid {
 		u.PasswordHash = &passwordHash.String
+	}
+	if err := json.Unmarshal([]byte(abilitiesJSON), &u.Abilities); err != nil {
+		return nil, fmt.Errorf("unmarshal abilities: %w", err)
 	}
 	u.IsFirstUser = isFirst != 0
 	parsedCreated, err := time.Parse(time.RFC3339Nano, createdAt)
