@@ -179,11 +179,6 @@ var Templates = []Template{
 		Slogan:           "A fast, structured team wiki and knowledge base with real-time collaborative editing.",
 		Category:         "Productivity",
 		DocumentationURL: "https://docs.getoutline.com",
-		// DATABASE_URL is a single composite connection string, and a
-		// generated secret can't be spliced into a larger literal
-		// value (see internal/compose/resolve.go), so the shared DB
-		// credential here is a plain default rather than
-		// $SERVICE_PASSWORD_*, consistent between both services.
 		Compose: `services:
   outline:
     image: outlinewiki/outline:0.79.0
@@ -191,7 +186,7 @@ var Templates = []Template{
     environment:
       SECRET_KEY: $SERVICE_HEX_64_SECRETKEY
       UTILS_SECRET: $SERVICE_HEX_64_UTILSSECRET
-      DATABASE_URL: postgres://outline:${SERVICE_DB_PASSWORD:-outline-local-dev-password}@db:5432/outline
+      DATABASE_URL: postgres://outline:$SERVICE_PASSWORD_DB@db:5432/outline
       REDIS_URL: redis://redis:6379
       URL: ${SERVICE_FQDN_OUTLINE:-http://localhost:3000}
       FORCE_HTTPS: "false"
@@ -201,7 +196,7 @@ var Templates = []Template{
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: outline
-      POSTGRES_PASSWORD: ${SERVICE_DB_PASSWORD:-outline-local-dev-password}
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
       POSTGRES_DB: outline
     volumes:
       - outline_db_data:/var/lib/postgresql/data
@@ -256,28 +251,25 @@ var Templates = []Template{
       - nextcloud_data:/var/www/html
 `,
 	},
-	{
+	{ //nolint:gosec // DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
 		ID:               "umami",
 		Name:             "Umami",
 		Slogan:           "Simple, privacy-focused website analytics without tracking cookies or ad-tech.",
 		Category:         "Analytics",
 		DocumentationURL: "https://umami.is/docs",
-		// Same composite-DATABASE_URL constraint as Outline above: the
-		// shared DB credential is a plain default, not a generated
-		// magic var.
 		Compose: `services:
   umami:
     image: ghcr.io/umami-software/umami:postgresql-v2.15.0
     ports: ["3000:3000"]
     environment:
       DATABASE_TYPE: postgresql
-      DATABASE_URL: postgresql://umami:${SERVICE_DB_PASSWORD:-umami-local-dev-password}@db:5432/umami
+      DATABASE_URL: postgresql://umami:$SERVICE_PASSWORD_DB@db:5432/umami
       APP_SECRET: $SERVICE_HEX_64_APPSECRET
   db:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: umami
-      POSTGRES_PASSWORD: ${SERVICE_DB_PASSWORD:-umami-local-dev-password}
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
       POSTGRES_DB: umami
     volumes:
       - umami_db_data:/var/lib/postgresql/data

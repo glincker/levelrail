@@ -34,11 +34,12 @@ func (u UnresolvedVar) String() string {
 // into whichever per-service secret store its later container-create
 // step reads from.
 //
-// A magic-var token embedded inside a larger literal string (not the
-// entire env value) can only be resolved via its own default; a
-// generatable or default-less token in that position is always
-// unresolved, since a generated/secret value can't be spliced into a
-// literal string.
+// A magic-var token embedded inside a larger string (not the entire env
+// value, e.g. a composite DATABASE_URL) can still splice in a
+// generated value: the whole assembled string is then secret-backed
+// (persisted and added to secretEnv), the same as a whole-value
+// generatable token, since it now contains one. A default-less,
+// non-generatable token in that position is unresolved.
 func ResolveMagicVars(
 	f *File,
 	generate func(kind, key string, length int) (string, error),
@@ -88,6 +89,7 @@ func ResolveMagicVars(
 			}
 
 			resolved := value
+			hasSecret := false
 			for _, v := range vars {
 				if v.Kind == "FQDN" {
 					if url, ok := resolveFQDN(f, svcKey); ok {
@@ -95,11 +97,27 @@ func ResolveMagicVars(
 						continue
 					}
 				}
-				if !v.Generatable && v.HasDefault {
+				if v.Generatable {
+					val, genErr := resolveGenerated(generated, v, generate)
+					if genErr != nil {
+						return nil, nil, fmt.Errorf("service %q: env %q: %w", svcKey, envKey, genErr)
+					}
+					resolved = strings.Replace(resolved, v.Token, val, 1)
+					hasSecret = true
+					continue
+				}
+				if v.HasDefault {
 					resolved = strings.Replace(resolved, v.Token, v.Default, 1)
 					continue
 				}
 				unresolved = append(unresolved, UnresolvedVar{Service: svcKey, EnvKey: envKey, Token: v.Token})
+			}
+			if hasSecret {
+				if err := persist(svcKey, envKey, resolved); err != nil {
+					return nil, nil, fmt.Errorf("service %q: env %q: persist secret: %w", svcKey, envKey, err)
+				}
+				secretEnv[svcKey] = append(secretEnv[svcKey], envKey)
+				continue
 			}
 			newEnv[envKey] = resolved
 		}
