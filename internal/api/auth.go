@@ -157,9 +157,17 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
+// loginResponse is either a completed sign-in (Email/DisplayName set,
+// MFARequired omitted) or a "password checked out, now prove the second
+// factor" signal (MFARequired true, MFAToken set, Email/DisplayName
+// omitted): handleLogin, handleRegister, and the OAuth callbacks only
+// ever produce the former; handleVerifyTwoFactor's own success response
+// is the same struct in the same completed-sign-in shape.
 type loginResponse struct {
-	Email       string `json:"username"`
-	DisplayName string `json:"display_name"`
+	Email       string `json:"username,omitempty"`
+	DisplayName string `json:"display_name,omitempty"`
+	MFARequired bool   `json:"mfa_required,omitempty"`
+	MFAToken    string `json:"mfa_token,omitempty"`
 }
 
 // handleLogin verifies an email/password against the users table and,
@@ -209,6 +217,17 @@ func (rt *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rt.logins.recordSuccess(key)
+
+	if user.TOTPEnabled {
+		token, err := rt.mfaPending.create(user.ID)
+		if err != nil {
+			rt.logger.Error("api: login: create mfa pending token failed", slog.String("error", err.Error()), slog.String("user_id", user.ID))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+		writeJSON(w, http.StatusOK, loginResponse{MFARequired: true, MFAToken: token})
+		return
+	}
 
 	if err := rt.establishSession(r.Context(), w, *user); err != nil {
 		rt.logger.Error("api: login: establish session failed", slog.String("error", err.Error()), slog.String("user_id", user.ID))

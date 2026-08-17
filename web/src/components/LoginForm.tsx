@@ -9,6 +9,7 @@ import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Field, FieldError, FieldGroup, FieldLabel } from './ui/field'
 import { Alert, AlertDescription, AlertTitle } from './ui/alert'
+import { TwoFactorVerifyForm } from './TwoFactorVerifyForm'
 
 const loginSchema = z.object({
   username: z.string().trim().min(1, 'Username is required'),
@@ -26,6 +27,7 @@ type LoginFormValues = z.infer<typeof loginSchema>
 // Ns" countdown, not a message indistinguishable from a wrong password.
 export function LoginForm() {
   const login = useLogin()
+  const [mfaToken, setMfaToken] = useState<string | null>(null)
   const { register, handleSubmit, formState } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { username: '', password: '' },
@@ -64,6 +66,11 @@ export function LoginForm() {
       // render effect) is the allowed place to do this: it runs in
       // response to the login attempt actually failing, not as a
       // synchronous side effect of rendering.
+      onSuccess: (result) => {
+        if ('mfa_required' in result && result.mfa_required) {
+          setMfaToken(result.mfa_token)
+        }
+      },
       onError: (error) => {
         if (error instanceof RateLimitError) {
           setSecondsRemaining(error.retryAfterSeconds)
@@ -71,6 +78,17 @@ export function LoginForm() {
       },
     })
   })
+
+  if (mfaToken) {
+    return (
+      <TwoFactorVerifyForm
+        mfaToken={mfaToken}
+        onBack={() => {
+          setMfaToken(null)
+        }}
+      />
+    )
+  }
 
   return (
     <form

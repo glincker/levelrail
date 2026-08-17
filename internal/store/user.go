@@ -11,15 +11,19 @@ import (
 // User is a real, individually-identified account
 // (migrations/0035_users.sql). Every user has identical access, no role
 // field. PasswordHash is nil for an OAuth-only user. IsFirstUser is
-// display-only.
+// display-only. TOTPEnabled/TOTPConfirmedAt come from
+// migrations/0042_user_totp.sql; the TOTP secret itself is not on this
+// struct, it lives in internal/secrets keyed by UserTOTPSecretsKey(ID).
 type User struct {
-	ID           string
-	Email        string
-	DisplayName  string
-	PasswordHash *string
-	IsFirstUser  bool
-	CreatedAt    time.Time
-	LastLoginAt  *time.Time
+	ID              string
+	Email           string
+	DisplayName     string
+	PasswordHash    *string
+	IsFirstUser     bool
+	CreatedAt       time.Time
+	LastLoginAt     *time.Time
+	TOTPEnabled     bool
+	TOTPConfirmedAt *time.Time
 }
 
 // ErrUserNotFound is returned by GetUserByID and GetUserByEmail when no
@@ -61,12 +65,14 @@ func (db *DB) CreateUser(ctx context.Context, u User) error {
 	return fmt.Errorf("store: create user %q: %w", u.ID, err)
 }
 
+// userColumns is the shared SELECT column list every user-row reader
+// below uses, so scanUser's argument order never drifts from what a
+// given query actually asked for.
+const userColumns = `id, email, display_name, password_hash, is_first_user, created_at, last_login_at, totp_enabled, totp_confirmed_at`
+
 // GetUserByID returns the user with this ID, or ErrUserNotFound.
 func (db *DB) GetUserByID(ctx context.Context, id string) (*User, error) {
-	row := db.QueryRowContext(ctx, `
-		SELECT id, email, display_name, password_hash, is_first_user, created_at, last_login_at
-		FROM users WHERE id = ?
-	`, id)
+	row := db.QueryRowContext(ctx, `SELECT `+userColumns+` FROM users WHERE id = ?`, id)
 	return scanUser(row.Scan)
 }
 
@@ -74,27 +80,18 @@ func (db *DB) GetUserByID(ctx context.Context, id string) (*User, error) {
 // The stored value isn't always a syntactically valid email: a
 // pre-migration bare username migrates in unchanged (migrations/0035).
 func (db *DB) GetUserByEmail(ctx context.Context, email string) (*User, error) {
-	row := db.QueryRowContext(ctx, `
-		SELECT id, email, display_name, password_hash, is_first_user, created_at, last_login_at
-		FROM users WHERE email = ?
-	`, email)
+	row := db.QueryRowContext(ctx, `SELECT `+userColumns+` FROM users WHERE email = ?`, email)
 	return scanUser(row.Scan)
 }
 
 func (db *DB) getFirstUser(ctx context.Context) (*User, error) {
-	row := db.QueryRowContext(ctx, `
-		SELECT id, email, display_name, password_hash, is_first_user, created_at, last_login_at
-		FROM users WHERE is_first_user = 1
-	`)
+	row := db.QueryRowContext(ctx, `SELECT `+userColumns+` FROM users WHERE is_first_user = 1`)
 	return scanUser(row.Scan)
 }
 
 // ListUsers returns every user, oldest first.
 func (db *DB) ListUsers(ctx context.Context) ([]User, error) {
-	rows, err := db.QueryContext(ctx, `
-		SELECT id, email, display_name, password_hash, is_first_user, created_at, last_login_at
-		FROM users ORDER BY created_at
-	`)
+	rows, err := db.QueryContext(ctx, `SELECT `+userColumns+` FROM users ORDER BY created_at`)
 	if err != nil {
 		return nil, fmt.Errorf("store: list users: %w", err)
 	}
@@ -151,6 +148,45 @@ func (db *DB) UpdateUserLastLogin(ctx context.Context, id string, when time.Time
 	return rowsAffectedOrNotFound(res, ErrUserNotFound, "update user %q last login", id)
 }
 
+// EnableUserTOTP marks a user's TOTP setup confirmed: the caller has
+// already verified a code against the secret it stored in
+// internal/secrets before calling this. Returns ErrUserNotFound if id
+// doesn't exist.
+func (db *DB) EnableUserTOTP(ctx context.Context, id string, confirmedAt time.Time) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE users SET totp_enabled = 1, totp_confirmed_at = ? WHERE id = ?
+	`, formatTime(confirmedAt), id)
+	if err != nil {
+		return fmt.Errorf("store: enable user %q totp: %w", id, err)
+	}
+	return rowsAffectedOrNotFound(res, ErrUserNotFound, "enable user %q totp", id)
+}
+
+// DisableUserTOTP clears a user's TOTP state. It does not touch the
+// user_recovery_codes table or the internal/secrets-held secret;
+// callers (internal/api's disable handler) delete those separately,
+// since only that layer has a secrets.Manager to call DeleteAll on.
+// Returns ErrUserNotFound if id doesn't exist.
+func (db *DB) DisableUserTOTP(ctx context.Context, id string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE users SET totp_enabled = 0, totp_confirmed_at = NULL WHERE id = ?
+	`, id)
+	if err != nil {
+		return fmt.Errorf("store: disable user %q totp: %w", id, err)
+	}
+	return rowsAffectedOrNotFound(res, ErrUserNotFound, "disable user %q totp", id)
+}
+
+// UserTOTPSecretsKey returns the internal/secrets serviceName a user's
+// TOTP secret is stored under, parameterized by ID the same way
+// BackupTargetSecretsKey(targetID) is: unlike GitHubAppSecretsKey's
+// fixed singleton-row key, every user has their own. The "/" makes this
+// structurally impossible to collide with a real desired_services name,
+// same reasoning BackupTargetSecretsKey's own doc comment gives.
+func UserTOTPSecretsKey(userID string) string {
+	return "user-totp/" + userID
+}
+
 // DeleteUser removes a user row; the FK cascade (migrations/0035) takes
 // any linked OAuth identities with it. Guards like "not the last user"
 // live in internal/api/users.go, not here.
@@ -164,13 +200,15 @@ func (db *DB) DeleteUser(ctx context.Context, id string) error {
 
 func scanUser(scan func(dest ...any) error) (*User, error) {
 	var (
-		u             User
-		passwordHash  sql.NullString
-		isFirst       int
-		createdAt     string
-		lastLoginNull sql.NullString
+		u               User
+		passwordHash    sql.NullString
+		isFirst         int
+		createdAt       string
+		lastLoginNull   sql.NullString
+		totpEnabled     int
+		totpConfirmedAt sql.NullString
 	)
-	if err := scan(&u.ID, &u.Email, &u.DisplayName, &passwordHash, &isFirst, &createdAt, &lastLoginNull); err != nil {
+	if err := scan(&u.ID, &u.Email, &u.DisplayName, &passwordHash, &isFirst, &createdAt, &lastLoginNull, &totpEnabled, &totpConfirmedAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrUserNotFound
 		}
@@ -188,6 +226,11 @@ func scanUser(scan func(dest ...any) error) (*User, error) {
 	u.LastLoginAt, err = parseTimePtr(lastLoginNull)
 	if err != nil {
 		return nil, fmt.Errorf("parse last_login_at: %w", err)
+	}
+	u.TOTPEnabled = totpEnabled != 0
+	u.TOTPConfirmedAt, err = parseTimePtr(totpConfirmedAt)
+	if err != nil {
+		return nil, fmt.Errorf("parse totp_confirmed_at: %w", err)
 	}
 	return &u, nil
 }
