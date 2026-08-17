@@ -240,6 +240,57 @@ func TestHandleGitPushWebhook_CorrectSignature_TriggersDeploy(t *testing.T) {
 	}
 }
 
+// TestHandleGitPushWebhook_GitLabTokenHeader_TriggersDeploy proves the
+// exact same webhook route accepts GitLab's own X-Gitlab-Token scheme
+// (a plain secret comparison, not an HMAC signature), the receiver
+// gitlab_app_projects.go's CreateProjectWebhook call registers a
+// project hook against.
+func TestHandleGitPushWebhook_GitLabTokenHeader_TriggersDeploy(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://gitlab.example.com/org/web.git","branch":"main","build_type":"dockerfile"}`)
+
+	var fetchCalls []fakeGitSourceFetchCall
+	rt.gitSourceFetch = newFakeGitSourceFetch(&fetchCalls, t.TempDir(), new(bool), nil)
+	fb := &fakeBuilder{tag: "web:sha1"}
+	rt.builder = fb
+
+	body := pushBody("refs/heads/main")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+	req.Header.Set("X-Gitlab-Token", created.WebhookSecret)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if fb.calls != 1 {
+		t.Fatalf("builder called %d times, want 1", fb.calls)
+	}
+}
+
+// TestHandleGitPushWebhook_GitLabTokenHeader_WrongToken_Rejected proves
+// a wrong X-Gitlab-Token is rejected the same way a wrong
+// X-Hub-Signature-256 already is (TestHandleGitPushWebhook_WrongSecret_Rejected).
+func TestHandleGitPushWebhook_GitLabTokenHeader_WrongToken_Rejected(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	connectGitSource(t, rt, cookie, `{"repo_url":"https://gitlab.example.com/org/web.git","branch":"main"}`)
+	rt.builder = &fakeBuilder{tag: "web:sha1"}
+
+	body := pushBody("refs/heads/main")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+	req.Header.Set("X-Gitlab-Token", "not-the-real-secret")
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusUnauthorized, rec.Body.String())
+	}
+}
+
 func TestHandleGitPushWebhook_PrivateRepo_PassesToken(t *testing.T) {
 	secrets := newFakeGitSourceSecrets()
 	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)

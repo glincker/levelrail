@@ -1,0 +1,201 @@
+package api
+
+import (
+	"encoding/json"
+	"errors"
+	"log/slog"
+	"net/http"
+	"strconv"
+
+	"github.com/GLINCKER/levelrail/internal/gitlabapp"
+	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/webhook"
+)
+
+// gitLabAppProjectResource is one entry of GET /api/v1/gitlab-app/projects.
+type gitLabAppProjectResource struct {
+	ID                int64  `json:"id"`
+	Name              string `json:"name"`
+	PathWithNamespace string `json:"path_with_namespace"`
+	CloneURL          string `json:"clone_url"`
+	DefaultBranch     string `json:"default_branch"`
+	Visibility        string `json:"visibility"`
+	WebURL            string `json:"web_url"`
+}
+
+func toGitLabAppProjectResource(p gitlabapp.Project) gitLabAppProjectResource {
+	return gitLabAppProjectResource{
+		ID:                p.ID,
+		Name:              p.Name,
+		PathWithNamespace: p.PathWithNamespace,
+		CloneURL:          p.HTTPURLToRepo,
+		DefaultBranch:     p.DefaultBranch,
+		Visibility:        p.Visibility,
+		WebURL:            p.WebURL,
+	}
+}
+
+// handleListGitLabAppProjects handles GET /api/v1/gitlab-app/projects:
+// every project the connected account can access, for the frontend's
+// project picker. AbilityReadSensitive, the same tier
+// handleListGitHubAppRepos uses for the identical reason (this discloses
+// real private-project names/paths).
+func (rt *Router) handleListGitLabAppProjects(w http.ResponseWriter, r *http.Request) {
+	if rt.gitlabAppSecrets == nil {
+		writeError(w, http.StatusNotImplemented, "the gitlab app connection requires a master key to be configured on this control plane")
+		return
+	}
+
+	ctx := r.Context()
+	conn, accessToken, err := rt.gitlabAccessToken(ctx)
+	if err != nil {
+		rt.writeGitLabAppTokenError(w, "api: mint gitlab access token for project listing failed", err)
+		return
+	}
+
+	projects, err := rt.gitlabAppClient.ListProjects(ctx, conn.InstanceURL, accessToken)
+	if err != nil {
+		rt.logger.Error("api: list gitlab projects failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusBadGateway, "failed to list projects from gitlab")
+		return
+	}
+
+	out := make([]gitLabAppProjectResource, 0, len(projects))
+	for _, p := range projects {
+		out = append(out, toGitLabAppProjectResource(p))
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// useGitLabProjectAsSourceRequest is
+// POST /api/v1/gitlab-app/projects/{id}/use-as-source's body: which app
+// this project becomes the connected git source for, plus the same
+// optional build configuration handleSetGitSource's own request accepts.
+type useGitLabProjectAsSourceRequest struct {
+	AppName   string `json:"app_name"`
+	Branch    string `json:"branch,omitempty"`
+	BuildType string `json:"build_type,omitempty"`
+	BuildPath string `json:"build_path,omitempty"`
+}
+
+// handleUseGitLabProjectAsSource handles
+// POST /api/v1/gitlab-app/projects/{id}/use-as-source: looks the project
+// up, connects it as app_name's git source through the exact same
+// connectGitSource step handleSetGitSource itself uses (git_sources.go),
+// then registers a GitLab project webhook pointed at that source's own
+// webhook URL. AbilityWriteSensitive, the same tier PUT
+// .../git-source uses, since this performs that exact action.
+//
+// Known gap, left honest the same way handleSetGitSource's own Token
+// field already is: no deploy token is set from this path, so a private
+// project connected this way builds only once an operator separately
+// pastes a personal/project access token into the app's git-source
+// card. The connected OAuth access token isn't reused for that, since
+// it's short-lived and this control plane has no path today to refresh
+// it outside of an interactive request.
+func (rt *Router) handleUseGitLabProjectAsSource(w http.ResponseWriter, r *http.Request) {
+	if rt.gitlabAppSecrets == nil {
+		writeError(w, http.StatusNotImplemented, "the gitlab app connection requires a master key to be configured on this control plane")
+		return
+	}
+	if rt.gitSourceSecrets == nil {
+		writeError(w, http.StatusNotImplemented, "git sources are not configured on this control plane (no master key set)")
+		return
+	}
+
+	projectID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || projectID <= 0 {
+		writeError(w, http.StatusBadRequest, "id must be a positive integer")
+		return
+	}
+
+	var req useGitLabProjectAsSourceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.AppName == "" {
+		writeError(w, http.StatusBadRequest, "app_name is required")
+		return
+	}
+	buildType, err := normalizeGitSourceBuildType(req.BuildType)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if buildType == "railpack" && req.BuildPath != "" {
+		writeError(w, http.StatusBadRequest, "build_path is not meaningful for build_type \"railpack\"")
+		return
+	}
+
+	ctx := r.Context()
+	if _, err := rt.apps.GetDesiredService(ctx, req.AppName); errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: use gitlab project as source: load app failed", slog.String("error", err.Error()), slog.String("app_name", req.AppName))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	conn, accessToken, err := rt.gitlabAccessToken(ctx)
+	if err != nil {
+		rt.writeGitLabAppTokenError(w, "api: mint gitlab access token for use-as-source failed", err)
+		return
+	}
+
+	project, err := rt.gitlabAppClient.GetProject(ctx, conn.InstanceURL, accessToken, projectID)
+	if err != nil {
+		rt.logger.Error("api: get gitlab project failed", slog.String("error", err.Error()), slog.Int64("project_id", projectID))
+		writeError(w, http.StatusBadGateway, "failed to look up the project on gitlab")
+		return
+	}
+
+	branch := req.Branch
+	if branch == "" {
+		branch = project.DefaultBranch
+	}
+	if branch == "" {
+		branch = webhook.DefaultBranch
+	}
+
+	result, err := rt.connectGitSource(ctx, req.AppName, connectGitSourceParams{
+		RepoURL: project.HTTPURLToRepo, Branch: branch, BuildType: buildType, BuildPath: req.BuildPath,
+	})
+	if err != nil {
+		rt.logger.Error("api: use gitlab project as source: connect git source failed", slog.String("error", err.Error()), slog.String("app_name", req.AppName))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	baseURL, err := rt.githubAppBaseURL(ctx)
+	if err != nil {
+		if errors.Is(err, errGitHubAppNoPrimaryDomain) {
+			writeError(w, http.StatusConflict, "git source connected, but set a primary domain in ingress settings before gitlab can reach a webhook here")
+			return
+		}
+		rt.logger.Error("api: get base url for gitlab webhook registration failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	webhookSecret, err := rt.gitSourceSecrets.Resolve(ctx, store.GitSourceSecretsKey(req.AppName), gitSourceSecretKey)
+	if err != nil {
+		rt.logger.Error("api: resolve git source webhook secret for gitlab hook registration failed", slog.String("error", err.Error()), slog.String("app_name", req.AppName))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	if err := rt.gitlabAppClient.CreateProjectWebhook(ctx, conn.InstanceURL, accessToken, projectID, baseURL+result.Resource.WebhookURL, webhookSecret); err != nil {
+		rt.logger.Error("api: register gitlab project webhook failed", slog.String("error", err.Error()), slog.Int64("project_id", projectID), slog.String("app_name", req.AppName))
+		writeError(w, http.StatusBadGateway, "git source connected, but registering the webhook on gitlab failed; add it manually")
+		return
+	}
+
+	status := http.StatusOK
+	if result.Creating {
+		status = http.StatusCreated
+	}
+	rt.logger.Info("api: gitlab project connected as git source", slog.String("app_name", req.AppName), slog.Int64("project_id", projectID), slog.Bool("creating", result.Creating))
+	writeJSON(w, status, result.Resource)
+}

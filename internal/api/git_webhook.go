@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"crypto/subtle"
 	"errors"
 	"fmt"
 	"io"
@@ -94,10 +95,15 @@ func gitCheckoutWithToken(ctx context.Context, repoURL, sha, token string) (dir 
 // history and log persistence a manual build trigger already gets.
 //
 // Unauthenticated by design (router.go's own route registration
-// comment): GitHub cannot present a session or API token, so this
-// route's HMAC signature check, against this app's own per-app secret
+// comment): neither GitHub nor GitLab can present a session or API
+// token, so this route's own request verification (GitHub's HMAC
+// signature or GitLab's plain secret token, see
+// verifyGitPushWebhookAuth), against this app's own per-app secret
 // generated at connect time and internal/secrets-encrypted at rest, is
-// what stands in for auth.
+// what stands in for auth. The URL still says "github" for backward
+// compatibility with already-configured GitHub webhooks; GitLab's own
+// project webhook (internal/api/gitlab_app_projects.go) points at this
+// exact same path.
 //
 // 404, not 501, when no git source is connected for name: unlike a
 // control-plane-wide "not configured" gap (no master key set, checked
@@ -144,7 +150,7 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !webhook.VerifySignature([]byte(secret), body, r.Header.Get("X-Hub-Signature-256")) {
+	if !verifyGitPushWebhookAuth(secret, body, r.Header) {
 		rt.logger.Warn("api: git push webhook: signature verification failed", slog.String("name", name), slog.String("remote_addr", r.RemoteAddr))
 		writeError(w, http.StatusUnauthorized, "invalid signature")
 		return
@@ -231,4 +237,18 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 	if _, err := fmt.Fprintf(w, "deploy triggered: %s\n", tag); err != nil {
 		rt.logger.Warn("api: git push webhook: failed to write response body", slog.String("error", err.Error()), slog.String("name", name))
 	}
+}
+
+// verifyGitPushWebhookAuth checks an incoming push webhook request
+// against secret, GitHub's or GitLab's own scheme depending on which
+// header is present. GitHub signs the body (X-Hub-Signature-256, an
+// HMAC-SHA256 hex digest, webhook.VerifySignature); GitLab instead sends
+// the configured secret back verbatim (X-Gitlab-Token, checked with a
+// constant-time comparison since it's a direct secret comparison, not a
+// signature). Neither header present, or a mismatch, fails closed.
+func verifyGitPushWebhookAuth(secret string, body []byte, header http.Header) bool {
+	if token := header.Get("X-Gitlab-Token"); token != "" {
+		return secret != "" && subtle.ConstantTimeCompare([]byte(token), []byte(secret)) == 1
+	}
+	return webhook.VerifySignature([]byte(secret), body, header.Get("X-Hub-Signature-256"))
 }

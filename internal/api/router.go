@@ -84,6 +84,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/GLINCKER/levelrail/internal/gitlabapp"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -359,6 +360,7 @@ type Store interface {
 	DomainStore
 	GitSourceStore
 	GitHubAppStore
+	GitLabAppStore
 	OAuthSettingsStore
 	OAuthIdentityStore
 	EmailSettingsStore
@@ -549,6 +551,10 @@ type Router struct {
 	githubAppClient           GitHubAppClient             // always set (NewRouter defaults it to a real *githubapp.Client, which needs no configuration to construct), overridable in this package's own tests the same way fetch is
 	githubAppState            *githubAppRegistrationState // always set (NewRouter constructs one unconditionally); purely in-memory bookkeeping, see its own doc comment
 	githubAppManifestConfig   githubapp.ManifestConfig    // always set, defaulted to githubapp.DefaultManifestConfig() in NewRouter, overridable via WithGitHubAppManifestConfig: the permissions/events a fresh App registration requests
+	gitlabApp                 GitLabAppStore              // always set, same "core Store interface" shape as githubApp above
+	gitlabAppSecrets          GitLabAppSecrets            // nil is valid: every gitlab-app route that needs it returns 501, same shape as githubAppSecrets above
+	gitlabAppClient           GitLabAppClient             // always set (NewRouter defaults it to a real *gitlabapp.Client), overridable in this package's own tests
+	gitlabAppState            *pendingState               // always set (NewRouter constructs one unconditionally); purely in-memory OAuth CSRF state, see pendingState's own doc comment
 	oauthSettings             OAuthSettingsStore          // always set, same "core Store interface" shape as ingressSettings above: both provider rows always exist (migrations/0035's own seeded rows)
 	oauthIdentities           OAuthIdentityStore          // always set, same shape as oauthSettings above
 	oauthSecrets              OAuthSecrets                // nil is valid: every /auth/oauth/... sign-in route and PUT /settings/oauth/{provider} return 501/501, same "not configured" shape as gitSourceSecrets above
@@ -629,6 +635,14 @@ func WithGitHubAppSecrets(s GitHubAppSecrets) Option {
 // store.User.TOTPEnabled.
 func WithTwoFactorSecrets(s TwoFactorSecrets) Option {
 	return func(rt *Router) { rt.twoFactorSecrets = s }
+}
+
+// WithGitLabAppSecrets enables the GitLab App routes that read or write
+// a credential (connect, connect-start, callback, project listing,
+// use-as-source). Without one configured, those return 501; GET/DELETE
+// /api/v1/gitlab-app work regardless.
+func WithGitLabAppSecrets(s GitLabAppSecrets) Option {
+	return func(rt *Router) { rt.gitlabAppSecrets = s }
 }
 
 // WithGitHubAppManifestConfig overrides the permissions/events a fresh
@@ -919,6 +933,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		githubAppClient:         githubapp.NewClient(),
 		githubAppState:          newGitHubAppRegistrationState(),
 		githubAppManifestConfig: githubapp.DefaultManifestConfig(),
+		gitlabApp:               s,
+		gitlabAppClient:         gitlabapp.NewClient(),
+		gitlabAppState:          newPendingState(),
 		fetch:                   gitCheckout,
 		listBranches:            listRemoteBranches,
 		gitSourceFetch:          gitCheckoutWithToken,
@@ -1419,6 +1436,20 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/github-app/installed", rt.requireAbility(AbilityRoot, rt.handleGitHubAppInstalled))
 	mux.HandleFunc("GET /api/v1/github-app/repos", rt.requireAbility(AbilityReadSensitive, rt.handleListGitHubAppRepos))
 	mux.HandleFunc("GET /api/v1/github-app/repos/{owner}/{repo}/branches", rt.requireAbility(AbilityReadSensitive, rt.handleListGitHubAppBranches))
+
+	// GitLab App: the OAuth-Application counterpart of the GitHub App
+	// routes above, same ability tiers for the same reasons. connect and
+	// callback are real, full-page browser navigations (GitLab's OAuth2
+	// authorization endpoint requires that), not fetch calls.
+	// use-as-source is AbilityWriteSensitive, matching PUT
+	// .../git-source's own tier: it performs that exact action.
+	mux.HandleFunc("GET /api/v1/gitlab-app", rt.requireAbility(AbilityRoot, rt.handleGetGitLabAppStatus))
+	mux.HandleFunc("PUT /api/v1/gitlab-app", rt.requireAbility(AbilityRoot, rt.handleConnectGitLabApp))
+	mux.HandleFunc("DELETE /api/v1/gitlab-app", rt.requireAbility(AbilityRoot, rt.handleDisconnectGitLabApp))
+	mux.HandleFunc("GET /api/v1/gitlab-app/connect", rt.requireAbility(AbilityRoot, rt.handleStartGitLabAppConnect))
+	mux.HandleFunc("GET /api/v1/gitlab-app/callback", rt.requireAbility(AbilityRoot, rt.handleGitLabAppCallback))
+	mux.HandleFunc("GET /api/v1/gitlab-app/projects", rt.requireAbility(AbilityReadSensitive, rt.handleListGitLabAppProjects))
+	mux.HandleFunc("POST /api/v1/gitlab-app/projects/{id}/use-as-source", rt.requireAbility(AbilityWriteSensitive, rt.handleUseGitLabProjectAsSource))
 
 	// Backup history and manual trigger, per database. Trigger needs
 	// AbilityWriteSensitive: it starts real work against a live bucket
