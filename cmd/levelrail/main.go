@@ -43,6 +43,7 @@ import (
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	meshreconcile "github.com/GLINCKER/levelrail/internal/reconcile/mesh"
 	"github.com/GLINCKER/levelrail/internal/reconcile/nodehealth"
+	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -171,6 +172,14 @@ const (
 	// express would ever need to be checked more often than once a
 	// minute anyway.
 	defaultBackupSchedulerInterval = 1 * time.Minute
+
+	// defaultScheduledTaskSchedulerInterval is
+	// internal/scheduledtask.Scheduler's own tick interval, env-overridable
+	// via APP_SCHEDULED_TASK_SCHEDULER_INTERVAL
+	// (scheduledTaskSchedulerInterval below). Same one-minute default and
+	// same reasoning as defaultBackupSchedulerInterval above: standard
+	// 5-field cron has no granularity finer than a minute.
+	defaultScheduledTaskSchedulerInterval = 1 * time.Minute
 )
 
 func main() {
@@ -367,6 +376,23 @@ func run(logger *slog.Logger) error {
 		}
 	}
 
+	// scheduledTaskRunner needs no secretsManager (unlike backupRunner
+	// above): it execs a plain command through the same docker.Runtime
+	// every reconciler controller already resolves per service
+	// (resolveNodeTransport), nothing that touches envelope-encrypted
+	// credentials. Constructed unconditionally, here, for the identical
+	// "one instance, two consumers" reason backupRunner is: api.Router's
+	// manual "run now" trigger (WithScheduledTaskRunner below, via
+	// rootHandler) and the scheduled-task loop started further down this
+	// function both need the exact same instance.
+	scheduledTaskRunner := &scheduledtask.Runner{
+		Apps: db,
+		Runtime: func(nodeID string) (docker.Runtime, error) {
+			return resolveNodeTransport(client, agentRegistry, nodeID)
+		},
+		History: db,
+	}
+
 	builder, closeBuilder, err := loadBuilder(ctx, logger, db, telemetryDB, secretsManager, agentRegistry)
 	if err != nil {
 		// Not fatal, the same choice as everything else optional above:
@@ -396,7 +422,7 @@ func run(logger *slog.Logger) error {
 
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
-		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, agentRegistry, emailSender),
+		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, scheduledTaskRunner, agentRegistry, emailSender),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -512,6 +538,19 @@ func run(logger *slog.Logger) error {
 			}
 		}()
 	}
+
+	// App-level scheduled tasks: internal/scheduledtask.Scheduler checks,
+	// on its own tick, which tasks are enabled and due, and runs them
+	// through the same scheduledTaskRunner the manual "run now" trigger
+	// (api.WithScheduledTaskRunner above) uses. Unlike the backup
+	// scheduler above, this is unconditional: scheduledTaskRunner needs no
+	// master key, so there is no equivalent "not configured" gate here.
+	scheduledTaskScheduler := scheduledtask.NewScheduler(db, scheduledTaskRunner, logger)
+	go func() {
+		if err := scheduledTaskScheduler.Run(ctx, scheduledTaskSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("scheduled task scheduler stopped", slog.String("error", err.Error()))
+		}
+	}()
 
 	events, errs := client.Events(ctx)
 	go func() {
@@ -1403,7 +1442,7 @@ func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent
 // internal/api importing internal/agent.Registry directly (see
 // api.NodeRuntimeResolver's own doc comment for why this stays a
 // closure over resolveNodeTransport instead of a new dependency edge).
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, agentRegistry *agent.Registry, emailSender email.Sender) http.Handler {
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, scheduledTaskRunner *scheduledtask.Runner, agentRegistry *agent.Registry, emailSender email.Sender) http.Handler {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
@@ -1424,6 +1463,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithExecRuntime(func(nodeID string) (docker.Runtime, error) {
 			return resolveNodeTransport(client, agentRegistry, nodeID)
 		}),
+		api.WithScheduledTaskRunner(scheduledTaskRunner),
 		api.WithCertExpiryWarningWindow(certExpiryWarningWindow(logger)),
 		api.WithPublicHost(publicHost()),
 		api.WithDeployLogStore(telemetryDB),
@@ -1549,6 +1589,22 @@ func backupSchedulerInterval(logger *slog.Logger) time.Duration {
 	if err != nil {
 		logger.Warn("invalid APP_BACKUP_SCHEDULER_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return defaultBackupSchedulerInterval
+	}
+	return d
+}
+
+// scheduledTaskSchedulerInterval mirrors backupSchedulerInterval's exact
+// shape for internal/scheduledtask.Scheduler.Run's own interval
+// argument.
+func scheduledTaskSchedulerInterval(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_SCHEDULED_TASK_SCHEDULER_INTERVAL")
+	if raw == "" {
+		return defaultScheduledTaskSchedulerInterval
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_SCHEDULED_TASK_SCHEDULER_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return defaultScheduledTaskSchedulerInterval
 	}
 	return d
 }
