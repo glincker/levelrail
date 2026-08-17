@@ -132,6 +132,26 @@ func TestHandleSetGitSource_RejectsComposeBuildType(t *testing.T) {
 	}
 }
 
+func TestHandleSetGitSource_RejectsImageBuildType(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source", `{"repo_url":"https://github.com/org/web.git","build_type":"image"}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusBadRequest)
+	}
+	var got apiError
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	want := `build_type "image" needs no build; deploy it directly with POST /api/v1/apps/{name}/deploys instead of connecting a git source`
+	if got.Error != want {
+		t.Errorf("error = %q, want %q", got.Error, want)
+	}
+}
+
 func TestHandleSetGitSource_Create_Success(t *testing.T) {
 	secrets := newFakeGitSourceSecrets()
 	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
@@ -363,6 +383,7 @@ func TestNormalizeGitSourceBuildType(t *testing.T) {
 		{name: "railpack", in: "railpack", want: "railpack"},
 		{name: "static", in: "static", want: "static"},
 		{name: "compose rejected", in: "compose", wantErr: true},
+		{name: "image rejected", in: "image", wantErr: true},
 		{name: "unrecognized rejected", in: "nixpacks", wantErr: true},
 	}
 	for _, tt := range tests {
