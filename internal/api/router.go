@@ -1040,6 +1040,12 @@ func (rt *Router) Handler() http.Handler {
 	// and deploys, it's not ordinary config.
 	mux.HandleFunc("POST /api/v1/apps/{name}/compose", rt.requireAbility(AbilityDeploy, rt.handleDeployCompose))
 
+	// Service template catalog (service_templates.go, ADR 015):
+	// read-only, static, served straight from internal/catalog.Templates,
+	// no store involved. AbilityRead like every other passive view.
+	mux.HandleFunc("GET /api/v1/service-templates", rt.requireAbility(AbilityRead, rt.handleListServiceTemplates))
+	mux.HandleFunc("GET /api/v1/service-templates/{id}", rt.requireAbility(AbilityRead, rt.handleGetServiceTemplate))
+
 	// Clone: duplicates an app's desired state under a new name.
 	// AbilityWrite, the same gate POST /api/v1/apps itself uses, since a
 	// clone is a creation shaped as "copy {name}" rather than "start
