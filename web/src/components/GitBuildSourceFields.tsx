@@ -44,10 +44,17 @@ import type { FormInput, FormOutput } from './CreateAppFromGitFields'
 // build pack is a real scope expansion this pass didn't take. A static
 // site whose output lives in a subdirectory still deploys fine through
 // app.yaml, just not through this manual-trigger wizard yet.
-// build.type: railpack has no build.path concept at all
-// (build.RailpackRequest carries no path field, and
-// handleTriggerBuild rejects one being set), so it never shows the
-// field either.
+// build.type: railpack and build.type: image both have no build.path
+// concept at all (handleTriggerBuild rejects one being set for either),
+// so neither ever shows the field.
+//
+// build.type: image needs no build at all (internal/deploy.Pipeline.
+// deployImage saves the given reference directly), so its own tab shows
+// an image-reference input instead of anything build-related. The
+// repository URL/branch fields above still stay visible and required:
+// handleTriggerBuild (internal/api/builds.go) clones the repo for every
+// build.type today, this one included, even though deployImage never
+// reads the checkout it produces.
 export function GitBuildSourceFields({
   control,
   register,
@@ -172,19 +179,27 @@ export function GitBuildSourceFields({
             <Tabs
               value={field.value}
               onValueChange={(v: unknown) => {
-                if (v === 'railpack' || v === 'dockerfile' || v === 'static') {
+                if (
+                  v === 'railpack' ||
+                  v === 'dockerfile' ||
+                  v === 'static' ||
+                  v === 'image'
+                ) {
                   field.onChange(v)
                 }
               }}
             >
-              {/* Only these three tabs: the three build.type cases
+              {/* Only these four tabs: the four build.type cases
                   internal/deploy.Pipeline.Deploy actually has a case for
                   (internal/api/builds.go's handleTriggerBuild). No Nixpacks
                   (this project uses Railpack instead, see CLAUDE.md 4.4)
                   and no Compose (internal/deploy's own compose case still
                   returns "not yet supported"). Same order and tab layout
-                  GitSourceCard.tsx already uses for this exact choice. */}
-              <TabsList id="git-app-build-type" className="grid w-full grid-cols-3">
+                  GitSourceCard.tsx already uses for the three build-from-
+                  source cases; "Prebuilt image" has no GitSourceCard
+                  counterpart, see normalizeGitSourceBuildType's own doc
+                  comment (internal/api/git_sources.go) for why. */}
+              <TabsList id="git-app-build-type" className="grid w-full grid-cols-4">
                 <TabsTrigger value="railpack" disabled={disabled}>
                   Auto-detect
                 </TabsTrigger>
@@ -193,6 +208,9 @@ export function GitBuildSourceFields({
                 </TabsTrigger>
                 <TabsTrigger value="static" disabled={disabled}>
                   Static site
+                </TabsTrigger>
+                <TabsTrigger value="image" disabled={disabled}>
+                  Prebuilt image
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="railpack" className="pt-2">
@@ -211,12 +229,31 @@ export function GitBuildSourceFields({
                   Serves the checkout directly, no container.
                 </FieldDescription>
               </TabsContent>
+              <TabsContent value="image" className="space-y-3 pt-2">
+                <FieldDescription>
+                  Already built and pushed somewhere Docker can pull it from?
+                  Skip the build entirely and deploy that image directly.
+                </FieldDescription>
+                <Field>
+                  <FieldLabel htmlFor="git-app-image">Image</FieldLabel>
+                  <Input
+                    id="git-app-image"
+                    className="font-mono"
+                    placeholder="ghcr.io/you/app:latest"
+                    autoComplete="off"
+                    spellCheck={false}
+                    disabled={disabled}
+                    {...register('image')}
+                  />
+                  <FieldError errors={[formState.errors.image]} />
+                </Field>
+              </TabsContent>
             </Tabs>
           )}
         />
       </Field>
 
-      {buildType !== 'static' ? (
+      {buildType !== 'static' && buildType !== 'image' ? (
         <div>
           <button
             type="button"

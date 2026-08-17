@@ -26,9 +26,9 @@ import { GitHubAppRepoPicker } from './GitHubAppRepoPicker'
 
 // Build packs this form offers, matching GitBuildSourceFields' own tab
 // picker for what POST /api/v1/apps/{name}/builds actually supports:
-// dockerfile, railpack, static. See that component's doc comment for
-// why Nixpacks and compose are never offered.
-const BUILD_TYPES = ['dockerfile', 'railpack', 'static'] as const
+// dockerfile, railpack, static, image. See that component's doc comment
+// for why Nixpacks and compose are never offered.
+const BUILD_TYPES = ['dockerfile', 'railpack', 'static', 'image'] as const
 
 // Same pattern DomainEditor.tsx validates a domain row against; kept as
 // a local copy rather than exported/imported from there since this form
@@ -46,25 +46,37 @@ const DOMAIN_PATTERN =
 // app that already exists. buildType is new: this form used to fire
 // every build as an implicit build.type: dockerfile, matching what
 // handleTriggerBuild used to reject everything else as.
-const createAppFromGitSchema = z.object({
-  name: z.string().trim().min(1, 'Name is required'),
-  port: z.coerce
-    .number({ error: 'Port is required' })
-    .int('Port must be a whole number')
-    .positive('Port must be a positive integer'),
-  repoUrl: z.string().trim().min(1, 'Repository URL is required'),
-  ref: z.string().trim().min(1, 'Branch, tag, or commit is required'),
-  imageRepo: z.string().trim(),
-  buildType: z.enum(BUILD_TYPES),
-  dockerfilePath: z.string().trim(),
-  domain: z
-    .string()
-    .trim()
-    .refine(
-      (v) => v === '' || DOMAIN_PATTERN.test(v),
-      'Enter a valid domain, e.g. app.example.com',
-    ),
-})
+const createAppFromGitSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Name is required'),
+    port: z.coerce
+      .number({ error: 'Port is required' })
+      .int('Port must be a whole number')
+      .positive('Port must be a positive integer'),
+    repoUrl: z.string().trim().min(1, 'Repository URL is required'),
+    ref: z.string().trim().min(1, 'Branch, tag, or commit is required'),
+    imageRepo: z.string().trim(),
+    buildType: z.enum(BUILD_TYPES),
+    dockerfilePath: z.string().trim(),
+    // Only required for buildType "image": see the superRefine below.
+    image: z.string().trim(),
+    domain: z
+      .string()
+      .trim()
+      .refine(
+        (v) => v === '' || DOMAIN_PATTERN.test(v),
+        'Enter a valid domain, e.g. app.example.com',
+      ),
+  })
+  .superRefine((values, ctx) => {
+    if (values.buildType === 'image' && values.image.trim() === '') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['image'],
+        message: 'Image reference is required',
+      })
+    }
+  })
 
 export type FormInput = z.input<typeof createAppFromGitSchema>
 export type FormOutput = z.output<typeof createAppFromGitSchema>
@@ -77,6 +89,7 @@ const DEFAULT_VALUES: FormInput = {
   imageRepo: '',
   buildType: 'railpack',
   dockerfilePath: '',
+  image: '',
   domain: '',
 }
 
@@ -85,16 +98,18 @@ const DEFAULT_VALUES: FormInput = {
 // internal/api/builds.go's triggerBuildBuildInput.Path doc comment), and
 // static's own build.path (the output subdirectory to serve) isn't
 // exposed by this form yet, see GitBuildSourceFields' own doc comment
-// for why. image_repo is only meaningful for a container-backed build
-// (deployStatic never reads req.ImageRepo), so it's omitted for static
-// too, matching GitBuildSourceFields not even rendering that field in
-// that case.
+// for why. build.type: image has no path concept either, same rejection
+// as railpack. image_repo is only meaningful for a container-backed
+// build that actually runs (deployStatic never reads req.ImageRepo, and
+// build.type: image already carries a full, tagged reference), so it's
+// omitted for both, matching GitBuildSourceFields not even rendering
+// that field in either case.
 function buildInputFrom(values: FormOutput): TriggerBuildInput {
   return {
     repoUrl: values.repoUrl.trim(),
     ref: values.ref.trim(),
     imageRepo:
-      values.buildType === 'static'
+      values.buildType === 'static' || values.buildType === 'image'
         ? undefined
         : values.imageRepo.trim() || undefined,
     buildType: values.buildType,
@@ -102,6 +117,7 @@ function buildInputFrom(values: FormOutput): TriggerBuildInput {
       values.buildType === 'dockerfile'
         ? values.dockerfilePath.trim() || undefined
         : undefined,
+    image: values.buildType === 'image' ? values.image.trim() : undefined,
   }
 }
 
