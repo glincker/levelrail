@@ -79,20 +79,11 @@ type useGitLabProjectAsSourceRequest struct {
 }
 
 // handleUseGitLabProjectAsSource handles
-// POST /api/v1/gitlab-app/projects/{id}/use-as-source: looks the project
-// up, connects it as app_name's git source through the exact same
-// connectGitSource step handleSetGitSource itself uses (git_sources.go),
-// then registers a GitLab project webhook pointed at that source's own
-// webhook URL. AbilityWriteSensitive, the same tier PUT
-// .../git-source uses, since this performs that exact action.
+// POST /api/v1/gitlab-app/projects/{id}/use-as-source.
 //
-// Known gap, left honest the same way handleSetGitSource's own Token
-// field already is: no deploy token is set from this path, so a private
-// project connected this way builds only once an operator separately
-// pastes a personal/project access token into the app's git-source
-// card. The connected OAuth access token isn't reused for that, since
-// it's short-lived and this control plane has no path today to refresh
-// it outside of an interactive request.
+// Known gap: no deploy token is set from this path, so a private
+// project builds only once an operator pastes a token into the app's
+// git-source card; the short-lived OAuth token isn't reused for that.
 func (rt *Router) handleUseGitLabProjectAsSource(w http.ResponseWriter, r *http.Request) {
 	if rt.gitlabAppSecrets == nil {
 		writeError(w, http.StatusNotImplemented, "the gitlab app connection requires a master key to be configured on this control plane")

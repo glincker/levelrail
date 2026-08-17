@@ -1,14 +1,9 @@
-// Package gitlabapp implements the OAuth2 authorization-code flow
-// against a GitLab instance's manually-registered OAuth Application
-// (operator-created, unlike GitHub's manifest-driven App registration),
-// plus the small slice of GitLab's REST API this control plane needs
-// once connected: listing accessible projects and registering a
-// project's push webhook.
+// Package gitlabapp implements OAuth2 and the small slice of GitLab's
+// REST API this control plane needs once connected.
 //
-// Every method takes instanceURL explicitly rather than baking one into
-// the Client, since GitLab is commonly self-hosted: one control plane
-// connects to exactly one instance, but that instance is operator-
-// configured, not fixed like api.github.com.
+// Methods take instanceURL explicitly rather than baking one into the
+// Client, since GitLab is commonly self-hosted and not fixed like
+// api.github.com.
 package gitlabapp
 
 import (
