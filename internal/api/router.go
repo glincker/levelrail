@@ -283,6 +283,20 @@ type AuthStore interface {
 	CountUsers(ctx context.Context) (int, error)
 	ListUsers(ctx context.Context) ([]store.User, error)
 	DeleteUser(ctx context.Context, id string) error
+	EnableUserTOTP(ctx context.Context, id string, confirmedAt time.Time) error
+	DisableUserTOTP(ctx context.Context, id string) error
+}
+
+// RecoveryCodeStore is the store surface the 2FA handlers (twofactor.go)
+// need for single-use fallback codes: always set, part of the core
+// Store interface, the same "no secrets configuration needed" shape
+// AuthStore itself has (a recovery code's hash is an ordinary column,
+// unlike a TOTP secret which goes through TwoFactorSecrets below).
+type RecoveryCodeStore interface {
+	ReplaceUserRecoveryCodes(ctx context.Context, userID string, hashes []string) error
+	ConsumeUserRecoveryCode(ctx context.Context, userID, hash string) (bool, error)
+	CountUnusedUserRecoveryCodes(ctx context.Context, userID string) (int, error)
+	DeleteUserRecoveryCodes(ctx context.Context, userID string) error
 }
 
 // EmailSettingsStore is the store surface GET/PUT
@@ -339,6 +353,7 @@ type Store interface {
 	OAuthIdentityStore
 	EmailSettingsStore
 	PasswordResetTokenStore
+	RecoveryCodeStore
 }
 
 // SecretSetter is the surface the secrets handlers need from
@@ -439,33 +454,37 @@ type NodeRuntimeResolver func(nodeID string) (docker.Runtime, error)
 
 // Router wires every internal/api handler onto one http.Handler.
 type Router struct {
-	logger          *slog.Logger
-	brand           *brand.Brand
-	apps            AppStore
-	appGroups       AppGroupLister
-	appCompose      AppComposeStore
-	deploys         DeployStore
-	databases       DatabaseStore
-	auth            AuthStore
-	tokens          TokenStore
-	nodes           NodeStore
-	projects        ProjectStore
-	secrets         SecretSetter       // nil is valid: a control plane with no master key configured serves everything except secret-setting
-	composeSecrets  ComposeSecretStore // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
-	telemetry       TelemetryQuerier   // nil is valid: metrics/logs query routes return 501, same shape as secrets above
-	alertRules      AlertRules         // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
-	sessions        *sessionStore
-	logins          *loginLimiter
-	sessionTTL      time.Duration        // 0 means "use defaultSessionTTL", set via WithSessionTTL
-	dataDir         string               // "" means "don't report disk usage", set via WithDataDir
-	dockerPinger    DockerPinger         // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
-	images          ImageLister          // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
-	dockerDiskUsage DockerDiskUsager     // nil is valid: GET /system/status omits its docker_disk_usage field, same "optional signal, absence is not an error" shape as dockerPinger above
-	dockerPruner    DockerPruner         // nil is valid: POST /system/prune returns 501, same shape as builder/secrets above
-	execRuntime     NodeRuntimeResolver  // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
-	certs           CertStore            // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
-	ingressSettings IngressSettingsStore // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
-	domains         DomainStore          // always set, same shape as ingressSettings above: service_domains is always queryable, empty is a valid, non-error result
+	logger           *slog.Logger
+	brand            *brand.Brand
+	apps             AppStore
+	appGroups        AppGroupLister
+	appCompose       AppComposeStore
+	deploys          DeployStore
+	databases        DatabaseStore
+	auth             AuthStore
+	tokens           TokenStore
+	nodes            NodeStore
+	projects         ProjectStore
+	secrets          SecretSetter       // nil is valid: a control plane with no master key configured serves everything except secret-setting
+	composeSecrets   ComposeSecretStore // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
+	telemetry        TelemetryQuerier   // nil is valid: metrics/logs query routes return 501, same shape as secrets above
+	alertRules       AlertRules         // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
+	sessions         *sessionStore
+	logins           *loginLimiter
+	recoveryCodes    RecoveryCodeStore    // always set, same "core Store interface" shape as auth above
+	twoFactorSecrets TwoFactorSecrets     // nil is valid: POST /api/v1/auth/2fa/setup (and confirm/disable/regenerate) return 501, same "not configured" shape as githubAppSecrets above
+	mfaPending       *mfaPendingStore     // always set, same "always present, not an Option" shape sessions itself has
+	mfaVerify        *loginLimiter        // separate budget from logins above: brute-forcing a 6-digit code after a correct password is a distinct attack this must independently rate limit
+	sessionTTL       time.Duration        // 0 means "use defaultSessionTTL", set via WithSessionTTL
+	dataDir          string               // "" means "don't report disk usage", set via WithDataDir
+	dockerPinger     DockerPinger         // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
+	images           ImageLister          // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
+	dockerDiskUsage  DockerDiskUsager     // nil is valid: GET /system/status omits its docker_disk_usage field, same "optional signal, absence is not an error" shape as dockerPinger above
+	dockerPruner     DockerPruner         // nil is valid: POST /system/prune returns 501, same shape as builder/secrets above
+	execRuntime      NodeRuntimeResolver  // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
+	certs            CertStore            // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
+	ingressSettings  IngressSettingsStore // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
+	domains          DomainStore          // always set, same shape as ingressSettings above: service_domains is always queryable, empty is a valid, non-error result
 	// publicHost is APP_PUBLIC_HOST: the IP or hostname operators should
 	// point a DNS record at to reach this control plane's embedded
 	// ingress. "" means "not configured", set via WithPublicHost;
@@ -589,6 +608,15 @@ func WithGitSourceSecrets(s GitSourceSecrets) Option {
 // /api/v1/github-app work regardless.
 func WithGitHubAppSecrets(s GitHubAppSecrets) Option {
 	return func(rt *Router) { rt.githubAppSecrets = s }
+}
+
+// WithTwoFactorSecrets enables the 2FA setup/confirm/disable/regenerate
+// routes (twofactor.go), which need to write and read back a user's
+// TOTP secret. Without one configured, those return 501; GET
+// /api/v1/auth/2fa (status) works regardless, since it only reads
+// store.User.TOTPEnabled.
+func WithTwoFactorSecrets(s TwoFactorSecrets) Option {
+	return func(rt *Router) { rt.twoFactorSecrets = s }
 }
 
 // WithGitHubAppManifestConfig overrides the permissions/events a fresh
@@ -883,6 +911,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		listBranches:            listRemoteBranches,
 		gitSourceFetch:          gitCheckoutWithToken,
 		logins:                  newLoginLimiter(),
+		recoveryCodes:           s,
+		mfaPending:              newMFAPendingStore(),
+		mfaVerify:               newLoginLimiter(),
 		oauthSettings:           s,
 		oauthIdentities:         s,
 		oauthState:              newOAuthStateStore(),
@@ -939,6 +970,18 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("PUT /api/v1/auth/password", rt.requireAuth(rt.handleChangePassword))
 	mux.HandleFunc("GET /api/v1/auth/session", rt.requireAuth(rt.handleGetSession))
 	mux.HandleFunc("POST /api/v1/auth/sessions/revoke-others", rt.requireAuth(rt.handleRevokeOtherSessions))
+
+	// Two-factor auth (twofactor.go). /2fa/verify is necessarily public
+	// (it's step two of login, before a session exists), rate-limited by
+	// rt.mfaVerify instead of a session/ability check. Every other route
+	// here acts on the caller's own account, so requireAuth
+	// (session-only, matching handleChangePassword's own reasoning).
+	mux.HandleFunc("GET /api/v1/auth/2fa", rt.requireAuth(rt.handleGetTwoFactorStatus))
+	mux.HandleFunc("POST /api/v1/auth/2fa/setup", rt.requireAuth(rt.handleSetupTwoFactor))
+	mux.HandleFunc("POST /api/v1/auth/2fa/confirm", rt.requireAuth(rt.handleConfirmTwoFactor))
+	mux.HandleFunc("POST /api/v1/auth/2fa/disable", rt.requireAuth(rt.handleDisableTwoFactor))
+	mux.HandleFunc("POST /api/v1/auth/2fa/recovery-codes/regenerate", rt.requireAuth(rt.handleRegenerateRecoveryCodes))
+	mux.HandleFunc("POST /api/v1/auth/2fa/verify", rt.handleVerifyTwoFactor)
 
 	// Multi-user: an already-authenticated user creating another
 	// local-password user (see handleRegister's own doc comment), and a

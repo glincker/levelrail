@@ -1455,6 +1455,10 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			// Same nil-interface hazard as every other
 			// secretsManager-dependent option in this block.
 			api.WithGitHubAppSecrets(secretsManager),
+			// Per-user TOTP secrets (internal/api/twofactor.go): same
+			// secretsManager, same nil-interface hazard as everything else
+			// in this block.
+			api.WithTwoFactorSecrets(secretsManager),
 		)
 	}
 	if builder != nil {

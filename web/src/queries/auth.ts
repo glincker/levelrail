@@ -22,6 +22,21 @@ export interface AuthUser {
   username: string
 }
 
+// The other shape internal/api/auth.go's loginResponse can take: a
+// correct password for an account with TOTP enabled, sent back instead
+// of a completed sign-in. LoginForm switches to a second step (entering
+// a code) when it sees this instead of AuthUser.
+export interface MFARequiredResponse {
+  mfa_required: true
+  mfa_token: string
+}
+
+export type LoginResult = AuthUser | MFARequiredResponse
+
+function isMFARequired(result: LoginResult): result is MFARequiredResponse {
+  return 'mfa_required' in result && result.mfa_required
+}
+
 // Thrown for a 429 specifically, carrying the seconds-to-wait the
 // backend's Retry-After header names (internal/api/auth.go's
 // handleLogin, backed by ratelimit.go's real exponential backoff: 3 free
@@ -52,7 +67,7 @@ async function throwAuthError(res: Response, fallback: string): Promise<never> {
 export async function login(
   username: string,
   password: string,
-): Promise<AuthUser> {
+): Promise<LoginResult> {
   const res = await fetch('/api/v1/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -60,6 +75,35 @@ export async function login(
   })
   if (!res.ok) {
     await throwAuthError(res, `login failed: ${res.status}`)
+  }
+  return (await res.json()) as LoginResult
+}
+
+// POST /api/v1/auth/2fa/verify (internal/api/twofactor.go's
+// handleVerifyTwoFactor): the second step of login for an account with
+// TOTP enabled, exchanging the mfa_token login() returned plus a code
+// (or recovery code) for a real session. Same response shape and same
+// rate-limit (429) handling as login itself.
+export interface VerifyTwoFactorRequest {
+  mfaToken: string
+  code?: string
+  recoveryCode?: string
+}
+
+export async function verifyTwoFactor(
+  req: VerifyTwoFactorRequest,
+): Promise<AuthUser> {
+  const res = await fetch('/api/v1/auth/2fa/verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      mfa_token: req.mfaToken,
+      code: req.code ?? '',
+      recovery_code: req.recoveryCode ?? '',
+    }),
+  })
+  if (!res.ok) {
+    await throwAuthError(res, `two-factor verification failed: ${res.status}`)
   }
   return (await res.json()) as AuthUser
 }
@@ -107,10 +151,29 @@ interface Credentials {
 // infers: LoginForm/RegisterForm need to narrow on `instanceof
 // RateLimitError` and read `.status`, which only typechecks if the
 // mutation's error type says so.
+// A completed sign-in stores the username and navigates away, exactly
+// as before; an mfa_required result does neither, LoginForm's own
+// call-level onSuccess (passed to .mutate) is what switches it to the
+// second-step UI, this hook has no navigation to do until that second
+// step succeeds too.
 export function useLogin() {
   const navigate = useNavigate()
-  return useMutation<AuthUser, ApiError, Credentials>({
+  return useMutation<LoginResult, ApiError, Credentials>({
     mutationFn: ({ username, password }) => login(username, password),
+    onSuccess: (result) => {
+      if (isMFARequired(result)) {
+        return
+      }
+      setStoredUsername(result.username)
+      void navigate({ to: '/' })
+    },
+  })
+}
+
+export function useVerifyTwoFactor() {
+  const navigate = useNavigate()
+  return useMutation<AuthUser, ApiError, VerifyTwoFactorRequest>({
+    mutationFn: verifyTwoFactor,
     onSuccess: (user) => {
       setStoredUsername(user.username)
       void navigate({ to: '/' })

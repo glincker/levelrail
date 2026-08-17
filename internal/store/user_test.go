@@ -310,6 +310,22 @@ func TestMigration_LegacyAdminUserBecomesFirstUser(t *testing.T) {
 	if err := db.applyMigration(ctx, *usersMigration); err != nil {
 		t.Fatalf("apply users migration: %v", err)
 	}
+	// GetUserByEmail below reads every users column that exists on the
+	// finished schema, including ones added by migrations after "users"
+	// (e.g. 0042's totp_enabled/totp_confirmed_at), so the rest of the
+	// chain needs to run too: this test only means to isolate "did the
+	// legacy admin_user backfill work", not "does GetUserByEmail work
+	// against a schema frozen partway through history", which was never
+	// a real state a running instance passes through.
+	for i := range migrations {
+		m := migrations[i]
+		if m.version <= usersMigration.version {
+			continue
+		}
+		if err := db.applyMigration(ctx, m); err != nil {
+			t.Fatalf("apply migration %d: %v", m.version, err)
+		}
+	}
 
 	got, err := db.GetUserByEmail(ctx, "admin")
 	if err != nil {
@@ -323,6 +339,59 @@ func TestMigration_LegacyAdminUserBecomesFirstUser(t *testing.T) {
 	}
 	if got.ID != "user_legacy_admin" {
 		t.Errorf("ID = %q, want %q", got.ID, "user_legacy_admin")
+	}
+}
+
+func TestEnableAndDisableUserTOTP(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	u := User{ID: "user_1", Email: "a@example.com", DisplayName: "A", CreatedAt: time.Now().UTC()}
+	if err := db.CreateUser(ctx, u); err != nil {
+		t.Fatalf("CreateUser() error = %v", err)
+	}
+
+	got, err := db.GetUserByID(ctx, u.ID)
+	if err != nil {
+		t.Fatalf("GetUserByID() error = %v", err)
+	}
+	if got.TOTPEnabled || got.TOTPConfirmedAt != nil {
+		t.Fatalf("new user TOTPEnabled = %v, TOTPConfirmedAt = %v, want false/nil", got.TOTPEnabled, got.TOTPConfirmedAt)
+	}
+
+	confirmedAt := time.Now().UTC().Truncate(time.Second)
+	if err := db.EnableUserTOTP(ctx, u.ID, confirmedAt); err != nil {
+		t.Fatalf("EnableUserTOTP() error = %v", err)
+	}
+	got, err = db.GetUserByID(ctx, u.ID)
+	if err != nil {
+		t.Fatalf("GetUserByID() error = %v", err)
+	}
+	if !got.TOTPEnabled {
+		t.Error("TOTPEnabled = false after EnableUserTOTP, want true")
+	}
+	if got.TOTPConfirmedAt == nil || !got.TOTPConfirmedAt.Equal(confirmedAt) {
+		t.Errorf("TOTPConfirmedAt = %v, want %v", got.TOTPConfirmedAt, confirmedAt)
+	}
+
+	if err := db.DisableUserTOTP(ctx, u.ID); err != nil {
+		t.Fatalf("DisableUserTOTP() error = %v", err)
+	}
+	got, err = db.GetUserByID(ctx, u.ID)
+	if err != nil {
+		t.Fatalf("GetUserByID() error = %v", err)
+	}
+	if got.TOTPEnabled || got.TOTPConfirmedAt != nil {
+		t.Errorf("after DisableUserTOTP: TOTPEnabled = %v, TOTPConfirmedAt = %v, want false/nil", got.TOTPEnabled, got.TOTPConfirmedAt)
+	}
+}
+
+func TestEnableUserTOTP_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.EnableUserTOTP(ctx, "does-not-exist", time.Now()); !errors.Is(err, ErrUserNotFound) {
+		t.Errorf("EnableUserTOTP() error = %v, want ErrUserNotFound", err)
 	}
 }
 
