@@ -43,7 +43,7 @@ func TestRun_Dispatch(t *testing.T) {
 			// file, and every one of them returns before doing so
 			// (help, usage errors, and validation errors are all
 			// resolved before any Client is constructed).
-			got := run("levelrail-cli-test", tt.args, &stdout, &stderr, envMap(nil))
+			got := run("levelrail-cli-test", tt.args, &stdout, &stderr, envMap())
 			if got != tt.wantExit {
 				t.Errorf("exit = %d, want %d (stdout=%q stderr=%q)", got, tt.wantExit, stdout.String(), stderr.String())
 			}
@@ -61,7 +61,7 @@ func TestRun_CreateJSONErrorGoesToStdout(t *testing.T) {
 	t.Chdir(t.TempDir())
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "create", "--json"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "create", "--json"}, &stdout, &stderr, envMap())
 	if got != exitValidation {
 		t.Fatalf("exit = %d, want %d", got, exitValidation)
 	}

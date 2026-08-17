@@ -24,7 +24,7 @@ func TestRun_AppsRestart(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "restart", "web", "--api-url", srv.URL, "--json"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "restart", "web", "--api-url", srv.URL, "--json"}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -48,7 +48,7 @@ func TestRun_AppsRestart_Human(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "restart", "web", "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "restart", "web", "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -69,7 +69,7 @@ func TestRun_AppsRestart_NotFound(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "restart", "ghost", "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "restart", "ghost", "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitAPIError {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitAPIError, stdout.String(), stderr.String())
 	}
@@ -80,7 +80,7 @@ func TestRun_AppsRestart_NotFound(t *testing.T) {
 
 func TestRun_AppsRestart_NoName(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "restart"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "restart"}, &stdout, &stderr, envMap())
 	if got != exitUsage {
 		t.Fatalf("exit = %d, want %d", got, exitUsage)
 	}
@@ -91,7 +91,7 @@ func TestRun_AppsRestart_NoName(t *testing.T) {
 
 func TestRun_AppsRestart_Help(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "restart", "-h"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "restart", "-h"}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d", got, exitOK)
 	}

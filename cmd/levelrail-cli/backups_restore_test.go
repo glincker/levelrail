@@ -51,7 +51,7 @@ func TestRun_BackupsRestore_MismatchedConfirmNeverCallsAPI(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"backups", "restore", "main", "--backup", "bkp_1", "--confirm", "wrong-name", "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"backups", "restore", "main", "--backup", "bkp_1", "--confirm", "wrong-name", "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitValidation {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitValidation, stdout.String(), stderr.String())
 	}
@@ -70,7 +70,7 @@ func TestRun_BackupsRestore_MissingConfirmPromptsAndRefusesOnEOF(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := runBackupsRestore("levelrail-cli-test", []string{"main", "--backup", "bkp_1", "--api-url", srv.URL}, &stdout, &stderr, envMap(nil), strings.NewReader(""))
+	got := runBackupsRestore("levelrail-cli-test", []string{"main", "--backup", "bkp_1", "--api-url", srv.URL}, &stdout, &stderr, envMap(), strings.NewReader(""))
 	if got != exitValidation {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitValidation, stdout.String(), stderr.String())
 	}
@@ -94,7 +94,7 @@ func TestRun_BackupsRestore_ConfirmedCallsAPI(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"backups", "restore", "main", "--backup", "bkp_1", "--confirm", "main", "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"backups", "restore", "main", "--backup", "bkp_1", "--confirm", "main", "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -111,7 +111,7 @@ func TestRun_BackupsRestore_ConfirmedCallsAPI(t *testing.T) {
 
 func TestRun_BackupsRestore_MissingBackupID(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"backups", "restore", "main", "--confirm", "main"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"backups", "restore", "main", "--confirm", "main"}, &stdout, &stderr, envMap())
 	if got != exitValidation {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitValidation, stdout.String(), stderr.String())
 	}
@@ -122,7 +122,7 @@ func TestRun_BackupsRestore_MissingBackupID(t *testing.T) {
 
 func TestRun_BackupsRestore_NoName(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"backups", "restore"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"backups", "restore"}, &stdout, &stderr, envMap())
 	if got != exitUsage {
 		t.Fatalf("exit = %d, want %d", got, exitUsage)
 	}

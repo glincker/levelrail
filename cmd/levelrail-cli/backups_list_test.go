@@ -21,7 +21,7 @@ func TestRun_BackupsList(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"backups", "list", "main", "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"backups", "list", "main", "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -35,7 +35,7 @@ func TestRun_BackupsList(t *testing.T) {
 
 func TestRun_BackupsList_NoName(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"backups", "list"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"backups", "list"}, &stdout, &stderr, envMap())
 	if got != exitUsage {
 		t.Fatalf("exit = %d, want %d", got, exitUsage)
 	}
@@ -56,7 +56,7 @@ func TestRun_BackupsTrigger(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"backups", "trigger", "main", "--target", "tgt_1", "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"backups", "trigger", "main", "--target", "tgt_1", "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -73,7 +73,7 @@ func TestRun_BackupsTrigger(t *testing.T) {
 
 func TestRun_BackupsTrigger_MissingTarget(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"backups", "trigger", "main"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"backups", "trigger", "main"}, &stdout, &stderr, envMap())
 	if got != exitValidation {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitValidation, stdout.String(), stderr.String())
 	}
@@ -84,7 +84,7 @@ func TestRun_BackupsTrigger_MissingTarget(t *testing.T) {
 
 func TestRun_Backups_Help(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"backups", "-h"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"backups", "-h"}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d", got, exitOK)
 	}

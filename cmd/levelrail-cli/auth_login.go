@@ -109,7 +109,7 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("mint API token: %w", err))
 	}
 
-	if err := writeCredentialsFile(prog, credentials{apiURL: apiURL, token: created.Token}); err != nil {
+	if err := writeCredentialsFile(prog, credentials{APIURL: apiURL, Token: created.Token}); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("save credentials: %w", err))
 	}
 

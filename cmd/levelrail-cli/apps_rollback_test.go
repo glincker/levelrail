@@ -32,7 +32,7 @@ func TestRun_AppsRollback(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "rollback", "web", "--image", "levelrail/web:old", "--api-url", srv.URL, "--json"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "rollback", "web", "--image", "levelrail/web:old", "--api-url", srv.URL, "--json"}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -59,7 +59,7 @@ func TestRun_AppsRollback_Human(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "rollback", "web", "--image", "levelrail/web:old", "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "rollback", "web", "--image", "levelrail/web:old", "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -73,7 +73,7 @@ func TestRun_AppsRollback_Human(t *testing.T) {
 
 func TestRun_AppsRollback_MissingImage(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "rollback", "web"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "rollback", "web"}, &stdout, &stderr, envMap())
 	if got != exitValidation {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitValidation, stdout.String(), stderr.String())
 	}
@@ -84,7 +84,7 @@ func TestRun_AppsRollback_MissingImage(t *testing.T) {
 
 func TestRun_AppsRollback_NoName(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "rollback", "--image", "levelrail/web:old"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "rollback", "--image", "levelrail/web:old"}, &stdout, &stderr, envMap())
 	if got != exitUsage {
 		t.Fatalf("exit = %d, want %d", got, exitUsage)
 	}
@@ -102,7 +102,7 @@ func TestRun_AppsRollback_APIError(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "rollback", "ghost", "--image", "levelrail/web:old", "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "rollback", "ghost", "--image", "levelrail/web:old", "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitAPIError {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitAPIError, stdout.String(), stderr.String())
 	}
@@ -113,7 +113,7 @@ func TestRun_AppsRollback_APIError(t *testing.T) {
 
 func TestRun_AppsRollback_Help(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "rollback", "-h"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "rollback", "-h"}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d", got, exitOK)
 	}

@@ -1,4 +1,4 @@
-package main
+package apiclient
 
 import (
 	"context"
@@ -24,8 +24,8 @@ func TestExtractErrorMessage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := extractErrorMessage(tt.data); got != tt.want {
-				t.Errorf("extractErrorMessage(%s) = %q, want %q", tt.data, got, tt.want)
+			if got := ExtractErrorMessage(tt.data); got != tt.want {
+				t.Errorf("ExtractErrorMessage(%s) = %q, want %q", tt.data, got, tt.want)
 			}
 		})
 	}
@@ -38,15 +38,15 @@ func TestPathEscape(t *testing.T) {
 		{in: "50%", want: "50%25"},
 	}
 	for _, tt := range tests {
-		if got := pathEscape(tt.in); got != tt.want {
-			t.Errorf("pathEscape(%q) = %q, want %q", tt.in, got, tt.want)
+		if got := PathEscape(tt.in); got != tt.want {
+			t.Errorf("PathEscape(%q) = %q, want %q", tt.in, got, tt.want)
 		}
 	}
 }
 
 func TestClient_CreateApp(t *testing.T) {
 	var gotAuth, gotMethod, gotPath string
-	var gotBody appResource
+	var gotBody AppResource
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotAuth = r.Header.Get("Authorization")
 		gotMethod = r.Method
@@ -61,7 +61,7 @@ func TestClient_CreateApp(t *testing.T) {
 	defer srv.Close()
 
 	client := NewClient(srv.URL, "test-token")
-	req := appResource{Name: "web", Image: "levelrail/web:1", Port: 3000}
+	req := AppResource{Name: "web", Image: "levelrail/web:1", Port: 3000}
 	got, err := client.CreateApp(context.Background(), req)
 	if err != nil {
 		t.Fatalf("CreateApp() error = %v", err)
@@ -89,13 +89,13 @@ func TestClient_APIErrorStatus(t *testing.T) {
 	defer srv.Close()
 
 	client := NewClient(srv.URL, "test-token")
-	_, err := client.CreateApp(context.Background(), appResource{Name: "web", Image: "x:1", Port: 3000})
+	_, err := client.CreateApp(context.Background(), AppResource{Name: "web", Image: "x:1", Port: 3000})
 	if err == nil {
 		t.Fatalf("CreateApp() error = nil, want an error for a 409 response")
 	}
-	var apiErr *apiError
+	var apiErr *APIError
 	if !errors.As(err, &apiErr) {
-		t.Fatalf("error type = %T, want *apiError", err)
+		t.Fatalf("error type = %T, want *APIError", err)
 	}
 	if apiErr.StatusCode != http.StatusConflict {
 		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusConflict)
@@ -117,12 +117,9 @@ func TestClient_NetworkError(t *testing.T) {
 	if err == nil {
 		t.Fatalf("ListApps() error = nil, want a network error")
 	}
-	var apiErr *apiError
+	var apiErr *APIError
 	if errors.As(err, &apiErr) {
-		t.Fatalf("error type = *apiError, want a plain network error (exitNetwork path), got %v", err)
-	}
-	if exitCodeForError(err) != exitNetwork {
-		t.Errorf("exitCodeForError() = %d, want exitNetwork", exitCodeForError(err))
+		t.Fatalf("error type = *APIError, want a plain network error, got %v", err)
 	}
 }
 
@@ -135,7 +132,7 @@ func TestClient_RestartApp(t *testing.T) {
 		gotBody = string(b)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(appResource{Name: "web", Image: "levelrail/web:1", Port: 3000})
+		_ = json.NewEncoder(w).Encode(AppResource{Name: "web", Image: "levelrail/web:1", Port: 3000})
 	}))
 	defer srv.Close()
 
@@ -171,9 +168,9 @@ func TestClient_RestartApp_NotFound(t *testing.T) {
 	if err == nil {
 		t.Fatalf("RestartApp() error = nil, want an error for a 404 response")
 	}
-	var apiErr *apiError
+	var apiErr *APIError
 	if !errors.As(err, &apiErr) {
-		t.Fatalf("error type = %T, want *apiError", err)
+		t.Fatalf("error type = %T, want *APIError", err)
 	}
 	if apiErr.StatusCode != http.StatusNotFound {
 		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusNotFound)
@@ -196,9 +193,9 @@ func TestClient_DeployCompose(t *testing.T) {
 		gotBody = b
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(composeDeployResult{
+		_ = json.NewEncoder(w).Encode(ComposeDeployResult{
 			AppID:    "myapp",
-			Services: []appResource{{Name: "web", Image: "nginx:latest", Port: 80}},
+			Services: []AppResource{{Name: "web", Image: "nginx:latest", Port: 80}},
 		})
 	}))
 	defer srv.Close()
@@ -223,7 +220,7 @@ func TestClient_DeployCompose(t *testing.T) {
 	if !reflect.DeepEqual(gotBody, composeYAML) {
 		t.Errorf("body = %q, want raw YAML %q, not JSON-encoded", gotBody, composeYAML)
 	}
-	want := composeDeployResult{AppID: "myapp", Services: []appResource{{Name: "web", Image: "nginx:latest", Port: 80}}}
+	want := ComposeDeployResult{AppID: "myapp", Services: []AppResource{{Name: "web", Image: "nginx:latest", Port: 80}}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("DeployCompose() = %+v, want %+v", got, want)
 	}
@@ -242,9 +239,9 @@ func TestClient_DeployCompose_APIError(t *testing.T) {
 	if err == nil {
 		t.Fatalf("DeployCompose() error = nil, want an error for a 400 response")
 	}
-	var apiErr *apiError
+	var apiErr *APIError
 	if !errors.As(err, &apiErr) {
-		t.Fatalf("error type = %T, want *apiError", err)
+		t.Fatalf("error type = %T, want *APIError", err)
 	}
 	if apiErr.StatusCode != http.StatusBadRequest {
 		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusBadRequest)
@@ -261,19 +258,80 @@ func TestClient_TriggerBuild(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusAccepted)
-		_ = json.NewEncoder(w).Encode(buildTriggerResponse{
+		_ = json.NewEncoder(w).Encode(BuildTriggerResponse{
 			Image: "levelrail/web:abc123",
-			App:   appResource{Name: "web", Image: "levelrail/web:abc123"},
+			App:   AppResource{Name: "web", Image: "levelrail/web:abc123"},
 		})
 	}))
 	defer srv.Close()
 
 	client := NewClient(srv.URL, "test-token")
-	got, err := client.TriggerBuild(context.Background(), "web", buildTriggerRequest{RepoURL: "https://example.com/x.git", Ref: "main", ImageRepo: "levelrail/web"})
+	got, err := client.TriggerBuild(context.Background(), "web", BuildTriggerRequest{RepoURL: "https://example.com/x.git", Ref: "main", ImageRepo: "levelrail/web"})
 	if err != nil {
 		t.Fatalf("TriggerBuild() error = %v", err)
 	}
 	if got.Image != "levelrail/web:abc123" {
 		t.Errorf("Image = %q, want %q", got.Image, "levelrail/web:abc123")
+	}
+}
+
+func TestClient_ListServiceTemplates(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/service-templates" {
+			t.Errorf("path = %q, want /api/v1/service-templates", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode([]ServiceTemplateListItem{{ID: "postgres", Name: "Postgres", Category: "database"}})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.ListServiceTemplates(context.Background())
+	if err != nil {
+		t.Fatalf("ListServiceTemplates() error = %v", err)
+	}
+	if len(got) != 1 || got[0].ID != "postgres" {
+		t.Errorf("ListServiceTemplates() = %+v, want one entry with ID postgres", got)
+	}
+}
+
+func TestClient_GetServiceTemplate(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/service-templates/postgres" {
+			t.Errorf("path = %q, want /api/v1/service-templates/postgres", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(ServiceTemplateDetail{ID: "postgres", Name: "Postgres", Compose: "services:\n  postgres:\n    image: postgres:16\n"})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.GetServiceTemplate(context.Background(), "postgres")
+	if err != nil {
+		t.Fatalf("GetServiceTemplate() error = %v", err)
+	}
+	if got.Compose == "" {
+		t.Errorf("GetServiceTemplate() Compose is empty, want the full compose body")
+	}
+}
+
+func TestClient_GetServiceTemplate_NotFound(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"service template not found"}`))
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	_, err := client.GetServiceTemplate(context.Background(), "ghost")
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("error type = %T, want *APIError", err)
+	}
+	if apiErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusNotFound)
 	}
 }

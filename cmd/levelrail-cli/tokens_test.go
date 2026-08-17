@@ -58,7 +58,7 @@ func TestRun_TokensCreate(t *testing.T) {
 	got := run("levelrail-cli-test", []string{
 		"tokens", "create", "--name", "ci", "--abilities", "read,deploy",
 		"--username", "admin", "--password", "x", "--api-url", srv.URL,
-	}, &stdout, &stderr, envMap(nil))
+	}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -72,7 +72,7 @@ func TestRun_TokensCreate(t *testing.T) {
 
 func TestRun_TokensCreate_MissingAbilities(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"tokens", "create", "--name", "ci", "--username", "admin", "--password", "x"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"tokens", "create", "--name", "ci", "--username", "admin", "--password", "x"}, &stdout, &stderr, envMap())
 	if got != exitValidation {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitValidation, stdout.String(), stderr.String())
 	}
@@ -90,7 +90,7 @@ func TestRun_TokensList(t *testing.T) {
 	})
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"tokens", "list", "--username", "admin", "--password", "x", "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"tokens", "list", "--username", "admin", "--password", "x", "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -110,7 +110,7 @@ func TestRun_TokensRevoke(t *testing.T) {
 	})
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"tokens", "revoke", "tok_1", "--username", "admin", "--password", "x", "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"tokens", "revoke", "tok_1", "--username", "admin", "--password", "x", "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -124,7 +124,7 @@ func TestRun_TokensRevoke(t *testing.T) {
 
 func TestRun_TokensRevoke_NoID(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"tokens", "revoke", "--username", "admin", "--password", "x"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"tokens", "revoke", "--username", "admin", "--password", "x"}, &stdout, &stderr, envMap())
 	if got != exitUsage {
 		t.Fatalf("exit = %d, want %d", got, exitUsage)
 	}
@@ -132,7 +132,7 @@ func TestRun_TokensRevoke_NoID(t *testing.T) {
 
 func TestRun_Tokens_Help(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"tokens", "-h"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"tokens", "-h"}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d", got, exitOK)
 	}

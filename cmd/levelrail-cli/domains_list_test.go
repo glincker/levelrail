@@ -21,7 +21,7 @@ func TestRun_DomainsList(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"domains", "list", "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"domains", "list", "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -41,7 +41,7 @@ func TestRun_DomainsList_JSON(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"domains", "list", "--api-url", srv.URL, "--json"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"domains", "list", "--api-url", srv.URL, "--json"}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d", got, exitOK)
 	}
@@ -58,7 +58,7 @@ func TestRun_DomainsList_Empty(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"domains", "list", "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"domains", "list", "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d", got, exitOK)
 	}
@@ -69,7 +69,7 @@ func TestRun_DomainsList_Empty(t *testing.T) {
 
 func TestRun_Domains_UnknownSubcommand(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"domains", "bogus"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"domains", "bogus"}, &stdout, &stderr, envMap())
 	if got != exitUsage {
 		t.Fatalf("exit = %d, want %d", got, exitUsage)
 	}

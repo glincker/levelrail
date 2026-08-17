@@ -80,7 +80,7 @@ func TestRun_AuthLogin_MintsAndPersistsToken(t *testing.T) {
 	prog := "levelrail-cli-test-auth-login"
 
 	var stdout, stderr bytes.Buffer
-	got := run(prog, []string{"auth", "login", "--username", "admin", "--password", "correct-horse", "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run(prog, []string{"auth", "login", "--username", "admin", "--password", "correct-horse", "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -103,7 +103,7 @@ func TestRun_AuthLogin_MintsAndPersistsToken(t *testing.T) {
 
 	// And a later command resolves that persisted token automatically,
 	// the entire point of "auth login" existing.
-	got2 := resolveToken("", envMap(nil), prog)
+	got2 := resolveToken("", envMap(), prog)
 	if got2 != "plaintext-token-value" {
 		t.Errorf("resolveToken() after login = %q, want the persisted token", got2)
 	}
@@ -119,7 +119,7 @@ func TestRun_AuthLogin_JSONWritesFullTokenResource(t *testing.T) {
 	got := run("levelrail-cli-test-auth-login-json", []string{
 		"auth", "login", "--username", "admin", "--password", "correct-horse",
 		"--api-url", srv.URL, "--abilities", "read", "--json",
-	}, &stdout, &stderr, envMap(nil))
+	}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -135,7 +135,7 @@ func TestRun_AuthLogin_WrongPassword(t *testing.T) {
 	t.Setenv("HOME", home)
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test-auth-login-badpw", []string{"auth", "login", "--username", "admin", "--password", "wrong", "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test-auth-login-badpw", []string{"auth", "login", "--username", "admin", "--password", "wrong", "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitAPIError {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitAPIError, stdout.String(), stderr.String())
 	}
@@ -155,7 +155,7 @@ func TestRun_AuthLogin_MissingUsername(t *testing.T) {
 	// (no line ever typed), and this asserts that failure is reported
 	// as a real error, never a hang or a silent empty-string login
 	// attempt.
-	got := runAuthLogin("levelrail-cli-test-auth-login-nouser", []string{"--password", "x"}, &stdout, &stderr, envMap(nil), strings.NewReader(""))
+	got := runAuthLogin("levelrail-cli-test-auth-login-nouser", []string{"--password", "x"}, &stdout, &stderr, envMap(), strings.NewReader(""))
 	if got == exitOK {
 		t.Fatalf("exit = %d, want a failure (stdout=%q stderr=%q)", got, stdout.String(), stderr.String())
 	}
@@ -166,7 +166,7 @@ func TestRun_AuthLogin_MissingUsername(t *testing.T) {
 
 func TestRun_AuthLogin_Help(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"auth", "login", "-h"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"auth", "login", "-h"}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d", got, exitOK)
 	}
