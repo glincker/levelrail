@@ -11,6 +11,7 @@ import {
   ScrollIcon,
   BellIcon,
   TerminalIcon,
+  ClockIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   SidebarGroup,
@@ -192,6 +193,18 @@ export function AppScopedSidebar({ name }: { name: string }) {
               >
                 <TerminalIcon />
                 <span>Exec</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={
+                  <Link to="/apps/$name/scheduled-tasks" params={{ name }} />
+                }
+                isActive={pathname.endsWith('/scheduled-tasks')}
+                tooltip="Scheduled Tasks"
+              >
+                <ClockIcon />
+                <span>Scheduled Tasks</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
