@@ -180,6 +180,13 @@ type DesiredService struct {
 	// their own dedicated Update* setters); a service's AppID is fixed
 	// at creation.
 	AppID string
+
+	// LogDrain is this service's external log-forwarding config
+	// (migrations/0043_service_log_drain.sql), nil meaning none
+	// configured. Like NodeID/ProjectID/StorageTargetID/Suspended,
+	// SaveDesiredService never writes this field: only
+	// UpdateServiceLogDrain does.
+	LogDrain *LogDrain
 }
 
 // DefaultDeployStrategy and DefaultReplicas mirror internal/spec's
@@ -648,7 +655,7 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id"
+const desiredServiceColumns = "name, image, port, domains, env, secret_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, log_drain"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
@@ -657,9 +664,9 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	var (
 		svc                                                                         DesiredService
 		domainsJSON, envJSON, secretEnvJSON, resourcesJSON, health, labels, volumes string
-		projectID, storageTargetID, appID                                           sql.NullString
+		projectID, storageTargetID, appID, logDrainJSON                             sql.NullString
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &logDrainJSON); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String
@@ -690,6 +697,11 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	}
 	if err := json.Unmarshal([]byte(volumes), &svc.Volumes); err != nil {
 		return nil, fmt.Errorf("unmarshal volumes: %w", err)
+	}
+	if logDrainJSON.Valid {
+		if err := json.Unmarshal([]byte(logDrainJSON.String), &svc.LogDrain); err != nil {
+			return nil, fmt.Errorf("unmarshal log_drain: %w", err)
+		}
 	}
 
 	return &svc, nil
