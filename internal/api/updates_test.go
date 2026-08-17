@@ -36,20 +36,36 @@ func getUpdates(t *testing.T, rt *Router, cookie *http.Cookie) (int, updateStatu
 	return rec.Code, got
 }
 
-func TestHandleGetUpdates_DevBuildNeverReportsAvailable(t *testing.T) {
+// setVersion pins version.Version for the duration of the test, the
+// shared setup every TestHandleGetUpdates_* case below needs.
+func setVersion(t *testing.T, v string) {
+	t.Helper()
 	orig := version.Version
-	version.Version = "dev"
-	defer func() { version.Version = orig }()
+	version.Version = v
+	t.Cleanup(func() { version.Version = orig })
+}
+
+// getUpdatesOK is getUpdates plus the "must succeed" assertion every
+// case below shares, so each test only spells out its own distinct
+// response checks.
+func getUpdatesOK(t *testing.T, rt *Router, cookie *http.Cookie) updateStatusResource {
+	t.Helper()
+	status, got := getUpdates(t, rt, cookie)
+	if status != http.StatusOK {
+		t.Fatalf("status = %d, want %d", status, http.StatusOK)
+	}
+	return got
+}
+
+func TestHandleGetUpdates_DevBuildNeverReportsAvailable(t *testing.T) {
+	setVersion(t, "dev")
 
 	rt, db := newTestRouterWithFetchLatestRelease(t, func(context.Context) (*githubRelease, error) {
 		return &githubRelease{TagName: "v9.9.9", HTMLURL: "https://example.com/releases/v9.9.9", PublishedAt: "2026-01-01T00:00:00Z"}, nil
 	})
 	cookie := loginTestSession(t, rt, db)
 
-	status, got := getUpdates(t, rt, cookie)
-	if status != http.StatusOK {
-		t.Fatalf("status = %d, want %d", status, http.StatusOK)
-	}
+	got := getUpdatesOK(t, rt, cookie)
 	if got.CurrentVersion != "dev" {
 		t.Errorf("current_version = %q, want %q", got.CurrentVersion, "dev")
 	}
@@ -59,19 +75,14 @@ func TestHandleGetUpdates_DevBuildNeverReportsAvailable(t *testing.T) {
 }
 
 func TestHandleGetUpdates_NewerVersionAvailable(t *testing.T) {
-	orig := version.Version
-	version.Version = "v1.0.0"
-	defer func() { version.Version = orig }()
+	setVersion(t, "v1.0.0")
 
 	rt, db := newTestRouterWithFetchLatestRelease(t, func(context.Context) (*githubRelease, error) {
 		return &githubRelease{TagName: "v1.1.0", HTMLURL: "https://example.com/releases/v1.1.0", PublishedAt: "2026-02-01T00:00:00Z"}, nil
 	})
 	cookie := loginTestSession(t, rt, db)
 
-	status, got := getUpdates(t, rt, cookie)
-	if status != http.StatusOK {
-		t.Fatalf("status = %d, want %d", status, http.StatusOK)
-	}
+	got := getUpdatesOK(t, rt, cookie)
 	if !got.UpdateAvailable {
 		t.Error("update_available = false, want true")
 	}
@@ -87,38 +98,28 @@ func TestHandleGetUpdates_NewerVersionAvailable(t *testing.T) {
 }
 
 func TestHandleGetUpdates_AlreadyOnLatest(t *testing.T) {
-	orig := version.Version
-	version.Version = "v1.1.0"
-	defer func() { version.Version = orig }()
+	setVersion(t, "v1.1.0")
 
 	rt, db := newTestRouterWithFetchLatestRelease(t, func(context.Context) (*githubRelease, error) {
 		return &githubRelease{TagName: "v1.1.0", HTMLURL: "https://example.com/releases/v1.1.0", PublishedAt: "2026-02-01T00:00:00Z"}, nil
 	})
 	cookie := loginTestSession(t, rt, db)
 
-	status, got := getUpdates(t, rt, cookie)
-	if status != http.StatusOK {
-		t.Fatalf("status = %d, want %d", status, http.StatusOK)
-	}
+	got := getUpdatesOK(t, rt, cookie)
 	if got.UpdateAvailable {
 		t.Error("update_available = true, want false: already on the latest tag")
 	}
 }
 
 func TestHandleGetUpdates_NoReleasesPublished(t *testing.T) {
-	orig := version.Version
-	version.Version = "v1.0.0"
-	defer func() { version.Version = orig }()
+	setVersion(t, "v1.0.0")
 
 	rt, db := newTestRouterWithFetchLatestRelease(t, func(context.Context) (*githubRelease, error) {
 		return nil, nil // GitHub 404: no releases published yet
 	})
 	cookie := loginTestSession(t, rt, db)
 
-	status, got := getUpdates(t, rt, cookie)
-	if status != http.StatusOK {
-		t.Fatalf("status = %d, want %d", status, http.StatusOK)
-	}
+	got := getUpdatesOK(t, rt, cookie)
 	if got.LatestVersion != nil {
 		t.Errorf("latest_version = %v, want nil", got.LatestVersion)
 	}
@@ -131,19 +132,14 @@ func TestHandleGetUpdates_NoReleasesPublished(t *testing.T) {
 }
 
 func TestHandleGetUpdates_FetchFailsNoCache(t *testing.T) {
-	orig := version.Version
-	version.Version = "v1.0.0"
-	defer func() { version.Version = orig }()
+	setVersion(t, "v1.0.0")
 
 	rt, db := newTestRouterWithFetchLatestRelease(t, func(context.Context) (*githubRelease, error) {
 		return nil, errors.New("network unreachable")
 	})
 	cookie := loginTestSession(t, rt, db)
 
-	status, got := getUpdates(t, rt, cookie)
-	if status != http.StatusOK {
-		t.Fatalf("status = %d, want %d: a version-check page must never block on GitHub being unreachable", status, http.StatusOK)
-	}
+	got := getUpdatesOK(t, rt, cookie)
 	if got.CurrentVersion != "v1.0.0" {
 		t.Errorf("current_version = %q, want %q", got.CurrentVersion, "v1.0.0")
 	}
@@ -153,9 +149,7 @@ func TestHandleGetUpdates_FetchFailsNoCache(t *testing.T) {
 }
 
 func TestHandleGetUpdates_FetchFailsServesCache(t *testing.T) {
-	orig := version.Version
-	version.Version = "v1.0.0"
-	defer func() { version.Version = orig }()
+	setVersion(t, "v1.0.0")
 
 	calls := 0
 	fail := false

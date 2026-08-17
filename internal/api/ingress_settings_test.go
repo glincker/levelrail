@@ -382,6 +382,21 @@ func TestHandleCheckIngressDomain_RequiresAuth(t *testing.T) {
 	}
 }
 
+// requestWithWriteScopedToken seeds a plain AbilityWrite-only API token
+// and issues req with it as the bearer credential, for tests proving a
+// route needs more than AbilityWrite.
+func requestWithWriteScopedToken(t *testing.T, db *store.DB, req *http.Request) *http.Request {
+	t.Helper()
+	const plaintext = "write-scoped-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(context.Background(), store.APIToken{
+		ID: "tok_write_check", Name: "writer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWrite}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	return req
+}
+
 // TestHandleCheckIngressDomain_PlainWriteToken_Forbidden proves the
 // route really sits behind AbilityRoot, matching PUT
 // /api/v1/settings/ingress's own precedent: see that route's forbidden
@@ -390,17 +405,8 @@ func TestHandleCheckIngressDomain_PlainWriteToken_Forbidden(t *testing.T) {
 	rt, db := newTestRouterWithLookupHost(t, "203.0.113.10", func(_ context.Context, _ string) ([]string, error) {
 		return []string{"203.0.113.10"}, nil
 	})
-	ctx := context.Background()
 
-	const plaintext = "write-scoped-token" //nolint:gosec // fake fixture, not a real credential
-	if err := db.SaveAPIToken(ctx, store.APIToken{
-		ID: "tok_write_check", Name: "writer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWrite}, CreatedAt: time.Now(),
-	}); err != nil {
-		t.Fatalf("seed token: %v", err)
-	}
-
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/settings/ingress/check", nil)
-	req.Header.Set("Authorization", "Bearer "+plaintext)
+	req := requestWithWriteScopedToken(t, db, httptest.NewRequest(http.MethodGet, "/api/v1/settings/ingress/check", nil))
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusForbidden {
