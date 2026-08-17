@@ -74,6 +74,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runDomains(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backups":
 		return runBackups(prog, args[1:], stdout, stderr, lookupEnv)
+	case "channels":
+		return runChannels(prog, args[1:], stdout, stderr, lookupEnv)
 	case "migrate":
 		return runMigrate(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -102,6 +104,7 @@ Usage:
   %[1]s databases get <name> [flags]   show one database
   %[1]s domains list [flags]           list every app's domains in one call
   %[1]s backups list|trigger|restore <database> [flags]   database backup history, manual trigger, and restore
+  %[1]s channels list|create|delete|test [flags]           manage notification channels (Slack, Discord, Telegram, email, Pushover, webhook)
   %[1]s auth login [flags]             authenticate and persist a new API token
   %[1]s auth whoami [flags]           show who the current token authenticates as
   %[1]s tokens create|list|revoke [flags]   manage API tokens (requires a live session, see "%[1]s tokens -h")
