@@ -21,9 +21,10 @@ func TestValidateDatabaseResource(t *testing.T) {
 		{name: "valid postgres", db: databaseResource{Name: "main", Engine: store.EnginePostgres, Version: "16"}, wantErr: false},
 		{name: "valid redis", db: databaseResource{Name: "cache", Engine: store.EngineRedis, Version: "7"}, wantErr: false},
 		{name: "valid mysql", db: databaseResource{Name: "orders", Engine: store.EngineMySQL, Version: "8"}, wantErr: false},
+		{name: "valid mongodb", db: databaseResource{Name: "docs", Engine: store.EngineMongoDB, Version: "7"}, wantErr: false},
 		{name: "missing name", db: databaseResource{Engine: store.EnginePostgres, Version: "16"}, wantErr: true},
 		{name: "missing engine", db: databaseResource{Name: "main", Version: "16"}, wantErr: true},
-		{name: "unknown engine", db: databaseResource{Name: "main", Engine: "mongodb", Version: "7"}, wantErr: true},
+		{name: "unknown engine", db: databaseResource{Name: "main", Engine: "cassandra", Version: "7"}, wantErr: true},
 		{name: "missing version", db: databaseResource{Name: "main", Engine: store.EnginePostgres}, wantErr: true},
 	}
 	for _, tt := range tests {
