@@ -1101,6 +1101,130 @@ func TestController_Reconcile_StorageTarget_UnknownTarget_FailsLoudly(t *testing
 	}
 }
 
+// fakeRegistryCredentialStore is a hand-written fake for
+// RegistryCredentialStore, the same pattern fakeStorageTargetStore
+// above uses.
+type fakeRegistryCredentialStore struct {
+	credentials map[string]store.RegistryCredential
+}
+
+func (f *fakeRegistryCredentialStore) GetRegistryCredential(_ context.Context, id string) (store.RegistryCredential, error) {
+	cred, ok := f.credentials[id]
+	if !ok {
+		return store.RegistryCredential{}, store.ErrRegistryCredentialNotFound
+	}
+	return cred, nil
+}
+
+func TestController_Reconcile_RegistryCredential_ResolvedIntoPullAuth(t *testing.T) {
+	rt := newFakeRuntime(0)
+	credStore := &fakeRegistryCredentialStore{credentials: map[string]store.RegistryCredential{
+		"regcred_1": {ID: "regcred_1", Name: "ghcr-bot", RegistryHost: "ghcr.io", Username: "bot"},
+	}}
+	secretResolver := newFakeSecretResolver(map[string]string{
+		"registry-credential/regcred_1/password": "gh-token-real",
+	})
+	desired := &store.DesiredService{
+		Name: "web", Image: "ghcr.io/org/app:v1", Port: 80,
+		RegistryCredentialID: "regcred_1",
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithRegistryCredentials(credStore), WithSecretResolver(secretResolver))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	auth := rt.lastCreateSpec.RegistryAuth
+	if auth == nil {
+		t.Fatal("lastCreateSpec.RegistryAuth = nil, want it set")
+	}
+	if auth.Username != "bot" || auth.Password != "gh-token-real" {
+		t.Errorf("RegistryAuth = %+v, want Username=bot Password=gh-token-real", auth)
+	}
+}
+
+func TestController_Reconcile_NoRegistryCredential_Unaffected(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "public/app:v1", Port: 80}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if rt.lastCreateSpec.RegistryAuth != nil {
+		t.Errorf("RegistryAuth = %+v, want nil for a service with no RegistryCredentialID", rt.lastCreateSpec.RegistryAuth)
+	}
+}
+
+func TestController_Reconcile_RegistryCredential_NoStoreConfigured_FailsLoudly(t *testing.T) {
+	rt := newFakeRuntime(0)
+	secretResolver := newFakeSecretResolver(map[string]string{
+		"registry-credential/regcred_1/password": "gh-token-real",
+	})
+	desired := &store.DesiredService{
+		Name: "web", Image: "ghcr.io/org/app:v1", Port: 80,
+		RegistryCredentialID: "regcred_1",
+	}
+	// No WithRegistryCredentials.
+	c := New("web", &fakeStore{svc: desired}, rt, WithSecretResolver(secretResolver))
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want a failure: a registry credential with no store configured must never silently attempt an unauthenticated pull")
+	}
+	if conditionOf(t, result).Status != reconcile.ConditionFalse {
+		t.Errorf("condition status = %v, want False", conditionOf(t, result).Status)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0", rt.createCalls)
+	}
+}
+
+func TestController_Reconcile_RegistryCredential_NoSecretResolverConfigured_FailsLoudly(t *testing.T) {
+	rt := newFakeRuntime(0)
+	credStore := &fakeRegistryCredentialStore{credentials: map[string]store.RegistryCredential{
+		"regcred_1": {ID: "regcred_1", Name: "ghcr-bot", RegistryHost: "ghcr.io", Username: "bot"},
+	}}
+	desired := &store.DesiredService{
+		Name: "web", Image: "ghcr.io/org/app:v1", Port: 80,
+		RegistryCredentialID: "regcred_1",
+	}
+	// No WithSecretResolver.
+	c := New("web", &fakeStore{svc: desired}, rt, WithRegistryCredentials(credStore))
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want a failure: a registry credential with no secret resolver configured must never silently attempt an unauthenticated pull")
+	}
+	if conditionOf(t, result).Status != reconcile.ConditionFalse {
+		t.Errorf("condition status = %v, want False", conditionOf(t, result).Status)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0", rt.createCalls)
+	}
+}
+
+func TestController_Reconcile_RegistryCredential_Unknown_FailsLoudly(t *testing.T) {
+	rt := newFakeRuntime(0)
+	credStore := &fakeRegistryCredentialStore{credentials: map[string]store.RegistryCredential{}} // empty: regcred_1 doesn't exist
+	secretResolver := newFakeSecretResolver(nil)
+	desired := &store.DesiredService{
+		Name: "web", Image: "ghcr.io/org/app:v1", Port: 80,
+		RegistryCredentialID: "regcred_1",
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithRegistryCredentials(credStore), WithSecretResolver(secretResolver))
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want the registry credential lookup failure to propagate")
+	}
+	if conditionOf(t, result).Status != reconcile.ConditionFalse {
+		t.Errorf("condition status = %v, want False", conditionOf(t, result).Status)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0", rt.createCalls)
+	}
+}
+
 // TestController_ResolveEnv_StorageTargetWinsOnKeyCollision pins down
 // resolveEnv's documented final-precedence rule directly: a storage
 // target's resolved S3_* values must win over both a same-named literal

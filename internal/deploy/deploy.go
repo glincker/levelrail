@@ -38,6 +38,10 @@ type ImageBuilder interface {
 // internal/store. *store.DB satisfies this.
 type ServiceStore interface {
 	SaveDesiredService(ctx context.Context, svc store.DesiredService) error
+	// GetRegistryCredentialByName resolves build.type: image's optional
+	// registryCredential field (a name, spec.Build.RegistryCredential's
+	// own doc comment on why not an ID) at deploy time, in deployImage.
+	GetRegistryCredentialByName(ctx context.Context, name string) (store.RegistryCredential, error)
 }
 
 // SecretChecker is the narrow surface this package needs from
@@ -312,6 +316,13 @@ func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error)
 	desired, err := toDesiredService(req.ServiceName, image, req.Service)
 	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
+	if req.Service.Build.RegistryCredential != "" {
+		cred, err := p.store.GetRegistryCredentialByName(ctx, req.Service.Build.RegistryCredential)
+		if err != nil {
+			return "", fmt.Errorf("deploy: service %q: registry credential %q: %w", req.ServiceName, req.Service.Build.RegistryCredential, err)
+		}
+		desired.RegistryCredentialID = cred.ID
 	}
 	if err := p.store.SaveDesiredService(ctx, desired); err != nil {
 		return "", fmt.Errorf("deploy: service %q: save desired state: %w", req.ServiceName, err)

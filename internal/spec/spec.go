@@ -93,6 +93,11 @@ type Build struct {
 	// exact image, so there is nothing for this control plane to build,
 	// only to deploy as-is. See internal/deploy's deployImage.
 	Image string `yaml:"image,omitempty"`
+	// RegistryCredential names a store.RegistryCredential (by its Name,
+	// not ID: app.yaml is hand-written, an opaque ID would be hostile
+	// to author) to authenticate with when pulling Image from a private
+	// registry. Empty means an unauthenticated (public) pull.
+	RegistryCredential string `yaml:"registryCredential,omitempty"`
 }
 
 // Health holds a service's readiness and liveness probe configuration.

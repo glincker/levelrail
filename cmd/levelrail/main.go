@@ -1426,6 +1426,10 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// non-nil interface value, whenever no master key is configured.
 		opts = append(opts,
 			api.WithBackupSecrets(secretsManager),
+			// Registry credentials (build.type: image's optional
+			// registryCredential field): same secretsManager, same
+			// nil-interface hazard as everything else in this block.
+			api.WithRegistryCredentialSecrets(secretsManager),
 			api.WithBackupRunner(backupRunner),
 			// The restore counterpart of the backup runner just above:
 			// same secretsManager dependency (a restore resolves the same
@@ -1675,6 +1679,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 	appOpts := []application.Option{
 		application.WithDeployRecorder(deps.telemetryDB),
 		application.WithStorageTargets(deps.db),
+		application.WithRegistryCredentials(deps.db),
 		application.WithProjectEnv(deps.db),
 		application.WithNetworkPrefix(deps.networkPrefix),
 	}

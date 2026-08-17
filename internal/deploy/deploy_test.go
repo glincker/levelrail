@@ -79,6 +79,19 @@ type fakeServiceStore struct {
 	// in this file leaves this empty, so saveErr keeps applying
 	// unconditionally for them, unchanged from before this field existed.
 	failOnName string
+
+	// registryCredentials backs GetRegistryCredentialByName for the
+	// build.type: image + registryCredential tests; unset means every
+	// lookup returns store.ErrRegistryCredentialNotFound.
+	registryCredentials map[string]store.RegistryCredential
+}
+
+func (f *fakeServiceStore) GetRegistryCredentialByName(_ context.Context, name string) (store.RegistryCredential, error) {
+	cred, ok := f.registryCredentials[name]
+	if !ok {
+		return store.RegistryCredential{}, store.ErrRegistryCredentialNotFound
+	}
+	return cred, nil
 }
 
 func (f *fakeServiceStore) SaveDesiredService(_ context.Context, svc store.DesiredService) error {
@@ -287,6 +300,44 @@ func TestPipeline_Deploy_Image_SaveFailure(t *testing.T) {
 	_, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: imageService()}, nil)
 	if err == nil {
 		t.Fatal("Deploy() error = nil, want the save error to propagate")
+	}
+}
+
+func TestPipeline_Deploy_Image_RegistryCredential_Resolved(t *testing.T) {
+	builder := &fakeBuilder{}
+	svcStore := &fakeServiceStore{
+		registryCredentials: map[string]store.RegistryCredential{
+			"ghcr-bot": {ID: "regcred_abc123", Name: "ghcr-bot", RegistryHost: "ghcr.io", Username: "bot"},
+		},
+	}
+	p := New(builder, svcStore)
+
+	svc := imageService()
+	svc.Build.RegistryCredential = "ghcr-bot"
+
+	_, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: svc}, nil)
+	if err != nil {
+		t.Fatalf("Deploy() error = %v", err)
+	}
+	if svcStore.saved.RegistryCredentialID != "regcred_abc123" {
+		t.Errorf("saved.RegistryCredentialID = %q, want %q", svcStore.saved.RegistryCredentialID, "regcred_abc123")
+	}
+}
+
+func TestPipeline_Deploy_Image_RegistryCredential_NotFound_Rejected(t *testing.T) {
+	builder := &fakeBuilder{}
+	svcStore := &fakeServiceStore{}
+	p := New(builder, svcStore)
+
+	svc := imageService()
+	svc.Build.RegistryCredential = "does-not-exist"
+
+	_, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: svc}, nil)
+	if err == nil {
+		t.Fatal("Deploy() error = nil, want an error for an unknown registry credential name")
+	}
+	if svcStore.saveCalls != 0 {
+		t.Errorf("SaveDesiredService called %d times, want 0: an unresolved credential must never reach the store", svcStore.saveCalls)
 	}
 }
 

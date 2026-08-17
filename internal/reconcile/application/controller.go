@@ -67,6 +67,14 @@ type StorageTargetStore interface {
 	GetBackupTarget(ctx context.Context, id string) (store.BackupTarget, error)
 }
 
+// RegistryCredentialStore is the narrow surface this controller needs to
+// resolve store.DesiredService.RegistryCredentialID into a real
+// username, the same "just the one read" shape StorageTargetStore
+// establishes just above. *store.DB satisfies this structurally.
+type RegistryCredentialStore interface {
+	GetRegistryCredential(ctx context.Context, id string) (store.RegistryCredential, error)
+}
+
 // ProjectEnvStore is the narrow surface this controller needs to
 // resolve store.DesiredService.ProjectID into that project's shared env
 // vars (resolveEnv's own doc comment on precedence). *store.DB satisfies
@@ -123,12 +131,13 @@ type Controller struct {
 	runtime        docker.Runtime
 	httpClient     *http.Client
 	readyBudget    time.Duration
-	secretResolver SecretResolver     // nil is valid: a service with no secret-backed env vars never needs one
-	deployRecorder DeployRecorder     // nil is valid: deploy frequency just isn't recorded
-	meshDNSAddr    string             // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
-	storageTargets StorageTargetStore // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
-	projectEnv     ProjectEnvStore    // nil is valid: project vars are just skipped, see WithProjectEnv
-	networkPrefix  string             // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
+	secretResolver SecretResolver          // nil is valid: a service with no secret-backed env vars never needs one
+	deployRecorder DeployRecorder          // nil is valid: deploy frequency just isn't recorded
+	meshDNSAddr    string                  // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	storageTargets StorageTargetStore      // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
+	projectEnv     ProjectEnvStore         // nil is valid: project vars are just skipped, see WithProjectEnv
+	networkPrefix  string                  // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
+	registryCreds  RegistryCredentialStore // nil is valid: a service with no RegistryCredentialID never needs one, see WithRegistryCredentials
 }
 
 // Option configures optional Controller behavior.
@@ -192,6 +201,16 @@ func WithMeshDNSAddr(addr string) Option {
 // for SecretEnv.
 func WithStorageTargets(s StorageTargetStore) Option {
 	return func(ctrl *Controller) { ctrl.storageTargets = s }
+}
+
+// WithRegistryCredentials enables resolving
+// store.DesiredService.RegistryCredentialID into real pull credentials,
+// the same "fail loudly if declared but unconfigured" shape
+// WithStorageTargets establishes: an unauthenticated pull silently
+// succeeding for a service that explicitly asked for a private-registry
+// credential would be a worse failure mode than Reconcile erroring.
+func WithRegistryCredentials(s RegistryCredentialStore) Option {
+	return func(ctrl *Controller) { ctrl.registryCreds = s }
 }
 
 // WithProjectEnv enables resolving store.DesiredService.ProjectID's
@@ -503,6 +522,13 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 
 	spec := toContainerSpec(name, desired)
 	spec.Env = env
+	if desired.RegistryCredentialID != "" {
+		auth, err := c.resolveRegistryAuth(ctx, desired.RegistryCredentialID)
+		if err != nil {
+			return fmt.Errorf("resolve registry credential: %w", err)
+		}
+		spec.RegistryAuth = auth
+	}
 	if c.meshDNSAddr != "" {
 		spec.DNS = []string{c.meshDNSAddr}
 	}
@@ -663,6 +689,29 @@ var StorageEnvKeys = []string{
 	envKeyS3Region,
 	envKeyS3AccessKey,
 	envKeyS3SecretKey,
+}
+
+// resolveRegistryAuth resolves credentialID
+// (store.DesiredService.RegistryCredentialID) into the docker.RegistryAuth
+// ensureImage needs to pull a private image, the same
+// store-row-plus-secrets-lookup shape resolveStorageEnv below uses.
+func (c *Controller) resolveRegistryAuth(ctx context.Context, credentialID string) (*docker.RegistryAuth, error) {
+	if c.registryCreds == nil {
+		return nil, fmt.Errorf("service declares a registry credential but no registry credential store is configured")
+	}
+	cred, err := c.registryCreds.GetRegistryCredential(ctx, credentialID)
+	if err != nil {
+		return nil, fmt.Errorf("get registry credential %q: %w", credentialID, err)
+	}
+
+	if c.secretResolver == nil {
+		return nil, fmt.Errorf("service declares a registry credential but no secret resolver is configured")
+	}
+	password, err := c.secretResolver.Resolve(ctx, store.RegistryCredentialSecretsKey(credentialID), "password")
+	if err != nil {
+		return nil, fmt.Errorf("resolve registry credential password: %w", err)
+	}
+	return &docker.RegistryAuth{Username: cred.Username, Password: password}, nil
 }
 
 func (c *Controller) resolveStorageEnv(ctx context.Context, targetID string) (map[string]string, error) {

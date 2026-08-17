@@ -121,6 +121,20 @@ type ContainerSpec struct {
 	// field existed: that network has no embedded DNS, so this is what
 	// makes multi-service apps able to reach each other by name at all.
 	Network *NetworkAttachment
+	// RegistryAuth authenticates the image pull (Create's own ensureImage
+	// step) against a private registry. Nil means an unauthenticated
+	// pull, unchanged from every container this codebase created before
+	// this field existed.
+	RegistryAuth *RegistryAuth
+}
+
+// RegistryAuth is a plaintext username/password pair for pulling a
+// private image, resolved by the caller (internal/reconcile/application)
+// from internal/secrets immediately before Create; never persisted by
+// this package.
+type RegistryAuth struct {
+	Username string
+	Password string
 }
 
 // NetworkAttachment is a container's non-default network attachment:
