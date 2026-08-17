@@ -56,6 +56,8 @@ func (r *ContainerRestorer) Restore(ctx context.Context, engine, containerName s
 		cmd = postgresRestoreCmd
 	case store.EngineMySQL:
 		cmd = mysqlRestoreCmd
+	case store.EngineMongoDB:
+		cmd = mongoRestoreCmd
 	default:
 		// Mirrors ContainerDumper.Dump's own reasoning for its identical
 		// default branch: a genuinely unknown engine reaching here means
@@ -225,3 +227,15 @@ var postgresRestoreCmd = []string{"sh", "-c", `psql --no-password -U "$POSTGRES_
 // let the shell continue on to the second, stdin-reading mysql
 // invocation, so only the trailing command is exec'd.
 var mysqlRestoreCmd = []string{"sh", "-c", `mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $MYSQL_DATABASE; CREATE DATABASE $MYSQL_DATABASE;" && exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"`}
+
+// mongoRestoreCmd feeds mongoDumpCmd's own --archive output (dump.go)
+// back in via mongorestore --archive, reading from stdin the same way
+// psql/mysql above read a piped dump. --drop achieves the same full
+// drop-and-replace semantics postgresRestoreCmd's schema reset and
+// mysqlRestoreCmd's database recreate both give: every collection the
+// archive mentions is dropped immediately before mongorestore recreates
+// it from the archive's contents, so a restore means "this database now
+// matches the backup," not "the backup's collections got merged into
+// whatever was already here." Authenticates off the container's own
+// inherited environment, same as mongoDumpCmd.
+var mongoRestoreCmd = []string{"sh", "-c", `exec mongorestore --archive --drop --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin`}

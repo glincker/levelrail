@@ -105,6 +105,27 @@ databases:
 	}
 }
 
+func TestParse_ValidMongoDBDatabase(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  events: { engine: mongodb, version: "7" }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	events, ok := s.Databases["events"]
+	if !ok {
+		t.Fatal("expected an \"events\" database")
+	}
+	if events.Engine != EngineMongoDB || events.Version != "7" {
+		t.Errorf("Databases[events] = %+v, want Engine=mongodb Version=7", events)
+	}
+}
+
 func TestParse_ValidMinimal_Defaults(t *testing.T) {
 	s, err := Parse(readTestdata(t, "valid_minimal.yaml"))
 	if err != nil {
@@ -342,7 +363,7 @@ version: 1
 services:
   web: { build: { type: dockerfile }, port: 8080 }
 databases:
-  main: { engine: mongodb }
+  main: { engine: cassandra }
 `,
 		},
 	}

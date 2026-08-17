@@ -55,6 +55,7 @@ const (
 	redisDataPath    = "/data"
 	postgresDataPath = "/var/lib/postgresql/data"
 	mysqlDataPath    = "/var/lib/mysql"
+	mongoDataPath    = "/data/db"
 )
 
 // Container ports each engine's image listens on, used to publish the
@@ -67,6 +68,7 @@ const (
 	redisContainerPort    = 6379
 	postgresContainerPort = 5432
 	mysqlContainerPort    = 3306
+	mongoContainerPort    = 27017
 )
 
 const defaultStopTimeout = 10 * time.Second
@@ -102,6 +104,21 @@ type MySQLCredentials struct {
 	Password string
 }
 
+// MongoDBCredentials is what MongoDB reconciliation needs: the same
+// dbName-scoped username/password shape PostgresCredentials/
+// MySQLCredentials already establish, injected as
+// MONGO_INITDB_ROOT_USERNAME/MONGO_INITDB_ROOT_PASSWORD, the official
+// mongo image's own root-credential env vars. Unlike MySQL's image,
+// mongo's does not refuse to start without these, so this controller
+// still requires them (WithMongoDBCredentials unset blocks reconciling
+// just like an unset WithPostgresCredentials/WithMySQLCredentials
+// does), keeping every managed database on the same "never
+// unauthenticated" posture rather than making Mongo the one exception.
+type MongoDBCredentials struct {
+	Username string
+	Password string
+}
+
 // Controller converges one named database's desired state (read fresh
 // from Store on every Reconcile, never cached) to a running,
 // volume-backed container.
@@ -111,6 +128,7 @@ type Controller struct {
 	runtime       docker.Runtime
 	postgresCreds *PostgresCredentials
 	mysqlCreds    *MySQLCredentials
+	mongoCreds    *MongoDBCredentials
 	meshDNSAddr   string // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
 }
 
@@ -132,6 +150,15 @@ func WithPostgresCredentials(creds *PostgresCredentials) Option {
 // reasoning to Postgres: no container starts without real auth.
 func WithMySQLCredentials(creds *MySQLCredentials) Option {
 	return func(c *Controller) { c.mysqlCreds = creds }
+}
+
+// WithMongoDBCredentials supplies the credentials MongoDB reconciliation
+// needs, the same "populate to activate, no restructuring needed" shape
+// WithPostgresCredentials/WithMySQLCredentials already establish.
+// Without one, every MongoDB database reports the credentials-blocked
+// condition, identical reasoning to Postgres and MySQL.
+func WithMongoDBCredentials(creds *MongoDBCredentials) Option {
+	return func(c *Controller) { c.mongoCreds = creds }
 }
 
 // WithMeshDNSAddr points every container this controller creates at addr,
@@ -218,6 +245,18 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		}
 		return c.reconcileEngine(ctx, desired, env, mysqlDataPath, mysqlContainerPort)
 
+	case store.EngineMongoDB:
+		if c.mongoCreds == nil {
+			// Same reasoning as the Postgres/MySQL branches above: a
+			// known, permanent, documented block, not a transient failure.
+			return credentialsBlockedResult(), nil
+		}
+		env := map[string]string{
+			"MONGO_INITDB_ROOT_USERNAME": c.mongoCreds.Username,
+			"MONGO_INITDB_ROOT_PASSWORD": c.mongoCreds.Password,
+		}
+		return c.reconcileEngine(ctx, desired, env, mongoDataPath, mongoContainerPort)
+
 	default:
 		err := fmt.Errorf("unrecognized engine %q", desired.Engine)
 		return notReady("UnknownEngine", err), fmt.Errorf("database/%s: %w", c.dbName, err)
@@ -229,7 +268,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 // database's data volume exists, then ensures the right container exists
 // and is running.
 func (c *Controller) reconcileEngine(ctx context.Context, desired *store.DesiredDatabase, env map[string]string, dataPath string, containerPort int) (reconcile.Result, error) {
-	image := desired.Engine + ":" + versionOrDefault(desired.Version)
+	image := dockerImageFor(desired.Engine) + ":" + versionOrDefault(desired.Version)
 	target := containerName(c.dbName)
 	volName := dataVolumeName(c.dbName)
 
@@ -374,6 +413,22 @@ func normalizedPortSet(ports []docker.PortBinding) map[docker.PortBinding]bool {
 		set[docker.PortBinding{ContainerPort: p.ContainerPort, HostPort: p.HostPort, Protocol: proto}] = true
 	}
 	return set
+}
+
+// dockerImageFor returns the official Docker Hub image name for engine.
+// Every other supported engine's registry id (store.EnginePostgres,
+// EngineRedis, EngineMySQL) is already identical to its own official
+// image name, so this only needs a real mapping for MongoDB: the
+// registry id is "mongodb" (matching how every other part of this
+// codebase, and users, refer to the engine), but the official image is
+// named "mongo", not "mongodb". Falls through to engine itself for
+// every other id, so adding a future engine whose id does match its
+// image name needs no change here.
+func dockerImageFor(engine string) string {
+	if engine == store.EngineMongoDB {
+		return "mongo"
+	}
+	return engine
 }
 
 func versionOrDefault(v string) string {

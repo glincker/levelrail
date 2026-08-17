@@ -10,12 +10,13 @@ import (
 
 // Supported managed database engines, matching internal/spec's list:
 // Postgres and Redis shipped as first-class resources in the initial
-// release, MySQL joined once internal/reconcile/database's controller
-// grew a third engine case.
+// release, MySQL and MongoDB joined once internal/reconcile/database's
+// controller grew matching engine cases.
 const (
 	EnginePostgres = "postgres"
 	EngineRedis    = "redis"
 	EngineMySQL    = "mysql"
+	EngineMongoDB  = "mongodb"
 )
 
 // DesiredDatabase is what a future database controller (TASKS.md 1.8)

@@ -106,13 +106,15 @@ type Resources struct {
 }
 
 // Supported managed database engines: Postgres and Redis shipped as
-// first-class resources in the initial release, MySQL joined once
-// internal/reconcile/database's controller grew a third engine case.
+// first-class resources in the initial release, MySQL and MongoDB
+// joined once internal/reconcile/database's controller grew matching
+// engine cases.
 const (
 	EngineFake     = "" // zero value only, never valid; see Validate
 	EnginePostgres = "postgres"
 	EngineRedis    = "redis"
 	EngineMySQL    = "mysql"
+	EngineMongoDB  = "mongodb"
 )
 
 // Database is one entry under databases:.

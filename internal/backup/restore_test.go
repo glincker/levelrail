@@ -54,6 +54,27 @@ func TestContainerRestorer_Restore_MySQL(t *testing.T) {
 	}
 }
 
+func TestContainerRestorer_Restore_MongoDB(t *testing.T) {
+	rt := &fakeExecRuntime{content: "-- mongorestore output\n"}
+	r := &ContainerRestorer{Runtime: rt}
+
+	dump := "mongodump archive bytes"
+	if err := r.Restore(context.Background(), store.EngineMongoDB, "db-mydb", strings.NewReader(dump)); err != nil {
+		t.Fatalf("Restore() error = %v", err)
+	}
+
+	if rt.gotInputContainer != "db-mydb" {
+		t.Errorf("container = %q, want %q", rt.gotInputContainer, "db-mydb")
+	}
+	if rt.gotStdin != dump {
+		t.Errorf("stdin = %q, want %q", rt.gotStdin, dump)
+	}
+	wantCmd := []string{"sh", "-c", `exec mongorestore --archive --drop --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin`}
+	if !reflect.DeepEqual(rt.gotInputCmd, wantCmd) {
+		t.Errorf("cmd = %v, want %v", rt.gotInputCmd, wantCmd)
+	}
+}
+
 // TestContainerRestorer_Restore_Redis proves the write-then-stop-then-start
 // sequence: the dump is streamed onto /data/dump.rdb via ExecWithInput
 // while the container is still running, then the container is stopped and
@@ -206,7 +227,7 @@ func TestContainerRestorer_Restore_UnknownEngine(t *testing.T) {
 	rt := &fakeExecRuntime{}
 	r := &ContainerRestorer{Runtime: rt}
 
-	err := r.Restore(context.Background(), "mongodb", "db-mydb", strings.NewReader("x"))
+	err := r.Restore(context.Background(), "cassandra", "db-mydb", strings.NewReader("x"))
 	if err == nil {
 		t.Fatal("Restore() error = nil, want an error for an unrecognized engine")
 	}

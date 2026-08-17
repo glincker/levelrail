@@ -35,8 +35,8 @@ func TestPlanDatabaseCreate(t *testing.T) {
 		},
 		{
 			name:    "unsupported engine",
-			flags:   createDatabaseFlags{name: "main", engine: "mysql", version: "8"},
-			wantErr: `"postgres" or "redis"`,
+			flags:   createDatabaseFlags{name: "main", engine: "cassandra", version: "5"},
+			wantErr: "--engine must be one of",
 		},
 		{
 			name:  "valid postgres",
@@ -47,6 +47,16 @@ func TestPlanDatabaseCreate(t *testing.T) {
 			name:  "valid redis",
 			flags: createDatabaseFlags{name: "cache", engine: "redis", version: "7"},
 			want:  databaseResource{Name: "cache", Engine: "redis", Version: "7"},
+		},
+		{
+			name:  "valid mysql",
+			flags: createDatabaseFlags{name: "orders", engine: "mysql", version: "8"},
+			want:  databaseResource{Name: "orders", Engine: "mysql", Version: "8"},
+		},
+		{
+			name:  "valid mongodb",
+			flags: createDatabaseFlags{name: "events", engine: "mongodb", version: "7"},
+			want:  databaseResource{Name: "events", Engine: "mongodb", Version: "7"},
 		},
 	}
 

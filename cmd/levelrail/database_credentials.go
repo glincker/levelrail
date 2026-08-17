@@ -24,6 +24,13 @@ const postgresPasswordEnvKey = "postgres_password"
 // database of the same name reconciled as postgres.
 const mysqlPasswordEnvKey = "mysql_password"
 
+// mongoPasswordEnvKey is mongoCredentialsFor's own storage key, distinct
+// from postgresPasswordEnvKey/mysqlPasswordEnvKey for the same reason
+// mysqlPasswordEnvKey is distinct from postgresPasswordEnvKey: a
+// database named "main" reconciled as mongodb must never share storage
+// with a same-named database reconciled as a different engine.
+const mongoPasswordEnvKey = "mongo_password"
+
 // postgresCredentialsFor returns the Postgres credentials
 // database.WithPostgresCredentials needs for dbName, generating and
 // persisting a random password on first call and returning the same
@@ -106,4 +113,41 @@ func mysqlCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName strin
 	}
 
 	return &database.MySQLCredentials{Username: dbName, Password: password}, nil
+}
+
+// mongoCredentialsFor is postgresCredentialsFor's exact counterpart for
+// database.WithMongoDBCredentials: same generate-once-persist-forever
+// shape, same "nil manager means nil credentials, not an error"
+// contract, its own storage key (mongoPasswordEnvKey) so it never
+// collides with a same-named database of a different engine. See
+// postgresCredentialsFor's own doc comment for the full reasoning,
+// unchanged here.
+func mongoCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName string) (*database.MongoDBCredentials, error) {
+	if mgr == nil {
+		return nil, nil
+	}
+
+	exists, err := mgr.Exists(ctx, dbName, mongoPasswordEnvKey)
+	if err != nil {
+		return nil, fmt.Errorf("check existing mongodb credentials for %q: %w", dbName, err)
+	}
+	if !exists {
+		password, err := generateRandomPassword()
+		if err != nil {
+			return nil, fmt.Errorf("generate mongodb password for %q: %w", dbName, err)
+		}
+		if err := mgr.SetValue(ctx, dbName, mongoPasswordEnvKey, password); err != nil {
+			return nil, fmt.Errorf("store mongodb password for %q: %w", dbName, err)
+		}
+	}
+
+	password, err := mgr.Resolve(ctx, dbName, mongoPasswordEnvKey)
+	if err != nil {
+		return nil, fmt.Errorf("resolve mongodb password for %q: %w", dbName, err)
+	}
+	if password == "" {
+		return nil, errors.New("resolved mongodb password is empty")
+	}
+
+	return &database.MongoDBCredentials{Username: dbName, Password: password}, nil
 }
