@@ -182,6 +182,73 @@ func TestNotifyTelegram_InvalidURL_Errors(t *testing.T) {
 	}
 }
 
+func TestNotifyPushover_PostsTokenUserAndMessage(t *testing.T) {
+	var got pushoverPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	r := Rule{
+		ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web",
+		NotifyURL:  srv.URL + "/1/messages.json?token=app-token-123&user=user-key-456",
+		NotifyKind: NotifyPushover,
+	}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if got.Token != "app-token-123" {
+		t.Errorf("payload.Token = %q, want app-token-123 (parsed from the notify_url's token query param)", got.Token)
+	}
+	if got.User != "user-key-456" {
+		t.Errorf("payload.User = %q, want user-key-456 (parsed from the notify_url's user query param)", got.User)
+	}
+	if !strings.Contains(got.Message, "high cpu") {
+		t.Errorf("payload.Message = %q, want it to mention the rule name", got.Message)
+	}
+	if got.Title != "high cpu" {
+		t.Errorf("payload.Title = %q, want the rule name", got.Title)
+	}
+}
+
+func TestNotifyPushover_MissingCreds_Errors(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	tests := []struct {
+		name string
+		url  string
+	}{
+		{"missing token", srv.URL + "/1/messages.json?user=user-key-456"},
+		{"missing user", srv.URL + "/1/messages.json?token=app-token-123"},
+		{"missing both", srv.URL + "/1/messages.json"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := Rule{ID: "r1", Name: "x", NotifyURL: tt.url, NotifyKind: NotifyPushover}
+			notifier := NewNotifier(nil, nil, r)
+
+			if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
+				t.Error("Notify() error = nil, want an error when notify_url is missing token or user")
+			}
+		})
+	}
+}
+
+func TestNotifyPushover_InvalidURL_Errors(t *testing.T) {
+	r := Rule{ID: "r1", Name: "x", NotifyURL: "://not a url", NotifyKind: NotifyPushover}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
+		t.Error("Notify() error = nil, want an error for an unparseable notify_url")
+	}
+}
+
 func TestNewNotifier_Email_NoSMTPConfigured_Errors(t *testing.T) {
 	r := Rule{ID: "r1", Name: "high cpu", NotifyURL: "ops@example.com", NotifyKind: NotifyEmail}
 	notifier := NewNotifier(nil, nil, r) // no email.Sender

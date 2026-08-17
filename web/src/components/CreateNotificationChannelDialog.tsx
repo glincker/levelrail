@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import {
+  BellRingingIcon,
   CheckCircleIcon,
   EnvelopeSimpleIcon,
   PaperPlaneTiltIcon,
@@ -34,6 +35,7 @@ import {
   useCreateNotificationChannel,
   useTestNotificationChannel,
 } from '../queries/notificationChannels'
+import { buildPushoverNotifyUrl } from '../lib/pushoverNotifyUrl'
 import type { NotificationChannelKind } from '../types/notificationChannel'
 
 const KIND_ORDER: NotificationChannelKind[] = [
@@ -42,6 +44,7 @@ const KIND_ORDER: NotificationChannelKind[] = [
   'telegram',
   'generic',
   'email',
+  'pushover',
 ]
 
 // Destination placeholder and setup-guide link per kind: each URL is the
@@ -64,15 +67,53 @@ const KIND_META: Record<
   },
   generic: { placeholder: 'https://example.com/webhook' },
   email: { placeholder: 'ops@example.com' },
+  pushover: {
+    placeholder: '',
+    href: 'https://pushover.net/api#registration',
+  },
 }
 
 const createChannelSchema = z
   .object({
     name: z.string().trim().min(1, 'Name is required'),
-    kind: z.enum(['generic', 'slack', 'discord', 'telegram', 'email']),
-    notifyUrl: z.string().trim().min(1, 'Destination is required'),
+    kind: z.enum([
+      'generic',
+      'slack',
+      'discord',
+      'telegram',
+      'email',
+      'pushover',
+    ]),
+    notifyUrl: z.string().trim(),
+    pushoverUserKey: z.string().trim(),
+    pushoverApiToken: z.string().trim(),
   })
   .superRefine((data, ctx) => {
+    if (data.kind === 'pushover') {
+      if (!data.pushoverUserKey) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'User Key is required',
+          path: ['pushoverUserKey'],
+        })
+      }
+      if (!data.pushoverApiToken) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'API Token is required',
+          path: ['pushoverApiToken'],
+        })
+      }
+      return
+    }
+    if (!data.notifyUrl) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Destination is required',
+        path: ['notifyUrl'],
+      })
+      return
+    }
     const isValid =
       data.kind === 'email'
         ? z.email().safeParse(data.notifyUrl).success
@@ -95,6 +136,21 @@ const DEFAULT_VALUES: CreateChannelForm = {
   name: '',
   kind: 'slack',
   notifyUrl: '',
+  pushoverUserKey: '',
+  pushoverApiToken: '',
+}
+
+// The single notify_url string the API expects, per kind: Pushover's
+// two credentials get packed into it client-side (buildPushoverNotifyUrl),
+// every other kind sends the destination field as-is.
+function resolveNotifyUrl(values: CreateChannelForm): string {
+  if (values.kind === 'pushover') {
+    return buildPushoverNotifyUrl(
+      values.pushoverUserKey.trim(),
+      values.pushoverApiToken.trim(),
+    )
+  }
+  return values.notifyUrl.trim()
 }
 
 // The global "connect once" flow: picker with real brand marks, inline
@@ -111,6 +167,12 @@ export function CreateNotificationChannelDialog() {
     })
   const kind = watch('kind')
   const notifyUrl = watch('notifyUrl')
+  const pushoverUserKey = watch('pushoverUserKey')
+  const pushoverApiToken = watch('pushoverApiToken')
+  const hasDestination =
+    kind === 'pushover'
+      ? Boolean(pushoverUserKey.trim() && pushoverApiToken.trim())
+      : Boolean(notifyUrl.trim())
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -125,7 +187,7 @@ export function CreateNotificationChannelDialog() {
   function handleTest() {
     setVerified(false)
     testChannel.mutate(
-      { kind, notify_url: notifyUrl.trim() },
+      { kind, notify_url: resolveNotifyUrl(watch()) },
       {
         onSuccess: () => {
           setVerified(true)
@@ -147,7 +209,7 @@ export function CreateNotificationChannelDialog() {
       {
         name: values.name.trim(),
         kind: values.kind,
-        notify_url: values.notifyUrl.trim(),
+        notify_url: resolveNotifyUrl(values),
       },
       {
         onSuccess: (created) => {
@@ -187,7 +249,7 @@ export function CreateNotificationChannelDialog() {
               control={control}
               name="kind"
               render={({ field }) => (
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
                   {KIND_ORDER.map((option) => {
                     const brandIcon = CHANNEL_KIND_BRAND_ICON[option]
                     const selected = field.value === option
@@ -211,6 +273,11 @@ export function CreateNotificationChannelDialog() {
                           <BrandIcon name={brandIcon} className="size-5" />
                         ) : option === 'email' ? (
                           <EnvelopeSimpleIcon
+                            className="size-5"
+                            aria-hidden="true"
+                          />
+                        ) : option === 'pushover' ? (
+                          <BellRingingIcon
                             className="size-5"
                             aria-hidden="true"
                           />
@@ -241,32 +308,71 @@ export function CreateNotificationChannelDialog() {
             <FieldError errors={[formState.errors.name]} />
           </Field>
 
-          <Field>
-            <FieldLabel htmlFor="channel-notify-url">
-              {kind === 'email' ? 'Notify email address' : 'Webhook URL'}
-            </FieldLabel>
-            <Input
-              id="channel-notify-url"
-              placeholder={KIND_META[kind].placeholder}
-              {...register('notifyUrl', {
-                onChange: () => {
-                  setVerified(false)
-                },
-              })}
-            />
-            <FieldError errors={[formState.errors.notifyUrl]} />
-            <FieldHint href={KIND_META[kind].href}>
-              What gets sent: app name, image/tag, success or failure, and the
-              error message on failure. Nothing else about your app.
-            </FieldHint>
-          </Field>
+          {kind === 'pushover' ? (
+            <>
+              <Field>
+                <FieldLabel htmlFor="channel-pushover-user-key">
+                  Pushover User Key
+                </FieldLabel>
+                <Input
+                  id="channel-pushover-user-key"
+                  placeholder="uQiRzpo4DXghDmr9QzzfQu27cmVRsG"
+                  {...register('pushoverUserKey', {
+                    onChange: () => {
+                      setVerified(false)
+                    },
+                  })}
+                />
+                <FieldError errors={[formState.errors.pushoverUserKey]} />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="channel-pushover-api-token">
+                  Pushover Application API Token
+                </FieldLabel>
+                <Input
+                  id="channel-pushover-api-token"
+                  placeholder="azGDORePK8gMaC0QOYAMyEEuzJnyUi"
+                  {...register('pushoverApiToken', {
+                    onChange: () => {
+                      setVerified(false)
+                    },
+                  })}
+                />
+                <FieldError errors={[formState.errors.pushoverApiToken]} />
+                <FieldHint href={KIND_META.pushover.href}>
+                  What gets sent: app name, image/tag, success or failure, and
+                  the error message on failure. Nothing else about your app.
+                </FieldHint>
+              </Field>
+            </>
+          ) : (
+            <Field>
+              <FieldLabel htmlFor="channel-notify-url">
+                {kind === 'email' ? 'Notify email address' : 'Webhook URL'}
+              </FieldLabel>
+              <Input
+                id="channel-notify-url"
+                placeholder={KIND_META[kind].placeholder}
+                {...register('notifyUrl', {
+                  onChange: () => {
+                    setVerified(false)
+                  },
+                })}
+              />
+              <FieldError errors={[formState.errors.notifyUrl]} />
+              <FieldHint href={KIND_META[kind].href}>
+                What gets sent: app name, image/tag, success or failure, and
+                the error message on failure. Nothing else about your app.
+              </FieldHint>
+            </Field>
+          )}
 
           <div className="flex items-center gap-2">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              disabled={testChannel.isPending || !notifyUrl.trim()}
+              disabled={testChannel.isPending || !hasDestination}
               onClick={handleTest}
             >
               <PaperPlaneTiltIcon className="size-3.5" aria-hidden="true" />

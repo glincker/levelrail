@@ -68,6 +68,26 @@ func TestHandleCreateNotificationChannel_Success(t *testing.T) {
 	}
 }
 
+func TestHandleCreateNotificationChannel_PushoverKindAccepted(t *testing.T) {
+	rt, db, _ := newTestRouterWithNotificationChannels(t)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"My Phone","kind":"pushover","notify_url":"https://api.pushover.net/1/messages.json?token=app-token&user=user-key"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/notification-channels", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	var got notificationChannelResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Kind != "pushover" {
+		t.Errorf("Kind = %q, want pushover", got.Kind)
+	}
+}
+
 func TestHandleCreateNotificationChannel_EnabledFalseRespected(t *testing.T) {
 	rt, db, _ := newTestRouterWithNotificationChannels(t)
 	cookie := loginTestSession(t, rt, db)

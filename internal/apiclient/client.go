@@ -329,6 +329,40 @@ func (c *Client) GetServiceTemplate(ctx context.Context, id string) (ServiceTemp
 	return out, err
 }
 
+// CreateNotificationChannel calls POST /api/v1/notification-channels.
+func (c *Client) CreateNotificationChannel(ctx context.Context, req CreateNotificationChannelRequest) (NotificationChannelResource, error) {
+	var out NotificationChannelResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/notification-channels", req, &out)
+	return out, err
+}
+
+// ListNotificationChannels calls GET /api/v1/notification-channels.
+func (c *Client) ListNotificationChannels(ctx context.Context) ([]NotificationChannelResource, error) {
+	var out []NotificationChannelResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/notification-channels", nil, &out)
+	return out, err
+}
+
+// DeleteNotificationChannel calls DELETE
+// /api/v1/notification-channels/{id}.
+func (c *Client) DeleteNotificationChannel(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/notification-channels/"+PathEscape(id), nil, nil)
+}
+
+// TestNotificationChannel calls POST
+// /api/v1/notification-channels/test: fires a real test message via
+// kind/notifyURL without requiring the channel to exist yet.
+func (c *Client) TestNotificationChannel(ctx context.Context, kind, notifyURL string) error {
+	return c.do(ctx, http.MethodPost, "/api/v1/notification-channels/test", TestNotificationChannelRequest{Kind: kind, NotifyURL: notifyURL}, nil)
+}
+
+// TestExistingNotificationChannel calls POST
+// /api/v1/notification-channels/{id}/test: the same real send, against
+// an already-saved channel's own kind/notify_url.
+func (c *Client) TestExistingNotificationChannel(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodPost, "/api/v1/notification-channels/"+PathEscape(id)+"/test", nil, nil)
+}
+
 // PathEscape guards against a name containing characters that would
 // otherwise change the request's URL shape (a "/" turning one path
 // segment into two, for instance). Server-side validation is the real

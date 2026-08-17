@@ -233,6 +233,34 @@ type SetSecretRequest struct {
 	Value string `json:"value"`
 }
 
+// NotificationChannelResource mirrors internal/api's
+// notificationChannelResource (internal/api/notification_channels.go).
+type NotificationChannelResource struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Kind      string `json:"kind"`
+	NotifyURL string `json:"notify_url"`
+	Enabled   bool   `json:"enabled"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+// CreateNotificationChannelRequest mirrors internal/api's
+// createNotificationChannelRequest.
+type CreateNotificationChannelRequest struct {
+	Name      string `json:"name"`
+	Kind      string `json:"kind"`
+	NotifyURL string `json:"notify_url"`
+	Enabled   *bool  `json:"enabled,omitempty"`
+}
+
+// TestNotificationChannelRequest mirrors internal/api's
+// testNotificationChannelRequest.
+type TestNotificationChannelRequest struct {
+	Kind      string `json:"kind"`
+	NotifyURL string `json:"notify_url"`
+}
+
 // apiErrorBody is the JSON shape every non-2xx response from the
 // control plane returns (internal/api/respond.go's own apiError).
 type apiErrorBody struct {

@@ -2,7 +2,7 @@
 // internal/api/notification_channels.go's notificationChannelResource.
 
 export type NotificationChannelKind =
-  'generic' | 'slack' | 'discord' | 'telegram' | 'email'
+  'generic' | 'slack' | 'discord' | 'telegram' | 'email' | 'pushover'
 
 export interface NotificationChannel {
   id: string
