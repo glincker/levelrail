@@ -32,7 +32,7 @@ func fakeCoolifyServer(t *testing.T, app coolifyApplication, envs []coolifyEnvVa
 
 func TestRun_MigrateCoolify_MissingFlags(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"migrate", "coolify"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"migrate", "coolify"}, &stdout, &stderr, envMap())
 	if got != exitValidation {
 		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitValidation, stderr.String())
 	}
@@ -58,7 +58,7 @@ func TestRun_MigrateCoolify_FileMode(t *testing.T) {
 		"migrate", "coolify",
 		"--url", srv.URL, "--token", "coolify-token",
 		"--out-dir", outDir,
-	}, &stdout, &stderr, envMap(nil))
+	}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -105,7 +105,7 @@ func TestRun_MigrateCoolify_Apply(t *testing.T) {
 		"migrate", "coolify",
 		"--url", coolifySrv.URL, "--token", "coolify-token",
 		"--apply", "--target-api-url", targetSrv.URL, "--target-token", "target-token",
-	}, &stdout, &stderr, envMap(nil))
+	}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -132,7 +132,7 @@ func TestRun_MigrateCoolify_BlockingAppReported(t *testing.T) {
 		"migrate", "coolify",
 		"--url", srv.URL, "--token", "t",
 		"--out-dir", outDir,
-	}, &stdout, &stderr, envMap(nil))
+	}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -161,7 +161,7 @@ func TestRun_MigrateCoolify_JSON(t *testing.T) {
 		"migrate", "coolify",
 		"--url", srv.URL, "--token", "t",
 		"--out-dir", outDir, "--json",
-	}, &stdout, &stderr, envMap(nil))
+	}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -177,7 +177,7 @@ func TestRun_MigrateCoolify_JSON(t *testing.T) {
 
 func TestRun_MigrateCoolify_Help(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"migrate", "coolify", "-h"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"migrate", "coolify", "-h"}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d", got, exitOK)
 	}
@@ -188,7 +188,7 @@ func TestRun_MigrateCoolify_Help(t *testing.T) {
 
 func TestRun_Migrate_UnknownSource(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"migrate", "bogus"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"migrate", "bogus"}, &stdout, &stderr, envMap())
 	if got != exitUsage {
 		t.Fatalf("exit = %d, want %d", got, exitUsage)
 	}

@@ -48,7 +48,7 @@ func TestRun_AppsExec_RealExitCode(t *testing.T) {
 			defer srv.Close()
 
 			var stdout, stderr bytes.Buffer
-			got := run("levelrail-cli-test", []string{"apps", "exec", "web", "--api-url", srv.URL, "--", "sh", "-c", "exit"}, &stdout, &stderr, envMap(nil))
+			got := run("levelrail-cli-test", []string{"apps", "exec", "web", "--api-url", srv.URL, "--", "sh", "-c", "exit"}, &stdout, &stderr, envMap())
 			if got != tt.serverExit {
 				t.Fatalf("exit = %d, want %d (the server's own exit_code) (stdout=%q stderr=%q)", got, tt.serverExit, stdout.String(), stderr.String())
 			}
@@ -68,7 +68,7 @@ func TestRun_AppsExec_JSON(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "exec", "web", "--api-url", srv.URL, "--json", "--", "echo", "hi"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "exec", "web", "--api-url", srv.URL, "--json", "--", "echo", "hi"}, &stdout, &stderr, envMap())
 	if got != 5 {
 		t.Fatalf("exit = %d, want 5 (the server's exit_code) even in --json mode", got)
 	}
@@ -86,7 +86,7 @@ func TestRun_AppsExec_Stderr(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "exec", "web", "--api-url", srv.URL, "--", "false"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "exec", "web", "--api-url", srv.URL, "--", "false"}, &stdout, &stderr, envMap())
 	if got != 1 {
 		t.Fatalf("exit = %d, want 1", got)
 	}
@@ -104,7 +104,7 @@ func TestRun_AppsExec_APIError(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "exec", "web", "--api-url", srv.URL, "--", "true"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "exec", "web", "--api-url", srv.URL, "--", "true"}, &stdout, &stderr, envMap())
 	if got != exitAPIError {
 		t.Fatalf("exit = %d, want %d (a genuine API error, no remote exit code was ever learned)", got, exitAPIError)
 	}
@@ -115,7 +115,7 @@ func TestRun_AppsExec_APIError(t *testing.T) {
 
 func TestRun_AppsExec_MissingCommand(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "exec", "web"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "exec", "web"}, &stdout, &stderr, envMap())
 	if got != exitUsage {
 		t.Fatalf("exit = %d, want %d", got, exitUsage)
 	}
@@ -126,7 +126,7 @@ func TestRun_AppsExec_MissingCommand(t *testing.T) {
 
 func TestRun_AppsExec_NoArgs(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "exec"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "exec"}, &stdout, &stderr, envMap())
 	if got != exitUsage {
 		t.Fatalf("exit = %d, want %d", got, exitUsage)
 	}
@@ -134,7 +134,7 @@ func TestRun_AppsExec_NoArgs(t *testing.T) {
 
 func TestRun_AppsExec_Help(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "exec", "-h"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "exec", "-h"}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d", got, exitOK)
 	}

@@ -28,7 +28,7 @@ func TestRun_AuthWhoami_Success(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"auth", "whoami", "--token", "sometoken", "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"auth", "whoami", "--token", "sometoken", "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -58,7 +58,7 @@ func TestRun_AuthWhoami_RealServer401(t *testing.T) {
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"auth", "whoami", "--token", "sometoken", "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"auth", "whoami", "--token", "sometoken", "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitAPIError {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitAPIError, stdout.String(), stderr.String())
 	}
@@ -69,7 +69,7 @@ func TestRun_AuthWhoami_RealServer401(t *testing.T) {
 
 func TestRun_AuthWhoami_Help(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"auth", "whoami", "-h"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"auth", "whoami", "-h"}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d", got, exitOK)
 	}
@@ -80,7 +80,7 @@ func TestRun_AuthWhoami_Help(t *testing.T) {
 
 func TestRun_Auth_UnknownSubcommand(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"auth", "bogus"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"auth", "bogus"}, &stdout, &stderr, envMap())
 	if got != exitUsage {
 		t.Fatalf("exit = %d, want %d", got, exitUsage)
 	}

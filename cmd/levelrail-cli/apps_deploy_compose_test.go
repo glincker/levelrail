@@ -48,7 +48,7 @@ func TestRun_AppsDeployCompose(t *testing.T) {
 	file := writeComposeFixture(t)
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "deploy-compose", "myapp", "--file", file, "--api-url", srv.URL, "--json"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "deploy-compose", "myapp", "--file", file, "--api-url", srv.URL, "--json"}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -86,7 +86,7 @@ func TestRun_AppsDeployCompose_Human(t *testing.T) {
 	file := writeComposeFixture(t)
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "deploy-compose", "myapp", "--file", file, "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "deploy-compose", "myapp", "--file", file, "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -103,7 +103,7 @@ func TestRun_AppsDeployCompose_Human(t *testing.T) {
 
 func TestRun_AppsDeployCompose_MissingFile(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "deploy-compose", "myapp"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "deploy-compose", "myapp"}, &stdout, &stderr, envMap())
 	if got != exitValidation {
 		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitValidation, stderr.String())
 	}
@@ -114,7 +114,7 @@ func TestRun_AppsDeployCompose_MissingFile(t *testing.T) {
 
 func TestRun_AppsDeployCompose_FileNotFound(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "deploy-compose", "myapp", "--file", "/nonexistent/compose.yaml"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "deploy-compose", "myapp", "--file", "/nonexistent/compose.yaml"}, &stdout, &stderr, envMap())
 	if got != exitNetwork {
 		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitNetwork, stderr.String())
 	}
@@ -125,7 +125,7 @@ func TestRun_AppsDeployCompose_FileNotFound(t *testing.T) {
 
 func TestRun_AppsDeployCompose_NoName(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "deploy-compose", "--file", "compose.yaml"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "deploy-compose", "--file", "compose.yaml"}, &stdout, &stderr, envMap())
 	if got != exitUsage {
 		t.Fatalf("exit = %d, want %d", got, exitUsage)
 	}
@@ -145,7 +145,7 @@ func TestRun_AppsDeployCompose_APIError(t *testing.T) {
 	file := writeComposeFixture(t)
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "deploy-compose", "myapp", "--file", file, "--api-url", srv.URL}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "deploy-compose", "myapp", "--file", file, "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitAPIError {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitAPIError, stdout.String(), stderr.String())
 	}
@@ -156,7 +156,7 @@ func TestRun_AppsDeployCompose_APIError(t *testing.T) {
 
 func TestRun_AppsDeployCompose_Help(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "deploy-compose", "-h"}, &stdout, &stderr, envMap(nil))
+	got := run("levelrail-cli-test", []string{"apps", "deploy-compose", "-h"}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d", got, exitOK)
 	}
