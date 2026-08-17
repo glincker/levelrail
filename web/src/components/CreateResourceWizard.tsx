@@ -6,6 +6,7 @@ import {
   DatabaseIcon,
   GitBranchIcon,
   MagnifyingGlassIcon,
+  PackageIcon,
   StackIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -19,18 +20,22 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { BrandIcon, BRAND_ICON_NAMES, type BrandIconName } from './BrandIcon'
+import { BrowseTemplatesFields } from './BrowseTemplatesFields'
 import { CreateAppFields } from './CreateAppFields'
 import { CreateAppFromGitFields } from './CreateAppFromGitFields'
 import { CreateComposeFields } from './CreateComposeFields'
 import { CreateDatabaseFields } from './CreateDatabaseFields'
 import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
 
-// Step 1's fixed application starting points: a small set, not a
-// template catalog (see this repo's root CLAUDE.md non-goals section).
-// Database cards are appended dynamically below, from
-// GET /api/v1/database-engines (queries/databaseEngines.ts), rather than
-// hardcoded here.
-type FixedWizardOption = 'docker-image' | 'dockerfile-git' | 'docker-compose'
+// Step 1's fixed application starting points. Database cards are
+// appended dynamically below, from GET /api/v1/database-engines
+// (queries/databaseEngines.ts), rather than hardcoded here.
+// browse-templates leads to BrowseTemplatesFields, a searchable grid
+// over Levelrail's own curated GET /api/v1/service-templates catalog
+// (internal/catalog, ADR 015), distinct from docker-compose's own
+// paste-your-own-YAML path below.
+type FixedWizardOption =
+  'docker-image' | 'dockerfile-git' | 'docker-compose' | 'browse-templates'
 
 interface WizardOptionDef {
   value: string
@@ -64,6 +69,13 @@ const FIXED_OPTIONS: WizardOptionDef[] = [
     description:
       'Paste or upload a compose.yaml and deploy every service it defines at once.',
     icon: <StackIcon className="size-6" />,
+  },
+  {
+    value: 'browse-templates',
+    label: 'Browse templates',
+    description:
+      'Pick from a curated catalog of ready-to-deploy services like n8n, Uptime Kuma, and MinIO.',
+    icon: <PackageIcon className="size-6" />,
   },
 ]
 
@@ -146,7 +158,8 @@ export function CreateResourceWizard({
   const isFixedOption = (value: string): value is FixedWizardOption =>
     value === 'docker-image' ||
     value === 'dockerfile-git' ||
-    value === 'docker-compose'
+    value === 'docker-compose' ||
+    value === 'browse-templates'
 
   const applicationOptions = FIXED_OPTIONS
   const databaseOptions: WizardOptionDef[] = engines.map((engine) => {
@@ -196,7 +209,9 @@ export function CreateResourceWizard({
         ? 'New app from an image'
         : selected === 'dockerfile-git'
           ? 'New app from a git repo'
-          : 'New app from Docker Compose'
+          : selected === 'docker-compose'
+            ? 'New app from Docker Compose'
+            : 'New app from a template'
       : `New ${engines.find((e) => e.id === selected)?.label ?? selected} database`
     : ''
 
@@ -211,7 +226,9 @@ export function CreateResourceWizard({
         ? `We'll create your app, then build and deploy it straight from your repository. This usually takes a minute or two. ${appYamlAside}`
         : selected === 'docker-compose'
           ? `We'll create one app per service defined in your compose.yaml. ${appYamlAside}`
-          : "We'll set this database up on your server and connect it automatically, no manual configuration needed."
+          : selected === 'browse-templates'
+            ? `Pick a service from the catalog, we'll pre-fill its compose.yaml and create one app per service it defines. ${appYamlAside}`
+            : "We'll set this database up on your server and connect it automatically, no manual configuration needed."
     : ''
 
   const gridClassName = fullscreen
@@ -361,6 +378,13 @@ export function CreateResourceWizard({
             ) : null}
             {selected === 'docker-compose' ? (
               <CreateComposeFields
+                key={selected}
+                open={open}
+                onCreated={handleCreated}
+              />
+            ) : null}
+            {selected === 'browse-templates' ? (
+              <BrowseTemplatesFields
                 key={selected}
                 open={open}
                 onCreated={handleCreated}
