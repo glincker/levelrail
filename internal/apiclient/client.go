@@ -388,6 +388,54 @@ func (c *Client) ClearLogDrain(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/log-drain", nil, nil)
 }
 
+// CreateScheduledTask calls POST /api/v1/apps/{name}/scheduled-tasks.
+func (c *Client) CreateScheduledTask(ctx context.Context, appName string, req ScheduledTaskRequest) (ScheduledTaskResource, error) {
+	var out ScheduledTaskResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(appName)+"/scheduled-tasks", req, &out)
+	return out, err
+}
+
+// ListScheduledTasks calls GET /api/v1/apps/{name}/scheduled-tasks.
+func (c *Client) ListScheduledTasks(ctx context.Context, appName string) ([]ScheduledTaskResource, error) {
+	var out []ScheduledTaskResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(appName)+"/scheduled-tasks", nil, &out)
+	return out, err
+}
+
+// UpdateScheduledTask calls PUT /api/v1/apps/{name}/scheduled-tasks/{id}:
+// a full replace of every editable field, the same convention
+// setBackupScheduleRequest's own server-side doc comment establishes.
+func (c *Client) UpdateScheduledTask(ctx context.Context, appName, id string, req ScheduledTaskRequest) (ScheduledTaskResource, error) {
+	var out ScheduledTaskResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/scheduled-tasks/"+PathEscape(id), req, &out)
+	return out, err
+}
+
+// DeleteScheduledTask calls
+// DELETE /api/v1/apps/{name}/scheduled-tasks/{id}.
+func (c *Client) DeleteScheduledTask(ctx context.Context, appName, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(appName)+"/scheduled-tasks/"+PathEscape(id), nil, nil)
+}
+
+// RunScheduledTask calls
+// POST /api/v1/apps/{name}/scheduled-tasks/{id}/run: starts a real run
+// of a scheduled task's command and returns as soon as the attempt is
+// recorded and under way, not once the command actually finishes.
+// ListScheduledTaskRuns is how a caller finds out whether it did.
+func (c *Client) RunScheduledTask(ctx context.Context, appName, id string) (ScheduledTaskRunResource, error) {
+	var out ScheduledTaskRunResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(appName)+"/scheduled-tasks/"+PathEscape(id)+"/run", nil, &out)
+	return out, err
+}
+
+// ListScheduledTaskRuns calls
+// GET /api/v1/apps/{name}/scheduled-tasks/{id}/runs.
+func (c *Client) ListScheduledTaskRuns(ctx context.Context, appName, id string) ([]ScheduledTaskRunResource, error) {
+	var out []ScheduledTaskRunResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(appName)+"/scheduled-tasks/"+PathEscape(id)+"/runs", nil, &out)
+	return out, err
+}
+
 // PathEscape guards against a name containing characters that would
 // otherwise change the request's URL shape (a "/" turning one path
 // segment into two, for instance). Server-side validation is the real

@@ -280,6 +280,43 @@ type TestNotificationChannelRequest struct {
 	NotifyURL string `json:"notify_url"`
 }
 
+// ScheduledTaskResource mirrors internal/api's scheduledTaskResource
+// (internal/api/scheduled_tasks.go).
+type ScheduledTaskResource struct {
+	ID             string `json:"id"`
+	ServiceName    string `json:"service_name"`
+	Name           string `json:"name"`
+	Command        string `json:"command"`
+	Schedule       string `json:"schedule"`
+	Enabled        bool   `json:"enabled"`
+	TimeoutSeconds int    `json:"timeout_seconds,omitempty"`
+	CreatedAt      string `json:"created_at"`
+	UpdatedAt      string `json:"updated_at"`
+}
+
+// ScheduledTaskRequest mirrors internal/api's scheduledTaskRequest: the
+// body both CreateScheduledTask and UpdateScheduledTask send.
+type ScheduledTaskRequest struct {
+	Name           string `json:"name"`
+	Command        string `json:"command"`
+	Schedule       string `json:"schedule"`
+	Enabled        bool   `json:"enabled"`
+	TimeoutSeconds int    `json:"timeout_seconds,omitempty"`
+}
+
+// ScheduledTaskRunResource mirrors internal/api's
+// scheduledTaskRunResource.
+type ScheduledTaskRunResource struct {
+	ID              string `json:"id"`
+	ScheduledTaskID string `json:"scheduled_task_id"`
+	Status          string `json:"status"`
+	ExitCode        int    `json:"exit_code"`
+	Output          string `json:"output,omitempty"`
+	Error           string `json:"error,omitempty"`
+	StartedAt       string `json:"started_at"`
+	FinishedAt      string `json:"finished_at,omitempty"`
+}
+
 // apiErrorBody is the JSON shape every non-2xx response from the
 // control plane returns (internal/api/respond.go's own apiError).
 type apiErrorBody struct {
