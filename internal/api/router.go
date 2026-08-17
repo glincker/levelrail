@@ -376,6 +376,8 @@ type Store interface {
 	PasswordResetTokenStore
 	RecoveryCodeStore
 	AuditStore
+	ScheduledTaskStore
+	ScheduledTaskHistoryStore
 }
 
 // SecretSetter is the surface the secrets handlers need from
@@ -578,6 +580,9 @@ type Router struct {
 	forgotPasswordByIP        *loginLimiter                   // per-IP forgot-password budget, distinct from logins above
 	forgotPasswordByEmail     *loginLimiter                   // per-(IP,email) forgot-password budget; both this and forgotPasswordByIP must allow a request
 	auditLog                  AuditStore                      // always set, same "core Store interface" shape as backupTargets/certs above: requireAbility's audit hook (auth.go) writes through this on every request, GET /api/v1/audit-log (audit.go) reads through it
+	scheduledTasks            ScheduledTaskStore              // always set, same "core Store interface" shape as backupTargets above: CRUD on a scheduled task's config needs no runner configuration, only actually running one does
+	scheduledTaskHistory      ScheduledTaskHistoryStore       // always set, same shape as scheduledTasks above
+	scheduledTaskRunner       ScheduledTaskRunner             // nil is valid: POST .../scheduled-tasks/{id}/run returns 501, same shape as backupRunner above
 }
 
 // Option configures optional Router behavior.
@@ -837,6 +842,16 @@ func WithExecRuntime(r NodeRuntimeResolver) Option {
 	return func(rt *Router) { rt.execRuntime = r }
 }
 
+// WithScheduledTaskRunner enables
+// POST /apps/{name}/scheduled-tasks/{id}/run. Without one configured
+// (the default), that route returns 501, the same "not configured"
+// shape WithExecRuntime's own absence produces: CRUD on a scheduled
+// task's config still works with no runner wired in, only actually
+// running one needs it.
+func WithScheduledTaskRunner(r ScheduledTaskRunner) Option {
+	return func(rt *Router) { rt.scheduledTaskRunner = r }
+}
+
 // WithCertExpiryWarningWindow overrides how far ahead of a certificate's
 // expiry GET /api/v1/certificates starts reporting "expiring_soon"
 // instead of "healthy" (see statusForExpiry). Without one configured (or
@@ -973,6 +988,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		fetchLatestRelease:      defaultFetchLatestRelease,
 		updatesCache:            newUpdatesCache(),
 		auditLog:                s,
+		scheduledTasks:          s,
+		scheduledTaskHistory:    s,
 	}
 	for _, opt := range opts {
 		opt(rt)
@@ -1143,6 +1160,20 @@ func (rt *Router) Handler() http.Handler {
 	// tier. AbilityRoot is this project's existing "breaks an assumption
 	// other tiers rely on" boundary (see restore's own reasoning above).
 	mux.HandleFunc("POST /api/v1/apps/{name}/exec", rt.requireAbility(AbilityRoot, rt.handleExecApp))
+
+	// Scheduled tasks (scheduled_tasks.go): an arbitrary command run
+	// inside this app's container on a cron schedule, the same
+	// non-interactive exec primitive the route above uses. Create/update/
+	// delete/run and the execution-history list all sit at AbilityRoot,
+	// the same tier as exec itself; only the plain config list stays at
+	// AbilityRead. See scheduled_tasks.go's own package-level doc comment
+	// for the full reasoning.
+	mux.HandleFunc("POST /api/v1/apps/{name}/scheduled-tasks", rt.requireAbility(AbilityRoot, rt.handleCreateScheduledTask))
+	mux.HandleFunc("GET /api/v1/apps/{name}/scheduled-tasks", rt.requireAbility(AbilityRead, rt.handleListScheduledTasks))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/scheduled-tasks/{id}", rt.requireAbility(AbilityRoot, rt.handleUpdateScheduledTask))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/scheduled-tasks/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteScheduledTask))
+	mux.HandleFunc("POST /api/v1/apps/{name}/scheduled-tasks/{id}/run", rt.requireAbility(AbilityRoot, rt.handleRunScheduledTask))
+	mux.HandleFunc("GET /api/v1/apps/{name}/scheduled-tasks/{id}/runs", rt.requireAbility(AbilityRoot, rt.handleListScheduledTaskRuns))
 
 	// Real deploy-attempt history (deploy_attempts.go): a row per
 	// trigger call across all three real trigger paths, additional to
