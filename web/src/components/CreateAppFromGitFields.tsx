@@ -26,9 +26,9 @@ import { GitHubAppRepoPicker } from './GitHubAppRepoPicker'
 
 // Build packs this form offers, matching GitBuildSourceFields' own tab
 // picker for what POST /api/v1/apps/{name}/builds actually supports:
-// dockerfile, railpack, static. See that component's doc comment for
-// why Nixpacks and compose are never offered.
-const BUILD_TYPES = ['dockerfile', 'railpack', 'static'] as const
+// dockerfile, railpack, static, image. See that component's doc comment
+// for why Nixpacks and compose are never offered.
+const BUILD_TYPES = ['dockerfile', 'railpack', 'static', 'image'] as const
 
 // Same pattern DomainEditor.tsx validates a domain row against; kept as
 // a local copy rather than exported/imported from there since this form
@@ -46,25 +46,58 @@ const DOMAIN_PATTERN =
 // app that already exists. buildType is new: this form used to fire
 // every build as an implicit build.type: dockerfile, matching what
 // handleTriggerBuild used to reject everything else as.
-const createAppFromGitSchema = z.object({
-  name: z.string().trim().min(1, 'Name is required'),
-  port: z.coerce
-    .number({ error: 'Port is required' })
-    .int('Port must be a whole number')
-    .positive('Port must be a positive integer'),
-  repoUrl: z.string().trim().min(1, 'Repository URL is required'),
-  ref: z.string().trim().min(1, 'Branch, tag, or commit is required'),
-  imageRepo: z.string().trim(),
-  buildType: z.enum(BUILD_TYPES),
-  dockerfilePath: z.string().trim(),
-  domain: z
-    .string()
-    .trim()
-    .refine(
-      (v) => v === '' || DOMAIN_PATTERN.test(v),
-      'Enter a valid domain, e.g. app.example.com',
-    ),
-})
+//
+// repoUrl/ref/image are only conditionally required (see the
+// superRefine below): build.type: image needs image but not repoUrl/ref
+// (handleTriggerBuild clones nothing for it), every other build type is
+// the reverse.
+const createAppFromGitSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Name is required'),
+    port: z.coerce
+      .number({ error: 'Port is required' })
+      .int('Port must be a whole number')
+      .positive('Port must be a positive integer'),
+    repoUrl: z.string().trim(),
+    ref: z.string().trim(),
+    imageRepo: z.string().trim(),
+    buildType: z.enum(BUILD_TYPES),
+    dockerfilePath: z.string().trim(),
+    image: z.string().trim(),
+    domain: z
+      .string()
+      .trim()
+      .refine(
+        (v) => v === '' || DOMAIN_PATTERN.test(v),
+        'Enter a valid domain, e.g. app.example.com',
+      ),
+  })
+  .superRefine((values, ctx) => {
+    if (values.buildType === 'image') {
+      if (!values.image.trim()) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Image reference is required',
+          path: ['image'],
+        })
+      }
+      return
+    }
+    if (!values.repoUrl.trim()) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Repository URL is required',
+        path: ['repoUrl'],
+      })
+    }
+    if (!values.ref.trim()) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Branch, tag, or commit is required',
+        path: ['ref'],
+      })
+    }
+  })
 
 export type FormInput = z.input<typeof createAppFromGitSchema>
 export type FormOutput = z.output<typeof createAppFromGitSchema>
@@ -77,6 +110,7 @@ const DEFAULT_VALUES: FormInput = {
   imageRepo: '',
   buildType: 'railpack',
   dockerfilePath: '',
+  image: '',
   domain: '',
 }
 
@@ -88,8 +122,17 @@ const DEFAULT_VALUES: FormInput = {
 // for why. image_repo is only meaningful for a container-backed build
 // (deployStatic never reads req.ImageRepo), so it's omitted for static
 // too, matching GitBuildSourceFields not even rendering that field in
-// that case.
+// that case. build.type: image sends only image: repoUrl/ref/imageRepo
+// are all meaningless when nothing gets cloned or built.
 function buildInputFrom(values: FormOutput): TriggerBuildInput {
+  if (values.buildType === 'image') {
+    return {
+      repoUrl: '',
+      ref: '',
+      buildType: 'image',
+      image: values.image.trim(),
+    }
+  }
   return {
     repoUrl: values.repoUrl.trim(),
     ref: values.ref.trim(),
@@ -330,19 +373,21 @@ export function CreateAppFromGitFields({
             {...register('port')}
           />
           <FieldHint>
-            The port your app listens on inside its container, e.g. 3000 for
-            a typical Next.js app.
+            The port your app listens on inside its container, e.g. 3000 for a
+            typical Next.js app.
           </FieldHint>
           <FieldError errors={[formState.errors.port]} />
         </Field>
       </div>
 
-      <GitHubAppRepoPicker
-        onSelect={(repoUrl, ref) => {
-          setValue('repoUrl', repoUrl, { shouldValidate: true })
-          setValue('ref', ref, { shouldValidate: true })
-        }}
-      />
+      {watch('buildType') !== 'image' ? (
+        <GitHubAppRepoPicker
+          onSelect={(repoUrl, ref) => {
+            setValue('repoUrl', repoUrl, { shouldValidate: true })
+            setValue('ref', ref, { shouldValidate: true })
+          }}
+        />
+      ) : null}
 
       <GitBuildSourceFields
         control={control}
@@ -367,9 +412,8 @@ export function CreateAppFromGitFields({
         />
         <FieldError errors={[formState.errors.domain]} />
         <FieldDescription>
-          Routed once its DNS record points here. A TLS certificate is
-          issued automatically, or add this later from the app&apos;s
-          Domains tab.
+          Routed once its DNS record points here. A TLS certificate is issued
+          automatically, or add this later from the app&apos;s Domains tab.
         </FieldDescription>
       </Field>
 
@@ -391,8 +435,8 @@ export function CreateAppFromGitFields({
           <WarningIcon />
           <AlertDescription>
             App created, but triggering the build failed:{' '}
-            {buildMutation.error.message}. Fix the fields above and submit
-            again to retry.
+            {buildMutation.error.message}. Fix the fields above and submit again
+            to retry.
           </AlertDescription>
         </Alert>
       ) : null}

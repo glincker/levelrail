@@ -11,7 +11,12 @@ import {
 import { WarningIcon, SpinnerIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -79,89 +84,96 @@ export function GitBuildSourceFields({
 
   return (
     <>
-      <Field>
-        <FieldLabel htmlFor="git-app-repo-url">Repository URL</FieldLabel>
-        <div className="flex gap-2">
-          <Input
-            id="git-app-repo-url"
-            className="flex-1 font-mono"
-            placeholder="https://github.com/you/app.git"
-            autoComplete="off"
-            spellCheck={false}
-            disabled={disabled}
-            {...register('repoUrl')}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            disabled={disabled || branchesQuery.isFetching}
-            onClick={() => {
-              setLoadedRepoUrl(getValues('repoUrl').trim())
-            }}
-          >
-            {branchesQuery.isFetching ? (
-              <SpinnerIcon className="size-4 animate-spin" />
-            ) : null}
-            Load branches
-          </Button>
-        </div>
-        <FieldError errors={[formState.errors.repoUrl]} />
-      </Field>
+      {buildType !== 'image' ? (
+        <>
+          <Field>
+            <FieldLabel htmlFor="git-app-repo-url">Repository URL</FieldLabel>
+            <div className="flex gap-2">
+              <Input
+                id="git-app-repo-url"
+                className="flex-1 font-mono"
+                placeholder="https://github.com/you/app.git"
+                autoComplete="off"
+                spellCheck={false}
+                disabled={disabled}
+                {...register('repoUrl')}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                disabled={disabled || branchesQuery.isFetching}
+                onClick={() => {
+                  setLoadedRepoUrl(getValues('repoUrl').trim())
+                }}
+              >
+                {branchesQuery.isFetching ? (
+                  <SpinnerIcon className="size-4 animate-spin" />
+                ) : null}
+                Load branches
+              </Button>
+            </div>
+            <FieldError errors={[formState.errors.repoUrl]} />
+          </Field>
 
-      {branchesQuery.isError ? (
-        <Alert variant="destructive">
-          <WarningIcon />
-          <AlertDescription>
-            {branchesQuery.error.message}. You can still type a branch, tag,
-            or commit manually below.
-          </AlertDescription>
-        </Alert>
+          {branchesQuery.isError ? (
+            <Alert variant="destructive">
+              <WarningIcon />
+              <AlertDescription>
+                {branchesQuery.error.message}. You can still type a branch, tag,
+                or commit manually below.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
+          {branches.length > 0 ? (
+            <Field>
+              <FieldLabel htmlFor="git-app-branch-picker">Branch</FieldLabel>
+              <Select
+                value=""
+                onValueChange={(branch: string | null) => {
+                  if (!branch) return
+                  setValue('ref', branch, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  })
+                }}
+              >
+                <SelectTrigger
+                  id="git-app-branch-picker"
+                  className="w-full font-mono"
+                >
+                  <SelectValue placeholder="Pick a branch..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {branches.map((b) => (
+                    <SelectItem key={b} value={b} className="font-mono">
+                      {b}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          ) : null}
+
+          <Field>
+            <FieldLabel htmlFor="git-app-ref">
+              {branches.length > 0
+                ? 'Branch, tag, or commit (or pick above)'
+                : 'Branch, tag, or commit'}
+            </FieldLabel>
+            <Input
+              id="git-app-ref"
+              className="font-mono"
+              placeholder="main"
+              autoComplete="off"
+              spellCheck={false}
+              disabled={disabled}
+              {...register('ref')}
+            />
+            <FieldError errors={[formState.errors.ref]} />
+          </Field>
+        </>
       ) : null}
-
-      {branches.length > 0 ? (
-        <Field>
-          <FieldLabel htmlFor="git-app-branch-picker">Branch</FieldLabel>
-          <Select
-            value=""
-            onValueChange={(branch: string | null) => {
-              if (!branch) return
-              setValue('ref', branch, {
-                shouldValidate: true,
-                shouldDirty: true,
-              })
-            }}
-          >
-            <SelectTrigger id="git-app-branch-picker" className="w-full font-mono">
-              <SelectValue placeholder="Pick a branch..." />
-            </SelectTrigger>
-            <SelectContent>
-              {branches.map((b) => (
-                <SelectItem key={b} value={b} className="font-mono">
-                  {b}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-      ) : null}
-
-      <Field>
-        <FieldLabel htmlFor="git-app-ref">
-          {branches.length > 0
-            ? 'Branch, tag, or commit (or pick above)'
-            : 'Branch, tag, or commit'}
-        </FieldLabel>
-        <Input
-          id="git-app-ref"
-          className="font-mono"
-          placeholder="main"
-          autoComplete="off"
-          spellCheck={false}
-          disabled={disabled}
-          {...register('ref')}
-        />
-        <FieldError errors={[formState.errors.ref]} />
-      </Field>
 
       <Field>
         <FieldLabel htmlFor="git-app-build-type">Build pack</FieldLabel>
@@ -172,19 +184,30 @@ export function GitBuildSourceFields({
             <Tabs
               value={field.value}
               onValueChange={(v: unknown) => {
-                if (v === 'railpack' || v === 'dockerfile' || v === 'static') {
+                if (
+                  v === 'railpack' ||
+                  v === 'dockerfile' ||
+                  v === 'static' ||
+                  v === 'image'
+                ) {
                   field.onChange(v)
                 }
               }}
             >
-              {/* Only these three tabs: the three build.type cases
+              {/* Only these four tabs: the four build.type cases
                   internal/deploy.Pipeline.Deploy actually has a case for
                   (internal/api/builds.go's handleTriggerBuild). No Nixpacks
                   (this project uses Railpack instead, see CLAUDE.md 4.4)
                   and no Compose (internal/deploy's own compose case still
                   returns "not yet supported"). Same order and tab layout
-                  GitSourceCard.tsx already uses for this exact choice. */}
-              <TabsList id="git-app-build-type" className="grid w-full grid-cols-3">
+                  GitSourceCard.tsx already uses for this exact choice,
+                  which never offers "image" (see that component's own
+                  build-type restrictions: a persistent git source has
+                  nothing to redeploy for a pinned image). */}
+              <TabsList
+                id="git-app-build-type"
+                className="grid w-full grid-cols-4"
+              >
                 <TabsTrigger value="railpack" disabled={disabled}>
                   Auto-detect
                 </TabsTrigger>
@@ -193,6 +216,9 @@ export function GitBuildSourceFields({
                 </TabsTrigger>
                 <TabsTrigger value="static" disabled={disabled}>
                   Static site
+                </TabsTrigger>
+                <TabsTrigger value="image" disabled={disabled}>
+                  Prebuilt image
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="railpack" className="pt-2">
@@ -211,12 +237,38 @@ export function GitBuildSourceFields({
                   Serves the checkout directly, no container.
                 </FieldDescription>
               </TabsContent>
+              <TabsContent value="image" className="pt-2">
+                <FieldDescription>
+                  Deploys an already-built image from a registry directly, no
+                  git repository or build step at all.
+                </FieldDescription>
+              </TabsContent>
             </Tabs>
           )}
         />
       </Field>
 
-      {buildType !== 'static' ? (
+      {buildType === 'image' ? (
+        <Field>
+          <FieldLabel htmlFor="git-app-image">Image reference</FieldLabel>
+          <Input
+            id="git-app-image"
+            className="font-mono"
+            placeholder="registry.example.com/org/app:v1.2.3"
+            autoComplete="off"
+            spellCheck={false}
+            disabled={disabled}
+            {...register('image')}
+          />
+          <FieldDescription>
+            A full registry reference, already built and pushed elsewhere.
+            Deployed as-is.
+          </FieldDescription>
+          <FieldError errors={[formState.errors.image]} />
+        </Field>
+      ) : null}
+
+      {buildType !== 'static' && buildType !== 'image' ? (
         <div>
           <button
             type="button"
@@ -246,8 +298,8 @@ export function GitBuildSourceFields({
                   {...register('imageRepo')}
                 />
                 <FieldDescription>
-                  The name given to the built image. Leave blank to use the
-                  app name.
+                  The name given to the built image. Leave blank to use the app
+                  name.
                 </FieldDescription>
               </Field>
 
