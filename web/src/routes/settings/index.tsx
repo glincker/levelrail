@@ -7,6 +7,7 @@ import {
   LockKeyIcon,
   UsersIcon,
   GithubLogoIcon,
+  GitlabLogoIcon,
   WebhooksLogoIcon,
   CloudArrowUpIcon,
   EnvelopeIcon,
@@ -82,6 +83,12 @@ const sections: SettingsSection[] = [
         icon: GithubLogoIcon,
         title: 'GitHub App',
         description: 'Private-repository access for git-based deploys.',
+      },
+      {
+        to: '/settings/gitlab-app',
+        icon: GitlabLogoIcon,
+        title: 'GitLab App',
+        description: 'gitlab.com or self-hosted project access for git-based deploys.',
       },
       {
         to: '/settings/notification-channels',
