@@ -314,10 +314,19 @@ func (rt *Router) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 // full access unconditionally: not because there's only one identity
 // (any number of users can exist now), but because there's no per-user
 // role model yet (RBAC is Phase 4).
+//
+// For any required ability above AbilityRead, this is also the single
+// place an audit_log row gets written (audit.go's recordAudit): every
+// gated route already flows through here to resolve its actor and
+// pass/fail decision, so hooking observation in at this one seam covers
+// every route by construction instead of needing a call added to each
+// handler individually. The hook only ever observes, after the real
+// decision above it already ran; it never influences whether a request
+// passes or fails.
 func (rt *Router) requireAbility(required string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if rt.hasValidSession(r) {
-			next(w, r)
+		if userID, ok := rt.currentSessionUserID(r); ok {
+			rt.callAudited(w, r, required, "session", userID, "", next)
 			return
 		}
 
@@ -356,8 +365,29 @@ func (rt *Router) requireAbility(required string, next http.HandlerFunc) http.Ha
 			rt.logger.Warn("api: touch token last_used_at failed", slog.String("error", terr.Error()), slog.String("token_id", rec.ID))
 		}
 
-		next(w, r)
+		rt.callAudited(w, r, required, "token", rec.ID, rec.Name, next)
 	}
+}
+
+// callAudited runs next and, for every ability above AbilityRead
+// (auditWorthy, audit.go), best-effort records who did what once next
+// returns. actorName is the token's own stored Name for a token actor
+// (already resolved by the caller above, no extra lookup needed) or
+// empty for a session actor, resolved from the real user record lazily
+// in auditActorName, only when a request actually needs auditing: a
+// plain AbilityRead request never reaches the auditWorthy branch at
+// all, so it never pays for that lookup.
+func (rt *Router) callAudited(w http.ResponseWriter, r *http.Request, required, actorType, actorID, tokenName string, next http.HandlerFunc) {
+	if !auditWorthy(required) {
+		next(w, r)
+		return
+	}
+
+	rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+	next(rec, r)
+
+	actorName := rt.auditActorName(r.Context(), actorType, actorID, tokenName)
+	rt.recordAudit(r.Context(), r, required, actorType, actorID, actorName, rec.status)
 }
 
 // callerHasAbility reports whether r's caller holds ability, the same

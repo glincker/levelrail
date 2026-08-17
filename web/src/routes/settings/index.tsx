@@ -13,6 +13,7 @@ import {
   GearIcon,
   GlobeIcon,
   ArrowCircleUpIcon,
+  ClockCounterClockwiseIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Card, CardHeader, CardTitle, CardDescription } from '../../components/ui/card'
 
@@ -122,6 +123,12 @@ const sections: SettingsSection[] = [
         icon: ArrowCircleUpIcon,
         title: 'Updates',
         description: 'Current version and available releases.',
+      },
+      {
+        to: '/settings/audit-log',
+        icon: ClockCounterClockwiseIcon,
+        title: 'Audit log',
+        description: 'Who changed what, across every session and API token.',
       },
     ],
   },
