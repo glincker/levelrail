@@ -149,10 +149,17 @@ func planFromFile(f createFlags, fileSpec *spec.Spec, detected detectedGit) (cre
 	}
 	svc := fileSpec.Services[key]
 
-	if svc.Build.Type != spec.BuildDockerfile {
-		return createPlan{}, newValidationError("service %q has build.type %q; apps create only supports %q today", key, svc.Build.Type, spec.BuildDockerfile)
+	switch svc.Build.Type {
+	case spec.BuildDockerfile:
+		return planFromFileDockerfile(f, key, svc, detected)
+	case spec.BuildImage:
+		return planFromFileImage(f, key, svc)
+	default:
+		return createPlan{}, newValidationError("service %q has build.type %q; apps create only supports %q and %q today", key, svc.Build.Type, spec.BuildDockerfile, spec.BuildImage)
 	}
+}
 
+func planFromFileDockerfile(f createFlags, key string, svc spec.Service, detected detectedGit) (createPlan, error) {
 	if secretKeys := secretEnvKeys(svc.Env); len(secretKeys) > 0 {
 		return createPlan{}, newValidationError(
 			"service %q declares secret env var(s) %s; apps create does not yet set secrets, create the app without them and set each one via PUT /api/v1/apps/{name}/secrets/{key} afterward",
@@ -214,6 +221,54 @@ func planFromFile(f createFlags, fileSpec *spec.Spec, detected detectedGit) (cre
 			Ref:       ref,
 			ImageRepo: f.imageRepo,
 			Build:     buildTriggerRequestBuild{Path: dockerfile},
+		},
+	}, nil
+}
+
+// planFromFileImage handles a service whose build.type is image: a
+// prebuilt registry reference, so the app is created directly with that
+// image, no build trigger and no repo/ref/image-repo needed at all.
+func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan, error) {
+	if svc.Build.Image == "" {
+		return createPlan{}, newValidationError("service %q has build.type %q but no build.image set", key, spec.BuildImage)
+	}
+	if secretKeys := secretEnvKeys(svc.Env); len(secretKeys) > 0 {
+		return createPlan{}, newValidationError(
+			"service %q declares secret env var(s) %s; apps create does not yet set secrets, create the app without them and set each one via PUT /api/v1/apps/{name}/secrets/{key} afterward",
+			key, strings.Join(secretKeys, ", "))
+	}
+
+	name := f.name
+	if name == "" {
+		name = key
+	}
+
+	port := f.port
+	if port <= 0 {
+		port = svc.Port
+	}
+	if port <= 0 {
+		return createPlan{}, newValidationError("service %q has no port set in %s and --port was not given", key, f.file)
+	}
+
+	resources, err := toServiceResources(svc.Resources)
+	if err != nil {
+		return createPlan{}, newValidationError("service %q resources: %v", key, err)
+	}
+	health, err := toServiceHealth(svc.Health)
+	if err != nil {
+		return createPlan{}, newValidationError("service %q health: %v", key, err)
+	}
+
+	return createPlan{
+		CreateBody: appResource{
+			Name:      name,
+			Image:     svc.Build.Image,
+			Port:      port,
+			Domains:   svc.Domains,
+			Env:       literalEnv(svc.Env),
+			Resources: resources,
+			Health:    health,
 		},
 	}, nil
 }
@@ -532,6 +587,8 @@ Manifest path:
   --service string      which service to create, if the file declares more than one
   --name, --port, --repo, --ref, --dockerfile, --image-repo above all override
     the file's own values or supply what it cannot express (repo location, image name)
+  build.type: dockerfile builds from git (repo/ref/image-repo required, as above);
+    build.type: image creates the app directly with build.image, no build triggered
 
 Common flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
