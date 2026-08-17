@@ -128,22 +128,10 @@ type setGitSourceRequest struct {
 	Token string `json:"token,omitempty"`
 }
 
-// normalizeGitSourceBuildType mirrors handleTriggerBuild's own build.type
-// validation (builds.go): empty defaults to dockerfile, compose is
-// rejected as not-yet-supported (internal/deploy.Pipeline.Deploy has no
-// real case for it), anything else unrecognized is a 400. Unlike
-// builds.go, build.type: image is also rejected here even though
-// internal/deploy.Pipeline.Deploy does have a case for it: a connected
-// git source is a persistent, webhook-driven redeploy trigger, and
-// store.GitSource has no column to persist an image reference across
-// pushes, only build_type/build_path. A pinned image needs no push
-// trigger at all; use POST /api/v1/apps/{name}/deploys directly. A
-// separate copy rather than a shared helper: builds.go's version is
-// embedded directly in that handler's larger validation flow, and the
-// two request shapes differ (BuildType/BuildPath as top-level fields
-// here, a nested Build sub-object there), the same "two fetchFuncs, one
-// per caller" duplication builds.go's own gitCheckout doc comment
-// already accepts for an analogous pair.
+// normalizeGitSourceBuildType rejects build.type: image because a git
+// source is a persistent, webhook-driven redeploy trigger and
+// store.GitSource has no column to pin an image reference across pushes;
+// use POST /api/v1/apps/{name}/deploys directly for that instead.
 func normalizeGitSourceBuildType(buildType string) (string, error) {
 	if buildType == "" {
 		return spec.BuildDockerfile, nil

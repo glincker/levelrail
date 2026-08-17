@@ -188,19 +188,10 @@ func (p *Pipeline) Deploy(ctx context.Context, req Request, progress func(build.
 	}
 }
 
-// deployImage handles build.type: image (spec.BuildImage): req.Service.
-// Build.Image is already a complete, published registry reference, so
-// this skips BuildKit entirely and saves it as the service's desired
-// image directly, the same store.DesiredService shape finishDeploy
-// produces from a real build, picked up by the application controller's
-// next reconcile exactly like any other completed build.
-//
-// Public images only: internal/docker's own pull path
-// (Client.ensureImage) passes an empty image.PullOptions{}, so there is
-// no private-registry credential mechanism anywhere in this codebase yet
-// to reuse here. A private ref will simply fail to pull at reconcile
-// time with Docker's own auth error, the same failure mode any other
-// build type hits pulling a private base image today.
+// deployImage skips BuildKit and saves req.Service.Build.Image directly as
+// the desired image. Public images only: internal/docker has no
+// private-registry credential mechanism yet, so a private ref fails to pull
+// at reconcile time instead.
 func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error) {
 	if err := p.validateEnv(ctx, req.ServiceName, req.Service.Env); err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)

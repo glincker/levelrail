@@ -24,37 +24,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useGitBranches } from '../queries/gitBranches'
 import type { FormInput, FormOutput } from './CreateAppFromGitFields'
 
-// GitBuildSourceFields is CreateAppFromGitFields' git-source input
-// group: repository URL, a real branch picker backed by
-// GET-equivalent POST /api/v1/git/branches, the build pack choice, and
-// (dockerfile only) the Dockerfile path. Split out once the parent
-// form crossed a comfortable single-file size with this addition,
-// mirroring HealthCheckEditor.tsx's own ProbeFields split: a
-// sub-component that takes register/control/formState as explicit
-// props typed against the owning form's exact value shape, not a
-// FormProvider/context split (no component in this codebase uses one).
-//
-// The Dockerfile-path field only appears for build.type: dockerfile.
-// build.type: static also has a meaningful build.path server-side
-// (internal/deploy/static.go's deployStatic: the built output
-// subdirectory to serve, relative to the checkout root), but this form
-// deliberately doesn't expose it yet: a static site with output at the
-// checkout root (no build step) is the common case this wizard targets
-// first, and adding a second, differently-labeled path field for one
-// build pack is a real scope expansion this pass didn't take. A static
-// site whose output lives in a subdirectory still deploys fine through
-// app.yaml, just not through this manual-trigger wizard yet.
-// build.type: railpack and build.type: image both have no build.path
-// concept at all (handleTriggerBuild rejects one being set for either),
-// so neither ever shows the field.
-//
-// build.type: image needs no build at all (internal/deploy.Pipeline.
-// deployImage saves the given reference directly), so its own tab shows
-// an image-reference input instead of anything build-related. The
-// repository URL/branch fields above still stay visible and required:
-// handleTriggerBuild (internal/api/builds.go) clones the repo for every
-// build.type today, this one included, even though deployImage never
-// reads the checkout it produces.
+// GitBuildSourceFields is CreateAppFromGitFields' git-source input group:
+// repo URL, branch picker, build pack choice, and (dockerfile only) the
+// Dockerfile path. The advanced Dockerfile-path field is hidden for
+// railpack/image since neither has a build.path concept server-side.
 export function GitBuildSourceFields({
   control,
   register,
@@ -189,16 +162,8 @@ export function GitBuildSourceFields({
                 }
               }}
             >
-              {/* Only these four tabs: the four build.type cases
-                  internal/deploy.Pipeline.Deploy actually has a case for
-                  (internal/api/builds.go's handleTriggerBuild). No Nixpacks
-                  (this project uses Railpack instead, see CLAUDE.md 4.4)
-                  and no Compose (internal/deploy's own compose case still
-                  returns "not yet supported"). Same order and tab layout
-                  GitSourceCard.tsx already uses for the three build-from-
-                  source cases; "Prebuilt image" has no GitSourceCard
-                  counterpart, see normalizeGitSourceBuildType's own doc
-                  comment (internal/api/git_sources.go) for why. */}
+              {/* No Nixpacks or Compose tabs: neither is a supported
+                  build.type on the deploy pipeline yet. */}
               <TabsList id="git-app-build-type" className="grid w-full grid-cols-4">
                 <TabsTrigger value="railpack" disabled={disabled}>
                   Auto-detect
