@@ -11,6 +11,7 @@ export const CHANNEL_KIND_LABEL: Record<NotificationChannelKind, string> = {
   telegram: 'Telegram',
   generic: 'Generic webhook',
   email: 'Email',
+  pushover: 'Pushover',
 }
 
 // Only the three brand-mark kinds map to a BrandIconName; generic/email
