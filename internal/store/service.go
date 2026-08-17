@@ -58,7 +58,7 @@ type DesiredService struct {
 	Domains []string
 	Env     map[string]string
 	// RegistryCredentialID is which store.RegistryCredential
-	// (migrations/0044_registry_credentials.sql) to authenticate with
+	// (migrations/0046_registry_credentials.sql) to authenticate with
 	// when pulling Image, resolved by internal/docker at container-
 	// create time; empty string means an unauthenticated (public) pull.
 	// A normal deploy-time field, unlike NodeID/ProjectID/
