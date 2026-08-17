@@ -250,7 +250,7 @@ services:
 	}
 }
 
-func TestResolveMagicVars_EmbeddedGeneratableTokenIsUnresolved(t *testing.T) {
+func TestResolveMagicVars_EmbeddedGeneratableTokenIsSpliced(t *testing.T) {
 	f, err := Parse([]byte(`
 services:
   app:
@@ -262,12 +262,100 @@ services:
 		t.Fatalf("Parse() error = %v", err)
 	}
 
+	var persisted string
+	persist := func(_, _, value string) error {
+		persisted = value
+		return nil
+	}
+	secretEnv, unresolved, err := ResolveMagicVars(f, func(_, _ string, _ int) (string, error) {
+		return "generated-pw", nil //nolint:gosec // test fixture value, not a real credential
+	}, persist)
+	if err != nil {
+		t.Fatalf("ResolveMagicVars() error = %v", err)
+	}
+	if len(unresolved) != 0 {
+		t.Errorf("unresolved = %+v, want none", unresolved)
+	}
+	want := "postgres://user:generated-pw@db/app" //nolint:gosec // test fixture value, not a real credential
+	if persisted != want {
+		t.Errorf("persisted = %q, want %q", persisted, want)
+	}
+	if got := secretEnv["app"]; len(got) != 1 || got[0] != "URL" {
+		t.Errorf("secretEnv[app] = %v, want [URL]", got)
+	}
+	if _, ok := f.Services["app"].Environment["URL"]; ok {
+		t.Error("URL is still in Environment after resolving to a secret, want it removed")
+	}
+}
+
+func TestResolveMagicVars_EmbeddedSharesGeneratedValueWithWholeValueReference(t *testing.T) {
+	f, err := Parse([]byte(`
+services:
+  app:
+    image: app:latest
+    environment:
+      DB_PASSWORD: $SERVICE_PASSWORD_DB
+      DATABASE_URL: "postgres://user:$SERVICE_PASSWORD_DB@db/app"
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	calls := 0
+	generate := func(_, _ string, _ int) (string, error) {
+		calls++
+		return "shared-pw", nil //nolint:gosec // test fixture value, not a real credential
+	}
+	persisted := map[string]string{}
+	persist := func(svcKey, envKey, value string) error {
+		persisted[svcKey+"/"+envKey] = value
+		return nil
+	}
+
+	_, unresolved, err := ResolveMagicVars(f, generate, persist)
+	if err != nil {
+		t.Fatalf("ResolveMagicVars() error = %v", err)
+	}
+	if len(unresolved) != 0 {
+		t.Errorf("unresolved = %+v, want none", unresolved)
+	}
+	if calls != 1 {
+		t.Errorf("generate called %d times, want 1 (one shared key across a whole-value and an embedded reference)", calls)
+	}
+	if persisted["app/DB_PASSWORD"] != "shared-pw" {
+		t.Errorf("app/DB_PASSWORD = %q, want shared-pw", persisted["app/DB_PASSWORD"])
+	}
+	wantURL := "postgres://user:shared-pw@db/app" //nolint:gosec // test fixture value, not a real credential
+	if persisted["app/DATABASE_URL"] != wantURL {
+		t.Errorf("app/DATABASE_URL = %q, want %q", persisted["app/DATABASE_URL"], wantURL)
+	}
+	if persisted["db/POSTGRES_PASSWORD"] != "shared-pw" {
+		t.Errorf("db/POSTGRES_PASSWORD = %q, want shared-pw", persisted["db/POSTGRES_PASSWORD"])
+	}
+}
+
+func TestResolveMagicVars_EmbeddedDefaultlessNonGeneratableTokenIsUnresolved(t *testing.T) {
+	f, err := Parse([]byte(`
+services:
+  app:
+    image: app:latest
+    environment:
+      URL: "postgres://user@db/${SERVICE_DB_NAME}"
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
 	_, unresolved, err := ResolveMagicVars(f, failGenerate(t), failPersist(t))
 	if err != nil {
 		t.Fatalf("ResolveMagicVars() error = %v", err)
 	}
 	if len(unresolved) != 1 {
-		t.Fatalf("unresolved = %+v, want exactly one entry (a generated secret can't be spliced into a literal string)", unresolved)
+		t.Fatalf("unresolved = %+v, want exactly one entry (no default, not generatable)", unresolved)
 	}
 }
 
