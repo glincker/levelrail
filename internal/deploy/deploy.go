@@ -155,9 +155,12 @@ func New(builder ImageBuilder, svcStore ServiceStore, opts ...Option) *Pipeline 
 
 // Deploy runs req's build (if its build.Type needs one) and saves the
 // resulting desired state. For every build.Type except spec.BuildStatic,
-// that means the full image reference that was built, ready for the
-// application controller to converge on its next reconcile, which is
-// also what's returned. spec.BuildStatic has no image and no container
+// that means the full image reference the application controller
+// converges to on its next reconcile, also what's returned: a freshly
+// built one for spec.BuildDockerfile/spec.BuildRailpack, or, for
+// spec.BuildImage, req.Service.Build.Image passed straight through with
+// no build at all (see deployImage). spec.BuildStatic has no image and
+// no container
 // for the application controller to converge to at all (see static.go's
 // package doc comment): its desired state is a store.StaticSite instead
 // of a store.DesiredService, consumed directly by
@@ -181,6 +184,12 @@ func (p *Pipeline) Deploy(ctx context.Context, req Request, progress func(build.
 		return "", fmt.Errorf("deploy: service %q: build.type %q is not yet supported", req.ServiceName, spec.BuildCompose)
 	case spec.BuildRailpack:
 		return p.deployRailpack(ctx, req, progress)
+	case spec.BuildImage:
+		// No build.ProgressEvent stream, same reasoning spec.BuildStatic's
+		// own case above gives: there is nothing to report progress on,
+		// req.Service.Build.Image is already a real, already-pushed image
+		// reference.
+		return p.deployImage(ctx, req)
 	default:
 		return "", fmt.Errorf("deploy: service %q: unrecognized build.type %q", req.ServiceName, req.Service.Build.Type)
 	}
@@ -283,6 +292,31 @@ func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Res
 	}
 
 	return res.Tag, nil
+}
+
+// deployImage handles build.Type == spec.BuildImage: a prebuilt image
+// already sitting in a registry, so there is no build.Result the way
+// deployDockerfile/deployRailpack produce one, and this bypasses
+// finishDeploy entirely rather than manufacturing a fake Result just to
+// reuse its shared tail. The two things finishDeploy does beyond the
+// desired-state save, returning res.Tag and recording a build-duration
+// metric, have no meaning here: the image reference is already known
+// (req.Service.Build.Image, not something this platform produced), and
+// there is no build duration to measure since no build ran.
+func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error) {
+	if err := p.validateEnv(ctx, req.ServiceName, req.Service.Env); err != nil {
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
+
+	image := req.Service.Build.Image
+	desired, err := toDesiredService(req.ServiceName, image, req.Service)
+	if err != nil {
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
+	if err := p.store.SaveDesiredService(ctx, desired); err != nil {
+		return "", fmt.Errorf("deploy: service %q: save desired state: %w", req.ServiceName, err)
+	}
+	return image, nil
 }
 
 // validateEnv fails loudly rather than silently deploying a container

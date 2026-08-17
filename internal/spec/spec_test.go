@@ -105,6 +105,28 @@ databases:
 	}
 }
 
+func TestParse_ValidImageBuild(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: image, image: "ghcr.io/org/app:v1.2.3" }, port: 8080 }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	web, ok := s.Services["web"]
+	if !ok {
+		t.Fatal("expected a \"web\" service")
+	}
+	if web.Build.Type != BuildImage || web.Build.Image != "ghcr.io/org/app:v1.2.3" {
+		t.Errorf("Build = %+v, want type=image image=ghcr.io/org/app:v1.2.3", web.Build)
+	}
+	if web.Build.Path != "" {
+		t.Errorf("Build.Path = %q, want empty for build.type: image", web.Build.Path)
+	}
+}
+
 func TestParse_ValidMongoDBDatabase(t *testing.T) {
 	yaml := `
 version: 1
@@ -265,6 +287,33 @@ services:
   web: { build: { type: compose }, port: 8080 }
 `,
 			wantErrSubstr: "build.path is required for build.type: compose",
+		},
+		{
+			name: "image build type missing image",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: image }, port: 8080 }
+`,
+			wantErrSubstr: "build.image is required for build.type: image",
+		},
+		{
+			name: "build.image set for a non-image build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile, image: "ghcr.io/org/app:v1" }, port: 8080 }
+`,
+			wantErrSubstr: "build.image is only meaningful for build.type: image",
+		},
+		{
+			name: "build.path set for an image build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: image, image: "ghcr.io/org/app:v1", path: "./Dockerfile" }, port: 8080 }
+`,
+			wantErrSubstr: "build.path is not meaningful for build.type: image",
 		},
 		{
 			name: "port required for non-static build",
