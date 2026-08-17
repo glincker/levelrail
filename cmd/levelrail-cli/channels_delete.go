@@ -12,13 +12,7 @@ import (
 // attached (the server clears channel_id via ON DELETE SET NULL), so
 // unlike a database or backup target this needs no confirmation flag.
 func runChannelsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" channels delete", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag string
-	var jsonOut bool
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print {\"deleted\": true} as JSON to stdout on success and nothing else")
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := channelsFlagSet(prog, "delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, channelsDeleteUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -27,16 +21,14 @@ func runChannelsDelete(prog string, args []string, stdout, stderr io.Writer, loo
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
-	rest := fs.Args()
-	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: channels delete requires exactly one channel id\n\n", prog)
-		fs.Usage()
+	id, ok := channelsRequireID(fs, stderr, prog, "delete")
+	if !ok {
 		return exitUsage
 	}
-	id := rest[0]
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	client := channelsClient(prog, apiURLFlag, tokenFlag, lookupEnv)
 
 	if err := client.DeleteNotificationChannel(context.Background(), id); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete notification channel %q: %w", id, err))

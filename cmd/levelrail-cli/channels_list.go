@@ -11,13 +11,7 @@ import (
 // runChannelsList implements "channels list": GET
 // /api/v1/notification-channels.
 func runChannelsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" channels list", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag string
-	var jsonOut bool
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print channels as a JSON array to stdout and nothing else")
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := channelsFlagSet(prog, "list", "print channels as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, channelsListUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -26,8 +20,9 @@ func runChannelsList(prog string, args []string, stdout, stderr io.Writer, looku
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	client := channelsClient(prog, apiURLFlag, tokenFlag, lookupEnv)
 
 	channels, err := client.ListNotificationChannels(context.Background())
 	if err != nil {

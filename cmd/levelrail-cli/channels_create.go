@@ -17,19 +17,15 @@ import (
 // (mirroring how the web dashboard's connect dialog does the same
 // packing client-side).
 func runChannelsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" channels create", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, name, kind, notifyURL, pushoverUserKey, pushoverAPIToken string
-	var disabled, jsonOut bool
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := channelsFlagSet(prog, "create", "print the created channel as JSON to stdout and nothing else", stderr)
+	var name, kind, notifyURL, pushoverUserKey, pushoverAPIToken string
+	var disabled bool
 	fs.StringVar(&name, "name", "", "display name for the channel (required)")
 	fs.StringVar(&kind, "kind", "", "channel kind: generic, slack, discord, telegram, email, pushover (required)")
 	fs.StringVar(&notifyURL, "notify-url", "", "destination (webhook URL, Telegram sendMessage URL, or email address); required unless --kind pushover with both --pushover-user-key and --pushover-api-token set")
 	fs.StringVar(&pushoverUserKey, "pushover-user-key", "", "Pushover User Key (--kind pushover only, an alternative to --notify-url)")
 	fs.StringVar(&pushoverAPIToken, "pushover-api-token", "", "Pushover Application API Token (--kind pushover only, an alternative to --notify-url)")
 	fs.BoolVar(&disabled, "disabled", false, "create the channel disabled (default: enabled)")
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print the created channel as JSON to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, channelsCreateUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -38,6 +34,7 @@ func runChannelsCreate(prog string, args []string, stdout, stderr io.Writer, loo
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
@@ -55,7 +52,7 @@ func runChannelsCreate(prog string, args []string, stdout, stderr io.Writer, loo
 	}
 
 	enabled := !disabled
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	client := channelsClient(prog, apiURLFlag, tokenFlag, lookupEnv)
 
 	created, err := client.CreateNotificationChannel(context.Background(), createNotificationChannelRequest{
 		Name: name, Kind: kind, NotifyURL: resolvedURL, Enabled: &enabled,

@@ -11,13 +11,7 @@ import (
 // /api/v1/notification-channels/{id}/test, a real send against an
 // already-connected channel's own stored kind/notify_url.
 func runChannelsTest(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" channels test", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag string
-	var jsonOut bool
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print {\"sent\": true} as JSON to stdout on success and nothing else")
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := channelsFlagSet(prog, "test", "print {\"sent\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, channelsTestUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -26,16 +20,14 @@ func runChannelsTest(prog string, args []string, stdout, stderr io.Writer, looku
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
-	rest := fs.Args()
-	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: channels test requires exactly one channel id\n\n", prog)
-		fs.Usage()
+	id, ok := channelsRequireID(fs, stderr, prog, "test")
+	if !ok {
 		return exitUsage
 	}
-	id := rest[0]
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	client := channelsClient(prog, apiURLFlag, tokenFlag, lookupEnv)
 
 	if err := client.TestExistingNotificationChannel(context.Background(), id); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("test notification channel %q: %w", id, err))
