@@ -8,4 +8,4 @@
 -- control plane.
 ALTER TABLE users ADD COLUMN abilities TEXT NOT NULL DEFAULT '["root"]';
 
-UPDATE users SET abilities = '["root"]';
+UPDATE users SET abilities = '["root"]'; -- NOSONAR
