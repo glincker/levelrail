@@ -481,6 +481,13 @@ type Router struct {
 	// domainChecks rate-limits handleCheckDomain's real DNS lookups per
 	// domain; always non-nil, constructed in NewRouter.
 	domainChecks *domainCheckCache
+	// fetchLatestRelease is handleGetUpdates' GitHub Releases lookup;
+	// always non-nil, defaulted to defaultFetchLatestRelease in
+	// NewRouter, overridable in tests the same way lookupHost is above.
+	fetchLatestRelease fetchLatestReleaseFunc
+	// updatesCache caches fetchLatestRelease's result; always non-nil,
+	// constructed in NewRouter.
+	updatesCache *updatesCache
 	// certExpiryWarningWindow overrides defaultCertExpiryWarningWindow
 	// for GET /api/v1/certificates's "expiring_soon" threshold. 0 means
 	// "use the default", set via WithCertExpiryWarningWindow.
@@ -884,6 +891,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		passwordResetTokens:     s,
 		forgotPasswordByIP:      newLoginLimiter(),
 		forgotPasswordByEmail:   newLoginLimiter(),
+		fetchLatestRelease:      defaultFetchLatestRelease,
+		updatesCache:            newUpdatesCache(),
 	}
 	for _, opt := range opts {
 		opt(rt)
@@ -917,6 +926,10 @@ func (rt *Router) Handler() http.Handler {
 	// gate handleDrainNode uses for its own fleet-wide, no-undo action,
 	// not AbilityWrite (which a narrower, single-app token could hold).
 	mux.HandleFunc("POST /api/v1/system/prune", rt.requireAbility(AbilityRoot, rt.handleSystemPrune))
+
+	// Updates (Settings > Updates page): running version vs. GitHub's
+	// latest published release, AbilityRead like system/status above.
+	mux.HandleFunc("GET /api/v1/updates", rt.requireAbility(AbilityRead, rt.handleGetUpdates))
 
 	// Auth. Login and first-run registration are necessarily public;
 	// everything else requires an existing session.
@@ -1265,6 +1278,13 @@ func (rt *Router) Handler() http.Handler {
 	// draining already reserve AbilityRoot for.
 	mux.HandleFunc("GET /api/v1/settings/ingress", rt.requireAbility(AbilityRead, rt.handleGetIngressSettings))
 	mux.HandleFunc("PUT /api/v1/settings/ingress", rt.requireAbility(AbilityRoot, rt.handleUpdateIngressSettings))
+
+	// Platform-level DNS check (ingress_settings.go): runDomainCheck
+	// against the platform's own PrimaryDomain instead of a per-app one.
+	// AbilityRoot, matching PUT /api/v1/settings/ingress just above: the
+	// result speaks directly to whether that endpoint's ACMEEnabled
+	// toggle can actually succeed.
+	mux.HandleFunc("GET /api/v1/settings/ingress/check", rt.requireAbility(AbilityRoot, rt.handleCheckIngressDomain))
 
 	// Domain DNS check (domain_check.go): the guidance layer on top of
 	// domain connection, so DomainEditor can show an operator the exact

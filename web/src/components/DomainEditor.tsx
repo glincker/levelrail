@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { useMemo } from 'react'
+import { Link } from '@tanstack/react-router'
 import { GlobeIcon, PlusIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
@@ -100,7 +101,12 @@ export function DomainEditor({ app }: { app: AppDetail }) {
           Domains
         </CardTitle>
         <CardDescription>
-          Domains routed to this app through the ingress layer.
+          Domains routed to this app through the ingress layer. Platform-wide
+          ACME and primary domain settings live under{' '}
+          <Link to="/domains" className="underline">
+            Domains
+          </Link>
+          .
         </CardDescription>
       </CardHeader>
       <CardContent>

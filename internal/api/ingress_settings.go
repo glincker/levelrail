@@ -154,6 +154,42 @@ func (rt *Router) handleUpdateIngressSettings(w http.ResponseWriter, r *http.Req
 	writeJSON(w, http.StatusOK, toIngressSettingsResource(settings))
 }
 
+// ingressDomainCheckResponse is GET /api/v1/settings/ingress/check's wire
+// shape: domainCheckResponse's own fields, reused verbatim so the
+// frontend's existing per-app rendering logic (DomainDnsCheck.tsx)
+// applies unchanged, plus Configured for the "no primary domain set yet"
+// state that has no domain to check at all.
+type ingressDomainCheckResponse struct {
+	Configured bool `json:"configured"`
+	domainCheckResponse
+}
+
+// handleCheckIngressDomain handles GET /api/v1/settings/ingress/check:
+// runDomainCheck (domain_check.go) against the platform's own
+// PrimaryDomain instead of a per-app one, the same DNS-check visibility
+// DomainEditor already gives an operator per app, extended to the
+// dashboard's own domain. AbilityRoot, matching this file's other
+// /api/v1/settings/ingress handlers, since the check result reveals
+// whether ACMEEnabled (also AbilityRoot) can actually succeed.
+func (rt *Router) handleCheckIngressDomain(w http.ResponseWriter, r *http.Request) {
+	settings, err := rt.ingressSettings.GetIngressSettings(r.Context())
+	if err != nil {
+		rt.logger.Error("api: check ingress domain: get settings failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	domain := strings.ToLower(strings.TrimSpace(settings.PrimaryDomain))
+	if domain == "" {
+		writeJSON(w, http.StatusOK, ingressDomainCheckResponse{Configured: false})
+		return
+	}
+
+	expectedHost, inferred := advertisedHost(r, rt.publicHost)
+	resp := rt.runDomainCheck(r.Context(), domain, expectedHost, inferred)
+	writeJSON(w, http.StatusOK, ingressDomainCheckResponse{Configured: true, domainCheckResponse: resp})
+}
+
 // DomainStore is the store surface GET /api/v1/domains needs: every
 // domain currently claimed by a service, for the centralized cross-app
 // domains list (web/src/routes/domains). Reuses internal/store's

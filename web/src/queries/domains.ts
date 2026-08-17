@@ -12,10 +12,12 @@
 import {
   queryOptions,
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import type { DomainCheckStatus } from './domainCheck'
 
 export const domainKeys = {
   all: ['domains'] as const,
@@ -122,6 +124,64 @@ export function useUpdateIngressSettings() {
     mutationFn: updateIngressSettings,
     onSuccess: (updated) => {
       queryClient.setQueryData(ingressSettingsKeys.all, updated)
+    },
+  })
+}
+
+export const ingressDomainCheckKeys = {
+  all: ['ingress-settings', 'check'] as const,
+}
+
+// IngressDomainCheckResult mirrors GET /api/v1/settings/ingress/check's
+// (internal/api/ingress_settings.go's handleCheckIngressDomain) wire
+// shape exactly: domainCheckResponse's own fields plus configured,
+// discriminated on it so a caller can't read Status/ExpectedHost without
+// first narrowing past the "no primary domain set yet" case.
+export type IngressDomainCheckResult =
+  | { configured: false }
+  | {
+      configured: true
+      domain: string
+      expected_host?: string
+      host_inferred?: boolean
+      resolved: boolean
+      resolved_hosts?: string[]
+      status: DomainCheckStatus
+    }
+
+export async function fetchIngressDomainCheck(): Promise<IngressDomainCheckResult> {
+  const res = await fetch('/api/v1/settings/ingress/check')
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `check ingress domain failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as IngressDomainCheckResult
+}
+
+export function ingressDomainCheckQueryOptions() {
+  return queryOptions({
+    queryKey: ingressDomainCheckKeys.all,
+    queryFn: fetchIngressDomainCheck,
+  })
+}
+
+// Same bounded auto-poll restraint as queries/domainCheck.ts's
+// useDomainCheck: keep polling only while the primary domain hasn't
+// resolved to this control plane yet, capped so an idle open settings
+// tab can't turn into an indefinite background DNS poll.
+const UNRESOLVED_POLL_INTERVAL_MS = 5_000
+const MAX_AUTO_POLL_ATTEMPTS = 24 // 24 * 5s = 2 minutes of automatic polling
+
+export function useIngressDomainCheck() {
+  return useQuery({
+    ...ingressDomainCheckQueryOptions(),
+    refetchInterval: (query) => {
+      if (!query.state.data?.configured) return false
+      if (query.state.data.status === 'connected') return false
+      if (query.state.dataUpdateCount >= MAX_AUTO_POLL_ATTEMPTS) return false
+      return UNRESOLVED_POLL_INTERVAL_MS
     },
   })
 }

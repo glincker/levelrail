@@ -154,6 +154,64 @@ func hostsOverlap(a, b []string) bool {
 	return false
 }
 
+// runDomainCheck resolves domain and compares it against expectedHost,
+// the shared logic behind both handleCheckDomain (per-app) and
+// handleCheckIngressDomain (the platform's own primary domain, in
+// ingress_settings.go): same cache, same lookupHost, same status rules,
+// so the two endpoints can never quietly drift apart on what "connected"
+// means.
+func (rt *Router) runDomainCheck(ctx context.Context, domain, expectedHost string, inferred bool) domainCheckResponse {
+	resp := domainCheckResponse{Domain: domain, ExpectedHost: expectedHost, HostInferred: inferred}
+	if expectedHost == "" {
+		resp.Status = domainCheckStatusUnconfigured
+		return resp
+	}
+
+	result, cached := rt.domainChecks.get(domain)
+	if !cached {
+		lookupCtx, cancel := context.WithTimeout(ctx, domainCheckLookupTimeout)
+		hosts, err := rt.lookupHost(lookupCtx, domain)
+		cancel()
+		result = domainCheckResult{resolvedHosts: hosts, resolved: err == nil && len(hosts) > 0, at: time.Now()}
+		rt.domainChecks.set(domain, result)
+	}
+
+	resp.ResolvedHosts = result.resolvedHosts
+	resp.Resolved = result.resolved
+	if !result.resolved {
+		resp.Status = domainCheckStatusNotResolving
+		return resp
+	}
+
+	// Cached the same way and under the same TTL as the domain lookup
+	// above, just keyed with a prefix no real domain can collide with
+	// (a bare hostname is never dot-free the way "expected:" itself
+	// is malformed as a domain). Without this, a hostname
+	// APP_PUBLIC_HOST (as opposed to an IP literal, which
+	// expectedIPs never calls lookupHost for at all) got one real,
+	// uncached DNS lookup on every single poll, defeating the whole
+	// point of the cache above for exactly the deployments where it
+	// matters most (a fronted/load-balanced control plane).
+	expectedCacheKey := "expected:" + expectedHost
+	expectedResult, expectedCached := rt.domainChecks.get(expectedCacheKey)
+	var expected []string
+	if expectedCached {
+		expected = expectedResult.resolvedHosts
+	} else {
+		lookupCtx, cancel := context.WithTimeout(ctx, domainCheckLookupTimeout)
+		expected = expectedIPs(lookupCtx, rt.lookupHost, expectedHost)
+		cancel()
+		rt.domainChecks.set(expectedCacheKey, domainCheckResult{resolvedHosts: expected, at: time.Now()})
+	}
+
+	if hostsOverlap(result.resolvedHosts, expected) {
+		resp.Status = domainCheckStatusConnected
+	} else {
+		resp.Status = domainCheckStatusResolvesElsewhere
+	}
+	return resp
+}
+
 // handleCheckDomain handles GET
 // /api/v1/apps/{name}/domains/{domain}/check: a real DNS lookup
 // (net.LookupHost, no external dependency) for domain, reporting whether
@@ -180,55 +238,6 @@ func (rt *Router) handleCheckDomain(w http.ResponseWriter, r *http.Request) {
 	}
 
 	expectedHost, inferred := advertisedHost(r, rt.publicHost)
-	resp := domainCheckResponse{Domain: domain, ExpectedHost: expectedHost, HostInferred: inferred}
-	if expectedHost == "" {
-		resp.Status = domainCheckStatusUnconfigured
-		writeJSON(w, http.StatusOK, resp)
-		return
-	}
-
-	result, cached := rt.domainChecks.get(domain)
-	if !cached {
-		ctx, cancel := context.WithTimeout(r.Context(), domainCheckLookupTimeout)
-		hosts, err := rt.lookupHost(ctx, domain)
-		cancel()
-		result = domainCheckResult{resolvedHosts: hosts, resolved: err == nil && len(hosts) > 0, at: time.Now()}
-		rt.domainChecks.set(domain, result)
-	}
-
-	resp.ResolvedHosts = result.resolvedHosts
-	resp.Resolved = result.resolved
-	if !result.resolved {
-		resp.Status = domainCheckStatusNotResolving
-		writeJSON(w, http.StatusOK, resp)
-		return
-	}
-
-	// Cached the same way and under the same TTL as the domain lookup
-	// above, just keyed with a prefix no real domain can collide with
-	// (a bare hostname is never dot-free the way "expected:" itself
-	// is malformed as a domain). Without this, a hostname
-	// APP_PUBLIC_HOST (as opposed to an IP literal, which
-	// expectedIPs never calls lookupHost for at all) got one real,
-	// uncached DNS lookup on every single poll, defeating the whole
-	// point of the cache above for exactly the deployments where it
-	// matters most (a fronted/load-balanced control plane).
-	expectedCacheKey := "expected:" + expectedHost
-	expectedResult, expectedCached := rt.domainChecks.get(expectedCacheKey)
-	var expected []string
-	if expectedCached {
-		expected = expectedResult.resolvedHosts
-	} else {
-		ctx, cancel := context.WithTimeout(r.Context(), domainCheckLookupTimeout)
-		expected = expectedIPs(ctx, rt.lookupHost, expectedHost)
-		cancel()
-		rt.domainChecks.set(expectedCacheKey, domainCheckResult{resolvedHosts: expected, at: time.Now()})
-	}
-
-	if hostsOverlap(result.resolvedHosts, expected) {
-		resp.Status = domainCheckStatusConnected
-	} else {
-		resp.Status = domainCheckStatusResolvesElsewhere
-	}
+	resp := rt.runDomainCheck(r.Context(), domain, expectedHost, inferred)
 	writeJSON(w, http.StatusOK, resp)
 }
