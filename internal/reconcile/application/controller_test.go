@@ -1121,8 +1121,8 @@ func TestController_Reconcile_RegistryCredential_ResolvedIntoPullAuth(t *testing
 	credStore := &fakeRegistryCredentialStore{credentials: map[string]store.RegistryCredential{
 		"regcred_1": {ID: "regcred_1", Name: "ghcr-bot", RegistryHost: "ghcr.io", Username: "bot"},
 	}}
-	secretResolver := newFakeSecretResolver(map[string]string{
-		"registry-credential/regcred_1/password": "gh-token-real", //nolint:gosec // fake fixture, not a real credential
+	secretResolver := newFakeSecretResolver(map[string]string{ //nolint:gosec // fake fixture, not a real credential
+		"registry-credential/regcred_1/password": "gh-token-real",
 	})
 	desired := &store.DesiredService{
 		Name: "web", Image: "ghcr.io/org/app:v1", Port: 80,
@@ -1157,8 +1157,8 @@ func TestController_Reconcile_NoRegistryCredential_Unaffected(t *testing.T) {
 
 func TestController_Reconcile_RegistryCredential_NoStoreConfigured_FailsLoudly(t *testing.T) {
 	rt := newFakeRuntime(0)
-	secretResolver := newFakeSecretResolver(map[string]string{
-		"registry-credential/regcred_1/password": "gh-token-real", //nolint:gosec // fake fixture, not a real credential
+	secretResolver := newFakeSecretResolver(map[string]string{ //nolint:gosec // fake fixture, not a real credential
+		"registry-credential/regcred_1/password": "gh-token-real",
 	})
 	desired := &store.DesiredService{
 		Name: "web", Image: "ghcr.io/org/app:v1", Port: 80,
