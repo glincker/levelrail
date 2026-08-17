@@ -130,6 +130,102 @@ services:
 	}
 }
 
+func TestResolveMagicVars_FQDNResolvesToOwnDomain(t *testing.T) {
+	f, err := Parse([]byte(`
+x-levelrail-domains:
+  app: app.example.com
+services:
+  app:
+    image: app:latest
+    environment:
+      FRONTEND_URL: ${SERVICE_FQDN_APP}
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	secretEnv, unresolved, err := ResolveMagicVars(f, failGenerate(t), failPersist(t))
+	if err != nil {
+		t.Fatalf("ResolveMagicVars() error = %v", err)
+	}
+	if len(unresolved) != 0 {
+		t.Errorf("unresolved = %+v, want none", unresolved)
+	}
+	if len(secretEnv) != 0 {
+		t.Errorf("secretEnv = %+v, want none (FQDN is a literal URL, not a secret)", secretEnv)
+	}
+	if got := f.Services["app"].Environment["FRONTEND_URL"]; got != "https://app.example.com" {
+		t.Errorf("FRONTEND_URL = %q, want https://app.example.com", got)
+	}
+}
+
+func TestResolveMagicVars_FQDNEmbeddedResolvesToOwnDomain(t *testing.T) {
+	f, err := Parse([]byte(`
+x-levelrail-domains:
+  app: app.example.com
+services:
+  app:
+    image: app:latest
+    environment:
+      CALLBACK_URL: "${SERVICE_FQDN_APP}/oauth/callback"
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	_, unresolved, err := ResolveMagicVars(f, failGenerate(t), failPersist(t))
+	if err != nil {
+		t.Fatalf("ResolveMagicVars() error = %v", err)
+	}
+	if len(unresolved) != 0 {
+		t.Errorf("unresolved = %+v, want none", unresolved)
+	}
+	if got := f.Services["app"].Environment["CALLBACK_URL"]; got != "https://app.example.com/oauth/callback" {
+		t.Errorf("CALLBACK_URL = %q, want https://app.example.com/oauth/callback", got)
+	}
+}
+
+func TestResolveMagicVars_FQDNIgnoresOtherServicesDomain(t *testing.T) {
+	f, err := Parse([]byte(`
+x-levelrail-domains:
+  web: web.example.com
+services:
+  web:
+    image: web:latest
+  worker:
+    image: worker:latest
+    environment:
+      FRONTEND_URL: ${SERVICE_FQDN_WEB}
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	_, unresolved, err := ResolveMagicVars(f, failGenerate(t), failPersist(t))
+	if err != nil {
+		t.Fatalf("ResolveMagicVars() error = %v", err)
+	}
+	if len(unresolved) != 1 {
+		t.Fatalf("unresolved = %+v, want exactly one entry (worker has no domain of its own, the FQDN key naming web is not what resolves it)", unresolved)
+	}
+}
+
+func TestValidate_UnknownDomainServiceRejected(t *testing.T) {
+	f, err := Parse([]byte(`
+x-levelrail-domains:
+  typo-service: app.example.com
+services:
+  app:
+    image: app:latest
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if err := f.Validate(); err == nil {
+		t.Fatal("Validate() error = nil, want an error for a domain mapped to an unknown service")
+	}
+}
+
 func TestResolveMagicVars_EmbeddedTokenUsesDefault(t *testing.T) {
 	f, err := Parse([]byte(`
 services:

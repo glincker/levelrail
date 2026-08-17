@@ -16,6 +16,13 @@ import (
 type File struct {
 	Version  string
 	Services map[string]Service
+	// Domains maps a service key to the real domain it should be
+	// reachable at, from the top-level x-levelrail-domains extension
+	// (Compose's own reserved x- prefix for tool-specific keys). Used
+	// both to set that service's own store.DesiredService.Domains (real
+	// ingress routing) and to resolve any ${SERVICE_FQDN_*} reference
+	// within that same service's environment (ResolveMagicVars).
+	Domains map[string]string
 }
 
 // Service is one entry under services:.
@@ -56,7 +63,7 @@ func Parse(data []byte) (*File, error) {
 		return nil, fmt.Errorf("compose: parse: %w", err)
 	}
 
-	f := &File{Version: raw.Version, Services: make(map[string]Service, len(raw.Services))}
+	f := &File{Version: raw.Version, Services: make(map[string]Service, len(raw.Services)), Domains: raw.Domains}
 	for name, svc := range raw.Services {
 		f.Services[name] = Service(svc)
 	}
@@ -86,6 +93,12 @@ func (f *File) Validate() error {
 			}
 		}
 	}
+	for svcKey := range f.Domains {
+		if _, ok := f.Services[svcKey]; !ok {
+			errs = append(errs, fmt.Errorf("x-levelrail-domains: %q is not a service in this file", svcKey))
+		}
+	}
+
 	if len(errs) == 0 {
 		return nil
 	}

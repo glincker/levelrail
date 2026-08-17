@@ -224,3 +224,30 @@ func TestHandleDeployCompose_UnresolvedVar(t *testing.T) {
 		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
 	}
 }
+
+func TestHandleDeployCompose_DomainAssignedFromExtension(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	yaml := "x-levelrail-domains:\n  app: app.example.com\nservices:\n  app:\n    image: myapp:latest\n    environment:\n      FRONTEND_URL: ${SERVICE_FQDN_APP}\n"
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/compose", yaml))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got composeDeployResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got.Services) != 1 {
+		t.Fatalf("got %d services, want 1", len(got.Services))
+	}
+	svc := got.Services[0]
+	if len(svc.Domains) != 1 || svc.Domains[0] != "app.example.com" {
+		t.Errorf("Domains = %+v, want [app.example.com]", svc.Domains)
+	}
+	if svc.Env["FRONTEND_URL"] != "https://app.example.com" {
+		t.Errorf("Env[FRONTEND_URL] = %q, want https://app.example.com", svc.Env["FRONTEND_URL"])
+	}
+}
