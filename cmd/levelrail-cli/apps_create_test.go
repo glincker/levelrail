@@ -166,6 +166,30 @@ func TestPlanFromFlags(t *testing.T) {
 			wantErr: "only supports",
 		},
 		{
+			name:  "file mode build.type image success, no repo needed",
+			flags: createFlags{file: "app.yaml"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildImage, Image: "ghcr.io/example/app:1.2.3"}, Port: 3000},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.Build != nil {
+					t.Errorf("Build = %+v, want nil: build.type: image never triggers a build", p.Build)
+				}
+				want := appResource{Name: "web", Image: "ghcr.io/example/app:1.2.3", Port: 3000}
+				if !reflect.DeepEqual(p.CreateBody, want) {
+					t.Errorf("CreateBody = %+v, want %+v", p.CreateBody, want)
+				}
+			},
+		},
+		{
+			name:  "file mode build.type image missing port",
+			flags: createFlags{file: "app.yaml"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildImage, Image: "ghcr.io/example/app:1.2.3"}},
+			}},
+			wantErr: "no port set",
+		},
+		{
 			name:  "file mode secret env vars rejected",
 			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git"},
 			fileSpec: &spec.Spec{Services: map[string]spec.Service{

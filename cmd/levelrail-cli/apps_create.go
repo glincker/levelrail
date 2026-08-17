@@ -34,8 +34,9 @@ type createFlags struct {
 
 // createPlan is planFromFlags's output: exactly the HTTP requests
 // runAppsCreate needs to make, already validated. Build is nil for the
-// existing-image path, non-nil for the git-build path (whether reached
-// via flags or --file).
+// existing-image path (via --image, or --file with a build.type: image
+// service), non-nil for the git-build path (whether reached via flags or
+// a build.type: dockerfile --file service).
 type createPlan struct {
 	CreateBody appResource
 	Build      *buildTriggerRequest
@@ -149,8 +150,8 @@ func planFromFile(f createFlags, fileSpec *spec.Spec, detected detectedGit) (cre
 	}
 	svc := fileSpec.Services[key]
 
-	if svc.Build.Type != spec.BuildDockerfile {
-		return createPlan{}, newValidationError("service %q has build.type %q; apps create only supports %q today", key, svc.Build.Type, spec.BuildDockerfile)
+	if svc.Build.Type != spec.BuildDockerfile && svc.Build.Type != spec.BuildImage {
+		return createPlan{}, newValidationError("service %q has build.type %q; apps create only supports %q and %q today", key, svc.Build.Type, spec.BuildDockerfile, spec.BuildImage)
 	}
 
 	if secretKeys := secretEnvKeys(svc.Env); len(secretKeys) > 0 {
@@ -162,6 +163,10 @@ func planFromFile(f createFlags, fileSpec *spec.Spec, detected detectedGit) (cre
 	name := f.name
 	if name == "" {
 		name = key
+	}
+
+	if svc.Build.Type == spec.BuildImage {
+		return planFromFileImage(f, svc, key, name)
 	}
 
 	port := f.port
@@ -214,6 +219,41 @@ func planFromFile(f createFlags, fileSpec *spec.Spec, detected detectedGit) (cre
 			Ref:       ref,
 			ImageRepo: f.imageRepo,
 			Build:     buildTriggerRequestBuild{Path: dockerfile},
+		},
+	}, nil
+}
+
+// planFromFileImage handles a build.type: image service from --file: the
+// image is already known (svc.Build.Image), so this creates the app
+// directly with it, the same shape planExistingImage uses, and skips
+// Build entirely: there is no build to trigger for this type.
+func planFromFileImage(f createFlags, svc spec.Service, key, name string) (createPlan, error) {
+	port := f.port
+	if port <= 0 {
+		port = svc.Port
+	}
+	if port <= 0 {
+		return createPlan{}, newValidationError("service %q has no port set in %s and --port was not given", key, f.file)
+	}
+
+	resources, err := toServiceResources(svc.Resources)
+	if err != nil {
+		return createPlan{}, newValidationError("service %q resources: %v", key, err)
+	}
+	health, err := toServiceHealth(svc.Health)
+	if err != nil {
+		return createPlan{}, newValidationError("service %q health: %v", key, err)
+	}
+
+	return createPlan{
+		CreateBody: appResource{
+			Name:      name,
+			Image:     svc.Build.Image,
+			Port:      port,
+			Domains:   svc.Domains,
+			Env:       literalEnv(svc.Env),
+			Resources: resources,
+			Health:    health,
 		},
 	}, nil
 }
