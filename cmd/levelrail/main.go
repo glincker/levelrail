@@ -459,6 +459,17 @@ func run(logger *slog.Logger) error {
 	}()
 	go runLogsRetentionSweep(ctx, telemetryDB, logger)
 
+	// drainForwarder taps logBroadcaster the same way a live SSE viewer
+	// does (internal/telemetry/drain.go's own doc comment): a pure
+	// additional consumer of the log stream, never touching logCollector
+	// or its store writes.
+	drainForwarder := telemetry.NewDrainForwarder(logBroadcaster, logger)
+	go func() {
+		if err := drainForwarder.Run(ctx, logTargetsResyncInterval, drainTargets(db)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("telemetry log drain forwarder stopped", slog.String("error", err.Error()))
+		}
+	}()
+
 	// Alerting (TASKS.md 2.5/2.7): RestartTracker watches the same
 	// Docker client's event stream, independently of the reconcile
 	// engine's own subscription below, to count restarts per service for
@@ -810,6 +821,35 @@ func logTargets(db *store.DB, runtime docker.Runtime) func(context.Context) ([]t
 			}
 		}
 		return targets, nil
+	}
+}
+
+// drainTargets adapts every desired service's configured, enabled log
+// drain (store.LogDrain) into telemetry.DrainConfig, the same "convert
+// store types into telemetry types" shape logTargets already establishes
+// for LogTarget above. A service with no log_drain configured, or one
+// that's configured but disabled, simply isn't included: DrainForwarder.Run
+// only ever spawns a forwarding goroutine for what this returns.
+func drainTargets(db *store.DB) func(context.Context) ([]telemetry.DrainConfig, error) {
+	return func(ctx context.Context) ([]telemetry.DrainConfig, error) {
+		services, err := db.ListDesiredServices(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("list desired services: %w", err)
+		}
+
+		var configs []telemetry.DrainConfig
+		for _, svc := range services {
+			if svc.LogDrain == nil || !svc.LogDrain.Enabled {
+				continue
+			}
+			configs = append(configs, telemetry.DrainConfig{
+				ResourceID: "service:" + svc.Name,
+				Type:       telemetry.DrainSinkType(svc.LogDrain.Type),
+				Target:     svc.LogDrain.Target,
+				Enabled:    true,
+			})
+		}
+		return configs, nil
 	}
 }
 
