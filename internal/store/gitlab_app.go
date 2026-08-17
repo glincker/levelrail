@@ -13,7 +13,7 @@ import (
 var ErrGitLabAppConnectionNotFound = errors.New("store: gitlab app connection not found")
 
 // GitLabAppConnection is the single-row gitlab_app_connections table
-// (migrations/0043_gitlab_app_connection.sql). No credential fields:
+// (migrations/0044_gitlab_app_connection.sql). No credential fields:
 // client_secret and the OAuth access_token/refresh_token live in
 // internal/secrets instead, under GitLabAppSecretsKey().
 type GitLabAppConnection struct {
