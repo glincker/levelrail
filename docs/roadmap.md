@@ -53,9 +53,10 @@ are still open. This page describes what's actually true today.
   start without touching desired state.
 - `install.sh` (curl-pipe-sh) and a systemd unit for the control plane
   itself, safe to re-run as an upgrade path.
-- `levelrail migrate coolify` CLI command: pulls every app off a live
-  Coolify instance and either writes app.yaml files or applies them
-  directly to a target Levelrail instance.
+- `levelrail migrate coolify` and `levelrail migrate dokploy` CLI
+  commands: pull every app off a live Coolify or Dokploy instance and
+  either write app.yaml files or apply them directly to a target
+  Levelrail instance.
 - Live end-to-end test suite: whole-chain push-to-HTTPS, rollback in
   both directions, the real git webhook path, database reconciliation,
   non-default port routing, and node placement. Doesn't yet exercise
@@ -150,8 +151,6 @@ are still open. This page describes what's actually true today.
   git-source webhook path used for real connected repos still looks
   up exactly one service, and there's no frontend for any of this. Not
   end-to-end yet.
-- **Dokploy migration tooling.** Coolify migration shipped (see Done);
-  Dokploy has no code written yet.
 - **Real public ACME.** The Caddy ACME issuer type, a settings toggle,
   and form validation are all built and wired end to end (Settings >
   Domains). Only unit-tested against the config shape so far, not
