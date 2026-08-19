@@ -745,6 +745,47 @@ func TestHandleTriggerBuild_StaticAccepted(t *testing.T) {
 	}
 }
 
+// TestHandleTriggerBuild_ImageAccepted proves build.type: image deploys
+// the given image directly with no git clone at all: repo_url/ref are
+// omitted from the request entirely and fetch is never called, unlike
+// every other build type.
+func TestHandleTriggerBuild_ImageAccepted(t *testing.T) {
+	fb := newFakeBuilder("registry.example.com/web:v1", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
+	cookie := loginTestSession(t, rt, db)
+	seedWebApp(t, db)
+
+	postTriggerBuildAccepted(t, rt, cookie, `{"build":{"type":"image","image":"registry.example.com/web:v1"}}`)
+	got := fb.awaitCall(t)
+	if got.Service.Build.Type != "image" {
+		t.Errorf("Service.Build.Type = %q, want %q", got.Service.Build.Type, "image")
+	}
+	if got.Service.Build.Image != "registry.example.com/web:v1" {
+		t.Errorf("Service.Build.Image = %q, want %q", got.Service.Build.Image, "registry.example.com/web:v1")
+	}
+	fetch.assertNotCalled(t)
+}
+
+// TestHandleTriggerBuild_ImageMissingImageRejected proves build.type:
+// image still requires build.image, even though repo_url/ref are not
+// required for this build type.
+func TestHandleTriggerBuild_ImageMissingImageRejected(t *testing.T) {
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
+	cookie := loginTestSession(t, rt, db)
+	seedWebApp(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds", `{"build":{"type":"image"}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	fetch.assertNotCalled(t)
+	fb.assertNotCalled(t)
+}
+
 // TestHandleTriggerBuild_ComposeStillRejected proves build.type: compose
 // specifically (not every non-dockerfile type, now that railpack and
 // static are accepted above) still gets the original 501, matching

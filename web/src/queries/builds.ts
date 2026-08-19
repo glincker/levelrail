@@ -19,13 +19,18 @@ import { deployAttemptKeys } from './deployAttempts'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export interface TriggerBuildInput {
+  /** Not required by the backend when buildType is "image": nothing gets cloned. */
   repoUrl: string
+  /** Not required by the backend when buildType is "image", see repoUrl. */
   ref: string
   /** Defaults to the app's own name on the backend when omitted. */
   imageRepo?: string
   /** Defaults to "dockerfile" on the backend when omitted. */
   buildType?: string
   buildPath?: string
+  /** Required when, and only meaningful for, buildType "image": the
+   *  prebuilt registry reference to deploy as-is, no build at all. */
+  image?: string
 }
 
 // TriggerBuildResult mirrors internal/api/builds.go's own
@@ -45,6 +50,7 @@ export async function triggerBuild(
   const build: Record<string, string> = {}
   if (input.buildType) build.type = input.buildType
   if (input.buildPath) build.path = input.buildPath
+  if (input.image) build.image = input.image
 
   const res = await fetch(
     `/api/v1/apps/${encodeURIComponent(appName)}/builds`,
@@ -52,8 +58,8 @@ export async function triggerBuild(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        repo_url: input.repoUrl,
-        ref: input.ref,
+        ...(input.repoUrl ? { repo_url: input.repoUrl } : {}),
+        ...(input.ref ? { ref: input.ref } : {}),
         ...(input.imageRepo ? { image_repo: input.imageRepo } : {}),
         ...(Object.keys(build).length > 0 ? { build } : {}),
       }),

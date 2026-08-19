@@ -98,15 +98,15 @@ func gitCheckout(ctx context.Context, repoURL, ref, token string) (dir string, c
 }
 
 // triggerBuildBuildInput is the build.* sub-object of
-// triggerBuildRequest, matching the same two fields app.yaml's own
-// build: block has (internal/spec.Build): type and path.
+// triggerBuildRequest, matching the same fields app.yaml's own build:
+// block has (internal/spec.Build): type, path, and image.
 type triggerBuildBuildInput struct {
 	// Type defaults to spec.BuildDockerfile when empty. handleTriggerBuild
-	// accepts every build.type internal/deploy.Pipeline.Deploy actually
-	// performs a build for (dockerfile, railpack, static); only compose
-	// (and any unrecognized value) is rejected, since Pipeline's own
-	// switch statement still returns a clear "not yet supported" error
-	// for that one.
+	// accepts every build.type internal/deploy.Pipeline.Deploy has a real
+	// case for (dockerfile, railpack, static, image); only compose (and
+	// any unrecognized value) is rejected, since Pipeline's own switch
+	// statement still returns a clear "not yet supported" error for that
+	// one.
 	Type string `json:"type,omitempty"`
 	// Path is only meaningful for build.type: dockerfile (the Dockerfile
 	// location, relative to the checkout root) and build.type: static
@@ -117,6 +117,12 @@ type triggerBuildBuildInput struct {
 	// runs against the checkout root), so handleTriggerBuild rejects a
 	// railpack request that sets one rather than silently ignoring it.
 	Path string `json:"path,omitempty"`
+	// Image is required for, and only meaningful for, build.type: image:
+	// a prebuilt registry reference deployed as-is, no git checkout or
+	// build at all (internal/deploy.Pipeline.deployImage). repo_url/ref
+	// are not required on the request for this build type either, since
+	// nothing gets cloned.
+	Image string `json:"image,omitempty"`
 }
 
 // triggerBuildRequest is POST /api/v1/apps/{name}/builds's body: a git
@@ -132,13 +138,13 @@ type triggerBuildBuildInput struct {
 // omit.
 type triggerBuildRequest struct {
 	// RepoURL is the git remote to clone, e.g.
-	// "https://github.com/org/app.git". Always required: unlike
-	// internal/webhook.Config.RepoURL (fixed, operator-configured
-	// server-side per app), there is nowhere else this could come from
-	// for an arbitrary app today.
+	// "https://github.com/org/app.git". Required for every build.type
+	// except image, which clones nothing (build.image is already a real,
+	// already-pushed image reference).
 	RepoURL string `json:"repo_url"`
 	// Ref is the branch, tag, or commit hash to build, resolved via
-	// gitCheckout's ResolveRevision call. Always required.
+	// gitCheckout's ResolveRevision call. Required for every build.type
+	// except image, the same exception RepoURL's own doc comment gives.
 	Ref string `json:"ref"`
 	// ImageRepo is the image name without a tag, the same meaning
 	// deploy.Request.ImageRepo already documents. Defaults to the app's
@@ -187,7 +193,9 @@ func (rt *Router) tokenForRepo(ctx context.Context, repoURL string) string {
 // image from a git source and points the app's desired state at the
 // result, through the same internal/deploy.Pipeline
 // internal/webhook.Handler.ServeHTTP uses for a git-push-triggered
-// deploy (see Builder's own doc comment).
+// deploy (see Builder's own doc comment). build.type: image is the one
+// exception: no git source and no build at all, just build.image
+// deployed as-is (internal/deploy.Pipeline.deployImage).
 //
 // Asynchronous: validates the request, records a deploy_attempts row
 // (beginBuildDeployAttempt), and returns 202 with its id immediately,
@@ -222,23 +230,15 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.RepoURL == "" {
-		writeError(w, http.StatusBadRequest, "repo_url is required")
-		return
-	}
-	if req.Ref == "" {
-		writeError(w, http.StatusBadRequest, "ref is required")
-		return
-	}
 
 	buildType := req.Build.Type
 	if buildType == "" {
 		buildType = spec.BuildDockerfile
 	}
 	switch buildType {
-	case spec.BuildDockerfile, spec.BuildRailpack, spec.BuildStatic:
+	case spec.BuildDockerfile, spec.BuildRailpack, spec.BuildStatic, spec.BuildImage:
 		// Supported: internal/deploy.Pipeline.Deploy has a real case for
-		// each of these three.
+		// each of these four.
 	case spec.BuildCompose:
 		// Fails before any git I/O: a build type internal/deploy.Pipeline
 		// can never build is a fixed fact about this control plane's
@@ -249,6 +249,22 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 	default:
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("build.type %q is not recognized", buildType))
 		return
+	}
+
+	if buildType == spec.BuildImage {
+		if req.Build.Image == "" {
+			writeError(w, http.StatusBadRequest, "build.image is required for build.type \"image\"")
+			return
+		}
+	} else {
+		if req.RepoURL == "" {
+			writeError(w, http.StatusBadRequest, "repo_url is required")
+			return
+		}
+		if req.Ref == "" {
+			writeError(w, http.StatusBadRequest, "ref is required")
+			return
+		}
 	}
 	if buildType == spec.BuildRailpack && req.Build.Path != "" {
 		// See triggerBuildBuildInput.Path's own doc comment: railpack has
@@ -264,7 +280,11 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		imageRepo = name
 	}
 
-	svcSpec := specServiceFromDesired(*existing, spec.Build{Type: buildType, Path: req.Build.Path})
+	buildCfg := spec.Build{Type: buildType, Path: req.Build.Path}
+	if buildType == spec.BuildImage {
+		buildCfg = spec.Build{Type: buildType, Image: req.Build.Image}
+	}
+	svcSpec := specServiceFromDesired(*existing, buildCfg)
 
 	buildReq := deploy.Request{
 		ServiceName: name,
@@ -289,18 +309,20 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 	repoURL, ref := req.RepoURL, req.Ref
 	go func() { //nolint:gosec // deliberately not r.Context(): it is cancelled the moment this handler returns, which would abort the fetch and build within microseconds of starting them; see this handler's own doc comment
 		ctx := context.Background()
-		var token string
-		if allowPrivateRepoAuth {
-			token = rt.tokenForRepo(ctx, repoURL)
+		if buildType != spec.BuildImage {
+			var token string
+			if allowPrivateRepoAuth {
+				token = rt.tokenForRepo(ctx, repoURL)
+			}
+			sourceDir, cleanup, err := rt.fetch(ctx, repoURL, ref, token)
+			if err != nil {
+				rt.logger.Error("api: trigger build: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", repoURL), slog.String("ref", ref))
+				finishAttempt(err)
+				return
+			}
+			defer cleanup()
+			buildReq.SourceDir = sourceDir
 		}
-		sourceDir, cleanup, err := rt.fetch(ctx, repoURL, ref, token)
-		if err != nil {
-			rt.logger.Error("api: trigger build: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", repoURL), slog.String("ref", ref))
-			finishAttempt(err)
-			return
-		}
-		defer cleanup()
-		buildReq.SourceDir = sourceDir
 
 		tag, err := rt.builder.Deploy(ctx, buildReq, progress)
 		finishAttempt(err)
