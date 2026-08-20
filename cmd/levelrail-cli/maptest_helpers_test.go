@@ -103,3 +103,5 @@ func assertEnvLiteral(t *testing.T, got mappedApp, want map[string]string) {
 		t.Errorf("EnvLiteral = %v, want %v", got.Service.EnvLiteral, want)
 	}
 }
+
+func ptr[T any](v T) *T { return &v }

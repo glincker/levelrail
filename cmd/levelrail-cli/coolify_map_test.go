@@ -16,6 +16,8 @@ func TestMapCoolifyApplication(t *testing.T) {
 		includeSecretValues bool
 		wantBlocking        bool
 		wantIssueSubstr     string // substring expected somewhere in Issues, empty means no particular check
+		wantMemory          *string
+		wantCPU             *float64
 		check               func(t *testing.T, got mappedApp)
 	}{
 		{
@@ -131,39 +133,29 @@ func TestMapCoolifyApplication(t *testing.T) {
 			},
 		},
 		{
-			name: "memory in whole gibibytes",
-			app:  coolifyApplication{Name: "big", BuildPack: "dockerfile", PortsExposes: "3000", LimitsMemory: "2g"},
-			check: func(t *testing.T, got mappedApp) {
-				assertMemory(t, got, "2Gi")
-			},
+			name:       "memory in whole gibibytes",
+			app:        coolifyApplication{Name: "big", BuildPack: "dockerfile", PortsExposes: "3000", LimitsMemory: "2g"},
+			wantMemory: ptr("2Gi"),
 		},
 		{
-			name: "memory in mebibytes",
-			app:  coolifyApplication{Name: "small", BuildPack: "dockerfile", PortsExposes: "3000", LimitsMemory: "512m"},
-			check: func(t *testing.T, got mappedApp) {
-				assertMemory(t, got, "512Mi")
-			},
+			name:       "memory in mebibytes",
+			app:        coolifyApplication{Name: "small", BuildPack: "dockerfile", PortsExposes: "3000", LimitsMemory: "512m"},
+			wantMemory: ptr("512Mi"),
 		},
 		{
-			name: "memory zero is omitted",
-			app:  coolifyApplication{Name: "unlimited", BuildPack: "dockerfile", PortsExposes: "3000", LimitsMemory: "0"},
-			check: func(t *testing.T, got mappedApp) {
-				assertMemory(t, got, "")
-			},
+			name:       "memory zero is omitted",
+			app:        coolifyApplication{Name: "unlimited", BuildPack: "dockerfile", PortsExposes: "3000", LimitsMemory: "0"},
+			wantMemory: ptr(""),
 		},
 		{
-			name: "cpu parses to float directly",
-			app:  coolifyApplication{Name: "cpubound", BuildPack: "dockerfile", PortsExposes: "3000", LimitsCPUs: "1.5"},
-			check: func(t *testing.T, got mappedApp) {
-				assertCPU(t, got, 1.5)
-			},
+			name:    "cpu parses to float directly",
+			app:     coolifyApplication{Name: "cpubound", BuildPack: "dockerfile", PortsExposes: "3000", LimitsCPUs: "1.5"},
+			wantCPU: ptr(1.5),
 		},
 		{
-			name: "cpu zero is omitted",
-			app:  coolifyApplication{Name: "unbound", BuildPack: "dockerfile", PortsExposes: "3000", LimitsCPUs: "0"},
-			check: func(t *testing.T, got mappedApp) {
-				assertCPU(t, got, 0)
-			},
+			name:    "cpu zero is omitted",
+			app:     coolifyApplication{Name: "unbound", BuildPack: "dockerfile", PortsExposes: "3000", LimitsCPUs: "0"},
+			wantCPU: ptr(0.0),
 		},
 		{
 			name: "non-positive parsed memory is silently omitted, no issue",
@@ -216,6 +208,12 @@ func TestMapCoolifyApplication(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := mapCoolifyApplication(tt.app, tt.envs, tt.includeSecretValues)
 			runMapTestCase(t, tt.wantBlocking, tt.wantIssueSubstr, tt.check, got)
+			if tt.wantMemory != nil {
+				assertMemory(t, got, *tt.wantMemory)
+			}
+			if tt.wantCPU != nil {
+				assertCPU(t, got, *tt.wantCPU)
+			}
 		})
 	}
 }
