@@ -159,6 +159,20 @@ func (c *Client) DeployApp(ctx context.Context, name, image string) (AppResource
 	return out, err
 }
 
+// SetAppDatabaseAttachment calls PUT /api/v1/apps/{name}/database:
+// attaches an existing managed database to name as a real, persisted
+// connection env var source.
+func (c *Client) SetAppDatabaseAttachment(ctx context.Context, name string, req SetAppDatabaseRequest) (AppDatabaseResource, error) {
+	var out AppDatabaseResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/database", req, &out)
+	return out, err
+}
+
+// ClearAppDatabaseAttachment calls DELETE /api/v1/apps/{name}/database.
+func (c *Client) ClearAppDatabaseAttachment(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/database", nil, nil)
+}
+
 // DeployCompose calls POST /api/v1/apps/{name}/compose with composeYAML
 // as the raw request body. Unlike every other Client method, this
 // doesn't go through do(): handleDeployCompose (internal/api/apps_compose.go)

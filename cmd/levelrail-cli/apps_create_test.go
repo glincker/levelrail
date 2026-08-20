@@ -480,3 +480,36 @@ func TestPendingImageTag(t *testing.T) {
 		t.Errorf("pendingImageTag() = %q, want %q", got, want)
 	}
 }
+
+func TestParseCreateFlags_AttachDatabase(t *testing.T) {
+	var token, apiURL string
+	f, err := parseCreateFlags("levelrail", []string{
+		"--name", "web", "--image", "img:v1", "--port", "3000",
+		"--attach-database", "main",
+		"--attach-database-env-var", "DB_URL",
+		"--attach-database-field", "host",
+	}, &strings.Builder{}, &token, &apiURL)
+	if err != nil {
+		t.Fatalf("parseCreateFlags() error = %v", err)
+	}
+	if f.attachDatabase != "main" {
+		t.Errorf("attachDatabase = %q, want main", f.attachDatabase)
+	}
+	if f.attachDatabaseEnvVar != "DB_URL" {
+		t.Errorf("attachDatabaseEnvVar = %q, want DB_URL", f.attachDatabaseEnvVar)
+	}
+	if f.attachDatabaseField != "host" {
+		t.Errorf("attachDatabaseField = %q, want host", f.attachDatabaseField)
+	}
+}
+
+func TestParseCreateFlags_AttachDatabase_DefaultsEmpty(t *testing.T) {
+	var token, apiURL string
+	f, err := parseCreateFlags("levelrail", []string{"--name", "web", "--image", "img:v1", "--port", "3000"}, &strings.Builder{}, &token, &apiURL)
+	if err != nil {
+		t.Fatalf("parseCreateFlags() error = %v", err)
+	}
+	if f.attachDatabase != "" || f.attachDatabaseEnvVar != "" || f.attachDatabaseField != "" {
+		t.Errorf("attach-database fields = %+v, want all empty when the flag isn't passed", f)
+	}
+}

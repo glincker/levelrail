@@ -9,6 +9,7 @@ import { ConditionsPanel } from '../../../components/ConditionsPanel'
 import { GitSourceCard } from '../../../components/GitSourceCard'
 import { StorageAttachmentCard } from '../../../components/StorageAttachmentCard'
 import { LogDrainCard } from '../../../components/LogDrainCard'
+import { DatabaseAttachmentCard } from '../../../components/DatabaseAttachmentCard'
 
 // Former "overview" tab of routes/apps/$name.tsx's Tabs component, now a
 // real deep-linkable route. Reads app/conditions from the same query
@@ -38,6 +39,7 @@ function OverviewSection() {
       <GitSourceCard app={app} />
       <StorageAttachmentCard app={app} />
       <LogDrainCard app={app} />
+      <DatabaseAttachmentCard app={app} />
       <PortEditor app={app} />
       <DeployStrategyEditor app={app} />
       <ConditionsPanel conditions={conditions} />

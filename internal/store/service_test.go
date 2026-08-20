@@ -515,6 +515,106 @@ func TestSaveDesiredService_RedeployDoesNotResetStorageTargetID(t *testing.T) {
 	}
 }
 
+func TestSaveDesiredService_DatabaseEnvRoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	svc := DesiredService{
+		Name: "web", Image: "img:v1", Port: 8080,
+		DatabaseEnv: map[string]DatabaseEnvRef{
+			"DATABASE_URL": {Database: "main", Field: "url"},
+		},
+	}
+	if err := db.SaveDesiredService(ctx, svc); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	want := DatabaseEnvRef{Database: "main", Field: "url"}
+	if got.DatabaseEnv["DATABASE_URL"] != want {
+		t.Errorf("DatabaseEnv[%q] = %+v, want %+v", "DATABASE_URL", got.DatabaseEnv["DATABASE_URL"], want)
+	}
+}
+
+func TestUpdateServiceDatabaseAttachment(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	att := &DatabaseAttachment{DatabaseName: "main", EnvVar: "DATABASE_URL", Field: "url"}
+	if err := db.UpdateServiceDatabaseAttachment(ctx, "web", att); err != nil {
+		t.Fatalf("UpdateServiceDatabaseAttachment() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.DatabaseAttachment == nil || *got.DatabaseAttachment != *att {
+		t.Errorf("DatabaseAttachment = %+v, want %+v", got.DatabaseAttachment, att)
+	}
+}
+
+func TestUpdateServiceDatabaseAttachment_Clear(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.UpdateServiceDatabaseAttachment(ctx, "web", &DatabaseAttachment{DatabaseName: "main", EnvVar: "DATABASE_URL", Field: "url"}); err != nil {
+		t.Fatalf("UpdateServiceDatabaseAttachment(set) error = %v", err)
+	}
+	if err := db.UpdateServiceDatabaseAttachment(ctx, "web", nil); err != nil {
+		t.Fatalf("UpdateServiceDatabaseAttachment(clear) error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.DatabaseAttachment != nil {
+		t.Errorf("DatabaseAttachment = %+v, want nil after clearing", got.DatabaseAttachment)
+	}
+}
+
+func TestUpdateServiceDatabaseAttachment_NotFound(t *testing.T) {
+	err := openTestDB(t).UpdateServiceDatabaseAttachment(context.Background(), "nonexistent", &DatabaseAttachment{DatabaseName: "main", EnvVar: "DATABASE_URL", Field: "url"})
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("UpdateServiceDatabaseAttachment() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+func TestSaveDesiredService_RedeployDoesNotResetDatabaseAttachment(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("initial SaveDesiredService() error = %v", err)
+	}
+	att := &DatabaseAttachment{DatabaseName: "main", EnvVar: "DATABASE_URL", Field: "url"}
+	if err := db.UpdateServiceDatabaseAttachment(ctx, "web", att); err != nil {
+		t.Fatalf("UpdateServiceDatabaseAttachment() error = %v", err)
+	}
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("redeploy SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.DatabaseAttachment == nil || *got.DatabaseAttachment != *att {
+		t.Errorf("DatabaseAttachment = %+v, want %+v (a redeploy must not silently detach it)", got.DatabaseAttachment, att)
+	}
+}
+
 func TestUpdateServiceApp(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

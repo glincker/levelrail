@@ -128,6 +128,13 @@ type AppStore interface {
 	// UpdateServiceProject, see store.DB.UpdateServiceStorageTarget's own
 	// doc comment.
 	UpdateServiceStorageTarget(ctx context.Context, name, storageTargetID string) error
+	// UpdateServiceDatabaseAttachment backs PUT/DELETE
+	// /api/v1/apps/{name}/database (apps_database.go): which managed
+	// database (DatabaseStore below) this app resolves one connection env
+	// var from. Same separation-from-ordinary-update reasoning as
+	// UpdateServiceStorageTarget, see store.DB.UpdateServiceDatabaseAttachment's
+	// own doc comment.
+	UpdateServiceDatabaseAttachment(ctx context.Context, name string, att *store.DatabaseAttachment) error
 	// UpdateServiceSuspended backs POST /api/v1/apps/{name}/stop and
 	// .../start (handleStopApp/handleStartApp): same
 	// separation-from-ordinary-update reasoning as UpdateServiceNode/
@@ -1625,6 +1632,14 @@ func (rt *Router) Handler() http.Handler {
 	// apply.
 	mux.HandleFunc("PUT /api/v1/apps/{name}/storage", rt.requireAbility(AbilityWriteSensitive, rt.handleSetAppStorage))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/storage", rt.requireAbility(AbilityWriteSensitive, rt.handleClearAppStorage))
+
+	// Real app-to-database attachment (apps_database.go): AbilityWrite,
+	// not AbilityDeploy, since this is a config write, not itself a
+	// deploy trigger (the next reconcile picks up the change on its own
+	// schedule, the same "desired state changes, containers converge
+	// later" shape PUT .../storage/.../node/.../project already have).
+	mux.HandleFunc("PUT /api/v1/apps/{name}/database", rt.requireAbility(AbilityWrite, rt.handleSetAppDatabase))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/database", rt.requireAbility(AbilityWrite, rt.handleClearAppDatabase))
 	// Read-only, not scoped to any one app: the static list of env var
 	// names attaching storage can inject, backed by
 	// application.StorageEnvKeys rather than a hardcoded list, see

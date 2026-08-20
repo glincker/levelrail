@@ -9,39 +9,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/secrets"
 )
 
-// postgresPasswordEnvKey is the envKey postgresCredentialsFor stores a
-// database's generated Postgres password under, in internal/secrets'
-// per-(serviceName, envKey) keyspace. Reused here with a database's own
-// name in place of a service name: that keyspace was designed for app
-// env vars, but nothing about its shape is app-specific, and adding a
-// parallel storage path just for this one value would be new surface
-// for no real benefit.
-const postgresPasswordEnvKey = "postgres_password"
-
-// mysqlPasswordEnvKey is mysqlCredentialsFor's own storage key, distinct
-// from postgresPasswordEnvKey: a database named "main" reconciled as
-// mysql must never share storage (and therefore a password) with a
-// database of the same name reconciled as postgres.
-const mysqlPasswordEnvKey = "mysql_password"
-
-// mongoPasswordEnvKey is mongoCredentialsFor's own storage key, distinct
-// from postgresPasswordEnvKey/mysqlPasswordEnvKey for the same reason
-// mysqlPasswordEnvKey is distinct from postgresPasswordEnvKey: a
-// database named "main" reconciled as mongodb must never share storage
-// with a same-named database reconciled as a different engine.
-const mongoPasswordEnvKey = "mongo_password"
-
-// mariadbPasswordEnvKey is mariadbCredentialsFor's own storage key,
-// distinct from mysqlPasswordEnvKey for the same reason: a database
-// named "main" reconciled as mariadb must never share storage (or a
-// password) with a same-named database reconciled as mysql.
-const mariadbPasswordEnvKey = "mariadb_password"
-
-// clickhousePasswordEnvKey is clickhouseCredentialsFor's own storage
-// key, distinct from every other engine's for the same reason
-// mariadbPasswordEnvKey is distinct from mysqlPasswordEnvKey.
-const clickhousePasswordEnvKey = "clickhouse_password"
-
 // postgresCredentialsFor returns the Postgres credentials
 // database.WithPostgresCredentials needs for dbName, generating and
 // persisting a random password on first call and returning the same
@@ -65,7 +32,7 @@ func postgresCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName st
 		return nil, nil
 	}
 
-	exists, err := mgr.Exists(ctx, dbName, postgresPasswordEnvKey)
+	exists, err := mgr.Exists(ctx, dbName, database.PostgresPasswordEnvKey)
 	if err != nil {
 		return nil, fmt.Errorf("check existing postgres credentials for %q: %w", dbName, err)
 	}
@@ -74,12 +41,12 @@ func postgresCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName st
 		if err != nil {
 			return nil, fmt.Errorf("generate postgres password for %q: %w", dbName, err)
 		}
-		if err := mgr.SetValue(ctx, dbName, postgresPasswordEnvKey, password); err != nil {
+		if err := mgr.SetValue(ctx, dbName, database.PostgresPasswordEnvKey, password); err != nil {
 			return nil, fmt.Errorf("store postgres password for %q: %w", dbName, err)
 		}
 	}
 
-	password, err := mgr.Resolve(ctx, dbName, postgresPasswordEnvKey)
+	password, err := mgr.Resolve(ctx, dbName, database.PostgresPasswordEnvKey)
 	if err != nil {
 		return nil, fmt.Errorf("resolve postgres password for %q: %w", dbName, err)
 	}
@@ -93,7 +60,7 @@ func postgresCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName st
 // mysqlCredentialsFor is postgresCredentialsFor's exact counterpart for
 // database.WithMySQLCredentials: same generate-once-persist-forever
 // shape, same "nil manager means nil credentials, not an error" contract,
-// its own storage key (mysqlPasswordEnvKey) so it never collides with a
+// its own storage key (database.MySQLPasswordEnvKey) so it never collides with a
 // postgres database of the same name. See postgresCredentialsFor's own
 // doc comment for the full reasoning, unchanged here.
 func mysqlCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName string) (*database.MySQLCredentials, error) {
@@ -101,7 +68,7 @@ func mysqlCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName strin
 		return nil, nil
 	}
 
-	exists, err := mgr.Exists(ctx, dbName, mysqlPasswordEnvKey)
+	exists, err := mgr.Exists(ctx, dbName, database.MySQLPasswordEnvKey)
 	if err != nil {
 		return nil, fmt.Errorf("check existing mysql credentials for %q: %w", dbName, err)
 	}
@@ -110,12 +77,12 @@ func mysqlCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName strin
 		if err != nil {
 			return nil, fmt.Errorf("generate mysql password for %q: %w", dbName, err)
 		}
-		if err := mgr.SetValue(ctx, dbName, mysqlPasswordEnvKey, password); err != nil {
+		if err := mgr.SetValue(ctx, dbName, database.MySQLPasswordEnvKey, password); err != nil {
 			return nil, fmt.Errorf("store mysql password for %q: %w", dbName, err)
 		}
 	}
 
-	password, err := mgr.Resolve(ctx, dbName, mysqlPasswordEnvKey)
+	password, err := mgr.Resolve(ctx, dbName, database.MySQLPasswordEnvKey)
 	if err != nil {
 		return nil, fmt.Errorf("resolve mysql password for %q: %w", dbName, err)
 	}
@@ -129,7 +96,7 @@ func mysqlCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName strin
 // mongoCredentialsFor is postgresCredentialsFor's exact counterpart for
 // database.WithMongoDBCredentials: same generate-once-persist-forever
 // shape, same "nil manager means nil credentials, not an error"
-// contract, its own storage key (mongoPasswordEnvKey) so it never
+// contract, its own storage key (database.MongoPasswordEnvKey) so it never
 // collides with a same-named database of a different engine. See
 // postgresCredentialsFor's own doc comment for the full reasoning,
 // unchanged here.
@@ -138,7 +105,7 @@ func mongoCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName strin
 		return nil, nil
 	}
 
-	exists, err := mgr.Exists(ctx, dbName, mongoPasswordEnvKey)
+	exists, err := mgr.Exists(ctx, dbName, database.MongoPasswordEnvKey)
 	if err != nil {
 		return nil, fmt.Errorf("check existing mongodb credentials for %q: %w", dbName, err)
 	}
@@ -147,12 +114,12 @@ func mongoCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName strin
 		if err != nil {
 			return nil, fmt.Errorf("generate mongodb password for %q: %w", dbName, err)
 		}
-		if err := mgr.SetValue(ctx, dbName, mongoPasswordEnvKey, password); err != nil {
+		if err := mgr.SetValue(ctx, dbName, database.MongoPasswordEnvKey, password); err != nil {
 			return nil, fmt.Errorf("store mongodb password for %q: %w", dbName, err)
 		}
 	}
 
-	password, err := mgr.Resolve(ctx, dbName, mongoPasswordEnvKey)
+	password, err := mgr.Resolve(ctx, dbName, database.MongoPasswordEnvKey)
 	if err != nil {
 		return nil, fmt.Errorf("resolve mongodb password for %q: %w", dbName, err)
 	}
@@ -166,7 +133,7 @@ func mongoCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName strin
 // mariadbCredentialsFor is postgresCredentialsFor's exact counterpart
 // for database.WithMariaDBCredentials: same generate-once-persist-
 // forever shape, same "nil manager means nil credentials, not an error"
-// contract, its own storage key (mariadbPasswordEnvKey) so it never
+// contract, its own storage key (database.MariaDBPasswordEnvKey) so it never
 // collides with a mysql database of the same name. See
 // postgresCredentialsFor's own doc comment for the full reasoning,
 // unchanged here.
@@ -175,7 +142,7 @@ func mariadbCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName str
 		return nil, nil
 	}
 
-	exists, err := mgr.Exists(ctx, dbName, mariadbPasswordEnvKey)
+	exists, err := mgr.Exists(ctx, dbName, database.MariaDBPasswordEnvKey)
 	if err != nil {
 		return nil, fmt.Errorf("check existing mariadb credentials for %q: %w", dbName, err)
 	}
@@ -184,12 +151,12 @@ func mariadbCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName str
 		if err != nil {
 			return nil, fmt.Errorf("generate mariadb password for %q: %w", dbName, err)
 		}
-		if err := mgr.SetValue(ctx, dbName, mariadbPasswordEnvKey, password); err != nil {
+		if err := mgr.SetValue(ctx, dbName, database.MariaDBPasswordEnvKey, password); err != nil {
 			return nil, fmt.Errorf("store mariadb password for %q: %w", dbName, err)
 		}
 	}
 
-	password, err := mgr.Resolve(ctx, dbName, mariadbPasswordEnvKey)
+	password, err := mgr.Resolve(ctx, dbName, database.MariaDBPasswordEnvKey)
 	if err != nil {
 		return nil, fmt.Errorf("resolve mariadb password for %q: %w", dbName, err)
 	}
@@ -202,13 +169,13 @@ func mariadbCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName str
 
 // clickhouseCredentialsFor mirrors postgresCredentialsFor for
 // database.WithClickHouseCredentials, using its own storage key
-// (clickhousePasswordEnvKey) to avoid colliding with other engines.
+// (database.ClickHousePasswordEnvKey) to avoid colliding with other engines.
 func clickhouseCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName string) (*database.ClickHouseCredentials, error) {
 	if mgr == nil {
 		return nil, nil
 	}
 
-	exists, err := mgr.Exists(ctx, dbName, clickhousePasswordEnvKey)
+	exists, err := mgr.Exists(ctx, dbName, database.ClickHousePasswordEnvKey)
 	if err != nil {
 		return nil, fmt.Errorf("check existing clickhouse credentials for %q: %w", dbName, err)
 	}
@@ -217,12 +184,12 @@ func clickhouseCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName 
 		if err != nil {
 			return nil, fmt.Errorf("generate clickhouse password for %q: %w", dbName, err)
 		}
-		if err := mgr.SetValue(ctx, dbName, clickhousePasswordEnvKey, password); err != nil {
+		if err := mgr.SetValue(ctx, dbName, database.ClickHousePasswordEnvKey, password); err != nil {
 			return nil, fmt.Errorf("store clickhouse password for %q: %w", dbName, err)
 		}
 	}
 
-	password, err := mgr.Resolve(ctx, dbName, clickhousePasswordEnvKey)
+	password, err := mgr.Resolve(ctx, dbName, database.ClickHousePasswordEnvKey)
 	if err != nil {
 		return nil, fmt.Errorf("resolve clickhouse password for %q: %w", dbName, err)
 	}

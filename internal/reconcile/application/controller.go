@@ -27,6 +27,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -34,6 +35,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/probe"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -73,6 +75,16 @@ type StorageTargetStore interface {
 // establishes just above. *store.DB satisfies this structurally.
 type RegistryCredentialStore interface {
 	GetRegistryCredential(ctx context.Context, id string) (store.RegistryCredential, error)
+}
+
+// DatabaseAttachmentStore is the narrow surface this controller needs to
+// resolve a { from: ... } env var (store.DesiredService.DatabaseEnv,
+// store.DesiredService.DatabaseAttachment) against a real managed
+// database: just the one read, the same shape StorageTargetStore/
+// RegistryCredentialStore already establish. *store.DB satisfies this
+// structurally.
+type DatabaseAttachmentStore interface {
+	GetDesiredDatabase(ctx context.Context, name string) (*store.DesiredDatabase, error)
 }
 
 // ProjectEnvStore is the narrow surface this controller needs to
@@ -138,6 +150,7 @@ type Controller struct {
 	projectEnv     ProjectEnvStore         // nil is valid: project vars are just skipped, see WithProjectEnv
 	networkPrefix  string                  // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
 	registryCreds  RegistryCredentialStore // nil is valid: a service with no RegistryCredentialID never needs one, see WithRegistryCredentials
+	databases      DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
 }
 
 // Option configures optional Controller behavior.
@@ -211,6 +224,17 @@ func WithStorageTargets(s StorageTargetStore) Option {
 // credential would be a worse failure mode than Reconcile erroring.
 func WithRegistryCredentials(s RegistryCredentialStore) Option {
 	return func(ctrl *Controller) { ctrl.registryCreds = s }
+}
+
+// WithDatabaseAttachments enables container creation to resolve
+// store.DesiredService.DatabaseEnv/DatabaseAttachment into real
+// connection env vars, the same "fail loudly if declared but
+// unconfigured" shape WithStorageTargets already establishes: a service
+// declaring a { from: ... } env var with no database store configured
+// fails Reconcile rather than silently starting a container missing the
+// value it needs.
+func WithDatabaseAttachments(s DatabaseAttachmentStore) Option {
+	return func(ctrl *Controller) { ctrl.databases = s }
 }
 
 // WithProjectEnv enables resolving store.DesiredService.ProjectID's
@@ -614,13 +638,24 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 // declaring the same key, the same way a resolved secret already takes
 // precedence over a plain literal.
 //
+// desired.DatabaseEnv/desired.DatabaseAttachment's resolved values
+// (resolveDatabaseEnv) are applied last of all, after desired.
+// StorageTargetID's: the identical "more deliberate, more authoritative
+// source wins" reasoning extended one more step. A database connection
+// value is exactly as live/authoritative as a storage target's, so
+// neither should be able to silently shadow the other by accident; in
+// practice they almost never target the same env var name, so this
+// ordering mostly only matters for the (rare, deliberate) case of both
+// declaring the same key.
+//
 // desired.ProjectID's shared env vars (WithProjectEnv) are the opposite
 // end: applied first, as the base layer, so this service's own Env
 // (and everything above) freely overrides a same-named project default
 // rather than the other way around.
 func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredService) (map[string]string, error) {
 	hasProjectEnv := desired.ProjectID != "" && c.projectEnv != nil
-	if len(desired.SecretEnv) == 0 && desired.StorageTargetID == "" && !hasProjectEnv {
+	hasDatabaseEnv := len(desired.DatabaseEnv) > 0 || desired.DatabaseAttachment != nil
+	if len(desired.SecretEnv) == 0 && desired.StorageTargetID == "" && !hasProjectEnv && !hasDatabaseEnv {
 		return desired.Env, nil
 	}
 
@@ -670,7 +705,131 @@ func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredServi
 		}
 	}
 
+	if hasDatabaseEnv {
+		databaseEnv, err := c.resolveDatabaseEnv(ctx, desired)
+		if err != nil {
+			return nil, fmt.Errorf("resolve database env: %w", err)
+		}
+		for k, v := range databaseEnv {
+			env[k] = v
+		}
+	}
+
 	return env, nil
+}
+
+// resolveDatabaseEnv resolves every entry in desired.DatabaseEnv plus
+// desired.DatabaseAttachment (if set) into real connection values,
+// against a managed database's actual desired state (host/port/engine)
+// and its real credentials (internal/secrets, the same per-database
+// keying cmd/levelrail's postgresCredentialsFor and its siblings already
+// establish). See resolveDatabaseField for the per-field resolution
+// rules.
+func (c *Controller) resolveDatabaseEnv(ctx context.Context, desired *store.DesiredService) (map[string]string, error) {
+	if c.databases == nil {
+		return nil, fmt.Errorf("service declares a database-backed env var but no database store is configured")
+	}
+
+	env := make(map[string]string, len(desired.DatabaseEnv)+1)
+	for envVar, ref := range desired.DatabaseEnv {
+		value, err := c.resolveDatabaseField(ctx, ref.Database, ref.Field)
+		if err != nil {
+			return nil, fmt.Errorf("env var %q: %w", envVar, err)
+		}
+		env[envVar] = value
+	}
+
+	if att := desired.DatabaseAttachment; att != nil {
+		value, err := c.resolveDatabaseField(ctx, att.DatabaseName, att.Field)
+		if err != nil {
+			return nil, fmt.Errorf("database attachment (env var %q): %w", att.EnvVar, err)
+		}
+		env[att.EnvVar] = value
+	}
+
+	return env, nil
+}
+
+// resolveDatabaseField resolves one (database, field) pair to its real
+// value. host is always the referenced database's own container name
+// (database.ContainerName, the same deterministic name
+// internal/reconcile/database's own controller creates); port is the
+// engine's standard port (database.ContainerPort); username is the
+// database's own name, mirroring Postgres/MySQL/MongoDB's own
+// "role/user equals database name" convention this platform's
+// credential generators already establish (cmd/levelrail's
+// postgresCredentialsFor and its siblings); password comes from the same
+// internal/secrets storage those generators already write to
+// (database.PasswordSecretKey).
+func (c *Controller) resolveDatabaseField(ctx context.Context, dbName, field string) (string, error) {
+	desiredDB, err := c.databases.GetDesiredDatabase(ctx, dbName)
+	if errors.Is(err, store.ErrDatabaseNotFound) {
+		return "", fmt.Errorf("references database %q, which does not exist", dbName)
+	}
+	if err != nil {
+		return "", fmt.Errorf("get database %q: %w", dbName, err)
+	}
+	if !database.SupportsField(desiredDB.Engine, field) {
+		return "", fmt.Errorf("field %q is not supported for %s databases", field, desiredDB.Engine)
+	}
+
+	host := database.ContainerName(dbName)
+	port, _ := database.ContainerPort(desiredDB.Engine) // ok already confirmed by SupportsField above
+
+	switch field {
+	case "host":
+		return host, nil
+	case "port":
+		return strconv.Itoa(port), nil
+	case "database":
+		return dbName, nil
+	case "username":
+		return dbName, nil
+	case "password":
+		return c.resolveDatabasePassword(ctx, dbName, desiredDB.Engine)
+	case "url":
+		return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, port)
+	default:
+		return "", fmt.Errorf("unsupported database field %q", field)
+	}
+}
+
+func (c *Controller) resolveDatabasePassword(ctx context.Context, dbName, engine string) (string, error) {
+	secretKey, ok := database.PasswordSecretKey(engine)
+	if !ok {
+		return "", fmt.Errorf("%s databases have no password", engine)
+	}
+	if c.secretResolver == nil {
+		return "", fmt.Errorf("database %q needs a secret resolver to resolve its password but none is configured", dbName)
+	}
+	password, err := c.secretResolver.Resolve(ctx, dbName, secretKey)
+	if err != nil {
+		return "", fmt.Errorf("resolve password for database %q: %w", dbName, err)
+	}
+	return password, nil
+}
+
+// resolveDatabaseURL builds a full connection URL. Redis runs
+// passwordless (internal/reconcile/database's own package doc comment),
+// so its URL carries no userinfo; every other engine's own scheme string
+// is identical to store's engine identifier (store.EnginePostgres is
+// "postgres", store.EngineMongoDB is "mongodb", and so on), so no
+// separate scheme mapping is needed.
+func (c *Controller) resolveDatabaseURL(ctx context.Context, dbName, engine, host string, port int) (string, error) {
+	if engine == store.EngineRedis {
+		return fmt.Sprintf("redis://%s:%d", host, port), nil
+	}
+	password, err := c.resolveDatabasePassword(ctx, dbName, engine)
+	if err != nil {
+		return "", err
+	}
+	u := url.URL{
+		Scheme: engine,
+		User:   url.UserPassword(dbName, password),
+		Host:   fmt.Sprintf("%s:%d", host, port),
+		Path:   "/" + dbName,
+	}
+	return u.String(), nil
 }
 
 // resolveStorageEnv resolves targetID (store.DesiredService.StorageTargetID)

@@ -74,6 +74,20 @@ type appResource struct {
 	// PUT/DELETE /api/v1/apps/{name}/storage (apps_storage.go's
 	// handleSetAppStorage/handleClearAppStorage) instead.
 	StorageTargetID string `json:"storage_target_id,omitempty"`
+	// DatabaseEnv names every env var whose value resolves from a managed
+	// database's own connection details (store.DesiredService.DatabaseEnv,
+	// internal/spec's { from: "<database>.<field>" } syntax), so the UI
+	// can show which databases an app.yaml-deployed service is wired to
+	// without hand-parsing app.yaml itself. Response-only: this comes from
+	// the deploy pipeline (internal/deploy), never from this endpoint.
+	DatabaseEnv map[string]appDatabaseEnvRef `json:"database_env,omitempty"`
+	// DatabaseAttachment is the UI/CLI-facing attachment
+	// (store.DesiredService.DatabaseAttachment), distinct from DatabaseEnv
+	// above: see apps_database.go's own doc comment. Response-only, the
+	// same "shown but not settable through this endpoint" boundary
+	// StorageTargetID already establishes: set it via PUT/DELETE
+	// /api/v1/apps/{name}/database instead.
+	DatabaseAttachment *appDatabaseResource `json:"database_attachment,omitempty"`
 	// Suspended is whether the app is stopped (POST .../stop), the
 	// reconciler's own containers-only teardown, distinct from delete.
 	// Response-only: set it via POST/DELETE-shaped
@@ -95,23 +109,42 @@ type appResource struct {
 }
 
 func toAppResource(svc store.DesiredService) appResource {
+	var databaseEnv map[string]appDatabaseEnvRef
+	if len(svc.DatabaseEnv) > 0 {
+		databaseEnv = make(map[string]appDatabaseEnvRef, len(svc.DatabaseEnv))
+		for k, v := range svc.DatabaseEnv {
+			databaseEnv[k] = appDatabaseEnvRef{Database: v.Database, Field: v.Field}
+		}
+	}
+	var attachment *appDatabaseResource
+	if svc.DatabaseAttachment != nil {
+		attachment = &appDatabaseResource{
+			AppName:      svc.Name,
+			DatabaseName: svc.DatabaseAttachment.DatabaseName,
+			EnvVar:       svc.DatabaseAttachment.EnvVar,
+			Field:        svc.DatabaseAttachment.Field,
+		}
+	}
+
 	return appResource{
-		Name:            svc.Name,
-		Image:           svc.Image,
-		Port:            svc.Port,
-		Domains:         svc.Domains,
-		Env:             svc.Env,
-		Resources:       svc.Resources,
-		Health:          svc.Health,
-		Strategy:        svc.Strategy,
-		Replicas:        svc.Replicas,
-		Labels:          svc.Labels,
-		NodeID:          svc.NodeID,
-		ProjectID:       svc.ProjectID,
-		StorageTargetID: svc.StorageTargetID,
-		Suspended:       svc.Suspended,
-		AppID:           svc.AppID,
-		LogDrain:        svc.LogDrain,
+		Name:               svc.Name,
+		Image:              svc.Image,
+		Port:               svc.Port,
+		Domains:            svc.Domains,
+		Env:                svc.Env,
+		Resources:          svc.Resources,
+		Health:             svc.Health,
+		Strategy:           svc.Strategy,
+		Replicas:           svc.Replicas,
+		Labels:             svc.Labels,
+		NodeID:             svc.NodeID,
+		ProjectID:          svc.ProjectID,
+		StorageTargetID:    svc.StorageTargetID,
+		DatabaseEnv:        databaseEnv,
+		DatabaseAttachment: attachment,
+		Suspended:          svc.Suspended,
+		AppID:              svc.AppID,
+		LogDrain:           svc.LogDrain,
 	}
 }
 

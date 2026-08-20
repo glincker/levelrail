@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -42,6 +43,11 @@ type ServiceStore interface {
 	// registryCredential field (a name, spec.Build.RegistryCredential's
 	// own doc comment on why not an ID) at deploy time, in deployImage.
 	GetRegistryCredentialByName(ctx context.Context, name string) (store.RegistryCredential, error)
+	// GetDesiredDatabase resolves a { from: "<database>.<field>" } env
+	// var's database at deploy time (validateEnv), so an app referencing
+	// an unknown database fails the deploy itself rather than only
+	// surfacing later as a reconcile failure.
+	GetDesiredDatabase(ctx context.Context, name string) (*store.DesiredDatabase, error)
 }
 
 // SecretChecker is the narrow surface this package needs from
@@ -343,10 +349,18 @@ func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error)
 // validateEnv fails loudly rather than silently deploying a container
 // missing values it needs.
 //
-// { from: ... } (cross-resource references like "postgres.main.url")
-// still isn't resolvable: it needs a managed database's credentials,
-// which are themselves blocked on secret storage (TASKS.md 1.8's own
-// Postgres scope note), so this stays unsupported until that lands.
+// { from: ... } (cross-resource references like "postgres.main.url",
+// parsed by parseFromRef) resolves against a real managed database's
+// desired state: the referenced database must already exist, and the
+// requested field must be one database.SupportsField's own engine-aware
+// rules allow (e.g. redis has no username/password). Both are checked
+// here, at deploy time, so a typo'd database name or an unsupported
+// field fails the deploy itself rather than only surfacing later as a
+// reconcile failure. The actual value (host/port/credentials) is
+// resolved later, by internal/reconcile/application's
+// resolveDatabaseField, immediately before container creation, the same
+// split { secret: true } already has between this existence check and
+// the application controller's own SecretResolver.Resolve call.
 //
 // { secret: true } is resolvable now that TASKS.md 1.7's secret storage
 // exists, but only if this Pipeline has a SecretChecker configured
@@ -364,7 +378,21 @@ func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error)
 func (p *Pipeline) validateEnv(ctx context.Context, serviceName string, env map[string]spec.EnvVar) error {
 	for name, v := range env {
 		if v.From != "" {
-			return fmt.Errorf("env var %q needs cross-resource resolution ({ from: ... }), not supported until managed database credentials exist", name)
+			dbName, field, err := parseFromRef(v.From)
+			if err != nil {
+				return fmt.Errorf("env var %q: %w", name, err)
+			}
+			desiredDB, err := p.store.GetDesiredDatabase(ctx, dbName)
+			if errors.Is(err, store.ErrDatabaseNotFound) {
+				return fmt.Errorf("env var %q references database %q, which does not exist", name, dbName)
+			}
+			if err != nil {
+				return fmt.Errorf("env var %q: check database %q exists: %w", name, dbName, err)
+			}
+			if !database.SupportsField(desiredDB.Engine, field) {
+				return fmt.Errorf("env var %q: field %q is not supported for %s databases", name, field, desiredDB.Engine)
+			}
+			continue
 		}
 		if !v.Secret {
 			continue

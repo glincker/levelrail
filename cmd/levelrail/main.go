@@ -543,7 +543,7 @@ func run(logger *slog.Logger) error {
 
 	// Scheduled tasks: internal/scheduledtask.Scheduler checks, on its
 	// own tick, which tasks have a due cron schedule
-	// (store.ScheduledTask, migrations/0047_scheduled_tasks.sql) and runs
+	// (store.ScheduledTask, migrations/0048_scheduled_tasks.sql) and runs
 	// them through the same scheduledTaskRunner the manual "run now"
 	// trigger (api.WithScheduledTaskRunner above) uses. Unlike the backup
 	// scheduler just above, this needs no secretsManager gate:
@@ -1789,14 +1789,17 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 // appControllersFor builds one application.Controller per service,
 // skipping (with a warning) any whose node isn't currently reachable.
 func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) []reconcile.Controller {
-	// application.WithStorageTargets is unconditional, unlike
-	// WithSecretResolver below: resolving a StorageTarget's
-	// endpoint/region/bucket needs no master key, only its access keys
-	// do. A service with a StorageTargetID but no secretsManager still
-	// fails Reconcile loudly rather than starting half-configured.
+	// application.WithStorageTargets/WithDatabaseAttachments are both
+	// unconditional, unlike WithSecretResolver below: resolving a
+	// StorageTarget's endpoint/region/bucket, or a database's host/port,
+	// needs no master key, only credentials (a bucket's access keys, a
+	// database's password) do. A service with a StorageTargetID/
+	// DatabaseEnv but no secretsManager still fails Reconcile loudly
+	// rather than starting half-configured.
 	appOpts := []application.Option{
 		application.WithDeployRecorder(deps.telemetryDB),
 		application.WithStorageTargets(deps.db),
+		application.WithDatabaseAttachments(deps.db),
 		application.WithRegistryCredentials(deps.db),
 		application.WithProjectEnv(deps.db),
 		application.WithNetworkPrefix(deps.networkPrefix),

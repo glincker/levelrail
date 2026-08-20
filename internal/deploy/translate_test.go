@@ -231,3 +231,64 @@ func TestToDesiredService_InvalidHealthPropagatesError(t *testing.T) {
 		t.Fatal("toDesiredService() error = nil, want the health translation error to propagate")
 	}
 }
+
+func TestParseFromRef(t *testing.T) {
+	tests := []struct {
+		name      string
+		in        string
+		wantDB    string
+		wantField string
+		wantErr   bool
+	}{
+		{name: "two segments", in: "main.url", wantDB: "main", wantField: "url"},
+		{name: "three segments, engine hint dropped", in: "postgres.main.url", wantDB: "main", wantField: "url"},
+		{name: "four segments, only last two matter", in: "cluster.postgres.main.host", wantDB: "main", wantField: "host"},
+		{name: "empty", in: "", wantErr: true},
+		{name: "single segment", in: "main", wantErr: true},
+		{name: "empty database segment", in: ".url", wantErr: true},
+		{name: "empty field segment", in: "main.", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotDB, gotField, err := parseFromRef(tt.in)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("parseFromRef(%q) error = %v, wantErr %v", tt.in, err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
+			}
+			if gotDB != tt.wantDB || gotField != tt.wantField {
+				t.Errorf("parseFromRef(%q) = (%q, %q), want (%q, %q)", tt.in, gotDB, gotField, tt.wantDB, tt.wantField)
+			}
+		})
+	}
+}
+
+func TestDatabaseEnvRefs(t *testing.T) {
+	env := map[string]spec.EnvVar{
+		"DATABASE_URL": {From: "postgres.main.url"},
+		"CACHE_HOST":   {From: "cache.host"},
+		"LOG_LEVEL":    {Value: "debug"},
+		"API_KEY":      {Secret: true, Required: true},
+	}
+
+	got, err := databaseEnvRefs(env)
+	if err != nil {
+		t.Fatalf("databaseEnvRefs() error = %v", err)
+	}
+	want := map[string]store.DatabaseEnvRef{
+		"DATABASE_URL": {Database: "main", Field: "url"},
+		"CACHE_HOST":   {Database: "cache", Field: "host"},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("databaseEnvRefs() = %+v, want %+v", got, want)
+	}
+}
+
+func TestDatabaseEnvRefs_InvalidFrom(t *testing.T) {
+	env := map[string]spec.EnvVar{"DATABASE_URL": {From: "main"}}
+	if _, err := databaseEnvRefs(env); err == nil {
+		t.Fatal("databaseEnvRefs() error = nil, want a single-segment from to be rejected")
+	}
+}

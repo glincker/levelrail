@@ -95,6 +95,25 @@ export interface AppDetail {
   // (useSetAppStorage/useClearAppStorage), the same node_id/project_id
   // shape just above.
   storage_target_id?: string
+  // database_env carries `omitempty` on the Go side and is response-only
+  // (internal/api/apps.go's appResource own doc comment): every env var
+  // this app.yaml-deployed service resolves from a managed database
+  // (internal/spec's own { from: "<database>.<field>" } syntax), keyed by
+  // env var name. Read-only here on purpose: it comes from the deploy
+  // pipeline, not this endpoint. See database_attachment below for the
+  // settable, single-attachment counterpart.
+  database_env?: Record<string, { database: string; field: string }>
+  // database_attachment carries `omitempty` on the Go side and is
+  // response-only, the same node_id/project_id/storage_target_id shape
+  // above: which managed database this app resolves one connection env
+  // var from, undefined meaning none attached. Set it via PUT/DELETE
+  // /api/v1/apps/{name}/database (useSetAppDatabase/useClearAppDatabase).
+  database_attachment?: {
+    app_name?: string
+    database_name: string
+    env_var: string
+    field: string
+  }
   // suspended is response-only (internal/api/apps.go's appResource own
   // doc comment): set it via POST /api/v1/apps/{name}/stop and .../start
   // (useStopApp/useStartApp), the same node_id/project_id shape above.

@@ -329,6 +329,24 @@ type ScheduledTaskRequest struct {
 	Enabled  bool     `json:"enabled"`
 }
 
+// SetAppDatabaseRequest mirrors internal/api's setAppDatabaseRequest
+// (apps_database.go). EnvVar and Field are both optional: the server
+// defaults them ("DATABASE_URL"/"url") when left blank.
+type SetAppDatabaseRequest struct {
+	DatabaseName string `json:"database_name"`
+	EnvVar       string `json:"env_var,omitempty"`
+	Field        string `json:"field,omitempty"`
+}
+
+// AppDatabaseResource mirrors internal/api's appDatabaseResource:
+// PUT /api/v1/apps/{name}/database's response body.
+type AppDatabaseResource struct {
+	AppName      string `json:"app_name,omitempty"`
+	DatabaseName string `json:"database_name"`
+	EnvVar       string `json:"env_var"`
+	Field        string `json:"field"`
+}
+
 // apiErrorBody is the JSON shape every non-2xx response from the
 // control plane returns (internal/api/respond.go's own apiError).
 type apiErrorBody struct {
