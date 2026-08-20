@@ -22,6 +22,8 @@ func TestContainerPort(t *testing.T) {
 		{engine: store.EngineRedis, want: 6379, wantOK: true},
 		{engine: store.EngineMySQL, want: 3306, wantOK: true},
 		{engine: store.EngineMongoDB, want: 27017, wantOK: true},
+		{engine: store.EngineMariaDB, want: 3306, wantOK: true},
+		{engine: store.EngineKeyDB, want: 6379, wantOK: true},
 		{engine: "not-a-real-engine", want: 0, wantOK: false},
 	}
 	for _, tt := range tests {
@@ -43,7 +45,9 @@ func TestPasswordSecretKey(t *testing.T) {
 		{engine: store.EnginePostgres, want: PostgresPasswordEnvKey, wantOK: true},
 		{engine: store.EngineMySQL, want: MySQLPasswordEnvKey, wantOK: true},
 		{engine: store.EngineMongoDB, want: MongoPasswordEnvKey, wantOK: true},
+		{engine: store.EngineMariaDB, want: MariaDBPasswordEnvKey, wantOK: true},
 		{engine: store.EngineRedis, want: "", wantOK: false},
+		{engine: store.EngineKeyDB, want: "", wantOK: false},
 		{engine: "not-a-real-engine", want: "", wantOK: false},
 	}
 	for _, tt := range tests {
@@ -76,6 +80,17 @@ func TestSupportsField(t *testing.T) {
 		{engine: store.EngineRedis, field: "username", want: false},
 		{engine: store.EngineRedis, field: "password", want: false},
 		{engine: store.EngineRedis, field: "database", want: false},
+
+		{engine: store.EngineMariaDB, field: "url", want: true},
+		{engine: store.EngineMariaDB, field: "username", want: true},
+		{engine: store.EngineMariaDB, field: "password", want: true},
+		{engine: store.EngineMariaDB, field: "database", want: true},
+
+		{engine: store.EngineKeyDB, field: "url", want: true},
+		{engine: store.EngineKeyDB, field: "port", want: true},
+		{engine: store.EngineKeyDB, field: "username", want: false},
+		{engine: store.EngineKeyDB, field: "password", want: false},
+		{engine: store.EngineKeyDB, field: "database", want: false},
 
 		{engine: "not-a-real-engine", field: "url", want: false},
 	}
