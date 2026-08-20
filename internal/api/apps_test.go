@@ -232,6 +232,63 @@ func TestHandleCreateApp(t *testing.T) {
 	}
 }
 
+// TestHandleCreateApp_RecordsDeployAttempt covers the gap found via live
+// testing: the existing-image path deserves a deploy_attempts row for
+// history just like any later redeploy (handleTriggerDeploy already
+// gets this via recordPlainDeployAttempt); before this, an app's very
+// first deploy was invisible in its own deploy history forever.
+func TestHandleCreateApp_RecordsDeployAttempt(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	attempts, err := db.ListDeployAttempts(ctx, "web")
+	if err != nil {
+		t.Fatalf("ListDeployAttempts() error = %v", err)
+	}
+	if len(attempts) != 1 {
+		t.Fatalf("expected 1 deploy attempt recorded, got %d", len(attempts))
+	}
+	if attempts[0].Image != "levelrail/web:1" {
+		t.Errorf("Image = %q, want %q", attempts[0].Image, "levelrail/web:1")
+	}
+	if attempts[0].Status != store.DeployAttemptStatusSucceeded {
+		t.Errorf("Status = %q, want %q", attempts[0].Status, store.DeployAttemptStatusSucceeded)
+	}
+}
+
+// TestHandleCreateApp_PendingPlaceholder_NoDeployAttemptRecorded covers
+// the git-build path: cmd/levelrail-cli's pendingImageTag creates with
+// an image_repo + ":pending" placeholder that was never actually
+// running, replaced by the follow-up POST .../builds call, whose own
+// beginBuildDeployAttempt records the real history entry. Recording
+// here too would add a second, misleading "succeeded" row.
+func TestHandleCreateApp_PendingPlaceholder_NoDeployAttemptRecorded(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:pending","port":3000}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	attempts, err := db.ListDeployAttempts(ctx, "web")
+	if err != nil {
+		t.Fatalf("ListDeployAttempts() error = %v", err)
+	}
+	if len(attempts) != 0 {
+		t.Errorf("expected 0 deploy attempts recorded for a :pending placeholder, got %d", len(attempts))
+	}
+}
+
 // TestHandleCreateApp_StrategyAndReplicas covers both an explicit value
 // and the omitted-field case, which must resolve to store.DefaultDeployStrategy/
 // store.DefaultReplicas exactly like a service saved without these fields
