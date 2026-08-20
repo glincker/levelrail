@@ -83,21 +83,16 @@ const (
 	keydbCLIBin = "keydb-cli"
 )
 
-// redisDisableAutoSaveCmd/keydbDisableAutoSaveCmd clear the running
-// session's own save points before restoreRedisLike writes the restored
-// RDB file, so the SIGTERM handler's own configured snapshot on the way
-// down (true by default for these images whenever a save point exists)
-// doesn't overwrite it a moment before the process exits; a real failure
-// mode this guards against, caught by TestContainerRestorer_Restore_Redis_Live.
+// redisDisableAutoSaveCmd/keydbDisableAutoSaveCmd clear save points so the
+// SIGTERM shutdown snapshot doesn't overwrite the restored RDB file a
+// moment before the process exits.
 var (
 	redisDisableAutoSaveCmd = []string{redisCLIBin, "CONFIG", "SET", "save", ""}
 	keydbDisableAutoSaveCmd = []string{keydbCLIBin, "CONFIG", "SET", "save", ""}
 )
 
-// dragonflyDisableAutoSaveCmd is redisDisableAutoSaveCmd's Dragonfly
-// counterpart: Dragonfly's automatic shutdown snapshot is gated by
-// whether dbfilename is configured, not by Redis-style save points, so
-// clearing dbfilename (not "save") is what actually suppresses it here.
+// dragonflyDisableAutoSaveCmd suppresses Dragonfly's shutdown snapshot,
+// which is gated by dbfilename rather than a Redis-style save point.
 var dragonflyDisableAutoSaveCmd = []string{redisCLIBin, "CONFIG", "SET", "dbfilename", ""}
 
 // restoreRedisLike loads an RDB snapshot the only way Redis-protocol
@@ -179,9 +174,7 @@ var mariadbRestoreCmd = []string{"sh", "-c", `mariadb -uroot -p"$MARIADB_ROOT_PA
 // postgresRestoreCmd and mysqlRestoreCmd achieve their own way.
 var mongoRestoreCmd = []string{"sh", "-c", `exec mongorestore --archive --drop --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin`}
 
-// clickhouseRestoreCmd drops and recreates $CLICKHOUSE_DB up front (the
-// same full-replace reasoning mysqlRestoreCmd gives), then feeds
-// clickhouseDumpCmd's own CREATE TABLE + INSERT statements into a second
-// client connected with that database as default, so the dump's
-// unqualified INSERT INTO statements resolve against it.
+// clickhouseRestoreCmd drops and recreates $CLICKHOUSE_DB (same
+// full-replace reasoning as mysqlRestoreCmd), then reconnects with it as
+// default so the dump's unqualified INSERT INTO statements resolve.
 var clickhouseRestoreCmd = []string{"sh", "-c", `clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --query "DROP DATABASE IF EXISTS $CLICKHOUSE_DB; CREATE DATABASE $CLICKHOUSE_DB" && exec clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --database "$CLICKHOUSE_DB"`}

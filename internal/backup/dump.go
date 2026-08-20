@@ -98,14 +98,9 @@ var keydbDumpCmd = []string{"keydb-cli", "--rdb", "-"}
 // file back. Dragonfly ships redis-cli for Redis-protocol compatibility.
 var dragonflyDumpCmd = []string{"sh", "-c", "redis-cli SAVE RDB dump.rdb && exec cat /data/dump.rdb"}
 
-// clickhouseDumpCmd produces a plain, restorable SQL dump: for every
-// table in $CLICKHOUSE_DB, its DDL (SHOW CREATE TABLE) followed by its
-// rows re-rendered as INSERT statements (FORMAT SQLInsert). ClickHouse's
-// native BACKUP/RESTORE statements were deliberately not used here: they
-// require a server-side named backup disk configured in advance
-// (clickhouse-server's own config file), which this controller does not
-// provision, so BACKUP would fail on every managed ClickHouse container
-// as shipped today.
+// clickhouseDumpCmd dumps each table's DDL plus rows as INSERT
+// statements rather than native BACKUP/RESTORE, which needs a
+// server-side named backup disk this controller never provisions.
 var clickhouseDumpCmd = []string{"sh", "-c",
 	"set -e\n" +
 		"for t in $(clickhouse-client --user \"$CLICKHOUSE_USER\" --password \"$CLICKHOUSE_PASSWORD\" --query \"SHOW TABLES FROM $CLICKHOUSE_DB\"); do\n" +

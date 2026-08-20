@@ -251,7 +251,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 
 	switch desired.Engine {
 	case store.EngineRedis:
-		return c.reconcileEngine(ctx, desired, nil, redisDataPath, redisContainerPort)
+		return c.reconcileEngine(ctx, desired, nil, nil, redisDataPath, redisContainerPort)
 
 	case store.EnginePostgres:
 		if c.postgresCreds == nil {
@@ -265,7 +265,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"POSTGRES_USER":     c.postgresCreds.Username,
 			"POSTGRES_PASSWORD": c.postgresCreds.Password,
 		}
-		return c.reconcileEngine(ctx, desired, env, postgresDataPath, postgresContainerPort)
+		return c.reconcileEngine(ctx, desired, env, nil, postgresDataPath, postgresContainerPort)
 
 	case store.EngineMySQL:
 		if c.mysqlCreds == nil {
@@ -286,7 +286,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"MYSQL_USER":          c.mysqlCreds.Username,
 			"MYSQL_PASSWORD":      c.mysqlCreds.Password,
 		}
-		return c.reconcileEngine(ctx, desired, env, mysqlDataPath, mysqlContainerPort)
+		return c.reconcileEngine(ctx, desired, env, nil, mysqlDataPath, mysqlContainerPort)
 
 	case store.EngineMongoDB:
 		if c.mongoCreds == nil {
@@ -298,7 +298,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"MONGO_INITDB_ROOT_USERNAME": c.mongoCreds.Username,
 			"MONGO_INITDB_ROOT_PASSWORD": c.mongoCreds.Password,
 		}
-		return c.reconcileEngine(ctx, desired, env, mongoDataPath, mongoContainerPort)
+		return c.reconcileEngine(ctx, desired, env, nil, mongoDataPath, mongoContainerPort)
 
 	case store.EngineMariaDB:
 		if c.mariadbCreds == nil {
@@ -319,7 +319,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		// MariaDB is a MySQL-protocol-compatible fork: same data
 		// directory and port as the mysql image, reused directly rather
 		// than duplicating identical constants under a new name.
-		return c.reconcileEngine(ctx, desired, env, mysqlDataPath, mysqlContainerPort)
+		return c.reconcileEngine(ctx, desired, env, nil, mysqlDataPath, mysqlContainerPort)
 
 	case store.EngineKeyDB:
 		// KeyDB is a Redis-protocol-compatible drop-in fork: same
@@ -328,12 +328,13 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		// under a new name. See the package doc comment for why an
 		// unauthenticated Redis-family database is an accepted posture
 		// here.
-		return c.reconcileEngine(ctx, desired, nil, redisDataPath, redisContainerPort)
+		return c.reconcileEngine(ctx, desired, nil, nil, redisDataPath, redisContainerPort)
 
 	case store.EngineDragonfly:
-		// Dragonfly is also Redis-protocol-compatible and passwordless by
-		// default, same reasoning as the KeyDB case above.
-		return c.reconcileEngine(ctx, desired, nil, redisDataPath, redisContainerPort)
+		// dragonflyCommand pins dbfilename so restoreRedisLike's
+		// /data/dump.rdb write actually gets loaded on restart; Dragonfly's
+		// own default (dump-{timestamp}) never matches that path.
+		return c.reconcileEngine(ctx, desired, nil, dragonflyCommand, redisDataPath, redisContainerPort)
 
 	case store.EngineClickHouse:
 		if c.clickhouseCreds == nil {
@@ -345,7 +346,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"CLICKHOUSE_PASSWORD":                  c.clickhouseCreds.Password,
 			"CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT": "1",
 		}
-		return c.reconcileEngine(ctx, desired, env, clickhouseDataPath, clickhouseContainerPort)
+		return c.reconcileEngine(ctx, desired, env, nil, clickhouseDataPath, clickhouseContainerPort)
 
 	default:
 		err := fmt.Errorf("unrecognized engine %q", desired.Engine)
@@ -357,7 +358,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 // and by Postgres once credentials are supplied. It ensures the
 // database's data volume exists, then ensures the right container exists
 // and is running.
-func (c *Controller) reconcileEngine(ctx context.Context, desired *store.DesiredDatabase, env map[string]string, dataPath string, containerPort int) (reconcile.Result, error) {
+func (c *Controller) reconcileEngine(ctx context.Context, desired *store.DesiredDatabase, env map[string]string, command []string, dataPath string, containerPort int) (reconcile.Result, error) {
 	image := dockerImageFor(desired.Engine) + ":" + versionOrDefault(desired.Version)
 	target := containerName(c.dbName)
 	volName := dataVolumeName(c.dbName)
@@ -375,6 +376,7 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		Name:    target,
 		Image:   image,
 		Env:     env,
+		Command: command,
 		Volumes: []docker.VolumeMount{{Name: volName, ContainerPath: dataPath}},
 	}
 	if c.meshDNSAddr != "" {
@@ -516,6 +518,12 @@ var dockerImageMapping = map[string]string{
 	// clickhouse/clickhouse-server is what upstream publishes.
 	store.EngineClickHouse: "clickhouse/clickhouse-server",
 }
+
+// dragonflyCommand overrides the image's default CMD: its entrypoint.sh
+// prepends the "dragonfly" binary itself whenever the first arg starts
+// with "-", so this is passed as flags only, matching Dragonfly's own
+// documented invocation (--dbfilename without a "dragonfly" prefix).
+var dragonflyCommand = []string{"--dbfilename", "dump"}
 
 // dockerImageFor returns the Docker image name for engine, applying
 // dockerImageMapping where the registry id and image name diverge.
