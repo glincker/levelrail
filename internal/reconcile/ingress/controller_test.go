@@ -26,6 +26,8 @@ type fakeStore struct {
 	staticSitesErr error
 	settings       store.IngressSettings
 	settingsErr    error
+	dnsSettings    store.CloudflareDNSSettings
+	dnsSettingsErr error
 }
 
 func (f *fakeStore) ListDesiredServices(_ context.Context) ([]store.DesiredService, error) {
@@ -53,6 +55,17 @@ func (f *fakeStore) GetIngressSettings(_ context.Context) (store.IngressSettings
 		return store.IngressSettings{}, f.settingsErr
 	}
 	return f.settings, nil
+}
+
+// GetCloudflareDNSSettings mirrors GetIngressSettings' own "zero value
+// unless a test opts in" convention: Enabled defaults to false, matching
+// a fresh migration's seeded row, so tests written before this method
+// existed are unaffected.
+func (f *fakeStore) GetCloudflareDNSSettings(_ context.Context) (store.CloudflareDNSSettings, error) {
+	if f.dnsSettingsErr != nil {
+		return store.CloudflareDNSSettings{}, f.dnsSettingsErr
+	}
+	return f.dnsSettings, nil
 }
 
 // fakeRuntime implements docker.Runtime with an in-memory container set,
