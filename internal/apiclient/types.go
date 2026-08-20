@@ -283,6 +283,35 @@ type TestNotificationChannelRequest struct {
 	NotifyURL string `json:"notify_url"`
 }
 
+// ScheduledTaskResource mirrors internal/api's scheduledTaskResource
+// (internal/api/scheduled_tasks.go). Command is a real argv (no shell),
+// and LastRun* describe only the single most recent run in place: there
+// is no separate run-history endpoint.
+type ScheduledTaskResource struct {
+	ID          string   `json:"id,omitempty"`
+	ServiceName string   `json:"service_name,omitempty"`
+	Command     []string `json:"command"`
+	Schedule    string   `json:"schedule"`
+	Enabled     bool     `json:"enabled"`
+
+	LastRunAt     *time.Time `json:"last_run_at,omitempty"`
+	LastRunStatus string     `json:"last_run_status,omitempty"`
+	LastRunOutput string     `json:"last_run_output,omitempty"`
+
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+}
+
+// ScheduledTaskRequest mirrors the fields internal/api's
+// scheduledTaskResource actually reads from a create/update request
+// body (Command, Schedule, Enabled); ID and ServiceName always come
+// from the URL, never the body.
+type ScheduledTaskRequest struct {
+	Command  []string `json:"command"`
+	Schedule string   `json:"schedule"`
+	Enabled  bool     `json:"enabled"`
+}
+
 // apiErrorBody is the JSON shape every non-2xx response from the
 // control plane returns (internal/api/respond.go's own apiError).
 type apiErrorBody struct {
