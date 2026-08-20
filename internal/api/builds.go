@@ -117,6 +117,11 @@ type triggerBuildBuildInput struct {
 	// runs against the checkout root), so handleTriggerBuild rejects a
 	// railpack request that sets one rather than silently ignoring it.
 	Path string `json:"path,omitempty"`
+	// BaseDirectory scopes the build context (and Path, for dockerfile)
+	// to a subdirectory of the checkout, for a monorepo where this
+	// service doesn't live at the repo root. Meaningful for dockerfile,
+	// railpack, and static; rejected for image below.
+	BaseDirectory string `json:"base_directory,omitempty"`
 	// Image is required for, and only meaningful for, build.type: image:
 	// a prebuilt registry reference deployed as-is, no git checkout or
 	// build at all (internal/deploy.Pipeline.deployImage). repo_url/ref
@@ -256,6 +261,10 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "build.image is required for build.type \"image\"")
 			return
 		}
+		if req.Build.BaseDirectory != "" {
+			writeError(w, http.StatusBadRequest, "build.base_directory is not meaningful for build.type \"image\"")
+			return
+		}
 	} else {
 		if req.RepoURL == "" {
 			writeError(w, http.StatusBadRequest, "repo_url is required")
@@ -280,7 +289,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		imageRepo = name
 	}
 
-	buildCfg := spec.Build{Type: buildType, Path: req.Build.Path}
+	buildCfg := spec.Build{Type: buildType, Path: req.Build.Path, BaseDirectory: req.Build.BaseDirectory}
 	if buildType == spec.BuildImage {
 		buildCfg = spec.Build{Type: buildType, Image: req.Build.Image}
 	}

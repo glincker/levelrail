@@ -19,17 +19,18 @@ import (
 // logic) is a pure function over plain data, testable without a
 // flag.FlagSet in the loop at all.
 type createFlags struct {
-	name       string
-	image      string
-	port       int
-	repo       string
-	ref        string
-	dockerfile string
-	imageRepo  string
-	file       string
-	service    string
-	yes        bool
-	jsonOut    bool
+	name          string
+	image         string
+	port          int
+	repo          string
+	ref           string
+	dockerfile    string
+	baseDirectory string
+	imageRepo     string
+	file          string
+	service       string
+	yes           bool
+	jsonOut       bool
 }
 
 // createPlan is planFromFlags's output: exactly the HTTP requests
@@ -133,7 +134,7 @@ func planGitBuildFlags(f createFlags, detected detectedGit) (createPlan, error) 
 			RepoURL:   repo,
 			Ref:       ref,
 			ImageRepo: f.imageRepo,
-			Build:     buildTriggerRequestBuild{Path: f.dockerfile},
+			Build:     buildTriggerRequestBuild{Path: f.dockerfile, BaseDirectory: f.baseDirectory},
 		},
 	}, nil
 }
@@ -196,6 +197,10 @@ func planFromFileDockerfile(f createFlags, key string, svc spec.Service, detecte
 	if dockerfile == "" {
 		dockerfile = svc.Build.Path
 	}
+	baseDirectory := f.baseDirectory
+	if baseDirectory == "" {
+		baseDirectory = svc.Build.BaseDirectory
+	}
 
 	resources, err := toServiceResources(svc.Resources)
 	if err != nil {
@@ -220,7 +225,7 @@ func planFromFileDockerfile(f createFlags, key string, svc spec.Service, detecte
 			RepoURL:   repo,
 			Ref:       ref,
 			ImageRepo: f.imageRepo,
-			Build:     buildTriggerRequestBuild{Path: dockerfile},
+			Build:     buildTriggerRequestBuild{Path: dockerfile, BaseDirectory: baseDirectory},
 		},
 	}, nil
 }
@@ -524,6 +529,7 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.StringVar(&f.repo, "repo", "", "git repository URL to build from (git-build path); auto-detected from the current directory's git remote \"origin\" when omitted")
 	fs.StringVar(&f.ref, "ref", "", "git ref (branch) to build from (git-build path); defaults to the current directory's branch, then \"main\"")
 	fs.StringVar(&f.dockerfile, "dockerfile", "", "Dockerfile path relative to the repo root (git-build path); defaults to \"Dockerfile\" at the repo root")
+	fs.StringVar(&f.baseDirectory, "base-directory", "", "subdirectory of the repo to build from, for a monorepo (git-build path); defaults to the repo root")
 	fs.StringVar(&f.imageRepo, "image-repo", "", "image name without a tag, e.g. registry.example.com/org/app (git-build path)")
 	fs.StringVar(&f.file, "file", "", "path to an app.yaml (or equivalent) spec file; an alternative to the flag-only paths above")
 	fs.StringVar(&f.service, "service", "", "which service in --file's services: map to create, required when it declares more than one")
@@ -581,11 +587,12 @@ Git-build path (flags):
   --ref string            git ref/branch (default: current branch, then "main")
   --image-repo string     image name without a tag (required)
   --dockerfile string   Dockerfile path relative to the repo root (default: "Dockerfile")
+  --base-directory string  subdirectory of the repo to build from, for a monorepo (default: repo root)
 
 Manifest path:
   --file string           path to an app.yaml (or equivalent) spec file
   --service string      which service to create, if the file declares more than one
-  --name, --port, --repo, --ref, --dockerfile, --image-repo above all override
+  --name, --port, --repo, --ref, --dockerfile, --base-directory, --image-repo above all override
     the file's own values or supply what it cannot express (repo location, image name)
   build.type: dockerfile builds from git (repo/ref/image-repo required, as above);
     build.type: image creates the app directly with build.image, no build triggered
