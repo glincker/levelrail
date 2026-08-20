@@ -10,6 +10,26 @@ import (
 	"testing"
 )
 
+// newChannelCreateEchoServer starts a test server that decodes a create-channel
+// request into gotBody and echoes it back as the created channel resource.
+// gotPath may be nil when the caller doesn't need the request path.
+func newChannelCreateEchoServer(t *testing.T, id string, gotBody *createNotificationChannelRequest, gotPath *string) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if gotPath != nil {
+			*gotPath = r.URL.Path
+		}
+		if err := json.NewDecoder(r.Body).Decode(gotBody); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(notificationChannelResource{
+			ID: id, Name: gotBody.Name, Kind: gotBody.Kind, NotifyURL: gotBody.NotifyURL, Enabled: *gotBody.Enabled,
+		})
+	}))
+}
+
 func TestRun_ChannelsList(t *testing.T) {
 	var gotPath string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -37,17 +57,7 @@ func TestRun_ChannelsList(t *testing.T) {
 func TestRun_ChannelsCreate_NotifyURL(t *testing.T) {
 	var gotPath string
 	var gotBody createNotificationChannelRequest
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath = r.URL.Path
-		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
-			t.Fatalf("decode request: %v", err)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_ = json.NewEncoder(w).Encode(notificationChannelResource{
-			ID: "chn_2", Name: gotBody.Name, Kind: gotBody.Kind, NotifyURL: gotBody.NotifyURL, Enabled: *gotBody.Enabled,
-		})
-	}))
+	srv := newChannelCreateEchoServer(t, "chn_2", &gotBody, &gotPath)
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
@@ -74,16 +84,7 @@ func TestRun_ChannelsCreate_NotifyURL(t *testing.T) {
 // parsePushoverCreds expects, without the caller hand-constructing it.
 func TestRun_ChannelsCreate_PushoverFlags(t *testing.T) {
 	var gotBody createNotificationChannelRequest
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
-			t.Fatalf("decode request: %v", err)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_ = json.NewEncoder(w).Encode(notificationChannelResource{
-			ID: "chn_3", Name: gotBody.Name, Kind: gotBody.Kind, NotifyURL: gotBody.NotifyURL, Enabled: *gotBody.Enabled,
-		})
-	}))
+	srv := newChannelCreateEchoServer(t, "chn_3", &gotBody, nil)
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
@@ -116,16 +117,7 @@ func TestRun_ChannelsCreate_PushoverFlags(t *testing.T) {
 // backend's own convention for a pagerduty channel.
 func TestRun_ChannelsCreate_PagerDutyRoutingKeyFlag(t *testing.T) {
 	var gotBody createNotificationChannelRequest
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
-			t.Fatalf("decode request: %v", err)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_ = json.NewEncoder(w).Encode(notificationChannelResource{
-			ID: "chn_4", Name: gotBody.Name, Kind: gotBody.Kind, NotifyURL: gotBody.NotifyURL, Enabled: *gotBody.Enabled,
-		})
-	}))
+	srv := newChannelCreateEchoServer(t, "chn_4", &gotBody, nil)
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
@@ -143,16 +135,7 @@ func TestRun_ChannelsCreate_PagerDutyRoutingKeyFlag(t *testing.T) {
 
 func TestRun_ChannelsCreate_TeamsWebhookURL(t *testing.T) {
 	var gotBody createNotificationChannelRequest
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
-			t.Fatalf("decode request: %v", err)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_ = json.NewEncoder(w).Encode(notificationChannelResource{
-			ID: "chn_5", Name: gotBody.Name, Kind: gotBody.Kind, NotifyURL: gotBody.NotifyURL, Enabled: *gotBody.Enabled,
-		})
-	}))
+	srv := newChannelCreateEchoServer(t, "chn_5", &gotBody, nil)
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
