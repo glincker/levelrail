@@ -30,11 +30,11 @@ type createFlags struct {
 	// buildArgs backs --build-arg (repeatable KEY=VALUE), only meaningful
 	// alongside --build-type dockerfile. See stringMapFlag (flagutil.go).
 	buildArgs map[string]string
-	imageRepo     string
-	file          string
-	service       string
-	yes           bool
-	jsonOut       bool
+	imageRepo string
+	file      string
+	service   string
+	yes       bool
+	jsonOut   bool
 
 	// attachDatabase, attachDatabaseEnvVar, attachDatabaseField back
 	// --attach-database and its two optional refinements: a post-create
