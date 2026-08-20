@@ -867,6 +867,25 @@ func TestController_Reconcile_Dragonfly_UsesDragonflyDBImage(t *testing.T) {
 	}
 }
 
+// TestController_Reconcile_Dragonfly_SetsDbfilenameCommand guards the
+// restore data-loss fix: Dragonfly defaults to dbfilename
+// "dump-{timestamp}", not "dump.rdb", so without this override
+// restoreRedisLike's /data/dump.rdb write is never loaded back on
+// restart and Restore silently no-ops.
+func TestController_Reconcile_Dragonfly_SetsDbfilenameCommand(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineDragonfly, Version: "v1.27.1"}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	wantCommand := []string{"--dbfilename", "dump"}
+	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {
+		t.Errorf("created command = %v, want %v", rt.lastCreateSpec.Command, wantCommand)
+	}
+}
+
 func TestController_Reconcile_ClickHouse_AlwaysCredentialsBlocked(t *testing.T) {
 	rt := newFakeRuntime()
 	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineClickHouse, Version: "24.8"}
