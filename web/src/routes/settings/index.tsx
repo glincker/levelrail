@@ -8,6 +8,7 @@ import {
   UsersIcon,
   GithubLogoIcon,
   GitlabLogoIcon,
+  GitBranchIcon,
   WebhooksLogoIcon,
   CloudArrowUpIcon,
   CloudCheckIcon,
@@ -91,6 +92,12 @@ const sections: SettingsSection[] = [
         icon: GitlabLogoIcon,
         title: 'GitLab App',
         description: 'gitlab.com or self-hosted project access for git-based deploys.',
+      },
+      {
+        to: '/settings/bitbucket-app',
+        icon: GitBranchIcon,
+        title: 'Bitbucket App',
+        description: 'Bitbucket Cloud repository access for git-based deploys.',
       },
       {
         to: '/settings/notification-channels',

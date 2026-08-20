@@ -156,7 +156,7 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ev, err := webhook.ParsePushEvent(body)
+	ev, err := webhook.ParsePushEventForProvider(body, r.Header.Get("X-Event-Key"))
 	if err != nil {
 		rt.logger.Warn("api: git push webhook: malformed payload", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusBadRequest, "malformed payload")
@@ -240,15 +240,23 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 }
 
 // verifyGitPushWebhookAuth checks an incoming push webhook request
-// against secret, GitHub's or GitLab's own scheme depending on which
-// header is present. GitHub signs the body (X-Hub-Signature-256, an
-// HMAC-SHA256 hex digest, webhook.VerifySignature); GitLab instead sends
-// the configured secret back verbatim (X-Gitlab-Token, checked with a
-// constant-time comparison since it's a direct secret comparison, not a
-// signature). Neither header present, or a mismatch, fails closed.
+// against secret, whichever of GitHub's, GitLab's, or Bitbucket's own
+// scheme the request's headers indicate. GitHub signs the body
+// (X-Hub-Signature-256, an HMAC-SHA256 hex digest,
+// webhook.VerifySignature); GitLab instead sends the configured secret
+// back verbatim (X-Gitlab-Token, checked with a constant-time comparison
+// since it's a direct secret comparison, not a signature); Bitbucket
+// signs the body the same HMAC-SHA256 way GitHub does, over the
+// identical "sha256=<hex>" wire format, just under a header name with
+// no "-256" suffix (X-Hub-Signature), so webhook.VerifySignature's own
+// parsing is reused unchanged for it. No known-header case present, or
+// a mismatch, fails closed.
 func verifyGitPushWebhookAuth(secret string, body []byte, header http.Header) bool {
 	if token := header.Get("X-Gitlab-Token"); token != "" {
 		return secret != "" && subtle.ConstantTimeCompare([]byte(token), []byte(secret)) == 1
 	}
-	return webhook.VerifySignature([]byte(secret), body, header.Get("X-Hub-Signature-256"))
+	if sig := header.Get("X-Hub-Signature-256"); sig != "" {
+		return webhook.VerifySignature([]byte(secret), body, sig)
+	}
+	return webhook.VerifySignature([]byte(secret), body, header.Get("X-Hub-Signature"))
 }

@@ -298,6 +298,7 @@ type Store interface {
 	GitSourceStore
 	GitHubAppStore
 	GitLabAppStore
+	BitbucketAppStore
 	OAuthSettingsStore
 	OAuthIdentityStore
 	EmailSettingsStore

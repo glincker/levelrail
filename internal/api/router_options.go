@@ -102,6 +102,14 @@ func WithGitLabAppSecrets(s GitLabAppSecrets) Option {
 	return func(rt *Router) { rt.gitlabAppSecrets = s }
 }
 
+// WithBitbucketAppSecrets enables the Bitbucket App routes that read or
+// write a credential (connect, connect-start, callback, repo/branch
+// listing, use-as-source). Without one configured, those return 501;
+// GET/DELETE /api/v1/bitbucket-app work regardless.
+func WithBitbucketAppSecrets(s BitbucketAppSecrets) Option {
+	return func(rt *Router) { rt.bitbucketAppSecrets = s }
+}
+
 // WithGitHubAppManifestConfig overrides the permissions/events a fresh
 // App registration requests (githubapp.BuildManifest's own doc
 // comment). Without one configured, NewRouter defaults to

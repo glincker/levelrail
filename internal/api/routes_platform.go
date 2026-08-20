@@ -301,6 +301,19 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/gitlab-app/projects", rt.requireAbility(AbilityReadSensitive, rt.handleListGitLabAppProjects))
 	mux.HandleFunc("POST /api/v1/gitlab-app/projects/{id}/use-as-source", rt.requireAbility(AbilityWriteSensitive, rt.handleUseGitLabProjectAsSource))
 
+	// Bitbucket App: the OAuth-consumer counterpart of the GitLab App
+	// routes above, same ability tiers for the same reasons, same
+	// two-step "configure, then authorize" shape. Cloud only, no
+	// instance_url (docs/design/git-provider-integrations.md section 3).
+	mux.HandleFunc("GET /api/v1/bitbucket-app", rt.requireAbility(AbilityRoot, rt.handleGetBitbucketAppStatus))
+	mux.HandleFunc("PUT /api/v1/bitbucket-app", rt.requireAbility(AbilityRoot, rt.handleConnectBitbucketApp))
+	mux.HandleFunc("DELETE /api/v1/bitbucket-app", rt.requireAbility(AbilityRoot, rt.handleDisconnectBitbucketApp))
+	mux.HandleFunc("GET /api/v1/bitbucket-app/connect", rt.requireAbility(AbilityRoot, rt.handleStartBitbucketAppConnect))
+	mux.HandleFunc("GET /api/v1/bitbucket-app/callback", rt.requireAbility(AbilityRoot, rt.handleBitbucketAppCallback))
+	mux.HandleFunc("GET /api/v1/bitbucket-app/repos", rt.requireAbility(AbilityReadSensitive, rt.handleListBitbucketAppRepos))
+	mux.HandleFunc("GET /api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/branches", rt.requireAbility(AbilityReadSensitive, rt.handleListBitbucketAppBranches))
+	mux.HandleFunc("POST /api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/use-as-source", rt.requireAbility(AbilityWriteSensitive, rt.handleUseBitbucketRepoAsSource))
+
 	// Backup history and manual trigger, per database. Trigger needs
 	// AbilityWriteSensitive: it starts real work against a live bucket
 	// using a previously-stored credential, the same sensitivity class

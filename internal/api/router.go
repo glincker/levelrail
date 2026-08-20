@@ -76,6 +76,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/email"
@@ -192,6 +193,10 @@ type Router struct {
 	auditLog                  AuditStore                      // always set, same "core Store interface" shape as backupTargets/certs above: requireAbility's audit hook (auth.go) writes through this on every request, GET /api/v1/audit-log (audit.go) reads through it
 	scheduledTasks            ScheduledTaskStore              // always set, same "core Store interface" shape as backupTargets above: CRUD on a scheduled task needs no runner configuration, only actually running one does
 	scheduledTaskRunner       ScheduledTaskRunner             // nil is valid: POST .../scheduled-tasks/{id}/run returns 501, same shape as backupRunner above
+	bitbucketApp              BitbucketAppStore               // always set, same "core Store interface" shape as gitlabApp above
+	bitbucketAppSecrets       BitbucketAppSecrets             // nil is valid: every bitbucket-app route that needs it returns 501, same shape as gitlabAppSecrets above
+	bitbucketAppClient        BitbucketAppClient              // always set (NewRouter defaults it to a real *bitbucketapp.Client), overridable in this package's own tests
+	bitbucketAppState         *pendingState                   // always set (NewRouter constructs one unconditionally); purely in-memory OAuth CSRF state, see pendingState's own doc comment
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
@@ -250,6 +255,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		updatesCache:            newUpdatesCache(),
 		auditLog:                s,
 		scheduledTasks:          s,
+		bitbucketApp:            s,
+		bitbucketAppClient:      bitbucketapp.NewClient(),
+		bitbucketAppState:       newPendingState(),
 	}
 	for _, opt := range opts {
 		opt(rt)
