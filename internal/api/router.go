@@ -144,6 +144,13 @@ type AppStore interface {
 	// path both handleCreateApp (an ordinary single-service app) and
 	// handleDeploySpec (a multi-service fan-out) go through.
 	UpdateServiceApp(ctx context.Context, name, appID string) error
+	// UpdateServiceLogDrain backs PUT/DELETE
+	// /api/v1/apps/{name}/log-drain (apps_log_drain.go): which external
+	// sink (internal/telemetry.DrainForwarder) this app's container logs
+	// additionally forward to. Same separation-from-ordinary-update
+	// reasoning as UpdateServiceStorageTarget, see
+	// store.DB.UpdateServiceLogDrain's own doc comment.
+	UpdateServiceLogDrain(ctx context.Context, name string, drain *store.LogDrain) error
 }
 
 // AppGroupLister is the store surface GET /api/v1/apps/{name}/group
@@ -1567,6 +1574,15 @@ func (rt *Router) Handler() http.Handler {
 	// other identity on this control plane, not an ordinary per-app
 	// read.
 	mux.HandleFunc("GET /api/v1/audit-log", rt.requireAbility(AbilityRoot, rt.handleListAuditLog))
+
+	// Log drain (apps_log_drain.go): forwards an app's container logs to
+	// an external HTTP or syslog sink, additive to the existing
+	// node-local store. AbilityWriteSensitive for write/clear, the same
+	// tier as storage above (both configure where data leaves this
+	// control plane to); AbilityRead for the GET.
+	mux.HandleFunc("GET /api/v1/apps/{name}/log-drain", rt.requireAbility(AbilityRead, rt.handleGetAppLogDrain))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/log-drain", rt.requireAbility(AbilityWriteSensitive, rt.handleSetAppLogDrain))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/log-drain", rt.requireAbility(AbilityWriteSensitive, rt.handleClearAppLogDrain))
 
 	return mux
 }

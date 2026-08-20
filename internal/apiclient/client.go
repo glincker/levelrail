@@ -363,6 +363,31 @@ func (c *Client) TestExistingNotificationChannel(ctx context.Context, id string)
 	return c.do(ctx, http.MethodPost, "/api/v1/notification-channels/"+PathEscape(id)+"/test", nil, nil)
 }
 
+// GetLogDrain calls GET /api/v1/apps/{name}/log-drain: the app's
+// currently configured external log-forwarding sink. Returns *APIError
+// with StatusCode 404 (via errors.As) if the app doesn't exist or has no
+// drain configured, the same two-404-cases-in-one shape that route's own
+// doc comment describes.
+func (c *Client) GetLogDrain(ctx context.Context, name string) (LogDrainResource, error) {
+	var out LogDrainResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/log-drain", nil, &out)
+	return out, err
+}
+
+// SetLogDrain calls PUT /api/v1/apps/{name}/log-drain.
+func (c *Client) SetLogDrain(ctx context.Context, name string, req SetLogDrainRequest) (LogDrainResource, error) {
+	var out LogDrainResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/log-drain", req, &out)
+	return out, err
+}
+
+// ClearLogDrain calls DELETE /api/v1/apps/{name}/log-drain. No response
+// body (204 on success), matching SetSecret's own "no body beyond the
+// status" shape above.
+func (c *Client) ClearLogDrain(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/log-drain", nil, nil)
+}
+
 // PathEscape guards against a name containing characters that would
 // otherwise change the request's URL shape (a "/" turning one path
 // segment into two, for instance). Server-side validation is the real

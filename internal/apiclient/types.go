@@ -47,6 +47,23 @@ type AppResource struct {
 	NodeID    string            `json:"node_id,omitempty"`
 }
 
+// LogDrainResource mirrors internal/api's logDrainResource
+// (apps_log_drain.go): GET/PUT /api/v1/apps/{name}/log-drain's wire
+// shape. Type is "http" or "syslog", validated server-side.
+type LogDrainResource struct {
+	AppName string `json:"app_name"`
+	Type    string `json:"type"`
+	Target  string `json:"target"`
+	Enabled bool   `json:"enabled"`
+}
+
+// SetLogDrainRequest mirrors internal/api's setLogDrainRequest.
+type SetLogDrainRequest struct {
+	Type    string `json:"type"`
+	Target  string `json:"target"`
+	Enabled bool   `json:"enabled"`
+}
+
 // BuildTriggerRequest mirrors internal/api's triggerBuildRequest
 // (internal/api/builds.go). Ref is required server-side (handleTriggerBuild
 // rejects an empty one with 400), so every caller of TriggerBuild must

@@ -11,7 +11,7 @@ import (
 // runChannelsList implements "channels list": GET
 // /api/v1/notification-channels.
 func runChannelsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := channelsFlagSet(prog, "list", "print channels as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "channels list", "print channels as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, channelsListUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -22,7 +22,7 @@ func runChannelsList(prog string, args []string, stdout, stderr io.Writer, looku
 	}
 	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
-	client := channelsClient(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 
 	channels, err := client.ListNotificationChannels(context.Background())
 	if err != nil {
