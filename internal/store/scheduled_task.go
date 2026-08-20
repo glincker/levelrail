@@ -7,7 +7,7 @@ import (
 	"fmt"
 )
 
-// Scheduled task run statuses migrations/0046_scheduled_tasks.sql's CHECK
+// Scheduled task run statuses migrations/0047_scheduled_tasks.sql's CHECK
 // constraint accepts, mirroring backup_history's own BackupStatus*
 // constants exactly.
 const (
@@ -28,7 +28,7 @@ var ErrScheduledTaskRunNotFound = errors.New("store: scheduled task run not foun
 // ScheduledTask is an arbitrary command run inside one service's
 // container on a cron schedule (internal/scheduledtask.Scheduler).
 // Command is always executed as `sh -c Command`, see
-// migrations/0046_scheduled_tasks.sql's own doc comment for why.
+// migrations/0047_scheduled_tasks.sql's own doc comment for why.
 type ScheduledTask struct {
 	ID             string
 	ServiceName    string
@@ -160,7 +160,7 @@ func (db *DB) UpdateScheduledTask(ctx context.Context, t ScheduledTask) error {
 }
 
 // DeleteScheduledTask removes a scheduled task row and, via
-// migrations/0046's ON DELETE CASCADE, every scheduled_task_runs row
+// migrations/0047's ON DELETE CASCADE, every scheduled_task_runs row
 // that references it. Returns ErrScheduledTaskNotFound if id doesn't
 // exist.
 func (db *DB) DeleteScheduledTask(ctx context.Context, id string) error {
@@ -229,7 +229,7 @@ func (db *DB) FinishScheduledTaskRun(ctx context.Context, id, status string, exi
 }
 
 // ListScheduledTaskRuns returns every run of taskID, newest first
-// (migrations/0046's own index is built for exactly this query shape).
+// (migrations/0047's own index is built for exactly this query shape).
 func (db *DB) ListScheduledTaskRuns(ctx context.Context, taskID string) ([]ScheduledTaskRun, error) {
 	rows, err := db.QueryContext(ctx, `
 		SELECT id, scheduled_task_id, status, exit_code, output, error, started_at, finished_at

@@ -165,7 +165,7 @@ func TestDeleteScheduledTask_NotFound(t *testing.T) {
 	}
 }
 
-// TestDeleteScheduledTask_CascadesRuns proves migrations/0046's ON
+// TestDeleteScheduledTask_CascadesRuns proves migrations/0047's ON
 // DELETE CASCADE actually fires: deleting a task must also remove every
 // scheduled_task_runs row referencing it.
 func TestDeleteScheduledTask_CascadesRuns(t *testing.T) {
