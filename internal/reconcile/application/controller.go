@@ -483,6 +483,16 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, de
 		}
 		justDeployed = true
 	case !state.Running:
+		// The container's own network can go missing between reconcile
+		// passes (an operator running docker network prune, or any other
+		// external interference this codebase can't prevent): re-ensure
+		// it before Start, the same guarantee createAndStart already
+		// gives a fresh container, so a stopped container is never
+		// permanently stuck retrying Start against a network that no
+		// longer exists.
+		if err := c.ensureAppNetwork(ctx, desired); err != nil {
+			return replicaOutcome{reason: "EnsureNetworkFailed"}, fmt.Errorf("restart %q: %w", target, err)
+		}
 		if err := c.runtime.Start(ctx, state.ID); err != nil {
 			return replicaOutcome{reason: "StartFailed"}, fmt.Errorf("restart %q: %w", target, err)
 		}
@@ -506,6 +516,22 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, de
 		return replicaOutcome{reason: "ReadinessFailed"}, err
 	}
 	return replicaOutcome{justDeployed: true}, nil
+}
+
+// ensureAppNetwork makes sure desired.AppID's per-app Docker network
+// exists, a no-op for a service with no AppID. Called from both
+// createAndStart and ensureReplicaRunning's restart path: EnsureNetwork
+// is itself idempotent (docker.Runtime's own contract), so calling it
+// again for an already-existing network is cheap and safe.
+func (c *Controller) ensureAppNetwork(ctx context.Context, desired *store.DesiredService) error {
+	if desired.AppID == "" {
+		return nil
+	}
+	networkName := NetworkName(c.networkPrefix, desired.AppID)
+	if _, err := c.runtime.EnsureNetwork(ctx, networkName); err != nil {
+		return fmt.Errorf("ensure network %q: %w", networkName, err)
+	}
+	return nil
 }
 
 func (c *Controller) createAndStart(ctx context.Context, name string, desired *store.DesiredService) error {
@@ -532,12 +558,11 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	if c.meshDNSAddr != "" {
 		spec.DNS = []string{c.meshDNSAddr}
 	}
+	if err := c.ensureAppNetwork(ctx, desired); err != nil {
+		return err
+	}
 	if desired.AppID != "" {
-		networkName := NetworkName(c.networkPrefix, desired.AppID)
-		if _, err := c.runtime.EnsureNetwork(ctx, networkName); err != nil {
-			return fmt.Errorf("ensure network %q: %w", networkName, err)
-		}
-		spec.Network = &docker.NetworkAttachment{Name: networkName, Alias: serviceAlias(desired)}
+		spec.Network = &docker.NetworkAttachment{Name: NetworkName(c.networkPrefix, desired.AppID), Alias: serviceAlias(desired)}
 	}
 
 	id, err := c.runtime.Create(ctx, spec)

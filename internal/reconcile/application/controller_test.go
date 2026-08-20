@@ -425,6 +425,59 @@ func TestController_Reconcile_RestartAfterCrash(t *testing.T) {
 	}
 }
 
+// TestController_Reconcile_RestartAfterCrash_EnsuresNetworkFirst covers
+// the gap that let a stopped container become permanently stuck: its
+// per-app network can go missing between reconcile passes (an operator
+// running docker network prune, or any other external interference this
+// codebase can't prevent), and Start alone can never recover from that,
+// only EnsureNetwork followed by Start can.
+func TestController_Reconcile_RestartAfterCrash_EnsuresNetworkFirst(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, AppID: "myapp"}
+	target := ContainerName("web", desired.Image, "")
+	rt.seed(target, false) // exists, not running, its network may or may not still exist
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Errorf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+	if rt.ensureNetworkCalls != 1 {
+		t.Errorf("ensureNetworkCalls = %d, want 1: a stopped container's network must be re-ensured before Start, not just created fresh", rt.ensureNetworkCalls)
+	}
+}
+
+// TestController_Reconcile_RestartAfterCrash_EnsureNetworkFails_StartNeverCalled
+// is the half-succeeded case CLAUDE.md's testing standard requires for
+// this path: if the network can't be re-ensured, Start must never run
+// against a container whose network isn't there, and the container must
+// stay stopped rather than being reported as recovered.
+func TestController_Reconcile_RestartAfterCrash_EnsureNetworkFails_StartNeverCalled(t *testing.T) {
+	rt := newFakeRuntime(0)
+	rt.ensureNetworkErr = errors.New("network not found")
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, AppID: "myapp"}
+	target := ContainerName("web", desired.Image, "")
+	rt.seed(target, false)
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want an error")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "EnsureNetworkFailed" {
+		t.Errorf("condition = %+v, want Status=False Reason=EnsureNetworkFailed", cond)
+	}
+	state, _ := rt.InspectByName(context.Background(), target)
+	if state.Running {
+		t.Error("container reported Running after a failed EnsureNetwork; Start must never have been reached")
+	}
+}
+
 func TestController_Reconcile_Redeploy_CleansUpOldContainer(t *testing.T) {
 	srv := alwaysHealthy()
 	defer srv.Close()
