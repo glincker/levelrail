@@ -263,6 +263,96 @@ func TestMongoCredentialsFor_SameDatabaseName_DistinctFromOtherEngines(t *testin
 	}
 }
 
+func TestMariaDBCredentialsFor_NilSecretsManager_ReturnsNil(t *testing.T) {
+	creds, err := mariadbCredentialsFor(context.Background(), nil, "main")
+	if err != nil {
+		t.Fatalf("mariadbCredentialsFor() error = %v", err)
+	}
+	if creds != nil {
+		t.Errorf("creds = %+v, want nil (no secrets manager configured)", creds)
+	}
+}
+
+func TestMariaDBCredentialsFor_GeneratesOnFirstCall(t *testing.T) {
+	mgr := newTestSecretsManager(t)
+
+	creds, err := mariadbCredentialsFor(context.Background(), mgr, "main")
+	if err != nil {
+		t.Fatalf("mariadbCredentialsFor() error = %v", err)
+	}
+	if creds == nil {
+		t.Fatal("creds = nil, want a real credentials value")
+	}
+	if creds.Username == "" {
+		t.Error("Username is empty")
+	}
+	if creds.Password == "" {
+		t.Error("Password is empty")
+	}
+}
+
+func TestMariaDBCredentialsFor_ReusesExistingPasswordOnSecondCall(t *testing.T) {
+	mgr := newTestSecretsManager(t)
+	ctx := context.Background()
+
+	first, err := mariadbCredentialsFor(ctx, mgr, "main")
+	if err != nil {
+		t.Fatalf("first call error = %v", err)
+	}
+
+	second, err := mariadbCredentialsFor(ctx, mgr, "main")
+	if err != nil {
+		t.Fatalf("second call error = %v", err)
+	}
+
+	if first.Password != second.Password {
+		t.Errorf("Password changed between calls: %q != %q, a reconcile pass must never rotate a running database's password out from under it", first.Password, second.Password)
+	}
+	if first.Username != second.Username {
+		t.Errorf("Username changed between calls: %q != %q", first.Username, second.Username)
+	}
+}
+
+func TestMariaDBCredentialsFor_DifferentDatabasesGetDifferentPasswords(t *testing.T) {
+	mgr := newTestSecretsManager(t)
+	ctx := context.Background()
+
+	main, err := mariadbCredentialsFor(ctx, mgr, "main")
+	if err != nil {
+		t.Fatalf("mariadbCredentialsFor(main) error = %v", err)
+	}
+	analytics, err := mariadbCredentialsFor(ctx, mgr, "analytics")
+	if err != nil {
+		t.Fatalf("mariadbCredentialsFor(analytics) error = %v", err)
+	}
+
+	if main.Password == analytics.Password {
+		t.Error("two distinct databases got the same generated password")
+	}
+}
+
+func TestMariaDBCredentialsFor_SameDatabaseName_DistinctFromMySQLCredentials(t *testing.T) {
+	// mariadbCredentialsFor and mysqlCredentialsFor must use distinct
+	// secrets-store keys for the same dbName, the same reasoning
+	// TestMySQLCredentialsFor_SamedDatabaseName_DistinctFromPostgresCredentials
+	// already establishes for mysql vs postgres.
+	mgr := newTestSecretsManager(t)
+	ctx := context.Background()
+
+	mariadb, err := mariadbCredentialsFor(ctx, mgr, "main")
+	if err != nil {
+		t.Fatalf("mariadbCredentialsFor(main) error = %v", err)
+	}
+	mysql, err := mysqlCredentialsFor(ctx, mgr, "main")
+	if err != nil {
+		t.Fatalf("mysqlCredentialsFor(main) error = %v", err)
+	}
+
+	if mariadb.Password == mysql.Password {
+		t.Error("mariadb and mysql credentials for the same database name share a password, storage keys must not collide")
+	}
+}
+
 func TestGenerateRandomPassword_ReturnsNonEmptyUniqueValues(t *testing.T) {
 	a, err := generateRandomPassword()
 	if err != nil {

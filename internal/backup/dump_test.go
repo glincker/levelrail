@@ -234,6 +234,60 @@ func TestContainerDumper_Dump_Redis(t *testing.T) {
 	}
 }
 
+func TestContainerDumper_Dump_MariaDB(t *testing.T) {
+	rt := &fakeExecRuntime{content: "mariadb-dump-bytes"}
+	d := &ContainerDumper{Runtime: rt}
+
+	rc, err := d.Dump(context.Background(), store.EngineMariaDB, "db-mydb")
+	if err != nil {
+		t.Fatalf("Dump() error = %v", err)
+	}
+	defer func() { _ = rc.Close() }()
+
+	if rt.gotContainer != "db-mydb" {
+		t.Errorf("container = %q, want %q", rt.gotContainer, "db-mydb")
+	}
+	wantCmd := []string{"sh", "-c", `exec mariadb-dump -uroot -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"`}
+	if !reflect.DeepEqual(rt.gotCmd, wantCmd) {
+		t.Errorf("cmd = %v, want %v", rt.gotCmd, wantCmd)
+	}
+
+	got, err := io.ReadAll(rc)
+	if err != nil {
+		t.Fatalf("ReadAll() error = %v", err)
+	}
+	if string(got) != "mariadb-dump-bytes" {
+		t.Errorf("content = %q, want %q", got, "mariadb-dump-bytes")
+	}
+}
+
+func TestContainerDumper_Dump_KeyDB(t *testing.T) {
+	rt := &fakeExecRuntime{content: "rdb-bytes"}
+	d := &ContainerDumper{Runtime: rt}
+
+	rc, err := d.Dump(context.Background(), store.EngineKeyDB, "db-cache")
+	if err != nil {
+		t.Fatalf("Dump() error = %v", err)
+	}
+	defer func() { _ = rc.Close() }()
+
+	if rt.gotContainer != "db-cache" {
+		t.Errorf("container = %q, want %q", rt.gotContainer, "db-cache")
+	}
+	wantCmd := []string{"keydb-cli", "--rdb", "-"}
+	if !reflect.DeepEqual(rt.gotCmd, wantCmd) {
+		t.Errorf("cmd = %v, want %v", rt.gotCmd, wantCmd)
+	}
+
+	got, err := io.ReadAll(rc)
+	if err != nil {
+		t.Fatalf("ReadAll() error = %v", err)
+	}
+	if string(got) != "rdb-bytes" {
+		t.Errorf("content = %q, want %q", got, "rdb-bytes")
+	}
+}
+
 func TestContainerDumper_Dump_UnknownEngine(t *testing.T) {
 	rt := &fakeExecRuntime{}
 	d := &ContainerDumper{Runtime: rt}

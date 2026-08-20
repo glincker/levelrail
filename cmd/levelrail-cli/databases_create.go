@@ -20,11 +20,13 @@ const (
 	engineParamRedis    = "redis"
 	engineParamMySQL    = "mysql"
 	engineParamMongoDB  = "mongodb"
+	engineParamMariaDB  = "mariadb"
+	engineParamKeyDB    = "keydb"
 )
 
 // supportedEngineParams is every engineParam* above, in the order they
 // should be listed in an error or usage message.
-var supportedEngineParams = []string{engineParamPostgres, engineParamRedis, engineParamMySQL, engineParamMongoDB}
+var supportedEngineParams = []string{engineParamPostgres, engineParamRedis, engineParamMySQL, engineParamMongoDB, engineParamMariaDB, engineParamKeyDB}
 
 // createDatabaseFlags is runDatabasesCreate's raw, unvalidated input;
 // planDatabaseCreate's plain-data counterpart to apps_create.go's own
@@ -123,7 +125,7 @@ directly.
 
 Flags:
   --name string           database name (required)
-  --engine string        database engine: postgres, redis, mysql, or mongodb (required)
+  --engine string        database engine: postgres, redis, mysql, mongodb, mariadb, or keydb (required)
   --version string      engine version, e.g. "16" (required)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)

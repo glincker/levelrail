@@ -21,3 +21,9 @@ engines:
   - id: mongodb
     label: MongoDB
     default_version: "7"
+  - id: mariadb
+    label: MariaDB
+    default_version: "11"
+  - id: keydb
+    label: KeyDB
+    default_version: "latest"
