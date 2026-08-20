@@ -250,13 +250,9 @@ function DownloadBackupLink({
   )
 }
 
-// Pages backward past useBackupHistory's own freshest-page (up to
-// BACKUP_HISTORY_PAGE_SIZE rows, kept live by that hook's own polling
-// and optimistic-insert-on-trigger behavior) via plain component state,
-// the same "Load older entries" shape routes/settings/audit-log.tsx
-// already establishes against its own sibling cursor-paginated
-// endpoint: a bounded, explicit fetch on click rather than
-// useInfiniteQuery, since nothing else in this codebase uses it either.
+// "Load older entries" via plain component state rather than
+// useInfiniteQuery, mirroring routes/settings/audit-log.tsx's pattern
+// for its own cursor-paginated endpoint.
 function BackupHistoryTable({ databaseName }: { databaseName: string }) {
   const { data: targets } = useBackupTargets()
   const { data, isLoading, error } = useBackupHistory(databaseName)

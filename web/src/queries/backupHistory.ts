@@ -35,19 +35,12 @@ export const backupHistoryKeys = {
 // flight.
 const RUNNING_POLL_INTERVAL_MS = 3_000
 
-// The server's own default page size (defaultBackupHistoryLimit,
-// internal/api/backups.go), duplicated here the same way
-// auditLogSettingsPage's own page-size constant duplicates
-// defaultAuditLogLimit: a page shorter than this means there is nothing
-// older left to load.
+// Mirrors the server's defaultBackupHistoryLimit: a page shorter than
+// this means there's nothing older left to load.
 export const BACKUP_HISTORY_PAGE_SIZE = 50
 
-// GET /api/v1/databases/{name}/backups (handleListBackupHistory).
-// Ordered newest first by the server already, per that handler's own
-// doc comment, so this fetcher does no client-side sorting either.
-// opts.before cursor-paginates backward through older attempts, the
-// same ?before contract fetchAuditLog (queries/auditLog.ts) already
-// uses against its own sibling endpoint.
+// GET /api/v1/databases/{name}/backups, newest first. opts.before
+// cursor-paginates backward, mirroring fetchAuditLog's ?before contract.
 export async function fetchBackupHistory(
   databaseName: string,
   opts: { limit?: number; before?: string } = {},

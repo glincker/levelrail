@@ -198,13 +198,9 @@ func (db *DB) PruneBackupHistory(ctx context.Context, databaseName string, keep 
 	return out, nil
 }
 
-// ListBackupHistory returns up to limit backup attempts for databaseName,
-// newest first (migrations/0018's own index is built for exactly this
-// query shape). before, when non-nil, restricts the result to attempts
-// started strictly before that timestamp, the same cursor-pagination
-// shape ListAuditEntries (audit.go) uses, so a database with years of
-// scheduled backups never needs an OFFSET query that gets slower as the
-// table grows.
+// ListBackupHistory returns up to limit backup attempts for databaseName, newest first.
+// before, when non-nil, cursor-paginates on start time (mirrors ListAuditEntries)
+// so long-lived backup schedules never need a slow OFFSET query.
 func (db *DB) ListBackupHistory(ctx context.Context, databaseName string, limit int, before *time.Time) ([]BackupHistory, error) {
 	var (
 		rows *sql.Rows

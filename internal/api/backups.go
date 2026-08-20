@@ -168,16 +168,8 @@ const (
 )
 
 // handleListBackupHistory handles GET /api/v1/databases/{name}/backups.
-// AbilityRead: this is passive visibility into attempts already made,
-// the same boundary handleListCertificates/handleListStaticSites draw
-// between visibility and mutation elsewhere in this file's sibling
-// handlers.
-//
-// Cursor-paginated by ?before (an RFC3339 timestamp) and ?limit, the
-// identical query-param contract handleListAuditLog (audit.go)
-// establishes: a database backed up on a tight schedule for years
-// accumulates exactly the kind of unbounded history an OFFSET query
-// degrades against.
+// Cursor-paginated by ?before/?limit, mirroring handleListAuditLog's
+// contract since backup history on a long-lived schedule is unbounded.
 func (rt *Router) handleListBackupHistory(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
