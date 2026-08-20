@@ -46,13 +46,7 @@ Run "%[1]s apps log-drain <subcommand> -h" for a subcommand's own flags.
 }
 
 func runAppsLogDrainGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" apps log-drain get", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag string
-	var jsonOut bool
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print the log drain as JSON to stdout and nothing else")
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps log-drain get", "print the log drain as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps log-drain get <name> [flags]\n\nShows an app's currently configured log drain.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -64,16 +58,14 @@ func runAppsLogDrainGet(prog string, args []string, stdout, stderr io.Writer, lo
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
-	rest := fs.Args()
-	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: apps log-drain get requires exactly one app name\n\n", prog)
-		fs.Usage()
+	name, ok := requireOneArg(fs, stderr, prog, "apps log-drain get", "app name")
+	if !ok {
 		return exitUsage
 	}
-	name := rest[0]
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 
 	drain, err := client.GetLogDrain(context.Background(), name)
 	if err != nil {
@@ -92,16 +84,12 @@ func runAppsLogDrainGet(prog string, args []string, stdout, stderr io.Writer, lo
 }
 
 func runAppsLogDrainSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" apps log-drain set", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, typeFlag, targetFlag string
-	var disabled, jsonOut bool
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps log-drain set", "print the log drain as JSON to stdout and nothing else", stderr)
+	var typeFlag, targetFlag string
+	var disabled bool
 	fs.StringVar(&typeFlag, "type", "", `sink type: "http" or "syslog" (required)`)
 	fs.StringVar(&targetFlag, "target", "", "sink target: an HTTP URL, or a syslog network://host:port (empty for local syslog)")
 	fs.BoolVar(&disabled, "disabled", false, "save the drain but leave forwarding paused (default: enabled)")
-	fs.BoolVar(&jsonOut, "json", false, "print the log drain as JSON to stdout and nothing else")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps log-drain set <name> --type TYPE --target TARGET [flags]\n\nConfigures an app's log drain, additive to the built-in log store.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -113,21 +101,19 @@ func runAppsLogDrainSet(prog string, args []string, stdout, stderr io.Writer, lo
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
-	rest := fs.Args()
-	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: apps log-drain set requires exactly one app name\n\n", prog)
-		fs.Usage()
+	name, ok := requireOneArg(fs, stderr, prog, "apps log-drain set", "app name")
+	if !ok {
 		return exitUsage
 	}
-	name := rest[0]
 	if typeFlag == "" {
 		_, _ = fmt.Fprintf(stderr, "%s: apps log-drain set requires --type\n\n", prog)
 		fs.Usage()
 		return exitUsage
 	}
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 
 	drain, err := client.SetLogDrain(context.Background(), name, setLogDrainRequest{
 		Type:    typeFlag,
@@ -167,15 +153,12 @@ func runAppsLogDrainClear(prog string, args []string, stdout, stderr io.Writer, 
 		return exitUsage
 	}
 
-	rest := fs.Args()
-	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: apps log-drain clear requires exactly one app name\n\n", prog)
-		fs.Usage()
+	name, ok := requireOneArg(fs, stderr, prog, "apps log-drain clear", "app name")
+	if !ok {
 		return exitUsage
 	}
-	name := rest[0]
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 
 	if err := client.ClearLogDrain(context.Background(), name); err != nil {
 		return reportError(stdout, stderr, false, fmt.Errorf("clear log drain for app %q: %w", name, err))

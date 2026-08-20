@@ -17,7 +17,7 @@ import (
 // (mirroring how the web dashboard's connect dialog does the same
 // packing client-side).
 func runChannelsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := channelsFlagSet(prog, "create", "print the created channel as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "channels create", "print the created channel as JSON to stdout and nothing else", stderr)
 	var name, kind, notifyURL, pushoverUserKey, pushoverAPIToken string
 	var disabled bool
 	fs.StringVar(&name, "name", "", "display name for the channel (required)")
@@ -52,7 +52,7 @@ func runChannelsCreate(prog string, args []string, stdout, stderr io.Writer, loo
 	}
 
 	enabled := !disabled
-	client := channelsClient(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 
 	created, err := client.CreateNotificationChannel(context.Background(), createNotificationChannelRequest{
 		Name: name, Kind: kind, NotifyURL: resolvedURL, Enabled: &enabled,
