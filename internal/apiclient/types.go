@@ -178,6 +178,23 @@ type DomainResource struct {
 	ServiceName string `json:"service_name"`
 }
 
+// CloudflareDNSResource mirrors internal/api's cloudflareDNSResource
+// (internal/api/cloudflare_dns.go): GET/PUT/DELETE
+// /api/v1/settings/cloudflare-dns's wire shape. The token itself never
+// appears here in either direction.
+type CloudflareDNSResource struct {
+	Enabled  bool `json:"enabled"`
+	HasToken bool `json:"has_token"`
+}
+
+// UpdateCloudflareDNSRequest mirrors internal/api's
+// updateCloudflareDNSRequest. Token empty on an update means "leave the
+// currently stored token unchanged".
+type UpdateCloudflareDNSRequest struct {
+	Enabled bool   `json:"enabled"`
+	Token   string `json:"token,omitempty"`
+}
+
 // BackupHistoryResource mirrors internal/api's backupHistoryResource
 // (internal/api/backups.go).
 type BackupHistoryResource struct {
