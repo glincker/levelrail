@@ -8,11 +8,12 @@ import (
 	"time"
 )
 
-// OAuth provider names the migrations/0035_users.sql CHECK constraints
-// accept. Fixed pair, no other providers (Phase 4 scope).
+// OAuth provider names the migrations/0035_users.sql and 0052's CHECK
+// constraints accept.
 const (
 	OAuthProviderGoogle = "google"
 	OAuthProviderGitHub = "github"
+	OAuthProviderOIDC   = "oidc"
 )
 
 // OAuthIdentity is one linked external account. Uniqueness (at most one

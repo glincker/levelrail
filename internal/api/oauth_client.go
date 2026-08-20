@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 	xgithub "golang.org/x/oauth2/github"
 	xgoogle "golang.org/x/oauth2/google"
@@ -54,6 +56,8 @@ func defaultOAuthClientFactory(provider string, settings store.OAuthProviderSett
 			Endpoint:     xgithub.Endpoint,
 			Scopes:       []string{"read:user", "user:email"},
 		}}, nil
+	case store.OAuthProviderOIDC:
+		return newOIDCOAuthClient(settings, clientSecret, redirectURL)
 	default:
 		return nil, fmt.Errorf("api: unknown oauth provider %q", provider)
 	}
@@ -154,6 +158,72 @@ func (c *githubOAuthClient) FetchUserInfo(ctx context.Context, token *oauth2.Tok
 		Email:          email,
 		DisplayName:    name,
 	}, nil
+}
+
+type oidcOAuthClient struct {
+	cfg      oauth2.Config
+	verifier *oidc.IDTokenVerifier
+}
+
+// newOIDCOAuthClient runs discovery synchronously against settings'
+// operator-configured issuer, so a misconfigured issuer fails the sign-in
+// attempt immediately rather than at token-exchange time.
+func newOIDCOAuthClient(settings store.OAuthProviderSettings, clientSecret, redirectURL string) (oauthProviderClient, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	provider, err := oidc.NewProvider(ctx, settings.IssuerURL)
+	if err != nil {
+		return nil, fmt.Errorf("oidc discovery for issuer %q: %w", settings.IssuerURL, err)
+	}
+	return &oidcOAuthClient{
+		cfg: oauth2.Config{
+			ClientID:     settings.ClientID,
+			ClientSecret: clientSecret,
+			RedirectURL:  redirectURL,
+			Endpoint:     provider.Endpoint(),
+			Scopes:       []string{oidc.ScopeOpenID, "email", "profile"},
+		},
+		verifier: provider.Verifier(&oidc.Config{ClientID: settings.ClientID}),
+	}, nil
+}
+
+func (c *oidcOAuthClient) AuthCodeURL(state string) string {
+	return c.cfg.AuthCodeURL(state)
+}
+
+func (c *oidcOAuthClient) Exchange(ctx context.Context, code string) (*oauth2.Token, error) {
+	return c.cfg.Exchange(ctx, code)
+}
+
+// FetchUserInfo verifies the token response's id_token (signature, issuer,
+// audience, expiry) rather than trusting an unverified access-token
+// userinfo call, since an arbitrary OIDC issuer's userinfo endpoint isn't
+// a fixed, trusted URL the way Google/GitHub's are.
+func (c *oidcOAuthClient) FetchUserInfo(ctx context.Context, token *oauth2.Token) (oauthUserInfo, error) {
+	rawIDToken, ok := token.Extra("id_token").(string)
+	if !ok || rawIDToken == "" {
+		return oauthUserInfo{}, fmt.Errorf("oidc token response missing id_token")
+	}
+	idToken, err := c.verifier.Verify(ctx, rawIDToken)
+	if err != nil {
+		return oauthUserInfo{}, fmt.Errorf("verify oidc id_token: %w", err)
+	}
+	var claims struct {
+		Email         string `json:"email"`
+		EmailVerified bool   `json:"email_verified"`
+		Name          string `json:"name"`
+	}
+	if err := idToken.Claims(&claims); err != nil {
+		return oauthUserInfo{}, fmt.Errorf("decode oidc claims: %w", err)
+	}
+	if claims.Email == "" || !claims.EmailVerified {
+		return oauthUserInfo{}, fmt.Errorf("oidc claims: missing or unverified email")
+	}
+	name := claims.Name
+	if name == "" {
+		name = claims.Email
+	}
+	return oauthUserInfo{ProviderUserID: idToken.Subject, Email: claims.Email, DisplayName: name}, nil
 }
 
 func getJSON(ctx context.Context, client *http.Client, url string, out any) error {

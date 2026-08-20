@@ -45,7 +45,7 @@ func WithOAuthSecrets(s OAuthSecrets) Option {
 }
 
 func isValidOAuthProvider(p string) bool {
-	return p == store.OAuthProviderGoogle || p == store.OAuthProviderGitHub
+	return p == store.OAuthProviderGoogle || p == store.OAuthProviderGitHub || p == store.OAuthProviderOIDC
 }
 
 // Sentinel errors completeOAuthSignin/completeOAuthLink return, mapped
@@ -66,12 +66,13 @@ func (rt *Router) handleListPublicOAuthProviders(w http.ResponseWriter, r *http.
 		return
 	}
 	type publicProvider struct {
-		Provider string `json:"provider"`
-		Enabled  bool   `json:"enabled"`
+		Provider    string `json:"provider"`
+		Enabled     bool   `json:"enabled"`
+		DisplayName string `json:"display_name,omitempty"`
 	}
 	out := make([]publicProvider, 0, len(settings))
 	for _, s := range settings {
-		out = append(out, publicProvider{Provider: s.Provider, Enabled: s.Enabled})
+		out = append(out, publicProvider{Provider: s.Provider, Enabled: s.Enabled, DisplayName: s.DisplayName})
 	}
 	writeJSON(w, http.StatusOK, out)
 }
