@@ -534,6 +534,79 @@ func (c *Client) RunScheduledTask(ctx context.Context, name, id string) (Schedul
 	return out, err
 }
 
+func organizationsCollectionPath() string {
+	return "/api/v1/organizations"
+}
+
+func organizationPath(id string) string {
+	return organizationsCollectionPath() + "/" + PathEscape(id)
+}
+
+// CreateOrganization calls POST /api/v1/organizations.
+func (c *Client) CreateOrganization(ctx context.Context, req CreateOrganizationRequest) (OrganizationResource, error) {
+	var out OrganizationResource
+	err := c.do(ctx, http.MethodPost, organizationsCollectionPath(), req, &out)
+	return out, err
+}
+
+// ListOrganizations calls GET /api/v1/organizations.
+func (c *Client) ListOrganizations(ctx context.Context) ([]OrganizationResource, error) {
+	var out []OrganizationResource
+	err := c.do(ctx, http.MethodGet, organizationsCollectionPath(), nil, &out)
+	return out, err
+}
+
+// GetOrganization calls GET /api/v1/organizations/{id}.
+func (c *Client) GetOrganization(ctx context.Context, id string) (OrganizationResource, error) {
+	var out OrganizationResource
+	err := c.do(ctx, http.MethodGet, organizationPath(id), nil, &out)
+	return out, err
+}
+
+// DeleteOrganization calls DELETE /api/v1/organizations/{id}.
+func (c *Client) DeleteOrganization(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, organizationPath(id), nil, nil)
+}
+
+// SetProjectOrganization calls PUT /api/v1/projects/{id}/organization.
+// An empty orgID clears the assignment. Returns the updated project.
+func (c *Client) SetProjectOrganization(ctx context.Context, projectID, orgID string) (ProjectResource, error) {
+	var out ProjectResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/projects/"+PathEscape(projectID)+"/organization", SetProjectOrganizationRequest{OrgID: orgID}, &out)
+	return out, err
+}
+
+func environmentsCollectionPath(projectID string) string {
+	return "/api/v1/projects/" + PathEscape(projectID) + "/environments"
+}
+
+// CreateEnvironment calls POST /api/v1/projects/{id}/environments.
+func (c *Client) CreateEnvironment(ctx context.Context, projectID string, req CreateEnvironmentRequest) (EnvironmentResource, error) {
+	var out EnvironmentResource
+	err := c.do(ctx, http.MethodPost, environmentsCollectionPath(projectID), req, &out)
+	return out, err
+}
+
+// ListEnvironments calls GET /api/v1/projects/{id}/environments.
+func (c *Client) ListEnvironments(ctx context.Context, projectID string) ([]EnvironmentResource, error) {
+	var out []EnvironmentResource
+	err := c.do(ctx, http.MethodGet, environmentsCollectionPath(projectID), nil, &out)
+	return out, err
+}
+
+// DeleteEnvironment calls DELETE /api/v1/environments/{id}.
+func (c *Client) DeleteEnvironment(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/environments/"+PathEscape(id), nil, nil)
+}
+
+// SetAppEnvironment calls PUT /api/v1/apps/{name}/environment. An empty
+// environmentID clears the assignment. Returns the updated app.
+func (c *Client) SetAppEnvironment(ctx context.Context, name, environmentID string) (AppResource, error) {
+	var out AppResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/environment", SetAppEnvironmentRequest{EnvironmentID: environmentID}, &out)
+	return out, err
+}
+
 // PathEscape guards against a name containing characters that would
 // otherwise change the request's URL shape (a "/" turning one path
 // segment into two, for instance). Server-side validation is the real

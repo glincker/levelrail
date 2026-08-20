@@ -177,6 +177,11 @@ type DesiredService struct {
 	// already-placed service between projects.
 	ProjectID string
 
+	// EnvironmentID is which store.Environment (migrations/0054) this
+	// service is tagged with; empty is "no environment", set only via
+	// SetServiceEnvironment, same non-full-replace shape as ProjectID.
+	EnvironmentID string
+
 	// StorageTargetID is which store.BackupTarget (migrations/0018_backup_targets.sql)
 	// this app's own object-storage credentials resolve from
 	// (migrations/0030_service_storage_target.sql): the same bucket
@@ -348,8 +353,8 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	}()
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, domains, env, secret_env, database_env, resources, health, node_id, strategy, replicas, labels, volumes, registry_credential_id, project_id, app_id, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, NULL, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, domains, env, secret_env, database_env, resources, health, node_id, strategy, replicas, labels, volumes, registry_credential_id, project_id, environment_id, app_id, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, NULL, NULL, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
@@ -734,7 +739,7 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, domains, env, secret_env, database_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain"
+const desiredServiceColumns = "name, image, port, domains, env, secret_env, database_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
@@ -743,15 +748,16 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	var (
 		svc                                                                                          DesiredService
 		domainsJSON, envJSON, secretEnvJSON, databaseEnvJSON, resourcesJSON, health, labels, volumes string
-		projectID, storageTargetID, appID, logDrainJSON                                              sql.NullString
+		projectID, storageTargetID, appID, logDrainJSON, environmentID                               sql.NullString
 		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                      string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &databaseEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &databaseEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String
 	svc.StorageTargetID = storageTargetID.String
 	svc.AppID = appID.String
+	svc.EnvironmentID = environmentID.String
 	if dbAttachmentName != "" {
 		svc.DatabaseAttachment = &DatabaseAttachment{DatabaseName: dbAttachmentName, EnvVar: dbAttachmentEnvVar, Field: dbAttachmentField}
 	}

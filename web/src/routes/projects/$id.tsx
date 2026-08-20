@@ -8,9 +8,13 @@ import {
 import { projectDetailQueryOptions, useProject } from '../../queries/projects'
 import { appListQueryOptions } from '../../queries/apps'
 import { databaseListQueryOptions } from '../../queries/databases'
+import { environmentListQueryOptions } from '../../queries/environments'
+import { useOrganizationListOptional } from '../../queries/organizations'
 import { AppRow } from '../../components/AppRow'
 import { DatabaseRow } from '../../components/DatabaseRow'
 import { DeleteProjectDialog } from '../../components/DeleteProjectDialog'
+import { MoveToOrganizationDialog } from '../../components/MoveToOrganizationDialog'
+import { ProjectEnvironmentsPanel } from '../../components/ProjectEnvironmentsPanel'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -31,6 +35,7 @@ export const Route = createFileRoute('/projects/$id')({
       queryClient.ensureQueryData(projectDetailQueryOptions(id)),
       queryClient.ensureQueryData(appListQueryOptions()),
       queryClient.ensureQueryData(databaseListQueryOptions()),
+      queryClient.ensureQueryData(environmentListQueryOptions(id)),
     ]),
   component: ProjectDetailPage,
   errorComponent: ProjectDetailError,
@@ -42,6 +47,13 @@ function ProjectDetailPage() {
   const { data: project } = useProject(id)
   const { data: apps } = useSuspenseQuery(appListQueryOptions())
   const { data: databases } = useSuspenseQuery(databaseListQueryOptions())
+  // Optional convenience only, see useOrganizationListOptional's own doc
+  // comment: resolving org_id to a human-readable name is a display
+  // nicety, a failed/slow fetch just means the raw id is shown instead.
+  const organizationList = useOrganizationListOptional()
+  const organizationName = organizationList.data?.find(
+    (o) => o.id === project.org_id,
+  )?.name
 
   const projectApps = apps.filter((a) => a.project_id === id)
   const projectDatabases = databases.filter((d) => d.project_id === id)
@@ -69,7 +81,24 @@ function ProjectDetailPage() {
             }}
           />
         </div>
+        <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+          <span>Organization:</span>
+          {project.org_id ? (
+            <span className="text-foreground">
+              {organizationName ?? project.org_id}
+            </span>
+          ) : (
+            <span className="italic">none</span>
+          )}
+          <MoveToOrganizationDialog
+            projectId={project.id}
+            projectName={project.name}
+            currentOrgId={project.org_id}
+          />
+        </div>
       </div>
+
+      <ProjectEnvironmentsPanel projectId={project.id} />
 
       {isEmpty ? (
         <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-16 text-center">

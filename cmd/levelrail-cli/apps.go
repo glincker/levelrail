@@ -46,6 +46,14 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsLogDrain(prog, args[1:], stdout, stderr, lookupEnv)
 	case "scheduled-tasks":
 		return runAppsScheduledTasks(prog, args[1:], stdout, stderr, lookupEnv)
+	case "organizations":
+		return runAppsOrganizations(prog, args[1:], stdout, stderr, lookupEnv)
+	case "environments":
+		return runAppsEnvironments(prog, args[1:], stdout, stderr, lookupEnv)
+	case "set-environment":
+		return runAppsSetEnvironment(prog, args[1:], stdout, stderr, lookupEnv)
+	case "clear-environment":
+		return runAppsClearEnvironment(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsUsage(prog))
@@ -70,6 +78,10 @@ func appsUsage(prog string) string {
   %[1]s apps exec <name> -- <cmd> [args...]   run a command in the app's container, exits with its real exit code
   %[1]s apps log-drain get|set|clear <name> [flags]   configure an external log drain
   %[1]s apps scheduled-tasks <verb> [flags]   manage cron-scheduled commands run inside the app's container
+  %[1]s apps organizations <verb> [flags]   manage organizations, which group projects
+  %[1]s apps environments <verb> [flags]   manage a project's environments (staging, production, ...)
+  %[1]s apps set-environment <name> <environment-id> [flags]   tag an app with an environment
+  %[1]s apps clear-environment <name> [flags]   remove an app's environment tag
 
 Run "%[1]s apps <subcommand> -h" for a subcommand's own flags.
 `, prog)

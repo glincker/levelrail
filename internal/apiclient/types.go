@@ -45,6 +45,9 @@ type AppResource struct {
 	Resources *ServiceResources `json:"resources,omitempty"`
 	Health    *ServiceHealth    `json:"health,omitempty"`
 	NodeID    string            `json:"node_id,omitempty"`
+	// EnvironmentID mirrors internal/api's appResource.EnvironmentID:
+	// response-only, set via PUT /api/v1/apps/{name}/environment.
+	EnvironmentID string `json:"environment_id,omitempty"`
 }
 
 // LogDrainResource mirrors internal/api's logDrainResource
@@ -366,6 +369,58 @@ type ScheduledTaskRequest struct {
 	Command  []string `json:"command"`
 	Schedule string   `json:"schedule"`
 	Enabled  bool     `json:"enabled"`
+}
+
+// OrganizationResource mirrors internal/api's organizationResource
+// (internal/api/organizations.go).
+type OrganizationResource struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"created_at"`
+}
+
+// CreateOrganizationRequest mirrors internal/api's
+// createOrganizationRequest.
+type CreateOrganizationRequest struct {
+	Name string `json:"name"`
+}
+
+// ProjectResource mirrors internal/api's projectResource
+// (internal/api/projects.go). OrgID is empty when the project isn't
+// filed under any organization.
+type ProjectResource struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"created_at"`
+	OrgID     string `json:"org_id,omitempty"`
+}
+
+// SetProjectOrganizationRequest mirrors internal/api's
+// setProjectOrganizationRequest. An empty OrgID clears the assignment.
+type SetProjectOrganizationRequest struct {
+	OrgID string `json:"org_id"`
+}
+
+// EnvironmentResource mirrors internal/api's environmentResource
+// (internal/api/environments.go).
+type EnvironmentResource struct {
+	ID        string `json:"id"`
+	ProjectID string `json:"project_id"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"created_at"`
+}
+
+// CreateEnvironmentRequest mirrors internal/api's
+// createEnvironmentRequest.
+type CreateEnvironmentRequest struct {
+	Name string `json:"name"`
+}
+
+// SetAppEnvironmentRequest mirrors internal/api's
+// setAppEnvironmentRequest. An empty EnvironmentID clears the
+// assignment.
+type SetAppEnvironmentRequest struct {
+	EnvironmentID string `json:"environment_id"`
 }
 
 // SetAppDatabaseRequest mirrors internal/api's setAppDatabaseRequest
