@@ -229,12 +229,9 @@ type ACMEIssuer struct {
 	// operator believes is a production toggle would be a worse
 	// surprise than requiring them to opt in explicitly.
 	CA string `json:"ca,omitempty"`
-	// Challenges configures non-default ACME challenge types. Nil (the
-	// default) leaves Caddy's own HTTP-01/TLS-ALPN-01 automatic
-	// selection in place; NewCloudflareDNSACMEIssuer is the only
-	// constructor in this package that sets it, for the wildcard-domain
-	// case HTTP-01 structurally cannot solve (RFC 8555 7.1.1 restricts
-	// it to non-wildcard identifiers).
+	// Challenges is non-nil only for wildcard subjects: RFC 8555 7.1.1
+	// restricts HTTP-01 to non-wildcard identifiers, so
+	// NewCloudflareDNSACMEIssuer sets DNS-01 here instead.
 	Challenges *ChallengesConfig `json:"challenges,omitempty"`
 }
 
@@ -247,12 +244,9 @@ type ChallengesConfig struct {
 // DNSChallengeConfig mirrors Caddy's caddytls.DNSChallengeConfig, scoped
 // to the one field this package sets: Provider.
 type DNSChallengeConfig struct {
-	// Provider is a dns.providers.* module reference. Typed any for the
-	// same reason Route.Handle and AutomationPolicy.Issuers already are:
-	// Caddy's DNS provider namespace is polymorphic, any value
-	// marshaling to {"name": "<id>", ...} is valid here (inline_key is
-	// "name" for this namespace, not "module": verified against
-	// caddytls.DNSChallengeConfig.ProviderRaw's own struct tag).
+	// Provider is a dns.providers.* module reference, typed any like
+	// Route.Handle. Its inline_key is "name", not "module" (per
+	// caddytls.DNSChallengeConfig.ProviderRaw's struct tag).
 	Provider any `json:"provider"`
 }
 
