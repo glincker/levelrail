@@ -36,6 +36,10 @@ func TestValidateAppResource(t *testing.T) {
 		{name: "custom labels valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Labels: map[string]string{"team": "platform"}}, wantErr: false},
 		{name: "reserved-prefix label rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Labels: map[string]string{spec.ReservedLabelPrefix + "managed": "true"}}, wantErr: true},
 		{name: "empty label key rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Labels: map[string]string{"": "x"}}, wantErr: true},
+		{name: "valid wildcard domain", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Domains: []string{"*.example.com"}}, wantErr: false},
+		{name: "wildcard mixed with plain domain", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Domains: []string{"*.example.com", "example.com"}}, wantErr: false},
+		{name: "malformed wildcard rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Domains: []string{"sub.*.example.com"}}, wantErr: true},
+		{name: "wildcard with no base domain rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Domains: []string{"*.internal"}}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

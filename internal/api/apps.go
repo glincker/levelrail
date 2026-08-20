@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -208,6 +209,11 @@ func validateAppResource(a appResource) error {
 	}
 	if err := spec.ValidateLabels(a.Labels); err != nil {
 		return err
+	}
+	for _, domain := range a.Domains {
+		if err := ingress.ValidateWildcardDomain(domain); err != nil {
+			return err
+		}
 	}
 	return nil
 }
