@@ -88,6 +88,9 @@ type BuildTriggerRequestBuild struct {
 	// repo, for a monorepo. Not meaningful for Type == "image".
 	BaseDirectory string `json:"base_directory,omitempty"`
 	Image         string `json:"image,omitempty"`
+	// Args are Dockerfile build-time ARG values. Only meaningful for
+	// Type == "dockerfile".
+	Args map[string]string `json:"args,omitempty"`
 }
 
 // BuildTriggerResponse mirrors internal/api's triggerBuildResponse: the

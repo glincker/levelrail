@@ -226,6 +226,7 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 		ContextDir:     buildRoot,
 		DockerfilePath: dockerfilePath,
 		Tag:            tag,
+		BuildArgs:      req.Service.Build.Args,
 	}, progress)
 	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: build: %w", req.ServiceName, err)

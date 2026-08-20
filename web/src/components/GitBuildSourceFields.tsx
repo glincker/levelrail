@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import {
   Controller,
+  useFieldArray,
   type Control,
   type FormState,
   type UseFormGetValues,
@@ -8,7 +9,12 @@ import {
   type UseFormSetValue,
   type UseFormWatch,
 } from 'react-hook-form'
-import { WarningIcon, SpinnerIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  WarningIcon,
+  SpinnerIcon,
+  PlusIcon,
+  XIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -288,71 +294,170 @@ export function GitBuildSourceFields({
           </button>
 
           {showAdvanced ? (
-            <div className="mt-3 flex flex-col gap-4 rounded-lg border border-dashed border-border p-3 sm:flex-row">
-              {buildType !== 'static' ? (
+            <div className="mt-3 flex flex-col gap-4 rounded-lg border border-dashed border-border p-3">
+              <div className="flex flex-col gap-4 sm:flex-row">
+                {buildType !== 'static' ? (
+                  <Field className="flex-1">
+                    <FieldLabel htmlFor="git-app-image-repo">
+                      Image name (optional)
+                    </FieldLabel>
+                    <Input
+                      id="git-app-image-repo"
+                      className="font-mono"
+                      placeholder="defaults to the app name"
+                      autoComplete="off"
+                      spellCheck={false}
+                      disabled={disabled}
+                      {...register('imageRepo')}
+                    />
+                    <FieldDescription>
+                      The name given to the built image. Leave blank to use the
+                      app name.
+                    </FieldDescription>
+                  </Field>
+                ) : null}
+
+                {buildType === 'dockerfile' ? (
+                  <Field className="flex-1">
+                    <FieldLabel htmlFor="git-app-dockerfile-path">
+                      Dockerfile path (optional)
+                    </FieldLabel>
+                    <Input
+                      id="git-app-dockerfile-path"
+                      className="font-mono"
+                      placeholder="./Dockerfile"
+                      autoComplete="off"
+                      spellCheck={false}
+                      disabled={disabled}
+                      {...register('dockerfilePath')}
+                    />
+                    <FieldDescription>
+                      Where the Dockerfile lives in your repo. Leave blank if
+                      it&rsquo;s at the root.
+                    </FieldDescription>
+                  </Field>
+                ) : null}
+
                 <Field className="flex-1">
-                  <FieldLabel htmlFor="git-app-image-repo">
-                    Image name (optional)
+                  <FieldLabel htmlFor="git-app-base-directory">
+                    Base directory (optional)
                   </FieldLabel>
                   <Input
-                    id="git-app-image-repo"
+                    id="git-app-base-directory"
                     className="font-mono"
-                    placeholder="defaults to the app name"
+                    placeholder="apps/web"
                     autoComplete="off"
                     spellCheck={false}
                     disabled={disabled}
-                    {...register('imageRepo')}
+                    {...register('baseDirectory')}
                   />
                   <FieldDescription>
-                    The name given to the built image. Leave blank to use the
-                    app name.
+                    Subdirectory to build from, for a monorepo. Leave blank to
+                    build from the repo root.
                   </FieldDescription>
                 </Field>
-              ) : null}
+              </div>
 
               {buildType === 'dockerfile' ? (
-                <Field className="flex-1">
-                  <FieldLabel htmlFor="git-app-dockerfile-path">
-                    Dockerfile path (optional)
-                  </FieldLabel>
-                  <Input
-                    id="git-app-dockerfile-path"
-                    className="font-mono"
-                    placeholder="./Dockerfile"
-                    autoComplete="off"
-                    spellCheck={false}
-                    disabled={disabled}
-                    {...register('dockerfilePath')}
-                  />
-                  <FieldDescription>
-                    Where the Dockerfile lives in your repo. Leave blank if
-                    it&rsquo;s at the root.
-                  </FieldDescription>
-                </Field>
-              ) : null}
-
-              <Field className="flex-1">
-                <FieldLabel htmlFor="git-app-base-directory">
-                  Base directory (optional)
-                </FieldLabel>
-                <Input
-                  id="git-app-base-directory"
-                  className="font-mono"
-                  placeholder="apps/web"
-                  autoComplete="off"
-                  spellCheck={false}
+                <BuildArgsFields
+                  control={control}
+                  register={register}
+                  formState={formState}
                   disabled={disabled}
-                  {...register('baseDirectory')}
                 />
-                <FieldDescription>
-                  Subdirectory to build from, for a monorepo. Leave blank to
-                  build from the repo root.
-                </FieldDescription>
-              </Field>
+              ) : null}
             </div>
           ) : null}
         </div>
       ) : null}
     </>
+  )
+}
+
+// BuildArgsFields is GitBuildSourceFields' Dockerfile-build-args editor,
+// the same add/remove-row pattern LabelsEditor.tsx establishes for Docker
+// labels, bound to this form's own control/register instead of its own.
+function BuildArgsFields({
+  control,
+  register,
+  formState,
+  disabled,
+}: {
+  control: Control<FormInput, unknown, FormOutput>
+  register: UseFormRegister<FormInput>
+  formState: FormState<FormInput>
+  disabled: boolean
+}) {
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'buildArgs',
+  })
+
+  return (
+    <Field>
+      <FieldLabel>Build args (optional)</FieldLabel>
+      <FieldDescription>
+        Dockerfile <code className="font-mono">ARG</code> values passed to the
+        build, for example a base image version or a build-time feature flag.
+      </FieldDescription>
+      <div className="flex flex-col gap-2">
+        {fields.map((field, index) => (
+          <div key={field.id} className="flex items-start gap-2">
+            <div className="flex-1">
+              <Input
+                {...register(`buildArgs.${index}.key`)}
+                className="font-mono"
+                placeholder="KEY"
+                autoComplete="off"
+                spellCheck={false}
+                disabled={disabled}
+                aria-label="Build arg key"
+              />
+              <FieldError
+                errors={
+                  formState.errors.buildArgs?.[index]?.key
+                    ? [formState.errors.buildArgs[index]?.key]
+                    : undefined
+                }
+              />
+            </div>
+            <Input
+              {...register(`buildArgs.${index}.value`)}
+              className="flex-1 font-mono"
+              placeholder="value"
+              autoComplete="off"
+              spellCheck={false}
+              disabled={disabled}
+              aria-label="Build arg value"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              disabled={disabled}
+              onClick={() => {
+                remove(index)
+              }}
+            >
+              <XIcon />
+              <span className="sr-only">Remove build arg</span>
+            </Button>
+          </div>
+        ))}
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="w-fit"
+        disabled={disabled}
+        onClick={() => {
+          append({ key: '', value: '' })
+        }}
+      >
+        <PlusIcon />
+        Add build arg
+      </Button>
+    </Field>
   )
 }

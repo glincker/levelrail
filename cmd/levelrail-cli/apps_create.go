@@ -27,11 +27,14 @@ type createFlags struct {
 	dockerfile    string
 	buildType     string
 	baseDirectory string
-	imageRepo     string
-	file          string
-	service       string
-	yes           bool
-	jsonOut       bool
+	// buildArgs backs --build-arg (repeatable KEY=VALUE), only meaningful
+	// alongside --build-type dockerfile. See stringMapFlag (flagutil.go).
+	buildArgs map[string]string
+	imageRepo string
+	file      string
+	service   string
+	yes       bool
+	jsonOut   bool
 
 	// attachDatabase, attachDatabaseEnvVar, attachDatabaseField back
 	// --attach-database and its two optional refinements: a post-create
@@ -131,6 +134,9 @@ func planGitBuildFlags(f createFlags, detected detectedGit) (createPlan, error) 
 	if buildType != spec.BuildDockerfile && buildType != spec.BuildRailpack {
 		return createPlan{}, newValidationError("--build-type %q not supported by the git-build path; use %q or %q", buildType, spec.BuildDockerfile, spec.BuildRailpack)
 	}
+	if buildType != spec.BuildDockerfile && len(f.buildArgs) > 0 {
+		return createPlan{}, newValidationError("--build-arg is only meaningful with --build-type %q", spec.BuildDockerfile)
+	}
 
 	var missing []string
 	if f.name == "" {
@@ -152,6 +158,7 @@ func planGitBuildFlags(f createFlags, detected detectedGit) (createPlan, error) 
 	buildInput := buildTriggerRequestBuild{Type: buildType, BaseDirectory: f.baseDirectory}
 	if buildType == spec.BuildDockerfile {
 		buildInput.Path = f.dockerfile
+		buildInput.Args = f.buildArgs
 	}
 
 	return createPlan{
@@ -187,6 +194,9 @@ func planFromFile(f createFlags, fileSpec *spec.Spec, detected detectedGit) (cre
 }
 
 func planFromFileBuild(f createFlags, key string, svc spec.Service, detected detectedGit, buildType string) (createPlan, error) {
+	if buildType != spec.BuildDockerfile && len(f.buildArgs) > 0 {
+		return createPlan{}, newValidationError("--build-arg is only meaningful for a dockerfile build (service %q has build.type %q)", key, buildType)
+	}
 	if secretKeys := secretEnvKeys(svc.Env); len(secretKeys) > 0 {
 		return createPlan{}, newValidationError(
 			"service %q declares secret env var(s) %s; apps create does not yet set secrets, create the app without them and set each one via PUT /api/v1/apps/{name}/secrets/{key} afterward",
@@ -230,6 +240,12 @@ func planFromFileBuild(f createFlags, key string, svc spec.Service, detected det
 			dockerfile = svc.Build.Path
 		}
 		buildInput.Path = dockerfile
+
+		args := svc.Build.Args
+		if len(f.buildArgs) > 0 {
+			args = f.buildArgs
+		}
+		buildInput.Args = args
 	}
 
 	resources, err := toServiceResources(svc.Resources)
@@ -571,6 +587,8 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.StringVar(&f.dockerfile, "dockerfile", "", "Dockerfile path relative to the repo root (git-build path, --build-type dockerfile only); defaults to \"Dockerfile\" at the repo root")
 	fs.StringVar(&f.buildType, "build-type", "", "build type for the git-build path: \"dockerfile\" (default) or \"railpack\" (auto-detected build, no Dockerfile needed)")
 	fs.StringVar(&f.baseDirectory, "base-directory", "", "subdirectory of the repo to build from, for a monorepo (git-build path); defaults to the repo root")
+	f.buildArgs = make(map[string]string)
+	fs.Var(stringMapFlag(f.buildArgs), "build-arg", "Dockerfile build arg as KEY=VALUE, repeatable (git-build path, --build-type dockerfile only)")
 	fs.StringVar(&f.imageRepo, "image-repo", "", "image name without a tag, e.g. registry.example.com/org/app (git-build path)")
 	fs.StringVar(&f.file, "file", "", "path to an app.yaml (or equivalent) spec file; an alternative to the flag-only paths above")
 	fs.StringVar(&f.service, "service", "", "which service in --file's services: map to create, required when it declares more than one")
@@ -633,14 +651,17 @@ Git-build path (flags):
   --build-type string  "dockerfile" (default) or "railpack" (auto-detected build, no Dockerfile needed)
   --dockerfile string   Dockerfile path relative to the repo root, --build-type dockerfile only (default: "Dockerfile")
   --base-directory string  subdirectory of the repo to build from, for a monorepo (default: repo root)
+  --build-arg KEY=VALUE   Dockerfile build arg, repeatable, --build-type dockerfile only
 
 Manifest path:
   --file string           path to an app.yaml (or equivalent) spec file
   --service string      which service to create, if the file declares more than one
-  --name, --port, --repo, --ref, --dockerfile, --base-directory, --image-repo above all override
-    the file's own values or supply what it cannot express (repo location, image name)
+  --name, --port, --repo, --ref, --dockerfile, --base-directory, --build-arg, --image-repo above
+    all override the file's own values or supply what it cannot express (repo location, image name)
   build.type: dockerfile or railpack builds from git (repo/ref/image-repo required, as above);
     build.type: image creates the app directly with build.image, no build triggered
+  build.args from app.yaml's own build.args flow through automatically for a dockerfile build;
+    --build-arg overrides them entirely rather than merging
 
 Database attachment (any path above):
   --attach-database string           name of an existing managed database to attach after create

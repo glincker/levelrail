@@ -66,7 +66,11 @@
         "path": { "type": "string", "minLength": 1 },
         "baseDirectory": { "type": "string", "minLength": 1 },
         "image": { "type": "string", "minLength": 1 },
-        "registryCredential": { "type": "string", "minLength": 1 }
+        "registryCredential": { "type": "string", "minLength": 1 },
+        "args": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
       }
     },
     "health": {

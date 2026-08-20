@@ -64,6 +64,9 @@ const createAppFromGitSchema = z
     buildType: z.enum(BUILD_TYPES),
     dockerfilePath: z.string().trim(),
     baseDirectory: z.string().trim(),
+    // Dockerfile build-time ARGs, buildType: 'dockerfile' only. A blank
+    // key is dropped in buildInputFrom below, not rejected here.
+    buildArgs: z.array(z.object({ key: z.string(), value: z.string() })),
     image: z.string().trim(),
     domain: z
       .string()
@@ -98,6 +101,21 @@ const createAppFromGitSchema = z
         path: ['ref'],
       })
     }
+    if (values.buildType === 'dockerfile') {
+      const seen = new Set<string>()
+      values.buildArgs.forEach((arg, index) => {
+        const key = arg.key.trim()
+        if (!key) return
+        if (seen.has(key)) {
+          ctx.addIssue({
+            code: 'custom',
+            message: 'Duplicate key',
+            path: ['buildArgs', index, 'key'],
+          })
+        }
+        seen.add(key)
+      })
+    }
   })
 
 export type FormInput = z.input<typeof createAppFromGitSchema>
@@ -112,6 +130,7 @@ const DEFAULT_VALUES: FormInput = {
   buildType: 'railpack',
   dockerfilePath: '',
   baseDirectory: '',
+  buildArgs: [],
   image: '',
   domain: '',
 }
@@ -127,7 +146,8 @@ const DEFAULT_VALUES: FormInput = {
 // that case. build.type: image sends only image: repoUrl/ref/imageRepo
 // are all meaningless when nothing gets cloned or built. baseDirectory
 // is sent for every non-image build type: the backend accepts it for
-// dockerfile, railpack, and static alike.
+// dockerfile, railpack, and static alike. build.args is dockerfile-only,
+// same restriction handleTriggerBuild enforces server-side.
 function buildInputFrom(values: FormOutput): TriggerBuildInput {
   if (values.buildType === 'image') {
     return {
@@ -150,7 +170,26 @@ function buildInputFrom(values: FormOutput): TriggerBuildInput {
         ? values.dockerfilePath.trim() || undefined
         : undefined,
     baseDirectory: values.baseDirectory.trim() || undefined,
+    buildArgs:
+      values.buildType === 'dockerfile'
+        ? buildArgsRecord(values.buildArgs)
+        : undefined,
   }
+}
+
+// buildArgsRecord drops any row with a blank key, the same leniency
+// this form's superRefine above already applies when checking for
+// duplicates: a trailing blank row left over from "Add build arg" isn't
+// a validation error, it's just not sent.
+function buildArgsRecord(
+  args: FormOutput['buildArgs'],
+): Record<string, string> | undefined {
+  const out: Record<string, string> = {}
+  for (const { key, value } of args) {
+    const trimmedKey = key.trim()
+    if (trimmedKey) out[trimmedKey] = value
+  }
+  return Object.keys(out).length > 0 ? out : undefined
 }
 
 // Placeholder image tag POST /api/v1/apps is sent on step 1 of this

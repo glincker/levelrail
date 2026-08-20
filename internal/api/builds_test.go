@@ -465,6 +465,45 @@ func TestHandleTriggerBuild_BaseDirectoryAccepted(t *testing.T) {
 	}
 }
 
+// TestHandleTriggerBuild_ArgsAccepted proves build.args reaches the
+// spec.Build the deploy pipeline builds from, for the one build type it's
+// meaningful for.
+func TestHandleTriggerBuild_ArgsAccepted(t *testing.T) {
+	fb := newFakeBuilder("levelrail/web:abc1234", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
+	cookie := loginTestSession(t, rt, db)
+	seedWebApp(t, db)
+
+	postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main","build":{"args":{"VERSION":"1.2.3"}}}`)
+	got := fb.awaitCall(t)
+	if got.Service.Build.Args["VERSION"] != "1.2.3" {
+		t.Errorf("Service.Build.Args = %+v, want VERSION=1.2.3", got.Service.Build.Args)
+	}
+}
+
+// TestHandleTriggerBuild_RailpackWithArgsRejected proves a caller-supplied
+// build.args for build.type: railpack fails loudly rather than being
+// silently discarded, the same pattern
+// TestHandleTriggerBuild_RailpackWithPathRejected already establishes for
+// railpack's own path field.
+func TestHandleTriggerBuild_RailpackWithArgsRejected(t *testing.T) {
+	fb := newFakeBuilder("levelrail/web:railpack1", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
+	cookie := loginTestSession(t, rt, db)
+	seedWebApp(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
+		`{"repo_url":"https://example.com/web.git","ref":"main","build":{"type":"railpack","args":{"VERSION":"1.2.3"}}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	fetch.assertNotCalled(t)
+	fb.assertNotCalled(t)
+}
+
 // TestHandleTriggerBuild_ImageWithBaseDirectoryRejected proves
 // base_directory is rejected outright for build.type: image, the same
 // "fail loudly on a meaningless field" pattern
