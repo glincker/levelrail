@@ -35,7 +35,7 @@ type manualGitHubAppRequest struct {
 // the alternative to the automated manifest flow
 // (handleStartGitHubAppRegistration/handleGitHubAppCallback) for an
 // operator whose control plane has no publicly reachable primary domain
-// yet (githubAppBaseURL's own error), or who simply prefers creating
+// yet (controlPlaneBaseURL's own error), or who simply prefers creating
 // the App by hand on github.com and pasting the resulting credentials
 // in, the same "automated vs manual" choice Coolify's own GitHub App
 // connect screen offers side by side. Storage is identical to the

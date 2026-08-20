@@ -44,9 +44,9 @@ func (rt *Router) handleStartGitLabAppConnect(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	baseURL, err := rt.githubAppBaseURL(ctx)
+	baseURL, err := rt.controlPlaneBaseURL(ctx)
 	if err != nil {
-		if errors.Is(err, errGitHubAppNoPrimaryDomain) {
+		if errors.Is(err, errNoPrimaryDomain) {
 			writeError(w, http.StatusConflict, "set a primary domain in ingress settings before connecting gitlab: it needs a real, reachable redirect url")
 			return
 		}
@@ -113,7 +113,7 @@ func (rt *Router) handleGitLabAppCallback(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	baseURL, err := rt.githubAppBaseURL(ctx)
+	baseURL, err := rt.controlPlaneBaseURL(ctx)
 	if err != nil {
 		rt.logger.Error("api: get base url for gitlab app callback failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")

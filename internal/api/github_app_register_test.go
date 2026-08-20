@@ -46,7 +46,7 @@ func testRSAPrivateKeyPEM(t *testing.T) string {
 
 // testPrimaryDomain is the fixed primary domain every test in this file
 // configures before exercising a route that needs one
-// (githubAppBaseURL). A single constant, not a parameter: every call
+// (controlPlaneBaseURL). A single constant, not a parameter: every call
 // site here happens to want the same value, and a real test needing a
 // different one can pass it inline via db.UpdateIngressSettings
 // directly rather than this helper growing an unused-in-practice knob.

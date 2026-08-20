@@ -169,7 +169,11 @@ export function GitLabAppConnectionCard() {
           )}
         </div>
       </CardContent>
-      <ConfigureDialog open={configureOpen} onOpenChange={setConfigureOpen} />
+      <ConfigureDialog
+        open={configureOpen}
+        onOpenChange={setConfigureOpen}
+        baseURL={status.base_url}
+      />
     </Card>
   )
 }
@@ -183,9 +187,11 @@ export function GitLabAppConnectionCard() {
 function ConfigureDialog({
   open,
   onOpenChange,
+  baseURL,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
+  baseURL?: string
 }) {
   const connect = useConnectGitLabApp()
   const [instanceURL, setInstanceURL] = useState('https://gitlab.com')
@@ -244,9 +250,13 @@ function ConfigureDialog({
           <DialogDescription>
             Create one in your GitLab instance under Applications, with
             redirect URI{' '}
-            <code className="text-xs">
-              {window.location.origin}/api/v1/gitlab-app/callback
-            </code>{' '}
+            {baseURL ? (
+              <code className="text-xs">{baseURL}/api/v1/gitlab-app/callback</code>
+            ) : (
+              <span className="text-amber-700 dark:text-amber-400">
+                set a primary domain in domain settings first
+              </span>
+            )}{' '}
             and scope <code className="text-xs">api</code>, then paste the
             resulting client ID and secret here.
           </DialogDescription>

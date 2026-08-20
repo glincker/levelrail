@@ -74,7 +74,7 @@ type gitLabAppStatusResource struct {
 // handleGetGitLabAppStatus handles GET /api/v1/gitlab-app.
 func (rt *Router) handleGetGitLabAppStatus(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	baseURL, _ := rt.githubAppBaseURL(ctx)
+	baseURL, _ := rt.controlPlaneBaseURL(ctx)
 
 	conn, err := rt.gitlabApp.GetGitLabAppConnection(ctx)
 	if errors.Is(err, store.ErrGitLabAppConnectionNotFound) {

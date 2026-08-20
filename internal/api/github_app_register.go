@@ -33,7 +33,7 @@ import (
 // needs somewhere to store the App's credentials), no App may already
 // be connected (re-registering over an existing connection would orphan
 // the old App on GitHub's side with nothing here still pointing at it),
-// and a primary domain must be configured (githubAppBaseURL's own
+// and a primary domain must be configured (controlPlaneBaseURL's own
 // requirement: GitHub needs a real, reachable callback URL).
 func (rt *Router) handleStartGitHubAppRegistration(w http.ResponseWriter, r *http.Request) {
 	if rt.githubAppSecrets == nil {
@@ -51,9 +51,9 @@ func (rt *Router) handleStartGitHubAppRegistration(w http.ResponseWriter, r *htt
 		return
 	}
 
-	baseURL, err := rt.githubAppBaseURL(ctx)
+	baseURL, err := rt.controlPlaneBaseURL(ctx)
 	if err != nil {
-		if errors.Is(err, errGitHubAppNoPrimaryDomain) {
+		if errors.Is(err, errNoPrimaryDomain) {
 			writeError(w, http.StatusConflict, "set a primary domain in ingress settings before connecting a github app: github needs a real, reachable callback url")
 			return
 		}
@@ -134,7 +134,7 @@ func writeGitHubAppManifestForm(w http.ResponseWriter, state string, manifestJSO
 //
 // code and state are validated present before use; state is further
 // checked against the single pending value handleStartGitHubAppRegistration
-// generated (githubAppRegistrationState.consume), rejecting a missing,
+// generated (pendingState.consume), rejecting a missing,
 // unknown, expired, or already-used state with a 400, never a panic.
 func (rt *Router) handleGitHubAppCallback(w http.ResponseWriter, r *http.Request) {
 	if rt.githubAppSecrets == nil {
@@ -291,7 +291,7 @@ func (rt *Router) handleGitHubAppInstalled(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	baseURL, err := rt.githubAppBaseURL(ctx)
+	baseURL, err := rt.controlPlaneBaseURL(ctx)
 	if err != nil {
 		// PrimaryDomain being unset here would be surprising
 		// (registration itself required it to start), but this handler
