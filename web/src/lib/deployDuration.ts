@@ -13,10 +13,18 @@ export function formatDeployDuration(
     return 'Running'
   }
   const ms = new Date(finishedAt).getTime() - new Date(startedAt).getTime()
-  if (!Number.isFinite(ms) || ms < 0) {
-    return 'Unknown'
-  }
+  return formatDurationMs(ms) ?? 'Unknown'
+}
 
+// formatDurationMs is the shared h/m/s formatter behind
+// formatDeployDuration above and DeployStageTimeline's live-ticking
+// elapsed display, so a fixed and a still-counting-up duration render
+// with the same rounding and units. Returns null for a negative or
+// non-finite input rather than a fabricated string.
+export function formatDurationMs(ms: number): string | null {
+  if (!Number.isFinite(ms) || ms < 0) {
+    return null
+  }
   const totalSeconds = Math.round(ms / 1000)
   const hours = Math.floor(totalSeconds / 3600)
   const minutes = Math.floor((totalSeconds % 3600) / 60)

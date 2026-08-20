@@ -1,8 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
 import { useDeployStatus } from '../../../queries/deploys'
+import {
+  deployAttemptsQueryOptions,
+  useDeployAttempts,
+} from '../../../queries/deployAttempts'
 import { AppOverviewHero } from '../../../components/AppOverviewHero'
 import { AppOverview } from '../../../components/AppOverview'
+import { DeployInProgressBanner } from '../../../components/DeployInProgressBanner'
 import { PortEditor } from '../../../components/PortEditor'
 import { DeployStrategyEditor } from '../../../components/DeployStrategyEditor'
 import { ConditionsPanel } from '../../../components/ConditionsPanel'
@@ -23,7 +28,14 @@ import { DatabaseAttachmentCard } from '../../../components/DatabaseAttachmentCa
 // pre-existing raw field grid (memory/CPU/strategy/replicas/probes,
 // plus the Node/Project move dialogs), unchanged, just no longer the
 // only thing on the page.
+//
+// This route's own loader primes deploy-attempts (queries/deployAttempts.ts),
+// the same query DeployAttemptsList already uses, so a running latest
+// attempt renders DeployInProgressBanner above the hero without a second,
+// route-specific poll.
 export const Route = createFileRoute('/apps/$name/overview')({
+  loader: ({ context: { queryClient }, params: { name } }) =>
+    queryClient.ensureQueryData(deployAttemptsQueryOptions(name)),
   component: OverviewSection,
 })
 
@@ -31,9 +43,18 @@ function OverviewSection() {
   const { name } = Route.useParams()
   const { data: app } = useApp(name)
   const { data: conditions } = useDeployStatus(name)
+  const { data: attempts } = useDeployAttempts(name)
+  const latestAttempt = attempts[0]
 
   return (
     <div className="space-y-6">
+      {latestAttempt?.status === 'running' ? (
+        <DeployInProgressBanner
+          appName={name}
+          attempt={latestAttempt}
+          conditions={conditions}
+        />
+      ) : null}
       <AppOverviewHero app={app} conditions={conditions} />
       <AppOverview app={app} />
       <GitSourceCard app={app} />
