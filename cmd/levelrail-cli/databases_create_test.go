@@ -68,6 +68,16 @@ func TestPlanDatabaseCreate(t *testing.T) {
 			flags: createDatabaseFlags{name: "cache", engine: "keydb", version: "latest"},
 			want:  databaseResource{Name: "cache", Engine: "keydb", Version: "latest"},
 		},
+		{
+			name:  "valid dragonfly",
+			flags: createDatabaseFlags{name: "hotcache", engine: "dragonfly", version: "v1.27.1"},
+			want:  databaseResource{Name: "hotcache", Engine: "dragonfly", Version: "v1.27.1"},
+		},
+		{
+			name:  "valid clickhouse",
+			flags: createDatabaseFlags{name: "analytics", engine: "clickhouse", version: "24.8"},
+			want:  databaseResource{Name: "analytics", Engine: "clickhouse", Version: "24.8"},
+		},
 	}
 
 	for _, tt := range tests {

@@ -8,17 +8,19 @@ import (
 	"fmt"
 )
 
-// Supported managed database engines, matching internal/spec's list:
-// Postgres and Redis shipped as first-class resources in the initial
-// release, MySQL, MongoDB, MariaDB, and KeyDB joined once
-// internal/reconcile/database's controller grew matching engine cases.
+// Supported managed database engines. internal/spec's own engine list
+// (app.yaml declarative support) is tracked separately and not
+// guaranteed to match this one: Dragonfly and ClickHouse are available
+// here but not yet in internal/spec.
 const (
-	EnginePostgres = "postgres"
-	EngineRedis    = "redis"
-	EngineMySQL    = "mysql"
-	EngineMongoDB  = "mongodb"
-	EngineMariaDB  = "mariadb"
-	EngineKeyDB    = "keydb"
+	EnginePostgres   = "postgres"
+	EngineRedis      = "redis"
+	EngineMySQL      = "mysql"
+	EngineMongoDB    = "mongodb"
+	EngineMariaDB    = "mariadb"
+	EngineKeyDB      = "keydb"
+	EngineDragonfly  = "dragonfly"
+	EngineClickHouse = "clickhouse"
 )
 
 // DesiredDatabase is what a future database controller (TASKS.md 1.8)

@@ -52,10 +52,11 @@ import (
 // Data paths inside the container each engine's image expects its
 // volume mounted at.
 const (
-	redisDataPath    = "/data"
-	postgresDataPath = "/var/lib/postgresql/data"
-	mysqlDataPath    = "/var/lib/mysql"
-	mongoDataPath    = "/data/db"
+	redisDataPath      = "/data"
+	postgresDataPath   = "/var/lib/postgresql/data"
+	mysqlDataPath      = "/var/lib/mysql"
+	mongoDataPath      = "/data/db"
+	clickhouseDataPath = "/var/lib/clickhouse"
 )
 
 // Container ports each engine's image listens on, used to publish the
@@ -65,10 +66,11 @@ const (
 // than in database_engines.yaml, the same "identity/display metadata
 // only" boundary that registry's own doc comment already draws.
 const (
-	redisContainerPort    = 6379
-	postgresContainerPort = 5432
-	mysqlContainerPort    = 3306
-	mongoContainerPort    = 27017
+	redisContainerPort      = 6379
+	postgresContainerPort   = 5432
+	mysqlContainerPort      = 3306
+	mongoContainerPort      = 27017
+	clickhouseContainerPort = 8123
 )
 
 const defaultStopTimeout = 10 * time.Second
@@ -133,18 +135,29 @@ type MariaDBCredentials struct {
 	Password string
 }
 
+// ClickHouseCredentials is what ClickHouse reconciliation needs,
+// injected as CLICKHOUSE_USER/CLICKHOUSE_PASSWORD/CLICKHOUSE_DB. Unlike
+// MySQL/MariaDB, the image doesn't refuse to start without these, but
+// this controller still requires them, the same "never unauthenticated"
+// posture MongoDBCredentials' own doc comment explains.
+type ClickHouseCredentials struct {
+	Username string
+	Password string
+}
+
 // Controller converges one named database's desired state (read fresh
 // from Store on every Reconcile, never cached) to a running,
 // volume-backed container.
 type Controller struct {
-	dbName        string
-	store         Store
-	runtime       docker.Runtime
-	postgresCreds *PostgresCredentials
-	mysqlCreds    *MySQLCredentials
-	mongoCreds    *MongoDBCredentials
-	mariadbCreds  *MariaDBCredentials
-	meshDNSAddr   string // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	dbName          string
+	store           Store
+	runtime         docker.Runtime
+	postgresCreds   *PostgresCredentials
+	mysqlCreds      *MySQLCredentials
+	mongoCreds      *MongoDBCredentials
+	mariadbCreds    *MariaDBCredentials
+	clickhouseCreds *ClickHouseCredentials
+	meshDNSAddr     string // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
 }
 
 // Option configures optional Controller behavior.
@@ -182,6 +195,13 @@ func WithMongoDBCredentials(creds *MongoDBCredentials) Option {
 // every MariaDB database reports the credentials-blocked condition.
 func WithMariaDBCredentials(creds *MariaDBCredentials) Option {
 	return func(c *Controller) { c.mariadbCreds = creds }
+}
+
+// WithClickHouseCredentials supplies the credentials ClickHouse
+// reconciliation needs. Without one, every ClickHouse database reports
+// the credentials-blocked condition.
+func WithClickHouseCredentials(creds *ClickHouseCredentials) Option {
+	return func(c *Controller) { c.clickhouseCreds = creds }
 }
 
 // WithMeshDNSAddr points every container this controller creates at addr,
@@ -309,6 +329,23 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		// unauthenticated Redis-family database is an accepted posture
 		// here.
 		return c.reconcileEngine(ctx, desired, nil, redisDataPath, redisContainerPort)
+
+	case store.EngineDragonfly:
+		// Dragonfly is also Redis-protocol-compatible and passwordless by
+		// default, same reasoning as the KeyDB case above.
+		return c.reconcileEngine(ctx, desired, nil, redisDataPath, redisContainerPort)
+
+	case store.EngineClickHouse:
+		if c.clickhouseCreds == nil {
+			return credentialsBlockedResult(), nil
+		}
+		env := map[string]string{
+			"CLICKHOUSE_DB":                        c.dbName,
+			"CLICKHOUSE_USER":                      c.clickhouseCreds.Username,
+			"CLICKHOUSE_PASSWORD":                  c.clickhouseCreds.Password,
+			"CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT": "1",
+		}
+		return c.reconcileEngine(ctx, desired, env, clickhouseDataPath, clickhouseContainerPort)
 
 	default:
 		err := fmt.Errorf("unrecognized engine %q", desired.Engine)
@@ -468,24 +505,25 @@ func normalizedPortSet(ports []docker.PortBinding) map[docker.PortBinding]bool {
 	return set
 }
 
-// dockerImageFor returns the real Docker Hub image name for engine.
-// Every other supported engine's registry id (store.EnginePostgres,
-// EngineRedis, EngineMySQL, EngineMariaDB) is already identical to its
-// own image name, so this only needs real mappings for MongoDB and
-// KeyDB: "mongodb" maps to the official image "mongo", and "keydb" maps
-// to "eqalpha/keydb", the actual maintained image (there is no official,
-// Docker-Hub-library "keydb" image). Falls through to engine itself for
-// every other id, so adding a future engine whose id does match its
-// image name needs no change here.
+// dockerImageMapping holds engines whose registry id (see
+// database_engines.yaml) doesn't match its Docker image name; any id
+// absent here is used as its own image name.
+var dockerImageMapping = map[string]string{
+	store.EngineMongoDB:   "mongo",
+	store.EngineKeyDB:     "eqalpha/keydb",
+	store.EngineDragonfly: "docker.dragonflydb.io/dragonflydb/dragonfly",
+	// ClickHouse's own registry namespace, not a Docker Official Image:
+	// clickhouse/clickhouse-server is what upstream publishes.
+	store.EngineClickHouse: "clickhouse/clickhouse-server",
+}
+
+// dockerImageFor returns the Docker image name for engine, applying
+// dockerImageMapping where the registry id and image name diverge.
 func dockerImageFor(engine string) string {
-	switch engine {
-	case store.EngineMongoDB:
-		return "mongo"
-	case store.EngineKeyDB:
-		return "eqalpha/keydb"
-	default:
-		return engine
+	if image, ok := dockerImageMapping[engine]; ok {
+		return image
 	}
+	return engine
 }
 
 func versionOrDefault(v string) string {
@@ -543,20 +581,15 @@ func unknownResult(reason string) reconcile.Result {
 	}}}
 }
 
-// credentialsBlockedResult is the condition a Postgres database reports
-// whenever this controller has no credentials to work with, either the
-// control plane has no master key configured at all (TASKS.md 1.7,
-// envelope-encrypted secrets, internal/secrets.Manager), or generating/
-// persisting/resolving this database's own credentials failed on this
-// reconcile pass: either way, no container is started rather than
-// running postgres unauthenticated. See the package doc comment for the
-// full reasoning.
+// credentialsBlockedResult is the condition every credentialed engine
+// reports when it has no usable credentials: no container starts rather
+// than running unauthenticated. See the package doc comment.
 func credentialsBlockedResult() reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
 		Type:   "Ready",
 		Status: reconcile.ConditionFalse,
 		Reason: "CredentialsNotConfigured",
-		Message: "no postgres credentials available for this database; either the control plane has no secrets master key configured, " +
-			"or generating/resolving this database's own credentials failed, so no container is started rather than running postgres unauthenticated",
+		Message: "no credentials available for this database; either the control plane has no secrets master key configured, " +
+			"or generating/resolving this database's own credentials failed, so no container is started rather than running it unauthenticated",
 	}}}
 }
