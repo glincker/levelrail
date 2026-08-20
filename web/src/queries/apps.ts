@@ -275,6 +275,48 @@ export function useSetAppProject() {
   })
 }
 
+// PUT /api/v1/apps/{name}/environment (internal/api/environments.go's
+// handleSetAppEnvironment): the only way an existing app's environment
+// tag changes, the same node_id/project_id shape setAppNode/setAppProject
+// already establish. Empty environmentId clears the tag.
+export async function setAppEnvironment(
+  name: string,
+  environmentId: string,
+): Promise<AppDetail> {
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(name)}/environment`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ environment_id: environmentId }),
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `set app environment failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as AppDetail
+}
+
+export function useSetAppEnvironment() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      name,
+      environmentId,
+    }: {
+      name: string
+      environmentId: string
+    }) => setAppEnvironment(name, environmentId),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(appKeys.detail(updated.name), updated)
+      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+    },
+  })
+}
+
 // PUT /api/v1/apps/{name}/storage (internal/api/apps_storage.go's
 // handleSetAppStorage): attaches an already-connected backup target (the
 // same S3-compatible bucket connection a database's scheduled backups can
