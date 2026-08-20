@@ -59,6 +59,20 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/alerts", rt.requireAbility(AbilityRead, rt.handleListAlertRules))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/alerts/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteAlertRule))
 
+	// Scheduled tasks: run an arbitrary command inside this app's
+	// container on a cron schedule (internal/scheduledtask). CRUD sits at
+	// AbilityWrite, the same config-mutation tier alert rules above and
+	// env var updates already use; "run now" sits one tier up at
+	// AbilityDeploy, matching restart/stop/start above, since it has the
+	// identical immediate side effect (a real command actually runs
+	// inside a running container right now), not just a config change.
+	mux.HandleFunc("POST /api/v1/apps/{name}/scheduled-tasks", rt.requireAbility(AbilityWrite, rt.handleCreateScheduledTask))
+	mux.HandleFunc("GET /api/v1/apps/{name}/scheduled-tasks", rt.requireAbility(AbilityRead, rt.handleListScheduledTasks))
+	mux.HandleFunc("GET /api/v1/apps/{name}/scheduled-tasks/{id}", rt.requireAbility(AbilityRead, rt.handleGetScheduledTask))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/scheduled-tasks/{id}", rt.requireAbility(AbilityWrite, rt.handleUpdateScheduledTask))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/scheduled-tasks/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteScheduledTask))
+	mux.HandleFunc("POST /api/v1/apps/{name}/scheduled-tasks/{id}/run", rt.requireAbility(AbilityDeploy, rt.handleRunScheduledTaskNow))
+
 	// Deploy-outcome notifications (wave-2 roadmap item #5): a Slack/
 	// Discord/Telegram/generic-webhook/email ping fired once per deploy
 	// attempt reaching a terminal state, distinct from the threshold/
@@ -196,6 +210,14 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// GET is AbilityRead; PUT is AbilityRoot, real infrastructure config.
 	mux.HandleFunc("GET /api/v1/settings/email", rt.requireAbility(AbilityRead, rt.handleGetEmailSettings))
 	mux.HandleFunc("PUT /api/v1/settings/email", rt.requireAbility(AbilityRoot, rt.handleUpdateEmailSettings))
+
+	// Cloudflare Tunnel (instance-level, one connection per control
+	// plane): GET is AbilityRead; PUT/DELETE are AbilityRoot, matching
+	// PUT /api/v1/settings/email's own tier for infrastructure config
+	// that changes how this control plane is reachable.
+	mux.HandleFunc("GET /api/v1/settings/cloudflare-tunnel", rt.requireAbility(AbilityRead, rt.handleGetCloudflareTunnelSettings))
+	mux.HandleFunc("PUT /api/v1/settings/cloudflare-tunnel", rt.requireAbility(AbilityRoot, rt.handleUpdateCloudflareTunnelSettings))
+	mux.HandleFunc("DELETE /api/v1/settings/cloudflare-tunnel", rt.requireAbility(AbilityRoot, rt.handleDisconnectCloudflareTunnel))
 
 	// Domains (centralized cross-app list, web/src/routes/domains):
 	// every service_domains row, AbilityRead like GET /api/v1/apps,
@@ -369,4 +391,13 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// other identity on this control plane, not an ordinary per-app
 	// read.
 	mux.HandleFunc("GET /api/v1/audit-log", rt.requireAbility(AbilityRoot, rt.handleListAuditLog))
+
+	// Log drain (apps_log_drain.go): forwards an app's container logs to
+	// an external HTTP or syslog sink, additive to the existing
+	// node-local store. AbilityWriteSensitive for write/clear, the same
+	// tier as storage above (both configure where data leaves this
+	// control plane to); AbilityRead for the GET.
+	mux.HandleFunc("GET /api/v1/apps/{name}/log-drain", rt.requireAbility(AbilityRead, rt.handleGetAppLogDrain))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/log-drain", rt.requireAbility(AbilityWriteSensitive, rt.handleSetAppLogDrain))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/log-drain", rt.requireAbility(AbilityWriteSensitive, rt.handleClearAppLogDrain))
 }

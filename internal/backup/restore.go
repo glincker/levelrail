@@ -46,8 +46,14 @@ type ContainerRestorer struct {
 
 // Restore implements Restorer.
 func (r *ContainerRestorer) Restore(ctx context.Context, engine, containerName string, dump io.Reader) error {
-	if engine == store.EngineRedis {
-		return r.restoreRedis(ctx, containerName, dump)
+	switch engine {
+	case store.EngineRedis:
+		return r.restoreRedisLike(ctx, containerName, dump, redisCLIBin)
+	case store.EngineKeyDB:
+		// See keydbDumpCmd's own doc comment: KeyDB ships keydb-cli, not
+		// redis-cli, otherwise this is restoreRedisLike's identical
+		// write-then-stop-then-start sequence.
+		return r.restoreRedisLike(ctx, containerName, dump, keydbCLIBin)
 	}
 
 	var cmd []string
@@ -58,6 +64,8 @@ func (r *ContainerRestorer) Restore(ctx context.Context, engine, containerName s
 		cmd = mysqlRestoreCmd
 	case store.EngineMongoDB:
 		cmd = mongoRestoreCmd
+	case store.EngineMariaDB:
+		cmd = mariadbRestoreCmd
 	default:
 		// Mirrors ContainerDumper.Dump's own reasoning for its identical
 		// default branch: a genuinely unknown engine reaching here means
@@ -88,29 +96,42 @@ func (r *ContainerRestorer) Restore(ctx context.Context, engine, containerName s
 	return nil
 }
 
-// restoreRedis loads an RDB snapshot the only way Redis actually supports
-// one: write it to disk as /data/dump.rdb while the container is still
-// running, then stop and start the container so Redis loads it during its
-// own startup sequence, the unconditional-at-boot RDB load that applies
-// whenever AOF isn't configured (see redisDataPath's own callers in
-// internal/reconcile/database.Controller, which never set one).
+// redisCLIBin and keydbCLIBin are the two Redis-protocol-compatible CLI
+// binary names restoreRedisLike's cliBin parameter accepts: the eqalpha/
+// keydb image ships its own keydb-cli rather than a copy of Redis's
+// redis-cli (see dump.go's keydbDumpCmd doc comment), everything else
+// about the restore sequence is identical between the two engines.
+const (
+	redisCLIBin = "redis-cli"
+	keydbCLIBin = "keydb-cli"
+)
+
+// restoreRedisLike loads an RDB snapshot the only way Redis (and its
+// protocol-compatible forks, KeyDB) actually support one: write it to
+// disk as /data/dump.rdb while the container is still running, then stop
+// and start the container so it loads the file during its own startup
+// sequence, the unconditional-at-boot RDB load that applies whenever AOF
+// isn't configured (see redisDataPath's own callers in
+// internal/reconcile/database.Controller, which never set one for
+// either engine).
 //
-// Before writing, this clears Redis's own save points for the running
-// session (CONFIG SET save "", not persisted to disk, reverts on the
-// restart below). Without this, Redis's own SIGTERM handler performs its
+// Before writing, this clears the running session's own save points via
+// cliBin (CONFIG SET save "", not persisted to disk, reverts on the
+// restart below). Without this, the SIGTERM handler performs its
 // configured snapshot on the way down whenever any save point exists
 // (true by default for this image), overwriting the dump.rdb this method
 // just wrote with the live pre-restore state a split second before the
 // process actually exits: a real failure mode caught by
 // TestContainerRestorer_Restore_Redis_Live, not a hypothetical one.
-func (r *ContainerRestorer) restoreRedis(ctx context.Context, containerName string, dump io.Reader) error {
-	if err := r.drainExec(ctx, containerName, redisDisableSaveCmd); err != nil {
-		return fmt.Errorf("backup: restore redis container %q: disable save points: %w", containerName, err)
+func (r *ContainerRestorer) restoreRedisLike(ctx context.Context, containerName string, dump io.Reader, cliBin string) error {
+	disableSaveCmd := []string{cliBin, "CONFIG", "SET", "save", ""}
+	if err := r.drainExec(ctx, containerName, disableSaveCmd); err != nil {
+		return fmt.Errorf("backup: restore %s container %q: disable save points: %w", cliBin, containerName, err)
 	}
 
 	rc, err := r.Runtime.ExecWithInput(ctx, containerName, redisRestoreWriteCmd, dump)
 	if err != nil {
-		return fmt.Errorf("backup: restore redis container %q: write dump.rdb: %w", containerName, err)
+		return fmt.Errorf("backup: restore %s container %q: write dump.rdb: %w", cliBin, containerName, err)
 	}
 	writeErr := func() error {
 		defer func() { _ = rc.Close() }()
@@ -118,37 +139,34 @@ func (r *ContainerRestorer) restoreRedis(ctx context.Context, containerName stri
 		return err
 	}()
 	if writeErr != nil {
-		return fmt.Errorf("backup: restore redis container %q: write dump.rdb: %w", containerName, writeErr)
+		return fmt.Errorf("backup: restore %s container %q: write dump.rdb: %w", cliBin, containerName, writeErr)
 	}
 
 	state, err := r.Runtime.InspectByName(ctx, containerName)
 	if err != nil {
-		return fmt.Errorf("backup: restore redis container %q: inspect: %w", containerName, err)
+		return fmt.Errorf("backup: restore %s container %q: inspect: %w", cliBin, containerName, err)
 	}
 	if state == nil {
-		return fmt.Errorf("backup: restore redis container %q: not found", containerName)
+		return fmt.Errorf("backup: restore %s container %q: not found", cliBin, containerName)
 	}
 
 	if err := r.Runtime.Stop(ctx, state.ID, redisStopTimeout); err != nil {
-		return fmt.Errorf("backup: restore redis container %q: stop: %w", containerName, err)
+		return fmt.Errorf("backup: restore %s container %q: stop: %w", cliBin, containerName, err)
 	}
 	if err := r.Runtime.Start(ctx, state.ID); err != nil {
-		return fmt.Errorf("backup: restore redis container %q: start: %w", containerName, err)
+		return fmt.Errorf("backup: restore %s container %q: start: %w", cliBin, containerName, err)
 	}
 	return nil
 }
 
 // redisRestoreWriteCmd streams ExecWithInput's stdin straight onto disk
-// as the RDB file Redis loads at its next startup, the write half of
-// restoreRedis's write-then-stop-then-start sequence.
+// as the RDB file Redis (or KeyDB) loads at its next startup, the write
+// half of restoreRedisLike's write-then-stop-then-start sequence.
+// Engine-agnostic: a plain shell redirect, no CLI binary involved.
 var redisRestoreWriteCmd = []string{"sh", "-c", "cat > /data/dump.rdb"}
 
-// redisDisableSaveCmd clears every configured save point for the
-// current session only, see restoreRedis's own doc comment for why.
-var redisDisableSaveCmd = []string{"redis-cli", "CONFIG", "SET", "save", ""}
-
 // drainExec runs cmd via Exec and discards its output, surfacing only
-// whether it failed: used for restoreRedis steps that don't need the
+// whether it failed: used for restoreRedisLike steps that don't need the
 // command's own stdout, mirroring Restore's own drain-then-check
 // handling of psql/mysql's status output above.
 func (r *ContainerRestorer) drainExec(ctx context.Context, containerName string, cmd []string) error {
@@ -227,6 +245,16 @@ var postgresRestoreCmd = []string{"sh", "-c", `psql --no-password -U "$POSTGRES_
 // let the shell continue on to the second, stdin-reading mysql
 // invocation, so only the trailing command is exec'd.
 var mysqlRestoreCmd = []string{"sh", "-c", `mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $MYSQL_DATABASE; CREATE DATABASE $MYSQL_DATABASE;" && exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"`}
+
+// mariadbRestoreCmd is mysqlRestoreCmd's exact counterpart for MariaDB:
+// same drop-and-recreate-the-database-first outcome, same reasoning
+// (mysqlRestoreCmd's own doc comment). Uses the mariadb client and
+// MARIADB_* env vars, not mysql/MYSQL_*: from MariaDB 11 the mysql
+// client binary is removed entirely from the official image (see
+// mariadbDumpCmd's own doc comment in dump.go for the same removal
+// affecting mysqldump), so a command that worked against MySQL by
+// analogy would fail outright here.
+var mariadbRestoreCmd = []string{"sh", "-c", `mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $MARIADB_DATABASE; CREATE DATABASE $MARIADB_DATABASE;" && exec mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"`}
 
 // mongoRestoreCmd feeds mongoDumpCmd's own --archive output (dump.go)
 // back in via mongorestore --archive, reading from stdin the same way

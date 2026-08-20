@@ -34,6 +34,8 @@ type (
 	notificationChannelResource      = apiclient.NotificationChannelResource
 	createNotificationChannelRequest = apiclient.CreateNotificationChannelRequest
 	testNotificationChannelRequest   = apiclient.TestNotificationChannelRequest
+	logDrainResource                 = apiclient.LogDrainResource
+	setLogDrainRequest               = apiclient.SetLogDrainRequest
 )
 
 // NewClient builds a Client. See apiclient.NewClient.

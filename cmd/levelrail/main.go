@@ -39,10 +39,12 @@ import (
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/internal/reconcile/cloudflaretunnel"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	meshreconcile "github.com/GLINCKER/levelrail/internal/reconcile/mesh"
 	"github.com/GLINCKER/levelrail/internal/reconcile/nodehealth"
+	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -171,6 +173,15 @@ const (
 	// express would ever need to be checked more often than once a
 	// minute anyway.
 	defaultBackupSchedulerInterval = 1 * time.Minute
+
+	// defaultScheduledTaskSchedulerInterval is how often
+	// internal/scheduledtask.Scheduler checks which scheduled tasks have
+	// a due cron schedule, env-overridable via
+	// APP_SCHEDULED_TASK_SCHEDULER_INTERVAL
+	// (scheduledTaskSchedulerInterval below). Same one-minute value and
+	// the same reasoning as defaultBackupSchedulerInterval just above:
+	// standard 5-field cron has no granularity finer than a minute.
+	defaultScheduledTaskSchedulerInterval = 1 * time.Minute
 )
 
 func main() {
@@ -367,6 +378,23 @@ func run(logger *slog.Logger) error {
 		}
 	}
 
+	// scheduledTaskRunner, like backupRunner just above, is constructed
+	// once here so the exact same instance backs both api.Router's
+	// manual "run now" trigger (WithScheduledTaskRunner below, via
+	// rootHandler) and the background cron loop started further down
+	// this function. Unlike backupRunner it needs no secretsManager (an
+	// exec'd command carries no credential of its own), so it's always
+	// constructed, the same "always available by the time rootHandler is
+	// called" shape client/agentRegistry already have.
+	scheduledTaskRunner := &scheduledtask.Runner{
+		Apps: db,
+		Runs: db,
+		Resolver: func(nodeID string) (docker.Runtime, error) {
+			return resolveNodeTransport(client, agentRegistry, nodeID)
+		},
+		Logger: logger,
+	}
+
 	builder, closeBuilder, err := loadBuilder(ctx, logger, db, telemetryDB, secretsManager, agentRegistry)
 	if err != nil {
 		// Not fatal, the same choice as everything else optional above:
@@ -396,7 +424,7 @@ func run(logger *slog.Logger) error {
 
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
-		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, agentRegistry, emailSender),
+		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, agentRegistry, emailSender, scheduledTaskRunner),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -459,6 +487,17 @@ func run(logger *slog.Logger) error {
 	}()
 	go runLogsRetentionSweep(ctx, telemetryDB, logger)
 
+	// drainForwarder taps logBroadcaster the same way a live SSE viewer
+	// does (internal/telemetry/drain.go's own doc comment): a pure
+	// additional consumer of the log stream, never touching logCollector
+	// or its store writes.
+	drainForwarder := telemetry.NewDrainForwarder(logBroadcaster, logger, b.ShortName)
+	go func() {
+		if err := drainForwarder.Run(ctx, logTargetsResyncInterval, drainTargets(db)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("telemetry log drain forwarder stopped", slog.String("error", err.Error()))
+		}
+	}()
+
 	// Alerting (TASKS.md 2.5/2.7): RestartTracker watches the same
 	// Docker client's event stream, independently of the reconcile
 	// engine's own subscription below, to count restarts per service for
@@ -501,6 +540,20 @@ func run(logger *slog.Logger) error {
 			}
 		}()
 	}
+
+	// Scheduled tasks: internal/scheduledtask.Scheduler checks, on its
+	// own tick, which tasks have a due cron schedule
+	// (store.ScheduledTask, migrations/0047_scheduled_tasks.sql) and runs
+	// them through the same scheduledTaskRunner the manual "run now"
+	// trigger (api.WithScheduledTaskRunner above) uses. Unlike the backup
+	// scheduler just above, this needs no secretsManager gate:
+	// scheduledTaskRunner is always non-nil, so this loop always runs.
+	scheduledTaskScheduler := scheduledtask.NewScheduler(db, scheduledTaskRunner, logger)
+	go func() {
+		if err := scheduledTaskScheduler.Run(ctx, scheduledTaskSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("scheduled task scheduler stopped", slog.String("error", err.Error()))
+		}
+	}()
 
 	events, errs := client.Events(ctx)
 	go func() {
@@ -810,6 +863,35 @@ func logTargets(db *store.DB, runtime docker.Runtime) func(context.Context) ([]t
 			}
 		}
 		return targets, nil
+	}
+}
+
+// drainTargets adapts every desired service's configured, enabled log
+// drain (store.LogDrain) into telemetry.DrainConfig, the same "convert
+// store types into telemetry types" shape logTargets already establishes
+// for LogTarget above. A service with no log_drain configured, or one
+// that's configured but disabled, simply isn't included: DrainForwarder.Run
+// only ever spawns a forwarding goroutine for what this returns.
+func drainTargets(db *store.DB) func(context.Context) ([]telemetry.DrainConfig, error) {
+	return func(ctx context.Context) ([]telemetry.DrainConfig, error) {
+		services, err := db.ListDesiredServices(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("list desired services: %w", err)
+		}
+
+		var configs []telemetry.DrainConfig
+		for _, svc := range services {
+			if svc.LogDrain == nil || !svc.LogDrain.Enabled {
+				continue
+			}
+			configs = append(configs, telemetry.DrainConfig{
+				ResourceID: "service:" + svc.Name,
+				Type:       telemetry.DrainSinkType(svc.LogDrain.Type),
+				Target:     svc.LogDrain.Target,
+				Enabled:    true,
+			})
+		}
+		return configs, nil
 	}
 }
 
@@ -1363,7 +1445,7 @@ func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent
 // internal/api importing internal/agent.Registry directly (see
 // api.NodeRuntimeResolver's own doc comment for why this stays a
 // closure over resolveNodeTransport instead of a new dependency edge).
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, agentRegistry *agent.Registry, emailSender email.Sender) http.Handler {
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, agentRegistry *agent.Registry, emailSender email.Sender, scheduledTaskRunner *scheduledtask.Runner) http.Handler {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
@@ -1384,6 +1466,12 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithExecRuntime(func(nodeID string) (docker.Runtime, error) {
 			return resolveNodeTransport(client, agentRegistry, nodeID)
 		}),
+		// scheduledTaskRunner is always non-nil (constructed
+		// unconditionally in run(), see that construction's own doc
+		// comment), so this is applied unconditionally too, the same
+		// shape api.WithDeployRecorder/api.WithLogBroadcaster already use
+		// for their own always-non-nil dependencies.
+		api.WithScheduledTaskRunner(scheduledTaskRunner),
 		api.WithCertExpiryWarningWindow(certExpiryWarningWindow(logger)),
 		api.WithPublicHost(publicHost()),
 		api.WithDeployLogStore(telemetryDB),
@@ -1399,6 +1487,9 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// Email settings' SMTP password / SES secret access key go
 		// through the same secretsManager as everything else here.
 		opts = append(opts, api.WithEmailSecrets(secretsManager))
+		// Cloudflare Tunnel's token goes through the same secretsManager,
+		// same nil-interface hazard as everything else in this block.
+		opts = append(opts, api.WithCloudflareTunnelSecrets(secretsManager))
 		// Git sources (TASKS.md 1.7's own deferred follow-up,
 		// internal/api/git_sources.go, git_webhook.go): a connected
 		// source's deploy token and webhook secret go through the same
@@ -1509,6 +1600,19 @@ func backupSchedulerInterval(logger *slog.Logger) time.Duration {
 	if err != nil {
 		logger.Warn("invalid APP_BACKUP_SCHEDULER_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return defaultBackupSchedulerInterval
+	}
+	return d
+}
+
+func scheduledTaskSchedulerInterval(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_SCHEDULED_TASK_SCHEDULER_INTERVAL")
+	if raw == "" {
+		return defaultScheduledTaskSchedulerInterval
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_SCHEDULED_TASK_SCHEDULER_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return defaultScheduledTaskSchedulerInterval
 	}
 	return d
 }
@@ -1661,6 +1765,20 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		// the WireGuard mesh (TASKS.md 3.4) exists.
 		controllers = append(controllers, application.NewNetworkCleanupController(deps.db, deps.runtime, deps.networkPrefix))
 
+		// Cloudflare Tunnel: also local-runtime-unconditional, the same
+		// "this control plane's own node, not per-app placement" shape as
+		// the ingress controller above. A platform-wide singleton, so one
+		// controller instance regardless of how many services/databases
+		// exist. deps.secretsManager may be nil (no master key
+		// configured); cloudflaretunnel.New's own doc comment covers that
+		// case, the same "known, permanent, documented block" shape
+		// database.Controller's credential options already establish.
+		var tunnelTokens cloudflaretunnel.TokenResolver
+		if deps.secretsManager != nil {
+			tunnelTokens = deps.secretsManager
+		}
+		controllers = append(controllers, cloudflaretunnel.New(deps.db, tunnelTokens, deps.runtime, cloudflaretunnel.WithContainerPrefix(deps.networkPrefix)))
+
 		if deps.meshCfg != nil {
 			controllers = append(controllers, meshreconcile.New(deps.meshCfg.localNodeID, deps.db, deps.meshCfg.coordinator, deps.meshCfg.resolver, meshreconcile.WithLogger(deps.logger)))
 		}
@@ -1707,8 +1825,9 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 // skipping (with a warning) any whose node isn't currently reachable. A
 // database whose engine credentials can't be resolved this pass still
 // gets a controller, just without WithPostgresCredentials/
-// WithMySQLCredentials/WithMongoDBCredentials set: one broken resource
-// must not block others, and it retries fresh on the next pass.
+// WithMySQLCredentials/WithMongoDBCredentials/WithMariaDBCredentials
+// set: one broken resource must not block others, and it retries fresh
+// on the next pass.
 func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databases []store.DesiredDatabase) []reconcile.Controller {
 	controllers := make([]reconcile.Controller, 0, len(databases))
 	for _, desired := range databases {
@@ -1755,6 +1874,14 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 				slog.String("database", desired.Name), slog.String("error", err.Error()))
 		} else if creds != nil {
 			opts = append(opts, database.WithMongoDBCredentials(creds))
+		}
+	case store.EngineMariaDB:
+		creds, err := mariadbCredentialsFor(ctx, deps.secretsManager, desired.Name)
+		if err != nil {
+			deps.logger.Warn("skipping mariadb credentials for this reconcile pass",
+				slog.String("database", desired.Name), slog.String("error", err.Error()))
+		} else if creds != nil {
+			opts = append(opts, database.WithMariaDBCredentials(creds))
 		}
 	}
 	return opts

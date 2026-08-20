@@ -119,6 +119,20 @@ type MongoDBCredentials struct {
 	Password string
 }
 
+// MariaDBCredentials is MySQLCredentials' counterpart for the official
+// mariadb image. Injected as MARIADB_ROOT_PASSWORD/MARIADB_USER/
+// MARIADB_PASSWORD/MARIADB_DATABASE, not the MYSQL_* names: the mariadb
+// image accepts MYSQL_* only as a legacy alias ("MARIADB_* variables
+// will be used in preference to MYSQL_* variables" per its own docs),
+// and from MariaDB 11 the mysqldump/mysql client binaries themselves are
+// gone from the image, so this controller and internal/backup's dump/
+// restore commands both use the MariaDB-native names throughout, not the
+// MySQL-shaped ones this image only keeps for someone else's old scripts.
+type MariaDBCredentials struct {
+	Username string
+	Password string
+}
+
 // Controller converges one named database's desired state (read fresh
 // from Store on every Reconcile, never cached) to a running,
 // volume-backed container.
@@ -129,6 +143,7 @@ type Controller struct {
 	postgresCreds *PostgresCredentials
 	mysqlCreds    *MySQLCredentials
 	mongoCreds    *MongoDBCredentials
+	mariadbCreds  *MariaDBCredentials
 	meshDNSAddr   string // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
 }
 
@@ -159,6 +174,14 @@ func WithMySQLCredentials(creds *MySQLCredentials) Option {
 // condition, identical reasoning to Postgres and MySQL.
 func WithMongoDBCredentials(creds *MongoDBCredentials) Option {
 	return func(c *Controller) { c.mongoCreds = creds }
+}
+
+// WithMariaDBCredentials supplies the credentials MariaDB reconciliation
+// needs, the same "populate to activate, no restructuring needed" shape
+// the other WithXCredentials options already establish. Without one,
+// every MariaDB database reports the credentials-blocked condition.
+func WithMariaDBCredentials(creds *MariaDBCredentials) Option {
+	return func(c *Controller) { c.mariadbCreds = creds }
 }
 
 // WithMeshDNSAddr points every container this controller creates at addr,
@@ -256,6 +279,36 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"MONGO_INITDB_ROOT_PASSWORD": c.mongoCreds.Password,
 		}
 		return c.reconcileEngine(ctx, desired, env, mongoDataPath, mongoContainerPort)
+
+	case store.EngineMariaDB:
+		if c.mariadbCreds == nil {
+			// Same reasoning as the Postgres/MySQL/MongoDB branches above:
+			// a known, permanent, documented block, not a transient
+			// failure.
+			return credentialsBlockedResult(), nil
+		}
+		env := map[string]string{
+			// See MariaDBCredentials' own doc comment for why these are
+			// MARIADB_*, not MYSQL_*: the same one-user-one-database shape
+			// the EngineMySQL case above sets up, MariaDB-native names.
+			"MARIADB_ROOT_PASSWORD": c.mariadbCreds.Password,
+			"MARIADB_DATABASE":      c.dbName,
+			"MARIADB_USER":          c.mariadbCreds.Username,
+			"MARIADB_PASSWORD":      c.mariadbCreds.Password,
+		}
+		// MariaDB is a MySQL-protocol-compatible fork: same data
+		// directory and port as the mysql image, reused directly rather
+		// than duplicating identical constants under a new name.
+		return c.reconcileEngine(ctx, desired, env, mysqlDataPath, mysqlContainerPort)
+
+	case store.EngineKeyDB:
+		// KeyDB is a Redis-protocol-compatible drop-in fork: same
+		// passwordless-by-default posture, same /data path, same port,
+		// reused directly rather than duplicating identical constants
+		// under a new name. See the package doc comment for why an
+		// unauthenticated Redis-family database is an accepted posture
+		// here.
+		return c.reconcileEngine(ctx, desired, nil, redisDataPath, redisContainerPort)
 
 	default:
 		err := fmt.Errorf("unrecognized engine %q", desired.Engine)
@@ -415,20 +468,24 @@ func normalizedPortSet(ports []docker.PortBinding) map[docker.PortBinding]bool {
 	return set
 }
 
-// dockerImageFor returns the official Docker Hub image name for engine.
+// dockerImageFor returns the real Docker Hub image name for engine.
 // Every other supported engine's registry id (store.EnginePostgres,
-// EngineRedis, EngineMySQL) is already identical to its own official
-// image name, so this only needs a real mapping for MongoDB: the
-// registry id is "mongodb" (matching how every other part of this
-// codebase, and users, refer to the engine), but the official image is
-// named "mongo", not "mongodb". Falls through to engine itself for
+// EngineRedis, EngineMySQL, EngineMariaDB) is already identical to its
+// own image name, so this only needs real mappings for MongoDB and
+// KeyDB: "mongodb" maps to the official image "mongo", and "keydb" maps
+// to "eqalpha/keydb", the actual maintained image (there is no official,
+// Docker-Hub-library "keydb" image). Falls through to engine itself for
 // every other id, so adding a future engine whose id does match its
 // image name needs no change here.
 func dockerImageFor(engine string) string {
-	if engine == store.EngineMongoDB {
+	switch engine {
+	case store.EngineMongoDB:
 		return "mongo"
+	case store.EngineKeyDB:
+		return "eqalpha/keydb"
+	default:
+		return engine
 	}
-	return engine
 }
 
 func versionOrDefault(v string) string {

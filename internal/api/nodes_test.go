@@ -548,6 +548,9 @@ func (f *fakeDrainAppStore) UpdateServiceSuspended(context.Context, string, bool
 func (f *fakeDrainAppStore) UpdateServiceApp(context.Context, string, string) error {
 	return nil
 }
+func (f *fakeDrainAppStore) UpdateServiceLogDrain(context.Context, string, *store.LogDrain) error {
+	return nil
+}
 
 type fakeDrainDatabaseStore struct{}
 

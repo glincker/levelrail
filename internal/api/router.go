@@ -183,11 +183,15 @@ type Router struct {
 	oauthClientFactory        oauthClientFactory              // defaulted to defaultOAuthClientFactory in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape fetch/listBranches/gitSourceFetch above already use
 	emailSettings             EmailSettingsStore              // always set, same shape as ingressSettings above
 	emailSecrets              EmailSecretsStore               // nil is valid: PUT /api/v1/settings/email returns 501
+	cloudflareTunnel          CloudflareTunnelStore           // always set, same shape as emailSettings above
+	cloudflareTunnelSecrets   CloudflareTunnelSecrets         // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-tunnel return 501, same shape as emailSecrets above
 	emailSender               email.Sender                    // nil is valid: forgot-password still returns its generic success response
 	passwordResetTokens       PasswordResetTokenStore         // always set, same shape as backupTargets above
 	forgotPasswordByIP        *loginLimiter                   // per-IP forgot-password budget, distinct from logins above
 	forgotPasswordByEmail     *loginLimiter                   // per-(IP,email) forgot-password budget; both this and forgotPasswordByIP must allow a request
 	auditLog                  AuditStore                      // always set, same "core Store interface" shape as backupTargets/certs above: requireAbility's audit hook (auth.go) writes through this on every request, GET /api/v1/audit-log (audit.go) reads through it
+	scheduledTasks            ScheduledTaskStore              // always set, same "core Store interface" shape as backupTargets above: CRUD on a scheduled task needs no runner configuration, only actually running one does
+	scheduledTaskRunner       ScheduledTaskRunner             // nil is valid: POST .../scheduled-tasks/{id}/run returns 501, same shape as backupRunner above
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
@@ -238,12 +242,14 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		oauthState:              newOAuthStateStore(),
 		oauthClientFactory:      defaultOAuthClientFactory,
 		emailSettings:           s,
+		cloudflareTunnel:        s,
 		passwordResetTokens:     s,
 		forgotPasswordByIP:      newLoginLimiter(),
 		forgotPasswordByEmail:   newLoginLimiter(),
 		fetchLatestRelease:      defaultFetchLatestRelease,
 		updatesCache:            newUpdatesCache(),
 		auditLog:                s,
+		scheduledTasks:          s,
 	}
 	for _, opt := range opts {
 		opt(rt)

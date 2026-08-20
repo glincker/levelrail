@@ -33,25 +33,35 @@ import {
 // controller.go's Reconcile switch) refuses to start the container
 // without generated credentials, reported as the CredentialsNotConfigured
 // condition (ConditionsPanel.tsx's own reason-specific translation).
-// Redis is deliberately excluded: it reconciles unconditionally, no
-// secrets master key involved, see that controller's own package doc
-// comment. Mirrors store.EnginePostgres/store.EngineMySQL by value
-// rather than importing them, the same "plain non-empty string, not a
-// literal union" reasoning createDatabaseSchema's own comment gives for
-// why this file doesn't hardcode a second typed copy of the engine
-// registry.
-const CREDENTIALED_ENGINES = new Set(['postgres', 'mysql'])
+// Redis and KeyDB are deliberately excluded: both reconcile
+// unconditionally, no secrets master key involved, see that
+// controller's own package doc comment. Mirrors
+// store.EnginePostgres/store.EngineMySQL/store.EngineMongoDB/
+// store.EngineMariaDB by value rather than importing them, the same
+// "plain non-empty string, not a literal union" reasoning
+// createDatabaseSchema's own comment gives for why this file doesn't
+// hardcode a second typed copy of the engine registry.
+const CREDENTIALED_ENGINES = new Set([
+  'postgres',
+  'mysql',
+  'mongodb',
+  'mariadb',
+])
 
-// Presentation-only mapping to Docker Hub's official image slug for
-// engine ids that have one, used solely to build the version field's
-// "see available tags" link below. Not a source of truth for which
-// engines exist (that's the /api/v1/database-engines registry this
-// file already reads via useDatabaseEnginesOptional), so an id with no
-// entry here just means the link is omitted, never a broken one.
+// Presentation-only mapping from engine id to Docker Hub's official
+// image slug, used solely to build the version field's "see available
+// tags" link below. Not a source of truth for which engines exist
+// (that's the /api/v1/database-engines registry this file already reads
+// via useDatabaseEnginesOptional), so an id with no entry here just
+// means the link is omitted, never a broken one. keydb has no entry
+// deliberately: eqalpha/keydb isn't a Docker Hub "official image" (no
+// hub.docker.com/_/<name> page to link to).
 const DOCKER_HUB_OFFICIAL_IMAGE: Record<string, string> = {
   postgres: 'postgres',
   mysql: 'mysql',
   redis: 'redis',
+  mongodb: 'mongo',
+  mariadb: 'mariadb',
 }
 
 // Matches validateDatabaseResource (internal/api/databases.go): name/
@@ -237,9 +247,9 @@ export function CreateDatabaseFields({
         <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
           <WarningIcon className="mt-0.5 size-4 shrink-0" />
           <p className="text-sm">
-            No secrets master key is configured on this control plane.
-            This database will be created but won&rsquo;t start until one
-            is configured.{' '}
+            No secrets master key is configured on this control plane. This
+            database will be created but won&rsquo;t start until one is
+            configured.{' '}
             <Link
               to="/settings/general"
               className="underline underline-offset-2"

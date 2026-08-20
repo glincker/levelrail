@@ -126,6 +126,13 @@ type ContainerSpec struct {
 	// pull, unchanged from every container this codebase created before
 	// this field existed.
 	RegistryAuth *RegistryAuth
+	// Command overrides the image's own default CMD. Nil means the
+	// image's own default, unchanged from every container this codebase
+	// created before this field existed. First caller:
+	// internal/reconcile/cloudflaretunnel, whose cloudflared image needs
+	// an explicit "tunnel run" argument rather than relying on the
+	// image's bare entrypoint.
+	Command []string
 }
 
 // RegistryAuth is a plaintext username/password pair for pulling a

@@ -645,6 +645,167 @@ func TestController_Reconcile_MongoDB_UsesOfficialMongoImage(t *testing.T) {
 	}
 }
 
+func TestController_Reconcile_MariaDB_AlwaysCredentialsBlocked(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineMariaDB, Version: "11"}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v, want nil: credentials-blocked is a documented permanent state, not a transient failure", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "CredentialsNotConfigured" {
+		t.Errorf("condition = %+v, want Status=False Reason=CredentialsNotConfigured", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0: must never start an unauthenticated mariadb container", rt.createCalls)
+	}
+	if rt.ensureVolumeCalls != 0 {
+		t.Errorf("ensureVolumeCalls = %d, want 0: must not touch Docker at all while blocked", rt.ensureVolumeCalls)
+	}
+}
+
+func TestController_Reconcile_MariaDB_CredentialsBlocked_EvenIfAlreadyRunning(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.seed(containerName("main"), "mariadb:11", true)
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineMariaDB, Version: "11"}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "CredentialsNotConfigured" {
+		t.Errorf("condition = %+v, want Status=False Reason=CredentialsNotConfigured", cond)
+	}
+}
+
+func TestController_Reconcile_MariaDB_WithCredentials_Reconciles(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineMariaDB, Version: "11"}
+	c := New("main", &fakeStore{db: desired}, rt, WithMariaDBCredentials(&MariaDBCredentials{
+		Username: "main",
+		Password: "s3cret",
+	}))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Errorf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1", rt.createCalls)
+	}
+	if rt.lastCreateSpec.Image != "mariadb:11" {
+		t.Errorf("created image = %q, want %q", rt.lastCreateSpec.Image, "mariadb:11")
+	}
+}
+
+// TestController_Reconcile_MariaDB_WithCredentials_SetsMariaDBEnv guards
+// this controller's own real deviation from copy-pasting MySQL's shape
+// unchanged: the mariadb image prefers MARIADB_* env vars over MYSQL_*
+// (see MariaDBCredentials' own doc comment), so this asserts the
+// container spec actually carries the MariaDB-native names, not the
+// MySQL ones.
+func TestController_Reconcile_MariaDB_WithCredentials_SetsMariaDBEnv(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineMariaDB, Version: "11"}
+	c := New("main", &fakeStore{db: desired}, rt, WithMariaDBCredentials(&MariaDBCredentials{
+		Username: "main",
+		Password: "s3cret",
+	}))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	env := rt.lastCreateEnv
+	if env["MARIADB_ROOT_PASSWORD"] != "s3cret" {
+		t.Errorf("MARIADB_ROOT_PASSWORD = %q, want %q", env["MARIADB_ROOT_PASSWORD"], "s3cret")
+	}
+	if env["MARIADB_DATABASE"] != "main" {
+		t.Errorf("MARIADB_DATABASE = %q, want %q", env["MARIADB_DATABASE"], "main")
+	}
+	if env["MARIADB_USER"] != "main" {
+		t.Errorf("MARIADB_USER = %q, want %q", env["MARIADB_USER"], "main")
+	}
+	if env["MARIADB_PASSWORD"] != "s3cret" {
+		t.Errorf("MARIADB_PASSWORD = %q, want %q", env["MARIADB_PASSWORD"], "s3cret")
+	}
+	if _, ok := env["MYSQL_ROOT_PASSWORD"]; ok {
+		t.Error("MYSQL_ROOT_PASSWORD set on a mariadb container, want only MARIADB_* names")
+	}
+}
+
+func TestController_Reconcile_KeyDB_FreshDeploy(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineKeyDB, Version: "latest"}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Errorf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1", rt.createCalls)
+	}
+
+	volName := dataVolumeName("main")
+	if !rt.hasVolume(volName) {
+		t.Errorf("expected volume %q to have been ensured", volName)
+	}
+}
+
+func TestController_Reconcile_KeyDB_AlreadyRunning_NoOp(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineKeyDB, Version: "latest"}
+	rt.seed(containerName("main"), "eqalpha/keydb:latest", true)
+
+	c := New("main", &fakeStore{db: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "AlreadyRunning" {
+		t.Errorf("condition = %+v, want Status=True Reason=AlreadyRunning", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0 (already converged, must be a no-op)", rt.createCalls)
+	}
+}
+
+// TestController_Reconcile_KeyDB_UsesEqalphaImage guards
+// dockerImageFor's second real mapping: the registry id is "keydb", but
+// there is no official Docker-Hub-library "keydb" image, only the
+// maintained "eqalpha/keydb" one. Getting this wrong means every KeyDB
+// database fails to start with an image-not-found error, not a
+// credentials block (KeyDB needs none), so this is worth its own
+// explicit test, the same reasoning
+// TestController_Reconcile_MongoDB_UsesOfficialMongoImage already
+// establishes for MongoDB's own image-name mapping.
+func TestController_Reconcile_KeyDB_UsesEqalphaImage(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineKeyDB, Version: "latest"}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if rt.lastCreateSpec.Image != "eqalpha/keydb:latest" {
+		t.Errorf("created image = %q, want %q", rt.lastCreateSpec.Image, "eqalpha/keydb:latest")
+	}
+}
+
 func TestController_Reconcile_UnknownEngine(t *testing.T) {
 	rt := newFakeRuntime()
 	desired := &store.DesiredDatabase{Name: "main", Engine: "cassandra", Version: "5"}

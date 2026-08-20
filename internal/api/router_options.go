@@ -45,6 +45,14 @@ func WithEmailSecrets(s EmailSecretsStore) Option {
 	return func(rt *Router) { rt.emailSecrets = s }
 }
 
+// WithCloudflareTunnelSecrets enables PUT/DELETE
+// /api/v1/settings/cloudflare-tunnel. Without one configured (the
+// default), both return 501; GET works regardless, the same shape
+// WithEmailSecrets establishes.
+func WithCloudflareTunnelSecrets(s CloudflareTunnelSecrets) Option {
+	return func(rt *Router) { rt.cloudflareTunnelSecrets = s }
+}
+
 // WithComposeSecrets enables POST /api/v1/apps/{name}/compose to
 // resolve a compose file's generatable SERVICE_ magic vars. Without one
 // configured (the default), that endpoint still works for compose files
@@ -266,6 +274,19 @@ func WithDockerPruner(p DockerPruner) Option {
 // routing (NodeRuntimeResolver's own doc comment).
 func WithExecRuntime(r NodeRuntimeResolver) Option {
 	return func(rt *Router) { rt.execRuntime = r }
+}
+
+// WithScheduledTaskRunner enables POST
+// /api/v1/apps/{name}/scheduled-tasks/{id}/run. Without one configured
+// (the default), that route returns 501: scheduled task CRUD still
+// works either way (rt.scheduledTasks is always set), only actually
+// running one on demand needs this. r should be the exact same
+// *scheduledtask.Runner instance cmd/levelrail/main.go wires into
+// scheduledtask.NewScheduler, the same "construct once, share by
+// reference" reasoning WithBackupRunner's own doc comment gives for
+// backupRunner.
+func WithScheduledTaskRunner(r ScheduledTaskRunner) Option {
+	return func(rt *Router) { rt.scheduledTaskRunner = r }
 }
 
 // WithCertExpiryWarningWindow overrides how far ahead of a certificate's

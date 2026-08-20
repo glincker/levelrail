@@ -12,7 +12,7 @@ import (
 // attached (the server clears channel_id via ON DELETE SET NULL), so
 // unlike a database or backup target this needs no confirmation flag.
 func runChannelsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := channelsFlagSet(prog, "delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "channels delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, channelsDeleteUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -23,12 +23,12 @@ func runChannelsDelete(prog string, args []string, stdout, stderr io.Writer, loo
 	}
 	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
-	id, ok := channelsRequireID(fs, stderr, prog, "delete")
+	id, ok := requireOneArg(fs, stderr, prog, "channels delete", "channel id")
 	if !ok {
 		return exitUsage
 	}
 
-	client := channelsClient(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 
 	if err := client.DeleteNotificationChannel(context.Background(), id); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete notification channel %q: %w", id, err))

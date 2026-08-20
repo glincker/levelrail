@@ -3,6 +3,8 @@ import DiscordLogo from '@thesvg/react/discord'
 import DockerLogo from '@thesvg/react/docker'
 import GoLogo from '@thesvg/react/go'
 import JavaLogo from '@thesvg/react/java'
+import KeydbLogo from '@thesvg/react/keydb'
+import MariadbLogo from '@thesvg/react/mariadb'
 import MongodbLogo from '@thesvg/react/mongodb'
 import MysqlLogo from '@thesvg/react/mysql'
 import NodedotjsLogo from '@thesvg/react/nodedotjs'
@@ -20,6 +22,8 @@ export type BrandIconName =
   | 'redis'
   | 'mysql'
   | 'mongodb'
+  | 'mariadb'
+  | 'keydb'
   | 'node'
   | 'go'
   | 'java'
@@ -36,6 +40,8 @@ const BRAND_ICONS: Record<
   redis: RedisLogo,
   mysql: MysqlLogo,
   mongodb: MongodbLogo,
+  mariadb: MariadbLogo,
+  keydb: KeydbLogo,
   node: NodedotjsLogo,
   go: GoLogo,
   java: JavaLogo,
@@ -54,6 +60,8 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'redis',
   'mysql',
   'mongodb',
+  'mariadb',
+  'keydb',
   'node',
   'go',
   'java',

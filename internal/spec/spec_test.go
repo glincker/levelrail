@@ -148,6 +148,48 @@ databases:
 	}
 }
 
+func TestParse_ValidMariaDBDatabase(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  orders: { engine: mariadb, version: "11" }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	orders, ok := s.Databases["orders"]
+	if !ok {
+		t.Fatal("expected an \"orders\" database")
+	}
+	if orders.Engine != EngineMariaDB || orders.Version != "11" {
+		t.Errorf("Databases[orders] = %+v, want Engine=mariadb Version=11", orders)
+	}
+}
+
+func TestParse_ValidKeyDBDatabase(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  cache: { engine: keydb, version: "latest" }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	cache, ok := s.Databases["cache"]
+	if !ok {
+		t.Fatal("expected a \"cache\" database")
+	}
+	if cache.Engine != EngineKeyDB || cache.Version != "latest" {
+		t.Errorf("Databases[cache] = %+v, want Engine=keydb Version=latest", cache)
+	}
+}
+
 func TestParse_ValidMinimal_Defaults(t *testing.T) {
 	s, err := Parse(readTestdata(t, "valid_minimal.yaml"))
 	if err != nil {

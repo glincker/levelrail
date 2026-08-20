@@ -10,7 +10,12 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
-import type { AppDetail, AppListEntry, DeployStrategy } from '../types/appDetail'
+import type {
+  AppDetail,
+  AppListEntry,
+  DeployStrategy,
+  LogDrain,
+} from '../types/appDetail'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export const appKeys = {
@@ -354,6 +359,100 @@ export function useClearAppStorage() {
         appKeys.detail(name),
         (existing: AppDetail | undefined) =>
           existing && { ...existing, storage_target_id: undefined },
+      )
+      void queryClient.invalidateQueries({ queryKey: appKeys.detail(name) })
+    },
+  })
+}
+
+// PUT /api/v1/apps/{name}/log-drain (internal/api/apps_log_drain.go's
+// handleSetAppLogDrain): forwards this app's container logs to an
+// external HTTP or syslog sink, additive to the existing node-local log
+// store. Response is deliberately narrow (LogDrainResource, just
+// app_name plus the drain's own fields), the same shape
+// AppStorageResource already establishes for its own dedicated
+// endpoint.
+export interface LogDrainResource {
+  app_name: string
+  type: LogDrain['type']
+  target: string
+  enabled: boolean
+}
+
+export async function setLogDrain(
+  name: string,
+  drain: LogDrain,
+): Promise<LogDrainResource> {
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(name)}/log-drain`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(drain),
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `set log drain failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as LogDrainResource
+}
+
+export function useSetLogDrain() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ name, drain }: { name: string; drain: LogDrain }) =>
+      setLogDrain(name, drain),
+    onSuccess: (result) => {
+      queryClient.setQueryData(
+        appKeys.detail(result.app_name),
+        (existing: AppDetail | undefined) =>
+          existing && {
+            ...existing,
+            log_drain: {
+              type: result.type,
+              target: result.target,
+              enabled: result.enabled,
+            },
+          },
+      )
+      void queryClient.invalidateQueries({
+        queryKey: appKeys.detail(result.app_name),
+      })
+    },
+  })
+}
+
+// DELETE /api/v1/apps/{name}/log-drain (handleClearAppLogDrain): stops
+// forwarding this app's logs externally. 204, no body, so the cache is
+// patched directly from the name this mutation was called with,
+// mirroring clearAppStorage's own shape.
+export async function clearLogDrain(name: string): Promise<void> {
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(name)}/log-drain`,
+    {
+      method: 'DELETE',
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `clear log drain failed: ${res.status}`),
+    )
+  }
+}
+
+export function useClearLogDrain() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (name: string) => clearLogDrain(name),
+    onSuccess: (_data, name) => {
+      queryClient.setQueryData(
+        appKeys.detail(name),
+        (existing: AppDetail | undefined) =>
+          existing && { ...existing, log_drain: undefined },
       )
       void queryClient.invalidateQueries({ queryKey: appKeys.detail(name) })
     },

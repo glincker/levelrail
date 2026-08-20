@@ -88,6 +88,10 @@ type appResource struct {
 	// for a fanned-out service. See GET /api/v1/apps/{name}/group
 	// (apps_group.go) for the sibling-services read this enables.
 	AppID string `json:"app_id,omitempty"`
+	// LogDrain is response-only, the same boundary NodeID/ProjectID/
+	// StorageTargetID already establish above: set it via PUT/DELETE
+	// /api/v1/apps/{name}/log-drain (apps_log_drain.go) instead.
+	LogDrain *store.LogDrain `json:"log_drain,omitempty"`
 }
 
 func toAppResource(svc store.DesiredService) appResource {
@@ -107,6 +111,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		StorageTargetID: svc.StorageTargetID,
 		Suspended:       svc.Suspended,
 		AppID:           svc.AppID,
+		LogDrain:        svc.LogDrain,
 	}
 }
 

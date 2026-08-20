@@ -64,6 +64,13 @@ type AppStore interface {
 	// path both handleCreateApp (an ordinary single-service app) and
 	// handleDeploySpec (a multi-service fan-out) go through.
 	UpdateServiceApp(ctx context.Context, name, appID string) error
+	// UpdateServiceLogDrain backs PUT/DELETE
+	// /api/v1/apps/{name}/log-drain (apps_log_drain.go): which external
+	// sink (internal/telemetry.DrainForwarder) this app's container logs
+	// additionally forward to. Same separation-from-ordinary-update
+	// reasoning as UpdateServiceStorageTarget, see
+	// store.DB.UpdateServiceLogDrain's own doc comment.
+	UpdateServiceLogDrain(ctx context.Context, name string, drain *store.LogDrain) error
 }
 
 // AppGroupLister is the store surface GET /api/v1/apps/{name}/group
@@ -229,6 +236,14 @@ type EmailSettingsStore interface {
 	UpdateEmailSettings(ctx context.Context, s store.EmailSettings) error
 }
 
+// CloudflareTunnelStore is the store surface GET/PUT/DELETE
+// /api/v1/settings/cloudflare-tunnel need: the single platform-wide row,
+// always present, the same shape EmailSettingsStore has for its own row.
+type CloudflareTunnelStore interface {
+	GetCloudflareTunnelSettings(ctx context.Context) (store.CloudflareTunnelSettings, error)
+	UpdateCloudflareTunnelSettings(ctx context.Context, s store.CloudflareTunnelSettings) error
+}
+
 // PasswordResetTokenStore is the store surface the forgot-password flow
 // needs: always set, part of the core Store interface.
 type PasswordResetTokenStore interface {
@@ -286,9 +301,11 @@ type Store interface {
 	OAuthSettingsStore
 	OAuthIdentityStore
 	EmailSettingsStore
+	CloudflareTunnelStore
 	PasswordResetTokenStore
 	RecoveryCodeStore
 	AuditStore
+	ScheduledTaskStore
 }
 
 // SecretSetter is the surface the secrets handlers need from
