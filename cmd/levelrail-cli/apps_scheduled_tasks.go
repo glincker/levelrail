@@ -69,16 +69,11 @@ func scheduledTaskFlags(fs *flag.FlagSet, name, command, schedule *string, disab
 }
 
 func runAppsScheduledTasksCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" apps scheduled-tasks create", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, name, command, schedule string
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps scheduled-tasks create", "print the created task as JSON to stdout and nothing else", stderr)
+	var name, command, schedule string
 	var disabled bool
 	var timeout int
-	var jsonOut bool
 	scheduledTaskFlags(fs, &name, &command, &schedule, &disabled, &timeout)
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print the created task as JSON to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksCreateUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -87,14 +82,12 @@ func runAppsScheduledTasksCreate(prog string, args []string, stdout, stderr io.W
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
-	rest := fs.Args()
-	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: apps scheduled-tasks create requires exactly one app name\n\n", prog)
-		fs.Usage()
+	appName, ok := requireOneArg(fs, stderr, prog, "apps scheduled-tasks create", "app name")
+	if !ok {
 		return exitUsage
 	}
-	appName := rest[0]
 
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
@@ -106,7 +99,7 @@ func runAppsScheduledTasksCreate(prog string, args []string, stdout, stderr io.W
 		return reportError(stdout, stderr, jsonOut, newValidationError("--schedule is required"))
 	}
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 	created, err := client.CreateScheduledTask(context.Background(), appName, scheduledTaskRequest{
 		Name: name, Command: command, Schedule: schedule, Enabled: !disabled, TimeoutSeconds: timeout,
 	})
@@ -133,7 +126,7 @@ Creates a new scheduled task for <app>.
 
 Flags:
   --name string           display name for the task (required)
-  --command string        command to run, executed as ` + "`sh -c COMMAND`" + ` (required)
+  --command string        command to run, executed as `+"`sh -c COMMAND`"+` (required)
   --schedule string       standard 5-field cron expression (required)
   --disabled                 create the task disabled (default: enabled)
   --timeout int            command timeout in seconds (0 means the server's own default)
@@ -145,13 +138,7 @@ Flags:
 }
 
 func runAppsScheduledTasksList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" apps scheduled-tasks list", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag string
-	var jsonOut bool
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print tasks as a JSON array to stdout and nothing else")
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps scheduled-tasks list", "print tasks as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksListUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -160,16 +147,14 @@ func runAppsScheduledTasksList(prog string, args []string, stdout, stderr io.Wri
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
-	rest := fs.Args()
-	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: apps scheduled-tasks list requires exactly one app name\n\n", prog)
-		fs.Usage()
+	appName, ok := requireOneArg(fs, stderr, prog, "apps scheduled-tasks list", "app name")
+	if !ok {
 		return exitUsage
 	}
-	appName := rest[0]
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 	tasks, err := client.ListScheduledTasks(context.Background(), appName)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list scheduled tasks for app %q: %w", appName, err))
@@ -214,16 +199,11 @@ Flags:
 }
 
 func runAppsScheduledTasksUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" apps scheduled-tasks update", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, name, command, schedule string
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps scheduled-tasks update", "print the updated task as JSON to stdout and nothing else", stderr)
+	var name, command, schedule string
 	var disabled bool
 	var timeout int
-	var jsonOut bool
 	scheduledTaskFlags(fs, &name, &command, &schedule, &disabled, &timeout)
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print the updated task as JSON to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksUpdateUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -232,11 +212,10 @@ func runAppsScheduledTasksUpdate(prog string, args []string, stdout, stderr io.W
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
-	rest := fs.Args()
-	if len(rest) != 2 {
-		_, _ = fmt.Fprintf(stderr, "%s: apps scheduled-tasks update requires an app name and a task id\n\n", prog)
-		fs.Usage()
+	rest, ok := requireArgs(fs, stderr, prog, "apps scheduled-tasks update", "an app name and a task id", 2)
+	if !ok {
 		return exitUsage
 	}
 	appName, id := rest[0], rest[1]
@@ -251,7 +230,7 @@ func runAppsScheduledTasksUpdate(prog string, args []string, stdout, stderr io.W
 		return reportError(stdout, stderr, jsonOut, newValidationError("--schedule is required"))
 	}
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 	updated, err := client.UpdateScheduledTask(context.Background(), appName, id, scheduledTaskRequest{
 		Name: name, Command: command, Schedule: schedule, Enabled: !disabled, TimeoutSeconds: timeout,
 	})
@@ -280,7 +259,7 @@ must be supplied on every call, the same as the value already saved.
 
 Flags:
   --name string           display name for the task (required)
-  --command string        command to run, executed as ` + "`sh -c COMMAND`" + ` (required)
+  --command string        command to run, executed as `+"`sh -c COMMAND`"+` (required)
   --schedule string       standard 5-field cron expression (required)
   --disabled                 save the task disabled (default: enabled)
   --timeout int            command timeout in seconds (0 means the server's own default)
@@ -292,13 +271,7 @@ Flags:
 }
 
 func runAppsScheduledTasksDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" apps scheduled-tasks delete", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag string
-	var jsonOut bool
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print {} to stdout on success instead of a plain confirmation")
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps scheduled-tasks delete", "print {} to stdout on success instead of a plain confirmation", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksDeleteUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -307,16 +280,15 @@ func runAppsScheduledTasksDelete(prog string, args []string, stdout, stderr io.W
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
-	rest := fs.Args()
-	if len(rest) != 2 {
-		_, _ = fmt.Fprintf(stderr, "%s: apps scheduled-tasks delete requires an app name and a task id\n\n", prog)
-		fs.Usage()
+	rest, ok := requireArgs(fs, stderr, prog, "apps scheduled-tasks delete", "an app name and a task id", 2)
+	if !ok {
 		return exitUsage
 	}
 	appName, id := rest[0], rest[1]
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 	if err := client.DeleteScheduledTask(context.Background(), appName, id); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete scheduled task %q: %w", id, err))
 	}
@@ -347,13 +319,7 @@ Flags:
 }
 
 func runAppsScheduledTasksRun(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" apps scheduled-tasks run", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag string
-	var jsonOut bool
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print the started run as JSON to stdout and nothing else")
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps scheduled-tasks run", "print the started run as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksRunUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -362,16 +328,15 @@ func runAppsScheduledTasksRun(prog string, args []string, stdout, stderr io.Writ
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
-	rest := fs.Args()
-	if len(rest) != 2 {
-		_, _ = fmt.Fprintf(stderr, "%s: apps scheduled-tasks run requires an app name and a task id\n\n", prog)
-		fs.Usage()
+	rest, ok := requireArgs(fs, stderr, prog, "apps scheduled-tasks run", "an app name and a task id", 2)
+	if !ok {
 		return exitUsage
 	}
 	appName, id := rest[0], rest[1]
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 	started, err := client.RunScheduledTask(context.Background(), appName, id)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("run scheduled task %q: %w", id, err))
@@ -406,13 +371,7 @@ Flags:
 }
 
 func runAppsScheduledTasksRuns(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" apps scheduled-tasks runs", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag string
-	var jsonOut bool
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print run history as a JSON array to stdout and nothing else")
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps scheduled-tasks runs", "print run history as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksRunsUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -421,16 +380,15 @@ func runAppsScheduledTasksRuns(prog string, args []string, stdout, stderr io.Wri
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
-	rest := fs.Args()
-	if len(rest) != 2 {
-		_, _ = fmt.Fprintf(stderr, "%s: apps scheduled-tasks runs requires an app name and a task id\n\n", prog)
-		fs.Usage()
+	rest, ok := requireArgs(fs, stderr, prog, "apps scheduled-tasks runs", "an app name and a task id", 2)
+	if !ok {
 		return exitUsage
 	}
 	appName, id := rest[0], rest[1]
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 	runs, err := client.ListScheduledTaskRuns(context.Background(), appName, id)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list runs for scheduled task %q: %w", id, err))
