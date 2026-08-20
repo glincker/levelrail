@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -135,34 +134,12 @@ func (c *DokployClient) do(ctx context.Context, path string, query url.Values, o
 		u += "?" + query.Encode()
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil) //nolint:gosec // c.baseURL is the operator-supplied --url target this command exists to call, not attacker-controlled input
-	if err != nil {
-		return fmt.Errorf("build request: %w", err)
-	}
-	req.Header.Set("x-api-key", c.apiKey)
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
-	if err != nil {
-		return fmt.Errorf("request GET %s: %w", path, err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("read response body: %w", err)
-	}
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return &dokployAPIError{StatusCode: resp.StatusCode, Message: extractDokployErrorMessage(data)}
-	}
-
-	if out != nil && len(data) > 0 {
-		if err := json.Unmarshal(data, out); err != nil {
-			return fmt.Errorf("decode response body: %w", err)
-		}
-	}
-	return nil
+	return providerGetJSON(ctx, c.hc, u, path, func(req *http.Request) {
+		req.Header.Set("x-api-key", c.apiKey)
+		req.Header.Set("Accept", "application/json")
+	}, func(status int, data []byte) error {
+		return &dokployAPIError{StatusCode: status, Message: extractDokployErrorMessage(data)}
+	}, out)
 }
 
 func extractDokployErrorMessage(data []byte) string {

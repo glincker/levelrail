@@ -59,22 +59,10 @@ func runMigrateDokploy(prog string, args []string, stdout, stderr io.Writer, loo
 		report.Apps = append(report.Apps, fetchAndMapDokployApplication(ctx, dokploy, summary, f.includeSecretValues))
 	}
 
-	if f.apply {
-		client := NewClient(resolveAPIURL(targetAPIURLFlag, lookupEnv, prog), resolveToken(targetTokenFlag, lookupEnv, prog))
-		applyMigration(ctx, client, &report)
-	} else if err := writeMigrationFiles(f.outDir, &report); err != nil {
-		return reportError(stdout, stderr, f.jsonOut, err)
-	}
-
-	if f.jsonOut {
-		if err := writeJSONValue(stdout, report); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	printMigrationReportHuman(stdout, report, prog, f.outDir)
-	return exitOK
+	return runMigrationPipeline(ctx, &report, migratePipelineFlags{
+		apply: f.apply, outDir: f.outDir, jsonOut: f.jsonOut,
+		targetToken: targetTokenFlag, targetAPIURL: targetAPIURLFlag,
+	}, prog, stdout, stderr, lookupEnv)
 }
 
 // fetchAndMapDokployApplication loads one Dokploy application's full
@@ -84,19 +72,11 @@ func runMigrateDokploy(prog string, args []string, stdout, stderr io.Writer, loo
 func fetchAndMapDokployApplication(ctx context.Context, dokploy *DokployClient, summary dokployApplicationSummary, includeSecretValues bool) mappedApp {
 	full, err := dokploy.GetApplication(ctx, summary.ApplicationID)
 	if err != nil {
-		return mappedApp{
-			SourceName: summary.Name,
-			Blocking:   true,
-			Issues:     []migrationIssue{{Field: "fetch", Severity: issueBlocking, Detail: fmt.Sprintf("could not fetch full application detail: %v", err)}},
-		}
+		return blockingFetchIssue(summary.Name, fmt.Sprintf("could not fetch full application detail: %v", err))
 	}
 	domains, err := dokploy.ListDomains(ctx, summary.ApplicationID)
 	if err != nil {
-		return mappedApp{
-			SourceName: summary.Name,
-			Blocking:   true,
-			Issues:     []migrationIssue{{Field: "fetch", Severity: issueBlocking, Detail: fmt.Sprintf("could not fetch domains: %v", err)}},
-		}
+		return blockingFetchIssue(summary.Name, fmt.Sprintf("could not fetch domains: %v", err))
 	}
 	return mapDokployApplication(full, domains, includeSecretValues)
 }
