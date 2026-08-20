@@ -27,3 +27,9 @@ engines:
   - id: keydb
     label: KeyDB
     default_version: "latest"
+  - id: dragonfly
+    label: Dragonfly
+    default_version: "v1.27.1"
+  - id: clickhouse
+    label: ClickHouse
+    default_version: "24.8"

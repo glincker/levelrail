@@ -16,17 +16,22 @@ import (
 // client.go's own wire-shape types already keep: this binary must
 // depend on what the API accepts, not on internal/store's Go constants.
 const (
-	engineParamPostgres = "postgres"
-	engineParamRedis    = "redis"
-	engineParamMySQL    = "mysql"
-	engineParamMongoDB  = "mongodb"
-	engineParamMariaDB  = "mariadb"
-	engineParamKeyDB    = "keydb"
+	engineParamPostgres   = "postgres"
+	engineParamRedis      = "redis"
+	engineParamMySQL      = "mysql"
+	engineParamMongoDB    = "mongodb"
+	engineParamMariaDB    = "mariadb"
+	engineParamKeyDB      = "keydb"
+	engineParamDragonfly  = "dragonfly"
+	engineParamClickHouse = "clickhouse"
 )
 
 // supportedEngineParams is every engineParam* above, in the order they
 // should be listed in an error or usage message.
-var supportedEngineParams = []string{engineParamPostgres, engineParamRedis, engineParamMySQL, engineParamMongoDB, engineParamMariaDB, engineParamKeyDB}
+var supportedEngineParams = []string{
+	engineParamPostgres, engineParamRedis, engineParamMySQL, engineParamMongoDB,
+	engineParamMariaDB, engineParamKeyDB, engineParamDragonfly, engineParamClickHouse,
+}
 
 // createDatabaseFlags is runDatabasesCreate's raw, unvalidated input;
 // planDatabaseCreate's plain-data counterpart to apps_create.go's own
@@ -125,11 +130,11 @@ directly.
 
 Flags:
   --name string           database name (required)
-  --engine string        database engine: postgres, redis, mysql, mongodb, mariadb, or keydb (required)
+  --engine string        database engine: %[5]s (required)
   --version string      engine version, e.g. "16" (required)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --json                     print the created database as JSON to stdout, nothing else
   -h, --help               show this help
-`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+`, prog, envAPIToken, envAPIURL, defaultAPIURL, strings.Join(supportedEngineParams, ", "))
 }

@@ -22,6 +22,8 @@ func TestValidateDatabaseResource(t *testing.T) {
 		{name: "valid redis", db: databaseResource{Name: "cache", Engine: store.EngineRedis, Version: "7"}, wantErr: false},
 		{name: "valid mysql", db: databaseResource{Name: "orders", Engine: store.EngineMySQL, Version: "8"}, wantErr: false},
 		{name: "valid mongodb", db: databaseResource{Name: "docs", Engine: store.EngineMongoDB, Version: "7"}, wantErr: false},
+		{name: "valid dragonfly", db: databaseResource{Name: "hotcache", Engine: store.EngineDragonfly, Version: "v1.27.1"}, wantErr: false},
+		{name: "valid clickhouse", db: databaseResource{Name: "analytics", Engine: store.EngineClickHouse, Version: "24.8"}, wantErr: false},
 		{name: "missing name", db: databaseResource{Engine: store.EnginePostgres, Version: "16"}, wantErr: true},
 		{name: "missing engine", db: databaseResource{Name: "main", Version: "16"}, wantErr: true},
 		{name: "unknown engine", db: databaseResource{Name: "main", Engine: "cassandra", Version: "7"}, wantErr: true},

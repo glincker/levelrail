@@ -37,6 +37,11 @@ const mongoPasswordEnvKey = "mongo_password"
 // password) with a same-named database reconciled as mysql.
 const mariadbPasswordEnvKey = "mariadb_password"
 
+// clickhousePasswordEnvKey is clickhouseCredentialsFor's own storage
+// key, distinct from every other engine's for the same reason
+// mariadbPasswordEnvKey is distinct from mysqlPasswordEnvKey.
+const clickhousePasswordEnvKey = "clickhouse_password"
+
 // postgresCredentialsFor returns the Postgres credentials
 // database.WithPostgresCredentials needs for dbName, generating and
 // persisting a random password on first call and returning the same
@@ -193,4 +198,37 @@ func mariadbCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName str
 	}
 
 	return &database.MariaDBCredentials{Username: dbName, Password: password}, nil
+}
+
+// clickhouseCredentialsFor mirrors postgresCredentialsFor for
+// database.WithClickHouseCredentials, using its own storage key
+// (clickhousePasswordEnvKey) to avoid colliding with other engines.
+func clickhouseCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName string) (*database.ClickHouseCredentials, error) {
+	if mgr == nil {
+		return nil, nil
+	}
+
+	exists, err := mgr.Exists(ctx, dbName, clickhousePasswordEnvKey)
+	if err != nil {
+		return nil, fmt.Errorf("check existing clickhouse credentials for %q: %w", dbName, err)
+	}
+	if !exists {
+		password, err := generateRandomPassword()
+		if err != nil {
+			return nil, fmt.Errorf("generate clickhouse password for %q: %w", dbName, err)
+		}
+		if err := mgr.SetValue(ctx, dbName, clickhousePasswordEnvKey, password); err != nil {
+			return nil, fmt.Errorf("store clickhouse password for %q: %w", dbName, err)
+		}
+	}
+
+	password, err := mgr.Resolve(ctx, dbName, clickhousePasswordEnvKey)
+	if err != nil {
+		return nil, fmt.Errorf("resolve clickhouse password for %q: %w", dbName, err)
+	}
+	if password == "" {
+		return nil, errors.New("resolved clickhouse password is empty")
+	}
+
+	return &database.ClickHouseCredentials{Username: dbName, Password: password}, nil
 }

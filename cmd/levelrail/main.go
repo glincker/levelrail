@@ -1883,6 +1883,14 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 		} else if creds != nil {
 			opts = append(opts, database.WithMariaDBCredentials(creds))
 		}
+	case store.EngineClickHouse:
+		creds, err := clickhouseCredentialsFor(ctx, deps.secretsManager, desired.Name)
+		if err != nil {
+			deps.logger.Warn("skipping clickhouse credentials for this reconcile pass",
+				slog.String("database", desired.Name), slog.String("error", err.Error()))
+		} else if creds != nil {
+			opts = append(opts, database.WithClickHouseCredentials(creds))
+		}
 	}
 	return opts
 }

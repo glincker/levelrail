@@ -1,6 +1,8 @@
 import type { ComponentType, SVGProps } from 'react'
+import ClickhouseLogo from '@thesvg/react/clickhouse'
 import DiscordLogo from '@thesvg/react/discord'
 import DockerLogo from '@thesvg/react/docker'
+import DragonflyLogo from '@thesvg/react/dragonfly'
 import GoLogo from '@thesvg/react/go'
 import JavaLogo from '@thesvg/react/java'
 import KeydbLogo from '@thesvg/react/keydb'
@@ -24,6 +26,8 @@ export type BrandIconName =
   | 'mongodb'
   | 'mariadb'
   | 'keydb'
+  | 'dragonfly'
+  | 'clickhouse'
   | 'node'
   | 'go'
   | 'java'
@@ -42,6 +46,8 @@ const BRAND_ICONS: Record<
   mongodb: MongodbLogo,
   mariadb: MariadbLogo,
   keydb: KeydbLogo,
+  dragonfly: DragonflyLogo,
+  clickhouse: ClickhouseLogo,
   node: NodedotjsLogo,
   go: GoLogo,
   java: JavaLogo,
@@ -62,6 +68,8 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'mongodb',
   'mariadb',
   'keydb',
+  'dragonfly',
+  'clickhouse',
   'node',
   'go',
   'java',
