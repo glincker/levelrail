@@ -2,7 +2,9 @@ package spec
 
 import (
 	"fmt"
+	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 // nameLike matches the pattern service and database keys must follow:
@@ -66,6 +68,18 @@ func (svc *Service) validate(name string) error {
 		return fmt.Errorf("spec: service %q: build.path is not meaningful for build.type: image, there is nothing to build", name)
 	}
 
+	if svc.Build.BaseDirectory != "" {
+		if svc.Build.Type == BuildImage {
+			return fmt.Errorf("spec: service %q: build.baseDirectory is not meaningful for build.type: image, there is nothing to build", name)
+		}
+		if svc.Build.Type == BuildCompose {
+			return fmt.Errorf("spec: service %q: build.baseDirectory is not meaningful for build.type: compose, use the compose file's own context: field instead", name)
+		}
+		if err := validateBaseDirectory(svc.Build.BaseDirectory); err != nil {
+			return fmt.Errorf("spec: service %q: %w", name, err)
+		}
+	}
+
 	if svc.Build.Type != BuildStatic && svc.Port == 0 {
 		return fmt.Errorf("spec: service %q: port is required unless build.type is %q", name, BuildStatic)
 	}
@@ -101,6 +115,22 @@ func (svc *Service) validate(name string) error {
 		seenVolumePaths[v.Path] = true
 	}
 
+	return nil
+}
+
+// validateBaseDirectory rejects an absolute path or a "../" traversal at
+// parse time, an early, friendly check; the authoritative one runs
+// against the real checkout at deploy time (internal/deploy's
+// resolveBuildRoot), since a relative path that looks safe here can
+// still resolve outside the repo root once joined with it.
+func validateBaseDirectory(dir string) error {
+	if filepath.IsAbs(dir) {
+		return fmt.Errorf("build.baseDirectory %q must be a relative path", dir)
+	}
+	clean := filepath.ToSlash(filepath.Clean(dir))
+	if clean == ".." || strings.HasPrefix(clean, "../") {
+		return fmt.Errorf("build.baseDirectory %q must not escape the repository root", dir)
+	}
 	return nil
 }
 
