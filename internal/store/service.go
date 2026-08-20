@@ -182,7 +182,7 @@ type DesiredService struct {
 	AppID string
 
 	// LogDrain is this service's external log-forwarding config
-	// (migrations/0043_service_log_drain.sql), nil meaning none
+	// (migrations/0047_service_log_drain.sql), nil meaning none
 	// configured. Like NodeID/ProjectID/StorageTargetID/Suspended,
 	// SaveDesiredService never writes this field: only
 	// UpdateServiceLogDrain does.

@@ -19,7 +19,7 @@ const (
 )
 
 // LogDrain is one service's external log-forwarding configuration
-// (migrations/0043_service_log_drain.sql), the Coolify-parity per-app
+// (migrations/0047_service_log_drain.sql), the Coolify-parity per-app
 // log_drain field: forward this service's container log stream to Target
 // alongside the existing node-local store, in addition to it, never
 // instead of it. Enabled lets an operator keep Target configured but
