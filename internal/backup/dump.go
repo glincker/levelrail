@@ -47,13 +47,17 @@ func (d *ContainerDumper) Dump(ctx context.Context, engine, containerName string
 		cmd = redisDumpCmd
 	case store.EngineMongoDB:
 		cmd = mongoDumpCmd
+	case store.EngineMariaDB:
+		cmd = mariadbDumpCmd
+	case store.EngineKeyDB:
+		cmd = keydbDumpCmd
 	default:
 		// A genuinely unknown engine, not a known-but-unsupported one:
-		// store.EnginePostgres/EngineRedis/EngineMySQL/EngineMongoDB is
-		// the complete list internal/reconcile/database's controller
-		// itself recognizes, so reaching this branch means engine came
-		// from somewhere that skipped that validation, not a real gap in
-		// dump coverage.
+		// store.EnginePostgres/EngineRedis/EngineMySQL/EngineMongoDB/
+		// EngineMariaDB/EngineKeyDB is the complete list
+		// internal/reconcile/database's controller itself recognizes, so
+		// reaching this branch means engine came from somewhere that
+		// skipped that validation, not a real gap in dump coverage.
 		return nil, fmt.Errorf("backup: dump: unrecognized engine %q", engine)
 	}
 
@@ -167,3 +171,23 @@ var redisDumpCmd = []string{"redis-cli", "--rdb", "-"}
 // restore.go), with no intermediate directory either side ever needs to
 // materialize.
 var mongoDumpCmd = []string{"sh", "-c", `exec mongodump --archive --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin`}
+
+// mariadbDumpCmd runs mariadb-dump inside a MariaDB database container,
+// authenticating off MARIADB_ROOT_PASSWORD/MARIADB_DATABASE, the
+// MariaDB-native env vars this codebase's own controller sets (see
+// internal/reconcile/database.MariaDBCredentials' own doc comment), the
+// same scoped-to-one-database reasoning mysqlDumpCmd already gives.
+//
+// mariadb-dump, not mysqldump: from MariaDB 11 the mysqldump binary is
+// removed entirely from the official image, so a command that worked
+// against MySQL by analogy would fail outright against a modern MariaDB
+// container. mariadb-dump is the maintained name going forward.
+var mariadbDumpCmd = []string{"sh", "-c", `exec mariadb-dump -uroot -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"`}
+
+// keydbDumpCmd is redisDumpCmd's exact counterpart for KeyDB: same
+// --rdb - live-snapshot-to-stdout mechanism, keydb-cli in place of
+// redis-cli because the eqalpha/keydb image ships its own CLI binary
+// under that name, not a copy of Redis's. No authentication flag for
+// the same reason redisDumpCmd has none: this controller never
+// configures a KeyDB password either.
+var keydbDumpCmd = []string{"keydb-cli", "--rdb", "-"}

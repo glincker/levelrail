@@ -117,12 +117,62 @@ func TestContainerRestorer_Restore_Redis(t *testing.T) {
 	}
 }
 
+func TestContainerRestorer_Restore_MariaDB(t *testing.T) {
+	rt := &fakeExecRuntime{content: "-- mariadb restore output\n"}
+	r := &ContainerRestorer{Runtime: rt}
+
+	dump := "DROP TABLE IF EXISTS `t`;\nCREATE TABLE `t` (...);\n"
+	if err := r.Restore(context.Background(), store.EngineMariaDB, "db-mydb", strings.NewReader(dump)); err != nil {
+		t.Fatalf("Restore() error = %v", err)
+	}
+
+	if rt.gotInputContainer != "db-mydb" {
+		t.Errorf("container = %q, want %q", rt.gotInputContainer, "db-mydb")
+	}
+	if rt.gotStdin != dump {
+		t.Errorf("stdin = %q, want %q", rt.gotStdin, dump)
+	}
+	wantCmd := []string{"sh", "-c", `mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $MARIADB_DATABASE; CREATE DATABASE $MARIADB_DATABASE;" && exec mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"`}
+	if !reflect.DeepEqual(rt.gotInputCmd, wantCmd) {
+		t.Errorf("cmd = %v, want %v", rt.gotInputCmd, wantCmd)
+	}
+}
+
+// TestContainerRestorer_Restore_KeyDB mirrors
+// TestContainerRestorer_Restore_Redis: same write-then-stop-then-start
+// sequence, the only real difference being keydb-cli in place of
+// redis-cli for the disable-save-points step (see keydbCLIBin).
+func TestContainerRestorer_Restore_KeyDB(t *testing.T) {
+	rt := &fakeExecRuntime{
+		inspectState: &docker.ContainerState{ID: "container-id-456"},
+	}
+	r := &ContainerRestorer{Runtime: rt}
+
+	dump := "REDIS0011..."
+	if err := r.Restore(context.Background(), store.EngineKeyDB, "db-cache", strings.NewReader(dump)); err != nil {
+		t.Fatalf("Restore() error = %v", err)
+	}
+
+	wantCmd := []string{"sh", "-c", "cat > /data/dump.rdb"}
+	if !reflect.DeepEqual(rt.gotInputCmd, wantCmd) {
+		t.Errorf("ExecWithInput cmd = %v, want %v", rt.gotInputCmd, wantCmd)
+	}
+	wantDisableSaveCmd := []string{"keydb-cli", "CONFIG", "SET", "save", ""}
+	if !reflect.DeepEqual(rt.gotCmd, wantDisableSaveCmd) {
+		t.Errorf("Exec cmd = %v, want %v", rt.gotCmd, wantDisableSaveCmd)
+	}
+	wantOrder := []string{"Exec", "ExecWithInput", "InspectByName", "Stop", "Start"}
+	if !reflect.DeepEqual(rt.callOrder, wantOrder) {
+		t.Errorf("call order = %v, want %v", rt.callOrder, wantOrder)
+	}
+}
+
 // TestContainerRestorer_Restore_Redis_DisableSaveError proves a failure
 // disabling save points (the Exec call) aborts before the RDB is even
 // written, and before Stop/Start run: this call has to happen and
-// succeed first, see restoreRedis's own doc comment for why (Redis's own
-// SIGTERM-triggered save would otherwise overwrite the restored RDB file
-// with the live pre-restore state on the way down).
+// succeed first, see restoreRedisLike's own doc comment for why (Redis's
+// own SIGTERM-triggered save would otherwise overwrite the restored RDB
+// file with the live pre-restore state on the way down).
 func TestContainerRestorer_Restore_Redis_DisableSaveError(t *testing.T) {
 	wantErr := errors.New("exec: command exited 1")
 	rt := &fakeExecRuntime{err: wantErr, inspectState: &docker.ContainerState{ID: "container-id-123"}}

@@ -31,6 +31,12 @@ const mysqlPasswordEnvKey = "mysql_password"
 // with a same-named database reconciled as a different engine.
 const mongoPasswordEnvKey = "mongo_password"
 
+// mariadbPasswordEnvKey is mariadbCredentialsFor's own storage key,
+// distinct from mysqlPasswordEnvKey for the same reason: a database
+// named "main" reconciled as mariadb must never share storage (or a
+// password) with a same-named database reconciled as mysql.
+const mariadbPasswordEnvKey = "mariadb_password"
+
 // postgresCredentialsFor returns the Postgres credentials
 // database.WithPostgresCredentials needs for dbName, generating and
 // persisting a random password on first call and returning the same
@@ -150,4 +156,41 @@ func mongoCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName strin
 	}
 
 	return &database.MongoDBCredentials{Username: dbName, Password: password}, nil
+}
+
+// mariadbCredentialsFor is postgresCredentialsFor's exact counterpart
+// for database.WithMariaDBCredentials: same generate-once-persist-
+// forever shape, same "nil manager means nil credentials, not an error"
+// contract, its own storage key (mariadbPasswordEnvKey) so it never
+// collides with a mysql database of the same name. See
+// postgresCredentialsFor's own doc comment for the full reasoning,
+// unchanged here.
+func mariadbCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName string) (*database.MariaDBCredentials, error) {
+	if mgr == nil {
+		return nil, nil
+	}
+
+	exists, err := mgr.Exists(ctx, dbName, mariadbPasswordEnvKey)
+	if err != nil {
+		return nil, fmt.Errorf("check existing mariadb credentials for %q: %w", dbName, err)
+	}
+	if !exists {
+		password, err := generateRandomPassword()
+		if err != nil {
+			return nil, fmt.Errorf("generate mariadb password for %q: %w", dbName, err)
+		}
+		if err := mgr.SetValue(ctx, dbName, mariadbPasswordEnvKey, password); err != nil {
+			return nil, fmt.Errorf("store mariadb password for %q: %w", dbName, err)
+		}
+	}
+
+	password, err := mgr.Resolve(ctx, dbName, mariadbPasswordEnvKey)
+	if err != nil {
+		return nil, fmt.Errorf("resolve mariadb password for %q: %w", dbName, err)
+	}
+	if password == "" {
+		return nil, errors.New("resolved mariadb password is empty")
+	}
+
+	return &database.MariaDBCredentials{Username: dbName, Password: password}, nil
 }

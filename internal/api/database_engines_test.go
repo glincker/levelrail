@@ -35,7 +35,7 @@ func TestHandleListDatabaseEngines(t *testing.T) {
 		}
 		byID[e.ID] = e
 	}
-	for _, want := range []string{"postgres", "redis", "mysql"} {
+	for _, want := range []string{"postgres", "redis", "mysql", "mongodb", "mariadb", "keydb"} {
 		if _, ok := byID[want]; !ok {
 			t.Errorf("response missing expected engine %q", want)
 		}

@@ -58,6 +58,16 @@ func TestPlanDatabaseCreate(t *testing.T) {
 			flags: createDatabaseFlags{name: "events", engine: "mongodb", version: "7"},
 			want:  databaseResource{Name: "events", Engine: "mongodb", Version: "7"},
 		},
+		{
+			name:  "valid mariadb",
+			flags: createDatabaseFlags{name: "orders", engine: "mariadb", version: "11"},
+			want:  databaseResource{Name: "orders", Engine: "mariadb", Version: "11"},
+		},
+		{
+			name:  "valid keydb",
+			flags: createDatabaseFlags{name: "cache", engine: "keydb", version: "latest"},
+			want:  databaseResource{Name: "cache", Engine: "keydb", Version: "latest"},
+		},
 	}
 
 	for _, tt := range tests {
