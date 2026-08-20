@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { GithubLogoIcon, GoogleLogoIcon } from '@phosphor-icons/react/dist/ssr'
+import { GithubLogoIcon, GoogleLogoIcon, ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
 import type { OAuthProviderSettings } from '../queries/oauth'
 import { useUpdateOAuthProviderSettings } from '../queries/oauth'
 import { Alert, AlertDescription } from './ui/alert'
@@ -15,15 +15,18 @@ import { toast } from './ui/toast'
 const PROVIDER_META: Record<string, { label: string; icon: React.ReactNode }> = {
   google: { label: 'Google', icon: <GoogleLogoIcon className="size-4" /> },
   github: { label: 'GitHub', icon: <GithubLogoIcon className="size-4" /> },
+  oidc: { label: 'OIDC / SSO', icon: <ShieldCheckIcon className="size-4" /> },
 }
 
-function buildSchema(hasClientSecret: boolean) {
+function buildSchema(provider: string, hasClientSecret: boolean) {
   return z
     .object({
       enabled: z.boolean(),
       clientId: z.string().trim(),
       clientSecret: z.string(),
       allowedEmailDomain: z.string().trim(),
+      issuerUrl: z.string().trim(),
+      displayName: z.string().trim(),
     })
     .superRefine((data, ctx) => {
       if (!data.enabled) {
@@ -43,6 +46,13 @@ function buildSchema(hasClientSecret: boolean) {
           path: ['clientSecret'],
         })
       }
+      if (provider === 'oidc' && !data.issuerUrl) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Issuer URL is required to enable OIDC',
+          path: ['issuerUrl'],
+        })
+      }
     })
 }
 
@@ -57,13 +67,16 @@ export function OAuthProviderCard({
 }) {
   const updateSettings = useUpdateOAuthProviderSettings()
   const meta = PROVIDER_META[settings.provider]
+  const isOIDC = settings.provider === 'oidc'
   const { control, register, handleSubmit, formState } = useForm<FormValues>({
-    resolver: zodResolver(buildSchema(settings.has_client_secret)),
+    resolver: zodResolver(buildSchema(settings.provider, settings.has_client_secret)),
     values: {
       enabled: settings.enabled,
       clientId: settings.client_id ?? '',
       clientSecret: '',
       allowedEmailDomain: settings.allowed_email_domain ?? '',
+      issuerUrl: settings.issuer_url ?? '',
+      displayName: settings.display_name ?? '',
     },
     resetOptions: { keepDirtyValues: true },
   })
@@ -77,6 +90,8 @@ export function OAuthProviderCard({
           client_id: values.clientId,
           client_secret: values.clientSecret || undefined,
           allowed_email_domain: values.allowedEmailDomain,
+          issuer_url: values.issuerUrl,
+          display_name: values.displayName,
         },
       },
       {
@@ -120,6 +135,40 @@ export function OAuthProviderCard({
           </Field>
 
           <FieldGroup className="gap-3">
+            {isOIDC ? (
+              <Field>
+                <FieldLabel htmlFor={`${settings.provider}-issuer-url`}>
+                  Issuer URL
+                </FieldLabel>
+                <Input
+                  id={`${settings.provider}-issuer-url`}
+                  {...register('issuerUrl')}
+                  placeholder="https://idp.example.com"
+                  className="font-mono"
+                />
+                <FieldDescription>
+                  Your identity provider's OIDC issuer, e.g. what
+                  /.well-known/openid-configuration is served from.
+                </FieldDescription>
+                <FieldError errors={[formState.errors.issuerUrl]} />
+              </Field>
+            ) : null}
+            {isOIDC ? (
+              <Field>
+                <FieldLabel htmlFor={`${settings.provider}-display-name`}>
+                  Display name (optional)
+                </FieldLabel>
+                <Input
+                  id={`${settings.provider}-display-name`}
+                  {...register('displayName')}
+                  placeholder="Okta"
+                />
+                <FieldDescription>
+                  Shown on the login button as "Continue with ...". Defaults
+                  to "SSO".
+                </FieldDescription>
+              </Field>
+            ) : null}
             <Field>
               <FieldLabel htmlFor={`${settings.provider}-client-id`}>
                 Client ID

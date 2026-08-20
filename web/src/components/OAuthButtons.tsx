@@ -1,11 +1,19 @@
 import { useQuery } from '@tanstack/react-query'
-import { GithubLogoIcon, GoogleLogoIcon } from '@phosphor-icons/react/dist/ssr'
+import { GithubLogoIcon, GoogleLogoIcon, ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import type { PublicOAuthProvider } from '../queries/oauth'
 import { publicOAuthProvidersQueryOptions } from '../queries/oauth'
 import { Button } from './ui/button'
 
 const PROVIDER_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
   google: { label: 'Continue with Google', icon: <GoogleLogoIcon /> },
   github: { label: 'Continue with GitHub', icon: <GithubLogoIcon /> },
+}
+
+function buttonMeta(p: PublicOAuthProvider): { label: string; icon: React.ReactNode } {
+  if (p.provider === 'oidc') {
+    return { label: `Continue with ${p.display_name || 'SSO'}`, icon: <ShieldCheckIcon /> }
+  }
+  return PROVIDER_LABELS[p.provider] ?? { label: `Continue with ${p.provider}`, icon: null }
 }
 
 // Real top-level navigation (<a href>, not a fetch): the browser must
@@ -31,7 +39,7 @@ export function OAuthButtons() {
         <span className="h-px flex-1 bg-border" />
       </div>
       {enabled.map((p) => {
-        const meta = PROVIDER_LABELS[p.provider]
+        const meta = buttonMeta(p)
         return (
           <Button
             key={p.provider}
@@ -39,8 +47,8 @@ export function OAuthButtons() {
             variant="outline"
             render={<a href={startOAuthURL(p.provider)} />}
           >
-            {meta?.icon}
-            {meta?.label ?? `Continue with ${p.provider}`}
+            {meta.icon}
+            {meta.label}
           </Button>
         )
       })}

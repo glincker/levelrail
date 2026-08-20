@@ -125,6 +125,40 @@ func TestHandleUpdateOAuthProviderSettings_EnableWithoutSecret_Rejected(t *testi
 	}
 }
 
+func TestHandleUpdateOAuthProviderSettings_OIDCWithoutIssuerURL_Rejected(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	rt.oauthSecrets = newFakeOAuthSecrets()
+
+	body := `{"enabled":true,"client_id":"levelrail","client_secret":"x"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/settings/oauth/oidc", body))
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+func TestHandleUpdateOAuthProviderSettings_OIDCRoundTrip(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	rt.oauthSecrets = newFakeOAuthSecrets()
+
+	body := `{"enabled":true,"client_id":"levelrail","client_secret":"x","issuer_url":"https://idp.example.com","display_name":"Okta"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/settings/oauth/oidc", body))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got oauthProviderSettingsResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.IssuerURL != "https://idp.example.com" || got.DisplayName != "Okta" {
+		t.Errorf("got issuer_url=%q display_name=%q, want https://idp.example.com / Okta", got.IssuerURL, got.DisplayName)
+	}
+}
+
 func TestHandleUpdateOAuthProviderSettings_RoundTrip(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
