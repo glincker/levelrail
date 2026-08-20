@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import {
   CheckCircleIcon,
   CircleIcon,
@@ -10,6 +9,7 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 import type { DeployStage, DeployStageStatus } from '../lib/deployStages'
 import { formatDurationMs } from '../lib/deployDuration'
+import { useNowTick } from '../hooks/useNowTick'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 // The at-a-glance primary element for the live deploy view (Build, then
@@ -75,8 +75,12 @@ function DeployStageRow({ stage }: { stage: DeployStage }) {
       />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          <span className="text-sm font-medium text-foreground">{stage.label}</span>
-          <span className="text-xs text-muted-foreground">{STATUS_LABEL[stage.status]}</span>
+          <span className="text-sm font-medium text-foreground">
+            {stage.label}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {STATUS_LABEL[stage.status]}
+          </span>
           {elapsed ? (
             <span className="text-xs text-muted-foreground/70">{elapsed}</span>
           ) : null}
@@ -84,7 +88,9 @@ function DeployStageRow({ stage }: { stage: DeployStage }) {
         {stage.detail ? (
           <p
             className={`mt-0.5 text-xs ${
-              stage.status === 'failed' ? 'text-destructive' : 'text-muted-foreground'
+              stage.status === 'failed'
+                ? 'text-destructive'
+                : 'text-muted-foreground'
             }`}
           >
             {stage.detail}
@@ -97,17 +103,9 @@ function DeployStageRow({ stage }: { stage: DeployStage }) {
 
 // useStageElapsed live-ticks a running stage's elapsed time once a second,
 // or formats a finished stage's fixed duration once. Pending, skipped,
-// and unknown stages have no meaningful duration to show. `now` is kept
-// in state rather than read via Date.now() at render time, so render
-// itself stays pure (the interval effect is the only impure read).
+// and unknown stages have no meaningful duration to show.
 function useStageElapsed(stage: DeployStage): string | null {
-  const [now, setNow] = useState(() => Date.now())
-
-  useEffect(() => {
-    if (stage.status !== 'running' || !stage.startedAt) return
-    const id = window.setInterval(() => setNow(Date.now()), 1000)
-    return () => window.clearInterval(id)
-  }, [stage.status, stage.startedAt])
+  const now = useNowTick(stage.status === 'running' && !!stage.startedAt)
 
   if (stage.status === 'running' && stage.startedAt) {
     return formatDurationMs(now - new Date(stage.startedAt).getTime())
@@ -118,7 +116,8 @@ function useStageElapsed(stage: DeployStage): string | null {
     stage.finishedAt
   ) {
     return formatDurationMs(
-      new Date(stage.finishedAt).getTime() - new Date(stage.startedAt).getTime(),
+      new Date(stage.finishedAt).getTime() -
+        new Date(stage.startedAt).getTime(),
     )
   }
   return null

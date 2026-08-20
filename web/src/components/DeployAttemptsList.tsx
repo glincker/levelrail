@@ -1,53 +1,23 @@
 import { Link } from '@tanstack/react-router'
 import {
-  CheckCircleIcon,
-  WarningCircleIcon,
-  SpinnerGapIcon,
   ScrollIcon,
   ArrowCounterClockwiseIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
-import type { VariantProps } from 'class-variance-authority'
-import type {
-  DeployAttempt,
-  DeployAttemptSource,
-  DeployAttemptStatus,
-} from '../types/deployAttempt'
+import type { DeployAttempt } from '../types/deployAttempt'
 import type { ReconcileCondition } from '../types/deploy'
 import { useTriggerDeploy } from '../queries/deploys'
 import { formatDeployDuration } from '../lib/deployDuration'
 import { computeDeployStages } from '../lib/deployStages'
+import {
+  DEPLOY_ATTEMPT_SOURCE_LABEL,
+  DEPLOY_ATTEMPT_STATUS_BADGE_VARIANT,
+  DEPLOY_ATTEMPT_STATUS_ICON,
+  DEPLOY_ATTEMPT_STATUS_LABEL,
+} from '../lib/deployAttemptPresentation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge, type badgeVariants } from '@/components/ui/badge'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
-
-const STATUS_BADGE_VARIANT: Record<
-  DeployAttemptStatus,
-  VariantProps<typeof badgeVariants>['variant']
-> = {
-  succeeded: 'success',
-  failed: 'destructive',
-  running: 'muted',
-}
-
-const STATUS_ICON: Record<DeployAttemptStatus, Icon> = {
-  succeeded: CheckCircleIcon,
-  failed: WarningCircleIcon,
-  running: SpinnerGapIcon,
-}
-
-const STATUS_LABEL: Record<DeployAttemptStatus, string> = {
-  succeeded: 'Succeeded',
-  failed: 'Failed',
-  running: 'Running',
-}
-
-const SOURCE_LABEL: Record<DeployAttemptSource, string> = {
-  webhook: 'Webhook',
-  manual: 'Manual build',
-  image: 'Image',
-}
 
 // DeployAttemptsList renders GET /api/v1/apps/{name}/deploy-attempts'
 // real, row-per-attempt history (internal/api/deploy_attempts.go), the
@@ -129,7 +99,7 @@ function DeployAttemptRow({
   conditions: ReconcileCondition[]
 }) {
   const triggerDeploy = useTriggerDeploy(appName)
-  const StatusIcon = STATUS_ICON[attempt.status]
+  const StatusIcon = DEPLOY_ATTEMPT_STATUS_ICON[attempt.status]
   // Stage vocabulary (Build/Roll out) reuses computeDeployStages, the
   // same derivation the live deploy view uses: only meaningful for the
   // latest attempt, since reconcile conditions carry no per-attempt
@@ -137,7 +107,9 @@ function DeployAttemptRow({
   // stage failed; running shows which stage is currently in flight.
   const stageLabel = isLatestAttempt
     ? computeDeployStages(attempt, conditions, true).find((s) =>
-        attempt.status === 'failed' ? s.status === 'failed' : s.status === 'running',
+        attempt.status === 'failed'
+          ? s.status === 'failed'
+          : s.status === 'running',
       )?.label
     : undefined
 
@@ -156,7 +128,7 @@ function DeployAttemptRow({
   return (
     <li className="flex items-start gap-3 px-4 py-3 first:pt-0 last:pb-0">
       <Badge
-        variant={STATUS_BADGE_VARIANT[attempt.status]}
+        variant={DEPLOY_ATTEMPT_STATUS_BADGE_VARIANT[attempt.status]}
         className="mt-0.5 shrink-0 rounded-full"
       >
         <StatusIcon
@@ -164,7 +136,7 @@ function DeployAttemptRow({
             attempt.status === 'running' ? 'size-3 animate-spin' : 'size-3'
           }
         />
-        {STATUS_LABEL[attempt.status]}
+        {DEPLOY_ATTEMPT_STATUS_LABEL[attempt.status]}
         {stageLabel ? ` (${stageLabel})` : ''}
       </Badge>
 
@@ -180,7 +152,7 @@ function DeployAttemptRow({
           ) : null}
           {attempt.source ? (
             <Badge variant="outline" className="shrink-0">
-              {SOURCE_LABEL[attempt.source]}
+              {DEPLOY_ATTEMPT_SOURCE_LABEL[attempt.source]}
             </Badge>
           ) : null}
         </div>
