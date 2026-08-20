@@ -69,7 +69,10 @@ func (rt *Router) handleStartGitHubAppRegistration(w http.ResponseWriter, r *htt
 		return
 	}
 
-	appName := githubapp.AppDisplayName(rt.brand.Name, strings.TrimPrefix(baseURL, "https://"))
+	appName := strings.TrimSpace(r.URL.Query().Get("name"))
+	if appName == "" {
+		appName = githubapp.AppDisplayName(rt.brand.Name, strings.TrimPrefix(baseURL, "https://"))
+	}
 	manifestJSON, err := json.Marshal(githubapp.BuildManifest(appName, baseURL, rt.githubAppManifestConfig))
 	if err != nil {
 		rt.logger.Error("api: marshal github app manifest failed", slog.String("error", err.Error()))
@@ -78,6 +81,80 @@ func (rt *Router) handleStartGitHubAppRegistration(w http.ResponseWriter, r *htt
 	}
 
 	writeGitHubAppManifestForm(w, state, manifestJSON)
+}
+
+// githubAppManifestPreviewResource is the wire shape for
+// GET /api/v1/github-app/register/preview: every field the manifest
+// form (writeGitHubAppManifestForm) is about to send GitHub, rendered
+// ahead of the redirect so an operator can see (and rename) the App
+// before their browser leaves this page. Built from the exact same
+// githubapp.BuildManifest call handleStartGitHubAppRegistration itself
+// uses, so preview and the real POST can never drift apart into two
+// sources of truth.
+type githubAppManifestPreviewResource struct {
+	AppName               string            `json:"app_name"`
+	HomepageURL           string            `json:"homepage_url"`
+	CallbackURL           string            `json:"callback_url"`
+	SetupURL              string            `json:"setup_url"`
+	WebhookURL            string            `json:"webhook_url"`
+	WebhookActive         bool              `json:"webhook_active"`
+	Permissions           map[string]string `json:"permissions"`
+	Events                []string          `json:"events"`
+	Public                bool              `json:"public"`
+	RequestOAuthOnInstall bool              `json:"request_oauth_on_install"`
+}
+
+// handleGetGitHubAppManifestPreview handles
+// GET /api/v1/github-app/register/preview. Read-only: unlike
+// handleStartGitHubAppRegistration, this never calls rt.githubAppState.begin,
+// so opening (and closing without confirming) the preview dialog this
+// feeds never mints or invalidates a pending CSRF state value. Same
+// preconditions as the real registration start (master key configured,
+// no App already connected, primary domain set) since there is nothing
+// meaningful to preview otherwise, and the frontend dialog that calls
+// this is only ever shown from the same "Add GitHub App" action that
+// leads to register/start.
+func (rt *Router) handleGetGitHubAppManifestPreview(w http.ResponseWriter, r *http.Request) {
+	if rt.githubAppSecrets == nil {
+		writeError(w, http.StatusNotImplemented, "the github app connection requires a master key to be configured on this control plane")
+		return
+	}
+
+	ctx := r.Context()
+	if _, err := rt.githubApp.GetGitHubAppConnection(ctx); err == nil {
+		writeError(w, http.StatusConflict, "a github app is already connected; disconnect it first before registering a new one")
+		return
+	} else if !errors.Is(err, store.ErrGitHubAppConnectionNotFound) {
+		rt.logger.Error("api: check existing github app connection failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	baseURL, err := rt.controlPlaneBaseURL(ctx)
+	if err != nil {
+		if errors.Is(err, errNoPrimaryDomain) {
+			writeError(w, http.StatusConflict, "set a primary domain in ingress settings before connecting a github app: github needs a real, reachable callback url")
+			return
+		}
+		rt.logger.Error("api: get ingress settings for github app manifest preview failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	appName := githubapp.AppDisplayName(rt.brand.Name, strings.TrimPrefix(baseURL, "https://"))
+	manifest := githubapp.BuildManifest(appName, baseURL, rt.githubAppManifestConfig)
+	writeJSON(w, http.StatusOK, githubAppManifestPreviewResource{
+		AppName:               manifest.Name,
+		HomepageURL:           manifest.URL,
+		CallbackURL:           manifest.RedirectURL,
+		SetupURL:              manifest.SetupURL,
+		WebhookURL:            manifest.HookAttributes.URL,
+		WebhookActive:         manifest.HookAttributes.Active,
+		Permissions:           manifest.DefaultPermissions,
+		Events:                manifest.DefaultEvents,
+		Public:                manifest.Public,
+		RequestOAuthOnInstall: manifest.RequestOAuthOnInstall,
+	})
 }
 
 // writeGitHubAppManifestForm renders the auto-submitting form GitHub's

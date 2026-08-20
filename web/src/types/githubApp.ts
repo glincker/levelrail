@@ -53,3 +53,19 @@ export interface GitHubAppBranch {
   name: string
   commit_sha: string
 }
+
+// GitHubAppManifestPreview mirrors githubAppManifestPreviewResource
+// (internal/api/github_app_register.go): every field the manifest form
+// is about to send GitHub, shown before the browser navigates away.
+export interface GitHubAppManifestPreview {
+  app_name: string
+  homepage_url: string
+  callback_url: string
+  setup_url: string
+  webhook_url: string
+  webhook_active: boolean
+  permissions: Record<string, string>
+  events: string[]
+  public: boolean
+  request_oauth_on_install: boolean
+}

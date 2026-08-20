@@ -133,6 +133,101 @@ func TestHandleStartGitHubAppRegistration_Success(t *testing.T) {
 	}
 }
 
+func TestHandleStartGitHubAppRegistration_NameOverride(t *testing.T) {
+	rt, db := newTestRouterWithGitHubApp(t, newFakeGitHubAppSecrets(), &fakeGitHubAppClient{})
+	cookie := loginTestSession(t, rt, db)
+	setPrimaryDomain(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/github-app/register/start?name="+url.QueryEscape("My Custom App"), ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "My Custom App") {
+		t.Errorf("body does not reference the overridden name: %s", body)
+	}
+	if strings.Contains(body, "Test Platform (") {
+		t.Errorf("body still contains the default computed name, override did not take effect: %s", body)
+	}
+}
+
+func TestHandleGetGitHubAppManifestPreview_NotConfigured(t *testing.T) {
+	rt, db := newTestRouter(t) // no WithGitHubAppSecrets: no master key
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/github-app/register/preview", ""))
+	if rec.Code != http.StatusNotImplemented {
+		t.Fatalf("status = %d, want 501, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestHandleGetGitHubAppManifestPreview_NoPrimaryDomain(t *testing.T) {
+	rt, db := newTestRouterWithGitHubApp(t, newFakeGitHubAppSecrets(), &fakeGitHubAppClient{})
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/github-app/register/preview", ""))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want 409, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestHandleGetGitHubAppManifestPreview_AlreadyConnected(t *testing.T) {
+	rt, db := newTestRouterWithGitHubApp(t, newFakeGitHubAppSecrets(), &fakeGitHubAppClient{})
+	cookie := loginTestSession(t, rt, db)
+	setPrimaryDomain(t, db)
+	if err := db.SaveGitHubAppConnection(context.Background(), store.GitHubAppConnection{
+		AppID: 1, ClientID: "Iv1.x", CreatedAt: "2026-08-14T00:00:00Z",
+	}); err != nil {
+		t.Fatalf("seed connection: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/github-app/register/preview", ""))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want 409, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+// TestHandleGetGitHubAppManifestPreview_Success also proves the preview
+// never mints a pending registration state: unlike register/start,
+// calling it must not consume the one in-flight slot githubAppState
+// holds, so a dialog that fetches a preview and is then cancelled
+// leaves a subsequent real register/start call free to begin its own.
+func TestHandleGetGitHubAppManifestPreview_Success(t *testing.T) {
+	rt, db := newTestRouterWithGitHubApp(t, newFakeGitHubAppSecrets(), &fakeGitHubAppClient{})
+	cookie := loginTestSession(t, rt, db)
+	setPrimaryDomain(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/github-app/register/preview", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`"app_name":"Test Platform (deploy.example.com)"`,
+		`"homepage_url":"https://deploy.example.com"`,
+		`"callback_url":"https://deploy.example.com/api/v1/github-app/callback"`,
+		`"setup_url":"https://deploy.example.com/api/v1/github-app/installed"`,
+		`"webhook_url":"https://deploy.example.com/api/v1/github-app/webhook"`,
+		`"webhook_active":false`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("body = %s, want it to contain %q", body, want)
+		}
+	}
+
+	rt.githubAppState.mu.Lock()
+	pending := rt.githubAppState.state
+	rt.githubAppState.mu.Unlock()
+	if pending != "" {
+		t.Error("preview must not have minted a pending registration state")
+	}
+}
+
 func TestHandleGitHubAppCallback_MissingCode(t *testing.T) {
 	rt, db := newTestRouterWithGitHubApp(t, newFakeGitHubAppSecrets(), &fakeGitHubAppClient{})
 	cookie := loginTestSession(t, rt, db)
