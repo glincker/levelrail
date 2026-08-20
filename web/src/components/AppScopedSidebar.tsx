@@ -5,6 +5,7 @@ import {
   ClockCounterClockwiseIcon,
   GlobeIcon,
   ShareNetworkIcon,
+  StackIcon,
   BracketsCurlyIcon,
   HeartbeatIcon,
   CpuIcon,
@@ -118,6 +119,16 @@ export function AppScopedSidebar({ name }: { name: string }) {
               >
                 <ShareNetworkIcon />
                 <span>Network</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={<Link to="/apps/$name/services" params={{ name }} />}
+                isActive={pathname.endsWith('/services')}
+                tooltip="Services"
+              >
+                <StackIcon />
+                <span>Services</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
