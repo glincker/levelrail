@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -30,6 +31,32 @@ func runCLIExpectAPIError(t *testing.T, args []string) string {
 		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitAPIError, stderr.String())
 	}
 	return stderr.String()
+}
+
+// newListEchoServer starts a test server that records the request path in
+// gotPath (when non-nil) and responds with items JSON-encoded.
+func newListEchoServer[T any](t *testing.T, gotPath *string, items T) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if gotPath != nil {
+			*gotPath = r.URL.Path
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(items)
+	}))
+}
+
+// newNoContentEchoServer starts a test server that records the request
+// method and path and responds 204 No Content, for action-verb endpoints
+// with no response body.
+func newNoContentEchoServer(t *testing.T) (srv *httptest.Server, gotPath, gotMethod *string) {
+	t.Helper()
+	gotPath, gotMethod = new(string), new(string)
+	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		*gotPath, *gotMethod = r.URL.Path, r.Method
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	return srv, gotPath, gotMethod
 }
 
 // newJSONErrorServer starts a test server that always responds with status

@@ -42,9 +42,11 @@ const KIND_ORDER: NotificationChannelKind[] = [
   'slack',
   'discord',
   'telegram',
+  'teams',
   'generic',
   'email',
   'pushover',
+  'pagerduty',
 ]
 
 // Destination placeholder and setup-guide link per kind: each URL is the
@@ -71,6 +73,14 @@ const KIND_META: Record<
     placeholder: '',
     href: 'https://pushover.net/api#registration',
   },
+  pagerduty: {
+    placeholder: '',
+    href: 'https://support.pagerduty.com/docs/services-and-integrations#events-api-v2',
+  },
+  teams: {
+    placeholder: 'https://example.webhook.office.com/webhookb2/...',
+    href: 'https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook',
+  },
 }
 
 const createChannelSchema = z
@@ -83,10 +93,13 @@ const createChannelSchema = z
       'telegram',
       'email',
       'pushover',
+      'pagerduty',
+      'teams',
     ]),
     notifyUrl: z.string().trim(),
     pushoverUserKey: z.string().trim(),
     pushoverApiToken: z.string().trim(),
+    pagerdutyRoutingKey: z.string().trim(),
   })
   .superRefine((data, ctx) => {
     if (data.kind === 'pushover') {
@@ -102,6 +115,16 @@ const createChannelSchema = z
           code: 'custom',
           message: 'API Token is required',
           path: ['pushoverApiToken'],
+        })
+      }
+      return
+    }
+    if (data.kind === 'pagerduty') {
+      if (!data.pagerdutyRoutingKey) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Integration/Routing Key is required',
+          path: ['pagerdutyRoutingKey'],
         })
       }
       return
@@ -138,17 +161,23 @@ const DEFAULT_VALUES: CreateChannelForm = {
   notifyUrl: '',
   pushoverUserKey: '',
   pushoverApiToken: '',
+  pagerdutyRoutingKey: '',
 }
 
 // The single notify_url string the API expects, per kind: Pushover's
 // two credentials get packed into it client-side (buildPushoverNotifyUrl),
-// every other kind sends the destination field as-is.
+// PagerDuty's routing key is sent through as-is (it's the whole
+// notify_url for that kind, not a URL), every other kind sends the
+// destination field as-is.
 function resolveNotifyUrl(values: CreateChannelForm): string {
   if (values.kind === 'pushover') {
     return buildPushoverNotifyUrl(
       values.pushoverUserKey.trim(),
       values.pushoverApiToken.trim(),
     )
+  }
+  if (values.kind === 'pagerduty') {
+    return values.pagerdutyRoutingKey.trim()
   }
   return values.notifyUrl.trim()
 }
@@ -169,10 +198,13 @@ export function CreateNotificationChannelDialog() {
   const notifyUrl = watch('notifyUrl')
   const pushoverUserKey = watch('pushoverUserKey')
   const pushoverApiToken = watch('pushoverApiToken')
+  const pagerdutyRoutingKey = watch('pagerdutyRoutingKey')
   const hasDestination =
     kind === 'pushover'
       ? Boolean(pushoverUserKey.trim() && pushoverApiToken.trim())
-      : Boolean(notifyUrl.trim())
+      : kind === 'pagerduty'
+        ? Boolean(pagerdutyRoutingKey.trim())
+        : Boolean(notifyUrl.trim())
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -345,6 +377,26 @@ export function CreateNotificationChannelDialog() {
                 </FieldHint>
               </Field>
             </>
+          ) : kind === 'pagerduty' ? (
+            <Field>
+              <FieldLabel htmlFor="channel-pagerduty-routing-key">
+                Integration/Routing Key
+              </FieldLabel>
+              <Input
+                id="channel-pagerduty-routing-key"
+                placeholder="a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4"
+                {...register('pagerdutyRoutingKey', {
+                  onChange: () => {
+                    setVerified(false)
+                  },
+                })}
+              />
+              <FieldError errors={[formState.errors.pagerdutyRoutingKey]} />
+              <FieldHint href={KIND_META.pagerduty.href}>
+                What gets sent: app name, image/tag, success or failure, and
+                the error message on failure. Nothing else about your app.
+              </FieldHint>
+            </Field>
           ) : (
             <Field>
               <FieldLabel htmlFor="channel-notify-url">

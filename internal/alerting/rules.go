@@ -35,17 +35,20 @@ const (
 // NotifyKind selects the notification payload shape (notify.go).
 type NotifyKind string
 
-// The six payload shapes NewNotifier knows how to build; an unknown or
+// The eight payload shapes NewNotifier knows how to build; an unknown or
 // empty NotifyKind falls back to NotifyGeneric. NotifyEmail is the one
 // exception to "NotifyURL is a webhook URL": see emailNotifier's doc
-// comment in notify.go.
+// comment in notify.go. NotifyPagerDuty is another: NotifyURL there
+// holds a routing key, not a URL, per notifyPagerDuty's own comment.
 const (
-	NotifyGeneric  NotifyKind = "generic"
-	NotifySlack    NotifyKind = "slack"
-	NotifyDiscord  NotifyKind = "discord"
-	NotifyTelegram NotifyKind = "telegram"
-	NotifyEmail    NotifyKind = "email"
-	NotifyPushover NotifyKind = "pushover"
+	NotifyGeneric   NotifyKind = "generic"
+	NotifySlack     NotifyKind = "slack"
+	NotifyDiscord   NotifyKind = "discord"
+	NotifyTelegram  NotifyKind = "telegram"
+	NotifyEmail     NotifyKind = "email"
+	NotifyPushover  NotifyKind = "pushover"
+	NotifyPagerDuty NotifyKind = "pagerduty"
+	NotifyTeams     NotifyKind = "teams"
 )
 
 // Rule is one alert rule: either a threshold check (Kind ==
