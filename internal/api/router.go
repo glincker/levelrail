@@ -309,6 +309,14 @@ type EmailSettingsStore interface {
 	UpdateEmailSettings(ctx context.Context, s store.EmailSettings) error
 }
 
+// CloudflareTunnelStore is the store surface GET/PUT/DELETE
+// /api/v1/settings/cloudflare-tunnel need: the single platform-wide row,
+// always present, the same shape EmailSettingsStore has for its own row.
+type CloudflareTunnelStore interface {
+	GetCloudflareTunnelSettings(ctx context.Context) (store.CloudflareTunnelSettings, error)
+	UpdateCloudflareTunnelSettings(ctx context.Context, s store.CloudflareTunnelSettings) error
+}
+
 // PasswordResetTokenStore is the store surface the forgot-password flow
 // needs: always set, part of the core Store interface.
 type PasswordResetTokenStore interface {
@@ -366,6 +374,7 @@ type Store interface {
 	OAuthSettingsStore
 	OAuthIdentityStore
 	EmailSettingsStore
+	CloudflareTunnelStore
 	PasswordResetTokenStore
 	RecoveryCodeStore
 	AuditStore
@@ -566,6 +575,8 @@ type Router struct {
 	oauthClientFactory        oauthClientFactory              // defaulted to defaultOAuthClientFactory in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape fetch/listBranches/gitSourceFetch above already use
 	emailSettings             EmailSettingsStore              // always set, same shape as ingressSettings above
 	emailSecrets              EmailSecretsStore               // nil is valid: PUT /api/v1/settings/email returns 501
+	cloudflareTunnel          CloudflareTunnelStore           // always set, same shape as emailSettings above
+	cloudflareTunnelSecrets   CloudflareTunnelSecrets         // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-tunnel return 501, same shape as emailSecrets above
 	emailSender               email.Sender                    // nil is valid: forgot-password still returns its generic success response
 	passwordResetTokens       PasswordResetTokenStore         // always set, same shape as backupTargets above
 	forgotPasswordByIP        *loginLimiter                   // per-IP forgot-password budget, distinct from logins above
@@ -605,6 +616,14 @@ func WithRegistryCredentialSecrets(s RegistryCredentialSecretsSetter) Option {
 // configured (the default), that route returns 501; GET works regardless.
 func WithEmailSecrets(s EmailSecretsStore) Option {
 	return func(rt *Router) { rt.emailSecrets = s }
+}
+
+// WithCloudflareTunnelSecrets enables PUT/DELETE
+// /api/v1/settings/cloudflare-tunnel. Without one configured (the
+// default), both return 501; GET works regardless, the same shape
+// WithEmailSecrets establishes.
+func WithCloudflareTunnelSecrets(s CloudflareTunnelSecrets) Option {
+	return func(rt *Router) { rt.cloudflareTunnelSecrets = s }
 }
 
 // WithComposeSecrets enables POST /api/v1/apps/{name}/compose to
@@ -960,6 +979,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		oauthState:              newOAuthStateStore(),
 		oauthClientFactory:      defaultOAuthClientFactory,
 		emailSettings:           s,
+		cloudflareTunnel:        s,
 		passwordResetTokens:     s,
 		forgotPasswordByIP:      newLoginLimiter(),
 		forgotPasswordByEmail:   newLoginLimiter(),
@@ -1395,6 +1415,14 @@ func (rt *Router) Handler() http.Handler {
 	// GET is AbilityRead; PUT is AbilityRoot, real infrastructure config.
 	mux.HandleFunc("GET /api/v1/settings/email", rt.requireAbility(AbilityRead, rt.handleGetEmailSettings))
 	mux.HandleFunc("PUT /api/v1/settings/email", rt.requireAbility(AbilityRoot, rt.handleUpdateEmailSettings))
+
+	// Cloudflare Tunnel (instance-level, one connection per control
+	// plane): GET is AbilityRead; PUT/DELETE are AbilityRoot, matching
+	// PUT /api/v1/settings/email's own tier for infrastructure config
+	// that changes how this control plane is reachable.
+	mux.HandleFunc("GET /api/v1/settings/cloudflare-tunnel", rt.requireAbility(AbilityRead, rt.handleGetCloudflareTunnelSettings))
+	mux.HandleFunc("PUT /api/v1/settings/cloudflare-tunnel", rt.requireAbility(AbilityRoot, rt.handleUpdateCloudflareTunnelSettings))
+	mux.HandleFunc("DELETE /api/v1/settings/cloudflare-tunnel", rt.requireAbility(AbilityRoot, rt.handleDisconnectCloudflareTunnel))
 
 	// Domains (centralized cross-app list, web/src/routes/domains):
 	// every service_domains row, AbilityRead like GET /api/v1/apps,
