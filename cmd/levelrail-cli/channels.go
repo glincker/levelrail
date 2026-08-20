@@ -42,7 +42,7 @@ func channelsUsage(prog string) string {
   %[1]s channels delete <id> [flags]                                    disconnect a channel
   %[1]s channels test <id> [flags]                                       send a real test message to a connected channel
 
-Valid --kind values: generic, slack, discord, telegram, email, pushover.
+Valid --kind values: generic, slack, discord, telegram, email, pushover, pagerduty, teams.
 
 Run "%[1]s channels <subcommand> -h" for a subcommand's own flags.
 `, prog)

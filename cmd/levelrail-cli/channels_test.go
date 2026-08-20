@@ -111,6 +111,63 @@ func TestRun_ChannelsCreate_PushoverFlags(t *testing.T) {
 	}
 }
 
+// TestRun_ChannelsCreate_PagerDutyRoutingKeyFlag proves
+// --pagerduty-routing-key is sent through as notify_url unchanged, the
+// backend's own convention for a pagerduty channel.
+func TestRun_ChannelsCreate_PagerDutyRoutingKeyFlag(t *testing.T) {
+	var gotBody createNotificationChannelRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(notificationChannelResource{
+			ID: "chn_4", Name: gotBody.Name, Kind: gotBody.Kind, NotifyURL: gotBody.NotifyURL, Enabled: *gotBody.Enabled,
+		})
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{
+		"channels", "create", "--name", "Oncall", "--kind", "pagerduty",
+		"--pagerduty-routing-key", "routing-key-789", "--api-url", srv.URL,
+	}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if gotBody.Kind != "pagerduty" || gotBody.NotifyURL != "routing-key-789" {
+		t.Errorf("request body = %+v, want kind pagerduty and notify_url routing-key-789", gotBody)
+	}
+}
+
+func TestRun_ChannelsCreate_TeamsWebhookURL(t *testing.T) {
+	var gotBody createNotificationChannelRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(notificationChannelResource{
+			ID: "chn_5", Name: gotBody.Name, Kind: gotBody.Kind, NotifyURL: gotBody.NotifyURL, Enabled: *gotBody.Enabled,
+		})
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{
+		"channels", "create", "--name", "Ops Teams", "--kind", "teams",
+		"--notify-url", "https://example.webhook.office.com/x", "--api-url", srv.URL,
+	}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if gotBody.Kind != "teams" || gotBody.NotifyURL != "https://example.webhook.office.com/x" {
+		t.Errorf("request body = %+v, want kind teams and the given notify_url", gotBody)
+	}
+}
+
 func TestRun_ChannelsCreate_MissingDestination(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"channels", "create", "--name", "x", "--kind", "pushover"}, &stdout, &stderr, envMap())
