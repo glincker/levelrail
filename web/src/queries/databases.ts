@@ -6,6 +6,7 @@
 import {
   queryOptions,
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
@@ -47,6 +48,17 @@ export function databaseListQueryOptions() {
     queryKey: databaseKeys.list(),
     queryFn: fetchDatabases,
   })
+}
+
+// useDatabases is databaseListQueryOptions' plain (non-suspense) form,
+// the same "component decides its own loading UI, no route-level
+// Suspense boundary" shape useBackupTargetsOptional (queries/
+// backupTargets.ts) already establishes for a picker component. Unlike
+// that hook, retry isn't disabled: GET /api/v1/databases needs no
+// optional server config the way backup targets' 501 case does, so an
+// ordinary transient failure is worth TanStack Query's default retry.
+export function useDatabases() {
+  return useQuery(databaseListQueryOptions())
 }
 
 // Fetches a single database resource for the detail route, GET

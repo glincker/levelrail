@@ -31,6 +31,8 @@ type (
 	deployTriggerRequest     = apiclient.DeployTriggerRequest
 	triggerBackupRequest     = apiclient.TriggerBackupRequest
 	triggerRestoreRequest    = apiclient.TriggerRestoreRequest
+	setAppDatabaseRequest    = apiclient.SetAppDatabaseRequest
+	appDatabaseResource      = apiclient.AppDatabaseResource
 
 	notificationChannelResource      = apiclient.NotificationChannelResource
 	createNotificationChannelRequest = apiclient.CreateNotificationChannelRequest

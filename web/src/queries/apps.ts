@@ -459,6 +459,106 @@ export function useClearLogDrain() {
   })
 }
 
+// PUT /api/v1/apps/{name}/database (internal/api/apps_database.go's
+// handleSetAppDatabase): attaches an already-created managed database to
+// this app as a real, persisted connection-env-var source, the UI/CLI
+// equivalent of app.yaml's own { from: "<database>.<field>" } syntax.
+// Response is deliberately narrow (AppDatabaseResource), the same shape
+// AppStorageResource already establishes for its own dedicated endpoint,
+// so the cache is patched directly below rather than replaced wholesale.
+export interface AppDatabaseResource {
+  app_name?: string
+  database_name: string
+  env_var: string
+  field: string
+}
+
+export async function setAppDatabase(
+  name: string,
+  req: { databaseName: string; envVar?: string; field?: string },
+): Promise<AppDatabaseResource> {
+  const res = await fetch(`/api/v1/apps/${encodeURIComponent(name)}/database`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      database_name: req.databaseName,
+      env_var: req.envVar,
+      field: req.field,
+    }),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `set app database failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as AppDatabaseResource
+}
+
+export function useSetAppDatabase() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      name,
+      databaseName,
+      envVar,
+      field,
+    }: {
+      name: string
+      databaseName: string
+      envVar?: string
+      field?: string
+    }) => setAppDatabase(name, { databaseName, envVar, field }),
+    onSuccess: (result) => {
+      queryClient.setQueryData(
+        appKeys.detail(result.app_name ?? ''),
+        (existing: AppDetail | undefined) =>
+          existing && {
+            ...existing,
+            database_attachment: {
+              database_name: result.database_name,
+              env_var: result.env_var,
+              field: result.field,
+            },
+          },
+      )
+      void queryClient.invalidateQueries({
+        queryKey: appKeys.detail(result.app_name ?? ''),
+      })
+    },
+  })
+}
+
+// DELETE /api/v1/apps/{name}/database (handleClearAppDatabase): detaches
+// whatever database this app currently resolves its attachment env var
+// from. 204, no body, mirroring clearAppStorage's own shape.
+export async function clearAppDatabase(name: string): Promise<void> {
+  const res = await fetch(`/api/v1/apps/${encodeURIComponent(name)}/database`, {
+    method: 'DELETE',
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `clear app database failed: ${res.status}`),
+    )
+  }
+}
+
+export function useClearAppDatabase() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (name: string) => clearAppDatabase(name),
+    onSuccess: (_data, name) => {
+      queryClient.setQueryData(
+        appKeys.detail(name),
+        (existing: AppDetail | undefined) =>
+          existing && { ...existing, database_attachment: undefined },
+      )
+      void queryClient.invalidateQueries({ queryKey: appKeys.detail(name) })
+    },
+  })
+}
+
 // POST /api/v1/apps/{name}/restart (internal/api/apps.go's
 // handleRestartApp): force a running container to be recreated with no
 // image change, the only way to do that at all today (re-deploying the

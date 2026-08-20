@@ -32,6 +32,18 @@ type createFlags struct {
 	service       string
 	yes           bool
 	jsonOut       bool
+
+	// attachDatabase, attachDatabaseEnvVar, attachDatabaseField back
+	// --attach-database and its two optional refinements: a post-create
+	// call to PUT /api/v1/apps/{name}/database (apiclient's
+	// SetAppDatabaseAttachment), the CLI's own reach into the real
+	// app-to-database attachment internal/api/apps_database.go exposes,
+	// matching this repo's own "UI, CLI, and API together" rule. Not part
+	// of createPlan: unlike CreateBody/Build, this is a separate HTTP
+	// call runAppsCreate makes only once the app itself already exists.
+	attachDatabase       string
+	attachDatabaseEnvVar string
+	attachDatabaseField  string
 }
 
 // createPlan is planFromFlags's output: exactly the HTTP requests
@@ -504,6 +516,16 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		}
 	}
 
+	if f.attachDatabase != "" {
+		if !f.jsonOut {
+			_, _ = fmt.Fprintf(stderr, "attaching database %q...\n", f.attachDatabase)
+		}
+		attachReq := setAppDatabaseRequest{DatabaseName: f.attachDatabase, EnvVar: f.attachDatabaseEnvVar, Field: f.attachDatabaseField}
+		if _, attachErr := client.SetAppDatabaseAttachment(ctx, created.Name, attachReq); attachErr != nil {
+			return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("app %q was created but attaching database %q failed: %w", created.Name, f.attachDatabase, attachErr))
+		}
+	}
+
 	final, err := client.GetApp(ctx, created.Name)
 	if err != nil {
 		// The app (and, if applicable, its build) already succeeded by
@@ -552,6 +574,9 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.StringVar(&f.imageRepo, "image-repo", "", "image name without a tag, e.g. registry.example.com/org/app (git-build path)")
 	fs.StringVar(&f.file, "file", "", "path to an app.yaml (or equivalent) spec file; an alternative to the flag-only paths above")
 	fs.StringVar(&f.service, "service", "", "which service in --file's services: map to create, required when it declares more than one")
+	fs.StringVar(&f.attachDatabase, "attach-database", "", "name of an existing managed database to attach after create (injects a connection env var, see --attach-database-env-var/--attach-database-field)")
+	fs.StringVar(&f.attachDatabaseEnvVar, "attach-database-env-var", "", "env var name the attached database's value is injected as (default: DATABASE_URL); only meaningful with --attach-database")
+	fs.StringVar(&f.attachDatabaseField, "attach-database-field", "", "which field to inject: url, host, port, username, password, or database (default: url); only meaningful with --attach-database")
 	fs.BoolVar(&f.yes, "yes", false, "accept defaults without prompting (reserved: this command never prompts today, so this is currently a no-op accepted for forward compatibility and script portability)")
 	fs.BoolVar(&f.yes, "y", false, "shorthand for --yes")
 	fs.BoolVar(&f.jsonOut, "json", false, "print the created app as JSON to stdout and nothing else")
@@ -616,6 +641,11 @@ Manifest path:
     the file's own values or supply what it cannot express (repo location, image name)
   build.type: dockerfile or railpack builds from git (repo/ref/image-repo required, as above);
     build.type: image creates the app directly with build.image, no build triggered
+
+Database attachment (any path above):
+  --attach-database string           name of an existing managed database to attach after create
+  --attach-database-env-var string   env var name for the injected value (default: DATABASE_URL)
+  --attach-database-field string     url, host, port, username, password, or database (default: url)
 
 Common flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
