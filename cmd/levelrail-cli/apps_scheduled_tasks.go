@@ -193,23 +193,36 @@ Flags:
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
+// appAndTaskIDLabel is requireArgs' argsLabel for every "apps
+// scheduled-tasks <verb> <app> <id>" subcommand (get/delete/run).
+const appAndTaskIDLabel = "an app name and a task id"
+
+// parseAppAndTaskID runs fs.Parse then extracts the <app> <id> pair
+// get/delete/run all take with no other positional arguments, the
+// common shape those three subcommands share.
+func parseAppAndTaskID(fs *flag.FlagSet, args []string, stderr io.Writer, prog, cmdLabel string) (appName, id string, exitCode int, ok bool) {
+	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
+		if err == flag.ErrHelp {
+			return "", "", exitOK, false
+		}
+		return "", "", exitUsage, false
+	}
+	rest, argsOK := requireArgs(fs, stderr, prog, cmdLabel, appAndTaskIDLabel, 2)
+	if !argsOK {
+		return "", "", exitUsage, false
+	}
+	return rest[0], rest[1], exitOK, true
+}
+
 func runAppsScheduledTasksGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps scheduled-tasks get", "print the task as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksGetUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	appName, id, code, ok := parseAppAndTaskID(fs, args, stderr, prog, "apps scheduled-tasks get")
+	if !ok {
+		return code
 	}
 	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
-
-	rest, ok := requireArgs(fs, stderr, prog, "apps scheduled-tasks get", "an app name and a task id", 2)
-	if !ok {
-		return exitUsage
-	}
-	appName, id := rest[0], rest[1]
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 	task, err := client.GetScheduledTask(context.Background(), appName, id)
@@ -307,19 +320,11 @@ func runAppsScheduledTasksDelete(prog string, args []string, stdout, stderr io.W
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps scheduled-tasks delete", "print {} to stdout on success instead of a plain confirmation", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksDeleteUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	appName, id, code, ok := parseAppAndTaskID(fs, args, stderr, prog, "apps scheduled-tasks delete")
+	if !ok {
+		return code
 	}
 	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
-
-	rest, ok := requireArgs(fs, stderr, prog, "apps scheduled-tasks delete", "an app name and a task id", 2)
-	if !ok {
-		return exitUsage
-	}
-	appName, id := rest[0], rest[1]
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 	if err := client.DeleteScheduledTask(context.Background(), appName, id); err != nil {
@@ -349,19 +354,11 @@ func runAppsScheduledTasksRun(prog string, args []string, stdout, stderr io.Writ
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps scheduled-tasks run", "print the task as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksRunUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	appName, id, code, ok := parseAppAndTaskID(fs, args, stderr, prog, "apps scheduled-tasks run")
+	if !ok {
+		return code
 	}
 	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
-
-	rest, ok := requireArgs(fs, stderr, prog, "apps scheduled-tasks run", "an app name and a task id", 2)
-	if !ok {
-		return exitUsage
-	}
-	appName, id := rest[0], rest[1]
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 	started, err := client.RunScheduledTask(context.Background(), appName, id)

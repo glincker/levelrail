@@ -388,24 +388,36 @@ func (c *Client) ClearLogDrain(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/log-drain", nil, nil)
 }
 
+// scheduledTasksCollectionPath builds
+// /api/v1/apps/{name}/scheduled-tasks, and scheduledTaskPath builds that
+// same path plus /{id}: shared by every scheduled-task method below so
+// the "/scheduled-tasks" segment exists in exactly one place.
+func scheduledTasksCollectionPath(name string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/scheduled-tasks"
+}
+
+func scheduledTaskPath(name, id string) string {
+	return scheduledTasksCollectionPath(name) + "/" + PathEscape(id)
+}
+
 // CreateScheduledTask calls POST /api/v1/apps/{name}/scheduled-tasks.
 func (c *Client) CreateScheduledTask(ctx context.Context, name string, req ScheduledTaskRequest) (ScheduledTaskResource, error) {
 	var out ScheduledTaskResource
-	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/scheduled-tasks", req, &out)
+	err := c.do(ctx, http.MethodPost, scheduledTasksCollectionPath(name), req, &out)
 	return out, err
 }
 
 // ListScheduledTasks calls GET /api/v1/apps/{name}/scheduled-tasks.
 func (c *Client) ListScheduledTasks(ctx context.Context, name string) ([]ScheduledTaskResource, error) {
 	var out []ScheduledTaskResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/scheduled-tasks", nil, &out)
+	err := c.do(ctx, http.MethodGet, scheduledTasksCollectionPath(name), nil, &out)
 	return out, err
 }
 
 // GetScheduledTask calls GET /api/v1/apps/{name}/scheduled-tasks/{id}.
 func (c *Client) GetScheduledTask(ctx context.Context, name, id string) (ScheduledTaskResource, error) {
 	var out ScheduledTaskResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/scheduled-tasks/"+PathEscape(id), nil, &out)
+	err := c.do(ctx, http.MethodGet, scheduledTaskPath(name, id), nil, &out)
 	return out, err
 }
 
@@ -414,14 +426,14 @@ func (c *Client) GetScheduledTask(ctx context.Context, name, id string) (Schedul
 // matching handleUpdateScheduledTask's own contract.
 func (c *Client) UpdateScheduledTask(ctx context.Context, name, id string, req ScheduledTaskRequest) (ScheduledTaskResource, error) {
 	var out ScheduledTaskResource
-	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/scheduled-tasks/"+PathEscape(id), req, &out)
+	err := c.do(ctx, http.MethodPut, scheduledTaskPath(name, id), req, &out)
 	return out, err
 }
 
 // DeleteScheduledTask calls DELETE
 // /api/v1/apps/{name}/scheduled-tasks/{id}.
 func (c *Client) DeleteScheduledTask(ctx context.Context, name, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/scheduled-tasks/"+PathEscape(id), nil, nil)
+	return c.do(ctx, http.MethodDelete, scheduledTaskPath(name, id), nil, nil)
 }
 
 // RunScheduledTask calls POST
@@ -429,7 +441,7 @@ func (c *Client) DeleteScheduledTask(ctx context.Context, name, id string) error
 // run and returns as soon as it starts, not once the command finishes.
 func (c *Client) RunScheduledTask(ctx context.Context, name, id string) (ScheduledTaskResource, error) {
 	var out ScheduledTaskResource
-	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/scheduled-tasks/"+PathEscape(id)+"/run", nil, &out)
+	err := c.do(ctx, http.MethodPost, scheduledTaskPath(name, id)+"/run", nil, &out)
 	return out, err
 }
 
