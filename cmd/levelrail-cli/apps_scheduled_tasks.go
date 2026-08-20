@@ -68,6 +68,36 @@ func scheduledTaskFlags(fs *flag.FlagSet, name, command, schedule *string, disab
 	fs.IntVar(timeout, "timeout", 0, "command timeout in seconds (0 means the server's own default)")
 }
 
+// parseScheduledTaskFlags runs fs.Parse on args (reordered flags-first)
+// and unpacks the token/api-url/json flag values every apps
+// scheduled-tasks subcommand takes. ok is false once -h/--help or a
+// parse error has already been handled, in which case the caller
+// should return exitCode without doing anything else.
+func parseScheduledTaskFlags(fs *flag.FlagSet, args []string, tokenFlagP, apiURLFlagP *string, jsonOutP *bool) (token, apiURL string, jsonOut bool, exitCode int, ok bool) {
+	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
+		if err == flag.ErrHelp {
+			return "", "", false, exitOK, false
+		}
+		return "", "", false, exitUsage, false
+	}
+	return *tokenFlagP, *apiURLFlagP, *jsonOutP, exitOK, true
+}
+
+// writeScheduledTaskResult prints value as JSON when jsonOut is set,
+// otherwise runs plainOut, the success-output shape every apps
+// scheduled-tasks subcommand shares.
+func writeScheduledTaskResult(stdout, stderr io.Writer, jsonOut bool, value any, plainOut func()) int {
+	if jsonOut {
+		if err := writeJSONValue(stdout, value); err != nil {
+			_, _ = fmt.Fprintln(stderr, err)
+			return exitNetwork
+		}
+		return exitOK
+	}
+	plainOut()
+	return exitOK
+}
+
 func runAppsScheduledTasksCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps scheduled-tasks create", "print the created task as JSON to stdout and nothing else", stderr)
 	var name, command, schedule string
@@ -76,13 +106,10 @@ func runAppsScheduledTasksCreate(prog string, args []string, stdout, stderr io.W
 	scheduledTaskFlags(fs, &name, &command, &schedule, &disabled, &timeout)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksCreateUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, jsonOut, code, ok := parseScheduledTaskFlags(fs, args, tokenFlagP, apiURLFlagP, jsonOutP)
+	if !ok {
+		return code
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
 	appName, ok := requireOneArg(fs, stderr, prog, "apps scheduled-tasks create", "app name")
 	if !ok {
@@ -107,15 +134,9 @@ func runAppsScheduledTasksCreate(prog string, args []string, stdout, stderr io.W
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create scheduled task for app %q: %w", appName, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, created); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	_, _ = fmt.Fprintf(stdout, "scheduled task %q (id %s) created for app %q\n", created.Name, created.ID, appName)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, created, func() {
+		_, _ = fmt.Fprintf(stdout, "scheduled task %q (id %s) created for app %q\n", created.Name, created.ID, appName)
+	})
 }
 
 func appsScheduledTasksCreateUsage(prog string) string {
@@ -141,13 +162,10 @@ func runAppsScheduledTasksList(prog string, args []string, stdout, stderr io.Wri
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps scheduled-tasks list", "print tasks as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksListUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, jsonOut, code, ok := parseScheduledTaskFlags(fs, args, tokenFlagP, apiURLFlagP, jsonOutP)
+	if !ok {
+		return code
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
 	appName, ok := requireOneArg(fs, stderr, prog, "apps scheduled-tasks list", "app name")
 	if !ok {
@@ -160,15 +178,7 @@ func runAppsScheduledTasksList(prog string, args []string, stdout, stderr io.Wri
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list scheduled tasks for app %q: %w", appName, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, tasks); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	printScheduledTasksTable(stdout, tasks)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, tasks, func() { printScheduledTasksTable(stdout, tasks) })
 }
 
 func printScheduledTasksTable(out io.Writer, tasks []scheduledTaskResource) {
@@ -206,13 +216,10 @@ func runAppsScheduledTasksUpdate(prog string, args []string, stdout, stderr io.W
 	scheduledTaskFlags(fs, &name, &command, &schedule, &disabled, &timeout)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksUpdateUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, jsonOut, code, ok := parseScheduledTaskFlags(fs, args, tokenFlagP, apiURLFlagP, jsonOutP)
+	if !ok {
+		return code
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
 	rest, ok := requireArgs(fs, stderr, prog, "apps scheduled-tasks update", "an app name and a task id", 2)
 	if !ok {
@@ -238,15 +245,9 @@ func runAppsScheduledTasksUpdate(prog string, args []string, stdout, stderr io.W
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("update scheduled task %q: %w", id, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, updated); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	_, _ = fmt.Fprintf(stdout, "scheduled task %q updated\n", updated.ID)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, updated, func() {
+		_, _ = fmt.Fprintf(stdout, "scheduled task %q updated\n", updated.ID)
+	})
 }
 
 func appsScheduledTasksUpdateUsage(prog string) string {
@@ -274,13 +275,10 @@ func runAppsScheduledTasksDelete(prog string, args []string, stdout, stderr io.W
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps scheduled-tasks delete", "print {} to stdout on success instead of a plain confirmation", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksDeleteUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, jsonOut, code, ok := parseScheduledTaskFlags(fs, args, tokenFlagP, apiURLFlagP, jsonOutP)
+	if !ok {
+		return code
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
 	rest, ok := requireArgs(fs, stderr, prog, "apps scheduled-tasks delete", "an app name and a task id", 2)
 	if !ok {
@@ -293,15 +291,9 @@ func runAppsScheduledTasksDelete(prog string, args []string, stdout, stderr io.W
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete scheduled task %q: %w", id, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, map[string]any{}); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	_, _ = fmt.Fprintf(stdout, "scheduled task %q deleted\n", id)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, map[string]any{}, func() {
+		_, _ = fmt.Fprintf(stdout, "scheduled task %q deleted\n", id)
+	})
 }
 
 func appsScheduledTasksDeleteUsage(prog string) string {
@@ -322,13 +314,10 @@ func runAppsScheduledTasksRun(prog string, args []string, stdout, stderr io.Writ
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps scheduled-tasks run", "print the started run as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksRunUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, jsonOut, code, ok := parseScheduledTaskFlags(fs, args, tokenFlagP, apiURLFlagP, jsonOutP)
+	if !ok {
+		return code
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
 	rest, ok := requireArgs(fs, stderr, prog, "apps scheduled-tasks run", "an app name and a task id", 2)
 	if !ok {
@@ -342,15 +331,9 @@ func runAppsScheduledTasksRun(prog string, args []string, stdout, stderr io.Writ
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("run scheduled task %q: %w", id, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, started); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	_, _ = fmt.Fprintf(stdout, "run %q started for scheduled task %q (use \"%s apps scheduled-tasks runs %s %s\" to see the result)\n", started.ID, id, prog, appName, id)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, started, func() {
+		_, _ = fmt.Fprintf(stdout, "run %q started for scheduled task %q (use \"%s apps scheduled-tasks runs %s %s\" to see the result)\n", started.ID, id, prog, appName, id)
+	})
 }
 
 func appsScheduledTasksRunUsage(prog string) string {
@@ -374,13 +357,10 @@ func runAppsScheduledTasksRuns(prog string, args []string, stdout, stderr io.Wri
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps scheduled-tasks runs", "print run history as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksRunsUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, jsonOut, code, ok := parseScheduledTaskFlags(fs, args, tokenFlagP, apiURLFlagP, jsonOutP)
+	if !ok {
+		return code
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
 	rest, ok := requireArgs(fs, stderr, prog, "apps scheduled-tasks runs", "an app name and a task id", 2)
 	if !ok {
@@ -394,15 +374,7 @@ func runAppsScheduledTasksRuns(prog string, args []string, stdout, stderr io.Wri
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list runs for scheduled task %q: %w", id, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, runs); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	printScheduledTaskRunsTable(stdout, runs)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, runs, func() { printScheduledTaskRunsTable(stdout, runs) })
 }
 
 func printScheduledTaskRunsTable(out io.Writer, runs []scheduledTaskRunResource) {

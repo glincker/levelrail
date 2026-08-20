@@ -161,6 +161,24 @@ func (rt *Router) loadOwnedScheduledTaskOrRespond(w http.ResponseWriter, r *http
 	return task, true
 }
 
+// decodeAndValidateScheduledTaskRequest decodes and validates the
+// request body create and update share, writing the 400 response
+// itself so the caller can just return when ok is false, the same
+// "handles its own error response" shape loadOwnedScheduledTaskOrRespond
+// uses above.
+func decodeAndValidateScheduledTaskRequest(w http.ResponseWriter, r *http.Request) (scheduledTaskRequest, bool) {
+	var req scheduledTaskRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return scheduledTaskRequest{}, false
+	}
+	if err := validateScheduledTaskRequest(req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return scheduledTaskRequest{}, false
+	}
+	return req, true
+}
+
 // handleCreateScheduledTask handles POST /api/v1/apps/{name}/scheduled-tasks.
 func (rt *Router) handleCreateScheduledTask(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
@@ -173,13 +191,8 @@ func (rt *Router) handleCreateScheduledTask(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	var req scheduledTaskRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
-		return
-	}
-	if err := validateScheduledTaskRequest(req); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+	req, ok := decodeAndValidateScheduledTaskRequest(w, r)
+	if !ok {
 		return
 	}
 
@@ -244,13 +257,8 @@ func (rt *Router) handleUpdateScheduledTask(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	var req scheduledTaskRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
-		return
-	}
-	if err := validateScheduledTaskRequest(req); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+	req, ok := decodeAndValidateScheduledTaskRequest(w, r)
+	if !ok {
 		return
 	}
 
