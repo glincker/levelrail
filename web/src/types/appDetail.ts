@@ -65,6 +65,11 @@ export interface AppDetail {
   name: string
   image: string
   port: number
+  // host_port pins the host-side port Docker binds `port` to
+  // (internal/api/apps.go's appResource.HostPort). undefined/null means
+  // "let Docker assign one", the ordinary case. Settable on create and
+  // update, like `port` itself, not response-only.
+  host_port?: number | null
   domains?: string[]
   env?: Record<string, string>
   resources?: ServiceResources | null

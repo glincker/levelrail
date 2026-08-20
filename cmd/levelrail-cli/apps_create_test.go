@@ -51,6 +51,16 @@ func TestPlanFromFlags(t *testing.T) {
 			},
 		},
 		{
+			name:  "existing image with pinned host port",
+			flags: createFlags{image: "registry.example.com/x:1", name: "web", port: 3000, hostPort: 30001},
+			wantPlan: func(t *testing.T, p createPlan) {
+				want := appResource{Name: "web", Image: "registry.example.com/x:1", Port: 3000, HostPort: toHostPort(30001)}
+				if !reflect.DeepEqual(p.CreateBody, want) {
+					t.Errorf("CreateBody = %+v, want %+v", p.CreateBody, want)
+				}
+			},
+		},
+		{
 			name:    "git-build flags missing image-repo",
 			flags:   createFlags{repo: "https://example.com/x.git", name: "web", port: 3000},
 			wantErr: "--image-repo",
@@ -299,6 +309,30 @@ func TestPlanFromFlags(t *testing.T) {
 			},
 		},
 		{
+			name:  "file mode host_port from spec",
+			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildDockerfile}, Port: 3000, HostPort: 30001},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.CreateBody.HostPort == nil || *p.CreateBody.HostPort != 30001 {
+					t.Errorf("HostPort = %v, want a pointer to 30001", p.CreateBody.HostPort)
+				}
+			},
+		},
+		{
+			name:  "file mode --host-port overrides spec",
+			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git", hostPort: 40002},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildDockerfile}, Port: 3000, HostPort: 30001},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.CreateBody.HostPort == nil || *p.CreateBody.HostPort != 40002 {
+					t.Errorf("HostPort = %v, want overridden pointer to 40002", p.CreateBody.HostPort)
+				}
+			},
+		},
+		{
 			name:  "file mode missing image-repo",
 			flags: createFlags{file: "app.yaml", repo: "https://example.com/x.git"},
 			fileSpec: &spec.Spec{Services: map[string]spec.Service{
@@ -530,6 +564,16 @@ func TestResolveRef(t *testing.T) {
 func TestPendingImageTag(t *testing.T) {
 	if got, want := pendingImageTag("levelrail/web"), "levelrail/web:pending"; got != want {
 		t.Errorf("pendingImageTag() = %q, want %q", got, want)
+	}
+}
+
+func TestToHostPort(t *testing.T) {
+	if got := toHostPort(0); got != nil {
+		t.Errorf("toHostPort(0) = %v, want nil", got)
+	}
+	got := toHostPort(8080)
+	if got == nil || *got != 8080 {
+		t.Errorf("toHostPort(8080) = %v, want a pointer to 8080", got)
 	}
 }
 

@@ -40,6 +40,11 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		Labels:   svc.Labels,
 	}
 
+	if svc.HostPort != 0 {
+		hostPort := svc.HostPort
+		d.HostPort = &hostPort
+	}
+
 	if svc.Resources != nil {
 		resources, err := toServiceResources(*svc.Resources)
 		if err != nil {

@@ -174,6 +174,31 @@ func TestToDesiredService_FullySpecified(t *testing.T) {
 	}
 }
 
+func TestToDesiredService_HostPort_PassesThroughAsPointer(t *testing.T) {
+	svc := spec.Service{Port: 8080, HostPort: 30001}
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.HostPort == nil || *got.HostPort != 30001 {
+		t.Errorf("HostPort = %v, want a pointer to 30001", got.HostPort)
+	}
+}
+
+// TestToDesiredService_NoHostPort_LeavesNil is the regression-safety
+// counterpart: an app.yaml with no host_port: (every service before this
+// field existed) must produce a nil HostPort, not a pointer to 0.
+func TestToDesiredService_NoHostPort_LeavesNil(t *testing.T) {
+	svc := spec.Service{Port: 8080}
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.HostPort != nil {
+		t.Errorf("HostPort = %v, want nil", *got.HostPort)
+	}
+}
+
 func TestToDesiredService_LabelsPassThrough(t *testing.T) {
 	svc := spec.Service{Port: 8080, Labels: map[string]string{"team": "platform"}}
 	got, err := toDesiredService("web", "img:sha", svc)

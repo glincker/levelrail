@@ -91,6 +91,15 @@ func (svc *Service) validate(name string) error {
 		return fmt.Errorf("spec: service %q: port must not be set when build.type is %q, static sites have no running container to route to", name, BuildStatic)
 	}
 
+	if svc.HostPort != 0 {
+		if svc.HostPort < 1 || svc.HostPort > 65535 {
+			return fmt.Errorf("spec: service %q: host_port must be between 1 and 65535", name)
+		}
+		if svc.Build.Type == BuildStatic {
+			return fmt.Errorf("spec: service %q: host_port must not be set when build.type is %q, static sites have no running container to publish a port for", name, BuildStatic)
+		}
+	}
+
 	if svc.Strategy != "" && svc.Strategy != StrategyRolling && svc.Strategy != StrategyRecreate && svc.Strategy != StrategyBlueGreen {
 		// Unreachable while the JSON Schema's enum stays in sync with the
 		// constants above, kept as a direct check anyway since Validate

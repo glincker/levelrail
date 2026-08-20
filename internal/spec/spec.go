@@ -25,9 +25,14 @@ type Spec struct {
 
 // Service is one entry under services:.
 type Service struct {
-	Build     Build             `yaml:"build"`
-	Domains   []string          `yaml:"domains,omitempty"`
-	Port      int               `yaml:"port,omitempty"`
+	Build   Build    `yaml:"build"`
+	Domains []string `yaml:"domains,omitempty"`
+	Port    int      `yaml:"port,omitempty"`
+	// HostPort pins the host-side port Docker binds Port to, 0 meaning
+	// auto-assign (the same zero-value-means-unset convention Port
+	// itself uses). Its storage home is store.DesiredService.HostPort
+	// (migrations/0056_service_host_port.sql).
+	HostPort  int               `yaml:"host_port,omitempty"`
 	Health    *Health           `yaml:"health,omitempty"`
 	Resources *Resources        `yaml:"resources,omitempty"`
 	Env       map[string]EnvVar `yaml:"env,omitempty"`
