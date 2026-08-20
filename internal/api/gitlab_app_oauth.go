@@ -55,7 +55,7 @@ func (rt *Router) handleStartGitLabAppConnect(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	state, err := rt.gitlabAppState.begin()
+	state, err := rt.gitlabAppState.begin("")
 	if err != nil {
 		rt.logger.Error("api: begin gitlab app oauth state failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
@@ -88,7 +88,7 @@ func (rt *Router) handleGitLabAppCallback(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, "missing state parameter")
 		return
 	}
-	if !rt.gitlabAppState.consume(state) {
+	if _, ok := rt.gitlabAppState.consume(state); !ok {
 		writeError(w, http.StatusBadRequest, "state parameter is invalid, expired, or already used")
 		return
 	}

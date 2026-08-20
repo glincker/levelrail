@@ -16,6 +16,27 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
+// normalizeGitHubInstanceURL validates and normalizes the optional
+// instance_url query parameter every GitHub App registration entry
+// point (register/start, register/preview) accepts: "" defaults to
+// github.com itself, matching every existing connection's own default
+// (migrations/0050). A non-empty value must be a real https URL with no
+// path/query/fragment, and is returned with any trailing slash trimmed
+// so it composes cleanly with the fixed paths BuildManifest and
+// APIBaseURL append.
+func normalizeGitHubInstanceURL(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "https://github.com", nil
+	}
+	raw = strings.TrimRight(raw, "/")
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme != "https" || u.Host == "" || u.Path != "" || u.RawQuery != "" || u.Fragment != "" {
+		return "", fmt.Errorf("instance_url must be a bare https URL like https://ghe.example.com")
+	}
+	return raw, nil
+}
+
 // handleStartGitHubAppRegistration handles
 // GET /api/v1/github-app/register/start: the entry point for GitHub's
 // manifest flow. Unlike every other handler in this package, this one's
@@ -62,7 +83,19 @@ func (rt *Router) handleStartGitHubAppRegistration(w http.ResponseWriter, r *htt
 		return
 	}
 
-	state, err := rt.githubAppState.begin()
+	instanceURL, err := normalizeGitHubInstanceURL(r.URL.Query().Get("instance_url"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if instanceURL != "https://github.com" {
+		if err := rt.githubAppClient.CheckInstanceReachable(ctx, instanceURL); err != nil {
+			writeError(w, http.StatusBadGateway, "could not reach "+instanceURL+": "+err.Error())
+			return
+		}
+	}
+
+	state, err := rt.githubAppState.begin(instanceURL)
 	if err != nil {
 		rt.logger.Error("api: begin github app registration failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
@@ -80,7 +113,7 @@ func (rt *Router) handleStartGitHubAppRegistration(w http.ResponseWriter, r *htt
 		return
 	}
 
-	writeGitHubAppManifestForm(w, state, manifestJSON)
+	writeGitHubAppManifestForm(w, instanceURL, state, manifestJSON)
 }
 
 // githubAppManifestPreviewResource is the wire shape for
@@ -92,6 +125,7 @@ func (rt *Router) handleStartGitHubAppRegistration(w http.ResponseWriter, r *htt
 // uses, so preview and the real POST can never drift apart into two
 // sources of truth.
 type githubAppManifestPreviewResource struct {
+	InstanceURL           string            `json:"instance_url"`
 	AppName               string            `json:"app_name"`
 	HomepageURL           string            `json:"homepage_url"`
 	CallbackURL           string            `json:"callback_url"`
@@ -141,9 +175,16 @@ func (rt *Router) handleGetGitHubAppManifestPreview(w http.ResponseWriter, r *ht
 		return
 	}
 
+	instanceURL, err := normalizeGitHubInstanceURL(r.URL.Query().Get("instance_url"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	appName := githubapp.AppDisplayName(rt.brand.Name, strings.TrimPrefix(baseURL, "https://"))
 	manifest := githubapp.BuildManifest(appName, baseURL, rt.githubAppManifestConfig)
 	writeJSON(w, http.StatusOK, githubAppManifestPreviewResource{
+		InstanceURL:           instanceURL,
 		AppName:               manifest.Name,
 		HomepageURL:           manifest.URL,
 		CallbackURL:           manifest.RedirectURL,
@@ -159,7 +200,8 @@ func (rt *Router) handleGetGitHubAppManifestPreview(w http.ResponseWriter, r *ht
 
 // writeGitHubAppManifestForm renders the auto-submitting form GitHub's
 // manifest flow expects: a hidden "manifest" field posted to
-// github.com/settings/apps/new?state=<state>. No external CSS/JS, no
+// <instanceURL>/settings/apps/new?state=<state> (github.com itself, or
+// a GitHub Enterprise Server instance). No external CSS/JS, no
 // template engine dependency (there is no existing html/template use
 // anywhere in this codebase to extend, and this is exactly one page
 // with exactly two dynamic values), both dynamic values passed through
@@ -170,10 +212,10 @@ func (rt *Router) handleGetGitHubAppManifestPreview(w http.ResponseWriter, r *ht
 // (not attacker-controlled request input at this point), so there is no
 // real injection surface today, but both are still escaped as a matter
 // of course rather than trusted to stay that way.
-func writeGitHubAppManifestForm(w http.ResponseWriter, state string, manifestJSON []byte) {
+func writeGitHubAppManifestForm(w http.ResponseWriter, instanceURL, state string, manifestJSON []byte) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	actionURL := "https://github.com/settings/apps/new?state=" + url.QueryEscape(state)
+	actionURL := instanceURL + "/settings/apps/new?state=" + url.QueryEscape(state)
 	_, err := fmt.Fprintf(w, `<!doctype html>
 <html>
 <head><meta charset="utf-8"><title>Connecting GitHub App</title></head>
@@ -230,13 +272,14 @@ func (rt *Router) handleGitHubAppCallback(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, "missing state parameter")
 		return
 	}
-	if !rt.githubAppState.consume(state) {
+	instanceURL, ok := rt.githubAppState.consume(state)
+	if !ok {
 		writeError(w, http.StatusBadRequest, "state parameter is invalid, expired, or already used")
 		return
 	}
 
 	ctx := r.Context()
-	creds, err := rt.githubAppClient.ExchangeManifestCode(ctx, code)
+	creds, err := rt.githubAppClient.ExchangeManifestCode(ctx, instanceURL, code)
 	if err != nil {
 		rt.logger.Error("api: exchange github app manifest code failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusBadGateway, "failed to exchange the manifest code with github")
@@ -261,9 +304,10 @@ func (rt *Router) handleGitHubAppCallback(w http.ResponseWriter, r *http.Request
 	}
 
 	if err := rt.githubApp.SaveGitHubAppConnection(ctx, store.GitHubAppConnection{
-		AppID:     creds.AppID,
-		ClientID:  creds.ClientID,
-		CreatedAt: time.Now().UTC().Format(time.RFC3339),
+		AppID:       creds.AppID,
+		ClientID:    creds.ClientID,
+		InstanceURL: instanceURL,
+		CreatedAt:   time.Now().UTC().Format(time.RFC3339),
 	}); err != nil {
 		rt.logger.Error("api: save github app connection failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
@@ -276,7 +320,7 @@ func (rt *Router) handleGitHubAppCallback(w http.ResponseWriter, r *http.Request
 	// themselves. GitHub redirects back to setup_url (this control
 	// plane's own /api/v1/github-app/installed, handleGitHubAppInstalled
 	// below) once they finish that step.
-	installURL := "https://github.com/apps/" + url.PathEscape(creds.Slug) + "/installations/new"
+	installURL := instanceURL + "/apps/" + url.PathEscape(creds.Slug) + "/installations/new"
 	http.Redirect(w, r, installURL, http.StatusFound)
 }
 
@@ -341,7 +385,7 @@ func (rt *Router) handleGitHubAppInstalled(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	info, err := rt.githubAppClient.GetInstallation(ctx, appJWT, installationID)
+	info, err := rt.githubAppClient.GetInstallation(ctx, conn.InstanceURL, appJWT, installationID)
 	if err != nil {
 		// A real, reachable failure mode, not just a hypothetical: an
 		// org that requires admin approval to install an App sends this

@@ -75,6 +75,9 @@ func (*fakeSecretNotSetError) Error() string { return "fake: secret not set" }
 // before use, the same "no mocking framework, plain struct fields"
 // convention this package's other fakes already use.
 type fakeGitHubAppClient struct {
+	reachableErr   error
+	gotInstanceURL string
+
 	exchangeCreds githubapp.Credentials
 	exchangeErr   error
 	gotCode       string
@@ -94,28 +97,38 @@ type fakeGitHubAppClient struct {
 	branchesErr error
 }
 
-func (f *fakeGitHubAppClient) ExchangeManifestCode(_ context.Context, code string) (githubapp.Credentials, error) {
+func (f *fakeGitHubAppClient) CheckInstanceReachable(_ context.Context, instanceURL string) error {
+	f.gotInstanceURL = instanceURL
+	return f.reachableErr
+}
+
+func (f *fakeGitHubAppClient) ExchangeManifestCode(_ context.Context, instanceURL, code string) (githubapp.Credentials, error) {
+	f.gotInstanceURL = instanceURL
 	f.gotCode = code
 	return f.exchangeCreds, f.exchangeErr
 }
 
-func (f *fakeGitHubAppClient) GetInstallation(_ context.Context, appJWT string, installationID int64) (githubapp.InstallationInfo, error) {
+func (f *fakeGitHubAppClient) GetInstallation(_ context.Context, instanceURL, appJWT string, installationID int64) (githubapp.InstallationInfo, error) {
+	f.gotInstanceURL = instanceURL
 	f.gotAppJWT = appJWT
 	f.gotInstallID = installationID
 	return f.installation, f.installationErr
 }
 
-func (f *fakeGitHubAppClient) MintInstallationToken(_ context.Context, appJWT string, installationID int64) (githubapp.InstallationToken, error) {
+func (f *fakeGitHubAppClient) MintInstallationToken(_ context.Context, instanceURL, appJWT string, installationID int64) (githubapp.InstallationToken, error) {
+	f.gotInstanceURL = instanceURL
 	f.gotAppJWT = appJWT
 	f.gotInstallID = installationID
 	return f.mintToken, f.mintErr
 }
 
-func (f *fakeGitHubAppClient) ListInstallationRepos(_ context.Context, _ string) ([]githubapp.Repo, error) {
+func (f *fakeGitHubAppClient) ListInstallationRepos(_ context.Context, instanceURL, _ string) ([]githubapp.Repo, error) {
+	f.gotInstanceURL = instanceURL
 	return f.repos, f.reposErr
 }
 
-func (f *fakeGitHubAppClient) ListBranches(_ context.Context, _, _, _ string) ([]githubapp.Branch, error) {
+func (f *fakeGitHubAppClient) ListBranches(_ context.Context, instanceURL, _, _, _ string) ([]githubapp.Branch, error) {
+	f.gotInstanceURL = instanceURL
 	return f.branches, f.branchesErr
 }
 

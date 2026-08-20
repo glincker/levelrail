@@ -49,11 +49,12 @@ type GitHubAppSecrets interface {
 // shape every other external-system boundary in this package uses
 // (Builder, DockerPinger, BackupRunner).
 type GitHubAppClient interface {
-	ExchangeManifestCode(ctx context.Context, code string) (githubapp.Credentials, error)
-	GetInstallation(ctx context.Context, appJWT string, installationID int64) (githubapp.InstallationInfo, error)
-	MintInstallationToken(ctx context.Context, appJWT string, installationID int64) (githubapp.InstallationToken, error)
-	ListInstallationRepos(ctx context.Context, token string) ([]githubapp.Repo, error)
-	ListBranches(ctx context.Context, token, owner, repo string) ([]githubapp.Branch, error)
+	CheckInstanceReachable(ctx context.Context, instanceURL string) error
+	ExchangeManifestCode(ctx context.Context, instanceURL, code string) (githubapp.Credentials, error)
+	GetInstallation(ctx context.Context, instanceURL, appJWT string, installationID int64) (githubapp.InstallationInfo, error)
+	MintInstallationToken(ctx context.Context, instanceURL, appJWT string, installationID int64) (githubapp.InstallationToken, error)
+	ListInstallationRepos(ctx context.Context, instanceURL, token string) ([]githubapp.Repo, error)
+	ListBranches(ctx context.Context, instanceURL, token, owner, repo string) ([]githubapp.Branch, error)
 }
 
 // gitHubAppStatusResource is the wire shape for GET /api/v1/github-app.
@@ -63,9 +64,14 @@ type GitHubAppClient interface {
 // echoed back, both non-secret per this feature's own store design
 // (migrations/0034_github_app_connection.sql's own comment).
 type gitHubAppStatusResource struct {
-	Connected    bool   `json:"connected"`
-	AppID        int64  `json:"app_id,omitempty"`
-	ClientID     string `json:"client_id,omitempty"`
+	Connected bool   `json:"connected"`
+	AppID     int64  `json:"app_id,omitempty"`
+	ClientID  string `json:"client_id,omitempty"`
+	// InstanceURL is "https://github.com" for every connection until
+	// GitHub Enterprise Server support (migrations/0050), a real GHES
+	// base URL after. Empty when not connected, the same shape
+	// GitLabAppStatus's own instance_url already has.
+	InstanceURL  string `json:"instance_url,omitempty"`
 	Installed    bool   `json:"installed"`
 	AccountLogin string `json:"account_login,omitempty"`
 	CreatedAt    string `json:"created_at,omitempty"`
@@ -104,11 +110,12 @@ func (rt *Router) handleGetGitHubAppStatus(w http.ResponseWriter, r *http.Reques
 	}
 
 	resource := gitHubAppStatusResource{
-		Connected: true,
-		AppID:     conn.AppID,
-		ClientID:  conn.ClientID,
-		CreatedAt: conn.CreatedAt,
-		BaseURL:   baseURL,
+		Connected:   true,
+		AppID:       conn.AppID,
+		ClientID:    conn.ClientID,
+		InstanceURL: conn.InstanceURL,
+		CreatedAt:   conn.CreatedAt,
+		BaseURL:     baseURL,
 	}
 	if conn.InstallationID != nil {
 		resource.Installed = true

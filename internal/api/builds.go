@@ -179,7 +179,7 @@ func (rt *Router) tokenForRepo(ctx context.Context, repoURL string) string {
 	if !isGitHubHTTPSRepoURL(repoURL) || rt.githubAppSecrets == nil {
 		return ""
 	}
-	token, err := rt.mintGitHubAppInstallationToken(ctx)
+	_, token, err := rt.mintGitHubAppInstallationToken(ctx)
 	if err != nil {
 		if !errors.Is(err, errGitHubAppNotConnected) && !errors.Is(err, errGitHubAppNotInstalled) {
 			rt.logger.Warn("api: trigger build: mint github app installation token failed, falling back to an unauthenticated clone", slog.String("error", err.Error()))

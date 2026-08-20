@@ -8,9 +8,10 @@ import (
 
 func newTestGitHubAppConnection() GitHubAppConnection {
 	return GitHubAppConnection{
-		AppID:     123456,
-		ClientID:  "Iv1.testclientid",
-		CreatedAt: "2026-08-14T00:00:00Z",
+		AppID:       123456,
+		ClientID:    "Iv1.testclientid",
+		InstanceURL: "https://github.com",
+		CreatedAt:   "2026-08-14T00:00:00Z",
 	}
 }
 
@@ -27,7 +28,7 @@ func TestSaveAndGetGitHubAppConnection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetGitHubAppConnection() error = %v", err)
 	}
-	if got.AppID != want.AppID || got.ClientID != want.ClientID || got.CreatedAt != want.CreatedAt {
+	if got.AppID != want.AppID || got.ClientID != want.ClientID || got.InstanceURL != want.InstanceURL || got.CreatedAt != want.CreatedAt {
 		t.Errorf("GetGitHubAppConnection() = %+v, want %+v", got, want)
 	}
 	if got.InstallationID != nil {
@@ -35,6 +36,28 @@ func TestSaveAndGetGitHubAppConnection(t *testing.T) {
 	}
 	if got.AccountLogin != nil {
 		t.Errorf("GetGitHubAppConnection().AccountLogin = %v, want nil (not yet installed)", *got.AccountLogin)
+	}
+}
+
+// TestSaveAndGetGitHubAppConnection_GHEInstanceURL proves a GitHub
+// Enterprise Server instance URL round-trips distinctly from the
+// github.com default (migrations/0050).
+func TestSaveAndGetGitHubAppConnection_GHEInstanceURL(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := newTestGitHubAppConnection()
+	want.InstanceURL = "https://ghe.example.com"
+	if err := db.SaveGitHubAppConnection(ctx, want); err != nil {
+		t.Fatalf("SaveGitHubAppConnection() error = %v", err)
+	}
+
+	got, err := db.GetGitHubAppConnection(ctx)
+	if err != nil {
+		t.Fatalf("GetGitHubAppConnection() error = %v", err)
+	}
+	if got.InstanceURL != "https://ghe.example.com" {
+		t.Errorf("GetGitHubAppConnection().InstanceURL = %q, want the GHE instance URL", got.InstanceURL)
 	}
 }
 

@@ -84,6 +84,11 @@ export function GitHubAppConnectionCard() {
                   <Badge variant="warning">not installed yet</Badge>
                 )}
               </div>
+            ) : null}
+            {status.connected ? (
+              <p className="font-mono text-sm text-muted-foreground">
+                {status.instance_url}
+              </p>
             ) : (
               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <XCircleIcon className="size-4" />
@@ -239,7 +244,12 @@ function ManifestPreviewDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const { data: preview, isLoading, isError, error } = useGitHubAppManifestPreview(open)
+  const [instanceURL, setInstanceURL] = useState('')
+  const trimmedInstanceURL = instanceURL.trim()
+  const { data: preview, isLoading, isError, error } = useGitHubAppManifestPreview(
+    trimmedInstanceURL,
+    open,
+  )
   const [name, setName] = useState('')
   // Empty means "untouched": falls back to the fetched default rather
   // than syncing it into state via an effect (React's own guidance
@@ -253,6 +263,9 @@ function ManifestPreviewDialog({
     if (name.trim() !== '') {
       params.set('name', name.trim())
     }
+    if (trimmedInstanceURL !== '') {
+      params.set('instance_url', trimmedInstanceURL)
+    }
     window.location.href = `/api/v1/github-app/register/start?${params.toString()}`
   }
 
@@ -262,6 +275,7 @@ function ManifestPreviewDialog({
       onOpenChange={(next) => {
         if (!next) {
           setName('')
+          setInstanceURL('')
         }
         onOpenChange(next)
       }}
@@ -283,6 +297,26 @@ function ManifestPreviewDialog({
           </p>
         ) : preview ? (
           <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
+            <Field>
+              <FieldLabel htmlFor="gh-preview-instance-url">
+                GitHub instance
+              </FieldLabel>
+              <Input
+                id="gh-preview-instance-url"
+                className="font-mono"
+                autoComplete="off"
+                spellCheck={false}
+                value={instanceURL}
+                onChange={(e) => {
+                  setInstanceURL(e.target.value)
+                }}
+                placeholder="https://github.com"
+              />
+              <FieldDescription>
+                Leave blank for github.com. Self-hosted GitHub Enterprise
+                Server instances work too, e.g. https://github.example.com.
+              </FieldDescription>
+            </Field>
             <Field>
               <FieldLabel htmlFor="gh-preview-name">App name</FieldLabel>
               <Input
@@ -356,6 +390,7 @@ function ManualConnectDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const connect = useConnectGitHubAppManually()
+  const [instanceURL, setInstanceURL] = useState('')
   const [appID, setAppID] = useState('')
   const [clientID, setClientID] = useState('')
   const [clientSecret, setClientSecret] = useState('')
@@ -365,6 +400,7 @@ function ManualConnectDialog({
   const [accountLogin, setAccountLogin] = useState('')
 
   function resetForm() {
+    setInstanceURL('')
     setAppID('')
     setClientID('')
     setClientSecret('')
@@ -395,6 +431,7 @@ function ManualConnectDialog({
       {
         app_id: appIDNum,
         client_id: clientID.trim(),
+        instance_url: instanceURL.trim() || undefined,
         client_secret: clientSecret,
         webhook_secret: webhookSecret,
         private_key: privateKey,
@@ -443,12 +480,34 @@ function ManualConnectDialog({
               className="underline"
             >
               github.com/settings/apps/new
-            </a>
-            , then paste the resulting credentials here. No primary domain
-            required to save these: only automated setup needs one.
+            </a>{' '}
+            (or your GitHub Enterprise Server instance&apos;s own
+            /settings/apps/new), then paste the resulting credentials here.
+            No primary domain required to save these: only automated setup
+            needs one.
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
+          <Field>
+            <FieldLabel htmlFor="gh-instance-url">
+              GitHub instance (optional)
+            </FieldLabel>
+            <Input
+              id="gh-instance-url"
+              className="font-mono"
+              autoComplete="off"
+              spellCheck={false}
+              value={instanceURL}
+              onChange={(e) => {
+                setInstanceURL(e.target.value)
+              }}
+              placeholder="https://github.com"
+            />
+            <FieldDescription>
+              Leave blank for github.com. Self-hosted instances work too,
+              e.g. https://github.example.com.
+            </FieldDescription>
+          </Field>
           <Field>
             <FieldLabel htmlFor="gh-app-id">App ID</FieldLabel>
             <Input

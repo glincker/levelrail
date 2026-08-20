@@ -34,19 +34,23 @@ export const githubAppKeys = {
   repos: () => [...githubAppKeys.all, 'repos'] as const,
   branches: (owner: string, repo: string) =>
     [...githubAppKeys.all, 'branches', owner, repo] as const,
-  manifestPreview: () => [...githubAppKeys.all, 'manifest-preview'] as const,
+  manifestPreview: (instanceURL: string) =>
+    [...githubAppKeys.all, 'manifest-preview', instanceURL] as const,
 }
 
-// GET /api/v1/github-app/register/preview
-// (handleGetGitHubAppManifestPreview): read-only, safe to fetch just to
-// populate a confirmation dialog. Only fetched while that dialog is
-// open (see useGitHubAppManifestPreview's `enabled`), never on page
-// load: this precondition-checks the same things register/start does
-// (master key, no existing connection, primary domain set), so calling
-// it unconditionally would surface a confusing error before the
-// operator has even clicked "Add GitHub App".
-export async function fetchGitHubAppManifestPreview(): Promise<GitHubAppManifestPreview> {
-  const res = await fetch('/api/v1/github-app/register/preview')
+// GET /api/v1/github-app/register/preview (handleGetGitHubAppManifestPreview):
+// read-only, safe to fetch just to populate a confirmation dialog. Only
+// fetched while that dialog is open (see useGitHubAppManifestPreview's
+// `enabled`), never on page load: this precondition-checks the same
+// things register/start does (master key, no existing connection,
+// primary domain set), so calling it unconditionally would surface a
+// confusing error before the operator has even clicked "Add GitHub App".
+// instanceURL defaults to github.com on the backend when omitted.
+export async function fetchGitHubAppManifestPreview(
+  instanceURL: string,
+): Promise<GitHubAppManifestPreview> {
+  const params = instanceURL ? `?instance_url=${encodeURIComponent(instanceURL)}` : ''
+  const res = await fetch(`/api/v1/github-app/register/preview${params}`)
   if (!res.ok) {
     throw new ApiError(
       res.status,
@@ -59,10 +63,10 @@ export async function fetchGitHubAppManifestPreview(): Promise<GitHubAppManifest
   return (await res.json()) as GitHubAppManifestPreview
 }
 
-export function useGitHubAppManifestPreview(enabled: boolean) {
+export function useGitHubAppManifestPreview(instanceURL: string, enabled: boolean) {
   return useQuery({
-    queryKey: githubAppKeys.manifestPreview(),
-    queryFn: fetchGitHubAppManifestPreview,
+    queryKey: githubAppKeys.manifestPreview(instanceURL),
+    queryFn: () => fetchGitHubAppManifestPreview(instanceURL),
     enabled,
     retry: false,
   })

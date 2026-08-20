@@ -10,6 +10,9 @@ export interface GitHubAppStatus {
   connected: boolean
   app_id?: number
   client_id?: string
+  // instance_url is "https://github.com" for every connection until a
+  // GitHub Enterprise Server one is connected, empty when not connected.
+  instance_url?: string
   installed: boolean
   account_login?: string
   created_at?: string
@@ -29,6 +32,9 @@ export interface GitHubAppStatus {
 export interface GitHubAppManualConnectRequest {
   app_id: number
   client_id: string
+  // instance_url is optional: omitted or "" means github.com, matching
+  // the backend's own normalizeGitHubInstanceURL default.
+  instance_url?: string
   client_secret: string
   webhook_secret: string
   private_key: string
@@ -58,6 +64,7 @@ export interface GitHubAppBranch {
 // (internal/api/github_app_register.go): every field the manifest form
 // is about to send GitHub, shown before the browser navigates away.
 export interface GitHubAppManifestPreview {
+  instance_url: string
   app_name: string
   homepage_url: string
   callback_url: string
