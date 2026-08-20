@@ -62,7 +62,7 @@ func TestPlanFromFlags(t *testing.T) {
 				if p.Build == nil {
 					t.Fatalf("Build = nil, want non-nil for git-build path")
 				}
-				wantBuild := buildTriggerRequest{RepoURL: "https://example.com/x.git", Ref: "release", ImageRepo: "levelrail/web"}
+				wantBuild := buildTriggerRequest{RepoURL: "https://example.com/x.git", Ref: "release", ImageRepo: "levelrail/web", Build: buildTriggerRequestBuild{Type: spec.BuildDockerfile}}
 				if *p.Build != wantBuild {
 					t.Errorf("Build = %+v, want %+v", *p.Build, wantBuild)
 				}
@@ -82,6 +82,24 @@ func TestPlanFromFlags(t *testing.T) {
 					t.Errorf("Build.BaseDirectory = %q, want %q", p.Build.Build.BaseDirectory, "apps/web")
 				}
 			},
+		},
+		{
+			name:  "git-build flags railpack build type",
+			flags: createFlags{repo: "https://example.com/x.git", name: "web", port: 3000, imageRepo: "levelrail/web", buildType: spec.BuildRailpack},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.Build == nil {
+					t.Fatalf("Build = nil, want non-nil for git-build path")
+				}
+				wantBuild := buildTriggerRequest{RepoURL: "https://example.com/x.git", Ref: "main", ImageRepo: "levelrail/web", Build: buildTriggerRequestBuild{Type: spec.BuildRailpack}}
+				if *p.Build != wantBuild {
+					t.Errorf("Build = %+v, want %+v", *p.Build, wantBuild)
+				}
+			},
+		},
+		{
+			name:    "git-build flags unsupported build type rejected",
+			flags:   createFlags{repo: "https://example.com/x.git", name: "web", port: 3000, imageRepo: "levelrail/web", buildType: spec.BuildStatic},
+			wantErr: "not supported",
 		},
 		{
 			name:     "git-build flags ref defaults to detected branch",
@@ -176,6 +194,24 @@ func TestPlanFromFlags(t *testing.T) {
 				"web": {Build: spec.Build{Type: spec.BuildStatic}, Port: 3000},
 			}},
 			wantErr: "only supports",
+		},
+		{
+			name:  "file mode railpack build type success",
+			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildRailpack}, Port: 3000},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.Build == nil {
+					t.Fatalf("Build = nil, want non-nil for the railpack path")
+				}
+				if p.Build.Build.Type != spec.BuildRailpack {
+					t.Errorf("Build.Build.Type = %q, want %q", p.Build.Build.Type, spec.BuildRailpack)
+				}
+				if p.Build.Build.Path != "" {
+					t.Errorf("Build.Build.Path = %q, want empty: railpack needs no Dockerfile path", p.Build.Build.Path)
+				}
+			},
 		},
 		{
 			name:  "file mode image build type success",

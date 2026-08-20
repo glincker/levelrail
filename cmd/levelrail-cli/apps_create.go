@@ -25,6 +25,7 @@ type createFlags struct {
 	repo          string
 	ref           string
 	dockerfile    string
+	buildType     string
 	baseDirectory string
 	imageRepo     string
 	file          string
@@ -111,6 +112,14 @@ func planGitBuildFlags(f createFlags, detected detectedGit) (createPlan, error) 
 	}
 	ref := resolveRef(f.ref, detected.Ref)
 
+	buildType := f.buildType
+	if buildType == "" {
+		buildType = spec.BuildDockerfile
+	}
+	if buildType != spec.BuildDockerfile && buildType != spec.BuildRailpack {
+		return createPlan{}, newValidationError("--build-type %q not supported by the git-build path; use %q or %q", buildType, spec.BuildDockerfile, spec.BuildRailpack)
+	}
+
 	var missing []string
 	if f.name == "" {
 		missing = append(missing, "--name")
@@ -128,13 +137,18 @@ func planGitBuildFlags(f createFlags, detected detectedGit) (createPlan, error) 
 		return createPlan{}, newValidationError("missing required flag(s) for the git-build path: %s", strings.Join(missing, ", "))
 	}
 
+	buildInput := buildTriggerRequestBuild{Type: buildType, BaseDirectory: f.baseDirectory}
+	if buildType == spec.BuildDockerfile {
+		buildInput.Path = f.dockerfile
+	}
+
 	return createPlan{
 		CreateBody: appResource{Name: f.name, Image: pendingImageTag(f.imageRepo), Port: f.port},
 		Build: &buildTriggerRequest{
 			RepoURL:   repo,
 			Ref:       ref,
 			ImageRepo: f.imageRepo,
-			Build:     buildTriggerRequestBuild{Path: f.dockerfile, BaseDirectory: f.baseDirectory},
+			Build:     buildInput,
 		},
 	}, nil
 }
@@ -151,16 +165,16 @@ func planFromFile(f createFlags, fileSpec *spec.Spec, detected detectedGit) (cre
 	svc := fileSpec.Services[key]
 
 	switch svc.Build.Type {
-	case spec.BuildDockerfile:
-		return planFromFileDockerfile(f, key, svc, detected)
+	case spec.BuildDockerfile, spec.BuildRailpack:
+		return planFromFileBuild(f, key, svc, detected, svc.Build.Type)
 	case spec.BuildImage:
 		return planFromFileImage(f, key, svc)
 	default:
-		return createPlan{}, newValidationError("service %q has build.type %q; apps create only supports %q and %q today", key, svc.Build.Type, spec.BuildDockerfile, spec.BuildImage)
+		return createPlan{}, newValidationError("service %q has build.type %q; apps create only supports %q, %q, and %q today", key, svc.Build.Type, spec.BuildDockerfile, spec.BuildRailpack, spec.BuildImage)
 	}
 }
 
-func planFromFileDockerfile(f createFlags, key string, svc spec.Service, detected detectedGit) (createPlan, error) {
+func planFromFileBuild(f createFlags, key string, svc spec.Service, detected detectedGit, buildType string) (createPlan, error) {
 	if secretKeys := secretEnvKeys(svc.Env); len(secretKeys) > 0 {
 		return createPlan{}, newValidationError(
 			"service %q declares secret env var(s) %s; apps create does not yet set secrets, create the app without them and set each one via PUT /api/v1/apps/{name}/secrets/{key} afterward",
@@ -193,13 +207,17 @@ func planFromFileDockerfile(f createFlags, key string, svc spec.Service, detecte
 	}
 	ref := resolveRef(f.ref, detected.Ref)
 
-	dockerfile := f.dockerfile
-	if dockerfile == "" {
-		dockerfile = svc.Build.Path
-	}
 	baseDirectory := f.baseDirectory
 	if baseDirectory == "" {
 		baseDirectory = svc.Build.BaseDirectory
+	}
+	buildInput := buildTriggerRequestBuild{Type: buildType, BaseDirectory: baseDirectory}
+	if buildType == spec.BuildDockerfile {
+		dockerfile := f.dockerfile
+		if dockerfile == "" {
+			dockerfile = svc.Build.Path
+		}
+		buildInput.Path = dockerfile
 	}
 
 	resources, err := toServiceResources(svc.Resources)
@@ -225,7 +243,7 @@ func planFromFileDockerfile(f createFlags, key string, svc spec.Service, detecte
 			RepoURL:   repo,
 			Ref:       ref,
 			ImageRepo: f.imageRepo,
-			Build:     buildTriggerRequestBuild{Path: dockerfile, BaseDirectory: baseDirectory},
+			Build:     buildInput,
 		},
 	}, nil
 }
@@ -528,7 +546,8 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.IntVar(&f.port, "port", 0, "container port the app listens on")
 	fs.StringVar(&f.repo, "repo", "", "git repository URL to build from (git-build path); auto-detected from the current directory's git remote \"origin\" when omitted")
 	fs.StringVar(&f.ref, "ref", "", "git ref (branch) to build from (git-build path); defaults to the current directory's branch, then \"main\"")
-	fs.StringVar(&f.dockerfile, "dockerfile", "", "Dockerfile path relative to the repo root (git-build path); defaults to \"Dockerfile\" at the repo root")
+	fs.StringVar(&f.dockerfile, "dockerfile", "", "Dockerfile path relative to the repo root (git-build path, --build-type dockerfile only); defaults to \"Dockerfile\" at the repo root")
+	fs.StringVar(&f.buildType, "build-type", "", "build type for the git-build path: \"dockerfile\" (default) or \"railpack\" (auto-detected build, no Dockerfile needed)")
 	fs.StringVar(&f.baseDirectory, "base-directory", "", "subdirectory of the repo to build from, for a monorepo (git-build path); defaults to the repo root")
 	fs.StringVar(&f.imageRepo, "image-repo", "", "image name without a tag, e.g. registry.example.com/org/app (git-build path)")
 	fs.StringVar(&f.file, "file", "", "path to an app.yaml (or equivalent) spec file; an alternative to the flag-only paths above")
@@ -586,7 +605,8 @@ Git-build path (flags):
   --repo string           git repository URL (required unless auto-detected from ./.git's "origin" remote)
   --ref string            git ref/branch (default: current branch, then "main")
   --image-repo string     image name without a tag (required)
-  --dockerfile string   Dockerfile path relative to the repo root (default: "Dockerfile")
+  --build-type string  "dockerfile" (default) or "railpack" (auto-detected build, no Dockerfile needed)
+  --dockerfile string   Dockerfile path relative to the repo root, --build-type dockerfile only (default: "Dockerfile")
   --base-directory string  subdirectory of the repo to build from, for a monorepo (default: repo root)
 
 Manifest path:
@@ -594,7 +614,7 @@ Manifest path:
   --service string      which service to create, if the file declares more than one
   --name, --port, --repo, --ref, --dockerfile, --base-directory, --image-repo above all override
     the file's own values or supply what it cannot express (repo location, image name)
-  build.type: dockerfile builds from git (repo/ref/image-repo required, as above);
+  build.type: dockerfile or railpack builds from git (repo/ref/image-repo required, as above);
     build.type: image creates the app directly with build.image, no build triggered
 
 Common flags:
