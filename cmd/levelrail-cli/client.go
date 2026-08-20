@@ -54,6 +54,14 @@ type (
 
 	scheduledTaskResource = apiclient.ScheduledTaskResource
 	scheduledTaskRequest  = apiclient.ScheduledTaskRequest
+
+	organizationResource          = apiclient.OrganizationResource
+	createOrganizationRequest     = apiclient.CreateOrganizationRequest
+	projectResource               = apiclient.ProjectResource
+	setProjectOrganizationRequest = apiclient.SetProjectOrganizationRequest
+	environmentResource           = apiclient.EnvironmentResource
+	createEnvironmentRequest      = apiclient.CreateEnvironmentRequest
+	setAppEnvironmentRequest      = apiclient.SetAppEnvironmentRequest
 )
 
 // NewClient builds a Client. See apiclient.NewClient.
