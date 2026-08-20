@@ -12,10 +12,9 @@ import (
 
 // defaultDatabaseAttachmentEnvVar and defaultDatabaseAttachmentField are
 // what PUT /api/v1/apps/{name}/database fills in when the request body
-// leaves env_var/field blank: the common case (Coolify's own baseline
-// behavior this endpoint matches) is "give me a full connection string
-// under the conventional name", not an operator choosing a specific
-// sub-field every time.
+// leaves env_var/field blank: the common case is "give me a full
+// connection string under the conventional name", not an operator
+// choosing a specific sub-field every time.
 const (
 	defaultDatabaseAttachmentEnvVar = "DATABASE_URL"
 	defaultDatabaseAttachmentField  = "url"
