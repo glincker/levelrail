@@ -58,16 +58,12 @@ func TestRun_AppsRollback_Human(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "rollback", "web", "--image", "levelrail/web:old", "--api-url", srv.URL}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	stdout, stderr := runCLIExpectOK(t, []string{"apps", "rollback", "web", "--image", "levelrail/web:old", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "name:     web") {
+		t.Errorf("stdout = %q, want the human app summary", stdout)
 	}
-	if !strings.Contains(stdout.String(), "name:     web") {
-		t.Errorf("stdout = %q, want the human app summary", stdout.String())
-	}
-	if !strings.Contains(strings.ToLower(stderr.String()), "roll") {
-		t.Errorf("stderr = %q, want a rollback-framed diagnostic message", stderr.String())
+	if !strings.Contains(strings.ToLower(stderr), "roll") {
+		t.Errorf("stderr = %q, want a rollback-framed diagnostic message", stderr)
 	}
 }
 

@@ -144,34 +144,21 @@ func TestRun_AppsScheduledTasksGet(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "scheduled-tasks", "get", "web", "sct_1", "--api-url", srv.URL}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "scheduled-tasks", "get", "web", "sct_1", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "id:        sct_1") {
+		t.Errorf("stdout = %q, want the task id line", stdout)
 	}
-	if !strings.Contains(stdout.String(), "id:        sct_1") {
-		t.Errorf("stdout = %q, want the task id line", stdout.String())
-	}
-	if !strings.Contains(stdout.String(), "last run:  never") {
-		t.Errorf("stdout = %q, want a 'never' last-run summary when last_run_at is unset", stdout.String())
+	if !strings.Contains(stdout, "last run:  never") {
+		t.Errorf("stdout = %q, want a 'never' last-run summary when last_run_at is unset", stdout)
 	}
 }
 
 func TestRun_AppsScheduledTasksGet_NotFound(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusNotFound)
-		_, _ = w.Write([]byte(`{"error":"scheduled task not found"}`))
-	}))
-	defer srv.Close()
+	srv := newJSONErrorServer(t, http.StatusNotFound, `{"error":"scheduled task not found"}`)
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "scheduled-tasks", "get", "web", "sct_missing", "--api-url", srv.URL}, &stdout, &stderr, envMap())
-	if got != exitAPIError {
-		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitAPIError, stderr.String())
-	}
-	if !strings.Contains(stderr.String(), "scheduled task not found") {
-		t.Errorf("stderr = %q, want the server's error message", stderr.String())
+	stderr := runCLIExpectAPIError(t, []string{"apps", "scheduled-tasks", "get", "web", "sct_missing", "--api-url", srv.URL})
+	if !strings.Contains(stderr, "scheduled task not found") {
+		t.Errorf("stderr = %q, want the server's error message", stderr)
 	}
 }
 
@@ -263,37 +250,16 @@ func TestRun_AppsScheduledTasksRun(t *testing.T) {
 }
 
 func TestRun_AppsScheduledTasksRun_NotConfigured(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusNotImplemented)
-		_, _ = w.Write([]byte(`{"error":"scheduled task execution is not configured on this control plane"}`))
-	}))
-	defer srv.Close()
+	srv := newJSONErrorServer(t, http.StatusNotImplemented, `{"error":"scheduled task execution is not configured on this control plane"}`)
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "scheduled-tasks", "run", "web", "sct_1", "--api-url", srv.URL}, &stdout, &stderr, envMap())
-	if got != exitAPIError {
-		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitAPIError, stderr.String())
-	}
-	if !strings.Contains(stderr.String(), "not configured") {
-		t.Errorf("stderr = %q, want the server's error message", stderr.String())
+	stderr := runCLIExpectAPIError(t, []string{"apps", "scheduled-tasks", "run", "web", "sct_1", "--api-url", srv.URL})
+	if !strings.Contains(stderr, "not configured") {
+		t.Errorf("stderr = %q, want the server's error message", stderr)
 	}
 }
 
 func TestRun_AppsScheduledTasks_NoAppName(t *testing.T) {
-	tests := []string{"list"}
-	for _, verb := range tests {
-		t.Run(verb, func(t *testing.T) {
-			var stdout, stderr bytes.Buffer
-			got := run("levelrail-cli-test", []string{"apps", "scheduled-tasks", verb}, &stdout, &stderr, envMap())
-			if got != exitUsage {
-				t.Fatalf("exit = %d, want %d", got, exitUsage)
-			}
-			if !strings.Contains(stderr.String(), "requires exactly one") {
-				t.Errorf("stderr = %q, want a missing-name usage error", stderr.String())
-			}
-		})
-	}
+	assertUsageErrorMissingName(t, "scheduled-tasks", []string{"list"})
 }
 
 func TestRun_AppsScheduledTasks_MissingTaskID(t *testing.T) {
