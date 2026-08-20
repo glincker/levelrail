@@ -67,6 +67,10 @@ type appResource struct {
 	// it there doesn't violate that boundary. Set it on an existing app
 	// via PUT /api/v1/apps/{name}/project (handleSetAppProject) instead.
 	ProjectID string `json:"project_id,omitempty"`
+	// EnvironmentID is which environment (environments.go) this app is
+	// tagged with, empty meaning none. Response-only, same boundary as
+	// ProjectID: set via PUT /api/v1/apps/{name}/environment instead.
+	EnvironmentID string `json:"environment_id,omitempty"`
 	// StorageTargetID is which connected backup target (backup_targets.go)
 	// this app's object-storage credentials resolve from, empty meaning
 	// no storage attached. Response-only, the same "shown but not
@@ -141,6 +145,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		Labels:             svc.Labels,
 		NodeID:             svc.NodeID,
 		ProjectID:          svc.ProjectID,
+		EnvironmentID:      svc.EnvironmentID,
 		StorageTargetID:    svc.StorageTargetID,
 		DatabaseEnv:        databaseEnv,
 		DatabaseAttachment: attachment,

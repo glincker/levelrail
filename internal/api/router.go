@@ -389,6 +389,8 @@ type Store interface {
 	BackupHistoryStore
 	RestoreHistoryStore
 	ProjectStore
+	OrganizationStore
+	EnvironmentStore
 	IngressSettingsStore
 	DomainStore
 	DomainBasicAuthStore
@@ -515,6 +517,8 @@ type Router struct {
 	tokens                 TokenStore
 	nodes                  NodeStore
 	projects               ProjectStore
+	organizations          OrganizationStore
+	environments           EnvironmentStore
 	secrets                SecretSetter       // nil is valid: a control plane with no master key configured serves everything except secret-setting
 	composeSecrets         ComposeSecretStore // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
 	telemetry              TelemetryQuerier   // nil is valid: metrics/logs query routes return 501, same shape as secrets above
@@ -1010,6 +1014,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		tokens:                  s,
 		nodes:                   s,
 		projects:                s,
+		organizations:           s,
+		environments:            s,
 		certs:                   s,
 		staticSites:             s,
 		ingressSettings:         s,
@@ -1400,6 +1406,21 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("POST /api/v1/projects", rt.requireAbility(AbilityWrite, rt.handleCreateProject))
 	mux.HandleFunc("GET /api/v1/projects/{id}", rt.requireAbility(AbilityRead, rt.handleGetProject))
 	mux.HandleFunc("DELETE /api/v1/projects/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteProject))
+
+	// Organizations (organizations.go): groups projects, same ordinary
+	// AbilityRead/AbilityWrite boundary as projects above.
+	mux.HandleFunc("GET /api/v1/organizations", rt.requireAbility(AbilityRead, rt.handleListOrganizations))
+	mux.HandleFunc("POST /api/v1/organizations", rt.requireAbility(AbilityWrite, rt.handleCreateOrganization))
+	mux.HandleFunc("GET /api/v1/organizations/{id}", rt.requireAbility(AbilityRead, rt.handleGetOrganization))
+	mux.HandleFunc("DELETE /api/v1/organizations/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteOrganization))
+	mux.HandleFunc("PUT /api/v1/projects/{id}/organization", rt.requireAbility(AbilityWrite, rt.handleSetProjectOrganization))
+
+	// Environments (environments.go): staging/production-style labels
+	// scoped to a project, tagged onto a service via its own app route.
+	mux.HandleFunc("GET /api/v1/projects/{id}/environments", rt.requireAbility(AbilityRead, rt.handleListEnvironments))
+	mux.HandleFunc("POST /api/v1/projects/{id}/environments", rt.requireAbility(AbilityWrite, rt.handleCreateEnvironment))
+	mux.HandleFunc("DELETE /api/v1/environments/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteEnvironment))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/environment", rt.requireAbility(AbilityWrite, rt.handleSetAppEnvironment))
 
 	// Shared env vars every app filed under this project inherits
 	// (project_env.go): same AbilityRead/AbilityWrite boundary as the

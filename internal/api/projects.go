@@ -45,10 +45,11 @@ type projectResource struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
 	CreatedAt string `json:"created_at"`
+	OrgID     string `json:"org_id,omitempty"`
 }
 
 func toProjectResource(p store.Project) projectResource {
-	return projectResource{ID: p.ID, Name: p.Name, CreatedAt: p.CreatedAt}
+	return projectResource{ID: p.ID, Name: p.Name, CreatedAt: p.CreatedAt, OrgID: p.OrgID}
 }
 
 // createProjectRequest is POST /api/v1/projects's body: just a name,
