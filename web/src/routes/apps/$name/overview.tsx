@@ -6,6 +6,7 @@ import {
   useDeployAttempts,
 } from '../../../queries/deployAttempts'
 import { AppOverviewHero } from '../../../components/AppOverviewHero'
+import { AppQuickStats } from '../../../components/AppQuickStats'
 import { AppOverview } from '../../../components/AppOverview'
 import { DeployInProgressBanner } from '../../../components/DeployInProgressBanner'
 import { PortEditor } from '../../../components/PortEditor'
@@ -56,6 +57,7 @@ function OverviewSection() {
         />
       ) : null}
       <AppOverviewHero app={app} conditions={conditions} />
+      <AppQuickStats appName={name} />
       <AppOverview app={app} />
       <GitSourceCard app={app} />
       <StorageAttachmentCard app={app} />
