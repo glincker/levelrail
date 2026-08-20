@@ -331,6 +331,15 @@ type CloudflareTunnelStore interface {
 	UpdateCloudflareTunnelSettings(ctx context.Context, s store.CloudflareTunnelSettings) error
 }
 
+// CloudflareDNSStore is the store surface GET/PUT
+// /api/v1/settings/cloudflare-dns need: the single platform-wide row,
+// always present, the same shape CloudflareTunnelStore has for its own
+// (distinct) row.
+type CloudflareDNSStore interface {
+	GetCloudflareDNSSettings(ctx context.Context) (store.CloudflareDNSSettings, error)
+	UpdateCloudflareDNSSettings(ctx context.Context, s store.CloudflareDNSSettings) error
+}
+
 // PasswordResetTokenStore is the store surface the forgot-password flow
 // needs: always set, part of the core Store interface.
 type PasswordResetTokenStore interface {
@@ -389,6 +398,7 @@ type Store interface {
 	OAuthIdentityStore
 	EmailSettingsStore
 	CloudflareTunnelStore
+	CloudflareDNSStore
 	PasswordResetTokenStore
 	RecoveryCodeStore
 	AuditStore
@@ -592,6 +602,8 @@ type Router struct {
 	emailSecrets              EmailSecretsStore               // nil is valid: PUT /api/v1/settings/email returns 501
 	cloudflareTunnel          CloudflareTunnelStore           // always set, same shape as emailSettings above
 	cloudflareTunnelSecrets   CloudflareTunnelSecrets         // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-tunnel return 501, same shape as emailSecrets above
+	cloudflareDNS             CloudflareDNSStore              // always set, same shape as cloudflareTunnel above
+	cloudflareDNSSecrets      CloudflareDNSSecrets            // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-dns return 501, same shape as cloudflareTunnelSecrets above
 	emailSender               email.Sender                    // nil is valid: forgot-password still returns its generic success response
 	passwordResetTokens       PasswordResetTokenStore         // always set, same shape as backupTargets above
 	forgotPasswordByIP        *loginLimiter                   // per-IP forgot-password budget, distinct from logins above
@@ -641,6 +653,14 @@ func WithEmailSecrets(s EmailSecretsStore) Option {
 // WithEmailSecrets establishes.
 func WithCloudflareTunnelSecrets(s CloudflareTunnelSecrets) Option {
 	return func(rt *Router) { rt.cloudflareTunnelSecrets = s }
+}
+
+// WithCloudflareDNSSecrets enables PUT/DELETE
+// /api/v1/settings/cloudflare-dns. Without one configured (the default),
+// both return 501; GET works regardless, the same shape
+// WithCloudflareTunnelSecrets establishes.
+func WithCloudflareDNSSecrets(s CloudflareDNSSecrets) Option {
+	return func(rt *Router) { rt.cloudflareDNSSecrets = s }
 }
 
 // WithComposeSecrets enables POST /api/v1/apps/{name}/compose to
@@ -1010,6 +1030,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		oauthClientFactory:      defaultOAuthClientFactory,
 		emailSettings:           s,
 		cloudflareTunnel:        s,
+		cloudflareDNS:           s,
 		passwordResetTokens:     s,
 		forgotPasswordByIP:      newLoginLimiter(),
 		forgotPasswordByEmail:   newLoginLimiter(),
@@ -1473,6 +1494,9 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/settings/cloudflare-tunnel", rt.requireAbility(AbilityRead, rt.handleGetCloudflareTunnelSettings))
 	mux.HandleFunc("PUT /api/v1/settings/cloudflare-tunnel", rt.requireAbility(AbilityRoot, rt.handleUpdateCloudflareTunnelSettings))
 	mux.HandleFunc("DELETE /api/v1/settings/cloudflare-tunnel", rt.requireAbility(AbilityRoot, rt.handleDisconnectCloudflareTunnel))
+	mux.HandleFunc("GET /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRead, rt.handleGetCloudflareDNSSettings))
+	mux.HandleFunc("PUT /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRoot, rt.handleUpdateCloudflareDNSSettings))
+	mux.HandleFunc("DELETE /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRoot, rt.handleDisconnectCloudflareDNS))
 
 	// Domains (centralized cross-app list, web/src/routes/domains):
 	// every service_domains row, AbilityRead like GET /api/v1/apps,

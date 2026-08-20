@@ -1490,6 +1490,10 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// Cloudflare Tunnel's token goes through the same secretsManager,
 		// same nil-interface hazard as everything else in this block.
 		opts = append(opts, api.WithCloudflareTunnelSecrets(secretsManager))
+		// Cloudflare DNS-01's API token (a distinct credential from the
+		// Tunnel connector token above) goes through the same
+		// secretsManager, same nil-interface hazard.
+		opts = append(opts, api.WithCloudflareDNSSecrets(secretsManager))
 		// Git sources (TASKS.md 1.7's own deferred follow-up,
 		// internal/api/git_sources.go, git_webhook.go): a connected
 		// source's deploy token and webhook secret go through the same
@@ -1757,6 +1761,12 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		ingressOpts := []ingressreconcile.Option{ingressreconcile.WithLogger(deps.logger)}
 		if deps.dashboardDial != "" {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(deps.dashboardDial))
+		}
+		// Cloudflare DNS-01 for wildcard domains: same nil-secretsManager
+		// hazard as the Tunnel token below, and the same "skipped
+		// entirely without a master key" fallback.
+		if deps.secretsManager != nil {
+			ingressOpts = append(ingressOpts, ingressreconcile.WithCloudflareDNSTokens(deps.secretsManager))
 		}
 		controllers = append(controllers, ingressreconcile.New(deps.db, deps.runtime, deps.driver, ingressOpts...))
 

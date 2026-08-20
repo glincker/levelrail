@@ -287,6 +287,29 @@ func (c *Client) ListDomains(ctx context.Context) ([]DomainResource, error) {
 	return out, err
 }
 
+// GetCloudflareDNS calls GET /api/v1/settings/cloudflare-dns: the
+// Cloudflare DNS-01 credential's enabled/has_token state, needed for
+// ACME to issue real wildcard certificates (HTTP-01 cannot).
+func (c *Client) GetCloudflareDNS(ctx context.Context) (CloudflareDNSResource, error) {
+	var out CloudflareDNSResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/cloudflare-dns", nil, &out)
+	return out, err
+}
+
+// SetCloudflareDNS calls PUT /api/v1/settings/cloudflare-dns.
+func (c *Client) SetCloudflareDNS(ctx context.Context, req UpdateCloudflareDNSRequest) (CloudflareDNSResource, error) {
+	var out CloudflareDNSResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/cloudflare-dns", req, &out)
+	return out, err
+}
+
+// DisconnectCloudflareDNS calls DELETE /api/v1/settings/cloudflare-dns.
+func (c *Client) DisconnectCloudflareDNS(ctx context.Context) (CloudflareDNSResource, error) {
+	var out CloudflareDNSResource
+	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/cloudflare-dns", nil, &out)
+	return out, err
+}
+
 // TriggerBackup calls POST /api/v1/databases/{name}/backups: starts a
 // real backup of name to targetID and returns as soon as the attempt is
 // recorded and under way, not once the dump and upload actually finish.

@@ -98,6 +98,7 @@ type ServiceStore interface {
 	ListDesiredServices(ctx context.Context) ([]store.DesiredService, error)
 	ListStaticSites(ctx context.Context) ([]store.StaticSite, error)
 	GetIngressSettings(ctx context.Context) (store.IngressSettings, error)
+	GetCloudflareDNSSettings(ctx context.Context) (store.CloudflareDNSSettings, error)
 }
 
 // Applier is the narrow surface this controller needs from
@@ -105,6 +106,14 @@ type ServiceStore interface {
 // Caddy instance. *ingress.Driver satisfies this.
 type Applier interface {
 	Apply(ctx context.Context, cfg *ingress.Config) error
+}
+
+// CloudflareDNSTokenResolver is the narrow surface this controller needs
+// from internal/secrets.Manager to resolve the Cloudflare DNS-01 API
+// token, mirroring cloudflaretunnel.TokenResolver's exact shape.
+// *secrets.Manager satisfies this structurally.
+type CloudflareDNSTokenResolver interface {
+	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
 }
 
 const (
@@ -161,6 +170,14 @@ type Controller struct {
 	// "storageDir/file storage instead" (see WithCertStore).
 	certStore   ingress.CertStore
 	certStorage any
+
+	// dnsTokens, if set via WithCloudflareDNSTokens, is resolved fresh
+	// every Reconcile pass whenever store.CloudflareDNSSettings.Enabled
+	// is true, and threaded through to
+	// ingress.RoutesOptions.CloudflareDNSAPIToken. Nil (the default)
+	// means no wildcard domain ever gets Cloudflare DNS-01, unchanged
+	// from this controller's behavior before this field existed.
+	dnsTokens CloudflareDNSTokenResolver
 }
 
 // Option configures optional Controller behavior.
@@ -225,6 +242,16 @@ func WithCertStore(certStore ingress.CertStore) Option {
 // erroring when its prerequisite wiring is absent.
 func WithDashboardDial(dial string) Option {
 	return func(c *Controller) { c.dashboardDial = dial }
+}
+
+// WithCloudflareDNSTokens enables Cloudflare DNS-01 for wildcard domains
+// (see internal/ingress.IsWildcardDomain) by resolving the API token
+// internal/secrets stores under store.CloudflareDNSSecretsKey(), whenever
+// store.CloudflareDNSSettings.Enabled is true. Without this option (the
+// default), wildcard hosts reconcile exactly as before this feature
+// existed.
+func WithCloudflareDNSTokens(resolver CloudflareDNSTokenResolver) Option {
+	return func(c *Controller) { c.dnsTokens = resolver }
 }
 
 // WithLogger overrides the logger used for per-service skip decisions.
@@ -382,17 +409,18 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 
 	cfg, err := ingress.BuildRoutesConfig(ingress.RoutesOptions{
-		ServerName:       c.serverName,
-		ListenAddr:       c.listenAddr,
-		Routes:           routes,
-		StaticRoutes:     staticRoutes,
-		TLS:              true,
-		AdminListen:      c.adminListen,
-		StorageDir:       c.storageDir,
-		CertStorage:      c.certStorage,
-		ACMEEnabled:      settings.ACMEEnabled,
-		ACMEEmail:        settings.ACMEEmail,
-		ACMEDirectoryURL: settings.ACMEDirectoryURL,
+		ServerName:            c.serverName,
+		ListenAddr:            c.listenAddr,
+		Routes:                routes,
+		StaticRoutes:          staticRoutes,
+		TLS:                   true,
+		AdminListen:           c.adminListen,
+		StorageDir:            c.storageDir,
+		CertStorage:           c.certStorage,
+		ACMEEnabled:           settings.ACMEEnabled,
+		ACMEEmail:             settings.ACMEEmail,
+		ACMEDirectoryURL:      settings.ACMEDirectoryURL,
+		CloudflareDNSAPIToken: c.resolveCloudflareDNSAPIToken(ctx),
 	})
 	if err != nil {
 		return notReady("BuildConfigFailed", err), fmt.Errorf("ingress: build config: %w", err)
@@ -429,6 +457,34 @@ func firstDuplicateHost(name string, domains []string, claimed map[string]string
 		}
 	}
 	return "", "", false
+}
+
+// resolveCloudflareDNSAPIToken returns the Cloudflare DNS-01 API token
+// for this reconcile pass, or "" if WithCloudflareDNSTokens was never
+// set, the operator hasn't enabled it (store.CloudflareDNSSettings.
+// Enabled), or resolving it fails. Failing to "" rather than returning
+// an error keeps a token problem from blocking the whole ingress
+// reconcile: it only means wildcard hosts fall back to whatever the
+// non-wildcard policy already does with them this pass, exactly as if
+// this feature were never configured.
+func (c *Controller) resolveCloudflareDNSAPIToken(ctx context.Context) string {
+	if c.dnsTokens == nil {
+		return ""
+	}
+	dnsSettings, err := c.store.GetCloudflareDNSSettings(ctx)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: get cloudflare dns settings failed, wildcard domains will not get DNS-01 this pass", slog.String("error", err.Error()))
+		return ""
+	}
+	if !dnsSettings.Enabled {
+		return ""
+	}
+	token, err := c.dnsTokens.Resolve(ctx, store.CloudflareDNSSecretsKey(), store.CloudflareDNSTokenEnvKey)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: resolve cloudflare dns token failed, wildcard domains will not get DNS-01 this pass", slog.String("error", err.Error()))
+		return ""
+	}
+	return token
 }
 
 // routeFor derives svc's currently active container the same way the

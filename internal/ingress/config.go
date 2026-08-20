@@ -229,6 +229,51 @@ type ACMEIssuer struct {
 	// operator believes is a production toggle would be a worse
 	// surprise than requiring them to opt in explicitly.
 	CA string `json:"ca,omitempty"`
+	// Challenges is non-nil only for wildcard subjects: RFC 8555 7.1.1
+	// restricts HTTP-01 to non-wildcard identifiers, so
+	// NewCloudflareDNSACMEIssuer sets DNS-01 here instead.
+	Challenges *ChallengesConfig `json:"challenges,omitempty"`
+}
+
+// ChallengesConfig mirrors Caddy's caddytls.ChallengesConfig, scoped to
+// the one field this package sets: DNS.
+type ChallengesConfig struct {
+	DNS *DNSChallengeConfig `json:"dns,omitempty"`
+}
+
+// DNSChallengeConfig mirrors Caddy's caddytls.DNSChallengeConfig, scoped
+// to the one field this package sets: Provider.
+type DNSChallengeConfig struct {
+	// Provider is a dns.providers.* module reference, typed any like
+	// Route.Handle. Its inline_key is "name", not "module" (per
+	// caddytls.DNSChallengeConfig.ProviderRaw's struct tag).
+	Provider any `json:"provider"`
+}
+
+// CloudflareDNSProvider is the wire shape for Caddy's Cloudflare DNS
+// provider module (dns.providers.cloudflare,
+// github.com/caddy-dns/cloudflare wrapping github.com/libdns/cloudflare),
+// used as a DNSChallengeConfig's Provider. APIToken must be a scoped
+// Cloudflare API token (Zone:DNS:Edit), never the global API key.
+type CloudflareDNSProvider struct {
+	Name     string `json:"name"`
+	APIToken string `json:"api_token"`
+}
+
+// NewCloudflareDNSACMEIssuer returns the JSON shape for Caddy's real
+// ACME issuer configured to solve the DNS-01 challenge via Cloudflare
+// instead of Caddy's default HTTP-01, for wildcard subjects. email and
+// directoryURL pass straight through to the same fields NewACMEIssuer
+// sets; apiToken populates the Cloudflare provider. This package
+// performs no validation on apiToken; internal/api owns that.
+func NewCloudflareDNSACMEIssuer(email, directoryURL, apiToken string) ACMEIssuer {
+	iss := NewACMEIssuer(email, directoryURL)
+	iss.Challenges = &ChallengesConfig{
+		DNS: &DNSChallengeConfig{
+			Provider: CloudflareDNSProvider{Name: "cloudflare", APIToken: apiToken},
+		},
+	}
+	return iss
 }
 
 // NewACMEIssuer returns the JSON shape for Caddy's real ACME issuer
