@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"text/tabwriter"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // runBackupsList implements "backups list <database>": GET
@@ -15,11 +17,14 @@ import (
 func runBackupsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs := flag.NewFlagSet(prog+" backups list", flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag string
+	var tokenFlag, apiURLFlag, beforeFlag string
 	var jsonOut bool
+	var limitFlag int
 	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
 	fs.BoolVar(&jsonOut, "json", false, "print backup history as a JSON array to stdout and nothing else")
+	fs.IntVar(&limitFlag, "limit", 0, "max attempts to return (default: server default)")
+	fs.StringVar(&beforeFlag, "before", "", "only show attempts started before this RFC3339 timestamp (page backward using the STARTED column of a prior run)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsListUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -39,7 +44,10 @@ func runBackupsList(prog string, args []string, stdout, stderr io.Writer, lookup
 
 	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
 
-	history, err := client.ListBackups(context.Background(), name)
+	history, err := client.ListBackups(context.Background(), name, apiclient.ListBackupsOptions{
+		Limit:  limitFlag,
+		Before: beforeFlag,
+	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list backups for database %q: %w", name, err))
 	}
@@ -81,6 +89,8 @@ Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --json                    print backup history as a JSON array to stdout, nothing else
+  --limit int              max attempts to return (default: server default)
+  --before string          only show attempts started before this RFC3339 timestamp
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

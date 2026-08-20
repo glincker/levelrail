@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/cronexpr"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -35,7 +37,7 @@ func databaseContainerName(dbName string) string {
 // just listing every attempt for a database, the same "look up one row
 // by ID" need GetBackupTarget already serves for backup targets.
 type BackupHistoryStore interface {
-	ListBackupHistory(ctx context.Context, databaseName string) ([]store.BackupHistory, error)
+	ListBackupHistory(ctx context.Context, databaseName string, limit int, before *time.Time) ([]store.BackupHistory, error)
 	GetBackupHistory(ctx context.Context, id string) (store.BackupHistory, error)
 }
 
@@ -160,11 +162,22 @@ func (rt *Router) handleTriggerBackup(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+const (
+	defaultBackupHistoryLimit = 50
+	maxBackupHistoryLimit     = 200
+)
+
 // handleListBackupHistory handles GET /api/v1/databases/{name}/backups.
 // AbilityRead: this is passive visibility into attempts already made,
 // the same boundary handleListCertificates/handleListStaticSites draw
 // between visibility and mutation elsewhere in this file's sibling
 // handlers.
+//
+// Cursor-paginated by ?before (an RFC3339 timestamp) and ?limit, the
+// identical query-param contract handleListAuditLog (audit.go)
+// establishes: a database backed up on a tight schedule for years
+// accumulates exactly the kind of unbounded history an OFFSET query
+// degrades against.
 func (rt *Router) handleListBackupHistory(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -177,7 +190,30 @@ func (rt *Router) handleListBackupHistory(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	history, err := rt.backupHistory.ListBackupHistory(r.Context(), name)
+	limit := defaultBackupHistoryLimit
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil || n <= 0 {
+			writeError(w, http.StatusBadRequest, "limit must be a positive integer")
+			return
+		}
+		limit = n
+	}
+	if limit > maxBackupHistoryLimit {
+		limit = maxBackupHistoryLimit
+	}
+
+	var before *time.Time
+	if raw := r.URL.Query().Get("before"); raw != "" {
+		t, err := time.Parse(time.RFC3339, raw)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "before must be an RFC3339 timestamp")
+			return
+		}
+		before = &t
+	}
+
+	history, err := rt.backupHistory.ListBackupHistory(r.Context(), name, limit, before)
 	if err != nil {
 		rt.logger.Error("api: list backup history failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")

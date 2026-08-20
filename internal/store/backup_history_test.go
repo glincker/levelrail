@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 )
 
 func seedBackupTarget(t *testing.T, db *DB) BackupTarget {
@@ -101,7 +102,7 @@ func TestListBackupHistory_NewestFirst_ScopedToDatabase(t *testing.T) {
 		}
 	}
 
-	got, err := db.ListBackupHistory(ctx, "mydb")
+	got, err := db.ListBackupHistory(ctx, "mydb", 50, nil)
 	if err != nil {
 		t.Fatalf("ListBackupHistory() error = %v", err)
 	}
@@ -146,7 +147,7 @@ func TestPruneBackupHistory_KeepsNewestSucceeded(t *testing.T) {
 		t.Errorf("pruned = %d, want 3", len(pruned))
 	}
 
-	got, err := db.ListBackupHistory(ctx, "mydb")
+	got, err := db.ListBackupHistory(ctx, "mydb", 50, nil)
 	if err != nil {
 		t.Fatalf("ListBackupHistory() error = %v", err)
 	}
@@ -229,7 +230,7 @@ func TestPruneBackupHistory_NeverTouchesFailedOrRunning(t *testing.T) {
 		t.Errorf("pruned = %d, want 1 (only the older succeeded row)", len(pruned))
 	}
 
-	got, err := db.ListBackupHistory(ctx, "mydb")
+	got, err := db.ListBackupHistory(ctx, "mydb", 50, nil)
 	if err != nil {
 		t.Fatalf("ListBackupHistory() error = %v", err)
 	}
@@ -271,7 +272,7 @@ func TestPruneBackupHistory_ZeroOrNegativeKeepDeletesNothing(t *testing.T) {
 		}
 	}
 
-	got, err := db.ListBackupHistory(ctx, "mydb")
+	got, err := db.ListBackupHistory(ctx, "mydb", 50, nil)
 	if err != nil {
 		t.Fatalf("ListBackupHistory() error = %v", err)
 	}
@@ -280,9 +281,60 @@ func TestPruneBackupHistory_ZeroOrNegativeKeepDeletesNothing(t *testing.T) {
 	}
 }
 
+// TestListBackupHistory_Pagination is table-driven over limit/before
+// combinations against one fixed, deterministic seed of five rows, the
+// same "seed once, assert many shapes" structure
+// TestPruneBackupHistory_NeverTouchesFailedOrRunning already uses in this
+// file.
+func TestListBackupHistory_Pagination(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	target := seedBackupTarget(t, db)
+
+	for i, id := range []string{"bkh_1", "bkh_2", "bkh_3", "bkh_4", "bkh_5"} {
+		startedAt := time.Date(2026, 1, 1, i, 0, 0, 0, time.UTC).Format(time.RFC3339)
+		if err := db.StartBackupHistory(ctx, BackupHistory{
+			ID: id, DatabaseName: "mydb", TargetID: target.ID,
+			ObjectKey: id, StartedAt: startedAt,
+		}); err != nil {
+			t.Fatalf("StartBackupHistory(%s) error = %v", id, err)
+		}
+	}
+
+	before3 := time.Date(2026, 1, 1, 2, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name   string
+		limit  int
+		before *time.Time
+		want   []string
+	}{
+		{name: "default limit returns newest first", limit: 50, before: nil, want: []string{"bkh_5", "bkh_4", "bkh_3", "bkh_2", "bkh_1"}},
+		{name: "limit caps the page", limit: 2, before: nil, want: []string{"bkh_5", "bkh_4"}},
+		{name: "before excludes rows at or after cursor", limit: 50, before: &before3, want: []string{"bkh_2", "bkh_1"}},
+		{name: "limit and before combine", limit: 1, before: &before3, want: []string{"bkh_2"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := db.ListBackupHistory(ctx, "mydb", tt.limit, tt.before)
+			if err != nil {
+				t.Fatalf("ListBackupHistory() error = %v", err)
+			}
+			if len(got) != len(tt.want) {
+				t.Fatalf("ListBackupHistory() = %d rows, want %d: %+v", len(got), len(tt.want), got)
+			}
+			for i, id := range tt.want {
+				if got[i].ID != id {
+					t.Errorf("row %d ID = %q, want %q", i, got[i].ID, id)
+				}
+			}
+		})
+	}
+}
+
 func mustListOne(t *testing.T, db *DB, databaseName string) BackupHistory {
 	t.Helper()
-	got, err := db.ListBackupHistory(context.Background(), databaseName)
+	got, err := db.ListBackupHistory(context.Background(), databaseName, 50, nil)
 	if err != nil {
 		t.Fatalf("ListBackupHistory(%q) error = %v", databaseName, err)
 	}

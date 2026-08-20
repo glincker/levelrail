@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -406,5 +407,83 @@ func TestHandleListBackupHistory_NoRunnerConfigured_StillWorks(t *testing.T) {
 	}
 	if len(got) != 1 || got[0].ID != "bkh_1" {
 		t.Fatalf("history = %+v, want exactly the seeded row", got)
+	}
+}
+
+// TestHandleListBackupHistory_Pagination mirrors
+// TestAuditLogRoute_Pagination (audit_test.go): ?limit caps a page,
+// ?before pages backward through the rest without repeating rows.
+func TestHandleListBackupHistory_Pagination(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed database: %v", err)
+	}
+	target := seedBackupTargetForAPI(t, db)
+
+	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	for i, id := range []string{"bkh_seed_1", "bkh_seed_2", "bkh_seed_3"} {
+		if err := db.StartBackupHistory(ctx, store.BackupHistory{
+			ID: id, DatabaseName: "main", TargetID: target.ID,
+			ObjectKey: id, StartedAt: base.Add(time.Duration(i) * time.Hour).Format(time.RFC3339),
+		}); err != nil {
+			t.Fatalf("seed backup history %s: %v", id, err)
+		}
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/backups?limit=2", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	var page1 []backupHistoryResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &page1); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(page1) != 2 || page1[0].ID != "bkh_seed_3" || page1[1].ID != "bkh_seed_2" {
+		t.Fatalf("page1 = %+v, want [bkh_seed_3, bkh_seed_2]", page1)
+	}
+
+	before := page1[len(page1)-1].StartedAt
+	rec2 := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec2, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/backups?before="+url.QueryEscape(before), ""))
+	if rec2.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec2.Code, http.StatusOK, rec2.Body.String())
+	}
+	var page2 []backupHistoryResource
+	if err := json.Unmarshal(rec2.Body.Bytes(), &page2); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(page2) != 1 || page2[0].ID != "bkh_seed_1" {
+		t.Fatalf("page2 = %+v, want exactly [bkh_seed_1]", page2)
+	}
+}
+
+func TestHandleListBackupHistory_InvalidLimit(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed database: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/backups?limit=not-a-number", ""))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusBadRequest)
+	}
+}
+
+func TestHandleListBackupHistory_InvalidBefore(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed database: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/backups?before=not-a-timestamp", ""))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusBadRequest)
 	}
 }
