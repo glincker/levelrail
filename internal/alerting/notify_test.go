@@ -249,6 +249,109 @@ func TestNotifyPushover_InvalidURL_Errors(t *testing.T) {
 	}
 }
 
+func withPagerDutyEventsURL(t *testing.T, url string) {
+	t.Helper()
+	original := pagerDutyEventsURL
+	pagerDutyEventsURL = url
+	t.Cleanup(func() { pagerDutyEventsURL = original })
+}
+
+func TestNotifyPagerDuty_PostsRoutingKeyAndSummary(t *testing.T) {
+	var got pagerDutyPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+	withPagerDutyEventsURL(t, srv.URL)
+
+	r := Rule{
+		ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web",
+		NotifyURL: "routing-key-123", NotifyKind: NotifyPagerDuty,
+	}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if got.RoutingKey != "routing-key-123" {
+		t.Errorf("payload.RoutingKey = %q, want routing-key-123", got.RoutingKey)
+	}
+	if got.EventAction != "trigger" {
+		t.Errorf("payload.EventAction = %q, want trigger", got.EventAction)
+	}
+	if !strings.Contains(got.Payload.Summary, "high cpu") {
+		t.Errorf("payload.Payload.Summary = %q, want it to mention the rule name", got.Payload.Summary)
+	}
+	if got.Payload.Source != "service:web" {
+		t.Errorf("payload.Payload.Source = %q, want the resource id", got.Payload.Source)
+	}
+	if got.Payload.Severity != "critical" {
+		t.Errorf("payload.Payload.Severity = %q, want critical for a firing event", got.Payload.Severity)
+	}
+}
+
+func TestNotifyPagerDuty_ResolvedEvent_SeverityInfo(t *testing.T) {
+	var got pagerDutyPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+	withPagerDutyEventsURL(t, srv.URL)
+
+	r := Rule{ID: "r1", Name: "high cpu", NotifyURL: "routing-key-123", NotifyKind: NotifyPagerDuty}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r, Resolved: true}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if got.Payload.Severity != "info" {
+		t.Errorf("payload.Payload.Severity = %q, want info for a resolved event", got.Payload.Severity)
+	}
+}
+
+func TestNotifyPagerDuty_MissingRoutingKey_Errors(t *testing.T) {
+	r := Rule{ID: "r1", Name: "x", NotifyKind: NotifyPagerDuty}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
+		t.Error("Notify() error = nil, want an error when notify_url (routing key) is empty")
+	}
+}
+
+func TestNotifyTeams_PostsMessageCard(t *testing.T) {
+	var got teamsPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	r := Rule{ID: "r1", Name: "crashloop", Kind: KindCrashloop, ResourceID: "service:web", NotifyURL: srv.URL, NotifyKind: NotifyTeams}
+	notifier := NewNotifier(nil, nil, r)
+
+	err := notifier.Notify(context.Background(), Event{Rule: r, LogLines: []string{"line 1", "line 2"}})
+	if err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if got.Type != "MessageCard" {
+		t.Errorf("payload.Type = %q, want MessageCard", got.Type)
+	}
+	if !strings.Contains(got.Text, "line 1") || !strings.Contains(got.Text, "line 2") {
+		t.Errorf("payload.Text = %q, want it to include the log lines", got.Text)
+	}
+}
+
+func TestNotifyTeams_NoURL_Errors(t *testing.T) {
+	r := Rule{ID: "r1", Name: "x", NotifyKind: NotifyTeams}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
+		t.Error("Notify() error = nil, want an error when notify_url is empty")
+	}
+}
+
 func TestNewNotifier_Email_NoSMTPConfigured_Errors(t *testing.T) {
 	r := Rule{ID: "r1", Name: "high cpu", NotifyURL: "ops@example.com", NotifyKind: NotifyEmail}
 	notifier := NewNotifier(nil, nil, r) // no email.Sender

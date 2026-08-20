@@ -64,17 +64,23 @@ type createNotificationChannelRequest struct {
 	Enabled   *bool  `json:"enabled,omitempty"`
 }
 
+// validNotifyKinds is shared by validateNotifyKind and every place that
+// needs to list them (usage strings, error messages).
+var validNotifyKinds = []alerting.NotifyKind{
+	alerting.NotifyGeneric, alerting.NotifySlack, alerting.NotifyDiscord, alerting.NotifyTelegram,
+	alerting.NotifyEmail, alerting.NotifyPushover, alerting.NotifyPagerDuty, alerting.NotifyTeams,
+}
+
 // validateNotifyKind is shared by channel creation and the test-send
-// routes below, both accepting the same five kinds.
+// routes below.
 func validateNotifyKind(kind string) (alerting.NotifyKind, error) {
 	k := alerting.NotifyKind(kind)
-	switch k {
-	case alerting.NotifyGeneric, alerting.NotifySlack, alerting.NotifyDiscord, alerting.NotifyTelegram, alerting.NotifyEmail, alerting.NotifyPushover:
-		return k, nil
-	default:
-		return "", fmt.Errorf("kind must be one of %q, %q, %q, %q, %q, %q",
-			alerting.NotifyGeneric, alerting.NotifySlack, alerting.NotifyDiscord, alerting.NotifyTelegram, alerting.NotifyEmail, alerting.NotifyPushover)
+	for _, valid := range validNotifyKinds {
+		if k == valid {
+			return k, nil
+		}
 	}
+	return "", fmt.Errorf("kind must be one of %q", validNotifyKinds)
 }
 
 func (req createNotificationChannelRequest) toChannel(id string) (alerting.NotificationChannel, error) {

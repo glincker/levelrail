@@ -55,13 +55,10 @@ func (n httpNotifier) Notify(ctx context.Context, ev Event) error {
 }
 
 // NewNotifier builds the right Notifier for r.NotifyKind. An unknown or
-// empty NotifyKind falls back to NotifyGeneric rather than erroring: a
-// rule with a typo'd notify_kind should still get *a* notification,
-// diagnosable from the payload shape, rather than silently notifying no
-// one.
-//
-// sender may be nil (no email capability configured): an email-kind
-// rule then always fails with a clear "not configured" error.
+// empty NotifyKind falls back to NotifyGeneric rather than erroring, so a
+// typo'd notify_kind still notifies someone, diagnosable from the
+// payload shape. sender may be nil, in which case an email-kind rule
+// fails with a clear "not configured" error.
 func NewNotifier(client *http.Client, sender email.Sender, r Rule) Notifier {
 	if client == nil {
 		client = http.DefaultClient
@@ -80,6 +77,10 @@ func NewNotifier(client *http.Client, sender email.Sender, r Rule) Notifier {
 		build = notifyTelegram
 	case NotifyPushover:
 		build = notifyPushover
+	case NotifyPagerDuty:
+		build = notifyPagerDuty
+	case NotifyTeams:
+		build = notifyTeams
 	}
 	return httpNotifier{client: client, url: r.NotifyURL, build: build}
 }
@@ -192,6 +193,65 @@ func parsePushoverCreds(rawURL string) (token, user string, err error) {
 		return "", "", fmt.Errorf("pushover notify_url must include token and user query parameters")
 	}
 	return token, user, nil
+}
+
+// pagerDutyEventsURL is PagerDuty's fixed Events API v2 endpoint. A var,
+// not a const, so tests can point it at an httptest server.
+var pagerDutyEventsURL = "https://events.pagerduty.com/v2/enqueue"
+
+// pagerDutyPayload is the Events API v2 enqueue body
+// (https://developer.pagerduty.com/api-reference/reference/events-v2/openapiv3.json).
+type pagerDutyPayload struct {
+	RoutingKey  string           `json:"routing_key"`
+	EventAction string           `json:"event_action"`
+	Payload     pagerDutyDetails `json:"payload"`
+}
+
+type pagerDutyDetails struct {
+	Summary  string `json:"summary"`
+	Source   string `json:"source"`
+	Severity string `json:"severity"`
+}
+
+// notifyPagerDuty always posts to pagerDutyEventsURL, not rawURL:
+// rawURL here is the channel's Integration/Routing Key, not a webhook
+// URL, the same "NotifyURL is generically 'the destination'" convention
+// notifyTelegram and notifyPushover already establish for their own
+// non-URL query parameters.
+func notifyPagerDuty(ctx context.Context, client *http.Client, rawURL string, ev Event) error {
+	if rawURL == "" {
+		return fmt.Errorf("alerting: notify: no notify_url (pagerduty routing key) configured")
+	}
+	severity := "critical"
+	if ev.Resolved {
+		severity = "info"
+	}
+	payload := pagerDutyPayload{
+		RoutingKey:  rawURL,
+		EventAction: "trigger",
+		Payload: pagerDutyDetails{
+			Summary:  summaryText(ev),
+			Source:   ev.Rule.ResourceID,
+			Severity: severity,
+		},
+	}
+	return postJSON(ctx, client, pagerDutyEventsURL, payload)
+}
+
+// teamsPayload is a Microsoft Teams incoming-webhook connector's
+// MessageCard body (https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/connectors-using).
+type teamsPayload struct {
+	Type    string `json:"@type"`
+	Context string `json:"@context"`
+	Summary string `json:"summary"`
+	Text    string `json:"text"`
+}
+
+func notifyTeams(ctx context.Context, client *http.Client, url string, ev Event) error {
+	text := summaryText(ev)
+	return postJSON(ctx, client, url, teamsPayload{
+		Type: "MessageCard", Context: "http://schema.org/extensions", Summary: text, Text: text,
+	})
 }
 
 // parseTelegramChatID extracts the chat_id query parameter a Telegram
