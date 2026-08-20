@@ -33,7 +33,9 @@ import { formatBytes } from '../lib/format'
 import { ApiError } from '../lib/apiError'
 import { useBackupTargets } from '../queries/backupTargets'
 import {
+  BACKUP_HISTORY_PAGE_SIZE,
   backupDownloadURL,
+  fetchBackupHistory,
   useBackupHistory,
   useTriggerBackup,
 } from '../queries/backupHistory'
@@ -248,10 +250,48 @@ function DownloadBackupLink({
   )
 }
 
+// "Load older entries" via plain component state rather than
+// useInfiniteQuery, mirroring routes/settings/audit-log.tsx's pattern
+// for its own cursor-paginated endpoint.
 function BackupHistoryTable({ databaseName }: { databaseName: string }) {
   const { data: targets } = useBackupTargets()
   const { data, isLoading, error } = useBackupHistory(databaseName)
-  const history = data ?? []
+  const firstPage = useMemo(() => data ?? [], [data])
+  const [olderRows, setOlderRows] = useState<BackupHistoryRecord[]>([])
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null)
+  const [noMoreOlder, setNoMoreOlder] = useState(false)
+  const history = [...firstPage, ...olderRows]
+
+  // Before any "Load older" click, a first page shorter than the page
+  // size already means there's nothing older; after one, noMoreOlder
+  // (set by handleLoadMore below) is the only signal that matters.
+  const exhausted =
+    olderRows.length === 0
+      ? firstPage.length < BACKUP_HISTORY_PAGE_SIZE
+      : noMoreOlder
+
+  async function handleLoadMore() {
+    const oldest = history[history.length - 1]
+    if (!oldest) return
+    setLoadingMore(true)
+    setLoadMoreError(null)
+    try {
+      const next = await fetchBackupHistory(databaseName, {
+        before: oldest.started_at,
+      })
+      setOlderRows((prev) => [...prev, ...next])
+      if (next.length < BACKUP_HISTORY_PAGE_SIZE) {
+        setNoMoreOlder(true)
+      }
+    } catch (err) {
+      setLoadMoreError(
+        err instanceof Error ? err.message : 'failed to load older backups',
+      )
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   const targetName = useMemo(() => {
     const byId = new Map(targets.map((t) => [t.id, t.name]))
@@ -273,68 +313,88 @@ function BackupHistoryTable({ databaseName }: { databaseName: string }) {
   }
 
   return (
-    <div className="rounded-lg border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Status</TableHead>
-            <TableHead>Target</TableHead>
-            <TableHead>Size</TableHead>
-            <TableHead>Started</TableHead>
-            <TableHead>Finished</TableHead>
-            <TableHead>
-              <span className="sr-only">Actions</span>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {history.map((record: BackupHistoryRecord) => (
-            <TableRow key={record.id}>
-              <TableCell>
-                <div className="flex flex-col gap-1">
-                  <StatusBadge status={record.status} />
-                  {record.status === 'failed' && record.error ? (
-                    <span
-                      className="max-w-[20rem] truncate text-xs text-destructive"
-                      title={record.error}
-                    >
-                      {record.error}
-                    </span>
-                  ) : null}
-                </div>
-              </TableCell>
-              <TableCell className="text-foreground">
-                {targetName(record.target_id)}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {record.status === 'running'
-                  ? '-'
-                  : formatBytes(record.size_bytes)}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {formatDate(record.started_at, '-')}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {formatDate(record.finished_at, '-')}
-              </TableCell>
-              <TableCell>
-                {record.status === 'succeeded' ? (
-                  <div className="flex items-center gap-2">
-                    <DownloadBackupLink
-                      databaseName={databaseName}
-                      backup={record}
-                    />
-                    <RestoreBackupDialog
-                      databaseName={databaseName}
-                      backup={record}
-                    />
-                  </div>
-                ) : null}
-              </TableCell>
+    <div className="flex flex-col gap-2">
+      <div className="rounded-lg border border-border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Status</TableHead>
+              <TableHead>Target</TableHead>
+              <TableHead>Size</TableHead>
+              <TableHead>Started</TableHead>
+              <TableHead>Finished</TableHead>
+              <TableHead>
+                <span className="sr-only">Actions</span>
+              </TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {history.map((record: BackupHistoryRecord) => (
+              <TableRow key={record.id}>
+                <TableCell>
+                  <div className="flex flex-col gap-1">
+                    <StatusBadge status={record.status} />
+                    {record.status === 'failed' && record.error ? (
+                      <span
+                        className="max-w-[20rem] truncate text-xs text-destructive"
+                        title={record.error}
+                      >
+                        {record.error}
+                      </span>
+                    ) : null}
+                  </div>
+                </TableCell>
+                <TableCell className="text-foreground">
+                  {targetName(record.target_id)}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {record.status === 'running'
+                    ? '-'
+                    : formatBytes(record.size_bytes)}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {formatDate(record.started_at, '-')}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {formatDate(record.finished_at, '-')}
+                </TableCell>
+                <TableCell>
+                  {record.status === 'succeeded' ? (
+                    <div className="flex items-center gap-2">
+                      <DownloadBackupLink
+                        databaseName={databaseName}
+                        backup={record}
+                      />
+                      <RestoreBackupDialog
+                        databaseName={databaseName}
+                        backup={record}
+                      />
+                    </div>
+                  ) : null}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {loadMoreError ? (
+        <p className="text-sm text-destructive">{loadMoreError}</p>
+      ) : null}
+
+      {!exhausted ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={loadingMore}
+          onClick={() => {
+            void handleLoadMore()
+          }}
+        >
+          {loadingMore ? 'Loading...' : 'Load older backups'}
+        </Button>
+      ) : null}
     </div>
   )
 }

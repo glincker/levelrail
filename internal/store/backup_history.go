@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 )
 
 // Backup attempt statuses migrations/0018_backup_targets.sql's CHECK
@@ -197,16 +198,31 @@ func (db *DB) PruneBackupHistory(ctx context.Context, databaseName string, keep 
 	return out, nil
 }
 
-// ListBackupHistory returns every backup attempt for databaseName,
-// newest first (migrations/0018's own index is built for exactly this
-// query shape).
-func (db *DB) ListBackupHistory(ctx context.Context, databaseName string) ([]BackupHistory, error) {
-	rows, err := db.QueryContext(ctx, `
-		SELECT id, database_name, target_id, object_key, size_bytes, status, error, started_at, finished_at
-		FROM backup_history
-		WHERE database_name = ?
-		ORDER BY started_at DESC
-	`, databaseName)
+// ListBackupHistory returns up to limit backup attempts for databaseName, newest first.
+// before, when non-nil, cursor-paginates on start time (mirrors ListAuditEntries)
+// so long-lived backup schedules never need a slow OFFSET query.
+func (db *DB) ListBackupHistory(ctx context.Context, databaseName string, limit int, before *time.Time) ([]BackupHistory, error) {
+	var (
+		rows *sql.Rows
+		err  error
+	)
+	if before != nil {
+		rows, err = db.QueryContext(ctx, `
+			SELECT id, database_name, target_id, object_key, size_bytes, status, error, started_at, finished_at
+			FROM backup_history
+			WHERE database_name = ? AND started_at < ?
+			ORDER BY started_at DESC
+			LIMIT ?
+		`, databaseName, before.UTC().Format(time.RFC3339), limit)
+	} else {
+		rows, err = db.QueryContext(ctx, `
+			SELECT id, database_name, target_id, object_key, size_bytes, status, error, started_at, finished_at
+			FROM backup_history
+			WHERE database_name = ?
+			ORDER BY started_at DESC
+			LIMIT ?
+		`, databaseName, limit)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("store: list backup history for %q: %w", databaseName, err)
 	}

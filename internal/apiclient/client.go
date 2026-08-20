@@ -17,6 +17,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -284,9 +285,20 @@ func (c *Client) TriggerBackup(ctx context.Context, name, targetID string) (Back
 
 // ListBackups calls GET /api/v1/databases/{name}/backups: the full
 // backup attempt history for one database.
-func (c *Client) ListBackups(ctx context.Context, name string) ([]BackupHistoryResource, error) {
+func (c *Client) ListBackups(ctx context.Context, name string, opts ListBackupsOptions) ([]BackupHistoryResource, error) {
+	path := "/api/v1/databases/" + PathEscape(name) + "/backups"
+	q := url.Values{}
+	if opts.Limit > 0 {
+		q.Set("limit", strconv.Itoa(opts.Limit))
+	}
+	if opts.Before != "" {
+		q.Set("before", opts.Before)
+	}
+	if enc := q.Encode(); enc != "" {
+		path += "?" + enc
+	}
 	var out []BackupHistoryResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/backups", nil, &out)
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }
 

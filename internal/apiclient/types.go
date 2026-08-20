@@ -197,6 +197,14 @@ type TriggerBackupRequest struct {
 	TargetID string `json:"target_id"`
 }
 
+// ListBackupsOptions is ListBackups' pagination input, mirroring the
+// server's ?limit/?before query params. Zero values omit the param
+// (Limit <= 0 uses the server default, Before == "" is the first page).
+type ListBackupsOptions struct {
+	Limit  int
+	Before string
+}
+
 // RestoreHistoryResource mirrors internal/api's restoreHistoryResource
 // (internal/api/restore.go).
 type RestoreHistoryResource struct {

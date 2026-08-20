@@ -33,6 +33,29 @@ func TestRun_BackupsList(t *testing.T) {
 	}
 }
 
+func TestRun_BackupsList_Pagination(t *testing.T) {
+	var gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]backupHistoryResource{})
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{
+		"backups", "list", "main",
+		"--limit", "2", "--before", "2026-08-15T00:00:00Z",
+		"--api-url", srv.URL,
+	}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if gotQuery != "before=2026-08-15T00%3A00%3A00Z&limit=2" {
+		t.Errorf("query = %q, want limit and before both forwarded", gotQuery)
+	}
+}
+
 func TestRun_BackupsList_NoName(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"backups", "list"}, &stdout, &stderr, envMap())

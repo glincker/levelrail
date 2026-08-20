@@ -96,14 +96,8 @@ func (rt *Router) handleTriggerRestore(w http.ResponseWriter, r *http.Request) {
 
 	name := r.PathValue("name")
 
-	db, err := rt.databases.GetDesiredDatabase(r.Context(), name)
-	if errors.Is(err, store.ErrDatabaseNotFound) {
-		writeError(w, http.StatusNotFound, "database not found")
-		return
-	}
-	if err != nil {
-		rt.logger.Error("api: trigger restore: load database failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+	db, ok := rt.loadDatabaseForRunner(w, r, name, "api: trigger restore: load database failed")
+	if !ok {
 		return
 	}
 
