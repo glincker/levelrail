@@ -31,6 +31,7 @@ import {
   useDisconnectBitbucketApp,
   useBitbucketAppStatus,
 } from '../queries/bitbucketApp'
+import { SetPrimaryDomainPrompt } from './SetPrimaryDomainPrompt'
 
 // Status card for the Bitbucket App connection: not connected /
 // configured but not yet authorized / connected. Cloud only, no
@@ -84,17 +85,20 @@ export function BitbucketAppConnectionCard() {
                 Not connected
               </div>
             )}
-            {status.connected && !status.authorized ? (
+            {status.connected && !status.authorized && status.base_url ? (
               <p className="text-sm text-muted-foreground">
                 The OAuth consumer is configured but hasn&apos;t been
                 authorized yet. Click Connect to finish.
               </p>
             ) : null}
+            {status.connected && !status.authorized && !status.base_url ? (
+              <SetPrimaryDomainPrompt />
+            ) : null}
           </div>
 
           {status.connected ? (
             <div className="flex shrink-0 items-center gap-2">
-              {!status.authorized ? (
+              {!status.authorized && status.base_url ? (
                 <Button
                   type="button"
                   size="sm"

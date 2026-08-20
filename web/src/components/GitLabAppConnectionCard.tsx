@@ -31,6 +31,7 @@ import {
   useDisconnectGitLabApp,
   useGitLabAppStatus,
 } from '../queries/gitlabApp'
+import { SetPrimaryDomainPrompt } from './SetPrimaryDomainPrompt'
 
 // Status card for the GitLab App connection: not connected / configured
 // but not yet authorized / connected as <instance>. Unlike GitHub's
@@ -89,17 +90,20 @@ export function GitLabAppConnectionCard() {
                 {status.instance_url}
               </p>
             ) : null}
-            {status.connected && !status.authorized ? (
+            {status.connected && !status.authorized && status.base_url ? (
               <p className="text-sm text-muted-foreground">
                 The OAuth Application is configured but hasn&apos;t been
                 authorized yet. Click Connect to finish.
               </p>
             ) : null}
+            {status.connected && !status.authorized && !status.base_url ? (
+              <SetPrimaryDomainPrompt />
+            ) : null}
           </div>
 
           {status.connected ? (
             <div className="flex shrink-0 items-center gap-2">
-              {!status.authorized ? (
+              {!status.authorized && status.base_url ? (
                 <Button
                   type="button"
                   size="sm"

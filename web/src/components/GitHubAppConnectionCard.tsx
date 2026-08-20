@@ -35,6 +35,7 @@ import {
   useGitHubAppManifestPreview,
   useGitHubAppStatus,
 } from '../queries/githubApp'
+import { SetPrimaryDomainPrompt } from './SetPrimaryDomainPrompt'
 
 // Status card for the GitHub App connection: not connected / connected
 // as <account> but not yet installed / connected and installed on
@@ -103,14 +104,7 @@ export function GitHubAppConnectionCard() {
               </p>
             ) : null}
             {!status.connected && !hasPrimaryDomain ? (
-              <p className="flex items-center gap-1.5 text-sm text-amber-700 dark:text-amber-400">
-                <WarningIcon className="size-3.5" />
-                Set a primary domain in{' '}
-                <Link to="/domains" className="underline">
-                  domain settings
-                </Link>{' '}
-                first for automated setup, or connect manually below.
-              </p>
+              <SetPrimaryDomainPrompt />
             ) : null}
             {!status.connected && hasPrimaryDomain && baseURL ? (
               <p className="flex items-start gap-1.5 text-sm text-amber-700 dark:text-amber-400">
