@@ -200,6 +200,30 @@ func TestMapCoolifyApplication(t *testing.T) {
 			},
 		},
 		{
+			name: "non-positive parsed memory is silently omitted, no issue",
+			app:  coolifyApplication{Name: "zeroed", BuildPack: "dockerfile", PortsExposes: "3000", LimitsMemory: "0m"},
+			check: func(t *testing.T, got mappedApp) {
+				if got.Service.Memory != "" {
+					t.Errorf("Memory = %q, want empty for limits_memory: 0m", got.Service.Memory)
+				}
+				if hasIssue(got.Issues, "limits_memory", issueReview) {
+					t.Errorf("Issues = %+v, want no review issue for a validly-parsed non-positive limits_memory", got.Issues)
+				}
+			},
+		},
+		{
+			name: "non-positive parsed cpu is silently omitted, no issue",
+			app:  coolifyApplication{Name: "negcpu", BuildPack: "dockerfile", PortsExposes: "3000", LimitsCPUs: "-1"},
+			check: func(t *testing.T, got mappedApp) {
+				if got.Service.CPU != 0 {
+					t.Errorf("CPU = %v, want 0", got.Service.CPU)
+				}
+				if hasIssue(got.Issues, "limits_cpus", issueReview) {
+					t.Errorf("Issues = %+v, want no review issue for a validly-parsed non-positive limits_cpus", got.Issues)
+				}
+			},
+		},
+		{
 			name: "env vars default to key-only secret placeholders",
 			app:  coolifyApplication{Name: "envtest", BuildPack: "dockerfile", PortsExposes: "3000"},
 			envs: []coolifyEnvVar{{Key: "DATABASE_URL", Value: "***", RealValue: ""}, {Key: "API_KEY", Value: "***"}},

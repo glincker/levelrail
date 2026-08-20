@@ -211,6 +211,30 @@ func TestMapDokployApplication(t *testing.T) {
 			},
 		},
 		{
+			name: "negative parsed memory leaves it unset with a review issue",
+			app:  dokployApplication{Name: "negmem", SourceType: "github", BuildType: "dockerfile", MemoryLimit: "-1"},
+			check: func(t *testing.T, got mappedApp) {
+				if got.Service.Memory != "" {
+					t.Errorf("Memory = %q, want empty for a negative memoryLimit", got.Service.Memory)
+				}
+				if !hasIssue(got.Issues, "memoryLimit", issueReview) {
+					t.Errorf("Issues = %+v, want a review issue about the negative memoryLimit", got.Issues)
+				}
+			},
+		},
+		{
+			name: "negative parsed cpu leaves it unset with a review issue",
+			app:  dokployApplication{Name: "negcpu", SourceType: "github", BuildType: "dockerfile", CPULimit: "-1"},
+			check: func(t *testing.T, got mappedApp) {
+				if got.Service.CPU != 0 {
+					t.Errorf("CPU = %v, want 0", got.Service.CPU)
+				}
+				if !hasIssue(got.Issues, "cpuLimit", issueReview) {
+					t.Errorf("Issues = %+v, want a review issue about the negative cpuLimit", got.Issues)
+				}
+			},
+		},
+		{
 			name: "env vars default to key-only secret placeholders",
 			app:  dokployApplication{Name: "envtest", SourceType: "github", BuildType: "dockerfile", Env: "DATABASE_URL=postgres://real\nAPI_KEY=secret\n"},
 			check: func(t *testing.T, got mappedApp) {
