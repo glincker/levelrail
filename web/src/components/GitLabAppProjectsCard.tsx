@@ -32,6 +32,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from '@/components/ui/toast'
+import { EmptyState } from '@/components/ui/empty-state'
 import { appListQueryOptions } from '../queries/apps'
 import {
   useGitLabAppProjects,
@@ -113,7 +114,12 @@ export function GitLabAppProjectsCard() {
           </div>
         ))}
         {!projects.isLoading && !projects.isError && (projects.data ?? []).length === 0 ? (
-          <p className="text-sm text-muted-foreground">No accessible projects found.</p>
+          <EmptyState
+            className="py-12"
+            icon={<GitlabLogoIcon className="size-5" />}
+            title="No accessible projects"
+            description="The authorized GitLab App has no projects it can see yet. Grant it access to a project from GitLab to connect it here."
+          />
         ) : null}
       </CardContent>
       <UseAsSourceDialog project={target} onOpenChange={(open) => !open && setTarget(null)} />
