@@ -3,6 +3,7 @@ import {
   TerminalIcon,
   MagnifyingGlassIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import { useDeployStatus } from '../../../queries/deploys'
 import { LogSearchPanel } from '../../../components/LogSearchPanel'
 import { LiveLogViewer } from '../../../components/LiveLogViewer'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -27,6 +28,12 @@ export const Route = createFileRoute('/apps/$name/logs')({
 
 function LogsSection() {
   const { name } = Route.useParams()
+  // Same cache key useDeployStatus already primes on the Overview
+  // route, so this is free when that page was visited first: needed
+  // here so an empty live tail can explain *why* (the app's own current
+  // reconcile condition) instead of leaving an operator staring at a
+  // blank terminal with no way to tell "still starting" from "broken".
+  const { data: conditions } = useDeployStatus(name)
 
   return (
     <Tabs defaultValue="live" className="flex h-full flex-col gap-3">
@@ -42,7 +49,7 @@ function LogsSection() {
       </TabsList>
 
       <TabsContent value="live" className="flex-1">
-        <LiveLogViewer appName={name} />
+        <LiveLogViewer appName={name} conditions={conditions} />
       </TabsContent>
       <TabsContent value="search" className="flex-1">
         <LogSearchPanel appName={name} />
