@@ -12,7 +12,7 @@ import (
 // platform is Linux-only in production (CLAUDE.md §2), so a syslog
 // drain is simply unavailable when this package happens to be built for
 // one of these targets, e.g. a contributor's own dev machine.
-func newSyslogSink(_ string) (*SyslogSink, error) {
+func newSyslogSink(_, _ string) (*SyslogSink, error) {
 	return nil, fmt.Errorf("telemetry: syslog log drains are not supported on this platform")
 }
 

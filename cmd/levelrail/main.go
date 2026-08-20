@@ -463,7 +463,7 @@ func run(logger *slog.Logger) error {
 	// does (internal/telemetry/drain.go's own doc comment): a pure
 	// additional consumer of the log stream, never touching logCollector
 	// or its store writes.
-	drainForwarder := telemetry.NewDrainForwarder(logBroadcaster, logger)
+	drainForwarder := telemetry.NewDrainForwarder(logBroadcaster, logger, b.ShortName)
 	go func() {
 		if err := drainForwarder.Run(ctx, logTargetsResyncInterval, drainTargets(db)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("telemetry log drain forwarder stopped", slog.String("error", err.Error()))

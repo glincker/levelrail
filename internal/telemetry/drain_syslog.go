@@ -39,26 +39,40 @@ func parseSyslogTarget(target string) (network, raddr string, err error) {
 	return u.Scheme, u.Host, nil
 }
 
+// defaultSyslogProgramTag is used when newSyslogSink is called with "":
+// a fixed, brand-independent fallback, the same reasoning
+// internal/reconcile/application.defaultNetworkPrefix's own doc comment
+// gives for not deriving this from brand.ShortName directly.
+const defaultSyslogProgramTag = "platform"
+
 // newSyslogSink dials target and returns a ready SyslogSink. target is
 // either empty/"local" (write to this host's local syslog daemon) or
 // "network://host:port" (e.g. "udp://logs.example.com:514",
 // "tcp://logs.example.com:601"), the same network/address split
-// syslog.Dial itself takes.
-func newSyslogSink(target string) (*SyslogSink, error) {
+// syslog.Dial itself takes. programTag identifies this process in each
+// syslog line (the tag syslog.New/syslog.Dial takes); callers pass the
+// resolved brand.Brand.ShortName, following the same "pass the resolved
+// value in, don't import internal/brand here" convention
+// internal/reconcile/application.WithNetworkPrefix already establishes.
+// An empty programTag falls back to defaultSyslogProgramTag.
+func newSyslogSink(target, programTag string) (*SyslogSink, error) {
 	network, raddr, err := parseSyslogTarget(target)
 	if err != nil {
 		return nil, err
 	}
+	if programTag == "" {
+		programTag = defaultSyslogProgramTag
+	}
 
 	if network == "" {
-		w, err := syslog.New(syslog.LOG_INFO, "levelrail")
+		w, err := syslog.New(syslog.LOG_INFO, programTag)
 		if err != nil {
 			return nil, fmt.Errorf("telemetry: dial local syslog: %w", err)
 		}
 		return &SyslogSink{writer: w}, nil
 	}
 
-	w, err := syslog.Dial(network, raddr, syslog.LOG_INFO, "levelrail")
+	w, err := syslog.Dial(network, raddr, syslog.LOG_INFO, programTag)
 	if err != nil {
 		return nil, fmt.Errorf("telemetry: dial syslog %q: %w", target, err)
 	}

@@ -51,7 +51,7 @@ func TestBuildDrainSink(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink, err := buildDrainSink(tt.cfg)
+			sink, err := buildDrainSink(tt.cfg, "test-tag")
 			if tt.wantErr {
 				if err == nil {
 					t.Fatalf("buildDrainSink(%+v) error = nil, want an error", tt.cfg)
@@ -76,7 +76,7 @@ func TestBuildDrainSink(t *testing.T) {
 func TestDrainForwarder_ForwardsPublishedLines(t *testing.T) {
 	broadcaster := NewLogBroadcaster()
 	sink := &fakeSink{}
-	forwarder := NewDrainForwarder(broadcaster, nil)
+	forwarder := NewDrainForwarder(broadcaster, nil, "test-tag")
 	forwarder.buildSink = func(DrainConfig) (DrainSink, error) { return sink, nil }
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -110,9 +110,9 @@ func TestDrainForwarder_ForwardsPublishedLines(t *testing.T) {
 	}
 }
 
-func TestDrainForwarder_SinkBuildErrorDoesNotPanic(t *testing.T) {
+func TestDrainForwarder_SinkBuildErrorDoesNotPanic(_ *testing.T) {
 	broadcaster := NewLogBroadcaster()
-	forwarder := NewDrainForwarder(broadcaster, nil)
+	forwarder := NewDrainForwarder(broadcaster, nil, "test-tag")
 	forwarder.buildSink = func(DrainConfig) (DrainSink, error) { return nil, errors.New("boom") }
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)

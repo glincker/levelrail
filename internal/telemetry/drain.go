@@ -65,12 +65,20 @@ type DrainForwarder struct {
 }
 
 // NewDrainForwarder builds a DrainForwarder reading from broadcaster.
-// logger defaults to slog.Default() if nil.
-func NewDrainForwarder(broadcaster *LogBroadcaster, logger *slog.Logger) *DrainForwarder {
+// logger defaults to slog.Default() if nil. programTag is the syslog
+// program tag a DrainSinkSyslog sink identifies itself with (see
+// newSyslogSink); callers pass brand.Brand.ShortName, following the same
+// "resolve brand outside this package" convention
+// internal/reconcile/application.WithNetworkPrefix already establishes.
+func NewDrainForwarder(broadcaster *LogBroadcaster, logger *slog.Logger, programTag string) *DrainForwarder {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &DrainForwarder{broadcaster: broadcaster, logger: logger, buildSink: buildDrainSink}
+	return &DrainForwarder{
+		broadcaster: broadcaster,
+		logger:      logger,
+		buildSink:   func(cfg DrainConfig) (DrainSink, error) { return buildDrainSink(cfg, programTag) },
+	}
 }
 
 // Run derives the desired drain set via configFunc on a resync interval
@@ -184,8 +192,9 @@ func (f *DrainForwarder) forwardOne(ctx context.Context, cfg DrainConfig) {
 }
 
 // buildDrainSink is DrainForwarder's default sink factory, overridable
-// in tests via the buildSink field.
-func buildDrainSink(cfg DrainConfig) (DrainSink, error) {
+// in tests via the buildSink field. programTag is only used by the
+// syslog sink; see newSyslogSink.
+func buildDrainSink(cfg DrainConfig, programTag string) (DrainSink, error) {
 	switch cfg.Type {
 	case DrainSinkHTTP:
 		if cfg.Target == "" {
@@ -193,7 +202,7 @@ func buildDrainSink(cfg DrainConfig) (DrainSink, error) {
 		}
 		return NewHTTPSink(cfg.Target, nil), nil
 	case DrainSinkSyslog:
-		return newSyslogSink(cfg.Target)
+		return newSyslogSink(cfg.Target, programTag)
 	default:
 		return nil, fmt.Errorf("telemetry: unknown log drain sink type %q", cfg.Type)
 	}
