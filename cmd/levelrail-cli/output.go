@@ -146,6 +146,37 @@ func printLogEntriesHuman(out io.Writer, entries []logEntryResource) {
 	}
 }
 
+// printAppGroupHuman prints "apps group" output: name's sibling services
+// under the same app, plus the group's own rollup status.
+func printAppGroupHuman(out io.Writer, g appGroupResource) {
+	if g.AppID != "" {
+		_, _ = fmt.Fprintf(out, "app_id:  %s\n", g.AppID)
+	}
+	_, _ = fmt.Fprintf(out, "status:  %s\n", g.Status.Label)
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "NAME\tIMAGE\tPORT")
+	for _, s := range g.Services {
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\n", s.Name, s.Image, s.Port)
+	}
+	_ = tw.Flush()
+}
+
+// printDeploySpecResultHuman prints "apps deploy-spec" output: one line
+// per service key's own outcome, error inline when that key's build or
+// deploy failed.
+func printDeploySpecResultHuman(out io.Writer, r deploySpecResult) {
+	_, _ = fmt.Fprintf(out, "app_id: %s\n", r.AppID)
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "SERVICE\tIMAGE\tERROR")
+	for _, s := range r.Services {
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\n", s.ServiceKey, s.Image, s.Error)
+	}
+	_ = tw.Flush()
+	if !r.AllSucceeded {
+		_, _ = fmt.Fprintln(out, "one or more services failed, see the ERROR column above")
+	}
+}
+
 // printDatabaseHuman prints one database resource in a human-readable,
 // non-JSON form ("databases get" output).
 func printDatabaseHuman(out io.Writer, d databaseResource) {

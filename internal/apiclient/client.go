@@ -228,6 +228,27 @@ func (c *Client) GetAppNetwork(ctx context.Context, name string) (NetworkResourc
 	return out, err
 }
 
+// GetAppGroup calls GET /api/v1/apps/{name}/group
+// (internal/api/apps_group.go's handleGetAppGroup): name's sibling
+// services under the same store.App, one call whether name already has
+// siblings or is its own one-service group.
+func (c *Client) GetAppGroup(ctx context.Context, name string) (AppGroupResource, error) {
+	var out AppGroupResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/group", nil, &out)
+	return out, err
+}
+
+// DeploySpec calls POST /api/v1/apps/{name}/deploy-spec
+// (internal/api/apps_multi.go's handleDeploySpec): fans req.Services out
+// into N independent builds+deploys under one store.App named name.
+// Synchronous and blocking, same as TriggerBuild, for the identical
+// reason (internal/api/apps_multi.go's own doc comment).
+func (c *Client) DeploySpec(ctx context.Context, name string, req DeploySpecRequest) (DeploySpecResult, error) {
+	var out DeploySpecResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/deploy-spec", req, &out)
+	return out, err
+}
+
 // QueryLogs calls GET /api/v1/apps/{name}/logs?from=&to=&q=
 // (internal/api/logs.go's handleQueryLogs): a real, historical full-text
 // search over already-stored log entries. from/to are sent as RFC3339,
