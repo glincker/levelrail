@@ -16,21 +16,11 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// This file implements app-level scheduled tasks: run an arbitrary
-// command inside a service's currently running container on a cron
-// schedule (internal/scheduledtask.Scheduler runs the background side;
-// this file is the CRUD, manual-trigger, and history-list surface).
-//
-// Create/Update/Delete/Run are all gated at AbilityRoot, the identical
-// tier POST /apps/{name}/exec sits at (exec.go's own doc comment):
-// defining or triggering a scheduled task's command is the same class of
-// capability as running one directly, since the command runs with the
-// same access to the container's environment (and therefore any secret
-// injected into it) either way. List (config only, no captured output)
-// stays at the ordinary AbilityRead every other resource list uses;
-// the execution-history list, which does carry a run's real captured
-// output, sits at AbilityRoot alongside create/update/delete/run for the
-// same reason.
+// This file implements app-level scheduled tasks: CRUD, manual trigger,
+// and run history (internal/scheduledtask.Scheduler runs the background
+// side). Mutating/running/history endpoints sit at AbilityRoot, matching
+// exec.go's exec endpoint, since a task's command has the same access to
+// the container's secrets; plain List stays at AbilityRead.
 
 // ScheduledTaskStore is the store surface the CRUD handlers need.
 type ScheduledTaskStore interface {
@@ -47,11 +37,10 @@ type ScheduledTaskHistoryStore interface {
 	ListScheduledTaskRuns(ctx context.Context, taskID string) ([]store.ScheduledTaskRun, error)
 }
 
-// ScheduledTaskRunner is the surface the manual "run now" handler needs
-// from internal/scheduledtask.Runner. *scheduledtask.Runner satisfies
-// this structurally; internal/api never imports internal/scheduledtask
-// directly, the same reconciler-internals boundary BackupRunner's own
-// doc comment describes.
+// ScheduledTaskRunner is the surface the manual "run now" handler needs.
+// *scheduledtask.Runner satisfies this structurally; internal/api never
+// imports internal/scheduledtask directly (see BackupRunner for the same
+// boundary).
 type ScheduledTaskRunner interface {
 	Run(ctx context.Context, runID string, task store.ScheduledTask) error
 }

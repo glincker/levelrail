@@ -159,10 +159,8 @@ func (s *Scheduler) runScheduled(ctx context.Context, t store.ScheduledTask) err
 	return nil
 }
 
-// Run calls Tick on interval until ctx is done, the same select-on-
-// ticker-or-ctx-Done shape every periodic loop in this codebase
-// (alerting.Engine.Run, backup.Scheduler.Run, telemetry.Collector.Run)
-// already uses.
+// Run calls Tick on interval until ctx is done, mirroring the periodic
+// loop shape used elsewhere (backup.Scheduler.Run, telemetry.Collector.Run).
 func (s *Scheduler) Run(ctx context.Context, interval time.Duration) error {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()

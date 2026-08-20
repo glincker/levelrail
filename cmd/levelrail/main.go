@@ -173,12 +173,10 @@ const (
 	// minute anyway.
 	defaultBackupSchedulerInterval = 1 * time.Minute
 
-	// defaultScheduledTaskSchedulerInterval is
-	// internal/scheduledtask.Scheduler's own tick interval, env-overridable
-	// via APP_SCHEDULED_TASK_SCHEDULER_INTERVAL
-	// (scheduledTaskSchedulerInterval below). Same one-minute default and
-	// same reasoning as defaultBackupSchedulerInterval above: standard
-	// 5-field cron has no granularity finer than a minute.
+	// defaultScheduledTaskSchedulerInterval is Scheduler's tick interval,
+	// env-overridable via APP_SCHEDULED_TASK_SCHEDULER_INTERVAL. Same
+	// one-minute default as defaultBackupSchedulerInterval, for the same
+	// cron-granularity reason.
 	defaultScheduledTaskSchedulerInterval = 1 * time.Minute
 )
 
@@ -376,15 +374,11 @@ func run(logger *slog.Logger) error {
 		}
 	}
 
-	// scheduledTaskRunner needs no secretsManager (unlike backupRunner
-	// above): it execs a plain command through the same docker.Runtime
-	// every reconciler controller already resolves per service
-	// (resolveNodeTransport), nothing that touches envelope-encrypted
-	// credentials. Constructed unconditionally, here, for the identical
-	// "one instance, two consumers" reason backupRunner is: api.Router's
-	// manual "run now" trigger (WithScheduledTaskRunner below, via
-	// rootHandler) and the scheduled-task loop started further down this
-	// function both need the exact same instance.
+	// scheduledTaskRunner needs no secretsManager (unlike backupRunner):
+	// it execs a plain command through docker.Runtime, nothing that
+	// touches envelope-encrypted credentials. Built once here since both
+	// the manual "run now" HTTP trigger and the scheduled-task loop below
+	// share this instance.
 	scheduledTaskRunner := &scheduledtask.Runner{
 		Apps: db,
 		Runtime: func(nodeID string) (docker.Runtime, error) {
@@ -539,12 +533,9 @@ func run(logger *slog.Logger) error {
 		}()
 	}
 
-	// App-level scheduled tasks: internal/scheduledtask.Scheduler checks,
-	// on its own tick, which tasks are enabled and due, and runs them
-	// through the same scheduledTaskRunner the manual "run now" trigger
-	// (api.WithScheduledTaskRunner above) uses. Unlike the backup
-	// scheduler above, this is unconditional: scheduledTaskRunner needs no
-	// master key, so there is no equivalent "not configured" gate here.
+	// Scheduler checks on its own tick which tasks are due and runs them
+	// through scheduledTaskRunner. Unlike the backup scheduler above, this
+	// is unconditional: it needs no master key.
 	scheduledTaskScheduler := scheduledtask.NewScheduler(db, scheduledTaskRunner, logger)
 	go func() {
 		if err := scheduledTaskScheduler.Run(ctx, scheduledTaskSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
