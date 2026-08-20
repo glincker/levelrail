@@ -50,6 +50,10 @@ type fakeRuntime struct {
 	stopErr         error
 	removeErr       error
 	ensureVolumeErr error
+	// startErrOnce fails exactly the next Start call, then clears
+	// itself: the "broken container, but recreating it works" scenario,
+	// distinct from startErr's "every Start fails" shape.
+	startErrOnce error
 
 	createCalls       int
 	removeCalls       int
@@ -121,6 +125,11 @@ func (f *fakeRuntime) Start(_ context.Context, id string) error {
 	defer f.mu.Unlock()
 	if f.startErr != nil {
 		return f.startErr
+	}
+	if f.startErrOnce != nil {
+		err := f.startErrOnce
+		f.startErrOnce = nil
+		return err
 	}
 	for _, cs := range f.containers {
 		if cs.ID == id {
@@ -475,6 +484,96 @@ func TestController_Reconcile_RestartAfterCrash_EnsureNetworkFails_StartNeverCal
 	state, _ := rt.InspectByName(context.Background(), target)
 	if state.Running {
 		t.Error("container reported Running after a failed EnsureNetwork; Start must never have been reached")
+	}
+}
+
+// TestController_Reconcile_RestartAfterCrash_StartFails_RecreatesAndRecovers
+// covers the case live testing found: EnsureNetwork succeeds (the
+// network genuinely exists) but Start still fails on the existing
+// container, e.g. one whose first-ever Start already failed and left it
+// with no real network binding, unrecoverable by retrying Start no
+// matter how many times the network itself is re-ensured. The
+// controller must remove that broken container and recreate it fresh
+// rather than reporting a permanent StartFailed forever.
+func TestController_Reconcile_RestartAfterCrash_StartFails_RecreatesAndRecovers(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, AppID: "myapp"}
+	target := ContainerName("web", desired.Image, "")
+	rt.seed(target, false)
+	rt.startErrOnce = errors.New("network not found")
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v, want the broken container recovered by recreation", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Errorf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+	if rt.removeCalls != 1 {
+		t.Errorf("removeCalls = %d, want 1 (the broken container must be removed before recreating)", rt.removeCalls)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1 (recreated fresh after the broken Start)", rt.createCalls)
+	}
+	state, _ := rt.InspectByName(context.Background(), target)
+	if state == nil || !state.Running {
+		t.Errorf("state = %+v, want a running container after recovery", state)
+	}
+}
+
+// TestController_Reconcile_RestartAfterCrash_StartFails_RemoveAlsoFails is
+// the half-succeeded case CLAUDE.md's testing standard requires: if the
+// broken container can't even be removed, the controller must report
+// both failures clearly rather than silently losing the original Start
+// error or claiming success.
+func TestController_Reconcile_RestartAfterCrash_StartFails_RemoveAlsoFails(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, AppID: "myapp"}
+	target := ContainerName("web", desired.Image, "")
+	rt.seed(target, false)
+	rt.startErrOnce = errors.New("network not found")
+	rt.removeErr = errors.New("permission denied")
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want an error")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "StartFailed" {
+		t.Errorf("condition = %+v, want Status=False Reason=StartFailed", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0: must never attempt to recreate a container it couldn't remove", rt.createCalls)
+	}
+}
+
+// TestController_Reconcile_RestartAfterCrash_StartFails_RecreateAlsoFails
+// is the other half-succeeded case: the broken container is removed
+// successfully, but the fresh Create also fails (e.g. the underlying
+// problem is not this one container at all). Must report CreateFailed,
+// not silently retry Start against a container that no longer exists.
+func TestController_Reconcile_RestartAfterCrash_StartFails_RecreateAlsoFails(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, AppID: "myapp"}
+	target := ContainerName("web", desired.Image, "")
+	rt.seed(target, false)
+	rt.startErrOnce = errors.New("network not found")
+	rt.createErr = errors.New("docker daemon unavailable")
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want an error")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "CreateFailed" {
+		t.Errorf("condition = %+v, want Status=False Reason=CreateFailed", cond)
+	}
+	if rt.removeCalls != 1 {
+		t.Errorf("removeCalls = %d, want 1: the broken container must still be removed even though recreation then fails", rt.removeCalls)
 	}
 }
 

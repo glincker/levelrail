@@ -518,7 +518,19 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, de
 			return replicaOutcome{reason: "EnsureNetworkFailed"}, fmt.Errorf("restart %q: %w", target, err)
 		}
 		if err := c.runtime.Start(ctx, state.ID); err != nil {
-			return replicaOutcome{reason: "StartFailed"}, fmt.Errorf("restart %q: %w", target, err)
+			// EnsureNetwork just succeeded, so a Start failure here means
+			// this specific container is broken (a container whose first
+			// Start ever failed can be left with no network binding at
+			// all, unrecoverable by retrying Start), not that the
+			// network is missing again. Remove and recreate, the same
+			// operation a redeploy already performs routinely.
+			startErr := err
+			if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+				return replicaOutcome{reason: "StartFailed"}, fmt.Errorf("restart %q: start failed (%w) and the broken container could not be removed for recreation: %w", target, startErr, err)
+			}
+			if err := c.createAndStart(ctx, target, desired); err != nil {
+				return replicaOutcome{reason: "CreateFailed"}, fmt.Errorf("restart %q: start failed (%w), recreated instead: %w", target, startErr, err)
+			}
 		}
 		justDeployed = true
 	}
