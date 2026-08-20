@@ -31,6 +31,38 @@ func databaseContainerName(dbName string) string {
 	return "db-" + dbName
 }
 
+// loadDatabaseForRunner looks up name and writes the 404/500 response
+// itself on failure, the shared shape handleTriggerBackup and
+// handleTriggerRestore both need before starting a runner.
+func (rt *Router) loadDatabaseForRunner(w http.ResponseWriter, r *http.Request, name, logContext string) (*store.DesiredDatabase, bool) {
+	db, err := rt.databases.GetDesiredDatabase(r.Context(), name)
+	if errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return nil, false
+	}
+	if err != nil {
+		rt.logger.Error(logContext, slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return nil, false
+	}
+	return db, true
+}
+
+// loadBackupTarget confirms targetID exists, writing the 404/500 response
+// itself on failure, the shared shape handleTriggerBackup and
+// handleSetBackupSchedule both need before using a target.
+func (rt *Router) loadBackupTarget(w http.ResponseWriter, r *http.Request, targetID, logContext string) bool {
+	if _, err := rt.backupTargets.GetBackupTarget(r.Context(), targetID); errors.Is(err, store.ErrBackupTargetNotFound) {
+		writeError(w, http.StatusNotFound, "backup target not found")
+		return false
+	} else if err != nil {
+		rt.logger.Error(logContext, slog.String("error", err.Error()), slog.String("target_id", targetID))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return false
+	}
+	return true
+}
+
 // BackupHistoryStore is the store surface the backup history handler
 // needs. GetBackupHistory was added for handleTriggerRestore
 // (restore.go): resolving the one backup attempt a restore names, not
@@ -110,14 +142,8 @@ func (rt *Router) handleTriggerBackup(w http.ResponseWriter, r *http.Request) {
 
 	name := r.PathValue("name")
 
-	db, err := rt.databases.GetDesiredDatabase(r.Context(), name)
-	if errors.Is(err, store.ErrDatabaseNotFound) {
-		writeError(w, http.StatusNotFound, "database not found")
-		return
-	}
-	if err != nil {
-		rt.logger.Error("api: trigger backup: load database failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+	db, ok := rt.loadDatabaseForRunner(w, r, name, "api: trigger backup: load database failed")
+	if !ok {
 		return
 	}
 
@@ -131,12 +157,7 @@ func (rt *Router) handleTriggerBackup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := rt.backupTargets.GetBackupTarget(r.Context(), req.TargetID); errors.Is(err, store.ErrBackupTargetNotFound) {
-		writeError(w, http.StatusNotFound, "backup target not found")
-		return
-	} else if err != nil {
-		rt.logger.Error("api: trigger backup: load backup target failed", slog.String("error", err.Error()), slog.String("target_id", req.TargetID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+	if !rt.loadBackupTarget(w, r, req.TargetID, "api: trigger backup: load backup target failed") {
 		return
 	}
 
@@ -291,12 +312,7 @@ func (rt *Router) handleSetBackupSchedule(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if _, err := rt.backupTargets.GetBackupTarget(r.Context(), req.TargetID); errors.Is(err, store.ErrBackupTargetNotFound) {
-		writeError(w, http.StatusNotFound, "backup target not found")
-		return
-	} else if err != nil {
-		rt.logger.Error("api: set backup schedule: load backup target failed", slog.String("error", err.Error()), slog.String("target_id", req.TargetID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+	if !rt.loadBackupTarget(w, r, req.TargetID, "api: set backup schedule: load backup target failed") {
 		return
 	}
 
