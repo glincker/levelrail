@@ -63,6 +63,7 @@ const createAppFromGitSchema = z
     imageRepo: z.string().trim(),
     buildType: z.enum(BUILD_TYPES),
     dockerfilePath: z.string().trim(),
+    baseDirectory: z.string().trim(),
     image: z.string().trim(),
     domain: z
       .string()
@@ -110,6 +111,7 @@ const DEFAULT_VALUES: FormInput = {
   imageRepo: '',
   buildType: 'railpack',
   dockerfilePath: '',
+  baseDirectory: '',
   image: '',
   domain: '',
 }
@@ -123,7 +125,9 @@ const DEFAULT_VALUES: FormInput = {
 // (deployStatic never reads req.ImageRepo), so it's omitted for static
 // too, matching GitBuildSourceFields not even rendering that field in
 // that case. build.type: image sends only image: repoUrl/ref/imageRepo
-// are all meaningless when nothing gets cloned or built.
+// are all meaningless when nothing gets cloned or built. baseDirectory
+// is sent for every non-image build type: the backend accepts it for
+// dockerfile, railpack, and static alike.
 function buildInputFrom(values: FormOutput): TriggerBuildInput {
   if (values.buildType === 'image') {
     return {
@@ -145,6 +149,7 @@ function buildInputFrom(values: FormOutput): TriggerBuildInput {
       values.buildType === 'dockerfile'
         ? values.dockerfilePath.trim() || undefined
         : undefined,
+    baseDirectory: values.baseDirectory.trim() || undefined,
   }
 }
 
