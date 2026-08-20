@@ -12,6 +12,7 @@ import {
 import { DOMAIN_LIST_GRID, DomainRow } from '../../components/DomainRow'
 import { CloudflareDnsCard } from '../../components/CloudflareDnsCard'
 import { IngressSettingsCard } from '../../components/IngressSettingsCard'
+import { EmptyState } from '../../components/ui/empty-state'
 
 // Centralized domains page: every domain currently claimed by an app
 // (GET /api/v1/domains, service_domains) merged client-side with
@@ -111,10 +112,11 @@ function DomainsPage() {
         </div>
 
         {domains.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-            No app has a domain configured yet. Add one from an
-            app&apos;s Domains tab.
-          </div>
+          <EmptyState
+            icon={<GlobeIcon className="size-5" />}
+            title="No app domains yet"
+            description="Add a domain from an app's Domains tab to route traffic to it over HTTPS."
+          />
         ) : (
           <div
             ref={parentRef}

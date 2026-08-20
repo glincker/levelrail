@@ -11,6 +11,7 @@ import { Badge, type badgeVariants } from '@/components/ui/badge'
 import type { VariantProps } from 'class-variance-authority'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
+import { EmptyState } from '@/components/ui/empty-state'
 import { ScheduledTaskDialog } from './ScheduledTaskDialog'
 import { DeleteScheduledTaskDialog } from './DeleteScheduledTaskDialog'
 import { RunScheduledTaskButton } from './RunScheduledTaskButton'
@@ -154,10 +155,12 @@ export function ScheduledTasksPanel({ appName }: { appName: string }) {
         ) : error ? (
           <p className="text-sm text-destructive">{error.message}</p>
         ) : tasks.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No scheduled tasks yet. Create one to run a command on a cron
-            schedule.
-          </p>
+          <EmptyState
+            icon={<ClockCountdownIcon className="size-5" />}
+            title="No scheduled tasks yet"
+            description="Run a command inside this app's container on a cron schedule, e.g. a nightly cleanup script or a periodic cache-warm job."
+            action={<ScheduledTaskDialog appName={appName} />}
+          />
         ) : (
           <div className="rounded-lg border border-border">
             <Table>
