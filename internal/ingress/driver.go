@@ -18,6 +18,14 @@ import (
 	// names from Go's init()-time module registry, not from the config
 	// itself.
 	_ "github.com/caddyserver/caddy/v2/modules/standard"
+
+	// Blank-imported for the same registration-side-effect reason:
+	// dns.providers.cloudflare is a separate Go module from Caddy's own
+	// standard set (third-party DNS providers always are), so it needs
+	// its own blank import to be resolvable from a wildcard domain's
+	// DNS-01 automation policy (see config.go's
+	// NewCloudflareDNSACMEIssuer).
+	_ "github.com/caddy-dns/cloudflare"
 )
 
 // Driver drives an in-process Caddy instance through the same code path as
