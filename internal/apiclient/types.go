@@ -127,6 +127,15 @@ type ConditionResource struct {
 	LastTransitionTime time.Time `json:"LastTransitionTime"`
 }
 
+// NetworkResource mirrors internal/api's networkResource
+// (internal/api/network.go): the live traffic path, container's declared
+// port plus whatever host port Docker currently has bound.
+type NetworkResource struct {
+	ContainerPort int  `json:"container_port"`
+	HostPort      int  `json:"host_port,omitempty"`
+	Running       bool `json:"running"`
+}
+
 // LogEntryResource mirrors internal/api's logEntryResource
 // (internal/api/logs.go).
 type LogEntryResource struct {
