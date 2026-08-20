@@ -288,6 +288,69 @@ func TestContainerDumper_Dump_KeyDB(t *testing.T) {
 	}
 }
 
+func TestContainerDumper_Dump_Dragonfly(t *testing.T) {
+	rt := &fakeExecRuntime{content: "rdb-bytes"}
+	d := &ContainerDumper{Runtime: rt}
+
+	rc, err := d.Dump(context.Background(), store.EngineDragonfly, "db-cache")
+	if err != nil {
+		t.Fatalf("Dump() error = %v", err)
+	}
+	defer func() { _ = rc.Close() }()
+
+	if rt.gotContainer != "db-cache" {
+		t.Errorf("container = %q, want %q", rt.gotContainer, "db-cache")
+	}
+	wantCmd := []string{"sh", "-c", "redis-cli SAVE RDB dump.rdb && exec cat /data/dump.rdb"}
+	if !reflect.DeepEqual(rt.gotCmd, wantCmd) {
+		t.Errorf("cmd = %v, want %v", rt.gotCmd, wantCmd)
+	}
+
+	got, err := io.ReadAll(rc)
+	if err != nil {
+		t.Fatalf("ReadAll() error = %v", err)
+	}
+	if string(got) != "rdb-bytes" {
+		t.Errorf("content = %q, want %q", got, "rdb-bytes")
+	}
+}
+
+func TestContainerDumper_Dump_ClickHouse(t *testing.T) {
+	rt := &fakeExecRuntime{content: "CREATE TABLE...;\nINSERT INTO t...;\n"}
+	d := &ContainerDumper{Runtime: rt}
+
+	rc, err := d.Dump(context.Background(), store.EngineClickHouse, "db-mydb")
+	if err != nil {
+		t.Fatalf("Dump() error = %v", err)
+	}
+	defer func() { _ = rc.Close() }()
+
+	if rt.gotContainer != "db-mydb" {
+		t.Errorf("container = %q, want %q", rt.gotContainer, "db-mydb")
+	}
+	if got, want := rt.gotCmd[0], "sh"; got != want {
+		t.Errorf("cmd[0] = %q, want %q", got, want)
+	}
+	script := rt.gotCmd[2]
+	for _, want := range []string{
+		`--query "SHOW TABLES FROM $CLICKHOUSE_DB"`,
+		`--query "SHOW CREATE TABLE $CLICKHOUSE_DB.$t" --format TSVRaw`,
+		`SETTINGS output_format_sql_insert_table_name = '$t' FORMAT SQLInsert`,
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("dump script missing %q, got %q", want, script)
+		}
+	}
+
+	got, err := io.ReadAll(rc)
+	if err != nil {
+		t.Fatalf("ReadAll() error = %v", err)
+	}
+	if string(got) != "CREATE TABLE...;\nINSERT INTO t...;\n" {
+		t.Errorf("content = %q, want dump content unchanged", got)
+	}
+}
+
 func TestContainerDumper_Dump_UnknownEngine(t *testing.T) {
 	rt := &fakeExecRuntime{}
 	d := &ContainerDumper{Runtime: rt}
