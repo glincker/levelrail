@@ -32,25 +32,17 @@ func newChannelCreateEchoServer(t *testing.T, id string, gotBody *createNotifica
 
 func TestRun_ChannelsList(t *testing.T) {
 	var gotPath string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath = r.URL.Path
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode([]notificationChannelResource{
-			{ID: "chn_1", Name: "Team Slack", Kind: "slack", Enabled: true, CreatedAt: "2026-08-15T00:00:00Z"},
-		})
-	}))
+	srv := newListEchoServer(t, &gotPath, []notificationChannelResource{
+		{ID: "chn_1", Name: "Team Slack", Kind: "slack", Enabled: true, CreatedAt: "2026-08-15T00:00:00Z"},
+	})
 	defer srv.Close()
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"channels", "list", "--api-url", srv.URL}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
+	stdout, _ := runCLIExpectOK(t, []string{"channels", "list", "--api-url", srv.URL})
 	if gotPath != "/api/v1/notification-channels" {
 		t.Errorf("path = %q, want /api/v1/notification-channels", gotPath)
 	}
-	if !strings.Contains(stdout.String(), "chn_1") {
-		t.Errorf("stdout = %q, want the channel id listed", stdout.String())
+	if !strings.Contains(stdout, "chn_1") {
+		t.Errorf("stdout = %q, want the channel id listed", stdout)
 	}
 }
 
@@ -112,43 +104,34 @@ func TestRun_ChannelsCreate_PushoverFlags(t *testing.T) {
 	}
 }
 
+// assertChannelsCreate runs "channels create" with flags against a fresh
+// echo server and asserts the request body's kind and notify_url.
+func assertChannelsCreate(t *testing.T, id string, flags []string, wantKind, wantNotifyURL string) {
+	t.Helper()
+	var gotBody createNotificationChannelRequest
+	srv := newChannelCreateEchoServer(t, id, &gotBody, nil)
+	defer srv.Close()
+
+	args := append(append([]string{"channels", "create"}, flags...), "--api-url", srv.URL)
+	runCLIExpectOK(t, args)
+	if gotBody.Kind != wantKind || gotBody.NotifyURL != wantNotifyURL {
+		t.Errorf("request body = %+v, want kind %s and notify_url %s", gotBody, wantKind, wantNotifyURL)
+	}
+}
+
 // TestRun_ChannelsCreate_PagerDutyRoutingKeyFlag proves
 // --pagerduty-routing-key is sent through as notify_url unchanged, the
 // backend's own convention for a pagerduty channel.
 func TestRun_ChannelsCreate_PagerDutyRoutingKeyFlag(t *testing.T) {
-	var gotBody createNotificationChannelRequest
-	srv := newChannelCreateEchoServer(t, "chn_4", &gotBody, nil)
-	defer srv.Close()
-
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{
-		"channels", "create", "--name", "Oncall", "--kind", "pagerduty",
-		"--pagerduty-routing-key", "routing-key-789", "--api-url", srv.URL,
-	}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
-	if gotBody.Kind != "pagerduty" || gotBody.NotifyURL != "routing-key-789" {
-		t.Errorf("request body = %+v, want kind pagerduty and notify_url routing-key-789", gotBody)
-	}
+	assertChannelsCreate(t, "chn_4",
+		[]string{"--name", "Oncall", "--kind", "pagerduty", "--pagerduty-routing-key", "routing-key-789"},
+		"pagerduty", "routing-key-789")
 }
 
 func TestRun_ChannelsCreate_TeamsWebhookURL(t *testing.T) {
-	var gotBody createNotificationChannelRequest
-	srv := newChannelCreateEchoServer(t, "chn_5", &gotBody, nil)
-	defer srv.Close()
-
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{
-		"channels", "create", "--name", "Ops Teams", "--kind", "teams",
-		"--notify-url", "https://example.webhook.office.com/x", "--api-url", srv.URL,
-	}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
-	if gotBody.Kind != "teams" || gotBody.NotifyURL != "https://example.webhook.office.com/x" {
-		t.Errorf("request body = %+v, want kind teams and the given notify_url", gotBody)
-	}
+	assertChannelsCreate(t, "chn_5",
+		[]string{"--name", "Ops Teams", "--kind", "teams", "--notify-url", "https://example.webhook.office.com/x"},
+		"teams", "https://example.webhook.office.com/x")
 }
 
 func TestRun_ChannelsCreate_MissingDestination(t *testing.T) {
@@ -162,7 +145,10 @@ func TestRun_ChannelsCreate_MissingDestination(t *testing.T) {
 	}
 }
 
-func TestRun_ChannelsDelete(t *testing.T) {
+// assertChannelsPathMethod runs a "channels" subcommand against a
+// no-content echo server and asserts the request method and path.
+func assertChannelsPathMethod(t *testing.T, args []string, wantMethod, wantPath string) {
+	t.Helper()
 	var gotPath, gotMethod string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath, gotMethod = r.URL.Path, r.Method
@@ -170,32 +156,21 @@ func TestRun_ChannelsDelete(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"channels", "delete", "chn_1", "--api-url", srv.URL}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
-	if gotMethod != http.MethodDelete || gotPath != "/api/v1/notification-channels/chn_1" {
-		t.Errorf("request = %s %s, want DELETE /api/v1/notification-channels/chn_1", gotMethod, gotPath)
+	fullArgs := append(append([]string{}, args...), "--api-url", srv.URL)
+	runCLIExpectOK(t, fullArgs)
+	if gotMethod != wantMethod || gotPath != wantPath {
+		t.Errorf("request = %s %s, want %s %s", gotMethod, gotPath, wantMethod, wantPath)
 	}
 }
 
-func TestRun_ChannelsTest(t *testing.T) {
-	var gotPath, gotMethod string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath, gotMethod = r.URL.Path, r.Method
-		w.WriteHeader(http.StatusNoContent)
-	}))
-	defer srv.Close()
+func TestRun_ChannelsDelete(t *testing.T) {
+	assertChannelsPathMethod(t, []string{"channels", "delete", "chn_1"},
+		http.MethodDelete, "/api/v1/notification-channels/chn_1")
+}
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"channels", "test", "chn_1", "--api-url", srv.URL}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
-	if gotMethod != http.MethodPost || gotPath != "/api/v1/notification-channels/chn_1/test" {
-		t.Errorf("request = %s %s, want POST /api/v1/notification-channels/chn_1/test", gotMethod, gotPath)
-	}
+func TestRun_ChannelsTest(t *testing.T) {
+	assertChannelsPathMethod(t, []string{"channels", "test", "chn_1"},
+		http.MethodPost, "/api/v1/notification-channels/chn_1/test")
 }
 
 func TestRun_Channels_Help(t *testing.T) {

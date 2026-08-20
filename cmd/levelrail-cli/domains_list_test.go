@@ -11,25 +11,17 @@ import (
 
 func TestRun_DomainsList(t *testing.T) {
 	var gotPath string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath = r.URL.Path
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode([]domainResource{
-			{Domain: "app.example.com", ServiceName: "web"},
-		})
-	}))
+	srv := newListEchoServer(t, &gotPath, []domainResource{
+		{Domain: "app.example.com", ServiceName: "web"},
+	})
 	defer srv.Close()
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"domains", "list", "--api-url", srv.URL}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
+	stdout, _ := runCLIExpectOK(t, []string{"domains", "list", "--api-url", srv.URL})
 	if gotPath != "/api/v1/domains" {
 		t.Errorf("path = %q, want /api/v1/domains", gotPath)
 	}
-	if !strings.Contains(stdout.String(), "app.example.com") {
-		t.Errorf("stdout = %q, want the domain listed", stdout.String())
+	if !strings.Contains(stdout, "app.example.com") {
+		t.Errorf("stdout = %q, want the domain listed", stdout)
 	}
 }
 
