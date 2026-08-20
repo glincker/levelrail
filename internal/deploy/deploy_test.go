@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -255,6 +256,30 @@ func TestPipeline_Deploy_Dockerfile_BaseDirectory_ScopesContext(t *testing.T) {
 	wantDockerfile := filepath.Join(wantContext, "Dockerfile")
 	if builder.lastReq.DockerfilePath != wantDockerfile {
 		t.Errorf("DockerfilePath = %q, want %q", builder.lastReq.DockerfilePath, wantDockerfile)
+	}
+}
+
+func TestPipeline_Deploy_Dockerfile_BuildArgs_PassedThrough(t *testing.T) {
+	builder := &fakeBuilder{result: &build.Result{Tag: "levelrail/web:abc1234"}}
+	p := New(builder, &fakeServiceStore{})
+
+	svc := dockerfileService()
+	svc.Build.Args = map[string]string{"VERSION": "1.2.3"}
+
+	_, err := p.Deploy(context.Background(), Request{
+		ServiceName: "web",
+		Service:     svc,
+		SourceDir:   "/repo",
+		CommitSHA:   "abc1234",
+		ImageRepo:   "levelrail/web",
+	}, nil)
+	if err != nil {
+		t.Fatalf("Deploy() error = %v", err)
+	}
+
+	want := map[string]string{"VERSION": "1.2.3"}
+	if !reflect.DeepEqual(builder.lastReq.BuildArgs, want) {
+		t.Errorf("BuildArgs = %+v, want %+v", builder.lastReq.BuildArgs, want)
 	}
 }
 

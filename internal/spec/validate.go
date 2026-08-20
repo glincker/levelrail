@@ -68,6 +68,10 @@ func (svc *Service) validate(name string) error {
 		return fmt.Errorf("spec: service %q: build.path is not meaningful for build.type: image, there is nothing to build", name)
 	}
 
+	if len(svc.Build.Args) > 0 && svc.Build.Type != BuildDockerfile {
+		return fmt.Errorf("spec: service %q: build.args is not meaningful for build.type %q", name, svc.Build.Type)
+	}
+
 	if svc.Build.BaseDirectory != "" {
 		if svc.Build.Type == BuildImage {
 			return fmt.Errorf("spec: service %q: build.baseDirectory is not meaningful for build.type: image, there is nothing to build", name)

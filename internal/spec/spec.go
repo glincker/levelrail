@@ -104,6 +104,11 @@ type Build struct {
 	// to author) to authenticate with when pulling Image from a private
 	// registry. Empty means an unauthenticated (public) pull.
 	RegistryCredential string `yaml:"registryCredential,omitempty"`
+	// Args are Dockerfile build-time ARG values (e.g. a base image
+	// version, a build-time feature flag), passed through as
+	// --build-arg equivalents to BuildKit. Only meaningful for
+	// build.type: dockerfile.
+	Args map[string]string `yaml:"args,omitempty"`
 }
 
 // Health holds a service's readiness and liveness probe configuration.

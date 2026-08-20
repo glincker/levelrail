@@ -34,6 +34,9 @@ export interface TriggerBuildInput {
   /** Required when, and only meaningful for, buildType "image": the
    *  prebuilt registry reference to deploy as-is, no build at all. */
   image?: string
+  /** Dockerfile build-time ARG values. Only meaningful when buildType
+   *  is "dockerfile". */
+  buildArgs?: Record<string, string>
 }
 
 // TriggerBuildResult mirrors internal/api/builds.go's own
@@ -50,11 +53,20 @@ export async function triggerBuild(
   appName: string,
   input: TriggerBuildInput,
 ): Promise<TriggerBuildResult> {
-  const build: Record<string, string> = {}
+  const build: {
+    type?: string
+    path?: string
+    base_directory?: string
+    image?: string
+    args?: Record<string, string>
+  } = {}
   if (input.buildType) build.type = input.buildType
   if (input.buildPath) build.path = input.buildPath
   if (input.baseDirectory) build.base_directory = input.baseDirectory
   if (input.image) build.image = input.image
+  if (input.buildArgs && Object.keys(input.buildArgs).length > 0) {
+    build.args = input.buildArgs
+  }
 
   const res = await fetch(
     `/api/v1/apps/${encodeURIComponent(appName)}/builds`,

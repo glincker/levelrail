@@ -1,6 +1,7 @@
 package api
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -59,7 +60,7 @@ func TestSpecServiceFromDesired(t *testing.T) {
 
 	got := specServiceFromDesired(svc, buildCfg)
 
-	if got.Build != buildCfg {
+	if !reflect.DeepEqual(got.Build, buildCfg) {
 		t.Errorf("Build = %+v, want %+v", got.Build, buildCfg)
 	}
 	if got.Port != 8080 {

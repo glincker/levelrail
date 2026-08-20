@@ -146,6 +146,26 @@ services:
 	}
 }
 
+func TestParse_ValidBuildArgs(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile, args: { VERSION: "1.2.3", DEBUG: "false" } }, port: 8080 }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	web, ok := s.Services["web"]
+	if !ok {
+		t.Fatal("expected a \"web\" service")
+	}
+	want := map[string]string{"VERSION": "1.2.3", "DEBUG": "false"}
+	if len(web.Build.Args) != len(want) || web.Build.Args["VERSION"] != "1.2.3" || web.Build.Args["DEBUG"] != "false" {
+		t.Errorf("Build.Args = %+v, want %+v", web.Build.Args, want)
+	}
+}
+
 func TestParse_ValidMongoDBDatabase(t *testing.T) {
 	yaml := `
 version: 1
@@ -393,6 +413,33 @@ services:
   web: { build: { type: compose, path: "./docker-compose.yml", baseDirectory: "apps/web" }, port: 8080 }
 `,
 			wantErrSubstr: "build.baseDirectory is not meaningful for build.type: compose",
+		},
+		{
+			name: "build.args set for a railpack build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: railpack, args: { VERSION: "1.2.3" } }, port: 8080 }
+`,
+			wantErrSubstr: `build.args is not meaningful for build.type "railpack"`,
+		},
+		{
+			name: "build.args set for a static build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: static, args: { VERSION: "1.2.3" } } }
+`,
+			wantErrSubstr: `build.args is not meaningful for build.type "static"`,
+		},
+		{
+			name: "build.args set for an image build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: image, image: "ghcr.io/org/app:v1", args: { VERSION: "1.2.3" } }, port: 8080 }
+`,
+			wantErrSubstr: `build.args is not meaningful for build.type "image"`,
 		},
 		{
 			name: "build.baseDirectory is an absolute path",

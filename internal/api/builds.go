@@ -128,6 +128,13 @@ type triggerBuildBuildInput struct {
 	// are not required on the request for this build type either, since
 	// nothing gets cloned.
 	Image string `json:"image,omitempty"`
+	// Args are Dockerfile build-time ARG values, passed through to
+	// BuildKit as --build-arg equivalents. Only meaningful for
+	// build.type: dockerfile; handleTriggerBuild rejects a non-empty
+	// value for any other build type, the same "fail loudly on a
+	// meaningless field" pattern Path's own doc comment establishes for
+	// railpack.
+	Args map[string]string `json:"args,omitempty"`
 }
 
 // triggerBuildRequest is POST /api/v1/apps/{name}/builds's body: a git
@@ -283,13 +290,17 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "build.path is not meaningful for build.type \"railpack\"")
 		return
 	}
+	if buildType != spec.BuildDockerfile && len(req.Build.Args) > 0 {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("build.args is not meaningful for build.type %q", buildType))
+		return
+	}
 
 	imageRepo := req.ImageRepo
 	if imageRepo == "" {
 		imageRepo = name
 	}
 
-	buildCfg := spec.Build{Type: buildType, Path: req.Build.Path, BaseDirectory: req.Build.BaseDirectory}
+	buildCfg := spec.Build{Type: buildType, Path: req.Build.Path, BaseDirectory: req.Build.BaseDirectory, Args: req.Build.Args}
 	if buildType == spec.BuildImage {
 		buildCfg = spec.Build{Type: buildType, Image: req.Build.Image}
 	}

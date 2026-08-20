@@ -7,6 +7,33 @@ import (
 	"strings"
 )
 
+// stringMapFlag is a flag.Value for a repeatable "KEY=VALUE" flag (e.g.
+// --build-arg), accumulating into a map. Registered via fs.Var: the
+// stdlib flag package has no native repeated-string-flag support.
+type stringMapFlag map[string]string
+
+func (m stringMapFlag) String() string {
+	if len(m) == 0 {
+		return ""
+	}
+	pairs := make([]string, 0, len(m))
+	for k, v := range m {
+		pairs = append(pairs, k+"="+v)
+	}
+	return strings.Join(pairs, ",")
+}
+
+// Set splits s on the first "=" and records it. Called once per
+// occurrence of the flag on the command line.
+func (m stringMapFlag) Set(s string) error {
+	key, value, ok := strings.Cut(s, "=")
+	if !ok || key == "" {
+		return fmt.Errorf("invalid KEY=VALUE %q, want a key, an \"=\", and a value", s)
+	}
+	m[key] = value
+	return nil
+}
+
 // apiFlagSet builds a FlagSet named prog+" "+cmdLabel with the
 // --token/--api-url/--json flags most subcommands take, so each command
 // only wires up the flags unique to itself.
