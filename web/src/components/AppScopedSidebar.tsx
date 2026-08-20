@@ -4,6 +4,7 @@ import {
   SquaresFourIcon,
   ClockCounterClockwiseIcon,
   GlobeIcon,
+  ShareNetworkIcon,
   BracketsCurlyIcon,
   HeartbeatIcon,
   CpuIcon,
@@ -28,8 +29,8 @@ import { summarizeAppStatus } from '../lib/appStatus'
 
 // The app-scoped half of AppSidebar's Vercel-style dynamic nav: rendered
 // in place of the global nav whenever the current route is under
-// /apps/$name/*. The 9 section routes are grouped into Deploy
-// (Overview, Deploys, Domains), Configure (Environment, Health,
+// /apps/$name/*. The 10 section routes are grouped into Deploy
+// (Overview, Deploys, Domains, Network), Configure (Environment, Health,
 // Resources), and Observe (Metrics, Logs, Alerts), matching the
 // SidebarGroupLabel pattern the global sidebar's Settings group uses.
 //
@@ -107,6 +108,16 @@ export function AppScopedSidebar({ name }: { name: string }) {
               >
                 <GlobeIcon />
                 <span>Domains</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={<Link to="/apps/$name/network" params={{ name }} />}
+                isActive={pathname.endsWith('/network')}
+                tooltip="Network"
+              >
+                <ShareNetworkIcon />
+                <span>Network</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

@@ -205,6 +205,14 @@ func (c *Client) GetDeployStatus(ctx context.Context, name string) ([]ConditionR
 	return out, err
 }
 
+// GetAppNetwork calls GET /api/v1/apps/{name}/network
+// (internal/api/network.go's handleGetAppNetwork).
+func (c *Client) GetAppNetwork(ctx context.Context, name string) (NetworkResource, error) {
+	var out NetworkResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/network", nil, &out)
+	return out, err
+}
+
 // QueryLogs calls GET /api/v1/apps/{name}/logs?from=&to=&q=
 // (internal/api/logs.go's handleQueryLogs): a real, historical full-text
 // search over already-stored log entries. from/to are sent as RFC3339,

@@ -97,6 +97,7 @@ Usage:
   %[1]s apps rollback <name> [flags]   redeploy an older image (same endpoint as deploy)
   %[1]s apps restart <name> [flags]     recreate the running container, no image change
   %[1]s apps status <name> [flags]   show an app's current reconcile conditions
+  %[1]s apps network <name> [flags]   show the live traffic path: container port, host port, running
   %[1]s apps logs <name> [flags]     search an app's stored log entries
   %[1]s apps exec <name> -- <cmd> [args...]   run a command in the app's container, exits with its real exit code
   %[1]s databases create [flags]     create a managed database

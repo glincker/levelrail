@@ -17,6 +17,7 @@ type (
 	buildTriggerRequestBuild = apiclient.BuildTriggerRequestBuild
 	buildTriggerResponse     = apiclient.BuildTriggerResponse
 	conditionResource        = apiclient.ConditionResource
+	networkResource          = apiclient.NetworkResource
 	logEntryResource         = apiclient.LogEntryResource
 	execRequest              = apiclient.ExecRequest
 	execResponse             = apiclient.ExecResponse

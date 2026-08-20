@@ -119,6 +119,19 @@ func printConditionsHuman(out io.Writer, conditions []conditionResource) {
 	_ = tw.Flush()
 }
 
+// printAppNetworkHuman prints "apps network" output: the live traffic
+// path, container's declared port plus whatever host port Docker
+// currently has bound.
+func printAppNetworkHuman(out io.Writer, n networkResource) {
+	_, _ = fmt.Fprintf(out, "container port:  %d\n", n.ContainerPort)
+	if n.Running && n.HostPort > 0 {
+		_, _ = fmt.Fprintf(out, "host port:       %d\n", n.HostPort)
+	} else {
+		_, _ = fmt.Fprintln(out, "host port:       (not running)")
+	}
+	_, _ = fmt.Fprintf(out, "running:         %t\n", n.Running)
+}
+
 // printLogEntriesHuman prints "apps logs" output: one line per entry,
 // oldest first (the order handleQueryLogs' underlying store returns
 // them in), timestamp and stream prefixed so stdout/stderr lines are
