@@ -149,17 +149,13 @@ func TestRun_ChannelsCreate_MissingDestination(t *testing.T) {
 // no-content echo server and asserts the request method and path.
 func assertChannelsPathMethod(t *testing.T, args []string, wantMethod, wantPath string) {
 	t.Helper()
-	var gotPath, gotMethod string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath, gotMethod = r.URL.Path, r.Method
-		w.WriteHeader(http.StatusNoContent)
-	}))
+	srv, gotPath, gotMethod := newNoContentEchoServer(t)
 	defer srv.Close()
 
 	fullArgs := append(append([]string{}, args...), "--api-url", srv.URL)
 	runCLIExpectOK(t, fullArgs)
-	if gotMethod != wantMethod || gotPath != wantPath {
-		t.Errorf("request = %s %s, want %s %s", gotMethod, gotPath, wantMethod, wantPath)
+	if *gotMethod != wantMethod || *gotPath != wantPath {
+		t.Errorf("request = %s %s, want %s %s", *gotMethod, *gotPath, wantMethod, wantPath)
 	}
 }
 
