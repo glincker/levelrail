@@ -6,12 +6,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 	"time"
 
 	bkclient "github.com/moby/buildkit/client"
 	"github.com/moby/buildkit/client/llb"
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	rpbuildkit "github.com/railwayapp/railpack/buildkit"
+	"github.com/railwayapp/railpack/buildkit/build_llb"
 	"github.com/railwayapp/railpack/core"
 	rpapp "github.com/railwayapp/railpack/core/app"
 	rpplan "github.com/railwayapp/railpack/core/plan"
@@ -200,11 +203,18 @@ func newRailpackSolveOpt(ctx context.Context, plan *rpplan.BuildPlan, req Railpa
 		return nil, nil, fmt.Errorf("build: railpack: resolve build platform: %w", err)
 	}
 
-	llbState, image, err := rpbuildkit.ConvertPlanToLLB(plan, rpbuildkit.ConvertPlanOptions{
+	// llbState is discarded and rebuilt below by deployStateWithoutMerge;
+	// see that function's doc comment for why. image is unaffected.
+	_, image, err := rpbuildkit.ConvertPlanToLLB(plan, rpbuildkit.ConvertPlanOptions{
 		BuildPlatform: platform,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("build: railpack: convert plan to LLB: %w", err)
+	}
+
+	llbState, err := deployStateWithoutMerge(plan, platform)
+	if err != nil {
+		return nil, nil, fmt.Errorf("build: railpack: assemble deploy image: %w", err)
 	}
 
 	imageConfig, err := json.Marshal(image)
@@ -235,6 +245,89 @@ func newRailpackSolveOpt(ctx context.Context, plan *rpplan.BuildPlan, req Railpa
 		},
 	}
 	return def, opt, nil
+}
+
+// deployStateWithoutMerge rebuilds Railpack's deploy-image filesystem the
+// way rpbuildkit.ConvertPlanToLLB does internally, except the final layer
+// assembly always uses sequential llb.Copy rather than letting Railpack's
+// own build_llb.GetFullStateFromLayers pick llb.Merge for non-overlapping
+// layers. That merge choice deadlocks creating a containerd lease against
+// this codebase's BuildKit connection (a bare two-state llb.Merge against
+// the same *Client.bk reproduces it with no Railpack involved at all,
+// only unblocking on context cancellation). ConvertPlanOptions has no
+// field to opt out, so this reimplements just that one step with the same
+// exported build_llb building blocks ConvertPlanToLLB itself uses.
+func deployStateWithoutMerge(plan *rpplan.BuildPlan, platform specs.Platform) (*llb.State, error) {
+	localOpts := []llb.LocalOption{
+		llb.SharedKeyHint("local"),
+		llb.WithCustomName("loading ."),
+	}
+	if len(plan.Exclude) > 0 {
+		localOpts = append(localOpts, llb.ExcludePatterns(plan.Exclude))
+	}
+	localState := llb.Local("context", localOpts...)
+
+	graph, err := build_llb.NewBuildGraph(plan, &localState, build_llb.NewBuildKitCacheStore(""), "", &platform, "", false)
+	if err != nil {
+		return nil, fmt.Errorf("build: railpack: build graph: %w", err)
+	}
+	// GenerateLLB also computes its own (merge-based) deploy state as part
+	// of its return value; that part is never used below, only the step
+	// states it populates on graph as a side effect.
+	if _, err := graph.GenerateLLB(); err != nil {
+		return nil, fmt.Errorf("build: railpack: generate step states: %w", err)
+	}
+
+	deployInputs := append([]rpplan.Layer{plan.Deploy.Base}, plan.Deploy.Inputs...)
+	state := copyDeployLayers(graph, deployInputs).Dir(rpbuildkit.WorkingDir)
+	return &state, nil
+}
+
+// copyDeployLayers and its helpers mirror build_llb's own unexported
+// getCopyState/copyLayerPaths/resolvePaths (the fallback path
+// GetFullStateFromLayers already uses for layers it doesn't trust
+// merging), reimplemented here because that fallback isn't reachable
+// through Railpack's public API.
+func copyDeployLayers(graph *build_llb.BuildGraph, layers []rpplan.Layer) llb.State {
+	state := graph.GetStateForLayer(layers[0])
+	for _, input := range layers[1:] {
+		inputState := graph.GetStateForLayer(input)
+		state = copyLayerFiltered(state, inputState, input.Filter, input.Local)
+	}
+	return state
+}
+
+func copyLayerFiltered(destState, srcState llb.State, filter rpplan.Filter, isLocal bool) llb.State {
+	for _, include := range filter.Include {
+		srcPath, destPath := deployLayerPaths(include, isLocal)
+		opts := []llb.ConstraintsOpt{}
+		if srcPath == destPath {
+			opts = append(opts, llb.WithCustomName("copy "+srcPath))
+		}
+		destState = destState.File(llb.Copy(srcState, srcPath, destPath, &llb.CopyInfo{
+			CopyDirContentsOnly: true,
+			CreateDestPath:      true,
+			FollowSymlinks:      true,
+			AllowWildcard:       true,
+			AllowEmptyWildcard:  true,
+			ExcludePatterns:     filter.Exclude,
+		}), opts...)
+	}
+	return destState
+}
+
+func deployLayerPaths(include string, isLocal bool) (srcPath, destPath string) {
+	if isLocal {
+		return include, filepath.Join(rpbuildkit.WorkingDir, filepath.Base(include))
+	}
+	switch {
+	case include == "." || include == rpbuildkit.WorkingDir || include == rpbuildkit.WorkingDir+"/":
+		return rpbuildkit.WorkingDir, rpbuildkit.WorkingDir
+	case filepath.IsAbs(include):
+		return include, include
+	default:
+		return filepath.Join(rpbuildkit.WorkingDir, include), filepath.Join(rpbuildkit.WorkingDir, include)
+	}
 }
 
 // BuildRailpack runs req end to end: generates a Railpack build plan for

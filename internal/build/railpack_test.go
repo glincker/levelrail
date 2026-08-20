@@ -11,6 +11,8 @@ import (
 	"github.com/docker/docker/api/types/image"
 	dockerclient "github.com/docker/docker/client"
 	bkclient "github.com/moby/buildkit/client"
+	"github.com/moby/buildkit/solver/pb"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestGenerateRailpackPlan(t *testing.T) {
@@ -152,6 +154,51 @@ func TestNewRailpackSolveOpt(t *testing.T) {
 			// never sets a Frontend: BuildKit is driven entirely by def.
 			if opt.Frontend != "" {
 				t.Errorf("Frontend = %q, want empty: a Railpack solve is Definition-based, not frontend-based", opt.Frontend)
+			}
+		})
+	}
+}
+
+// TestNewRailpackSolveOpt_NoMergeOp guards against the deploy-image hang
+// this codebase's BuildKit connection has for llb.Merge (see
+// deployStateWithoutMerge's doc comment in railpack.go): it never
+// completes, only unblocking on context cancellation with "failed to
+// create lease: context canceled". Confirmed independently of Railpack
+// with a bare two-state llb.Merge against the same connection.
+// newRailpackSolveOpt must never hand BuildKit a Definition containing a
+// MergeOp, for any supported provider's deploy layer assembly.
+func TestNewRailpackSolveOpt_NoMergeOp(t *testing.T) {
+	tests := []struct {
+		name string
+		dir  string
+		tag  string
+	}{
+		{name: "node plan", dir: "testdata/railpack-node", tag: "levelrail-railpack:node"},
+		{name: "go plan", dir: "testdata/railpack-go", tag: "levelrail-railpack:go"},
+		{name: "java plan", dir: "testdata/railpack-java-spring-boot", tag: "levelrail-railpack:java"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := generateRailpackPlan(RailpackRequest{SourceDir: tt.dir, Tag: tt.tag})
+			if err != nil {
+				t.Fatalf("generateRailpackPlan() unexpected error: %v", err)
+			}
+
+			out := discardWriteCloser{io.Discard}
+			def, _, err := newRailpackSolveOpt(context.Background(), result.Plan, RailpackRequest{SourceDir: tt.dir, Tag: tt.tag}, out)
+			if err != nil {
+				t.Fatalf("newRailpackSolveOpt() unexpected error: %v", err)
+			}
+
+			for _, opBytes := range def.Def {
+				var op pb.Op
+				if err := proto.Unmarshal(opBytes, &op); err != nil {
+					t.Fatalf("unmarshal LLB op: %v", err)
+				}
+				if _, ok := op.Op.(*pb.Op_Merge); ok {
+					t.Fatalf("newRailpackSolveOpt(%q) produced a MergeOp in the deploy image assembly; this hangs against this codebase's BuildKit connection (see deployStateWithoutMerge)", tt.dir)
+				}
 			}
 		})
 	}
