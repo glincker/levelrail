@@ -39,6 +39,7 @@ import (
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/internal/reconcile/cloudflaretunnel"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	meshreconcile "github.com/GLINCKER/levelrail/internal/reconcile/mesh"
@@ -1439,6 +1440,9 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// Email settings' SMTP password / SES secret access key go
 		// through the same secretsManager as everything else here.
 		opts = append(opts, api.WithEmailSecrets(secretsManager))
+		// Cloudflare Tunnel's token goes through the same secretsManager,
+		// same nil-interface hazard as everything else in this block.
+		opts = append(opts, api.WithCloudflareTunnelSecrets(secretsManager))
 		// Git sources (TASKS.md 1.7's own deferred follow-up,
 		// internal/api/git_sources.go, git_webhook.go): a connected
 		// source's deploy token and webhook secret go through the same
@@ -1700,6 +1704,20 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		// controller above: per-app networks are single-node scope until
 		// the WireGuard mesh (TASKS.md 3.4) exists.
 		controllers = append(controllers, application.NewNetworkCleanupController(deps.db, deps.runtime, deps.networkPrefix))
+
+		// Cloudflare Tunnel: also local-runtime-unconditional, the same
+		// "this control plane's own node, not per-app placement" shape as
+		// the ingress controller above. A platform-wide singleton, so one
+		// controller instance regardless of how many services/databases
+		// exist. deps.secretsManager may be nil (no master key
+		// configured); cloudflaretunnel.New's own doc comment covers that
+		// case, the same "known, permanent, documented block" shape
+		// database.Controller's credential options already establish.
+		var tunnelTokens cloudflaretunnel.TokenResolver
+		if deps.secretsManager != nil {
+			tunnelTokens = deps.secretsManager
+		}
+		controllers = append(controllers, cloudflaretunnel.New(deps.db, tunnelTokens, deps.runtime, cloudflaretunnel.WithContainerPrefix(deps.networkPrefix)))
 
 		if deps.meshCfg != nil {
 			controllers = append(controllers, meshreconcile.New(deps.meshCfg.localNodeID, deps.db, deps.meshCfg.coordinator, deps.meshCfg.resolver, meshreconcile.WithLogger(deps.logger)))
