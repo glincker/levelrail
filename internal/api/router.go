@@ -385,6 +385,7 @@ type Store interface {
 	PasswordResetTokenStore
 	RecoveryCodeStore
 	AuditStore
+	ScheduledTaskStore
 }
 
 // SecretSetter is the surface the secrets handlers need from
@@ -589,6 +590,8 @@ type Router struct {
 	forgotPasswordByIP        *loginLimiter                   // per-IP forgot-password budget, distinct from logins above
 	forgotPasswordByEmail     *loginLimiter                   // per-(IP,email) forgot-password budget; both this and forgotPasswordByIP must allow a request
 	auditLog                  AuditStore                      // always set, same "core Store interface" shape as backupTargets/certs above: requireAbility's audit hook (auth.go) writes through this on every request, GET /api/v1/audit-log (audit.go) reads through it
+	scheduledTasks            ScheduledTaskStore              // always set, same "core Store interface" shape as backupTargets above: CRUD on a scheduled task needs no runner configuration, only actually running one does
+	scheduledTaskRunner       ScheduledTaskRunner             // nil is valid: POST .../scheduled-tasks/{id}/run returns 501, same shape as backupRunner above
 }
 
 // Option configures optional Router behavior.
@@ -856,6 +859,19 @@ func WithExecRuntime(r NodeRuntimeResolver) Option {
 	return func(rt *Router) { rt.execRuntime = r }
 }
 
+// WithScheduledTaskRunner enables POST
+// /api/v1/apps/{name}/scheduled-tasks/{id}/run. Without one configured
+// (the default), that route returns 501: scheduled task CRUD still
+// works either way (rt.scheduledTasks is always set), only actually
+// running one on demand needs this. r should be the exact same
+// *scheduledtask.Runner instance cmd/levelrail/main.go wires into
+// scheduledtask.NewScheduler, the same "construct once, share by
+// reference" reasoning WithBackupRunner's own doc comment gives for
+// backupRunner.
+func WithScheduledTaskRunner(r ScheduledTaskRunner) Option {
+	return func(rt *Router) { rt.scheduledTaskRunner = r }
+}
+
 // WithCertExpiryWarningWindow overrides how far ahead of a certificate's
 // expiry GET /api/v1/certificates starts reporting "expiring_soon"
 // instead of "healthy" (see statusForExpiry). Without one configured (or
@@ -993,6 +1009,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		fetchLatestRelease:      defaultFetchLatestRelease,
 		updatesCache:            newUpdatesCache(),
 		auditLog:                s,
+		scheduledTasks:          s,
 	}
 	for _, opt := range opts {
 		opt(rt)
@@ -1284,6 +1301,20 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("POST /api/v1/apps/{name}/alerts", rt.requireAbility(AbilityWrite, rt.handleCreateAlertRule))
 	mux.HandleFunc("GET /api/v1/apps/{name}/alerts", rt.requireAbility(AbilityRead, rt.handleListAlertRules))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/alerts/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteAlertRule))
+
+	// Scheduled tasks: run an arbitrary command inside this app's
+	// container on a cron schedule (internal/scheduledtask). CRUD sits at
+	// AbilityWrite, the same config-mutation tier alert rules above and
+	// env var updates already use; "run now" sits one tier up at
+	// AbilityDeploy, matching restart/stop/start above, since it has the
+	// identical immediate side effect (a real command actually runs
+	// inside a running container right now), not just a config change.
+	mux.HandleFunc("POST /api/v1/apps/{name}/scheduled-tasks", rt.requireAbility(AbilityWrite, rt.handleCreateScheduledTask))
+	mux.HandleFunc("GET /api/v1/apps/{name}/scheduled-tasks", rt.requireAbility(AbilityRead, rt.handleListScheduledTasks))
+	mux.HandleFunc("GET /api/v1/apps/{name}/scheduled-tasks/{id}", rt.requireAbility(AbilityRead, rt.handleGetScheduledTask))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/scheduled-tasks/{id}", rt.requireAbility(AbilityWrite, rt.handleUpdateScheduledTask))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/scheduled-tasks/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteScheduledTask))
+	mux.HandleFunc("POST /api/v1/apps/{name}/scheduled-tasks/{id}/run", rt.requireAbility(AbilityDeploy, rt.handleRunScheduledTaskNow))
 
 	// Deploy-outcome notifications (wave-2 roadmap item #5): a Slack/
 	// Discord/Telegram/generic-webhook/email ping fired once per deploy
