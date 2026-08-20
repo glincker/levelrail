@@ -29,7 +29,7 @@ export function DeployQuickLinks({ appName }: { appName: string }) {
         <QuickLinkCard
           icon={PulseIcon}
           label="Metrics"
-          description="CPU, memory, and request metrics"
+          description="CPU, memory, and network usage"
         />
       </Link>
       <Link
