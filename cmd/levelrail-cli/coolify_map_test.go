@@ -3,7 +3,6 @@ package main
 import (
 	"reflect"
 	"sort"
-	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -17,6 +16,8 @@ func TestMapCoolifyApplication(t *testing.T) {
 		includeSecretValues bool
 		wantBlocking        bool
 		wantIssueSubstr     string // substring expected somewhere in Issues, empty means no particular check
+		wantMemory          *string
+		wantCPU             *float64
 		check               func(t *testing.T, got mappedApp)
 	}{
 		{
@@ -26,24 +27,7 @@ func TestMapCoolifyApplication(t *testing.T) {
 				FQDN: "https://app.example.com", PortsExposes: "3000",
 			},
 			check: func(t *testing.T, got mappedApp) {
-				if got.Blocking {
-					t.Fatalf("Blocking = true, want false")
-				}
-				if got.ServiceName != "my-app" {
-					t.Errorf("ServiceName = %q, want %q", got.ServiceName, "my-app")
-				}
-				if got.Service.BuildType != spec.BuildDockerfile {
-					t.Errorf("BuildType = %q, want %q", got.Service.BuildType, spec.BuildDockerfile)
-				}
-				if got.Service.BuildPath != "backend/Dockerfile" {
-					t.Errorf("BuildPath = %q, want %q", got.Service.BuildPath, "backend/Dockerfile")
-				}
-				if !reflect.DeepEqual(got.Service.Domains, []string{"app.example.com"}) {
-					t.Errorf("Domains = %v, want [app.example.com]", got.Service.Domains)
-				}
-				if got.Service.Port != 3000 {
-					t.Errorf("Port = %d, want 3000", got.Service.Port)
-				}
+				assertBasicMapping(t, got, "my-app", spec.BuildDockerfile, "backend/Dockerfile", []string{"app.example.com"}, 3000)
 			},
 		},
 		{
@@ -65,9 +49,7 @@ func TestMapCoolifyApplication(t *testing.T) {
 				if got.Service.Port != 0 {
 					t.Errorf("Port = %d, want 0 for a static build", got.Service.Port)
 				}
-				if !hasIssue(got.Issues, "ports_exposes", issueDropped) {
-					t.Errorf("Issues = %+v, want a dropped ports_exposes issue", got.Issues)
-				}
+				assertHasIssue(t, got.Issues, "ports_exposes", issueDropped, "a dropped ports_exposes issue")
 			},
 		},
 		{
@@ -108,9 +90,7 @@ func TestMapCoolifyApplication(t *testing.T) {
 				if got.Service.Port != 3000 {
 					t.Errorf("Port = %d, want 3000 (first value)", got.Service.Port)
 				}
-				if !hasIssue(got.Issues, "ports_exposes", issueDropped) {
-					t.Errorf("Issues = %+v, want a dropped ports_exposes issue for the extra ports", got.Issues)
-				}
+				assertHasIssue(t, got.Issues, "ports_exposes", issueDropped, "a dropped ports_exposes issue for the extra ports")
 			},
 		},
 		{
@@ -140,9 +120,7 @@ func TestMapCoolifyApplication(t *testing.T) {
 				if got.Service.Health != nil {
 					t.Errorf("Health = %+v, want nil for a CMD-style check", got.Service.Health)
 				}
-				if !hasIssue(got.Issues, "health_check", issueDropped) {
-					t.Errorf("Issues = %+v, want a dropped health_check issue", got.Issues)
-				}
+				assertHasIssue(t, got.Issues, "health_check", issueDropped, "a dropped health_check issue")
 			},
 		},
 		{
@@ -155,48 +133,44 @@ func TestMapCoolifyApplication(t *testing.T) {
 			},
 		},
 		{
-			name: "memory in whole gibibytes",
-			app:  coolifyApplication{Name: "big", BuildPack: "dockerfile", PortsExposes: "3000", LimitsMemory: "2g"},
+			name:       "memory in whole gibibytes",
+			app:        coolifyApplication{Name: "big", BuildPack: "dockerfile", PortsExposes: "3000", LimitsMemory: "2g"},
+			wantMemory: ptr("2Gi"),
+		},
+		{
+			name:       "memory in mebibytes",
+			app:        coolifyApplication{Name: "small", BuildPack: "dockerfile", PortsExposes: "3000", LimitsMemory: "512m"},
+			wantMemory: ptr("512Mi"),
+		},
+		{
+			name:       "memory zero is omitted",
+			app:        coolifyApplication{Name: "unlimited", BuildPack: "dockerfile", PortsExposes: "3000", LimitsMemory: "0"},
+			wantMemory: ptr(""),
+		},
+		{
+			name:    "cpu parses to float directly",
+			app:     coolifyApplication{Name: "cpubound", BuildPack: "dockerfile", PortsExposes: "3000", LimitsCPUs: "1.5"},
+			wantCPU: ptr(1.5),
+		},
+		{
+			name:    "cpu zero is omitted",
+			app:     coolifyApplication{Name: "unbound", BuildPack: "dockerfile", PortsExposes: "3000", LimitsCPUs: "0"},
+			wantCPU: ptr(0.0),
+		},
+		{
+			name: "non-positive parsed memory is silently omitted, no issue",
+			app:  coolifyApplication{Name: "zeroed", BuildPack: "dockerfile", PortsExposes: "3000", LimitsMemory: "0m"},
 			check: func(t *testing.T, got mappedApp) {
-				if got.Service.Memory != "2Gi" {
-					t.Errorf("Memory = %q, want %q", got.Service.Memory, "2Gi")
-				}
+				assertMemory(t, got, "")
+				assertNoIssue(t, got.Issues, "limits_memory", issueReview, "no review issue for a validly-parsed non-positive limits_memory")
 			},
 		},
 		{
-			name: "memory in mebibytes",
-			app:  coolifyApplication{Name: "small", BuildPack: "dockerfile", PortsExposes: "3000", LimitsMemory: "512m"},
+			name: "non-positive parsed cpu is silently omitted, no issue",
+			app:  coolifyApplication{Name: "negcpu", BuildPack: "dockerfile", PortsExposes: "3000", LimitsCPUs: "-1"},
 			check: func(t *testing.T, got mappedApp) {
-				if got.Service.Memory != "512Mi" {
-					t.Errorf("Memory = %q, want %q", got.Service.Memory, "512Mi")
-				}
-			},
-		},
-		{
-			name: "memory zero is omitted",
-			app:  coolifyApplication{Name: "unlimited", BuildPack: "dockerfile", PortsExposes: "3000", LimitsMemory: "0"},
-			check: func(t *testing.T, got mappedApp) {
-				if got.Service.Memory != "" {
-					t.Errorf("Memory = %q, want empty for limits_memory: 0", got.Service.Memory)
-				}
-			},
-		},
-		{
-			name: "cpu parses to float directly",
-			app:  coolifyApplication{Name: "cpubound", BuildPack: "dockerfile", PortsExposes: "3000", LimitsCPUs: "1.5"},
-			check: func(t *testing.T, got mappedApp) {
-				if got.Service.CPU != 1.5 {
-					t.Errorf("CPU = %v, want 1.5", got.Service.CPU)
-				}
-			},
-		},
-		{
-			name: "cpu zero is omitted",
-			app:  coolifyApplication{Name: "unbound", BuildPack: "dockerfile", PortsExposes: "3000", LimitsCPUs: "0"},
-			check: func(t *testing.T, got mappedApp) {
-				if got.Service.CPU != 0 {
-					t.Errorf("CPU = %v, want 0", got.Service.CPU)
-				}
+				assertCPU(t, got, 0)
+				assertNoIssue(t, got.Issues, "limits_cpus", issueReview, "no review issue for a validly-parsed non-positive limits_cpus")
 			},
 		},
 		{
@@ -204,16 +178,7 @@ func TestMapCoolifyApplication(t *testing.T) {
 			app:  coolifyApplication{Name: "envtest", BuildPack: "dockerfile", PortsExposes: "3000"},
 			envs: []coolifyEnvVar{{Key: "DATABASE_URL", Value: "***", RealValue: ""}, {Key: "API_KEY", Value: "***"}},
 			check: func(t *testing.T, got mappedApp) {
-				want := []string{"API_KEY", "DATABASE_URL"}
-				if !reflect.DeepEqual(got.Service.EnvKeys, want) {
-					t.Errorf("EnvKeys = %v, want %v", got.Service.EnvKeys, want)
-				}
-				if len(got.Service.EnvLiteral) != 0 {
-					t.Errorf("EnvLiteral = %v, want empty when --include-secret-values was not passed", got.Service.EnvLiteral)
-				}
-				if !hasIssue(got.Issues, "environment_variables", issueReview) {
-					t.Errorf("Issues = %+v, want a review note about unfetched values", got.Issues)
-				}
+				assertEnvKeysPlaceholder(t, got, []string{"API_KEY", "DATABASE_URL"}, "environment_variables")
 			},
 		},
 		{
@@ -222,10 +187,7 @@ func TestMapCoolifyApplication(t *testing.T) {
 			envs:                []coolifyEnvVar{{Key: "DATABASE_URL", RealValue: "postgres://real"}, {Key: "PLAIN", Value: "literal-value"}},
 			includeSecretValues: true,
 			check: func(t *testing.T, got mappedApp) {
-				want := map[string]string{"DATABASE_URL": "postgres://real", "PLAIN": "literal-value"}
-				if !reflect.DeepEqual(got.Service.EnvLiteral, want) {
-					t.Errorf("EnvLiteral = %v, want %v", got.Service.EnvLiteral, want)
-				}
+				assertEnvLiteral(t, got, map[string]string{"DATABASE_URL": "postgres://real", "PLAIN": "literal-value"})
 			},
 		},
 		{
@@ -237,9 +199,7 @@ func TestMapCoolifyApplication(t *testing.T) {
 				if len(got.Service.EnvLiteral) != 0 {
 					t.Errorf("EnvLiteral = %v, want empty", got.Service.EnvLiteral)
 				}
-				if !hasIssue(got.Issues, "environment_variables", issueReview) {
-					t.Errorf("Issues = %+v, want a review note about the missing value", got.Issues)
-				}
+				assertHasIssue(t, got.Issues, "environment_variables", issueReview, "a review note about the missing value")
 			},
 		},
 	}
@@ -247,23 +207,12 @@ func TestMapCoolifyApplication(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := mapCoolifyApplication(tt.app, tt.envs, tt.includeSecretValues)
-			if got.Blocking != tt.wantBlocking {
-				t.Fatalf("Blocking = %v, want %v (issues=%+v)", got.Blocking, tt.wantBlocking, got.Issues)
+			runMapTestCase(t, tt.wantBlocking, tt.wantIssueSubstr, tt.check, got)
+			if tt.wantMemory != nil {
+				assertMemory(t, got, *tt.wantMemory)
 			}
-			if tt.wantIssueSubstr != "" {
-				found := false
-				for _, iss := range got.Issues {
-					if strings.Contains(iss.Detail, tt.wantIssueSubstr) {
-						found = true
-						break
-					}
-				}
-				if !found {
-					t.Errorf("Issues = %+v, want one containing %q", got.Issues, tt.wantIssueSubstr)
-				}
-			}
-			if tt.check != nil {
-				tt.check(t, got)
+			if tt.wantCPU != nil {
+				assertCPU(t, got, *tt.wantCPU)
 			}
 		})
 	}

@@ -26,6 +26,23 @@ type migrationIssue struct {
 	Detail   string        `json:"detail"`
 }
 
+func newIssue(field string, severity issueSeverity, detail string) migrationIssue {
+	return migrationIssue{Field: field, Severity: severity, Detail: detail}
+}
+
+// appendIssue is the shared "record a field-level migration issue" step
+// used throughout both providers' mapping functions.
+func appendIssue(issues []migrationIssue, field string, severity issueSeverity, detail string) []migrationIssue {
+	return append(issues, newIssue(field, severity, detail))
+}
+
+// blockingIssue builds the issue returned alongside blocking=true by the
+// build-type dispatch in both coolify_map.go and dokploy_map.go.
+func blockingIssue(field, detail string) *migrationIssue {
+	i := newIssue(field, issueBlocking, detail)
+	return &i
+}
+
 // mappedApp is one Coolify application's migration result: either a
 // generated service (Blocking false) or a reason it can't be migrated at
 // all (Blocking true, e.g. build_pack: dockercompose), plus every issue
@@ -98,6 +115,19 @@ func sanitizeServiceName(name string) string {
 	return s
 }
 
+// mapServiceName sanitizes rawName and, when sanitization changed it,
+// records a review issue naming providerName. Shared by mapCoolifyApplication
+// and mapDokployApplication.
+func mapServiceName(providerName, rawName string, issues []migrationIssue) (string, []migrationIssue) {
+	sanitized := sanitizeServiceName(rawName)
+	if sanitized != strings.ToLower(strings.TrimSpace(rawName)) {
+		issues = appendIssue(issues, "name", issueReview, fmt.Sprintf(
+			"%s application name %q was sanitized to %q to satisfy Levelrail's service-name pattern (lowercase alphanumeric and hyphens, starting with a letter)",
+			providerName, rawName, sanitized))
+	}
+	return sanitized, issues
+}
+
 // mapCoolifyApplication translates one Coolify application (plus its env
 // vars) into a Levelrail service. Pure: no I/O, no network, fully
 // covered by table-driven tests (coolify_map_test.go).
@@ -108,14 +138,7 @@ func mapCoolifyApplication(app coolifyApplication, envs []coolifyEnvVar, include
 		Ref:        app.GitBranch,
 	}
 
-	sanitized := sanitizeServiceName(app.Name)
-	out.ServiceName = sanitized
-	if sanitized != strings.ToLower(strings.TrimSpace(app.Name)) {
-		out.Issues = append(out.Issues, migrationIssue{
-			Field: "name", Severity: issueReview,
-			Detail: fmt.Sprintf("Coolify application name %q was sanitized to %q to satisfy Levelrail's service-name pattern (lowercase alphanumeric and hyphens, starting with a letter)", app.Name, sanitized),
-		})
-	}
+	out.ServiceName, out.Issues = mapServiceName("Coolify", app.Name, out.Issues)
 
 	buildType, buildIssue, blocking := mapBuildPack(app.BuildPack)
 	if buildIssue != nil {
@@ -149,20 +172,11 @@ func mapBuildPack(buildPack string) (buildType string, issue *migrationIssue, bl
 	case "static":
 		return spec.BuildStatic, nil, false
 	case "nixpacks":
-		return "", &migrationIssue{
-			Field: "build_pack", Severity: issueBlocking,
-			Detail: "Coolify's nixpacks build pack has no Levelrail equivalent (Levelrail uses Railpack, not Nixpacks); pick dockerfile, railpack, or static manually and create this app by hand",
-		}, true
+		return "", blockingIssue("build_pack", "Coolify's nixpacks build pack has no Levelrail equivalent (Levelrail uses Railpack, not Nixpacks); pick dockerfile, railpack, or static manually and create this app by hand"), true
 	case "dockercompose":
-		return "", &migrationIssue{
-			Field: "build_pack", Severity: issueBlocking,
-			Detail: "Coolify's dockercompose build pack is multi-service; Levelrail does not yet support Compose as a deploy target, and this tool does not attempt to translate the compose file",
-		}, true
+		return "", blockingIssue("build_pack", "Coolify's dockercompose build pack is multi-service; Levelrail does not yet support Compose as a deploy target, and this tool does not attempt to translate the compose file"), true
 	default:
-		return "", &migrationIssue{
-			Field: "build_pack", Severity: issueBlocking,
-			Detail: fmt.Sprintf("unrecognized Coolify build_pack %q", buildPack),
-		}, true
+		return "", blockingIssue("build_pack", fmt.Sprintf("unrecognized Coolify build_pack %q", buildPack)), true
 	}
 }
 
@@ -195,24 +209,15 @@ func mapPort(portsExposes, buildType string, issues []migrationIssue) (int, []mi
 	first := strings.TrimSpace(parts[0])
 	port, err := strconv.Atoi(first)
 	if err != nil {
-		issues = append(issues, migrationIssue{
-			Field: "ports_exposes", Severity: issueReview,
-			Detail: fmt.Sprintf("could not parse a port from %q, port left unset, set it manually", portsExposes),
-		})
+		issues = appendIssue(issues, "ports_exposes", issueReview, fmt.Sprintf("could not parse a port from %q, port left unset, set it manually", portsExposes))
 		return 0, issues
 	}
 	if buildType == spec.BuildStatic {
-		issues = append(issues, migrationIssue{
-			Field: "ports_exposes", Severity: issueDropped,
-			Detail: fmt.Sprintf("ports_exposes %q ignored: static sites have no running container to route to", portsExposes),
-		})
+		issues = appendIssue(issues, "ports_exposes", issueDropped, fmt.Sprintf("ports_exposes %q ignored: static sites have no running container to route to", portsExposes))
 		return 0, issues
 	}
 	if len(parts) > 1 {
-		issues = append(issues, migrationIssue{
-			Field: "ports_exposes", Severity: issueDropped,
-			Detail: fmt.Sprintf("only the first port (%d) was migrated; app.yaml supports one port per service, additional port(s) %s were dropped", port, strings.Join(parts[1:], ",")),
-		})
+		issues = appendIssue(issues, "ports_exposes", issueDropped, fmt.Sprintf("only the first port (%d) was migrated; app.yaml supports one port per service, additional port(s) %s were dropped", port, strings.Join(parts[1:], ",")))
 	}
 	return port, issues
 }
@@ -222,10 +227,7 @@ func mapHealth(app coolifyApplication, issues []migrationIssue) (*mappedHealth, 
 		return nil, issues
 	}
 	if app.HealthCheckType == "cmd" || app.HealthCheckCommand != "" {
-		issues = append(issues, migrationIssue{
-			Field: "health_check", Severity: issueDropped,
-			Detail: "Coolify's CMD-style health check has no Levelrail equivalent (Levelrail only supports HTTP-path health checks); no health check was migrated",
-		})
+		issues = appendIssue(issues, "health_check", issueDropped, "Coolify's CMD-style health check has no Levelrail equivalent (Levelrail only supports HTTP-path health checks); no health check was migrated")
 		return nil, issues
 	}
 	path := app.HealthCheckPath
@@ -285,42 +287,53 @@ func formatMemoryMiGi(bytes int64) string {
 	return fmt.Sprintf("%dMi", mib)
 }
 
-func mapMemory(raw string, issues []migrationIssue) (string, []migrationIssue) {
+type numericLimit interface {
+	~int64 | ~float64
+}
+
+// parseNumericLimit implements the shared "blank/zero means unset, parse,
+// review-issue on failure, non-positive means unset" skeleton behind
+// mapMemory, mapCPU, mapDokployMemory, and mapDokployCPU. When
+// issueOnNonPositive is true, a successfully parsed non-positive value is
+// reported the same as a parse failure; when false it is silently treated
+// as unset. The two providers disagree on this, so it stays a parameter
+// rather than a shared assumption.
+func parseNumericLimit[T numericLimit](raw, field string, issues []migrationIssue, parse func(string) (T, error), issueOnNonPositive bool, detail func(raw string, err error) string) (T, []migrationIssue) {
+	var zero T
 	raw = strings.TrimSpace(raw)
 	if raw == "" || raw == "0" {
-		return "", issues
+		return zero, issues
 	}
-	bytes, err := parseDockerMemoryBytes(raw)
+	v, err := parse(raw)
+	if err == nil && issueOnNonPositive && v <= 0 {
+		err = fmt.Errorf("non-positive value")
+	}
 	if err != nil {
-		issues = append(issues, migrationIssue{
-			Field: "limits_memory", Severity: issueReview,
-			Detail: fmt.Sprintf("could not parse limits_memory %q, resources.memory left unset: %v", raw, err),
-		})
-		return "", issues
+		issues = appendIssue(issues, field, issueReview, detail(raw, err))
+		return zero, issues
 	}
-	if bytes <= 0 {
+	if v <= 0 {
+		return zero, issues
+	}
+	return v, issues
+}
+
+func mapMemory(raw string, issues []migrationIssue) (string, []migrationIssue) {
+	bytes, issues := parseNumericLimit(raw, "limits_memory", issues, parseDockerMemoryBytes, false,
+		func(raw string, err error) string {
+			return fmt.Sprintf("could not parse limits_memory %q, resources.memory left unset: %v", raw, err)
+		})
+	if bytes == 0 {
 		return "", issues
 	}
 	return formatMemoryMiGi(bytes), issues
 }
 
 func mapCPU(raw string, issues []migrationIssue) (float64, []migrationIssue) {
-	raw = strings.TrimSpace(raw)
-	if raw == "" || raw == "0" {
-		return 0, issues
-	}
-	cpu, err := strconv.ParseFloat(raw, 64)
-	if err != nil {
-		issues = append(issues, migrationIssue{
-			Field: "limits_cpus", Severity: issueReview,
-			Detail: fmt.Sprintf("could not parse limits_cpus %q, resources.cpu left unset: %v", raw, err),
+	return parseNumericLimit(raw, "limits_cpus", issues, func(s string) (float64, error) { return strconv.ParseFloat(s, 64) }, false,
+		func(raw string, err error) string {
+			return fmt.Sprintf("could not parse limits_cpus %q, resources.cpu left unset: %v", raw, err)
 		})
-		return 0, issues
-	}
-	if cpu <= 0 {
-		return 0, issues
-	}
-	return cpu, issues
 }
 
 // mapEnv always returns every Coolify env var's key. Real values are
@@ -338,10 +351,7 @@ func mapEnv(envs []coolifyEnvVar, includeSecretValues bool, issues []migrationIs
 	sort.Strings(keys)
 
 	if !includeSecretValues {
-		issues = append(issues, migrationIssue{
-			Field: "environment_variables", Severity: issueReview,
-			Detail: fmt.Sprintf("%d env var(s) migrated as key-only secret placeholders; pass --include-secret-values with a Coolify token that has the read:sensitive ability to fetch real values", len(keys)),
-		})
+		issues = appendIssue(issues, "environment_variables", issueReview, fmt.Sprintf("%d env var(s) migrated as key-only secret placeholders; pass --include-secret-values with a Coolify token that has the read:sensitive ability to fetch real values", len(keys)))
 		return keys, nil, issues
 	}
 
@@ -360,10 +370,7 @@ func mapEnv(envs []coolifyEnvVar, includeSecretValues bool, issues []migrationIs
 	}
 	if len(missing) > 0 {
 		sort.Strings(missing)
-		issues = append(issues, migrationIssue{
-			Field: "environment_variables", Severity: issueReview,
-			Detail: fmt.Sprintf("no value returned by Coolify for %s even with --include-secret-values; the Coolify token likely lacks the read:sensitive ability", strings.Join(missing, ", ")),
-		})
+		issues = appendIssue(issues, "environment_variables", issueReview, fmt.Sprintf("no value returned by Coolify for %s even with --include-secret-values; the Coolify token likely lacks the read:sensitive ability", strings.Join(missing, ", ")))
 	}
 	return keys, literal, issues
 }
