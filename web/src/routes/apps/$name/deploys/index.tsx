@@ -3,6 +3,7 @@ import {
   deployAttemptsQueryOptions,
   useDeployAttempts,
 } from '../../../../queries/deployAttempts'
+import { useDeployStatus } from '../../../../queries/deploys'
 import { DeployAttemptsList } from '../../../../components/DeployAttemptsList'
 
 // A 9th app-scoped section, matching the 8 existing ones' "own loader,
@@ -26,6 +27,9 @@ export const Route = createFileRoute('/apps/$name/deploys/')({
 function DeploysSection() {
   const { name } = Route.useParams()
   const { data: attempts } = useDeployAttempts(name)
+  const { data: conditions } = useDeployStatus(name)
 
-  return <DeployAttemptsList appName={name} attempts={attempts} />
+  return (
+    <DeployAttemptsList appName={name} attempts={attempts} conditions={conditions} />
+  )
 }
