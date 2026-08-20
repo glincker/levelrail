@@ -198,6 +198,25 @@ type UpdateCloudflareDNSRequest struct {
 	Token   string `json:"token,omitempty"`
 }
 
+// DomainBasicAuthResource mirrors internal/api's domainBasicAuthResource
+// (internal/api/domain_basic_auth.go): GET/PUT/DELETE
+// /api/v1/apps/{name}/domains/{domain}/auth's wire shape. The password
+// itself never appears here in either direction.
+type DomainBasicAuthResource struct {
+	Domain      string `json:"domain"`
+	Enabled     bool   `json:"enabled"`
+	Username    string `json:"username,omitempty"`
+	HasPassword bool   `json:"has_password"`
+}
+
+// SetDomainBasicAuthRequest mirrors internal/api's
+// setDomainBasicAuthRequest. Password empty on an update means "leave
+// the currently stored password unchanged".
+type SetDomainBasicAuthRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password,omitempty"`
+}
+
 // BackupHistoryResource mirrors internal/api's backupHistoryResource
 // (internal/api/backups.go).
 type BackupHistoryResource struct {

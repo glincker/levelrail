@@ -12,6 +12,8 @@ import type { AppDetail } from '../types/appDetail'
 import type { ReconcileCondition } from '../types/deploy'
 import { summarizeAppStatus } from '../lib/appStatus'
 import { formatBytes, formatNanoCpus } from '../lib/format'
+import { useAppNetwork } from '../queries/appNetwork'
+import { useCloudflareTunnelStatus } from '../queries/cloudflareTunnel'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
@@ -41,6 +43,15 @@ export function AppOverviewHero({
   const hasResourceLimits = Boolean(
     app.resources?.memory_bytes || app.resources?.nano_cpus,
   )
+
+  // Both queries are supplementary signals for the "Domain connected"
+  // checklist row below, not primary page data: plain (non-suspending)
+  // reads so a slow or not-yet-cached network/tunnel fetch never blocks
+  // the rest of this already-loaded page, the same restraint
+  // queries/domainCheck.ts's useDomainCheck already applies.
+  const { data: network } = useAppNetwork(app.name)
+  const { data: tunnelStatus } = useCloudflareTunnelStatus()
+  const tunnelAvailable = tunnelStatus?.enabled && tunnelStatus.status === 'connected'
 
   return (
     <Card>
@@ -106,12 +117,24 @@ export function AppOverviewHero({
               detail={
                 primaryDomain
                   ? `Serving ${primaryDomain}.`
-                  : 'No domain connected yet, the app is only reachable by its container port.'
+                  : network?.running && network.host_port
+                    ? `No domain connected yet. Reachable right now at this server's address on port ${network.host_port}.`
+                    : 'No domain connected yet, and the container is not currently running.'
               }
               action={
                 primaryDomain
                   ? undefined
                   : { label: 'Connect a domain', to: '/apps/$name/domains' }
+              }
+              extraAction={
+                primaryDomain || !tunnelAvailable
+                  ? undefined
+                  : {
+                      label: 'Open Cloudflare Tunnel settings',
+                      detail:
+                        'A public URL is available via the connected Cloudflare Tunnel.',
+                      to: '/settings/cloudflare-tunnel',
+                    }
               }
               appName={app.name}
             />
@@ -196,6 +219,7 @@ function ChecklistRow({
   label,
   detail,
   action,
+  extraAction,
   appName,
 }: {
   met: boolean
@@ -203,6 +227,12 @@ function ChecklistRow({
   label: string
   detail: string
   action?: { label: string; to: '/apps/$name/domains' | '/apps/$name/health' | '/apps/$name/resources' }
+  // A second, distinct CTA for an unmet checklist item, scoped to
+  // routes with no {name} param (unlike action above): today only the
+  // "Domain connected" row's Cloudflare Tunnel pointer uses this, kept
+  // as its own prop rather than a union with action so the two never
+  // get confused about which params shape they need.
+  extraAction?: { label: string; detail: string; to: '/settings/cloudflare-tunnel' }
   appName: string
 }) {
   const Icon = met ? CheckCircleIcon : SEVERITY_ICON[severity]
@@ -224,6 +254,17 @@ function ChecklistRow({
           >
             {action.label}
           </Link>
+        ) : null}
+        {extraAction ? (
+          <div className="mt-1.5 border-t border-border/60 pt-1.5">
+            <p className="text-muted-foreground">{extraAction.detail}</p>
+            <Link
+              to={extraAction.to}
+              className="mt-0.5 inline-block text-xs text-primary underline underline-offset-2"
+            >
+              {extraAction.label}
+            </Link>
+          </div>
         ) : null}
       </div>
     </li>

@@ -67,6 +67,8 @@ import (
 	"log/slog"
 	"strconv"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
@@ -99,6 +101,13 @@ type ServiceStore interface {
 	ListStaticSites(ctx context.Context) ([]store.StaticSite, error)
 	GetIngressSettings(ctx context.Context) (store.IngressSettings, error)
 	GetCloudflareDNSSettings(ctx context.Context) (store.CloudflareDNSSettings, error)
+	// ListDomainBasicAuth returns every domain currently protected by
+	// HTTP Basic Auth (store.DomainBasicAuth, migrations/0052), read
+	// fresh every Reconcile like everything else on this interface: an
+	// operator setting or clearing a domain's basic auth through PUT/
+	// DELETE /api/v1/apps/{name}/domains/{domain}/auth (internal/api)
+	// must take effect on this controller's very next pass.
+	ListDomainBasicAuth(ctx context.Context) ([]store.DomainBasicAuth, error)
 }
 
 // Applier is the narrow surface this controller needs from
@@ -113,6 +122,15 @@ type Applier interface {
 // token, mirroring cloudflaretunnel.TokenResolver's exact shape.
 // *secrets.Manager satisfies this structurally.
 type CloudflareDNSTokenResolver interface {
+	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+}
+
+// DomainBasicAuthPasswordResolver is the narrow surface this controller
+// needs from internal/secrets.Manager to resolve a domain's basic-auth
+// password, structurally identical to CloudflareDNSTokenResolver but
+// named separately since the two resolve unrelated credentials under
+// different serviceName namespaces.
+type DomainBasicAuthPasswordResolver interface {
 	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
 }
 
@@ -178,6 +196,13 @@ type Controller struct {
 	// means no wildcard domain ever gets Cloudflare DNS-01, unchanged
 	// from this controller's behavior before this field existed.
 	dnsTokens CloudflareDNSTokenResolver
+
+	// basicAuthSecrets, if set via WithDomainBasicAuthSecrets, is
+	// resolved fresh every Reconcile pass for every domain returned by
+	// ServiceStore.ListDomainBasicAuth. Nil (the default) means no
+	// domain ever gets a basic_auth handler, unchanged from this
+	// controller's behavior before this feature existed.
+	basicAuthSecrets DomainBasicAuthPasswordResolver
 }
 
 // Option configures optional Controller behavior.
@@ -254,6 +279,16 @@ func WithCloudflareDNSTokens(resolver CloudflareDNSTokenResolver) Option {
 	return func(c *Controller) { c.dnsTokens = resolver }
 }
 
+// WithDomainBasicAuthSecrets enables HTTP Basic Auth on any domain
+// present in store.DomainBasicAuth by resolving its password through
+// internal/secrets.Manager under store.DomainBasicAuthSecretsKey(domain).
+// Without this option (the default), domain_basic_auth rows exist in
+// the store but are never enforced, the same "fails closed" shape
+// WithCloudflareDNSTokens's own absence already has.
+func WithDomainBasicAuthSecrets(resolver DomainBasicAuthPasswordResolver) Option {
+	return func(c *Controller) { c.basicAuthSecrets = resolver }
+}
+
 // WithLogger overrides the logger used for per-service skip decisions.
 // Defaults to slog.Default().
 func WithLogger(logger *slog.Logger) Option {
@@ -325,6 +360,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: get ingress settings: %w", err)
 	}
+	authByDomain, err := c.domainBasicAuthByDomain(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list domain basic auth: %w", err)
+	}
 
 	var routes []ingress.ProxyRoute
 	claimedHosts := make(map[string]string, len(services)+len(staticSites)) // host -> owning service/static site, this pass only
@@ -349,14 +388,14 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			)
 			continue
 		}
-		route, ok := c.routeFor(ctx, svc)
+		dial, ok := c.dialForService(ctx, svc)
 		if !ok {
 			continue
 		}
 		for _, host := range svc.Domains {
 			claimedHosts[host] = svc.Name
 		}
-		routes = append(routes, route)
+		routes = append(routes, c.routesForService(ctx, svc, dial, authByDomain)...)
 	}
 
 	var staticRoutes []ingress.StaticRoute
@@ -487,13 +526,13 @@ func (c *Controller) resolveCloudflareDNSAPIToken(ctx context.Context) string {
 	return token
 }
 
-// routeFor derives svc's currently active container the same way the
-// application controller does (application.ContainerName: a deterministic
-// hash of the service name and image), inspects it, and builds a
-// ProxyRoute from its host port binding. false means svc has no valid
-// backend to route right now; the caller skips it for this pass rather
-// than failing the whole reconcile.
-func (c *Controller) routeFor(ctx context.Context, svc store.DesiredService) (ingress.ProxyRoute, bool) {
+// dialForService derives svc's currently active container the same way
+// the application controller does (application.ContainerName: a
+// deterministic hash of the service name and image), inspects it, and
+// returns its host port binding as a dial address. false means svc has
+// no valid backend to route right now; the caller skips it for this
+// pass rather than failing the whole reconcile.
+func (c *Controller) dialForService(ctx context.Context, svc store.DesiredService) (string, bool) {
 	target := application.ContainerName(svc.Name, svc.Image, svc.RestartNonce)
 
 	state, err := c.runtime.InspectByName(ctx, target)
@@ -510,28 +549,28 @@ func (c *Controller) routeFor(ctx context.Context, svc store.DesiredService) (in
 			slog.String("container", target),
 			slog.String("error", err.Error()),
 		)
-		return ingress.ProxyRoute{}, false
+		return "", false
 	}
 	if state == nil {
 		c.logger.DebugContext(ctx, "ingress: no container found for service yet, skipping (likely mid-deploy or never deployed)",
 			slog.String("service", svc.Name),
 			slog.String("container", target),
 		)
-		return ingress.ProxyRoute{}, false
+		return "", false
 	}
 	if !state.Running {
 		c.logger.DebugContext(ctx, "ingress: service container found but not running, skipping",
 			slog.String("service", svc.Name),
 			slog.String("container", target),
 		)
-		return ingress.ProxyRoute{}, false
+		return "", false
 	}
 	if len(state.Ports) == 0 {
 		c.logger.DebugContext(ctx, "ingress: service container running but has no published ports, skipping",
 			slog.String("service", svc.Name),
 			slog.String("container", target),
 		)
-		return ingress.ProxyRoute{}, false
+		return "", false
 	}
 
 	// See internal/docker.PortBinding's doc comment: routing to the
@@ -540,9 +579,81 @@ func (c *Controller) routeFor(ctx context.Context, svc store.DesiredService) (in
 	// reason the application controller's readiness probe does (macOS
 	// Docker Desktop's VM boundary makes container IPs unreachable from
 	// this process, host ports are reachable everywhere this runs).
-	dial := "127.0.0.1:" + strconv.Itoa(state.Ports[0].HostPort)
+	return "127.0.0.1:" + strconv.Itoa(state.Ports[0].HostPort), true
+}
 
-	return ingress.ProxyRoute{Hosts: svc.Domains, BackendDial: dial}, true
+// domainBasicAuthByDomain returns every store.DomainBasicAuth row keyed
+// by domain, for routesForService to look up in O(1) per host.
+func (c *Controller) domainBasicAuthByDomain(ctx context.Context) (map[string]store.DomainBasicAuth, error) {
+	rows, err := c.store.ListDomainBasicAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
+	byDomain := make(map[string]store.DomainBasicAuth, len(rows))
+	for _, row := range rows {
+		byDomain[row.Domain] = row
+	}
+	return byDomain, nil
+}
+
+// routesForService builds one ProxyRoute per svc.Domains entry that has
+// basic auth configured (each needs its own Handle chain, since Caddy
+// has no notion of "this host within a shared route is exempt"), plus
+// one shared ProxyRoute carrying every domain that doesn't. A service
+// with no protected domains reproduces this controller's behavior
+// before this feature existed exactly: a single route with every host.
+func (c *Controller) routesForService(ctx context.Context, svc store.DesiredService, dial string, authByDomain map[string]store.DomainBasicAuth) []ingress.ProxyRoute {
+	var open []string
+	var routes []ingress.ProxyRoute
+	for _, host := range svc.Domains {
+		auth, protected := authByDomain[host]
+		if !protected {
+			open = append(open, host)
+			continue
+		}
+		account, ok := c.resolveBasicAuthAccount(ctx, host, auth)
+		if !ok {
+			// A domain configured for basic auth that this pass cannot
+			// resolve a password for (no resolver wired, or the secret
+			// itself failed to resolve) is left unrouted this pass
+			// rather than served unprotected: failing a security
+			// control closed is worse to leave silent than a domain
+			// being briefly unreachable, unlike dialForService's own
+			// "no backend yet" cases above, which fail open to "just
+			// not routed yet."
+			continue
+		}
+		routes = append(routes, ingress.ProxyRoute{Hosts: []string{host}, BackendDial: dial, BasicAuth: account})
+	}
+	if len(open) > 0 {
+		routes = append(routes, ingress.ProxyRoute{Hosts: open, BackendDial: dial})
+	}
+	return routes
+}
+
+// resolveBasicAuthAccount resolves domain's plaintext password through
+// c.basicAuthSecrets and hashes it with bcrypt (the same algorithm
+// internal/api already uses for user login passwords), fresh every
+// call: this controller never persists a hash across reconcile passes,
+// the same "never cache, re-derive from current state" principle every
+// other Reconcile input already follows.
+func (c *Controller) resolveBasicAuthAccount(ctx context.Context, domain string, auth store.DomainBasicAuth) (*ingress.BasicAuthAccount, bool) {
+	if c.basicAuthSecrets == nil {
+		return nil, false
+	}
+	password, err := c.basicAuthSecrets.Resolve(ctx, store.DomainBasicAuthSecretsKey(domain), store.DomainBasicAuthPasswordEnvKey)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: resolve domain basic auth password failed, domain will not be routed this pass",
+			slog.String("domain", domain), slog.String("error", err.Error()))
+		return nil, false
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: hash domain basic auth password failed, domain will not be routed this pass",
+			slog.String("domain", domain), slog.String("error", err.Error()))
+		return nil, false
+	}
+	return &ingress.BasicAuthAccount{Username: auth.Username, Password: string(hash)}, true
 }
 
 func notReady(reason string, err error) reconcile.Result {

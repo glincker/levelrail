@@ -24,6 +24,8 @@ type (
 	domainResource             = apiclient.DomainResource
 	cloudflareDNSResource      = apiclient.CloudflareDNSResource
 	updateCloudflareDNSRequest = apiclient.UpdateCloudflareDNSRequest
+	domainBasicAuthResource    = apiclient.DomainBasicAuthResource
+	setDomainBasicAuthRequest  = apiclient.SetDomainBasicAuthRequest
 	backupHistoryResource      = apiclient.BackupHistoryResource
 	restoreHistoryResource     = apiclient.RestoreHistoryResource
 	sessionInfoResource        = apiclient.SessionInfoResource

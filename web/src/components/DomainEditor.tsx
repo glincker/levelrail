@@ -9,6 +9,7 @@ import { useUpdateApp } from '../queries/apps'
 import { useCertificates } from '../queries/certificates'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { DomainDnsCheck } from './DomainDnsCheck'
+import { DomainBasicAuthControl } from './DomainBasicAuthControl'
 import { certStatusMeta } from '../lib/certStatus'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -171,16 +172,19 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                       <div className="space-y-1.5 pl-1">
                         <DomainDnsCheck appName={app.name} domain={domain} />
                         {isSaved ? (
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>TLS certificate:</span>
-                            {cert ? (
-                              <Badge variant={certStatusMeta[cert.status].variant}>
-                                {certStatusMeta[cert.status].label}
-                              </Badge>
-                            ) : (
-                              <Badge variant="muted">Provisioning</Badge>
-                            )}
-                          </div>
+                          <>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>TLS certificate:</span>
+                              {cert ? (
+                                <Badge variant={certStatusMeta[cert.status].variant}>
+                                  {certStatusMeta[cert.status].label}
+                                </Badge>
+                              ) : (
+                                <Badge variant="muted">Provisioning</Badge>
+                              )}
+                            </div>
+                            <DomainBasicAuthControl appName={app.name} domain={domain} />
+                          </>
                         ) : null}
                       </div>
                     ) : null}
