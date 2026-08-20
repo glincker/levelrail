@@ -150,6 +150,61 @@ func NewReverseProxyHandler(backendDial string) ReverseProxyHandler {
 	}
 }
 
+// BasicAuthHandler is Caddy's "authentication" handler
+// (http.handlers.authentication) configured with the http_basic
+// provider (http.authentication.providers.http_basic): per-route HTTP
+// Basic Auth checked against a bcrypt hash. A Route places this ahead
+// of a ReverseProxyHandler in Handle so Caddy's own handler chain
+// short-circuits with 401 before the request ever reaches the backend.
+type BasicAuthHandler struct {
+	Handler   string             `json:"handler"`
+	Providers BasicAuthProviders `json:"providers"`
+}
+
+// BasicAuthProviders holds the one provider this package configures.
+type BasicAuthProviders struct {
+	HTTPBasic *HTTPBasicAuthProvider `json:"http_basic"`
+}
+
+// HTTPBasicAuthProvider mirrors Caddy's caddyauth.HTTPBasicAuth: a
+// fixed account list checked against Hash.
+type HTTPBasicAuthProvider struct {
+	Accounts []BasicAuthAccount `json:"accounts"`
+	Hash     BasicAuthHash      `json:"hash"`
+}
+
+// BasicAuthAccount is one entry in HTTPBasicAuthProvider.Accounts.
+// Password is always a bcrypt hash, never the plaintext credential: see
+// NewBasicAuthHandler.
+type BasicAuthAccount struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// BasicAuthHash selects the password hashing algorithm HTTPBasicAuthProvider
+// checks Accounts against. This package only ever sets "bcrypt", the
+// same algorithm internal/api already uses for user login passwords
+// (golang.org/x/crypto/bcrypt).
+type BasicAuthHash struct {
+	Algorithm string `json:"algorithm"`
+}
+
+// NewBasicAuthHandler builds Caddy's http_basic authentication handler
+// for a single account. bcryptHash must already be a bcrypt hash
+// (bcrypt.GenerateFromPassword); this function never sees or hashes a
+// plaintext password itself.
+func NewBasicAuthHandler(username, bcryptHash string) BasicAuthHandler {
+	return BasicAuthHandler{
+		Handler: "authentication",
+		Providers: BasicAuthProviders{
+			HTTPBasic: &HTTPBasicAuthProvider{
+				Accounts: []BasicAuthAccount{{Username: username, Password: bcryptHash}},
+				Hash:     BasicAuthHash{Algorithm: "bcrypt"},
+			},
+		},
+	}
+}
+
 // TLSApp is Caddy's "tls" app: certificate automation policy.
 type TLSApp struct {
 	Automation *Automation `json:"automation,omitempty"`

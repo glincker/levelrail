@@ -6,11 +6,14 @@ import {
   ShareNetworkIcon,
   WifiHighIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import { Link } from '@tanstack/react-router'
 import type { Icon } from '@phosphor-icons/react'
 import type { AppDetail } from '../types/appDetail'
 import { useAppNetwork } from '../queries/appNetwork'
 import { DomainDnsCheck } from './DomainDnsCheck'
+import { DomainBasicAuthControl } from './DomainBasicAuthControl'
 import { Badge } from '@/components/ui/badge'
+import { buttonVariants } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -77,14 +80,26 @@ export function AppNetworkPanel({ app }: { app: AppDetail }) {
             Domains
           </h3>
           {domains.length === 0 ? (
-            <p className="mt-2 text-sm text-muted-foreground">
-              No domain configured. This app is only reachable on this
-              server&apos;s host port directly.
-            </p>
+            <div className="mt-2 space-y-2">
+              <p className="text-sm text-muted-foreground">
+                No domain configured. This app is only reachable on this
+                server&apos;s host port directly.
+              </p>
+              <Link
+                to="/apps/$name/domains"
+                params={{ name: app.name }}
+                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              >
+                Connect a domain
+              </Link>
+            </div>
           ) : (
             <div className="mt-3 space-y-2">
               {domains.map((domain) => (
-                <DomainDnsCheck key={domain} appName={app.name} domain={domain} />
+                <div key={domain} className="space-y-1.5">
+                  <DomainDnsCheck appName={app.name} domain={domain} />
+                  <DomainBasicAuthControl appName={app.name} domain={domain} />
+                </div>
               ))}
             </div>
           )}

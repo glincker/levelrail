@@ -48,6 +48,12 @@ type ProxyRoute struct {
 	Hosts []string
 	// BackendDial is the reverse-proxy target, e.g. "127.0.0.1:9090".
 	BackendDial string
+	// BasicAuth, if non-nil, adds a BasicAuthHandler ahead of the
+	// reverse-proxy handler so every host in this route requires HTTP
+	// Basic Auth. Nil (the default) reproduces this package's prior
+	// behavior exactly: a plain reverse-proxy route with no
+	// authentication handler.
+	BasicAuth *BasicAuthAccount
 }
 
 // StaticRoute is one static site routed by hostname within a Server
@@ -192,9 +198,16 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		if r.BackendDial == "" {
 			return nil, fmt.Errorf("ingress: build routes config: route %d has no backend dial address", i)
 		}
+		handle := []any{NewReverseProxyHandler(r.BackendDial)}
+		if r.BasicAuth != nil {
+			// Prepended, not appended: Caddy runs a route's handlers in
+			// order, so authentication must short-circuit with 401 before
+			// reverse_proxy ever dials the backend.
+			handle = append([]any{NewBasicAuthHandler(r.BasicAuth.Username, r.BasicAuth.Password)}, handle...)
+		}
 		routes = append(routes, Route{
 			Match:  []Matcher{{Host: r.Hosts}},
-			Handle: []any{NewReverseProxyHandler(r.BackendDial)},
+			Handle: handle,
 		})
 		allHosts = append(allHosts, r.Hosts...)
 	}

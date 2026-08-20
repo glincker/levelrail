@@ -310,6 +310,38 @@ func (c *Client) DisconnectCloudflareDNS(ctx context.Context) (CloudflareDNSReso
 	return out, err
 }
 
+// domainAuthPath builds /api/v1/apps/{name}/domains/{domain}/auth,
+// shared by all three domain basic auth methods below.
+func domainAuthPath(name, domain string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/domains/" + PathEscape(domain) + "/auth"
+}
+
+// GetDomainBasicAuth calls GET /api/v1/apps/{name}/domains/{domain}/auth:
+// domain's current HTTP Basic Auth state.
+func (c *Client) GetDomainBasicAuth(ctx context.Context, name, domain string) (DomainBasicAuthResource, error) {
+	var out DomainBasicAuthResource
+	err := c.do(ctx, http.MethodGet, domainAuthPath(name, domain), nil, &out)
+	return out, err
+}
+
+// SetDomainBasicAuth calls PUT /api/v1/apps/{name}/domains/{domain}/auth:
+// enables HTTP Basic Auth on domain, enforced by Caddy on the next
+// ingress reconcile pass.
+func (c *Client) SetDomainBasicAuth(ctx context.Context, name, domain string, req SetDomainBasicAuthRequest) (DomainBasicAuthResource, error) {
+	var out DomainBasicAuthResource
+	err := c.do(ctx, http.MethodPut, domainAuthPath(name, domain), req, &out)
+	return out, err
+}
+
+// ClearDomainBasicAuth calls DELETE
+// /api/v1/apps/{name}/domains/{domain}/auth: removes basic auth
+// protection from domain.
+func (c *Client) ClearDomainBasicAuth(ctx context.Context, name, domain string) (DomainBasicAuthResource, error) {
+	var out DomainBasicAuthResource
+	err := c.do(ctx, http.MethodDelete, domainAuthPath(name, domain), nil, &out)
+	return out, err
+}
+
 // TriggerBackup calls POST /api/v1/databases/{name}/backups: starts a
 // real backup of name to targetID and returns as soon as the attempt is
 // recorded and under way, not once the dump and upload actually finish.

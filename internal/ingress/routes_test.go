@@ -330,4 +330,79 @@ func TestBuildRoutesConfig_JSONShape(t *testing.T) {
 			t.Errorf("apps.tls missing for a static-only route set with TLS: true, want automation built from the static route's hosts")
 		}
 	})
+
+	t.Run("route with BasicAuth gets an authentication handler ahead of reverse_proxy", func(t *testing.T) {
+		cfg, err := BuildRoutesConfig(RoutesOptions{
+			ServerName: "ingress",
+			ListenAddr: ":443",
+			Routes: []ProxyRoute{
+				{
+					Hosts:       []string{"protected.example.internal"},
+					BackendDial: "127.0.0.1:9001",
+					BasicAuth:   &BasicAuthAccount{Username: "operator", Password: "$2a$10$fakehashfakehashfakehashfa"}, //nolint:gosec // fake bcrypt-shaped fixture, not a real credential
+				},
+				{Hosts: []string{"open.example.internal"}, BackendDial: "127.0.0.1:9002"},
+			},
+		})
+		if err != nil {
+			t.Fatalf("BuildRoutesConfig() error: %v", err)
+		}
+
+		raw, err := json.Marshal(cfg)
+		if err != nil {
+			t.Fatalf("json.Marshal() error: %v", err)
+		}
+		var decoded map[string]any
+		if err := json.Unmarshal(raw, &decoded); err != nil {
+			t.Fatalf("json.Unmarshal() error: %v", err)
+		}
+
+		apps := decoded["apps"].(map[string]any)
+		http := apps["http"].(map[string]any)
+		servers := http["servers"].(map[string]any)
+		ingressSrv := servers["ingress"].(map[string]any)
+		routes := ingressSrv["routes"].([]any)
+		if len(routes) != 2 {
+			t.Fatalf("routes = %v, want exactly two", routes)
+		}
+
+		for _, r := range routes {
+			route := r.(map[string]any)
+			match := route["match"].([]any)[0].(map[string]any)
+			host := match["host"].([]any)[0].(string)
+			handle := route["handle"].([]any)
+
+			switch host {
+			case "protected.example.internal":
+				if len(handle) != 2 {
+					t.Fatalf("protected route handle = %v, want [authentication, reverse_proxy]", handle)
+				}
+				authHandler := handle[0].(map[string]any)
+				if authHandler["handler"] != "authentication" {
+					t.Errorf("handle[0].handler = %v, want authentication (must run before reverse_proxy)", authHandler["handler"])
+				}
+				providers := authHandler["providers"].(map[string]any)
+				httpBasic := providers["http_basic"].(map[string]any)
+				accounts := httpBasic["accounts"].([]any)[0].(map[string]any)
+				if accounts["username"] != "operator" {
+					t.Errorf("accounts[0].username = %v, want operator", accounts["username"])
+				}
+				if accounts["password"] != "$2a$10$fakehashfakehashfakehashfa" {
+					t.Errorf("accounts[0].password = %v, want the bcrypt hash verbatim (never re-derived here)", accounts["password"])
+				}
+				if hash := httpBasic["hash"].(map[string]any); hash["algorithm"] != "bcrypt" {
+					t.Errorf("hash.algorithm = %v, want bcrypt", hash["algorithm"])
+				}
+				if handle[1].(map[string]any)["handler"] != "reverse_proxy" {
+					t.Errorf("handle[1].handler = %v, want reverse_proxy", handle[1].(map[string]any)["handler"])
+				}
+			case "open.example.internal":
+				if len(handle) != 1 || handle[0].(map[string]any)["handler"] != "reverse_proxy" {
+					t.Errorf("open route handle = %v, want exactly [reverse_proxy], no authentication handler", handle)
+				}
+			default:
+				t.Errorf("unexpected host %q", host)
+			}
+		}
+	})
 }

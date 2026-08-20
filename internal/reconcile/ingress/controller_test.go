@@ -28,6 +28,8 @@ type fakeStore struct {
 	settingsErr    error
 	dnsSettings    store.CloudflareDNSSettings
 	dnsSettingsErr error
+	basicAuth      []store.DomainBasicAuth
+	basicAuthErr   error
 }
 
 func (f *fakeStore) ListDesiredServices(_ context.Context) ([]store.DesiredService, error) {
@@ -66,6 +68,16 @@ func (f *fakeStore) GetCloudflareDNSSettings(_ context.Context) (store.Cloudflar
 		return store.CloudflareDNSSettings{}, f.dnsSettingsErr
 	}
 	return f.dnsSettings, nil
+}
+
+// ListDomainBasicAuth mirrors GetCloudflareDNSSettings' own "empty
+// unless a test opts in" convention: no rows unless f.basicAuth is set,
+// so tests written before this method existed are unaffected.
+func (f *fakeStore) ListDomainBasicAuth(_ context.Context) ([]store.DomainBasicAuth, error) {
+	if f.basicAuthErr != nil {
+		return nil, f.basicAuthErr
+	}
+	return f.basicAuth, nil
 }
 
 // fakeRuntime implements docker.Runtime with an in-memory container set,

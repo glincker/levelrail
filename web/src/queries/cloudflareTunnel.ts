@@ -6,6 +6,7 @@
 import {
   queryOptions,
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
@@ -56,6 +57,19 @@ export function cloudflareTunnelSettingsQueryOptions() {
 
 export function useCloudflareTunnelSettings() {
   return useSuspenseQuery(cloudflareTunnelSettingsQueryOptions())
+}
+
+// Non-suspending variant for callers that want to read tunnel status as
+// a supplementary signal (AppOverviewHero's setup checklist) without
+// making an unrelated page's whole Suspense boundary wait on it, the
+// same reasoning queries/domainCheck.ts's useDomainCheck already uses
+// plain useQuery instead of useSuspenseQuery for a similarly optional
+// guidance signal. Shares the same query key/cache as
+// useCloudflareTunnelSettings, so a tab that already visited
+// /settings/cloudflare-tunnel reads this instantly with no extra
+// request.
+export function useCloudflareTunnelStatus() {
+  return useQuery(cloudflareTunnelSettingsQueryOptions())
 }
 
 // 501 means the control plane was started without APP_MASTER_KEY, the
