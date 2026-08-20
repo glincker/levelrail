@@ -7,8 +7,6 @@ import type { AppStatusSummary } from '../types/appDetail'
 // AppScopedSidebar.tsx (sidebar app-info block): both render the same
 // one-line status rollup from the same conditions array, so the logic
 // lives here once instead of being copy-pasted at both call sites.
-// Mirrors how Coolify/Dokploy show a single status pill next to the
-// resource name.
 export function summarizeAppStatus(conditions: ReconcileCondition[]): {
   label: string
   variant: VariantProps<typeof badgeVariants>['variant']
