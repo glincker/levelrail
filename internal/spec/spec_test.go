@@ -41,6 +41,9 @@ func TestParse_ValidFull(t *testing.T) {
 	if web.Port != 3000 {
 		t.Errorf("Port = %d, want 3000", web.Port)
 	}
+	if web.HostPort != 30001 {
+		t.Errorf("HostPort = %d, want 30001", web.HostPort)
+	}
 	if web.Health == nil || web.Health.Readiness == nil || web.Health.Readiness.Path != "/healthz" {
 		t.Errorf("Health.Readiness = %+v, want Path=/healthz", web.Health)
 	}
@@ -340,6 +343,23 @@ version: 1
 services:
   web: { build: { type: dockerfile }, port: 99999 }
 `,
+		},
+		{
+			name: "host_port out of range",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, host_port: 99999 }
+`,
+		},
+		{
+			name: "host_port set for a static build",
+			yaml: `
+version: 1
+services:
+  docs: { build: { type: static }, host_port: 8080 }
+`,
+			wantErrSubstr: "host_port must not be set when build.type is",
 		},
 		{
 			name: "bad memory pattern",

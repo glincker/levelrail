@@ -22,9 +22,18 @@ import (
 // 0017_deploy_strategy.sql), so this resource now carries them too;
 // domains closed once TASKS.md 1.6 added the column, the same way.
 type appResource struct {
-	Name      string                  `json:"name"`
-	Image     string                  `json:"image"`
-	Port      int                     `json:"port"`
+	Name  string `json:"name"`
+	Image string `json:"image"`
+	Port  int    `json:"port"`
+	// HostPort pins the host-side port Docker binds Port to
+	// (store.DesiredService.HostPort, migrations/0056). nil means "let
+	// Docker assign one", the ordinary case; a real conflict at deploy
+	// time (this host port already bound) surfaces through the existing
+	// reconcile-condition/deploy-log mechanism, since Docker itself is
+	// the only thing that can authoritatively know at container-create
+	// time. Settable on create and update, like Port itself, not
+	// response-only.
+	HostPort  *int                    `json:"host_port,omitempty"`
 	Domains   []string                `json:"domains,omitempty"`
 	Env       map[string]string       `json:"env,omitempty"`
 	Resources *store.ServiceResources `json:"resources,omitempty"`
@@ -136,6 +145,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		Name:               svc.Name,
 		Image:              svc.Image,
 		Port:               svc.Port,
+		HostPort:           svc.HostPort,
 		Domains:            svc.Domains,
 		Env:                svc.Env,
 		Resources:          svc.Resources,
@@ -160,6 +170,7 @@ func (a appResource) toDesiredService() store.DesiredService {
 		Name:      a.Name,
 		Image:     a.Image,
 		Port:      a.Port,
+		HostPort:  a.HostPort,
 		Domains:   a.Domains,
 		Env:       a.Env,
 		Resources: a.Resources,
@@ -200,6 +211,9 @@ func validateAppResource(a appResource) error {
 	}
 	if a.Port <= 0 {
 		return errors.New("port must be a positive integer")
+	}
+	if a.HostPort != nil && (*a.HostPort < 1 || *a.HostPort > 65535) {
+		return errors.New("host_port must be between 1 and 65535")
 	}
 	// Empty is valid (falls through to store.DefaultDeployStrategy), but
 	// a non-empty value that isn't one of the three known spec constants

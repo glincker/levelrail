@@ -2221,3 +2221,41 @@ func TestController_Reconcile_NoVolumes_LeavesContainerSpecVolumesNil(t *testing
 		t.Errorf("EnsureVolume calls = %v, want none", rt.ensureVolumeCalls)
 	}
 }
+
+// TestController_Reconcile_PinnedHostPort_PassedToContainerSpec is the
+// host-port-pinning counterpart to the volumes/labels regression tests
+// above: a non-nil DesiredService.HostPort must reach the created
+// container's own PortBinding.HostPort, not just its ContainerPort.
+func TestController_Reconcile_PinnedHostPort_PassedToContainerSpec(t *testing.T) {
+	rt := newFakeRuntime(0)
+	hostPort := 8080
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, HostPort: &hostPort}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	want := []docker.PortBinding{{ContainerPort: 80, HostPort: 8080}}
+	if got := rt.lastCreateSpec.Ports; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Ports = %+v, want %+v", got, want)
+	}
+}
+
+// TestController_Reconcile_UnpinnedHostPort_LeavesZero is the regression-
+// safety counterpart: a service with no HostPort set (the state every
+// service had before this field existed) must keep producing HostPort 0,
+// Docker's own "assign one" signal (internal/docker.PortBinding's own doc
+// comment).
+func TestController_Reconcile_UnpinnedHostPort_LeavesZero(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	want := []docker.PortBinding{{ContainerPort: 80, HostPort: 0}}
+	if got := rt.lastCreateSpec.Ports; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Ports = %+v, want %+v", got, want)
+	}
+}

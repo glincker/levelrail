@@ -37,9 +37,13 @@ type ServiceHealth struct {
 // and JSON tags match exactly, so a response decodes cleanly and a
 // request encodes into exactly what the server expects.
 type AppResource struct {
-	Name      string            `json:"name"`
-	Image     string            `json:"image"`
-	Port      int               `json:"port"`
+	Name  string `json:"name"`
+	Image string `json:"image"`
+	Port  int    `json:"port"`
+	// HostPort mirrors internal/api's appResource.HostPort: nil means
+	// "let Docker assign one", a value pins the host-side port. Settable
+	// on create and update, like Port.
+	HostPort  *int              `json:"host_port,omitempty"`
 	Domains   []string          `json:"domains,omitempty"`
 	Env       map[string]string `json:"env,omitempty"`
 	Resources *ServiceResources `json:"resources,omitempty"`

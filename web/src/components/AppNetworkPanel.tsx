@@ -35,6 +35,14 @@ export function AppNetworkPanel({ app }: { app: AppDetail }) {
   const domains = app.domains ?? []
   const running = network?.running ?? false
   const hostPort = network?.host_port
+  // pinnedHostPort is the configured value (PortEditor), independent of
+  // whether a container is actually running right now; hostPort above is
+  // the live value Docker actually bound, only meaningful while running
+  // (networkResource's own doc comment, internal/api/network.go). Shown
+  // separately so a pin an operator just saved but hasn't redeployed yet
+  // reads as "will be :N once running", not the same "not running" text
+  // an app with no pin at all gets.
+  const pinnedHostPort = app.host_port ?? undefined
 
   return (
     <Card>
@@ -53,6 +61,7 @@ export function AppNetworkPanel({ app }: { app: AppDetail }) {
           domains={domains}
           containerPort={app.port}
           hostPort={hostPort}
+          pinnedHostPort={pinnedHostPort}
           running={running}
           isLoading={isLoading}
         />
@@ -64,8 +73,20 @@ export function AppNetworkPanel({ app }: { app: AppDetail }) {
           <FlowField label="Host port">
             {running && hostPort ? (
               <span className="font-mono">:{hostPort}</span>
+            ) : running ? (
+              <span className="text-muted-foreground italic">
+                running, host port unknown
+              </span>
+            ) : pinnedHostPort ? (
+              <span className="text-muted-foreground italic">
+                will be{' '}
+                <span className="font-mono not-italic">:{pinnedHostPort}</span>{' '}
+                once running
+              </span>
             ) : (
-              <span className="text-muted-foreground italic">not running</span>
+              <span className="text-muted-foreground italic">
+                not running, no port pinned
+              </span>
             )}
           </FlowField>
           <FlowField label="Status">
@@ -136,12 +157,14 @@ function TrafficPath({
   domains,
   containerPort,
   hostPort,
+  pinnedHostPort,
   running,
   isLoading,
 }: {
   domains: string[]
   containerPort: number
   hostPort?: number
+  pinnedHostPort?: number
   running: boolean
   isLoading: boolean
 }) {
@@ -150,7 +173,9 @@ function TrafficPath({
       <PathNode
         icon={GlobeIcon}
         label={domains[0] ?? 'No domain'}
-        sublabel={domains.length > 1 ? `+${domains.length - 1} more` : undefined}
+        sublabel={
+          domains.length > 1 ? `+${domains.length - 1} more` : undefined
+        }
         muted={domains.length === 0}
       />
       <ArrowRightIcon className="size-4 shrink-0 text-muted-foreground" />
@@ -158,7 +183,13 @@ function TrafficPath({
       <ArrowRightIcon className="size-4 shrink-0 text-muted-foreground" />
       <PathNode
         icon={WifiHighIcon}
-        label={running && hostPort ? `:${hostPort}` : 'no host port'}
+        label={
+          running && hostPort
+            ? `:${hostPort}`
+            : pinnedHostPort
+              ? `:${pinnedHostPort} (pending)`
+              : 'no host port'
+        }
         sublabel="this machine"
         muted={!running || !hostPort}
       />

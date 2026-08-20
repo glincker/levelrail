@@ -30,6 +30,7 @@
           "items": { "type": "string", "minLength": 1 }
         },
         "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "host_port": { "type": "integer", "minimum": 1, "maximum": 65535 },
         "health": { "$ref": "#/$defs/health" },
         "resources": { "$ref": "#/$defs/resources" },
         "env": {

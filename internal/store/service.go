@@ -77,11 +77,21 @@ type ServiceVolume struct {
 // for why this is a distinct type from internal/spec.Service rather than
 // reusing it directly.
 type DesiredService struct {
-	Name    string
-	Image   string
-	Port    int
-	Domains []string
-	Env     map[string]string
+	Name  string
+	Image string
+	Port  int
+	// HostPort pins the host-side port Docker binds Port to
+	// (internal/docker.PortBinding.HostPort), migrations/0056's own
+	// operator-facing counterpart to Port itself. nil means "let Docker
+	// assign one" (today's only behavior, and the ordinary case), the
+	// same "an ordinary desired-state field, written on every
+	// SaveDesiredService call" treatment Port itself already gets, not
+	// a dedicated setter: an app.yaml redeploy or an API update is meant
+	// to be able to change or clear a pin the same way it already
+	// changes Port.
+	HostPort *int
+	Domains  []string
+	Env      map[string]string
 	// RegistryCredentialID is which store.RegistryCredential
 	// (migrations/0046_registry_credentials.sql) to authenticate with
 	// when pulling Image, resolved by internal/docker at container-
@@ -353,11 +363,12 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	}()
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, domains, env, secret_env, database_env, resources, health, node_id, strategy, replicas, labels, volumes, registry_credential_id, project_id, environment_id, app_id, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, NULL, NULL, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, host_port, domains, env, secret_env, database_env, resources, health, node_id, strategy, replicas, labels, volumes, registry_credential_id, project_id, environment_id, app_id, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, NULL, NULL, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
+			host_port = excluded.host_port,
 			domains = excluded.domains,
 			env = excluded.env,
 			secret_env = excluded.secret_env,
@@ -370,7 +381,7 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 			volumes = excluded.volumes,
 			registry_credential_id = excluded.registry_credential_id,
 			updated_at = excluded.updated_at
-	`, svc.Name, svc.Image, svc.Port, string(domainsJSON), string(envJSON), string(secretEnvJSON), string(databaseEnvJSON), string(resourcesJSON), string(healthJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""})
+	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), string(domainsJSON), string(envJSON), string(secretEnvJSON), string(databaseEnvJSON), string(resourcesJSON), string(healthJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""})
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
@@ -739,7 +750,7 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, domains, env, secret_env, database_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id"
+const desiredServiceColumns = "name, image, port, host_port, domains, env, secret_env, database_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
@@ -749,15 +760,20 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 		svc                                                                                          DesiredService
 		domainsJSON, envJSON, secretEnvJSON, databaseEnvJSON, resourcesJSON, health, labels, volumes string
 		projectID, storageTargetID, appID, logDrainJSON, environmentID                               sql.NullString
+		hostPort                                                                                     sql.NullInt64
 		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                      string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &domainsJSON, &envJSON, &secretEnvJSON, &databaseEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &domainsJSON, &envJSON, &secretEnvJSON, &databaseEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String
 	svc.StorageTargetID = storageTargetID.String
 	svc.AppID = appID.String
 	svc.EnvironmentID = environmentID.String
+	if hostPort.Valid {
+		v := int(hostPort.Int64)
+		svc.HostPort = &v
+	}
 	if dbAttachmentName != "" {
 		svc.DatabaseAttachment = &DatabaseAttachment{DatabaseName: dbAttachmentName, EnvVar: dbAttachmentEnvVar, Field: dbAttachmentField}
 	}
@@ -816,4 +832,15 @@ func nonNilSlice(s []string) []string {
 		return []string{}
 	}
 	return s
+}
+
+// hostPortToNull converts DesiredService.HostPort to the database/sql
+// type ExecContext needs to write either a real value or a genuine SQL
+// NULL, the same *int-to-sql.NullInt64 idiom github_app.go's
+// nullableInt64 already establishes for *int64.
+func hostPortToNull(v *int) sql.NullInt64 {
+	if v == nil {
+		return sql.NullInt64{}
+	}
+	return sql.NullInt64{Int64: int64(*v), Valid: true}
 }

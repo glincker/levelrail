@@ -1203,7 +1203,11 @@ func toContainerSpec(name string, desired *store.DesiredService) docker.Containe
 		Labels: desired.Labels,
 	}
 	if desired.Port != 0 {
-		spec.Ports = []docker.PortBinding{{ContainerPort: desired.Port}}
+		binding := docker.PortBinding{ContainerPort: desired.Port}
+		if desired.HostPort != nil {
+			binding.HostPort = *desired.HostPort
+		}
+		spec.Ports = []docker.PortBinding{binding}
 	}
 	if desired.Resources != nil {
 		spec.Resources = &docker.Resources{

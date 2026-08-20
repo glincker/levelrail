@@ -99,6 +99,73 @@ func TestSaveDesiredService_MinimalFieldsRoundTrip(t *testing.T) {
 	}
 }
 
+func TestSaveDesiredService_HostPort_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	hostPort := 8080
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000, HostPort: &hostPort}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.HostPort == nil || *got.HostPort != 8080 {
+		t.Errorf("HostPort = %v, want a pointer to 8080", got.HostPort)
+	}
+}
+
+// TestSaveDesiredService_HostPort_NilByDefault is the regression-safety
+// counterpart: a service that never sets HostPort (every service before
+// this field existed, and the ordinary case going forward) must keep
+// reading back nil, not a spurious zero value, since 0 is not a valid
+// TCP port and must never be mistaken for "pinned to port 0".
+func TestSaveDesiredService_HostPort_NilByDefault(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.HostPort != nil {
+		t.Errorf("HostPort = %v, want nil", *got.HostPort)
+	}
+}
+
+// TestSaveDesiredService_HostPort_ClearedByRedeploy proves HostPort is an
+// ordinary desired-state field, full-record-replace like Port itself
+// (not excluded from SaveDesiredService the way NodeID/ProjectID/
+// LogDrain are): a redeploy that omits it must clear a previously pinned
+// value, the same way an app.yaml edit that drops host_port: is expected
+// to.
+func TestSaveDesiredService_HostPort_ClearedByRedeploy(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	hostPort := 8080
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000, HostPort: &hostPort}); err != nil {
+		t.Fatalf("first save: %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 3000}); err != nil {
+		t.Fatalf("second save: %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.HostPort != nil {
+		t.Errorf("HostPort = %v, want nil after a redeploy that omitted it", *got.HostPort)
+	}
+}
+
 func TestSaveDesiredService_UpsertReplacesNotAccumulates(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

@@ -39,9 +39,8 @@ func exitCodeForError(err error) int {
 
 // validationError marks a failure as "the request itself is invalid"
 // (a bad flag combination, an app.yaml this CLI can't yet turn into a
-// request), as opposed to a network or API failure: the same
-// distinction flyctl/railway/vercel's own CLIs make between a usage
-// mistake and something failing downstream.
+// request), as opposed to a network or API failure: a usage mistake vs.
+// something failing downstream.
 type validationError struct{ msg string }
 
 func (e *validationError) Error() string { return e.msg }
@@ -76,6 +75,9 @@ func printAppHuman(out io.Writer, a appResource) {
 	_, _ = fmt.Fprintf(out, "name:     %s\n", a.Name)
 	_, _ = fmt.Fprintf(out, "image:    %s\n", a.Image)
 	_, _ = fmt.Fprintf(out, "port:     %d\n", a.Port)
+	if a.HostPort != nil {
+		_, _ = fmt.Fprintf(out, "host port: %d (pinned)\n", *a.HostPort)
+	}
 	if len(a.Domains) > 0 {
 		_, _ = fmt.Fprintf(out, "domains:  %v\n", a.Domains)
 	}
