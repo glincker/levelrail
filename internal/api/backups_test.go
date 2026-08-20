@@ -460,12 +460,18 @@ func TestHandleListBackupHistory_Pagination(t *testing.T) {
 	}
 }
 
-func TestHandleListBackupHistory_InvalidLimit(t *testing.T) {
+func newBackupHistoryTestRouter(t *testing.T) (*Router, *http.Cookie) {
+	t.Helper()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
 		t.Fatalf("seed database: %v", err)
 	}
+	return rt, cookie
+}
+
+func TestHandleListBackupHistory_InvalidLimit(t *testing.T) {
+	rt, cookie := newBackupHistoryTestRouter(t)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/backups?limit=not-a-number", ""))
@@ -475,11 +481,7 @@ func TestHandleListBackupHistory_InvalidLimit(t *testing.T) {
 }
 
 func TestHandleListBackupHistory_InvalidBefore(t *testing.T) {
-	rt, db := newTestRouter(t)
-	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
-		t.Fatalf("seed database: %v", err)
-	}
+	rt, cookie := newBackupHistoryTestRouter(t)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/backups?before=not-a-timestamp", ""))
