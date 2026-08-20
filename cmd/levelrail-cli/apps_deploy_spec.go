@@ -10,13 +10,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
-// runAppsDeploySpec implements "apps deploy-spec <name> --file app.yaml
-// --repo-url <url> --ref <ref>": POST /api/v1/apps/{name}/deploy-spec
-// (internal/api/apps_multi.go's handleDeploySpec), fanning every service
-// app.yaml declares out into an independent build+deploy under one app
-// named <name>. Unlike "apps create --file --service", which picks one
-// service out of a multi-service file, this deploys every service the
-// file declares in one call.
+// runAppsDeploySpec deploys every service in app.yaml under one app, unlike
+// "apps create --file --service" which picks a single service.
 func runAppsDeploySpec(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps deploy-spec", "print the full deploy result as JSON to stdout and nothing else", stderr)
 	var file, repoURL, ref, imageRepoBase string
@@ -96,12 +91,8 @@ func runAppsDeploySpec(prog string, args []string, stdout, stderr io.Writer, loo
 	return exitOK
 }
 
-// toDeploySpecService converts one app.yaml service into deploy-spec's
-// own wire shape (apiclient.DeploySpecService): unlike apps_create.go's
-// toServiceResources/toServiceHealth, this keeps app.yaml's own
-// human-readable strings (memory "512Mi", durations "5s") rather than
-// converting to bytes/nanoseconds, because handleDeploySpec decodes
-// straight into internal/spec.Service, not through appResource.
+// toDeploySpecService keeps app.yaml's human-readable strings ("512Mi", "5s")
+// as-is, unlike apps_create.go's converters which encode to bytes/nanoseconds.
 func toDeploySpecService(svc spec.Service) (deploySpecService, error) {
 	if secretKeys := secretEnvKeys(svc.Env); len(secretKeys) > 0 {
 		return deploySpecService{}, fmt.Errorf("declares secret env var(s) %v; apps deploy-spec does not yet set secrets", secretKeys)

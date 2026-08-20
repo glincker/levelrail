@@ -1,22 +1,15 @@
 import type { AppDetail, AppStatusSummary } from './appDetail'
 
-// Mirrors internal/api's appGroupResource (internal/api/apps_group.go):
-// GET /api/v1/apps/{name}/group's response. app_id carries `omitempty`
-// on the Go side: empty means name has no store.App link yet (a service
-// created before that concept existed), in which case services holds
-// exactly one entry, name's own.
+// Empty app_id means name has no store.App link yet (a service created
+// before that concept existed); services then holds exactly one entry.
 export interface AppGroup {
   app_id?: string
   services: AppDetail[]
   status: AppStatusSummary
 }
 
-// Mirrors internal/spec.Build's JSON wire shape as POST
-// /api/v1/apps/{name}/deploy-spec expects it (internal/api/apps_multi.go's
-// handleDeploySpec decodes straight into internal/spec.Service, so this
-// deliberately does not reuse ServiceResources/ServiceHealth's
-// bytes/nanosecond encoding from appDetail.ts, which is only valid for
-// the general create/update endpoint).
+// Deliberately does not reuse appDetail.ts's bytes/nanosecond encoding;
+// deploy-spec decodes straight into internal/spec.Service instead.
 export type DeploySpecBuildType = 'dockerfile' | 'railpack' | 'static' | 'image'
 
 export interface DeploySpecServiceInput {

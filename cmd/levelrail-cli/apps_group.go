@@ -7,11 +7,8 @@ import (
 	"io"
 )
 
-// runAppsGroup implements "apps group <name>": GET
-// /api/v1/apps/{name}/group (internal/api/apps_group.go's
-// handleGetAppGroup), name's sibling services under the same store.App
-// plus one rollup status across all of them. Works the same whether name
-// has any siblings yet or not.
+// runAppsGroup implements "apps group <name>": name's sibling services under
+// the same store.App plus one rollup status, whether or not siblings exist yet.
 func runAppsGroup(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps group", "print the app group as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {

@@ -23,14 +23,8 @@ type AppGroupResource struct {
 	Status   AppStatusSummary `json:"status"`
 }
 
-// DeploySpecServiceBuild mirrors one service's build: block
-// (internal/spec.Build's JSON wire shape) as POST
-// /api/v1/apps/{name}/deploy-spec expects it: human-written field names,
-// not the bytes/nanoCPUs encoding AppResource's own Resources/Health use
-// for the general create/update endpoints. handleDeploySpec decodes this
-// straight into internal/spec.Service, which has no json struct tags of
-// its own; encoding/json matches these lowercase keys to that struct's
-// exported Go field names case-insensitively.
+// DeploySpecServiceBuild mirrors internal/spec.Build's JSON wire shape:
+// human-written field names, not AppResource's bytes/nanoCPUs encoding.
 type DeploySpecServiceBuild struct {
 	Type               string `json:"type"`
 	Path               string `json:"path,omitempty"`
@@ -39,11 +33,8 @@ type DeploySpecServiceBuild struct {
 	RegistryCredential string `json:"registryCredential,omitempty"`
 }
 
-// DeploySpecServiceEnv mirrors one entry in a deploy-spec service's env:
-// map (internal/spec.EnvVar's JSON wire shape). Unlike app.yaml's own
-// YAML parsing, a plain string shorthand is not accepted over JSON
-// (EnvVar has no UnmarshalJSON): every entry must be this object shape,
-// Value set for a literal value.
+// DeploySpecServiceEnv mirrors internal/spec.EnvVar's JSON shape. Unlike
+// app.yaml's YAML parsing, no plain-string shorthand: use Value for a literal.
 type DeploySpecServiceEnv struct {
 	Value    string `json:"value,omitempty"`
 	From     string `json:"from,omitempty"`

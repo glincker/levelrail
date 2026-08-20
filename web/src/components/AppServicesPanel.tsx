@@ -23,16 +23,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-// Read-only view of GET /api/v1/apps/{name}/group (internal/api/
-// apps_group.go): name's sibling services under the same store.App, each
-// linking to its own full app detail page (a service is a real app
-// resource in its own right, GET /api/v1/apps/{name}). Renders exactly
-// as well for a single-service group (one row) as for a real
-// multi-service one, so this tab is always safe to show regardless of
-// how many services an app currently has. A suspense query, primed by
-// the route's own loader: a fetch failure surfaces through the route's
-// errorComponent, the same AppDetailError every other section route
-// shares (routes/apps/$name.tsx).
+// A suspense query primed by the route's loader; fetch failures surface
+// through the route's errorComponent (routes/apps/$name.tsx), not locally.
 export function AppServicesPanel({ appName }: { appName: string }) {
   const { data: group } = useAppGroup(appName)
 
