@@ -225,6 +225,14 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
+	// Must run before anything below can create a new deploy attempt:
+	// see FailOrphanedDeployAttempts' own doc comment.
+	if n, err := db.FailOrphanedDeployAttempts(ctx, time.Now()); err != nil {
+		logger.Error("fail orphaned deploy attempts", slog.String("error", err.Error()))
+	} else if n > 0 {
+		logger.Warn("marked orphaned deploy attempts as failed", slog.Int("count", n))
+	}
+
 	b, err := loadBrand()
 	if err != nil {
 		return err

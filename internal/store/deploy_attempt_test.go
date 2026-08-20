@@ -178,6 +178,84 @@ func TestFinishDeployAttempt_Failed(t *testing.T) {
 	}
 }
 
+func TestFailOrphanedDeployAttempts_MarksRunningOnesFailed(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDeployAttempt(ctx, DeployAttempt{
+		ID: "dep_orphan1", ServiceName: "web", Image: "levelrail/web:abc123",
+		Status: DeployAttemptStatusRunning, StartedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatalf("seed orphan1: %v", err)
+	}
+	if err := db.SaveDeployAttempt(ctx, DeployAttempt{
+		ID: "dep_orphan2", ServiceName: "worker", Image: "levelrail/worker:def456",
+		Status: DeployAttemptStatusRunning, StartedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatalf("seed orphan2: %v", err)
+	}
+	if err := db.SaveDeployAttempt(ctx, DeployAttempt{
+		ID: "dep_already_done", ServiceName: "web", Image: "levelrail/web:xyz789",
+		Status: DeployAttemptStatusRunning, StartedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatalf("seed already_done: %v", err)
+	}
+	finishedEarlier := time.Now().UTC().Truncate(time.Millisecond)
+	if err := db.FinishDeployAttempt(ctx, "dep_already_done", DeployAttemptStatusSucceeded, finishedEarlier, ""); err != nil {
+		t.Fatalf("finish already_done: %v", err)
+	}
+
+	sweepTime := time.Now().UTC().Truncate(time.Millisecond)
+	n, err := db.FailOrphanedDeployAttempts(ctx, sweepTime)
+	if err != nil {
+		t.Fatalf("FailOrphanedDeployAttempts() error = %v", err)
+	}
+	if n != 2 {
+		t.Errorf("fixed count = %d, want 2", n)
+	}
+
+	for _, id := range []string{"dep_orphan1", "dep_orphan2"} {
+		got, err := db.GetDeployAttempt(ctx, id)
+		if err != nil {
+			t.Fatalf("GetDeployAttempt(%q) error = %v", id, err)
+		}
+		if got.Status != DeployAttemptStatusFailed {
+			t.Errorf("%s: Status = %q, want %q", id, got.Status, DeployAttemptStatusFailed)
+		}
+		if got.FinishedAt == nil || !got.FinishedAt.Equal(sweepTime) {
+			t.Errorf("%s: FinishedAt = %v, want %v", id, got.FinishedAt, sweepTime)
+		}
+		if got.Error == "" {
+			t.Errorf("%s: Error is empty, want a real explanation", id)
+		}
+	}
+
+	// Already-finished attempts must be left untouched.
+	untouched, err := db.GetDeployAttempt(ctx, "dep_already_done")
+	if err != nil {
+		t.Fatalf("GetDeployAttempt(already_done) error = %v", err)
+	}
+	if untouched.Status != DeployAttemptStatusSucceeded {
+		t.Errorf("already_done: Status = %q, want unchanged %q", untouched.Status, DeployAttemptStatusSucceeded)
+	}
+	if !untouched.FinishedAt.Equal(finishedEarlier) {
+		t.Errorf("already_done: FinishedAt = %v, want unchanged %v", untouched.FinishedAt, finishedEarlier)
+	}
+}
+
+func TestFailOrphanedDeployAttempts_NothingRunning_ReturnsZero(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	n, err := db.FailOrphanedDeployAttempts(ctx, time.Now().UTC())
+	if err != nil {
+		t.Fatalf("FailOrphanedDeployAttempts() error = %v", err)
+	}
+	if n != 0 {
+		t.Errorf("fixed count = %d, want 0", n)
+	}
+}
+
 func TestFinishDeployAttempt_NotFound(t *testing.T) {
 	db := openTestDB(t)
 	err := db.FinishDeployAttempt(context.Background(), "dep_ghost", DeployAttemptStatusFailed, time.Now(), "boom")
