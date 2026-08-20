@@ -53,6 +53,11 @@ import type { FormInput, FormOutput } from './CreateAppFromGitFields'
 // (build.RailpackRequest carries no path field, and
 // handleTriggerBuild rejects one being set), so it never shows the
 // field either.
+//
+// The base-directory field is different: it scopes the whole build
+// context to a subdirectory (for a monorepo) and is meaningful for
+// dockerfile, railpack, and static alike, so it shows for all three,
+// unlike Dockerfile path and image name.
 export function GitBuildSourceFields({
   control,
   register,
@@ -268,7 +273,7 @@ export function GitBuildSourceFields({
         </Field>
       ) : null}
 
-      {buildType !== 'static' && buildType !== 'image' ? (
+      {buildType !== 'image' ? (
         <div>
           <button
             type="button"
@@ -284,24 +289,26 @@ export function GitBuildSourceFields({
 
           {showAdvanced ? (
             <div className="mt-3 flex flex-col gap-4 rounded-lg border border-dashed border-border p-3 sm:flex-row">
-              <Field className="flex-1">
-                <FieldLabel htmlFor="git-app-image-repo">
-                  Image name (optional)
-                </FieldLabel>
-                <Input
-                  id="git-app-image-repo"
-                  className="font-mono"
-                  placeholder="defaults to the app name"
-                  autoComplete="off"
-                  spellCheck={false}
-                  disabled={disabled}
-                  {...register('imageRepo')}
-                />
-                <FieldDescription>
-                  The name given to the built image. Leave blank to use the app
-                  name.
-                </FieldDescription>
-              </Field>
+              {buildType !== 'static' ? (
+                <Field className="flex-1">
+                  <FieldLabel htmlFor="git-app-image-repo">
+                    Image name (optional)
+                  </FieldLabel>
+                  <Input
+                    id="git-app-image-repo"
+                    className="font-mono"
+                    placeholder="defaults to the app name"
+                    autoComplete="off"
+                    spellCheck={false}
+                    disabled={disabled}
+                    {...register('imageRepo')}
+                  />
+                  <FieldDescription>
+                    The name given to the built image. Leave blank to use the
+                    app name.
+                  </FieldDescription>
+                </Field>
+              ) : null}
 
               {buildType === 'dockerfile' ? (
                 <Field className="flex-1">
@@ -323,6 +330,25 @@ export function GitBuildSourceFields({
                   </FieldDescription>
                 </Field>
               ) : null}
+
+              <Field className="flex-1">
+                <FieldLabel htmlFor="git-app-base-directory">
+                  Base directory (optional)
+                </FieldLabel>
+                <Input
+                  id="git-app-base-directory"
+                  className="font-mono"
+                  placeholder="apps/web"
+                  autoComplete="off"
+                  spellCheck={false}
+                  disabled={disabled}
+                  {...register('baseDirectory')}
+                />
+                <FieldDescription>
+                  Subdirectory to build from, for a monorepo. Leave blank to
+                  build from the repo root.
+                </FieldDescription>
+              </Field>
             </div>
           ) : null}
         </div>

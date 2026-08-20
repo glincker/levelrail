@@ -206,13 +206,18 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 
 	tag := req.ImageRepo + ":" + req.CommitSHA
 
+	buildRoot, err := resolveBuildRoot(req.SourceDir, req.Service.Build.BaseDirectory)
+	if err != nil {
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
+
 	dockerfilePath := ""
 	if req.Service.Build.Path != "" {
-		dockerfilePath = filepath.Join(req.SourceDir, req.Service.Build.Path)
+		dockerfilePath = filepath.Join(buildRoot, req.Service.Build.Path)
 	}
 
 	res, err := p.builder.Build(ctx, build.Request{
-		ContextDir:     req.SourceDir,
+		ContextDir:     buildRoot,
 		DockerfilePath: dockerfilePath,
 		Tag:            tag,
 	}, progress)
@@ -246,8 +251,13 @@ func (p *Pipeline) deployRailpack(ctx context.Context, req Request, progress fun
 
 	tag := req.ImageRepo + ":" + req.CommitSHA
 
+	buildRoot, err := resolveBuildRoot(req.SourceDir, req.Service.Build.BaseDirectory)
+	if err != nil {
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
+
 	res, err := p.builder.BuildRailpack(ctx, build.RailpackRequest{
-		SourceDir: req.SourceDir,
+		SourceDir: buildRoot,
 		Tag:       tag,
 	}, progress)
 	if err != nil {

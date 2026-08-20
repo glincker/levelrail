@@ -127,6 +127,25 @@ services:
 	}
 }
 
+func TestParse_ValidBaseDirectory(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile, baseDirectory: "apps/web" }, port: 8080 }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	web, ok := s.Services["web"]
+	if !ok {
+		t.Fatal("expected a \"web\" service")
+	}
+	if web.Build.BaseDirectory != "apps/web" {
+		t.Errorf("Build.BaseDirectory = %q, want apps/web", web.Build.BaseDirectory)
+	}
+}
+
 func TestParse_ValidMongoDBDatabase(t *testing.T) {
 	yaml := `
 version: 1
@@ -356,6 +375,42 @@ services:
   web: { build: { type: image, image: "ghcr.io/org/app:v1", path: "./Dockerfile" }, port: 8080 }
 `,
 			wantErrSubstr: "build.path is not meaningful for build.type: image",
+		},
+		{
+			name: "build.baseDirectory set for an image build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: image, image: "ghcr.io/org/app:v1", baseDirectory: "apps/web" }, port: 8080 }
+`,
+			wantErrSubstr: "build.baseDirectory is not meaningful for build.type: image",
+		},
+		{
+			name: "build.baseDirectory set for a compose build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: compose, path: "./docker-compose.yml", baseDirectory: "apps/web" }, port: 8080 }
+`,
+			wantErrSubstr: "build.baseDirectory is not meaningful for build.type: compose",
+		},
+		{
+			name: "build.baseDirectory is an absolute path",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile, baseDirectory: "/etc/passwd" }, port: 8080 }
+`,
+			wantErrSubstr: "must be a relative path",
+		},
+		{
+			name: "build.baseDirectory escapes the repository root",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile, baseDirectory: "../escape" }, port: 8080 }
+`,
+			wantErrSubstr: "must not escape the repository root",
 		},
 		{
 			name: "port required for non-static build",

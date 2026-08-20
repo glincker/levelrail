@@ -72,6 +72,18 @@ func TestPlanFromFlags(t *testing.T) {
 			},
 		},
 		{
+			name:  "git-build flags base directory",
+			flags: createFlags{repo: "https://example.com/x.git", name: "web", port: 3000, imageRepo: "levelrail/web", ref: "release", baseDirectory: "apps/web"},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.Build == nil {
+					t.Fatalf("Build = nil, want non-nil for git-build path")
+				}
+				if p.Build.Build.BaseDirectory != "apps/web" {
+					t.Errorf("Build.BaseDirectory = %q, want %q", p.Build.Build.BaseDirectory, "apps/web")
+				}
+			},
+		},
+		{
 			name:     "git-build flags ref defaults to detected branch",
 			flags:    createFlags{repo: "https://example.com/x.git", name: "web", port: 3000, imageRepo: "levelrail/web"},
 			detected: detectedGit{Ref: "feature-branch"},
@@ -319,6 +331,30 @@ func TestPlanFromFlags(t *testing.T) {
 			wantPlan: func(t *testing.T, p createPlan) {
 				if p.Build.Build.Path != "Dockerfile.prod" {
 					t.Errorf("Build.Path = %q, want overridden %q", p.Build.Build.Path, "Dockerfile.prod")
+				}
+			},
+		},
+		{
+			name:  "file mode base directory from spec",
+			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildDockerfile, BaseDirectory: "apps/web"}, Port: 3000},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.Build.Build.BaseDirectory != "apps/web" {
+					t.Errorf("Build.BaseDirectory = %q, want %q", p.Build.Build.BaseDirectory, "apps/web")
+				}
+			},
+		},
+		{
+			name:  "file mode --base-directory overrides spec",
+			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git", baseDirectory: "apps/api"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildDockerfile, BaseDirectory: "apps/web"}, Port: 3000},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.Build.Build.BaseDirectory != "apps/api" {
+					t.Errorf("Build.BaseDirectory = %q, want overridden %q", p.Build.Build.BaseDirectory, "apps/api")
 				}
 			},
 		},

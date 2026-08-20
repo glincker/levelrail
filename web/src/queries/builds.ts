@@ -28,6 +28,9 @@ export interface TriggerBuildInput {
   /** Defaults to "dockerfile" on the backend when omitted. */
   buildType?: string
   buildPath?: string
+  /** Subdirectory of the repo to build from, for a monorepo. Not
+   *  meaningful when buildType is "image". */
+  baseDirectory?: string
   /** Required when, and only meaningful for, buildType "image": the
    *  prebuilt registry reference to deploy as-is, no build at all. */
   image?: string
@@ -50,6 +53,7 @@ export async function triggerBuild(
   const build: Record<string, string> = {}
   if (input.buildType) build.type = input.buildType
   if (input.buildPath) build.path = input.buildPath
+  if (input.baseDirectory) build.base_directory = input.baseDirectory
   if (input.image) build.image = input.image
 
   const res = await fetch(

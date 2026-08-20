@@ -87,6 +87,12 @@ const DefaultReplicas = 1
 type Build struct {
 	Type string `yaml:"type"`
 	Path string `yaml:"path,omitempty"`
+	// BaseDirectory scopes the build context to a subdirectory of the
+	// repo, e.g. "apps/web" in a monorepo. Empty means the repo root.
+	// Meaningful for dockerfile, railpack, and static; not meaningful
+	// for image (nothing gets built) or compose (the compose file's own
+	// context: field already scopes each service).
+	BaseDirectory string `yaml:"baseDirectory,omitempty"`
 	// Image is a full registry reference (e.g.
 	// "ghcr.io/org/app:v1.2.3"), only meaningful for build.type: image:
 	// a CI pipeline (or anything else) already built and pushed this

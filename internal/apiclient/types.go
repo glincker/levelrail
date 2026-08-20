@@ -82,9 +82,12 @@ type BuildTriggerRequest struct {
 // Type == "image": a prebuilt registry reference deployed as-is, no
 // repo/ref/build needed.
 type BuildTriggerRequestBuild struct {
-	Type  string `json:"type,omitempty"`
-	Path  string `json:"path,omitempty"`
-	Image string `json:"image,omitempty"`
+	Type string `json:"type,omitempty"`
+	Path string `json:"path,omitempty"`
+	// BaseDirectory scopes the build context to a subdirectory of the
+	// repo, for a monorepo. Not meaningful for Type == "image".
+	BaseDirectory string `json:"base_directory,omitempty"`
+	Image         string `json:"image,omitempty"`
 }
 
 // BuildTriggerResponse mirrors internal/api's triggerBuildResponse: the

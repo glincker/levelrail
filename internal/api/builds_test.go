@@ -447,6 +447,47 @@ func TestHandleTriggerBuild_Success(t *testing.T) {
 	fetch.awaitCleanup(t)
 }
 
+// TestHandleTriggerBuild_BaseDirectoryAccepted proves build.base_directory
+// flows through to the deploy pipeline's Service.Build.BaseDirectory,
+// the field internal/deploy's resolveBuildRoot scopes the build context
+// with.
+func TestHandleTriggerBuild_BaseDirectoryAccepted(t *testing.T) {
+	fb := newFakeBuilder("levelrail/web:abc1234", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
+	cookie := loginTestSession(t, rt, db)
+	seedWebApp(t, db)
+
+	postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main","build":{"base_directory":"apps/web"}}`)
+	got := fb.awaitCall(t)
+	if got.Service.Build.BaseDirectory != "apps/web" {
+		t.Errorf("Service.Build.BaseDirectory = %q, want %q", got.Service.Build.BaseDirectory, "apps/web")
+	}
+}
+
+// TestHandleTriggerBuild_ImageWithBaseDirectoryRejected proves
+// base_directory is rejected outright for build.type: image, the same
+// "fail loudly on a meaningless field" pattern
+// TestHandleTriggerBuild_RailpackWithPathRejected already establishes
+// for railpack's own path field: nothing gets built for an image
+// deploy, so there is no build context to scope.
+func TestHandleTriggerBuild_ImageWithBaseDirectoryRejected(t *testing.T) {
+	fb := newFakeBuilder("registry.example.com/web:v1", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
+	cookie := loginTestSession(t, rt, db)
+	seedWebApp(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
+		`{"build":{"type":"image","image":"registry.example.com/web:v1","base_directory":"apps/web"}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	fetch.assertNotCalled(t)
+	fb.assertNotCalled(t)
+}
+
 // TestHandleTriggerBuild_PreservesCustomLabels is a regression test:
 // specServiceFromDesired originally reconstructed every field a manual
 // rebuild's request body doesn't repeat (env, secret env, resources,

@@ -216,6 +216,56 @@ func TestPipeline_Deploy_Dockerfile_Success(t *testing.T) {
 	}
 }
 
+func TestPipeline_Deploy_Dockerfile_BaseDirectory_ScopesContext(t *testing.T) {
+	builder := &fakeBuilder{result: &build.Result{Tag: "levelrail/web:abc1234"}}
+	p := New(builder, &fakeServiceStore{})
+
+	svc := dockerfileService()
+	svc.Build.BaseDirectory = "apps/web"
+
+	_, err := p.Deploy(context.Background(), Request{
+		ServiceName: "web",
+		Service:     svc,
+		SourceDir:   "/repo",
+		CommitSHA:   "abc1234",
+		ImageRepo:   "levelrail/web",
+	}, nil)
+	if err != nil {
+		t.Fatalf("Deploy() error = %v", err)
+	}
+
+	wantContext := filepath.Join("/repo", "apps/web")
+	if builder.lastReq.ContextDir != wantContext {
+		t.Errorf("ContextDir = %q, want %q", builder.lastReq.ContextDir, wantContext)
+	}
+	wantDockerfile := filepath.Join(wantContext, "Dockerfile")
+	if builder.lastReq.DockerfilePath != wantDockerfile {
+		t.Errorf("DockerfilePath = %q, want %q", builder.lastReq.DockerfilePath, wantDockerfile)
+	}
+}
+
+func TestPipeline_Deploy_Dockerfile_BaseDirectory_Traversal_Rejected(t *testing.T) {
+	builder := &fakeBuilder{result: &build.Result{Tag: "levelrail/web:abc1234"}}
+	p := New(builder, &fakeServiceStore{})
+
+	svc := dockerfileService()
+	svc.Build.BaseDirectory = "../escape"
+
+	_, err := p.Deploy(context.Background(), Request{
+		ServiceName: "web",
+		Service:     svc,
+		SourceDir:   "/repo",
+		CommitSHA:   "abc1234",
+		ImageRepo:   "levelrail/web",
+	}, nil)
+	if err == nil {
+		t.Fatal("Deploy() error = nil, want an error for a base directory that escapes the repo root")
+	}
+	if builder.calls != 0 {
+		t.Errorf("Build called %d times, want 0: a traversal must be rejected before any build attempt", builder.calls)
+	}
+}
+
 func TestPipeline_Deploy_ProgressForwarded(t *testing.T) {
 	builder := &fakeBuilder{result: &build.Result{Tag: "levelrail/web:abc1234"}}
 	p := New(builder, &fakeServiceStore{})
@@ -664,6 +714,30 @@ func TestPipeline_Deploy_Railpack_Success(t *testing.T) {
 	}
 	if svcStore.saved.Name != "web" || svcStore.saved.Image != "levelrail/web:abc1234" || svcStore.saved.Port != 3000 {
 		t.Errorf("saved = %+v, want Name=web Image=levelrail/web:abc1234 Port=3000", svcStore.saved)
+	}
+}
+
+func TestPipeline_Deploy_Railpack_BaseDirectory_ScopesSourceDir(t *testing.T) {
+	builder := &fakeBuilder{railpackResult: &build.Result{Tag: "levelrail/web:abc1234"}}
+	p := New(builder, &fakeServiceStore{})
+
+	svc := railpackService()
+	svc.Build.BaseDirectory = "apps/web"
+
+	_, err := p.Deploy(context.Background(), Request{
+		ServiceName: "web",
+		Service:     svc,
+		SourceDir:   "/repo",
+		CommitSHA:   "abc1234",
+		ImageRepo:   "levelrail/web",
+	}, nil)
+	if err != nil {
+		t.Fatalf("Deploy() error = %v", err)
+	}
+
+	want := filepath.Join("/repo", "apps/web")
+	if builder.lastRailpackReq.SourceDir != want {
+		t.Errorf("SourceDir = %q, want %q", builder.lastRailpackReq.SourceDir, want)
 	}
 }
 
