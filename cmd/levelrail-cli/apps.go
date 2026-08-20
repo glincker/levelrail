@@ -26,6 +26,10 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsDeploy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-compose":
 		return runAppsDeployCompose(prog, args[1:], stdout, stderr, lookupEnv)
+	case "deploy-spec":
+		return runAppsDeploySpec(prog, args[1:], stdout, stderr, lookupEnv)
+	case "group":
+		return runAppsGroup(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rollback":
 		return runAppsRollback(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restart":
@@ -56,6 +60,8 @@ func appsUsage(prog string) string {
   %[1]s apps get <name> [flags]       show one app
   %[1]s apps deploy <name> [flags]   deploy an image to an existing app
   %[1]s apps deploy-compose <name> --file compose.yaml [flags]   deploy a Docker Compose file as an app
+  %[1]s apps deploy-spec <name> --file app.yaml --repo-url <url> --ref <ref> [flags]   fan an app.yaml's services: map out into N independent builds under one app
+  %[1]s apps group <name> [flags]   show name's sibling services under the same multi-service app
   %[1]s apps rollback <name> [flags]   redeploy an older image (same endpoint as deploy)
   %[1]s apps restart <name> [flags]     recreate the running container, no image change
   %[1]s apps status <name> [flags]   show an app's current reconcile conditions

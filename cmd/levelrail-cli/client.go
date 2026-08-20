@@ -35,6 +35,14 @@ type (
 	triggerRestoreRequest      = apiclient.TriggerRestoreRequest
 	setAppDatabaseRequest      = apiclient.SetAppDatabaseRequest
 	appDatabaseResource        = apiclient.AppDatabaseResource
+	appStatusSummary           = apiclient.AppStatusSummary
+	appGroupResource           = apiclient.AppGroupResource
+	deploySpecServiceBuild     = apiclient.DeploySpecServiceBuild
+	deploySpecServiceEnv       = apiclient.DeploySpecServiceEnv
+	deploySpecService          = apiclient.DeploySpecService
+	deploySpecRequest          = apiclient.DeploySpecRequest
+	deploySpecServiceResult    = apiclient.DeploySpecServiceResult
+	deploySpecResult           = apiclient.DeploySpecResult
 
 	notificationChannelResource      = apiclient.NotificationChannelResource
 	createNotificationChannelRequest = apiclient.CreateNotificationChannelRequest
