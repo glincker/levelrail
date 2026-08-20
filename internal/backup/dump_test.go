@@ -126,192 +126,91 @@ func (f *fakeExecRuntime) ListNetworksByPrefix(context.Context, string) ([]docke
 	return nil, nil
 }
 
-func TestContainerDumper_Dump_Postgres(t *testing.T) {
-	rt := &fakeExecRuntime{content: "postgres-dump-bytes"}
-	d := &ContainerDumper{Runtime: rt}
-
-	rc, err := d.Dump(context.Background(), store.EnginePostgres, "db-mydb")
-	if err != nil {
-		t.Fatalf("Dump() error = %v", err)
-	}
-	defer func() { _ = rc.Close() }()
-
-	if rt.gotContainer != "db-mydb" {
-		t.Errorf("container = %q, want %q", rt.gotContainer, "db-mydb")
-	}
-	wantCmd := []string{"sh", "-c", `exec pg_dump --no-password -U "$POSTGRES_USER" "$POSTGRES_USER"`}
-	if !reflect.DeepEqual(rt.gotCmd, wantCmd) {
-		t.Errorf("cmd = %v, want %v", rt.gotCmd, wantCmd)
-	}
-
-	got, err := io.ReadAll(rc)
-	if err != nil {
-		t.Fatalf("ReadAll() error = %v", err)
-	}
-	if string(got) != "postgres-dump-bytes" {
-		t.Errorf("content = %q, want %q", got, "postgres-dump-bytes")
-	}
-}
-
-func TestContainerDumper_Dump_MySQL(t *testing.T) {
-	rt := &fakeExecRuntime{content: "mysql-dump-bytes"}
-	d := &ContainerDumper{Runtime: rt}
-
-	rc, err := d.Dump(context.Background(), store.EngineMySQL, "db-mydb")
-	if err != nil {
-		t.Fatalf("Dump() error = %v", err)
-	}
-	defer func() { _ = rc.Close() }()
-
-	if rt.gotContainer != "db-mydb" {
-		t.Errorf("container = %q, want %q", rt.gotContainer, "db-mydb")
-	}
-	wantCmd := []string{"sh", "-c", `exec mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"`}
-	if !reflect.DeepEqual(rt.gotCmd, wantCmd) {
-		t.Errorf("cmd = %v, want %v", rt.gotCmd, wantCmd)
-	}
-
-	got, err := io.ReadAll(rc)
-	if err != nil {
-		t.Fatalf("ReadAll() error = %v", err)
-	}
-	if string(got) != "mysql-dump-bytes" {
-		t.Errorf("content = %q, want %q", got, "mysql-dump-bytes")
-	}
-}
-
-func TestContainerDumper_Dump_MongoDB(t *testing.T) {
-	rt := &fakeExecRuntime{content: "mongo-dump-bytes"}
-	d := &ContainerDumper{Runtime: rt}
-
-	rc, err := d.Dump(context.Background(), store.EngineMongoDB, "db-mydb")
-	if err != nil {
-		t.Fatalf("Dump() error = %v", err)
-	}
-	defer func() { _ = rc.Close() }()
-
-	if rt.gotContainer != "db-mydb" {
-		t.Errorf("container = %q, want %q", rt.gotContainer, "db-mydb")
-	}
-	wantCmd := []string{"sh", "-c", `exec mongodump --archive --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin`}
-	if !reflect.DeepEqual(rt.gotCmd, wantCmd) {
-		t.Errorf("cmd = %v, want %v", rt.gotCmd, wantCmd)
+func TestContainerDumper_Dump(t *testing.T) {
+	cases := []struct {
+		name        string
+		engine      string
+		containerID string
+		content     string
+		wantCmd     []string
+	}{
+		{
+			name:        "Postgres",
+			engine:      store.EnginePostgres,
+			containerID: "db-mydb",
+			content:     "postgres-dump-bytes",
+			wantCmd:     []string{"sh", "-c", `exec pg_dump --no-password -U "$POSTGRES_USER" "$POSTGRES_USER"`},
+		},
+		{
+			name:        "MySQL",
+			engine:      store.EngineMySQL,
+			containerID: "db-mydb",
+			content:     "mysql-dump-bytes",
+			wantCmd:     []string{"sh", "-c", `exec mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"`},
+		},
+		{
+			name:        "MongoDB",
+			engine:      store.EngineMongoDB,
+			containerID: "db-mydb",
+			content:     "mongo-dump-bytes",
+			wantCmd:     []string{"sh", "-c", `exec mongodump --archive --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin`},
+		},
+		{
+			name:        "Redis",
+			engine:      store.EngineRedis,
+			containerID: "db-cache",
+			content:     "rdb-bytes",
+			wantCmd:     []string{"redis-cli", "--rdb", "-"},
+		},
+		{
+			name:        "MariaDB",
+			engine:      store.EngineMariaDB,
+			containerID: "db-mydb",
+			content:     "mariadb-dump-bytes",
+			wantCmd:     []string{"sh", "-c", `exec mariadb-dump -uroot -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"`},
+		},
+		{
+			name:        "KeyDB",
+			engine:      store.EngineKeyDB,
+			containerID: "db-cache",
+			content:     "rdb-bytes",
+			wantCmd:     []string{"keydb-cli", "--rdb", "-"},
+		},
+		{
+			name:        "Dragonfly",
+			engine:      store.EngineDragonfly,
+			containerID: "db-cache",
+			content:     "rdb-bytes",
+			wantCmd:     []string{"sh", "-c", "redis-cli SAVE RDB dump.rdb && exec cat /data/dump.rdb"},
+		},
 	}
 
-	got, err := io.ReadAll(rc)
-	if err != nil {
-		t.Fatalf("ReadAll() error = %v", err)
-	}
-	if string(got) != "mongo-dump-bytes" {
-		t.Errorf("content = %q, want %q", got, "mongo-dump-bytes")
-	}
-}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rt := &fakeExecRuntime{content: tc.content}
+			d := &ContainerDumper{Runtime: rt}
 
-func TestContainerDumper_Dump_Redis(t *testing.T) {
-	rt := &fakeExecRuntime{content: "rdb-bytes"}
-	d := &ContainerDumper{Runtime: rt}
+			rc, err := d.Dump(context.Background(), tc.engine, tc.containerID)
+			if err != nil {
+				t.Fatalf("Dump() error = %v", err)
+			}
+			defer func() { _ = rc.Close() }()
 
-	rc, err := d.Dump(context.Background(), store.EngineRedis, "db-cache")
-	if err != nil {
-		t.Fatalf("Dump() error = %v", err)
-	}
-	defer func() { _ = rc.Close() }()
+			if rt.gotContainer != tc.containerID {
+				t.Errorf("container = %q, want %q", rt.gotContainer, tc.containerID)
+			}
+			if !reflect.DeepEqual(rt.gotCmd, tc.wantCmd) {
+				t.Errorf("cmd = %v, want %v", rt.gotCmd, tc.wantCmd)
+			}
 
-	if rt.gotContainer != "db-cache" {
-		t.Errorf("container = %q, want %q", rt.gotContainer, "db-cache")
-	}
-	wantCmd := []string{"redis-cli", "--rdb", "-"}
-	if !reflect.DeepEqual(rt.gotCmd, wantCmd) {
-		t.Errorf("cmd = %v, want %v", rt.gotCmd, wantCmd)
-	}
-
-	got, err := io.ReadAll(rc)
-	if err != nil {
-		t.Fatalf("ReadAll() error = %v", err)
-	}
-	if string(got) != "rdb-bytes" {
-		t.Errorf("content = %q, want %q", got, "rdb-bytes")
-	}
-}
-
-func TestContainerDumper_Dump_MariaDB(t *testing.T) {
-	rt := &fakeExecRuntime{content: "mariadb-dump-bytes"}
-	d := &ContainerDumper{Runtime: rt}
-
-	rc, err := d.Dump(context.Background(), store.EngineMariaDB, "db-mydb")
-	if err != nil {
-		t.Fatalf("Dump() error = %v", err)
-	}
-	defer func() { _ = rc.Close() }()
-
-	if rt.gotContainer != "db-mydb" {
-		t.Errorf("container = %q, want %q", rt.gotContainer, "db-mydb")
-	}
-	wantCmd := []string{"sh", "-c", `exec mariadb-dump -uroot -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"`}
-	if !reflect.DeepEqual(rt.gotCmd, wantCmd) {
-		t.Errorf("cmd = %v, want %v", rt.gotCmd, wantCmd)
-	}
-
-	got, err := io.ReadAll(rc)
-	if err != nil {
-		t.Fatalf("ReadAll() error = %v", err)
-	}
-	if string(got) != "mariadb-dump-bytes" {
-		t.Errorf("content = %q, want %q", got, "mariadb-dump-bytes")
-	}
-}
-
-func TestContainerDumper_Dump_KeyDB(t *testing.T) {
-	rt := &fakeExecRuntime{content: "rdb-bytes"}
-	d := &ContainerDumper{Runtime: rt}
-
-	rc, err := d.Dump(context.Background(), store.EngineKeyDB, "db-cache")
-	if err != nil {
-		t.Fatalf("Dump() error = %v", err)
-	}
-	defer func() { _ = rc.Close() }()
-
-	if rt.gotContainer != "db-cache" {
-		t.Errorf("container = %q, want %q", rt.gotContainer, "db-cache")
-	}
-	wantCmd := []string{"keydb-cli", "--rdb", "-"}
-	if !reflect.DeepEqual(rt.gotCmd, wantCmd) {
-		t.Errorf("cmd = %v, want %v", rt.gotCmd, wantCmd)
-	}
-
-	got, err := io.ReadAll(rc)
-	if err != nil {
-		t.Fatalf("ReadAll() error = %v", err)
-	}
-	if string(got) != "rdb-bytes" {
-		t.Errorf("content = %q, want %q", got, "rdb-bytes")
-	}
-}
-
-func TestContainerDumper_Dump_Dragonfly(t *testing.T) {
-	rt := &fakeExecRuntime{content: "rdb-bytes"}
-	d := &ContainerDumper{Runtime: rt}
-
-	rc, err := d.Dump(context.Background(), store.EngineDragonfly, "db-cache")
-	if err != nil {
-		t.Fatalf("Dump() error = %v", err)
-	}
-	defer func() { _ = rc.Close() }()
-
-	if rt.gotContainer != "db-cache" {
-		t.Errorf("container = %q, want %q", rt.gotContainer, "db-cache")
-	}
-	wantCmd := []string{"sh", "-c", "redis-cli SAVE RDB dump.rdb && exec cat /data/dump.rdb"}
-	if !reflect.DeepEqual(rt.gotCmd, wantCmd) {
-		t.Errorf("cmd = %v, want %v", rt.gotCmd, wantCmd)
-	}
-
-	got, err := io.ReadAll(rc)
-	if err != nil {
-		t.Fatalf("ReadAll() error = %v", err)
-	}
-	if string(got) != "rdb-bytes" {
-		t.Errorf("content = %q, want %q", got, "rdb-bytes")
+			got, err := io.ReadAll(rc)
+			if err != nil {
+				t.Fatalf("ReadAll() error = %v", err)
+			}
+			if string(got) != tc.content {
+				t.Errorf("content = %q, want %q", got, tc.content)
+			}
+		})
 	}
 }
 
