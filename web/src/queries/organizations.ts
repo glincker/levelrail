@@ -52,6 +52,35 @@ export function useOrganizationListOptional() {
   return useQuery({ ...organizationListQueryOptions(), retry: false })
 }
 
+// GET /api/v1/organizations/{id} (handleGetOrganization), for the
+// organization detail route.
+export async function fetchOrganization(
+  id: string,
+): Promise<OrganizationResource> {
+  const res = await fetch(`/api/v1/organizations/${encodeURIComponent(id)}`)
+  if (res.status === 404) {
+    throw new ApiError(404, `organization not found: ${id}`)
+  }
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `fetch organization failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as OrganizationResource
+}
+
+export function organizationDetailQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: organizationKeys.detail(id),
+    queryFn: () => fetchOrganization(id),
+  })
+}
+
+export function useOrganization(id: string) {
+  return useSuspenseQuery(organizationDetailQueryOptions(id))
+}
+
 export async function createOrganization(
   name: string,
 ): Promise<OrganizationResource> {

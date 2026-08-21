@@ -10,6 +10,7 @@ import {
   useDeployStatus,
 } from '../../queries/deploys'
 import { summarizeAppStatus } from '../../lib/appStatus'
+import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { CloneAppDialog } from '../../components/CloneAppDialog'
 import { DeleteAppDialog } from '../../components/DeleteAppDialog'
 import { DeployTriggerForm } from '../../components/DeployTriggerForm'
@@ -18,6 +19,27 @@ import { StopStartAppButton } from '../../components/StopStartAppButton'
 import { ConvergenceIndicator } from '../../components/ConvergenceIndicator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+
+// Matches the 13 real section routes under /apps/$name/* (see
+// AppScopedSidebar.tsx's own nav, the source of truth for these labels):
+// the breadcrumb's trailing "sub-page" segment, keyed by the pathname's
+// last segment. /overview is included even though it's the default
+// redirect target, so the breadcrumb still names the page you're on.
+const APP_SECTION_LABELS: Record<string, string> = {
+  overview: 'Overview',
+  deploys: 'Deploys',
+  domains: 'Domains',
+  network: 'Network',
+  services: 'Services',
+  environment: 'Environment',
+  health: 'Health',
+  resources: 'Resources',
+  'scheduled-tasks': 'Scheduled tasks',
+  metrics: 'Metrics',
+  logs: 'Logs',
+  alerts: 'Alerts',
+  exec: 'Exec',
+}
 
 // App detail layout route (TASKS.md 1.10, expanded into a per-section
 // nested-route layout): this file used to render all 8 sections itself as client-side
@@ -76,12 +98,23 @@ function AppDetailLayout() {
       s.location.pathname.endsWith('/overview') ||
       s.location.pathname.endsWith('/deploys'),
   })
+  const section = useRouterState({
+    select: (s) => s.location.pathname.split('/').filter(Boolean).pop(),
+  })
   if (isViewingDeployLogs) {
     return <Outlet />
   }
 
   return (
     <div className="space-y-6">
+      <div>
+        <Breadcrumbs
+          projectId={app.project_id}
+          environmentId={app.environment_id}
+          appName={app.name}
+          page={section ? APP_SECTION_LABELS[section] : undefined}
+        />
+      </div>
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <h1 className="text-lg font-semibold text-foreground">{app.name}</h1>

@@ -15,6 +15,7 @@ import {
 } from '../../../../../lib/deployStages'
 import type { ReconcileCondition } from '../../../../../types/deploy'
 import { stripAnsiCodes } from '../../../../../lib/ansi'
+import { Breadcrumbs } from '../../../../../components/Breadcrumbs'
 import { LogConnectionBadge } from '../../../../../components/LogConnectionBadge'
 import { LogTerminal } from '../../../../../components/LogTerminal'
 import { BuildLogHints } from '../../../../../components/BuildLogHints'
@@ -68,6 +69,12 @@ function DeployLogsPage() {
 
   return (
     <div className="flex h-full flex-col gap-4 overflow-y-auto">
+      <Breadcrumbs
+        projectId={app.project_id}
+        environmentId={app.environment_id}
+        appName={name}
+        page="Deploy logs"
+      />
       <header className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="flex items-center gap-1.5 text-lg font-semibold text-foreground">
