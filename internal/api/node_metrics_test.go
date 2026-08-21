@@ -152,3 +152,62 @@ func TestHandleQueryNodeMetrics_NoPlacedServices_ReturnsEmptyNotError(t *testing
 		t.Errorf("resource_count = %d, want 0", got.ResourceCount)
 	}
 }
+
+// TestHandleQueryNodeMetrics_DiskUsage_ReadsHostSampleDirectly is
+// writeNodeHostMetric's real end-to-end case: disk_used_bytes/
+// disk_total_bytes are read straight off nodeResourceID(id), the same
+// key HostDiskCollector writes under, not summed across placed
+// services, so this passes even with zero services placed on the node.
+func TestHandleQueryNodeMetrics_DiskUsage_ReadsHostSampleDirectly(t *testing.T) {
+	rt, db, tdb := newTestRouterWithTelemetry(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNode(t, db, "node_a", "alpha")
+
+	now := time.Now().UTC().Truncate(time.Second)
+	err := tdb.WriteSamples(context.Background(), []telemetry.Sample{
+		{ResourceID: "node:node_a", Metric: "disk_total_bytes", Timestamp: now.Add(-10 * time.Minute), Value: 1000},
+		{ResourceID: "node:node_a", Metric: "disk_used_bytes", Timestamp: now.Add(-10 * time.Minute), Value: 400},
+		{ResourceID: "node:node_b", Metric: "disk_used_bytes", Timestamp: now.Add(-10 * time.Minute), Value: 999},
+	})
+	if err != nil {
+		t.Fatalf("seed samples: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	url := "/api/v1/nodes/node_a/metrics?metric=disk_used_bytes&from=" + now.Add(-time.Hour).Format(time.RFC3339) + "&to=" + now.Format(time.RFC3339)
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, url, ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	var got nodeMetricsResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got.Points) != 1 || got.Points[0].Value != 400 {
+		t.Errorf("points = %+v, want one point with value 400 (node_a's own sample, not node_b's 999)", got.Points)
+	}
+	if got.ResourceCount != 1 {
+		t.Errorf("resource_count = %d, want 1", got.ResourceCount)
+	}
+}
+
+func TestHandleQueryNodeMetrics_DiskUsage_NoSamples_ReturnsEmptyNotError(t *testing.T) {
+	rt, db, _ := newTestRouterWithTelemetry(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNode(t, db, "node_a", "alpha")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/nodes/node_a/metrics?metric=disk_total_bytes", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	var got nodeMetricsResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got.Points) != 0 || got.ResourceCount != 0 {
+		t.Errorf("got = %+v, want an empty, valid series", got)
+	}
+}

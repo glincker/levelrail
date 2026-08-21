@@ -4,16 +4,19 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
 // nodeResourceID is the identifier this handler stamps onto the summed,
-// computed-on-the-fly series SumAcrossResources returns. Nothing ever
-// writes samples under this key: unlike resourceIDForApp (metrics.go),
-// which names a real row in metric_samples, this only ever labels an
-// in-memory aggregate built fresh per request.
+// computed-on-the-fly series SumAcrossResources returns for
+// nodeSummableMetrics, and the real metric_samples resource ID
+// cmd/levelrail's HostDiskCollector writes nodeHostMetrics samples
+// under directly: unlike the summed metrics, a host disk reading is
+// already one real per-node measurement, not an aggregate computed at
+// query time.
 func nodeResourceID(nodeID string) string {
 	return "node:" + nodeID
 }
@@ -35,6 +38,18 @@ var nodeSummableMetrics = map[string]bool{
 	"network_tx_bytes":   true,
 	"disk_read_bytes":    true,
 	"disk_write_bytes":   true,
+}
+
+// nodeHostMetrics is disk capacity: a real host filesystem reading of
+// the volume this node's data directory lives on
+// (cmd/levelrail.HostDiskCollector, internal/telemetry/hostdisk.go),
+// queried directly by this node's own resource ID rather than summed
+// across placed services like nodeSummableMetrics above, because there
+// is exactly one real reading per node, not many containers to add
+// together.
+var nodeHostMetrics = map[string]bool{
+	"disk_used_bytes":  true,
+	"disk_total_bytes": true,
 }
 
 // nodeMetricsResponse mirrors metricsResponse (metrics.go) plus
@@ -92,11 +107,11 @@ func (rt *Router) handleQueryNodeMetrics(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, "metric query parameter is required")
 		return
 	}
-	if !nodeSummableMetrics[metric] {
+	if !nodeSummableMetrics[metric] && !nodeHostMetrics[metric] {
 		writeError(w, http.StatusBadRequest,
 			"metric must be one of cpu_percent, memory_usage_bytes, network_rx_bytes, network_tx_bytes, "+
-				"disk_read_bytes, disk_write_bytes (memory_limit_bytes cannot be honestly summed across containers "+
-				"on one node, see handleQueryNodeMetrics's doc comment)")
+				"disk_read_bytes, disk_write_bytes, disk_used_bytes, disk_total_bytes (memory_limit_bytes cannot be "+
+				"honestly summed across containers on one node, see handleQueryNodeMetrics's doc comment)")
 		return
 	}
 
@@ -108,6 +123,11 @@ func (rt *Router) handleQueryNodeMetrics(w http.ResponseWriter, r *http.Request)
 	step, err := parseStep(r)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if nodeHostMetrics[metric] {
+		rt.writeNodeHostMetric(w, r, id, metric, from, to, step)
 		return
 	}
 
@@ -151,5 +171,35 @@ func (rt *Router) handleQueryNodeMetrics(w http.ResponseWriter, r *http.Request)
 		points[i] = metricPoint{Timestamp: a.Timestamp, Value: a.Value, Count: a.Count}
 	}
 
+	writeJSON(w, http.StatusOK, nodeMetricsResponse{Metric: metric, Points: points, ResourceCount: resourceCount})
+}
+
+// writeNodeHostMetric answers a nodeHostMetrics query: unlike the sum-
+// across-placed-services path above, this is a direct read of the one
+// real sample series HostDiskCollector writes under nodeResourceID(id),
+// so there is nothing to fan out or sum. ResourceCount is 1 when the
+// range has any data and 0 otherwise, purely so the wire shape matches
+// nodeMetricsResponse; the frontend doesn't read it for this metric
+// group (NodeMetricsDashboard.tsx never captions a disk chart with a
+// container count).
+func (rt *Router) writeNodeHostMetric(w http.ResponseWriter, r *http.Request, id, metric string, from, to time.Time, step time.Duration) {
+	samples, err := rt.telemetry.QueryMetrics(r.Context(), nodeResourceID(id), metric, from, to)
+	if err != nil {
+		rt.logger.Error("api: query node metrics: host disk query failed",
+			slog.String("error", err.Error()), slog.String("node_id", id), slog.String("metric", metric))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	aggregated := telemetry.Aggregate(samples, from, step)
+	points := make([]metricPoint, len(aggregated))
+	for i, a := range aggregated {
+		points[i] = metricPoint{Timestamp: a.Timestamp, Value: a.Value, Count: a.Count}
+	}
+
+	resourceCount := 0
+	if len(samples) > 0 {
+		resourceCount = 1
+	}
 	writeJSON(w, http.StatusOK, nodeMetricsResponse{Metric: metric, Points: points, ResourceCount: resourceCount})
 }
