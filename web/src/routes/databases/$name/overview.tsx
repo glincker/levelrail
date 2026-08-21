@@ -106,7 +106,7 @@ function OverviewSection() {
 
       <DatabasePublicAccessCard database={database} />
 
-      <BackupsSection databaseName={database.name} />
+      <BackupsSection database={database} />
     </div>
   )
 }

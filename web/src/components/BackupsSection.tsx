@@ -41,7 +41,9 @@ import {
 } from '../queries/backupHistory'
 import { useRestoreHistory } from '../queries/restoreHistory'
 import { RestoreBackupDialog } from './RestoreBackupDialog'
+import { BackupScheduleForm } from './BackupScheduleForm'
 import type { BackupHistoryRecord, BackupStatus } from '../types/backupHistory'
+import type { DatabaseResource } from '../types/databaseDetail'
 import type {
   RestoreHistoryRecord,
   RestoreStatus,
@@ -464,13 +466,15 @@ function RestoreHistoryTable({ databaseName }: { databaseName: string }) {
   )
 }
 
-export function BackupsSection({ databaseName }: { databaseName: string }) {
+export function BackupsSection({ database }: { database: DatabaseResource }) {
+  const databaseName = database.name
   return (
     <Card>
       <CardHeader>
         <CardTitle>Backups</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <BackupScheduleForm database={database} />
         <TriggerBackupRow databaseName={databaseName} />
         <BackupHistoryTable databaseName={databaseName} />
         <RestoreHistoryTable databaseName={databaseName} />
