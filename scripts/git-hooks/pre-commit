@@ -25,6 +25,14 @@ if [ -n "$staged_go_files" ]; then
 	fi
 fi
 
+echo "pre-commit: migration version collisions"
+staged_migrations=$(git diff --cached --name-only --diff-filter=ACM -- 'internal/store/migrations/*.sql')
+if [ -n "$staged_migrations" ]; then
+	if ! scripts/check-migration-versions.sh; then
+		fail=1
+	fi
+fi
+
 echo "pre-commit: go vet"
 if ! go vet ./... 2>&1; then
 	fail=1

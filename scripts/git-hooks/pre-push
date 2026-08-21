@@ -10,6 +10,11 @@ fail=0
 coverage_out="$(mktemp -t levelrail-coverage.XXXXXX)"
 trap 'rm -f "$coverage_out"' EXIT
 
+echo "pre-push: migration version collisions"
+if ! scripts/check-migration-versions.sh; then
+	fail=1
+fi
+
 echo "pre-push: go build"
 if ! go build ./... 2>&1; then
 	fail=1
