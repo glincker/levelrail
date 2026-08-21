@@ -138,8 +138,8 @@ type Resources struct {
 
 // Supported managed database engines: Postgres and Redis shipped as
 // first-class resources in the initial release, MySQL, MongoDB,
-// MariaDB, KeyDB, and ClickHouse joined once internal/reconcile/database's
-// controller grew matching engine cases.
+// MariaDB, KeyDB, ClickHouse, and Dragonfly joined once
+// internal/reconcile/database's controller grew matching engine cases.
 const (
 	EngineFake       = "" // zero value only, never valid; see Validate
 	EnginePostgres   = "postgres"
@@ -149,6 +149,7 @@ const (
 	EngineMariaDB    = "mariadb"
 	EngineKeyDB      = "keydb"
 	EngineClickHouse = "clickhouse"
+	EngineDragonfly  = "dragonfly"
 )
 
 // Database is one entry under databases:.
