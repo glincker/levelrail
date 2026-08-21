@@ -117,42 +117,20 @@ func TestController_Reconcile_DatabaseEnv_PerFieldVariants(t *testing.T) {
 	}
 }
 
-func TestController_Reconcile_DatabaseEnv_Redis_URL_NoPassword(t *testing.T) {
-	rt := newFakeRuntime(0)
-	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
-		"cache": {Name: "cache", Engine: store.EngineRedis},
-	}}
-	desired := &store.DesiredService{
-		Name: "web", Image: "img:v1", Port: 80,
-		DatabaseEnv: map[string]store.DatabaseEnvRef{
-			"REDIS_URL": {Database: "cache", Field: "url"},
-		},
-	}
-	// No WithSecretResolver: redis needs none, so this must still succeed.
-	c := New("web", &fakeStore{svc: desired}, rt, WithDatabaseAttachments(dbStore))
-
-	if _, err := c.Reconcile(context.Background()); err != nil {
-		t.Fatalf("Reconcile() error = %v", err)
-	}
-	want := "redis://db-cache:6379"
-	if got := rt.lastCreateEnv["REDIS_URL"]; got != want {
-		t.Errorf("container env REDIS_URL = %q, want %q", got, want)
-	}
-}
-
-// TestController_Reconcile_DatabaseEnv_KeyDBAndDragonfly_URL_UsesRedisScheme
-// guards resolveDatabaseURL's Redis-protocol-family branch: both engines
-// are passwordless drop-in Redis forks, so their URL must use the
-// "redis://" scheme a Redis client library actually recognizes, not
-// "keydb://"/"dragonfly://" (neither engine's own PasswordSecretKey
-// entry exists, so falling through to the generic credentialed branch
-// would fail resolution entirely, the bug this test locks in the fix
-// for).
-func TestController_Reconcile_DatabaseEnv_KeyDBAndDragonfly_URL_UsesRedisScheme(t *testing.T) {
+// TestController_Reconcile_DatabaseEnv_RedisProtocolFamily_URL_UsesRedisScheme
+// guards resolveDatabaseURL's Redis-protocol-family branch: all three
+// engines are passwordless drop-in Redis forks, so their URL must use
+// the "redis://" scheme a Redis client library actually recognizes, not
+// "keydb://"/"dragonfly://" (neither KeyDB nor Dragonfly has its own
+// PasswordSecretKey entry, so falling through to the generic
+// credentialed branch would fail resolution entirely, the bug this test
+// locks in the fix for).
+func TestController_Reconcile_DatabaseEnv_RedisProtocolFamily_URL_UsesRedisScheme(t *testing.T) {
 	tests := []struct {
 		name   string
 		engine string
 	}{
+		{name: "Redis", engine: store.EngineRedis},
 		{name: "KeyDB", engine: store.EngineKeyDB},
 		{name: "Dragonfly", engine: store.EngineDragonfly},
 	}
