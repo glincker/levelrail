@@ -143,11 +143,7 @@ export function useUpdateApp(name: string) {
 // (internal/api/apps.go) already treats an omitted/empty strategy and a
 // zero replicas count as "use the store's default"
 // (DefaultDeployStrategy/DefaultReplicas), the exact same fallthrough a
-// service saved without these fields has always had. "rolling" is
-// deliberately excluded from this type: a brand-new app has no existing
-// rolling state to preserve, so there is no honest reason to offer it as
-// a creation-time choice the way DeployStrategyEditor must for an
-// existing one.
+// service saved without these fields has always had.
 // project_id is optional and, unlike node placement, sent directly in
 // this same create request: handleCreateApp's own doc comment (internal/
 // api/apps.go) explains why a brand-new app is safe to assign a project
@@ -159,7 +155,7 @@ export interface CreateAppRequest {
   name: string
   image: string
   port: number
-  strategy?: Exclude<DeployStrategy, 'rolling'>
+  strategy?: DeployStrategy
   replicas?: number
   project_id?: string
   domains?: string[]

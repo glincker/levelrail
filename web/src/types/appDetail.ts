@@ -25,13 +25,7 @@ export interface ServiceHealth {
 
 // The three deploy strategy values internal/spec.Service.Strategy
 // accepts (internal/spec/spec.go's StrategyRolling/StrategyRecreate/
-// StrategyBlueGreen). "rolling" is included here because it's a real,
-// readable value a service can already carry (e.g. a hand-edited
-// app.yaml deployed outside this UI), not because it's meant to be
-// offered as a new choice: internal/reconcile/application's controller
-// refuses to run it (documented "unsupported" condition, not a bug),
-// so DeployStrategyEditor deliberately does not let an operator pick it
-// going forward, see that component's own comment.
+// StrategyBlueGreen), all three reconciler-backed.
 export type DeployStrategy = 'rolling' | 'recreate' | 'blue-green'
 
 // Matches internal/store's LogDrainType exactly: the two sink protocols
