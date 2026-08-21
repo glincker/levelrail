@@ -302,6 +302,20 @@ func TestParse_ValidStatic_NoPortRequired(t *testing.T) {
 	}
 }
 
+func TestParse_ValidCompose_NoPortRequired(t *testing.T) {
+	s, err := Parse(readTestdata(t, "valid_compose.yaml"))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	stack := s.Services["stack"]
+	if stack.Build.Type != BuildCompose {
+		t.Errorf("Build.Type = %q, want %q", stack.Build.Type, BuildCompose)
+	}
+	if stack.Port != 0 {
+		t.Errorf("Port = %d, want 0 (a compose wrapper expands into N services, each with its own port, not one to route to itself)", stack.Port)
+	}
+}
+
 // TestParse_Invalid covers errors from both validation layers: schema
 // (structural shape) and Validate (semantic, cross-field/cross-service).
 // Schema error messages come from the library and aren't asserted on
@@ -536,6 +550,15 @@ services:
 version: 1
 services:
   docs: { build: { type: static }, port: 8080 }
+`,
+			wantErrSubstr: "port must not be set when build.type is",
+		},
+		{
+			name: "port must not be set for compose build",
+			yaml: `
+version: 1
+services:
+  stack: { build: { type: compose, path: docker-compose.yml }, port: 8080 }
 `,
 			wantErrSubstr: "port must not be set when build.type is",
 		},

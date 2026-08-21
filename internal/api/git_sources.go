@@ -184,7 +184,7 @@ func normalizeGitSourceBuildType(buildType string) (string, error) {
 	case spec.BuildDockerfile, spec.BuildRailpack, spec.BuildStatic:
 		return buildType, nil
 	case spec.BuildCompose:
-		return "", fmt.Errorf("build_type %q is not yet supported for a git source", buildType)
+		return "", fmt.Errorf("build_type %q is not supported for a git source: a compose file always declares its own set of services, which can only be expanded into a real multi-service deploy (POST /api/v1/apps/{name}/deploy-spec), never a single one this source's own webhook rebuilds", buildType)
 	case spec.BuildImage:
 		return "", fmt.Errorf("build_type %q is not supported for a git source: a pinned image has nothing to rebuild on push, use POST /api/v1/apps/{name}/deploys to redeploy it directly", buildType)
 	default:

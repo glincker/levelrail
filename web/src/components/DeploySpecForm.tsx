@@ -30,7 +30,13 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 
-const buildTypeValues = ['dockerfile', 'railpack', 'static', 'image'] as const
+const buildTypeValues = [
+  'dockerfile',
+  'railpack',
+  'static',
+  'image',
+  'compose',
+] as const
 
 const serviceSchema = z
   .object({
@@ -47,6 +53,13 @@ const serviceSchema = z
         code: 'custom',
         message: 'Image reference is required for build type "image"',
         path: ['buildImage'],
+      })
+    }
+    if (data.buildType === 'compose' && !data.buildPath) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Compose file path is required for build type "compose"',
+        path: ['buildPath'],
       })
     }
   })
@@ -328,18 +341,20 @@ function ServiceRow({
             )}
           />
         </Field>
-        <Field className="flex-1">
-          <FieldLabel htmlFor={`deploy-spec-port-${index}`}>
-            Port (optional)
-          </FieldLabel>
-          <Input
-            id={`deploy-spec-port-${index}`}
-            {...register(`services.${index}.port`)}
-            type="number"
-            placeholder="3000"
-            disabled={disabled}
-          />
-        </Field>
+        {buildType === 'compose' ? null : (
+          <Field className="flex-1">
+            <FieldLabel htmlFor={`deploy-spec-port-${index}`}>
+              Port (optional)
+            </FieldLabel>
+            <Input
+              id={`deploy-spec-port-${index}`}
+              {...register(`services.${index}.port`)}
+              type="number"
+              placeholder="3000"
+              disabled={disabled}
+            />
+          </Field>
+        )}
         {onRemove ? (
           <Button
             type="button"
@@ -376,36 +391,57 @@ function ServiceRow({
         ) : (
           <Field className="flex-1">
             <FieldLabel htmlFor={`deploy-spec-build-path-${index}`}>
-              {buildType === 'dockerfile' ? 'Dockerfile path' : 'Build path'}{' '}
-              (optional)
+              {buildPathLabel(buildType)}
             </FieldLabel>
             <Input
               id={`deploy-spec-build-path-${index}`}
               {...register(`services.${index}.buildPath`)}
               className="font-mono"
-              placeholder="./Dockerfile"
+              placeholder={
+                buildType === 'compose'
+                  ? './docker-compose.yml'
+                  : './Dockerfile'
+              }
+              autoComplete="off"
+              spellCheck={false}
+              disabled={disabled}
+            />
+            <FieldError
+              errors={errors?.buildPath ? [errors.buildPath] : undefined}
+            />
+          </Field>
+        )}
+        {buildType === 'compose' ? null : (
+          <Field className="flex-1">
+            <FieldLabel htmlFor={`deploy-spec-domains-${index}`}>
+              Domains (optional, comma-separated)
+            </FieldLabel>
+            <Input
+              id={`deploy-spec-domains-${index}`}
+              {...register(`services.${index}.domains`)}
+              placeholder="app.example.com, www.app.example.com"
               autoComplete="off"
               spellCheck={false}
               disabled={disabled}
             />
           </Field>
         )}
-        <Field className="flex-1">
-          <FieldLabel htmlFor={`deploy-spec-domains-${index}`}>
-            Domains (optional, comma-separated)
-          </FieldLabel>
-          <Input
-            id={`deploy-spec-domains-${index}`}
-            {...register(`services.${index}.domains`)}
-            placeholder="app.example.com, www.app.example.com"
-            autoComplete="off"
-            spellCheck={false}
-            disabled={disabled}
-          />
-        </Field>
       </div>
+      {buildType === 'compose' ? (
+        <p className="mt-2 text-xs text-muted-foreground">
+          The service key above is a placeholder: every service this compose
+          file declares becomes its own real service under this app, using its
+          own name, port, and domains from the file itself.
+        </p>
+      ) : null}
     </div>
   )
+}
+
+function buildPathLabel(buildType: (typeof buildTypeValues)[number]): string {
+  if (buildType === 'compose') return 'Compose file path'
+  if (buildType === 'dockerfile') return 'Dockerfile path (optional)'
+  return 'Build path (optional)'
 }
 
 function DeploySpecResultSummary({ result }: { result: DeploySpecResult }) {

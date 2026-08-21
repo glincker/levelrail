@@ -130,7 +130,7 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 	}
 	for key, svc := range req.Services {
 		switch svc.Build.Type {
-		case spec.BuildDockerfile, spec.BuildRailpack, spec.BuildStatic, spec.BuildImage:
+		case spec.BuildDockerfile, spec.BuildRailpack, spec.BuildStatic, spec.BuildImage, spec.BuildCompose:
 			// Supported. spec.BuildImage needs no build at all
 			// (internal/deploy.Pipeline.deployImage), but this switch's job
 			// is only to reject what internal/deploy.Pipeline.Deploy's own
@@ -138,9 +138,10 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 			// build; a sibling service in the same app.yaml that does need
 			// one is exactly why this request still requires repo_url/ref
 			// even when every service happens to be build.type: image.
-		case spec.BuildCompose:
-			writeError(w, http.StatusNotImplemented, fmt.Sprintf("service %q: build.type %q is not yet supported for a multi-service deploy", key, svc.Build.Type))
-			return
+			// spec.BuildCompose is expanded into real per-service entries
+			// before Deploy ever sees it (internal/deploy.Pipeline.
+			// DeploySpec's own expandComposeServices), never dispatched to
+			// Deploy's switch itself.
 		default:
 			writeError(w, http.StatusBadRequest, fmt.Sprintf("service %q: build.type %q is not recognized", key, svc.Build.Type))
 			return

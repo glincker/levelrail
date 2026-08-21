@@ -10,7 +10,13 @@ export interface AppGroup {
 
 // Deliberately does not reuse appDetail.ts's bytes/nanosecond encoding;
 // deploy-spec decodes straight into internal/spec.Service instead.
-export type DeploySpecBuildType = 'dockerfile' | 'railpack' | 'static' | 'image'
+// 'compose' expands into N real services server-side
+// (internal/deploy.Pipeline.DeploySpec's own expandComposeServices):
+// buildPath here is the compose file's own path, and port/domains/
+// replicas are meaningless for it (the wrapper key never survives
+// expansion, see DeploySpecForm's own handling).
+export type DeploySpecBuildType =
+  'dockerfile' | 'railpack' | 'static' | 'image' | 'compose'
 
 export interface DeploySpecServiceInput {
   key: string

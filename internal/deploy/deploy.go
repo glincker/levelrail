@@ -191,7 +191,13 @@ func (p *Pipeline) Deploy(ctx context.Context, req Request, progress func(build.
 		// store.StaticSite save, not a build.
 		return p.deployStatic(ctx, req)
 	case spec.BuildCompose:
-		return "", fmt.Errorf("deploy: service %q: build.type %q is not yet supported", req.ServiceName, spec.BuildCompose)
+		// A compose file always declares its own set of services, so it
+		// can never resolve to the one image a single-service Deploy call
+		// expects back: only DeploySpec's own multi-service fan-out
+		// (expandComposeServices, multi.go) can expand it, since expanding
+		// means producing N services under one app, not one image under
+		// this one.
+		return "", fmt.Errorf("deploy: service %q: build.type %q is only supported via a multi-service deploy (POST /api/v1/apps/{name}/deploy-spec), not a single-service one", req.ServiceName, spec.BuildCompose)
 	case spec.BuildRailpack:
 		return p.deployRailpack(ctx, req, progress)
 	case spec.BuildImage:

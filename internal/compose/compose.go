@@ -1,8 +1,14 @@
 // Package compose parses a Docker Compose file into Levelrail's own
-// desired-state model. Scope is deliberately narrow: every service
-// needs a pre-built image (no build:), environment/ports/volumes
-// support only their short-form syntax, and everything else (networks,
-// depends_on, restart, ...) parses but is ignored.
+// desired-state model, in two shapes depending on the caller. The
+// direct-import path (ToDesiredServices, via Validate) is deliberately
+// narrow: every service needs a pre-built image (no build:), since
+// there is no build context to build one from (a pasted file, no git
+// checkout). The git-sourced expand path (ExpandBuildService, via
+// ValidateForBuild) allows build: for exactly that reason: it always
+// has a real checkout. Both paths share the same narrow scope
+// otherwise: environment/ports/volumes support only their short-form
+// syntax, and everything else (networks, depends_on, restart, ...)
+// parses but is ignored.
 package compose
 
 import (
@@ -72,8 +78,24 @@ func Parse(data []byte) (*File, error) {
 
 // Validate reports every unsupported-shape problem across all
 // services, not just the first, so a template author can fix them in
-// one pass.
+// one pass. Used by the direct-import path (ToDesiredServices), which
+// has no build context (no git checkout, just a pasted file) to build
+// a build: block from, so it rejects one outright. See ValidateForBuild
+// for the git-sourced deploy-spec path, which does have one.
 func (f *File) Validate() error {
+	return f.validate(false)
+}
+
+// ValidateForBuild is Validate, except a service's build: block is
+// allowed rather than rejected: used only by the git-sourced
+// expand-a-compose-file-into-services path (ExpandBuildService), which
+// has a real checkout to resolve a build context against, unlike the
+// direct-import path Validate itself still guards.
+func (f *File) ValidateForBuild() error {
+	return f.validate(true)
+}
+
+func (f *File) validate(allowBuild bool) error {
 	if len(f.Services) == 0 {
 		return fmt.Errorf("compose: no services declared")
 	}
@@ -81,7 +103,7 @@ func (f *File) Validate() error {
 	var errs []error
 	for _, name := range sortedServiceNames(f) {
 		svc := f.Services[name]
-		if svc.Build != nil {
+		if svc.Build != nil && !allowBuild {
 			errs = append(errs, fmt.Errorf("service %q: build: is not supported, declare a pre-built image: instead", name))
 		}
 		if svc.Image == "" && svc.Build == nil {
