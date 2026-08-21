@@ -66,6 +66,23 @@ func TestHandleQueryNodeMetrics_RejectsMemoryLimit(t *testing.T) {
 	}
 }
 
+// queryNodeMetrics issues url and decodes a 200 response into
+// nodeMetricsResponse, the shared shape every real (non-error) case in
+// this file asserts against.
+func queryNodeMetrics(t *testing.T, rt *Router, cookie *http.Cookie, url string) nodeMetricsResponse {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, url, ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var got nodeMetricsResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	return got
+}
+
 // TestHandleQueryNodeMetrics_SumsAcrossPlacedServices is the real
 // end-to-end case: two services placed on the same node, each with its
 // own collected samples, must come back as one summed series with
@@ -104,17 +121,8 @@ func TestHandleQueryNodeMetrics_SumsAcrossPlacedServices(t *testing.T) {
 		t.Fatalf("seed samples: %v", err)
 	}
 
-	rec := httptest.NewRecorder()
 	url := "/api/v1/nodes/node_a/metrics?metric=cpu_percent&from=" + now.Add(-time.Hour).Format(time.RFC3339) + "&to=" + now.Format(time.RFC3339)
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, url, ""))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
-	}
-
-	var got nodeMetricsResponse
-	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
+	got := queryNodeMetrics(t, rt, cookie, url)
 	if len(got.Points) != 1 {
 		t.Fatalf("points = %d, want 1", len(got.Points))
 	}
@@ -135,16 +143,7 @@ func TestHandleQueryNodeMetrics_NoPlacedServices_ReturnsEmptyNotError(t *testing
 	cookie := loginTestSession(t, rt, db)
 	seedNode(t, db, "node_a", "alpha")
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/nodes/node_a/metrics?metric=cpu_percent", ""))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
-	}
-
-	var got nodeMetricsResponse
-	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
+	got := queryNodeMetrics(t, rt, cookie, "/api/v1/nodes/node_a/metrics?metric=cpu_percent")
 	if len(got.Points) != 0 {
 		t.Errorf("points = %d, want 0", len(got.Points))
 	}
@@ -173,17 +172,8 @@ func TestHandleQueryNodeMetrics_DiskUsage_ReadsHostSampleDirectly(t *testing.T) 
 		t.Fatalf("seed samples: %v", err)
 	}
 
-	rec := httptest.NewRecorder()
 	url := "/api/v1/nodes/node_a/metrics?metric=disk_used_bytes&from=" + now.Add(-time.Hour).Format(time.RFC3339) + "&to=" + now.Format(time.RFC3339)
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, url, ""))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
-	}
-
-	var got nodeMetricsResponse
-	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
+	got := queryNodeMetrics(t, rt, cookie, url)
 	if len(got.Points) != 1 || got.Points[0].Value != 400 {
 		t.Errorf("points = %+v, want one point with value 400 (node_a's own sample, not node_b's 999)", got.Points)
 	}
@@ -197,16 +187,7 @@ func TestHandleQueryNodeMetrics_DiskUsage_NoSamples_ReturnsEmptyNotError(t *test
 	cookie := loginTestSession(t, rt, db)
 	seedNode(t, db, "node_a", "alpha")
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/nodes/node_a/metrics?metric=disk_total_bytes", ""))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
-	}
-
-	var got nodeMetricsResponse
-	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
+	got := queryNodeMetrics(t, rt, cookie, "/api/v1/nodes/node_a/metrics?metric=disk_total_bytes")
 	if len(got.Points) != 0 || got.ResourceCount != 0 {
 		t.Errorf("got = %+v, want an empty, valid series", got)
 	}
