@@ -19,6 +19,8 @@ export type DomainCheckStatus =
 export interface DomainCheckResult {
   domain: string
   expected_host?: string
+  expected_ipv4?: string[]
+  expected_ipv6?: string[]
   host_inferred?: boolean
   resolved: boolean
   resolved_hosts?: string[]

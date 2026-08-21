@@ -103,6 +103,11 @@ type domainCheckResponse struct {
 	Resolved      bool     `json:"resolved"`
 	ResolvedHosts []string `json:"resolved_hosts,omitempty"`
 	Status        string   `json:"status"`
+	// ExpectedIPv4/ExpectedIPv6 split ExpectedHost's resolved addresses
+	// by family, so the frontend can offer A/AAAA as alternatives to
+	// CNAME when ExpectedHost is a hostname with both.
+	ExpectedIPv4 []string `json:"expected_ipv4,omitempty"`
+	ExpectedIPv6 []string `json:"expected_ipv6,omitempty"`
 }
 
 // advertisedHost picks the host DomainEditor should tell an operator to
@@ -139,6 +144,21 @@ func expectedIPs(ctx context.Context, lookup lookupHostFunc, host string) []stri
 		return nil
 	}
 	return hosts
+}
+
+// splitByFamily buckets addrs into IPv4 and IPv6.
+func splitByFamily(addrs []string) (v4, v6 []string) {
+	for _, a := range addrs {
+		ip := net.ParseIP(a)
+		switch {
+		case ip == nil:
+		case ip.To4() != nil:
+			v4 = append(v4, a)
+		default:
+			v6 = append(v6, a)
+		}
+	}
+	return v4, v6
 }
 
 func hostsOverlap(a, b []string) bool {
@@ -203,6 +223,7 @@ func (rt *Router) runDomainCheck(ctx context.Context, domain, expectedHost strin
 		cancel()
 		rt.domainChecks.set(expectedCacheKey, domainCheckResult{resolvedHosts: expected, at: time.Now()})
 	}
+	resp.ExpectedIPv4, resp.ExpectedIPv6 = splitByFamily(expected)
 
 	if hostsOverlap(result.resolvedHosts, expected) {
 		resp.Status = domainCheckStatusConnected
