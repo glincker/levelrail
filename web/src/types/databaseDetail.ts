@@ -44,4 +44,12 @@ export interface DatabaseResource {
   // handleUpdateApp, so this field is settable only through its own
   // dedicated route.
   resources?: ServiceResources | null
+  // backup_target_id/backup_schedule/backup_retain: response-only, the
+  // same boundary publicly_accessible/public_port already establish. Set
+  // or cleared via PUT/DELETE /api/v1/databases/{name}/backup-schedule
+  // (useSetDatabaseBackupSchedule/useClearDatabaseBackupSchedule,
+  // queries/databases.ts).
+  backup_target_id?: string
+  backup_schedule?: string
+  backup_retain?: number
 }

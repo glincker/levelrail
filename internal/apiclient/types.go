@@ -243,6 +243,23 @@ type TriggerBackupRequest struct {
 	TargetID string `json:"target_id"`
 }
 
+// BackupScheduleResource mirrors internal/api's backupScheduleResource
+// (internal/api/backups.go): PUT/DELETE .../backup-schedule only ever
+// touch these three fields, never the full database resource.
+type BackupScheduleResource struct {
+	DatabaseName string `json:"database_name"`
+	TargetID     string `json:"target_id,omitempty"`
+	Schedule     string `json:"schedule,omitempty"`
+	Retain       int    `json:"retain,omitempty"`
+}
+
+// SetBackupScheduleRequest mirrors internal/api's setBackupScheduleRequest.
+type SetBackupScheduleRequest struct {
+	TargetID string `json:"target_id"`
+	Schedule string `json:"schedule"`
+	Retain   int    `json:"retain,omitempty"`
+}
+
 // ListBackupsOptions is ListBackups' pagination input, mirroring the
 // server's ?limit/?before query params. Zero values omit the param
 // (Limit <= 0 uses the server default, Before == "" is the first page).

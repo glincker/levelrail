@@ -444,3 +444,113 @@ export function useSetDatabaseResources() {
     },
   })
 }
+
+// BackupScheduleResource mirrors internal/api's backupScheduleResource
+// (internal/api/backups.go): PUT/DELETE only ever touch these three
+// fields, never the full database resource.
+export interface BackupScheduleResource {
+  database_name: string
+  target_id?: string
+  schedule?: string
+  retain?: number
+}
+
+export interface SetDatabaseBackupScheduleRequest {
+  name: string
+  targetId: string
+  schedule: string
+  retain: number
+}
+
+// PUT /api/v1/databases/{name}/backup-schedule
+// (handleSetBackupSchedule). 400 means an invalid cron expression or a
+// missing target_id; 404 means the database or target itself is gone.
+export async function setDatabaseBackupSchedule({
+  name,
+  targetId,
+  schedule,
+  retain,
+}: SetDatabaseBackupScheduleRequest): Promise<BackupScheduleResource> {
+  const res = await fetch(
+    `/api/v1/databases/${encodeURIComponent(name)}/backup-schedule`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target_id: targetId, schedule, retain }),
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `set backup schedule failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as BackupScheduleResource
+}
+
+// Patches the cached DatabaseResource directly, the same "PUT response
+// only carries a few fields, not the full resource" reasoning
+// useSetDatabasePublicAccess already follows.
+export function useSetDatabaseBackupSchedule() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: setDatabaseBackupSchedule,
+    onSuccess: (result) => {
+      queryClient.setQueryData(
+        databaseKeys.detail(result.database_name),
+        (existing: DatabaseResource | undefined) =>
+          existing && {
+            ...existing,
+            backup_target_id: result.target_id,
+            backup_schedule: result.schedule,
+            backup_retain: result.retain,
+          },
+      )
+      void queryClient.invalidateQueries({
+        queryKey: databaseKeys.detail(result.database_name),
+      })
+    },
+  })
+}
+
+// DELETE /api/v1/databases/{name}/backup-schedule
+// (handleClearBackupSchedule): 204, no body, so the cache is patched
+// directly from the name this mutation was called with, mirroring
+// useClearDatabasePublicAccess exactly.
+export async function clearDatabaseBackupSchedule(name: string): Promise<void> {
+  const res = await fetch(
+    `/api/v1/databases/${encodeURIComponent(name)}/backup-schedule`,
+    { method: 'DELETE' },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `clear backup schedule failed: ${res.status}`,
+      ),
+    )
+  }
+}
+
+export function useClearDatabaseBackupSchedule() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (name: string) => clearDatabaseBackupSchedule(name),
+    onSuccess: (_data, name) => {
+      queryClient.setQueryData(
+        databaseKeys.detail(name),
+        (existing: DatabaseResource | undefined) =>
+          existing && {
+            ...existing,
+            backup_target_id: undefined,
+            backup_schedule: undefined,
+            backup_retain: undefined,
+          },
+      )
+      void queryClient.invalidateQueries({
+        queryKey: databaseKeys.detail(name),
+      })
+    },
+  })
+}

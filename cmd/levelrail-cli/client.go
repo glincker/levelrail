@@ -34,6 +34,8 @@ type (
 	apiError                   = apiclient.APIError
 	deployTriggerRequest       = apiclient.DeployTriggerRequest
 	triggerBackupRequest       = apiclient.TriggerBackupRequest
+	backupScheduleResource     = apiclient.BackupScheduleResource
+	setBackupScheduleRequest   = apiclient.SetBackupScheduleRequest
 	triggerRestoreRequest      = apiclient.TriggerRestoreRequest
 	setAppDatabaseRequest      = apiclient.SetAppDatabaseRequest
 	appDatabaseResource        = apiclient.AppDatabaseResource
