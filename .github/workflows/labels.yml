@@ -16,7 +16,7 @@ jobs:
       contents: read
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: EndBug/label-sync@7753e99e1e64188c24d7deede343c5a63e7c0d39 # v2.3.3
         with:
           config-file: .github/labels.yml
