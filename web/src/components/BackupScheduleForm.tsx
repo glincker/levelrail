@@ -26,14 +26,8 @@ import {
 } from '../queries/databases'
 import type { DatabaseResource } from '../types/databaseDetail'
 
-// Recurring-backup config for one database: PUT/DELETE
-// /api/v1/databases/{name}/backup-schedule (internal/api/backups.go),
-// rendered inside BackupsSection alongside the manual "back up now"
-// control it already has. internal/cronexpr parses the full standard
-// 5-field grammar (lists, ranges, steps), but this form only exposes the
-// two shapes an operator actually reaches for, daily and weekly at a
-// fixed time, plus a raw cron escape hatch, rather than promising UI for
-// every combination the parser happens to accept.
+// Only exposes daily/weekly at a fixed time plus a raw cron escape
+// hatch, not the full 5-field grammar internal/cronexpr actually parses.
 const WEEKDAY_LABEL: Record<string, string> = {
   '0': 'Sunday',
   '1': 'Monday',
@@ -91,12 +85,8 @@ function toCron(values: ScheduleFormValues): string {
   return `${minute} ${hour} * * ${values.weekday}`
 }
 
-// The inverse of toCron, used to populate the form from an
-// already-configured schedule: recognizes only the daily/weekly shapes
-// toCron itself produces, so a schedule set through the CLI or a
-// previous version of this form with anything else (ranges, steps, a
-// restricted day-of-month) falls back to the custom cron field with the
-// raw string intact rather than misrepresenting it.
+// Inverse of toCron; anything not matching its daily/weekly shapes falls
+// back to the custom cron field with the raw string intact.
 function fromCron(
   cron: string | undefined,
 ): Pick<ScheduleFormValues, 'frequency' | 'time' | 'weekday' | 'customCron'> {
