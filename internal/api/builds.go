@@ -252,11 +252,14 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		// Supported: internal/deploy.Pipeline.Deploy has a real case for
 		// each of these four.
 	case spec.BuildCompose:
-		// Fails before any git I/O: a build type internal/deploy.Pipeline
-		// can never build is a fixed fact about this control plane's
-		// current capability, not something a valid repo_url/ref could
-		// ever fix, so there's nothing worth cloning first to find out.
-		writeError(w, http.StatusNotImplemented, fmt.Sprintf("build.type %q is not yet supported for a manual build trigger", buildType))
+		// Fails before any git I/O: a manual build trigger rebuilds one
+		// already-existing single service, but a compose file always
+		// declares its own set of services, which can only ever be
+		// expanded into a real multi-service deploy (POST
+		// /api/v1/apps/{name}/deploy-spec, internal/deploy.Pipeline.
+		// DeploySpec's own expandComposeServices), never a single one, so
+		// there's nothing worth cloning first to find out.
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("build.type %q is only supported via a multi-service deploy (POST /api/v1/apps/{name}/deploy-spec), not a manual build trigger", buildType))
 		return
 	default:
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("build.type %q is not recognized", buildType))

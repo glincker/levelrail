@@ -84,11 +84,19 @@ func (svc *Service) validate(name string) error {
 		}
 	}
 
-	if svc.Build.Type != BuildStatic && svc.Port == 0 {
-		return fmt.Errorf("spec: service %q: port is required unless build.type is %q", name, BuildStatic)
+	// compose joins static here: a compose-typed service is a wrapper
+	// that expands into N real services at deploy time
+	// (internal/deploy.Pipeline.DeploySpec's own expandComposeServices),
+	// each with its own port from the compose file's own ports:, so the
+	// wrapper itself has no single container to route to either.
+	if svc.Build.Type != BuildStatic && svc.Build.Type != BuildCompose && svc.Port == 0 {
+		return fmt.Errorf("spec: service %q: port is required unless build.type is %q or %q", name, BuildStatic, BuildCompose)
 	}
 	if svc.Build.Type == BuildStatic && svc.Port != 0 {
 		return fmt.Errorf("spec: service %q: port must not be set when build.type is %q, static sites have no running container to route to", name, BuildStatic)
+	}
+	if svc.Build.Type == BuildCompose && svc.Port != 0 {
+		return fmt.Errorf("spec: service %q: port must not be set when build.type is %q, each of the compose file's own services has its own port instead", name, BuildCompose)
 	}
 
 	if svc.HostPort != 0 {

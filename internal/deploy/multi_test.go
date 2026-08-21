@@ -3,6 +3,8 @@ package deploy
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/build"
@@ -294,4 +296,135 @@ func (f *failOnPathBuilder) Build(_ context.Context, req build.Request, progress
 
 func (f *failOnPathBuilder) BuildRailpack(_ context.Context, _ build.RailpackRequest, _ func(build.ProgressEvent)) (*build.Result, error) {
 	return nil, errors.New("failOnPathBuilder: BuildRailpack not used by this test")
+}
+
+// TestDeploySpec_ComposeService_ExpandsIntoRealServices proves the
+// integration end to end: a Services map with one build.type: compose
+// entry produces real per-compose-service outcomes (never the original
+// wrapper key), each going through the exact same fakeBuilder.Build
+// call path an ordinary dockerfile service does.
+func TestDeploySpec_ComposeService_ExpandsIntoRealServices(t *testing.T) {
+	sourceDir := t.TempDir()
+	writeComposeFixture(t, sourceDir, "docker-compose.yml", `
+services:
+  web:
+    build: ./web
+    ports:
+      - "8080:3000"
+  redis:
+    image: redis:7
+`)
+
+	builder := &fakeBuilder{result: &build.Result{Tag: "irrelevant:sha"}}
+	svcStore := &fakeServiceStore{}
+	apps := newFakeAppStore()
+	p := New(builder, svcStore, WithAppStore(apps))
+
+	outcomes, err := p.DeploySpec(context.Background(), MultiRequest{
+		AppName: "myapp",
+		Services: map[string]spec.Service{
+			"stack": {Build: spec.Build{Type: spec.BuildCompose, Path: "docker-compose.yml"}},
+		},
+		SourceDir: sourceDir, CommitSHA: "abc123", ImageRepoBase: "levelrail/myapp",
+	}, nil)
+	if err != nil {
+		t.Fatalf("DeploySpec() error = %v", err)
+	}
+	if len(outcomes) != 2 {
+		t.Fatalf("outcomes = %+v, want 2 (one per compose service, not one for the wrapper key)", outcomes)
+	}
+	for _, o := range outcomes {
+		if o.ServiceKey == "stack" {
+			t.Errorf("outcome %+v uses the original wrapper key %q, want a real compose service key", o, "stack")
+		}
+		if o.Err != nil {
+			t.Errorf("outcome %+v has an error, want none", o)
+		}
+	}
+	if outcomes[0].ServiceKey != "redis" || outcomes[1].ServiceKey != "web" {
+		t.Errorf("outcomes order = [%s, %s], want [redis, web] (sorted)", outcomes[0].ServiceKey, outcomes[1].ServiceKey)
+	}
+	if svcStore.savedByName["myapp-web"].Image == "" || svcStore.savedByName["myapp-redis"].Image == "" {
+		t.Errorf("savedByName = %+v, want both expanded services saved with an image", svcStore.savedByName)
+	}
+	if got := svcStore.savedByName["myapp-web"].Port; got != 3000 {
+		t.Errorf("myapp-web port = %d, want 3000 (from the compose file's own ports:)", got)
+	}
+}
+
+// TestDeploySpec_ComposeService_KeyCollision_FailsBeforeAnyWork proves
+// expansion happens before ensureApp or any build starts: a compose
+// file whose own service key collides with a sibling in the same
+// Services map must fail loudly, and must never create an App row or
+// attempt a build for either colliding name.
+func TestDeploySpec_ComposeService_KeyCollision_FailsBeforeAnyWork(t *testing.T) {
+	sourceDir := t.TempDir()
+	writeComposeFixture(t, sourceDir, "docker-compose.yml", `
+services:
+  web:
+    image: nginx:1.27
+`)
+
+	builder := &fakeBuilder{result: &build.Result{Tag: "irrelevant:sha"}}
+	svcStore := &fakeServiceStore{}
+	apps := newFakeAppStore()
+	p := New(builder, svcStore, WithAppStore(apps))
+
+	_, err := p.DeploySpec(context.Background(), MultiRequest{
+		AppName: "myapp",
+		Services: map[string]spec.Service{
+			"stack": {Build: spec.Build{Type: spec.BuildCompose, Path: "docker-compose.yml"}},
+			"web":   {Build: spec.Build{Type: spec.BuildDockerfile, Path: "./web/Dockerfile"}, Port: 3000},
+		},
+		SourceDir: sourceDir, CommitSHA: "abc123", ImageRepoBase: "levelrail/myapp",
+	}, nil)
+	if err == nil {
+		t.Fatal("DeploySpec() error = nil, want a key-collision error")
+	}
+	if len(apps.apps) != 0 {
+		t.Errorf("apps.apps = %+v, want no App row created before a collision is caught", apps.apps)
+	}
+	if builder.calls != 0 {
+		t.Errorf("builder.calls = %d, want 0 (must not build either colliding service)", builder.calls)
+	}
+}
+
+// TestDeploySpec_ComposeService_ExpandFails_FailsBeforeAnyWork mirrors
+// the collision case for the other expansion failure mode: a compose
+// file that can't be read at all.
+func TestDeploySpec_ComposeService_ExpandFails_FailsBeforeAnyWork(t *testing.T) {
+	sourceDir := t.TempDir()
+
+	builder := &fakeBuilder{result: &build.Result{Tag: "irrelevant:sha"}}
+	svcStore := &fakeServiceStore{}
+	apps := newFakeAppStore()
+	p := New(builder, svcStore, WithAppStore(apps))
+
+	_, err := p.DeploySpec(context.Background(), MultiRequest{
+		AppName: "myapp",
+		Services: map[string]spec.Service{
+			"stack": {Build: spec.Build{Type: spec.BuildCompose, Path: "does-not-exist.yml"}},
+		},
+		SourceDir: sourceDir, CommitSHA: "abc123", ImageRepoBase: "levelrail/myapp",
+	}, nil)
+	if err == nil {
+		t.Fatal("DeploySpec() error = nil, want an error reading the missing compose file")
+	}
+	if len(apps.apps) != 0 {
+		t.Errorf("apps.apps = %+v, want no App row created when expansion fails", apps.apps)
+	}
+	if builder.calls != 0 {
+		t.Errorf("builder.calls = %d, want 0", builder.calls)
+	}
+}
+
+func writeComposeFixture(t *testing.T, dir, relPath, contents string) {
+	t.Helper()
+	full := filepath.Join(dir, relPath)
+	if err := os.MkdirAll(filepath.Dir(full), 0o750); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(full, []byte(contents), 0o600); err != nil {
+		t.Fatalf("write %q: %v", relPath, err)
+	}
 }

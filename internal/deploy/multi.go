@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/compose"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -84,6 +85,12 @@ func (p *Pipeline) DeploySpec(ctx context.Context, req MultiRequest, progress fu
 		return nil, fmt.Errorf("deploy: app %q: no app store configured for a multi-service deploy (see WithAppStore)", req.AppName)
 	}
 
+	services, err := expandComposeServices(req.Services, req.SourceDir)
+	if err != nil {
+		return nil, fmt.Errorf("deploy: app %q: %w", req.AppName, err)
+	}
+	req.Services = services
+
 	appID, err := p.ensureApp(ctx, req.AppName)
 	if err != nil {
 		return nil, fmt.Errorf("deploy: app %q: %w", req.AppName, err)
@@ -124,6 +131,53 @@ func (p *Pipeline) DeploySpec(ctx context.Context, req MultiRequest, progress fu
 		outcomes = append(outcomes, ServiceOutcome{ServiceKey: key, ServiceName: svcName, Image: image})
 	}
 	return outcomes, nil
+}
+
+// expandComposeServices replaces every build.type: compose entry in
+// services with the real services its referenced compose file declares
+// (compose.ExpandBuildService), so DeploySpec's own fan-out loop below
+// never needs to know compose exists: every entry it sees by the time
+// it runs is an ordinary dockerfile/image/railpack/static service. A
+// service with any other build.type passes through unchanged.
+//
+// Returns an error, rather than silently dropping or overwriting, on a
+// key collision between an expanded compose service and any other
+// entry (compose-expanded or not): silently picking one would deploy
+// the wrong thing under a name the operator didn't expect.
+func expandComposeServices(services map[string]spec.Service, sourceDir string) (map[string]spec.Service, error) {
+	hasCompose := false
+	for _, svc := range services {
+		if svc.Build.Type == spec.BuildCompose {
+			hasCompose = true
+			break
+		}
+	}
+	if !hasCompose {
+		return services, nil
+	}
+
+	out := make(map[string]spec.Service, len(services))
+	for key, svc := range services {
+		if svc.Build.Type != spec.BuildCompose {
+			if _, exists := out[key]; exists {
+				return nil, fmt.Errorf("service %q collides with a service another compose file already declared", key)
+			}
+			out[key] = svc
+			continue
+		}
+
+		expanded, err := compose.ExpandBuildService(svc, sourceDir)
+		if err != nil {
+			return nil, fmt.Errorf("service %q: %w", key, err)
+		}
+		for expandedKey, expandedSvc := range expanded {
+			if _, exists := out[expandedKey]; exists {
+				return nil, fmt.Errorf("service %q: compose service %q collides with another service of the same name", key, expandedKey)
+			}
+			out[expandedKey] = expandedSvc
+		}
+	}
+	return out, nil
 }
 
 // ensureApp returns name's store.App ID, creating the row (ID == Name)
