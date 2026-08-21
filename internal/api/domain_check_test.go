@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -263,5 +264,55 @@ func TestHostsOverlap(t *testing.T) {
 				t.Errorf("hostsOverlap(%v, %v) = %v, want %v", tt.a, tt.b, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestSplitByFamily(t *testing.T) {
+	tests := []struct {
+		name   string
+		addrs  []string
+		wantV4 []string
+		wantV6 []string
+	}{
+		{"mixed", []string{"203.0.113.10", "2001:db8::1"}, []string{"203.0.113.10"}, []string{"2001:db8::1"}},
+		{"v4 only", []string{"203.0.113.10"}, []string{"203.0.113.10"}, nil},
+		{"v6 only", []string{"2001:db8::1"}, nil, []string{"2001:db8::1"}},
+		{"empty", nil, nil, nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotV4, gotV6 := splitByFamily(tt.addrs)
+			if !slices.Equal(gotV4, tt.wantV4) || !slices.Equal(gotV6, tt.wantV6) {
+				t.Errorf("splitByFamily(%v) = (%v, %v), want (%v, %v)", tt.addrs, gotV4, gotV6, tt.wantV4, tt.wantV6)
+			}
+		})
+	}
+}
+
+func TestHandleCheckDomain_ExpectedHostResolvesToBothFamilies(t *testing.T) {
+	rt, db := newTestRouterWithLookupHost(t, "app.internal", func(_ context.Context, host string) ([]string, error) {
+		if host == "app.internal" {
+			return []string{"203.0.113.10", "2001:db8::1"}, nil
+		}
+		return []string{"203.0.113.10"}, nil
+	})
+	seedAppWithDomains(t, db, "app.example.com")
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/domains/app.example.com/check", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	var got domainCheckResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !slices.Equal(got.ExpectedIPv4, []string{"203.0.113.10"}) {
+		t.Errorf("expected_ipv4 = %v, want [203.0.113.10]", got.ExpectedIPv4)
+	}
+	if !slices.Equal(got.ExpectedIPv6, []string{"2001:db8::1"}) {
+		t.Errorf("expected_ipv6 = %v, want [2001:db8::1]", got.ExpectedIPv6)
 	}
 }
