@@ -20,10 +20,12 @@ export function DeleteEnvironmentDialog({
   id,
   name,
   projectId,
+  onDeleted,
 }: {
   id: string
   name: string
   projectId: string
+  onDeleted?: () => void
 }) {
   const [open, setOpen] = useState(false)
   const deleteEnvironment = useDeleteEnvironment(projectId)
@@ -81,6 +83,7 @@ export function DeleteEnvironmentDialog({
                     title: `Environment "${name}" deleted.`,
                     type: 'success',
                   })
+                  onDeleted?.()
                 },
               })
             }}

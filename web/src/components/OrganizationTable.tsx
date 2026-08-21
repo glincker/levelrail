@@ -1,4 +1,5 @@
-import { BuildingsIcon } from '@phosphor-icons/react/dist/ssr'
+import { Link } from '@tanstack/react-router'
+import { BuildingsIcon, CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Table,
   TableBody,
@@ -7,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { DeleteOrganizationDialog } from './DeleteOrganizationDialog'
 import type { OrganizationResource } from '../types/organization'
@@ -56,7 +58,13 @@ export function OrganizationTable({
                 {formatDate(org.created_at)}
               </TableCell>
               <TableCell className="text-right">
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2">
+                  <Link to="/organizations/$id" params={{ id: org.id }}>
+                    <Button type="button" variant="outline" size="sm">
+                      View
+                      <CaretRightIcon className="size-3.5" aria-hidden="true" />
+                    </Button>
+                  </Link>
                   <DeleteOrganizationDialog id={org.id} name={org.name} />
                 </div>
               </TableCell>

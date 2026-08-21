@@ -20,9 +20,11 @@ import { useDeleteOrganization } from '../queries/organizations'
 export function DeleteOrganizationDialog({
   id,
   name,
+  onDeleted,
 }: {
   id: string
   name: string
+  onDeleted?: () => void
 }) {
   const [open, setOpen] = useState(false)
   const deleteOrganization = useDeleteOrganization()
@@ -79,6 +81,7 @@ export function DeleteOrganizationDialog({
                     title: `Organization "${name}" deleted.`,
                     type: 'success',
                   })
+                  onDeleted?.()
                 },
               })
             }}

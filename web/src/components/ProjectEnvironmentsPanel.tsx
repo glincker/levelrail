@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import { StackSimpleIcon } from '@phosphor-icons/react/dist/ssr'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -41,7 +42,13 @@ export function ProjectEnvironmentsPanel({
                 variant="outline"
                 className="gap-1.5 py-1 pr-1"
               >
-                {env.name}
+                <Link
+                  to="/projects/$id/environments/$envId"
+                  params={{ id: projectId, envId: env.id }}
+                  className="hover:underline"
+                >
+                  {env.name}
+                </Link>
                 <DeleteEnvironmentDialog
                   id={env.id}
                   name={env.name}

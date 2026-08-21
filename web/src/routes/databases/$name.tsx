@@ -6,6 +6,7 @@ import {
   useDatabaseStatus,
 } from '../../queries/databases'
 import { summarizeDatabaseStatus } from '../../lib/databaseStatus'
+import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { DeleteDatabaseDialog } from '../../components/DeleteDatabaseDialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -45,6 +46,9 @@ function DatabaseDetailLayout() {
 
   return (
     <div className="space-y-6">
+      <div>
+        <Breadcrumbs projectId={database.project_id} page={database.name} />
+      </div>
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <h1 className="text-lg font-semibold text-foreground">
