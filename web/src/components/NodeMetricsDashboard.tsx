@@ -16,20 +16,15 @@ import {
 // Node-level metrics section for routes/nodes/$id.tsx, backed by real
 // data from GET /api/v1/nodes/{id}/metrics
 // (internal/api/node_metrics.go). Read that handler's doc comment
-// before touching this file, because "node-level" here is a specific,
-// narrower claim than it sounds like: every chart below is the *sum* of
-// this node's already-collected per-container samples
+// before touching this file: most charts below are the *sum* of this
+// node's already-collected per-container samples
 // (internal/telemetry/collector.go) for every app service currently
 // placed on it, not a read of the host machine's real free/total memory
-// or CPU. internal/agent has no host-level stats collection today (no
-// /proc reads, no host-info gRPC message in internal/agent/agentpb),
-// and internal/docker.ContainerStats is entirely per-container by
-// design, so a true "how full is this box" view is real, separate
-// agent-side work this pass didn't do. The alert at the bottom of this
-// component says so explicitly, the same NOT_YET_COLLECTED honesty
-// MetricsDashboard.tsx (the per-app dashboard this mirrors) already
-// established for its own gaps, rather than a node total quietly
-// implying a host reading it can't back up.
+// or CPU. The Disk space group is the one exception, a genuine host
+// filesystem reading (internal/telemetry/hostdisk.go's
+// HostDiskCollector), which is why it carries no "summed across N
+// containers" subtitle below (isHostLevel) and the alert at the bottom
+// still calls out CPU/memory/network as the remaining sum-only gap.
 //
 // Deliberately its own component, not MetricsDashboard reused wholesale:
 // the two differ enough in what they fetch (a different endpoint and
@@ -55,6 +50,12 @@ interface NodeChartGroupConfig {
   unit: ChartUnit
   primary: NodeSeriesConfig
   secondary?: NodeSeriesConfig
+  // True for the one group that reads a real host filesystem sample
+  // (HostDiskCollector) rather than a sum of per-container samples:
+  // suppresses the "summed across N containers" subtitle, which would
+  // be misleading for a reading that was never a sum in the first
+  // place.
+  isHostLevel?: boolean
 }
 
 // No memory_limit_bytes group here (unlike MetricsDashboard.tsx's own
@@ -95,6 +96,17 @@ const NODE_CHART_GROUPS: NodeChartGroupConfig[] = [
       color: '#a855f7',
     },
   },
+  {
+    title: 'Disk space',
+    unit: 'bytes',
+    isHostLevel: true,
+    primary: { metric: 'disk_used_bytes', label: 'Used', color: '#f97316' },
+    secondary: {
+      metric: 'disk_total_bytes',
+      label: 'Total',
+      color: '#64748b',
+    },
+  },
 ]
 
 function subtitleFor(resourceCount: number | undefined): string | undefined {
@@ -104,6 +116,23 @@ function subtitleFor(resourceCount: number | undefined): string | undefined {
   return resourceCount === 1
     ? 'Summed across 1 container'
     : `Summed across ${resourceCount} containers`
+}
+
+// diskPercentSubtitle turns the Disk space group's merged rows into a
+// "42% used" caption: the used/total lines already show the same fact
+// on the chart itself, but a caller glancing at the card title
+// shouldn't have to trace two lines to the right edge to get it.
+function diskPercentSubtitle(
+  rows: { primary?: number; secondary?: number }[],
+): string | undefined {
+  for (let i = rows.length - 1; i >= 0; i -= 1) {
+    const used = rows[i]?.primary
+    const total = rows[i]?.secondary
+    if (used !== undefined && total !== undefined && total > 0) {
+      return `${((used / total) * 100).toFixed(1)}% used`
+    }
+  }
+  return undefined
 }
 
 function NodeChartCard({
@@ -133,6 +162,13 @@ function NodeChartCard({
     Boolean(group.secondary),
   )
 
+  const subtitle =
+    isLoading || error
+      ? undefined
+      : group.isHostLevel
+        ? diskPercentSubtitle(rows)
+        : subtitleFor(primaryQuery.data?.resource_count)
+
   return (
     <MetricChartCard
       title={group.title}
@@ -145,11 +181,7 @@ function NodeChartCard({
       range={range}
       isLoading={isLoading}
       error={error}
-      subtitle={
-        isLoading || error
-          ? undefined
-          : subtitleFor(primaryQuery.data?.resource_count)
-      }
+      subtitle={subtitle}
     />
   )
 }
@@ -178,8 +210,9 @@ export function NodeMetricsDashboard({ nodeId }: { nodeId: string }) {
             Node metrics
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            As of {range.to.toLocaleTimeString()}. Sum of every app
-            container placed on this node, not a host-level reading.
+            As of {range.to.toLocaleTimeString()}. CPU, memory, and network/disk
+            I/O are summed across every app container placed here; disk space is
+            a real host filesystem reading.
           </p>
         </div>
         <TimeRangeControls
@@ -207,18 +240,18 @@ export function NodeMetricsDashboard({ nodeId }: { nodeId: string }) {
         <AlertTitle>What this is, and isn't</AlertTitle>
         <AlertDescription>
           <p>
-            These charts sum every app container's own collected CPU,
-            memory, and network/disk I/O for everything placed on this
-            node. They are not a read of the host machine's actual free
-            or total memory and CPU: this platform has no host-level
-            stats agent yet (Docker's per-container stats API doesn't
-            expose that), so there is no real capacity ceiling to
-            compare against here.
+            The CPU, Memory, Network I/O, and Disk I/O charts sum every app
+            container's own collected stats for everything placed on this node.
+            They are not a read of the host machine's actual free or total
+            memory and CPU, so there is no real capacity ceiling to compare
+            against there. Disk space is the exception: a real reading of the
+            host filesystem the data directory lives on, not a per-container
+            sum.
           </p>
           <p className="mt-2">
-            Databases placed on this node aren&apos;t included: only app
-            service containers are collected today, the same gap the
-            per-app metrics view documents.
+            Databases placed on this node aren&apos;t included: only app service
+            containers are collected today, the same gap the per-app metrics
+            view documents.
           </p>
         </AlertDescription>
       </Alert>

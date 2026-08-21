@@ -487,6 +487,23 @@ func run(logger *slog.Logger) error {
 	}()
 	go runMetricsRetentionSweep(ctx, telemetryDB, logger)
 
+	// Host disk space only has a real node to attribute samples to once
+	// meshCfg has bootstrapped this process's own nodes row
+	// (setupMesh -> bootstrapLocalNode), the same gate meshreconcile's
+	// controller below already requires: with mesh off there is no
+	// "self" node ID and no reachable /nodes/{id} page to show it on.
+	if meshCfg != nil {
+		// "node:" + id matches internal/api/node_metrics.go's own
+		// nodeResourceID exactly: that's the key handleQueryNodeMetrics
+		// reads nodeHostMetrics samples back from.
+		diskCollector := telemetry.NewHostDiskCollector(agentDataDir, "node:"+meshCfg.localNodeID, telemetryDB, metricsCollectionInterval, logger)
+		go func() {
+			if err := diskCollector.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+				logger.Error("telemetry host disk collector stopped", slog.String("error", err.Error()))
+			}
+		}()
+	}
+
 	logCollector := telemetry.NewLogCollector(client, telemetryDB, logBroadcaster, logger)
 	go func() {
 		if err := logCollector.Run(ctx, logTargetsResyncInterval, logTargets(db, client)); err != nil && !errors.Is(err, context.Canceled) {
