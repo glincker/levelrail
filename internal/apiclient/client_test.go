@@ -533,3 +533,74 @@ func TestClient_SetAppEnvironment(t *testing.T) {
 		t.Errorf("EnvironmentID = %q, want env_1", got.EnvironmentID)
 	}
 }
+
+func TestClient_GetCloudflareTunnel(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(CloudflareTunnelResource{Enabled: true, HasToken: true, Status: "connected"})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.GetCloudflareTunnel(context.Background())
+	if err != nil {
+		t.Fatalf("GetCloudflareTunnel() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/settings/cloudflare-tunnel" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/settings/cloudflare-tunnel", gotMethod, gotPath)
+	}
+	if !got.Enabled || got.Status != "connected" {
+		t.Errorf("GetCloudflareTunnel() = %+v, want Enabled=true Status=connected", got)
+	}
+}
+
+func TestClient_SetCloudflareTunnel(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody UpdateCloudflareTunnelRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(CloudflareTunnelResource{Enabled: gotBody.Enabled, HasToken: true})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.SetCloudflareTunnel(context.Background(), UpdateCloudflareTunnelRequest{Enabled: true, Token: "cf-tunnel-token"})
+	if err != nil {
+		t.Fatalf("SetCloudflareTunnel() error = %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/settings/cloudflare-tunnel" {
+		t.Errorf("method/path = %s %s, want PUT /api/v1/settings/cloudflare-tunnel", gotMethod, gotPath)
+	}
+	if gotBody.Token != "cf-tunnel-token" || !gotBody.Enabled {
+		t.Errorf("request body = %+v, want Enabled=true Token=cf-tunnel-token", gotBody)
+	}
+	if !got.Enabled {
+		t.Errorf("SetCloudflareTunnel() = %+v, want Enabled=true", got)
+	}
+}
+
+func TestClient_DisconnectCloudflareTunnel(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(CloudflareTunnelResource{Enabled: false, HasToken: false, Status: "disconnected"})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.DisconnectCloudflareTunnel(context.Background())
+	if err != nil {
+		t.Fatalf("DisconnectCloudflareTunnel() error = %v", err)
+	}
+	if gotMethod != http.MethodDelete || gotPath != "/api/v1/settings/cloudflare-tunnel" {
+		t.Errorf("method/path = %s %s, want DELETE /api/v1/settings/cloudflare-tunnel", gotMethod, gotPath)
+	}
+	if got.Enabled || got.HasToken {
+		t.Errorf("DisconnectCloudflareTunnel() = %+v, want Enabled=false HasToken=false", got)
+	}
+}

@@ -310,6 +310,31 @@ func (c *Client) DisconnectCloudflareDNS(ctx context.Context) (CloudflareDNSReso
 	return out, err
 }
 
+// GetCloudflareTunnel calls GET /api/v1/settings/cloudflare-tunnel: the
+// cloudflared container's configured/observed state, exposing the
+// control plane through a Cloudflare Tunnel instead of an inbound port.
+func (c *Client) GetCloudflareTunnel(ctx context.Context) (CloudflareTunnelResource, error) {
+	var out CloudflareTunnelResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/cloudflare-tunnel", nil, &out)
+	return out, err
+}
+
+// SetCloudflareTunnel calls PUT /api/v1/settings/cloudflare-tunnel.
+func (c *Client) SetCloudflareTunnel(ctx context.Context, req UpdateCloudflareTunnelRequest) (CloudflareTunnelResource, error) {
+	var out CloudflareTunnelResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/cloudflare-tunnel", req, &out)
+	return out, err
+}
+
+// DisconnectCloudflareTunnel calls DELETE
+// /api/v1/settings/cloudflare-tunnel: disables the tunnel and clears the
+// stored token in one step.
+func (c *Client) DisconnectCloudflareTunnel(ctx context.Context) (CloudflareTunnelResource, error) {
+	var out CloudflareTunnelResource
+	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/cloudflare-tunnel", nil, &out)
+	return out, err
+}
+
 // domainAuthPath builds /api/v1/apps/{name}/domains/{domain}/auth,
 // shared by all three domain basic auth methods below.
 func domainAuthPath(name, domain string) string {

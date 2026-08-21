@@ -49,13 +49,13 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	case "organizations":
 		return runAppsOrganizations(prog, args[1:], stdout, stderr, lookupEnv)
 	case "environments":
-		return runAppsEnvironments(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsEnvironments(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // args is non-empty here: the len(args)==0 guard above already returned, same as every other case in this switch
 	case "set-environment":
-		return runAppsSetEnvironment(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsSetEnvironment(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "clear-environment":
-		return runAppsClearEnvironment(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsClearEnvironment(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	default:
-		_, _ = fmt.Fprintf(stderr, "%s: unknown apps subcommand %q\n\n", prog, args[0])
+		_, _ = fmt.Fprintf(stderr, "%s: unknown apps subcommand %q\n\n", prog, args[0]) //nolint:gosec // same guard as above
 		_, _ = fmt.Fprint(stderr, appsUsage(prog))
 		return exitUsage
 	}

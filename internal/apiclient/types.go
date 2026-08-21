@@ -205,6 +205,27 @@ type UpdateCloudflareDNSRequest struct {
 	Token   string `json:"token,omitempty"`
 }
 
+// CloudflareTunnelResource mirrors internal/api's cloudflareTunnelResource
+// (internal/api/cloudflare_tunnel.go): GET/PUT/DELETE
+// /api/v1/settings/cloudflare-tunnel's wire shape. The token itself
+// never appears here in either direction. A distinct credential and
+// endpoint from CloudflareDNSResource: this one runs the cloudflared
+// container, that one configures ACME's DNS-01 challenge.
+type CloudflareTunnelResource struct {
+	Enabled  bool   `json:"enabled"`
+	HasToken bool   `json:"has_token"`
+	Status   string `json:"status"`
+	Message  string `json:"message,omitempty"`
+}
+
+// UpdateCloudflareTunnelRequest mirrors internal/api's
+// updateCloudflareTunnelRequest. Token empty on an update means "leave
+// the currently stored token unchanged".
+type UpdateCloudflareTunnelRequest struct {
+	Enabled bool   `json:"enabled"`
+	Token   string `json:"token,omitempty"`
+}
+
 // DomainBasicAuthResource mirrors internal/api's domainBasicAuthResource
 // (internal/api/domain_basic_auth.go): GET/PUT/DELETE
 // /api/v1/apps/{name}/domains/{domain}/auth's wire shape. The password
