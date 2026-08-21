@@ -1,10 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import {
-  ArrowsClockwiseIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -27,23 +24,12 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
 
-// Only recreate/blue-green are offered as choices here, deliberately
-// narrower than internal/spec's full StrategyRolling/StrategyRecreate/
-// StrategyBlueGreen set: internal/reconcile/application's controller
-// refuses to run "rolling" (a documented, permanent "unsupported"
-// condition, not a transient failure, see that package's own doc
-// comment), so letting an operator pick it fresh here would set an app
-// up to fail its very next reconcile for a reason nothing in this form
-// would explain. An app that already has strategy: rolling (e.g. a
-// hand-edited app.yaml deployed outside this UI) is handled below by
-// still showing it as the current, selected value, just not as a
-// choice you can pick your way back into once you leave it.
-const SELECTABLE_STRATEGIES = ['recreate', 'blue-green'] as const
+// All three of internal/spec's StrategyRolling/StrategyRecreate/
+// StrategyBlueGreen values are real, reconciler-backed choices
+// (internal/reconcile/application's controller runs all three).
+const SELECTABLE_STRATEGIES = ['recreate', 'blue-green', 'rolling'] as const
 
 const deployStrategySchema = z.object({
-  // Widened to include "rolling" purely so an unchanged form (current
-  // value untouched) still validates and round-trips; the Select itself
-  // never lets an operator choose it fresh, see SELECTABLE_STRATEGIES.
   strategy: z.enum(['recreate', 'blue-green', 'rolling']),
   replicas: z.coerce
     .number({ error: 'Replicas is required' })
@@ -64,7 +50,7 @@ function toFieldValues(app: AppDetail): DeployStrategyFormInput {
 const STRATEGY_LABELS: Record<string, string> = {
   recreate: 'Recreate',
   'blue-green': 'Blue-green',
-  rolling: 'Rolling (current, unsupported)',
+  rolling: 'Rolling',
 }
 
 // Same full-replace-PUT pattern as DomainEditor/EnvEditor/
@@ -75,7 +61,7 @@ const STRATEGY_LABELS: Record<string, string> = {
 // unsaved edits in a sibling editor.
 export function DeployStrategyEditor({ app }: { app: AppDetail }) {
   const updateApp = useUpdateApp(app.name)
-  const { control, register, handleSubmit, formState, watch } = useForm<
+  const { control, register, handleSubmit, formState } = useForm<
     DeployStrategyFormInput,
     unknown,
     DeployStrategyFormOutput
@@ -84,8 +70,6 @@ export function DeployStrategyEditor({ app }: { app: AppDetail }) {
     values: toFieldValues(app),
     resetOptions: { keepDirtyValues: true },
   })
-  const selectedStrategy = watch('strategy')
-
   const onSubmit = handleSubmit((values) => {
     updateApp.mutate(
       { ...app, strategy: values.strategy, replicas: values.replicas },
@@ -132,15 +116,6 @@ export function DeployStrategyEditor({ app }: { app: AppDetail }) {
                           {STRATEGY_LABELS[value]}
                         </SelectItem>
                       ))}
-                      {/* Only rendered when the app already carries
-                          "rolling", so the Select can honestly display
-                          the current value; disabled so it can't be
-                          re-selected once changed away from. */}
-                      {app.strategy === 'rolling' ? (
-                        <SelectItem value="rolling" disabled>
-                          {STRATEGY_LABELS.rolling}
-                        </SelectItem>
-                      ) : null}
                     </SelectContent>
                   </Select>
                 )}
@@ -160,17 +135,6 @@ export function DeployStrategyEditor({ app }: { app: AppDetail }) {
               <FieldError errors={[formState.errors.replicas]} />
             </Field>
           </div>
-
-          {selectedStrategy === 'rolling' ? (
-            <Alert variant="destructive">
-              <WarningIcon />
-              <AlertDescription>
-                This app is set to the "rolling" strategy, which the reconciler
-                does not support and will fail on the next deploy. Switch to
-                Recreate or Blue-green to clear this.
-              </AlertDescription>
-            </Alert>
-          ) : null}
 
           <div className="flex items-center gap-2">
             <Button type="submit" size="sm" disabled={updateApp.isPending}>

@@ -182,20 +182,9 @@ func (a appResource) toDesiredService() store.DesiredService {
 }
 
 // validKnownStrategies mirrors internal/spec's own
-// StrategyRolling/StrategyRecreate/StrategyBlueGreen exactly. "rolling"
-// stays in this set on purpose: it's a real, named app.yaml value (a
-// service saved via the deploy pipeline, e.g. a hand-edited app.yaml,
-// can already carry it, internal/reconcile/application's controller
-// test seeds it directly through the store), it is only permanently
-// unsupported at *reconcile* time, where it fails loudly with a
-// documented condition rather than silently running as something else.
-// Rejecting it here would make the API stricter than the store and the
-// reconciler already are, for no safety gain, since a bad reconcile
-// outcome is already visible via the app's conditions. The frontend
-// picker is a separate, narrower decision: it only offers recreate/
-// blue-green as new choices so a user can't pick a state that's
-// guaranteed to fail on next reconcile without ever seeing why, but
-// that's a UI affordance choice, not a wire-validation one.
+// StrategyRolling/StrategyRecreate/StrategyBlueGreen exactly, all three
+// reconciler-backed (internal/reconcile/application's controller runs
+// all three).
 var validKnownStrategies = map[string]bool{
 	spec.StrategyRolling:   true,
 	spec.StrategyRecreate:  true,

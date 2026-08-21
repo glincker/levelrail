@@ -116,18 +116,6 @@ const defaultReadyBudget = 60 * time.Second
 // importing internal/spec, the same "define locally, don't import a
 // higher-level package's vocabulary" convention store.DesiredService's
 // own Strategy field doc comment already establishes.
-//
-// strategyRolling is a real, named case Reconcile recognizes and
-// reports on (notReady("StrategyNotSupported", ...)), not an
-// unrecognized string that happens to fall through to a default: a
-// service can already save strategy: rolling today (internal/spec's
-// schema has always accepted it), so this controller must say so
-// honestly rather than silently reconciling it as something else. See
-// this package's own doc comment for why rolling specifically (staggered
-// per-replica cutover, partial-success handling) is a larger, separate
-// piece of work than generalizing the existing create-alongside-then-
-// remove-old shape to N replicas (blue-green) or adding a genuinely
-// simpler stop-then-start alternative (recreate).
 const (
 	strategyRolling   = "rolling"
 	strategyRecreate  = "recreate"
@@ -332,17 +320,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	case strategyRecreate:
 		return c.reconcileRecreate(ctx, targets, desired)
 	case strategyRolling:
-		// A real, named case, not a fallthrough: internal/spec's schema
-		// has always accepted strategy: rolling, so a service can
-		// already have this saved. Reported honestly rather than
-		// silently reconciled as something else (this package's own doc
-		// comment on the strategy constants explains why rolling is
-		// separate, larger scope). Not an error: a permanently
-		// unsupported strategy is the same "known, documented block, not
-		// a transient failure that should retry-and-log-error forever"
-		// shape internal/reconcile/database's credentials-blocked case
-		// already establishes for an analogous known gap.
-		return notReady("StrategyNotSupported", fmt.Errorf("deploy strategy %q is not yet implemented", strategy)), nil
+		return c.reconcileRolling(ctx, targets, desired)
 	default:
 		// Reachable only if something bypassed internal/spec's schema
 		// validation (a hand-built DesiredService, or the schema's own
@@ -453,9 +431,80 @@ func (c *Controller) reconcileRecreate(ctx context.Context, targets []string, de
 	return c.finishReconcile(ctx, true)
 }
 
+// reconcileRolling replaces targets one at a time: ensure the next
+// target is running (and, if freshly started, ready), then immediately
+// retire exactly one stale (old-image) container before moving to the
+// next target. Unlike reconcileBlueGreen, which proves every new
+// replica healthy before removing any old one (so the old and new sets
+// briefly coexist in full), this normally bounds the overlap to at most
+// one extra container at a time: the property that makes it "rolling"
+// rather than blue-green with more steps. That bound is best-effort,
+// not absolute: several consecutive per-step retirement failures in a
+// row (see below) can let more than one extra container pile up
+// temporarily, caught by the final sweep. Never a safety problem
+// (nothing is under-provisioned, only occasionally over-provisioned),
+// just not a hard invariant a caller should rely on.
+//
+// Pairing a retired container with the target that triggered its
+// retirement is by count, not identity: staleContainers has no way to
+// know which specific old container "belongs to" which replica index
+// (container names are derived from image+index, so an image change
+// renames every target at once), so this simply removes one arbitrary
+// stale container per freshly-deployed target. The safety property
+// rolling promises, never more than one replica short of the desired
+// count, holds regardless of which specific old container is removed
+// at each step.
+//
+// A failed per-step retirement is not fatal to the rollout: the
+// container just stays stale and is picked up again by the final
+// removeStale sweep below, the same "the important fact, a healthy set
+// is serving, is still true" tolerance reconcileBlueGreen's own cleanup
+// failure path already establishes. Only that final sweep's error (if
+// it still fails) is what gets reported.
+//
+// A known gap shared with reconcileBlueGreen, not introduced here:
+// ensureReplicaRunning only calls waitReady on a container it just
+// created or restarted (justDeployed), never on one InspectByName
+// already finds Running. A replica whose readiness probe timed out on
+// one reconcile pass, but whose container is otherwise still Running,
+// is treated as already-healthy on the next pass without ever being
+// re-probed, so "the replacement is proven healthy" is only checked
+// within a single pass, not re-verified across passes. Fixing this
+// belongs in ensureReplicaRunning itself, shared by all three
+// strategies, not scoped to this one.
+func (c *Controller) reconcileRolling(ctx context.Context, targets []string, desired *store.DesiredService) (reconcile.Result, error) {
+	anyDeployed := false
+	for _, target := range targets {
+		deployed, err := c.ensureReplicaRunning(ctx, target, desired)
+		if err != nil {
+			return notReady(deployed.reason, err), fmt.Errorf("application/%s: %w", c.serviceName, err)
+		}
+		anyDeployed = anyDeployed || deployed.justDeployed
+
+		if deployed.justDeployed {
+			stale, err := c.staleContainers(ctx, targets)
+			if err != nil {
+				return notReady("InspectFailed", err), fmt.Errorf("application/%s: list stale containers: %w", c.serviceName, err)
+			}
+			if len(stale) > 0 {
+				_ = c.removeContainers(ctx, stale[:1])
+			}
+		}
+	}
+
+	if err := c.removeStale(ctx, targets); err != nil {
+		return reconcile.Result{Conditions: []reconcile.Condition{{
+			Type: "Ready", Status: reconcile.ConditionTrue,
+			Reason: "RunningStaleCleanupFailed", Message: err.Error(),
+		}}}, fmt.Errorf("application/%s: cleanup stale containers: %w", c.serviceName, err)
+	}
+
+	return c.finishReconcile(ctx, anyDeployed)
+}
+
 // finishReconcile records the deploy metric (if a real cutover happened
-// this pass) and returns the final Ready condition, the shared tail both
-// reconcileBlueGreen and reconcileRecreate end with.
+// this pass) and returns the final Ready condition, the shared tail
+// every strategy's reconcile* method ends with.
 func (c *Controller) finishReconcile(ctx context.Context, justDeployed bool) (reconcile.Result, error) {
 	if !justDeployed {
 		return ready("AlreadyRunning"), nil
