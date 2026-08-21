@@ -3,7 +3,9 @@ import {
   CheckIcon,
   CopyIcon,
   GitBranchIcon,
+  PlusIcon,
   SpinnerIcon,
+  TrashIcon,
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,6 +17,13 @@ import {
   FieldHint,
   FieldLabel,
 } from '@/components/ui/field'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from '@/components/ui/toast'
 import { BrandIcon, type BrandIconName } from '@/components/BrandIcon'
@@ -25,7 +34,7 @@ import {
 } from '../queries/gitSources'
 import { ApiError } from '../lib/apiError'
 import type { AppDetail } from '../types/appDetail'
-import type { GitSourceBuildType, GitSourceResource } from '../types/gitSource'
+import type { GitSourceBuild, GitSourceBuildType, GitSourceResource } from '../types/gitSource'
 
 // Git source connect/manage card, PUT/GET/DELETE
 // /api/v1/apps/{name}/git-source (internal/api/git_sources.go): the
@@ -58,19 +67,30 @@ const AUTO_DETECT_STACKS: { icon: BrandIconName; label: string }[] = [
   { icon: 'java', label: 'Java (Spring Boot)' },
 ]
 
+// AdditionalServiceRow is one editable row of FormState.additionalServices:
+// an array, not a Record, so a service name can be edited mid-typing
+// without colliding with another row that momentarily shares the same
+// (incomplete) key.
+interface AdditionalServiceRow {
+  serviceName: string
+  buildType: GitSourceBuildType
+  buildPath: string
+}
+
 interface FormState {
   repoUrl: string
   branch: string
   buildType: GitSourceBuildType
   buildPath: string
   token: string
+  additionalServices: AdditionalServiceRow[]
 }
 
 // Auto-detect is the default and recommended choice: most repos need no
 // build configuration at all beyond picking their language, so a blank
 // connect form should not default to the manual Dockerfile path.
 function emptyForm(): FormState {
-  return { repoUrl: '', branch: '', buildType: 'railpack', buildPath: '', token: '' }
+  return { repoUrl: '', branch: '', buildType: 'railpack', buildPath: '', token: '', additionalServices: [] }
 }
 
 function formFromResource(g: GitSourceResource): FormState {
@@ -80,7 +100,26 @@ function formFromResource(g: GitSourceResource): FormState {
     buildType: g.build_type,
     buildPath: g.build_path ?? '',
     token: '',
+    additionalServices: Object.entries(g.additional_services ?? {}).map(([serviceName, build]) => ({
+      serviceName,
+      buildType: build.build_type,
+      buildPath: build.build_path ?? '',
+    })),
   }
+}
+
+// additionalServicesPayload drops rows with a blank service name (an
+// operator mid-edit adding a new row) rather than sending them as an
+// empty-string key, which the backend rejects as a self-reference-shaped
+// but meaningless entry.
+function additionalServicesPayload(rows: AdditionalServiceRow[]): Record<string, GitSourceBuild> | undefined {
+  const entries = rows
+    .filter((row) => row.serviceName.trim())
+    .map((row): [string, GitSourceBuild] => [
+      row.serviceName.trim(),
+      { build_type: row.buildType, build_path: row.buildPath.trim() || undefined },
+    ])
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined
 }
 
 export function GitSourceCard({ app }: { app: AppDetail }) {
@@ -125,6 +164,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
         build_type: form.buildType,
         build_path: form.buildPath.trim() || undefined,
         token: form.token.trim() || undefined,
+        additional_services: additionalServicesPayload(form.additionalServices),
       },
       {
         onSuccess: (resource) => {
@@ -164,6 +204,27 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
   }
 
   const webhookFullURL = (path: string) => `${window.location.origin}${path}`
+
+  function addAdditionalServiceRow() {
+    setForm({
+      ...form,
+      additionalServices: [...form.additionalServices, { serviceName: '', buildType: 'dockerfile', buildPath: '' }],
+    })
+  }
+
+  function updateAdditionalServiceRow(index: number, patch: Partial<AdditionalServiceRow>) {
+    setForm({
+      ...form,
+      additionalServices: form.additionalServices.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+    })
+  }
+
+  function removeAdditionalServiceRow(index: number) {
+    setForm({
+      ...form,
+      additionalServices: form.additionalServices.filter((_, i) => i !== index),
+    })
+  }
 
   return (
     <Card>
@@ -380,6 +441,78 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
               </FieldHint>
             </Field>
 
+            <Field>
+              <FieldLabel>Additional services (optional)</FieldLabel>
+              <FieldDescription>
+                Also rebuild these sibling services from the same push, for a
+                monorepo with more than one service. Each needs its own
+                already-existing service name and build config.
+              </FieldDescription>
+              <div className="space-y-2">
+                {form.additionalServices.map((row, index) => (
+                  <div key={index} className="flex items-start gap-2">
+                    <Input
+                      className="font-mono"
+                      placeholder="worker"
+                      autoComplete="off"
+                      spellCheck={false}
+                      value={row.serviceName}
+                      onChange={(e) => { updateAdditionalServiceRow(index, { serviceName: e.target.value }) }}
+                      disabled={setGitSource.isPending}
+                    />
+                    <Select
+                      value={row.buildType}
+                      onValueChange={(v) => {
+                        if (v === 'railpack' || v === 'dockerfile' || v === 'static') {
+                          updateAdditionalServiceRow(index, { buildType: v })
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="w-40 shrink-0">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {BUILD_PACKS.map((pack) => (
+                          <SelectItem key={pack.value} value={pack.value}>
+                            {pack.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      className="font-mono"
+                      placeholder="./worker/Dockerfile"
+                      autoComplete="off"
+                      spellCheck={false}
+                      value={row.buildPath}
+                      onChange={(e) => { updateAdditionalServiceRow(index, { buildPath: e.target.value }) }}
+                      disabled={setGitSource.isPending || row.buildType === 'railpack'}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={setGitSource.isPending}
+                      onClick={() => { removeAdditionalServiceRow(index) }}
+                      aria-label="Remove additional service"
+                    >
+                      <TrashIcon />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={setGitSource.isPending}
+                  onClick={addAdditionalServiceRow}
+                >
+                  <PlusIcon />
+                  Add service
+                </Button>
+              </div>
+            </Field>
+
             <div className="flex gap-2">
               <Button type="button" size="sm" disabled={setGitSource.isPending} onClick={submit}>
                 {setGitSource.isPending ? <SpinnerIcon className="size-4 animate-spin" /> : null}
@@ -403,6 +536,14 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
               <dd>{BUILD_PACKS.find((p) => p.value === query.data.build_type)?.label ?? query.data.build_type}</dd>
               <dt className="text-muted-foreground">Deploy token</dt>
               <dd>{query.data.has_token ? 'Configured' : 'Not set (public repo)'}</dd>
+              {Object.keys(query.data.additional_services ?? {}).length > 0 ? (
+                <>
+                  <dt className="text-muted-foreground">Also deploys</dt>
+                  <dd className="font-mono">
+                    {Object.keys(query.data.additional_services ?? {}).join(', ')}
+                  </dd>
+                </>
+              ) : null}
             </dl>
 
             <Field>

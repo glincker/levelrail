@@ -108,3 +108,46 @@ func TestGitSourceSecretsKey_DistinctFromServiceName(t *testing.T) {
 		t.Errorf("GitSourceSecretsKey(%q) = %q, must not equal the service name itself: a git source's credentials must not share a DEK with the app's own runtime env secrets", "web", got)
 	}
 }
+
+func TestSaveAndGetGitSource_AdditionalServices(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := GitSource{
+		ServiceName: "web",
+		RepoURL:     "https://github.com/org/web.git",
+		Branch:      "main",
+		BuildType:   "dockerfile",
+		AdditionalServices: map[string]GitSourceBuild{
+			"worker": {BuildType: "dockerfile", BuildPath: "./worker/Dockerfile"},
+		},
+	}
+	if err := db.SaveGitSource(ctx, want); err != nil {
+		t.Fatalf("SaveGitSource() error = %v", err)
+	}
+
+	got, err := db.GetGitSource(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetGitSource() error = %v", err)
+	}
+	if len(got.AdditionalServices) != 1 || got.AdditionalServices["worker"] != want.AdditionalServices["worker"] {
+		t.Errorf("GetGitSource().AdditionalServices = %+v, want %+v", got.AdditionalServices, want.AdditionalServices)
+	}
+}
+
+func TestGetGitSource_NoAdditionalServices_ReturnsEmptyNotNilError(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveGitSource(ctx, GitSource{ServiceName: "web", RepoURL: "https://github.com/org/web.git", Branch: "main", BuildType: "dockerfile"}); err != nil {
+		t.Fatalf("SaveGitSource() error = %v", err)
+	}
+
+	got, err := db.GetGitSource(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetGitSource() error = %v", err)
+	}
+	if len(got.AdditionalServices) != 0 {
+		t.Errorf("GetGitSource().AdditionalServices = %+v, want empty", got.AdditionalServices)
+	}
+}
