@@ -352,6 +352,23 @@ func (c *Client) TriggerBackup(ctx context.Context, name, targetID string) (Back
 	return out, err
 }
 
+// SetBackupSchedule calls PUT /api/v1/databases/{name}/backup-schedule:
+// configures a recurring backup, replacing any previously configured
+// schedule for name.
+func (c *Client) SetBackupSchedule(ctx context.Context, name string, req SetBackupScheduleRequest) (BackupScheduleResource, error) {
+	var out BackupScheduleResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/databases/"+PathEscape(name)+"/backup-schedule", req, &out)
+	return out, err
+}
+
+// ClearBackupSchedule calls DELETE
+// /api/v1/databases/{name}/backup-schedule: returns name to its default
+// "no scheduled backup configured" state. Past backup_history rows are
+// untouched, only the going-forward configuration.
+func (c *Client) ClearBackupSchedule(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name)+"/backup-schedule", nil, nil)
+}
+
 // ListBackups calls GET /api/v1/databases/{name}/backups: the full
 // backup attempt history for one database.
 func (c *Client) ListBackups(ctx context.Context, name string, opts ListBackupsOptions) ([]BackupHistoryResource, error) {
