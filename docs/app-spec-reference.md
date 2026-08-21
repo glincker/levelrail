@@ -39,7 +39,7 @@ services:
       tier: frontend
 databases:
   main:
-    engine: postgres          # postgres | redis | mysql | mongodb | mariadb | keydb
+    engine: postgres          # postgres | redis | mysql | mongodb | mariadb | keydb | clickhouse
     version: "16"
     backup: { schedule: "0 3 * * *", retain: 7 }
 ```
@@ -127,7 +127,7 @@ The object form must set at least one of the three fields.
 
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `engine` | string | yes | none | One of `postgres`, `redis`, `mysql`, `mongodb`, `mariadb`, `keydb`. |
+| `engine` | string | yes | none | One of `postgres`, `redis`, `mysql`, `mongodb`, `mariadb`, `keydb`, `clickhouse`. |
 | `version` | string | no | none | For example `"16"`. |
 | `backup` | `Backup` | no | none | Backup schedule. |
 

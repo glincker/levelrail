@@ -232,6 +232,27 @@ databases:
 	}
 }
 
+func TestParse_ValidClickHouseDatabase(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  analytics: { engine: clickhouse, version: "24.8" }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	analytics, ok := s.Databases["analytics"]
+	if !ok {
+		t.Fatal("expected an \"analytics\" database")
+	}
+	if analytics.Engine != EngineClickHouse || analytics.Version != "24.8" {
+		t.Errorf("Databases[analytics] = %+v, want Engine=clickhouse Version=24.8", analytics)
+	}
+}
+
 func TestParse_ValidMinimal_Defaults(t *testing.T) {
 	s, err := Parse(readTestdata(t, "valid_minimal.yaml"))
 	if err != nil {
