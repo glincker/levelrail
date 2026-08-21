@@ -436,9 +436,14 @@ func (c *Controller) reconcileRecreate(ctx context.Context, targets []string, de
 // retire exactly one stale (old-image) container before moving to the
 // next target. Unlike reconcileBlueGreen, which proves every new
 // replica healthy before removing any old one (so the old and new sets
-// briefly coexist in full), this bounds the overlap to at most one
-// extra container at a time: the property that makes it "rolling"
-// rather than blue-green with more steps.
+// briefly coexist in full), this normally bounds the overlap to at most
+// one extra container at a time: the property that makes it "rolling"
+// rather than blue-green with more steps. That bound is best-effort,
+// not absolute: several consecutive per-step retirement failures in a
+// row (see below) can let more than one extra container pile up
+// temporarily, caught by the final sweep. Never a safety problem
+// (nothing is under-provisioned, only occasionally over-provisioned),
+// just not a hard invariant a caller should rely on.
 //
 // Pairing a retired container with the target that triggered its
 // retirement is by count, not identity: staleContainers has no way to
@@ -456,6 +461,17 @@ func (c *Controller) reconcileRecreate(ctx context.Context, targets []string, de
 // is serving, is still true" tolerance reconcileBlueGreen's own cleanup
 // failure path already establishes. Only that final sweep's error (if
 // it still fails) is what gets reported.
+//
+// A known gap shared with reconcileBlueGreen, not introduced here:
+// ensureReplicaRunning only calls waitReady on a container it just
+// created or restarted (justDeployed), never on one InspectByName
+// already finds Running. A replica whose readiness probe timed out on
+// one reconcile pass, but whose container is otherwise still Running,
+// is treated as already-healthy on the next pass without ever being
+// re-probed, so "the replacement is proven healthy" is only checked
+// within a single pass, not re-verified across passes. Fixing this
+// belongs in ensureReplicaRunning itself, shared by all three
+// strategies, not scoped to this one.
 func (c *Controller) reconcileRolling(ctx context.Context, targets []string, desired *store.DesiredService) (reconcile.Result, error) {
 	anyDeployed := false
 	for _, target := range targets {

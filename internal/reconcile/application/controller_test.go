@@ -2155,6 +2155,97 @@ func TestController_Reconcile_Rolling_FirstReplicaReadinessFails_NoOldReplicaRem
 	}
 }
 
+// TestController_Reconcile_Rolling_PerStepRetirementFails_FinalSweepReportsIt
+// is the half-succeeded case CLAUDE.md's testing standard requires for
+// reconcileRolling's own new logic: its per-step retirement error is
+// deliberately discarded (the container just stays stale for the final
+// removeStale sweep to retry). With removeErr set for the whole pass,
+// both the per-step attempt and the final sweep fail, so this proves
+// the discard doesn't lose the failure entirely: it must still surface,
+// exactly once, as the final sweep's own RunningStaleCleanupFailed
+// condition, not silently disappear.
+func TestController_Reconcile_Rolling_PerStepRetirementFails_FinalSweepReportsIt(t *testing.T) {
+	rt := newFakeRuntime(0)
+	for i := 0; i < 2; i++ {
+		rt.seed(replicaContainerName("web", "img:v1", "", i), true)
+	}
+	rt.removeErr = errors.New("permission denied")
+	desired := &store.DesiredService{Name: "web", Image: "img:v2", Port: 80, Strategy: "rolling", Replicas: 2}
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want the final sweep's cleanup error")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "RunningStaleCleanupFailed" {
+		t.Errorf("condition = %+v, want Status=True Reason=RunningStaleCleanupFailed (a stuck old container is a lesser problem than the new set failing to deploy)", cond)
+	}
+	// Both new replicas must still deploy successfully: a stale-container
+	// cleanup failure must never block the actual rollout from
+	// completing, matching reconcileBlueGreen's own precedent.
+	if rt.createCalls != 2 {
+		t.Errorf("createCalls = %d, want 2 (cleanup failing must not stop the new replicas from being created)", rt.createCalls)
+	}
+	for i := 0; i < 2; i++ {
+		old := replicaContainerName("web", "img:v1", "", i)
+		if _, ok := rt.containers[old]; !ok {
+			t.Errorf("original replica %d container %q was removed despite removeErr, want it still present", i, old)
+		}
+	}
+}
+
+// TestController_Reconcile_Rolling_StaysRunningAfterReadinessTimeout_NotReProbed
+// documents a known, pre-existing gap shared with reconcileBlueGreen
+// (see reconcileRolling's own doc comment), not a regression introduced
+// by rolling: ensureReplicaRunning only calls waitReady on a container
+// it just created or restarted. A container whose readiness probe
+// timed out on one reconcile pass, but that Docker still reports as
+// Running, is treated as already-healthy on the very next pass without
+// ever being re-probed. This test locks in that current, documented
+// behavior so a future change to ensureReplicaRunning is a deliberate
+// decision, not an accidental one.
+func TestController_Reconcile_Rolling_StaysRunningAfterReadinessTimeout_NotReProbed(t *testing.T) {
+	srv := neverHealthy()
+	defer srv.Close()
+
+	rt := newFakeRuntime(serverPort(t, srv))
+	old := replicaContainerName("web", "img:v1", "", 0)
+	rt.seed(old, true)
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v2", Port: 80, Strategy: "rolling", Replicas: 1,
+		Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/healthz", Interval: 10 * time.Millisecond, Timeout: 50 * time.Millisecond}},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithReadyBudget(150*time.Millisecond))
+
+	// First pass: the new replica is created and started (Running=true
+	// in the fake), but its readiness probe times out. Reconcile must
+	// fail and remove nothing.
+	if _, err := c.Reconcile(context.Background()); err == nil {
+		t.Fatal("first Reconcile() error = nil, want a readiness timeout error")
+	}
+	if rt.removeCalls != 0 {
+		t.Fatalf("removeCalls after first pass = %d, want 0", rt.removeCalls)
+	}
+
+	// Second pass: InspectByName now finds the same new-image container
+	// already Running, so ensureReplicaRunning's justDeployed stays
+	// false and waitReady is never called again. This documents that
+	// the container's actual health is never re-verified, current
+	// behavior, not an endorsement of it (see doc comment above).
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("second Reconcile() error = %v, want nil (the container is trusted as already-healthy)", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "AlreadyRunning" {
+		t.Errorf("condition = %+v, want Status=True Reason=AlreadyRunning", cond)
+	}
+	if _, ok := rt.containers[old]; ok {
+		t.Error("old replica is still present after the second pass, want it removed by the final sweep: the replacement's readiness is never re-confirmed on a pass where InspectByName already finds it Running (current, documented behavior)")
+	}
+}
+
 func TestController_Reconcile_Strategy_Unrecognized(t *testing.T) {
 	rt := newFakeRuntime(0)
 	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Strategy: "not-a-real-strategy", Replicas: store.DefaultReplicas}
