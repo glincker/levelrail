@@ -21,6 +21,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # No `needs`, no path filter: runs immediately alongside `changes` so a
+  # migration version collision fails in seconds, not after the full
+  # build/test matrix.
+  migration-versions:
+    name: Migration version check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check for duplicate migration versions
+        run: scripts/check-migration-versions.sh
+
   # Gates every other job on which areas actually changed, so a
   # frontend-only PR doesn't wait on the Go suite and vice versa.
   changes:
@@ -276,12 +292,16 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    needs: [changes, build-vet, test-api, test-rest, coverage-gate, lint, web-check]
+    needs: [migration-versions, changes, build-vet, test-api, test-rest, coverage-gate, lint, web-check]
     if: always()
     timeout-minutes: 3
     steps:
       - name: Evaluate required jobs
         run: |
+          if [ "${{ needs.migration-versions.result }}" != "success" ]; then
+            echo "migration-versions: ${{ needs.migration-versions.result }} (required)"
+            exit 1
+          fi
           if [ "${{ needs.changes.result }}" != "success" ]; then
             echo "changes: ${{ needs.changes.result }} (required)"
             exit 1
