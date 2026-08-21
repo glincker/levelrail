@@ -253,6 +253,27 @@ databases:
 	}
 }
 
+func TestParse_ValidDragonflyDatabase(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  hotcache: { engine: dragonfly, version: "v1.27.1" }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	hotcache, ok := s.Databases["hotcache"]
+	if !ok {
+		t.Fatal("expected a \"hotcache\" database")
+	}
+	if hotcache.Engine != EngineDragonfly || hotcache.Version != "v1.27.1" {
+		t.Errorf("Databases[hotcache] = %+v, want Engine=dragonfly Version=v1.27.1", hotcache)
+	}
+}
+
 func TestParse_ValidMinimal_Defaults(t *testing.T) {
 	s, err := Parse(readTestdata(t, "valid_minimal.yaml"))
 	if err != nil {

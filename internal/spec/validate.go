@@ -46,8 +46,8 @@ func (s *Spec) Validate() error {
 		if !nameLike.MatchString(name) {
 			return fmt.Errorf("spec: database %q: name must be lowercase alphanumeric and hyphens, starting with a letter", name)
 		}
-		if db.Engine != EnginePostgres && db.Engine != EngineRedis && db.Engine != EngineMySQL && db.Engine != EngineMongoDB && db.Engine != EngineMariaDB && db.Engine != EngineKeyDB && db.Engine != EngineClickHouse {
-			return fmt.Errorf("spec: database %q: engine %q is not supported (supports %q, %q, %q, %q, %q, %q, and %q)", name, db.Engine, EnginePostgres, EngineRedis, EngineMySQL, EngineMongoDB, EngineMariaDB, EngineKeyDB, EngineClickHouse)
+		if db.Engine != EnginePostgres && db.Engine != EngineRedis && db.Engine != EngineMySQL && db.Engine != EngineMongoDB && db.Engine != EngineMariaDB && db.Engine != EngineKeyDB && db.Engine != EngineClickHouse && db.Engine != EngineDragonfly {
+			return fmt.Errorf("spec: database %q: engine %q is not supported (supports %q, %q, %q, %q, %q, %q, %q, and %q)", name, db.Engine, EnginePostgres, EngineRedis, EngineMySQL, EngineMongoDB, EngineMariaDB, EngineKeyDB, EngineClickHouse, EngineDragonfly)
 		}
 	}
 

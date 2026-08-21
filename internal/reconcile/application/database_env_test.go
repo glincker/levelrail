@@ -140,6 +140,49 @@ func TestController_Reconcile_DatabaseEnv_Redis_URL_NoPassword(t *testing.T) {
 	}
 }
 
+// TestController_Reconcile_DatabaseEnv_KeyDBAndDragonfly_URL_UsesRedisScheme
+// guards resolveDatabaseURL's Redis-protocol-family branch: both engines
+// are passwordless drop-in Redis forks, so their URL must use the
+// "redis://" scheme a Redis client library actually recognizes, not
+// "keydb://"/"dragonfly://" (neither engine's own PasswordSecretKey
+// entry exists, so falling through to the generic credentialed branch
+// would fail resolution entirely, the bug this test locks in the fix
+// for).
+func TestController_Reconcile_DatabaseEnv_KeyDBAndDragonfly_URL_UsesRedisScheme(t *testing.T) {
+	tests := []struct {
+		name   string
+		engine string
+	}{
+		{name: "KeyDB", engine: store.EngineKeyDB},
+		{name: "Dragonfly", engine: store.EngineDragonfly},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := newFakeRuntime(0)
+			dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
+				"cache": {Name: "cache", Engine: tt.engine},
+			}}
+			desired := &store.DesiredService{
+				Name: "web", Image: "img:v1", Port: 80,
+				DatabaseEnv: map[string]store.DatabaseEnvRef{
+					"CACHE_URL": {Database: "cache", Field: "url"},
+				},
+			}
+			// No WithSecretResolver: neither engine needs one, so this
+			// must still succeed.
+			c := New("web", &fakeStore{svc: desired}, rt, WithDatabaseAttachments(dbStore))
+
+			if _, err := c.Reconcile(context.Background()); err != nil {
+				t.Fatalf("Reconcile() error = %v", err)
+			}
+			want := "redis://db-cache:6379"
+			if got := rt.lastCreateEnv["CACHE_URL"]; got != want {
+				t.Errorf("container env CACHE_URL = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
 // TestController_Reconcile_DatabaseEnv_UnknownDatabase_FailsLoudly is the
 // case a { from: ... } env var referencing a database that doesn't (or
 // no longer) exist must fail Reconcile clearly, not silently start a

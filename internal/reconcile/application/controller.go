@@ -870,14 +870,17 @@ func (c *Controller) resolveDatabasePassword(ctx context.Context, dbName, engine
 	return password, nil
 }
 
-// resolveDatabaseURL builds a full connection URL. Redis runs
-// passwordless (internal/reconcile/database's own package doc comment),
-// so its URL carries no userinfo; every other engine's own scheme string
-// is identical to store's engine identifier (store.EnginePostgres is
+// resolveDatabaseURL builds a full connection URL. Redis, KeyDB, and
+// Dragonfly all run passwordless (internal/reconcile/database's own
+// package doc comment) and share the Redis wire protocol, so all three
+// get a "redis://" URL with no userinfo, not their own engine name as
+// scheme: a Redis client library has no idea what "keydb://" or
+// "dragonfly://" mean. Every other engine's own scheme string is
+// identical to store's engine identifier (store.EnginePostgres is
 // "postgres", store.EngineMongoDB is "mongodb", and so on), so no
-// separate scheme mapping is needed.
+// separate scheme mapping is needed there.
 func (c *Controller) resolveDatabaseURL(ctx context.Context, dbName, engine, host string, port int) (string, error) {
-	if engine == store.EngineRedis {
+	if engine == store.EngineRedis || engine == store.EngineKeyDB || engine == store.EngineDragonfly {
 		return fmt.Sprintf("redis://%s:%d", host, port), nil
 	}
 	password, err := c.resolveDatabasePassword(ctx, dbName, engine)
