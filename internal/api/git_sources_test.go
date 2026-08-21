@@ -151,6 +151,64 @@ func TestHandleSetGitSource_RejectsImageBuildType(t *testing.T) {
 	}
 }
 
+func TestHandleSetGitSource_RejectsAdditionalServiceSelfReference(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","additional_services":{"web":{"build_type":"dockerfile"}}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+func TestHandleSetGitSource_RejectsAdditionalServiceInvalidBuildType(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","additional_services":{"worker":{"build_type":"nonsense"}}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+func TestHandleSetGitSource_AdditionalServices_RoundTrip(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","additional_services":{"worker":{"build_type":"dockerfile","build_path":"./worker/Dockerfile"}}}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	var created gitSourceResource
+	if err := json.NewDecoder(rec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	want := store.GitSourceBuild{BuildType: "dockerfile", BuildPath: "./worker/Dockerfile"}
+	if created.AdditionalServices["worker"] != want {
+		t.Fatalf("create response AdditionalServices[worker] = %+v, want %+v", created.AdditionalServices["worker"], want)
+	}
+
+	getRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(getRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/git-source", ""))
+	var got gitSourceResource
+	if err := json.NewDecoder(getRec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode get: %v", err)
+	}
+	if got.AdditionalServices["worker"] != want {
+		t.Fatalf("GET AdditionalServices[worker] = %+v, want %+v", got.AdditionalServices["worker"], want)
+	}
+}
+
 func TestHandleSetGitSource_Create_Success(t *testing.T) {
 	secrets := newFakeGitSourceSecrets()
 	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)

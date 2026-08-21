@@ -432,3 +432,72 @@ func TestHandleGitPushWebhook_AppDeleted_ReturnsNotFound(t *testing.T) {
 		t.Errorf("builder called %d times, want 0", fb.calls)
 	}
 }
+
+func TestHandleGitPushWebhook_AdditionalServices_FansOut(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	seedApp(t, db, "worker")
+	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main","build_type":"dockerfile",
+		"additional_services":{"worker":{"build_type":"dockerfile","build_path":"./worker/Dockerfile"}}}`)
+
+	rt.gitSourceFetch = newFakeGitSourceFetch(&[]fakeGitSourceFetchCall{}, t.TempDir(), new(bool), nil)
+	fb := &fakeBuilder{tag: "web:sha1"}
+	rt.builder = fb
+
+	body := pushBody("refs/heads/main")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if fb.calls != 2 {
+		t.Fatalf("builder called %d times, want 2 (primary + additional)", fb.calls)
+	}
+
+	for _, name := range []string{"web", "worker"} {
+		attempts, err := db.ListDeployAttempts(context.Background(), name)
+		if err != nil {
+			t.Fatalf("ListDeployAttempts(%q) error = %v", name, err)
+		}
+		if len(attempts) != 1 || attempts[0].Source != store.DeployAttemptSourceWebhook {
+			t.Errorf("deploy attempts for %q = %+v, want exactly one with Source=%q", name, attempts, store.DeployAttemptSourceWebhook)
+		}
+	}
+}
+
+func TestHandleGitPushWebhook_AdditionalServices_MissingSibling_PartialFailure(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main","build_type":"dockerfile",
+		"additional_services":{"ghost":{"build_type":"dockerfile"}}}`)
+
+	rt.gitSourceFetch = newFakeGitSourceFetch(&[]fakeGitSourceFetchCall{}, t.TempDir(), new(bool), nil)
+	fb := &fakeBuilder{tag: "web:sha1"}
+	rt.builder = fb
+
+	body := pushBody("refs/heads/main")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusMultiStatus {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusMultiStatus, rec.Body.String())
+	}
+	if fb.calls != 1 {
+		t.Fatalf("builder called %d times, want 1: only the primary service should deploy", fb.calls)
+	}
+
+	attempts, err := db.ListDeployAttempts(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("ListDeployAttempts() error = %v", err)
+	}
+	if len(attempts) != 1 {
+		t.Errorf("deploy attempts for web = %+v, want exactly one: the missing sibling must not block the primary deploy", attempts)
+	}
+}
