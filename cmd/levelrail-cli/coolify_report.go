@@ -9,27 +9,36 @@ import (
 // migrationReport is a "migrate <source>" command's full result: every
 // application the source reported, either successfully mapped or flagged
 // as needing manual review, plus whether --apply was used. Shared by
-// migrate_coolify.go and migrate_dokploy.go; exactly one of
-// CoolifyURL/DokployURL is set per run.
+// migrate_coolify.go, migrate_dokploy.go, and migrate_caprover.go; exactly
+// one of CoolifyURL/DokployURL/CaproverURL is set per run.
 type migrationReport struct {
-	CoolifyURL string      `json:"coolify_url,omitempty"`
-	DokployURL string      `json:"dokploy_url,omitempty"`
-	Apps       []mappedApp `json:"apps"`
-	Applied    bool        `json:"applied"`
+	CoolifyURL  string      `json:"coolify_url,omitempty"`
+	DokployURL  string      `json:"dokploy_url,omitempty"`
+	CaproverURL string      `json:"caprover_url,omitempty"`
+	Apps        []mappedApp `json:"apps"`
+	Applied     bool        `json:"applied"`
 }
 
 func (r migrationReport) sourceLabel() string {
-	if r.DokployURL != "" {
+	switch {
+	case r.DokployURL != "":
 		return "Dokploy"
+	case r.CaproverURL != "":
+		return "CapRover"
+	default:
+		return "Coolify"
 	}
-	return "Coolify"
 }
 
 func (r migrationReport) sourceURL() string {
-	if r.DokployURL != "" {
+	switch {
+	case r.DokployURL != "":
 		return r.DokployURL
+	case r.CaproverURL != "":
+		return r.CaproverURL
+	default:
+		return r.CoolifyURL
 	}
-	return r.CoolifyURL
 }
 
 func (r migrationReport) cleanApps() []mappedApp {

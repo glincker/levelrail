@@ -21,6 +21,8 @@ func runMigrate(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runMigrateCoolify(prog, args[1:], stdout, stderr, lookupEnv)
 	case "dokploy":
 		return runMigrateDokploy(prog, args[1:], stdout, stderr, lookupEnv)
+	case "caprover":
+		return runMigrateCaprover(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown migrate source %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, migrateUsage(prog))
@@ -30,8 +32,9 @@ func runMigrate(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 
 func migrateUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s migrate coolify --url URL --token TOKEN [flags]   migrate apps from a Coolify instance
-  %[1]s migrate dokploy --url URL --token TOKEN [flags]   migrate apps from a Dokploy instance
+  %[1]s migrate coolify --url URL --token TOKEN [flags]    migrate apps from a Coolify instance
+  %[1]s migrate dokploy --url URL --token TOKEN [flags]    migrate apps from a Dokploy instance
+  %[1]s migrate caprover --url URL --token TOKEN [flags]   migrate apps from a CapRover instance
 
 Run "%[1]s migrate <source> -h" for a source's own flags.
 `, prog)
