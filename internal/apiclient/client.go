@@ -618,6 +618,21 @@ func (c *Client) SetProjectOrganization(ctx context.Context, projectID, orgID st
 	return out, err
 }
 
+// GetOrganizationEnv calls GET /api/v1/organizations/{id}/env.
+func (c *Client) GetOrganizationEnv(ctx context.Context, id string) (map[string]string, error) {
+	var out map[string]string
+	err := c.do(ctx, http.MethodGet, organizationPath(id)+"/env", nil, &out)
+	return out, err
+}
+
+// SetOrganizationEnv calls PUT /api/v1/organizations/{id}/env: a full
+// replace, mirroring PUT /apps/{name}'s own env field semantics.
+func (c *Client) SetOrganizationEnv(ctx context.Context, id string, vars map[string]string) (map[string]string, error) {
+	var out map[string]string
+	err := c.do(ctx, http.MethodPut, organizationPath(id)+"/env", vars, &out)
+	return out, err
+}
+
 func environmentsCollectionPath(projectID string) string {
 	return "/api/v1/projects/" + PathEscape(projectID) + "/environments"
 }

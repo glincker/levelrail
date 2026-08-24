@@ -1514,6 +1514,116 @@ func TestController_Reconcile_ProjectEnv_ResolverErrorPropagates(t *testing.T) {
 	}
 }
 
+// fakeOrganizationEnvStore is a hand-written fake for OrganizationEnvStore,
+// same pattern as fakeProjectEnvStore above: keyed directly by projectID,
+// standing in for the real store's projects.org_id join.
+type fakeOrganizationEnvStore struct {
+	vars  map[string]map[string]string
+	err   error
+	calls int
+}
+
+func (f *fakeOrganizationEnvStore) ListOrganizationEnvVarsForProject(_ context.Context, projectID string) (map[string]string, error) {
+	f.calls++
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.vars[projectID], nil
+}
+
+func TestController_Reconcile_NoProjectID_OrgEnvNeverConsulted(t *testing.T) {
+	rt := newFakeRuntime(0)
+	orgEnv := &fakeOrganizationEnvStore{}
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Env: map[string]string{"NODE_ENV": "production"},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithOrganizationEnv(orgEnv))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if orgEnv.calls != 0 {
+		t.Errorf("ListOrganizationEnvVarsForProject calls = %d, want 0: a service with no ProjectID must never look one up", orgEnv.calls)
+	}
+}
+
+func TestController_Reconcile_ProjectID_NoOrgEnvStoreConfigured_SkippedNotFailed(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Env:       map[string]string{"NODE_ENV": "production"},
+		ProjectID: "proj_1",
+	}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue {
+		t.Errorf("condition = %+v, want Status=True", cond)
+	}
+	if got := rt.lastCreateEnv["NODE_ENV"]; got != "production" {
+		t.Errorf("container env NODE_ENV = %q, want the literal value preserved", got)
+	}
+}
+
+// TestController_Reconcile_OrgEnv_MergedBelowProjectLayer pins down the
+// full three-tier precedence in one shot: org default, overridden by
+// project default, overridden by the service's own literal.
+func TestController_Reconcile_OrgEnv_MergedBelowProjectLayer(t *testing.T) {
+	rt := newFakeRuntime(0)
+	orgEnv := &fakeOrganizationEnvStore{vars: map[string]map[string]string{
+		"proj_1": {"LOG_LEVEL": "debug", "REGION": "us-east-1", "NODE_ENV": "test"},
+	}}
+	projectEnv := &fakeProjectEnvStore{vars: map[string]map[string]string{
+		"proj_1": {"LOG_LEVEL": "info", "NODE_ENV": "development"},
+	}}
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Env:       map[string]string{"NODE_ENV": "production"},
+		ProjectID: "proj_1",
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithOrganizationEnv(orgEnv), WithProjectEnv(projectEnv))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if got := rt.lastCreateEnv["REGION"]; got != "us-east-1" {
+		t.Errorf("container env REGION = %q, want the organization default (us-east-1), nothing overrides it", got)
+	}
+	if got := rt.lastCreateEnv["LOG_LEVEL"]; got != "info" {
+		t.Errorf("container env LOG_LEVEL = %q, want the project default (info) to win over the organization default (debug)", got)
+	}
+	if got := rt.lastCreateEnv["NODE_ENV"]; got != "production" {
+		t.Errorf("container env NODE_ENV = %q, want the service's own literal (production) to win over both defaults", got)
+	}
+}
+
+func TestController_Reconcile_OrgEnv_ResolverErrorPropagates(t *testing.T) {
+	rt := newFakeRuntime(0)
+	orgEnv := &fakeOrganizationEnvStore{err: errors.New("db unavailable")}
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		ProjectID: "proj_1",
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithOrganizationEnv(orgEnv))
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want the organization env lookup failure to propagate")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse {
+		t.Errorf("condition = %+v, want Status=False", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0", rt.createCalls)
+	}
+}
+
 // fakeDeployRecorder is a hand-written fake for DeployRecorder, same
 // pattern as fakeSecretResolver above.
 type fakeDeployRecorder struct {

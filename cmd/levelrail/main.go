@@ -1844,6 +1844,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithDatabaseAttachments(deps.db),
 		application.WithRegistryCredentials(deps.db),
 		application.WithProjectEnv(deps.db),
+		application.WithOrganizationEnv(deps.db),
 		application.WithNetworkPrefix(deps.networkPrefix),
 	}
 	if deps.secretsManager != nil {
