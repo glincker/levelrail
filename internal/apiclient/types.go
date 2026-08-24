@@ -272,13 +272,15 @@ type BackupScheduleResource struct {
 	TargetID     string `json:"target_id,omitempty"`
 	Schedule     string `json:"schedule,omitempty"`
 	Retain       int    `json:"retain,omitempty"`
+	RetainDays   int    `json:"retain_days,omitempty"`
 }
 
 // SetBackupScheduleRequest mirrors internal/api's setBackupScheduleRequest.
 type SetBackupScheduleRequest struct {
-	TargetID string `json:"target_id"`
-	Schedule string `json:"schedule"`
-	Retain   int    `json:"retain,omitempty"`
+	TargetID   string `json:"target_id"`
+	Schedule   string `json:"schedule"`
+	Retain     int    `json:"retain,omitempty"`
+	RetainDays int    `json:"retain_days,omitempty"`
 }
 
 // ListBackupsOptions is ListBackups' pagination input, mirroring the

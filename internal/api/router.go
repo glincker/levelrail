@@ -259,7 +259,7 @@ type DatabaseStore interface {
 	// wave-2 roadmap item 6, scheduled backups. Same "own endpoint, own
 	// store method" separation UpdateDatabaseNode/UpdateDatabaseProject
 	// already establish for their own single-purpose updates.
-	SetDatabaseBackupSchedule(ctx context.Context, name, targetID, schedule string, retain int) error
+	SetDatabaseBackupSchedule(ctx context.Context, name, targetID, schedule string, retain, retainDays int) error
 	// SetDatabasePublicAccess backs
 	// PUT/DELETE /api/v1/databases/{name}/public-access
 	// (database_public_access.go): the same "own endpoint, own store

@@ -113,19 +113,21 @@ type PrunedBackup struct {
 }
 
 // PruneBackupHistory deletes every succeeded backup_history row for
-// databaseName beyond the newest keep, ordered by started_at, and
-// returns the TargetID/ObjectKey of every row removed. Only
-// BackupStatusSucceeded rows are ever eligible: a running or failed
-// attempt carries diagnostic value a retention count was never meant to
-// bound (an operator who sets retain: 7 wants "7 successful backups,"
-// not "7 attempts of any kind"), so those are left untouched regardless
-// of how old they are.
+// databaseName that violates either retention limit: beyond the newest
+// keep (ordered by started_at), or older than olderThan, and returns the
+// TargetID/ObjectKey of every row removed. Only BackupStatusSucceeded
+// rows are ever eligible: a running or failed attempt carries diagnostic
+// value a retention limit was never meant to bound (an operator who sets
+// retain: 7 wants "7 successful backups," not "7 attempts of any kind"),
+// so those are left untouched regardless of how old they are.
 //
-// keep <= 0 deletes nothing and returns (nil, nil) without issuing a
-// query: this mirrors store.DesiredDatabase.BackupRetain's own "0 means
-// keep everything" meaning (see migrations/0023's own doc comment) at
-// the one call site that matters, internal/backup.Scheduler, rather than
-// making every caller remember to guard the zero case itself.
+// keep <= 0 disables the count limit; a zero-value olderThan (the usual
+// Go zero value, IsZero()) disables the age limit. Both disabled deletes
+// nothing and returns (nil, nil) without issuing a query: this mirrors
+// store.DesiredDatabase.BackupRetain/BackupRetainDays's own "0 means no
+// limit for that dimension" meaning at the one call site that matters,
+// internal/backup.Scheduler, rather than making every caller remember to
+// guard the zero case itself.
 //
 // Runs as a SELECT of the rows about to be removed followed by a DELETE
 // in the same transaction, rather than a single DELETE ... RETURNING:
@@ -134,8 +136,10 @@ type PrunedBackup struct {
 // The transaction ensures the two statements observe the identical row
 // set even though db.SetMaxOpenConns(1) (store.go) already serializes
 // writes against this *sql.DB.
-func (db *DB) PruneBackupHistory(ctx context.Context, databaseName string, keep int) ([]PrunedBackup, error) {
-	if keep <= 0 {
+func (db *DB) PruneBackupHistory(ctx context.Context, databaseName string, keep int, olderThan time.Time) ([]PrunedBackup, error) {
+	countActive := keep > 0
+	ageActive := !olderThan.IsZero()
+	if !countActive && !ageActive {
 		return nil, nil
 	}
 
@@ -147,15 +151,25 @@ func (db *DB) PruneBackupHistory(ctx context.Context, databaseName string, keep 
 		_ = tx.Rollback() // no-op if Commit already succeeded
 	}()
 
+	// started_at is written by internal/backup.Runner using time.RFC3339
+	// (no fractional seconds, runner.go), so the cutoff below is formatted
+	// identically: mixing formats would break the lexicographic
+	// comparison a TEXT column relies on for chronological ordering.
 	rows, err := tx.QueryContext(ctx, `
 		SELECT id, target_id, object_key FROM backup_history
-		WHERE database_name = ? AND status = ? AND id NOT IN (
-			SELECT id FROM backup_history
-			WHERE database_name = ? AND status = ?
-			ORDER BY started_at DESC
-			LIMIT ?
+		WHERE database_name = ? AND status = ?
+		AND (
+			(? AND id NOT IN (
+				SELECT id FROM backup_history
+				WHERE database_name = ? AND status = ?
+				ORDER BY started_at DESC
+				LIMIT ?
+			))
+			OR (? AND started_at < ?)
 		)
-	`, databaseName, BackupStatusSucceeded, databaseName, BackupStatusSucceeded, keep)
+	`, databaseName, BackupStatusSucceeded,
+		countActive, databaseName, BackupStatusSucceeded, keep,
+		ageActive, olderThan.UTC().Format(time.RFC3339))
 	if err != nil {
 		return nil, fmt.Errorf("store: prune backup history for %q: select stale rows: %w", databaseName, err)
 	}

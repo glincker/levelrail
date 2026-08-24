@@ -46,6 +46,7 @@ const scheduleSchema = z
     weekday: z.string().trim(),
     customCron: z.string().trim(),
     retain: z.string().trim(),
+    retainDays: z.string().trim(),
   })
   .superRefine((data, ctx) => {
     if (data.frequency === 'custom') {
@@ -66,6 +67,14 @@ const scheduleSchema = z
         code: 'custom',
         message: 'Retention must be a whole number, 0 or more',
         path: ['retain'],
+      })
+    }
+    const retainDays = Number(data.retainDays)
+    if (!Number.isInteger(retainDays) || retainDays < 0) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Retention must be a whole number, 0 or more',
+        path: ['retainDays'],
       })
     }
   })
@@ -112,10 +121,27 @@ function fromCron(
   return { frequency: 'custom', time: '03:00', weekday: '0', customCron: raw }
 }
 
+function scheduleSummary(database: DatabaseResource): string {
+  const parts = [`Runs on schedule "${database.backup_schedule}"`]
+  const retain = database.backup_retain ?? 0
+  const retainDays = database.backup_retain_days ?? 0
+  if (retain > 0) {
+    parts.push(`keeping the last ${retain} backups`)
+  }
+  if (retainDays > 0) {
+    parts.push(`deleting backups older than ${retainDays} days`)
+  }
+  if (retain <= 0 && retainDays <= 0) {
+    parts.push('keeping every backup')
+  }
+  return parts.join(', ') + '.'
+}
+
 function toFieldValues(database: DatabaseResource): ScheduleFormValues {
   return {
     targetId: database.backup_target_id ?? '',
     retain: String(database.backup_retain ?? 7),
+    retainDays: String(database.backup_retain_days ?? 0),
     ...fromCron(database.backup_schedule),
   }
 }
@@ -148,6 +174,7 @@ export function BackupScheduleForm({ database }: { database: DatabaseResource })
         targetId: values.targetId,
         schedule: toCron(values),
         retain: Math.round(Number(values.retain)),
+        retainDays: Math.round(Number(values.retainDays)),
       },
       {
         onSuccess: () => {
@@ -188,9 +215,7 @@ export function BackupScheduleForm({ database }: { database: DatabaseResource })
             Scheduled backups
           </h3>
           <p className="text-sm text-muted-foreground">
-            {scheduled
-              ? `Runs on schedule "${database.backup_schedule}", keeping the last ${database.backup_retain ?? 0} backups.`
-              : 'No recurring backup configured for this database.'}
+            {scheduled ? scheduleSummary(database) : 'No recurring backup configured for this database.'}
           </p>
         </div>
         {scheduled ? (
@@ -325,7 +350,24 @@ export function BackupScheduleForm({ database }: { database: DatabaseResource })
             className="max-w-32"
             {...register('retain')}
           />
+          <FieldDescription>0 means no limit on count.</FieldDescription>
           <FieldError errors={[formState.errors.retain]} />
+        </Field>
+
+        <Field>
+          <FieldLabel htmlFor="backup-schedule-retain-days">
+            Delete backups older than (days)
+          </FieldLabel>
+          <Input
+            id="backup-schedule-retain-days"
+            inputMode="numeric"
+            className="max-w-32"
+            {...register('retainDays')}
+          />
+          <FieldDescription>
+            0 means no age limit. Applies independently of the count above.
+          </FieldDescription>
+          <FieldError errors={[formState.errors.retainDays]} />
         </Field>
 
         <div className="flex items-end sm:col-span-2">
