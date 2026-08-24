@@ -162,4 +162,13 @@ type OrganizationStore interface {
 	ListOrganizations(ctx context.Context) ([]store.Organization, error)
 	DeleteOrganization(ctx context.Context, id string) error
 	SetProjectOrganization(ctx context.Context, projectID, orgID string) error
+	// SetOrganizationEnvVars/ListOrganizationEnvVars back GET/PUT
+	// /api/v1/organizations/{id}/env (organization_env.go): shared env
+	// vars every project filed under this organization inherits as the
+	// base layer beneath its own project_env_vars tier
+	// (internal/reconcile/application's resolveEnv), full-replace on
+	// write, mirroring ProjectStore's SetProjectEnvVars/ListProjectEnvVars
+	// one level up.
+	SetOrganizationEnvVars(ctx context.Context, orgID string, vars map[string]string) error
+	ListOrganizationEnvVars(ctx context.Context, orgID string) (map[string]string, error)
 }

@@ -1415,6 +1415,12 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("DELETE /api/v1/organizations/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteOrganization))
 	mux.HandleFunc("PUT /api/v1/projects/{id}/organization", rt.requireAbility(AbilityWrite, rt.handleSetProjectOrganization))
 
+	// Shared env vars every project filed under this organization
+	// inherits (organization_env.go), the base layer beneath
+	// projects/{id}/env below.
+	mux.HandleFunc("GET /api/v1/organizations/{id}/env", rt.requireAbility(AbilityRead, rt.handleGetOrganizationEnv))
+	mux.HandleFunc("PUT /api/v1/organizations/{id}/env", rt.requireAbility(AbilityWrite, rt.handleSetOrganizationEnv))
+
 	// Environments (environments.go): staging/production-style labels
 	// scoped to a project, tagged onto a service via its own app route.
 	mux.HandleFunc("GET /api/v1/projects/{id}/environments", rt.requireAbility(AbilityRead, rt.handleListEnvironments))

@@ -6,10 +6,12 @@ import {
   organizationDetailQueryOptions,
   useOrganization,
 } from '../../queries/organizations'
+import { organizationEnvQueryOptions } from '../../queries/organizationEnv'
 import { projectListQueryOptions, useProjects } from '../../queries/projects'
 import { PROJECT_LIST_GRID, ProjectRow } from '../../components/ProjectRow'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { DeleteOrganizationDialog } from '../../components/DeleteOrganizationDialog'
+import { OrganizationEnvEditor } from '../../components/OrganizationEnvEditor'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 // Organization detail route: the org's own name plus every project
@@ -23,6 +25,7 @@ export const Route = createFileRoute('/organizations/$id')({
     Promise.all([
       queryClient.ensureQueryData(organizationDetailQueryOptions(id)),
       queryClient.ensureQueryData(projectListQueryOptions()),
+      queryClient.ensureQueryData(organizationEnvQueryOptions(id)),
     ]),
   component: OrganizationDetailPage,
   errorComponent: OrganizationDetailError,
@@ -60,6 +63,8 @@ function OrganizationDetailPage() {
           />
         </div>
       </div>
+
+      <OrganizationEnvEditor organizationId={id} />
 
       {orgProjects.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-16 text-center">

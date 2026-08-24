@@ -132,6 +132,72 @@ func TestRun_AppsOrganizationsClearProject(t *testing.T) {
 	}
 }
 
+func TestRun_AppsOrganizationsEnvGet(t *testing.T) {
+	var gotPath string
+	srv := newListEchoServer(t, &gotPath, map[string]string{"LOG_LEVEL": "info"})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "organizations", "env-get", "org_1", "--api-url", srv.URL})
+	if gotPath != "/api/v1/organizations/org_1/env" {
+		t.Errorf("path = %q, want /api/v1/organizations/org_1/env", gotPath)
+	}
+	if !strings.Contains(stdout, "LOG_LEVEL") || !strings.Contains(stdout, "info") {
+		t.Errorf("stdout = %q, want the env var listed", stdout)
+	}
+}
+
+func TestRun_AppsOrganizationsEnvGet_NoneSet(t *testing.T) {
+	var gotPath string
+	srv := newListEchoServer(t, &gotPath, map[string]string{})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "organizations", "env-get", "org_1", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "no env vars set") {
+		t.Errorf("stdout = %q, want the empty-set message", stdout)
+	}
+}
+
+func TestRun_AppsOrganizationsEnvSet(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody map[string]string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(gotBody)
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "organizations", "env-set", "org_1", "--var", "LOG_LEVEL=info", "--api-url", srv.URL})
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/organizations/org_1/env" {
+		t.Errorf("request = %s %s, want PUT /api/v1/organizations/org_1/env", gotMethod, gotPath)
+	}
+	if gotBody["LOG_LEVEL"] != "info" {
+		t.Errorf("request body = %+v, want LOG_LEVEL=info", gotBody)
+	}
+	if !strings.Contains(stdout, `organization "org_1" env vars replaced (1 set)`) {
+		t.Errorf("stdout = %q, want a replace confirmation", stdout)
+	}
+}
+
+func TestRun_AppsOrganizationsEnvSet_NoVars_ClearsAll(t *testing.T) {
+	var gotBody map[string]string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(gotBody)
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "organizations", "env-set", "org_1", "--api-url", srv.URL})
+	if len(gotBody) != 0 {
+		t.Errorf("request body = %+v, want empty", gotBody)
+	}
+	if !strings.Contains(stdout, `organization "org_1" env vars replaced (0 set)`) {
+		t.Errorf("stdout = %q, want a replace confirmation", stdout)
+	}
+}
+
 func TestRun_AppsOrganizations_Help(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"apps", "organizations", "-h"}, &stdout, &stderr, envMap())

@@ -96,6 +96,16 @@ type ProjectEnvStore interface {
 	ListProjectEnvVars(ctx context.Context, projectID string) (map[string]string, error)
 }
 
+// OrganizationEnvStore is the narrow surface this controller needs to
+// resolve store.DesiredService.ProjectID's organization's shared env
+// vars, one tier below ProjectEnvStore (resolveEnv's own doc comment on
+// precedence). *store.DB satisfies this structurally: its
+// ListOrganizationEnvVarsForProject hides the projects.org_id join so
+// this package never needs to know a project carries one.
+type OrganizationEnvStore interface {
+	ListOrganizationEnvVarsForProject(ctx context.Context, projectID string) (map[string]string, error)
+}
+
 // DeployRecorder is the narrow surface this controller needs to record
 // TASKS.md 2.1's deploy-frequency metric. *telemetry.DB satisfies this
 // structurally; not imported directly, same reasoning ServiceStore/
@@ -136,6 +146,7 @@ type Controller struct {
 	meshDNSAddr    string                  // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
 	storageTargets StorageTargetStore      // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
 	projectEnv     ProjectEnvStore         // nil is valid: project vars are just skipped, see WithProjectEnv
+	orgEnv         OrganizationEnvStore    // nil is valid: organization vars are just skipped, see WithOrganizationEnv
 	networkPrefix  string                  // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
 	registryCreds  RegistryCredentialStore // nil is valid: a service with no RegistryCredentialID never needs one, see WithRegistryCredentials
 	databases      DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
@@ -234,6 +245,16 @@ func WithDatabaseAttachments(s DatabaseAttachmentStore) Option {
 // service's deploys, project vars are just silently skipped.
 func WithProjectEnv(s ProjectEnvStore) Option {
 	return func(ctrl *Controller) { ctrl.projectEnv = s }
+}
+
+// WithOrganizationEnv enables resolving the organization that owns
+// store.DesiredService.ProjectID's project into that organization's
+// shared env vars, applied as resolveEnv's base layer beneath
+// WithProjectEnv. Same "purely an organizational label" reasoning as
+// WithProjectEnv: a ProjectID with no WithOrganizationEnv configured
+// does not fail Reconcile, organization vars are just silently skipped.
+func WithOrganizationEnv(s OrganizationEnvStore) Option {
+	return func(ctrl *Controller) { ctrl.orgEnv = s }
 }
 
 // WithNetworkPrefix sets the Docker network naming prefix
@@ -712,15 +733,30 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 // desired.ProjectID's shared env vars (WithProjectEnv) are the opposite
 // end: applied first, as the base layer, so this service's own Env
 // (and everything above) freely overrides a same-named project default
-// rather than the other way around.
+// rather than the other way around. desired.ProjectID's organization's
+// shared env vars (WithOrganizationEnv) sit one layer below even that:
+// applied before the project layer, so a project default overrides a
+// same-named organization default exactly the way this service's own
+// Env already overrides the project layer.
 func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredService) (map[string]string, error) {
 	hasProjectEnv := desired.ProjectID != "" && c.projectEnv != nil
+	hasOrgEnv := desired.ProjectID != "" && c.orgEnv != nil
 	hasDatabaseEnv := len(desired.DatabaseEnv) > 0 || desired.DatabaseAttachment != nil
-	if len(desired.SecretEnv) == 0 && desired.StorageTargetID == "" && !hasProjectEnv && !hasDatabaseEnv {
+	if len(desired.SecretEnv) == 0 && desired.StorageTargetID == "" && !hasProjectEnv && !hasOrgEnv && !hasDatabaseEnv {
 		return desired.Env, nil
 	}
 
 	env := make(map[string]string, len(desired.Env)+len(desired.SecretEnv))
+
+	if hasOrgEnv {
+		orgVars, err := c.orgEnv.ListOrganizationEnvVarsForProject(ctx, desired.ProjectID)
+		if err != nil {
+			return nil, fmt.Errorf("resolve organization env vars: %w", err)
+		}
+		for k, v := range orgVars {
+			env[k] = v
+		}
+	}
 
 	if hasProjectEnv {
 		projectVars, err := c.projectEnv.ListProjectEnvVars(ctx, desired.ProjectID)
