@@ -1427,27 +1427,56 @@ func (f *fakeProjectEnvStore) ListProjectEnvVars(_ context.Context, projectID st
 	return f.vars[projectID], nil
 }
 
-func TestController_Reconcile_NoProjectID_ProjectEnvNeverConsulted(t *testing.T) {
-	rt := newFakeRuntime(0)
-	projectEnv := &fakeProjectEnvStore{}
-	desired := &store.DesiredService{
-		Name: "web", Image: "img:v1", Port: 80,
-		Env: map[string]string{"NODE_ENV": "production"},
+// TestController_Reconcile_NoProjectID_EnvStoreNeverConsulted covers both
+// tiers (WithProjectEnv, WithOrganizationEnv): a service with no
+// ProjectID must never look either one up.
+func TestController_Reconcile_NoProjectID_EnvStoreNeverConsulted(t *testing.T) {
+	tests := []struct {
+		name    string
+		options func(projectEnv *fakeProjectEnvStore, orgEnv *fakeOrganizationEnvStore) []Option
+		calls   func(projectEnv *fakeProjectEnvStore, orgEnv *fakeOrganizationEnvStore) int
+	}{
+		{
+			name:    "ProjectEnv",
+			options: func(p *fakeProjectEnvStore, _ *fakeOrganizationEnvStore) []Option { return []Option{WithProjectEnv(p)} },
+			calls:   func(p *fakeProjectEnvStore, _ *fakeOrganizationEnvStore) int { return p.calls },
+		},
+		{
+			name: "OrganizationEnv",
+			options: func(_ *fakeProjectEnvStore, o *fakeOrganizationEnvStore) []Option {
+				return []Option{WithOrganizationEnv(o)}
+			},
+			calls: func(_ *fakeProjectEnvStore, o *fakeOrganizationEnvStore) int { return o.calls },
+		},
 	}
-	c := New("web", &fakeStore{svc: desired}, rt, WithProjectEnv(projectEnv))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := newFakeRuntime(0)
+			projectEnv := &fakeProjectEnvStore{}
+			orgEnv := &fakeOrganizationEnvStore{}
+			desired := &store.DesiredService{
+				Name: "web", Image: "img:v1", Port: 80,
+				Env: map[string]string{"NODE_ENV": "production"},
+			}
+			c := New("web", &fakeStore{svc: desired}, rt, tt.options(projectEnv, orgEnv)...)
 
-	if _, err := c.Reconcile(context.Background()); err != nil {
-		t.Fatalf("Reconcile() error = %v", err)
-	}
-	if projectEnv.calls != 0 {
-		t.Errorf("ListProjectEnvVars calls = %d, want 0: a service with no ProjectID must never look one up", projectEnv.calls)
+			if _, err := c.Reconcile(context.Background()); err != nil {
+				t.Fatalf("Reconcile() error = %v", err)
+			}
+			if got := tt.calls(projectEnv, orgEnv); got != 0 {
+				t.Errorf("calls = %d, want 0: a service with no ProjectID must never look one up", got)
+			}
+		})
 	}
 }
 
-func TestController_Reconcile_ProjectID_NoProjectEnvStoreConfigured_SkippedNotFailed(t *testing.T) {
-	// Unlike SecretEnv/StorageTargetID, a ProjectID with no
-	// WithProjectEnv configured is not a failure: a project is purely an
-	// organizational label, see WithProjectEnv's own doc comment.
+// TestController_Reconcile_ProjectID_NoEnvStoresConfigured_SkippedNotFailed
+// covers the case neither WithProjectEnv nor WithOrganizationEnv is
+// configured at all: unlike SecretEnv/StorageTargetID, a ProjectID with
+// no env store configured is not a failure, a project (and its
+// organization) are purely organizational labels, see WithProjectEnv's
+// own doc comment.
+func TestController_Reconcile_ProjectID_NoEnvStoresConfigured_SkippedNotFailed(t *testing.T) {
 	rt := newFakeRuntime(0)
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
@@ -1492,28 +1521,6 @@ func TestController_Reconcile_ProjectEnv_MergedAsBaseLayer(t *testing.T) {
 	}
 }
 
-func TestController_Reconcile_ProjectEnv_ResolverErrorPropagates(t *testing.T) {
-	rt := newFakeRuntime(0)
-	projectEnv := &fakeProjectEnvStore{err: errors.New("db unavailable")}
-	desired := &store.DesiredService{
-		Name: "web", Image: "img:v1", Port: 80,
-		ProjectID: "proj_1",
-	}
-	c := New("web", &fakeStore{svc: desired}, rt, WithProjectEnv(projectEnv))
-
-	result, err := c.Reconcile(context.Background())
-	if err == nil {
-		t.Fatal("Reconcile() error = nil, want the project env lookup failure to propagate")
-	}
-	cond := conditionOf(t, result)
-	if cond.Status != reconcile.ConditionFalse {
-		t.Errorf("condition = %+v, want Status=False", cond)
-	}
-	if rt.createCalls != 0 {
-		t.Errorf("createCalls = %d, want 0", rt.createCalls)
-	}
-}
-
 // fakeOrganizationEnvStore is a hand-written fake for OrganizationEnvStore,
 // same pattern as fakeProjectEnvStore above: keyed directly by projectID,
 // standing in for the real store's projects.org_id join.
@@ -1529,45 +1536,6 @@ func (f *fakeOrganizationEnvStore) ListOrganizationEnvVarsForProject(_ context.C
 		return nil, f.err
 	}
 	return f.vars[projectID], nil
-}
-
-func TestController_Reconcile_NoProjectID_OrgEnvNeverConsulted(t *testing.T) {
-	rt := newFakeRuntime(0)
-	orgEnv := &fakeOrganizationEnvStore{}
-	desired := &store.DesiredService{
-		Name: "web", Image: "img:v1", Port: 80,
-		Env: map[string]string{"NODE_ENV": "production"},
-	}
-	c := New("web", &fakeStore{svc: desired}, rt, WithOrganizationEnv(orgEnv))
-
-	if _, err := c.Reconcile(context.Background()); err != nil {
-		t.Fatalf("Reconcile() error = %v", err)
-	}
-	if orgEnv.calls != 0 {
-		t.Errorf("ListOrganizationEnvVarsForProject calls = %d, want 0: a service with no ProjectID must never look one up", orgEnv.calls)
-	}
-}
-
-func TestController_Reconcile_ProjectID_NoOrgEnvStoreConfigured_SkippedNotFailed(t *testing.T) {
-	rt := newFakeRuntime(0)
-	desired := &store.DesiredService{
-		Name: "web", Image: "img:v1", Port: 80,
-		Env:       map[string]string{"NODE_ENV": "production"},
-		ProjectID: "proj_1",
-	}
-	c := New("web", &fakeStore{svc: desired}, rt)
-
-	result, err := c.Reconcile(context.Background())
-	if err != nil {
-		t.Fatalf("Reconcile() error = %v", err)
-	}
-	cond := conditionOf(t, result)
-	if cond.Status != reconcile.ConditionTrue {
-		t.Errorf("condition = %+v, want Status=True", cond)
-	}
-	if got := rt.lastCreateEnv["NODE_ENV"]; got != "production" {
-		t.Errorf("container env NODE_ENV = %q, want the literal value preserved", got)
-	}
 }
 
 // TestController_Reconcile_OrgEnv_MergedBelowProjectLayer pins down the
@@ -1602,25 +1570,50 @@ func TestController_Reconcile_OrgEnv_MergedBelowProjectLayer(t *testing.T) {
 	}
 }
 
-func TestController_Reconcile_OrgEnv_ResolverErrorPropagates(t *testing.T) {
-	rt := newFakeRuntime(0)
-	orgEnv := &fakeOrganizationEnvStore{err: errors.New("db unavailable")}
-	desired := &store.DesiredService{
-		Name: "web", Image: "img:v1", Port: 80,
-		ProjectID: "proj_1",
+// TestController_Reconcile_EnvStore_ResolverErrorPropagates covers both
+// tiers: a store lookup failure must propagate as a real Reconcile
+// error, not be swallowed.
+func TestController_Reconcile_EnvStore_ResolverErrorPropagates(t *testing.T) {
+	tests := []struct {
+		name    string
+		options func(projectEnv *fakeProjectEnvStore, orgEnv *fakeOrganizationEnvStore) []Option
+	}{
+		{
+			name: "ProjectEnv",
+			options: func(p *fakeProjectEnvStore, _ *fakeOrganizationEnvStore) []Option {
+				return []Option{WithProjectEnv(p)}
+			},
+		},
+		{
+			name: "OrganizationEnv",
+			options: func(_ *fakeProjectEnvStore, o *fakeOrganizationEnvStore) []Option {
+				return []Option{WithOrganizationEnv(o)}
+			},
+		},
 	}
-	c := New("web", &fakeStore{svc: desired}, rt, WithOrganizationEnv(orgEnv))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := newFakeRuntime(0)
+			projectEnv := &fakeProjectEnvStore{err: errors.New("db unavailable")}
+			orgEnv := &fakeOrganizationEnvStore{err: errors.New("db unavailable")}
+			desired := &store.DesiredService{
+				Name: "web", Image: "img:v1", Port: 80,
+				ProjectID: "proj_1",
+			}
+			c := New("web", &fakeStore{svc: desired}, rt, tt.options(projectEnv, orgEnv)...)
 
-	result, err := c.Reconcile(context.Background())
-	if err == nil {
-		t.Fatal("Reconcile() error = nil, want the organization env lookup failure to propagate")
-	}
-	cond := conditionOf(t, result)
-	if cond.Status != reconcile.ConditionFalse {
-		t.Errorf("condition = %+v, want Status=False", cond)
-	}
-	if rt.createCalls != 0 {
-		t.Errorf("createCalls = %d, want 0", rt.createCalls)
+			result, err := c.Reconcile(context.Background())
+			if err == nil {
+				t.Fatal("Reconcile() error = nil, want the env lookup failure to propagate")
+			}
+			cond := conditionOf(t, result)
+			if cond.Status != reconcile.ConditionFalse {
+				t.Errorf("condition = %+v, want Status=False", cond)
+			}
+			if rt.createCalls != 0 {
+				t.Errorf("createCalls = %d, want 0", rt.createCalls)
+			}
+		})
 	}
 }
 
