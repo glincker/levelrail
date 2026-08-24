@@ -55,7 +55,7 @@ type DesiredDatabase struct {
 	BackupSchedule string
 	BackupRetain   int
 	// BackupRetainDays is a second, independent retention dimension
-	// (migrations/0058_backup_retain_days.sql): 0 means no age limit,
+	// (migrations/0059_backup_retain_days.sql): 0 means no age limit,
 	// mirroring BackupRetain's own zero-means-unlimited convention.
 	BackupRetainDays int
 	// PubliclyAccessible, PublicPort: whether this database's container
