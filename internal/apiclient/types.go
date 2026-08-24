@@ -483,6 +483,50 @@ type AppDatabaseResource struct {
 	Field        string `json:"field"`
 }
 
+// NodeResource mirrors internal/api's nodeResource (internal/api/nodes.go).
+type NodeResource struct {
+	ID              string     `json:"id"`
+	Name            string     `json:"name"`
+	Address         string     `json:"address,omitempty"`
+	Status          string     `json:"status"`
+	CertFingerprint string     `json:"cert_fingerprint,omitempty"`
+	JoinedAt        *time.Time `json:"joined_at,omitempty"`
+	LastSeenAt      *time.Time `json:"last_seen_at,omitempty"`
+	// Schedulable is the cordon state: false means the node refuses new
+	// placements while whatever's already running there keeps running.
+	Schedulable           bool      `json:"schedulable"`
+	AcceptsAppWorkloads   bool      `json:"accepts_app_workloads"`
+	AcceptsBuildWorkloads bool      `json:"accepts_build_workloads"`
+	CreatedAt             time.Time `json:"created_at"`
+}
+
+// SetNodeWorkloadsRequest mirrors internal/api's setNodeWorkloadsRequest:
+// a full replace of both fields, not a partial patch.
+type SetNodeWorkloadsRequest struct {
+	AcceptsAppWorkloads   bool `json:"accepts_app_workloads"`
+	AcceptsBuildWorkloads bool `json:"accepts_build_workloads"`
+}
+
+// CreateNodeJoinTokenResponse mirrors internal/api's
+// createNodeJoinTokenResponse: a join token's one and only plaintext
+// appearance, the same "shown once, never recoverable again" shape a
+// created API token uses.
+type CreateNodeJoinTokenResponse struct {
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
+// DrainNodeResponse mirrors internal/api's drainNodeResponse. A partial
+// failure is not itself a Go error from DrainNode: it comes back as a
+// successful response with Errors populated, naming exactly which
+// resource didn't move so the caller can retry just that one.
+type DrainNodeResponse struct {
+	TargetNodeID   string   `json:"target_node_id"`
+	MovedServices  []string `json:"moved_services"`
+	MovedDatabases []string `json:"moved_databases"`
+	Errors         []string `json:"errors,omitempty"`
+}
+
 // apiErrorBody is the JSON shape every non-2xx response from the
 // control plane returns (internal/api/respond.go's own apiError).
 type apiErrorBody struct {
