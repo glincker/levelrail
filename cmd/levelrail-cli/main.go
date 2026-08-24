@@ -78,6 +78,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runCloudflareTunnel(prog, args[1:], stdout, stderr, lookupEnv)
 	case "channels":
 		return runChannels(prog, args[1:], stdout, stderr, lookupEnv)
+	case "nodes":
+		return runNodes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "migrate":
 		return runMigrate(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -109,6 +111,9 @@ Usage:
   %[1]s backups list|trigger|restore <database> [flags]   database backup history, manual trigger, and restore
   %[1]s cloudflare-tunnel get|set|disconnect [flags]   expose the control plane through a Cloudflare Tunnel
   %[1]s channels list|create|delete|test [flags]           manage notification channels (Slack, Discord, Telegram, email, Pushover, webhook)
+  %[1]s nodes list|get|delete [flags]                        manage nodes
+  %[1]s nodes join-token [flags]                             mint a one-time node enrollment token
+  %[1]s nodes cordon|uncordon|drain|health|workloads <id> [flags]   node scheduling and maintenance
   %[1]s auth login [flags]             authenticate and persist a new API token
   %[1]s auth whoami [flags]           show who the current token authenticates as
   %[1]s tokens create|list|revoke [flags]   manage API tokens (requires a live session, see "%[1]s tokens -h")

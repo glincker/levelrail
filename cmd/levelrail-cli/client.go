@@ -59,6 +59,11 @@ type (
 	scheduledTaskResource = apiclient.ScheduledTaskResource
 	scheduledTaskRequest  = apiclient.ScheduledTaskRequest
 
+	nodeResource                = apiclient.NodeResource
+	setNodeWorkloadsRequest     = apiclient.SetNodeWorkloadsRequest
+	createNodeJoinTokenResponse = apiclient.CreateNodeJoinTokenResponse
+	drainNodeResponse           = apiclient.DrainNodeResponse
+
 	organizationResource          = apiclient.OrganizationResource
 	createOrganizationRequest     = apiclient.CreateOrganizationRequest
 	projectResource               = apiclient.ProjectResource

@@ -208,3 +208,42 @@ func printDatabasesTable(out io.Writer, dbs []databaseResource) {
 	}
 	_ = tw.Flush()
 }
+
+// printNodeHuman prints one node resource in a human-readable, non-JSON
+// form ("nodes get" output).
+func printNodeHuman(out io.Writer, n nodeResource) {
+	_, _ = fmt.Fprintf(out, "id:                      %s\n", n.ID)
+	_, _ = fmt.Fprintf(out, "name:                    %s\n", n.Name)
+	if n.Address != "" {
+		_, _ = fmt.Fprintf(out, "address:                 %s\n", n.Address)
+	}
+	_, _ = fmt.Fprintf(out, "status:                  %s\n", n.Status)
+	if n.CertFingerprint != "" {
+		_, _ = fmt.Fprintf(out, "cert fingerprint:        %s\n", n.CertFingerprint)
+	}
+	if n.JoinedAt != nil {
+		_, _ = fmt.Fprintf(out, "joined at:               %s\n", n.JoinedAt.Format(time.RFC3339))
+	}
+	if n.LastSeenAt != nil {
+		_, _ = fmt.Fprintf(out, "last seen at:            %s\n", n.LastSeenAt.Format(time.RFC3339))
+	}
+	_, _ = fmt.Fprintf(out, "schedulable:             %t\n", n.Schedulable)
+	_, _ = fmt.Fprintf(out, "accepts app workloads:   %t\n", n.AcceptsAppWorkloads)
+	_, _ = fmt.Fprintf(out, "accepts build workloads: %t\n", n.AcceptsBuildWorkloads)
+	_, _ = fmt.Fprintf(out, "created at:              %s\n", n.CreatedAt.Format(time.RFC3339))
+}
+
+// printNodesTable prints a compact, aligned table of nodes ("nodes list"
+// output), the same shape printAppsTable/printDatabasesTable use.
+func printNodesTable(out io.Writer, nodes []nodeResource) {
+	if len(nodes) == 0 {
+		_, _ = fmt.Fprintln(out, "no nodes")
+		return
+	}
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "ID\tNAME\tADDRESS\tSTATUS\tSCHEDULABLE\tCREATED")
+	for _, n := range nodes {
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%t\t%s\n", n.ID, n.Name, n.Address, n.Status, n.Schedulable, n.CreatedAt.Format(time.RFC3339))
+	}
+	_ = tw.Flush()
+}

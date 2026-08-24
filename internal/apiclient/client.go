@@ -649,6 +649,93 @@ func (c *Client) SetAppEnvironment(ctx context.Context, name, environmentID stri
 	return out, err
 }
 
+func nodesCollectionPath() string {
+	return "/api/v1/nodes"
+}
+
+func nodePath(id string) string {
+	return nodesCollectionPath() + "/" + PathEscape(id)
+}
+
+// ListNodes calls GET /api/v1/nodes.
+func (c *Client) ListNodes(ctx context.Context) ([]NodeResource, error) {
+	var out []NodeResource
+	err := c.do(ctx, http.MethodGet, nodesCollectionPath(), nil, &out)
+	return out, err
+}
+
+// GetNode calls GET /api/v1/nodes/{id}.
+func (c *Client) GetNode(ctx context.Context, id string) (NodeResource, error) {
+	var out NodeResource
+	err := c.do(ctx, http.MethodGet, nodePath(id), nil, &out)
+	return out, err
+}
+
+// DeleteNode calls DELETE /api/v1/nodes/{id}. Refused with a 409
+// (*APIError) while any service or database is still placed on id,
+// telling the caller to drain first (handleDeleteNode's own doc comment).
+func (c *Client) DeleteNode(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, nodePath(id), nil, nil)
+}
+
+// SetNodeWorkloads calls PUT /api/v1/nodes/{id}/workloads: a full
+// replace of both workload flags, not a partial patch, matching
+// handleSetNodeWorkloads' own contract.
+func (c *Client) SetNodeWorkloads(ctx context.Context, id string, req SetNodeWorkloadsRequest) (NodeResource, error) {
+	var out NodeResource
+	err := c.do(ctx, http.MethodPut, nodePath(id)+"/workloads", req, &out)
+	return out, err
+}
+
+// CreateNodeJoinToken calls POST /api/v1/nodes/join-tokens: mints a
+// one-time enrollment token, returned in plaintext exactly once.
+func (c *Client) CreateNodeJoinToken(ctx context.Context) (CreateNodeJoinTokenResponse, error) {
+	var out CreateNodeJoinTokenResponse
+	err := c.do(ctx, http.MethodPost, nodesCollectionPath()+"/join-tokens", nil, &out)
+	return out, err
+}
+
+// CordonNode calls POST /api/v1/nodes/{id}/cordon: marks id
+// unschedulable for new placements without evacuating anything already
+// running there.
+func (c *Client) CordonNode(ctx context.Context, id string) (NodeResource, error) {
+	var out NodeResource
+	err := c.do(ctx, http.MethodPost, nodePath(id)+"/cordon", nil, &out)
+	return out, err
+}
+
+// UncordonNode calls POST /api/v1/nodes/{id}/uncordon: the inverse of
+// CordonNode.
+func (c *Client) UncordonNode(ctx context.Context, id string) (NodeResource, error) {
+	var out NodeResource
+	err := c.do(ctx, http.MethodPost, nodePath(id)+"/uncordon", nil, &out)
+	return out, err
+}
+
+// DrainNode calls POST /api/v1/nodes/{id}/drain?target_node_id=: moves
+// every service and database placed on id to targetNodeID (empty: the
+// local-node sentinel, the server's own default).
+func (c *Client) DrainNode(ctx context.Context, id, targetNodeID string) (DrainNodeResponse, error) {
+	path := nodePath(id) + "/drain"
+	if targetNodeID != "" {
+		q := url.Values{}
+		q.Set("target_node_id", targetNodeID)
+		path += "?" + q.Encode()
+	}
+	var out DrainNodeResponse
+	err := c.do(ctx, http.MethodPost, path, nil, &out)
+	return out, err
+}
+
+// GetNodeHealth calls GET /api/v1/nodes/{id}/health: the node health
+// controller's stored reconcile conditions, the same ConditionResource
+// shape GetDeployStatus returns for an app.
+func (c *Client) GetNodeHealth(ctx context.Context, id string) ([]ConditionResource, error) {
+	var out []ConditionResource
+	err := c.do(ctx, http.MethodGet, nodePath(id)+"/health", nil, &out)
+	return out, err
+}
+
 // PathEscape guards against a name containing characters that would
 // otherwise change the request's URL shape (a "/" turning one path
 // segment into two, for instance). Server-side validation is the real
