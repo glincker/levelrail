@@ -43,10 +43,11 @@ Run "%[1]s backups schedule <subcommand> -h" for a subcommand's own flags.
 func runBackupsScheduleSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "backups schedule set", "print the saved schedule as JSON to stdout and nothing else", stderr)
 	var targetID, cron string
-	var retain int
+	var retain, retainDays int
 	fs.StringVar(&targetID, "target", "", "backup target id to back up to (required)")
 	fs.StringVar(&cron, "cron", "", "standard 5-field cron expression: minute hour day-of-month month day-of-week (required)")
 	fs.IntVar(&retain, "retain", 0, "number of past backups to keep before older ones are deleted (0: no limit)")
+	fs.IntVar(&retainDays, "retain-days", 0, "delete backups older than this many days (0: no limit), independent of --retain")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s backups schedule set <database> --target ID --cron EXPR [flags]\n\nConfigures a recurring backup, replacing any previously configured\nschedule for <database>.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -74,9 +75,10 @@ func runBackupsScheduleSet(prog string, args []string, stdout, stderr io.Writer,
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 
 	schedule, err := client.SetBackupSchedule(context.Background(), name, setBackupScheduleRequest{
-		TargetID: targetID,
-		Schedule: cron,
-		Retain:   retain,
+		TargetID:   targetID,
+		Schedule:   cron,
+		Retain:     retain,
+		RetainDays: retainDays,
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set backup schedule for database %q: %w", name, err))
@@ -89,7 +91,7 @@ func runBackupsScheduleSet(prog string, args []string, stdout, stderr io.Writer,
 		}
 		return exitOK
 	}
-	_, _ = fmt.Fprintf(stdout, "backup schedule %q set for database %q (target %s, retain %d)\n", schedule.Schedule, name, schedule.TargetID, schedule.Retain)
+	_, _ = fmt.Fprintf(stdout, "backup schedule %q set for database %q (target %s, retain %d, retain_days %d)\n", schedule.Schedule, name, schedule.TargetID, schedule.Retain, schedule.RetainDays)
 	return exitOK
 }
 

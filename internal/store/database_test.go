@@ -331,7 +331,7 @@ func TestSetDatabaseBackupSchedule(t *testing.T) {
 	}
 	target := seedBackupTarget(t, db)
 
-	if err := db.SetDatabaseBackupSchedule(ctx, "main", target.ID, "0 3 * * *", 7); err != nil {
+	if err := db.SetDatabaseBackupSchedule(ctx, "main", target.ID, "0 3 * * *", 7, 30); err != nil {
 		t.Fatalf("SetDatabaseBackupSchedule() error = %v", err)
 	}
 
@@ -348,11 +348,14 @@ func TestSetDatabaseBackupSchedule(t *testing.T) {
 	if got.BackupRetain != 7 {
 		t.Errorf("BackupRetain = %d, want 7", got.BackupRetain)
 	}
+	if got.BackupRetainDays != 30 {
+		t.Errorf("BackupRetainDays = %d, want 30", got.BackupRetainDays)
+	}
 }
 
 func TestSetDatabaseBackupSchedule_NotFound(t *testing.T) {
 	db := openTestDB(t)
-	err := db.SetDatabaseBackupSchedule(context.Background(), "nonexistent", "bkt_1", "0 3 * * *", 7)
+	err := db.SetDatabaseBackupSchedule(context.Background(), "nonexistent", "bkt_1", "0 3 * * *", 7, 0)
 	if !errors.Is(err, ErrDatabaseNotFound) {
 		t.Errorf("SetDatabaseBackupSchedule() error = %v, want ErrDatabaseNotFound", err)
 	}
@@ -371,11 +374,11 @@ func TestSetDatabaseBackupSchedule_EmptyClears(t *testing.T) {
 		t.Fatalf("SaveDesiredDatabase() error = %v", err)
 	}
 	target := seedBackupTarget(t, db)
-	if err := db.SetDatabaseBackupSchedule(ctx, "main", target.ID, "0 3 * * *", 7); err != nil {
+	if err := db.SetDatabaseBackupSchedule(ctx, "main", target.ID, "0 3 * * *", 7, 30); err != nil {
 		t.Fatalf("SetDatabaseBackupSchedule() error = %v", err)
 	}
 
-	if err := db.SetDatabaseBackupSchedule(ctx, "main", "", "", 0); err != nil {
+	if err := db.SetDatabaseBackupSchedule(ctx, "main", "", "", 0, 0); err != nil {
 		t.Fatalf("SetDatabaseBackupSchedule(clear) error = %v", err)
 	}
 
@@ -383,8 +386,8 @@ func TestSetDatabaseBackupSchedule_EmptyClears(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetDesiredDatabase() error = %v", err)
 	}
-	if got.BackupTargetID != "" || got.BackupSchedule != "" || got.BackupRetain != 0 {
-		t.Errorf("after clear, got %+v, want all three fields zero-valued", got)
+	if got.BackupTargetID != "" || got.BackupSchedule != "" || got.BackupRetain != 0 || got.BackupRetainDays != 0 {
+		t.Errorf("after clear, got %+v, want all four fields zero-valued", got)
 	}
 }
 
@@ -400,7 +403,7 @@ func TestSetDatabaseBackupSchedule_TargetDeletedClearsColumn(t *testing.T) {
 		t.Fatalf("SaveDesiredDatabase() error = %v", err)
 	}
 	target := seedBackupTarget(t, db)
-	if err := db.SetDatabaseBackupSchedule(ctx, "main", target.ID, "0 3 * * *", 7); err != nil {
+	if err := db.SetDatabaseBackupSchedule(ctx, "main", target.ID, "0 3 * * *", 7, 0); err != nil {
 		t.Fatalf("SetDatabaseBackupSchedule() error = %v", err)
 	}
 
@@ -434,7 +437,7 @@ func TestListScheduledDatabases(t *testing.T) {
 			t.Fatalf("SaveDesiredDatabase(%s) error = %v", name, err)
 		}
 	}
-	if err := db.SetDatabaseBackupSchedule(ctx, "scheduled", target.ID, "0 3 * * *", 7); err != nil {
+	if err := db.SetDatabaseBackupSchedule(ctx, "scheduled", target.ID, "0 3 * * *", 7, 0); err != nil {
 		t.Fatalf("SetDatabaseBackupSchedule() error = %v", err)
 	}
 
@@ -461,7 +464,7 @@ func TestListScheduledDatabases_ExcludesHalfConfigured(t *testing.T) {
 	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "16"}); err != nil {
 		t.Fatalf("SaveDesiredDatabase() error = %v", err)
 	}
-	if err := db.SetDatabaseBackupSchedule(ctx, "main", target.ID, "0 3 * * *", 7); err != nil {
+	if err := db.SetDatabaseBackupSchedule(ctx, "main", target.ID, "0 3 * * *", 7, 0); err != nil {
 		t.Fatalf("SetDatabaseBackupSchedule() error = %v", err)
 	}
 	if err := db.DeleteBackupTarget(ctx, target.ID); err != nil {

@@ -309,7 +309,7 @@ func TestHandleSetBackupSchedule_Success(t *testing.T) {
 	seedBackupTargetForAPI(t, db)
 
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/backup-schedule", `{"target_id":"bkt_test1","schedule":"0 3 * * *","retain":7}`))
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/backup-schedule", `{"target_id":"bkt_test1","schedule":"0 3 * * *","retain":7,"retain_days":30}`))
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
 	}
@@ -318,15 +318,15 @@ func TestHandleSetBackupSchedule_Success(t *testing.T) {
 	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	if got.DatabaseName != "main" || got.TargetID != "bkt_test1" || got.Schedule != "0 3 * * *" || got.Retain != 7 {
-		t.Errorf("response = %+v, want database_name=main target_id=bkt_test1 schedule=\"0 3 * * *\" retain=7", got)
+	if got.DatabaseName != "main" || got.TargetID != "bkt_test1" || got.Schedule != "0 3 * * *" || got.Retain != 7 || got.RetainDays != 30 {
+		t.Errorf("response = %+v, want database_name=main target_id=bkt_test1 schedule=\"0 3 * * *\" retain=7 retain_days=30", got)
 	}
 
 	saved, err := db.GetDesiredDatabase(context.Background(), "main")
 	if err != nil {
 		t.Fatalf("GetDesiredDatabase() error = %v", err)
 	}
-	if saved.BackupTargetID != "bkt_test1" || saved.BackupSchedule != "0 3 * * *" || saved.BackupRetain != 7 {
+	if saved.BackupTargetID != "bkt_test1" || saved.BackupSchedule != "0 3 * * *" || saved.BackupRetain != 7 || saved.BackupRetainDays != 30 {
 		t.Errorf("persisted database = %+v, want the schedule to be saved", saved)
 	}
 }
@@ -349,7 +349,7 @@ func TestHandleClearBackupSchedule_Success(t *testing.T) {
 		t.Fatalf("seed: %v", err)
 	}
 	target := seedBackupTargetForAPI(t, db)
-	if err := db.SetDatabaseBackupSchedule(context.Background(), "main", target.ID, "0 3 * * *", 7); err != nil {
+	if err := db.SetDatabaseBackupSchedule(context.Background(), "main", target.ID, "0 3 * * *", 7, 0); err != nil {
 		t.Fatalf("SetDatabaseBackupSchedule() error = %v", err)
 	}
 

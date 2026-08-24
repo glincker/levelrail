@@ -52,4 +52,5 @@ export interface DatabaseResource {
   backup_target_id?: string
   backup_schedule?: string
   backup_retain?: number
+  backup_retain_days?: number
 }

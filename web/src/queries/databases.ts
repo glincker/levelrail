@@ -453,6 +453,7 @@ export interface BackupScheduleResource {
   target_id?: string
   schedule?: string
   retain?: number
+  retain_days?: number
 }
 
 export interface SetDatabaseBackupScheduleRequest {
@@ -460,6 +461,7 @@ export interface SetDatabaseBackupScheduleRequest {
   targetId: string
   schedule: string
   retain: number
+  retainDays: number
 }
 
 // PUT /api/v1/databases/{name}/backup-schedule
@@ -470,13 +472,19 @@ export async function setDatabaseBackupSchedule({
   targetId,
   schedule,
   retain,
+  retainDays,
 }: SetDatabaseBackupScheduleRequest): Promise<BackupScheduleResource> {
   const res = await fetch(
     `/api/v1/databases/${encodeURIComponent(name)}/backup-schedule`,
     {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ target_id: targetId, schedule, retain }),
+      body: JSON.stringify({
+        target_id: targetId,
+        schedule,
+        retain,
+        retain_days: retainDays,
+      }),
     },
   )
   if (!res.ok) {
@@ -504,6 +512,7 @@ export function useSetDatabaseBackupSchedule() {
             backup_target_id: result.target_id,
             backup_schedule: result.schedule,
             backup_retain: result.retain,
+            backup_retain_days: result.retain_days,
           },
       )
       void queryClient.invalidateQueries({
@@ -546,6 +555,7 @@ export function useClearDatabaseBackupSchedule() {
             backup_target_id: undefined,
             backup_schedule: undefined,
             backup_retain: undefined,
+            backup_retain_days: undefined,
           },
       )
       void queryClient.invalidateQueries({

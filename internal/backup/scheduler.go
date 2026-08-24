@@ -23,7 +23,7 @@ import (
 // dependency.
 type ScheduleStore interface {
 	ListScheduledDatabases(ctx context.Context) ([]store.DesiredDatabase, error)
-	PruneBackupHistory(ctx context.Context, databaseName string, keep int) ([]store.PrunedBackup, error)
+	PruneBackupHistory(ctx context.Context, databaseName string, keep int, olderThan time.Time) ([]store.PrunedBackup, error)
 }
 
 // ScheduledBackupRunner is the surface Scheduler needs to actually run a
@@ -229,9 +229,10 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 }
 
 // runScheduled runs one database's due backup and, on success, prunes
-// its backup_history rows back down to BackupRetain (0 means keep
-// everything, see PruneBackupHistory's own doc comment), then
-// best-effort deletes the pruned rows' bucket objects via Deleter. A
+// its backup_history rows against BackupRetain and BackupRetainDays (0
+// means no limit for that dimension, see PruneBackupHistory's own doc
+// comment), then best-effort deletes the pruned rows' bucket objects via
+// Deleter. A
 // pruning failure, or an individual object delete failure, is logged,
 // not returned as this call's own error: the backup itself already
 // succeeded and is already durably recorded, so losing the chance to
@@ -254,8 +255,12 @@ func (s *Scheduler) runScheduled(ctx context.Context, d store.DesiredDatabase) e
 		return runErr
 	}
 
-	if d.BackupRetain > 0 {
-		pruned, pruneErr := s.Store.PruneBackupHistory(ctx, d.Name, d.BackupRetain)
+	if d.BackupRetain > 0 || d.BackupRetainDays > 0 {
+		var olderThan time.Time
+		if d.BackupRetainDays > 0 {
+			olderThan = s.now().AddDate(0, 0, -d.BackupRetainDays)
+		}
+		pruned, pruneErr := s.Store.PruneBackupHistory(ctx, d.Name, d.BackupRetain, olderThan)
 		if pruneErr != nil {
 			s.log().Error("backup: scheduled retention prune failed",
 				slog.String("database", d.Name), slog.String("error", pruneErr.Error()))

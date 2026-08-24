@@ -251,13 +251,17 @@ type backupScheduleResource struct {
 	TargetID     string `json:"target_id,omitempty"`
 	Schedule     string `json:"schedule,omitempty"`
 	Retain       int    `json:"retain,omitempty"`
+	// RetainDays is a second, independent retention dimension: 0 means
+	// no age limit, mirroring Retain's own zero-means-unlimited meaning.
+	RetainDays int `json:"retain_days,omitempty"`
 }
 
 // setBackupScheduleRequest is handleSetBackupSchedule's request body.
 type setBackupScheduleRequest struct {
-	TargetID string `json:"target_id"`
-	Schedule string `json:"schedule"`
-	Retain   int    `json:"retain,omitempty"`
+	TargetID   string `json:"target_id"`
+	Schedule   string `json:"schedule"`
+	Retain     int    `json:"retain,omitempty"`
+	RetainDays int    `json:"retain_days,omitempty"`
 }
 
 // handleSetBackupSchedule handles
@@ -311,12 +315,16 @@ func (rt *Router) handleSetBackupSchedule(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, "retain must not be negative")
 		return
 	}
+	if req.RetainDays < 0 {
+		writeError(w, http.StatusBadRequest, "retain_days must not be negative")
+		return
+	}
 
 	if !rt.loadBackupTarget(w, r, req.TargetID, "api: set backup schedule: load backup target failed") {
 		return
 	}
 
-	if err := rt.databases.SetDatabaseBackupSchedule(r.Context(), name, req.TargetID, req.Schedule, req.Retain); errors.Is(err, store.ErrDatabaseNotFound) {
+	if err := rt.databases.SetDatabaseBackupSchedule(r.Context(), name, req.TargetID, req.Schedule, req.Retain, req.RetainDays); errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	} else if err != nil {
@@ -330,6 +338,7 @@ func (rt *Router) handleSetBackupSchedule(w http.ResponseWriter, r *http.Request
 		TargetID:     req.TargetID,
 		Schedule:     req.Schedule,
 		Retain:       req.Retain,
+		RetainDays:   req.RetainDays,
 	})
 }
 
@@ -354,7 +363,7 @@ func (rt *Router) handleClearBackupSchedule(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := rt.databases.SetDatabaseBackupSchedule(r.Context(), name, "", "", 0); errors.Is(err, store.ErrDatabaseNotFound) {
+	if err := rt.databases.SetDatabaseBackupSchedule(r.Context(), name, "", "", 0, 0); errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	} else if err != nil {

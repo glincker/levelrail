@@ -19,8 +19,9 @@ type fakeScheduleStore struct {
 	listErr error
 
 	pruned []struct {
-		database string
-		keep     int
+		database  string
+		keep      int
+		olderThan time.Time
 	}
 	pruneReturn []store.PrunedBackup
 	pruneErr    error
@@ -33,13 +34,14 @@ func (f *fakeScheduleStore) ListScheduledDatabases(context.Context) ([]store.Des
 	return f.dbs, nil
 }
 
-func (f *fakeScheduleStore) PruneBackupHistory(_ context.Context, databaseName string, keep int) ([]store.PrunedBackup, error) {
+func (f *fakeScheduleStore) PruneBackupHistory(_ context.Context, databaseName string, keep int, olderThan time.Time) ([]store.PrunedBackup, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.pruned = append(f.pruned, struct {
-		database string
-		keep     int
-	}{databaseName, keep})
+		database  string
+		keep      int
+		olderThan time.Time
+	}{databaseName, keep, olderThan})
 	if f.pruneErr != nil {
 		return nil, f.pruneErr
 	}
@@ -112,6 +114,12 @@ func scheduledDB(name, schedule string, retain int) store.DesiredDatabase {
 		Name: name, Engine: store.EnginePostgres, Version: "16",
 		BackupTargetID: "bkt_1", BackupSchedule: schedule, BackupRetain: retain,
 	}
+}
+
+func scheduledDBWithRetainDays(name, schedule string, retain, retainDays int) store.DesiredDatabase {
+	d := scheduledDB(name, schedule, retain)
+	d.BackupRetainDays = retainDays
+	return d
 }
 
 // TestScheduler_Tick_FirstSightingArmsWithoutFiring is the "no catch-up
@@ -351,6 +359,56 @@ func TestScheduler_Tick_RetainZeroSkipsPrune(t *testing.T) {
 
 	if len(fakeStore.pruned) != 0 {
 		t.Fatalf("prune calls = %d, want 0 (retain=0 means keep everything)", len(fakeStore.pruned))
+	}
+}
+
+// TestScheduler_Tick_RetainDaysOnlyPrunesByAge: BackupRetain 0 with
+// BackupRetainDays > 0 must still trigger a prune call, keep=0 (no count
+// limit) and olderThan set to now minus BackupRetainDays.
+func TestScheduler_Tick_RetainDaysOnlyPrunesByAge(t *testing.T) {
+	fakeStore := &fakeScheduleStore{dbs: []store.DesiredDatabase{scheduledDBWithRetainDays("main", "0 3 * * *", 0, 30)}}
+	runner := &fakeScheduledRunner{}
+	s := NewScheduler(fakeStore, runner, nil, nil)
+
+	runAt := time.Date(2026, 8, 15, 3, 0, 0, 0, time.UTC)
+	s.Now = func() time.Time { return time.Date(2026, 8, 15, 1, 0, 0, 0, time.UTC) }
+	_ = s.Tick(context.Background())
+	s.Now = func() time.Time { return runAt }
+	if err := s.Tick(context.Background()); err != nil {
+		t.Fatalf("Tick() error = %v", err)
+	}
+
+	if len(fakeStore.pruned) != 1 {
+		t.Fatalf("prune calls = %d, want 1", len(fakeStore.pruned))
+	}
+	want := runAt.AddDate(0, 0, -30)
+	if fakeStore.pruned[0].keep != 0 || !fakeStore.pruned[0].olderThan.Equal(want) {
+		t.Errorf("prune call = %+v, want keep=0 olderThan=%v", fakeStore.pruned[0], want)
+	}
+}
+
+// TestScheduler_Tick_RetainAndRetainDaysBothSet: both dimensions set must
+// both reach PruneBackupHistory in the same call, letting the store
+// layer enforce "violates either limit."
+func TestScheduler_Tick_RetainAndRetainDaysBothSet(t *testing.T) {
+	fakeStore := &fakeScheduleStore{dbs: []store.DesiredDatabase{scheduledDBWithRetainDays("main", "0 3 * * *", 7, 30)}}
+	runner := &fakeScheduledRunner{}
+	s := NewScheduler(fakeStore, runner, nil, nil)
+
+	runAt := time.Date(2026, 8, 15, 3, 0, 0, 0, time.UTC)
+	s.Now = func() time.Time { return time.Date(2026, 8, 15, 1, 0, 0, 0, time.UTC) }
+	_ = s.Tick(context.Background())
+	s.Now = func() time.Time { return runAt }
+	if err := s.Tick(context.Background()); err != nil {
+		t.Fatalf("Tick() error = %v", err)
+	}
+
+	if len(fakeStore.pruned) != 1 {
+		t.Fatalf("prune calls = %d, want 1", len(fakeStore.pruned))
+	}
+	want := runAt.AddDate(0, 0, -30)
+	if fakeStore.pruned[0].keep != 7 || !fakeStore.pruned[0].olderThan.Equal(want) {
+		t.Errorf("prune call = %+v, want keep=7 olderThan=%v", fakeStore.pruned[0], want)
 	}
 }
 
