@@ -1427,26 +1427,44 @@ func (f *fakeProjectEnvStore) ListProjectEnvVars(_ context.Context, projectID st
 	return f.vars[projectID], nil
 }
 
-// TestController_Reconcile_NoProjectID_EnvStoreNeverConsulted covers both
-// tiers (WithProjectEnv, WithOrganizationEnv): a service with no
-// ProjectID must never look either one up.
-func TestController_Reconcile_NoProjectID_EnvStoreNeverConsulted(t *testing.T) {
+// TestController_Reconcile_NoTierID_EnvStoreNeverConsulted covers all
+// three tiers (WithProjectEnv, WithOrganizationEnv, WithEnvironmentEnv):
+// a service with neither ProjectID nor EnvironmentID set must never look
+// any of them up. The shared desired below leaves both fields empty, so
+// every case's gate condition (ProjectID == "" for the first two,
+// EnvironmentID == "" for the third) holds at once.
+func TestController_Reconcile_NoTierID_EnvStoreNeverConsulted(t *testing.T) {
 	tests := []struct {
 		name    string
-		options func(projectEnv *fakeProjectEnvStore, orgEnv *fakeOrganizationEnvStore) []Option
-		calls   func(projectEnv *fakeProjectEnvStore, orgEnv *fakeOrganizationEnvStore) int
+		options func(projectEnv *fakeProjectEnvStore, orgEnv *fakeOrganizationEnvStore, environmentEnv *fakeEnvironmentEnvStore) []Option
+		calls   func(projectEnv *fakeProjectEnvStore, orgEnv *fakeOrganizationEnvStore, environmentEnv *fakeEnvironmentEnvStore) int
 	}{
 		{
-			name:    "ProjectEnv",
-			options: func(p *fakeProjectEnvStore, _ *fakeOrganizationEnvStore) []Option { return []Option{WithProjectEnv(p)} },
-			calls:   func(p *fakeProjectEnvStore, _ *fakeOrganizationEnvStore) int { return p.calls },
+			name: "ProjectEnv",
+			options: func(p *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvStore) []Option {
+				return []Option{WithProjectEnv(p)}
+			},
+			calls: func(p *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvStore) int {
+				return p.calls
+			},
 		},
 		{
 			name: "OrganizationEnv",
-			options: func(_ *fakeProjectEnvStore, o *fakeOrganizationEnvStore) []Option {
+			options: func(_ *fakeProjectEnvStore, o *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvStore) []Option {
 				return []Option{WithOrganizationEnv(o)}
 			},
-			calls: func(_ *fakeProjectEnvStore, o *fakeOrganizationEnvStore) int { return o.calls },
+			calls: func(_ *fakeProjectEnvStore, o *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvStore) int {
+				return o.calls
+			},
+		},
+		{
+			name: "EnvironmentEnv",
+			options: func(_ *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, e *fakeEnvironmentEnvStore) []Option {
+				return []Option{WithEnvironmentEnv(e)}
+			},
+			calls: func(_ *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, e *fakeEnvironmentEnvStore) int {
+				return e.calls
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -1454,17 +1472,18 @@ func TestController_Reconcile_NoProjectID_EnvStoreNeverConsulted(t *testing.T) {
 			rt := newFakeRuntime(0)
 			projectEnv := &fakeProjectEnvStore{}
 			orgEnv := &fakeOrganizationEnvStore{}
+			environmentEnv := &fakeEnvironmentEnvStore{}
 			desired := &store.DesiredService{
 				Name: "web", Image: "img:v1", Port: 80,
 				Env: map[string]string{"NODE_ENV": "production"},
 			}
-			c := New("web", &fakeStore{svc: desired}, rt, tt.options(projectEnv, orgEnv)...)
+			c := New("web", &fakeStore{svc: desired}, rt, tt.options(projectEnv, orgEnv, environmentEnv)...)
 
 			if _, err := c.Reconcile(context.Background()); err != nil {
 				t.Fatalf("Reconcile() error = %v", err)
 			}
-			if got := tt.calls(projectEnv, orgEnv); got != 0 {
-				t.Errorf("calls = %d, want 0: a service with no ProjectID must never look one up", got)
+			if got := tt.calls(projectEnv, orgEnv, environmentEnv); got != 0 {
+				t.Errorf("calls = %d, want 0: a service with no ProjectID/EnvironmentID must never look one up", got)
 			}
 		})
 	}
@@ -1521,6 +1540,36 @@ func TestController_Reconcile_ProjectEnv_MergedAsBaseLayer(t *testing.T) {
 	}
 }
 
+func TestController_Reconcile_EnvironmentEnv_MergedAboveProjectLayer(t *testing.T) {
+	rt := newFakeRuntime(0)
+	projectEnv := &fakeProjectEnvStore{vars: map[string]map[string]string{
+		"proj_1": {"LOG_LEVEL": "info", "REGION": "us-east-1"},
+	}}
+	environmentEnv := &fakeEnvironmentEnvStore{vars: map[string]map[string]string{
+		"env_1": {"LOG_LEVEL": "debug"},
+	}}
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Env:           map[string]string{"NODE_ENV": "production"},
+		ProjectID:     "proj_1",
+		EnvironmentID: "env_1",
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithProjectEnv(projectEnv), WithEnvironmentEnv(environmentEnv))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if got := rt.lastCreateEnv["REGION"]; got != "us-east-1" {
+		t.Errorf("container env REGION = %q, want the project default (us-east-1), nothing overrides it", got)
+	}
+	if got := rt.lastCreateEnv["LOG_LEVEL"]; got != "debug" {
+		t.Errorf("container env LOG_LEVEL = %q, want the environment default (debug) to win over the project default (info)", got)
+	}
+	if got := rt.lastCreateEnv["NODE_ENV"]; got != "production" {
+		t.Errorf("container env NODE_ENV = %q, want the service's own literal (production) to win over the environment default", got)
+	}
+}
+
 // fakeOrganizationEnvStore is a hand-written fake for OrganizationEnvStore,
 // same pattern as fakeProjectEnvStore above: keyed directly by projectID,
 // standing in for the real store's projects.org_id join.
@@ -1538,23 +1587,46 @@ func (f *fakeOrganizationEnvStore) ListOrganizationEnvVarsForProject(_ context.C
 	return f.vars[projectID], nil
 }
 
+// fakeEnvironmentEnvStore is a hand-written fake for EnvironmentEnvStore,
+// same pattern as fakeProjectEnvStore above, but keyed directly by
+// environmentID: unlike fakeOrganizationEnvStore, no join is needed since
+// EnvironmentID already lives directly on DesiredService.
+type fakeEnvironmentEnvStore struct {
+	vars  map[string]map[string]string
+	err   error
+	calls int
+}
+
+func (f *fakeEnvironmentEnvStore) ListEnvironmentEnvVars(_ context.Context, environmentID string) (map[string]string, error) {
+	f.calls++
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.vars[environmentID], nil
+}
+
 // TestController_Reconcile_OrgEnv_MergedBelowProjectLayer pins down the
-// full three-tier precedence in one shot: org default, overridden by
-// project default, overridden by the service's own literal.
+// full four-tier precedence in one shot: org default, overridden by
+// project default, overridden by the environment default, overridden by
+// the service's own literal.
 func TestController_Reconcile_OrgEnv_MergedBelowProjectLayer(t *testing.T) {
 	rt := newFakeRuntime(0)
 	orgEnv := &fakeOrganizationEnvStore{vars: map[string]map[string]string{
 		"proj_1": {"LOG_LEVEL": "debug", "REGION": "us-east-1", "NODE_ENV": "test"},
 	}}
 	projectEnv := &fakeProjectEnvStore{vars: map[string]map[string]string{
-		"proj_1": {"LOG_LEVEL": "info", "NODE_ENV": "development"},
+		"proj_1": {"LOG_LEVEL": "info", "NODE_ENV": "development", "TIER": "project"},
+	}}
+	environmentEnv := &fakeEnvironmentEnvStore{vars: map[string]map[string]string{
+		"env_1": {"LOG_LEVEL": "warn", "TIER": "environment"},
 	}}
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
-		Env:       map[string]string{"NODE_ENV": "production"},
-		ProjectID: "proj_1",
+		Env:           map[string]string{"NODE_ENV": "production"},
+		ProjectID:     "proj_1",
+		EnvironmentID: "env_1",
 	}
-	c := New("web", &fakeStore{svc: desired}, rt, WithOrganizationEnv(orgEnv), WithProjectEnv(projectEnv))
+	c := New("web", &fakeStore{svc: desired}, rt, WithOrganizationEnv(orgEnv), WithProjectEnv(projectEnv), WithEnvironmentEnv(environmentEnv))
 
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
@@ -1562,32 +1634,41 @@ func TestController_Reconcile_OrgEnv_MergedBelowProjectLayer(t *testing.T) {
 	if got := rt.lastCreateEnv["REGION"]; got != "us-east-1" {
 		t.Errorf("container env REGION = %q, want the organization default (us-east-1), nothing overrides it", got)
 	}
-	if got := rt.lastCreateEnv["LOG_LEVEL"]; got != "info" {
-		t.Errorf("container env LOG_LEVEL = %q, want the project default (info) to win over the organization default (debug)", got)
+	if got := rt.lastCreateEnv["TIER"]; got != "environment" {
+		t.Errorf("container env TIER = %q, want the environment default (environment) to win over the project default", got)
+	}
+	if got := rt.lastCreateEnv["LOG_LEVEL"]; got != "warn" {
+		t.Errorf("container env LOG_LEVEL = %q, want the environment default (warn) to win over both the project (info) and organization (debug) defaults", got)
 	}
 	if got := rt.lastCreateEnv["NODE_ENV"]; got != "production" {
-		t.Errorf("container env NODE_ENV = %q, want the service's own literal (production) to win over both defaults", got)
+		t.Errorf("container env NODE_ENV = %q, want the service's own literal (production) to win over every default", got)
 	}
 }
 
-// TestController_Reconcile_EnvStore_ResolverErrorPropagates covers both
-// tiers: a store lookup failure must propagate as a real Reconcile
+// TestController_Reconcile_EnvStore_ResolverErrorPropagates covers all
+// three tiers: a store lookup failure must propagate as a real Reconcile
 // error, not be swallowed.
 func TestController_Reconcile_EnvStore_ResolverErrorPropagates(t *testing.T) {
 	tests := []struct {
 		name    string
-		options func(projectEnv *fakeProjectEnvStore, orgEnv *fakeOrganizationEnvStore) []Option
+		options func(projectEnv *fakeProjectEnvStore, orgEnv *fakeOrganizationEnvStore, environmentEnv *fakeEnvironmentEnvStore) []Option
 	}{
 		{
 			name: "ProjectEnv",
-			options: func(p *fakeProjectEnvStore, _ *fakeOrganizationEnvStore) []Option {
+			options: func(p *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvStore) []Option {
 				return []Option{WithProjectEnv(p)}
 			},
 		},
 		{
 			name: "OrganizationEnv",
-			options: func(_ *fakeProjectEnvStore, o *fakeOrganizationEnvStore) []Option {
+			options: func(_ *fakeProjectEnvStore, o *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvStore) []Option {
 				return []Option{WithOrganizationEnv(o)}
+			},
+		},
+		{
+			name: "EnvironmentEnv",
+			options: func(_ *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, e *fakeEnvironmentEnvStore) []Option {
+				return []Option{WithEnvironmentEnv(e)}
 			},
 		},
 	}
@@ -1596,11 +1677,13 @@ func TestController_Reconcile_EnvStore_ResolverErrorPropagates(t *testing.T) {
 			rt := newFakeRuntime(0)
 			projectEnv := &fakeProjectEnvStore{err: errors.New("db unavailable")}
 			orgEnv := &fakeOrganizationEnvStore{err: errors.New("db unavailable")}
+			environmentEnv := &fakeEnvironmentEnvStore{err: errors.New("db unavailable")}
 			desired := &store.DesiredService{
 				Name: "web", Image: "img:v1", Port: 80,
-				ProjectID: "proj_1",
+				ProjectID:     "proj_1",
+				EnvironmentID: "env_1",
 			}
-			c := New("web", &fakeStore{svc: desired}, rt, tt.options(projectEnv, orgEnv)...)
+			c := New("web", &fakeStore{svc: desired}, rt, tt.options(projectEnv, orgEnv, environmentEnv)...)
 
 			result, err := c.Reconcile(context.Background())
 			if err == nil {

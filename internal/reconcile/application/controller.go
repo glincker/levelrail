@@ -106,6 +106,16 @@ type OrganizationEnvStore interface {
 	ListOrganizationEnvVarsForProject(ctx context.Context, projectID string) (map[string]string, error)
 }
 
+// EnvironmentEnvStore is the narrow surface this controller needs to
+// resolve store.DesiredService.EnvironmentID's shared env vars, the tier
+// between ProjectEnvStore and this service's own Env (resolveEnv's own
+// doc comment on precedence). Unlike OrganizationEnvStore, no join is
+// needed: EnvironmentID already lives directly on DesiredService.
+// *store.DB satisfies this structurally.
+type EnvironmentEnvStore interface {
+	ListEnvironmentEnvVars(ctx context.Context, environmentID string) (map[string]string, error)
+}
+
 // DeployRecorder is the narrow surface this controller needs to record
 // TASKS.md 2.1's deploy-frequency metric. *telemetry.DB satisfies this
 // structurally; not imported directly, same reasoning ServiceStore/
@@ -147,6 +157,7 @@ type Controller struct {
 	storageTargets StorageTargetStore      // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
 	projectEnv     ProjectEnvStore         // nil is valid: project vars are just skipped, see WithProjectEnv
 	orgEnv         OrganizationEnvStore    // nil is valid: organization vars are just skipped, see WithOrganizationEnv
+	environmentEnv EnvironmentEnvStore     // nil is valid: environment vars are just skipped, see WithEnvironmentEnv
 	networkPrefix  string                  // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
 	registryCreds  RegistryCredentialStore // nil is valid: a service with no RegistryCredentialID never needs one, see WithRegistryCredentials
 	databases      DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
@@ -255,6 +266,16 @@ func WithProjectEnv(s ProjectEnvStore) Option {
 // does not fail Reconcile, organization vars are just silently skipped.
 func WithOrganizationEnv(s OrganizationEnvStore) Option {
 	return func(ctrl *Controller) { ctrl.orgEnv = s }
+}
+
+// WithEnvironmentEnv enables resolving store.DesiredService.EnvironmentID's
+// shared env vars as resolveEnv's middle layer, applied above
+// WithProjectEnv/WithOrganizationEnv and below the service's own Env.
+// Same "purely an organizational label" reasoning as WithProjectEnv: a
+// service with an EnvironmentID but no EnvironmentEnvStore configured
+// does not fail Reconcile, environment vars are just silently skipped.
+func WithEnvironmentEnv(s EnvironmentEnvStore) Option {
+	return func(ctrl *Controller) { ctrl.environmentEnv = s }
 }
 
 // WithNetworkPrefix sets the Docker network naming prefix
@@ -738,11 +759,18 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 // applied before the project layer, so a project default overrides a
 // same-named organization default exactly the way this service's own
 // Env already overrides the project layer.
+//
+// desired.EnvironmentID's shared env vars (WithEnvironmentEnv) sit
+// between the project layer and this service's own Env: applied after
+// the project layer, so an environment default overrides a same-named
+// project default, and before this service's own Env, so the service
+// still overrides a same-named environment default.
 func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredService) (map[string]string, error) {
 	hasProjectEnv := desired.ProjectID != "" && c.projectEnv != nil
 	hasOrgEnv := desired.ProjectID != "" && c.orgEnv != nil
+	hasEnvironmentEnv := desired.EnvironmentID != "" && c.environmentEnv != nil
 	hasDatabaseEnv := len(desired.DatabaseEnv) > 0 || desired.DatabaseAttachment != nil
-	if len(desired.SecretEnv) == 0 && desired.StorageTargetID == "" && !hasProjectEnv && !hasOrgEnv && !hasDatabaseEnv {
+	if len(desired.SecretEnv) == 0 && desired.StorageTargetID == "" && !hasProjectEnv && !hasOrgEnv && !hasEnvironmentEnv && !hasDatabaseEnv {
 		return desired.Env, nil
 	}
 
@@ -764,6 +792,16 @@ func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredServi
 			return nil, fmt.Errorf("resolve project env vars: %w", err)
 		}
 		for k, v := range projectVars {
+			env[k] = v
+		}
+	}
+
+	if hasEnvironmentEnv {
+		environmentVars, err := c.environmentEnv.ListEnvironmentEnvVars(ctx, desired.EnvironmentID)
+		if err != nil {
+			return nil, fmt.Errorf("resolve environment env vars: %w", err)
+		}
+		for k, v := range environmentVars {
 			env[k] = v
 		}
 	}

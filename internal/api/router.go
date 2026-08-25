@@ -1428,6 +1428,12 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("DELETE /api/v1/environments/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteEnvironment))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/environment", rt.requireAbility(AbilityWrite, rt.handleSetAppEnvironment))
 
+	// Shared env vars every service tagged with this environment inherits
+	// (environment_env.go): the tier between organizations/{id}/env and
+	// projects/{id}/env above and a service's own env below.
+	mux.HandleFunc("GET /api/v1/environments/{id}/env", rt.requireAbility(AbilityRead, rt.handleGetEnvironmentEnv))
+	mux.HandleFunc("PUT /api/v1/environments/{id}/env", rt.requireAbility(AbilityWrite, rt.handleSetEnvironmentEnv))
+
 	// Shared env vars every app filed under this project inherits
 	// (project_env.go): same AbilityRead/AbilityWrite boundary as the
 	// project CRUD routes just above.
