@@ -160,6 +160,13 @@ const (
 	// short enough that a real hang is caught well within a minute.
 	defaultNodeHeartbeatTimeout = 45 * time.Second
 
+	// defaultOSPatchCheckInterval governs HostPatchCollector: unlike disk
+	// space or container metrics, this shells out to a package manager
+	// (internal/telemetry/hostpatch.go), real process cost an operator may
+	// want to tune, so an hour is a conservative default rather than
+	// metricsCollectionInterval's 15s.
+	defaultOSPatchCheckInterval = 1 * time.Hour
+
 	// defaultBackupSchedulerInterval is how often internal/backup.Scheduler
 	// checks which databases have a due cron schedule (wave-2 roadmap
 	// item 6), env-overridable via APP_BACKUP_SCHEDULER_INTERVAL
@@ -500,6 +507,13 @@ func run(logger *slog.Logger) error {
 		go func() {
 			if err := diskCollector.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
 				logger.Error("telemetry host disk collector stopped", slog.String("error", err.Error()))
+			}
+		}()
+
+		patchCollector := telemetry.NewHostPatchCollector(nil, "node:"+meshCfg.localNodeID, telemetryDB, osPatchCheckInterval(), logger)
+		go func() {
+			if err := patchCollector.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+				logger.Error("telemetry host patch collector stopped", slog.String("error", err.Error()))
 			}
 		}()
 	}
@@ -1034,6 +1048,20 @@ func nodeHeartbeatTimeout() time.Duration {
 	d, err := time.ParseDuration(raw)
 	if err != nil {
 		return defaultNodeHeartbeatTimeout
+	}
+	return d
+}
+
+// osPatchCheckInterval reads APP_OS_PATCH_CHECK_INTERVAL, the same
+// env-var-with-default shape as nodeHeartbeatInterval above.
+func osPatchCheckInterval() time.Duration {
+	raw := os.Getenv("APP_OS_PATCH_CHECK_INTERVAL")
+	if raw == "" {
+		return defaultOSPatchCheckInterval
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		return defaultOSPatchCheckInterval
 	}
 	return d
 }

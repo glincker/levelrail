@@ -502,6 +502,18 @@ type NodeResource struct {
 	CreatedAt             time.Time `json:"created_at"`
 }
 
+// NodePatchStatusResource mirrors internal/api's nodePatchStatusResponse
+// (internal/api/node_patch_status.go). Checked distinguishes "never
+// checked" (Total/Security both zero-valued and meaningless) from
+// checked-and-genuinely-up-to-date (Checked true, Total 0): callers must
+// branch on Checked first.
+type NodePatchStatusResource struct {
+	Checked   bool       `json:"checked"`
+	Total     int        `json:"total"`
+	Security  int        `json:"security"`
+	CheckedAt *time.Time `json:"checked_at,omitempty"`
+}
+
 // SetNodeWorkloadsRequest mirrors internal/api's setNodeWorkloadsRequest:
 // a full replace of both fields, not a partial patch.
 type SetNodeWorkloadsRequest struct {

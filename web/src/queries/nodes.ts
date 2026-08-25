@@ -22,6 +22,7 @@ import {
 import type {
   DrainNodeResponse,
   NodeJoinTokenResponse,
+  NodePatchStatusResource,
   NodeResource,
 } from '../types/nodeDetail'
 import type { ReconcileCondition } from '../types/deploy'
@@ -34,6 +35,8 @@ export const nodeKeys = {
   list: () => [...nodeKeys.all, 'list'] as const,
   detail: (id: string) => [...nodeKeys.all, 'detail', id] as const,
   health: (id: string) => [...nodeKeys.detail(id), 'health'] as const,
+  patchStatus: (id: string) =>
+    [...nodeKeys.detail(id), 'patch-status'] as const,
 }
 
 // Fetches every node from the control plane API. GET /api/v1/nodes
@@ -133,6 +136,42 @@ export function nodeHealthQueryOptions(id: string) {
 
 export function useNodeHealth(id: string) {
   return useSuspenseQuery(nodeHealthQueryOptions(id))
+}
+
+// GET /api/v1/nodes/{id}/patch-status (internal/api/node_patch_status.go):
+// the latest OS-patch reading HostPatchCollector wrote for this node.
+// 501 when telemetry isn't configured on this control plane at all, which
+// this treats the same way useNodeListOptional treats a scoped-token
+// 403: a real, expected "nothing to show" state, not a page-breaking
+// error, since the rest of the node detail page has nothing to do with
+// telemetry being configured.
+export async function fetchNodePatchStatus(
+  id: string,
+): Promise<NodePatchStatusResource> {
+  const res = await fetch(
+    `/api/v1/nodes/${encodeURIComponent(id)}/patch-status`,
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `fetch node patch status failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as NodePatchStatusResource
+}
+
+export function nodePatchStatusQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: nodeKeys.patchStatus(id),
+    queryFn: () => fetchNodePatchStatus(id),
+  })
+}
+
+export function useNodePatchStatus(id: string) {
+  return useQuery({ ...nodePatchStatusQueryOptions(id), retry: false })
 }
 
 // POST /api/v1/nodes/join-tokens (internal/api/nodes.go's

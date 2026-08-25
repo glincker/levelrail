@@ -40,16 +40,17 @@ var nodeSummableMetrics = map[string]bool{
 	"disk_write_bytes":   true,
 }
 
-// nodeHostMetrics is disk capacity: a real host filesystem reading of
-// the volume this node's data directory lives on
-// (cmd/levelrail.HostDiskCollector, internal/telemetry/hostdisk.go),
-// queried directly by this node's own resource ID rather than summed
-// across placed services like nodeSummableMetrics above, because there
-// is exactly one real reading per node, not many containers to add
-// together.
+// nodeHostMetrics are real host-level readings (disk capacity, available
+// OS package updates: cmd/levelrail.HostDiskCollector/HostPatchCollector,
+// internal/telemetry/hostdisk.go/hostpatch.go), queried directly by this
+// node's own resource ID rather than summed across placed services like
+// nodeSummableMetrics above, because there is exactly one real reading
+// per node, not many containers to add together.
 var nodeHostMetrics = map[string]bool{
-	"disk_used_bytes":  true,
-	"disk_total_bytes": true,
+	"disk_used_bytes":                          true,
+	"disk_total_bytes":                         true,
+	telemetry.MetricOSPatchesAvailable:         true,
+	telemetry.MetricOSSecurityPatchesAvailable: true,
 }
 
 // nodeMetricsResponse mirrors metricsResponse (metrics.go) plus
@@ -110,7 +111,8 @@ func (rt *Router) handleQueryNodeMetrics(w http.ResponseWriter, r *http.Request)
 	if !nodeSummableMetrics[metric] && !nodeHostMetrics[metric] {
 		writeError(w, http.StatusBadRequest,
 			"metric must be one of cpu_percent, memory_usage_bytes, network_rx_bytes, network_tx_bytes, "+
-				"disk_read_bytes, disk_write_bytes, disk_used_bytes, disk_total_bytes (memory_limit_bytes cannot be "+
+				"disk_read_bytes, disk_write_bytes, disk_used_bytes, disk_total_bytes, "+telemetry.MetricOSPatchesAvailable+
+				", "+telemetry.MetricOSSecurityPatchesAvailable+" (memory_limit_bytes cannot be "+
 				"honestly summed across containers on one node, see handleQueryNodeMetrics's doc comment)")
 		return
 	}

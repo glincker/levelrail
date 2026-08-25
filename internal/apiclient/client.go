@@ -751,6 +751,16 @@ func (c *Client) GetNodeHealth(ctx context.Context, id string) ([]ConditionResou
 	return out, err
 }
 
+// GetNodePatchStatus calls GET /api/v1/nodes/{id}/patch-status: the
+// latest OS-patch reading HostPatchCollector wrote for id, or
+// Checked == false if it has never checked (unsupported package manager,
+// or the collector hasn't run yet).
+func (c *Client) GetNodePatchStatus(ctx context.Context, id string) (NodePatchStatusResource, error) {
+	var out NodePatchStatusResource
+	err := c.do(ctx, http.MethodGet, nodePath(id)+"/patch-status", nil, &out)
+	return out, err
+}
+
 // PathEscape guards against a name containing characters that would
 // otherwise change the request's URL shape (a "/" turning one path
 // segment into two, for instance). Server-side validation is the real
