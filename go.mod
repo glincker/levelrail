@@ -19,6 +19,7 @@ require (
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/docker/go-connections v0.8.1
 	github.com/go-git/go-git/v5 v5.19.2
+	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/golang/snappy v1.0.0
 	github.com/miekg/dns v1.1.72
 	github.com/moby/buildkit v0.32.2
@@ -32,7 +33,7 @@ require (
 	golang.org/x/sync v0.22.0
 	golang.org/x/term v0.45.0
 	golang.zx2c4.com/wireguard v0.0.0-20260522210424-ecfc5a8d5446
-	google.golang.org/grpc v1.83.0
+	google.golang.org/grpc v1.83.1
 	google.golang.org/protobuf v1.36.12
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.56.0
@@ -121,7 +122,6 @@ require (
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.9.0 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.5 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
