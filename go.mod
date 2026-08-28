@@ -4,7 +4,7 @@ go 1.26.3
 
 require (
 	filippo.io/age v1.3.1
-	github.com/aws/aws-sdk-go-v2 v1.43.6
+	github.com/aws/aws-sdk-go-v2 v1.43.7
 	github.com/aws/aws-sdk-go-v2/config v1.32.37
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.36
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.22.43
@@ -19,6 +19,7 @@ require (
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/docker/go-connections v0.8.1
 	github.com/go-git/go-git/v5 v5.19.2
+	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/golang/snappy v1.0.0
 	github.com/miekg/dns v1.1.72
 	github.com/moby/buildkit v0.32.2
@@ -121,7 +122,6 @@ require (
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.9.0 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.5 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
