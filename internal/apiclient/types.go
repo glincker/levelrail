@@ -51,6 +51,9 @@ type AppResource struct {
 	Resources *ServiceResources `json:"resources,omitempty"`
 	Health    *ServiceHealth    `json:"health,omitempty"`
 	NodeID    string            `json:"node_id,omitempty"`
+	// ProjectID mirrors internal/api's appResource.ProjectID:
+	// response-only, set via PUT /api/v1/apps/{name}/project.
+	ProjectID string `json:"project_id,omitempty"`
 	// EnvironmentID mirrors internal/api's appResource.EnvironmentID:
 	// response-only, set via PUT /api/v1/apps/{name}/environment.
 	EnvironmentID string `json:"environment_id,omitempty"`
@@ -329,6 +332,9 @@ type DatabaseResource struct {
 	Engine  string `json:"engine"`
 	Version string `json:"version"`
 	NodeID  string `json:"node_id,omitempty"`
+	// ProjectID mirrors internal/api's databaseResource.ProjectID:
+	// response-only, set via PUT /api/v1/databases/{name}/project.
+	ProjectID string `json:"project_id,omitempty"`
 	// Resources, PubliclyAccessible, PublicPort, and the Backup* fields
 	// are set through their own dedicated routes (SetDatabaseResources,
 	// SetDatabasePublicAccess, SetBackupSchedule), never through this
@@ -534,6 +540,23 @@ type ProjectResource struct {
 // setProjectOrganizationRequest. An empty OrgID clears the assignment.
 type SetProjectOrganizationRequest struct {
 	OrgID string `json:"org_id"`
+}
+
+// CreateProjectRequest mirrors internal/api's createProjectRequest.
+type CreateProjectRequest struct {
+	Name string `json:"name"`
+}
+
+// SetAppProjectRequest mirrors internal/api's setAppProjectRequest. An
+// empty ProjectID clears the assignment.
+type SetAppProjectRequest struct {
+	ProjectID string `json:"project_id"`
+}
+
+// SetDatabaseProjectRequest mirrors internal/api's
+// setDatabaseProjectRequest. An empty ProjectID clears the assignment.
+type SetDatabaseProjectRequest struct {
+	ProjectID string `json:"project_id"`
 }
 
 // EnvironmentResource mirrors internal/api's environmentResource
