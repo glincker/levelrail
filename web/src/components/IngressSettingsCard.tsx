@@ -1,10 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { GlobeIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckIcon, CopyIcon, GlobeIcon } from '@phosphor-icons/react/dist/ssr'
 import type { CertificateStatus } from '../queries/certificates'
 import type { IngressSettings } from '../queries/domains'
 import { useIngressDomainCheck, useUpdateIngressSettings } from '../queries/domains'
+import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import { DomainCheckPanel } from './DomainDnsCheck'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -79,6 +80,7 @@ type IngressSettingsFormValues = z.infer<typeof ingressSettingsSchema>
 // trusted.
 function IngressDomainCheck({ domain }: { domain: string }) {
   const { data, isFetching, refetch } = useIngressDomainCheck()
+  const { copied, copy } = useCopyToClipboard()
   if (!data?.configured) return null
 
   return (
@@ -86,6 +88,17 @@ function IngressDomainCheck({ domain }: { domain: string }) {
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <span>Advertised as:</span>
         <code className="font-mono text-foreground">{data.expected_host}</code>
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="ghost"
+          onClick={() => {
+            copy(data.expected_host ?? '')
+          }}
+          aria-label={copied ? 'Advertised host copied' : 'Copy advertised host'}
+        >
+          {copied ? <CheckIcon className="size-3.5" /> : <CopyIcon className="size-3.5" />}
+        </Button>
         <Badge variant={data.host_inferred ? 'muted' : 'success'}>
           {data.host_inferred
             ? 'Inferred from your connection'

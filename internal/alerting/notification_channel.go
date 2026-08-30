@@ -159,6 +159,18 @@ func sendTestNotification(ctx context.Context, client *http.Client, sender email
 			return fmt.Errorf("alerting: test notification: %w", err)
 		}
 		return postJSON(ctx, client, notifyURL, pushoverPayload{Token: token, User: user, Message: testText})
+	case NotifyPagerDuty:
+		if notifyURL == "" {
+			return fmt.Errorf("alerting: test notification: no notify_url (pagerduty routing key) configured")
+		}
+		return postJSON(ctx, client, pagerDutyEventsURL, pagerDutyPayload{
+			RoutingKey: notifyURL, EventAction: "trigger",
+			Payload: pagerDutyDetails{Summary: testText, Source: "notification-test", Severity: "info"},
+		})
+	case NotifyTeams:
+		return postJSON(ctx, client, notifyURL, teamsPayload{
+			Type: "MessageCard", Context: "http://schema.org/extensions", Summary: testText, Text: testText,
+		})
 	case NotifyEmail:
 		if sender == nil {
 			return fmt.Errorf("alerting: test notification: email is not configured on this control plane")

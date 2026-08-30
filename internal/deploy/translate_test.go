@@ -174,6 +174,31 @@ func TestToDesiredService_FullySpecified(t *testing.T) {
 	}
 }
 
+func TestToDesiredService_HostPort_PassesThroughAsPointer(t *testing.T) {
+	svc := spec.Service{Port: 8080, HostPort: 30001}
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.HostPort == nil || *got.HostPort != 30001 {
+		t.Errorf("HostPort = %v, want a pointer to 30001", got.HostPort)
+	}
+}
+
+// TestToDesiredService_NoHostPort_LeavesNil is the regression-safety
+// counterpart: an app.yaml with no host_port: (every service before this
+// field existed) must produce a nil HostPort, not a pointer to 0.
+func TestToDesiredService_NoHostPort_LeavesNil(t *testing.T) {
+	svc := spec.Service{Port: 8080}
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.HostPort != nil {
+		t.Errorf("HostPort = %v, want nil", *got.HostPort)
+	}
+}
+
 func TestToDesiredService_LabelsPassThrough(t *testing.T) {
 	svc := spec.Service{Port: 8080, Labels: map[string]string{"team": "platform"}}
 	got, err := toDesiredService("web", "img:sha", svc)
@@ -229,5 +254,66 @@ func TestToDesiredService_InvalidHealthPropagatesError(t *testing.T) {
 	_, err := toDesiredService("web", "img:sha", svc)
 	if err == nil {
 		t.Fatal("toDesiredService() error = nil, want the health translation error to propagate")
+	}
+}
+
+func TestParseFromRef(t *testing.T) {
+	tests := []struct {
+		name      string
+		in        string
+		wantDB    string
+		wantField string
+		wantErr   bool
+	}{
+		{name: "two segments", in: "main.url", wantDB: "main", wantField: "url"},
+		{name: "three segments, engine hint dropped", in: "postgres.main.url", wantDB: "main", wantField: "url"},
+		{name: "four segments, only last two matter", in: "cluster.postgres.main.host", wantDB: "main", wantField: "host"},
+		{name: "empty", in: "", wantErr: true},
+		{name: "single segment", in: "main", wantErr: true},
+		{name: "empty database segment", in: ".url", wantErr: true},
+		{name: "empty field segment", in: "main.", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotDB, gotField, err := parseFromRef(tt.in)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("parseFromRef(%q) error = %v, wantErr %v", tt.in, err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
+			}
+			if gotDB != tt.wantDB || gotField != tt.wantField {
+				t.Errorf("parseFromRef(%q) = (%q, %q), want (%q, %q)", tt.in, gotDB, gotField, tt.wantDB, tt.wantField)
+			}
+		})
+	}
+}
+
+func TestDatabaseEnvRefs(t *testing.T) {
+	env := map[string]spec.EnvVar{
+		"DATABASE_URL": {From: "postgres.main.url"},
+		"CACHE_HOST":   {From: "cache.host"},
+		"LOG_LEVEL":    {Value: "debug"},
+		"API_KEY":      {Secret: true, Required: true},
+	}
+
+	got, err := databaseEnvRefs(env)
+	if err != nil {
+		t.Fatalf("databaseEnvRefs() error = %v", err)
+	}
+	want := map[string]store.DatabaseEnvRef{
+		"DATABASE_URL": {Database: "main", Field: "url"},
+		"CACHE_HOST":   {Database: "cache", Field: "host"},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("databaseEnvRefs() = %+v, want %+v", got, want)
+	}
+}
+
+func TestDatabaseEnvRefs_InvalidFrom(t *testing.T) {
+	env := map[string]spec.EnvVar{"DATABASE_URL": {From: "main"}}
+	if _, err := databaseEnvRefs(env); err == nil {
+		t.Fatal("databaseEnvRefs() error = nil, want a single-segment from to be rejected")
 	}
 }

@@ -50,6 +50,10 @@ type fakeRuntime struct {
 	stopErr         error
 	removeErr       error
 	ensureVolumeErr error
+	// startErrOnce fails exactly the next Start call, then clears
+	// itself: the "broken container, but recreating it works" scenario,
+	// distinct from startErr's "every Start fails" shape.
+	startErrOnce error
 
 	createCalls       int
 	removeCalls       int
@@ -61,11 +65,13 @@ type fakeRuntime struct {
 	lastCreateSpec docker.ContainerSpec
 
 	// networks, ensureNetworkCalls, ensureNetworkErr, removeNetworkErr,
-	// and callOrder back the per-app networking tests: networks tracks
-	// which names EnsureNetwork has (idempotently) created, callOrder
-	// records "network:<name>" and "create:<name>" in the order this
-	// fake actually saw them so a test can assert the network exists
-	// before the container that needs it does.
+	// and callOrder back the per-app networking and rolling-deploy
+	// tests: networks tracks which names EnsureNetwork has (idempotently)
+	// created, callOrder records "network:<name>", "create:<name>", and
+	// "remove:<name>" in the order this fake actually saw them so a test
+	// can assert e.g. the network exists before the container that needs
+	// it does, or that a rolling deploy creates a replacement before
+	// removing the replica it's retiring.
 	networks           map[string]string
 	ensureNetworkCalls int
 	ensureNetworkErr   error
@@ -122,6 +128,11 @@ func (f *fakeRuntime) Start(_ context.Context, id string) error {
 	if f.startErr != nil {
 		return f.startErr
 	}
+	if f.startErrOnce != nil {
+		err := f.startErrOnce
+		f.startErrOnce = nil
+		return err
+	}
 	for _, cs := range f.containers {
 		if cs.ID == id {
 			cs.Running = true
@@ -157,6 +168,7 @@ func (f *fakeRuntime) Remove(_ context.Context, id string, _ bool) error {
 	for name, cs := range f.containers {
 		if cs.ID == id {
 			delete(f.containers, name)
+			f.callOrder = append(f.callOrder, "remove:"+name)
 		}
 	}
 	return nil
@@ -422,6 +434,149 @@ func TestController_Reconcile_RestartAfterCrash(t *testing.T) {
 	}
 	if rt.createCalls != 0 {
 		t.Errorf("createCalls = %d, want 0 (a crashed container is restarted, not recreated)", rt.createCalls)
+	}
+}
+
+// TestController_Reconcile_RestartAfterCrash_EnsuresNetworkFirst covers
+// the gap that let a stopped container become permanently stuck: its
+// per-app network can go missing between reconcile passes (an operator
+// running docker network prune, or any other external interference this
+// codebase can't prevent), and Start alone can never recover from that,
+// only EnsureNetwork followed by Start can.
+func TestController_Reconcile_RestartAfterCrash_EnsuresNetworkFirst(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, AppID: "myapp"}
+	target := ContainerName("web", desired.Image, "")
+	rt.seed(target, false) // exists, not running, its network may or may not still exist
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Errorf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+	if rt.ensureNetworkCalls != 1 {
+		t.Errorf("ensureNetworkCalls = %d, want 1: a stopped container's network must be re-ensured before Start, not just created fresh", rt.ensureNetworkCalls)
+	}
+}
+
+// TestController_Reconcile_RestartAfterCrash_EnsureNetworkFails_StartNeverCalled
+// is the half-succeeded case CLAUDE.md's testing standard requires for
+// this path: if the network can't be re-ensured, Start must never run
+// against a container whose network isn't there, and the container must
+// stay stopped rather than being reported as recovered.
+func TestController_Reconcile_RestartAfterCrash_EnsureNetworkFails_StartNeverCalled(t *testing.T) {
+	rt := newFakeRuntime(0)
+	rt.ensureNetworkErr = errors.New("network not found")
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, AppID: "myapp"}
+	target := ContainerName("web", desired.Image, "")
+	rt.seed(target, false)
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want an error")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "EnsureNetworkFailed" {
+		t.Errorf("condition = %+v, want Status=False Reason=EnsureNetworkFailed", cond)
+	}
+	state, _ := rt.InspectByName(context.Background(), target)
+	if state.Running {
+		t.Error("container reported Running after a failed EnsureNetwork; Start must never have been reached")
+	}
+}
+
+// TestController_Reconcile_RestartAfterCrash_StartFails_RecreatesAndRecovers
+// covers the case live testing found: EnsureNetwork succeeds (the
+// network genuinely exists) but Start still fails on the existing
+// container, e.g. one whose first-ever Start already failed and left it
+// with no real network binding, unrecoverable by retrying Start no
+// matter how many times the network itself is re-ensured. The
+// controller must remove that broken container and recreate it fresh
+// rather than reporting a permanent StartFailed forever.
+func TestController_Reconcile_RestartAfterCrash_StartFails_RecreatesAndRecovers(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, AppID: "myapp"}
+	target := ContainerName("web", desired.Image, "")
+	rt.seed(target, false)
+	rt.startErrOnce = errors.New("network not found")
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v, want the broken container recovered by recreation", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Errorf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+	if rt.removeCalls != 1 {
+		t.Errorf("removeCalls = %d, want 1 (the broken container must be removed before recreating)", rt.removeCalls)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1 (recreated fresh after the broken Start)", rt.createCalls)
+	}
+	state, _ := rt.InspectByName(context.Background(), target)
+	if state == nil || !state.Running {
+		t.Errorf("state = %+v, want a running container after recovery", state)
+	}
+}
+
+// TestController_Reconcile_RestartAfterCrash_StartFails_RemoveAlsoFails is
+// the half-succeeded case CLAUDE.md's testing standard requires: if the
+// broken container can't even be removed, the controller must report
+// both failures clearly rather than silently losing the original Start
+// error or claiming success.
+func TestController_Reconcile_RestartAfterCrash_StartFails_RemoveAlsoFails(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, AppID: "myapp"}
+	target := ContainerName("web", desired.Image, "")
+	rt.seed(target, false)
+	rt.startErrOnce = errors.New("network not found")
+	rt.removeErr = errors.New("permission denied")
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want an error")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "StartFailed" {
+		t.Errorf("condition = %+v, want Status=False Reason=StartFailed", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0: must never attempt to recreate a container it couldn't remove", rt.createCalls)
+	}
+}
+
+// TestController_Reconcile_RestartAfterCrash_StartFails_RecreateAlsoFails
+// is the other half-succeeded case: the broken container is removed
+// successfully, but the fresh Create also fails (e.g. the underlying
+// problem is not this one container at all). Must report CreateFailed,
+// not silently retry Start against a container that no longer exists.
+func TestController_Reconcile_RestartAfterCrash_StartFails_RecreateAlsoFails(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, AppID: "myapp"}
+	target := ContainerName("web", desired.Image, "")
+	rt.seed(target, false)
+	rt.startErrOnce = errors.New("network not found")
+	rt.createErr = errors.New("docker daemon unavailable")
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want an error")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "CreateFailed" {
+		t.Errorf("condition = %+v, want Status=False Reason=CreateFailed", cond)
+	}
+	if rt.removeCalls != 1 {
+		t.Errorf("removeCalls = %d, want 1: the broken container must still be removed even though recreation then fails", rt.removeCalls)
 	}
 }
 
@@ -1272,27 +1427,75 @@ func (f *fakeProjectEnvStore) ListProjectEnvVars(_ context.Context, projectID st
 	return f.vars[projectID], nil
 }
 
-func TestController_Reconcile_NoProjectID_ProjectEnvNeverConsulted(t *testing.T) {
-	rt := newFakeRuntime(0)
-	projectEnv := &fakeProjectEnvStore{}
-	desired := &store.DesiredService{
-		Name: "web", Image: "img:v1", Port: 80,
-		Env: map[string]string{"NODE_ENV": "production"},
+// TestController_Reconcile_NoTierID_EnvStoreNeverConsulted covers all
+// three tiers (WithProjectEnv, WithOrganizationEnv, WithEnvironmentEnv):
+// a service with neither ProjectID nor EnvironmentID set must never look
+// any of them up. The shared desired below leaves both fields empty, so
+// every case's gate condition (ProjectID == "" for the first two,
+// EnvironmentID == "" for the third) holds at once.
+func TestController_Reconcile_NoTierID_EnvStoreNeverConsulted(t *testing.T) {
+	tests := []struct {
+		name    string
+		options func(projectEnv *fakeProjectEnvStore, orgEnv *fakeOrganizationEnvStore, environmentEnv *fakeEnvironmentEnvLister) []Option
+		calls   func(projectEnv *fakeProjectEnvStore, orgEnv *fakeOrganizationEnvStore, environmentEnv *fakeEnvironmentEnvLister) int
+	}{
+		{
+			name: "ProjectEnv",
+			options: func(p *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvLister) []Option {
+				return []Option{WithProjectEnv(p)}
+			},
+			calls: func(p *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvLister) int {
+				return p.calls
+			},
+		},
+		{
+			name: "OrganizationEnv",
+			options: func(_ *fakeProjectEnvStore, o *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvLister) []Option {
+				return []Option{WithOrganizationEnv(o)}
+			},
+			calls: func(_ *fakeProjectEnvStore, o *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvLister) int {
+				return o.calls
+			},
+		},
+		{
+			name: "EnvironmentEnv",
+			options: func(_ *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, e *fakeEnvironmentEnvLister) []Option {
+				return []Option{WithEnvironmentEnv(e)}
+			},
+			calls: func(_ *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, e *fakeEnvironmentEnvLister) int {
+				return e.calls
+			},
+		},
 	}
-	c := New("web", &fakeStore{svc: desired}, rt, WithProjectEnv(projectEnv))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := newFakeRuntime(0)
+			projectEnv := &fakeProjectEnvStore{}
+			orgEnv := &fakeOrganizationEnvStore{}
+			environmentEnv := &fakeEnvironmentEnvLister{}
+			desired := &store.DesiredService{
+				Name: "web", Image: "img:v1", Port: 80,
+				Env: map[string]string{"NODE_ENV": "production"},
+			}
+			c := New("web", &fakeStore{svc: desired}, rt, tt.options(projectEnv, orgEnv, environmentEnv)...)
 
-	if _, err := c.Reconcile(context.Background()); err != nil {
-		t.Fatalf("Reconcile() error = %v", err)
-	}
-	if projectEnv.calls != 0 {
-		t.Errorf("ListProjectEnvVars calls = %d, want 0: a service with no ProjectID must never look one up", projectEnv.calls)
+			if _, err := c.Reconcile(context.Background()); err != nil {
+				t.Fatalf("Reconcile() error = %v", err)
+			}
+			if got := tt.calls(projectEnv, orgEnv, environmentEnv); got != 0 {
+				t.Errorf("calls = %d, want 0: a service with no ProjectID/EnvironmentID must never look one up", got)
+			}
+		})
 	}
 }
 
-func TestController_Reconcile_ProjectID_NoProjectEnvStoreConfigured_SkippedNotFailed(t *testing.T) {
-	// Unlike SecretEnv/StorageTargetID, a ProjectID with no
-	// WithProjectEnv configured is not a failure: a project is purely an
-	// organizational label, see WithProjectEnv's own doc comment.
+// TestController_Reconcile_ProjectID_NoEnvStoresConfigured_SkippedNotFailed
+// covers the case neither WithProjectEnv nor WithOrganizationEnv is
+// configured at all: unlike SecretEnv/StorageTargetID, a ProjectID with
+// no env store configured is not a failure, a project (and its
+// organization) are purely organizational labels, see WithProjectEnv's
+// own doc comment.
+func TestController_Reconcile_ProjectID_NoEnvStoresConfigured_SkippedNotFailed(t *testing.T) {
 	rt := newFakeRuntime(0)
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
@@ -1337,25 +1540,163 @@ func TestController_Reconcile_ProjectEnv_MergedAsBaseLayer(t *testing.T) {
 	}
 }
 
-func TestController_Reconcile_ProjectEnv_ResolverErrorPropagates(t *testing.T) {
+func TestController_Reconcile_EnvironmentEnv_MergedAboveProjectLayer(t *testing.T) {
 	rt := newFakeRuntime(0)
-	projectEnv := &fakeProjectEnvStore{err: errors.New("db unavailable")}
+	projectEnv := &fakeProjectEnvStore{vars: map[string]map[string]string{
+		"proj_1": {"LOG_LEVEL": "info", "REGION": "us-east-1"},
+	}}
+	environmentEnv := &fakeEnvironmentEnvLister{vars: map[string]map[string]string{
+		"env_1": {"LOG_LEVEL": "debug"},
+	}}
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
-		ProjectID: "proj_1",
+		Env:           map[string]string{"NODE_ENV": "production"},
+		ProjectID:     "proj_1",
+		EnvironmentID: "env_1",
 	}
-	c := New("web", &fakeStore{svc: desired}, rt, WithProjectEnv(projectEnv))
+	c := New("web", &fakeStore{svc: desired}, rt, WithProjectEnv(projectEnv), WithEnvironmentEnv(environmentEnv))
 
-	result, err := c.Reconcile(context.Background())
-	if err == nil {
-		t.Fatal("Reconcile() error = nil, want the project env lookup failure to propagate")
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
 	}
-	cond := conditionOf(t, result)
-	if cond.Status != reconcile.ConditionFalse {
-		t.Errorf("condition = %+v, want Status=False", cond)
+	if got := rt.lastCreateEnv["REGION"]; got != "us-east-1" {
+		t.Errorf("container env REGION = %q, want the project default (us-east-1), nothing overrides it", got)
 	}
-	if rt.createCalls != 0 {
-		t.Errorf("createCalls = %d, want 0", rt.createCalls)
+	if got := rt.lastCreateEnv["LOG_LEVEL"]; got != "debug" {
+		t.Errorf("container env LOG_LEVEL = %q, want the environment default (debug) to win over the project default (info)", got)
+	}
+	if got := rt.lastCreateEnv["NODE_ENV"]; got != "production" {
+		t.Errorf("container env NODE_ENV = %q, want the service's own literal (production) to win over the environment default", got)
+	}
+}
+
+// fakeOrganizationEnvStore is a hand-written fake for OrganizationEnvStore,
+// same pattern as fakeProjectEnvStore above: keyed directly by projectID,
+// standing in for the real store's projects.org_id join.
+type fakeOrganizationEnvStore struct {
+	vars  map[string]map[string]string
+	err   error
+	calls int
+}
+
+func (f *fakeOrganizationEnvStore) ListOrganizationEnvVarsForProject(_ context.Context, projectID string) (map[string]string, error) {
+	f.calls++
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.vars[projectID], nil
+}
+
+// fakeEnvironmentEnvLister is a hand-written fake for EnvironmentEnvLister,
+// same pattern as fakeProjectEnvStore above, but keyed directly by
+// environmentID: unlike fakeOrganizationEnvStore, no join is needed since
+// EnvironmentID already lives directly on DesiredService.
+type fakeEnvironmentEnvLister struct {
+	vars  map[string]map[string]string
+	err   error
+	calls int
+}
+
+func (f *fakeEnvironmentEnvLister) ListEnvironmentEnvVars(_ context.Context, environmentID string) (map[string]string, error) {
+	f.calls++
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.vars[environmentID], nil
+}
+
+// TestController_Reconcile_OrgEnv_MergedBelowProjectLayer pins down the
+// full four-tier precedence in one shot: org default, overridden by
+// project default, overridden by the environment default, overridden by
+// the service's own literal.
+func TestController_Reconcile_OrgEnv_MergedBelowProjectLayer(t *testing.T) {
+	rt := newFakeRuntime(0)
+	orgEnv := &fakeOrganizationEnvStore{vars: map[string]map[string]string{
+		"proj_1": {"LOG_LEVEL": "debug", "REGION": "us-east-1", "NODE_ENV": "test"},
+	}}
+	projectEnv := &fakeProjectEnvStore{vars: map[string]map[string]string{
+		"proj_1": {"LOG_LEVEL": "info", "NODE_ENV": "development", "TIER": "project"},
+	}}
+	environmentEnv := &fakeEnvironmentEnvLister{vars: map[string]map[string]string{
+		"env_1": {"LOG_LEVEL": "warn", "TIER": "environment"},
+	}}
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Env:           map[string]string{"NODE_ENV": "production"},
+		ProjectID:     "proj_1",
+		EnvironmentID: "env_1",
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithOrganizationEnv(orgEnv), WithProjectEnv(projectEnv), WithEnvironmentEnv(environmentEnv))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if got := rt.lastCreateEnv["REGION"]; got != "us-east-1" {
+		t.Errorf("container env REGION = %q, want the organization default (us-east-1), nothing overrides it", got)
+	}
+	if got := rt.lastCreateEnv["TIER"]; got != "environment" {
+		t.Errorf("container env TIER = %q, want the environment default (environment) to win over the project default", got)
+	}
+	if got := rt.lastCreateEnv["LOG_LEVEL"]; got != "warn" {
+		t.Errorf("container env LOG_LEVEL = %q, want the environment default (warn) to win over both the project (info) and organization (debug) defaults", got)
+	}
+	if got := rt.lastCreateEnv["NODE_ENV"]; got != "production" {
+		t.Errorf("container env NODE_ENV = %q, want the service's own literal (production) to win over every default", got)
+	}
+}
+
+// TestController_Reconcile_EnvStore_ResolverErrorPropagates covers all
+// three tiers: a store lookup failure must propagate as a real Reconcile
+// error, not be swallowed.
+func TestController_Reconcile_EnvStore_ResolverErrorPropagates(t *testing.T) {
+	tests := []struct {
+		name    string
+		options func(projectEnv *fakeProjectEnvStore, orgEnv *fakeOrganizationEnvStore, environmentEnv *fakeEnvironmentEnvLister) []Option
+	}{
+		{
+			name: "ProjectEnv",
+			options: func(p *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvLister) []Option {
+				return []Option{WithProjectEnv(p)}
+			},
+		},
+		{
+			name: "OrganizationEnv",
+			options: func(_ *fakeProjectEnvStore, o *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvLister) []Option {
+				return []Option{WithOrganizationEnv(o)}
+			},
+		},
+		{
+			name: "EnvironmentEnv",
+			options: func(_ *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, e *fakeEnvironmentEnvLister) []Option {
+				return []Option{WithEnvironmentEnv(e)}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := newFakeRuntime(0)
+			projectEnv := &fakeProjectEnvStore{err: errors.New("db unavailable")}
+			orgEnv := &fakeOrganizationEnvStore{err: errors.New("db unavailable")}
+			environmentEnv := &fakeEnvironmentEnvLister{err: errors.New("db unavailable")}
+			desired := &store.DesiredService{
+				Name: "web", Image: "img:v1", Port: 80,
+				ProjectID:     "proj_1",
+				EnvironmentID: "env_1",
+			}
+			c := New("web", &fakeStore{svc: desired}, rt, tt.options(projectEnv, orgEnv, environmentEnv)...)
+
+			result, err := c.Reconcile(context.Background())
+			if err == nil {
+				t.Fatal("Reconcile() error = nil, want the env lookup failure to propagate")
+			}
+			cond := conditionOf(t, result)
+			if cond.Status != reconcile.ConditionFalse {
+				t.Errorf("condition = %+v, want Status=False", cond)
+			}
+			if rt.createCalls != 0 {
+				t.Errorf("createCalls = %d, want 0", rt.createCalls)
+			}
+		})
 	}
 }
 
@@ -1853,21 +2194,241 @@ func TestController_Reconcile_BlueGreen_RestartNonceChanged_ForcesRecreate(t *te
 	}
 }
 
-func TestController_Reconcile_Strategy_Rolling_NotYetSupported(t *testing.T) {
+func TestController_Reconcile_Rolling_FreshDeploy_CreatesAllReplicas(t *testing.T) {
 	rt := newFakeRuntime(0)
-	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Strategy: "rolling", Replicas: store.DefaultReplicas}
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Strategy: "rolling", Replicas: 3}
 	c := New("web", &fakeStore{svc: desired}, rt)
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
-		t.Fatalf("Reconcile() error = %v, want nil (a permanently unsupported strategy is a known, documented state, not a transient failure)", err)
+		t.Fatalf("Reconcile() error = %v", err)
 	}
 	cond := conditionOf(t, result)
-	if cond.Status != reconcile.ConditionFalse || cond.Reason != "StrategyNotSupported" {
-		t.Errorf("condition = %+v, want Status=False Reason=StrategyNotSupported", cond)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Fatalf("condition = %+v, want Status=True Reason=Deployed", cond)
 	}
-	if rt.createCalls != 0 {
-		t.Errorf("createCalls = %d, want 0 (must not touch the runtime at all for an unsupported strategy)", rt.createCalls)
+	if rt.createCalls != 3 || rt.count() != 3 {
+		t.Errorf("createCalls = %d, count = %d, want 3 and 3 (one per replica, nothing to retire on a first deploy)", rt.createCalls, rt.count())
+	}
+}
+
+func TestController_Reconcile_Rolling_AlreadyConverged_NoOp(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Strategy: "rolling", Replicas: 2}
+	for i := 0; i < 2; i++ {
+		rt.seed(replicaContainerName("web", "img:v1", "", i), true)
+	}
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "AlreadyRunning" {
+		t.Errorf("condition = %+v, want Status=True Reason=AlreadyRunning", cond)
+	}
+	if rt.createCalls != 0 || rt.removeCalls != 0 {
+		t.Errorf("createCalls = %d, removeCalls = %d, want 0 and 0 (already converged, must be a no-op)", rt.createCalls, rt.removeCalls)
+	}
+}
+
+func TestController_Reconcile_Rolling_ScaleDown_RemovesExcess(t *testing.T) {
+	// Same scenario as the blue-green equivalent above: replica 2 runs
+	// the exact same, current image as 0 and 1, but the desired count
+	// dropped to 2. Rolling's per-step retirement never fires here (no
+	// target is freshly deployed, image is unchanged), so this proves
+	// the final removeStale sweep, not the per-step path, is what
+	// catches a pure scale-down.
+	rt := newFakeRuntime(0)
+	for i := 0; i < 3; i++ {
+		rt.seed(replicaContainerName("web", "img:v1", "", i), true)
+	}
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Strategy: "rolling", Replicas: 2}
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue {
+		t.Fatalf("condition = %+v, want Status=True", cond)
+	}
+	if rt.count() != 2 {
+		t.Errorf("container count = %d, want 2 (replica 2 must be removed as excess)", rt.count())
+	}
+}
+
+func TestController_Reconcile_Rolling_ImageChange_InterleavesCreateAndRemove(t *testing.T) {
+	// The behavior that actually distinguishes rolling from blue-green:
+	// blue-green creates every new replica first and only removes old
+	// ones once the whole new set is healthy (all creates, then all
+	// removes). Rolling must retire the old replica it's replacing
+	// immediately after each new one comes up, so callOrder should read
+	// create, remove, create, remove, never create, create, remove,
+	// remove.
+	rt := newFakeRuntime(0)
+	for i := 0; i < 2; i++ {
+		rt.seed(replicaContainerName("web", "img:v1", "", i), true)
+	}
+	desired := &store.DesiredService{Name: "web", Image: "img:v2", Port: 80, Strategy: "rolling", Replicas: 2}
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Fatalf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+	if rt.createCalls != 2 || rt.removeCalls != 2 {
+		t.Fatalf("createCalls = %d, removeCalls = %d, want 2 and 2", rt.createCalls, rt.removeCalls)
+	}
+	if len(rt.callOrder) != 4 {
+		t.Fatalf("callOrder = %v, want 4 entries", rt.callOrder)
+	}
+	for i, kind := range []string{"create", "remove", "create", "remove"} {
+		if !strings.HasPrefix(rt.callOrder[i], kind+":") {
+			t.Errorf("callOrder[%d] = %q, want a %q call (want interleaved create/remove, not all creates then all removes)", i, rt.callOrder[i], kind)
+		}
+	}
+	for i := 0; i < 2; i++ {
+		want := replicaContainerName("web", "img:v2", "", i)
+		if _, ok := rt.containers[want]; !ok {
+			t.Errorf("replica %d container %q not found among %v", i, want, rt.names())
+		}
+	}
+}
+
+func TestController_Reconcile_Rolling_FirstReplicaReadinessFails_NoOldReplicaRemoved(t *testing.T) {
+	// Rolling's core safety property, the same one blue-green already
+	// has for its own single all-at-once cutover: an old replica is
+	// never removed until its replacement is proven healthy. With a
+	// readiness probe that never succeeds, target 0 never becomes
+	// justDeployed+ready, so the per-step retirement never fires and
+	// both original replicas must still be running afterward.
+	srv := neverHealthy()
+	defer srv.Close()
+
+	rt := newFakeRuntime(serverPort(t, srv))
+	for i := 0; i < 2; i++ {
+		rt.seed(replicaContainerName("web", "img:v1", "", i), true)
+	}
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v2", Port: 80, Strategy: "rolling", Replicas: 2,
+		Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/healthz", Interval: 10 * time.Millisecond, Timeout: 50 * time.Millisecond}},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithReadyBudget(150*time.Millisecond))
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want a readiness timeout error")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "ReadinessFailed" {
+		t.Errorf("condition = %+v, want Status=False Reason=ReadinessFailed", cond)
+	}
+	if rt.removeCalls != 0 {
+		t.Errorf("removeCalls = %d, want 0 (neither original replica may be removed before a replacement is healthy)", rt.removeCalls)
+	}
+	for i := 0; i < 2; i++ {
+		old := replicaContainerName("web", "img:v1", "", i)
+		if _, ok := rt.containers[old]; !ok {
+			t.Errorf("original replica %d container %q was removed, want it still running", i, old)
+		}
+	}
+}
+
+// TestController_Reconcile_Rolling_PerStepRetirementFails_FinalSweepReportsIt
+// is the half-succeeded case CLAUDE.md's testing standard requires for
+// reconcileRolling's own new logic: its per-step retirement error is
+// deliberately discarded (the container just stays stale for the final
+// removeStale sweep to retry). With removeErr set for the whole pass,
+// both the per-step attempt and the final sweep fail, so this proves
+// the discard doesn't lose the failure entirely: it must still surface,
+// exactly once, as the final sweep's own RunningStaleCleanupFailed
+// condition, not silently disappear.
+func TestController_Reconcile_Rolling_PerStepRetirementFails_FinalSweepReportsIt(t *testing.T) {
+	rt := newFakeRuntime(0)
+	for i := 0; i < 2; i++ {
+		rt.seed(replicaContainerName("web", "img:v1", "", i), true)
+	}
+	rt.removeErr = errors.New("permission denied")
+	desired := &store.DesiredService{Name: "web", Image: "img:v2", Port: 80, Strategy: "rolling", Replicas: 2}
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want the final sweep's cleanup error")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "RunningStaleCleanupFailed" {
+		t.Errorf("condition = %+v, want Status=True Reason=RunningStaleCleanupFailed (a stuck old container is a lesser problem than the new set failing to deploy)", cond)
+	}
+	// Both new replicas must still deploy successfully: a stale-container
+	// cleanup failure must never block the actual rollout from
+	// completing, matching reconcileBlueGreen's own precedent.
+	if rt.createCalls != 2 {
+		t.Errorf("createCalls = %d, want 2 (cleanup failing must not stop the new replicas from being created)", rt.createCalls)
+	}
+	for i := 0; i < 2; i++ {
+		old := replicaContainerName("web", "img:v1", "", i)
+		if _, ok := rt.containers[old]; !ok {
+			t.Errorf("original replica %d container %q was removed despite removeErr, want it still present", i, old)
+		}
+	}
+}
+
+// TestController_Reconcile_Rolling_StaysRunningAfterReadinessTimeout_NotReProbed
+// documents a known, pre-existing gap shared with reconcileBlueGreen
+// (see reconcileRolling's own doc comment), not a regression introduced
+// by rolling: ensureReplicaRunning only calls waitReady on a container
+// it just created or restarted. A container whose readiness probe
+// timed out on one reconcile pass, but that Docker still reports as
+// Running, is treated as already-healthy on the very next pass without
+// ever being re-probed. This test locks in that current, documented
+// behavior so a future change to ensureReplicaRunning is a deliberate
+// decision, not an accidental one.
+func TestController_Reconcile_Rolling_StaysRunningAfterReadinessTimeout_NotReProbed(t *testing.T) {
+	srv := neverHealthy()
+	defer srv.Close()
+
+	rt := newFakeRuntime(serverPort(t, srv))
+	old := replicaContainerName("web", "img:v1", "", 0)
+	rt.seed(old, true)
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v2", Port: 80, Strategy: "rolling", Replicas: 1,
+		Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/healthz", Interval: 10 * time.Millisecond, Timeout: 50 * time.Millisecond}},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithReadyBudget(150*time.Millisecond))
+
+	// First pass: the new replica is created and started (Running=true
+	// in the fake), but its readiness probe times out. Reconcile must
+	// fail and remove nothing.
+	if _, err := c.Reconcile(context.Background()); err == nil {
+		t.Fatal("first Reconcile() error = nil, want a readiness timeout error")
+	}
+	if rt.removeCalls != 0 {
+		t.Fatalf("removeCalls after first pass = %d, want 0", rt.removeCalls)
+	}
+
+	// Second pass: InspectByName now finds the same new-image container
+	// already Running, so ensureReplicaRunning's justDeployed stays
+	// false and waitReady is never called again. This documents that
+	// the container's actual health is never re-verified, current
+	// behavior, not an endorsement of it (see doc comment above).
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("second Reconcile() error = %v, want nil (the container is trusted as already-healthy)", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "AlreadyRunning" {
+		t.Errorf("condition = %+v, want Status=True Reason=AlreadyRunning", cond)
+	}
+	if _, ok := rt.containers[old]; ok {
+		t.Error("old replica is still present after the second pass, want it removed by the final sweep: the replacement's readiness is never re-confirmed on a pass where InspectByName already finds it Running (current, documented behavior)")
 	}
 }
 
@@ -2067,5 +2628,43 @@ func TestController_Reconcile_NoVolumes_LeavesContainerSpecVolumesNil(t *testing
 	}
 	if rt.ensureVolumeCalls != nil {
 		t.Errorf("EnsureVolume calls = %v, want none", rt.ensureVolumeCalls)
+	}
+}
+
+// TestController_Reconcile_PinnedHostPort_PassedToContainerSpec is the
+// host-port-pinning counterpart to the volumes/labels regression tests
+// above: a non-nil DesiredService.HostPort must reach the created
+// container's own PortBinding.HostPort, not just its ContainerPort.
+func TestController_Reconcile_PinnedHostPort_PassedToContainerSpec(t *testing.T) {
+	rt := newFakeRuntime(0)
+	hostPort := 8080
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, HostPort: &hostPort}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	want := []docker.PortBinding{{ContainerPort: 80, HostPort: 8080}}
+	if got := rt.lastCreateSpec.Ports; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Ports = %+v, want %+v", got, want)
+	}
+}
+
+// TestController_Reconcile_UnpinnedHostPort_LeavesZero is the regression-
+// safety counterpart: a service with no HostPort set (the state every
+// service had before this field existed) must keep producing HostPort 0,
+// Docker's own "assign one" signal (internal/docker.PortBinding's own doc
+// comment).
+func TestController_Reconcile_UnpinnedHostPort_LeavesZero(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	want := []docker.PortBinding{{ContainerPort: 80, HostPort: 0}}
+	if got := rt.lastCreateSpec.Ports; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Ports = %+v, want %+v", got, want)
 	}
 }

@@ -216,6 +216,11 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// view of an app's own state.
 	mux.HandleFunc("GET /api/v1/apps/{name}/images", rt.requireAbility(AbilityRead, rt.handleListImages))
 
+	// Live traffic path (network.go): declared container port plus the
+	// current Docker-assigned host port Caddy is actually proxying to, for
+	// the dashboard's Network tab. AbilityRead, same tier as images above.
+	mux.HandleFunc("GET /api/v1/apps/{name}/network", rt.requireAbility(AbilityRead, rt.handleGetAppNetwork))
+
 	// Databases CRUD, the database-kind counterpart to apps CRUD above.
 	// No PUT (full-replace update) yet: unlike a service's image/port/
 	// domains, none of engine/version/name are meant to change in place

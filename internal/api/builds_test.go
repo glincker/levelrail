@@ -348,8 +348,8 @@ func TestHandleTriggerBuild_UnsupportedBuildType(t *testing.T) {
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
 		`{"repo_url":"https://example.com/x.git","ref":"main","build":{"type":"compose"}}`))
-	if rec.Code != http.StatusNotImplemented {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusNotImplemented, rec.Body.String())
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
 	}
 	fetch.assertNotCalled(t)
 	fb.assertNotCalled(t)
@@ -445,6 +445,86 @@ func TestHandleTriggerBuild_Success(t *testing.T) {
 		t.Errorf("attempt Status = %q, want %q", attempt.Status, store.DeployAttemptStatusSucceeded)
 	}
 	fetch.awaitCleanup(t)
+}
+
+// TestHandleTriggerBuild_BaseDirectoryAccepted proves build.base_directory
+// flows through to the deploy pipeline's Service.Build.BaseDirectory,
+// the field internal/deploy's resolveBuildRoot scopes the build context
+// with.
+func TestHandleTriggerBuild_BaseDirectoryAccepted(t *testing.T) {
+	fb := newFakeBuilder("levelrail/web:abc1234", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
+	cookie := loginTestSession(t, rt, db)
+	seedWebApp(t, db)
+
+	postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main","build":{"base_directory":"apps/web"}}`)
+	got := fb.awaitCall(t)
+	if got.Service.Build.BaseDirectory != "apps/web" {
+		t.Errorf("Service.Build.BaseDirectory = %q, want %q", got.Service.Build.BaseDirectory, "apps/web")
+	}
+}
+
+// TestHandleTriggerBuild_ArgsAccepted proves build.args reaches the
+// spec.Build the deploy pipeline builds from, for the one build type it's
+// meaningful for.
+func TestHandleTriggerBuild_ArgsAccepted(t *testing.T) {
+	fb := newFakeBuilder("levelrail/web:abc1234", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
+	cookie := loginTestSession(t, rt, db)
+	seedWebApp(t, db)
+
+	postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main","build":{"args":{"VERSION":"1.2.3"}}}`)
+	got := fb.awaitCall(t)
+	if got.Service.Build.Args["VERSION"] != "1.2.3" {
+		t.Errorf("Service.Build.Args = %+v, want VERSION=1.2.3", got.Service.Build.Args)
+	}
+}
+
+// TestHandleTriggerBuild_RailpackWithArgsRejected proves a caller-supplied
+// build.args for build.type: railpack fails loudly rather than being
+// silently discarded, the same pattern
+// TestHandleTriggerBuild_RailpackWithPathRejected already establishes for
+// railpack's own path field.
+func TestHandleTriggerBuild_RailpackWithArgsRejected(t *testing.T) {
+	fb := newFakeBuilder("levelrail/web:railpack1", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
+	cookie := loginTestSession(t, rt, db)
+	seedWebApp(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
+		`{"repo_url":"https://example.com/web.git","ref":"main","build":{"type":"railpack","args":{"VERSION":"1.2.3"}}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	fetch.assertNotCalled(t)
+	fb.assertNotCalled(t)
+}
+
+// TestHandleTriggerBuild_ImageWithBaseDirectoryRejected proves
+// base_directory is rejected outright for build.type: image, the same
+// "fail loudly on a meaningless field" pattern
+// TestHandleTriggerBuild_RailpackWithPathRejected already establishes
+// for railpack's own path field: nothing gets built for an image
+// deploy, so there is no build context to scope.
+func TestHandleTriggerBuild_ImageWithBaseDirectoryRejected(t *testing.T) {
+	fb := newFakeBuilder("registry.example.com/web:v1", nil)
+	fetch := newFakeFetch(t.TempDir(), nil)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
+	cookie := loginTestSession(t, rt, db)
+	seedWebApp(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
+		`{"build":{"type":"image","image":"registry.example.com/web:v1","base_directory":"apps/web"}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	fetch.assertNotCalled(t)
+	fb.assertNotCalled(t)
 }
 
 // TestHandleTriggerBuild_PreservesCustomLabels is a regression test:
@@ -788,9 +868,13 @@ func TestHandleTriggerBuild_ImageMissingImageRejected(t *testing.T) {
 
 // TestHandleTriggerBuild_ComposeStillRejected proves build.type: compose
 // specifically (not every non-dockerfile type, now that railpack and
-// static are accepted above) still gets the original 501, matching
-// internal/deploy.Pipeline.Deploy's own compose case, which still
-// returns "not yet supported".
+// static are accepted above) is still rejected for a manual single-
+// service build trigger: a compose file always declares its own set of
+// services, which can only ever be expanded into a real multi-service
+// deploy (POST /api/v1/apps/{name}/deploy-spec, now genuinely
+// supported), never one already-existing single service's own rebuild.
+// A 400, not the old 501: this is a request-shape mismatch, not a
+// missing capability, now that compose is truly implemented elsewhere.
 func TestHandleTriggerBuild_ComposeStillRejected(t *testing.T) {
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
@@ -801,16 +885,16 @@ func TestHandleTriggerBuild_ComposeStillRejected(t *testing.T) {
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds",
 		`{"repo_url":"https://example.com/web.git","ref":"main","build":{"type":"compose"}}`))
-	if rec.Code != http.StatusNotImplemented {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusNotImplemented, rec.Body.String())
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
 	}
 	fb.assertNotCalled(t)
 }
 
 // TestHandleTriggerBuild_UnrecognizedBuildTypeRejected proves a
 // build.type this control plane has never heard of fails as a plain 400
-// (a caller mistake), distinct from compose's 501 (a real, named
-// capability gap).
+// (a caller mistake), the same status code compose's own mismatch gets
+// above, for a different reason (unrecognized vs. wrong request shape).
 func TestHandleTriggerBuild_UnrecognizedBuildTypeRejected(t *testing.T) {
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)

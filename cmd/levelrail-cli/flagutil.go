@@ -7,6 +7,33 @@ import (
 	"strings"
 )
 
+// stringMapFlag is a flag.Value for a repeatable "KEY=VALUE" flag (e.g.
+// --build-arg), accumulating into a map. Registered via fs.Var: the
+// stdlib flag package has no native repeated-string-flag support.
+type stringMapFlag map[string]string
+
+func (m stringMapFlag) String() string {
+	if len(m) == 0 {
+		return ""
+	}
+	pairs := make([]string, 0, len(m))
+	for k, v := range m {
+		pairs = append(pairs, k+"="+v)
+	}
+	return strings.Join(pairs, ",")
+}
+
+// Set splits s on the first "=" and records it. Called once per
+// occurrence of the flag on the command line.
+func (m stringMapFlag) Set(s string) error {
+	key, value, ok := strings.Cut(s, "=")
+	if !ok || key == "" {
+		return fmt.Errorf("invalid KEY=VALUE %q, want a key, an \"=\", and a value", s)
+	}
+	m[key] = value
+	return nil
+}
+
 // apiFlagSet builds a FlagSet named prog+" "+cmdLabel with the
 // --token/--api-url/--json flags most subcommands take, so each command
 // only wires up the flags unique to itself.
@@ -26,14 +53,26 @@ func apiClientFromFlags(prog, apiURLFlag, tokenFlag string, lookupEnv func(strin
 	return NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
 }
 
+// requireArgs extracts fs's exactly n required positional arguments,
+// labeled argsLabel in the usage error a subcommand like "apps
+// scheduled-tasks delete <app> <id>" prints when the count doesn't
+// match (e.g. "an app name and a task id").
+func requireArgs(fs *flag.FlagSet, stderr io.Writer, prog, cmdLabel, argsLabel string, n int) ([]string, bool) {
+	rest := fs.Args()
+	if len(rest) != n {
+		_, _ = fmt.Fprintf(stderr, "%s: %s requires %s\n\n", prog, cmdLabel, argsLabel)
+		fs.Usage()
+		return nil, false
+	}
+	return rest, true
+}
+
 // requireOneArg extracts fs's single required positional argument,
 // labeled argLabel in the usage error a subcommand like "channels
 // delete <id>" or "apps log-drain get <name>" prints when it's missing.
 func requireOneArg(fs *flag.FlagSet, stderr io.Writer, prog, cmdLabel, argLabel string) (string, bool) {
-	rest := fs.Args()
-	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: %s requires exactly one %s\n\n", prog, cmdLabel, argLabel)
-		fs.Usage()
+	rest, ok := requireArgs(fs, stderr, prog, cmdLabel, "exactly one "+argLabel, 1)
+	if !ok {
 		return "", false
 	}
 	return rest[0], true

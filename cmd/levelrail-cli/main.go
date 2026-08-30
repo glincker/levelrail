@@ -74,8 +74,12 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runDomains(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backups":
 		return runBackups(prog, args[1:], stdout, stderr, lookupEnv)
+	case "cloudflare-tunnel":
+		return runCloudflareTunnel(prog, args[1:], stdout, stderr, lookupEnv)
 	case "channels":
 		return runChannels(prog, args[1:], stdout, stderr, lookupEnv)
+	case "nodes":
+		return runNodes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "migrate":
 		return runMigrate(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -97,6 +101,7 @@ Usage:
   %[1]s apps rollback <name> [flags]   redeploy an older image (same endpoint as deploy)
   %[1]s apps restart <name> [flags]     recreate the running container, no image change
   %[1]s apps status <name> [flags]   show an app's current reconcile conditions
+  %[1]s apps network <name> [flags]   show the live traffic path: container port, host port, running
   %[1]s apps logs <name> [flags]     search an app's stored log entries
   %[1]s apps exec <name> -- <cmd> [args...]   run a command in the app's container, exits with its real exit code
   %[1]s databases create [flags]     create a managed database
@@ -104,7 +109,11 @@ Usage:
   %[1]s databases get <name> [flags]   show one database
   %[1]s domains list [flags]           list every app's domains in one call
   %[1]s backups list|trigger|restore <database> [flags]   database backup history, manual trigger, and restore
+  %[1]s cloudflare-tunnel get|set|disconnect [flags]   expose the control plane through a Cloudflare Tunnel
   %[1]s channels list|create|delete|test [flags]           manage notification channels (Slack, Discord, Telegram, email, Pushover, webhook)
+  %[1]s nodes list|get|delete [flags]                        manage nodes
+  %[1]s nodes join-token [flags]                             mint a one-time node enrollment token
+  %[1]s nodes cordon|uncordon|drain|health|workloads <id> [flags]   node scheduling and maintenance
   %[1]s auth login [flags]             authenticate and persist a new API token
   %[1]s auth whoami [flags]           show who the current token authenticates as
   %[1]s tokens create|list|revoke [flags]   manage API tokens (requires a live session, see "%[1]s tokens -h")

@@ -99,6 +99,73 @@ func TestSaveDesiredService_MinimalFieldsRoundTrip(t *testing.T) {
 	}
 }
 
+func TestSaveDesiredService_HostPort_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	hostPort := 8080
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000, HostPort: &hostPort}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.HostPort == nil || *got.HostPort != 8080 {
+		t.Errorf("HostPort = %v, want a pointer to 8080", got.HostPort)
+	}
+}
+
+// TestSaveDesiredService_HostPort_NilByDefault is the regression-safety
+// counterpart: a service that never sets HostPort (every service before
+// this field existed, and the ordinary case going forward) must keep
+// reading back nil, not a spurious zero value, since 0 is not a valid
+// TCP port and must never be mistaken for "pinned to port 0".
+func TestSaveDesiredService_HostPort_NilByDefault(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.HostPort != nil {
+		t.Errorf("HostPort = %v, want nil", *got.HostPort)
+	}
+}
+
+// TestSaveDesiredService_HostPort_ClearedByRedeploy proves HostPort is an
+// ordinary desired-state field, full-record-replace like Port itself
+// (not excluded from SaveDesiredService the way NodeID/ProjectID/
+// LogDrain are): a redeploy that omits it must clear a previously pinned
+// value, the same way an app.yaml edit that drops host_port: is expected
+// to.
+func TestSaveDesiredService_HostPort_ClearedByRedeploy(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	hostPort := 8080
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000, HostPort: &hostPort}); err != nil {
+		t.Fatalf("first save: %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 3000}); err != nil {
+		t.Fatalf("second save: %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.HostPort != nil {
+		t.Errorf("HostPort = %v, want nil after a redeploy that omitted it", *got.HostPort)
+	}
+}
+
 func TestSaveDesiredService_UpsertReplacesNotAccumulates(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
@@ -512,6 +579,106 @@ func TestSaveDesiredService_RedeployDoesNotResetStorageTargetID(t *testing.T) {
 	}
 	if got.StorageTargetID != "bkt_1" {
 		t.Errorf("StorageTargetID = %q, want bkt_1 (a redeploy must not silently detach storage)", got.StorageTargetID)
+	}
+}
+
+func TestSaveDesiredService_DatabaseEnvRoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	svc := DesiredService{
+		Name: "web", Image: "img:v1", Port: 8080,
+		DatabaseEnv: map[string]DatabaseEnvRef{
+			"DATABASE_URL": {Database: "main", Field: "url"},
+		},
+	}
+	if err := db.SaveDesiredService(ctx, svc); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	want := DatabaseEnvRef{Database: "main", Field: "url"}
+	if got.DatabaseEnv["DATABASE_URL"] != want {
+		t.Errorf("DatabaseEnv[%q] = %+v, want %+v", "DATABASE_URL", got.DatabaseEnv["DATABASE_URL"], want)
+	}
+}
+
+func TestUpdateServiceDatabaseAttachment(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	att := &DatabaseAttachment{DatabaseName: "main", EnvVar: "DATABASE_URL", Field: "url"}
+	if err := db.UpdateServiceDatabaseAttachment(ctx, "web", att); err != nil {
+		t.Fatalf("UpdateServiceDatabaseAttachment() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.DatabaseAttachment == nil || *got.DatabaseAttachment != *att {
+		t.Errorf("DatabaseAttachment = %+v, want %+v", got.DatabaseAttachment, att)
+	}
+}
+
+func TestUpdateServiceDatabaseAttachment_Clear(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.UpdateServiceDatabaseAttachment(ctx, "web", &DatabaseAttachment{DatabaseName: "main", EnvVar: "DATABASE_URL", Field: "url"}); err != nil {
+		t.Fatalf("UpdateServiceDatabaseAttachment(set) error = %v", err)
+	}
+	if err := db.UpdateServiceDatabaseAttachment(ctx, "web", nil); err != nil {
+		t.Fatalf("UpdateServiceDatabaseAttachment(clear) error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.DatabaseAttachment != nil {
+		t.Errorf("DatabaseAttachment = %+v, want nil after clearing", got.DatabaseAttachment)
+	}
+}
+
+func TestUpdateServiceDatabaseAttachment_NotFound(t *testing.T) {
+	err := openTestDB(t).UpdateServiceDatabaseAttachment(context.Background(), "nonexistent", &DatabaseAttachment{DatabaseName: "main", EnvVar: "DATABASE_URL", Field: "url"})
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("UpdateServiceDatabaseAttachment() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+func TestSaveDesiredService_RedeployDoesNotResetDatabaseAttachment(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("initial SaveDesiredService() error = %v", err)
+	}
+	att := &DatabaseAttachment{DatabaseName: "main", EnvVar: "DATABASE_URL", Field: "url"}
+	if err := db.UpdateServiceDatabaseAttachment(ctx, "web", att); err != nil {
+		t.Fatalf("UpdateServiceDatabaseAttachment() error = %v", err)
+	}
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("redeploy SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.DatabaseAttachment == nil || *got.DatabaseAttachment != *att {
+		t.Errorf("DatabaseAttachment = %+v, want %+v (a redeploy must not silently detach it)", got.DatabaseAttachment, att)
 	}
 }
 

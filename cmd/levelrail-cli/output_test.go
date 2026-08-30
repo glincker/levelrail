@@ -62,6 +62,27 @@ func TestExitCodeForError(t *testing.T) {
 	}
 }
 
+func TestPrintAppNetworkHuman(t *testing.T) {
+	var buf bytes.Buffer
+	printAppNetworkHuman(&buf, networkResource{ContainerPort: 3000, HostPort: 52308, Running: true})
+	out := buf.String()
+	for _, want := range []string{"container port:  3000", "host port:       52308", "running:         true"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("running output missing %q; got:\n%s", want, out)
+		}
+	}
+
+	buf.Reset()
+	printAppNetworkHuman(&buf, networkResource{ContainerPort: 3000})
+	out = buf.String()
+	if !strings.Contains(out, "not running") {
+		t.Errorf("stopped output = %q, want it to mention \"not running\"", out)
+	}
+	if strings.Contains(out, "host port:       0") {
+		t.Errorf("stopped output = %q, must not print a zero host port as if it were real", out)
+	}
+}
+
 func TestPrintAppsTable(t *testing.T) {
 	var buf bytes.Buffer
 	printAppsTable(&buf, nil)

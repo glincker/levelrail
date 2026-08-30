@@ -2,7 +2,14 @@
 // internal/api/deploy_notify_targets.go's deployTargetResource.
 
 export type DeployNotifyKind =
-  'generic' | 'slack' | 'discord' | 'telegram' | 'email' | 'pushover'
+  | 'generic'
+  | 'slack'
+  | 'discord'
+  | 'telegram'
+  | 'email'
+  | 'pushover'
+  | 'pagerduty'
+  | 'teams'
 
 // notify_url/notify_kind are the *resolved* values: the attached
 // channel's own when channel_id is set, this row's legacy columns

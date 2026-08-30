@@ -9,7 +9,7 @@ func TestGetOAuthProviderSettings_SeededDefault(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
 
-	for _, provider := range []string{OAuthProviderGoogle, OAuthProviderGitHub} {
+	for _, provider := range []string{OAuthProviderGoogle, OAuthProviderGitHub, OAuthProviderOIDC} {
 		got, err := db.GetOAuthProviderSettings(ctx, provider)
 		if err != nil {
 			t.Fatalf("GetOAuthProviderSettings(%q) error = %v", provider, err)
@@ -53,7 +53,7 @@ func TestUpdateAndGetOAuthProviderSettings_RoundTrip(t *testing.T) {
 	}
 }
 
-func TestListOAuthProviderSettings_BothProvidersSeeded(t *testing.T) {
+func TestListOAuthProviderSettings_AllProvidersSeeded(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
 
@@ -61,11 +61,38 @@ func TestListOAuthProviderSettings_BothProvidersSeeded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListOAuthProviderSettings() error = %v", err)
 	}
-	if len(got) != 2 {
-		t.Fatalf("len(ListOAuthProviderSettings()) = %d, want 2", len(got))
+	if len(got) != 3 {
+		t.Fatalf("len(ListOAuthProviderSettings()) = %d, want 3", len(got))
 	}
-	if got[0].Provider != OAuthProviderGitHub || got[1].Provider != OAuthProviderGoogle {
-		t.Errorf("ListOAuthProviderSettings() providers = [%q, %q], want alphabetical [github, google]", got[0].Provider, got[1].Provider)
+	want := []string{OAuthProviderGitHub, OAuthProviderGoogle, OAuthProviderOIDC}
+	for i, w := range want {
+		if got[i].Provider != w {
+			t.Errorf("ListOAuthProviderSettings()[%d].Provider = %q, want %q", i, got[i].Provider, w)
+		}
+	}
+}
+
+func TestUpdateAndGetOAuthProviderSettings_OIDCFields(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := OAuthProviderSettings{
+		Provider:    OAuthProviderOIDC,
+		Enabled:     true,
+		ClientID:    "levelrail",
+		IssuerURL:   "https://idp.example.com",
+		DisplayName: "Okta",
+	}
+	if err := db.UpdateOAuthProviderSettings(ctx, want); err != nil {
+		t.Fatalf("UpdateOAuthProviderSettings() error = %v", err)
+	}
+
+	got, err := db.GetOAuthProviderSettings(ctx, OAuthProviderOIDC)
+	if err != nil {
+		t.Fatalf("GetOAuthProviderSettings() error = %v", err)
+	}
+	if got != want {
+		t.Errorf("GetOAuthProviderSettings() = %+v, want %+v", got, want)
 	}
 }
 

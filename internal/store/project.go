@@ -22,6 +22,7 @@ type Project struct {
 	ID        string
 	Name      string
 	CreatedAt string
+	OrgID     string
 }
 
 // SaveProject inserts a new project row. IDs are minted by the caller
@@ -45,18 +46,22 @@ func (db *DB) SaveProject(ctx context.Context, p Project) error {
 
 // GetProject returns the project with this ID, or ErrProjectNotFound.
 func (db *DB) GetProject(ctx context.Context, id string) (Project, error) {
-	var p Project
+	var (
+		p     Project
+		orgID sql.NullString
+	)
 	err := db.QueryRowContext(ctx, `
-		SELECT id, name, created_at
+		SELECT id, name, created_at, org_id
 		FROM projects
 		WHERE id = ?
-	`, id).Scan(&p.ID, &p.Name, &p.CreatedAt)
+	`, id).Scan(&p.ID, &p.Name, &p.CreatedAt, &orgID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Project{}, ErrProjectNotFound
 	}
 	if err != nil {
 		return Project{}, fmt.Errorf("store: get project %q: %w", id, err)
 	}
+	p.OrgID = orgID.String
 	return p, nil
 }
 
@@ -67,7 +72,7 @@ func (db *DB) GetProject(ctx context.Context, id string) (Project, error) {
 // want to sort by instead.
 func (db *DB) ListProjects(ctx context.Context) ([]Project, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, name, created_at
+		SELECT id, name, created_at, org_id
 		FROM projects
 		ORDER BY created_at
 	`)
@@ -80,10 +85,14 @@ func (db *DB) ListProjects(ctx context.Context) ([]Project, error) {
 
 	var out []Project
 	for rows.Next() {
-		var p Project
-		if err := rows.Scan(&p.ID, &p.Name, &p.CreatedAt); err != nil {
+		var (
+			p     Project
+			orgID sql.NullString
+		)
+		if err := rows.Scan(&p.ID, &p.Name, &p.CreatedAt, &orgID); err != nil {
 			return nil, fmt.Errorf("store: scan project row: %w", err)
 		}
+		p.OrgID = orgID.String
 		out = append(out, p)
 	}
 	if err := rows.Err(); err != nil {

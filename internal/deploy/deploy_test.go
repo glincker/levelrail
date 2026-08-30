@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -84,6 +85,12 @@ type fakeServiceStore struct {
 	// build.type: image + registryCredential tests; unset means every
 	// lookup returns store.ErrRegistryCredentialNotFound.
 	registryCredentials map[string]store.RegistryCredential
+
+	// databases backs GetDesiredDatabase for validateEnv's { from: ... }
+	// tests; unset means every lookup returns store.ErrDatabaseNotFound,
+	// the same "empty means not found" default registryCredentials
+	// already establishes.
+	databases map[string]store.DesiredDatabase
 }
 
 func (f *fakeServiceStore) GetRegistryCredentialByName(_ context.Context, name string) (store.RegistryCredential, error) {
@@ -92,6 +99,14 @@ func (f *fakeServiceStore) GetRegistryCredentialByName(_ context.Context, name s
 		return store.RegistryCredential{}, store.ErrRegistryCredentialNotFound
 	}
 	return cred, nil
+}
+
+func (f *fakeServiceStore) GetDesiredDatabase(_ context.Context, name string) (*store.DesiredDatabase, error) {
+	db, ok := f.databases[name]
+	if !ok {
+		return nil, store.ErrDatabaseNotFound
+	}
+	return &db, nil
 }
 
 func (f *fakeServiceStore) SaveDesiredService(_ context.Context, svc store.DesiredService) error {
@@ -213,6 +228,80 @@ func TestPipeline_Deploy_Dockerfile_Success(t *testing.T) {
 	}
 	if svcStore.saved.Name != "web" || svcStore.saved.Image != "levelrail/web:abc1234" || svcStore.saved.Port != 3000 {
 		t.Errorf("saved = %+v, want Name=web Image=levelrail/web:abc1234 Port=3000", svcStore.saved)
+	}
+}
+
+func TestPipeline_Deploy_Dockerfile_BaseDirectory_ScopesContext(t *testing.T) {
+	builder := &fakeBuilder{result: &build.Result{Tag: "levelrail/web:abc1234"}}
+	p := New(builder, &fakeServiceStore{})
+
+	svc := dockerfileService()
+	svc.Build.BaseDirectory = "apps/web"
+
+	_, err := p.Deploy(context.Background(), Request{
+		ServiceName: "web",
+		Service:     svc,
+		SourceDir:   "/repo",
+		CommitSHA:   "abc1234",
+		ImageRepo:   "levelrail/web",
+	}, nil)
+	if err != nil {
+		t.Fatalf("Deploy() error = %v", err)
+	}
+
+	wantContext := filepath.Join("/repo", "apps/web")
+	if builder.lastReq.ContextDir != wantContext {
+		t.Errorf("ContextDir = %q, want %q", builder.lastReq.ContextDir, wantContext)
+	}
+	wantDockerfile := filepath.Join(wantContext, "Dockerfile")
+	if builder.lastReq.DockerfilePath != wantDockerfile {
+		t.Errorf("DockerfilePath = %q, want %q", builder.lastReq.DockerfilePath, wantDockerfile)
+	}
+}
+
+func TestPipeline_Deploy_Dockerfile_BuildArgs_PassedThrough(t *testing.T) {
+	builder := &fakeBuilder{result: &build.Result{Tag: "levelrail/web:abc1234"}}
+	p := New(builder, &fakeServiceStore{})
+
+	svc := dockerfileService()
+	svc.Build.Args = map[string]string{"VERSION": "1.2.3"}
+
+	_, err := p.Deploy(context.Background(), Request{
+		ServiceName: "web",
+		Service:     svc,
+		SourceDir:   "/repo",
+		CommitSHA:   "abc1234",
+		ImageRepo:   "levelrail/web",
+	}, nil)
+	if err != nil {
+		t.Fatalf("Deploy() error = %v", err)
+	}
+
+	want := map[string]string{"VERSION": "1.2.3"}
+	if !reflect.DeepEqual(builder.lastReq.BuildArgs, want) {
+		t.Errorf("BuildArgs = %+v, want %+v", builder.lastReq.BuildArgs, want)
+	}
+}
+
+func TestPipeline_Deploy_Dockerfile_BaseDirectory_Traversal_Rejected(t *testing.T) {
+	builder := &fakeBuilder{result: &build.Result{Tag: "levelrail/web:abc1234"}}
+	p := New(builder, &fakeServiceStore{})
+
+	svc := dockerfileService()
+	svc.Build.BaseDirectory = "../escape"
+
+	_, err := p.Deploy(context.Background(), Request{
+		ServiceName: "web",
+		Service:     svc,
+		SourceDir:   "/repo",
+		CommitSHA:   "abc1234",
+		ImageRepo:   "levelrail/web",
+	}, nil)
+	if err == nil {
+		t.Fatal("Deploy() error = nil, want an error for a base directory that escapes the repo root")
+	}
+	if builder.calls != 0 {
+		t.Errorf("Build called %d times, want 0: a traversal must be rejected before any build attempt", builder.calls)
 	}
 }
 
@@ -419,10 +508,10 @@ func TestPipeline_Deploy_UnresolvedEnv_RejectedBeforeBuild(t *testing.T) {
 	}
 }
 
-func TestPipeline_Deploy_FromReference_StillRejected_EvenWithSecretChecker(t *testing.T) {
-	// { from: ... } stays unsupported regardless of whether a
-	// SecretChecker is configured: it needs managed database
-	// credentials, a different, still-blocked dependency.
+func TestPipeline_Deploy_FromReference_UnknownDatabase_Rejected(t *testing.T) {
+	// A { from: ... } reference to a database that doesn't exist is
+	// rejected at deploy time regardless of whether a SecretChecker is
+	// configured: the database itself, not the secret store, is missing.
 	builder := &fakeBuilder{result: &build.Result{Tag: "x:y"}}
 	svcStore := &fakeServiceStore{}
 	checker := newFakeSecretChecker()
@@ -433,10 +522,67 @@ func TestPipeline_Deploy_FromReference_StillRejected_EvenWithSecretChecker(t *te
 
 	_, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: svc, SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web"}, nil)
 	if err == nil {
-		t.Fatal("Deploy() error = nil, want { from: ... } to still be rejected")
+		t.Fatal("Deploy() error = nil, want a reference to an unknown database to be rejected")
 	}
 	if builder.calls != 0 {
 		t.Errorf("builder.Build called %d times, want 0", builder.calls)
+	}
+}
+
+func TestPipeline_Deploy_FromReference_UnsupportedField_Rejected(t *testing.T) {
+	// redis has no username/password (internal/reconcile/database's own
+	// package doc comment): a { from: "main.username" } reference against
+	// a redis database is rejected even though the database itself
+	// exists.
+	builder := &fakeBuilder{result: &build.Result{Tag: "x:y"}}
+	svcStore := &fakeServiceStore{databases: map[string]store.DesiredDatabase{
+		"main": {Name: "main", Engine: store.EngineRedis},
+	}}
+	p := New(builder, svcStore)
+
+	svc := dockerfileService()
+	svc.Env = map[string]spec.EnvVar{"DB_USER": {From: "main.username"}}
+
+	_, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: svc, SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web"}, nil)
+	if err == nil {
+		t.Fatal("Deploy() error = nil, want an unsupported field to be rejected")
+	}
+	if builder.calls != 0 {
+		t.Errorf("builder.Build called %d times, want 0", builder.calls)
+	}
+}
+
+func TestPipeline_Deploy_FromReference_KnownDatabase_Resolves(t *testing.T) {
+	// A { from: ... } reference to a real, existing database now
+	// succeeds at deploy time: the declaration (which env var maps to
+	// which database/field) is saved on the desired service, resolved to
+	// a real value later by internal/reconcile/application immediately
+	// before container creation.
+	builder := &fakeBuilder{result: &build.Result{Tag: "x:y"}}
+	svcStore := &fakeServiceStore{databases: map[string]store.DesiredDatabase{
+		"main": {Name: "main", Engine: store.EnginePostgres},
+	}}
+	p := New(builder, svcStore)
+
+	svc := dockerfileService()
+	svc.Env = map[string]spec.EnvVar{"DATABASE_URL": {From: "postgres.main.url"}}
+
+	if _, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: svc, SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web"}, nil); err != nil {
+		t.Fatalf("Deploy() error = %v, want a known database reference to resolve", err)
+	}
+	if builder.calls != 1 {
+		t.Errorf("builder.Build called %d times, want 1", builder.calls)
+	}
+	got, ok := svcStore.saved.DatabaseEnv["DATABASE_URL"]
+	if !ok {
+		t.Fatalf("saved.DatabaseEnv[%q] missing, want an entry", "DATABASE_URL")
+	}
+	want := store.DatabaseEnvRef{Database: "main", Field: "url"}
+	if got != want {
+		t.Errorf("saved.DatabaseEnv[%q] = %+v, want %+v", "DATABASE_URL", got, want)
+	}
+	if _, literal := svcStore.saved.Env["DATABASE_URL"]; literal {
+		t.Errorf("saved.Env contains %q, want it absent: a { from: ... } var is never a literal value", "DATABASE_URL")
 	}
 }
 
@@ -664,6 +810,30 @@ func TestPipeline_Deploy_Railpack_Success(t *testing.T) {
 	}
 	if svcStore.saved.Name != "web" || svcStore.saved.Image != "levelrail/web:abc1234" || svcStore.saved.Port != 3000 {
 		t.Errorf("saved = %+v, want Name=web Image=levelrail/web:abc1234 Port=3000", svcStore.saved)
+	}
+}
+
+func TestPipeline_Deploy_Railpack_BaseDirectory_ScopesSourceDir(t *testing.T) {
+	builder := &fakeBuilder{railpackResult: &build.Result{Tag: "levelrail/web:abc1234"}}
+	p := New(builder, &fakeServiceStore{})
+
+	svc := railpackService()
+	svc.Build.BaseDirectory = "apps/web"
+
+	_, err := p.Deploy(context.Background(), Request{
+		ServiceName: "web",
+		Service:     svc,
+		SourceDir:   "/repo",
+		CommitSHA:   "abc1234",
+		ImageRepo:   "levelrail/web",
+	}, nil)
+	if err != nil {
+		t.Fatalf("Deploy() error = %v", err)
+	}
+
+	want := filepath.Join("/repo", "apps/web")
+	if builder.lastRailpackReq.SourceDir != want {
+		t.Errorf("SourceDir = %q, want %q", builder.lastRailpackReq.SourceDir, want)
 	}
 }
 

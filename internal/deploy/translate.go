@@ -3,6 +3,7 @@ package deploy
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -11,17 +12,24 @@ import (
 
 // toDesiredService translates a build's result into the runtime desired
 // state the application controller reconciles against. validateEnv
-// already rejected any { from: ... } reference, and any { secret: true }
-// var with no checker configured or (if required) no value set, before
-// a build was even attempted.
+// already rejected any unresolvable { from: ... } reference (unknown
+// database, unsupported field), and any { secret: true } var with no
+// checker configured or (if required) no value set, before a build was
+// even attempted.
 func toDesiredService(name, image string, svc spec.Service) (store.DesiredService, error) {
+	databaseEnv, err := databaseEnvRefs(svc.Env)
+	if err != nil {
+		return store.DesiredService{}, err
+	}
+
 	d := store.DesiredService{
-		Name:      name,
-		Image:     image,
-		Port:      svc.Port,
-		Domains:   svc.Domains,
-		Env:       literalEnv(svc.Env),
-		SecretEnv: secretEnvNames(svc.Env),
+		Name:        name,
+		Image:       image,
+		Port:        svc.Port,
+		Domains:     svc.Domains,
+		Env:         literalEnv(svc.Env),
+		SecretEnv:   secretEnvNames(svc.Env),
+		DatabaseEnv: databaseEnv,
 		// Effective*, not the raw field: svc.Strategy/svc.Replicas can be
 		// "" / 0 (unset in app.yaml), and store.DesiredService's own doc
 		// comment on these two fields requires them to always be the
@@ -30,6 +38,11 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		Strategy: svc.EffectiveStrategy(),
 		Replicas: svc.EffectiveReplicas(),
 		Labels:   svc.Labels,
+	}
+
+	if svc.HostPort != 0 {
+		hostPort := svc.HostPort
+		d.HostPort = &hostPort
 	}
 
 	if svc.Resources != nil {
@@ -74,12 +87,56 @@ func literalEnv(env map[string]spec.EnvVar) map[string]string {
 	}
 	out := make(map[string]string, len(env))
 	for k, v := range env {
-		if v.Secret {
+		if v.Secret || v.From != "" {
 			continue
 		}
 		out[k] = v.Value
 	}
 	return out
+}
+
+// parseFromRef parses app.yaml's { from: "<database>.<field>" } env var
+// syntax (internal/spec.EnvVar.From) into a database name and field.
+//
+// The doc'd three-segment form ("postgres.main.url",
+// docs/app-spec-reference.md) is also accepted: everything before the
+// last two segments is an optional, unchecked engine-name hint, dropped
+// here rather than validated against the database's real engine, so a
+// display-convention rename never breaks an existing app.yaml. The last
+// two segments are always "<database>.<field>".
+func parseFromRef(from string) (dbName, field string, err error) {
+	parts := strings.Split(from, ".")
+	if len(parts) < 2 {
+		return "", "", fmt.Errorf("from %q must be \"<database>.<field>\"", from)
+	}
+	field = parts[len(parts)-1]
+	dbName = parts[len(parts)-2]
+	if dbName == "" || field == "" {
+		return "", "", fmt.Errorf("from %q must be \"<database>.<field>\"", from)
+	}
+	return dbName, field, nil
+}
+
+// databaseEnvRefs parses every { from: ... } env var into
+// store.DesiredService's own DatabaseEnv shape, the same
+// "declaration only, resolved later" split secretEnvNames already makes
+// for { secret: true }.
+func databaseEnvRefs(env map[string]spec.EnvVar) (map[string]store.DatabaseEnvRef, error) {
+	var out map[string]store.DatabaseEnvRef
+	for k, v := range env {
+		if v.From == "" {
+			continue
+		}
+		dbName, field, err := parseFromRef(v.From)
+		if err != nil {
+			return nil, fmt.Errorf("env var %q: %w", k, err)
+		}
+		if out == nil {
+			out = make(map[string]store.DatabaseEnvRef)
+		}
+		out[k] = store.DatabaseEnvRef{Database: dbName, Field: field}
+	}
+	return out, nil
 }
 
 // secretEnvNames lists the env var names declared { secret: true },

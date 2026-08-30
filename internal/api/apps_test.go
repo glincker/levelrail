@@ -14,6 +14,10 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
+// intPtr is a small test-only helper for populating appResource.HostPort
+// (*int) inline in a struct literal.
+func intPtr(v int) *int { return &v }
+
 func TestValidateAppResource(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -36,6 +40,15 @@ func TestValidateAppResource(t *testing.T) {
 		{name: "custom labels valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Labels: map[string]string{"team": "platform"}}, wantErr: false},
 		{name: "reserved-prefix label rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Labels: map[string]string{spec.ReservedLabelPrefix + "managed": "true"}}, wantErr: true},
 		{name: "empty label key rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Labels: map[string]string{"": "x"}}, wantErr: true},
+		{name: "valid wildcard domain", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Domains: []string{"*.example.com"}}, wantErr: false},
+		{name: "wildcard mixed with plain domain", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Domains: []string{"*.example.com", "example.com"}}, wantErr: false},
+		{name: "malformed wildcard rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Domains: []string{"sub.*.example.com"}}, wantErr: true},
+		{name: "wildcard with no base domain rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, Domains: []string{"*.internal"}}, wantErr: true},
+		{name: "nil host_port valid (auto-assign)", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000}, wantErr: false},
+		{name: "pinned host_port valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, HostPort: intPtr(8080)}, wantErr: false},
+		{name: "host_port zero rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, HostPort: intPtr(0)}, wantErr: true},
+		{name: "host_port out of range rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, HostPort: intPtr(99999)}, wantErr: true},
+		{name: "host_port negative rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, HostPort: intPtr(-1)}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -228,6 +241,63 @@ func TestHandleCreateApp(t *testing.T) {
 	}
 }
 
+// TestHandleCreateApp_RecordsDeployAttempt covers the gap found via live
+// testing: the existing-image path deserves a deploy_attempts row for
+// history just like any later redeploy (handleTriggerDeploy already
+// gets this via recordPlainDeployAttempt); before this, an app's very
+// first deploy was invisible in its own deploy history forever.
+func TestHandleCreateApp_RecordsDeployAttempt(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	attempts, err := db.ListDeployAttempts(ctx, "web")
+	if err != nil {
+		t.Fatalf("ListDeployAttempts() error = %v", err)
+	}
+	if len(attempts) != 1 {
+		t.Fatalf("expected 1 deploy attempt recorded, got %d", len(attempts))
+	}
+	if attempts[0].Image != "levelrail/web:1" {
+		t.Errorf("Image = %q, want %q", attempts[0].Image, "levelrail/web:1")
+	}
+	if attempts[0].Status != store.DeployAttemptStatusSucceeded {
+		t.Errorf("Status = %q, want %q", attempts[0].Status, store.DeployAttemptStatusSucceeded)
+	}
+}
+
+// TestHandleCreateApp_PendingPlaceholder_NoDeployAttemptRecorded covers
+// the git-build path: cmd/levelrail-cli's pendingImageTag creates with
+// an image_repo + ":pending" placeholder that was never actually
+// running, replaced by the follow-up POST .../builds call, whose own
+// beginBuildDeployAttempt records the real history entry. Recording
+// here too would add a second, misleading "succeeded" row.
+func TestHandleCreateApp_PendingPlaceholder_NoDeployAttemptRecorded(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:pending","port":3000}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	attempts, err := db.ListDeployAttempts(ctx, "web")
+	if err != nil {
+		t.Fatalf("ListDeployAttempts() error = %v", err)
+	}
+	if len(attempts) != 0 {
+		t.Errorf("expected 0 deploy attempts recorded for a :pending placeholder, got %d", len(attempts))
+	}
+}
+
 // TestHandleCreateApp_StrategyAndReplicas covers both an explicit value
 // and the omitted-field case, which must resolve to store.DefaultDeployStrategy/
 // store.DefaultReplicas exactly like a service saved without these fields
@@ -397,6 +467,88 @@ func TestHandleGetApp_StrategyAndReplicasRoundTrip(t *testing.T) {
 	}
 	if gotBare.Strategy != store.DefaultDeployStrategy || gotBare.Replicas != store.DefaultReplicas {
 		t.Errorf("got = %+v, want strategy=%s replicas=%d", gotBare, store.DefaultDeployStrategy, store.DefaultReplicas)
+	}
+}
+
+// TestHandleGetApp_HostPortRoundTrip proves a pinned host_port survives
+// GetDesiredService -> appResource -> JSON, and that a service saved with
+// no HostPort (nil, the ordinary case) comes back with no host_port key
+// at all (json:"host_port,omitempty" on a nil *int), not a literal 0.
+func TestHandleGetApp_HostPortRoundTrip(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	hostPort := 30001
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "web", Image: "levelrail/web:1", Port: 3000, HostPort: &hostPort,
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web", ""))
+	var got appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.HostPort == nil || *got.HostPort != 30001 {
+		t.Errorf("HostPort = %v, want a pointer to 30001", got.HostPort)
+	}
+	if strings.Contains(rec.Body.String(), "host_port") == false {
+		t.Errorf("body = %s, want a host_port key present", rec.Body.String())
+	}
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "bare", Image: "levelrail/bare:1", Port: 3000}); err != nil {
+		t.Fatalf("seed bare: %v", err)
+	}
+	recBare := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recBare, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/bare", ""))
+	if strings.Contains(recBare.Body.String(), "host_port") {
+		t.Errorf("body = %s, want no host_port key for an unpinned service", recBare.Body.String())
+	}
+}
+
+// TestHandleUpdateApp_HostPort proves an update through the general PUT
+// endpoint both sets and clears a pinned host_port, the same
+// full-record-replace semantics Port itself already has (HostPort is an
+// ordinary field, not excluded from SaveDesiredService the way
+// NodeID/ProjectID/LogDrain are).
+func TestHandleUpdateApp_HostPort(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web",
+		`{"name":"web","image":"levelrail/web:1","port":3000,"host_port":30001}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("PUT status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after update: %v", err)
+	}
+	if svc.HostPort == nil || *svc.HostPort != 30001 {
+		t.Errorf("HostPort after pin = %v, want a pointer to 30001", svc.HostPort)
+	}
+
+	recClear := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recClear, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web",
+		`{"name":"web","image":"levelrail/web:1","port":3000}`))
+	if recClear.Code != http.StatusOK {
+		t.Fatalf("PUT status = %d, body = %s", recClear.Code, recClear.Body.String())
+	}
+
+	svc, err = db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after clearing update: %v", err)
+	}
+	if svc.HostPort != nil {
+		t.Errorf("HostPort after clearing update = %v, want nil", *svc.HostPort)
 	}
 }
 

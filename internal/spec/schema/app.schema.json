@@ -30,6 +30,7 @@
           "items": { "type": "string", "minLength": 1 }
         },
         "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "host_port": { "type": "integer", "minimum": 1, "maximum": 65535 },
         "health": { "$ref": "#/$defs/health" },
         "resources": { "$ref": "#/$defs/resources" },
         "env": {
@@ -64,8 +65,13 @@
       "properties": {
         "type": { "enum": ["dockerfile", "compose", "railpack", "static", "image"] },
         "path": { "type": "string", "minLength": 1 },
+        "baseDirectory": { "type": "string", "minLength": 1 },
         "image": { "type": "string", "minLength": 1 },
-        "registryCredential": { "type": "string", "minLength": 1 }
+        "registryCredential": { "type": "string", "minLength": 1 },
+        "args": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
       }
     },
     "health": {
@@ -115,7 +121,7 @@
       "required": ["engine"],
       "additionalProperties": false,
       "properties": {
-        "engine": { "enum": ["postgres", "redis", "mysql", "mongodb", "mariadb", "keydb"] },
+        "engine": { "enum": ["postgres", "redis", "mysql", "mongodb", "mariadb", "keydb", "clickhouse", "dragonfly"] },
         "version": { "type": "string", "minLength": 1 },
         "backup": { "$ref": "#/$defs/backup" }
       }

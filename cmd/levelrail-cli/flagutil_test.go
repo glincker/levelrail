@@ -104,3 +104,56 @@ func TestReorderArgsFlagsFirst_ParsesCorrectly(t *testing.T) {
 		t.Errorf("positional args = %v, want [web]", rest)
 	}
 }
+
+func TestStringMapFlag_Set(t *testing.T) {
+	tests := []struct {
+		name    string
+		sets    []string
+		want    map[string]string
+		wantErr bool
+	}{
+		{name: "single pair", sets: []string{"FOO=bar"}, want: map[string]string{"FOO": "bar"}},
+		{name: "multiple pairs accumulate", sets: []string{"FOO=bar", "BAZ=qux"}, want: map[string]string{"FOO": "bar", "BAZ": "qux"}},
+		{name: "value contains equals", sets: []string{"URL=http://x?a=b"}, want: map[string]string{"URL": "http://x?a=b"}},
+		{name: "empty value is valid", sets: []string{"FOO="}, want: map[string]string{"FOO": ""}},
+		{name: "no equals sign rejected", sets: []string{"FOO"}, wantErr: true},
+		{name: "empty key rejected", sets: []string{"=bar"}, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := make(stringMapFlag)
+			var err error
+			for _, s := range tt.sets {
+				if err = m.Set(s); err != nil {
+					break
+				}
+			}
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("Set() error = nil, want error")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Set() error = %v", err)
+			}
+			if !reflect.DeepEqual(map[string]string(m), tt.want) {
+				t.Errorf("map = %+v, want %+v", map[string]string(m), tt.want)
+			}
+		})
+	}
+}
+
+func TestStringMapFlag_Var(t *testing.T) {
+	fs := flag.NewFlagSet("test", flag.ContinueOnError)
+	m := make(stringMapFlag)
+	fs.Var(m, "build-arg", "")
+	if err := fs.Parse([]string{"--build-arg", "FOO=bar", "--build-arg", "BAZ=qux"}); err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	want := map[string]string{"FOO": "bar", "BAZ": "qux"}
+	if !reflect.DeepEqual(map[string]string(m), want) {
+		t.Errorf("map = %+v, want %+v", map[string]string(m), want)
+	}
+}

@@ -113,6 +113,33 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/projects/{id}", rt.requireAbility(AbilityRead, rt.handleGetProject))
 	mux.HandleFunc("DELETE /api/v1/projects/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteProject))
 
+	// Organizations (organizations.go): groups projects, same ordinary
+	// AbilityRead/AbilityWrite boundary as projects above.
+	mux.HandleFunc("GET /api/v1/organizations", rt.requireAbility(AbilityRead, rt.handleListOrganizations))
+	mux.HandleFunc("POST /api/v1/organizations", rt.requireAbility(AbilityWrite, rt.handleCreateOrganization))
+	mux.HandleFunc("GET /api/v1/organizations/{id}", rt.requireAbility(AbilityRead, rt.handleGetOrganization))
+	mux.HandleFunc("DELETE /api/v1/organizations/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteOrganization))
+	mux.HandleFunc("PUT /api/v1/projects/{id}/organization", rt.requireAbility(AbilityWrite, rt.handleSetProjectOrganization))
+
+	// Shared env vars every project filed under this organization
+	// inherits (organization_env.go), the base layer beneath
+	// projects/{id}/env below.
+	mux.HandleFunc("GET /api/v1/organizations/{id}/env", rt.requireAbility(AbilityRead, rt.handleGetOrganizationEnv))
+	mux.HandleFunc("PUT /api/v1/organizations/{id}/env", rt.requireAbility(AbilityWrite, rt.handleSetOrganizationEnv))
+
+	// Environments (environments.go): staging/production-style labels
+	// scoped to a project, tagged onto a service via its own app route.
+	mux.HandleFunc("GET /api/v1/projects/{id}/environments", rt.requireAbility(AbilityRead, rt.handleListEnvironments))
+	mux.HandleFunc("POST /api/v1/projects/{id}/environments", rt.requireAbility(AbilityWrite, rt.handleCreateEnvironment))
+	mux.HandleFunc("DELETE /api/v1/environments/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteEnvironment))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/environment", rt.requireAbility(AbilityWrite, rt.handleSetAppEnvironment))
+
+	// Shared env vars every service tagged with this environment inherits
+	// (environment_env.go): the tier between organizations/{id}/env and
+	// projects/{id}/env above and a service's own env below.
+	mux.HandleFunc("GET /api/v1/environments/{id}/env", rt.requireAbility(AbilityRead, rt.handleGetEnvironmentEnv))
+	mux.HandleFunc("PUT /api/v1/environments/{id}/env", rt.requireAbility(AbilityWrite, rt.handleSetEnvironmentEnv))
+
 	// Shared env vars every app filed under this project inherits
 	// (project_env.go): same AbilityRead/AbilityWrite boundary as the
 	// project CRUD routes just above.
@@ -206,6 +233,20 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// /apps/{name}/git-source: a live DNS lookup, no write.
 	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/check", rt.requireAbility(AbilityRead, rt.handleCheckDomain))
 
+	// Domain basic auth (domain_basic_auth.go): HTTP Basic Auth
+	// protection on one app-owned domain, enforced by Caddy's
+	// authentication handler (internal/reconcile/ingress) on the next
+	// reconcile pass. GET is AbilityRead, the same passive-visibility
+	// tier GET /api/v1/settings/cloudflare-tunnel uses for its own
+	// has_token-shaped read. PUT/DELETE are AbilityRoot, matching PUT/
+	// DELETE /api/v1/settings/cloudflare-tunnel: this changes how a
+	// live, currently-routed host is secured, the same "real
+	// infrastructure, high blast radius" class of change Cloudflare
+	// Tunnel/DNS and the ACME toggle already reserve AbilityRoot for.
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/auth", rt.requireAbility(AbilityRead, rt.handleGetDomainBasicAuth))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/auth", rt.requireAbility(AbilityRoot, rt.handleSetDomainBasicAuth))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/auth", rt.requireAbility(AbilityRoot, rt.handleClearDomainBasicAuth))
+
 	// Email settings: same precedent as ingress settings just above.
 	// GET is AbilityRead; PUT is AbilityRoot, real infrastructure config.
 	mux.HandleFunc("GET /api/v1/settings/email", rt.requireAbility(AbilityRead, rt.handleGetEmailSettings))
@@ -218,6 +259,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/settings/cloudflare-tunnel", rt.requireAbility(AbilityRead, rt.handleGetCloudflareTunnelSettings))
 	mux.HandleFunc("PUT /api/v1/settings/cloudflare-tunnel", rt.requireAbility(AbilityRoot, rt.handleUpdateCloudflareTunnelSettings))
 	mux.HandleFunc("DELETE /api/v1/settings/cloudflare-tunnel", rt.requireAbility(AbilityRoot, rt.handleDisconnectCloudflareTunnel))
+	mux.HandleFunc("GET /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRead, rt.handleGetCloudflareDNSSettings))
+	mux.HandleFunc("PUT /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRoot, rt.handleUpdateCloudflareDNSSettings))
+	mux.HandleFunc("DELETE /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRoot, rt.handleDisconnectCloudflareDNS))
 
 	// Domains (centralized cross-app list, web/src/routes/domains):
 	// every service_domains row, AbilityRead like GET /api/v1/apps,
@@ -391,6 +435,14 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// apply.
 	mux.HandleFunc("PUT /api/v1/apps/{name}/storage", rt.requireAbility(AbilityWriteSensitive, rt.handleSetAppStorage))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/storage", rt.requireAbility(AbilityWriteSensitive, rt.handleClearAppStorage))
+
+	// Real app-to-database attachment (apps_database.go): AbilityWrite,
+	// not AbilityDeploy, since this is a config write, not itself a
+	// deploy trigger (the next reconcile picks up the change on its own
+	// schedule, the same "desired state changes, containers converge
+	// later" shape PUT .../storage/.../node/.../project already have).
+	mux.HandleFunc("PUT /api/v1/apps/{name}/database", rt.requireAbility(AbilityWrite, rt.handleSetAppDatabase))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/database", rt.requireAbility(AbilityWrite, rt.handleClearAppDatabase))
 	// Read-only, not scoped to any one app: the static list of env var
 	// names attaching storage can inject, backed by
 	// application.StorageEnvKeys rather than a hardcoded list, see

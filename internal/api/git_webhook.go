@@ -231,12 +231,56 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "deploy failed")
 		return
 	}
-
 	rt.logger.Info("api: git push webhook: deploy triggered", slog.String("name", name), slog.String("commit", ev.After), slog.String("tag", tag))
-	w.WriteHeader(http.StatusOK)
-	if _, err := fmt.Fprintf(w, "deploy triggered: %s\n", tag); err != nil {
+
+	additionalFailed := rt.deployAdditionalServices(r.Context(), gs.AdditionalServices, sourceDir, ev.After)
+
+	status := http.StatusOK
+	if additionalFailed > 0 {
+		status = http.StatusMultiStatus
+	}
+	w.WriteHeader(status)
+	if _, err := fmt.Fprintf(w, "deploy triggered: %s (%d additional service(s) failed)\n", tag, additionalFailed); err != nil {
 		rt.logger.Warn("api: git push webhook: failed to write response body", slog.String("error", err.Error()), slog.String("name", name))
 	}
+}
+
+// deployAdditionalServices rebuilds and redeploys each sibling service in
+// additional from the same checkout and commit already fetched for the
+// pushed app, returning how many failed. One sibling's build failure
+// (e.g. it has since been deleted, or its Dockerfile path is stale) does
+// not block any other sibling, matching DeploySpec's own "one broken
+// resource must not block the others" principle (internal/deploy/multi.go).
+func (rt *Router) deployAdditionalServices(ctx context.Context, additional map[string]store.GitSourceBuild, sourceDir, commitSHA string) int {
+	failed := 0
+	for svcName, buildCfg := range additional {
+		svc, err := rt.apps.GetDesiredService(ctx, svcName)
+		if err != nil {
+			rt.logger.Error("api: git push webhook: additional service: load failed", slog.String("service", svcName), slog.String("error", err.Error()))
+			failed++
+			continue
+		}
+
+		svcSpec := specServiceFromDesired(*svc, spec.Build{Type: buildCfg.BuildType, Path: buildCfg.BuildPath})
+		req := deploy.Request{
+			ServiceName: svcName,
+			Service:     svcSpec,
+			SourceDir:   sourceDir,
+			CommitSHA:   commitSHA,
+			ImageRepo:   svcName,
+		}
+
+		_, progress, finishAttempt := rt.beginBuildDeployAttempt(ctx, req, store.DeployAttemptSourceWebhook)
+		tag, err := rt.builder.Deploy(ctx, req, progress)
+		finishAttempt(err)
+		if err != nil {
+			rt.logger.Error("api: git push webhook: additional service: deploy failed", slog.String("service", svcName), slog.String("error", err.Error()))
+			failed++
+			continue
+		}
+		rt.logger.Info("api: git push webhook: additional service: deploy triggered", slog.String("service", svcName), slog.String("tag", tag))
+	}
+	return failed
 }
 
 // verifyGitPushWebhookAuth checks an incoming push webhook request

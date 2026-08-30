@@ -273,6 +273,65 @@ func TestContainerRestorer_Restore_Redis_StartError(t *testing.T) {
 	}
 }
 
+// TestContainerRestorer_Restore_Dragonfly mirrors
+// TestContainerRestorer_Restore_Redis's write-then-stop-then-start
+// sequence, but the disable-auto-save step clears dbfilename rather than
+// save (see dragonflyDisableAutoSaveCmd's own doc comment).
+func TestContainerRestorer_Restore_Dragonfly(t *testing.T) {
+	rt := &fakeExecRuntime{
+		inspectState: &docker.ContainerState{ID: "container-id-789"},
+	}
+	r := &ContainerRestorer{Runtime: rt}
+
+	dump := "REDIS0011..."
+	if err := r.Restore(context.Background(), store.EngineDragonfly, "db-cache", strings.NewReader(dump)); err != nil {
+		t.Fatalf("Restore() error = %v", err)
+	}
+
+	wantCmd := []string{"sh", "-c", "cat > /data/dump.rdb"}
+	if !reflect.DeepEqual(rt.gotInputCmd, wantCmd) {
+		t.Errorf("ExecWithInput cmd = %v, want %v", rt.gotInputCmd, wantCmd)
+	}
+	if rt.gotStdin != dump {
+		t.Errorf("stdin = %q, want %q", rt.gotStdin, dump)
+	}
+	wantDisableSaveCmd := []string{"redis-cli", "CONFIG", "SET", "dbfilename", ""}
+	if !reflect.DeepEqual(rt.gotCmd, wantDisableSaveCmd) {
+		t.Errorf("Exec cmd = %v, want %v", rt.gotCmd, wantDisableSaveCmd)
+	}
+	wantOrder := []string{"Exec", "ExecWithInput", "InspectByName", "Stop", "Start"}
+	if !reflect.DeepEqual(rt.callOrder, wantOrder) {
+		t.Errorf("call order = %v, want %v", rt.callOrder, wantOrder)
+	}
+	if rt.gotStopID != "container-id-789" {
+		t.Errorf("Stop id = %q, want %q", rt.gotStopID, "container-id-789")
+	}
+	if rt.gotStartID != "container-id-789" {
+		t.Errorf("Start id = %q, want %q", rt.gotStartID, "container-id-789")
+	}
+}
+
+func TestContainerRestorer_Restore_ClickHouse(t *testing.T) {
+	rt := &fakeExecRuntime{content: "-- clickhouse restore output\n"}
+	r := &ContainerRestorer{Runtime: rt}
+
+	dump := "CREATE TABLE t (...) ENGINE = MergeTree ORDER BY id;\nINSERT INTO t (id) VALUES (1);\n"
+	if err := r.Restore(context.Background(), store.EngineClickHouse, "db-mydb", strings.NewReader(dump)); err != nil {
+		t.Fatalf("Restore() error = %v", err)
+	}
+
+	if rt.gotInputContainer != "db-mydb" {
+		t.Errorf("container = %q, want %q", rt.gotInputContainer, "db-mydb")
+	}
+	if rt.gotStdin != dump {
+		t.Errorf("stdin = %q, want %q", rt.gotStdin, dump)
+	}
+	wantCmd := []string{"sh", "-c", `clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --query "DROP DATABASE IF EXISTS $CLICKHOUSE_DB; CREATE DATABASE $CLICKHOUSE_DB" && exec clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --database "$CLICKHOUSE_DB"`}
+	if !reflect.DeepEqual(rt.gotInputCmd, wantCmd) {
+		t.Errorf("cmd = %v, want %v", rt.gotInputCmd, wantCmd)
+	}
+}
+
 func TestContainerRestorer_Restore_UnknownEngine(t *testing.T) {
 	rt := &fakeExecRuntime{}
 	r := &ContainerRestorer{Runtime: rt}

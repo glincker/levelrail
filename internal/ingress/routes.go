@@ -48,6 +48,12 @@ type ProxyRoute struct {
 	Hosts []string
 	// BackendDial is the reverse-proxy target, e.g. "127.0.0.1:9090".
 	BackendDial string
+	// BasicAuth, if non-nil, adds a BasicAuthHandler ahead of the
+	// reverse-proxy handler so every host in this route requires HTTP
+	// Basic Auth. Nil (the default) reproduces this package's prior
+	// behavior exactly: a plain reverse-proxy route with no
+	// authentication handler.
+	BasicAuth *BasicAuthAccount
 }
 
 // StaticRoute is one static site routed by hostname within a Server
@@ -134,6 +140,17 @@ type RoutesOptions struct {
 	// package never silently substitutes Let's Encrypt's staging
 	// directory on an operator's behalf.
 	ACMEDirectoryURL string
+	// CloudflareDNSAPIToken, if non-empty (and ACMEEnabled is true and
+	// at least one route's host is a wildcard, see IsWildcardDomain),
+	// scopes every wildcard subject to a separate automation policy
+	// using DNS-01 via Cloudflare (NewCloudflareDNSACMEIssuer) instead
+	// of the plain ACME policy every non-wildcard host still gets:
+	// HTTP-01 cannot solve a wildcard identifier. Empty reproduces this
+	// package's prior behavior exactly, wildcard hosts included, byte-
+	// identical to before this field existed; internal/store.
+	// CloudflareDNSSettings.Enabled plus internal/secrets' stored token
+	// is what an operator-facing settings flow resolves this from.
+	CloudflareDNSAPIToken string
 	// AdminListen overrides Caddy's admin API bind address. Empty keeps
 	// Caddy's own default (localhost:2019).
 	AdminListen string
@@ -181,9 +198,16 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		if r.BackendDial == "" {
 			return nil, fmt.Errorf("ingress: build routes config: route %d has no backend dial address", i)
 		}
+		handle := []any{NewReverseProxyHandler(r.BackendDial)}
+		if r.BasicAuth != nil {
+			// Prepended, not appended: Caddy runs a route's handlers in
+			// order, so authentication must short-circuit with 401 before
+			// reverse_proxy ever dials the backend.
+			handle = append([]any{NewBasicAuthHandler(r.BasicAuth.Username, r.BasicAuth.Password)}, handle...)
+		}
 		routes = append(routes, Route{
 			Match:  []Matcher{{Host: r.Hosts}},
-			Handle: []any{NewReverseProxyHandler(r.BackendDial)},
+			Handle: handle,
 		})
 		allHosts = append(allHosts, r.Hosts...)
 	}
@@ -228,12 +252,26 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		// which would otherwise try to bind Caddy's default HTTP port
 		// (80) and needs root.
 		server.AutomaticHTTPS = &AutoHTTPSConfig{DisableRedir: true}
-		if opts.ACMEEnabled {
+		wildcardHosts, regularHosts := splitWildcardHosts(allHosts)
+		switch {
+		case opts.ACMEEnabled && opts.CloudflareDNSAPIToken != "" && len(wildcardHosts) > 0:
+			policies := []AutomationPolicy{{
+				Subjects: wildcardHosts,
+				Issuers:  []any{NewCloudflareDNSACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL, opts.CloudflareDNSAPIToken)},
+			}}
+			if len(regularHosts) > 0 {
+				policies = append(policies, AutomationPolicy{
+					Subjects: regularHosts,
+					Issuers:  []any{NewACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL)},
+				})
+			}
 			// Real ACME has no local CA for a pki app to manage trust
 			// for, unlike the internal issuer branch below: cfg.Apps.PKI
 			// is deliberately left nil here.
+			cfg.Apps.TLS = &TLSApp{Automation: &Automation{Policies: policies}}
+		case opts.ACMEEnabled:
 			cfg.Apps.TLS = acmeIssuerTLSApp(allHosts, opts.ACMEEmail, opts.ACMEDirectoryURL)
-		} else {
+		default:
 			cfg.Apps.TLS = internalIssuerTLSApp(allHosts)
 			cfg.Apps.PKI = newInternalPKIApp()
 		}

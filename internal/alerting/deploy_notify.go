@@ -14,30 +14,13 @@ import (
 	"github.com/GLINCKER/levelrail/internal/email"
 )
 
-// This file is deploy-outcome notifications: a Slack/Discord/Telegram/
-// generic-webhook/email ping fired once, synchronously, when a deploy
-// attempt (store.DeployAttempt) reaches a terminal status, distinct from
-// this package's existing threshold/crashloop alert rules (rules.go,
-// evaluate.go, engine.go, crashloop.go) in one load-bearing way: a
-// deploy outcome is not evaluated on a tick against stored state, it is
-// reported exactly once by whichever of the three real deploy-trigger
-// call sites (internal/webhook, internal/api/deploys.go,
-// internal/api/builds.go) just finished a deploy_attempts row. There is
-// no "firing," "pending," or "resolved" here, only "this one attempt
-// just succeeded or failed."
-//
-// Deliberately kept in this package (not a new internal/deploynotify
-// package) and in a dedicated table (not a new alert_rules.kind): see
-// migrations/0002_deploy_notify_targets.sql's own doc comment for why a
-// separate table, and this file's own functions below for why staying
-// in this package lets deploy-outcome sends reuse notify.go's actual
-// Slack/Discord/Telegram/generic payload shapes and its postJSON/
-// parseTelegramChatID helpers directly, with zero new exports and zero
-// duplicated payload code, rather than either forcing a deploy outcome
-// through alerting.Event/Rule (whose Kind/Firing/LastValue/comparator
-// fields describe a threshold or crashloop evaluation, not "did this
-// deploy succeed") or duplicating four HTTP payload shapes in a separate
-// package for the sake of a nominal separation that would buy nothing.
+// This file is deploy-outcome notifications: a ping fired once,
+// synchronously, when a deploy attempt reaches a terminal status.
+// Unlike this package's threshold/crashloop alert rules, there is no
+// "firing" or "resolved" here, only "this attempt just succeeded or
+// failed." Kept in this package, reusing notify.go's payload shapes and
+// postJSON/parseTelegramChatID helpers directly, rather than forcing a
+// deploy outcome through alerting.Event/Rule.
 
 // DeployTarget is a notify destination for deploy-outcome events,
 // scoped to one app (ResourceID, matching Rule.ResourceID's own
@@ -248,15 +231,10 @@ type deployGenericPayload struct {
 	Error     string `json:"error,omitempty"`
 }
 
-// sendDeployOutcome sends ev to one target, dispatching on
-// t.NotifyKind exactly the way NewNotifier does for a Rule: an unknown
-// or empty NotifyKind falls back to the generic JSON shape, the same
-// "still notify somebody, diagnosable from the payload shape" reasoning
-// NewNotifier's own doc comment gives. Reuses notify.go's slackPayload/
-// discordPayload/telegramPayload structs, postJSON, parseTelegramChatID,
-// directly (same package, no exports needed): only the message text
-// (summaryDeployText) and the generic JSON shape (deployGenericPayload)
-// are new.
+// sendDeployOutcome sends ev to one target, dispatching on t.NotifyKind
+// the same way NewNotifier does for a Rule: an unknown or empty
+// NotifyKind falls back to the generic JSON shape (deployGenericPayload)
+// so a notification still goes out somewhere.
 func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Sender, t DeployTarget, ev DeployOutcome) error {
 	if client == nil {
 		client = http.DefaultClient
@@ -279,6 +257,23 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 			return fmt.Errorf("alerting: notify deploy outcome: %w", err)
 		}
 		return postJSON(ctx, client, t.NotifyURL, pushoverPayload{Token: token, User: user, Message: summaryDeployText(ev), Title: ev.AppName})
+	case NotifyPagerDuty:
+		if t.NotifyURL == "" {
+			return fmt.Errorf("alerting: notify deploy outcome: no notify_url (pagerduty routing key) configured")
+		}
+		severity := "critical"
+		if ev.Succeeded {
+			severity = "info"
+		}
+		return postJSON(ctx, client, pagerDutyEventsURL, pagerDutyPayload{
+			RoutingKey: t.NotifyURL, EventAction: "trigger",
+			Payload: pagerDutyDetails{Summary: summaryDeployText(ev), Source: ev.AppName, Severity: severity},
+		})
+	case NotifyTeams:
+		text := summaryDeployText(ev)
+		return postJSON(ctx, client, t.NotifyURL, teamsPayload{
+			Type: "MessageCard", Context: "http://schema.org/extensions", Summary: text, Text: text,
+		})
 	case NotifyEmail:
 		if sender == nil {
 			return fmt.Errorf("alerting: notify deploy outcome: email is not configured on this control plane")

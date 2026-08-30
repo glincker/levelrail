@@ -19,6 +19,8 @@ type oauthProviderSettingsResource struct {
 	Enabled            bool   `json:"enabled"`
 	ClientID           string `json:"client_id,omitempty"`
 	AllowedEmailDomain string `json:"allowed_email_domain,omitempty"`
+	IssuerURL          string `json:"issuer_url,omitempty"`
+	DisplayName        string `json:"display_name,omitempty"`
 	HasClientSecret    bool   `json:"has_client_secret"`
 }
 
@@ -28,6 +30,8 @@ func (rt *Router) toOAuthProviderSettingsResource(ctx context.Context, s store.O
 		Enabled:            s.Enabled,
 		ClientID:           s.ClientID,
 		AllowedEmailDomain: s.AllowedEmailDomain,
+		IssuerURL:          s.IssuerURL,
+		DisplayName:        s.DisplayName,
 	}
 	if rt.oauthSecrets == nil {
 		return res
@@ -57,15 +61,18 @@ func (rt *Router) handleListOAuthSettings(w http.ResponseWriter, r *http.Request
 }
 
 type updateOAuthProviderSettingsRequest struct {
-	Enabled            bool   `json:"enabled"`
-	ClientID           string `json:"client_id"`
+	Enabled  bool   `json:"enabled"`
+	ClientID string `json:"client_id"`
 	// ClientSecret is optional on update: empty means "leave the
 	// currently stored secret unchanged".
 	ClientSecret       string `json:"client_secret,omitempty"`
 	AllowedEmailDomain string `json:"allowed_email_domain"`
+	IssuerURL          string `json:"issuer_url"`
+	DisplayName        string `json:"display_name"`
 }
 
 var errOAuthClientSecretRequired = errors.New("client_secret is required the first time a provider is enabled")
+var errOIDCIssuerURLRequired = errors.New("issuer_url is required to enable the oidc provider")
 
 // handleUpdateOAuthProviderSettings handles
 // PUT /api/v1/settings/oauth/{provider}: AbilityRoot, matching PUT
@@ -92,6 +99,10 @@ func (rt *Router) handleUpdateOAuthProviderSettings(w http.ResponseWriter, r *ht
 		writeError(w, http.StatusBadRequest, "client_id is required to enable this provider")
 		return
 	}
+	if req.Enabled && provider == store.OAuthProviderOIDC && req.IssuerURL == "" {
+		writeError(w, http.StatusBadRequest, errOIDCIssuerURLRequired.Error())
+		return
+	}
 
 	hasSecret := req.ClientSecret != ""
 	if !hasSecret {
@@ -116,6 +127,8 @@ func (rt *Router) handleUpdateOAuthProviderSettings(w http.ResponseWriter, r *ht
 		Enabled:            req.Enabled,
 		ClientID:           req.ClientID,
 		AllowedEmailDomain: req.AllowedEmailDomain,
+		IssuerURL:          req.IssuerURL,
+		DisplayName:        req.DisplayName,
 	}
 	if err := rt.oauthSettings.UpdateOAuthProviderSettings(r.Context(), settings); err != nil {
 		rt.logger.Error("api: update oauth settings failed", slog.String("provider", provider), slog.String("error", err.Error()))

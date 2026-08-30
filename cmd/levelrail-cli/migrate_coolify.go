@@ -72,22 +72,10 @@ func runMigrateCoolify(prog string, args []string, stdout, stderr io.Writer, loo
 		report.Apps = append(report.Apps, fetchAndMapApplication(ctx, coolify, summary, f.includeSecretValues))
 	}
 
-	if f.apply {
-		client := NewClient(resolveAPIURL(targetAPIURLFlag, lookupEnv, prog), resolveToken(targetTokenFlag, lookupEnv, prog))
-		applyMigration(ctx, client, &report)
-	} else if err := writeMigrationFiles(f.outDir, &report); err != nil {
-		return reportError(stdout, stderr, f.jsonOut, err)
-	}
-
-	if f.jsonOut {
-		if err := writeJSONValue(stdout, report); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	printMigrationReportHuman(stdout, report, prog, f.outDir)
-	return exitOK
+	return runMigrationPipeline(ctx, &report, migratePipelineFlags{
+		apply: f.apply, outDir: f.outDir, jsonOut: f.jsonOut,
+		targetToken: targetTokenFlag, targetAPIURL: targetAPIURLFlag,
+	}, prog, stdout, stderr, lookupEnv)
 }
 
 // fetchAndMapApplication loads one Coolify application's full detail and
@@ -98,19 +86,11 @@ func runMigrateCoolify(prog string, args []string, stdout, stderr io.Writer, loo
 func fetchAndMapApplication(ctx context.Context, coolify *CoolifyClient, summary coolifyApplication, includeSecretValues bool) mappedApp {
 	full, err := coolify.GetApplication(ctx, summary.UUID)
 	if err != nil {
-		return mappedApp{
-			SourceName: summary.Name,
-			Blocking:   true,
-			Issues:     []migrationIssue{{Field: "fetch", Severity: issueBlocking, Detail: fmt.Sprintf("could not fetch full application detail: %v", err)}},
-		}
+		return blockingFetchIssue(summary.Name, fmt.Sprintf("could not fetch full application detail: %v", err))
 	}
 	envs, err := coolify.ListEnvs(ctx, summary.UUID)
 	if err != nil {
-		return mappedApp{
-			SourceName: summary.Name,
-			Blocking:   true,
-			Issues:     []migrationIssue{{Field: "fetch", Severity: issueBlocking, Detail: fmt.Sprintf("could not fetch environment variables: %v", err)}},
-		}
+		return blockingFetchIssue(summary.Name, fmt.Sprintf("could not fetch environment variables: %v", err))
 	}
 	return mapCoolifyApplication(full, envs, includeSecretValues)
 }

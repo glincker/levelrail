@@ -39,9 +39,8 @@ func exitCodeForError(err error) int {
 
 // validationError marks a failure as "the request itself is invalid"
 // (a bad flag combination, an app.yaml this CLI can't yet turn into a
-// request), as opposed to a network or API failure: the same
-// distinction flyctl/railway/vercel's own CLIs make between a usage
-// mistake and something failing downstream.
+// request), as opposed to a network or API failure: a usage mistake vs.
+// something failing downstream.
 type validationError struct{ msg string }
 
 func (e *validationError) Error() string { return e.msg }
@@ -76,6 +75,9 @@ func printAppHuman(out io.Writer, a appResource) {
 	_, _ = fmt.Fprintf(out, "name:     %s\n", a.Name)
 	_, _ = fmt.Fprintf(out, "image:    %s\n", a.Image)
 	_, _ = fmt.Fprintf(out, "port:     %d\n", a.Port)
+	if a.HostPort != nil {
+		_, _ = fmt.Fprintf(out, "host port: %d (pinned)\n", *a.HostPort)
+	}
 	if len(a.Domains) > 0 {
 		_, _ = fmt.Fprintf(out, "domains:  %v\n", a.Domains)
 	}
@@ -119,6 +121,19 @@ func printConditionsHuman(out io.Writer, conditions []conditionResource) {
 	_ = tw.Flush()
 }
 
+// printAppNetworkHuman prints "apps network" output: the live traffic
+// path, container's declared port plus whatever host port Docker
+// currently has bound.
+func printAppNetworkHuman(out io.Writer, n networkResource) {
+	_, _ = fmt.Fprintf(out, "container port:  %d\n", n.ContainerPort)
+	if n.Running && n.HostPort > 0 {
+		_, _ = fmt.Fprintf(out, "host port:       %d\n", n.HostPort)
+	} else {
+		_, _ = fmt.Fprintln(out, "host port:       (not running)")
+	}
+	_, _ = fmt.Fprintf(out, "running:         %t\n", n.Running)
+}
+
 // printLogEntriesHuman prints "apps logs" output: one line per entry,
 // oldest first (the order handleQueryLogs' underlying store returns
 // them in), timestamp and stream prefixed so stdout/stderr lines are
@@ -130,6 +145,37 @@ func printLogEntriesHuman(out io.Writer, entries []logEntryResource) {
 	}
 	for _, e := range entries {
 		_, _ = fmt.Fprintf(out, "%s %s %s\n", e.Timestamp.Format(time.RFC3339), e.Stream, e.Message)
+	}
+}
+
+// printAppGroupHuman prints "apps group" output: name's sibling services
+// under the same app, plus the group's own rollup status.
+func printAppGroupHuman(out io.Writer, g appGroupResource) {
+	if g.AppID != "" {
+		_, _ = fmt.Fprintf(out, "app_id:  %s\n", g.AppID)
+	}
+	_, _ = fmt.Fprintf(out, "status:  %s\n", g.Status.Label)
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "NAME\tIMAGE\tPORT")
+	for _, s := range g.Services {
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\n", s.Name, s.Image, s.Port)
+	}
+	_ = tw.Flush()
+}
+
+// printDeploySpecResultHuman prints "apps deploy-spec" output: one line
+// per service key's own outcome, error inline when that key's build or
+// deploy failed.
+func printDeploySpecResultHuman(out io.Writer, r deploySpecResult) {
+	_, _ = fmt.Fprintf(out, "app_id: %s\n", r.AppID)
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "SERVICE\tIMAGE\tERROR")
+	for _, s := range r.Services {
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\n", s.ServiceKey, s.Image, s.Error)
+	}
+	_ = tw.Flush()
+	if !r.AllSucceeded {
+		_, _ = fmt.Fprintln(out, "one or more services failed, see the ERROR column above")
 	}
 }
 
@@ -159,6 +205,45 @@ func printDatabasesTable(out io.Writer, dbs []databaseResource) {
 			node = "(local)"
 		}
 		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", d.Name, d.Engine, d.Version, node)
+	}
+	_ = tw.Flush()
+}
+
+// printNodeHuman prints one node resource in a human-readable, non-JSON
+// form ("nodes get" output).
+func printNodeHuman(out io.Writer, n nodeResource) {
+	_, _ = fmt.Fprintf(out, "id:                      %s\n", n.ID)
+	_, _ = fmt.Fprintf(out, "name:                    %s\n", n.Name)
+	if n.Address != "" {
+		_, _ = fmt.Fprintf(out, "address:                 %s\n", n.Address)
+	}
+	_, _ = fmt.Fprintf(out, "status:                  %s\n", n.Status)
+	if n.CertFingerprint != "" {
+		_, _ = fmt.Fprintf(out, "cert fingerprint:        %s\n", n.CertFingerprint)
+	}
+	if n.JoinedAt != nil {
+		_, _ = fmt.Fprintf(out, "joined at:               %s\n", n.JoinedAt.Format(time.RFC3339))
+	}
+	if n.LastSeenAt != nil {
+		_, _ = fmt.Fprintf(out, "last seen at:            %s\n", n.LastSeenAt.Format(time.RFC3339))
+	}
+	_, _ = fmt.Fprintf(out, "schedulable:             %t\n", n.Schedulable)
+	_, _ = fmt.Fprintf(out, "accepts app workloads:   %t\n", n.AcceptsAppWorkloads)
+	_, _ = fmt.Fprintf(out, "accepts build workloads: %t\n", n.AcceptsBuildWorkloads)
+	_, _ = fmt.Fprintf(out, "created at:              %s\n", n.CreatedAt.Format(time.RFC3339))
+}
+
+// printNodesTable prints a compact, aligned table of nodes ("nodes list"
+// output), the same shape printAppsTable/printDatabasesTable use.
+func printNodesTable(out io.Writer, nodes []nodeResource) {
+	if len(nodes) == 0 {
+		_, _ = fmt.Fprintln(out, "no nodes")
+		return
+	}
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "ID\tNAME\tADDRESS\tSTATUS\tSCHEDULABLE\tCREATED")
+	for _, n := range nodes {
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%t\t%s\n", n.ID, n.Name, n.Address, n.Status, n.Schedulable, n.CreatedAt.Format(time.RFC3339))
 	}
 	_ = tw.Flush()
 }

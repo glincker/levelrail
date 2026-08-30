@@ -35,14 +35,22 @@ export const backupHistoryKeys = {
 // flight.
 const RUNNING_POLL_INTERVAL_MS = 3_000
 
-// GET /api/v1/databases/{name}/backups (handleListBackupHistory).
-// Ordered newest first by the server already, per that handler's own
-// doc comment, so this fetcher does no client-side sorting either.
+// Mirrors the server's defaultBackupHistoryLimit: a page shorter than
+// this means there's nothing older left to load.
+export const BACKUP_HISTORY_PAGE_SIZE = 50
+
+// GET /api/v1/databases/{name}/backups, newest first. opts.before
+// cursor-paginates backward, mirroring fetchAuditLog's ?before contract.
 export async function fetchBackupHistory(
   databaseName: string,
+  opts: { limit?: number; before?: string } = {},
 ): Promise<BackupHistoryRecord[]> {
+  const params = new URLSearchParams()
+  if (opts.limit) params.set('limit', String(opts.limit))
+  if (opts.before) params.set('before', opts.before)
+  const qs = params.toString()
   const res = await fetch(
-    `/api/v1/databases/${encodeURIComponent(databaseName)}/backups`,
+    `/api/v1/databases/${encodeURIComponent(databaseName)}/backups${qs ? `?${qs}` : ''}`,
   )
   if (!res.ok) {
     throw new ApiError(

@@ -23,7 +23,7 @@ type GitHubAppConnection struct {
 	ClientID string
 	// InstanceURL is the GitHub instance this App is registered
 	// against: "https://github.com" for every connection until GitHub
-	// Enterprise Server support (migrations/0050), a real GHES base URL
+	// Enterprise Server support (migrations/0061), a real GHES base URL
 	// after. Never empty: the migration backfills the column, and
 	// SaveGitHubAppConnection requires a caller to pass one.
 	InstanceURL string

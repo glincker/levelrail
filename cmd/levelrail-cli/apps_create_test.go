@@ -51,6 +51,16 @@ func TestPlanFromFlags(t *testing.T) {
 			},
 		},
 		{
+			name:  "existing image with pinned host port",
+			flags: createFlags{image: "registry.example.com/x:1", name: "web", port: 3000, hostPort: 30001},
+			wantPlan: func(t *testing.T, p createPlan) {
+				want := appResource{Name: "web", Image: "registry.example.com/x:1", Port: 3000, HostPort: toHostPort(30001)}
+				if !reflect.DeepEqual(p.CreateBody, want) {
+					t.Errorf("CreateBody = %+v, want %+v", p.CreateBody, want)
+				}
+			},
+		},
+		{
 			name:    "git-build flags missing image-repo",
 			flags:   createFlags{repo: "https://example.com/x.git", name: "web", port: 3000},
 			wantErr: "--image-repo",
@@ -62,14 +72,62 @@ func TestPlanFromFlags(t *testing.T) {
 				if p.Build == nil {
 					t.Fatalf("Build = nil, want non-nil for git-build path")
 				}
-				wantBuild := buildTriggerRequest{RepoURL: "https://example.com/x.git", Ref: "release", ImageRepo: "levelrail/web"}
-				if *p.Build != wantBuild {
+				wantBuild := buildTriggerRequest{RepoURL: "https://example.com/x.git", Ref: "release", ImageRepo: "levelrail/web", Build: buildTriggerRequestBuild{Type: spec.BuildDockerfile}}
+				if !reflect.DeepEqual(*p.Build, wantBuild) {
 					t.Errorf("Build = %+v, want %+v", *p.Build, wantBuild)
 				}
 				if p.CreateBody.Image != "levelrail/web:pending" {
 					t.Errorf("CreateBody.Image = %q, want placeholder %q", p.CreateBody.Image, "levelrail/web:pending")
 				}
 			},
+		},
+		{
+			name:  "git-build flags base directory",
+			flags: createFlags{repo: "https://example.com/x.git", name: "web", port: 3000, imageRepo: "levelrail/web", ref: "release", baseDirectory: "apps/web"},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.Build == nil {
+					t.Fatalf("Build = nil, want non-nil for git-build path")
+				}
+				if p.Build.Build.BaseDirectory != "apps/web" {
+					t.Errorf("Build.BaseDirectory = %q, want %q", p.Build.Build.BaseDirectory, "apps/web")
+				}
+			},
+		},
+		{
+			name:  "git-build flags build args",
+			flags: createFlags{repo: "https://example.com/x.git", name: "web", port: 3000, imageRepo: "levelrail/web", ref: "release", buildArgs: map[string]string{"VERSION": "1.2.3"}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.Build == nil {
+					t.Fatalf("Build = nil, want non-nil for git-build path")
+				}
+				want := map[string]string{"VERSION": "1.2.3"}
+				if !reflect.DeepEqual(p.Build.Build.Args, want) {
+					t.Errorf("Build.Args = %+v, want %+v", p.Build.Build.Args, want)
+				}
+			},
+		},
+		{
+			name:    "git-build flags build args rejected for railpack",
+			flags:   createFlags{repo: "https://example.com/x.git", name: "web", port: 3000, imageRepo: "levelrail/web", buildType: spec.BuildRailpack, buildArgs: map[string]string{"VERSION": "1.2.3"}},
+			wantErr: "--build-arg is only meaningful",
+		},
+		{
+			name:  "git-build flags railpack build type",
+			flags: createFlags{repo: "https://example.com/x.git", name: "web", port: 3000, imageRepo: "levelrail/web", buildType: spec.BuildRailpack},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.Build == nil {
+					t.Fatalf("Build = nil, want non-nil for git-build path")
+				}
+				wantBuild := buildTriggerRequest{RepoURL: "https://example.com/x.git", Ref: "main", ImageRepo: "levelrail/web", Build: buildTriggerRequestBuild{Type: spec.BuildRailpack}}
+				if !reflect.DeepEqual(*p.Build, wantBuild) {
+					t.Errorf("Build = %+v, want %+v", *p.Build, wantBuild)
+				}
+			},
+		},
+		{
+			name:    "git-build flags unsupported build type rejected",
+			flags:   createFlags{repo: "https://example.com/x.git", name: "web", port: 3000, imageRepo: "levelrail/web", buildType: spec.BuildStatic},
+			wantErr: "not supported",
 		},
 		{
 			name:     "git-build flags ref defaults to detected branch",
@@ -166,6 +224,24 @@ func TestPlanFromFlags(t *testing.T) {
 			wantErr: "only supports",
 		},
 		{
+			name:  "file mode railpack build type success",
+			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildRailpack}, Port: 3000},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.Build == nil {
+					t.Fatalf("Build = nil, want non-nil for the railpack path")
+				}
+				if p.Build.Build.Type != spec.BuildRailpack {
+					t.Errorf("Build.Build.Type = %q, want %q", p.Build.Build.Type, spec.BuildRailpack)
+				}
+				if p.Build.Build.Path != "" {
+					t.Errorf("Build.Build.Path = %q, want empty: railpack needs no Dockerfile path", p.Build.Build.Path)
+				}
+			},
+		},
+		{
 			name:  "file mode image build type success",
 			flags: createFlags{file: "app.yaml", port: 3000},
 			fileSpec: &spec.Spec{Services: map[string]spec.Service{
@@ -229,6 +305,30 @@ func TestPlanFromFlags(t *testing.T) {
 			wantPlan: func(t *testing.T, p createPlan) {
 				if p.CreateBody.Port != 9000 {
 					t.Errorf("Port = %d, want overridden 9000", p.CreateBody.Port)
+				}
+			},
+		},
+		{
+			name:  "file mode host_port from spec",
+			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildDockerfile}, Port: 3000, HostPort: 30001},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.CreateBody.HostPort == nil || *p.CreateBody.HostPort != 30001 {
+					t.Errorf("HostPort = %v, want a pointer to 30001", p.CreateBody.HostPort)
+				}
+			},
+		},
+		{
+			name:  "file mode --host-port overrides spec",
+			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git", hostPort: 40002},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildDockerfile}, Port: 3000, HostPort: 30001},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.CreateBody.HostPort == nil || *p.CreateBody.HostPort != 40002 {
+					t.Errorf("HostPort = %v, want overridden pointer to 40002", p.CreateBody.HostPort)
 				}
 			},
 		},
@@ -322,6 +422,64 @@ func TestPlanFromFlags(t *testing.T) {
 				}
 			},
 		},
+		{
+			name:  "file mode base directory from spec",
+			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildDockerfile, BaseDirectory: "apps/web"}, Port: 3000},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.Build.Build.BaseDirectory != "apps/web" {
+					t.Errorf("Build.BaseDirectory = %q, want %q", p.Build.Build.BaseDirectory, "apps/web")
+				}
+			},
+		},
+		{
+			name:  "file mode --base-directory overrides spec",
+			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git", baseDirectory: "apps/api"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildDockerfile, BaseDirectory: "apps/web"}, Port: 3000},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.Build.Build.BaseDirectory != "apps/api" {
+					t.Errorf("Build.BaseDirectory = %q, want overridden %q", p.Build.Build.BaseDirectory, "apps/api")
+				}
+			},
+		},
+		{
+			name:  "file mode build args from spec",
+			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildDockerfile, Args: map[string]string{"VERSION": "1.2.3"}}, Port: 3000},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				want := map[string]string{"VERSION": "1.2.3"}
+				if !reflect.DeepEqual(p.Build.Build.Args, want) {
+					t.Errorf("Build.Args = %+v, want %+v", p.Build.Build.Args, want)
+				}
+			},
+		},
+		{
+			name:  "file mode --build-arg overrides spec",
+			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git", buildArgs: map[string]string{"VERSION": "9.9.9"}},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildDockerfile, Args: map[string]string{"VERSION": "1.2.3"}}, Port: 3000},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				want := map[string]string{"VERSION": "9.9.9"}
+				if !reflect.DeepEqual(p.Build.Build.Args, want) {
+					t.Errorf("Build.Args = %+v, want overridden %+v", p.Build.Build.Args, want)
+				}
+			},
+		},
+		{
+			name:  "file mode build args rejected for railpack",
+			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git", buildArgs: map[string]string{"VERSION": "1.2.3"}},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildRailpack}, Port: 3000},
+			}},
+			wantErr: "--build-arg is only meaningful",
+		},
 	}
 
 	for _, tt := range tests {
@@ -406,5 +564,64 @@ func TestResolveRef(t *testing.T) {
 func TestPendingImageTag(t *testing.T) {
 	if got, want := pendingImageTag("levelrail/web"), "levelrail/web:pending"; got != want {
 		t.Errorf("pendingImageTag() = %q, want %q", got, want)
+	}
+}
+
+func TestToHostPort(t *testing.T) {
+	if got := toHostPort(0); got != nil {
+		t.Errorf("toHostPort(0) = %v, want nil", got)
+	}
+	got := toHostPort(8080)
+	if got == nil || *got != 8080 {
+		t.Errorf("toHostPort(8080) = %v, want a pointer to 8080", got)
+	}
+}
+
+func TestParseCreateFlags_AttachDatabase(t *testing.T) {
+	var token, apiURL string
+	f, err := parseCreateFlags("levelrail", []string{
+		"--name", "web", "--image", "img:v1", "--port", "3000",
+		"--attach-database", "main",
+		"--attach-database-env-var", "DB_URL",
+		"--attach-database-field", "host",
+	}, &strings.Builder{}, &token, &apiURL)
+	if err != nil {
+		t.Fatalf("parseCreateFlags() error = %v", err)
+	}
+	if f.attachDatabase != "main" {
+		t.Errorf("attachDatabase = %q, want main", f.attachDatabase)
+	}
+	if f.attachDatabaseEnvVar != "DB_URL" {
+		t.Errorf("attachDatabaseEnvVar = %q, want DB_URL", f.attachDatabaseEnvVar)
+	}
+	if f.attachDatabaseField != "host" {
+		t.Errorf("attachDatabaseField = %q, want host", f.attachDatabaseField)
+	}
+}
+
+func TestParseCreateFlags_BuildArg(t *testing.T) {
+	var token, apiURL string
+	f, err := parseCreateFlags("levelrail", []string{
+		"--name", "web", "--port", "3000", "--repo", "https://example.com/x.git", "--image-repo", "levelrail/web",
+		"--build-arg", "VERSION=1.2.3",
+		"--build-arg", "FEATURE_FLAG=on",
+	}, &strings.Builder{}, &token, &apiURL)
+	if err != nil {
+		t.Fatalf("parseCreateFlags() error = %v", err)
+	}
+	want := map[string]string{"VERSION": "1.2.3", "FEATURE_FLAG": "on"}
+	if !reflect.DeepEqual(f.buildArgs, want) {
+		t.Errorf("buildArgs = %+v, want %+v", f.buildArgs, want)
+	}
+}
+
+func TestParseCreateFlags_AttachDatabase_DefaultsEmpty(t *testing.T) {
+	var token, apiURL string
+	f, err := parseCreateFlags("levelrail", []string{"--name", "web", "--image", "img:v1", "--port", "3000"}, &strings.Builder{}, &token, &apiURL)
+	if err != nil {
+		t.Fatalf("parseCreateFlags() error = %v", err)
+	}
+	if f.attachDatabase != "" || f.attachDatabaseEnvVar != "" || f.attachDatabaseField != "" {
+		t.Errorf("attach-database fields = %+v, want all empty when the flag isn't passed", f)
 	}
 }

@@ -27,6 +27,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -34,6 +35,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/probe"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -75,6 +77,16 @@ type RegistryCredentialStore interface {
 	GetRegistryCredential(ctx context.Context, id string) (store.RegistryCredential, error)
 }
 
+// DatabaseAttachmentStore is the narrow surface this controller needs to
+// resolve a { from: ... } env var (store.DesiredService.DatabaseEnv,
+// store.DesiredService.DatabaseAttachment) against a real managed
+// database: just the one read, the same shape StorageTargetStore/
+// RegistryCredentialStore already establish. *store.DB satisfies this
+// structurally.
+type DatabaseAttachmentStore interface {
+	GetDesiredDatabase(ctx context.Context, name string) (*store.DesiredDatabase, error)
+}
+
 // ProjectEnvStore is the narrow surface this controller needs to
 // resolve store.DesiredService.ProjectID into that project's shared env
 // vars (resolveEnv's own doc comment on precedence). *store.DB satisfies
@@ -82,6 +94,26 @@ type RegistryCredentialStore interface {
 // own project env endpoints.
 type ProjectEnvStore interface {
 	ListProjectEnvVars(ctx context.Context, projectID string) (map[string]string, error)
+}
+
+// OrganizationEnvStore is the narrow surface this controller needs to
+// resolve store.DesiredService.ProjectID's organization's shared env
+// vars, one tier below ProjectEnvStore (resolveEnv's own doc comment on
+// precedence). *store.DB satisfies this structurally: its
+// ListOrganizationEnvVarsForProject hides the projects.org_id join so
+// this package never needs to know a project carries one.
+type OrganizationEnvStore interface {
+	ListOrganizationEnvVarsForProject(ctx context.Context, projectID string) (map[string]string, error)
+}
+
+// EnvironmentEnvLister is the narrow surface this controller needs to
+// resolve store.DesiredService.EnvironmentID's shared env vars, the tier
+// between ProjectEnvStore and this service's own Env (resolveEnv's own
+// doc comment on precedence). Unlike OrganizationEnvStore, no join is
+// needed: EnvironmentID already lives directly on DesiredService.
+// *store.DB satisfies this structurally.
+type EnvironmentEnvLister interface {
+	ListEnvironmentEnvVars(ctx context.Context, environmentID string) (map[string]string, error)
 }
 
 // DeployRecorder is the narrow surface this controller needs to record
@@ -104,18 +136,6 @@ const defaultReadyBudget = 60 * time.Second
 // importing internal/spec, the same "define locally, don't import a
 // higher-level package's vocabulary" convention store.DesiredService's
 // own Strategy field doc comment already establishes.
-//
-// strategyRolling is a real, named case Reconcile recognizes and
-// reports on (notReady("StrategyNotSupported", ...)), not an
-// unrecognized string that happens to fall through to a default: a
-// service can already save strategy: rolling today (internal/spec's
-// schema has always accepted it), so this controller must say so
-// honestly rather than silently reconciling it as something else. See
-// this package's own doc comment for why rolling specifically (staggered
-// per-replica cutover, partial-success handling) is a larger, separate
-// piece of work than generalizing the existing create-alongside-then-
-// remove-old shape to N replicas (blue-green) or adding a genuinely
-// simpler stop-then-start alternative (recreate).
 const (
 	strategyRolling   = "rolling"
 	strategyRecreate  = "recreate"
@@ -136,8 +156,11 @@ type Controller struct {
 	meshDNSAddr    string                  // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
 	storageTargets StorageTargetStore      // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
 	projectEnv     ProjectEnvStore         // nil is valid: project vars are just skipped, see WithProjectEnv
+	orgEnv         OrganizationEnvStore    // nil is valid: organization vars are just skipped, see WithOrganizationEnv
+	environmentEnv EnvironmentEnvLister     // nil is valid: environment vars are just skipped, see WithEnvironmentEnv
 	networkPrefix  string                  // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
 	registryCreds  RegistryCredentialStore // nil is valid: a service with no RegistryCredentialID never needs one, see WithRegistryCredentials
+	databases      DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
 }
 
 // Option configures optional Controller behavior.
@@ -213,6 +236,17 @@ func WithRegistryCredentials(s RegistryCredentialStore) Option {
 	return func(ctrl *Controller) { ctrl.registryCreds = s }
 }
 
+// WithDatabaseAttachments enables container creation to resolve
+// store.DesiredService.DatabaseEnv/DatabaseAttachment into real
+// connection env vars, the same "fail loudly if declared but
+// unconfigured" shape WithStorageTargets already establishes: a service
+// declaring a { from: ... } env var with no database store configured
+// fails Reconcile rather than silently starting a container missing the
+// value it needs.
+func WithDatabaseAttachments(s DatabaseAttachmentStore) Option {
+	return func(ctrl *Controller) { ctrl.databases = s }
+}
+
 // WithProjectEnv enables resolving store.DesiredService.ProjectID's
 // shared env vars as resolveEnv's base layer. Unlike WithSecretResolver/
 // WithStorageTargets, a service with a ProjectID but no ProjectEnvStore
@@ -222,6 +256,26 @@ func WithRegistryCredentials(s RegistryCredentialStore) Option {
 // service's deploys, project vars are just silently skipped.
 func WithProjectEnv(s ProjectEnvStore) Option {
 	return func(ctrl *Controller) { ctrl.projectEnv = s }
+}
+
+// WithOrganizationEnv enables resolving the organization that owns
+// store.DesiredService.ProjectID's project into that organization's
+// shared env vars, applied as resolveEnv's base layer beneath
+// WithProjectEnv. Same "purely an organizational label" reasoning as
+// WithProjectEnv: a ProjectID with no WithOrganizationEnv configured
+// does not fail Reconcile, organization vars are just silently skipped.
+func WithOrganizationEnv(s OrganizationEnvStore) Option {
+	return func(ctrl *Controller) { ctrl.orgEnv = s }
+}
+
+// WithEnvironmentEnv enables resolving store.DesiredService.EnvironmentID's
+// shared env vars as resolveEnv's middle layer, applied above
+// WithProjectEnv/WithOrganizationEnv and below the service's own Env.
+// Same "purely an organizational label" reasoning as WithProjectEnv: a
+// service with an EnvironmentID but no EnvironmentEnvLister configured
+// does not fail Reconcile, environment vars are just silently skipped.
+func WithEnvironmentEnv(s EnvironmentEnvLister) Option {
+	return func(ctrl *Controller) { ctrl.environmentEnv = s }
 }
 
 // WithNetworkPrefix sets the Docker network naming prefix
@@ -308,17 +362,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	case strategyRecreate:
 		return c.reconcileRecreate(ctx, targets, desired)
 	case strategyRolling:
-		// A real, named case, not a fallthrough: internal/spec's schema
-		// has always accepted strategy: rolling, so a service can
-		// already have this saved. Reported honestly rather than
-		// silently reconciled as something else (this package's own doc
-		// comment on the strategy constants explains why rolling is
-		// separate, larger scope). Not an error: a permanently
-		// unsupported strategy is the same "known, documented block, not
-		// a transient failure that should retry-and-log-error forever"
-		// shape internal/reconcile/database's credentials-blocked case
-		// already establishes for an analogous known gap.
-		return notReady("StrategyNotSupported", fmt.Errorf("deploy strategy %q is not yet implemented", strategy)), nil
+		return c.reconcileRolling(ctx, targets, desired)
 	default:
 		// Reachable only if something bypassed internal/spec's schema
 		// validation (a hand-built DesiredService, or the schema's own
@@ -429,9 +473,80 @@ func (c *Controller) reconcileRecreate(ctx context.Context, targets []string, de
 	return c.finishReconcile(ctx, true)
 }
 
+// reconcileRolling replaces targets one at a time: ensure the next
+// target is running (and, if freshly started, ready), then immediately
+// retire exactly one stale (old-image) container before moving to the
+// next target. Unlike reconcileBlueGreen, which proves every new
+// replica healthy before removing any old one (so the old and new sets
+// briefly coexist in full), this normally bounds the overlap to at most
+// one extra container at a time: the property that makes it "rolling"
+// rather than blue-green with more steps. That bound is best-effort,
+// not absolute: several consecutive per-step retirement failures in a
+// row (see below) can let more than one extra container pile up
+// temporarily, caught by the final sweep. Never a safety problem
+// (nothing is under-provisioned, only occasionally over-provisioned),
+// just not a hard invariant a caller should rely on.
+//
+// Pairing a retired container with the target that triggered its
+// retirement is by count, not identity: staleContainers has no way to
+// know which specific old container "belongs to" which replica index
+// (container names are derived from image+index, so an image change
+// renames every target at once), so this simply removes one arbitrary
+// stale container per freshly-deployed target. The safety property
+// rolling promises, never more than one replica short of the desired
+// count, holds regardless of which specific old container is removed
+// at each step.
+//
+// A failed per-step retirement is not fatal to the rollout: the
+// container just stays stale and is picked up again by the final
+// removeStale sweep below, the same "the important fact, a healthy set
+// is serving, is still true" tolerance reconcileBlueGreen's own cleanup
+// failure path already establishes. Only that final sweep's error (if
+// it still fails) is what gets reported.
+//
+// A known gap shared with reconcileBlueGreen, not introduced here:
+// ensureReplicaRunning only calls waitReady on a container it just
+// created or restarted (justDeployed), never on one InspectByName
+// already finds Running. A replica whose readiness probe timed out on
+// one reconcile pass, but whose container is otherwise still Running,
+// is treated as already-healthy on the next pass without ever being
+// re-probed, so "the replacement is proven healthy" is only checked
+// within a single pass, not re-verified across passes. Fixing this
+// belongs in ensureReplicaRunning itself, shared by all three
+// strategies, not scoped to this one.
+func (c *Controller) reconcileRolling(ctx context.Context, targets []string, desired *store.DesiredService) (reconcile.Result, error) {
+	anyDeployed := false
+	for _, target := range targets {
+		deployed, err := c.ensureReplicaRunning(ctx, target, desired)
+		if err != nil {
+			return notReady(deployed.reason, err), fmt.Errorf("application/%s: %w", c.serviceName, err)
+		}
+		anyDeployed = anyDeployed || deployed.justDeployed
+
+		if deployed.justDeployed {
+			stale, err := c.staleContainers(ctx, targets)
+			if err != nil {
+				return notReady("InspectFailed", err), fmt.Errorf("application/%s: list stale containers: %w", c.serviceName, err)
+			}
+			if len(stale) > 0 {
+				_ = c.removeContainers(ctx, stale[:1])
+			}
+		}
+	}
+
+	if err := c.removeStale(ctx, targets); err != nil {
+		return reconcile.Result{Conditions: []reconcile.Condition{{
+			Type: "Ready", Status: reconcile.ConditionTrue,
+			Reason: "RunningStaleCleanupFailed", Message: err.Error(),
+		}}}, fmt.Errorf("application/%s: cleanup stale containers: %w", c.serviceName, err)
+	}
+
+	return c.finishReconcile(ctx, anyDeployed)
+}
+
 // finishReconcile records the deploy metric (if a real cutover happened
-// this pass) and returns the final Ready condition, the shared tail both
-// reconcileBlueGreen and reconcileRecreate end with.
+// this pass) and returns the final Ready condition, the shared tail
+// every strategy's reconcile* method ends with.
 func (c *Controller) finishReconcile(ctx context.Context, justDeployed bool) (reconcile.Result, error) {
 	if !justDeployed {
 		return ready("AlreadyRunning"), nil
@@ -483,8 +598,30 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, de
 		}
 		justDeployed = true
 	case !state.Running:
+		// The container's own network can go missing between reconcile
+		// passes (an operator running docker network prune, or any other
+		// external interference this codebase can't prevent): re-ensure
+		// it before Start, the same guarantee createAndStart already
+		// gives a fresh container, so a stopped container is never
+		// permanently stuck retrying Start against a network that no
+		// longer exists.
+		if err := c.ensureAppNetwork(ctx, desired); err != nil {
+			return replicaOutcome{reason: "EnsureNetworkFailed"}, fmt.Errorf("restart %q: %w", target, err)
+		}
 		if err := c.runtime.Start(ctx, state.ID); err != nil {
-			return replicaOutcome{reason: "StartFailed"}, fmt.Errorf("restart %q: %w", target, err)
+			// EnsureNetwork just succeeded, so a Start failure here means
+			// this specific container is broken (a container whose first
+			// Start ever failed can be left with no network binding at
+			// all, unrecoverable by retrying Start), not that the
+			// network is missing again. Remove and recreate, the same
+			// operation a redeploy already performs routinely.
+			startErr := err
+			if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+				return replicaOutcome{reason: "StartFailed"}, fmt.Errorf("restart %q: start failed (%w) and the broken container could not be removed for recreation: %w", target, startErr, err)
+			}
+			if err := c.createAndStart(ctx, target, desired); err != nil {
+				return replicaOutcome{reason: "CreateFailed"}, fmt.Errorf("restart %q: start failed (%w), recreated instead: %w", target, startErr, err)
+			}
 		}
 		justDeployed = true
 	}
@@ -506,6 +643,22 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, de
 		return replicaOutcome{reason: "ReadinessFailed"}, err
 	}
 	return replicaOutcome{justDeployed: true}, nil
+}
+
+// ensureAppNetwork makes sure desired.AppID's per-app Docker network
+// exists, a no-op for a service with no AppID. Called from both
+// createAndStart and ensureReplicaRunning's restart path: EnsureNetwork
+// is itself idempotent (docker.Runtime's own contract), so calling it
+// again for an already-existing network is cheap and safe.
+func (c *Controller) ensureAppNetwork(ctx context.Context, desired *store.DesiredService) error {
+	if desired.AppID == "" {
+		return nil
+	}
+	networkName := NetworkName(c.networkPrefix, desired.AppID)
+	if _, err := c.runtime.EnsureNetwork(ctx, networkName); err != nil {
+		return fmt.Errorf("ensure network %q: %w", networkName, err)
+	}
+	return nil
 }
 
 func (c *Controller) createAndStart(ctx context.Context, name string, desired *store.DesiredService) error {
@@ -532,12 +685,11 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	if c.meshDNSAddr != "" {
 		spec.DNS = []string{c.meshDNSAddr}
 	}
+	if err := c.ensureAppNetwork(ctx, desired); err != nil {
+		return err
+	}
 	if desired.AppID != "" {
-		networkName := NetworkName(c.networkPrefix, desired.AppID)
-		if _, err := c.runtime.EnsureNetwork(ctx, networkName); err != nil {
-			return fmt.Errorf("ensure network %q: %w", networkName, err)
-		}
-		spec.Network = &docker.NetworkAttachment{Name: networkName, Alias: serviceAlias(desired)}
+		spec.Network = &docker.NetworkAttachment{Name: NetworkName(c.networkPrefix, desired.AppID), Alias: serviceAlias(desired)}
 	}
 
 	id, err := c.runtime.Create(ctx, spec)
@@ -589,17 +741,50 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 // declaring the same key, the same way a resolved secret already takes
 // precedence over a plain literal.
 //
+// desired.DatabaseEnv/desired.DatabaseAttachment's resolved values
+// (resolveDatabaseEnv) are applied last of all, after desired.
+// StorageTargetID's: the identical "more deliberate, more authoritative
+// source wins" reasoning extended one more step. A database connection
+// value is exactly as live/authoritative as a storage target's, so
+// neither should be able to silently shadow the other by accident; in
+// practice they almost never target the same env var name, so this
+// ordering mostly only matters for the (rare, deliberate) case of both
+// declaring the same key.
+//
 // desired.ProjectID's shared env vars (WithProjectEnv) are the opposite
 // end: applied first, as the base layer, so this service's own Env
 // (and everything above) freely overrides a same-named project default
-// rather than the other way around.
+// rather than the other way around. desired.ProjectID's organization's
+// shared env vars (WithOrganizationEnv) sit one layer below even that:
+// applied before the project layer, so a project default overrides a
+// same-named organization default exactly the way this service's own
+// Env already overrides the project layer.
+//
+// desired.EnvironmentID's shared env vars (WithEnvironmentEnv) sit
+// between the project layer and this service's own Env: applied after
+// the project layer, so an environment default overrides a same-named
+// project default, and before this service's own Env, so the service
+// still overrides a same-named environment default.
 func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredService) (map[string]string, error) {
 	hasProjectEnv := desired.ProjectID != "" && c.projectEnv != nil
-	if len(desired.SecretEnv) == 0 && desired.StorageTargetID == "" && !hasProjectEnv {
+	hasOrgEnv := desired.ProjectID != "" && c.orgEnv != nil
+	hasEnvironmentEnv := desired.EnvironmentID != "" && c.environmentEnv != nil
+	hasDatabaseEnv := len(desired.DatabaseEnv) > 0 || desired.DatabaseAttachment != nil
+	if len(desired.SecretEnv) == 0 && desired.StorageTargetID == "" && !hasProjectEnv && !hasOrgEnv && !hasEnvironmentEnv && !hasDatabaseEnv {
 		return desired.Env, nil
 	}
 
 	env := make(map[string]string, len(desired.Env)+len(desired.SecretEnv))
+
+	if hasOrgEnv {
+		orgVars, err := c.orgEnv.ListOrganizationEnvVarsForProject(ctx, desired.ProjectID)
+		if err != nil {
+			return nil, fmt.Errorf("resolve organization env vars: %w", err)
+		}
+		for k, v := range orgVars {
+			env[k] = v
+		}
+	}
 
 	if hasProjectEnv {
 		projectVars, err := c.projectEnv.ListProjectEnvVars(ctx, desired.ProjectID)
@@ -607,6 +792,16 @@ func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredServi
 			return nil, fmt.Errorf("resolve project env vars: %w", err)
 		}
 		for k, v := range projectVars {
+			env[k] = v
+		}
+	}
+
+	if hasEnvironmentEnv {
+		environmentVars, err := c.environmentEnv.ListEnvironmentEnvVars(ctx, desired.EnvironmentID)
+		if err != nil {
+			return nil, fmt.Errorf("resolve environment env vars: %w", err)
+		}
+		for k, v := range environmentVars {
 			env[k] = v
 		}
 	}
@@ -645,7 +840,134 @@ func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredServi
 		}
 	}
 
+	if hasDatabaseEnv {
+		databaseEnv, err := c.resolveDatabaseEnv(ctx, desired)
+		if err != nil {
+			return nil, fmt.Errorf("resolve database env: %w", err)
+		}
+		for k, v := range databaseEnv {
+			env[k] = v
+		}
+	}
+
 	return env, nil
+}
+
+// resolveDatabaseEnv resolves every entry in desired.DatabaseEnv plus
+// desired.DatabaseAttachment (if set) into real connection values,
+// against a managed database's actual desired state (host/port/engine)
+// and its real credentials (internal/secrets, the same per-database
+// keying cmd/levelrail's postgresCredentialsFor and its siblings already
+// establish). See resolveDatabaseField for the per-field resolution
+// rules.
+func (c *Controller) resolveDatabaseEnv(ctx context.Context, desired *store.DesiredService) (map[string]string, error) {
+	if c.databases == nil {
+		return nil, fmt.Errorf("service declares a database-backed env var but no database store is configured")
+	}
+
+	env := make(map[string]string, len(desired.DatabaseEnv)+1)
+	for envVar, ref := range desired.DatabaseEnv {
+		value, err := c.resolveDatabaseField(ctx, ref.Database, ref.Field)
+		if err != nil {
+			return nil, fmt.Errorf("env var %q: %w", envVar, err)
+		}
+		env[envVar] = value
+	}
+
+	if att := desired.DatabaseAttachment; att != nil {
+		value, err := c.resolveDatabaseField(ctx, att.DatabaseName, att.Field)
+		if err != nil {
+			return nil, fmt.Errorf("database attachment (env var %q): %w", att.EnvVar, err)
+		}
+		env[att.EnvVar] = value
+	}
+
+	return env, nil
+}
+
+// resolveDatabaseField resolves one (database, field) pair to its real
+// value. host is always the referenced database's own container name
+// (database.ContainerName, the same deterministic name
+// internal/reconcile/database's own controller creates); port is the
+// engine's standard port (database.ContainerPort); username is the
+// database's own name, mirroring Postgres/MySQL/MongoDB's own
+// "role/user equals database name" convention this platform's
+// credential generators already establish (cmd/levelrail's
+// postgresCredentialsFor and its siblings); password comes from the same
+// internal/secrets storage those generators already write to
+// (database.PasswordSecretKey).
+func (c *Controller) resolveDatabaseField(ctx context.Context, dbName, field string) (string, error) {
+	desiredDB, err := c.databases.GetDesiredDatabase(ctx, dbName)
+	if errors.Is(err, store.ErrDatabaseNotFound) {
+		return "", fmt.Errorf("references database %q, which does not exist", dbName)
+	}
+	if err != nil {
+		return "", fmt.Errorf("get database %q: %w", dbName, err)
+	}
+	if !database.SupportsField(desiredDB.Engine, field) {
+		return "", fmt.Errorf("field %q is not supported for %s databases", field, desiredDB.Engine)
+	}
+
+	host := database.ContainerName(dbName)
+	port, _ := database.ContainerPort(desiredDB.Engine) // ok already confirmed by SupportsField above
+
+	switch field {
+	case "host":
+		return host, nil
+	case "port":
+		return strconv.Itoa(port), nil
+	case "database":
+		return dbName, nil
+	case "username":
+		return dbName, nil
+	case "password":
+		return c.resolveDatabasePassword(ctx, dbName, desiredDB.Engine)
+	case "url":
+		return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, port)
+	default:
+		return "", fmt.Errorf("unsupported database field %q", field)
+	}
+}
+
+func (c *Controller) resolveDatabasePassword(ctx context.Context, dbName, engine string) (string, error) {
+	secretKey, ok := database.PasswordSecretKey(engine)
+	if !ok {
+		return "", fmt.Errorf("%s databases have no password", engine)
+	}
+	if c.secretResolver == nil {
+		return "", fmt.Errorf("database %q needs a secret resolver to resolve its password but none is configured", dbName)
+	}
+	password, err := c.secretResolver.Resolve(ctx, dbName, secretKey)
+	if err != nil {
+		return "", fmt.Errorf("resolve password for database %q: %w", dbName, err)
+	}
+	return password, nil
+}
+
+// resolveDatabaseURL builds a full connection URL. Redis, KeyDB, and
+// Dragonfly all run passwordless (internal/reconcile/database's own
+// package doc comment) and share the Redis wire protocol, so all three
+// get a "redis://" URL with no userinfo, not their own engine name as
+// scheme: a Redis client library has no idea what "keydb://" or
+// "dragonfly://" mean. Every other engine's own scheme string is
+// identical to store's engine identifier (store.EnginePostgres is
+// "postgres", store.EngineMongoDB is "mongodb", and so on), so no
+// separate scheme mapping is needed there.
+func (c *Controller) resolveDatabaseURL(ctx context.Context, dbName, engine, host string, port int) (string, error) {
+	if engine == store.EngineRedis || engine == store.EngineKeyDB || engine == store.EngineDragonfly {
+		return fmt.Sprintf("redis://%s:%d", host, port), nil
+	}
+	password, err := c.resolveDatabasePassword(ctx, dbName, engine)
+	if err != nil {
+		return "", err
+	}
+	u := url.URL{
+		Scheme: engine,
+		User:   url.UserPassword(dbName, password),
+		Host:   fmt.Sprintf("%s:%d", host, port),
+		Path:   "/" + dbName,
+	}
+	return u.String(), nil
 }
 
 // resolveStorageEnv resolves targetID (store.DesiredService.StorageTargetID)
@@ -1007,7 +1329,11 @@ func toContainerSpec(name string, desired *store.DesiredService) docker.Containe
 		Labels: desired.Labels,
 	}
 	if desired.Port != 0 {
-		spec.Ports = []docker.PortBinding{{ContainerPort: desired.Port}}
+		binding := docker.PortBinding{ContainerPort: desired.Port}
+		if desired.HostPort != nil {
+			binding.HostPort = *desired.HostPort
+		}
+		spec.Ports = []docker.PortBinding{binding}
 	}
 	if desired.Resources != nil {
 		spec.Resources = &docker.Resources{

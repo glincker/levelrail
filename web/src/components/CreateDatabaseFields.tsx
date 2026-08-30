@@ -33,19 +33,20 @@ import {
 // controller.go's Reconcile switch) refuses to start the container
 // without generated credentials, reported as the CredentialsNotConfigured
 // condition (ConditionsPanel.tsx's own reason-specific translation).
-// Redis and KeyDB are deliberately excluded: both reconcile
-// unconditionally, no secrets master key involved, see that
+// Redis, KeyDB, and Dragonfly are deliberately excluded: all three
+// reconcile unconditionally, no secrets master key involved, see that
 // controller's own package doc comment. Mirrors
 // store.EnginePostgres/store.EngineMySQL/store.EngineMongoDB/
-// store.EngineMariaDB by value rather than importing them, the same
-// "plain non-empty string, not a literal union" reasoning
-// createDatabaseSchema's own comment gives for why this file doesn't
-// hardcode a second typed copy of the engine registry.
+// store.EngineMariaDB/store.EngineClickHouse by value rather than
+// importing them, the same "plain non-empty string, not a literal
+// union" reasoning createDatabaseSchema's own comment gives for why
+// this file doesn't hardcode a second typed copy of the engine registry.
 const CREDENTIALED_ENGINES = new Set([
   'postgres',
   'mysql',
   'mongodb',
   'mariadb',
+  'clickhouse',
 ])
 
 // Presentation-only mapping from engine id to Docker Hub's official

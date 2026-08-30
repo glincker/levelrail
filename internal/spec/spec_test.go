@@ -41,6 +41,9 @@ func TestParse_ValidFull(t *testing.T) {
 	if web.Port != 3000 {
 		t.Errorf("Port = %d, want 3000", web.Port)
 	}
+	if web.HostPort != 30001 {
+		t.Errorf("HostPort = %d, want 30001", web.HostPort)
+	}
 	if web.Health == nil || web.Health.Readiness == nil || web.Health.Readiness.Path != "/healthz" {
 		t.Errorf("Health.Readiness = %+v, want Path=/healthz", web.Health)
 	}
@@ -127,6 +130,45 @@ services:
 	}
 }
 
+func TestParse_ValidBaseDirectory(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile, baseDirectory: "apps/web" }, port: 8080 }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	web, ok := s.Services["web"]
+	if !ok {
+		t.Fatal("expected a \"web\" service")
+	}
+	if web.Build.BaseDirectory != "apps/web" {
+		t.Errorf("Build.BaseDirectory = %q, want apps/web", web.Build.BaseDirectory)
+	}
+}
+
+func TestParse_ValidBuildArgs(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile, args: { VERSION: "1.2.3", DEBUG: "false" } }, port: 8080 }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	web, ok := s.Services["web"]
+	if !ok {
+		t.Fatal("expected a \"web\" service")
+	}
+	want := map[string]string{"VERSION": "1.2.3", "DEBUG": "false"}
+	if len(web.Build.Args) != len(want) || web.Build.Args["VERSION"] != "1.2.3" || web.Build.Args["DEBUG"] != "false" {
+		t.Errorf("Build.Args = %+v, want %+v", web.Build.Args, want)
+	}
+}
+
 func TestParse_ValidMongoDBDatabase(t *testing.T) {
 	yaml := `
 version: 1
@@ -190,6 +232,48 @@ databases:
 	}
 }
 
+func TestParse_ValidClickHouseDatabase(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  analytics: { engine: clickhouse, version: "24.8" }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	analytics, ok := s.Databases["analytics"]
+	if !ok {
+		t.Fatal("expected an \"analytics\" database")
+	}
+	if analytics.Engine != EngineClickHouse || analytics.Version != "24.8" {
+		t.Errorf("Databases[analytics] = %+v, want Engine=clickhouse Version=24.8", analytics)
+	}
+}
+
+func TestParse_ValidDragonflyDatabase(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  hotcache: { engine: dragonfly, version: "v1.27.1" }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	hotcache, ok := s.Databases["hotcache"]
+	if !ok {
+		t.Fatal("expected a \"hotcache\" database")
+	}
+	if hotcache.Engine != EngineDragonfly || hotcache.Version != "v1.27.1" {
+		t.Errorf("Databases[hotcache] = %+v, want Engine=dragonfly Version=v1.27.1", hotcache)
+	}
+}
+
 func TestParse_ValidMinimal_Defaults(t *testing.T) {
 	s, err := Parse(readTestdata(t, "valid_minimal.yaml"))
 	if err != nil {
@@ -215,6 +299,20 @@ func TestParse_ValidStatic_NoPortRequired(t *testing.T) {
 	}
 	if docs.Port != 0 {
 		t.Errorf("Port = %d, want 0 (static sites have no container to route to)", docs.Port)
+	}
+}
+
+func TestParse_ValidCompose_NoPortRequired(t *testing.T) {
+	s, err := Parse(readTestdata(t, "valid_compose.yaml"))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	stack := s.Services["stack"]
+	if stack.Build.Type != BuildCompose {
+		t.Errorf("Build.Type = %q, want %q", stack.Build.Type, BuildCompose)
+	}
+	if stack.Port != 0 {
+		t.Errorf("Port = %d, want 0 (a compose wrapper expands into N services, each with its own port, not one to route to itself)", stack.Port)
 	}
 }
 
@@ -303,6 +401,23 @@ services:
 `,
 		},
 		{
+			name: "host_port out of range",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, host_port: 99999 }
+`,
+		},
+		{
+			name: "host_port set for a static build",
+			yaml: `
+version: 1
+services:
+  docs: { build: { type: static }, host_port: 8080 }
+`,
+			wantErrSubstr: "host_port must not be set when build.type is",
+		},
+		{
 			name: "bad memory pattern",
 			yaml: `
 version: 1
@@ -358,6 +473,69 @@ services:
 			wantErrSubstr: "build.path is not meaningful for build.type: image",
 		},
 		{
+			name: "build.baseDirectory set for an image build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: image, image: "ghcr.io/org/app:v1", baseDirectory: "apps/web" }, port: 8080 }
+`,
+			wantErrSubstr: "build.baseDirectory is not meaningful for build.type: image",
+		},
+		{
+			name: "build.baseDirectory set for a compose build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: compose, path: "./docker-compose.yml", baseDirectory: "apps/web" }, port: 8080 }
+`,
+			wantErrSubstr: "build.baseDirectory is not meaningful for build.type: compose",
+		},
+		{
+			name: "build.args set for a railpack build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: railpack, args: { VERSION: "1.2.3" } }, port: 8080 }
+`,
+			wantErrSubstr: `build.args is not meaningful for build.type "railpack"`,
+		},
+		{
+			name: "build.args set for a static build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: static, args: { VERSION: "1.2.3" } } }
+`,
+			wantErrSubstr: `build.args is not meaningful for build.type "static"`,
+		},
+		{
+			name: "build.args set for an image build type",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: image, image: "ghcr.io/org/app:v1", args: { VERSION: "1.2.3" } }, port: 8080 }
+`,
+			wantErrSubstr: `build.args is not meaningful for build.type "image"`,
+		},
+		{
+			name: "build.baseDirectory is an absolute path",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile, baseDirectory: "/etc/passwd" }, port: 8080 }
+`,
+			wantErrSubstr: "must be a relative path",
+		},
+		{
+			name: "build.baseDirectory escapes the repository root",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile, baseDirectory: "../escape" }, port: 8080 }
+`,
+			wantErrSubstr: "must not escape the repository root",
+		},
+		{
 			name: "port required for non-static build",
 			yaml: `
 version: 1
@@ -372,6 +550,15 @@ services:
 version: 1
 services:
   docs: { build: { type: static }, port: 8080 }
+`,
+			wantErrSubstr: "port must not be set when build.type is",
+		},
+		{
+			name: "port must not be set for compose build",
+			yaml: `
+version: 1
+services:
+  stack: { build: { type: compose, path: docker-compose.yml }, port: 8080 }
 `,
 			wantErrSubstr: "port must not be set when build.type is",
 		},

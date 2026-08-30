@@ -117,12 +117,24 @@ type triggerBuildBuildInput struct {
 	// runs against the checkout root), so handleTriggerBuild rejects a
 	// railpack request that sets one rather than silently ignoring it.
 	Path string `json:"path,omitempty"`
+	// BaseDirectory scopes the build context (and Path, for dockerfile)
+	// to a subdirectory of the checkout, for a monorepo where this
+	// service doesn't live at the repo root. Meaningful for dockerfile,
+	// railpack, and static; rejected for image below.
+	BaseDirectory string `json:"base_directory,omitempty"`
 	// Image is required for, and only meaningful for, build.type: image:
 	// a prebuilt registry reference deployed as-is, no git checkout or
 	// build at all (internal/deploy.Pipeline.deployImage). repo_url/ref
 	// are not required on the request for this build type either, since
 	// nothing gets cloned.
 	Image string `json:"image,omitempty"`
+	// Args are Dockerfile build-time ARG values, passed through to
+	// BuildKit as --build-arg equivalents. Only meaningful for
+	// build.type: dockerfile; handleTriggerBuild rejects a non-empty
+	// value for any other build type, the same "fail loudly on a
+	// meaningless field" pattern Path's own doc comment establishes for
+	// railpack.
+	Args map[string]string `json:"args,omitempty"`
 }
 
 // triggerBuildRequest is POST /api/v1/apps/{name}/builds's body: a git
@@ -256,11 +268,14 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		// Supported: internal/deploy.Pipeline.Deploy has a real case for
 		// each of these four.
 	case spec.BuildCompose:
-		// Fails before any git I/O: a build type internal/deploy.Pipeline
-		// can never build is a fixed fact about this control plane's
-		// current capability, not something a valid repo_url/ref could
-		// ever fix, so there's nothing worth cloning first to find out.
-		writeError(w, http.StatusNotImplemented, fmt.Sprintf("build.type %q is not yet supported for a manual build trigger", buildType))
+		// Fails before any git I/O: a manual build trigger rebuilds one
+		// already-existing single service, but a compose file always
+		// declares its own set of services, which can only ever be
+		// expanded into a real multi-service deploy (POST
+		// /api/v1/apps/{name}/deploy-spec, internal/deploy.Pipeline.
+		// DeploySpec's own expandComposeServices), never a single one, so
+		// there's nothing worth cloning first to find out.
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("build.type %q is only supported via a multi-service deploy (POST /api/v1/apps/{name}/deploy-spec), not a manual build trigger", buildType))
 		return
 	default:
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("build.type %q is not recognized", buildType))
@@ -270,6 +285,10 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 	if buildType == spec.BuildImage {
 		if req.Build.Image == "" {
 			writeError(w, http.StatusBadRequest, "build.image is required for build.type \"image\"")
+			return
+		}
+		if req.Build.BaseDirectory != "" {
+			writeError(w, http.StatusBadRequest, "build.base_directory is not meaningful for build.type \"image\"")
 			return
 		}
 	} else {
@@ -290,13 +309,17 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "build.path is not meaningful for build.type \"railpack\"")
 		return
 	}
+	if buildType != spec.BuildDockerfile && len(req.Build.Args) > 0 {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("build.args is not meaningful for build.type %q", buildType))
+		return
+	}
 
 	imageRepo := req.ImageRepo
 	if imageRepo == "" {
 		imageRepo = name
 	}
 
-	buildCfg := spec.Build{Type: buildType, Path: req.Build.Path}
+	buildCfg := spec.Build{Type: buildType, Path: req.Build.Path, BaseDirectory: req.Build.BaseDirectory, Args: req.Build.Args}
 	if buildType == spec.BuildImage {
 		buildCfg = spec.Build{Type: buildType, Image: req.Build.Image}
 	}

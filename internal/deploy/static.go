@@ -58,8 +58,9 @@ func WithStaticRootDir(dir string) Option {
 	return func(p *Pipeline) { p.staticRootDir = dir }
 }
 
-// deployStatic copies req.Service.Build.Path (relative to req.SourceDir,
-// or req.SourceDir itself when Build.Path is empty) into
+// deployStatic copies req.Service.Build.Path (relative to
+// req.Service.Build.BaseDirectory under req.SourceDir, or that build
+// root itself when Build.Path is empty) into
 // "<staticRootDir>/<req.ServiceName>/<req.CommitSHA>", then saves that
 // directory plus req.Service.Domains as a store.StaticSite. Unlike
 // deployDockerfile, there is no image, no build.ProgressEvent to forward
@@ -82,9 +83,14 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request) (string, error
 		return "", fmt.Errorf("deploy: service %q: build.type %q needs a static root directory configured (WithStaticRootDir)", req.ServiceName, spec.BuildStatic)
 	}
 
-	srcDir := req.SourceDir
+	buildRoot, err := resolveBuildRoot(req.SourceDir, req.Service.Build.BaseDirectory)
+	if err != nil {
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
+
+	srcDir := buildRoot
 	if req.Service.Build.Path != "" {
-		srcDir = filepath.Join(req.SourceDir, req.Service.Build.Path)
+		srcDir = filepath.Join(buildRoot, req.Service.Build.Path)
 	}
 	info, err := os.Stat(srcDir)
 	if err != nil {

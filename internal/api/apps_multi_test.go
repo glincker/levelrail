@@ -124,6 +124,39 @@ func TestHandleDeploySpec_ImageBuildTypeAccepted(t *testing.T) {
 	}
 }
 
+// TestHandleDeploySpec_ComposeBuildTypeAccepted proves this handler's
+// own per-service switch no longer rejects build.type: compose (it did,
+// with a 501, before internal/deploy.Pipeline.DeploySpec grew the
+// ability to expand one). Expansion itself (reading and parsing the
+// referenced compose file, splicing its own services in) is
+// Pipeline.DeploySpec's own job, already covered end to end against a
+// real *store.DB by internal/deploy/multi_test.go's own compose tests;
+// this test only needs a fake builder (this package's usual pattern) to
+// prove the request reaches it at all.
+func TestHandleDeploySpec_ComposeBuildTypeAccepted(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	fetch := newFakeFetch("/tmp/checkout", nil)
+	rt, db := newTestRouterWithBuilder(t, builder, fetch)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{
+		"repo_url": "https://example.com/org/app.git",
+		"ref": "main",
+		"services": {
+			"stack": {"build": {"type": "compose", "path": "./docker-compose.yml"}}
+		}
+	}`
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	if builder.multiCalls != 1 {
+		t.Fatalf("builder.multiCalls = %d, want 1: build.type compose must not be rejected before reaching the builder", builder.multiCalls)
+	}
+}
+
 func assertDeploySpecAllSucceeded(t *testing.T, resp deploySpecResponse) {
 	t.Helper()
 	if !resp.AllSucceeded {

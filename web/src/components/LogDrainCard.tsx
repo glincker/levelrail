@@ -3,7 +3,13 @@ import {
   ArrowSquareOutIcon,
   PlugsConnectedIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -80,13 +86,12 @@ export function LogDrainCard({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle>Log drain</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
+        <CardDescription>
           Forward this app&apos;s container logs to an external HTTP endpoint or
           syslog server, in addition to the built-in log store above.
-        </p>
-
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
         {existing ? (
           <div className="flex items-center justify-between gap-4 rounded-lg border border-input bg-muted/50 p-3">
             <div className="flex min-w-0 items-start gap-2">

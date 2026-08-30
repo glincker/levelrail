@@ -12,6 +12,7 @@ import { ApiError, readErrorMessage } from '../lib/apiError'
 export interface PublicOAuthProvider {
   provider: string
   enabled: boolean
+  display_name?: string
 }
 
 export interface OAuthProviderSettings {
@@ -19,6 +20,8 @@ export interface OAuthProviderSettings {
   enabled: boolean
   client_id?: string
   allowed_email_domain?: string
+  issuer_url?: string
+  display_name?: string
   has_client_secret: boolean
 }
 
@@ -27,6 +30,8 @@ export interface UpdateOAuthProviderSettingsRequest {
   client_id: string
   client_secret?: string
   allowed_email_domain: string
+  issuer_url: string
+  display_name: string
 }
 
 export const oauthKeys = {

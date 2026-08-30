@@ -53,6 +53,22 @@ func WithCloudflareTunnelSecrets(s CloudflareTunnelSecrets) Option {
 	return func(rt *Router) { rt.cloudflareTunnelSecrets = s }
 }
 
+// WithCloudflareDNSSecrets enables PUT/DELETE
+// /api/v1/settings/cloudflare-dns. Without one configured (the default),
+// both return 501; GET works regardless, the same shape
+// WithCloudflareTunnelSecrets establishes.
+func WithCloudflareDNSSecrets(s CloudflareDNSSecrets) Option {
+	return func(rt *Router) { rt.cloudflareDNSSecrets = s }
+}
+
+// WithDomainBasicAuthSecrets enables PUT/DELETE
+// /api/v1/apps/{name}/domains/{domain}/auth. Without one configured
+// (the default), both return 501; GET works regardless, the same shape
+// WithCloudflareTunnelSecrets establishes.
+func WithDomainBasicAuthSecrets(s DomainBasicAuthSecrets) Option {
+	return func(rt *Router) { rt.domainBasicAuthSecrets = s }
+}
+
 // WithComposeSecrets enables POST /api/v1/apps/{name}/compose to
 // resolve a compose file's generatable SERVICE_ magic vars. Without one
 // configured (the default), that endpoint still works for compose files

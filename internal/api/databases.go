@@ -40,9 +40,10 @@ type databaseResource struct {
 	// NodeID/ProjectID already establish: set or clear them via
 	// PUT/DELETE /api/v1/databases/{name}/backup-schedule (backups.go),
 	// never through this resource's own create/update body.
-	BackupTargetID string `json:"backup_target_id,omitempty"`
-	BackupSchedule string `json:"backup_schedule,omitempty"`
-	BackupRetain   int    `json:"backup_retain,omitempty"`
+	BackupTargetID   string `json:"backup_target_id,omitempty"`
+	BackupSchedule   string `json:"backup_schedule,omitempty"`
+	BackupRetain     int    `json:"backup_retain,omitempty"`
+	BackupRetainDays int    `json:"backup_retain_days,omitempty"`
 	// PubliclyAccessible, PublicPort: response-only, the identical
 	// boundary NodeID/ProjectID/BackupTargetID already establish. Set or
 	// clear them via PUT/DELETE /api/v1/databases/{name}/public-access
@@ -71,6 +72,7 @@ func toDatabaseResource(d store.DesiredDatabase) databaseResource {
 		BackupTargetID:     d.BackupTargetID,
 		BackupSchedule:     d.BackupSchedule,
 		BackupRetain:       d.BackupRetain,
+		BackupRetainDays:   d.BackupRetainDays,
 		PubliclyAccessible: d.PubliclyAccessible,
 		PublicPort:         d.PublicPort,
 		Resources:          d.Resources,

@@ -71,6 +71,13 @@ type AppStore interface {
 	// reasoning as UpdateServiceStorageTarget, see
 	// store.DB.UpdateServiceLogDrain's own doc comment.
 	UpdateServiceLogDrain(ctx context.Context, name string, drain *store.LogDrain) error
+	// UpdateServiceDatabaseAttachment backs PUT/DELETE
+	// /api/v1/apps/{name}/database (apps_database.go): which managed
+	// database (DatabaseStore below) this app resolves one connection env
+	// var from. Same separation-from-ordinary-update reasoning as
+	// UpdateServiceStorageTarget, see store.DB.UpdateServiceDatabaseAttachment's
+	// own doc comment.
+	UpdateServiceDatabaseAttachment(ctx context.Context, name string, att *store.DatabaseAttachment) error
 }
 
 // AppGroupLister is the store surface GET /api/v1/apps/{name}/group
@@ -172,7 +179,7 @@ type DatabaseStore interface {
 	// wave-2 roadmap item 6, scheduled backups. Same "own endpoint, own
 	// store method" separation UpdateDatabaseNode/UpdateDatabaseProject
 	// already establish for their own single-purpose updates.
-	SetDatabaseBackupSchedule(ctx context.Context, name, targetID, schedule string, retain int) error
+	SetDatabaseBackupSchedule(ctx context.Context, name, targetID, schedule string, retain, retainDays int) error
 	// SetDatabasePublicAccess backs
 	// PUT/DELETE /api/v1/databases/{name}/public-access
 	// (database_public_access.go): the same "own endpoint, own store
@@ -244,6 +251,14 @@ type CloudflareTunnelStore interface {
 	UpdateCloudflareTunnelSettings(ctx context.Context, s store.CloudflareTunnelSettings) error
 }
 
+// CloudflareDNSStore is the store surface GET/PUT
+// /api/v1/settings/cloudflare-dns need, the same "single platform-wide
+// row" shape CloudflareTunnelStore already establishes.
+type CloudflareDNSStore interface {
+	GetCloudflareDNSSettings(ctx context.Context) (store.CloudflareDNSSettings, error)
+	UpdateCloudflareDNSSettings(ctx context.Context, s store.CloudflareDNSSettings) error
+}
+
 // PasswordResetTokenStore is the store surface the forgot-password flow
 // needs: always set, part of the core Store interface.
 type PasswordResetTokenStore interface {
@@ -293,8 +308,11 @@ type Store interface {
 	BackupHistoryStore
 	RestoreHistoryStore
 	ProjectStore
+	OrganizationStore
+	EnvironmentStore
 	IngressSettingsStore
 	DomainStore
+	DomainBasicAuthStore
 	GitSourceStore
 	GitHubAppStore
 	GitLabAppStore
@@ -303,6 +321,7 @@ type Store interface {
 	OAuthIdentityStore
 	EmailSettingsStore
 	CloudflareTunnelStore
+	CloudflareDNSStore
 	PasswordResetTokenStore
 	RecoveryCodeStore
 	AuditStore

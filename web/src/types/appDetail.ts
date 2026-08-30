@@ -25,13 +25,7 @@ export interface ServiceHealth {
 
 // The three deploy strategy values internal/spec.Service.Strategy
 // accepts (internal/spec/spec.go's StrategyRolling/StrategyRecreate/
-// StrategyBlueGreen). "rolling" is included here because it's a real,
-// readable value a service can already carry (e.g. a hand-edited
-// app.yaml deployed outside this UI), not because it's meant to be
-// offered as a new choice: internal/reconcile/application's controller
-// refuses to run it (documented "unsupported" condition, not a bug),
-// so DeployStrategyEditor deliberately does not let an operator pick it
-// going forward, see that component's own comment.
+// StrategyBlueGreen), all three reconciler-backed.
 export type DeployStrategy = 'rolling' | 'recreate' | 'blue-green'
 
 // Matches internal/store's LogDrainType exactly: the two sink protocols
@@ -65,6 +59,11 @@ export interface AppDetail {
   name: string
   image: string
   port: number
+  // host_port pins the host-side port Docker binds `port` to
+  // (internal/api/apps.go's appResource.HostPort). undefined/null means
+  // "let Docker assign one", the ordinary case. Settable on create and
+  // update, like `port` itself, not response-only.
+  host_port?: number | null
   domains?: string[]
   env?: Record<string, string>
   resources?: ServiceResources | null
@@ -87,6 +86,10 @@ export interface AppDetail {
   // for why a brand-new app is safe to assign a project to at create
   // time in a way an ordinary update is not.
   project_id?: string
+  // environment_id carries `omitempty` on the Go side and is
+  // response-only, the same node_id/project_id shape above: set via
+  // PUT /api/v1/apps/{name}/environment (useSetAppEnvironment).
+  environment_id?: string
   // storage_target_id carries `omitempty` on the Go side and is
   // response-only (internal/api/apps.go's appResource own doc comment):
   // which connected backup target (queries/backupTargets.ts) this app's
@@ -95,6 +98,25 @@ export interface AppDetail {
   // (useSetAppStorage/useClearAppStorage), the same node_id/project_id
   // shape just above.
   storage_target_id?: string
+  // database_env carries `omitempty` on the Go side and is response-only
+  // (internal/api/apps.go's appResource own doc comment): every env var
+  // this app.yaml-deployed service resolves from a managed database
+  // (internal/spec's own { from: "<database>.<field>" } syntax), keyed by
+  // env var name. Read-only here on purpose: it comes from the deploy
+  // pipeline, not this endpoint. See database_attachment below for the
+  // settable, single-attachment counterpart.
+  database_env?: Record<string, { database: string; field: string }>
+  // database_attachment carries `omitempty` on the Go side and is
+  // response-only, the same node_id/project_id/storage_target_id shape
+  // above: which managed database this app resolves one connection env
+  // var from, undefined meaning none attached. Set it via PUT/DELETE
+  // /api/v1/apps/{name}/database (useSetAppDatabase/useClearAppDatabase).
+  database_attachment?: {
+    app_name?: string
+    database_name: string
+    env_var: string
+    field: string
+  }
   // suspended is response-only (internal/api/apps.go's appResource own
   // doc comment): set it via POST /api/v1/apps/{name}/stop and .../start
   // (useStopApp/useStartApp), the same node_id/project_id shape above.

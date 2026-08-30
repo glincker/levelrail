@@ -20,7 +20,7 @@ import (
 // instance_url query parameter every GitHub App registration entry
 // point (register/start, register/preview) accepts: "" defaults to
 // github.com itself, matching every existing connection's own default
-// (migrations/0050). A non-empty value must be a real https URL with no
+// (migrations/0061). A non-empty value must be a real https URL with no
 // path/query/fragment, and is returned with any trailing slash trimmed
 // so it composes cleanly with the fixed paths BuildManifest and
 // APIBaseURL append.

@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -20,9 +22,18 @@ import (
 // 0017_deploy_strategy.sql), so this resource now carries them too;
 // domains closed once TASKS.md 1.6 added the column, the same way.
 type appResource struct {
-	Name      string                  `json:"name"`
-	Image     string                  `json:"image"`
-	Port      int                     `json:"port"`
+	Name  string `json:"name"`
+	Image string `json:"image"`
+	Port  int    `json:"port"`
+	// HostPort pins the host-side port Docker binds Port to
+	// (store.DesiredService.HostPort, migrations/0056). nil means "let
+	// Docker assign one", the ordinary case; a real conflict at deploy
+	// time (this host port already bound) surfaces through the existing
+	// reconcile-condition/deploy-log mechanism, since Docker itself is
+	// the only thing that can authoritatively know at container-create
+	// time. Settable on create and update, like Port itself, not
+	// response-only.
+	HostPort  *int                    `json:"host_port,omitempty"`
 	Domains   []string                `json:"domains,omitempty"`
 	Env       map[string]string       `json:"env,omitempty"`
 	Resources *store.ServiceResources `json:"resources,omitempty"`
@@ -65,6 +76,10 @@ type appResource struct {
 	// it there doesn't violate that boundary. Set it on an existing app
 	// via PUT /api/v1/apps/{name}/project (handleSetAppProject) instead.
 	ProjectID string `json:"project_id,omitempty"`
+	// EnvironmentID is which environment (environments.go) this app is
+	// tagged with, empty meaning none. Response-only, same boundary as
+	// ProjectID: set via PUT /api/v1/apps/{name}/environment instead.
+	EnvironmentID string `json:"environment_id,omitempty"`
 	// StorageTargetID is which connected backup target (backup_targets.go)
 	// this app's object-storage credentials resolve from, empty meaning
 	// no storage attached. Response-only, the same "shown but not
@@ -74,6 +89,20 @@ type appResource struct {
 	// PUT/DELETE /api/v1/apps/{name}/storage (apps_storage.go's
 	// handleSetAppStorage/handleClearAppStorage) instead.
 	StorageTargetID string `json:"storage_target_id,omitempty"`
+	// DatabaseEnv names every env var whose value resolves from a managed
+	// database's own connection details (store.DesiredService.DatabaseEnv,
+	// internal/spec's { from: "<database>.<field>" } syntax), so the UI
+	// can show which databases an app.yaml-deployed service is wired to
+	// without hand-parsing app.yaml itself. Response-only: this comes from
+	// the deploy pipeline (internal/deploy), never from this endpoint.
+	DatabaseEnv map[string]appDatabaseEnvRef `json:"database_env,omitempty"`
+	// DatabaseAttachment is the UI/CLI-facing attachment
+	// (store.DesiredService.DatabaseAttachment), distinct from DatabaseEnv
+	// above: see apps_database.go's own doc comment. Response-only, the
+	// same "shown but not settable through this endpoint" boundary
+	// StorageTargetID already establishes: set it via PUT/DELETE
+	// /api/v1/apps/{name}/database instead.
+	DatabaseAttachment *appDatabaseResource `json:"database_attachment,omitempty"`
 	// Suspended is whether the app is stopped (POST .../stop), the
 	// reconciler's own containers-only teardown, distinct from delete.
 	// Response-only: set it via POST/DELETE-shaped
@@ -95,23 +124,44 @@ type appResource struct {
 }
 
 func toAppResource(svc store.DesiredService) appResource {
+	var databaseEnv map[string]appDatabaseEnvRef
+	if len(svc.DatabaseEnv) > 0 {
+		databaseEnv = make(map[string]appDatabaseEnvRef, len(svc.DatabaseEnv))
+		for k, v := range svc.DatabaseEnv {
+			databaseEnv[k] = appDatabaseEnvRef{Database: v.Database, Field: v.Field}
+		}
+	}
+	var attachment *appDatabaseResource
+	if svc.DatabaseAttachment != nil {
+		attachment = &appDatabaseResource{
+			AppName:      svc.Name,
+			DatabaseName: svc.DatabaseAttachment.DatabaseName,
+			EnvVar:       svc.DatabaseAttachment.EnvVar,
+			Field:        svc.DatabaseAttachment.Field,
+		}
+	}
+
 	return appResource{
-		Name:            svc.Name,
-		Image:           svc.Image,
-		Port:            svc.Port,
-		Domains:         svc.Domains,
-		Env:             svc.Env,
-		Resources:       svc.Resources,
-		Health:          svc.Health,
-		Strategy:        svc.Strategy,
-		Replicas:        svc.Replicas,
-		Labels:          svc.Labels,
-		NodeID:          svc.NodeID,
-		ProjectID:       svc.ProjectID,
-		StorageTargetID: svc.StorageTargetID,
-		Suspended:       svc.Suspended,
-		AppID:           svc.AppID,
-		LogDrain:        svc.LogDrain,
+		Name:               svc.Name,
+		Image:              svc.Image,
+		Port:               svc.Port,
+		HostPort:           svc.HostPort,
+		Domains:            svc.Domains,
+		Env:                svc.Env,
+		Resources:          svc.Resources,
+		Health:             svc.Health,
+		Strategy:           svc.Strategy,
+		Replicas:           svc.Replicas,
+		Labels:             svc.Labels,
+		NodeID:             svc.NodeID,
+		ProjectID:          svc.ProjectID,
+		EnvironmentID:      svc.EnvironmentID,
+		StorageTargetID:    svc.StorageTargetID,
+		DatabaseEnv:        databaseEnv,
+		DatabaseAttachment: attachment,
+		Suspended:          svc.Suspended,
+		AppID:              svc.AppID,
+		LogDrain:           svc.LogDrain,
 	}
 }
 
@@ -120,6 +170,7 @@ func (a appResource) toDesiredService() store.DesiredService {
 		Name:      a.Name,
 		Image:     a.Image,
 		Port:      a.Port,
+		HostPort:  a.HostPort,
 		Domains:   a.Domains,
 		Env:       a.Env,
 		Resources: a.Resources,
@@ -131,20 +182,9 @@ func (a appResource) toDesiredService() store.DesiredService {
 }
 
 // validKnownStrategies mirrors internal/spec's own
-// StrategyRolling/StrategyRecreate/StrategyBlueGreen exactly. "rolling"
-// stays in this set on purpose: it's a real, named app.yaml value (a
-// service saved via the deploy pipeline, e.g. a hand-edited app.yaml,
-// can already carry it, internal/reconcile/application's controller
-// test seeds it directly through the store), it is only permanently
-// unsupported at *reconcile* time, where it fails loudly with a
-// documented condition rather than silently running as something else.
-// Rejecting it here would make the API stricter than the store and the
-// reconciler already are, for no safety gain, since a bad reconcile
-// outcome is already visible via the app's conditions. The frontend
-// picker is a separate, narrower decision: it only offers recreate/
-// blue-green as new choices so a user can't pick a state that's
-// guaranteed to fail on next reconcile without ever seeing why, but
-// that's a UI affordance choice, not a wire-validation one.
+// StrategyRolling/StrategyRecreate/StrategyBlueGreen exactly, all three
+// reconciler-backed (internal/reconcile/application's controller runs
+// all three).
 var validKnownStrategies = map[string]bool{
 	spec.StrategyRolling:   true,
 	spec.StrategyRecreate:  true,
@@ -161,6 +201,9 @@ func validateAppResource(a appResource) error {
 	if a.Port <= 0 {
 		return errors.New("port must be a positive integer")
 	}
+	if a.HostPort != nil && (*a.HostPort < 1 || *a.HostPort > 65535) {
+		return errors.New("host_port must be between 1 and 65535")
+	}
 	// Empty is valid (falls through to store.DefaultDeployStrategy), but
 	// a non-empty value that isn't one of the three known spec constants
 	// is almost certainly a typo, and worth rejecting loudly here rather
@@ -175,6 +218,11 @@ func validateAppResource(a appResource) error {
 	}
 	if err := spec.ValidateLabels(a.Labels); err != nil {
 		return err
+	}
+	for _, domain := range a.Domains {
+		if err := ingress.ValidateWildcardDomain(domain); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -296,6 +344,13 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	}
 	req.AppID = appID
 
+	// Skip the git-build path's ":pending" placeholder (cmd/levelrail-cli's
+	// pendingImageTag): its own POST .../builds call records the real
+	// history entry once a build actually succeeds.
+	if !strings.HasSuffix(req.Image, ":pending") {
+		rt.recordPlainDeployAttempt(r.Context(), req.Name, req.Image)
+	}
+
 	writeJSON(w, http.StatusCreated, req)
 }
 
@@ -384,6 +439,19 @@ type setAppNodeRequest struct {
 // service on a node that will never reconcile it (resolveNodeTransport,
 // cmd/levelrail/main.go, would otherwise just skip it forever with
 // nothing surfaced beyond a log line).
+// reloadAndWriteApp reloads name's desired service and writes it as the
+// response, the common tail every app-mutation handler in this file needs.
+// logContext names the calling handler for the error log line.
+func (rt *Router) reloadAndWriteApp(w http.ResponseWriter, r *http.Request, name, logContext string) {
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if err != nil {
+		rt.logger.Error("api: "+logContext+": reload after update failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toAppResource(*svc))
+}
+
 func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -419,13 +487,7 @@ func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	svc, err := rt.apps.GetDesiredService(r.Context(), name)
-	if err != nil {
-		rt.logger.Error("api: set app node: reload after update failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	writeJSON(w, http.StatusOK, toAppResource(*svc))
+	rt.reloadAndWriteApp(w, r, name, "set app node")
 }
 
 // setAppProjectRequest is PUT /api/v1/apps/{name}/project's body, the
@@ -472,13 +534,7 @@ func (rt *Router) handleSetAppProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	svc, err := rt.apps.GetDesiredService(r.Context(), name)
-	if err != nil {
-		rt.logger.Error("api: set app project: reload after update failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	writeJSON(w, http.StatusOK, toAppResource(*svc))
+	rt.reloadAndWriteApp(w, r, name, "set app project")
 }
 
 // handleRestartApp handles POST /api/v1/apps/{name}/restart: force a
@@ -499,13 +555,7 @@ func (rt *Router) handleRestartApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	svc, err := rt.apps.GetDesiredService(r.Context(), name)
-	if err != nil {
-		rt.logger.Error("api: restart app: reload after restart failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	writeJSON(w, http.StatusOK, toAppResource(*svc))
+	rt.reloadAndWriteApp(w, r, name, "restart app")
 }
 
 // handleStopApp handles POST /api/v1/apps/{name}/stop: sets Suspended,
@@ -525,13 +575,7 @@ func (rt *Router) handleStopApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	svc, err := rt.apps.GetDesiredService(r.Context(), name)
-	if err != nil {
-		rt.logger.Error("api: stop app: reload after stop failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	writeJSON(w, http.StatusOK, toAppResource(*svc))
+	rt.reloadAndWriteApp(w, r, name, "stop app")
 }
 
 // handleStartApp handles POST /api/v1/apps/{name}/start: clears
@@ -549,13 +593,7 @@ func (rt *Router) handleStartApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	svc, err := rt.apps.GetDesiredService(r.Context(), name)
-	if err != nil {
-		rt.logger.Error("api: start app: reload after start failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	writeJSON(w, http.StatusOK, toAppResource(*svc))
+	rt.reloadAndWriteApp(w, r, name, "start app")
 }
 
 // handleDeleteApp handles DELETE /api/v1/apps/{name}. See

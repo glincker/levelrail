@@ -10,6 +10,10 @@ docs-local/
 *.test
 *.out
 vendor/
+/levelrail
+/levelrail-agent
+/levelrail-mcp
+*.log
 
 # Node (web frontend, once scaffolded). Anchored to /web/build/ so this
 # never shadows internal/build/ or any other Go package literally named

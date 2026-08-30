@@ -41,7 +41,7 @@ func TestSaveAndGetGitHubAppConnection(t *testing.T) {
 
 // TestSaveAndGetGitHubAppConnection_GHEInstanceURL proves a GitHub
 // Enterprise Server instance URL round-trips distinctly from the
-// github.com default (migrations/0050).
+// github.com default (migrations/0061).
 func TestSaveAndGetGitHubAppConnection_GHEInstanceURL(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

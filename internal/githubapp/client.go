@@ -17,7 +17,7 @@ import (
 const defaultBaseURL = "https://api.github.com"
 
 // defaultInstanceURL is github.com itself: every GitHubAppConnection
-// row's InstanceURL defaults to this (migrations/0050), and it is the
+// row's InstanceURL defaults to this (migrations/0061), and it is the
 // one instance value APIBaseURL treats as "use defaultBaseURL /
 // Client.BaseURL" rather than deriving a REST root from the instance
 // URL itself.

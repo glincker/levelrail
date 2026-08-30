@@ -335,3 +335,364 @@ func TestClient_GetServiceTemplate_NotFound(t *testing.T) {
 		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusNotFound)
 	}
 }
+
+func TestClient_CreateOrganization(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody CreateOrganizationRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(OrganizationResource{ID: "org_1", Name: gotBody.Name, CreatedAt: "2026-08-16T00:00:00Z"})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.CreateOrganization(context.Background(), CreateOrganizationRequest{Name: "Acme"})
+	if err != nil {
+		t.Fatalf("CreateOrganization() error = %v", err)
+	}
+	if gotMethod != http.MethodPost || gotPath != "/api/v1/organizations" {
+		t.Errorf("method/path = %s %s, want POST /api/v1/organizations", gotMethod, gotPath)
+	}
+	if got.ID != "org_1" || got.Name != "Acme" {
+		t.Errorf("CreateOrganization() = %+v, want id org_1 name Acme", got)
+	}
+}
+
+func TestClient_ListOrganizations(t *testing.T) {
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]OrganizationResource{{ID: "org_1", Name: "Acme"}})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.ListOrganizations(context.Background())
+	if err != nil {
+		t.Fatalf("ListOrganizations() error = %v", err)
+	}
+	if gotPath != "/api/v1/organizations" {
+		t.Errorf("path = %q, want /api/v1/organizations", gotPath)
+	}
+	if len(got) != 1 || got[0].ID != "org_1" {
+		t.Errorf("ListOrganizations() = %+v, want one org_1", got)
+	}
+}
+
+func TestClient_GetOrganization(t *testing.T) {
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(OrganizationResource{ID: "org_1", Name: "Acme"})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.GetOrganization(context.Background(), "org_1")
+	if err != nil {
+		t.Fatalf("GetOrganization() error = %v", err)
+	}
+	if gotPath != "/api/v1/organizations/org_1" {
+		t.Errorf("path = %q, want /api/v1/organizations/org_1", gotPath)
+	}
+	if got.Name != "Acme" {
+		t.Errorf("Name = %q, want Acme", got.Name)
+	}
+}
+
+func TestClient_DeleteOrganization(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	if err := client.DeleteOrganization(context.Background(), "org_1"); err != nil {
+		t.Fatalf("DeleteOrganization() error = %v", err)
+	}
+	if gotMethod != http.MethodDelete || gotPath != "/api/v1/organizations/org_1" {
+		t.Errorf("method/path = %s %s, want DELETE /api/v1/organizations/org_1", gotMethod, gotPath)
+	}
+}
+
+func TestClient_SetProjectOrganization(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody SetProjectOrganizationRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(ProjectResource{ID: "proj_1", Name: "web", OrgID: gotBody.OrgID})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.SetProjectOrganization(context.Background(), "proj_1", "org_1")
+	if err != nil {
+		t.Fatalf("SetProjectOrganization() error = %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/projects/proj_1/organization" {
+		t.Errorf("method/path = %s %s, want PUT /api/v1/projects/proj_1/organization", gotMethod, gotPath)
+	}
+	if got.OrgID != "org_1" {
+		t.Errorf("OrgID = %q, want org_1", got.OrgID)
+	}
+}
+
+func TestClient_GetOrganizationEnv(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"LOG_LEVEL": "info"})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.GetOrganizationEnv(context.Background(), "org_1")
+	if err != nil {
+		t.Fatalf("GetOrganizationEnv() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/organizations/org_1/env" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/organizations/org_1/env", gotMethod, gotPath)
+	}
+	if got["LOG_LEVEL"] != "info" {
+		t.Errorf("GetOrganizationEnv() = %+v, want LOG_LEVEL=info", got)
+	}
+}
+
+func TestClient_SetOrganizationEnv(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody map[string]string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(gotBody)
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.SetOrganizationEnv(context.Background(), "org_1", map[string]string{"LOG_LEVEL": "info"})
+	if err != nil {
+		t.Fatalf("SetOrganizationEnv() error = %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/organizations/org_1/env" {
+		t.Errorf("method/path = %s %s, want PUT /api/v1/organizations/org_1/env", gotMethod, gotPath)
+	}
+	if got["LOG_LEVEL"] != "info" {
+		t.Errorf("SetOrganizationEnv() = %+v, want LOG_LEVEL=info", got)
+	}
+}
+
+func TestClient_GetEnvironmentEnv(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"LOG_LEVEL": "info"})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.GetEnvironmentEnv(context.Background(), "env_1")
+	if err != nil {
+		t.Fatalf("GetEnvironmentEnv() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/environments/env_1/env" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/environments/env_1/env", gotMethod, gotPath)
+	}
+	if got["LOG_LEVEL"] != "info" {
+		t.Errorf("GetEnvironmentEnv() = %+v, want LOG_LEVEL=info", got)
+	}
+}
+
+func TestClient_SetEnvironmentEnv(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody map[string]string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(gotBody)
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.SetEnvironmentEnv(context.Background(), "env_1", map[string]string{"LOG_LEVEL": "info"})
+	if err != nil {
+		t.Fatalf("SetEnvironmentEnv() error = %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/environments/env_1/env" {
+		t.Errorf("method/path = %s %s, want PUT /api/v1/environments/env_1/env", gotMethod, gotPath)
+	}
+	if got["LOG_LEVEL"] != "info" {
+		t.Errorf("SetEnvironmentEnv() = %+v, want LOG_LEVEL=info", got)
+	}
+}
+
+func TestClient_CreateEnvironment(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody CreateEnvironmentRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(EnvironmentResource{ID: "env_1", ProjectID: "proj_1", Name: gotBody.Name})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.CreateEnvironment(context.Background(), "proj_1", CreateEnvironmentRequest{Name: "staging"})
+	if err != nil {
+		t.Fatalf("CreateEnvironment() error = %v", err)
+	}
+	if gotMethod != http.MethodPost || gotPath != "/api/v1/projects/proj_1/environments" {
+		t.Errorf("method/path = %s %s, want POST /api/v1/projects/proj_1/environments", gotMethod, gotPath)
+	}
+	if got.ID != "env_1" || got.Name != "staging" {
+		t.Errorf("CreateEnvironment() = %+v, want id env_1 name staging", got)
+	}
+}
+
+func TestClient_ListEnvironments(t *testing.T) {
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]EnvironmentResource{{ID: "env_1", ProjectID: "proj_1", Name: "staging"}})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.ListEnvironments(context.Background(), "proj_1")
+	if err != nil {
+		t.Fatalf("ListEnvironments() error = %v", err)
+	}
+	if gotPath != "/api/v1/projects/proj_1/environments" {
+		t.Errorf("path = %q, want /api/v1/projects/proj_1/environments", gotPath)
+	}
+	if len(got) != 1 || got[0].ID != "env_1" {
+		t.Errorf("ListEnvironments() = %+v, want one env_1", got)
+	}
+}
+
+func TestClient_DeleteEnvironment(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	if err := client.DeleteEnvironment(context.Background(), "env_1"); err != nil {
+		t.Fatalf("DeleteEnvironment() error = %v", err)
+	}
+	if gotMethod != http.MethodDelete || gotPath != "/api/v1/environments/env_1" {
+		t.Errorf("method/path = %s %s, want DELETE /api/v1/environments/env_1", gotMethod, gotPath)
+	}
+}
+
+func TestClient_SetAppEnvironment(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody SetAppEnvironmentRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(AppResource{Name: "web", EnvironmentID: gotBody.EnvironmentID})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.SetAppEnvironment(context.Background(), "web", "env_1")
+	if err != nil {
+		t.Fatalf("SetAppEnvironment() error = %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/apps/web/environment" {
+		t.Errorf("method/path = %s %s, want PUT /api/v1/apps/web/environment", gotMethod, gotPath)
+	}
+	if got.EnvironmentID != "env_1" {
+		t.Errorf("EnvironmentID = %q, want env_1", got.EnvironmentID)
+	}
+}
+
+func TestClient_GetCloudflareTunnel(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(CloudflareTunnelResource{Enabled: true, HasToken: true, Status: "connected"})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.GetCloudflareTunnel(context.Background())
+	if err != nil {
+		t.Fatalf("GetCloudflareTunnel() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/settings/cloudflare-tunnel" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/settings/cloudflare-tunnel", gotMethod, gotPath)
+	}
+	if !got.Enabled || got.Status != "connected" {
+		t.Errorf("GetCloudflareTunnel() = %+v, want Enabled=true Status=connected", got)
+	}
+}
+
+func TestClient_SetCloudflareTunnel(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody UpdateCloudflareTunnelRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(CloudflareTunnelResource{Enabled: gotBody.Enabled, HasToken: true})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.SetCloudflareTunnel(context.Background(), UpdateCloudflareTunnelRequest{Enabled: true, Token: "cf-tunnel-token"})
+	if err != nil {
+		t.Fatalf("SetCloudflareTunnel() error = %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/settings/cloudflare-tunnel" {
+		t.Errorf("method/path = %s %s, want PUT /api/v1/settings/cloudflare-tunnel", gotMethod, gotPath)
+	}
+	if gotBody.Token != "cf-tunnel-token" || !gotBody.Enabled {
+		t.Errorf("request body = %+v, want Enabled=true Token=cf-tunnel-token", gotBody)
+	}
+	if !got.Enabled {
+		t.Errorf("SetCloudflareTunnel() = %+v, want Enabled=true", got)
+	}
+}
+
+func TestClient_DisconnectCloudflareTunnel(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(CloudflareTunnelResource{Enabled: false, HasToken: false, Status: "disconnected"})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.DisconnectCloudflareTunnel(context.Background())
+	if err != nil {
+		t.Fatalf("DisconnectCloudflareTunnel() error = %v", err)
+	}
+	if gotMethod != http.MethodDelete || gotPath != "/api/v1/settings/cloudflare-tunnel" {
+		t.Errorf("method/path = %s %s, want DELETE /api/v1/settings/cloudflare-tunnel", gotMethod, gotPath)
+	}
+	if got.Enabled || got.HasToken {
+		t.Errorf("DisconnectCloudflareTunnel() = %+v, want Enabled=false HasToken=false", got)
+	}
+}

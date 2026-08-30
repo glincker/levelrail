@@ -152,6 +152,28 @@ func (db *DB) FinishDeployAttempt(ctx context.Context, id, status string, finish
 	return nil
 }
 
+// FailOrphanedDeployAttempts marks every still-"running" deploy attempt
+// as failed: called once at control-plane startup, before anything can
+// create a new one, so a "running" row at that moment can only mean the
+// process that owned it is gone (crash, OOM, restart) and it will never
+// get its own FinishDeployAttempt call. Returns the number of rows
+// fixed.
+func (db *DB) FailOrphanedDeployAttempts(ctx context.Context, finishedAt time.Time) (int, error) {
+	res, err := db.ExecContext(ctx, `
+		UPDATE deploy_attempts SET status = ?, finished_at = ?, error = ?
+		WHERE status = ?
+	`, DeployAttemptStatusFailed, finishedAt.UTC().Format(time.RFC3339Nano),
+		"control plane restarted before this deploy finished", DeployAttemptStatusRunning)
+	if err != nil {
+		return 0, fmt.Errorf("store: fail orphaned deploy attempts: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("store: fail orphaned deploy attempts: rows affected: %w", err)
+	}
+	return int(n), nil
+}
+
 // GetDeployAttempt returns one deploy attempt by ID, or
 // ErrDeployAttemptNotFound if no such row exists. Used by the SSE log
 // stream handler (internal/api/deploys.go) to decide whether an

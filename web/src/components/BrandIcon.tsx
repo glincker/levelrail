@@ -1,13 +1,17 @@
 import type { ComponentType, SVGProps } from 'react'
+import ClickhouseLogo from '@thesvg/react/clickhouse'
 import DiscordLogo from '@thesvg/react/discord'
 import DockerLogo from '@thesvg/react/docker'
+import DragonflyLogo from '@thesvg/react/dragonfly'
 import GoLogo from '@thesvg/react/go'
 import JavaLogo from '@thesvg/react/java'
 import KeydbLogo from '@thesvg/react/keydb'
 import MariadbLogo from '@thesvg/react/mariadb'
+import MicrosoftTeamsLogo from '@thesvg/react/microsoft-teams'
 import MongodbLogo from '@thesvg/react/mongodb'
 import MysqlLogo from '@thesvg/react/mysql'
 import NodedotjsLogo from '@thesvg/react/nodedotjs'
+import PagerdutyLogo from '@thesvg/react/pagerduty'
 import PostgresqlLogo from '@thesvg/react/postgresql'
 import RedisLogo from '@thesvg/react/redis'
 import SlackLogo from '@thesvg/react/slack'
@@ -24,12 +28,16 @@ export type BrandIconName =
   | 'mongodb'
   | 'mariadb'
   | 'keydb'
+  | 'dragonfly'
+  | 'clickhouse'
   | 'node'
   | 'go'
   | 'java'
   | 'discord'
   | 'slack'
   | 'telegram'
+  | 'pagerduty'
+  | 'microsoft-teams'
 
 const BRAND_ICONS: Record<
   BrandIconName,
@@ -42,12 +50,16 @@ const BRAND_ICONS: Record<
   mongodb: MongodbLogo,
   mariadb: MariadbLogo,
   keydb: KeydbLogo,
+  dragonfly: DragonflyLogo,
+  clickhouse: ClickhouseLogo,
   node: NodedotjsLogo,
   go: GoLogo,
   java: JavaLogo,
   discord: DiscordLogo,
   slack: SlackLogo,
   telegram: TelegramLogo,
+  pagerduty: PagerdutyLogo,
+  'microsoft-teams': MicrosoftTeamsLogo,
 }
 
 // All names in BRAND_ICONS, for callers that need to enumerate the
@@ -62,12 +74,16 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'mongodb',
   'mariadb',
   'keydb',
+  'dragonfly',
+  'clickhouse',
   'node',
   'go',
   'java',
   'discord',
   'slack',
   'telegram',
+  'pagerduty',
+  'microsoft-teams',
 ]
 
 export interface BrandIconProps extends SVGProps<SVGSVGElement> {

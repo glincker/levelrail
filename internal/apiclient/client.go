@@ -17,6 +17,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -158,6 +159,20 @@ func (c *Client) DeployApp(ctx context.Context, name, image string) (AppResource
 	return out, err
 }
 
+// SetAppDatabaseAttachment calls PUT /api/v1/apps/{name}/database:
+// attaches an existing managed database to name as a real, persisted
+// connection env var source.
+func (c *Client) SetAppDatabaseAttachment(ctx context.Context, name string, req SetAppDatabaseRequest) (AppDatabaseResource, error) {
+	var out AppDatabaseResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/database", req, &out)
+	return out, err
+}
+
+// ClearAppDatabaseAttachment calls DELETE /api/v1/apps/{name}/database.
+func (c *Client) ClearAppDatabaseAttachment(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/database", nil, nil)
+}
+
 // DeployCompose calls POST /api/v1/apps/{name}/compose with composeYAML
 // as the raw request body. Unlike every other Client method, this
 // doesn't go through do(): handleDeployCompose (internal/api/apps_compose.go)
@@ -202,6 +217,14 @@ func (c *Client) RestartApp(ctx context.Context, name string) (AppResource, erro
 func (c *Client) GetDeployStatus(ctx context.Context, name string) ([]ConditionResource, error) {
 	var out []ConditionResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/deploys", nil, &out)
+	return out, err
+}
+
+// GetAppNetwork calls GET /api/v1/apps/{name}/network
+// (internal/api/network.go's handleGetAppNetwork).
+func (c *Client) GetAppNetwork(ctx context.Context, name string) (NetworkResource, error) {
+	var out NetworkResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/network", nil, &out)
 	return out, err
 }
 
@@ -264,6 +287,86 @@ func (c *Client) ListDomains(ctx context.Context) ([]DomainResource, error) {
 	return out, err
 }
 
+// GetCloudflareDNS calls GET /api/v1/settings/cloudflare-dns: the
+// Cloudflare DNS-01 credential's enabled/has_token state, needed for
+// ACME to issue real wildcard certificates (HTTP-01 cannot).
+func (c *Client) GetCloudflareDNS(ctx context.Context) (CloudflareDNSResource, error) {
+	var out CloudflareDNSResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/cloudflare-dns", nil, &out)
+	return out, err
+}
+
+// SetCloudflareDNS calls PUT /api/v1/settings/cloudflare-dns.
+func (c *Client) SetCloudflareDNS(ctx context.Context, req UpdateCloudflareDNSRequest) (CloudflareDNSResource, error) {
+	var out CloudflareDNSResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/cloudflare-dns", req, &out)
+	return out, err
+}
+
+// DisconnectCloudflareDNS calls DELETE /api/v1/settings/cloudflare-dns.
+func (c *Client) DisconnectCloudflareDNS(ctx context.Context) (CloudflareDNSResource, error) {
+	var out CloudflareDNSResource
+	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/cloudflare-dns", nil, &out)
+	return out, err
+}
+
+// GetCloudflareTunnel calls GET /api/v1/settings/cloudflare-tunnel: the
+// cloudflared container's configured/observed state, exposing the
+// control plane through a Cloudflare Tunnel instead of an inbound port.
+func (c *Client) GetCloudflareTunnel(ctx context.Context) (CloudflareTunnelResource, error) {
+	var out CloudflareTunnelResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/cloudflare-tunnel", nil, &out)
+	return out, err
+}
+
+// SetCloudflareTunnel calls PUT /api/v1/settings/cloudflare-tunnel.
+func (c *Client) SetCloudflareTunnel(ctx context.Context, req UpdateCloudflareTunnelRequest) (CloudflareTunnelResource, error) {
+	var out CloudflareTunnelResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/cloudflare-tunnel", req, &out)
+	return out, err
+}
+
+// DisconnectCloudflareTunnel calls DELETE
+// /api/v1/settings/cloudflare-tunnel: disables the tunnel and clears the
+// stored token in one step.
+func (c *Client) DisconnectCloudflareTunnel(ctx context.Context) (CloudflareTunnelResource, error) {
+	var out CloudflareTunnelResource
+	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/cloudflare-tunnel", nil, &out)
+	return out, err
+}
+
+// domainAuthPath builds /api/v1/apps/{name}/domains/{domain}/auth,
+// shared by all three domain basic auth methods below.
+func domainAuthPath(name, domain string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/domains/" + PathEscape(domain) + "/auth"
+}
+
+// GetDomainBasicAuth calls GET /api/v1/apps/{name}/domains/{domain}/auth:
+// domain's current HTTP Basic Auth state.
+func (c *Client) GetDomainBasicAuth(ctx context.Context, name, domain string) (DomainBasicAuthResource, error) {
+	var out DomainBasicAuthResource
+	err := c.do(ctx, http.MethodGet, domainAuthPath(name, domain), nil, &out)
+	return out, err
+}
+
+// SetDomainBasicAuth calls PUT /api/v1/apps/{name}/domains/{domain}/auth:
+// enables HTTP Basic Auth on domain, enforced by Caddy on the next
+// ingress reconcile pass.
+func (c *Client) SetDomainBasicAuth(ctx context.Context, name, domain string, req SetDomainBasicAuthRequest) (DomainBasicAuthResource, error) {
+	var out DomainBasicAuthResource
+	err := c.do(ctx, http.MethodPut, domainAuthPath(name, domain), req, &out)
+	return out, err
+}
+
+// ClearDomainBasicAuth calls DELETE
+// /api/v1/apps/{name}/domains/{domain}/auth: removes basic auth
+// protection from domain.
+func (c *Client) ClearDomainBasicAuth(ctx context.Context, name, domain string) (DomainBasicAuthResource, error) {
+	var out DomainBasicAuthResource
+	err := c.do(ctx, http.MethodDelete, domainAuthPath(name, domain), nil, &out)
+	return out, err
+}
+
 // TriggerBackup calls POST /api/v1/databases/{name}/backups: starts a
 // real backup of name to targetID and returns as soon as the attempt is
 // recorded and under way, not once the dump and upload actually finish.
@@ -274,11 +377,39 @@ func (c *Client) TriggerBackup(ctx context.Context, name, targetID string) (Back
 	return out, err
 }
 
+// SetBackupSchedule calls PUT /api/v1/databases/{name}/backup-schedule:
+// configures a recurring backup, replacing any previously configured
+// schedule for name.
+func (c *Client) SetBackupSchedule(ctx context.Context, name string, req SetBackupScheduleRequest) (BackupScheduleResource, error) {
+	var out BackupScheduleResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/databases/"+PathEscape(name)+"/backup-schedule", req, &out)
+	return out, err
+}
+
+// ClearBackupSchedule calls DELETE
+// /api/v1/databases/{name}/backup-schedule: returns name to its default
+// "no scheduled backup configured" state. Past backup_history rows are
+// untouched, only the going-forward configuration.
+func (c *Client) ClearBackupSchedule(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name)+"/backup-schedule", nil, nil)
+}
+
 // ListBackups calls GET /api/v1/databases/{name}/backups: the full
 // backup attempt history for one database.
-func (c *Client) ListBackups(ctx context.Context, name string) ([]BackupHistoryResource, error) {
+func (c *Client) ListBackups(ctx context.Context, name string, opts ListBackupsOptions) ([]BackupHistoryResource, error) {
+	path := "/api/v1/databases/" + PathEscape(name) + "/backups"
+	q := url.Values{}
+	if opts.Limit > 0 {
+		q.Set("limit", strconv.Itoa(opts.Limit))
+	}
+	if opts.Before != "" {
+		q.Set("before", opts.Before)
+	}
+	if enc := q.Encode(); enc != "" {
+		path += "?" + enc
+	}
 	var out []BackupHistoryResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/backups", nil, &out)
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }
 
@@ -386,6 +517,257 @@ func (c *Client) SetLogDrain(ctx context.Context, name string, req SetLogDrainRe
 // status" shape above.
 func (c *Client) ClearLogDrain(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/log-drain", nil, nil)
+}
+
+// scheduledTasksCollectionPath builds
+// /api/v1/apps/{name}/scheduled-tasks, and scheduledTaskPath builds that
+// same path plus /{id}: shared by every scheduled-task method below so
+// the "/scheduled-tasks" segment exists in exactly one place.
+func scheduledTasksCollectionPath(name string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/scheduled-tasks"
+}
+
+func scheduledTaskPath(name, id string) string {
+	return scheduledTasksCollectionPath(name) + "/" + PathEscape(id)
+}
+
+// CreateScheduledTask calls POST /api/v1/apps/{name}/scheduled-tasks.
+func (c *Client) CreateScheduledTask(ctx context.Context, name string, req ScheduledTaskRequest) (ScheduledTaskResource, error) {
+	var out ScheduledTaskResource
+	err := c.do(ctx, http.MethodPost, scheduledTasksCollectionPath(name), req, &out)
+	return out, err
+}
+
+// ListScheduledTasks calls GET /api/v1/apps/{name}/scheduled-tasks.
+func (c *Client) ListScheduledTasks(ctx context.Context, name string) ([]ScheduledTaskResource, error) {
+	var out []ScheduledTaskResource
+	err := c.do(ctx, http.MethodGet, scheduledTasksCollectionPath(name), nil, &out)
+	return out, err
+}
+
+// GetScheduledTask calls GET /api/v1/apps/{name}/scheduled-tasks/{id}.
+func (c *Client) GetScheduledTask(ctx context.Context, name, id string) (ScheduledTaskResource, error) {
+	var out ScheduledTaskResource
+	err := c.do(ctx, http.MethodGet, scheduledTaskPath(name, id), nil, &out)
+	return out, err
+}
+
+// UpdateScheduledTask calls PUT /api/v1/apps/{name}/scheduled-tasks/{id}:
+// a full replace of Command/Schedule/Enabled, not a partial patch,
+// matching handleUpdateScheduledTask's own contract.
+func (c *Client) UpdateScheduledTask(ctx context.Context, name, id string, req ScheduledTaskRequest) (ScheduledTaskResource, error) {
+	var out ScheduledTaskResource
+	err := c.do(ctx, http.MethodPut, scheduledTaskPath(name, id), req, &out)
+	return out, err
+}
+
+// DeleteScheduledTask calls DELETE
+// /api/v1/apps/{name}/scheduled-tasks/{id}.
+func (c *Client) DeleteScheduledTask(ctx context.Context, name, id string) error {
+	return c.do(ctx, http.MethodDelete, scheduledTaskPath(name, id), nil, nil)
+}
+
+// RunScheduledTask calls POST
+// /api/v1/apps/{name}/scheduled-tasks/{id}/run: triggers an immediate
+// run and returns as soon as it starts, not once the command finishes.
+func (c *Client) RunScheduledTask(ctx context.Context, name, id string) (ScheduledTaskResource, error) {
+	var out ScheduledTaskResource
+	err := c.do(ctx, http.MethodPost, scheduledTaskPath(name, id)+"/run", nil, &out)
+	return out, err
+}
+
+func organizationsCollectionPath() string {
+	return "/api/v1/organizations"
+}
+
+func organizationPath(id string) string {
+	return organizationsCollectionPath() + "/" + PathEscape(id)
+}
+
+// CreateOrganization calls POST /api/v1/organizations.
+func (c *Client) CreateOrganization(ctx context.Context, req CreateOrganizationRequest) (OrganizationResource, error) {
+	var out OrganizationResource
+	err := c.do(ctx, http.MethodPost, organizationsCollectionPath(), req, &out)
+	return out, err
+}
+
+// ListOrganizations calls GET /api/v1/organizations.
+func (c *Client) ListOrganizations(ctx context.Context) ([]OrganizationResource, error) {
+	var out []OrganizationResource
+	err := c.do(ctx, http.MethodGet, organizationsCollectionPath(), nil, &out)
+	return out, err
+}
+
+// GetOrganization calls GET /api/v1/organizations/{id}.
+func (c *Client) GetOrganization(ctx context.Context, id string) (OrganizationResource, error) {
+	var out OrganizationResource
+	err := c.do(ctx, http.MethodGet, organizationPath(id), nil, &out)
+	return out, err
+}
+
+// DeleteOrganization calls DELETE /api/v1/organizations/{id}.
+func (c *Client) DeleteOrganization(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, organizationPath(id), nil, nil)
+}
+
+// SetProjectOrganization calls PUT /api/v1/projects/{id}/organization.
+// An empty orgID clears the assignment. Returns the updated project.
+func (c *Client) SetProjectOrganization(ctx context.Context, projectID, orgID string) (ProjectResource, error) {
+	var out ProjectResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/projects/"+PathEscape(projectID)+"/organization", SetProjectOrganizationRequest{OrgID: orgID}, &out)
+	return out, err
+}
+
+// GetOrganizationEnv calls GET /api/v1/organizations/{id}/env.
+func (c *Client) GetOrganizationEnv(ctx context.Context, id string) (map[string]string, error) {
+	var out map[string]string
+	err := c.do(ctx, http.MethodGet, organizationPath(id)+"/env", nil, &out)
+	return out, err
+}
+
+// SetOrganizationEnv calls PUT /api/v1/organizations/{id}/env: a full
+// replace, mirroring PUT /apps/{name}'s own env field semantics.
+func (c *Client) SetOrganizationEnv(ctx context.Context, id string, vars map[string]string) (map[string]string, error) {
+	var out map[string]string
+	err := c.do(ctx, http.MethodPut, organizationPath(id)+"/env", vars, &out)
+	return out, err
+}
+
+func environmentsCollectionPath(projectID string) string {
+	return "/api/v1/projects/" + PathEscape(projectID) + "/environments"
+}
+
+func environmentPath(id string) string {
+	return "/api/v1/environments/" + PathEscape(id)
+}
+
+// CreateEnvironment calls POST /api/v1/projects/{id}/environments.
+func (c *Client) CreateEnvironment(ctx context.Context, projectID string, req CreateEnvironmentRequest) (EnvironmentResource, error) {
+	var out EnvironmentResource
+	err := c.do(ctx, http.MethodPost, environmentsCollectionPath(projectID), req, &out)
+	return out, err
+}
+
+// ListEnvironments calls GET /api/v1/projects/{id}/environments.
+func (c *Client) ListEnvironments(ctx context.Context, projectID string) ([]EnvironmentResource, error) {
+	var out []EnvironmentResource
+	err := c.do(ctx, http.MethodGet, environmentsCollectionPath(projectID), nil, &out)
+	return out, err
+}
+
+// DeleteEnvironment calls DELETE /api/v1/environments/{id}.
+func (c *Client) DeleteEnvironment(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, environmentPath(id), nil, nil)
+}
+
+// GetEnvironmentEnv calls GET /api/v1/environments/{id}/env.
+func (c *Client) GetEnvironmentEnv(ctx context.Context, id string) (map[string]string, error) {
+	var out map[string]string
+	err := c.do(ctx, http.MethodGet, environmentPath(id)+"/env", nil, &out)
+	return out, err
+}
+
+// SetEnvironmentEnv calls PUT /api/v1/environments/{id}/env: a full
+// replace, mirroring PUT /apps/{name}'s own env field semantics.
+func (c *Client) SetEnvironmentEnv(ctx context.Context, id string, vars map[string]string) (map[string]string, error) {
+	var out map[string]string
+	err := c.do(ctx, http.MethodPut, environmentPath(id)+"/env", vars, &out)
+	return out, err
+}
+
+// SetAppEnvironment calls PUT /api/v1/apps/{name}/environment. An empty
+// environmentID clears the assignment. Returns the updated app.
+func (c *Client) SetAppEnvironment(ctx context.Context, name, environmentID string) (AppResource, error) {
+	var out AppResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/environment", SetAppEnvironmentRequest{EnvironmentID: environmentID}, &out)
+	return out, err
+}
+
+func nodesCollectionPath() string {
+	return "/api/v1/nodes"
+}
+
+func nodePath(id string) string {
+	return nodesCollectionPath() + "/" + PathEscape(id)
+}
+
+// ListNodes calls GET /api/v1/nodes.
+func (c *Client) ListNodes(ctx context.Context) ([]NodeResource, error) {
+	var out []NodeResource
+	err := c.do(ctx, http.MethodGet, nodesCollectionPath(), nil, &out)
+	return out, err
+}
+
+// GetNode calls GET /api/v1/nodes/{id}.
+func (c *Client) GetNode(ctx context.Context, id string) (NodeResource, error) {
+	var out NodeResource
+	err := c.do(ctx, http.MethodGet, nodePath(id), nil, &out)
+	return out, err
+}
+
+// DeleteNode calls DELETE /api/v1/nodes/{id}. Refused with a 409
+// (*APIError) while any service or database is still placed on id,
+// telling the caller to drain first (handleDeleteNode's own doc comment).
+func (c *Client) DeleteNode(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, nodePath(id), nil, nil)
+}
+
+// SetNodeWorkloads calls PUT /api/v1/nodes/{id}/workloads: a full
+// replace of both workload flags, not a partial patch, matching
+// handleSetNodeWorkloads' own contract.
+func (c *Client) SetNodeWorkloads(ctx context.Context, id string, req SetNodeWorkloadsRequest) (NodeResource, error) {
+	var out NodeResource
+	err := c.do(ctx, http.MethodPut, nodePath(id)+"/workloads", req, &out)
+	return out, err
+}
+
+// CreateNodeJoinToken calls POST /api/v1/nodes/join-tokens: mints a
+// one-time enrollment token, returned in plaintext exactly once.
+func (c *Client) CreateNodeJoinToken(ctx context.Context) (CreateNodeJoinTokenResponse, error) {
+	var out CreateNodeJoinTokenResponse
+	err := c.do(ctx, http.MethodPost, nodesCollectionPath()+"/join-tokens", nil, &out)
+	return out, err
+}
+
+// CordonNode calls POST /api/v1/nodes/{id}/cordon: marks id
+// unschedulable for new placements without evacuating anything already
+// running there.
+func (c *Client) CordonNode(ctx context.Context, id string) (NodeResource, error) {
+	var out NodeResource
+	err := c.do(ctx, http.MethodPost, nodePath(id)+"/cordon", nil, &out)
+	return out, err
+}
+
+// UncordonNode calls POST /api/v1/nodes/{id}/uncordon: the inverse of
+// CordonNode.
+func (c *Client) UncordonNode(ctx context.Context, id string) (NodeResource, error) {
+	var out NodeResource
+	err := c.do(ctx, http.MethodPost, nodePath(id)+"/uncordon", nil, &out)
+	return out, err
+}
+
+// DrainNode calls POST /api/v1/nodes/{id}/drain?target_node_id=: moves
+// every service and database placed on id to targetNodeID (empty: the
+// local-node sentinel, the server's own default).
+func (c *Client) DrainNode(ctx context.Context, id, targetNodeID string) (DrainNodeResponse, error) {
+	path := nodePath(id) + "/drain"
+	if targetNodeID != "" {
+		q := url.Values{}
+		q.Set("target_node_id", targetNodeID)
+		path += "?" + q.Encode()
+	}
+	var out DrainNodeResponse
+	err := c.do(ctx, http.MethodPost, path, nil, &out)
+	return out, err
+}
+
+// GetNodeHealth calls GET /api/v1/nodes/{id}/health: the node health
+// controller's stored reconcile conditions, the same ConditionResource
+// shape GetDeployStatus returns for an app.
+func (c *Client) GetNodeHealth(ctx context.Context, id string) ([]ConditionResource, error) {
+	var out []ConditionResource
+	err := c.do(ctx, http.MethodGet, nodePath(id)+"/health", nil, &out)
+	return out, err
 }
 
 // PathEscape guards against a name containing characters that would

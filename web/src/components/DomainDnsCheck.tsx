@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   ArrowsClockwiseIcon,
   CheckCircleIcon,
@@ -9,6 +10,7 @@ import type { Icon } from '@phosphor-icons/react'
 import type { VariantProps } from 'class-variance-authority'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import { useDomainCheck, type DomainCheckStatus } from '../queries/domainCheck'
 
@@ -18,8 +20,40 @@ import { useDomainCheck, type DomainCheckStatus } from '../queries/domainCheck'
 // without either query module depending on the other's types.
 export interface DomainCheckPanelData {
   expected_host?: string
+  expected_ipv4?: string[]
+  expected_ipv6?: string[]
   host_inferred?: boolean
   status: DomainCheckStatus
+}
+
+type DnsRecordType = 'A' | 'AAAA' | 'CNAME'
+
+function dnsRecordType(host: string): DnsRecordType {
+  if (host.includes(':')) return 'AAAA'
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return 'A'
+  return 'CNAME'
+}
+
+interface DnsRecordOption {
+  type: DnsRecordType
+  value: string
+}
+
+// One option per record type the operator could actually add. A raw IP
+// APP_PUBLIC_HOST has exactly one: its own family, nothing to choose
+// between. A hostname APP_PUBLIC_HOST offers CNAME first (the simplest,
+// works even if the server's IP changes later) plus a direct A/AAAA
+// alternative for each family it resolves to, since some registrars
+// reject CNAME at the domain apex.
+function dnsRecordOptions(data: DomainCheckPanelData): DnsRecordOption[] {
+  const host = data.expected_host
+  if (!host) return []
+  const type = dnsRecordType(host)
+  if (type !== 'CNAME') return [{ type, value: host }]
+  const options: DnsRecordOption[] = [{ type: 'CNAME', value: host }]
+  if (data.expected_ipv4?.[0]) options.push({ type: 'A', value: data.expected_ipv4[0] })
+  if (data.expected_ipv6?.[0]) options.push({ type: 'AAAA', value: data.expected_ipv6[0] })
+  return options
 }
 
 // One row of the DNS record block below: a label, the value itself
@@ -100,6 +134,9 @@ export function DomainCheckPanel({
 }) {
   const meta = data ? STATUS_META[data.status] : undefined
   const StatusIcon = meta?.icon
+  const options = data ? dnsRecordOptions(data) : []
+  const [activeType, setActiveType] = useState<DnsRecordType | undefined>(options[0]?.type)
+  const active = options.find((o) => o.type === activeType) ?? options[0]
 
   return (
     <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
@@ -115,19 +152,38 @@ export function DomainCheckPanel({
         ) : null}
       </div>
 
-      {data && data.status !== 'connected' && data.expected_host ? (
+      {data && data.status !== 'connected' && active ? (
         <div className="mt-2 space-y-1.5">
           <p className="text-xs text-muted-foreground">
-            Add this <span className="font-medium text-foreground">A record</span>{' '}
-            at your registrar:
+            Add {options.length > 1 ? 'one of these records' : 'this record'} at
+            your registrar:
             {data.status === 'resolves_elsewhere'
               ? ' it currently resolves somewhere else, double check the record you added.'
               : ''}
           </p>
-          <div className="space-y-1">
-            <DnsRecordRow label="Name" value={domain} />
-            <DnsRecordRow label="Value" value={data.expected_host} />
-          </div>
+          {options.length > 1 ? (
+            <Tabs value={active.type} onValueChange={(v) => { setActiveType(v as DnsRecordType) }}>
+              <TabsList>
+                {options.map((o) => (
+                  <TabsTrigger key={o.type} value={o.type}>
+                    {o.type}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              {options.map((o) => (
+                <TabsContent key={o.type} value={o.type} className="space-y-1 pt-2">
+                  <DnsRecordRow label="Name" value={domain} />
+                  <DnsRecordRow label="Value" value={o.value} />
+                </TabsContent>
+              ))}
+            </Tabs>
+          ) : (
+            <div className="space-y-1">
+              <DnsRecordRow label="Type" value={active.type} />
+              <DnsRecordRow label="Name" value={domain} />
+              <DnsRecordRow label="Value" value={active.value} />
+            </div>
+          )}
         </div>
       ) : null}
 

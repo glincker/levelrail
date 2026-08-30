@@ -63,6 +63,10 @@ const createAppFromGitSchema = z
     imageRepo: z.string().trim(),
     buildType: z.enum(BUILD_TYPES),
     dockerfilePath: z.string().trim(),
+    baseDirectory: z.string().trim(),
+    // Dockerfile build-time ARGs, buildType: 'dockerfile' only. A blank
+    // key is dropped in buildInputFrom below, not rejected here.
+    buildArgs: z.array(z.object({ key: z.string(), value: z.string() })),
     image: z.string().trim(),
     domain: z
       .string()
@@ -97,6 +101,21 @@ const createAppFromGitSchema = z
         path: ['ref'],
       })
     }
+    if (values.buildType === 'dockerfile') {
+      const seen = new Set<string>()
+      values.buildArgs.forEach((arg, index) => {
+        const key = arg.key.trim()
+        if (!key) return
+        if (seen.has(key)) {
+          ctx.addIssue({
+            code: 'custom',
+            message: 'Duplicate key',
+            path: ['buildArgs', index, 'key'],
+          })
+        }
+        seen.add(key)
+      })
+    }
   })
 
 export type FormInput = z.input<typeof createAppFromGitSchema>
@@ -110,6 +129,8 @@ const DEFAULT_VALUES: FormInput = {
   imageRepo: '',
   buildType: 'railpack',
   dockerfilePath: '',
+  baseDirectory: '',
+  buildArgs: [],
   image: '',
   domain: '',
 }
@@ -123,7 +144,10 @@ const DEFAULT_VALUES: FormInput = {
 // (deployStatic never reads req.ImageRepo), so it's omitted for static
 // too, matching GitBuildSourceFields not even rendering that field in
 // that case. build.type: image sends only image: repoUrl/ref/imageRepo
-// are all meaningless when nothing gets cloned or built.
+// are all meaningless when nothing gets cloned or built. baseDirectory
+// is sent for every non-image build type: the backend accepts it for
+// dockerfile, railpack, and static alike. build.args is dockerfile-only,
+// same restriction handleTriggerBuild enforces server-side.
 function buildInputFrom(values: FormOutput): TriggerBuildInput {
   if (values.buildType === 'image') {
     return {
@@ -145,7 +169,27 @@ function buildInputFrom(values: FormOutput): TriggerBuildInput {
       values.buildType === 'dockerfile'
         ? values.dockerfilePath.trim() || undefined
         : undefined,
+    baseDirectory: values.baseDirectory.trim() || undefined,
+    buildArgs:
+      values.buildType === 'dockerfile'
+        ? buildArgsRecord(values.buildArgs)
+        : undefined,
   }
+}
+
+// buildArgsRecord drops any row with a blank key, the same leniency
+// this form's superRefine above already applies when checking for
+// duplicates: a trailing blank row left over from "Add build arg" isn't
+// a validation error, it's just not sent.
+function buildArgsRecord(
+  args: FormOutput['buildArgs'],
+): Record<string, string> | undefined {
+  const out: Record<string, string> = {}
+  for (const { key, value } of args) {
+    const trimmedKey = key.trim()
+    if (trimmedKey) out[trimmedKey] = value
+  }
+  return Object.keys(out).length > 0 ? out : undefined
 }
 
 // Placeholder image tag POST /api/v1/apps is sent on step 1 of this
@@ -340,7 +384,17 @@ export function CreateAppFromGitFields({
   })
 
   const busy = createApp.isPending || buildMutation.isPending
+  // Locks name/port/domain forever once the app record exists: none of
+  // the three are resent on a retry (see buildInputFrom and onSubmit
+  // above), so editing them after step 1 succeeded would silently have
+  // no effect. Domain already tells the user it can be changed later
+  // from the app's Domains tab.
   const locked = createdName !== null
+  // The git/build fields ARE resent on every retry, so a failed build
+  // trigger must not leave them stuck disabled: that's the only way a
+  // user can act on the "fix the fields above and submit again" error
+  // below. Re-lock them while a request is actually in flight.
+  const buildFieldsLocked = busy || (locked && !buildMutation.isError)
 
   return (
     <form
@@ -396,7 +450,7 @@ export function CreateAppFromGitFields({
         getValues={getValues}
         setValue={setValue}
         watch={watch}
-        disabled={locked}
+        disabled={buildFieldsLocked}
       />
 
       <Field>

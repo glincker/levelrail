@@ -4,27 +4,32 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { useMemo, useRef } from 'react'
 import { GlobeIcon } from '@phosphor-icons/react/dist/ssr'
 import { certificatesQueryOptions } from '../../queries/certificates'
+import { cloudflareDnsSettingsQueryOptions } from '../../queries/cloudflareDns'
 import {
   domainsQueryOptions,
   ingressSettingsQueryOptions,
 } from '../../queries/domains'
 import { DOMAIN_LIST_GRID, DomainRow } from '../../components/DomainRow'
+import { CloudflareDnsCard } from '../../components/CloudflareDnsCard'
 import { IngressSettingsCard } from '../../components/IngressSettingsCard'
+import { EmptyState } from '../../components/ui/empty-state'
 
 // Centralized domains page: every domain currently claimed by an app
 // (GET /api/v1/domains, service_domains) merged client-side with
 // certificate status (GET /api/v1/certificates, already fetched for
 // settings/general.tsx's own TLS card) by domain string, plus the
-// platform-wide ingress settings (primary domain, ACME toggle) that used
-// to have no UI at all. Typed loader primes all three queries before
-// render, the same "no data fetching in the component body" rule every
-// other route in this app follows.
+// platform-wide ingress settings (primary domain, ACME toggle) and the
+// Cloudflare DNS-01 credential wildcard domains need on top of that.
+// Typed loader primes all four queries before render, the same "no data
+// fetching in the component body" rule every other route in this app
+// follows.
 export const Route = createFileRoute('/domains/')({
   loader: ({ context: { queryClient } }) =>
     Promise.all([
       queryClient.ensureQueryData(domainsQueryOptions()),
       queryClient.ensureQueryData(certificatesQueryOptions()),
       queryClient.ensureQueryData(ingressSettingsQueryOptions()),
+      queryClient.ensureQueryData(cloudflareDnsSettingsQueryOptions()),
     ]),
   component: DomainsPage,
 })
@@ -47,6 +52,9 @@ function DomainsPage() {
   const { data: domains } = useSuspenseQuery(domainsQueryOptions())
   const { data: certificates } = useSuspenseQuery(certificatesQueryOptions())
   const { data: settings } = useSuspenseQuery(ingressSettingsQueryOptions())
+  const { data: cloudflareDns } = useSuspenseQuery(
+    cloudflareDnsSettingsQueryOptions(),
+  )
   const parentRef = useRef<HTMLDivElement>(null)
 
   // Certificates are keyed by domain string (certificateStatus.domain,
@@ -88,6 +96,8 @@ function DomainsPage() {
         }
       />
 
+      <CloudflareDnsCard settings={cloudflareDns} />
+
       <div>
         <div className="mb-3 flex items-center gap-2">
           <GlobeIcon className="size-4 text-muted-foreground" />
@@ -102,10 +112,11 @@ function DomainsPage() {
         </div>
 
         {domains.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-            No app has a domain configured yet. Add one from an
-            app&apos;s Domains tab.
-          </div>
+          <EmptyState
+            icon={<GlobeIcon className="size-5" />}
+            title="No app domains yet"
+            description="Add a domain from an app's Domains tab to route traffic to it over HTTPS."
+          />
         ) : (
           <div
             ref={parentRef}

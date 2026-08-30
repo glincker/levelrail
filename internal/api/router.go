@@ -87,37 +87,41 @@ import (
 
 // Router wires every internal/api handler onto one http.Handler.
 type Router struct {
-	logger           *slog.Logger
-	brand            *brand.Brand
-	apps             AppStore
-	appGroups        AppGroupLister
-	appCompose       AppComposeStore
-	deploys          DeployStore
-	databases        DatabaseStore
-	auth             AuthStore
-	tokens           TokenStore
-	nodes            NodeStore
-	projects         ProjectStore
-	secrets          SecretSetter       // nil is valid: a control plane with no master key configured serves everything except secret-setting
-	composeSecrets   ComposeSecretStore // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
-	telemetry        TelemetryQuerier   // nil is valid: metrics/logs query routes return 501, same shape as secrets above
-	alertRules       AlertRules         // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
-	sessions         *sessionStore
-	logins           *loginLimiter
-	recoveryCodes    RecoveryCodeStore    // always set, same "core Store interface" shape as auth above
-	twoFactorSecrets TwoFactorSecrets     // nil is valid: POST /api/v1/auth/2fa/setup (and confirm/disable/regenerate) return 501, same "not configured" shape as githubAppSecrets above
-	mfaPending       *mfaPendingStore     // always set, same "always present, not an Option" shape sessions itself has
-	mfaVerify        *loginLimiter        // separate budget from logins above: brute-forcing a 6-digit code after a correct password is a distinct attack this must independently rate limit
-	sessionTTL       time.Duration        // 0 means "use defaultSessionTTL", set via WithSessionTTL
-	dataDir          string               // "" means "don't report disk usage", set via WithDataDir
-	dockerPinger     DockerPinger         // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
-	images           ImageLister          // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
-	dockerDiskUsage  DockerDiskUsager     // nil is valid: GET /system/status omits its docker_disk_usage field, same "optional signal, absence is not an error" shape as dockerPinger above
-	dockerPruner     DockerPruner         // nil is valid: POST /system/prune returns 501, same shape as builder/secrets above
-	execRuntime      NodeRuntimeResolver  // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
-	certs            CertStore            // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
-	ingressSettings  IngressSettingsStore // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
-	domains          DomainStore          // always set, same shape as ingressSettings above: service_domains is always queryable, empty is a valid, non-error result
+	logger                 *slog.Logger
+	brand                  *brand.Brand
+	apps                   AppStore
+	appGroups              AppGroupLister
+	appCompose             AppComposeStore
+	deploys                DeployStore
+	databases              DatabaseStore
+	auth                   AuthStore
+	tokens                 TokenStore
+	nodes                  NodeStore
+	projects               ProjectStore
+	organizations          OrganizationStore
+	environments           EnvironmentStore
+	secrets                SecretSetter       // nil is valid: a control plane with no master key configured serves everything except secret-setting
+	composeSecrets         ComposeSecretStore // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
+	telemetry              TelemetryQuerier   // nil is valid: metrics/logs query routes return 501, same shape as secrets above
+	alertRules             AlertRules         // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
+	sessions               *sessionStore
+	logins                 *loginLimiter
+	recoveryCodes          RecoveryCodeStore      // always set, same "core Store interface" shape as auth above
+	twoFactorSecrets       TwoFactorSecrets       // nil is valid: POST /api/v1/auth/2fa/setup (and confirm/disable/regenerate) return 501, same "not configured" shape as githubAppSecrets above
+	mfaPending             *mfaPendingStore       // always set, same "always present, not an Option" shape sessions itself has
+	mfaVerify              *loginLimiter          // separate budget from logins above: brute-forcing a 6-digit code after a correct password is a distinct attack this must independently rate limit
+	sessionTTL             time.Duration          // 0 means "use defaultSessionTTL", set via WithSessionTTL
+	dataDir                string                 // "" means "don't report disk usage", set via WithDataDir
+	dockerPinger           DockerPinger           // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
+	images                 ImageLister            // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
+	dockerDiskUsage        DockerDiskUsager       // nil is valid: GET /system/status omits its docker_disk_usage field, same "optional signal, absence is not an error" shape as dockerPinger above
+	dockerPruner           DockerPruner           // nil is valid: POST /system/prune returns 501, same shape as builder/secrets above
+	execRuntime            NodeRuntimeResolver    // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
+	certs                  CertStore              // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
+	ingressSettings        IngressSettingsStore   // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
+	domains                DomainStore            // always set, same shape as ingressSettings above: service_domains is always queryable, empty is a valid, non-error result
+	domainBasicAuth        DomainBasicAuthStore   // always set, same "core Store interface" shape as domains above
+	domainBasicAuthSecrets DomainBasicAuthSecrets // nil is valid: PUT/DELETE .../domains/{domain}/auth return 501, same shape as cloudflareTunnelSecrets above
 	// publicHost is APP_PUBLIC_HOST: the IP or hostname operators should
 	// point a DNS record at to reach this control plane's embedded
 	// ingress. "" means "not configured", set via WithPublicHost;
@@ -186,6 +190,8 @@ type Router struct {
 	emailSecrets              EmailSecretsStore               // nil is valid: PUT /api/v1/settings/email returns 501
 	cloudflareTunnel          CloudflareTunnelStore           // always set, same shape as emailSettings above
 	cloudflareTunnelSecrets   CloudflareTunnelSecrets         // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-tunnel return 501, same shape as emailSecrets above
+	cloudflareDNS             CloudflareDNSStore              // always set, same shape as cloudflareTunnel above
+	cloudflareDNSSecrets      CloudflareDNSSecrets            // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-dns return 501, same shape as cloudflareTunnelSecrets above
 	emailSender               email.Sender                    // nil is valid: forgot-password still returns its generic success response
 	passwordResetTokens       PasswordResetTokenStore         // always set, same shape as backupTargets above
 	forgotPasswordByIP        *loginLimiter                   // per-IP forgot-password budget, distinct from logins above
@@ -217,10 +223,13 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		tokens:                  s,
 		nodes:                   s,
 		projects:                s,
+		organizations:           s,
+		environments:            s,
 		certs:                   s,
 		staticSites:             s,
 		ingressSettings:         s,
 		domains:                 s,
+		domainBasicAuth:         s,
 		lookupHost:              defaultLookupHost,
 		domainChecks:            newDomainCheckCache(),
 		backupTargets:           s,
@@ -248,6 +257,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		oauthClientFactory:      defaultOAuthClientFactory,
 		emailSettings:           s,
 		cloudflareTunnel:        s,
+		cloudflareDNS:           s,
 		passwordResetTokens:     s,
 		forgotPasswordByIP:      newLoginLimiter(),
 		forgotPasswordByEmail:   newLoginLimiter(),

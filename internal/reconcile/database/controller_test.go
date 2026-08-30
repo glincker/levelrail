@@ -806,6 +806,174 @@ func TestController_Reconcile_KeyDB_UsesEqalphaImage(t *testing.T) {
 	}
 }
 
+func TestController_Reconcile_Dragonfly_FreshDeploy(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineDragonfly, Version: "v1.27.1"}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Errorf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1", rt.createCalls)
+	}
+
+	volName := dataVolumeName("main")
+	if !rt.hasVolume(volName) {
+		t.Errorf("expected volume %q to have been ensured", volName)
+	}
+}
+
+func TestController_Reconcile_Dragonfly_AlreadyRunning_NoOp(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineDragonfly, Version: "v1.27.1"}
+	rt.seed(containerName("main"), "docker.dragonflydb.io/dragonflydb/dragonfly:v1.27.1", true)
+
+	c := New("main", &fakeStore{db: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "AlreadyRunning" {
+		t.Errorf("condition = %+v, want Status=True Reason=AlreadyRunning", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0 (already converged, must be a no-op)", rt.createCalls)
+	}
+}
+
+// TestController_Reconcile_Dragonfly_UsesDragonflyDBImage guards
+// dockerImageMapping's Dragonfly entry: the registry id is "dragonfly",
+// but the maintained image lives under docker.dragonflydb.io, not Docker
+// Hub, the same "worth its own explicit test" reasoning
+// TestController_Reconcile_KeyDB_UsesEqalphaImage already establishes.
+func TestController_Reconcile_Dragonfly_UsesDragonflyDBImage(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineDragonfly, Version: "v1.27.1"}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	wantImage := "docker.dragonflydb.io/dragonflydb/dragonfly:v1.27.1"
+	if rt.lastCreateSpec.Image != wantImage {
+		t.Errorf("created image = %q, want %q", rt.lastCreateSpec.Image, wantImage)
+	}
+}
+
+// TestController_Reconcile_Dragonfly_SetsDbfilenameCommand guards the
+// restore data-loss fix: Dragonfly defaults to dbfilename
+// "dump-{timestamp}", not "dump.rdb", so without this override
+// restoreRedisLike's /data/dump.rdb write is never loaded back on
+// restart and Restore silently no-ops.
+func TestController_Reconcile_Dragonfly_SetsDbfilenameCommand(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineDragonfly, Version: "v1.27.1"}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	wantCommand := []string{"--dbfilename", "dump"}
+	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {
+		t.Errorf("created command = %v, want %v", rt.lastCreateSpec.Command, wantCommand)
+	}
+}
+
+func TestController_Reconcile_ClickHouse_AlwaysCredentialsBlocked(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineClickHouse, Version: "24.8"}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v, want nil: credentials-blocked is a documented permanent state, not a transient failure", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "CredentialsNotConfigured" {
+		t.Errorf("condition = %+v, want Status=False Reason=CredentialsNotConfigured", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0: must never start an unauthenticated clickhouse container", rt.createCalls)
+	}
+	if rt.ensureVolumeCalls != 0 {
+		t.Errorf("ensureVolumeCalls = %d, want 0: must not touch Docker at all while blocked", rt.ensureVolumeCalls)
+	}
+}
+
+func TestController_Reconcile_ClickHouse_CredentialsBlocked_EvenIfAlreadyRunning(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.seed(containerName("main"), "clickhouse/clickhouse-server:24.8", true)
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineClickHouse, Version: "24.8"}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "CredentialsNotConfigured" {
+		t.Errorf("condition = %+v, want Status=False Reason=CredentialsNotConfigured", cond)
+	}
+}
+
+func TestController_Reconcile_ClickHouse_WithCredentials_Reconciles(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineClickHouse, Version: "24.8"}
+	c := New("main", &fakeStore{db: desired}, rt, WithClickHouseCredentials(&ClickHouseCredentials{
+		Username: "main",
+		Password: "s3cret",
+	}))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Errorf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1", rt.createCalls)
+	}
+	if rt.lastCreateSpec.Image != "clickhouse/clickhouse-server:24.8" {
+		t.Errorf("created image = %q, want %q", rt.lastCreateSpec.Image, "clickhouse/clickhouse-server:24.8")
+	}
+}
+
+func TestController_Reconcile_ClickHouse_WithCredentials_SetsEnv(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineClickHouse, Version: "24.8"}
+	c := New("main", &fakeStore{db: desired}, rt, WithClickHouseCredentials(&ClickHouseCredentials{
+		Username: "main",
+		Password: "s3cret",
+	}))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	env := rt.lastCreateEnv
+	if env["CLICKHOUSE_DB"] != "main" {
+		t.Errorf("CLICKHOUSE_DB = %q, want %q", env["CLICKHOUSE_DB"], "main")
+	}
+	if env["CLICKHOUSE_USER"] != "main" {
+		t.Errorf("CLICKHOUSE_USER = %q, want %q", env["CLICKHOUSE_USER"], "main")
+	}
+	if env["CLICKHOUSE_PASSWORD"] != "s3cret" {
+		t.Errorf("CLICKHOUSE_PASSWORD = %q, want %q", env["CLICKHOUSE_PASSWORD"], "s3cret")
+	}
+	if env["CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT"] != "1" {
+		t.Errorf("CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT = %q, want %q", env["CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT"], "1")
+	}
+}
+
 func TestController_Reconcile_UnknownEngine(t *testing.T) {
 	rt := newFakeRuntime()
 	desired := &store.DesiredDatabase{Name: "main", Engine: "cassandra", Version: "5"}

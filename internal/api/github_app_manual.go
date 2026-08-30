@@ -26,7 +26,7 @@ type manualGitHubAppRequest struct {
 	ClientID string `json:"client_id"`
 	// InstanceURL is optional in the request body: "" normalizes to
 	// github.com (normalizeGitHubInstanceURL), the same default every
-	// existing connection already has (migrations/0050). A self-hosted
+	// existing connection already has (migrations/0061). A self-hosted
 	// operator creating the App on their own GitHub Enterprise Server
 	// instance sets this to that instance's own base URL.
 	InstanceURL    string  `json:"instance_url,omitempty"`

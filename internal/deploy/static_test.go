@@ -208,6 +208,50 @@ func TestPipeline_DeployStatic_NoBuildPath_ServesSourceDirRoot(t *testing.T) {
 	}
 }
 
+func TestPipeline_DeployStatic_BaseDirectory_ScopesSourceDir(t *testing.T) {
+	builder := &fakeBuilder{}
+	staticStore := &fakeStaticSiteStore{}
+	rootDir := t.TempDir()
+	p := New(builder, &fakeServiceStore{}, WithStaticSiteStore(staticStore), WithStaticRootDir(rootDir))
+
+	sourceDir := t.TempDir()
+	writeTree(t, sourceDir, map[string]string{"apps/docs/dist/index.html": "<h1>monorepo</h1>"})
+
+	svc := staticService("docs.example.com")
+	svc.Build.BaseDirectory = "apps/docs"
+
+	_, err := p.Deploy(context.Background(), Request{
+		ServiceName: "docs", Service: svc, SourceDir: sourceDir, CommitSHA: "abc1234",
+	}, nil)
+	if err != nil {
+		t.Fatalf("Deploy() error = %v", err)
+	}
+
+	got := readTree(t, filepath.Join(rootDir, "docs", "abc1234"))
+	if got["index.html"] != "<h1>monorepo</h1>" {
+		t.Errorf("copied tree = %v, want index.html from apps/docs/dist", got)
+	}
+}
+
+func TestPipeline_DeployStatic_BaseDirectory_Traversal_Rejected(t *testing.T) {
+	builder := &fakeBuilder{}
+	staticStore := &fakeStaticSiteStore{}
+	p := New(builder, &fakeServiceStore{}, WithStaticSiteStore(staticStore), WithStaticRootDir(t.TempDir()))
+
+	svc := staticService("docs.example.com")
+	svc.Build.BaseDirectory = "../escape"
+
+	_, err := p.Deploy(context.Background(), Request{
+		ServiceName: "docs", Service: svc, SourceDir: t.TempDir(), CommitSHA: "abc1234",
+	}, nil)
+	if err == nil {
+		t.Fatal("Deploy() error = nil, want an error for a base directory that escapes the repo root")
+	}
+	if staticStore.saveCalls != 0 {
+		t.Errorf("SaveStaticSite called %d times, want 0: a traversal must be rejected before any copy", staticStore.saveCalls)
+	}
+}
+
 func TestPipeline_DeployStatic_SourceDirMissing_Errors(t *testing.T) {
 	builder := &fakeBuilder{}
 	staticStore := &fakeStaticSiteStore{}

@@ -14,7 +14,7 @@ import (
 var ErrBitbucketAppConnectionNotFound = errors.New("store: bitbucket app connection not found")
 
 // BitbucketAppConnection is the single-row bitbucket_app_connections
-// table (migrations/0051_bitbucket_app_connection.sql). No secret
+// table (migrations/0062_bitbucket_app_connection.sql). No secret
 // fields: the consumer's own secret and the OAuth access_token/
 // refresh_token/token_expires_at live in internal/secrets instead,
 // under BitbucketAppSecretsKey(), the same split GitHubAppConnection

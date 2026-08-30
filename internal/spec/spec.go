@@ -25,9 +25,14 @@ type Spec struct {
 
 // Service is one entry under services:.
 type Service struct {
-	Build     Build             `yaml:"build"`
-	Domains   []string          `yaml:"domains,omitempty"`
-	Port      int               `yaml:"port,omitempty"`
+	Build   Build    `yaml:"build"`
+	Domains []string `yaml:"domains,omitempty"`
+	Port    int      `yaml:"port,omitempty"`
+	// HostPort pins the host-side port Docker binds Port to, 0 meaning
+	// auto-assign (the same zero-value-means-unset convention Port
+	// itself uses). Its storage home is store.DesiredService.HostPort
+	// (migrations/0056_service_host_port.sql).
+	HostPort  int               `yaml:"host_port,omitempty"`
 	Health    *Health           `yaml:"health,omitempty"`
 	Resources *Resources        `yaml:"resources,omitempty"`
 	Env       map[string]EnvVar `yaml:"env,omitempty"`
@@ -87,6 +92,12 @@ const DefaultReplicas = 1
 type Build struct {
 	Type string `yaml:"type"`
 	Path string `yaml:"path,omitempty"`
+	// BaseDirectory scopes the build context to a subdirectory of the
+	// repo, e.g. "apps/web" in a monorepo. Empty means the repo root.
+	// Meaningful for dockerfile, railpack, and static; not meaningful
+	// for image (nothing gets built) or compose (the compose file's own
+	// context: field already scopes each service).
+	BaseDirectory string `yaml:"baseDirectory,omitempty"`
 	// Image is a full registry reference (e.g.
 	// "ghcr.io/org/app:v1.2.3"), only meaningful for build.type: image:
 	// a CI pipeline (or anything else) already built and pushed this
@@ -98,6 +109,11 @@ type Build struct {
 	// to author) to authenticate with when pulling Image from a private
 	// registry. Empty means an unauthenticated (public) pull.
 	RegistryCredential string `yaml:"registryCredential,omitempty"`
+	// Args are Dockerfile build-time ARG values (e.g. a base image
+	// version, a build-time feature flag), passed through as
+	// --build-arg equivalents to BuildKit. Only meaningful for
+	// build.type: dockerfile.
+	Args map[string]string `yaml:"args,omitempty"`
 }
 
 // Health holds a service's readiness and liveness probe configuration.
@@ -122,16 +138,18 @@ type Resources struct {
 
 // Supported managed database engines: Postgres and Redis shipped as
 // first-class resources in the initial release, MySQL, MongoDB,
-// MariaDB, and KeyDB joined once internal/reconcile/database's
-// controller grew matching engine cases.
+// MariaDB, KeyDB, ClickHouse, and Dragonfly joined once
+// internal/reconcile/database's controller grew matching engine cases.
 const (
-	EngineFake     = "" // zero value only, never valid; see Validate
-	EnginePostgres = "postgres"
-	EngineRedis    = "redis"
-	EngineMySQL    = "mysql"
-	EngineMongoDB  = "mongodb"
-	EngineMariaDB  = "mariadb"
-	EngineKeyDB    = "keydb"
+	EngineFake       = "" // zero value only, never valid; see Validate
+	EnginePostgres   = "postgres"
+	EngineRedis      = "redis"
+	EngineMySQL      = "mysql"
+	EngineMongoDB    = "mongodb"
+	EngineMariaDB    = "mariadb"
+	EngineKeyDB      = "keydb"
+	EngineClickHouse = "clickhouse"
+	EngineDragonfly  = "dragonfly"
 )
 
 // Database is one entry under databases:.

@@ -68,7 +68,7 @@ type gitHubAppStatusResource struct {
 	AppID     int64  `json:"app_id,omitempty"`
 	ClientID  string `json:"client_id,omitempty"`
 	// InstanceURL is "https://github.com" for every connection until
-	// GitHub Enterprise Server support (migrations/0050), a real GHES
+	// GitHub Enterprise Server support (migrations/0061), a real GHES
 	// base URL after. Empty when not connected, the same shape
 	// GitLabAppStatus's own instance_url already has.
 	InstanceURL  string `json:"instance_url,omitempty"`

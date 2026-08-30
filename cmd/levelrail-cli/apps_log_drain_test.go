@@ -140,19 +140,7 @@ func TestRun_AppsLogDrainClear(t *testing.T) {
 }
 
 func TestRun_AppsLogDrain_NoName(t *testing.T) {
-	tests := []string{"get", "set", "clear"}
-	for _, verb := range tests {
-		t.Run(verb, func(t *testing.T) {
-			var stdout, stderr bytes.Buffer
-			got := run("levelrail-cli-test", []string{"apps", "log-drain", verb}, &stdout, &stderr, envMap())
-			if got != exitUsage {
-				t.Fatalf("exit = %d, want %d", got, exitUsage)
-			}
-			if !strings.Contains(stderr.String(), "requires exactly one") {
-				t.Errorf("stderr = %q, want a missing-name usage error", stderr.String())
-			}
-		})
-	}
+	assertUsageErrorMissingName(t, "log-drain", []string{"get", "set", "clear"})
 }
 
 func TestRun_AppsLogDrain_Help(t *testing.T) {

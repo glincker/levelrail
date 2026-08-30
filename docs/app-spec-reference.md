@@ -39,7 +39,7 @@ services:
       tier: frontend
 databases:
   main:
-    engine: postgres          # postgres | redis | mysql | mongodb | mariadb | keydb
+    engine: postgres          # postgres | redis | mysql | mongodb | mariadb | keydb | clickhouse | dragonfly
     version: "16"
     backup: { schedule: "0 3 * * *", retain: 7 }
 ```
@@ -84,6 +84,7 @@ as `LOG_LEVEL`).
 | --- | --- | --- | --- | --- |
 | `type` | string | yes | none | One of `dockerfile`, `compose`, `railpack`, `static`. |
 | `path` | string | conditional | none | Required when `type` is `compose`. Optional otherwise (for example, a non-default Dockerfile path). |
+| `args` | map of string to string | no | none | Dockerfile build-time `ARG` values, passed through to BuildKit as `--build-arg` equivalents. Only meaningful when `type` is `dockerfile`. |
 
 ### `Health`
 
@@ -126,7 +127,7 @@ The object form must set at least one of the three fields.
 
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `engine` | string | yes | none | One of `postgres`, `redis`, `mysql`, `mongodb`, `mariadb`, `keydb`. |
+| `engine` | string | yes | none | One of `postgres`, `redis`, `mysql`, `mongodb`, `mariadb`, `keydb`, `clickhouse`, `dragonfly`. |
 | `version` | string | no | none | For example `"16"`. |
 | `backup` | `Backup` | no | none | Backup schedule. |
 
@@ -160,6 +161,8 @@ before a caller ever sees a `Spec`:
    - Service and database names must match `^[a-z][a-z0-9-]*$`.
    - A domain can only be claimed by one service in the whole spec.
    - `build.path` is required when `build.type` is `compose`.
+   - `build.args` is only meaningful when `build.type` is `dockerfile`; set
+     with any other build type, it is rejected rather than silently ignored.
    - `port` is required unless `build.type` is `static`, and forbidden when
      it is.
    - `strategy`, if set, must be one of the three known values (a second,

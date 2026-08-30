@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/cronexpr"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -29,13 +31,45 @@ func databaseContainerName(dbName string) string {
 	return "db-" + dbName
 }
 
+// loadDatabaseForRunner looks up name and writes the 404/500 response
+// itself on failure, the shared shape handleTriggerBackup and
+// handleTriggerRestore both need before starting a runner.
+func (rt *Router) loadDatabaseForRunner(w http.ResponseWriter, r *http.Request, name, logContext string) (*store.DesiredDatabase, bool) {
+	db, err := rt.databases.GetDesiredDatabase(r.Context(), name)
+	if errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return nil, false
+	}
+	if err != nil {
+		rt.logger.Error(logContext, slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return nil, false
+	}
+	return db, true
+}
+
+// loadBackupTarget confirms targetID exists, writing the 404/500 response
+// itself on failure, the shared shape handleTriggerBackup and
+// handleSetBackupSchedule both need before using a target.
+func (rt *Router) loadBackupTarget(w http.ResponseWriter, r *http.Request, targetID, logContext string) bool {
+	if _, err := rt.backupTargets.GetBackupTarget(r.Context(), targetID); errors.Is(err, store.ErrBackupTargetNotFound) {
+		writeError(w, http.StatusNotFound, "backup target not found")
+		return false
+	} else if err != nil {
+		rt.logger.Error(logContext, slog.String("error", err.Error()), slog.String("target_id", targetID))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return false
+	}
+	return true
+}
+
 // BackupHistoryStore is the store surface the backup history handler
 // needs. GetBackupHistory was added for handleTriggerRestore
 // (restore.go): resolving the one backup attempt a restore names, not
 // just listing every attempt for a database, the same "look up one row
 // by ID" need GetBackupTarget already serves for backup targets.
 type BackupHistoryStore interface {
-	ListBackupHistory(ctx context.Context, databaseName string) ([]store.BackupHistory, error)
+	ListBackupHistory(ctx context.Context, databaseName string, limit int, before *time.Time) ([]store.BackupHistory, error)
 	GetBackupHistory(ctx context.Context, id string) (store.BackupHistory, error)
 }
 
@@ -108,14 +142,8 @@ func (rt *Router) handleTriggerBackup(w http.ResponseWriter, r *http.Request) {
 
 	name := r.PathValue("name")
 
-	db, err := rt.databases.GetDesiredDatabase(r.Context(), name)
-	if errors.Is(err, store.ErrDatabaseNotFound) {
-		writeError(w, http.StatusNotFound, "database not found")
-		return
-	}
-	if err != nil {
-		rt.logger.Error("api: trigger backup: load database failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+	db, ok := rt.loadDatabaseForRunner(w, r, name, "api: trigger backup: load database failed")
+	if !ok {
 		return
 	}
 
@@ -129,12 +157,7 @@ func (rt *Router) handleTriggerBackup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := rt.backupTargets.GetBackupTarget(r.Context(), req.TargetID); errors.Is(err, store.ErrBackupTargetNotFound) {
-		writeError(w, http.StatusNotFound, "backup target not found")
-		return
-	} else if err != nil {
-		rt.logger.Error("api: trigger backup: load backup target failed", slog.String("error", err.Error()), slog.String("target_id", req.TargetID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+	if !rt.loadBackupTarget(w, r, req.TargetID, "api: trigger backup: load backup target failed") {
 		return
 	}
 
@@ -160,11 +183,14 @@ func (rt *Router) handleTriggerBackup(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+const (
+	defaultBackupHistoryLimit = 50
+	maxBackupHistoryLimit     = 200
+)
+
 // handleListBackupHistory handles GET /api/v1/databases/{name}/backups.
-// AbilityRead: this is passive visibility into attempts already made,
-// the same boundary handleListCertificates/handleListStaticSites draw
-// between visibility and mutation elsewhere in this file's sibling
-// handlers.
+// Cursor-paginated by ?before/?limit, mirroring handleListAuditLog's
+// contract since backup history on a long-lived schedule is unbounded.
 func (rt *Router) handleListBackupHistory(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -177,7 +203,30 @@ func (rt *Router) handleListBackupHistory(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	history, err := rt.backupHistory.ListBackupHistory(r.Context(), name)
+	limit := defaultBackupHistoryLimit
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil || n <= 0 {
+			writeError(w, http.StatusBadRequest, "limit must be a positive integer")
+			return
+		}
+		limit = n
+	}
+	if limit > maxBackupHistoryLimit {
+		limit = maxBackupHistoryLimit
+	}
+
+	var before *time.Time
+	if raw := r.URL.Query().Get("before"); raw != "" {
+		t, err := time.Parse(time.RFC3339, raw)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "before must be an RFC3339 timestamp")
+			return
+		}
+		before = &t
+	}
+
+	history, err := rt.backupHistory.ListBackupHistory(r.Context(), name, limit, before)
 	if err != nil {
 		rt.logger.Error("api: list backup history failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
@@ -202,13 +251,17 @@ type backupScheduleResource struct {
 	TargetID     string `json:"target_id,omitempty"`
 	Schedule     string `json:"schedule,omitempty"`
 	Retain       int    `json:"retain,omitempty"`
+	// RetainDays is a second, independent retention dimension: 0 means
+	// no age limit, mirroring Retain's own zero-means-unlimited meaning.
+	RetainDays int `json:"retain_days,omitempty"`
 }
 
 // setBackupScheduleRequest is handleSetBackupSchedule's request body.
 type setBackupScheduleRequest struct {
-	TargetID string `json:"target_id"`
-	Schedule string `json:"schedule"`
-	Retain   int    `json:"retain,omitempty"`
+	TargetID   string `json:"target_id"`
+	Schedule   string `json:"schedule"`
+	Retain     int    `json:"retain,omitempty"`
+	RetainDays int    `json:"retain_days,omitempty"`
 }
 
 // handleSetBackupSchedule handles
@@ -262,17 +315,16 @@ func (rt *Router) handleSetBackupSchedule(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, "retain must not be negative")
 		return
 	}
-
-	if _, err := rt.backupTargets.GetBackupTarget(r.Context(), req.TargetID); errors.Is(err, store.ErrBackupTargetNotFound) {
-		writeError(w, http.StatusNotFound, "backup target not found")
-		return
-	} else if err != nil {
-		rt.logger.Error("api: set backup schedule: load backup target failed", slog.String("error", err.Error()), slog.String("target_id", req.TargetID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+	if req.RetainDays < 0 {
+		writeError(w, http.StatusBadRequest, "retain_days must not be negative")
 		return
 	}
 
-	if err := rt.databases.SetDatabaseBackupSchedule(r.Context(), name, req.TargetID, req.Schedule, req.Retain); errors.Is(err, store.ErrDatabaseNotFound) {
+	if !rt.loadBackupTarget(w, r, req.TargetID, "api: set backup schedule: load backup target failed") {
+		return
+	}
+
+	if err := rt.databases.SetDatabaseBackupSchedule(r.Context(), name, req.TargetID, req.Schedule, req.Retain, req.RetainDays); errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	} else if err != nil {
@@ -286,6 +338,7 @@ func (rt *Router) handleSetBackupSchedule(w http.ResponseWriter, r *http.Request
 		TargetID:     req.TargetID,
 		Schedule:     req.Schedule,
 		Retain:       req.Retain,
+		RetainDays:   req.RetainDays,
 	})
 }
 
@@ -310,7 +363,7 @@ func (rt *Router) handleClearBackupSchedule(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := rt.databases.SetDatabaseBackupSchedule(r.Context(), name, "", "", 0); errors.Is(err, store.ErrDatabaseNotFound) {
+	if err := rt.databases.SetDatabaseBackupSchedule(r.Context(), name, "", "", 0, 0); errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	} else if err != nil {

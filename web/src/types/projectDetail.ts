@@ -13,4 +13,8 @@ export interface ProjectResource {
   id: string
   name: string
   created_at: string
+  // org_id carries `omitempty` on the Go side: empty means not filed
+  // under any organization. Response-only, set via
+  // PUT /api/v1/projects/{id}/organization (useSetProjectOrganization).
+  org_id?: string
 }

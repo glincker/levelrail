@@ -12,9 +12,11 @@ export const CHANNEL_KIND_LABEL: Record<NotificationChannelKind, string> = {
   generic: 'Generic webhook',
   email: 'Email',
   pushover: 'Pushover',
+  pagerduty: 'PagerDuty',
+  teams: 'Microsoft Teams',
 }
 
-// Only the three brand-mark kinds map to a BrandIconName; generic/email
+// Only the brand-mark kinds map to a BrandIconName; generic/email/pushover
 // render through a Phosphor icon instead (BrandIcon.tsx's own documented
 // brand-vs-chrome boundary), chosen by the caller.
 export const CHANNEL_KIND_BRAND_ICON: Partial<
@@ -23,4 +25,6 @@ export const CHANNEL_KIND_BRAND_ICON: Partial<
   slack: 'slack',
   discord: 'discord',
   telegram: 'telegram',
+  pagerduty: 'pagerduty',
+  teams: 'microsoft-teams',
 }

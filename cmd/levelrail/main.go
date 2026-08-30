@@ -225,6 +225,14 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
+	// Must run before anything below can create a new deploy attempt:
+	// see FailOrphanedDeployAttempts' own doc comment.
+	if n, err := db.FailOrphanedDeployAttempts(ctx, time.Now()); err != nil {
+		logger.Error("fail orphaned deploy attempts", slog.String("error", err.Error()))
+	} else if n > 0 {
+		logger.Warn("marked orphaned deploy attempts as failed", slog.Int("count", n))
+	}
+
 	b, err := loadBrand()
 	if err != nil {
 		return err
@@ -479,6 +487,23 @@ func run(logger *slog.Logger) error {
 	}()
 	go runMetricsRetentionSweep(ctx, telemetryDB, logger)
 
+	// Host disk space only has a real node to attribute samples to once
+	// meshCfg has bootstrapped this process's own nodes row
+	// (setupMesh -> bootstrapLocalNode), the same gate meshreconcile's
+	// controller below already requires: with mesh off there is no
+	// "self" node ID and no reachable /nodes/{id} page to show it on.
+	if meshCfg != nil {
+		// "node:" + id matches internal/api/node_metrics.go's own
+		// nodeResourceID exactly: that's the key handleQueryNodeMetrics
+		// reads nodeHostMetrics samples back from.
+		diskCollector := telemetry.NewHostDiskCollector(agentDataDir, "node:"+meshCfg.localNodeID, telemetryDB, metricsCollectionInterval, logger)
+		go func() {
+			if err := diskCollector.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+				logger.Error("telemetry host disk collector stopped", slog.String("error", err.Error()))
+			}
+		}()
+	}
+
 	logCollector := telemetry.NewLogCollector(client, telemetryDB, logBroadcaster, logger)
 	go func() {
 		if err := logCollector.Run(ctx, logTargetsResyncInterval, logTargets(db, client)); err != nil && !errors.Is(err, context.Canceled) {
@@ -543,7 +568,7 @@ func run(logger *slog.Logger) error {
 
 	// Scheduled tasks: internal/scheduledtask.Scheduler checks, on its
 	// own tick, which tasks have a due cron schedule
-	// (store.ScheduledTask, migrations/0047_scheduled_tasks.sql) and runs
+	// (store.ScheduledTask, migrations/0048_scheduled_tasks.sql) and runs
 	// them through the same scheduledTaskRunner the manual "run now"
 	// trigger (api.WithScheduledTaskRunner above) uses. Unlike the backup
 	// scheduler just above, this needs no secretsManager gate:
@@ -1490,6 +1515,13 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// Cloudflare Tunnel's token goes through the same secretsManager,
 		// same nil-interface hazard as everything else in this block.
 		opts = append(opts, api.WithCloudflareTunnelSecrets(secretsManager))
+		// Cloudflare DNS-01's API token (a distinct credential from the
+		// Tunnel connector token above) goes through the same
+		// secretsManager, same nil-interface hazard.
+		opts = append(opts, api.WithCloudflareDNSSecrets(secretsManager))
+		// Per-domain HTTP Basic Auth passwords go through the same
+		// secretsManager, same nil-interface hazard.
+		opts = append(opts, api.WithDomainBasicAuthSecrets(secretsManager))
 		// Git sources (TASKS.md 1.7's own deferred follow-up,
 		// internal/api/git_sources.go, git_webhook.go): a connected
 		// source's deploy token and webhook secret go through the same
@@ -1758,6 +1790,16 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		if deps.dashboardDial != "" {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(deps.dashboardDial))
 		}
+		// Cloudflare DNS-01 for wildcard domains: same nil-secretsManager
+		// hazard as the Tunnel token below, and the same "skipped
+		// entirely without a master key" fallback.
+		if deps.secretsManager != nil {
+			ingressOpts = append(ingressOpts, ingressreconcile.WithCloudflareDNSTokens(deps.secretsManager))
+			// Per-domain HTTP Basic Auth passwords: same nil-secretsManager
+			// hazard as Cloudflare DNS-01 above, same "no domain gets a
+			// basic_auth handler" fallback when absent.
+			ingressOpts = append(ingressOpts, ingressreconcile.WithDomainBasicAuthSecrets(deps.secretsManager))
+		}
 		controllers = append(controllers, ingressreconcile.New(deps.db, deps.runtime, deps.driver, ingressOpts...))
 
 		// Local runtime unconditionally, same reasoning as the ingress
@@ -1789,16 +1831,21 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 // appControllersFor builds one application.Controller per service,
 // skipping (with a warning) any whose node isn't currently reachable.
 func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) []reconcile.Controller {
-	// application.WithStorageTargets is unconditional, unlike
-	// WithSecretResolver below: resolving a StorageTarget's
-	// endpoint/region/bucket needs no master key, only its access keys
-	// do. A service with a StorageTargetID but no secretsManager still
-	// fails Reconcile loudly rather than starting half-configured.
+	// application.WithStorageTargets/WithDatabaseAttachments are both
+	// unconditional, unlike WithSecretResolver below: resolving a
+	// StorageTarget's endpoint/region/bucket, or a database's host/port,
+	// needs no master key, only credentials (a bucket's access keys, a
+	// database's password) do. A service with a StorageTargetID/
+	// DatabaseEnv but no secretsManager still fails Reconcile loudly
+	// rather than starting half-configured.
 	appOpts := []application.Option{
 		application.WithDeployRecorder(deps.telemetryDB),
 		application.WithStorageTargets(deps.db),
+		application.WithDatabaseAttachments(deps.db),
 		application.WithRegistryCredentials(deps.db),
 		application.WithProjectEnv(deps.db),
+		application.WithOrganizationEnv(deps.db),
+		application.WithEnvironmentEnv(deps.db),
 		application.WithNetworkPrefix(deps.networkPrefix),
 	}
 	if deps.secretsManager != nil {
@@ -1882,6 +1929,14 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 				slog.String("database", desired.Name), slog.String("error", err.Error()))
 		} else if creds != nil {
 			opts = append(opts, database.WithMariaDBCredentials(creds))
+		}
+	case store.EngineClickHouse:
+		creds, err := clickhouseCredentialsFor(ctx, deps.secretsManager, desired.Name)
+		if err != nil {
+			deps.logger.Warn("skipping clickhouse credentials for this reconcile pass",
+				slog.String("database", desired.Name), slog.String("error", err.Error()))
+		} else if creds != nil {
+			opts = append(opts, database.WithClickHouseCredentials(creds))
 		}
 	}
 	return opts

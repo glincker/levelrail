@@ -38,10 +38,22 @@ export async function fetchDeployAttempts(
   return body ?? []
 }
 
+// Polls while the app's latest attempt is still 'running' (newest-first,
+// so attempts[0]), so the deploy-in-progress banner and the stage
+// timeline pick up a build finishing or a rollback landing without the
+// operator needing to navigate away and back. Off (false) once nothing
+// is running: matches queries/activity.ts's own refetchInterval
+// precedent, just conditional instead of constant.
+const RUNNING_ATTEMPT_POLL_INTERVAL_MS = 3_000
+
 export function deployAttemptsQueryOptions(appName: string) {
   return queryOptions({
     queryKey: deployAttemptKeys.list(appName),
     queryFn: () => fetchDeployAttempts(appName),
+    refetchInterval: (query) =>
+      query.state.data?.[0]?.status === 'running'
+        ? RUNNING_ATTEMPT_POLL_INTERVAL_MS
+        : false,
   })
 }
 

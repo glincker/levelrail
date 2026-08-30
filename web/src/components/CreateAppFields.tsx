@@ -51,13 +51,6 @@ import {
 // through to store.DefaultDeployStrategy").
 const STRATEGY_DEFAULT_VALUE = '__default__'
 
-// Only recreate/blue-green are offered, matching DeployStrategyEditor's
-// own SELECTABLE_STRATEGIES exactly and for the same reason: "rolling"
-// is a real spec constant the reconciler explicitly refuses to run
-// (internal/reconcile/application's controller, a documented
-// "unsupported" condition, not a bug), and a brand-new app has no
-// existing rolling state that would justify offering it here the way
-// DeployStrategyEditor must for an app that already carries it.
 const createAppSchema = z.object({
   name: z.string().trim().min(1, 'Name is required'),
   image: z.string().trim().min(1, 'Image is required'),
@@ -72,7 +65,12 @@ const createAppSchema = z.object({
   node: z.string().optional(),
   // Optional project id, same shape as node above.
   project: z.string().optional(),
-  strategy: z.enum(['recreate', 'blue-green', STRATEGY_DEFAULT_VALUE]),
+  strategy: z.enum([
+    'recreate',
+    'blue-green',
+    'rolling',
+    STRATEGY_DEFAULT_VALUE,
+  ]),
   // Left as a plain trimmed string rather than z.coerce.number: an empty
   // string here means "use store.DefaultReplicas", which a coerced
   // number field can't represent (Number('') is 0, a real, different
@@ -303,6 +301,7 @@ export function CreateAppFields({
                       </SelectItem>
                       <SelectItem value="recreate">Recreate</SelectItem>
                       <SelectItem value="blue-green">Blue-green</SelectItem>
+                      <SelectItem value="rolling">Rolling</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -326,8 +325,8 @@ export function CreateAppFields({
                 {...register('replicas')}
               />
               <FieldHint>
-                How many copies of your app run at once. Leave blank to run
-                just one.
+                How many copies of your app run at once. Leave blank to run just
+                one.
               </FieldHint>
               <FieldError errors={[formState.errors.replicas]} />
             </Field>

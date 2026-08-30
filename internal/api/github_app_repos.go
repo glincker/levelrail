@@ -38,7 +38,7 @@ func (rt *Router) mintGitHubAppInstallationToken(ctx context.Context) (instanceU
 	if conn.InstallationID == nil {
 		return "", "", errGitHubAppNotInstalled
 	}
-	// Defensive, not expected in practice: migrations/0050 backfills
+	// Defensive, not expected in practice: migrations/0061 backfills
 	// every pre-existing row to "https://github.com", and every writer
 	// of a connection row (handleGitHubAppCallback,
 	// handleConnectGitHubAppManually) always sets InstanceURL explicitly

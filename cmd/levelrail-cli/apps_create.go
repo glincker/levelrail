@@ -19,17 +19,39 @@ import (
 // logic) is a pure function over plain data, testable without a
 // flag.FlagSet in the loop at all.
 type createFlags struct {
-	name       string
-	image      string
-	port       int
-	repo       string
-	ref        string
-	dockerfile string
-	imageRepo  string
-	file       string
-	service    string
-	yes        bool
-	jsonOut    bool
+	name  string
+	image string
+	port  int
+	// hostPort backs --host-port: 0 means unset (auto-assign), matching
+	// port's own zero-means-unset convention, since a real host port is
+	// always positive. See toHostPort below for how this becomes
+	// appResource.HostPort's *int.
+	hostPort      int
+	repo          string
+	ref           string
+	dockerfile    string
+	buildType     string
+	baseDirectory string
+	// buildArgs backs --build-arg (repeatable KEY=VALUE), only meaningful
+	// alongside --build-type dockerfile. See stringMapFlag (flagutil.go).
+	buildArgs map[string]string
+	imageRepo string
+	file      string
+	service   string
+	yes       bool
+	jsonOut   bool
+
+	// attachDatabase, attachDatabaseEnvVar, attachDatabaseField back
+	// --attach-database and its two optional refinements: a post-create
+	// call to PUT /api/v1/apps/{name}/database (apiclient's
+	// SetAppDatabaseAttachment), the CLI's own reach into the real
+	// app-to-database attachment internal/api/apps_database.go exposes,
+	// matching this repo's own "UI, CLI, and API together" rule. Not part
+	// of createPlan: unlike CreateBody/Build, this is a separate HTTP
+	// call runAppsCreate makes only once the app itself already exists.
+	attachDatabase       string
+	attachDatabaseEnvVar string
+	attachDatabaseField  string
 }
 
 // createPlan is planFromFlags's output: exactly the HTTP requests
@@ -99,7 +121,7 @@ func planExistingImage(f createFlags) (createPlan, error) {
 		return createPlan{}, newValidationError("missing required flag(s) for the existing-image path: %s", strings.Join(missing, ", "))
 	}
 	return createPlan{
-		CreateBody: appResource{Name: f.name, Image: f.image, Port: f.port},
+		CreateBody: appResource{Name: f.name, Image: f.image, Port: f.port, HostPort: toHostPort(f.hostPort)},
 	}, nil
 }
 
@@ -109,6 +131,17 @@ func planGitBuildFlags(f createFlags, detected detectedGit) (createPlan, error) 
 		repo = detected.RepoURL
 	}
 	ref := resolveRef(f.ref, detected.Ref)
+
+	buildType := f.buildType
+	if buildType == "" {
+		buildType = spec.BuildDockerfile
+	}
+	if buildType != spec.BuildDockerfile && buildType != spec.BuildRailpack {
+		return createPlan{}, newValidationError("--build-type %q not supported by the git-build path; use %q or %q", buildType, spec.BuildDockerfile, spec.BuildRailpack)
+	}
+	if buildType != spec.BuildDockerfile && len(f.buildArgs) > 0 {
+		return createPlan{}, newValidationError("--build-arg is only meaningful with --build-type %q", spec.BuildDockerfile)
+	}
 
 	var missing []string
 	if f.name == "" {
@@ -127,13 +160,19 @@ func planGitBuildFlags(f createFlags, detected detectedGit) (createPlan, error) 
 		return createPlan{}, newValidationError("missing required flag(s) for the git-build path: %s", strings.Join(missing, ", "))
 	}
 
+	buildInput := buildTriggerRequestBuild{Type: buildType, BaseDirectory: f.baseDirectory}
+	if buildType == spec.BuildDockerfile {
+		buildInput.Path = f.dockerfile
+		buildInput.Args = f.buildArgs
+	}
+
 	return createPlan{
-		CreateBody: appResource{Name: f.name, Image: pendingImageTag(f.imageRepo), Port: f.port},
+		CreateBody: appResource{Name: f.name, Image: pendingImageTag(f.imageRepo), Port: f.port, HostPort: toHostPort(f.hostPort)},
 		Build: &buildTriggerRequest{
 			RepoURL:   repo,
 			Ref:       ref,
 			ImageRepo: f.imageRepo,
-			Build:     buildTriggerRequestBuild{Path: f.dockerfile},
+			Build:     buildInput,
 		},
 	}, nil
 }
@@ -150,16 +189,19 @@ func planFromFile(f createFlags, fileSpec *spec.Spec, detected detectedGit) (cre
 	svc := fileSpec.Services[key]
 
 	switch svc.Build.Type {
-	case spec.BuildDockerfile:
-		return planFromFileDockerfile(f, key, svc, detected)
+	case spec.BuildDockerfile, spec.BuildRailpack:
+		return planFromFileBuild(f, key, svc, detected, svc.Build.Type)
 	case spec.BuildImage:
 		return planFromFileImage(f, key, svc)
 	default:
-		return createPlan{}, newValidationError("service %q has build.type %q; apps create only supports %q and %q today", key, svc.Build.Type, spec.BuildDockerfile, spec.BuildImage)
+		return createPlan{}, newValidationError("service %q has build.type %q; apps create only supports %q, %q, and %q today", key, svc.Build.Type, spec.BuildDockerfile, spec.BuildRailpack, spec.BuildImage)
 	}
 }
 
-func planFromFileDockerfile(f createFlags, key string, svc spec.Service, detected detectedGit) (createPlan, error) {
+func planFromFileBuild(f createFlags, key string, svc spec.Service, detected detectedGit, buildType string) (createPlan, error) {
+	if buildType != spec.BuildDockerfile && len(f.buildArgs) > 0 {
+		return createPlan{}, newValidationError("--build-arg is only meaningful for a dockerfile build (service %q has build.type %q)", key, buildType)
+	}
 	if secretKeys := secretEnvKeys(svc.Env); len(secretKeys) > 0 {
 		return createPlan{}, newValidationError(
 			"service %q declares secret env var(s) %s; apps create does not yet set secrets, create the app without them and set each one via PUT /api/v1/apps/{name}/secrets/{key} afterward",
@@ -178,6 +220,10 @@ func planFromFileDockerfile(f createFlags, key string, svc spec.Service, detecte
 	if port <= 0 {
 		return createPlan{}, newValidationError("service %q has no port set in %s and --port was not given", key, f.file)
 	}
+	hostPort := f.hostPort
+	if hostPort <= 0 {
+		hostPort = svc.HostPort
+	}
 
 	if f.imageRepo == "" {
 		return createPlan{}, newValidationError("--image-repo is required: app.yaml has no field for it")
@@ -192,9 +238,23 @@ func planFromFileDockerfile(f createFlags, key string, svc spec.Service, detecte
 	}
 	ref := resolveRef(f.ref, detected.Ref)
 
-	dockerfile := f.dockerfile
-	if dockerfile == "" {
-		dockerfile = svc.Build.Path
+	baseDirectory := f.baseDirectory
+	if baseDirectory == "" {
+		baseDirectory = svc.Build.BaseDirectory
+	}
+	buildInput := buildTriggerRequestBuild{Type: buildType, BaseDirectory: baseDirectory}
+	if buildType == spec.BuildDockerfile {
+		dockerfile := f.dockerfile
+		if dockerfile == "" {
+			dockerfile = svc.Build.Path
+		}
+		buildInput.Path = dockerfile
+
+		args := svc.Build.Args
+		if len(f.buildArgs) > 0 {
+			args = f.buildArgs
+		}
+		buildInput.Args = args
 	}
 
 	resources, err := toServiceResources(svc.Resources)
@@ -211,6 +271,7 @@ func planFromFileDockerfile(f createFlags, key string, svc spec.Service, detecte
 			Name:      name,
 			Image:     pendingImageTag(f.imageRepo),
 			Port:      port,
+			HostPort:  toHostPort(hostPort),
 			Domains:   svc.Domains,
 			Env:       literalEnv(svc.Env),
 			Resources: resources,
@@ -220,7 +281,7 @@ func planFromFileDockerfile(f createFlags, key string, svc spec.Service, detecte
 			RepoURL:   repo,
 			Ref:       ref,
 			ImageRepo: f.imageRepo,
-			Build:     buildTriggerRequestBuild{Path: dockerfile},
+			Build:     buildInput,
 		},
 	}, nil
 }
@@ -250,6 +311,10 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 	if port <= 0 {
 		return createPlan{}, newValidationError("service %q has no port set in %s and --port was not given", key, f.file)
 	}
+	hostPort := f.hostPort
+	if hostPort <= 0 {
+		hostPort = svc.HostPort
+	}
 
 	resources, err := toServiceResources(svc.Resources)
 	if err != nil {
@@ -265,12 +330,22 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 			Name:      name,
 			Image:     svc.Build.Image,
 			Port:      port,
+			HostPort:  toHostPort(hostPort),
 			Domains:   svc.Domains,
 			Env:       literalEnv(svc.Env),
 			Resources: resources,
 			Health:    health,
 		},
 	}, nil
+}
+
+// toHostPort turns createFlags.hostPort's 0-means-unset int into
+// appResource.HostPort's nil-means-unset *int.
+func toHostPort(hostPort int) *int {
+	if hostPort == 0 {
+		return nil
+	}
+	return &hostPort
 }
 
 // resolveRef applies the --ref > detected-branch > "main" precedence
@@ -481,6 +556,16 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		}
 	}
 
+	if f.attachDatabase != "" {
+		if !f.jsonOut {
+			_, _ = fmt.Fprintf(stderr, "attaching database %q...\n", f.attachDatabase)
+		}
+		attachReq := setAppDatabaseRequest{DatabaseName: f.attachDatabase, EnvVar: f.attachDatabaseEnvVar, Field: f.attachDatabaseField}
+		if _, attachErr := client.SetAppDatabaseAttachment(ctx, created.Name, attachReq); attachErr != nil {
+			return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("app %q was created but attaching database %q failed: %w", created.Name, f.attachDatabase, attachErr))
+		}
+	}
+
 	final, err := client.GetApp(ctx, created.Name)
 	if err != nil {
 		// The app (and, if applicable, its build) already succeeded by
@@ -521,12 +606,20 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.StringVar(&f.name, "name", "", "app name (required unless --file is given and app.yaml has exactly one service)")
 	fs.StringVar(&f.image, "image", "", "existing image to deploy, e.g. registry.example.com/org/app:tag (existing-image path)")
 	fs.IntVar(&f.port, "port", 0, "container port the app listens on")
+	fs.IntVar(&f.hostPort, "host-port", 0, "host port to pin the container port to (default: auto-assigned by Docker)")
 	fs.StringVar(&f.repo, "repo", "", "git repository URL to build from (git-build path); auto-detected from the current directory's git remote \"origin\" when omitted")
 	fs.StringVar(&f.ref, "ref", "", "git ref (branch) to build from (git-build path); defaults to the current directory's branch, then \"main\"")
-	fs.StringVar(&f.dockerfile, "dockerfile", "", "Dockerfile path relative to the repo root (git-build path); defaults to \"Dockerfile\" at the repo root")
+	fs.StringVar(&f.dockerfile, "dockerfile", "", "Dockerfile path relative to the repo root (git-build path, --build-type dockerfile only); defaults to \"Dockerfile\" at the repo root")
+	fs.StringVar(&f.buildType, "build-type", "", "build type for the git-build path: \"dockerfile\" (default) or \"railpack\" (auto-detected build, no Dockerfile needed)")
+	fs.StringVar(&f.baseDirectory, "base-directory", "", "subdirectory of the repo to build from, for a monorepo (git-build path); defaults to the repo root")
+	f.buildArgs = make(map[string]string)
+	fs.Var(stringMapFlag(f.buildArgs), "build-arg", "Dockerfile build arg as KEY=VALUE, repeatable (git-build path, --build-type dockerfile only)")
 	fs.StringVar(&f.imageRepo, "image-repo", "", "image name without a tag, e.g. registry.example.com/org/app (git-build path)")
 	fs.StringVar(&f.file, "file", "", "path to an app.yaml (or equivalent) spec file; an alternative to the flag-only paths above")
 	fs.StringVar(&f.service, "service", "", "which service in --file's services: map to create, required when it declares more than one")
+	fs.StringVar(&f.attachDatabase, "attach-database", "", "name of an existing managed database to attach after create (injects a connection env var, see --attach-database-env-var/--attach-database-field)")
+	fs.StringVar(&f.attachDatabaseEnvVar, "attach-database-env-var", "", "env var name the attached database's value is injected as (default: DATABASE_URL); only meaningful with --attach-database")
+	fs.StringVar(&f.attachDatabaseField, "attach-database-field", "", "which field to inject: url, host, port, username, password, or database (default: url); only meaningful with --attach-database")
 	fs.BoolVar(&f.yes, "yes", false, "accept defaults without prompting (reserved: this command never prompts today, so this is currently a no-op accepted for forward compatibility and script portability)")
 	fs.BoolVar(&f.yes, "y", false, "shorthand for --yes")
 	fs.BoolVar(&f.jsonOut, "json", false, "print the created app as JSON to stdout and nothing else")
@@ -573,22 +666,34 @@ Existing-image path:
   --name string        app name (required)
   --image string        image reference to deploy, e.g. registry.example.com/org/app:tag (required)
   --port int             container port (required)
+  --host-port int      host port to pin the container port to (default: auto-assigned by Docker)
 
 Git-build path (flags):
   --name string          app name (required)
   --port int              container port (required)
+  --host-port int      host port to pin the container port to (default: auto-assigned by Docker)
   --repo string           git repository URL (required unless auto-detected from ./.git's "origin" remote)
   --ref string            git ref/branch (default: current branch, then "main")
   --image-repo string     image name without a tag (required)
-  --dockerfile string   Dockerfile path relative to the repo root (default: "Dockerfile")
+  --build-type string  "dockerfile" (default) or "railpack" (auto-detected build, no Dockerfile needed)
+  --dockerfile string   Dockerfile path relative to the repo root, --build-type dockerfile only (default: "Dockerfile")
+  --base-directory string  subdirectory of the repo to build from, for a monorepo (default: repo root)
+  --build-arg KEY=VALUE   Dockerfile build arg, repeatable, --build-type dockerfile only
 
 Manifest path:
   --file string           path to an app.yaml (or equivalent) spec file
   --service string      which service to create, if the file declares more than one
-  --name, --port, --repo, --ref, --dockerfile, --image-repo above all override
-    the file's own values or supply what it cannot express (repo location, image name)
-  build.type: dockerfile builds from git (repo/ref/image-repo required, as above);
+  --name, --port, --host-port, --repo, --ref, --dockerfile, --base-directory, --build-arg, --image-repo above
+    all override the file's own values or supply what it cannot express (repo location, image name)
+  build.type: dockerfile or railpack builds from git (repo/ref/image-repo required, as above);
     build.type: image creates the app directly with build.image, no build triggered
+  build.args from app.yaml's own build.args flow through automatically for a dockerfile build;
+    --build-arg overrides them entirely rather than merging
+
+Database attachment (any path above):
+  --attach-database string           name of an existing managed database to attach after create
+  --attach-database-env-var string   env var name for the injected value (default: DATABASE_URL)
+  --attach-database-field string     url, host, port, username, password, or database (default: url)
 
 Common flags:
   --token string          API token (default: %[2]s env var, then the credentials file)

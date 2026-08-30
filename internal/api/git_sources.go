@@ -65,16 +65,17 @@ const (
 // token by contrast only ever needs a hash, because it's checked once,
 // at exchange time, not on an ongoing basis.
 type gitSourceResource struct {
-	ServiceName   string    `json:"service_name"`
-	RepoURL       string    `json:"repo_url"`
-	Branch        string    `json:"branch"`
-	BuildType     string    `json:"build_type"`
-	BuildPath     string    `json:"build_path,omitempty"`
-	HasToken      bool      `json:"has_token"`
-	WebhookURL    string    `json:"webhook_url"`
-	WebhookSecret string    `json:"webhook_secret,omitempty"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	ServiceName        string                          `json:"service_name"`
+	RepoURL            string                          `json:"repo_url"`
+	Branch             string                          `json:"branch"`
+	BuildType          string                          `json:"build_type"`
+	BuildPath          string                          `json:"build_path,omitempty"`
+	AdditionalServices map[string]store.GitSourceBuild `json:"additional_services,omitempty"`
+	HasToken           bool                            `json:"has_token"`
+	WebhookURL         string                          `json:"webhook_url"`
+	WebhookSecret      string                          `json:"webhook_secret,omitempty"`
+	CreatedAt          time.Time                       `json:"created_at"`
+	UpdatedAt          time.Time                       `json:"updated_at"`
 }
 
 // gitSourceWebhookPath is the relative API path GitHub's own webhook
@@ -92,15 +93,16 @@ func gitSourceWebhookPath(name string) string {
 
 func toGitSourceResource(g store.GitSource, hasToken bool) gitSourceResource {
 	return gitSourceResource{
-		ServiceName: g.ServiceName,
-		RepoURL:     g.RepoURL,
-		Branch:      g.Branch,
-		BuildType:   g.BuildType,
-		BuildPath:   g.BuildPath,
-		HasToken:    hasToken,
-		WebhookURL:  gitSourceWebhookPath(g.ServiceName),
-		CreatedAt:   g.CreatedAt,
-		UpdatedAt:   g.UpdatedAt,
+		ServiceName:        g.ServiceName,
+		RepoURL:            g.RepoURL,
+		Branch:             g.Branch,
+		BuildType:          g.BuildType,
+		BuildPath:          g.BuildPath,
+		AdditionalServices: g.AdditionalServices,
+		HasToken:           hasToken,
+		WebhookURL:         gitSourceWebhookPath(g.ServiceName),
+		CreatedAt:          g.CreatedAt,
+		UpdatedAt:          g.UpdatedAt,
 	}
 }
 
@@ -128,6 +130,37 @@ type setGitSourceRequest struct {
 	// doc comment already accepts for secret deletion in this codebase:
 	// internal/secrets.Manager has no delete operation today.
 	Token string `json:"token,omitempty"`
+	// AdditionalServices lets a push also rebuild sibling services under
+	// the same app group (apps_group.go), keyed by the sibling
+	// DesiredService's own name. Each sibling must already exist and
+	// must not be name itself; see validateAdditionalServices.
+	AdditionalServices map[string]store.GitSourceBuild `json:"additional_services,omitempty"`
+}
+
+// validateAdditionalServices rejects a self-reference (name fanning out
+// to itself, which would double-deploy it) and any build_type this git
+// source can't handle, then normalizes each entry's build_type the same
+// way the primary service's own already does. It does not require each
+// sibling to already exist as a store.App-linked service: an operator
+// may reasonably connect the fan-out before the sibling's own first
+// deploy, and handleGitPushWebhook already treats a missing sibling as a
+// per-service failure at push time, not a connect-time error.
+func validateAdditionalServices(name string, additional map[string]store.GitSourceBuild) (map[string]store.GitSourceBuild, error) {
+	if len(additional) == 0 {
+		return nil, nil
+	}
+	out := make(map[string]store.GitSourceBuild, len(additional))
+	for svcName, build := range additional {
+		if svcName == name {
+			return nil, fmt.Errorf("additional_services: %q cannot list itself", svcName)
+		}
+		buildType, err := normalizeGitSourceBuildType(build.BuildType)
+		if err != nil {
+			return nil, fmt.Errorf("additional_services[%q]: %w", svcName, err)
+		}
+		out[svcName] = store.GitSourceBuild{BuildType: buildType, BuildPath: build.BuildPath}
+	}
+	return out, nil
 }
 
 // normalizeGitSourceBuildType mirrors handleTriggerBuild's own build.type
@@ -151,7 +184,7 @@ func normalizeGitSourceBuildType(buildType string) (string, error) {
 	case spec.BuildDockerfile, spec.BuildRailpack, spec.BuildStatic:
 		return buildType, nil
 	case spec.BuildCompose:
-		return "", fmt.Errorf("build_type %q is not yet supported for a git source", buildType)
+		return "", fmt.Errorf("build_type %q is not supported for a git source: a compose file always declares its own set of services, which can only be expanded into a real multi-service deploy (POST /api/v1/apps/{name}/deploy-spec), never a single one this source's own webhook rebuilds", buildType)
 	case spec.BuildImage:
 		return "", fmt.Errorf("build_type %q is not supported for a git source: a pinned image has nothing to rebuild on push, use POST /api/v1/apps/{name}/deploys to redeploy it directly", buildType)
 	default:
@@ -277,9 +310,15 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 	if branch == "" {
 		branch = webhook.DefaultBranch
 	}
+	additionalServices, err := validateAdditionalServices(name, req.AdditionalServices)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	result, err := rt.connectGitSource(r.Context(), name, connectGitSourceParams{
 		RepoURL: req.RepoURL, Branch: branch, BuildType: buildType, BuildPath: req.BuildPath, Token: req.Token,
+		AdditionalServices: additionalServices,
 	})
 	if err != nil {
 		rt.logger.Error("api: set git source failed", slog.String("error", err.Error()), slog.String("name", name))
@@ -307,7 +346,8 @@ type connectGitSourceParams struct {
 	// Token is optional; empty means "leave whatever is currently
 	// stored unchanged" on an update, matching setGitSourceRequest's own
 	// Token field.
-	Token string
+	Token              string
+	AdditionalServices map[string]store.GitSourceBuild
 }
 
 // connectGitSourceResult is connectGitSource's return: the resource to
@@ -355,6 +395,7 @@ func (rt *Router) connectGitSource(ctx context.Context, name string, p connectGi
 
 	if err := rt.gitSources.SaveGitSource(ctx, store.GitSource{
 		ServiceName: name, RepoURL: p.RepoURL, Branch: p.Branch, BuildType: p.BuildType, BuildPath: p.BuildPath,
+		AdditionalServices: p.AdditionalServices,
 	}); err != nil {
 		return connectGitSourceResult{}, fmt.Errorf("save git source: %w", err)
 	}

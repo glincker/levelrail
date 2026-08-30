@@ -7,6 +7,7 @@ services:
     domains:
       - app.example.com
     port: 3000
+    host_port: 30001
     health:
       readiness: { path: /healthz, interval: 5s, timeout: 2s }
       liveness: { path: /healthz, interval: 30s, failures: 3 }

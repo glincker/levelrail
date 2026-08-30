@@ -1,4 +1,4 @@
-import { SquaresFourIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { SquaresFourIcon } from '@phosphor-icons/react/dist/ssr'
 import type {
   AppDetail,
   DeployStrategy,
@@ -8,12 +8,11 @@ import { formatBytes, formatDurationNs, formatNanoCpus } from '../lib/format'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MoveToNodeDialog } from './MoveToNodeDialog'
 import { MoveToProjectDialog } from './MoveToProjectDialog'
+import { MoveToEnvironmentDialog } from './MoveToEnvironmentDialog'
 import { useProjectListOptional } from '../queries/projects'
+import { useEnvironmentListOptional } from '../queries/environments'
 
-// Display labels for internal/spec's three strategy constants. "rolling"
-// gets a label of its own rather than being title-cased generically,
-// since it's the one value worth calling out as a problem the moment it's
-// read, not just a name: see the inline warning below.
+// Display labels for internal/spec's three strategy constants.
 const STRATEGY_LABELS: Record<DeployStrategy, string> = {
   recreate: 'Recreate',
   'blue-green': 'Blue-green',
@@ -35,6 +34,14 @@ export function AppOverview({ app }: { app: AppDetail }) {
   const projectList = useProjectListOptional()
   const projectName = projectList.data?.find(
     (p) => p.id === app.project_id,
+  )?.name
+  // Environments are scoped to a project (internal/api/environments.go),
+  // so this list is only meaningful once app.project_id is set; an
+  // empty projectId disables the underlying query, same reasoning
+  // MoveToEnvironmentDialog's own doc comment gives.
+  const environmentList = useEnvironmentListOptional(app.project_id ?? '')
+  const environmentName = environmentList.data?.find(
+    (e) => e.id === app.environment_id,
   )?.name
 
   return (
@@ -63,13 +70,6 @@ export function AppOverview({ app }: { app: AppDetail }) {
             </dt>
             <dd className="mt-0.5 text-sm text-foreground">
               {STRATEGY_LABELS[app.strategy] ?? app.strategy}
-              {app.strategy === 'rolling' ? (
-                <span className="mt-1 flex items-center gap-1 text-xs text-destructive">
-                  <WarningIcon className="size-3.5" />
-                  Not supported by the reconciler; the next deploy will fail
-                  until this is changed.
-                </span>
-              ) : null}
             </dd>
           </div>
           <Field label="Replicas" value={String(app.replicas)} />
@@ -110,6 +110,28 @@ export function AppOverview({ app }: { app: AppDetail }) {
                 kind="app"
                 name={app.name}
                 currentProjectId={app.project_id}
+              />
+            </dd>
+          </div>
+          {/* Same "shown, not a filter" metadata role Project has above:
+              an app with no environment stays a real, permanent, equally
+              valid state. */}
+          <div>
+            <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Environment
+            </dt>
+            <dd className="mt-0.5 flex items-center gap-2 text-sm text-foreground">
+              {app.environment_id ? (
+                (environmentName ?? app.environment_id)
+              ) : (
+                <span className="text-muted-foreground italic">
+                  no environment
+                </span>
+              )}
+              <MoveToEnvironmentDialog
+                appName={app.name}
+                projectId={app.project_id}
+                currentEnvironmentId={app.environment_id}
               />
             </dd>
           </div>

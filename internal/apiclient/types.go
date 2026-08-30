@@ -37,14 +37,21 @@ type ServiceHealth struct {
 // and JSON tags match exactly, so a response decodes cleanly and a
 // request encodes into exactly what the server expects.
 type AppResource struct {
-	Name      string            `json:"name"`
-	Image     string            `json:"image"`
-	Port      int               `json:"port"`
+	Name  string `json:"name"`
+	Image string `json:"image"`
+	Port  int    `json:"port"`
+	// HostPort mirrors internal/api's appResource.HostPort: nil means
+	// "let Docker assign one", a value pins the host-side port. Settable
+	// on create and update, like Port.
+	HostPort  *int              `json:"host_port,omitempty"`
 	Domains   []string          `json:"domains,omitempty"`
 	Env       map[string]string `json:"env,omitempty"`
 	Resources *ServiceResources `json:"resources,omitempty"`
 	Health    *ServiceHealth    `json:"health,omitempty"`
 	NodeID    string            `json:"node_id,omitempty"`
+	// EnvironmentID mirrors internal/api's appResource.EnvironmentID:
+	// response-only, set via PUT /api/v1/apps/{name}/environment.
+	EnvironmentID string `json:"environment_id,omitempty"`
 }
 
 // LogDrainResource mirrors internal/api's logDrainResource
@@ -82,9 +89,15 @@ type BuildTriggerRequest struct {
 // Type == "image": a prebuilt registry reference deployed as-is, no
 // repo/ref/build needed.
 type BuildTriggerRequestBuild struct {
-	Type  string `json:"type,omitempty"`
-	Path  string `json:"path,omitempty"`
-	Image string `json:"image,omitempty"`
+	Type string `json:"type,omitempty"`
+	Path string `json:"path,omitempty"`
+	// BaseDirectory scopes the build context to a subdirectory of the
+	// repo, for a monorepo. Not meaningful for Type == "image".
+	BaseDirectory string `json:"base_directory,omitempty"`
+	Image         string `json:"image,omitempty"`
+	// Args are Dockerfile build-time ARG values. Only meaningful for
+	// Type == "dockerfile".
+	Args map[string]string `json:"args,omitempty"`
 }
 
 // BuildTriggerResponse mirrors internal/api's triggerBuildResponse: the
@@ -122,6 +135,15 @@ type ConditionResource struct {
 	Reason             string    `json:"Reason"`
 	Message            string    `json:"Message"`
 	LastTransitionTime time.Time `json:"LastTransitionTime"`
+}
+
+// NetworkResource mirrors internal/api's networkResource
+// (internal/api/network.go): the live traffic path, container's declared
+// port plus whatever host port Docker currently has bound.
+type NetworkResource struct {
+	ContainerPort int  `json:"container_port"`
+	HostPort      int  `json:"host_port,omitempty"`
+	Running       bool `json:"running"`
 }
 
 // LogEntryResource mirrors internal/api's logEntryResource
@@ -166,6 +188,63 @@ type DomainResource struct {
 	ServiceName string `json:"service_name"`
 }
 
+// CloudflareDNSResource mirrors internal/api's cloudflareDNSResource
+// (internal/api/cloudflare_dns.go): GET/PUT/DELETE
+// /api/v1/settings/cloudflare-dns's wire shape. The token itself never
+// appears here in either direction.
+type CloudflareDNSResource struct {
+	Enabled  bool `json:"enabled"`
+	HasToken bool `json:"has_token"`
+}
+
+// UpdateCloudflareDNSRequest mirrors internal/api's
+// updateCloudflareDNSRequest. Token empty on an update means "leave the
+// currently stored token unchanged".
+type UpdateCloudflareDNSRequest struct {
+	Enabled bool   `json:"enabled"`
+	Token   string `json:"token,omitempty"`
+}
+
+// CloudflareTunnelResource mirrors internal/api's cloudflareTunnelResource
+// (internal/api/cloudflare_tunnel.go): GET/PUT/DELETE
+// /api/v1/settings/cloudflare-tunnel's wire shape. The token itself
+// never appears here in either direction. A distinct credential and
+// endpoint from CloudflareDNSResource: this one runs the cloudflared
+// container, that one configures ACME's DNS-01 challenge.
+type CloudflareTunnelResource struct {
+	Enabled  bool   `json:"enabled"`
+	HasToken bool   `json:"has_token"`
+	Status   string `json:"status"`
+	Message  string `json:"message,omitempty"`
+}
+
+// UpdateCloudflareTunnelRequest mirrors internal/api's
+// updateCloudflareTunnelRequest. Token empty on an update means "leave
+// the currently stored token unchanged".
+type UpdateCloudflareTunnelRequest struct {
+	Enabled bool   `json:"enabled"`
+	Token   string `json:"token,omitempty"`
+}
+
+// DomainBasicAuthResource mirrors internal/api's domainBasicAuthResource
+// (internal/api/domain_basic_auth.go): GET/PUT/DELETE
+// /api/v1/apps/{name}/domains/{domain}/auth's wire shape. The password
+// itself never appears here in either direction.
+type DomainBasicAuthResource struct {
+	Domain      string `json:"domain"`
+	Enabled     bool   `json:"enabled"`
+	Username    string `json:"username,omitempty"`
+	HasPassword bool   `json:"has_password"`
+}
+
+// SetDomainBasicAuthRequest mirrors internal/api's
+// setDomainBasicAuthRequest. Password empty on an update means "leave
+// the currently stored password unchanged".
+type SetDomainBasicAuthRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password,omitempty"`
+}
+
 // BackupHistoryResource mirrors internal/api's backupHistoryResource
 // (internal/api/backups.go).
 type BackupHistoryResource struct {
@@ -183,6 +262,33 @@ type BackupHistoryResource struct {
 // TriggerBackupRequest mirrors internal/api's triggerBackupRequest.
 type TriggerBackupRequest struct {
 	TargetID string `json:"target_id"`
+}
+
+// BackupScheduleResource mirrors internal/api's backupScheduleResource
+// (internal/api/backups.go): PUT/DELETE .../backup-schedule only ever
+// touch these three fields, never the full database resource.
+type BackupScheduleResource struct {
+	DatabaseName string `json:"database_name"`
+	TargetID     string `json:"target_id,omitempty"`
+	Schedule     string `json:"schedule,omitempty"`
+	Retain       int    `json:"retain,omitempty"`
+	RetainDays   int    `json:"retain_days,omitempty"`
+}
+
+// SetBackupScheduleRequest mirrors internal/api's setBackupScheduleRequest.
+type SetBackupScheduleRequest struct {
+	TargetID   string `json:"target_id"`
+	Schedule   string `json:"schedule"`
+	Retain     int    `json:"retain,omitempty"`
+	RetainDays int    `json:"retain_days,omitempty"`
+}
+
+// ListBackupsOptions is ListBackups' pagination input, mirroring the
+// server's ?limit/?before query params. Zero values omit the param
+// (Limit <= 0 uses the server default, Before == "" is the first page).
+type ListBackupsOptions struct {
+	Limit  int
+	Before string
 }
 
 // RestoreHistoryResource mirrors internal/api's restoreHistoryResource
@@ -278,6 +384,149 @@ type CreateNotificationChannelRequest struct {
 type TestNotificationChannelRequest struct {
 	Kind      string `json:"kind"`
 	NotifyURL string `json:"notify_url"`
+}
+
+// ScheduledTaskResource mirrors internal/api's scheduledTaskResource
+// (internal/api/scheduled_tasks.go). Command is a real argv (no shell),
+// and LastRun* describe only the single most recent run in place: there
+// is no separate run-history endpoint.
+type ScheduledTaskResource struct {
+	ID          string   `json:"id,omitempty"`
+	ServiceName string   `json:"service_name,omitempty"`
+	Command     []string `json:"command"`
+	Schedule    string   `json:"schedule"`
+	Enabled     bool     `json:"enabled"`
+
+	LastRunAt     *time.Time `json:"last_run_at,omitempty"`
+	LastRunStatus string     `json:"last_run_status,omitempty"`
+	LastRunOutput string     `json:"last_run_output,omitempty"`
+
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+}
+
+// ScheduledTaskRequest mirrors the fields internal/api's
+// scheduledTaskResource actually reads from a create/update request
+// body (Command, Schedule, Enabled); ID and ServiceName always come
+// from the URL, never the body.
+type ScheduledTaskRequest struct {
+	Command  []string `json:"command"`
+	Schedule string   `json:"schedule"`
+	Enabled  bool     `json:"enabled"`
+}
+
+// OrganizationResource mirrors internal/api's organizationResource
+// (internal/api/organizations.go).
+type OrganizationResource struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"created_at"`
+}
+
+// CreateOrganizationRequest mirrors internal/api's
+// createOrganizationRequest.
+type CreateOrganizationRequest struct {
+	Name string `json:"name"`
+}
+
+// ProjectResource mirrors internal/api's projectResource
+// (internal/api/projects.go). OrgID is empty when the project isn't
+// filed under any organization.
+type ProjectResource struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"created_at"`
+	OrgID     string `json:"org_id,omitempty"`
+}
+
+// SetProjectOrganizationRequest mirrors internal/api's
+// setProjectOrganizationRequest. An empty OrgID clears the assignment.
+type SetProjectOrganizationRequest struct {
+	OrgID string `json:"org_id"`
+}
+
+// EnvironmentResource mirrors internal/api's environmentResource
+// (internal/api/environments.go).
+type EnvironmentResource struct {
+	ID        string `json:"id"`
+	ProjectID string `json:"project_id"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"created_at"`
+}
+
+// CreateEnvironmentRequest mirrors internal/api's
+// createEnvironmentRequest.
+type CreateEnvironmentRequest struct {
+	Name string `json:"name"`
+}
+
+// SetAppEnvironmentRequest mirrors internal/api's
+// setAppEnvironmentRequest. An empty EnvironmentID clears the
+// assignment.
+type SetAppEnvironmentRequest struct {
+	EnvironmentID string `json:"environment_id"`
+}
+
+// SetAppDatabaseRequest mirrors internal/api's setAppDatabaseRequest
+// (apps_database.go). EnvVar and Field are both optional: the server
+// defaults them ("DATABASE_URL"/"url") when left blank.
+type SetAppDatabaseRequest struct {
+	DatabaseName string `json:"database_name"`
+	EnvVar       string `json:"env_var,omitempty"`
+	Field        string `json:"field,omitempty"`
+}
+
+// AppDatabaseResource mirrors internal/api's appDatabaseResource:
+// PUT /api/v1/apps/{name}/database's response body.
+type AppDatabaseResource struct {
+	AppName      string `json:"app_name,omitempty"`
+	DatabaseName string `json:"database_name"`
+	EnvVar       string `json:"env_var"`
+	Field        string `json:"field"`
+}
+
+// NodeResource mirrors internal/api's nodeResource (internal/api/nodes.go).
+type NodeResource struct {
+	ID              string     `json:"id"`
+	Name            string     `json:"name"`
+	Address         string     `json:"address,omitempty"`
+	Status          string     `json:"status"`
+	CertFingerprint string     `json:"cert_fingerprint,omitempty"`
+	JoinedAt        *time.Time `json:"joined_at,omitempty"`
+	LastSeenAt      *time.Time `json:"last_seen_at,omitempty"`
+	// Schedulable is the cordon state: false means the node refuses new
+	// placements while whatever's already running there keeps running.
+	Schedulable           bool      `json:"schedulable"`
+	AcceptsAppWorkloads   bool      `json:"accepts_app_workloads"`
+	AcceptsBuildWorkloads bool      `json:"accepts_build_workloads"`
+	CreatedAt             time.Time `json:"created_at"`
+}
+
+// SetNodeWorkloadsRequest mirrors internal/api's setNodeWorkloadsRequest:
+// a full replace of both fields, not a partial patch.
+type SetNodeWorkloadsRequest struct {
+	AcceptsAppWorkloads   bool `json:"accepts_app_workloads"`
+	AcceptsBuildWorkloads bool `json:"accepts_build_workloads"`
+}
+
+// CreateNodeJoinTokenResponse mirrors internal/api's
+// createNodeJoinTokenResponse: a join token's one and only plaintext
+// appearance, the same "shown once, never recoverable again" shape a
+// created API token uses.
+type CreateNodeJoinTokenResponse struct {
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
+// DrainNodeResponse mirrors internal/api's drainNodeResponse. A partial
+// failure is not itself a Go error from DrainNode: it comes back as a
+// successful response with Errors populated, naming exactly which
+// resource didn't move so the caller can retry just that one.
+type DrainNodeResponse struct {
+	TargetNodeID   string   `json:"target_node_id"`
+	MovedServices  []string `json:"moved_services"`
+	MovedDatabases []string `json:"moved_databases"`
+	Errors         []string `json:"errors,omitempty"`
 }
 
 // apiErrorBody is the JSON shape every non-2xx response from the

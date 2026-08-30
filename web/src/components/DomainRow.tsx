@@ -1,14 +1,18 @@
 import { Link } from '@tanstack/react-router'
-import { GlobeIcon, CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
+import { CheckIcon, CopyIcon, GlobeIcon, CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { certStatusMeta } from '../lib/certStatus'
+import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import type { CertificateStatus } from '../queries/certificates'
 import type { Domain } from '../queries/domains'
 
 // Shared column grid between the sticky header (routes/domains/index.tsx)
 // and every row below, the same "header labels line up with row content
 // pixel-for-pixel" reasoning APP_LIST_GRID (AppRow.tsx) already
-// establishes for the apps list.
+// establishes for the apps list. The domain column gets its own copy
+// button (below), so its cell needs room for both the text and the
+// button without the grid itself changing shape.
 export const DOMAIN_LIST_GRID =
   'grid grid-cols-[2rem_minmax(0,1.5fr)_minmax(0,1fr)_8rem_1rem] items-center gap-3'
 
@@ -25,6 +29,7 @@ export function DomainRow({
   domain: Domain
   cert?: CertificateStatus
 }) {
+  const { copied, copy } = useCopyToClipboard()
   return (
     <Link
       to="/apps/$name/domains"
@@ -35,8 +40,24 @@ export function DomainRow({
         <GlobeIcon className="size-4" aria-hidden="true" />
       </span>
 
-      <span className="min-w-0 truncate font-mono text-sm font-medium text-foreground">
-        {domain.domain}
+      <span className="flex min-w-0 items-center gap-1">
+        <span className="min-w-0 truncate font-mono text-sm font-medium text-foreground">
+          {domain.domain}
+        </span>
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="ghost"
+          className="shrink-0"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            copy(domain.domain)
+          }}
+          aria-label={copied ? 'Domain copied' : 'Copy domain'}
+        >
+          {copied ? <CheckIcon className="size-3.5" /> : <CopyIcon className="size-3.5" />}
+        </Button>
       </span>
 
       <span className="min-w-0 truncate text-xs text-muted-foreground">

@@ -542,6 +542,9 @@ func (f *fakeDrainAppStore) UpdateServiceProject(context.Context, string, string
 func (f *fakeDrainAppStore) UpdateServiceStorageTarget(context.Context, string, string) error {
 	return nil
 }
+func (f *fakeDrainAppStore) UpdateServiceDatabaseAttachment(context.Context, string, *store.DatabaseAttachment) error {
+	return nil
+}
 func (f *fakeDrainAppStore) UpdateServiceSuspended(context.Context, string, bool) error {
 	return nil
 }
@@ -573,7 +576,7 @@ func (fakeDrainDatabaseStore) ListDesiredDatabasesByNode(context.Context, string
 func (fakeDrainDatabaseStore) UpdateDatabaseProject(context.Context, string, string) error {
 	return nil
 }
-func (fakeDrainDatabaseStore) SetDatabaseBackupSchedule(context.Context, string, string, string, int) error {
+func (fakeDrainDatabaseStore) SetDatabaseBackupSchedule(context.Context, string, string, string, int, int) error {
 	return nil
 }
 func (fakeDrainDatabaseStore) SetDatabasePublicAccess(context.Context, string, bool, int) (int, error) {

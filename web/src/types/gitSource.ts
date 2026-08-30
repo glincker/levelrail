@@ -13,12 +13,21 @@
 
 export type GitSourceBuildType = 'dockerfile' | 'railpack' | 'static'
 
+export interface GitSourceBuild {
+  build_type: GitSourceBuildType
+  build_path?: string
+}
+
 export interface GitSourceResource {
   service_name: string
   repo_url: string
   branch: string
   build_type: GitSourceBuildType
   build_path?: string
+  // additional_services fans one push out to sibling services under the
+  // same app group (apps_group.go), keyed by the sibling's own service
+  // name.
+  additional_services?: Record<string, GitSourceBuild>
   has_token: boolean
   webhook_url: string
   webhook_secret?: string
@@ -37,4 +46,5 @@ export interface SetGitSourceRequest {
   build_type?: GitSourceBuildType
   build_path?: string
   token?: string
+  additional_services?: Record<string, GitSourceBuild>
 }
