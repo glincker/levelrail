@@ -774,11 +774,13 @@ func (x *PortBinding) GetProtocol() string {
 }
 
 type Resources struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	MemoryBytes   int64                  `protobuf:"varint,1,opt,name=memory_bytes,json=memoryBytes,proto3" json:"memory_bytes,omitempty"`
-	NanoCpus      int64                  `protobuf:"varint,2,opt,name=nano_cpus,json=nanoCpus,proto3" json:"nano_cpus,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	MemoryBytes     int64                  `protobuf:"varint,1,opt,name=memory_bytes,json=memoryBytes,proto3" json:"memory_bytes,omitempty"`
+	NanoCpus        int64                  `protobuf:"varint,2,opt,name=nano_cpus,json=nanoCpus,proto3" json:"nano_cpus,omitempty"`
+	SwapMemoryBytes int64                  `protobuf:"varint,3,opt,name=swap_memory_bytes,json=swapMemoryBytes,proto3" json:"swap_memory_bytes,omitempty"`
+	CpusetCpus      string                 `protobuf:"bytes,4,opt,name=cpuset_cpus,json=cpusetCpus,proto3" json:"cpuset_cpus,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Resources) Reset() {
@@ -823,6 +825,20 @@ func (x *Resources) GetNanoCpus() int64 {
 		return x.NanoCpus
 	}
 	return 0
+}
+
+func (x *Resources) GetSwapMemoryBytes() int64 {
+	if x != nil {
+		return x.SwapMemoryBytes
+	}
+	return 0
+}
+
+func (x *Resources) GetCpusetCpus() string {
+	if x != nil {
+		return x.CpusetCpus
+	}
+	return ""
 }
 
 type VolumeMount struct {
@@ -1831,10 +1847,13 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\vPortBinding\x12%\n" +
 	"\x0econtainer_port\x18\x01 \x01(\x05R\rcontainerPort\x12\x1b\n" +
 	"\thost_port\x18\x02 \x01(\x05R\bhostPort\x12\x1a\n" +
-	"\bprotocol\x18\x03 \x01(\tR\bprotocol\"K\n" +
+	"\bprotocol\x18\x03 \x01(\tR\bprotocol\"\x98\x01\n" +
 	"\tResources\x12!\n" +
 	"\fmemory_bytes\x18\x01 \x01(\x03R\vmemoryBytes\x12\x1b\n" +
-	"\tnano_cpus\x18\x02 \x01(\x03R\bnanoCpus\"H\n" +
+	"\tnano_cpus\x18\x02 \x01(\x03R\bnanoCpus\x12*\n" +
+	"\x11swap_memory_bytes\x18\x03 \x01(\x03R\x0fswapMemoryBytes\x12\x1f\n" +
+	"\vcpuset_cpus\x18\x04 \x01(\tR\n" +
+	"cpusetCpus\"H\n" +
 	"\vVolumeMount\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12%\n" +
 	"\x0econtainer_path\x18\x02 \x01(\tR\rcontainerPath\"\xf0\x02\n" +

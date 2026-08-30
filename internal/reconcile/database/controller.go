@@ -394,8 +394,10 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	}
 	if desired.Resources != nil {
 		spec.Resources = &docker.Resources{
-			MemoryBytes: desired.Resources.MemoryBytes,
-			NanoCPUs:    desired.Resources.NanoCPUs,
+			MemoryBytes:     desired.Resources.MemoryBytes,
+			NanoCPUs:        desired.Resources.NanoCPUs,
+			SwapMemoryBytes: desired.Resources.SwapMemoryBytes,
+			CPUSetCPUs:      desired.Resources.CPUSetCPUs,
 		}
 	}
 

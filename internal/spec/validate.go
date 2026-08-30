@@ -116,6 +116,10 @@ func (svc *Service) validate(name string) error {
 		return fmt.Errorf("spec: service %q: strategy %q is not one of rolling, recreate, blue-green", name, svc.Strategy)
 	}
 
+	if svc.Resources != nil && svc.Resources.SwapMemory != "" && svc.Resources.Memory == "" {
+		return fmt.Errorf("spec: service %q: resources.swapMemory requires resources.memory to also be set", name)
+	}
+
 	if err := ValidateLabels(svc.Labels); err != nil {
 		return fmt.Errorf("spec: service %q: %w", name, err)
 	}

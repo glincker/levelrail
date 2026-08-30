@@ -62,14 +62,24 @@ func resourcesToPB(r *docker.Resources) *agentpb.Resources {
 	if r == nil {
 		return nil
 	}
-	return &agentpb.Resources{MemoryBytes: r.MemoryBytes, NanoCpus: r.NanoCPUs}
+	return &agentpb.Resources{
+		MemoryBytes:     r.MemoryBytes,
+		NanoCpus:        r.NanoCPUs,
+		SwapMemoryBytes: r.SwapMemoryBytes,
+		CpusetCpus:      r.CPUSetCPUs,
+	}
 }
 
 func resourcesFromPB(r *agentpb.Resources) *docker.Resources {
 	if r == nil {
 		return nil
 	}
-	return &docker.Resources{MemoryBytes: r.MemoryBytes, NanoCPUs: r.NanoCpus}
+	return &docker.Resources{
+		MemoryBytes:     r.MemoryBytes,
+		NanoCPUs:        r.NanoCpus,
+		SwapMemoryBytes: r.SwapMemoryBytes,
+		CPUSetCPUs:      r.CpusetCpus,
+	}
 }
 
 func volumesToPB(vs []docker.VolumeMount) []*agentpb.VolumeMount {

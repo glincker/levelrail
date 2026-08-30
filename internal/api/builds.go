@@ -436,6 +436,10 @@ func specResourcesFromStore(r store.ServiceResources) *spec.Resources {
 	if r.NanoCPUs > 0 {
 		out.CPU = float64(r.NanoCPUs) / 1e9
 	}
+	if r.SwapMemoryBytes > 0 {
+		out.SwapMemory = formatMemoryBytes(r.SwapMemoryBytes)
+	}
+	out.CPUSet = r.CPUSetCPUs
 	return out
 }
 

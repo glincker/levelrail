@@ -1299,8 +1299,10 @@ func toContainerSpec(name string, desired *store.DesiredService) docker.Containe
 	}
 	if desired.Resources != nil {
 		spec.Resources = &docker.Resources{
-			MemoryBytes: desired.Resources.MemoryBytes,
-			NanoCPUs:    desired.Resources.NanoCPUs,
+			MemoryBytes:     desired.Resources.MemoryBytes,
+			NanoCPUs:        desired.Resources.NanoCPUs,
+			SwapMemoryBytes: desired.Resources.SwapMemoryBytes,
+			CPUSetCPUs:      desired.Resources.CPUSetCPUs,
 		}
 	}
 	for _, v := range desired.Volumes {

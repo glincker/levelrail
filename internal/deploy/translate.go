@@ -165,6 +165,14 @@ func toServiceResources(r spec.Resources) (store.ServiceResources, error) {
 	if r.CPU != 0 {
 		out.NanoCPUs = int64(r.CPU * 1e9)
 	}
+	if r.SwapMemory != "" {
+		bytes, err := parseMemoryBytes(r.SwapMemory)
+		if err != nil {
+			return out, err
+		}
+		out.SwapMemoryBytes = bytes
+	}
+	out.CPUSetCPUs = r.CPUSet
 	return out, nil
 }
 

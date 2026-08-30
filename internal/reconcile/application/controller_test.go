@@ -355,6 +355,38 @@ func TestController_Reconcile_FreshDeploy_NoHealthCheck(t *testing.T) {
 	}
 }
 
+// TestController_Reconcile_Resources_ReachesContainerSpec mirrors
+// internal/reconcile/database's own test of the same name: desired.Resources
+// converts into ContainerSpec.Resources field-for-field, including the
+// swap/cpuset fields alongside the existing memory/cpu ones.
+func TestController_Reconcile_Resources_ReachesContainerSpec(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Resources: &store.ServiceResources{
+			MemoryBytes:     512 * 1024 * 1024,
+			NanoCPUs:        500_000_000,
+			SwapMemoryBytes: 1024 * 1024 * 1024,
+			CPUSetCPUs:      "0-1",
+		},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	want := &docker.Resources{
+		MemoryBytes:     512 * 1024 * 1024,
+		NanoCPUs:        500_000_000,
+		SwapMemoryBytes: 1024 * 1024 * 1024,
+		CPUSetCPUs:      "0-1",
+	}
+	if got := rt.lastCreateSpec.Resources; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Resources = %+v, want %+v", got, want)
+	}
+}
+
 func TestController_Reconcile_FreshDeploy_ReadinessSucceeds(t *testing.T) {
 	srv := alwaysHealthy()
 	defer srv.Close()
