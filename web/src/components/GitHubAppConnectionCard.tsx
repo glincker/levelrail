@@ -28,6 +28,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { toast } from '@/components/ui/toast'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useIngressSettings } from '../queries/domains'
 import {
   useConnectGitHubAppManually,
@@ -265,7 +266,23 @@ function ManifestPreviewDialog({
 
   function renderPreviewBody() {
     if (isLoading) {
-      return <p className="text-sm text-muted-foreground">Loading...</p>
+      return (
+        <div className="space-y-4" aria-hidden="true">
+          <div className="space-y-1.5">
+            <Skeleton className="h-3.5 w-24" />
+            <Skeleton className="h-9 w-full" />
+          </div>
+          <div className="space-y-1.5">
+            <Skeleton className="h-3.5 w-16" />
+            <Skeleton className="h-9 w-full" />
+          </div>
+          <div className="space-y-1.5">
+            <Skeleton className="h-3.5 w-full" />
+            <Skeleton className="h-3.5 w-5/6" />
+            <Skeleton className="h-3.5 w-2/3" />
+          </div>
+        </div>
+      )
     }
     if (isError) {
       return (

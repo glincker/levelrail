@@ -6,6 +6,7 @@ import { toast } from '@/components/ui/toast'
 import { GitHubAppConnectionCard } from '../../components/GitHubAppConnectionCard'
 import { githubAppStatusQueryOptions } from '../../queries/githubApp'
 import { ingressSettingsQueryOptions } from '../../queries/domains'
+import { PageSpinner } from '@/components/ui/page-spinner'
 
 // Account-level, not scoped to one app: lives under routes/settings/
 // next to backup-targets.tsx and tokens.tsx, the same reasoning those
@@ -26,6 +27,7 @@ export const Route = createFileRoute('/settings/github-app')({
       queryClient.ensureQueryData(ingressSettingsQueryOptions()),
     ]),
   component: GitHubAppSettingsPage,
+  pendingComponent: PageSpinner,
 })
 
 function GitHubAppSettingsPage() {

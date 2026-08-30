@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   useClearDomainBasicAuth,
   useDomainBasicAuth,
@@ -40,7 +41,17 @@ export function DomainBasicAuthControl({
   const setAuth = useSetDomainBasicAuth(appName, domain)
   const clearAuth = useClearDomainBasicAuth(appName, domain)
 
-  if (isLoading) return null
+  if (isLoading) {
+    return (
+      <div
+        className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/30 p-3"
+        aria-hidden="true"
+      >
+        <Skeleton className="h-5 w-28 rounded-full" />
+        <Skeleton className="h-7 w-32" />
+      </div>
+    )
+  }
 
   const protectedNow = auth?.enabled ?? false
   const pending = setAuth.isPending || clearAuth.isPending

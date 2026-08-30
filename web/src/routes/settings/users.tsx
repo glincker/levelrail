@@ -6,6 +6,7 @@ import { roleListQueryOptions } from '../../queries/roles'
 import { UserTable } from '../../components/UserTable'
 import { CreateUserDialog } from '../../components/CreateUserDialog'
 import { useAuthUsername } from '../../hooks/useAuthUsername'
+import { TableSkeleton } from '@/components/ui/table-skeleton'
 
 // AbilityRead-gated (GET /api/v1/users): who has access to this control
 // plane. Abilities are now per-user (internal/api/users.go's own doc
@@ -20,6 +21,7 @@ export const Route = createFileRoute('/settings/users')({
       queryClient.ensureQueryData(roleListQueryOptions()),
     ]),
   component: UsersSettingsPage,
+  pendingComponent: UsersSettingsPending,
 })
 
 function UsersSettingsPage() {
@@ -53,6 +55,18 @@ function UsersSettingsPage() {
         {isRoot ? <CreateUserDialog /> : null}
       </div>
       <UserTable users={users} />
+    </div>
+  )
+}
+
+// Route-level fallback for the loader's pending phase, matching
+// UserTable's own 6-column shape so the skeleton doesn't jump when real
+// rows swap in.
+function UsersSettingsPending() {
+  return (
+    <div className="space-y-6">
+      <h1 className="text-lg font-semibold text-foreground">Users</h1>
+      <TableSkeleton columnCount={6} />
     </div>
   )
 }

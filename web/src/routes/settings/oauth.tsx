@@ -3,6 +3,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { KeyIcon } from '@phosphor-icons/react/dist/ssr'
 import { oauthSettingsQueryOptions } from '../../queries/oauth'
 import { OAuthProviderCard } from '../../components/OAuthProviderCard'
+import { PageSpinner } from '@/components/ui/page-spinner'
 
 // AbilityRoot-gated server-side (PUT /api/v1/settings/oauth/{provider}),
 // same precedent as /settings/ingress: configures Google/GitHub sign-in.
@@ -10,6 +11,7 @@ export const Route = createFileRoute('/settings/oauth')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(oauthSettingsQueryOptions()),
   component: OAuthSettingsPage,
+  pendingComponent: PageSpinner,
 })
 
 function OAuthSettingsPage() {

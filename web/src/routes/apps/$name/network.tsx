@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
 import { appNetworkQueryOptions } from '../../../queries/appNetwork'
 import { AppNetworkPanel } from '../../../components/AppNetworkPanel'
+import { PageSpinner } from '@/components/ui/page-spinner'
 
 // The live traffic-path tab: domain through Caddy ingress to the
 // Docker-assigned host port to the container's own declared port. Reads
@@ -12,6 +13,7 @@ export const Route = createFileRoute('/apps/$name/network')({
   loader: ({ context: { queryClient }, params: { name } }) =>
     queryClient.ensureQueryData(appNetworkQueryOptions(name)),
   component: NetworkSection,
+  pendingComponent: PageSpinner,
 })
 
 function NetworkSection() {

@@ -8,6 +8,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { CreateDeployNotifyTargetDialog } from './CreateDeployNotifyTargetDialog'
 import { DeleteDeployNotifyTargetDialog } from './DeleteDeployNotifyTargetDialog'
 import { useDeployNotifyTargets } from '../queries/deployNotify'
@@ -93,7 +94,7 @@ export function DeployNotifyTargetsPanel({ appName }: { appName: string }) {
 
       <div className="mt-3">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <TableSkeleton columnCount={4} rowCount={3} />
         ) : error ? (
           <p className="text-sm text-destructive">{error.message}</p>
         ) : targets.length === 0 ? (

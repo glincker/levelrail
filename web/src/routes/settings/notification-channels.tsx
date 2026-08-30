@@ -4,6 +4,7 @@ import { WebhooksLogoIcon } from '@phosphor-icons/react/dist/ssr'
 import { notificationChannelListQueryOptions } from '../../queries/notificationChannels'
 import { NotificationChannelTable } from '../../components/NotificationChannelTable'
 import { CreateNotificationChannelDialog } from '../../components/CreateNotificationChannelDialog'
+import { TableSkeleton } from '@/components/ui/table-skeleton'
 
 // Account-level, mirroring routes/settings/backup-targets.tsx: connect
 // once here, apps attach a channel by ID instead of retyping a URL.
@@ -11,6 +12,7 @@ export const Route = createFileRoute('/settings/notification-channels')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(notificationChannelListQueryOptions()),
   component: NotificationChannelsPage,
+  pendingComponent: NotificationChannelsPending,
 })
 
 function NotificationChannelsPage() {
@@ -38,6 +40,20 @@ function NotificationChannelsPage() {
         <CreateNotificationChannelDialog />
       </div>
       <NotificationChannelTable channels={channels} />
+    </div>
+  )
+}
+
+// Route-level fallback for the loader's pending phase, matching
+// NotificationChannelTable's own 6-column shape so the skeleton doesn't
+// jump when real rows swap in.
+function NotificationChannelsPending() {
+  return (
+    <div className="space-y-6">
+      <h1 className="text-lg font-semibold text-foreground">
+        Notification channels
+      </h1>
+      <TableSkeleton columnCount={6} />
     </div>
   )
 }

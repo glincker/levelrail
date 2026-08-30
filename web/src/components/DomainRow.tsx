@@ -22,6 +22,24 @@ export const DOMAIN_LIST_GRID =
 // cross-app list would mean two places that can desync an app's
 // domains, exactly the kind of "second config surface" this codebase's
 // architecture doc otherwise argues hard against for ingress state.
+// Backs the list route's pendingComponent, matching DOMAIN_LIST_GRID
+// exactly so the skeleton doesn't jump when real rows swap in, same
+// reasoning AppRow's own RowSkeleton comment gives.
+export function RowSkeleton() {
+  return (
+    <div
+      className={`${DOMAIN_LIST_GRID} border-b border-border px-4 py-3`}
+      aria-hidden="true"
+    >
+      <div className="size-8 animate-pulse rounded-md bg-muted" />
+      <div className="h-4 w-40 animate-pulse rounded bg-muted" />
+      <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+      <div className="h-4 w-16 animate-pulse rounded bg-muted" />
+      <div className="h-4 w-4 animate-pulse justify-self-end rounded bg-muted" />
+    </div>
+  )
+}
+
 export function DomainRow({
   domain,
   cert,

@@ -4,11 +4,13 @@ import {
   useEmailSettings,
 } from '../../queries/emailSettings'
 import { EmailSettingsCard } from '../../components/EmailSettingsCard'
+import { PageSpinner } from '../../components/ui/page-spinner'
 
 export const Route = createFileRoute('/settings/email')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(emailSettingsQueryOptions()),
   component: EmailSettingsPage,
+  pendingComponent: PageSpinner,
 })
 
 function EmailSettingsPage() {

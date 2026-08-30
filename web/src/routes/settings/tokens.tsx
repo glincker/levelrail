@@ -5,6 +5,7 @@ import { tokenListQueryOptions } from '../../queries/tokens'
 import { TokenTable } from '../../components/TokenTable'
 import { CreateTokenDialog } from '../../components/CreateTokenDialog'
 import { useBrand } from '../../hooks/useBrand'
+import { TableSkeleton } from '@/components/ui/table-skeleton'
 
 // Account-level, not scoped to one app, so it lives under
 // routes/settings/ rather than routes/apps/, per TASKS.md's "Frontend:
@@ -23,6 +24,7 @@ export const Route = createFileRoute('/settings/tokens')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(tokenListQueryOptions()),
   component: TokensPage,
+  pendingComponent: TokensPending,
 })
 
 function TokensPage() {
@@ -68,6 +70,18 @@ function TokensPage() {
         <CreateTokenDialog />
       </div>
       <TokenTable tokens={tokens} />
+    </div>
+  )
+}
+
+// Route-level fallback for the loader's pending phase, matching
+// TokenTable's own 7-column shape so the skeleton doesn't jump when real
+// rows swap in.
+function TokensPending() {
+  return (
+    <div className="space-y-6">
+      <h1 className="text-lg font-semibold text-foreground">API tokens</h1>
+      <TableSkeleton columnCount={7} />
     </div>
   )
 }

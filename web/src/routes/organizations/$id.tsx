@@ -8,7 +8,11 @@ import {
 } from '../../queries/organizations'
 import { organizationEnvQueryOptions } from '../../queries/organizationEnv'
 import { projectListQueryOptions, useProjects } from '../../queries/projects'
-import { PROJECT_LIST_GRID, ProjectRow } from '../../components/ProjectRow'
+import {
+  PROJECT_LIST_GRID,
+  ProjectRow,
+  RowSkeleton,
+} from '../../components/ProjectRow'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { DeleteOrganizationDialog } from '../../components/DeleteOrganizationDialog'
 import { OrganizationEnvEditor } from '../../components/OrganizationEnvEditor'
@@ -28,6 +32,7 @@ export const Route = createFileRoute('/organizations/$id')({
       queryClient.ensureQueryData(organizationEnvQueryOptions(id)),
     ]),
   component: OrganizationDetailPage,
+  pendingComponent: OrganizationDetailPending,
   errorComponent: OrganizationDetailError,
 })
 
@@ -131,6 +136,31 @@ function OrganizationDetailPage() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// Route-level fallback for the loader's pending phase: the organization's
+// own name isn't known yet, so this shows a generic title placeholder
+// above RowSkeleton rows for the project list, mirroring
+// routes/apps/index.tsx's own pendingComponent shape.
+function OrganizationDetailPending() {
+  return (
+    <div className="space-y-6">
+      <div className="h-6 w-48 animate-pulse rounded bg-muted" />
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <div
+          className={`${PROJECT_LIST_GRID} sticky top-0 z-10 border-b border-border bg-card px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase`}
+        >
+          <span aria-hidden="true" />
+          <span>Name</span>
+          <span>Created</span>
+          <span aria-hidden="true" />
+        </div>
+        {Array.from({ length: 6 }, (_, i) => (
+          <RowSkeleton key={i} />
+        ))}
+      </div>
     </div>
   )
 }

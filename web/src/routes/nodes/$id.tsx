@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
+import { PageSpinner } from '@/components/ui/page-spinner'
 import type { VariantProps } from 'class-variance-authority'
 
 // Node detail route, mirroring routes/databases/$name.tsx's shape: three
@@ -53,6 +54,7 @@ export const Route = createFileRoute('/nodes/$id')({
       queryClient.ensureQueryData(nodeListQueryOptions()),
     ]),
   component: NodeDetailPage,
+  pendingComponent: PageSpinner,
   errorComponent: NodeDetailError,
 })
 

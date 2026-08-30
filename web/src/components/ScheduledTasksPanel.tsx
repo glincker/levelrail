@@ -12,6 +12,7 @@ import type { VariantProps } from 'class-variance-authority'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { EmptyState } from '@/components/ui/empty-state'
+import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { ScheduledTaskDialog } from './ScheduledTaskDialog'
 import { DeleteScheduledTaskDialog } from './DeleteScheduledTaskDialog'
 import { RunScheduledTaskButton } from './RunScheduledTaskButton'
@@ -151,7 +152,7 @@ export function ScheduledTasksPanel({ appName }: { appName: string }) {
 
       <div className="mt-3">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <TableSkeleton columnCount={5} rowCount={3} />
         ) : error ? (
           <p className="text-sm text-destructive">{error.message}</p>
         ) : tasks.length === 0 ? (

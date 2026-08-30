@@ -1,6 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useDatabase, useDatabaseStatus } from '../../../queries/databases'
-import { backupTargetListQueryOptions } from '../../../queries/backupTargets'
 import { ConditionsPanel } from '../../../components/ConditionsPanel'
 import { MoveToNodeDialog } from '../../../components/MoveToNodeDialog'
 import { MoveToProjectDialog } from '../../../components/MoveToProjectDialog'
@@ -17,15 +16,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 // route's loader already primed (queries/databases.ts), no fetch of its
 // own, mirroring routes/apps/$name/overview.tsx.
 //
-// This route's own loader additionally primes backupTargetListQueryOptions
-// (queries/backupTargets.ts): BackupsSection's target picker reads it via
-// useBackupTargets, a useSuspenseQuery call, and there is no ambient
-// <Suspense> boundary anywhere above this route to catch an unprimed one,
-// the same reason every other useSuspenseQuery call in this codebase has
-// a matching loader.
+// No loader of its own: BackupsSection's target picker used to need one
+// (a useSuspenseQuery call with no ambient <Suspense> boundary above it),
+// which blocked this whole page, including the already-loaded
+// database/conditions data above, on a fetch only the Backups card at the
+// bottom needed. It now reads useBackupTargetsOptional instead (see that
+// component's own doc comment), so this route has nothing left to prime.
 export const Route = createFileRoute('/databases/$name/overview')({
-  loader: ({ context: { queryClient } }) =>
-    queryClient.ensureQueryData(backupTargetListQueryOptions()),
   component: OverviewSection,
 })
 

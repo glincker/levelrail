@@ -17,6 +17,7 @@ import { PreviewEnvironmentsCard } from '../../../components/PreviewEnvironments
 import { StorageAttachmentCard } from '../../../components/StorageAttachmentCard'
 import { LogDrainCard } from '../../../components/LogDrainCard'
 import { DatabaseAttachmentCard } from '../../../components/DatabaseAttachmentCard'
+import { PageSpinner } from '@/components/ui/page-spinner'
 
 // Former "overview" tab of routes/apps/$name.tsx's Tabs component, now a
 // real deep-linkable route. Reads app/conditions from the same query
@@ -39,6 +40,7 @@ export const Route = createFileRoute('/apps/$name/overview')({
   loader: ({ context: { queryClient }, params: { name } }) =>
     queryClient.ensureQueryData(deployAttemptsQueryOptions(name)),
   component: OverviewSection,
+  pendingComponent: PageSpinner,
 })
 
 function OverviewSection() {

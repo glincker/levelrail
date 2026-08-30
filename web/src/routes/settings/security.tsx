@@ -44,6 +44,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { PageSpinner } from '@/components/ui/page-spinner'
 
 // Loader-primed the same way routes/settings/tokens.tsx primes
 // tokenListQueryOptions: the component below only ever reads that warm
@@ -56,6 +57,7 @@ export const Route = createFileRoute('/settings/security')({
       queryClient.ensureQueryData(twoFactorStatusQueryOptions()),
     ]),
   component: SecuritySettingsPage,
+  pendingComponent: PageSpinner,
 })
 
 // Matches TokenTable.tsx's own formatDate convention: toLocaleString(),
