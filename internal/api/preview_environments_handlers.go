@@ -63,6 +63,14 @@ func (rt *Router) handleListPreviewEnvironments(w http.ResponseWriter, r *http.R
 // the webhook path uses, so a manual and an automatic teardown can never
 // diverge in behavior.
 func (rt *Router) handleTeardownPreviewEnvironment(w http.ResponseWriter, r *http.Request) {
+	// teardownPreviewRecord's message embeds preview.PreviewAppID, built
+	// from a webhook-sourced PR number (previewAppName in
+	// preview_environments.go): an explicit text/plain content type stops
+	// a client from ever MIME-sniffing this body as HTML, the same
+	// mitigation handleGitPushWebhook applies for its own webhook-derived
+	// response text.
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+
 	name := r.PathValue("name")
 	prNumber, err := strconv.Atoi(r.PathValue("number"))
 	if err != nil {

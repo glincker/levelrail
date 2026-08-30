@@ -452,6 +452,24 @@ func TestServeHTTP_WrongBranch_AcceptedButNotTriggered(t *testing.T) {
 	}
 }
 
+// TestServeHTTP_WrongBranch_ResponseIsPlainText guards the fix for a
+// CodeQL-flagged reflected-XSS finding: this response embeds ev.Ref, a
+// pushed branch name the pusher fully controls, so it must never be
+// served without an explicit non-HTML content type.
+func TestServeHTTP_WrongBranch_ResponseIsPlainText(t *testing.T) {
+	cfg := testConfig() // Branch: "main"
+	h := newTestHandler(cfg, &fakeDeployer{tag: "levelrail/web:sha1"}, func(context.Context, string, string) (string, func(), error) {
+		return "", func() {}, nil
+	})
+
+	body := pushBody(t, "refs/heads/feature-x", "sha1")
+	rec := doPush(t, h, cfg.Secret, body, sign(cfg.Secret, body))
+
+	if ct := rec.Header().Get("Content-Type"); ct != "text/plain; charset=utf-8" {
+		t.Errorf("Content-Type = %q, want %q", ct, "text/plain; charset=utf-8")
+	}
+}
+
 func TestServeHTTP_DefaultBranch_WhenConfigBranchEmpty(t *testing.T) {
 	cfg := testConfig()
 	cfg.Branch = ""
