@@ -530,15 +530,25 @@ func TestClient_GetProjectEnv(t *testing.T) {
 	}
 }
 
-func TestClient_SetProjectEnv(t *testing.T) {
-	var gotMethod, gotPath string
-	var gotBody map[string]string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotMethod, gotPath = r.Method, r.URL.Path
-		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+// newEnvEchoServer starts a test server for a Set*Env client method
+// test, capturing the request method/path and echoing the body back,
+// the shared shape SetOrganizationEnv/SetEnvironmentEnv/SetProjectEnv's
+// own tests all need.
+func newEnvEchoServer(t *testing.T) (srv *httptest.Server, gotMethod, gotPath *string) {
+	t.Helper()
+	gotMethod, gotPath = new(string), new(string)
+	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]string
+		*gotMethod, *gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(gotBody)
+		_ = json.NewEncoder(w).Encode(body)
 	}))
+	return srv, gotMethod, gotPath
+}
+
+func TestClient_SetProjectEnv(t *testing.T) {
+	srv, gotMethod, gotPath := newEnvEchoServer(t)
 	defer srv.Close()
 
 	client := NewClient(srv.URL, "test-token")
@@ -546,8 +556,8 @@ func TestClient_SetProjectEnv(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SetProjectEnv() error = %v", err)
 	}
-	if gotMethod != http.MethodPut || gotPath != "/api/v1/projects/proj_1/env" {
-		t.Errorf("method/path = %s %s, want PUT /api/v1/projects/proj_1/env", gotMethod, gotPath)
+	if *gotMethod != http.MethodPut || *gotPath != "/api/v1/projects/proj_1/env" {
+		t.Errorf("method/path = %s %s, want PUT /api/v1/projects/proj_1/env", *gotMethod, *gotPath)
 	}
 	if got["LOG_LEVEL"] != "info" {
 		t.Errorf("SetProjectEnv() = %+v, want LOG_LEVEL=info", got)

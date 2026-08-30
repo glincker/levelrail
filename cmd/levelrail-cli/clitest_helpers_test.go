@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -70,6 +71,106 @@ func newJSONErrorServer(t *testing.T, status int, body string) *httptest.Server 
 	}))
 	t.Cleanup(srv.Close)
 	return srv
+}
+
+// assertEnvGetNoneSet runs "<verbArgs...> env-get <id>" against a server
+// returning an empty env map and asserts the empty-set message, the
+// shared shape every shared-env-var tier's own env-get test already
+// establishes (apps organizations/environments/projects).
+func assertEnvGetNoneSet(t *testing.T, verbArgs []string, id string) {
+	t.Helper()
+	srv := newListEchoServer(t, nil, map[string]string{})
+	defer srv.Close()
+
+	args := append(append([]string{}, verbArgs...), "env-get", id, "--api-url", srv.URL)
+	stdout, _ := runCLIExpectOK(t, args)
+	if !strings.Contains(stdout, "no env vars set") {
+		t.Errorf("stdout = %q, want the empty-set message", stdout)
+	}
+}
+
+// assertEnvSet runs "<verbArgs...> env-set <id> --var LOG_LEVEL=info"
+// and asserts the request/response shape every shared-env-var tier's own
+// env-set establishes: a PUT to wantPath carrying the var, and a
+// "<label> env vars replaced (1 set)" confirmation.
+func assertEnvSet(t *testing.T, verbArgs []string, id, wantPath, label string) {
+	t.Helper()
+	var gotMethod, gotPath string
+	var gotBody map[string]string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(gotBody)
+	}))
+	defer srv.Close()
+
+	args := append(append([]string{}, verbArgs...), "env-set", id, "--var", "LOG_LEVEL=info", "--api-url", srv.URL)
+	stdout, _ := runCLIExpectOK(t, args)
+	if gotMethod != http.MethodPut || gotPath != wantPath {
+		t.Errorf("request = %s %s, want PUT %s", gotMethod, gotPath, wantPath)
+	}
+	if gotBody["LOG_LEVEL"] != "info" {
+		t.Errorf("request body = %+v, want LOG_LEVEL=info", gotBody)
+	}
+	if want := fmt.Sprintf("%s env vars replaced (1 set)", label); !strings.Contains(stdout, want) {
+		t.Errorf("stdout = %q, want %q", stdout, want)
+	}
+}
+
+// assertEnvSetNoVarsClearsAll runs "<verbArgs...> env-set <id>" with no
+// --var flags and asserts every env var is cleared, the shared shape
+// every shared-env-var tier's own env-set establishes.
+func assertEnvSetNoVarsClearsAll(t *testing.T, verbArgs []string, id, label string) {
+	t.Helper()
+	var gotBody map[string]string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(gotBody)
+	}))
+	defer srv.Close()
+
+	args := append(append([]string{}, verbArgs...), "env-set", id, "--api-url", srv.URL)
+	stdout, _ := runCLIExpectOK(t, args)
+	if len(gotBody) != 0 {
+		t.Errorf("request body = %+v, want empty", gotBody)
+	}
+	if want := fmt.Sprintf("%s env vars replaced (0 set)", label); !strings.Contains(stdout, want) {
+		t.Errorf("stdout = %q, want %q", stdout, want)
+	}
+}
+
+// assertClearAssignment runs "<verbArgs...>" (e.g. "apps clear-project
+// web") against a server that echoes back an empty response and asserts
+// the request was a PUT to wantPath with every body value empty, the
+// shared shape every "clear-<tier>" verb pair establishes (apps
+// clear-environment, apps clear-project, databases clear-project).
+func assertClearAssignment(t *testing.T, verbArgs []string, wantPath, wantMsg string) {
+	t.Helper()
+	var gotMethod, gotPath string
+	var gotBody map[string]string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{})
+	}))
+	defer srv.Close()
+
+	args := append(append([]string{}, verbArgs...), "--api-url", srv.URL)
+	stdout, _ := runCLIExpectOK(t, args)
+	if gotMethod != http.MethodPut || gotPath != wantPath {
+		t.Errorf("request = %s %s, want PUT %s", gotMethod, gotPath, wantPath)
+	}
+	for k, v := range gotBody {
+		if v != "" {
+			t.Errorf("request body %s = %q, want empty", k, v)
+		}
+	}
+	if !strings.Contains(stdout, wantMsg) {
+		t.Errorf("stdout = %q, want %q", stdout, wantMsg)
+	}
 }
 
 // assertUsageErrorMissingName runs "apps <subcommand> <verb>" for each verb

@@ -44,26 +44,7 @@ func TestRun_AppsSetProject_MissingArgs(t *testing.T) {
 }
 
 func TestRun_AppsClearProject(t *testing.T) {
-	var gotMethod, gotPath string
-	var gotBody setAppProjectRequest
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotMethod, gotPath = r.Method, r.URL.Path
-		_ = json.NewDecoder(r.Body).Decode(&gotBody)
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(appResource{Name: "web"})
-	}))
-	defer srv.Close()
-
-	stdout, _ := runCLIExpectOK(t, []string{"apps", "clear-project", "web", "--api-url", srv.URL})
-	if gotMethod != http.MethodPut || gotPath != "/api/v1/apps/web/project" {
-		t.Errorf("request = %s %s, want PUT /api/v1/apps/web/project", gotMethod, gotPath)
-	}
-	if gotBody.ProjectID != "" {
-		t.Errorf("request body ProjectID = %q, want empty", gotBody.ProjectID)
-	}
-	if !strings.Contains(stdout, `app "web" removed from its project`) {
-		t.Errorf("stdout = %q, want a removal confirmation", stdout)
-	}
+	assertClearAssignment(t, []string{"apps", "clear-project", "web"}, "/api/v1/apps/web/project", `app "web" removed from its project`)
 }
 
 func TestRun_AppsClearProject_NoName(t *testing.T) {
