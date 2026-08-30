@@ -5,6 +5,7 @@ import { useLogSearch } from '../queries/logs'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
+import { EmptyState } from './ui/empty-state'
 import {
   DEFAULT_TIME_RANGE_KEY,
   TIME_RANGE_PRESETS,
@@ -156,10 +157,30 @@ export function LogSearchPanel({ appName }: { appName: string }) {
         ) : error ? (
           <p className="px-1 py-2 text-sm text-destructive">{error.message}</p>
         ) : entries.length === 0 ? (
-          <p className="px-1 py-2 text-sm text-muted-foreground">
-            No log entries in this range
-            {debouncedQuery ? ' matching your search' : ''}.
-          </p>
+          <EmptyState
+            className="py-8"
+            icon={<MagnifyingGlassIcon className="size-5" />}
+            title="No log entries found"
+            description={
+              debouncedQuery
+                ? `Nothing matched "${debouncedQuery}" in the selected time range.`
+                : 'No log output was captured for this app in the selected time range.'
+            }
+            action={
+              debouncedQuery || rangeKey !== '7d' ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setQuery('')
+                    setRangeKey('7d')
+                  }}
+                >
+                  Clear filters
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
           <>
             <p className="mb-1.5 px-1 text-xs text-muted-foreground">

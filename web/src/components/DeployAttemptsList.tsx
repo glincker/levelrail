@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import {
   ScrollIcon,
   ArrowCounterClockwiseIcon,
+  RocketLaunchIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { DeployAttempt } from '../types/deployAttempt'
 import type { ReconcileCondition } from '../types/deploy'
@@ -17,7 +18,20 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from '@/components/ui/toast'
+
+// Scrolls to the "Trigger a deploy" card pinned above this list on the
+// same route (see routes/apps/$name.tsx's showDeployTrigger) rather than
+// duplicating that form here, then moves focus into its image-tag field
+// (falling back to the tab buttons above it) so a keyboard user lands
+// somewhere useful instead of just visually nearby.
+function focusDeployTriggerForm() {
+  const form = document.getElementById('deploy-trigger-form')
+  form?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const target = form?.querySelector<HTMLElement>('input') ?? form?.querySelector<HTMLElement>('button')
+  target?.focus()
+}
 
 // DeployAttemptsList renders GET /api/v1/apps/{name}/deploy-attempts'
 // real, row-per-attempt history (internal/api/deploy_attempts.go), the
@@ -56,8 +70,18 @@ export function DeployAttemptsList({
         <CardHeader>
           <CardTitle>Deploy history</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          No deploys triggered yet.
+        <CardContent>
+          <EmptyState
+            icon={<RocketLaunchIcon className="size-5" />}
+            title="No deploys yet"
+            description="Trigger your first deploy above, either from an existing image tag or by building from a git source."
+            action={
+              <Button size="sm" onClick={focusDeployTriggerForm}>
+                <RocketLaunchIcon className="size-3.5" data-icon="inline-start" />
+                Go to deploy form
+              </Button>
+            }
+          />
         </CardContent>
       </Card>
     )
