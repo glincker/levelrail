@@ -72,6 +72,25 @@ func TestToServiceResources_InvalidSwapMemoryPropagatesError(t *testing.T) {
 	}
 }
 
+func TestToServiceResources_SwapBelowMemoryRejected(t *testing.T) {
+	// Docker's MemorySwap is memory+swap combined, not swap on top of
+	// memory, so a value below the memory limit is nonsensical.
+	_, err := toServiceResources(spec.Resources{Memory: "512Mi", SwapMemory: "256Mi"})
+	if err == nil {
+		t.Fatal("toServiceResources() error = nil, want an error when swapMemory is below memory")
+	}
+}
+
+func TestToServiceResources_SwapEqualToMemoryAccepted(t *testing.T) {
+	got, err := toServiceResources(spec.Resources{Memory: "512Mi", SwapMemory: "512Mi"})
+	if err != nil {
+		t.Fatalf("toServiceResources() error = %v, want nil (swap equal to memory means no swap, but is valid)", err)
+	}
+	if got.SwapMemoryBytes != 512*1024*1024 {
+		t.Errorf("SwapMemoryBytes = %d, want %d", got.SwapMemoryBytes, 512*1024*1024)
+	}
+}
+
 func TestParseDurationOrZero(t *testing.T) {
 	tests := []struct {
 		name    string

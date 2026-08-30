@@ -100,6 +100,18 @@ const resourcesSchema = z
           message: 'Swap must be a whole number of MiB',
           path: ['swapMib'],
         })
+      } else if (data.memoryEnabled) {
+        // Docker's MemorySwap is memory+swap combined, not swap on top
+        // of memory, so a value below the memory limit is nonsensical.
+        const memoryN = Number(data.memoryMib)
+        if (Number.isFinite(memoryN) && n < memoryN) {
+          ctx.addIssue({
+            code: 'custom',
+            message:
+              'Swap is memory+swap combined, so it must be at least the memory limit',
+            path: ['swapMib'],
+          })
+        }
       }
     }
     if (data.cpusetEnabled && !cpusetPattern.test(data.cpusetValue)) {

@@ -108,6 +108,8 @@ as `LOG_LEVEL`).
 | --- | --- | --- | --- | --- |
 | `memory` | string | no | none | Pattern `^[0-9]+(Mi\|Gi)$`, for example `512Mi`. |
 | `cpu` | number | no | none | Must be greater than 0 if set. |
+| `swapMemory` | string | no | none | Same pattern as `memory`. Docker's `MemorySwap`: the combined memory+swap ceiling, not swap on top of memory, so it must be at least `memory` and requires `memory` to also be set. |
+| `cpuSet` | string | no | none | Docker's `cpuset-cpus` format, for example `0-3` or `0,2`. Pins the container to specific host CPUs. |
 
 ### `EnvVar` (an entry under `env`)
 
@@ -174,6 +176,11 @@ before a caller ever sees a `Spec`:
      characters, values up to 4096 characters, no empty keys, and no key
      starting with the reserved prefix `platform-reserved.` (kept open for
      the platform's own bookkeeping labels).
+   - `resources.swapMemory` requires `resources.memory` to also be set, and
+     (checked later, during deploy translation in `internal/deploy`, not
+     here, since it needs both values converted to bytes first) must be at
+     least `resources.memory`: Docker's `MemorySwap` is the combined
+     memory+swap ceiling, not swap on top of memory.
 
 `spec.Parse` also runs `yamlUnmarshalStrict`, a YAML decode with
 `KnownFields(true)`, as an independent second guard against the struct

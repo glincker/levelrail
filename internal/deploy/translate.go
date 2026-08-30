@@ -170,6 +170,14 @@ func toServiceResources(r spec.Resources) (store.ServiceResources, error) {
 		if err != nil {
 			return out, err
 		}
+		// Docker's MemorySwap is memory+swap combined, not swap on top of
+		// memory (see store.ServiceResources.SwapMemoryBytes's own doc
+		// comment), so a value below the memory limit is nonsensical: it
+		// would otherwise surface as a raw Docker API rejection at
+		// container-create time instead of here.
+		if bytes < out.MemoryBytes {
+			return out, fmt.Errorf("resources.swapMemory (%s) must be at least resources.memory (%s): it is memory+swap combined, not swap alone", r.SwapMemory, r.Memory)
+		}
 		out.SwapMemoryBytes = bytes
 	}
 	out.CPUSetCPUs = r.CPUSet

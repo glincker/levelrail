@@ -426,6 +426,14 @@ func toServiceResources(r *spec.Resources) (*serviceResources, error) {
 		if err != nil {
 			return nil, err
 		}
+		// Docker's MemorySwap is memory+swap combined, not swap on top of
+		// memory, so a value below the memory limit is nonsensical: it
+		// would otherwise surface as a raw Docker API rejection at
+		// container-create time instead of here. Mirrors
+		// internal/deploy/translate.go's toServiceResources.
+		if bytes < out.MemoryBytes {
+			return nil, fmt.Errorf("resources.swapMemory (%s) must be at least resources.memory (%s): it is memory+swap combined, not swap alone", r.SwapMemory, r.Memory)
+		}
 		out.SwapMemoryBytes = bytes
 	}
 	out.CPUSetCPUs = r.CPUSet
