@@ -51,21 +51,33 @@ func TestHandleUseGitHubRepoAsSource_NotInstalled(t *testing.T) {
 	}
 }
 
+// seedGitHubUseAsSourceFixture wires an installed GitHub App connection,
+// a primary domain, and the target app "web": the common setup every
+// Success/PermissionDenied/OtherWebhookFailure test below needs before
+// hitting the handler, varying only the looked-up repo's default_branch
+// and the fake client's own webhook-registration outcome.
+func seedGitHubUseAsSourceFixture(t *testing.T, defaultBranch string, createHookErr error) (rt *Router, db *store.DB, fakeClient *fakeGitHubAppClient, gitSourceSecrets *fakeGitSourceSecrets, cookie *http.Cookie) {
+	t.Helper()
+	fakeSecrets := newFakeGitHubAppSecrets()
+	fakeClient = &fakeGitHubAppClient{
+		repo:          githubapp.Repo{FullName: "acme/web", DefaultBranch: defaultBranch},
+		createHookErr: createHookErr,
+	}
+	gitSourceSecrets = newFakeGitSourceSecrets()
+	rt, db = newTestRouterWithGitHubAndGitSource(t, fakeSecrets, fakeClient, gitSourceSecrets)
+	cookie = loginTestSession(t, rt, db)
+	seedInstalledGitHubApp(t, db, fakeSecrets)
+	setPrimaryDomain(t, db)
+	seedApp(t, db, "web")
+	return rt, db, fakeClient, gitSourceSecrets, cookie
+}
+
 // TestHandleUseGitHubRepoAsSource_Success proves this handler connects
 // the exact same store.GitSource row PUT .../git-source itself creates,
 // and registers a GitHub repo webhook pointed at that source's own
 // webhook URL with that same secret, reporting webhook_registered:true.
 func TestHandleUseGitHubRepoAsSource_Success(t *testing.T) {
-	fakeSecrets := newFakeGitHubAppSecrets()
-	fakeClient := &fakeGitHubAppClient{
-		repo: githubapp.Repo{FullName: "acme/web", DefaultBranch: "trunk"},
-	}
-	gitSourceSecrets := newFakeGitSourceSecrets()
-	rt, db := newTestRouterWithGitHubAndGitSource(t, fakeSecrets, fakeClient, gitSourceSecrets)
-	cookie := loginTestSession(t, rt, db)
-	seedInstalledGitHubApp(t, db, fakeSecrets)
-	setPrimaryDomain(t, db)
-	seedApp(t, db, "web")
+	rt, db, fakeClient, gitSourceSecrets, cookie := seedGitHubUseAsSourceFixture(t, "trunk", nil)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/github-app/repos/acme/web/use-as-source", `{"app_name":"web"}`))
@@ -116,17 +128,7 @@ func TestHandleUseGitHubRepoAsSource_Success(t *testing.T) {
 // still ends up with a connected git source, a 2xx response, and a
 // webhook_error explaining the manual fallback, not a failed request.
 func TestHandleUseGitHubRepoAsSource_PermissionDenied(t *testing.T) {
-	fakeSecrets := newFakeGitHubAppSecrets()
-	fakeClient := &fakeGitHubAppClient{
-		repo:          githubapp.Repo{FullName: "acme/web", DefaultBranch: "main"},
-		createHookErr: githubapp.ErrPermissionDenied,
-	}
-	gitSourceSecrets := newFakeGitSourceSecrets()
-	rt, db := newTestRouterWithGitHubAndGitSource(t, fakeSecrets, fakeClient, gitSourceSecrets)
-	cookie := loginTestSession(t, rt, db)
-	seedInstalledGitHubApp(t, db, fakeSecrets)
-	setPrimaryDomain(t, db)
-	seedApp(t, db, "web")
+	rt, db, _, _, cookie := seedGitHubUseAsSourceFixture(t, "main", githubapp.ErrPermissionDenied)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/github-app/repos/acme/web/use-as-source", `{"app_name":"web"}`))
@@ -159,16 +161,7 @@ func TestHandleUseGitHubRepoAsSource_PermissionDenied(t *testing.T) {
 // still a failure" shape GitLab/Bitbucket's own use-as-source handlers
 // have: only the specific, structural permission-denied case degrades.
 func TestHandleUseGitHubRepoAsSource_OtherWebhookFailure(t *testing.T) {
-	fakeSecrets := newFakeGitHubAppSecrets()
-	fakeClient := &fakeGitHubAppClient{
-		repo:          githubapp.Repo{FullName: "acme/web", DefaultBranch: "main"},
-		createHookErr: errFakeSecretNotSet,
-	}
-	rt, db := newTestRouterWithGitHubAndGitSource(t, fakeSecrets, fakeClient, newFakeGitSourceSecrets())
-	cookie := loginTestSession(t, rt, db)
-	seedInstalledGitHubApp(t, db, fakeSecrets)
-	setPrimaryDomain(t, db)
-	seedApp(t, db, "web")
+	rt, db, _, _, cookie := seedGitHubUseAsSourceFixture(t, "main", errFakeSecretNotSet)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/github-app/repos/acme/web/use-as-source", `{"app_name":"web"}`))

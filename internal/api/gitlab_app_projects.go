@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -110,17 +109,6 @@ func (rt *Router) handleListGitLabAppBranches(w http.ResponseWriter, r *http.Req
 	writeJSON(w, http.StatusOK, out)
 }
 
-// useGitLabProjectAsSourceRequest is
-// POST /api/v1/gitlab-app/projects/{id}/use-as-source's body: which app
-// this project becomes the connected git source for, plus the same
-// optional build configuration handleSetGitSource's own request accepts.
-type useGitLabProjectAsSourceRequest struct {
-	AppName   string `json:"app_name"`
-	Branch    string `json:"branch,omitempty"`
-	BuildType string `json:"build_type,omitempty"`
-	BuildPath string `json:"build_path,omitempty"`
-}
-
 // handleUseGitLabProjectAsSource handles
 // POST /api/v1/gitlab-app/projects/{id}/use-as-source.
 //
@@ -143,35 +131,12 @@ func (rt *Router) handleUseGitLabProjectAsSource(w http.ResponseWriter, r *http.
 		return
 	}
 
-	var req useGitLabProjectAsSourceRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
-		return
-	}
-	if req.AppName == "" {
-		writeError(w, http.StatusBadRequest, "app_name is required")
-		return
-	}
-	buildType, err := normalizeGitSourceBuildType(req.BuildType)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	if buildType == "railpack" && req.BuildPath != "" {
-		writeError(w, http.StatusBadRequest, "build_path is not meaningful for build_type \"railpack\"")
+	req, buildType, ok := rt.decodeUseAsSourceRequest(w, r, "api: use gitlab project as source")
+	if !ok {
 		return
 	}
 
 	ctx := r.Context()
-	if _, err := rt.apps.GetDesiredService(ctx, req.AppName); errors.Is(err, store.ErrServiceNotFound) {
-		writeError(w, http.StatusNotFound, "app not found")
-		return
-	} else if err != nil {
-		rt.logger.Error("api: use gitlab project as source: load app failed", slog.String("error", err.Error()), slog.String("app_name", req.AppName))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-
 	conn, accessToken, err := rt.gitlabAccessToken(ctx)
 	if err != nil {
 		rt.writeGitLabAppTokenError(w, "api: mint gitlab access token for use-as-source failed", err)

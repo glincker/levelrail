@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -109,16 +108,6 @@ func (rt *Router) handleListBitbucketAppBranches(w http.ResponseWriter, r *http.
 	writeJSON(w, http.StatusOK, out)
 }
 
-// useBitbucketRepoAsSourceRequest is
-// POST /api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/use-as-source's
-// body, mirroring useGitLabProjectAsSourceRequest.
-type useBitbucketRepoAsSourceRequest struct {
-	AppName   string `json:"app_name"`
-	Branch    string `json:"branch,omitempty"`
-	BuildType string `json:"build_type,omitempty"`
-	BuildPath string `json:"build_path,omitempty"`
-}
-
 // handleUseBitbucketRepoAsSource handles
 // POST /api/v1/bitbucket-app/repos/{fullName}/use-as-source. Mirrors
 // handleUseGitLabProjectAsSource, including its own documented gap: no
@@ -142,35 +131,12 @@ func (rt *Router) handleUseBitbucketRepoAsSource(w http.ResponseWriter, r *http.
 	}
 	fullName := workspace + "/" + repoSlug
 
-	var req useBitbucketRepoAsSourceRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
-		return
-	}
-	if req.AppName == "" {
-		writeError(w, http.StatusBadRequest, "app_name is required")
-		return
-	}
-	buildType, err := normalizeGitSourceBuildType(req.BuildType)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	if buildType == "railpack" && req.BuildPath != "" {
-		writeError(w, http.StatusBadRequest, "build_path is not meaningful for build_type \"railpack\"")
+	req, buildType, ok := rt.decodeUseAsSourceRequest(w, r, "api: use bitbucket repo as source")
+	if !ok {
 		return
 	}
 
 	ctx := r.Context()
-	if _, err := rt.apps.GetDesiredService(ctx, req.AppName); errors.Is(err, store.ErrServiceNotFound) {
-		writeError(w, http.StatusNotFound, "app not found")
-		return
-	} else if err != nil {
-		rt.logger.Error("api: use bitbucket repo as source: load app failed", slog.String("error", err.Error()), slog.String("app_name", req.AppName))
-		writeError(w, http.StatusInternalServerError, errInternal)
-		return
-	}
-
 	accessToken, err := rt.bitbucketAccessToken(ctx)
 	if err != nil {
 		rt.writeBitbucketAppTokenError(w, "api: mint bitbucket access token for use-as-source failed", err)

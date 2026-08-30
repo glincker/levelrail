@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import type { ReactNode } from 'react'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -55,6 +55,47 @@ function disconnected(provider: GitProviderStatus['provider']): GitProviderStatu
   }
 }
 
+// mockFetchRoutes stubs global fetch from a "METHOD url" -> response
+// table, so each test only ever states which endpoints it needs and
+// what they return, not a fresh vi.fn implementation reimplementing the
+// same "look up url+method, else reject" dispatch every time.
+function mockFetchRoutes(
+  routes: Record<string, () => Promise<Response>>,
+): ReturnType<typeof vi.fn> {
+  const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+    const url = requestUrlOf(input)
+    const method = init?.method ?? 'GET'
+    const handler = routes[`${method} ${url}`]
+    if (handler) return handler()
+    return Promise.reject(new Error(`unexpected fetch: ${method} ${url}`))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  return fetchMock
+}
+
+function jsonRoute(body: unknown, status = 200): () => Promise<Response> {
+  return () => Promise.resolve(fakeJsonResponse(body, status))
+}
+
+const fakeGitHubRepo = {
+  full_name: 'acme/app',
+  name: 'app',
+  owner_login: 'acme',
+  private: false,
+  default_branch: 'main',
+  clone_url: 'https://github.com/acme/app.git',
+}
+
+const fakeGitLabProject = {
+  id: 7,
+  name: 'web',
+  path_with_namespace: 'acme/web',
+  clone_url: 'https://gitlab.example.com/acme/web.git',
+  default_branch: 'main',
+  visibility: 'private',
+  web_url: 'https://gitlab.example.com/acme/web',
+}
+
 function renderPicker() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -75,11 +116,53 @@ function renderPicker() {
 // branch control is showing too, screen.getByLabelText('Branch') is
 // ambiguous (both the provider row and the manual row use that same
 // label text), so tests that need one specific provider's branch
-// control look it up by its own field id instead.
-function branchFieldById(container: HTMLElement, id: string): HTMLElement {
-  const el = container.querySelector(`#${id}`)
-  if (!el) throw new Error(`no element with id ${id}`)
-  return el as HTMLElement
+// control look it up by its own field id instead. Polls via waitFor,
+// not a plain querySelector: the field only mounts after a repo/project
+// pick's own state update and (for GitLab) an enabled-flag flip commit,
+// which doesn't necessarily land in the same microtask fireEvent.click
+// flushes, especially under concurrent test-file load.
+async function branchFieldById(container: HTMLElement, id: string): Promise<HTMLElement> {
+  return waitFor(() => {
+    const el = container.querySelector(`#${id}`)
+    if (!el) throw new Error(`no element with id ${id}`)
+    return el as HTMLElement
+  })
+}
+
+// pickOption opens the base-ui Select at triggerId and clicks the
+// option matching optionText, retrying the open+click pair up to 5
+// times on a real setTimeout delay (not testing-library's own waitFor):
+// base-ui occasionally drops a synthetic click sent in the same tick a
+// popup opens (observed as the popup staying open, aria-expanded stuck
+// true, under concurrent test-file load), and waitFor's own
+// MutationObserver-driven immediate retries turned that into a
+// synchronous busy loop here (the click toggles the popup open/closed
+// on every attempt, which is itself a DOM mutation, so waitFor kept
+// re-invoking the callback with no delay and never reached its own
+// timeout). A small number of real-clock-spaced attempts converges on
+// the same "keep trying until it lands" behavior without that failure
+// mode. `settled` is the actual assertion the pick should have
+// produced (e.g. a new field mounting, or onSelect having been called).
+async function pickOption(
+  container: HTMLElement,
+  triggerId: string,
+  optionText: string,
+  settled: () => void,
+) {
+  const trigger = container.querySelector(`#${triggerId}`)
+  if (!trigger) throw new Error(`no trigger with id ${triggerId}`)
+  const maxAttempts = 5
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    fireEvent.click(trigger)
+    try {
+      fireEvent.click(screen.getByText(optionText))
+      settled()
+      return
+    } catch (err) {
+      if (attempt === maxAttempts) throw err
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    }
+  }
 }
 
 describe('GitRepoSourcePicker', () => {
@@ -88,15 +171,9 @@ describe('GitRepoSourcePicker', () => {
 
   beforeEach(() => {
     providers = [disconnected('github'), disconnected('gitlab'), disconnected('bitbucket')]
-    fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-      const url = requestUrlOf(input)
-      const method = init?.method ?? 'GET'
-      if (url === '/api/v1/git-providers' && method === 'GET') {
-        return Promise.resolve(fakeJsonResponse(providers))
-      }
-      return Promise.reject(new Error(`unexpected fetch: ${method} ${url}`))
+    fetchMock = mockFetchRoutes({
+      'GET /api/v1/git-providers': () => Promise.resolve(fakeJsonResponse(providers)),
     })
-    vi.stubGlobal('fetch', fetchMock)
   })
 
   afterEach(() => {
@@ -139,29 +216,10 @@ describe('GitRepoSourcePicker', () => {
       disconnected('gitlab'),
       disconnected('bitbucket'),
     ]
-    fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-      const url = requestUrlOf(input)
-      const method = init?.method ?? 'GET'
-      if (url === '/api/v1/git-providers' && method === 'GET') {
-        return Promise.resolve(fakeJsonResponse(providers))
-      }
-      if (url === '/api/v1/github-app/repos' && method === 'GET') {
-        return Promise.resolve(
-          fakeJsonResponse([
-            {
-              full_name: 'acme/app',
-              name: 'app',
-              owner_login: 'acme',
-              private: false,
-              default_branch: 'main',
-              clone_url: 'https://github.com/acme/app.git',
-            },
-          ]),
-        )
-      }
-      return Promise.reject(new Error(`unexpected fetch: ${method} ${url}`))
+    fetchMock = mockFetchRoutes({
+      'GET /api/v1/git-providers': jsonRoute(providers),
+      'GET /api/v1/github-app/repos': jsonRoute([fakeGitHubRepo]),
     })
-    vi.stubGlobal('fetch', fetchMock)
 
     renderPicker()
 
@@ -176,46 +234,30 @@ describe('GitRepoSourcePicker', () => {
       disconnected('gitlab'),
       disconnected('bitbucket'),
     ]
-    fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-      const url = requestUrlOf(input)
-      const method = init?.method ?? 'GET'
-      if (url === '/api/v1/git-providers' && method === 'GET') {
-        return Promise.resolve(fakeJsonResponse(providers))
-      }
-      if (url === '/api/v1/github-app/repos' && method === 'GET') {
-        return Promise.resolve(
-          fakeJsonResponse([
-            {
-              full_name: 'acme/app',
-              name: 'app',
-              owner_login: 'acme',
-              private: false,
-              default_branch: 'main',
-              clone_url: 'https://github.com/acme/app.git',
-            },
-          ]),
-        )
-      }
-      if (url === '/api/v1/github-app/repos/acme/app/branches' && method === 'GET') {
-        return Promise.resolve(fakeJsonResponse([{ name: 'main', commit_sha: 'abc123' }]))
-      }
-      return Promise.reject(new Error(`unexpected fetch: ${method} ${url}`))
+    fetchMock = mockFetchRoutes({
+      'GET /api/v1/git-providers': jsonRoute(providers),
+      'GET /api/v1/github-app/repos': jsonRoute([fakeGitHubRepo]),
+      'GET /api/v1/github-app/repos/acme/app/branches': jsonRoute([
+        { name: 'main', commit_sha: 'abc123' },
+      ]),
     })
-    vi.stubGlobal('fetch', fetchMock)
 
     const { onSelect, container } = renderPicker()
+    await screen.findByLabelText('Repository')
 
-    // fireEvent, not user.click, for these Select interactions: base-ui's
-    // Select applies pointer-events:none while positioning its popup, and
-    // that inline style can still be present the instant an option
-    // renders, which user.click's real-interaction pointer-events guard
-    // treats as unclickable. This suite only needs to prove the wiring
-    // (which onSelect payload a pick produces), not real pointer
-    // accessibility, so fireEvent.click sidesteps that guard.
-    fireEvent.click(await screen.findByLabelText('Repository'))
-    fireEvent.click(await screen.findByText('acme/app'))
-    fireEvent.click(branchFieldById(container, 'git-picker-github-branch'))
-    fireEvent.click(await screen.findByText('main'))
+    // fireEvent (inside pickOption), not user.click, for these Select
+    // interactions: base-ui's Select applies pointer-events:none while
+    // positioning its popup, and that inline style can still be present
+    // the instant an option renders, which user.click's real-interaction
+    // pointer-events guard treats as unclickable. This suite only needs
+    // to prove the wiring (which onSelect payload a pick produces), not
+    // real pointer accessibility.
+    await pickOption(container, 'git-picker-github-repo', 'acme/app', () => {
+      expect(container.querySelector('#git-picker-github-branch')).toBeTruthy()
+    })
+    await pickOption(container, 'git-picker-github-branch', 'main', () => {
+      expect(onSelect).toHaveBeenCalled()
+    })
 
     expect(onSelect).toHaveBeenLastCalledWith({
       provider: 'github',
@@ -231,38 +273,21 @@ describe('GitRepoSourcePicker', () => {
       { provider: 'gitlab', connected: true, can_list_branches: true, can_register_webhook: true, can_auth_clone: false },
       disconnected('bitbucket'),
     ]
-    fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-      const url = requestUrlOf(input)
-      const method = init?.method ?? 'GET'
-      if (url === '/api/v1/git-providers' && method === 'GET') {
-        return Promise.resolve(fakeJsonResponse(providers))
-      }
-      if (url === '/api/v1/gitlab-app/projects' && method === 'GET') {
-        return Promise.resolve(
-          fakeJsonResponse([
-            {
-              id: 7,
-              name: 'web',
-              path_with_namespace: 'acme/web',
-              clone_url: 'https://gitlab.example.com/acme/web.git',
-              default_branch: 'main',
-              visibility: 'private',
-              web_url: 'https://gitlab.example.com/acme/web',
-            },
-          ]),
-        )
-      }
-      if (url === '/api/v1/gitlab-app/projects/7/branches' && method === 'GET') {
-        return Promise.resolve(fakeJsonResponse([{ name: 'main', commit_sha: 'abc' }, { name: 'dev', commit_sha: 'def' }]))
-      }
-      return Promise.reject(new Error(`unexpected fetch: ${method} ${url}`))
+    fetchMock = mockFetchRoutes({
+      'GET /api/v1/git-providers': jsonRoute(providers),
+      'GET /api/v1/gitlab-app/projects': jsonRoute([fakeGitLabProject]),
+      'GET /api/v1/gitlab-app/projects/7/branches': jsonRoute([
+        { name: 'main', commit_sha: 'abc' },
+        { name: 'dev', commit_sha: 'def' },
+      ]),
     })
-    vi.stubGlobal('fetch', fetchMock)
 
     const { onSelect, container } = renderPicker()
+    await screen.findByLabelText('Project')
 
-    fireEvent.click(await screen.findByLabelText('Project'))
-    fireEvent.click(await screen.findByText('acme/web'))
+    await pickOption(container, 'git-picker-gitlab-project', 'acme/web', () => {
+      expect(onSelect).toHaveBeenCalled()
+    })
 
     // Picking the project alone already emits its default branch, the
     // same immediate-pick shape GitLabProviderRow always had.
@@ -278,7 +303,7 @@ describe('GitRepoSourcePicker', () => {
     // here yet" copy is gone, and both fetched branches are listed once
     // the control is opened.
     expect(screen.queryByText(/branch-listing/i)).not.toBeInTheDocument()
-    const branchControl = branchFieldById(container, 'git-picker-gitlab-branch')
+    const branchControl = await branchFieldById(container, 'git-picker-gitlab-branch')
     expect(branchControl).toHaveAttribute('role', 'combobox')
 
     fireEvent.click(branchControl)
@@ -291,37 +316,19 @@ describe('GitRepoSourcePicker', () => {
       { provider: 'gitlab', connected: true, can_list_branches: false, can_register_webhook: true, can_auth_clone: false },
       disconnected('bitbucket'),
     ]
-    fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-      const url = requestUrlOf(input)
-      const method = init?.method ?? 'GET'
-      if (url === '/api/v1/git-providers' && method === 'GET') {
-        return Promise.resolve(fakeJsonResponse(providers))
-      }
-      if (url === '/api/v1/gitlab-app/projects' && method === 'GET') {
-        return Promise.resolve(
-          fakeJsonResponse([
-            {
-              id: 7,
-              name: 'web',
-              path_with_namespace: 'acme/web',
-              clone_url: 'https://gitlab.example.com/acme/web.git',
-              default_branch: 'main',
-              visibility: 'private',
-              web_url: 'https://gitlab.example.com/acme/web',
-            },
-          ]),
-        )
-      }
-      return Promise.reject(new Error(`unexpected fetch: ${method} ${url}`))
+    fetchMock = mockFetchRoutes({
+      'GET /api/v1/git-providers': jsonRoute(providers),
+      'GET /api/v1/gitlab-app/projects': jsonRoute([fakeGitLabProject]),
     })
-    vi.stubGlobal('fetch', fetchMock)
 
     const { container } = renderPicker()
+    await screen.findByLabelText('Project')
 
-    fireEvent.click(await screen.findByLabelText('Project'))
-    fireEvent.click(await screen.findByText('acme/web'))
+    await pickOption(container, 'git-picker-gitlab-project', 'acme/web', () => {
+      expect(container.querySelector('#git-picker-gitlab-branch')).toBeTruthy()
+    })
 
-    const branchControl = branchFieldById(container, 'git-picker-gitlab-branch')
+    const branchControl = await branchFieldById(container, 'git-picker-gitlab-branch')
     expect(branchControl).not.toHaveAttribute('role', 'combobox')
     expect(branchControl).toHaveValue('main')
   })
