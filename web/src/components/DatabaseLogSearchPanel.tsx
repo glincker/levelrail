@@ -5,7 +5,7 @@ import { useDatabaseLogSearch } from '../queries/databaseLogs'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
-import { EmptyState } from './ui/empty-state'
+import { LogSearchEmptyState } from './LogSearchEmptyState'
 import {
   DEFAULT_TIME_RANGE_KEY,
   TIME_RANGE_PRESETS,
@@ -143,29 +143,14 @@ export function DatabaseLogSearchPanel({
         ) : error ? (
           <p className="px-1 py-2 text-sm text-destructive">{error.message}</p>
         ) : entries.length === 0 ? (
-          <EmptyState
-            className="py-8"
-            icon={<MagnifyingGlassIcon className="size-5" />}
-            title="No log entries found"
-            description={
-              debouncedQuery
-                ? `Nothing matched "${debouncedQuery}" in the selected time range.`
-                : 'No log output was captured for this database in the selected time range.'
-            }
-            action={
-              debouncedQuery || rangeKey !== '7d' ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setQuery('')
-                    setRangeKey('7d')
-                  }}
-                >
-                  Clear filters
-                </Button>
-              ) : undefined
-            }
+          <LogSearchEmptyState
+            resourceKind="database"
+            query={debouncedQuery}
+            rangeKey={rangeKey}
+            onClearFilters={() => {
+              setQuery('')
+              setRangeKey('7d')
+            }}
           />
         ) : (
           <>
