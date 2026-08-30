@@ -78,6 +78,10 @@ are still open. This page describes what's actually true today.
   commands: pull every app off a live Coolify or Dokploy instance and
   either write app.yaml files or apply them directly to a target
   Levelrail instance.
+- `levelrail apps create --interactive` (`-i`): a step-by-step wizard
+  for creating an app without hand-writing app.yaml or knowing every
+  flag up front, ending in either a written app.yaml or a direct API
+  call, operator's choice.
 - An MCP server (`cmd/levelrail-mcp`), wrapping the same versioned REST
   API and bearer-token model the CLI already uses, so a token scoped to
   fewer abilities than a tool needs gets the same 403 the REST API
