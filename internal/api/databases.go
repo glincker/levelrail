@@ -87,6 +87,15 @@ func (d databaseResource) toDesiredDatabase() store.DesiredDatabase {
 	}
 }
 
+// databaseListResource is GET /api/v1/databases' own wire shape,
+// databaseResource plus a batched status summary, mirroring
+// appListResource's exact reasoning (apps.go): DatabaseRow needs enough
+// to render a status dot without an N+1 GetConditions call per database.
+type databaseListResource struct {
+	databaseResource
+	Status appStatusSummary `json:"status"`
+}
+
 // validateDatabaseResource checks d.Engine against
 // store.SupportedDatabaseEngines' embedded registry rather than a
 // hardcoded postgres/redis/mysql comparison chain: adding a new engine
@@ -115,7 +124,10 @@ func validateDatabaseResource(d databaseResource) error {
 	return nil
 }
 
-// handleListDatabases handles GET /api/v1/databases.
+// handleListDatabases handles GET /api/v1/databases. Status is computed
+// from one batched conditions query (store.GetConditionsForControllers),
+// the same shape handleListApps uses, not a GetConditions call per
+// database.
 func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 	dbs, err := rt.databases.ListDesiredDatabases(r.Context())
 	if err != nil {
@@ -123,9 +135,24 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	out := make([]databaseResource, 0, len(dbs))
+
+	controllerNames := make([]string, len(dbs))
+	for i, d := range dbs {
+		controllerNames[i] = databaseControllerName(d.Name)
+	}
+	conditionsByController, err := rt.deploys.GetConditionsForControllers(r.Context(), controllerNames)
+	if err != nil {
+		rt.logger.Error("api: list databases: batch load conditions failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	out := make([]databaseListResource, 0, len(dbs))
 	for _, d := range dbs {
-		out = append(out, toDatabaseResource(d))
+		out = append(out, databaseListResource{
+			databaseResource: toDatabaseResource(d),
+			Status:           summarizeAppConditions(conditionsByController[databaseControllerName(d.Name)]),
+		})
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -230,6 +257,19 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// reloadAndWriteDatabase reloads name's desired database and writes it as
+// the response, the common tail every database-mutation handler in this
+// file needs. logContext names the calling handler for the error log line.
+func (rt *Router) reloadAndWriteDatabase(w http.ResponseWriter, r *http.Request, name, logContext string) {
+	d, err := rt.databases.GetDesiredDatabase(r.Context(), name)
+	if err != nil {
+		rt.logger.Error("api: "+logContext+": reload after update failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toDatabaseResource(*d))
+}
+
 // setDatabaseNodeRequest is PUT /api/v1/databases/{name}/node's body,
 // identical shape to setAppNodeRequest.
 type setDatabaseNodeRequest struct {
@@ -270,13 +310,7 @@ func (rt *Router) handleSetDatabaseNode(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	d, err := rt.databases.GetDesiredDatabase(r.Context(), name)
-	if err != nil {
-		rt.logger.Error("api: set database node: reload after update failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	writeJSON(w, http.StatusOK, toDatabaseResource(*d))
+	rt.reloadAndWriteDatabase(w, r, name, "set database node")
 }
 
 // setDatabaseProjectRequest is PUT /api/v1/databases/{name}/project's
@@ -316,13 +350,7 @@ func (rt *Router) handleSetDatabaseProject(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	d, err := rt.databases.GetDesiredDatabase(r.Context(), name)
-	if err != nil {
-		rt.logger.Error("api: set database project: reload after update failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	writeJSON(w, http.StatusOK, toDatabaseResource(*d))
+	rt.reloadAndWriteDatabase(w, r, name, "set database project")
 }
 
 // setDatabaseResourcesRequest is PUT /api/v1/databases/{name}/resources's
@@ -368,13 +396,7 @@ func (rt *Router) handleSetDatabaseResources(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	updated, err := rt.databases.GetDesiredDatabase(r.Context(), name)
-	if err != nil {
-		rt.logger.Error("api: set database resources: reload after update failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	writeJSON(w, http.StatusOK, toDatabaseResource(*updated))
+	rt.reloadAndWriteDatabase(w, r, name, "set database resources")
 }
 
 // handleDatabaseStatus handles GET /api/v1/databases/{name}/status: the

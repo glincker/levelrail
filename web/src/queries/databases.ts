@@ -11,6 +11,7 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import type {
+  DatabaseListEntry,
   DatabaseResource,
   ServiceResources,
 } from '../types/databaseDetail'
@@ -26,10 +27,9 @@ export const databaseKeys = {
 
 // Fetches every database from the control plane API. GET
 // /api/v1/databases (internal/api/databases.go's handleListDatabases)
-// returns a bare array of the same databaseResource shape the detail
-// endpoint returns, no cursor and no separate summary projection, so
-// this is the one list fetcher, matching fetchApps's own reasoning.
-export async function fetchDatabases(): Promise<DatabaseResource[]> {
+// returns databaseListResource, databaseResource plus a batched status
+// summary, no cursor, matching fetchApps's own reasoning.
+export async function fetchDatabases(): Promise<DatabaseListEntry[]> {
   const res = await fetch('/api/v1/databases')
   if (!res.ok) {
     throw new ApiError(
@@ -37,7 +37,7 @@ export async function fetchDatabases(): Promise<DatabaseResource[]> {
       await readErrorMessage(res, `fetch databases failed: ${res.status}`),
     )
   }
-  return (await res.json()) as DatabaseResource[]
+  return (await res.json()) as DatabaseListEntry[]
 }
 
 // Shared options object between the route loader's
