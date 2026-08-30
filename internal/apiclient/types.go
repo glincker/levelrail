@@ -329,6 +329,50 @@ type DatabaseResource struct {
 	Engine  string `json:"engine"`
 	Version string `json:"version"`
 	NodeID  string `json:"node_id,omitempty"`
+	// Resources, PubliclyAccessible, PublicPort, and the Backup* fields
+	// are set through their own dedicated routes (SetDatabaseResources,
+	// SetDatabasePublicAccess, SetBackupSchedule), never through this
+	// resource's own create/update body; see internal/api's
+	// databaseResource for the identical boundary server-side.
+	Resources          *ServiceResources `json:"resources,omitempty"`
+	PubliclyAccessible bool              `json:"publicly_accessible,omitempty"`
+	PublicPort         int               `json:"public_port,omitempty"`
+	BackupTargetID     string            `json:"backup_target_id,omitempty"`
+	BackupSchedule     string            `json:"backup_schedule,omitempty"`
+	BackupRetain       int               `json:"backup_retain,omitempty"`
+	BackupRetainDays   int               `json:"backup_retain_days,omitempty"`
+}
+
+// DatabaseEngineResource mirrors internal/api's databaseEngineResource
+// (internal/api/database_engines.go): one entry from
+// GET /api/v1/database-engines, the dynamic registry backing the
+// creation wizard's engine picker.
+type DatabaseEngineResource struct {
+	ID             string `json:"id"`
+	Label          string `json:"label"`
+	DefaultVersion string `json:"default_version"`
+}
+
+// SetDatabaseResourcesRequest mirrors internal/api's
+// setDatabaseResourcesRequest.
+type SetDatabaseResourcesRequest struct {
+	Resources *ServiceResources `json:"resources"`
+}
+
+// DatabasePublicAccessResource mirrors internal/api's
+// databasePublicAccessResource (internal/api/database_public_access.go):
+// PUT/DELETE .../public-access only ever touch these three fields.
+type DatabasePublicAccessResource struct {
+	DatabaseName       string `json:"database_name"`
+	PubliclyAccessible bool   `json:"publicly_accessible"`
+	PublicPort         int    `json:"public_port,omitempty"`
+}
+
+// SetDatabasePublicAccessRequest mirrors internal/api's
+// setDatabasePublicAccessRequest. Port 0 means auto-assign the next
+// free port.
+type SetDatabasePublicAccessRequest struct {
+	Port int `json:"port,omitempty"`
 }
 
 // ServiceTemplateListItem mirrors internal/api's serviceTemplateListItem

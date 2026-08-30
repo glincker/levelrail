@@ -197,6 +197,29 @@ func (p *wizardPrompter) readInt(prompt string) (int, error) {
 	}
 }
 
+// readOptionalInt is readInt with a default for a blank answer instead of
+// requiring a positive value: blank means def (used by the databases
+// wizard's backup retain/retain-days prompts, where 0 means "no limit",
+// the same convention backups schedule set's own --retain/--retain-days
+// flags already use).
+func (p *wizardPrompter) readOptionalInt(prompt string, def int) (int, error) {
+	for {
+		v, err := p.readLine(prompt)
+		if err != nil {
+			return 0, err
+		}
+		if v == "" {
+			return def, nil
+		}
+		n, convErr := strconv.Atoi(v)
+		if convErr != nil || n < 0 {
+			_, _ = fmt.Fprintln(p.stderr, "enter a non-negative whole number, or press enter to skip")
+			continue
+		}
+		return n, nil
+	}
+}
+
 // readChoice loops until v (or def, when v is blank) case-insensitively
 // matches one of options, returning the matched option in its
 // canonical casing.

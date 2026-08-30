@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"os"
 )
 
 // runDatabases dispatches "databases <verb> [flags]" to one of
@@ -20,7 +21,7 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		_, _ = fmt.Fprint(stdout, databasesUsage(prog))
 		return exitOK
 	case "create":
-		return runDatabasesCreate(prog, args[1:], stdout, stderr, lookupEnv)
+		return runDatabasesCreate(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "list":
 		return runDatabasesList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "get":
@@ -35,6 +36,7 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 func databasesUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s databases create [flags]     create a managed database
+  %[1]s databases create --interactive  guided, step-by-step creation
   %[1]s databases list [flags]         list databases
   %[1]s databases get <name> [flags]   show one database
 
