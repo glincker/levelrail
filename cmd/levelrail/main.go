@@ -851,8 +851,47 @@ func telemetryTargets(db *store.DB, runtime docker.Runtime) func(context.Context
 				})
 			}
 		}
+
+		dbTargets, err := databaseTelemetryTargets(ctx, db, runtime)
+		if err != nil {
+			return nil, err
+		}
+		targets = append(targets, dbTargets...)
 		return targets, nil
 	}
+}
+
+// databaseTelemetryTargets lists every managed database's currently
+// running container as a collection target, the database-kind
+// counterpart to telemetryTargets' service loop above. Uses
+// InspectByName rather than ListByPrefix: unlike an application
+// container (which carries an image-hash suffix for blue-green, see
+// internal/reconcile/database's containerName doc comment on why
+// databases don't), a database's container name is the single
+// deterministic "db-" + name with no suffix, so an exact lookup is both
+// correct and avoids ListByPrefix("db-foo") also matching a differently
+// named "db-foobar" container.
+func databaseTelemetryTargets(ctx context.Context, db *store.DB, runtime docker.Runtime) ([]telemetry.Target, error) {
+	databases, err := db.ListDesiredDatabases(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list desired databases: %w", err)
+	}
+
+	var targets []telemetry.Target
+	for _, d := range databases {
+		cs, err := runtime.InspectByName(ctx, "db-"+d.Name)
+		if err != nil {
+			return nil, fmt.Errorf("inspect container for database %s: %w", d.Name, err)
+		}
+		if cs == nil || !cs.Running {
+			continue
+		}
+		targets = append(targets, telemetry.Target{
+			ResourceID:  "database:" + d.Name,
+			ContainerID: cs.ID,
+		})
+	}
+	return targets, nil
 }
 
 // logTargets lists every desired service's currently running container(s)
@@ -887,8 +926,40 @@ func logTargets(db *store.DB, runtime docker.Runtime) func(context.Context) ([]t
 				})
 			}
 		}
+
+		dbTargets, err := databaseLogTargets(ctx, db, runtime)
+		if err != nil {
+			return nil, err
+		}
+		targets = append(targets, dbTargets...)
 		return targets, nil
 	}
+}
+
+// databaseLogTargets is logTargets' database-kind counterpart, the same
+// InspectByName-not-ListByPrefix reasoning databaseTelemetryTargets'
+// own doc comment explains.
+func databaseLogTargets(ctx context.Context, db *store.DB, runtime docker.Runtime) ([]telemetry.LogTarget, error) {
+	databases, err := db.ListDesiredDatabases(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list desired databases: %w", err)
+	}
+
+	var targets []telemetry.LogTarget
+	for _, d := range databases {
+		cs, err := runtime.InspectByName(ctx, "db-"+d.Name)
+		if err != nil {
+			return nil, fmt.Errorf("inspect container for database %s: %w", d.Name, err)
+		}
+		if cs == nil || !cs.Running {
+			continue
+		}
+		targets = append(targets, telemetry.LogTarget{
+			ResourceID:  "database:" + d.Name,
+			ContainerID: cs.ID,
+		})
+	}
+	return targets, nil
 }
 
 // drainTargets adapts every desired service's configured, enabled log

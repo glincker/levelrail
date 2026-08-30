@@ -53,6 +53,9 @@ func TestDatabaseRoutes_RequireAuth(t *testing.T) {
 		{http.MethodGet, "/api/v1/databases/main/status"},
 		{http.MethodPut, "/api/v1/databases/main/node"},
 		{http.MethodPut, "/api/v1/databases/main/resources"},
+		{http.MethodGet, "/api/v1/databases/main/metrics"},
+		{http.MethodGet, "/api/v1/databases/main/logs"},
+		{http.MethodGet, "/api/v1/databases/main/logs/stream"},
 	}
 	for _, r := range routes {
 		t.Run(r.method+" "+r.target, func(t *testing.T) {

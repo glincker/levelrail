@@ -1297,6 +1297,16 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("DELETE /api/v1/databases/{name}", rt.requireAbility(AbilityWrite, rt.handleDeleteDatabase))
 	mux.HandleFunc("GET /api/v1/databases/{name}/status", rt.requireAbility(AbilityRead, rt.handleDatabaseStatus))
 
+	// Telemetry query, the database counterpart to
+	// GET /apps/{name}/metrics, /logs, /logs/stream above: same
+	// TelemetryQuerier/logBroadcaster gating (501 when unconfigured), see
+	// database_metrics.go/database_logs.go for why these are near-
+	// duplicates of the app handlers rather than a shared parameterized
+	// one.
+	mux.HandleFunc("GET /api/v1/databases/{name}/metrics", rt.requireAbility(AbilityRead, rt.handleQueryDatabaseMetrics))
+	mux.HandleFunc("GET /api/v1/databases/{name}/logs", rt.requireAbility(AbilityRead, rt.handleQueryDatabaseLogs))
+	mux.HandleFunc("GET /api/v1/databases/{name}/logs/stream", rt.requireAbility(AbilityRead, rt.handleLiveDatabaseLogStream))
+
 	// Placement (TASKS.md 3.3), the database counterpart to
 	// PUT /apps/{name}/node above: same AbilityRoot gating.
 	mux.HandleFunc("PUT /api/v1/databases/{name}/node", rt.requireAbility(AbilityRoot, rt.handleSetDatabaseNode))

@@ -81,11 +81,13 @@ type nodeMetricsResponse struct {
 // internal/agent/agentpb, and internal/docker.ContainerStats (stats.go)
 // is entirely per-container by design; adding true host-level
 // monitoring is real, separate agent-side work, out of scope here.
-// Databases are excluded from the sum for the same reason they're
-// absent from the per-app dashboard: cmd/levelrail's telemetryTargets
-// only ever collects desired *services*' containers, never databases',
-// so there is nothing collected yet to sum for them either, a
-// pre-existing gap this endpoint doesn't attempt to close.
+// Databases are collected now (cmd/levelrail's telemetryTargets, see
+// database_metrics.go for the per-database query endpoint) but are still
+// excluded from this sum: the loop below resolves placed resources via
+// ListDesiredServicesByNode, services only, so a database placed on this
+// node contributes nothing to the node-level total. Folding it in is a
+// real, separate change (a second ListDesiredDatabasesByNode loop plus
+// resourceIDForDatabase lookups), not attempted here.
 func (rt *Router) handleQueryNodeMetrics(w http.ResponseWriter, r *http.Request) {
 	if rt.telemetry == nil {
 		writeError(w, http.StatusNotImplemented, "telemetry is not configured on this control plane")
