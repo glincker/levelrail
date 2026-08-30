@@ -704,75 +704,67 @@ func TestHandleUpdateApp(t *testing.T) {
 
 // TestHandleUpdateApp_ResourcesAppliedLive covers the live-resource-
 // update fast path (docs/roadmap.md's "Live, in-place resource-limit
-// application without a restart"): saving new resource limits against
-// an app with a running container must push them onto that container
-// immediately via UpdateResources, and report resources_applied_live
-// true in the response, not just persist desired state and wait for a
-// restart.
+// application without a restart"): saving new resource limits pushes
+// them onto a running container immediately via UpdateResources and
+// reports resources_applied_live true, but falls back to false (still
+// saving successfully) when there's no running container to push onto,
+// docs/roadmap.md's own "In progress" wording for that fallback case.
 func TestHandleUpdateApp_ResourcesAppliedLive(t *testing.T) {
-	fake := &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "c1", Running: true}}
-	rt, db := newTestRouterWithExecRuntime(t, fake)
-	cookie := loginTestSession(t, rt, db)
+	const update = `{"name":"web","image":"levelrail/web:1","port":3000,"resources":{"memory_bytes":268435456}}`
 
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	t.Run("running container", func(t *testing.T) {
+		fake := &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "c1", Running: true}}
+		rt, db := newTestRouterWithExecRuntime(t, fake)
+		cookie := loginTestSession(t, rt, db)
+		if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+			t.Fatalf("seed: %v", err)
+		}
 
-	update := `{"name":"web","image":"levelrail/web:1","port":3000,"resources":{"memory_bytes":268435456}}`
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", update))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", update))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+		}
+		var resp appResource
+		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("decode response: %v", err)
+		}
+		if !resp.ResourcesAppliedLive {
+			t.Error("resources_applied_live = false, want true: a running container should get the update immediately")
+		}
+		if fake.updateResourcesCalls != 1 || fake.updateResourcesID != "c1" {
+			t.Errorf("updateResourcesCalls=%d updateResourcesID=%q, want 1/c1", fake.updateResourcesCalls, fake.updateResourcesID)
+		}
+	})
 
-	var resp appResource
-	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
-	if !resp.ResourcesAppliedLive {
-		t.Error("resources_applied_live = false, want true: a running container should get the update immediately")
-	}
-	if fake.updateResourcesCalls != 1 || fake.updateResourcesID != "c1" {
-		t.Errorf("updateResourcesCalls=%d updateResourcesID=%q, want 1/c1", fake.updateResourcesCalls, fake.updateResourcesID)
-	}
-}
+	t.Run("no running container", func(t *testing.T) {
+		rt, db := newTestRouter(t) // no WithExecRuntime configured
+		cookie := loginTestSession(t, rt, db)
+		if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+			t.Fatalf("seed: %v", err)
+		}
 
-// TestHandleUpdateApp_ResourcesNotAppliedLiveWithoutRunningContainer
-// covers the case docs/roadmap.md's own "In progress" wording already
-// describes as unchanged: no running container yet means nothing to
-// push the update onto, so resources_applied_live must be false, and
-// the save itself must still succeed (falling back to the existing
-// apply-on-next-deploy behavior, not treated as an error).
-func TestHandleUpdateApp_ResourcesNotAppliedLiveWithoutRunningContainer(t *testing.T) {
-	rt, db := newTestRouter(t) // no WithExecRuntime configured
-	cookie := loginTestSession(t, rt, db)
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", update))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+		}
+		var resp appResource
+		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("decode response: %v", err)
+		}
+		if resp.ResourcesAppliedLive {
+			t.Error("resources_applied_live = true with no runtime resolver configured, want false")
+		}
 
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
-
-	update := `{"name":"web","image":"levelrail/web:1","port":3000,"resources":{"memory_bytes":268435456}}`
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", update))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
-
-	var resp appResource
-	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
-	if resp.ResourcesAppliedLive {
-		t.Error("resources_applied_live = true with no runtime resolver configured, want false")
-	}
-
-	svc, err := db.GetDesiredService(context.Background(), "web")
-	if err != nil {
-		t.Fatalf("GetDesiredService after update: %v", err)
-	}
-	if svc.Resources == nil || svc.Resources.MemoryBytes != 268435456 {
-		t.Errorf("saved resources = %+v, want MemoryBytes 268435456", svc.Resources)
-	}
+		svc, err := db.GetDesiredService(context.Background(), "web")
+		if err != nil {
+			t.Fatalf("GetDesiredService after update: %v", err)
+		}
+		if svc.Resources == nil || svc.Resources.MemoryBytes != 268435456 {
+			t.Errorf("saved resources = %+v, want MemoryBytes 268435456", svc.Resources)
+		}
+	})
 }
 
 func TestHandleDeleteApp(t *testing.T) {
