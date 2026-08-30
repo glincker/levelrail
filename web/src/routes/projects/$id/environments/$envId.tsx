@@ -11,9 +11,11 @@ import {
   environmentListQueryOptions,
   useEnvironments,
 } from '../../../../queries/environments'
+import { environmentEnvQueryOptions } from '../../../../queries/environmentEnv'
 import { appListQueryOptions } from '../../../../queries/apps'
 import { Breadcrumbs } from '../../../../components/Breadcrumbs'
 import { DeleteEnvironmentDialog } from '../../../../components/DeleteEnvironmentDialog'
+import { EnvironmentEnvEditor } from '../../../../components/EnvironmentEnvEditor'
 import { AppRow } from '../../../../components/AppRow'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -27,11 +29,18 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 // client-side, the same shape routes/projects/$id.tsx already uses for
 // apps/databases filtered out of their own unfiltered lists.
 export const Route = createFileRoute('/projects/$id/environments/$envId')({
-  loader: ({ context: { queryClient }, params: { id } }) =>
+  loader: ({ context: { queryClient }, params: { id, envId } }) =>
     Promise.all([
       queryClient.ensureQueryData(projectDetailQueryOptions(id)),
       queryClient.ensureQueryData(environmentListQueryOptions(id)),
       queryClient.ensureQueryData(appListQueryOptions()),
+      // A stale/mistyped envId 404s here; caught rather than propagated,
+      // since EnvironmentEnvEditor only renders once the component's own
+      // client-side existence check (this file's own doc comment) has
+      // already passed, and that path should get the friendlier
+      // "Environment not found" message below, not this route's generic
+      // error page.
+      queryClient.ensureQueryData(environmentEnvQueryOptions(envId)).catch(() => undefined),
     ]),
   component: EnvironmentDetailPage,
   errorComponent: EnvironmentDetailError,
@@ -91,6 +100,8 @@ function EnvironmentDetailPage() {
           />
         </div>
       </div>
+
+      <EnvironmentEnvEditor environmentId={envId} />
 
       {siblingEnvironments.length > 0 ? (
         <div className="flex flex-wrap items-center gap-2">

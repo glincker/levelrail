@@ -21,6 +21,8 @@ func TestEnvironmentsRoutes_RequireAuth(t *testing.T) {
 		{http.MethodPost, "/api/v1/projects/proj_1/environments"},
 		{http.MethodDelete, "/api/v1/environments/env_1"},
 		{http.MethodPut, "/api/v1/apps/web/environment"},
+		{http.MethodGet, "/api/v1/environments/env_1/env"},
+		{http.MethodPut, "/api/v1/environments/env_1/env"},
 	}
 	for _, r := range routes {
 		t.Run(r.method+" "+r.target, func(t *testing.T) {

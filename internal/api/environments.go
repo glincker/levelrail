@@ -134,13 +134,7 @@ func (rt *Router) handleSetAppEnvironment(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	svc, err := rt.apps.GetDesiredService(r.Context(), name)
-	if err != nil {
-		rt.logger.Error("api: reload app after environment assignment failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	writeJSON(w, http.StatusOK, toAppResource(*svc))
+	rt.reloadAndWriteApp(w, r, name, "set app environment")
 }
 
 // randomEnvironmentID mirrors randomProjectID exactly.
@@ -159,4 +153,12 @@ type EnvironmentStore interface {
 	ListEnvironmentsByProject(ctx context.Context, projectID string) ([]store.Environment, error)
 	DeleteEnvironment(ctx context.Context, id string) error
 	SetServiceEnvironment(ctx context.Context, serviceName, envID string) error
+	// SetEnvironmentEnvVars/ListEnvironmentEnvVars back GET/PUT
+	// /api/v1/environments/{id}/env (environment_env.go): shared env vars
+	// every service tagged with this environment inherits, sitting
+	// between ProjectStore's own project_env_vars tier and a service's
+	// own env (internal/reconcile/application's resolveEnv), full-replace
+	// on write, mirroring SetOrganizationEnvVars/ListOrganizationEnvVars.
+	SetEnvironmentEnvVars(ctx context.Context, environmentID string, vars map[string]string) error
+	ListEnvironmentEnvVars(ctx context.Context, environmentID string) (map[string]string, error)
 }
