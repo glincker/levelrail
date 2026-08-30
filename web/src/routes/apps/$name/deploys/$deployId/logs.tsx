@@ -132,6 +132,7 @@ function DeployLogsPage() {
                     noBuildStep ? NO_BUILD_STEP_MESSAGE : undefined
                   }
                   emptyStatePulse={!noBuildStep}
+                  isFinished={attempt.status !== 'running'}
                 />
               </div>
             </DeploySection>
