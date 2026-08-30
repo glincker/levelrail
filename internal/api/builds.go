@@ -163,22 +163,38 @@ type triggerBuildResponse struct {
 	ID string `json:"id,omitempty"`
 }
 
-// isGitHubHTTPSRepoURL reports whether repoURL is an https://github.com
-// remote: the only shape a GitHub App installation token can
-// authenticate a clone against.
-func isGitHubHTTPSRepoURL(repoURL string) bool {
+// isGitHubHTTPSRepoURL reports whether repoURL is an https remote on
+// instanceHost: the only shape a GitHub App installation token can
+// authenticate a clone against. instanceHost is github.com for the
+// public GitHub App, or a GitHub Enterprise Server host for a
+// self-hosted connection (store.GitHubAppConnection.InstanceURL).
+func isGitHubHTTPSRepoURL(repoURL, instanceHost string) bool {
 	u, err := url.Parse(repoURL)
-	return err == nil && u.Scheme == "https" && u.Host == "github.com"
+	return err == nil && u.Scheme == "https" && u.Host == instanceHost
 }
 
 // tokenForRepo mints a GitHub App installation token for repoURL when
 // possible, falling back to an empty (unauthenticated) token for any
 // other host or a minting failure: the plain public-repo clone path must
-// keep working regardless.
+// keep working regardless. Checks the connected instance's own host
+// (GHE or github.com) rather than assuming github.com, so a private
+// repo on a GitHub Enterprise Server installation authenticates too.
 func (rt *Router) tokenForRepo(ctx context.Context, repoURL string) string {
-	if !isGitHubHTTPSRepoURL(repoURL) || rt.githubAppSecrets == nil {
+	if rt.githubAppSecrets == nil {
 		return ""
 	}
+	conn, err := rt.githubApp.GetGitHubAppConnection(ctx)
+	if err != nil {
+		return ""
+	}
+	instanceHost := "github.com"
+	if u, parseErr := url.Parse(conn.InstanceURL); parseErr == nil && u.Host != "" {
+		instanceHost = u.Host
+	}
+	if !isGitHubHTTPSRepoURL(repoURL, instanceHost) {
+		return ""
+	}
+
 	_, token, err := rt.mintGitHubAppInstallationToken(ctx)
 	if err != nil {
 		if !errors.Is(err, errGitHubAppNotConnected) && !errors.Is(err, errGitHubAppNotInstalled) {
