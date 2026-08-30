@@ -161,10 +161,8 @@ export function LogSearchPanel({ appName }: { appName: string }) {
             resourceKind="app"
             query={debouncedQuery}
             rangeKey={rangeKey}
-            onClearFilters={() => {
-              setQuery('')
-              setRangeKey('7d')
-            }}
+            setQuery={setQuery}
+            setRangeKey={setRangeKey}
           />
         ) : (
           <>

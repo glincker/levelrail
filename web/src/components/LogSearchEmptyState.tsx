@@ -14,14 +14,21 @@ export function LogSearchEmptyState({
   resourceKind,
   query,
   rangeKey,
-  onClearFilters,
+  setQuery,
+  setRangeKey,
 }: {
   resourceKind: 'app' | 'database'
   query: string
   rangeKey: TimeRangeKey
-  onClearFilters: () => void
+  setQuery: (value: string) => void
+  setRangeKey: (value: TimeRangeKey) => void
 }) {
   const canBroaden = query.trim() !== '' || rangeKey !== WIDEST_RANGE_KEY
+
+  function clearFilters() {
+    setQuery('')
+    setRangeKey(WIDEST_RANGE_KEY)
+  }
 
   return (
     <EmptyState
@@ -35,7 +42,7 @@ export function LogSearchEmptyState({
       }
       action={
         canBroaden ? (
-          <Button size="sm" variant="outline" onClick={onClearFilters}>
+          <Button size="sm" variant="outline" onClick={clearFilters}>
             Clear filters
           </Button>
         ) : undefined

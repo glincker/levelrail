@@ -147,10 +147,8 @@ export function DatabaseLogSearchPanel({
             resourceKind="database"
             query={debouncedQuery}
             rangeKey={rangeKey}
-            onClearFilters={() => {
-              setQuery('')
-              setRangeKey('7d')
-            }}
+            setQuery={setQuery}
+            setRangeKey={setRangeKey}
           />
         ) : (
           <>
