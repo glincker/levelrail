@@ -12,9 +12,11 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { AbilitiesField } from './AbilitiesField'
+import { RoleSelect } from './RoleSelect'
 import { toast } from './ui/toast'
 import { useUpdateUserAbilities } from '../queries/users'
 import type { UserResource } from '../queries/users'
+import { useRoles, roleForAbilities } from '../queries/roles'
 import type { Ability } from '../types/token'
 
 // PUT /api/v1/users/{id}/abilities: AbilityRoot-gated, and refuses
@@ -28,6 +30,7 @@ export function EditUserAbilitiesDialog({ user }: { user: UserResource }) {
   const [open, setOpen] = useState(false)
   const [abilities, setAbilities] = useState<Ability[]>(user.abilities)
   const updateAbilities = useUpdateUserAbilities()
+  const { data: roles } = useRoles()
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -39,8 +42,12 @@ export function EditUserAbilitiesDialog({ user }: { user: UserResource }) {
   }
 
   function handleSave() {
+    const matchedRole = roleForAbilities(roles, abilities)
     updateAbilities.mutate(
-      { id: user.id, abilities },
+      {
+        id: user.id,
+        ...(matchedRole ? { role: matchedRole.name } : { abilities }),
+      },
       {
         onSuccess: () => {
           setOpen(false)
@@ -67,7 +74,10 @@ export function EditUserAbilitiesDialog({ user }: { user: UserResource }) {
           </DialogDescription>
         </DialogHeader>
 
-        <AbilitiesField value={abilities} onChange={setAbilities} />
+        <div className="space-y-4">
+          <RoleSelect roles={roles} abilities={abilities} onChange={setAbilities} />
+          <AbilitiesField value={abilities} onChange={setAbilities} />
+        </div>
 
         {updateAbilities.isError ? (
           <Alert variant="destructive">

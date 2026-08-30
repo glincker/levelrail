@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/table'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import type { VariantProps } from 'class-variance-authority'
+import { EmptyState } from '@/components/ui/empty-state'
 import { CreateAlertRuleDialog } from './CreateAlertRuleDialog'
 import { DeleteAlertRuleDialog } from './DeleteAlertRuleDialog'
 import { useAlertRules } from '../queries/alerts'
@@ -266,10 +267,12 @@ export function AlertRulesPanel({ appName }: { appName: string }) {
         ) : error ? (
           <p className="text-sm text-destructive">{error.message}</p>
         ) : rules.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No alert rules yet. Create one to get notified on a metric threshold
-            or a crashloop.
-          </p>
+          <EmptyState
+            icon={<BellRingingIcon className="size-5" />}
+            title="No alert rules yet"
+            description="Get notified the moment a metric crosses a threshold or a container starts crashlooping, via webhook, Slack, or Discord."
+            action={<CreateAlertRuleDialog appName={appName} />}
+          />
         ) : (
           <div className="rounded-lg border border-border">
             <Table>

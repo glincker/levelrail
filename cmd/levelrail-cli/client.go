@@ -72,6 +72,11 @@ type (
 	environmentResource           = apiclient.EnvironmentResource
 	createEnvironmentRequest      = apiclient.CreateEnvironmentRequest
 	setAppEnvironmentRequest      = apiclient.SetAppEnvironmentRequest
+
+	userResource               = apiclient.UserResource
+	createUserRequest          = apiclient.CreateUserRequest
+	updateUserAbilitiesRequest = apiclient.UpdateUserAbilitiesRequest
+	roleResource               = apiclient.RoleResource
 )
 
 // NewClient builds a Client. See apiclient.NewClient.

@@ -10,15 +10,11 @@
 // (flyctl launch, railway up, vercel):
 //
 //   - Every required input has a flag. Supplying all of them skips every
-//     prompt; this first pass does not implement an interactive fallback
-//     at all (see apps_create.go's own doc comment on why that's scoped
-//     out), so a missing required flag is always reported as an
-//     immediate, actionable error rather than a hang on stdin. That is
-//     stricter than the competitive pattern, not a shortcut around it:
-//     it is exactly what makes this safe to drive from CI or an agent
-//     with no TTY at all, the specific failure mode noted about
-//     Railway's own CLI having to retrofit non-interactive support under
-//     pressure.
+//     prompt, so a missing required flag is reported as an immediate,
+//     actionable error rather than a hang on stdin: safe to drive from
+//     CI or an agent with no TTY at all. "apps create --interactive" is
+//     the one deliberate exception, a step-by-step wizard for a human
+//     at a real terminal (see apps_create_interactive.go).
 //   - --json switches every command's stdout to a single parseable JSON
 //     value (the result, or {"error": "..."} on failure) and nothing
 //     else; diagnostics always go to stderr, in both modes.
@@ -80,6 +76,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runChannels(prog, args[1:], stdout, stderr, lookupEnv)
 	case "nodes":
 		return runNodes(prog, args[1:], stdout, stderr, lookupEnv)
+	case "users":
+		return runUsers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "migrate":
 		return runMigrate(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -114,6 +112,7 @@ Usage:
   %[1]s nodes list|get|delete [flags]                        manage nodes
   %[1]s nodes join-token [flags]                             mint a one-time node enrollment token
   %[1]s nodes cordon|uncordon|drain|health|workloads <id> [flags]   node scheduling and maintenance
+  %[1]s users list|create|set-abilities|delete|roles [flags]   manage users and their abilities, directly or via a curated role
   %[1]s auth login [flags]             authenticate and persist a new API token
   %[1]s auth whoami [flags]           show who the current token authenticates as
   %[1]s tokens create|list|revoke [flags]   manage API tokens (requires a live session, see "%[1]s tokens -h")

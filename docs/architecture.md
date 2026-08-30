@@ -155,7 +155,3 @@ worth naming plainly rather than leaving implicit:
   Ingress defaults to an internal, self-signed issuer; a real Caddy
   ACME issuer, settings toggle, and form validation are built and
   wired end to end, but only unit-tested at the config level so far.
-- Named roles. Teams aren't a hard gap: multi-user accounts, per-user
-  scoped abilities, and a full audit log are all real. What's missing
-  is a curated small role set (e.g. "operator"/"viewer") as a
-  convenience layer over hand-picking an ability list per user.

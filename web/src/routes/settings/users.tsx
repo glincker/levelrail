@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { UsersIcon } from '@phosphor-icons/react/dist/ssr'
 import { userListQueryOptions } from '../../queries/users'
+import { roleListQueryOptions } from '../../queries/roles'
 import { UserTable } from '../../components/UserTable'
 import { CreateUserDialog } from '../../components/CreateUserDialog'
 import { useAuthUsername } from '../../hooks/useAuthUsername'
@@ -9,10 +10,15 @@ import { useAuthUsername } from '../../hooks/useAuthUsername'
 // AbilityRead-gated (GET /api/v1/users): who has access to this control
 // plane. Abilities are now per-user (internal/api/users.go's own doc
 // comment), shown and edited per row by UserTable, not implied by being
-// signed in.
+// signed in. Roles (GET /api/v1/roles) are preloaded here too, so
+// CreateUserDialog/EditUserAbilitiesDialog's RoleSelect can read them via
+// useSuspenseQuery without a second loading state of their own.
 export const Route = createFileRoute('/settings/users')({
   loader: ({ context: { queryClient } }) =>
-    queryClient.ensureQueryData(userListQueryOptions()),
+    Promise.all([
+      queryClient.ensureQueryData(userListQueryOptions()),
+      queryClient.ensureQueryData(roleListQueryOptions()),
+    ]),
   component: UsersSettingsPage,
 })
 
