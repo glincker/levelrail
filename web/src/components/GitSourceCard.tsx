@@ -8,6 +8,7 @@ import {
   TrashIcon,
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,7 +16,6 @@ import {
   Field,
   FieldDescription,
   FieldError,
-  FieldHint,
   FieldLabel,
 } from '@/components/ui/field'
 import {
@@ -29,10 +29,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from '@/components/ui/toast'
 import { BrandIcon, type BrandIconName } from '@/components/BrandIcon'
 import {
+  gitSourceKeys,
+  setGitSource,
   useDeleteGitSource,
   useGitSource,
-  useSetGitSource,
 } from '../queries/gitSources'
+import { connectGitHubRepoAsSource } from '../queries/githubApp'
+import { connectGitLabProjectAsSource } from '../queries/gitlabApp'
+import { connectBitbucketRepoAsSource } from '../queries/bitbucketApp'
+import { GitRepoSourcePicker, type GitRepoSourceValue } from './GitRepoSourcePicker'
 import { ApiError } from '../lib/apiError'
 import type { AppDetail } from '../types/appDetail'
 import type { GitSourceBuild, GitSourceBuildType, GitSourceResource } from '../types/gitSource'
@@ -47,8 +52,16 @@ import type { GitSourceBuild, GitSourceBuildType, GitSourceResource } from '../t
 // AddNodeDialog.tsx's "mint a secret, show it exactly once" pattern for
 // the generated webhook secret specifically: it never comes back from
 // GET (gitSourceResource's own doc comment, internal/api/git_sources.go),
-// so this component's only chance to show it is the PUT response the
+// so this component's only chance to show it is the connect response the
 // instant a repo is first connected.
+//
+// Repo/branch selection is GitRepoSourcePicker (also used by
+// CreateAppFromGitFields.tsx's app-creation wizard, see docs-local/
+// research/git-provider-connect-ux-unification-proposal.md section 4):
+// this card no longer hand-rolls its own URL/branch inputs, so picking a
+// connected GitHub/GitLab/Bitbucket repo here registers a push webhook
+// automatically the same way the wizard does, instead of only ever
+// producing a manual, paste-the-webhook-by-hand connection.
 const BUILD_PACKS: { value: GitSourceBuildType; label: string }[] = [
   { value: 'railpack', label: 'Auto-detect (Railpack)' },
   { value: 'dockerfile', label: 'Dockerfile' },
@@ -84,6 +97,11 @@ interface FormState {
   buildType: GitSourceBuildType
   buildPath: string
   token: string
+  // Set only by a fresh GitRepoSourcePicker pick from a connected
+  // provider row, cleared on every startEdit/cancelEdit: see
+  // connectGitSource's own doc comment for how this decides which
+  // endpoint submit() calls.
+  providerRef?: GitRepoSourceValue['providerRef']
   additionalServices: AdditionalServiceRow[]
 }
 
@@ -91,7 +109,15 @@ interface FormState {
 // build configuration at all beyond picking their language, so a blank
 // connect form should not default to the manual Dockerfile path.
 function emptyForm(): FormState {
-  return { repoUrl: '', branch: '', buildType: 'railpack', buildPath: '', token: '', additionalServices: [] }
+  return {
+    repoUrl: '',
+    branch: '',
+    buildType: 'railpack',
+    buildPath: '',
+    token: '',
+    providerRef: undefined,
+    additionalServices: [],
+  }
 }
 
 function formFromResource(g: GitSourceResource): FormState {
@@ -101,6 +127,7 @@ function formFromResource(g: GitSourceResource): FormState {
     buildType: g.build_type,
     buildPath: g.build_path ?? '',
     token: '',
+    providerRef: undefined,
     additionalServices: Object.entries(g.additional_services ?? {}).map(([serviceName, build]) => ({
       serviceName,
       buildType: build.build_type,
@@ -131,19 +158,90 @@ function additionalServicesPayload(rows: AdditionalServiceRow[]): Record<string,
   return entries.length > 0 ? Object.fromEntries(entries) : undefined
 }
 
+interface ConnectGitSourceResult {
+  resource: GitSourceResource
+  autoRegistered: boolean
+  webhookError?: string
+}
+
+// connectGitSource mirrors CreateAppFromGitFields.tsx's own
+// connectGitSourceFor: a fresh provider pick (form.providerRef) uses that
+// provider's use-as-source endpoint, which registers a push webhook
+// automatically, otherwise it falls back to the generic PUT
+// .../git-source endpoint this card always used before. A provider pick
+// combined with additional services also falls back: none of the three
+// use-as-source endpoints accept additional_services (only the generic
+// endpoint does), so a monorepo fan-out connect always takes the manual
+// path, trading away auto webhook registration for that one case.
+async function connectGitSource(
+  appName: string,
+  form: FormState,
+): Promise<ConnectGitSourceResult> {
+  const branch = form.branch.trim() || undefined
+  const buildPath = form.buildPath.trim() || undefined
+  const additionalServices = additionalServicesPayload(form.additionalServices)
+
+  if (form.providerRef && !additionalServices) {
+    if (form.providerRef.kind === 'github') {
+      const { webhook_registered: autoRegistered, webhook_error: webhookError, ...resource } =
+        await connectGitHubRepoAsSource(form.providerRef.owner, form.providerRef.repo, {
+          app_name: appName,
+          branch,
+          build_type: form.buildType,
+          build_path: buildPath,
+        })
+      return { resource, autoRegistered, webhookError }
+    }
+    if (form.providerRef.kind === 'gitlab') {
+      const resource = await connectGitLabProjectAsSource(form.providerRef.projectId, {
+        app_name: appName,
+        branch,
+        build_type: form.buildType,
+        build_path: buildPath,
+      })
+      return { resource, autoRegistered: true }
+    }
+    const resource = await connectBitbucketRepoAsSource(
+      form.providerRef.workspace,
+      form.providerRef.repoSlug,
+      { app_name: appName, branch, build_type: form.buildType, build_path: buildPath },
+    )
+    return { resource, autoRegistered: true }
+  }
+
+  const resource = await setGitSource(appName, {
+    repo_url: form.repoUrl.trim(),
+    branch,
+    build_type: form.buildType,
+    build_path: buildPath,
+    token: form.token.trim() || undefined,
+    additional_services: additionalServices,
+  })
+  return { resource, autoRegistered: false }
+}
+
 export function GitSourceCard({ app }: { app: AppDetail }) {
   const query = useGitSource(app.name)
-  const setGitSource = useSetGitSource(app.name)
+  const queryClient = useQueryClient()
+  const connectMutation = useMutation({
+    mutationFn: ({ appName, form }: { appName: string; form: FormState }) =>
+      connectGitSource(appName, form),
+    onSuccess: (result) => {
+      queryClient.setQueryData(gitSourceKeys.detail(app.name), result.resource)
+    },
+  })
   const deleteGitSource = useDeleteGitSource(app.name)
 
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState<FormState>(emptyForm)
   // The one and only place the generated webhook secret is ever held:
-  // set from setGitSource's own mutation response (only present on the
-  // create path, gitSourceResource's own doc comment), cleared the
-  // moment this card unmounts a connect/edit form. Never re-derived from
-  // query.data, which never carries it.
+  // set from connectGitSource's own result (only present on the create
+  // path, gitSourceResource's own doc comment), cleared the moment this
+  // card unmounts a connect/edit form. Never re-derived from query.data,
+  // which never carries it.
   const [justConnected, setJustConnected] = useState<GitSourceResource | null>(null)
+  const [webhookAutoRegistered, setWebhookAutoRegistered] = useState(false)
+  const [webhookError, setWebhookError] = useState<string | undefined>(undefined)
   const [secretCopied, setSecretCopied] = useState(false)
   const [urlCopied, setUrlCopied] = useState(false)
   const [additionalServicesError, setAdditionalServicesError] = useState<string | null>(null)
@@ -166,7 +264,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
 
   function submit() {
     if (!form.repoUrl.trim()) {
-      toast.add({ title: 'Repository URL is required.', type: 'error' })
+      toast.add({ title: 'Pick a repository or paste a URL first.', type: 'error' })
       return
     }
     const incomplete = incompleteRowIndexes(form.additionalServices)
@@ -179,23 +277,18 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
       return
     }
     setAdditionalServicesError(null)
-    setGitSource.mutate(
+    connectMutation.mutate(
+      { appName: app.name, form },
       {
-        repo_url: form.repoUrl.trim(),
-        branch: form.branch.trim() || undefined,
-        build_type: form.buildType,
-        build_path: form.buildPath.trim() || undefined,
-        token: form.token.trim() || undefined,
-        additional_services: additionalServicesPayload(form.additionalServices),
-      },
-      {
-        onSuccess: (resource) => {
+        onSuccess: (result) => {
           setEditing(false)
           setForm(emptyForm())
           setSecretCopied(false)
           setUrlCopied(false)
-          if (resource.webhook_secret) {
-            setJustConnected(resource)
+          if (result.resource.webhook_secret) {
+            setJustConnected(result.resource)
+            setWebhookAutoRegistered(result.autoRegistered)
+            setWebhookError(result.webhookError)
           } else {
             toast.add({ title: 'Git source updated.', type: 'success' })
           }
@@ -275,59 +368,79 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
 
         {justConnected ? (
           <div className="space-y-3">
-            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-              <WarningIcon className="mt-0.5 size-4 shrink-0" />
-              <p className="text-sm">
-                This webhook secret will not be shown again. Paste both values into
-                the repository&apos;s webhook settings now.
-              </p>
-            </div>
-
-            <Field>
-              <FieldLabel htmlFor="git-source-webhook-url">Webhook URL</FieldLabel>
-              <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
-                <code id="git-source-webhook-url" className="min-w-0 flex-1 overflow-x-auto text-xs break-all">
-                  {webhookFullURL(justConnected.webhook_url)}
-                </code>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    copyText(webhookFullURL(justConnected.webhook_url), setUrlCopied)
-                  }}
-                >
-                  {urlCopied ? <CheckIcon /> : <CopyIcon />}
-                  {urlCopied ? 'Copied' : 'Copy'}
-                </Button>
+            {webhookAutoRegistered ? (
+              <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-200">
+                <CheckIcon className="mt-0.5 size-4 shrink-0" />
+                <p className="text-sm">
+                  Git source connected. A push webhook was registered
+                  automatically, no manual setup needed.
+                </p>
               </div>
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="git-source-webhook-secret">Webhook secret</FieldLabel>
-              <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
-                <code id="git-source-webhook-secret" className="min-w-0 flex-1 overflow-x-auto text-xs break-all">
-                  {justConnected.webhook_secret}
-                </code>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    if (justConnected.webhook_secret) {
-                      copyText(justConnected.webhook_secret, setSecretCopied)
-                    }
-                  }}
-                >
-                  {secretCopied ? <CheckIcon /> : <CopyIcon />}
-                  {secretCopied ? 'Copied' : 'Copy'}
-                </Button>
+            ) : (
+              <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+                <WarningIcon className="mt-0.5 size-4 shrink-0" />
+                <p className="text-sm">
+                  {webhookError ? (
+                    webhookError
+                  ) : (
+                    <>
+                      This webhook secret will not be shown again. Paste both
+                      values into the repository&apos;s webhook settings now.
+                    </>
+                  )}
+                </p>
               </div>
-              <FieldDescription>
-                Set this as the secret on a GitHub &quot;Push&quot; webhook pointed at
-                the URL above, content type application/json.
-              </FieldDescription>
-            </Field>
+            )}
+
+            {!webhookAutoRegistered ? (
+              <>
+                <Field>
+                  <FieldLabel htmlFor="git-source-webhook-url">Webhook URL</FieldLabel>
+                  <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
+                    <code id="git-source-webhook-url" className="min-w-0 flex-1 overflow-x-auto text-xs break-all">
+                      {webhookFullURL(justConnected.webhook_url)}
+                    </code>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        copyText(webhookFullURL(justConnected.webhook_url), setUrlCopied)
+                      }}
+                    >
+                      {urlCopied ? <CheckIcon /> : <CopyIcon />}
+                      {urlCopied ? 'Copied' : 'Copy'}
+                    </Button>
+                  </div>
+                </Field>
+
+                <Field>
+                  <FieldLabel htmlFor="git-source-webhook-secret">Webhook secret</FieldLabel>
+                  <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
+                    <code id="git-source-webhook-secret" className="min-w-0 flex-1 overflow-x-auto text-xs break-all">
+                      {justConnected.webhook_secret}
+                    </code>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        if (justConnected.webhook_secret) {
+                          copyText(justConnected.webhook_secret, setSecretCopied)
+                        }
+                      }}
+                    >
+                      {secretCopied ? <CheckIcon /> : <CopyIcon />}
+                      {secretCopied ? 'Copied' : 'Copy'}
+                    </Button>
+                  </div>
+                  <FieldDescription>
+                    Set this as the secret on a GitHub &quot;Push&quot; webhook pointed at
+                    the URL above, content type application/json.
+                  </FieldDescription>
+                </Field>
+              </>
+            ) : null}
 
             <Button type="button" size="sm" onClick={() => { setJustConnected(null) }}>
               Done
@@ -335,40 +448,32 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
           </div>
         ) : editing || notConnected ? (
           <div className="space-y-4">
-            {!notConnected ? null : (
+            {!notConnected ? (
+              <p className="text-sm text-muted-foreground">
+                Currently connected to <span className="font-mono">{form.repoUrl}</span>{' '}
+                @ <span className="font-mono">{form.branch}</span>. Pick a different
+                repository below to re-point it, or leave it as is to only update the
+                build settings.
+              </p>
+            ) : (
               <p className="text-sm text-muted-foreground">
                 Connect a repository so a push to its target branch auto-deploys
                 this app.
               </p>
             )}
 
-            <Field>
-              <FieldLabel htmlFor="git-source-repo-url">Repository URL</FieldLabel>
-              <Input
-                id="git-source-repo-url"
-                className="font-mono"
-                placeholder="https://github.com/you/app.git"
-                autoComplete="off"
-                spellCheck={false}
-                value={form.repoUrl}
-                onChange={(e) => { setForm({ ...form, repoUrl: e.target.value }) }}
-                disabled={setGitSource.isPending}
-              />
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="git-source-branch">Branch</FieldLabel>
-              <Input
-                id="git-source-branch"
-                className="font-mono"
-                placeholder="main"
-                autoComplete="off"
-                spellCheck={false}
-                value={form.branch}
-                onChange={(e) => { setForm({ ...form, branch: e.target.value }) }}
-                disabled={setGitSource.isPending}
-              />
-            </Field>
+            <GitRepoSourcePicker
+              disabled={connectMutation.isPending}
+              onSelect={(value) => {
+                setForm((current) => ({
+                  ...current,
+                  repoUrl: value.repoUrl,
+                  branch: value.branch,
+                  token: value.token ?? '',
+                  providerRef: value.providerRef,
+                }))
+              }}
+            />
 
             <Field>
               <FieldLabel htmlFor="git-source-build-type">Build pack</FieldLabel>
@@ -381,13 +486,13 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                 }}
               >
                 <TabsList id="git-source-build-type" className="grid w-full grid-cols-3">
-                  <TabsTrigger value="railpack" disabled={setGitSource.isPending}>
+                  <TabsTrigger value="railpack" disabled={connectMutation.isPending}>
                     Auto-detect
                   </TabsTrigger>
-                  <TabsTrigger value="dockerfile" disabled={setGitSource.isPending}>
+                  <TabsTrigger value="dockerfile" disabled={connectMutation.isPending}>
                     Dockerfile
                   </TabsTrigger>
-                  <TabsTrigger value="static" disabled={setGitSource.isPending}>
+                  <TabsTrigger value="static" disabled={connectMutation.isPending}>
                     Static site
                   </TabsTrigger>
                 </TabsList>
@@ -424,7 +529,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                       spellCheck={false}
                       value={form.buildPath}
                       onChange={(e) => { setForm({ ...form, buildPath: e.target.value }) }}
-                      disabled={setGitSource.isPending}
+                      disabled={connectMutation.isPending}
                     />
                   </Field>
                 </TabsContent>
@@ -439,38 +544,14 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="git-source-token">
-                Deploy token (optional, for a private repo)
-              </FieldLabel>
-              <Input
-                id="git-source-token"
-                type="password"
-                autoComplete="off"
-                spellCheck={false}
-                placeholder={notConnected ? 'Personal access token' : 'Leave blank to keep the current token'}
-                value={form.token}
-                onChange={(e) => { setForm({ ...form, token: e.target.value }) }}
-                disabled={setGitSource.isPending}
-              />
-              <FieldDescription>
-                Sent once, encrypted at rest. Never shown again after saving.
-              </FieldDescription>
-              <FieldHint
-                href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens"
-                linkText="How do I create one?"
-              >
-                Needs the <code className="text-xs">repo</code> scope (classic
-                token) or Contents: Read-only permission (fine-grained token)
-                so this control plane can clone the repository over HTTPS.
-              </FieldHint>
-            </Field>
-
-            <Field>
               <FieldLabel>Additional services (optional)</FieldLabel>
               <FieldDescription>
                 Also rebuild these sibling services from the same push, for a
                 monorepo with more than one service. Each needs its own
-                already-existing service name and build config.
+                already-existing service name and build config. Saving with
+                any row filled in always uses the direct git-source
+                connection, even for a picked provider repo, since automatic
+                webhook registration doesn&apos;t support monorepo fan-out yet.
               </FieldDescription>
               <div className="space-y-2">
                 {form.additionalServices.map((row, index) => (
@@ -482,7 +563,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                       spellCheck={false}
                       value={row.serviceName}
                       onChange={(e) => { updateAdditionalServiceRow(index, { serviceName: e.target.value }) }}
-                      disabled={setGitSource.isPending}
+                      disabled={connectMutation.isPending}
                     />
                     <Select
                       value={row.buildType}
@@ -510,13 +591,13 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                       spellCheck={false}
                       value={row.buildPath}
                       onChange={(e) => { updateAdditionalServiceRow(index, { buildPath: e.target.value }) }}
-                      disabled={setGitSource.isPending || row.buildType === 'railpack'}
+                      disabled={connectMutation.isPending || row.buildType === 'railpack'}
                     />
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
-                      disabled={setGitSource.isPending}
+                      disabled={connectMutation.isPending}
                       onClick={() => { removeAdditionalServiceRow(index) }}
                       aria-label="Remove additional service"
                     >
@@ -528,7 +609,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                   type="button"
                   size="sm"
                   variant="outline"
-                  disabled={setGitSource.isPending}
+                  disabled={connectMutation.isPending}
                   onClick={addAdditionalServiceRow}
                 >
                   <PlusIcon />
@@ -541,12 +622,12 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
             </Field>
 
             <div className="flex gap-2">
-              <Button type="button" size="sm" disabled={setGitSource.isPending} onClick={submit}>
-                {setGitSource.isPending ? <SpinnerIcon className="size-4 animate-spin" /> : null}
+              <Button type="button" size="sm" disabled={connectMutation.isPending} onClick={submit}>
+                {connectMutation.isPending ? <SpinnerIcon className="size-4 animate-spin" /> : null}
                 {notConnected ? 'Connect' : 'Save'}
               </Button>
               {!notConnected ? (
-                <Button type="button" size="sm" variant="outline" disabled={setGitSource.isPending} onClick={cancelEdit}>
+                <Button type="button" size="sm" variant="outline" disabled={connectMutation.isPending} onClick={cancelEdit}>
                   Cancel
                 </Button>
               ) : null}
