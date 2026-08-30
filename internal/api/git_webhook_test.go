@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -637,5 +639,140 @@ func TestHandleGitPushWebhook_AdditionalServices_MissingSibling_PartialFailure(t
 	}
 	if len(attempts) != 1 {
 		t.Errorf("deploy attempts for web = %+v, want exactly one: the missing sibling must not block the primary deploy", attempts)
+	}
+}
+
+// servicesSpecBody is a two-key app.yaml-style services: map, the same
+// shape multiDeployBody (apps_multi_test.go) uses for the manual/API
+// deploy-spec path, so a git source's own persisted version exercises
+// an identical request shape.
+func servicesSpecBody() string {
+	return `{"repo_url":"https://github.com/org/web.git","branch":"main","services":{
+		"web":{"build":{"type":"dockerfile","path":"./web/Dockerfile"},"port":3000},
+		"worker":{"build":{"type":"dockerfile","path":"./worker/Dockerfile"}}
+	}}`
+}
+
+// TestHandleGitPushWebhook_ServicesSpec_RoutesThroughDeploySpec proves a
+// git source with a persisted services: map fans a push out through
+// Builder.DeploySpec (the same method handleDeploySpec calls), not
+// through the single Deploy call the AdditionalServices path uses: this
+// is the unification docs/roadmap.md's own "the two paths aren't
+// unified yet" gap named.
+func TestHandleGitPushWebhook_ServicesSpec_RoutesThroughDeploySpec(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	created := connectGitSource(t, rt, cookie, servicesSpecBody())
+
+	rt.gitSourceFetch = newFakeGitSourceFetch(&[]fakeGitSourceFetchCall{}, t.TempDir(), new(bool), nil)
+	fb := &fakeBuilder{tag: "img:sha1"}
+	rt.builder = fb
+
+	body := pushBody("refs/heads/main")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	if fb.calls != 0 {
+		t.Errorf("single-service Deploy called %d times, want 0: a services: map must route through DeploySpec instead", fb.calls)
+	}
+	if fb.multiCalls != 1 {
+		t.Fatalf("DeploySpec called %d times, want 1", fb.multiCalls)
+	}
+	if fb.lastMultiReq.AppName != "web" {
+		t.Errorf("AppName = %q, want %q (existing.AppID falls back to the git source's own service name)", fb.lastMultiReq.AppName, "web")
+	}
+	if fb.lastMultiReq.CommitSHA != "sha1" {
+		t.Errorf("CommitSHA = %q, want %q", fb.lastMultiReq.CommitSHA, "sha1")
+	}
+	if len(fb.lastMultiReq.Services) != 2 {
+		t.Errorf("Services = %+v, want 2 keys", fb.lastMultiReq.Services)
+	}
+}
+
+// TestHandleGitPushWebhook_ServicesSpec_PartialFailure_OneServiceFailing
+// covers the CLAUDE.md-required case for this dispatch: a fan-out where
+// one service key's own build fails must still deploy every other key
+// (not silently drop it), must not retry or double-trigger the failed
+// key, and must surface the partial failure as 207, mirroring
+// TestHandleDeploySpec_PartialFailure_StillReturns2xxWithPerServiceErrors's
+// own contract for the manual/API path this now shares.
+func TestHandleGitPushWebhook_ServicesSpec_PartialFailure_OneServiceFailing(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	created := connectGitSource(t, rt, cookie, servicesSpecBody())
+
+	rt.gitSourceFetch = newFakeGitSourceFetch(&[]fakeGitSourceFetchCall{}, t.TempDir(), new(bool), nil)
+	fb := &fakeBuilder{
+		multiOutcomes: []deploy.ServiceOutcome{
+			{ServiceKey: "web", ServiceName: "web-web", Image: "img:sha1"},
+			{ServiceKey: "worker", ServiceName: "web-worker", Err: errors.New("worker build failed")},
+		},
+	}
+	rt.builder = fb
+
+	body := pushBody("refs/heads/main")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusMultiStatus {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusMultiStatus, rec.Body.String())
+	}
+	if fb.multiCalls != 1 {
+		t.Fatalf("DeploySpec called %d times, want exactly 1: a partial failure must not be retried or double-triggered", fb.multiCalls)
+	}
+	if len(fb.lastMultiReq.Services) != 2 {
+		t.Errorf("Services = %+v, want both keys still submitted in one call, not dropped for the failing one", fb.lastMultiReq.Services)
+	}
+}
+
+// TestHandleGitPushWebhook_ServicesSpec_TakesPriorityOverAdditionalServices
+// cannot happen through the connect API (validateGitSourceServices
+// rejects setting both), but a git source created before that
+// validation existed, or written directly to the store, could still
+// carry both. This proves handleGitPushWebhook's own routing decision
+// (len(gs.Services) > 0) is services-first regardless, so such a row
+// deploys once, not twice.
+func TestHandleGitPushWebhook_ServicesSpec_TakesPriorityOverAdditionalServices(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	seedApp(t, db, "web")
+	seedApp(t, db, "worker")
+
+	webhookSecretKey := store.GitSourceSecretsKey("web")
+	if err := secrets.SetValue(context.Background(), webhookSecretKey, gitSourceSecretKey, "shh"); err != nil {
+		t.Fatalf("seed webhook secret: %v", err)
+	}
+	if err := db.SaveGitSource(context.Background(), store.GitSource{
+		ServiceName: "web", RepoURL: "https://github.com/org/web.git", Branch: "main", BuildType: "dockerfile",
+		AdditionalServices: map[string]store.GitSourceBuild{"worker": {BuildType: "dockerfile"}},
+		Services:           map[string]spec.Service{"web": {Build: spec.Build{Type: spec.BuildDockerfile}}},
+	}); err != nil {
+		t.Fatalf("seed git source: %v", err)
+	}
+
+	rt.gitSourceFetch = newFakeGitSourceFetch(&[]fakeGitSourceFetchCall{}, t.TempDir(), new(bool), nil)
+	fb := &fakeBuilder{tag: "img:sha1"}
+	rt.builder = fb
+
+	body := pushBody("refs/heads/main")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+	req.Header.Set("X-Hub-Signature-256", sign([]byte("shh"), body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if fb.multiCalls != 1 || fb.calls != 0 {
+		t.Errorf("multiCalls = %d, calls = %d, want DeploySpec called once and single Deploy never called", fb.multiCalls, fb.calls)
 	}
 }

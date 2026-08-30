@@ -213,11 +213,13 @@ are still open. This page describes what's actually true today.
   `POST /api/v1/apps/{name}/deploy-spec` fans a `services:` map out
   into independent per-service builds and deploys, each tracked
   separately, with a real frontend (a services tab plus
-  `DeploySpecForm`) driving it. Webhook-triggered auto-deploy for a
-  multi-service app is real too, but via a separate, simpler mechanism
-  (`GitSource.AdditionalServices`: a flat list of sibling services
-  independently rebuilt on push) rather than `DeploySpec`'s
-  compose-aware fan-out; the two paths aren't unified yet.
+  `DeploySpecForm`) driving it. Webhook-triggered auto-deploy is now
+  unified with that same path: a git source can persist a `services:`
+  map (`GitSource.Services`), and a push fans out through the identical
+  `DeploySpec` logic instead of the older, simpler
+  `GitSource.AdditionalServices` flat list. A git source with no
+  `services:` map still falls back to `AdditionalServices` unchanged,
+  so existing single-service webhook setups are unaffected.
 - **Real public ACME.** The Caddy ACME issuer type, a settings toggle,
   and form validation are all built and wired end to end (Settings >
   Domains). Only unit-tested against the config shape so far, not
@@ -226,9 +228,9 @@ are still open. This page describes what's actually true today.
 
 ## Not started
 
-- Preview environments per pull request. Depends on the webhook path
-  and `DeploySpec`'s fan-out unifying first (see Multi-service apps,
-  above).
+- Preview environments per pull request. Not built; no longer blocked
+  on the webhook and `DeploySpec` fan-out paths unifying, since that
+  work has landed (see Multi-service apps, above).
 - Live, in-place resource-limit application without a restart. A saved
   health-check or resource-limit change doesn't reconcile into the
   already-running container until a restart forces a new one (the

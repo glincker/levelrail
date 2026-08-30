@@ -155,9 +155,3 @@ worth naming plainly rather than leaving implicit:
   Ingress defaults to an internal, self-signed issuer; a real Caddy
   ACME issuer, settings toggle, and form validation are built and
   wired end to end, but only unit-tested at the config level so far.
-- Multi-service apps, fully unified. The app-spec schema's `services`
-  map genuinely fans out into independent per-service builds/deploys
-  (backend and frontend both real), but webhook-triggered auto-deploy
-  for a multi-service app still goes through a separate, simpler
-  mechanism (a flat list of sibling services rebuilt independently on
-  push) rather than that same fan-out; the two paths aren't unified.

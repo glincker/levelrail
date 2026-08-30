@@ -40,7 +40,12 @@ import { connectBitbucketRepoAsSource } from '../queries/bitbucketApp'
 import { GitRepoSourcePicker, type GitRepoSourceValue } from './GitRepoSourcePicker'
 import { ApiError } from '../lib/apiError'
 import type { AppDetail } from '../types/appDetail'
-import type { GitSourceBuild, GitSourceBuildType, GitSourceResource } from '../types/gitSource'
+import type {
+  GitSourceBuild,
+  GitSourceBuildType,
+  GitSourceResource,
+  GitSourceService,
+} from '../types/gitSource'
 
 // Git source connect/manage card, PUT/GET/DELETE
 // /api/v1/apps/{name}/git-source (internal/api/git_sources.go): the
@@ -91,6 +96,28 @@ interface AdditionalServiceRow {
   buildPath: string
 }
 
+// ServiceSpecRow is one editable row of FormState.services: an
+// app.yaml-style services: map entry, keyed here by serviceName the
+// same way AdditionalServiceRow is, plus port since a services: map
+// entry (unlike an additional_services one) is meant to fully describe
+// a real service, not just a rebuild config for one that already
+// exists.
+interface ServiceSpecRow {
+  serviceName: string
+  buildType: GitSourceBuildType
+  buildPath: string
+  port: string
+}
+
+// FanoutMode picks which persisted fan-out mechanism submit() writes:
+// 'additional' is the older GitSource.AdditionalServices flat rebuild
+// list, 'services' is the newer GitSource.Services app.yaml-style map
+// that routes a push through the same DeploySpec fan-out
+// POST .../deploy-spec uses (internal/api/git_webhook.go's
+// handleGitPushWebhook). The two are mutually exclusive server-side
+// (validateGitSourceServices), so the form only ever submits one.
+type FanoutMode = 'additional' | 'services'
+
 interface FormState {
   repoUrl: string
   branch: string
@@ -102,7 +129,9 @@ interface FormState {
   // connectGitSource's own doc comment for how this decides which
   // endpoint submit() calls.
   providerRef?: GitRepoSourceValue['providerRef']
+  fanoutMode: FanoutMode
   additionalServices: AdditionalServiceRow[]
+  services: ServiceSpecRow[]
 }
 
 // Auto-detect is the default and recommended choice: most repos need no
@@ -116,11 +145,14 @@ function emptyForm(): FormState {
     buildPath: '',
     token: '',
     providerRef: undefined,
+    fanoutMode: 'additional',
     additionalServices: [],
+    services: [],
   }
 }
 
 function formFromResource(g: GitSourceResource): FormState {
+  const hasServices = Object.keys(g.services ?? {}).length > 0
   return {
     repoUrl: g.repo_url,
     branch: g.branch,
@@ -128,12 +160,27 @@ function formFromResource(g: GitSourceResource): FormState {
     buildPath: g.build_path ?? '',
     token: '',
     providerRef: undefined,
+    fanoutMode: hasServices ? 'services' : 'additional',
     additionalServices: Object.entries(g.additional_services ?? {}).map(([serviceName, build]) => ({
       serviceName,
       buildType: build.build_type,
       buildPath: build.build_path ?? '',
     })),
+    services: Object.entries(g.services ?? {}).map(([serviceName, svc]) => ({
+      serviceName,
+      buildType: isGitSourceBuildType(svc.build.type) ? svc.build.type : 'dockerfile',
+      buildPath: svc.build.path ?? '',
+      port: svc.port ? String(svc.port) : '',
+    })),
   }
+}
+
+// isGitSourceBuildType narrows a services: map entry's build.type
+// (which also allows 'image'/'compose', see GitSourceServiceBuild) down
+// to the three this compact form actually offers a picker for, the same
+// three BUILD_PACKS already lists.
+function isGitSourceBuildType(value: string): value is GitSourceBuildType {
+  return value === 'dockerfile' || value === 'railpack' || value === 'static'
 }
 
 // A row only counts as "incomplete" once the operator has actually put
@@ -158,6 +205,24 @@ function additionalServicesPayload(rows: AdditionalServiceRow[]): Record<string,
   return entries.length > 0 ? Object.fromEntries(entries) : undefined
 }
 
+// servicesPayload mirrors additionalServicesPayload's own shape for
+// FormState.services, the newer app.yaml-style map: a filled-in port
+// becomes a number (the wire shape's own field, like
+// DeploySpecServiceInput's build in appGroup.ts), an empty one is
+// omitted rather than sent as 0.
+function servicesPayload(rows: ServiceSpecRow[]): Record<string, GitSourceService> | undefined {
+  const entries = rows
+    .filter((row) => row.serviceName.trim())
+    .map((row): [string, GitSourceService] => [
+      row.serviceName.trim(),
+      {
+        build: { type: row.buildType, path: row.buildPath.trim() || undefined },
+        port: row.port.trim() ? Number(row.port.trim()) : undefined,
+      },
+    ])
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined
+}
+
 interface ConnectGitSourceResult {
   resource: GitSourceResource
   autoRegistered: boolean
@@ -169,19 +234,22 @@ interface ConnectGitSourceResult {
 // provider's use-as-source endpoint, which registers a push webhook
 // automatically, otherwise it falls back to the generic PUT
 // .../git-source endpoint this card always used before. A provider pick
-// combined with additional services also falls back: none of the three
-// use-as-source endpoints accept additional_services (only the generic
-// endpoint does), so a monorepo fan-out connect always takes the manual
-// path, trading away auto webhook registration for that one case.
+// combined with additional services (or a services: map) also falls
+// back: none of the three use-as-source endpoints accept either (only
+// the generic endpoint does), so a monorepo fan-out connect always
+// takes the manual path, trading away auto webhook registration for
+// that one case.
 async function connectGitSource(
   appName: string,
   form: FormState,
 ): Promise<ConnectGitSourceResult> {
   const branch = form.branch.trim() || undefined
   const buildPath = form.buildPath.trim() || undefined
-  const additionalServices = additionalServicesPayload(form.additionalServices)
+  const additionalServices =
+    form.fanoutMode === 'additional' ? additionalServicesPayload(form.additionalServices) : undefined
+  const services = form.fanoutMode === 'services' ? servicesPayload(form.services) : undefined
 
-  if (form.providerRef && !additionalServices) {
+  if (form.providerRef && !additionalServices && !services) {
     if (form.providerRef.kind === 'github') {
       const { webhook_registered: autoRegistered, webhook_error: webhookError, ...resource } =
         await connectGitHubRepoAsSource(form.providerRef.owner, form.providerRef.repo, {
@@ -216,6 +284,7 @@ async function connectGitSource(
     build_path: buildPath,
     token: form.token.trim() || undefined,
     additional_services: additionalServices,
+    services,
   })
   return { resource, autoRegistered: false }
 }
@@ -267,14 +336,30 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
       toast.add({ title: 'Pick a repository or paste a URL first.', type: 'error' })
       return
     }
-    const incomplete = incompleteRowIndexes(form.additionalServices)
-    if (incomplete.length > 0) {
-      const rowLabel = incomplete.length === 1 ? 'Row' : 'Rows'
-      const rowNumbers = incomplete.map((index) => index + 1).join(', ')
-      setAdditionalServicesError(
-        `${rowLabel} ${rowNumbers} ${incomplete.length === 1 ? 'is' : 'are'} missing a service name.`,
-      )
-      return
+    if (form.fanoutMode === 'services') {
+      if (form.services.length === 0 || !form.services.some((row) => row.serviceName.trim())) {
+        setAdditionalServicesError('Add at least one service, or switch back to single service.')
+        return
+      }
+      const incomplete = incompleteRowIndexes(form.services)
+      if (incomplete.length > 0) {
+        const rowLabel = incomplete.length === 1 ? 'Row' : 'Rows'
+        const rowNumbers = incomplete.map((index) => index + 1).join(', ')
+        setAdditionalServicesError(
+          `${rowLabel} ${rowNumbers} ${incomplete.length === 1 ? 'is' : 'are'} missing a service name.`,
+        )
+        return
+      }
+    } else {
+      const incomplete = incompleteRowIndexes(form.additionalServices)
+      if (incomplete.length > 0) {
+        const rowLabel = incomplete.length === 1 ? 'Row' : 'Rows'
+        const rowNumbers = incomplete.map((index) => index + 1).join(', ')
+        setAdditionalServicesError(
+          `${rowLabel} ${rowNumbers} ${incomplete.length === 1 ? 'is' : 'are'} missing a service name.`,
+        )
+        return
+      }
     }
     setAdditionalServicesError(null)
     connectMutation.mutate(
@@ -339,6 +424,29 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
     setForm({
       ...form,
       additionalServices: form.additionalServices.filter((_, i) => i !== index),
+    })
+    setAdditionalServicesError(null)
+  }
+
+  function addServiceRow() {
+    setForm({
+      ...form,
+      services: [...form.services, { serviceName: '', buildType: 'dockerfile', buildPath: '', port: '' }],
+    })
+  }
+
+  function updateServiceRow(index: number, patch: Partial<ServiceSpecRow>) {
+    setForm({
+      ...form,
+      services: form.services.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+    })
+    setAdditionalServicesError(null)
+  }
+
+  function removeServiceRow(index: number) {
+    setForm({
+      ...form,
+      services: form.services.filter((_, i) => i !== index),
     })
     setAdditionalServicesError(null)
   }
@@ -544,17 +652,40 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
             </Field>
 
             <Field>
-              <FieldLabel>Additional services (optional)</FieldLabel>
-              <FieldDescription>
-                Also rebuild these sibling services from the same push, for a
-                monorepo with more than one service. Each needs its own
-                already-existing service name and build config. Saving with
-                any row filled in always uses the direct git-source
-                connection, even for a picked provider repo, since automatic
-                webhook registration doesn&apos;t support monorepo fan-out yet.
-              </FieldDescription>
-              <div className="space-y-2">
-                {form.additionalServices.map((row, index) => (
+              <FieldLabel htmlFor="git-source-fanout-mode">Multi-service fan-out</FieldLabel>
+              <Tabs
+                value={form.fanoutMode}
+                onValueChange={(v: unknown) => {
+                  if (v === 'additional' || v === 'services') {
+                    setForm({ ...form, fanoutMode: v })
+                    setAdditionalServicesError(null)
+                  }
+                }}
+              >
+                <TabsList id="git-source-fanout-mode" className="grid w-full grid-cols-2">
+                  <TabsTrigger value="additional" disabled={connectMutation.isPending}>
+                    Additional services
+                  </TabsTrigger>
+                  <TabsTrigger value="services" disabled={connectMutation.isPending}>
+                    Services map
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </Field>
+
+            {form.fanoutMode === 'additional' ? (
+              <Field>
+                <FieldLabel>Additional services (optional)</FieldLabel>
+                <FieldDescription>
+                  Also rebuild these sibling services from the same push, for a
+                  monorepo with more than one service. Each needs its own
+                  already-existing service name and build config. Saving with
+                  any row filled in always uses the direct git-source
+                  connection, even for a picked provider repo, since automatic
+                  webhook registration doesn&apos;t support monorepo fan-out yet.
+                </FieldDescription>
+                <div className="space-y-2">
+                  {form.additionalServices.map((row, index) => (
                   <div key={index} className="flex items-start gap-2">
                     <Input
                       className="font-mono"
@@ -620,6 +751,93 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                 errors={additionalServicesError ? [{ message: additionalServicesError }] : undefined}
               />
             </Field>
+            ) : (
+              <Field>
+                <FieldLabel>Services (app.yaml-style)</FieldLabel>
+                <FieldDescription>
+                  Every push fans out into an independent build and deploy per
+                  service, the same POST .../deploy-spec fan-out a manual
+                  multi-service deploy uses, under one app named{' '}
+                  <span className="font-mono">{app.name}</span>. Replaces the
+                  single-service build above; each service key becomes its own
+                  real service named <span className="font-mono">{app.name}-&lt;key&gt;</span>.
+                </FieldDescription>
+                <div className="space-y-2">
+                  {form.services.map((row, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <Input
+                        className="font-mono"
+                        placeholder="web"
+                        autoComplete="off"
+                        spellCheck={false}
+                        value={row.serviceName}
+                        onChange={(e) => { updateServiceRow(index, { serviceName: e.target.value }) }}
+                        disabled={connectMutation.isPending}
+                      />
+                      <Select
+                        value={row.buildType}
+                        onValueChange={(v) => {
+                          if (v === 'railpack' || v === 'dockerfile' || v === 'static') {
+                            updateServiceRow(index, { buildType: v })
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="w-40 shrink-0">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {BUILD_PACKS.map((pack) => (
+                            <SelectItem key={pack.value} value={pack.value}>
+                              {pack.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        className="font-mono"
+                        placeholder="./web/Dockerfile"
+                        autoComplete="off"
+                        spellCheck={false}
+                        value={row.buildPath}
+                        onChange={(e) => { updateServiceRow(index, { buildPath: e.target.value }) }}
+                        disabled={connectMutation.isPending || row.buildType === 'railpack'}
+                      />
+                      <Input
+                        className="w-24 shrink-0 font-mono"
+                        type="number"
+                        placeholder="3000"
+                        value={row.port}
+                        onChange={(e) => { updateServiceRow(index, { port: e.target.value }) }}
+                        disabled={connectMutation.isPending}
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={connectMutation.isPending}
+                        onClick={() => { removeServiceRow(index) }}
+                        aria-label="Remove service"
+                      >
+                        <TrashIcon />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={connectMutation.isPending}
+                    onClick={addServiceRow}
+                  >
+                    <PlusIcon />
+                    Add service
+                  </Button>
+                </div>
+                <FieldError
+                  errors={additionalServicesError ? [{ message: additionalServicesError }] : undefined}
+                />
+              </Field>
+            )}
 
             <div className="flex gap-2">
               <Button type="button" size="sm" disabled={connectMutation.isPending} onClick={submit}>
@@ -649,6 +867,14 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                   <dt className="text-muted-foreground">Also deploys</dt>
                   <dd className="font-mono">
                     {Object.keys(query.data.additional_services ?? {}).join(', ')}
+                  </dd>
+                </>
+              ) : null}
+              {Object.keys(query.data.services ?? {}).length > 0 ? (
+                <>
+                  <dt className="text-muted-foreground">Services fan-out</dt>
+                  <dd className="font-mono">
+                    {Object.keys(query.data.services ?? {}).join(', ')}
                   </dd>
                 </>
               ) : null}

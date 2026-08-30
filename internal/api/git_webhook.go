@@ -14,6 +14,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 
+	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -111,6 +112,12 @@ func gitCheckoutWithToken(ctx context.Context, repoURL, sha, token string) (dir 
 // exactly the shape GET/PUT/DELETE .../git-source already treat as 404,
 // and matches this route's own path shape (an app-scoped resource that
 // doesn't exist for this name) better than a blanket 501 would.
+//
+// A connected source with a persisted services: map (gs.Services) fans
+// out through deployServicesSpecFanout, the same deploy.Pipeline.DeploySpec
+// path POST .../deploy-spec uses; one with none falls through to the
+// single-service deploy plus the older deployAdditionalServices walk
+// below, unchanged.
 func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -205,8 +212,6 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	svcSpec := specServiceFromDesired(*existing, spec.Build{Type: gs.BuildType, Path: gs.BuildPath})
-
 	sourceDir, cleanup, err := rt.gitSourceFetch(r.Context(), gs.RepoURL, ev.After, token)
 	if err != nil {
 		rt.logger.Error("api: git push webhook: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("commit", ev.After))
@@ -214,6 +219,31 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer cleanup()
+
+	// A persisted services: map (store.GitSource.Services's own doc
+	// comment) routes this push through the same deploy.Pipeline.DeploySpec
+	// fan-out POST .../deploy-spec already uses, instead of the
+	// single-service Deploy plus AdditionalServices walk below: the two
+	// are mutually exclusive by construction (validateGitSourceServices),
+	// so this is the one place that decision is actually made.
+	if len(gs.Services) > 0 {
+		appName := existing.AppID
+		if appName == "" {
+			appName = name
+		}
+		failed := rt.deployServicesSpecFanout(r.Context(), appName, *gs, sourceDir, ev.After)
+		status := http.StatusOK
+		if failed > 0 {
+			status = http.StatusMultiStatus
+		}
+		w.WriteHeader(status)
+		if _, err := fmt.Fprintf(w, "services deploy triggered for app %q (%d service(s) failed)\n", appName, failed); err != nil {
+			rt.logger.Warn("api: git push webhook: failed to write response body", slog.String("error", err.Error()), slog.String("name", name))
+		}
+		return
+	}
+
+	svcSpec := specServiceFromDesired(*existing, spec.Build{Type: gs.BuildType, Path: gs.BuildPath})
 
 	buildReq := deploy.Request{
 		ServiceName: name,
@@ -279,6 +309,47 @@ func (rt *Router) deployAdditionalServices(ctx context.Context, additional map[s
 			continue
 		}
 		rt.logger.Info("api: git push webhook: additional service: deploy triggered", slog.String("service", svcName), slog.String("tag", tag))
+	}
+	return failed
+}
+
+// deployServicesSpecFanout routes a webhook-triggered push through
+// deploy.Pipeline.DeploySpec, the same fan-out handleDeploySpec
+// (apps_multi.go) already uses for a manual/API-triggered multi-service
+// deploy, so gs.Services and a hand-submitted deploy-spec request never
+// diverge again (docs/roadmap.md's own previously-named gap). appName is
+// resolved by the caller (existing.AppID, falling back to the git
+// source's own service name), matching DeploySpec's own ensureApp
+// default so a push against an already-fanned-out app reuses the same
+// store.App and the same "<appName>-<key>" service names, rather than
+// minting a second, parallel app group. Returns how many service keys
+// failed, the same shape deployAdditionalServices returns, so the caller
+// can pick 200 vs 207 the identical way.
+func (rt *Router) deployServicesSpecFanout(ctx context.Context, appName string, gs store.GitSource, sourceDir, commitSHA string) int {
+	progress := func(serviceKey string, ev build.ProgressEvent) {
+		rt.logger.Info("api: git push webhook: services fan-out build progress", slog.String("app_name", appName), slog.String("service_key", serviceKey), slog.String("step", ev.Step), slog.Bool("completed", ev.Completed), slog.String("error", ev.Error))
+	}
+
+	outcomes, err := rt.builder.DeploySpec(ctx, deploy.MultiRequest{
+		AppName:       appName,
+		Services:      gs.Services,
+		SourceDir:     sourceDir,
+		CommitSHA:     commitSHA,
+		ImageRepoBase: appName,
+	}, progress)
+	if err != nil {
+		rt.logger.Error("api: git push webhook: services fan-out failed", slog.String("app_name", appName), slog.String("error", err.Error()))
+		return len(gs.Services)
+	}
+
+	failed := 0
+	for _, o := range outcomes {
+		if o.Err != nil {
+			failed++
+			rt.logger.Error("api: git push webhook: services fan-out: service failed", slog.String("app_name", appName), slog.String("service_key", o.ServiceKey), slog.String("error", o.Err.Error()))
+			continue
+		}
+		rt.logger.Info("api: git push webhook: services fan-out: service deployed", slog.String("app_name", appName), slog.String("service_key", o.ServiceKey), slog.String("image", o.Image))
 	}
 	return failed
 }

@@ -71,11 +71,17 @@ type gitSourceResource struct {
 	BuildType          string                          `json:"build_type"`
 	BuildPath          string                          `json:"build_path,omitempty"`
 	AdditionalServices map[string]store.GitSourceBuild `json:"additional_services,omitempty"`
-	HasToken           bool                            `json:"has_token"`
-	WebhookURL         string                          `json:"webhook_url"`
-	WebhookSecret      string                          `json:"webhook_secret,omitempty"`
-	CreatedAt          time.Time                       `json:"created_at"`
-	UpdatedAt          time.Time                       `json:"updated_at"`
+	// Services is an app.yaml-style services: map (store.GitSource.Services's
+	// own doc comment): when set, a push fans out through the same
+	// deploy.Pipeline.DeploySpec logic POST .../deploy-spec uses, instead
+	// of the AdditionalServices walk. Mutually exclusive with
+	// AdditionalServices, see validateGitSourceServices.
+	Services      map[string]spec.Service `json:"services,omitempty"`
+	HasToken      bool                    `json:"has_token"`
+	WebhookURL    string                  `json:"webhook_url"`
+	WebhookSecret string                  `json:"webhook_secret,omitempty"`
+	CreatedAt     time.Time               `json:"created_at"`
+	UpdatedAt     time.Time               `json:"updated_at"`
 }
 
 // gitSourceWebhookPath is the relative API path GitHub's own webhook
@@ -99,6 +105,7 @@ func toGitSourceResource(g store.GitSource, hasToken bool) gitSourceResource {
 		BuildType:          g.BuildType,
 		BuildPath:          g.BuildPath,
 		AdditionalServices: g.AdditionalServices,
+		Services:           g.Services,
 		HasToken:           hasToken,
 		WebhookURL:         gitSourceWebhookPath(g.ServiceName),
 		CreatedAt:          g.CreatedAt,
@@ -133,8 +140,20 @@ type setGitSourceRequest struct {
 	// AdditionalServices lets a push also rebuild sibling services under
 	// the same app group (apps_group.go), keyed by the sibling
 	// DesiredService's own name. Each sibling must already exist and
-	// must not be name itself; see validateAdditionalServices.
+	// must not be name itself; see validateAdditionalServices. Rejected
+	// together with Services (validateGitSourceServices): once a real
+	// services: map is configured, a push fans out through that, and a
+	// separate AdditionalServices list alongside it would just be an
+	// ambiguous second fan-out for the same push.
 	AdditionalServices map[string]store.GitSourceBuild `json:"additional_services,omitempty"`
+	// Services is an app.yaml-style services: map (store.GitSource.Services's
+	// own doc comment): once set, a push routes through the same
+	// deploy.Pipeline.DeploySpec fan-out POST .../deploy-spec already
+	// uses (handleGitPushWebhook), instead of the single-service Deploy
+	// plus AdditionalServices walk. Validated the same way
+	// handleDeploySpec validates its own services map
+	// (validateDeploySpecServiceTypes).
+	Services map[string]spec.Service `json:"services,omitempty"`
 }
 
 // validateAdditionalServices rejects a self-reference (name fanning out
@@ -161,6 +180,24 @@ func validateAdditionalServices(name string, additional map[string]store.GitSour
 		out[svcName] = store.GitSourceBuild{BuildType: buildType, BuildPath: build.BuildPath}
 	}
 	return out, nil
+}
+
+// validateGitSourceServices rejects services alongside a non-empty
+// additional, since routing a push through both DeploySpec's fan-out and
+// the AdditionalServices walk for the same push would double-deploy
+// whatever service key happens to be named in both, and validates each
+// service's own build.type the same way handleDeploySpec does
+// (validateDeploySpecServiceTypes, apps_multi.go), so a persisted
+// services: map can never contain a build.type internal/deploy.Pipeline
+// can't handle either.
+func validateGitSourceServices(services map[string]spec.Service, additional map[string]store.GitSourceBuild) error {
+	if len(services) == 0 {
+		return nil
+	}
+	if len(additional) > 0 {
+		return errors.New("services and additional_services cannot both be set: a services map already fans out every service on push")
+	}
+	return validateDeploySpecServiceTypes(services)
 }
 
 // normalizeGitSourceBuildType mirrors handleTriggerBuild's own build.type
@@ -367,10 +404,14 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if err := validateGitSourceServices(req.Services, additionalServices); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	result, err := rt.connectGitSource(r.Context(), name, connectGitSourceParams{
 		RepoURL: req.RepoURL, Branch: branch, BuildType: buildType, BuildPath: req.BuildPath, Token: req.Token,
-		AdditionalServices: additionalServices,
+		AdditionalServices: additionalServices, Services: req.Services,
 	})
 	if err != nil {
 		rt.logger.Error("api: set git source failed", slog.String("error", err.Error()), slog.String("name", name))
@@ -400,6 +441,7 @@ type connectGitSourceParams struct {
 	// Token field.
 	Token              string
 	AdditionalServices map[string]store.GitSourceBuild
+	Services           map[string]spec.Service
 }
 
 // connectGitSourceResult is connectGitSource's return: the resource to
@@ -447,7 +489,7 @@ func (rt *Router) connectGitSource(ctx context.Context, name string, p connectGi
 
 	if err := rt.gitSources.SaveGitSource(ctx, store.GitSource{
 		ServiceName: name, RepoURL: p.RepoURL, Branch: p.Branch, BuildType: p.BuildType, BuildPath: p.BuildPath,
-		AdditionalServices: p.AdditionalServices,
+		AdditionalServices: p.AdditionalServices, Services: p.Services,
 	}); err != nil {
 		return connectGitSourceResult{}, fmt.Errorf("save git source: %w", err)
 	}
