@@ -37,7 +37,7 @@ func TestHandleListGitHubAppRepos_NotInstalled(t *testing.T) {
 	rt, db := newTestRouterWithGitHubApp(t, newFakeGitHubAppSecrets(), &fakeGitHubAppClient{})
 	cookie := loginTestSession(t, rt, db)
 	if err := db.SaveGitHubAppConnection(context.Background(), store.GitHubAppConnection{
-		AppID: 42, ClientID: "Iv1.abc", CreatedAt: "2026-08-14T00:00:00Z",
+		AppID: 42, ClientID: "Iv1.abc", InstanceURL: "https://github.com", CreatedAt: "2026-08-14T00:00:00Z",
 	}); err != nil {
 		t.Fatalf("seed connection: %v", err)
 	}
@@ -56,7 +56,7 @@ func seedInstalledGitHubApp(t *testing.T, db *store.DB, fakeSecrets *fakeGitHubA
 		t.Fatalf("seed private_key: %v", err)
 	}
 	if err := db.SaveGitHubAppConnection(context.Background(), store.GitHubAppConnection{
-		AppID: 42, ClientID: "Iv1.abc", CreatedAt: "2026-08-14T00:00:00Z",
+		AppID: 42, ClientID: "Iv1.abc", InstanceURL: "https://github.com", CreatedAt: "2026-08-14T00:00:00Z",
 	}); err != nil {
 		t.Fatalf("seed connection: %v", err)
 	}

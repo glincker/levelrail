@@ -22,8 +22,14 @@ import (
 // GET /api/v1/github-app/installed redirect, the same two-step shape
 // the manifest flow already has.
 type manualGitHubAppRequest struct {
-	AppID          int64   `json:"app_id"`
-	ClientID       string  `json:"client_id"`
+	AppID    int64  `json:"app_id"`
+	ClientID string `json:"client_id"`
+	// InstanceURL is optional in the request body: "" normalizes to
+	// github.com (normalizeGitHubInstanceURL), the same default every
+	// existing connection already has (migrations/0061). A self-hosted
+	// operator creating the App on their own GitHub Enterprise Server
+	// instance sets this to that instance's own base URL.
+	InstanceURL    string  `json:"instance_url,omitempty"`
 	ClientSecret   string  `json:"client_secret"`
 	WebhookSecret  string  `json:"webhook_secret"`
 	PrivateKeyPEM  string  `json:"private_key"`
@@ -35,7 +41,7 @@ type manualGitHubAppRequest struct {
 // the alternative to the automated manifest flow
 // (handleStartGitHubAppRegistration/handleGitHubAppCallback) for an
 // operator whose control plane has no publicly reachable primary domain
-// yet (githubAppBaseURL's own error), or who simply prefers creating
+// yet (controlPlaneBaseURL's own error), or who simply prefers creating
 // the App by hand on github.com and pasting the resulting credentials
 // in, the same "automated vs manual" choice Coolify's own GitHub App
 // connect screen offers side by side. Storage is identical to the
@@ -57,6 +63,12 @@ func (rt *Router) handleConnectGitHubAppManually(w http.ResponseWriter, r *http.
 	req.ClientSecret = strings.TrimSpace(req.ClientSecret)
 	req.WebhookSecret = strings.TrimSpace(req.WebhookSecret)
 	req.PrivateKeyPEM = strings.TrimSpace(req.PrivateKeyPEM)
+
+	instanceURL, err := normalizeGitHubInstanceURL(req.InstanceURL)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	if req.AppID <= 0 {
 		writeError(w, http.StatusBadRequest, "app_id is required")
@@ -84,6 +96,13 @@ func (rt *Router) handleConnectGitHubAppManually(w http.ResponseWriter, r *http.
 	}
 
 	ctx := r.Context()
+	if instanceURL != "https://github.com" {
+		if err := rt.githubAppClient.CheckInstanceReachable(ctx, instanceURL); err != nil {
+			writeError(w, http.StatusBadGateway, "could not reach "+instanceURL+": "+err.Error())
+			return
+		}
+	}
+
 	secretsKey := store.GitHubAppSecretsKey()
 	if err := rt.githubAppSecrets.SetValue(ctx, secretsKey, "client_secret", req.ClientSecret); err != nil {
 		rt.internalError(w, "api: store github app client_secret failed", err)
@@ -101,6 +120,7 @@ func (rt *Router) handleConnectGitHubAppManually(w http.ResponseWriter, r *http.
 	if err := rt.githubApp.SaveGitHubAppConnection(ctx, store.GitHubAppConnection{
 		AppID:          req.AppID,
 		ClientID:       req.ClientID,
+		InstanceURL:    instanceURL,
 		CreatedAt:      time.Now().UTC().Format(time.RFC3339),
 		InstallationID: req.InstallationID,
 		AccountLogin:   req.AccountLogin,

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   CheckCircleIcon,
-  GitlabLogoIcon,
+  GitBranchIcon,
   WarningIcon,
   XCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -27,26 +27,26 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from '@/components/ui/toast'
 import {
-  useConnectGitLabApp,
-  useDisconnectGitLabApp,
-  useGitLabAppStatus,
-} from '../queries/gitlabApp'
+  useConnectBitbucketApp,
+  useDisconnectBitbucketApp,
+  useBitbucketAppStatus,
+} from '../queries/bitbucketApp'
 import { SetPrimaryDomainPrompt } from './SetPrimaryDomainPrompt'
 
-// Status card for the GitLab App connection: not connected / configured
-// but not yet authorized / connected as <instance>. Unlike GitHub's
-// manifest flow, GitLab has no programmatic App-creation API: the
-// operator registers an OAuth Application themselves in their GitLab
-// instance's own Applications settings and pastes the resulting
-// instance URL, client ID, and client secret here (ConfigureDialog).
-// "Connect" is then a separate, real browser navigation
-// (window.location.href to GET /api/v1/gitlab-app/connect) that drives
-// GitLab's own OAuth2 authorization prompt, the same "fetch cannot drive
-// a redirect-based flow" reasoning GitHubAppConnectionCard.tsx's own doc
-// comment gives for its own navigation.
-export function GitLabAppConnectionCard() {
-  const { data: status } = useGitLabAppStatus()
-  const disconnect = useDisconnectGitLabApp()
+// Status card for the Bitbucket App connection: not connected /
+// configured but not yet authorized / connected. Cloud only, no
+// instance URL field (docs/design/git-provider-integrations.md section
+// 3): Bitbucket Server has no OAuth-consumer equivalent. Like GitLab,
+// Bitbucket has no programmatic consumer-creation API: the operator
+// registers an OAuth consumer themselves in their workspace settings
+// and pastes the resulting key/secret here (ConfigureDialog). "Connect"
+// is then a separate, real browser navigation (window.location.href to
+// GET /api/v1/bitbucket-app/connect) that drives Bitbucket's own OAuth2
+// authorization prompt, the same shape GitLabAppConnectionCard.tsx's
+// own doc comment describes.
+export function BitbucketAppConnectionCard() {
+  const { data: status } = useBitbucketAppStatus()
+  const disconnect = useDisconnectBitbucketApp()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [configureOpen, setConfigureOpen] = useState(false)
 
@@ -55,13 +55,13 @@ export function GitLabAppConnectionCard() {
       <CardHeader>
         <div className="flex items-center gap-3">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <GitlabLogoIcon className="size-4" />
+            <GitBranchIcon className="size-4" />
           </div>
           <div>
-            <CardTitle>GitLab App</CardTitle>
+            <CardTitle>Bitbucket App</CardTitle>
             <CardDescription>
-              Connect a GitLab OAuth Application for project browsing and
-              webhook-driven deploys, including self-hosted instances.
+              Connect a Bitbucket Cloud OAuth consumer for repository
+              browsing and webhook-driven deploys.
             </CardDescription>
           </div>
         </div>
@@ -85,14 +85,9 @@ export function GitLabAppConnectionCard() {
                 Not connected
               </div>
             )}
-            {status.connected ? (
-              <p className="font-mono text-sm text-muted-foreground">
-                {status.instance_url}
-              </p>
-            ) : null}
             {status.connected && !status.authorized && status.base_url ? (
               <p className="text-sm text-muted-foreground">
-                The OAuth Application is configured but hasn&apos;t been
+                The OAuth consumer is configured but hasn&apos;t been
                 authorized yet. Click Connect to finish.
               </p>
             ) : null}
@@ -108,10 +103,10 @@ export function GitLabAppConnectionCard() {
                   type="button"
                   size="sm"
                   onClick={() => {
-                    window.location.href = '/api/v1/gitlab-app/connect'
+                    window.location.href = '/api/v1/bitbucket-app/connect'
                   }}
                 >
-                  <GitlabLogoIcon className="size-4" />
+                  <GitBranchIcon className="size-4" />
                   Connect
                 </Button>
               ) : null}
@@ -123,12 +118,13 @@ export function GitLabAppConnectionCard() {
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-1.5 text-destructive">
                       <WarningIcon className="size-4" aria-hidden="true" />
-                      Disconnect GitLab App?
+                      Disconnect Bitbucket App?
                     </DialogTitle>
                     <DialogDescription>
                       This stops this control plane from using the connection to
-                      list projects or register webhooks. It does not revoke the
-                      authorization or delete the Application on GitLab itself.
+                      list repositories or register webhooks. It does not revoke
+                      the authorization or delete the consumer on Bitbucket
+                      itself.
                     </DialogDescription>
                   </DialogHeader>
                   <DialogFooter>
@@ -147,11 +143,11 @@ export function GitLabAppConnectionCard() {
                         disconnect.mutate(undefined, {
                           onSuccess: () => {
                             setConfirmOpen(false)
-                            toast.add({ title: 'GitLab App disconnected.', type: 'success' })
+                            toast.add({ title: 'Bitbucket App disconnected.', type: 'success' })
                           },
                           onError: (error) => {
                             toast.add({
-                              title: 'Could not disconnect the GitLab App.',
+                              title: 'Could not disconnect the Bitbucket App.',
                               description: error.message,
                               type: 'error',
                             })
@@ -167,7 +163,7 @@ export function GitLabAppConnectionCard() {
             </div>
           ) : (
             <Button type="button" size="sm" onClick={() => setConfigureOpen(true)}>
-              <GitlabLogoIcon className="size-4" />
+              <GitBranchIcon className="size-4" />
               Configure
             </Button>
           )}
@@ -182,34 +178,32 @@ export function GitLabAppConnectionCard() {
   )
 }
 
-// ConfigureDialog saves the OAuth Application's own instance/client_id/
-// client_secret (PUT /api/v1/gitlab-app). The operator creates this
-// Application themselves at <instance>/-/profile/applications (or, for
-// an instance-wide app, admin/applications) with redirect_uri
-// <this control plane's base url>/api/v1/gitlab-app/callback and scope
-// "api", then pastes the resulting client ID/secret here.
+// ConfigureDialog saves the OAuth consumer's own key/secret
+// (PUT /api/v1/bitbucket-app). The operator creates this consumer
+// themselves at bitbucket.org, workspace settings > OAuth consumers,
+// with the callback URL below and, since Bitbucket scopes permissions
+// on the consumer itself rather than requesting them per authorization
+// (unlike GitLab's own "api" scope), Account: Read, Repositories: Read,
+// and Webhooks: Read and Write ticked.
 function ConfigureDialog({
   open,
   onOpenChange,
   baseURL,
-}: {
+}: Readonly<{
   open: boolean
   onOpenChange: (open: boolean) => void
   baseURL?: string
-}) {
-  const connect = useConnectGitLabApp()
-  const [instanceURL, setInstanceURL] = useState('https://gitlab.com')
-  const [clientID, setClientID] = useState('')
-  const [clientSecret, setClientSecret] = useState('')
+}>) {
+  const connect = useConnectBitbucketApp()
+  const [key, setKey] = useState('')
+  const [secret, setSecret] = useState('')
 
   function resetForm() {
-    setInstanceURL('https://gitlab.com')
-    setClientID('')
-    setClientSecret('')
+    setKey('')
+    setSecret('')
   }
 
-  const canSubmit =
-    instanceURL.trim() !== '' && clientID.trim() !== '' && clientSecret.trim() !== ''
+  const canSubmit = key.trim() !== '' && secret.trim() !== ''
 
   function handleSubmit() {
     if (!canSubmit) {
@@ -217,19 +211,18 @@ function ConfigureDialog({
     }
     connect.mutate(
       {
-        instance_url: instanceURL.trim(),
-        client_id: clientID.trim(),
-        client_secret: clientSecret,
+        key: key.trim(),
+        secret,
       },
       {
         onSuccess: () => {
-          toast.add({ title: 'GitLab App configured.', type: 'success' })
+          toast.add({ title: 'Bitbucket App configured.', type: 'success' })
           resetForm()
           onOpenChange(false)
         },
         onError: (error) => {
           toast.add({
-            title: 'Could not configure the GitLab App.',
+            title: 'Could not configure the Bitbucket App.',
             description: error.message,
             type: 'error',
           })
@@ -250,64 +243,50 @@ function ConfigureDialog({
     >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Configure a GitLab OAuth Application</DialogTitle>
+          <DialogTitle>Configure a Bitbucket OAuth consumer</DialogTitle>
           <DialogDescription>
-            Create one in your GitLab instance under Applications, with
-            redirect URI{' '}
+            Create one at bitbucket.org under workspace settings &gt; OAuth
+            consumers, with callback URL{' '}
             {baseURL ? (
-              <code className="text-xs">{baseURL}/api/v1/gitlab-app/callback</code>
+              <code className="text-xs">{baseURL}/api/v1/bitbucket-app/callback</code>
             ) : (
               <span className="text-amber-700 dark:text-amber-400">
                 set a primary domain in domain settings first
               </span>
-            )}{' '}
-            and scope <code className="text-xs">api</code>, then paste the
-            resulting client ID and secret here.
+            )}
+            . Tick Account: Read, Repositories: Read, and Webhooks: Read and
+            Write, then paste the resulting key and secret here.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <Field>
-            <FieldLabel htmlFor="gl-instance-url">Instance URL</FieldLabel>
+            <FieldLabel htmlFor="bb-key">Key</FieldLabel>
             <Input
-              id="gl-instance-url"
-              className="font-mono"
+              id="bb-key"
               autoComplete="off"
               spellCheck={false}
-              value={instanceURL}
+              value={key}
               onChange={(e) => {
-                setInstanceURL(e.target.value)
-              }}
-              placeholder="https://gitlab.com"
-            />
-            <FieldDescription>
-              Self-hosted instances work too, e.g.
-              https://gitlab.internal.example.com.
-            </FieldDescription>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="gl-client-id">Application ID</FieldLabel>
-            <Input
-              id="gl-client-id"
-              autoComplete="off"
-              spellCheck={false}
-              value={clientID}
-              onChange={(e) => {
-                setClientID(e.target.value)
+                setKey(e.target.value)
               }}
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor="gl-client-secret">Secret</FieldLabel>
+            <FieldLabel htmlFor="bb-secret">Secret</FieldLabel>
             <Input
-              id="gl-client-secret"
+              id="bb-secret"
               type="password"
               autoComplete="off"
               spellCheck={false}
-              value={clientSecret}
+              value={secret}
               onChange={(e) => {
-                setClientSecret(e.target.value)
+                setSecret(e.target.value)
               }}
             />
+            <FieldDescription>
+              Shown once when the consumer is created. If you&apos;ve lost it,
+              regenerate it on Bitbucket and paste the new value here.
+            </FieldDescription>
           </Field>
         </div>
         <DialogFooter>

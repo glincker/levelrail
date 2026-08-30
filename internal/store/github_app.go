@@ -19,9 +19,15 @@ var ErrGitHubAppConnectionNotFound = errors.New("store: github app connection no
 // PEM private key live in internal/secrets instead, under
 // GitHubAppSecretsKey().
 type GitHubAppConnection struct {
-	AppID     int64
-	ClientID  string
-	CreatedAt string
+	AppID    int64
+	ClientID string
+	// InstanceURL is the GitHub instance this App is registered
+	// against: "https://github.com" for every connection until GitHub
+	// Enterprise Server support (migrations/0061), a real GHES base URL
+	// after. Never empty: the migration backfills the column, and
+	// SaveGitHubAppConnection requires a caller to pass one.
+	InstanceURL string
+	CreatedAt   string
 	// InstallationID and AccountLogin are nil until the App has been
 	// installed on a GitHub account/org (the redirect
 	// GET /api/v1/github-app/installed records). Pointers, not a
@@ -66,9 +72,9 @@ func GitHubAppSecretsKey() string {
 func (db *DB) SaveGitHubAppConnection(ctx context.Context, c GitHubAppConnection) error {
 	_, err := db.ExecContext(ctx, `
 		INSERT OR REPLACE INTO github_app_connections
-			(id, app_id, client_id, installation_id, account_login, created_at)
-		VALUES (1, ?, ?, ?, ?, ?)
-	`, c.AppID, c.ClientID, nullableInt64(c.InstallationID), nullableString(c.AccountLogin), c.CreatedAt)
+			(id, app_id, client_id, instance_url, installation_id, account_login, created_at)
+		VALUES (1, ?, ?, ?, ?, ?, ?)
+	`, c.AppID, c.ClientID, c.InstanceURL, nullableInt64(c.InstallationID), nullableString(c.AccountLogin), c.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("store: save github app connection: %w", err)
 	}
@@ -85,10 +91,10 @@ func (db *DB) GetGitHubAppConnection(ctx context.Context) (GitHubAppConnection, 
 		accountLogin   sql.NullString
 	)
 	err := db.QueryRowContext(ctx, `
-		SELECT app_id, client_id, installation_id, account_login, created_at
+		SELECT app_id, client_id, instance_url, installation_id, account_login, created_at
 		FROM github_app_connections
 		WHERE id = 1
-	`).Scan(&c.AppID, &c.ClientID, &installationID, &accountLogin, &c.CreatedAt)
+	`).Scan(&c.AppID, &c.ClientID, &c.InstanceURL, &installationID, &accountLogin, &c.CreatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return GitHubAppConnection{}, ErrGitHubAppConnectionNotFound
 	}

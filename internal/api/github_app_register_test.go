@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -46,7 +47,7 @@ func testRSAPrivateKeyPEM(t *testing.T) string {
 
 // testPrimaryDomain is the fixed primary domain every test in this file
 // configures before exercising a route that needs one
-// (githubAppBaseURL). A single constant, not a parameter: every call
+// (controlPlaneBaseURL). A single constant, not a parameter: every call
 // site here happens to want the same value, and a real test needing a
 // different one can pass it inline via db.UpdateIngressSettings
 // directly rather than this helper growing an unused-in-practice knob.
@@ -130,6 +131,101 @@ func TestHandleStartGitHubAppRegistration_Success(t *testing.T) {
 	}
 	if !strings.Contains(body, "Test Platform") {
 		t.Errorf("body does not reference the brand name (testBrand().Name): %s", body)
+	}
+}
+
+func TestHandleStartGitHubAppRegistration_NameOverride(t *testing.T) {
+	rt, db := newTestRouterWithGitHubApp(t, newFakeGitHubAppSecrets(), &fakeGitHubAppClient{})
+	cookie := loginTestSession(t, rt, db)
+	setPrimaryDomain(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/github-app/register/start?name="+url.QueryEscape("My Custom App"), ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "My Custom App") {
+		t.Errorf("body does not reference the overridden name: %s", body)
+	}
+	if strings.Contains(body, "Test Platform (") {
+		t.Errorf("body still contains the default computed name, override did not take effect: %s", body)
+	}
+}
+
+func TestHandleGetGitHubAppManifestPreview_NotConfigured(t *testing.T) {
+	rt, db := newTestRouter(t) // no WithGitHubAppSecrets: no master key
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/github-app/register/preview", ""))
+	if rec.Code != http.StatusNotImplemented {
+		t.Fatalf("status = %d, want 501, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestHandleGetGitHubAppManifestPreview_NoPrimaryDomain(t *testing.T) {
+	rt, db := newTestRouterWithGitHubApp(t, newFakeGitHubAppSecrets(), &fakeGitHubAppClient{})
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/github-app/register/preview", ""))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want 409, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestHandleGetGitHubAppManifestPreview_AlreadyConnected(t *testing.T) {
+	rt, db := newTestRouterWithGitHubApp(t, newFakeGitHubAppSecrets(), &fakeGitHubAppClient{})
+	cookie := loginTestSession(t, rt, db)
+	setPrimaryDomain(t, db)
+	if err := db.SaveGitHubAppConnection(context.Background(), store.GitHubAppConnection{
+		AppID: 1, ClientID: "Iv1.x", CreatedAt: "2026-08-14T00:00:00Z",
+	}); err != nil {
+		t.Fatalf("seed connection: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/github-app/register/preview", ""))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want 409, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+// TestHandleGetGitHubAppManifestPreview_Success also proves the preview
+// never mints a pending registration state: unlike register/start,
+// calling it must not consume the one in-flight slot githubAppState
+// holds, so a dialog that fetches a preview and is then cancelled
+// leaves a subsequent real register/start call free to begin its own.
+func TestHandleGetGitHubAppManifestPreview_Success(t *testing.T) {
+	rt, db := newTestRouterWithGitHubApp(t, newFakeGitHubAppSecrets(), &fakeGitHubAppClient{})
+	cookie := loginTestSession(t, rt, db)
+	setPrimaryDomain(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/github-app/register/preview", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`"app_name":"Test Platform (deploy.example.com)"`,
+		`"homepage_url":"https://deploy.example.com"`,
+		`"callback_url":"https://deploy.example.com/api/v1/github-app/callback"`,
+		`"setup_url":"https://deploy.example.com/api/v1/github-app/installed"`,
+		`"webhook_url":"https://deploy.example.com/api/v1/github-app/webhook"`,
+		`"webhook_active":false`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("body = %s, want it to contain %q", body, want)
+		}
+	}
+
+	rt.githubAppState.mu.Lock()
+	pending := rt.githubAppState.state
+	rt.githubAppState.mu.Unlock()
+	if pending != "" {
+		t.Error("preview must not have minted a pending registration state")
 	}
 }
 
@@ -229,6 +325,89 @@ func TestHandleGitHubAppCallback_Success(t *testing.T) {
 		if strings.Contains(cbRec.Body.String(), secret) {
 			t.Errorf("callback response body contains a secret value %q", secret)
 		}
+	}
+}
+
+// TestHandleGitHubAppCallback_GHEInstance drives the full register ->
+// callback round trip against a GitHub Enterprise Server instance_url,
+// proving the instance chosen at register/start survives through to
+// the callback (via pendingState's carried value, not the request
+// itself) and ends up both stored on the connection and used to build
+// the install-new redirect, rather than silently falling back to
+// github.com anywhere along the way.
+func TestHandleGitHubAppCallback_GHEInstance(t *testing.T) {
+	fakeClient := &fakeGitHubAppClient{
+		exchangeCreds: githubapp.Credentials{
+			AppID: 42, ClientID: "Iv1.abc", ClientSecret: "csecret",
+			WebhookSecret: "whsecret", PrivateKeyPEM: "pemdata", Slug: "my-app",
+		},
+	}
+	rt, db := newTestRouterWithGitHubApp(t, newFakeGitHubAppSecrets(), fakeClient)
+	cookie := loginTestSession(t, rt, db)
+	setPrimaryDomain(t, db)
+
+	startRec := httptest.NewRecorder()
+	startTarget := "/api/v1/github-app/register/start?instance_url=" + url.QueryEscape("https://ghe.example.com")
+	rt.Handler().ServeHTTP(startRec, authedRequest(t, cookie, http.MethodGet, startTarget, ""))
+	if startRec.Code != http.StatusOK {
+		t.Fatalf("start status = %d, body = %s", startRec.Code, startRec.Body.String())
+	}
+	if fakeClient.gotInstanceURL != "https://ghe.example.com" {
+		t.Errorf("CheckInstanceReachable called with instanceURL = %q, want the GHE instance", fakeClient.gotInstanceURL)
+	}
+	startBody := startRec.Body.String()
+	if !strings.Contains(startBody, `action="https://ghe.example.com/settings/apps/new?state=`) {
+		t.Errorf("form does not post to the GHE instance: %s", startBody)
+	}
+	state := extractState(t, startBody)
+
+	cbRec := httptest.NewRecorder()
+	target := "/api/v1/github-app/callback?code=the-code&state=" + url.QueryEscape(state)
+	rt.Handler().ServeHTTP(cbRec, authedRequest(t, cookie, http.MethodGet, target, ""))
+	if cbRec.Code != http.StatusFound {
+		t.Fatalf("callback status = %d, want 302, body = %s", cbRec.Code, cbRec.Body.String())
+	}
+	if fakeClient.gotInstanceURL != "https://ghe.example.com" {
+		t.Errorf("ExchangeManifestCode called with instanceURL = %q, want the GHE instance", fakeClient.gotInstanceURL)
+	}
+	loc := cbRec.Header().Get("Location")
+	if !strings.Contains(loc, "https://ghe.example.com/apps/my-app/installations/new") {
+		t.Errorf("Location = %q, want a redirect into the GHE instance's install-new page", loc)
+	}
+
+	conn, err := db.GetGitHubAppConnection(context.Background())
+	if err != nil {
+		t.Fatalf("GetGitHubAppConnection() error = %v", err)
+	}
+	if conn.InstanceURL != "https://ghe.example.com" {
+		t.Errorf("stored connection InstanceURL = %q, want the GHE instance", conn.InstanceURL)
+	}
+}
+
+func TestHandleStartGitHubAppRegistration_InvalidInstanceURL(t *testing.T) {
+	rt, db := newTestRouterWithGitHubApp(t, newFakeGitHubAppSecrets(), &fakeGitHubAppClient{})
+	cookie := loginTestSession(t, rt, db)
+	setPrimaryDomain(t, db)
+
+	rec := httptest.NewRecorder()
+	target := "/api/v1/github-app/register/start?instance_url=" + url.QueryEscape("not-a-url")
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, target, ""))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestHandleStartGitHubAppRegistration_UnreachableInstance(t *testing.T) {
+	fakeClient := &fakeGitHubAppClient{reachableErr: errors.New("connection refused")}
+	rt, db := newTestRouterWithGitHubApp(t, newFakeGitHubAppSecrets(), fakeClient)
+	cookie := loginTestSession(t, rt, db)
+	setPrimaryDomain(t, db)
+
+	rec := httptest.NewRecorder()
+	target := "/api/v1/github-app/register/start?instance_url=" + url.QueryEscape("https://ghe.example.com")
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, target, ""))
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("status = %d, want 502, body = %s", rec.Code, rec.Body.String())
 	}
 }
 

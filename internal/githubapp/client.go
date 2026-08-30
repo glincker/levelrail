@@ -16,6 +16,41 @@ import (
 // instead of making real network calls.
 const defaultBaseURL = "https://api.github.com"
 
+// defaultInstanceURL is github.com itself: every GitHubAppConnection
+// row's InstanceURL defaults to this (migrations/0061), and it is the
+// one instance value APIBaseURL treats as "use defaultBaseURL /
+// Client.BaseURL" rather than deriving a REST root from the instance
+// URL itself.
+const defaultInstanceURL = "https://github.com"
+
+// APIBaseURL derives the REST API root for instanceURL: github.com
+// itself routes through the dedicated api.github.com host
+// (defaultBaseURL, or Client.BaseURL when a test has overridden it), but
+// a GitHub Enterprise Server instance has no such split host, its REST
+// API lives under its own domain at /api/v3
+// (https://docs.github.com/en/enterprise-server/rest/about-the-rest-api).
+// instanceURL is treated as already-normalized (no trailing slash, a
+// real https URL): callers validate that once, at connect time, so this
+// pure derivation doesn't have to.
+func (c *Client) APIBaseURL(instanceURL string) string {
+	if instanceURL == "" || instanceURL == defaultInstanceURL {
+		return c.baseURL()
+	}
+	return instanceURL + "/api/v3"
+}
+
+// CheckInstanceReachable calls the unauthenticated GET /meta endpoint
+// (present on both api.github.com and a GHES instance's own /api/v3),
+// turning a GitHub Enterprise Server base URL an operator mistyped, or
+// one this control plane simply can't route to, into an immediate,
+// actionable save-time error instead of a silent failure the first time
+// the manifest flow's redirect actually needs it. Not called for
+// github.com itself (APIBaseURL's own default case): that host's
+// reachability is not this control plane's to diagnose.
+func (c *Client) CheckInstanceReachable(ctx context.Context, instanceURL string) error {
+	return c.do(ctx, c.APIBaseURL(instanceURL), http.MethodGet, "/meta", "", nil)
+}
+
 // apiVersion is the value GitHub's REST API docs currently document for
 // the X-GitHub-Api-Version header
 // (https://docs.github.com/en/rest/about-the-rest-api/api-versions):
@@ -24,6 +59,8 @@ const defaultBaseURL = "https://api.github.com"
 // client makes, per GitHub's own recommendation to always pin an
 // explicit version rather than floating on whatever the default is.
 const apiVersion = "2022-11-28"
+
+const bearerPrefix = "Bearer "
 
 // Client is a small, purpose-built GitHub REST API client covering only
 // what this control plane needs: manifest code exchange, installation
@@ -75,8 +112,8 @@ const maxErrorBodySnippet = 512
 // carrying one every current call site would pass as nil; a future
 // endpoint that does need one is a small, explicit addition here, not a
 // speculative parameter kept for its own sake.
-func (c *Client) do(ctx context.Context, method, path string, authHeader string, out any) error {
-	req, err := http.NewRequestWithContext(ctx, method, c.baseURL()+path, nil)
+func (c *Client) do(ctx context.Context, baseURL, method, path string, authHeader string, out any) error {
+	req, err := http.NewRequestWithContext(ctx, method, baseURL+path, nil)
 	if err != nil {
 		return fmt.Errorf("githubapp: build request: %w", err)
 	}
@@ -162,10 +199,10 @@ type manifestConversionResponse struct {
 // exactly once, is the only credential this call needs. If GitHub ever
 // starts requiring one, adding a personal-access-token Authorization
 // header here is the documented fix.
-func (c *Client) ExchangeManifestCode(ctx context.Context, code string) (Credentials, error) {
+func (c *Client) ExchangeManifestCode(ctx context.Context, instanceURL, code string) (Credentials, error) {
 	var resp manifestConversionResponse
 	path := "/app-manifests/" + url.PathEscape(code) + "/conversions"
-	if err := c.do(ctx, http.MethodPost, path, "", &resp); err != nil {
+	if err := c.do(ctx, c.APIBaseURL(instanceURL), http.MethodPost, path, "", &resp); err != nil {
 		return Credentials{}, err
 	}
 	return Credentials{
@@ -206,10 +243,10 @@ type installationResponse struct {
 // App itself (appJWT, from SignAppJWT) rather than as the installation:
 // this is the one call in this client that happens before an
 // installation access token exists to use instead.
-func (c *Client) GetInstallation(ctx context.Context, appJWT string, installationID int64) (InstallationInfo, error) {
+func (c *Client) GetInstallation(ctx context.Context, instanceURL, appJWT string, installationID int64) (InstallationInfo, error) {
 	var resp installationResponse
 	path := "/app/installations/" + strconv.FormatInt(installationID, 10)
-	if err := c.do(ctx, http.MethodGet, path, "Bearer "+appJWT, &resp); err != nil {
+	if err := c.do(ctx, c.APIBaseURL(instanceURL), http.MethodGet, path, bearerPrefix+appJWT, &resp); err != nil {
 		return InstallationInfo{}, err
 	}
 	return InstallationInfo{ID: resp.ID, AppID: resp.AppID, AccountLogin: resp.Account.Login}, nil
@@ -236,10 +273,10 @@ type installationTokenResponse struct {
 // (Authorization: Bearer <appJWT>), the same scheme GetInstallation
 // uses and the last call in this client that needs the App JWT rather
 // than the resulting installation token.
-func (c *Client) MintInstallationToken(ctx context.Context, appJWT string, installationID int64) (InstallationToken, error) {
+func (c *Client) MintInstallationToken(ctx context.Context, instanceURL, appJWT string, installationID int64) (InstallationToken, error) {
 	var resp installationTokenResponse
 	path := "/app/installations/" + strconv.FormatInt(installationID, 10) + "/access_tokens"
-	if err := c.do(ctx, http.MethodPost, path, "Bearer "+appJWT, &resp); err != nil {
+	if err := c.do(ctx, c.APIBaseURL(instanceURL), http.MethodPost, path, bearerPrefix+appJWT, &resp); err != nil {
 		return InstallationToken{}, err
 	}
 	expiresAt, err := time.Parse(time.RFC3339, resp.ExpiresAt)
@@ -292,12 +329,13 @@ const listPageCap = 20
 // ListInstallationRepos lists every repository accessible to token
 // (an installation access token from MintInstallationToken), across as
 // many pages as GitHub returns full pages for.
-func (c *Client) ListInstallationRepos(ctx context.Context, token string) ([]Repo, error) {
+func (c *Client) ListInstallationRepos(ctx context.Context, instanceURL, token string) ([]Repo, error) {
+	baseURL := c.APIBaseURL(instanceURL)
 	var out []Repo
 	for page := 1; page <= listPageCap; page++ {
 		var resp listRepositoriesResponse
 		path := fmt.Sprintf("/installation/repositories?per_page=%d&page=%d", listPerPage, page)
-		if err := c.do(ctx, http.MethodGet, path, "Bearer "+token, &resp); err != nil {
+		if err := c.do(ctx, baseURL, http.MethodGet, path, bearerPrefix+token, &resp); err != nil {
 			return nil, err
 		}
 		for _, r := range resp.Repositories {
@@ -332,13 +370,14 @@ type branchResponse struct {
 
 // ListBranches lists every branch of owner/repo, authenticated with an
 // installation access token the same way ListInstallationRepos is.
-func (c *Client) ListBranches(ctx context.Context, token, owner, repo string) ([]Branch, error) {
+func (c *Client) ListBranches(ctx context.Context, instanceURL, token, owner, repo string) ([]Branch, error) {
+	baseURL := c.APIBaseURL(instanceURL)
 	var out []Branch
 	for page := 1; page <= listPageCap; page++ {
 		var resp []branchResponse
 		path := fmt.Sprintf("/repos/%s/%s/branches?per_page=%d&page=%d",
 			url.PathEscape(owner), url.PathEscape(repo), listPerPage, page)
-		if err := c.do(ctx, http.MethodGet, path, "Bearer "+token, &resp); err != nil {
+		if err := c.do(ctx, baseURL, http.MethodGet, path, bearerPrefix+token, &resp); err != nil {
 			return nil, err
 		}
 		for _, b := range resp {

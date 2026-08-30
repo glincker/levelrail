@@ -16,8 +16,6 @@ import (
 // without losing the last real reading.
 const osPatchLookback = 48 * time.Hour
 
-const errInternal = "internal error"
-
 // nodePatchStatusResponse is GET /api/v1/nodes/{id}/patch-status's wire
 // shape. Checked distinguishes "never checked" (no sample yet: unknown
 // package manager, or the collector hasn't run) from Total == 0 (checked,

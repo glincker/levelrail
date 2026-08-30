@@ -42,7 +42,7 @@ func TestExchangeManifestCode_RequestAndResponseShape(t *testing.T) {
 		})
 	})
 
-	creds, err := c.ExchangeManifestCode(context.Background(), "the-code")
+	creds, err := c.ExchangeManifestCode(context.Background(), "", "the-code")
 	if err != nil {
 		t.Fatalf("ExchangeManifestCode() error = %v", err)
 	}
@@ -87,7 +87,7 @@ func TestExchangeManifestCode_CodeIsURLEscaped(t *testing.T) {
 		_ = json.NewEncoder(w).Encode(manifestConversionResponse{})
 	})
 
-	_, err := c.ExchangeManifestCode(context.Background(), "a/b c")
+	_, err := c.ExchangeManifestCode(context.Background(), "", "a/b c")
 	if err != nil {
 		t.Fatalf("ExchangeManifestCode() error = %v", err)
 	}
@@ -102,7 +102,7 @@ func TestExchangeManifestCode_ErrorResponse(t *testing.T) {
 		_, _ = w.Write([]byte(`{"message":"Not Found"}`))
 	})
 
-	_, err := c.ExchangeManifestCode(context.Background(), "bad-code")
+	_, err := c.ExchangeManifestCode(context.Background(), "", "bad-code")
 	if err == nil {
 		t.Fatal("ExchangeManifestCode() error = nil, want a wrapped apiError")
 	}
@@ -137,7 +137,7 @@ func TestGetInstallation_UsesBearerAppJWT(t *testing.T) {
 		})
 	})
 
-	info, err := c.GetInstallation(context.Background(), "the-app-jwt", 99)
+	info, err := c.GetInstallation(context.Background(), "", "the-app-jwt", 99)
 	if err != nil {
 		t.Fatalf("GetInstallation() error = %v", err)
 	}
@@ -166,7 +166,7 @@ func TestMintInstallationToken_ParsesExpiry(t *testing.T) {
 		})
 	})
 
-	tok, err := c.MintInstallationToken(context.Background(), "the-app-jwt", 7)
+	tok, err := c.MintInstallationToken(context.Background(), "", "the-app-jwt", 7)
 	if err != nil {
 		t.Fatalf("MintInstallationToken() error = %v", err)
 	}
@@ -201,7 +201,7 @@ func TestListInstallationRepos_Paginates(t *testing.T) {
 		_ = json.NewEncoder(w).Encode(listRepositoriesResponse{TotalCount: total, Repositories: repos})
 	})
 
-	repos, err := c.ListInstallationRepos(context.Background(), "tok")
+	repos, err := c.ListInstallationRepos(context.Background(), "", "tok")
 	if err != nil {
 		t.Fatalf("ListInstallationRepos() error = %v", err)
 	}
@@ -225,7 +225,7 @@ func TestListBranches_UsesInstallationToken(t *testing.T) {
 		})
 	})
 
-	branches, err := c.ListBranches(context.Background(), "install-token", "acme", "widgets")
+	branches, err := c.ListBranches(context.Background(), "", "install-token", "acme", "widgets")
 	if err != nil {
 		t.Fatalf("ListBranches() error = %v", err)
 	}

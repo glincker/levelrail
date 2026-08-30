@@ -928,20 +928,24 @@ func TestHandleTriggerBuild_InvalidBody(t *testing.T) {
 // even worth attempting.
 func TestIsGitHubHTTPSRepoURL(t *testing.T) {
 	cases := []struct {
-		url  string
-		want bool
+		url          string
+		instanceHost string
+		want         bool
 	}{
-		{"https://github.com/acme/widgets.git", true},
-		{"https://github.com/acme/widgets", true},
-		{"http://github.com/acme/widgets.git", false},
-		{"https://gitlab.com/acme/widgets.git", false},
-		{"git@github.com:acme/widgets.git", false},
-		{"not a url", false},
-		{"", false},
+		{"https://github.com/acme/widgets.git", "github.com", true},
+		{"https://github.com/acme/widgets", "github.com", true},
+		{"http://github.com/acme/widgets.git", "github.com", false},
+		{"https://gitlab.com/acme/widgets.git", "github.com", false},
+		{"git@github.com:acme/widgets.git", "github.com", false},
+		{"not a url", "github.com", false},
+		{"", "github.com", false},
+		{"https://ghe.example.com/acme/widgets.git", "ghe.example.com", true},
+		{"https://ghe.example.com/acme/widgets.git", "github.com", false},
+		{"https://github.com/acme/widgets.git", "ghe.example.com", false},
 	}
 	for _, c := range cases {
-		if got := isGitHubHTTPSRepoURL(c.url); got != c.want {
-			t.Errorf("isGitHubHTTPSRepoURL(%q) = %v, want %v", c.url, got, c.want)
+		if got := isGitHubHTTPSRepoURL(c.url, c.instanceHost); got != c.want {
+			t.Errorf("isGitHubHTTPSRepoURL(%q, %q) = %v, want %v", c.url, c.instanceHost, got, c.want)
 		}
 	}
 }

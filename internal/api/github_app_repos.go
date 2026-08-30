@@ -24,33 +24,46 @@ var (
 // every call rather than caching one: installation tokens are
 // short-lived (~1h) and this is low-frequency, human-driven traffic,
 // so a cache would add invalidation complexity for little benefit.
-func (rt *Router) mintGitHubAppInstallationToken(ctx context.Context) (string, error) {
+// Returns the connection's own InstanceURL alongside the token: every
+// caller needs it too, to keep talking to the same GitHub or GHES
+// instance the App is actually registered on.
+func (rt *Router) mintGitHubAppInstallationToken(ctx context.Context) (instanceURL, token string, err error) {
 	conn, err := rt.githubApp.GetGitHubAppConnection(ctx)
 	if errors.Is(err, store.ErrGitHubAppConnectionNotFound) {
-		return "", errGitHubAppNotConnected
+		return "", "", errGitHubAppNotConnected
 	}
 	if err != nil {
-		return "", fmt.Errorf("get github app connection: %w", err)
+		return "", "", fmt.Errorf("get github app connection: %w", err)
 	}
 	if conn.InstallationID == nil {
-		return "", errGitHubAppNotInstalled
+		return "", "", errGitHubAppNotInstalled
+	}
+	// Defensive, not expected in practice: migrations/0061 backfills
+	// every pre-existing row to "https://github.com", and every writer
+	// of a connection row (handleGitHubAppCallback,
+	// handleConnectGitHubAppManually) always sets InstanceURL explicitly
+	// now. An empty value here would otherwise build a bare
+	// "/owner/repo.git" clone URL below.
+	instanceURL = conn.InstanceURL
+	if instanceURL == "" {
+		instanceURL = "https://github.com"
 	}
 
 	privateKeyPEM, err := rt.githubAppSecrets.Resolve(ctx, store.GitHubAppSecretsKey(), "private_key")
 	if err != nil {
-		return "", fmt.Errorf("resolve github app private key: %w", err)
+		return "", "", fmt.Errorf("resolve github app private key: %w", err)
 	}
 
 	appJWT, err := githubapp.SignAppJWT(conn.AppID, []byte(privateKeyPEM), time.Now())
 	if err != nil {
-		return "", fmt.Errorf("sign github app jwt: %w", err)
+		return "", "", fmt.Errorf("sign github app jwt: %w", err)
 	}
 
-	tok, err := rt.githubAppClient.MintInstallationToken(ctx, appJWT, *conn.InstallationID)
+	tok, err := rt.githubAppClient.MintInstallationToken(ctx, instanceURL, appJWT, *conn.InstallationID)
 	if err != nil {
-		return "", fmt.Errorf("mint github app installation token: %w", err)
+		return "", "", fmt.Errorf("mint github app installation token: %w", err)
 	}
-	return tok.Token, nil
+	return instanceURL, tok.Token, nil
 }
 
 // writeGitHubAppTokenError maps mintGitHubAppInstallationToken's
@@ -80,14 +93,14 @@ type gitHubAppRepoResource struct {
 	CloneURL string `json:"clone_url"`
 }
 
-func toGitHubAppRepoResource(r githubapp.Repo) gitHubAppRepoResource {
+func toGitHubAppRepoResource(r githubapp.Repo, instanceURL string) gitHubAppRepoResource {
 	return gitHubAppRepoResource{
 		FullName:      r.FullName,
 		Name:          r.Name,
 		OwnerLogin:    r.OwnerLogin,
 		Private:       r.Private,
 		DefaultBranch: r.DefaultBranch,
-		CloneURL:      "https://github.com/" + r.FullName + ".git",
+		CloneURL:      instanceURL + "/" + r.FullName + ".git",
 	}
 }
 
@@ -104,13 +117,13 @@ func (rt *Router) handleListGitHubAppRepos(w http.ResponseWriter, r *http.Reques
 	}
 
 	ctx := r.Context()
-	token, err := rt.mintGitHubAppInstallationToken(ctx)
+	instanceURL, token, err := rt.mintGitHubAppInstallationToken(ctx)
 	if err != nil {
 		rt.writeGitHubAppTokenError(w, "api: mint github app installation token for repo listing failed", err)
 		return
 	}
 
-	repos, err := rt.githubAppClient.ListInstallationRepos(ctx, token)
+	repos, err := rt.githubAppClient.ListInstallationRepos(ctx, instanceURL, token)
 	if err != nil {
 		rt.logger.Error("api: list github app installation repos failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusBadGateway, "failed to list repositories from github")
@@ -119,7 +132,7 @@ func (rt *Router) handleListGitHubAppRepos(w http.ResponseWriter, r *http.Reques
 
 	out := make([]gitHubAppRepoResource, 0, len(repos))
 	for _, repo := range repos {
-		out = append(out, toGitHubAppRepoResource(repo))
+		out = append(out, toGitHubAppRepoResource(repo, instanceURL))
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -149,13 +162,13 @@ func (rt *Router) handleListGitHubAppBranches(w http.ResponseWriter, r *http.Req
 	}
 
 	ctx := r.Context()
-	token, err := rt.mintGitHubAppInstallationToken(ctx)
+	instanceURL, token, err := rt.mintGitHubAppInstallationToken(ctx)
 	if err != nil {
 		rt.writeGitHubAppTokenError(w, "api: mint github app installation token for branch listing failed", err)
 		return
 	}
 
-	branches, err := rt.githubAppClient.ListBranches(ctx, token, owner, repo)
+	branches, err := rt.githubAppClient.ListBranches(ctx, instanceURL, token, owner, repo)
 	if err != nil {
 		rt.logger.Error("api: list github app repo branches failed", slog.String("error", err.Error()), slog.String("owner", owner), slog.String("repo", repo))
 		writeError(w, http.StatusBadGateway, "failed to list branches from github")
