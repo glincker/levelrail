@@ -330,6 +330,45 @@ describe('GitSourceCard', () => {
     ).toHaveLength(0)
   })
 
+  it('sends a services map instead of additional_services once the services map tab is picked', async () => {
+    const user = userEvent.setup()
+    renderCard()
+
+    await user.click(await screen.findByRole('button', { name: 'Pick manual URL (test)' }))
+    await user.click(screen.getByRole('tab', { name: 'Services map' }))
+    await user.click(screen.getByRole('button', { name: 'Add service' }))
+    await user.type(screen.getByPlaceholderText('web'), 'web')
+    await user.type(screen.getByPlaceholderText('3000'), '3000')
+
+    await user.click(screen.getByRole('button', { name: 'Connect' }))
+
+    await waitFor(() => {
+      expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(1)
+    })
+    const [call] = callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')
+    const body = JSON.parse(call?.init?.body as string) as {
+      additional_services?: Record<string, unknown>
+      services?: Record<string, { build: { type: string }; port?: number }>
+    }
+    expect(body.additional_services).toBeUndefined()
+    expect(body.services).toEqual({
+      web: { build: { type: 'dockerfile', path: undefined }, port: 3000 },
+    })
+  })
+
+  it('blocks save and shows an error when the services map tab has no service rows filled in', async () => {
+    const user = userEvent.setup()
+    renderCard()
+
+    await user.click(await screen.findByRole('button', { name: 'Pick manual URL (test)' }))
+    await user.click(screen.getByRole('tab', { name: 'Services map' }))
+
+    await user.click(screen.getByRole('button', { name: 'Connect' }))
+
+    await screen.findByText(/Add at least one service/)
+    expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(0)
+  })
+
   it('sends the chosen build pack and path with a manual connect', async () => {
     const user = userEvent.setup()
     renderCard()

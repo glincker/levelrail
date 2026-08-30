@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
 // GitSource is one app's connected git repository (migrations/0029_service_git_sources.sql):
@@ -30,9 +32,25 @@ type GitSource struct {
 	// specServiceFromDesired for it (migrations/0057_git_source_additional_services.sql).
 	// A monorepo's other services rarely share this app's exact build
 	// config, so this is a map, not a single shared BuildType/BuildPath.
+	//
+	// Mutually exclusive with Services (internal/api's
+	// validateAdditionalServices enforces this at write time): an app
+	// that has grown a real Services map fans out through that instead,
+	// see Services's own doc comment.
 	AdditionalServices map[string]GitSourceBuild
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
+	// Services is an app.yaml-style services: map, persisted so a push
+	// can re-run the same fan-out deploy.Pipeline.DeploySpec (internal/
+	// api/apps_multi.go's handleDeploySpec) already performs for a
+	// manual/API-triggered multi-service deploy, without an operator
+	// re-submitting it by hand on every commit
+	// (migrations/0063_git_source_services_spec.sql). Empty/nil for
+	// every git source created before this field existed, and for any
+	// git source that only ever used AdditionalServices: a webhook keeps
+	// walking AdditionalServices exactly as before when this is empty,
+	// see handleGitPushWebhook's own doc comment.
+	Services  map[string]spec.Service
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // GitSourceBuild is one additional service's own build config within
@@ -72,17 +90,22 @@ func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
 	if err != nil {
 		return fmt.Errorf("store: save git source for %q: %w", g.ServiceName, err)
 	}
+	servicesJSON, err := marshalGitSourceServices(g.Services)
+	if err != nil {
+		return fmt.Errorf("store: save git source for %q: %w", g.ServiceName, err)
+	}
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO service_git_sources (service_name, repo_url, branch, build_type, build_path, additional_services, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO service_git_sources (service_name, repo_url, branch, build_type, build_path, additional_services, services_spec, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (service_name) DO UPDATE SET
 			repo_url = excluded.repo_url,
 			branch = excluded.branch,
 			build_type = excluded.build_type,
 			build_path = excluded.build_path,
 			additional_services = excluded.additional_services,
+			services_spec = excluded.services_spec,
 			updated_at = excluded.updated_at
-	`, g.ServiceName, g.RepoURL, g.Branch, g.BuildType, g.BuildPath, additionalJSON)
+	`, g.ServiceName, g.RepoURL, g.Branch, g.BuildType, g.BuildPath, additionalJSON, servicesJSON)
 	if err != nil {
 		return fmt.Errorf("store: save git source for %q: %w", g.ServiceName, err)
 	}
@@ -93,7 +116,7 @@ func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
 // ErrGitSourceNotFound if none is.
 func (db *DB) GetGitSource(ctx context.Context, serviceName string) (*GitSource, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT service_name, repo_url, branch, build_type, build_path, additional_services, created_at, updated_at
+		SELECT service_name, repo_url, branch, build_type, build_path, additional_services, services_spec, created_at, updated_at
 		FROM service_git_sources WHERE service_name = ?
 	`, serviceName)
 	g, err := scanGitSource(row.Scan)
@@ -116,6 +139,21 @@ func marshalGitSourceAdditionalServices(m map[string]GitSourceBuild) (string, er
 	b, err := json.Marshal(m)
 	if err != nil {
 		return "", fmt.Errorf("marshal additional services: %w", err)
+	}
+	return string(b), nil
+}
+
+// marshalGitSourceServices serializes m for storage, defaulting a
+// nil/empty map to "{}" the same way marshalGitSourceAdditionalServices
+// does, for the identical reason (scanGitSource's json.Unmarshal must
+// never see SQL NULL or an empty string).
+func marshalGitSourceServices(m map[string]spec.Service) (string, error) {
+	if len(m) == 0 {
+		return "{}", nil
+	}
+	b, err := json.Marshal(m)
+	if err != nil {
+		return "", fmt.Errorf("marshal services: %w", err)
 	}
 	return string(b), nil
 }
@@ -144,15 +182,18 @@ func (db *DB) DeleteGitSource(ctx context.Context, serviceName string) error {
 
 func scanGitSource(scan func(dest ...any) error) (*GitSource, error) {
 	var (
-		g                    GitSource
-		additionalJSON       string
-		createdAt, updatedAt string
+		g                       GitSource
+		additionalJSON, svcJSON string
+		createdAt, updatedAt    string
 	)
-	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &additionalJSON, &createdAt, &updatedAt); err != nil {
+	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &additionalJSON, &svcJSON, &createdAt, &updatedAt); err != nil {
 		return nil, err
 	}
 	if err := json.Unmarshal([]byte(additionalJSON), &g.AdditionalServices); err != nil {
 		return nil, fmt.Errorf("unmarshal additional_services: %w", err)
+	}
+	if err := json.Unmarshal([]byte(svcJSON), &g.Services); err != nil {
+		return nil, fmt.Errorf("unmarshal services_spec: %w", err)
 	}
 	var err error
 	g.CreatedAt, err = time.Parse(time.RFC3339Nano, createdAt)

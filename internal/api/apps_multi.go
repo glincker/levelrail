@@ -128,24 +128,9 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "services must declare at least one service")
 		return
 	}
-	for key, svc := range req.Services {
-		switch svc.Build.Type {
-		case spec.BuildDockerfile, spec.BuildRailpack, spec.BuildStatic, spec.BuildImage, spec.BuildCompose:
-			// Supported. spec.BuildImage needs no build at all
-			// (internal/deploy.Pipeline.deployImage), but this switch's job
-			// is only to reject what internal/deploy.Pipeline.Deploy's own
-			// switch can't handle, not to decide which types need a real
-			// build; a sibling service in the same app.yaml that does need
-			// one is exactly why this request still requires repo_url/ref
-			// even when every service happens to be build.type: image.
-			// spec.BuildCompose is expanded into real per-service entries
-			// before Deploy ever sees it (internal/deploy.Pipeline.
-			// DeploySpec's own expandComposeServices), never dispatched to
-			// Deploy's switch itself.
-		default:
-			writeError(w, http.StatusBadRequest, fmt.Sprintf("service %q: build.type %q is not recognized", key, svc.Build.Type))
-			return
-		}
+	if err := validateDeploySpecServiceTypes(req.Services); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
 	imageRepoBase := req.ImageRepoBase
@@ -213,4 +198,28 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 		status = http.StatusMultiStatus
 	}
 	writeJSON(w, status, resp)
+}
+
+// validateDeploySpecServiceTypes rejects any build.type
+// internal/deploy.Pipeline.Deploy's own switch can't handle. Shared by
+// handleDeploySpec (a manual/API-triggered fan-out) and
+// handleSetGitSource (persisting a services: map for a webhook-triggered
+// one, git_sources.go), so the two never validate build types
+// differently. spec.BuildImage needs no build at all
+// (internal/deploy.Pipeline.deployImage), but that doesn't make it
+// invalid here: a sibling service in the same services: map that does
+// need a real build is exactly why a fan-out request still needs
+// repo_url/ref even when every other service is build.type: image.
+// spec.BuildCompose is expanded into real per-service entries before
+// Deploy ever sees it (internal/deploy.Pipeline.DeploySpec's own
+// expandComposeServices), never dispatched to Deploy's switch itself.
+func validateDeploySpecServiceTypes(services map[string]spec.Service) error {
+	for key, svc := range services {
+		switch svc.Build.Type {
+		case spec.BuildDockerfile, spec.BuildRailpack, spec.BuildStatic, spec.BuildImage, spec.BuildCompose:
+		default:
+			return fmt.Errorf("service %q: build.type %q is not recognized", key, svc.Build.Type)
+		}
+	}
+	return nil
 }

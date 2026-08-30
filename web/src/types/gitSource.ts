@@ -18,6 +18,24 @@ export interface GitSourceBuild {
   build_path?: string
 }
 
+// GitSourceServiceBuild mirrors internal/spec.Build's own wire shape,
+// the subset this form actually collects (build.type/path/image): the
+// same subset DeploySpecServiceInput (appGroup.ts) already collects for
+// the manual/API deploy-spec form, since a persisted services: map is
+// the identical shape, just saved on the git source instead of sent
+// per-request.
+export interface GitSourceServiceBuild {
+  type: 'dockerfile' | 'railpack' | 'static' | 'image' | 'compose'
+  path?: string
+  image?: string
+}
+
+export interface GitSourceService {
+  build: GitSourceServiceBuild
+  port?: number
+  domains?: string[]
+}
+
 export interface GitSourceResource {
   service_name: string
   repo_url: string
@@ -26,8 +44,14 @@ export interface GitSourceResource {
   build_path?: string
   // additional_services fans one push out to sibling services under the
   // same app group (apps_group.go), keyed by the sibling's own service
-  // name.
+  // name. Mutually exclusive with services, see that field's own doc
+  // comment.
   additional_services?: Record<string, GitSourceBuild>
+  // services is an app.yaml-style services: map (store.GitSource.Services's
+  // own doc comment): when set, a push fans out through the same
+  // deploy.Pipeline.DeploySpec logic POST .../deploy-spec uses, instead
+  // of additional_services's own flat rebuild list.
+  services?: Record<string, GitSourceService>
   has_token: boolean
   webhook_url: string
   webhook_secret?: string
@@ -47,4 +71,5 @@ export interface SetGitSourceRequest {
   build_path?: string
   token?: string
   additional_services?: Record<string, GitSourceBuild>
+  services?: Record<string, GitSourceService>
 }
