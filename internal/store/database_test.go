@@ -60,8 +60,10 @@ func TestSaveAndGetDesiredDatabase_Resources(t *testing.T) {
 		Engine:  EnginePostgres,
 		Version: "16",
 		Resources: &ServiceResources{
-			MemoryBytes: 512 * 1024 * 1024,
-			NanoCPUs:    500_000_000,
+			MemoryBytes:     512 * 1024 * 1024,
+			NanoCPUs:        500_000_000,
+			SwapMemoryBytes: 1024 * 1024 * 1024,
+			CPUSetCPUs:      "0-1",
 		},
 	}
 	if err := db.SaveDesiredDatabase(ctx, want); err != nil {

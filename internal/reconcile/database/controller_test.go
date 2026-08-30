@@ -1236,8 +1236,10 @@ func TestController_Reconcile_Resources_ReachesContainerSpec(t *testing.T) {
 		Engine:  store.EngineRedis,
 		Version: "7",
 		Resources: &store.ServiceResources{
-			MemoryBytes: 512 * 1024 * 1024,
-			NanoCPUs:    500_000_000,
+			MemoryBytes:     512 * 1024 * 1024,
+			NanoCPUs:        500_000_000,
+			SwapMemoryBytes: 1024 * 1024 * 1024,
+			CPUSetCPUs:      "0-1",
 		},
 	}
 	c := New("main", &fakeStore{db: desired}, rt)
@@ -1246,7 +1248,12 @@ func TestController_Reconcile_Resources_ReachesContainerSpec(t *testing.T) {
 		t.Fatalf("Reconcile() error = %v", err)
 	}
 
-	want := &docker.Resources{MemoryBytes: 512 * 1024 * 1024, NanoCPUs: 500_000_000}
+	want := &docker.Resources{
+		MemoryBytes:     512 * 1024 * 1024,
+		NanoCPUs:        500_000_000,
+		SwapMemoryBytes: 1024 * 1024 * 1024,
+		CPUSetCPUs:      "0-1",
+	}
 	if got := rt.lastCreateSpec.Resources; !reflect.DeepEqual(got, want) {
 		t.Errorf("created ContainerSpec.Resources = %+v, want %+v", got, want)
 	}

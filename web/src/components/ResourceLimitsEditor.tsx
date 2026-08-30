@@ -36,12 +36,21 @@ import { useRestartRequiredToast } from '../hooks/useRestartRequiredToast'
 // and formatBytes of whatever gets saved always prints a round number.
 // Larger apps that want GiB just type the MiB equivalent (e.g. 4096 for
 // 4 GiB); that is a fair tradeoff for staying lossless.
+// cpusetPattern mirrors internal/spec/schema/app.schema.json's own
+// resources.cpuSet pattern exactly: Docker's cpuset-cpus format, e.g.
+// "0-3" or "0,2".
+const cpusetPattern = /^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$/
+
 const resourcesSchema = z
   .object({
     memoryEnabled: z.boolean(),
     memoryMib: z.string().trim(),
     cpuEnabled: z.boolean(),
     cpuCores: z.string().trim(),
+    swapEnabled: z.boolean(),
+    swapMib: z.string().trim(),
+    cpusetEnabled: z.boolean(),
+    cpusetValue: z.string().trim(),
   })
   .superRefine((data, ctx) => {
     if (data.memoryEnabled) {
@@ -70,6 +79,48 @@ const resourcesSchema = z
         })
       }
     }
+    if (data.swapEnabled) {
+      if (!data.memoryEnabled) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Swap requires a memory limit to also be set',
+          path: ['swapMib'],
+        })
+      }
+      const n = Number(data.swapMib)
+      if (!Number.isFinite(n) || n <= 0) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Enter a positive whole number of MiB',
+          path: ['swapMib'],
+        })
+      } else if (!Number.isInteger(n)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Swap must be a whole number of MiB',
+          path: ['swapMib'],
+        })
+      } else if (data.memoryEnabled) {
+        // Docker's MemorySwap is memory+swap combined, not swap on top
+        // of memory, so a value below the memory limit is nonsensical.
+        const memoryN = Number(data.memoryMib)
+        if (Number.isFinite(memoryN) && n < memoryN) {
+          ctx.addIssue({
+            code: 'custom',
+            message:
+              'Swap is memory+swap combined, so it must be at least the memory limit',
+            path: ['swapMib'],
+          })
+        }
+      }
+    }
+    if (data.cpusetEnabled && !cpusetPattern.test(data.cpusetValue)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Enter a CPU list/range, e.g. "0-3" or "0,2"',
+        path: ['cpusetValue'],
+      })
+    }
   })
 
 type ResourcesFormValues = z.infer<typeof resourcesSchema>
@@ -79,6 +130,8 @@ function toFieldValues(
 ): ResourcesFormValues {
   const memoryBytes = resources?.memory_bytes
   const nanoCpus = resources?.nano_cpus
+  const swapBytes = resources?.swap_memory_bytes
+  const cpusetCpus = resources?.cpuset_cpus
   return {
     memoryEnabled: !!memoryBytes && memoryBytes > 0,
     memoryMib:
@@ -87,6 +140,13 @@ function toFieldValues(
         : '',
     cpuEnabled: !!nanoCpus && nanoCpus > 0,
     cpuCores: nanoCpus && nanoCpus > 0 ? String(nanoCpus / 1_000_000_000) : '',
+    swapEnabled: !!swapBytes && swapBytes > 0,
+    swapMib:
+      swapBytes && swapBytes > 0
+        ? String(Math.round(swapBytes / 1_048_576))
+        : '',
+    cpusetEnabled: !!cpusetCpus,
+    cpusetValue: cpusetCpus ?? '',
   }
 }
 
@@ -103,6 +163,10 @@ function toResources(values: ResourcesFormValues): ServiceResources {
     nano_cpus: values.cpuEnabled
       ? Math.round(Number(values.cpuCores) * 1_000_000_000)
       : 0,
+    swap_memory_bytes: values.swapEnabled
+      ? Math.round(Number(values.swapMib)) * 1_048_576
+      : 0,
+    cpuset_cpus: values.cpusetEnabled ? values.cpusetValue : '',
   }
 }
 
@@ -140,8 +204,8 @@ export function ResourceLimitsEditor({ app }: { app: AppDetail }) {
           Resource limits
         </CardTitle>
         <CardDescription>
-          Memory and CPU limits applied to the container at create time. Leave a
-          limit off to run unbounded.
+          Memory, CPU, swap, and CPU pinning limits applied to the container
+          at create time. Leave a limit off to run unbounded.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -238,6 +302,98 @@ export function ResourceLimitsEditor({ app }: { app: AppDetail }) {
                   ) : (
                     <p className="mt-3 text-sm text-muted-foreground">
                       No CPU limit set.
+                    </p>
+                  )
+                }
+              />
+            </div>
+
+            <div className="rounded-md border border-border p-3">
+              <Field orientation="horizontal">
+                <Controller
+                  control={control}
+                  name="swapEnabled"
+                  render={({ field }) => (
+                    <Switch
+                      id="swap-enabled"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  )}
+                />
+                <FieldLabel htmlFor="swap-enabled">Swap limit</FieldLabel>
+              </Field>
+              <FieldDescription className="mt-1">
+                Currently: {formatBytes(app.resources?.swap_memory_bytes)}
+              </FieldDescription>
+              <Controller
+                control={control}
+                name="swapEnabled"
+                render={({ field }) =>
+                  field.value ? (
+                    <FieldGroup className="mt-3 gap-2">
+                      <Field>
+                        <FieldLabel htmlFor="swap-mib">Limit (MiB)</FieldLabel>
+                        <Input
+                          id="swap-mib"
+                          {...register('swapMib')}
+                          inputMode="numeric"
+                          placeholder="1024"
+                        />
+                        <FieldError errors={[formState.errors.swapMib]} />
+                      </Field>
+                    </FieldGroup>
+                  ) : (
+                    <p className="mt-3 text-sm text-muted-foreground">
+                      No swap limit set.
+                    </p>
+                  )
+                }
+              />
+            </div>
+
+            <div className="rounded-md border border-border p-3">
+              <Field orientation="horizontal">
+                <Controller
+                  control={control}
+                  name="cpusetEnabled"
+                  render={({ field }) => (
+                    <Switch
+                      id="cpuset-enabled"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  )}
+                />
+                <FieldLabel htmlFor="cpuset-enabled">CPU pinning</FieldLabel>
+              </Field>
+              <FieldDescription className="mt-1">
+                Currently:{' '}
+                {app.resources?.cpuset_cpus
+                  ? app.resources.cpuset_cpus
+                  : 'not set'}
+              </FieldDescription>
+              <Controller
+                control={control}
+                name="cpusetEnabled"
+                render={({ field }) =>
+                  field.value ? (
+                    <FieldGroup className="mt-3 gap-2">
+                      <Field>
+                        <FieldLabel htmlFor="cpuset-value">
+                          CPUs (Docker cpuset-cpus format)
+                        </FieldLabel>
+                        <Input
+                          id="cpuset-value"
+                          {...register('cpusetValue')}
+                          placeholder="0-3"
+                        />
+                        <FieldError errors={[formState.errors.cpusetValue]} />
+                      </Field>
+                    </FieldGroup>
+                  ) : (
+                    <p className="mt-3 text-sm text-muted-foreground">
+                      No CPU pinning set.
                     </p>
                   )
                 }

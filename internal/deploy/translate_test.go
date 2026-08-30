@@ -40,7 +40,7 @@ func TestParseMemoryBytes(t *testing.T) {
 }
 
 func TestToServiceResources(t *testing.T) {
-	got, err := toServiceResources(spec.Resources{Memory: "512Mi", CPU: 0.5})
+	got, err := toServiceResources(spec.Resources{Memory: "512Mi", CPU: 0.5, SwapMemory: "1Gi", CPUSet: "0-1"})
 	if err != nil {
 		t.Fatalf("toServiceResources() error = %v", err)
 	}
@@ -50,12 +50,44 @@ func TestToServiceResources(t *testing.T) {
 	if got.NanoCPUs != 500_000_000 {
 		t.Errorf("NanoCPUs = %d, want 500000000", got.NanoCPUs)
 	}
+	if got.SwapMemoryBytes != 1024*1024*1024 {
+		t.Errorf("SwapMemoryBytes = %d, want %d", got.SwapMemoryBytes, 1024*1024*1024)
+	}
+	if got.CPUSetCPUs != "0-1" {
+		t.Errorf("CPUSetCPUs = %q, want %q", got.CPUSetCPUs, "0-1")
+	}
 }
 
 func TestToServiceResources_InvalidMemoryPropagatesError(t *testing.T) {
 	_, err := toServiceResources(spec.Resources{Memory: "not-a-size"})
 	if err == nil {
 		t.Fatal("toServiceResources() error = nil, want an error for an invalid memory string")
+	}
+}
+
+func TestToServiceResources_InvalidSwapMemoryPropagatesError(t *testing.T) {
+	_, err := toServiceResources(spec.Resources{Memory: "512Mi", SwapMemory: "not-a-size"})
+	if err == nil {
+		t.Fatal("toServiceResources() error = nil, want an error for an invalid swapMemory string")
+	}
+}
+
+func TestToServiceResources_SwapBelowMemoryRejected(t *testing.T) {
+	// Docker's MemorySwap is memory+swap combined, not swap on top of
+	// memory, so a value below the memory limit is nonsensical.
+	_, err := toServiceResources(spec.Resources{Memory: "512Mi", SwapMemory: "256Mi"})
+	if err == nil {
+		t.Fatal("toServiceResources() error = nil, want an error when swapMemory is below memory")
+	}
+}
+
+func TestToServiceResources_SwapEqualToMemoryAccepted(t *testing.T) {
+	got, err := toServiceResources(spec.Resources{Memory: "512Mi", SwapMemory: "512Mi"})
+	if err != nil {
+		t.Fatalf("toServiceResources() error = %v, want nil (swap equal to memory means no swap, but is valid)", err)
+	}
+	if got.SwapMemoryBytes != 512*1024*1024 {
+		t.Errorf("SwapMemoryBytes = %d, want %d", got.SwapMemoryBytes, 512*1024*1024)
 	}
 }
 

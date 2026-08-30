@@ -219,6 +219,56 @@ func TestBuildHostConfig_DNS(t *testing.T) {
 	}
 }
 
+func TestBuildHostConfig_Resources(t *testing.T) {
+	tests := []struct {
+		name           string
+		resources      *Resources
+		wantMemory     int64
+		wantNanoCPUs   int64
+		wantMemorySwap int64
+		wantCpusetCpus string
+	}{
+		{name: "nil resources: everything zero"},
+		{
+			name:         "memory and cpu only, no swap or cpuset",
+			resources:    &Resources{MemoryBytes: 512 * 1024 * 1024, NanoCPUs: 500_000_000},
+			wantMemory:   512 * 1024 * 1024,
+			wantNanoCPUs: 500_000_000,
+		},
+		{
+			name: "swap and cpuset set alongside memory and cpu",
+			resources: &Resources{
+				MemoryBytes:     512 * 1024 * 1024,
+				NanoCPUs:        500_000_000,
+				SwapMemoryBytes: 1024 * 1024 * 1024,
+				CPUSetCPUs:      "0-1",
+			},
+			wantMemory:     512 * 1024 * 1024,
+			wantNanoCPUs:   500_000_000,
+			wantMemorySwap: 1024 * 1024 * 1024,
+			wantCpusetCpus: "0-1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hostConfig := buildHostConfig(ContainerSpec{Name: "web", Resources: tt.resources}, nat.PortMap{})
+			if hostConfig.Memory != tt.wantMemory {
+				t.Errorf("Resources.Memory = %d, want %d", hostConfig.Memory, tt.wantMemory)
+			}
+			if hostConfig.NanoCPUs != tt.wantNanoCPUs {
+				t.Errorf("Resources.NanoCPUs = %d, want %d", hostConfig.NanoCPUs, tt.wantNanoCPUs)
+			}
+			if hostConfig.MemorySwap != tt.wantMemorySwap {
+				t.Errorf("Resources.MemorySwap = %d, want %d", hostConfig.MemorySwap, tt.wantMemorySwap)
+			}
+			if hostConfig.CpusetCpus != tt.wantCpusetCpus {
+				t.Errorf("Resources.CpusetCpus = %q, want %q", hostConfig.CpusetCpus, tt.wantCpusetCpus)
+			}
+		})
+	}
+}
+
 func TestGatewayIPFromNetworkInspect(t *testing.T) {
 	tests := []struct {
 		name    string

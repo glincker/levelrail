@@ -9,6 +9,8 @@
 export interface ServiceResources {
   memory_bytes?: number
   nano_cpus?: number
+  swap_memory_bytes?: number
+  cpuset_cpus?: string
 }
 
 export interface ServiceProbe {

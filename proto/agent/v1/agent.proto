@@ -145,6 +145,8 @@ message PortBinding {
 message Resources {
   int64 memory_bytes = 1;
   int64 nano_cpus = 2;
+  int64 swap_memory_bytes = 3;
+  string cpuset_cpus = 4;
 }
 
 message VolumeMount {

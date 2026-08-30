@@ -375,7 +375,7 @@ func TestPlanFromFlags(t *testing.T) {
 				"web": {
 					Build:     spec.Build{Type: spec.BuildDockerfile},
 					Port:      3000,
-					Resources: &spec.Resources{Memory: "512Mi", CPU: 0.5},
+					Resources: &spec.Resources{Memory: "512Mi", CPU: 0.5, SwapMemory: "1Gi", CPUSet: "0-1"},
 					Health:    &spec.Health{Readiness: &spec.Probe{Path: "/healthz", Interval: "5s", Timeout: "2s", Failures: 3}},
 				},
 			}},
@@ -388,6 +388,12 @@ func TestPlanFromFlags(t *testing.T) {
 				}
 				if p.CreateBody.Resources.NanoCPUs != 500_000_000 {
 					t.Errorf("NanoCPUs = %d, want 500000000", p.CreateBody.Resources.NanoCPUs)
+				}
+				if p.CreateBody.Resources.SwapMemoryBytes != 1024*1024*1024 {
+					t.Errorf("SwapMemoryBytes = %d, want %d", p.CreateBody.Resources.SwapMemoryBytes, 1024*1024*1024)
+				}
+				if p.CreateBody.Resources.CPUSetCPUs != "0-1" {
+					t.Errorf("CPUSetCPUs = %q, want %q", p.CreateBody.Resources.CPUSetCPUs, "0-1")
 				}
 				if p.CreateBody.Health == nil || p.CreateBody.Health.Readiness == nil {
 					t.Fatalf("Health.Readiness = nil, want non-nil")
@@ -623,5 +629,25 @@ func TestParseCreateFlags_AttachDatabase_DefaultsEmpty(t *testing.T) {
 	}
 	if f.attachDatabase != "" || f.attachDatabaseEnvVar != "" || f.attachDatabaseField != "" {
 		t.Errorf("attach-database fields = %+v, want all empty when the flag isn't passed", f)
+	}
+}
+
+func TestToServiceResources_SwapBelowMemoryRejected(t *testing.T) {
+	// Docker's MemorySwap is memory+swap combined, not swap on top of
+	// memory, so a value below the memory limit is nonsensical. Mirrors
+	// internal/deploy/translate.go's own toServiceResources test.
+	_, err := toServiceResources(&spec.Resources{Memory: "512Mi", SwapMemory: "256Mi"})
+	if err == nil {
+		t.Fatal("toServiceResources() error = nil, want an error when swapMemory is below memory")
+	}
+}
+
+func TestToServiceResources_SwapEqualToMemoryAccepted(t *testing.T) {
+	got, err := toServiceResources(&spec.Resources{Memory: "512Mi", SwapMemory: "512Mi"})
+	if err != nil {
+		t.Fatalf("toServiceResources() error = %v, want nil (swap equal to memory means no swap, but is valid)", err)
+	}
+	if got.SwapMemoryBytes != 512*1024*1024 {
+		t.Errorf("SwapMemoryBytes = %d, want %d", got.SwapMemoryBytes, 512*1024*1024)
 	}
 }

@@ -19,6 +19,12 @@ import (
 type ServiceResources struct {
 	MemoryBytes int64 `json:"memory_bytes,omitempty"`
 	NanoCPUs    int64 `json:"nano_cpus,omitempty"`
+	// SwapMemoryBytes is Docker's own MemorySwap: total memory plus swap
+	// combined, only meaningful alongside MemoryBytes.
+	SwapMemoryBytes int64 `json:"swap_memory_bytes,omitempty"`
+	// CPUSetCPUs pins the container to specific host CPUs, Docker's own
+	// cpuset-cpus format (e.g. "0-3" or "0,2").
+	CPUSetCPUs string `json:"cpuset_cpus,omitempty"`
 }
 
 // ServiceProbe is one readiness or liveness check.

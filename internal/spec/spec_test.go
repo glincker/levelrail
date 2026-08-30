@@ -53,6 +53,9 @@ func TestParse_ValidFull(t *testing.T) {
 	if web.Resources == nil || web.Resources.Memory != "512Mi" || web.Resources.CPU != 0.5 {
 		t.Errorf("Resources = %+v, want Memory=512Mi CPU=0.5", web.Resources)
 	}
+	if web.Resources.SwapMemory != "1Gi" || web.Resources.CPUSet != "0-1" {
+		t.Errorf("Resources = %+v, want SwapMemory=1Gi CPUSet=0-1", web.Resources)
+	}
 	if web.Replicas != 2 {
 		t.Errorf("Replicas = %d, want 2", web.Replicas)
 	}
@@ -424,6 +427,31 @@ version: 1
 services:
   web: { build: { type: dockerfile }, port: 8080, resources: { memory: "lots" } }
 `,
+		},
+		{
+			name: "bad swapMemory pattern",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, resources: { memory: "512Mi", swapMemory: "lots" } }
+`,
+		},
+		{
+			name: "bad cpuSet pattern",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, resources: { cpuSet: "not-a-cpuset!" } }
+`,
+		},
+		{
+			name: "swapMemory without memory",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, resources: { swapMemory: "1Gi" } }
+`,
+			wantErrSubstr: "resources.swapMemory requires resources.memory to also be set",
 		},
 		{
 			name: "bad interval pattern",
