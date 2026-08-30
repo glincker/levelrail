@@ -962,6 +962,31 @@ func (c *Client) GetNodePatchStatus(ctx context.Context, id string) (NodePatchSt
 	return out, err
 }
 
+// ListAlertRules calls GET /api/v1/apps/{name}/alerts: every alert rule
+// scoped to name, including disabled ones.
+func (c *Client) ListAlertRules(ctx context.Context, name string) ([]AlertRuleResource, error) {
+	var out []AlertRuleResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/alerts", nil, &out)
+	return out, err
+}
+
+// QueryAppMetrics calls GET /api/v1/apps/{name}/metrics?metric=&from=&to=&step=
+// (internal/api/metrics.go's handleQueryMetrics). from/to are sent as
+// RFC3339; step of zero omits the query param, matching the server's own
+// "step<=0 means raw unaggregated samples" contract (telemetry.Aggregate).
+func (c *Client) QueryAppMetrics(ctx context.Context, name, metric string, from, to time.Time, step time.Duration) (AppMetricsResource, error) {
+	query := url.Values{}
+	query.Set("metric", metric)
+	query.Set("from", from.UTC().Format(time.RFC3339))
+	query.Set("to", to.UTC().Format(time.RFC3339))
+	if step > 0 {
+		query.Set("step", step.String())
+	}
+	var out AppMetricsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/metrics?"+query.Encode(), nil, &out)
+	return out, err
+}
+
 // PathEscape guards against a name containing characters that would
 // otherwise change the request's URL shape (a "/" turning one path
 // segment into two, for instance). Server-side validation is the real

@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -394,6 +395,254 @@ func TestToolError_SurfacesAPIMessage(t *testing.T) {
 	}
 	if !strings.Contains(text, "403") {
 		t.Errorf("error text = %q, want it to contain the status code 403", text)
+	}
+}
+
+func TestRollbackApp(t *testing.T) {
+	var gotBody map[string]string
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/api/v1/apps/web/deploys" {
+			t.Errorf("request = %s %s, want POST /api/v1/apps/web/deploys", r.Method, r.URL.Path)
+		}
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(apiclient.AppResource{Name: "web", Image: "nginx:1", Port: 80})
+	})
+
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "rollback_app",
+		Arguments: map[string]any{"name": "web", "image": "nginx:1"},
+	})
+	if err != nil {
+		t.Fatalf("CallTool(rollback_app) error = %v", err)
+	}
+	var app apiclient.AppResource
+	decodeStructured(t, result, &app)
+	if app.Image != "nginx:1" {
+		t.Errorf("app.Image = %q, want %q", app.Image, "nginx:1")
+	}
+	if gotBody["image"] != "nginx:1" {
+		t.Errorf("request body image = %q, want %q", gotBody["image"], "nginx:1")
+	}
+}
+
+func TestListNodes(t *testing.T) {
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/nodes" {
+			t.Errorf("request = %s %s, want GET /api/v1/nodes", r.Method, r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]apiclient.NodeResource{{ID: "n1", Name: "node-1", Status: "ready"}})
+	})
+
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "list_nodes", Arguments: map[string]any{}})
+	if err != nil {
+		t.Fatalf("CallTool(list_nodes) error = %v", err)
+	}
+	var nodes []apiclient.NodeResource
+	decodeStructured(t, result, &nodes)
+	if len(nodes) != 1 || nodes[0].ID != "n1" {
+		t.Errorf("nodes = %+v, want one node with id n1", nodes)
+	}
+}
+
+func TestGetNode(t *testing.T) {
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/nodes/n1" {
+			t.Errorf("path = %q, want /api/v1/nodes/n1", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(apiclient.NodeResource{ID: "n1", Name: "node-1", Status: "ready"})
+	})
+
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "get_node", Arguments: map[string]any{"id": "n1"}})
+	if err != nil {
+		t.Fatalf("CallTool(get_node) error = %v", err)
+	}
+	var node apiclient.NodeResource
+	decodeStructured(t, result, &node)
+	if node.ID != "n1" {
+		t.Errorf("node.ID = %q, want %q", node.ID, "n1")
+	}
+}
+
+func TestGetNodeHealth(t *testing.T) {
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/nodes/n1/health" {
+			t.Errorf("path = %q, want /api/v1/nodes/n1/health", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]apiclient.ConditionResource{{Type: "Ready", Status: "True"}})
+	})
+
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "get_node_health", Arguments: map[string]any{"id": "n1"}})
+	if err != nil {
+		t.Fatalf("CallTool(get_node_health) error = %v", err)
+	}
+	var conditions []apiclient.ConditionResource
+	decodeStructured(t, result, &conditions)
+	if len(conditions) != 1 || conditions[0].Type != "Ready" {
+		t.Errorf("conditions = %+v, want one Ready condition", conditions)
+	}
+}
+
+func TestListPreviewEnvironments(t *testing.T) {
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/apps/web/previews" {
+			t.Errorf("path = %q, want /api/v1/apps/web/previews", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]apiclient.PreviewEnvironmentResource{{PRNumber: 42, Branch: "feature-x", Status: "ready"}})
+	})
+
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "list_preview_environments", Arguments: map[string]any{"name": "web"}})
+	if err != nil {
+		t.Fatalf("CallTool(list_preview_environments) error = %v", err)
+	}
+	var previews []apiclient.PreviewEnvironmentResource
+	decodeStructured(t, result, &previews)
+	if len(previews) != 1 || previews[0].PRNumber != 42 {
+		t.Errorf("previews = %+v, want one preview for PR 42", previews)
+	}
+}
+
+func TestListAlertRules(t *testing.T) {
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/apps/web/alerts" {
+			t.Errorf("path = %q, want /api/v1/apps/web/alerts", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]apiclient.AlertRuleResource{{ID: "r1", Name: "high-cpu", Kind: "threshold", Enabled: true}})
+	})
+
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "list_alert_rules", Arguments: map[string]any{"name": "web"}})
+	if err != nil {
+		t.Fatalf("CallTool(list_alert_rules) error = %v", err)
+	}
+	var rules []apiclient.AlertRuleResource
+	decodeStructured(t, result, &rules)
+	if len(rules) != 1 || rules[0].ID != "r1" {
+		t.Errorf("rules = %+v, want one rule with id r1", rules)
+	}
+}
+
+func TestGetAppMetrics(t *testing.T) {
+	var gotQuery url.Values
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/apps/web/metrics" {
+			t.Errorf("path = %q, want /api/v1/apps/web/metrics", r.URL.Path)
+		}
+		gotQuery = r.URL.Query()
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(apiclient.AppMetricsResource{
+			Metric: "cpu_percent",
+			Points: []apiclient.MetricPointResource{{Value: 12.5, Count: 4}},
+		})
+	})
+
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "get_app_metrics",
+		Arguments: map[string]any{"name": "web", "metric": "cpu_percent", "since": "30m", "step": "60s"},
+	})
+	if err != nil {
+		t.Fatalf("CallTool(get_app_metrics) error = %v", err)
+	}
+	var metrics apiclient.AppMetricsResource
+	decodeStructured(t, result, &metrics)
+	if metrics.Metric != "cpu_percent" || len(metrics.Points) != 1 {
+		t.Errorf("metrics = %+v, want one cpu_percent point", metrics)
+	}
+	if gotQuery.Get("metric") != "cpu_percent" {
+		t.Errorf("metric query param = %q, want %q", gotQuery.Get("metric"), "cpu_percent")
+	}
+	if gotQuery.Get("step") != "1m0s" {
+		t.Errorf("step query param = %q, want %q", gotQuery.Get("step"), "1m0s")
+	}
+}
+
+func TestGetAppMetrics_InvalidSince(t *testing.T) {
+	session := newTestSession(t, func(_ http.ResponseWriter, _ *http.Request) {
+		t.Error("API server should not be called for an invalid since")
+	})
+
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "get_app_metrics",
+		Arguments: map[string]any{"name": "web", "metric": "cpu_percent", "since": "not-a-duration"},
+	})
+	if err != nil {
+		t.Fatalf("CallTool(get_app_metrics) transport error = %v", err)
+	}
+	if !result.IsError {
+		t.Fatalf("IsError = false, want true for an invalid since value")
+	}
+	if !strings.Contains(toolResultText(result), "invalid since") {
+		t.Errorf("error text = %q, want it to mention the invalid since value", toolResultText(result))
+	}
+}
+
+func TestGetAppMetrics_InvalidStep(t *testing.T) {
+	session := newTestSession(t, func(_ http.ResponseWriter, _ *http.Request) {
+		t.Error("API server should not be called for an invalid step")
+	})
+
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "get_app_metrics",
+		Arguments: map[string]any{"name": "web", "metric": "cpu_percent", "step": "not-a-duration"},
+	})
+	if err != nil {
+		t.Fatalf("CallTool(get_app_metrics) transport error = %v", err)
+	}
+	if !result.IsError {
+		t.Fatalf("IsError = false, want true for an invalid step value")
+	}
+	if !strings.Contains(toolResultText(result), "invalid step") {
+		t.Errorf("error text = %q, want it to mention the invalid step value", toolResultText(result))
+	}
+}
+
+// TestNewTools_Surface403 is the same "ability-check 403 surfaces as a
+// real MCP tool error with the server's own message" contract
+// TestToolError_SurfacesAPIMessage already covers for list_apps, checked
+// individually for every tool added alongside rollback/nodes/previews/
+// alerts/metrics, since each hits its own distinct API path and any of
+// them could regress independently of the others.
+func TestNewTools_Surface403(t *testing.T) {
+	tests := []struct {
+		tool string
+		args map[string]any
+	}{
+		{"rollback_app", map[string]any{"name": "web", "image": "nginx:1"}},
+		{"list_nodes", map[string]any{}},
+		{"get_node", map[string]any{"id": "n1"}},
+		{"get_node_health", map[string]any{"id": "n1"}},
+		{"list_preview_environments", map[string]any{"name": "web"}},
+		{"list_alert_rules", map[string]any{"name": "web"}},
+		{"get_app_metrics", map[string]any{"name": "web", "metric": "cpu_percent"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.tool, func(t *testing.T) {
+			session := newTestSession(t, func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusForbidden)
+				_, _ = w.Write([]byte(`{"error":"token lacks the required ability"}`))
+			})
+
+			result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: tt.tool, Arguments: tt.args})
+			if err != nil {
+				t.Fatalf("CallTool(%s) transport error = %v", tt.tool, err)
+			}
+			if !result.IsError {
+				t.Fatalf("IsError = false, want true for a 403 response")
+			}
+			text := toolResultText(result)
+			if !strings.Contains(text, "token lacks the required ability") {
+				t.Errorf("error text = %q, want it to contain the server's own 403 message", text)
+			}
+			if !strings.Contains(text, "403") {
+				t.Errorf("error text = %q, want it to contain the status code 403", text)
+			}
+		})
 	}
 }
 

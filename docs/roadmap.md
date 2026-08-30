@@ -107,9 +107,13 @@ are still open. This page describes what's actually true today.
 - An MCP server (`cmd/levelrail-mcp`), wrapping the same versioned REST
   API and bearer-token model the CLI already uses, so a token scoped to
   fewer abilities than a tool needs gets the same 403 the REST API
-  itself would return. Twelve tools today: list/get/deploy/restart/
-  status/deploy-history/logs for apps, list/get for databases, and
-  list/get for service templates.
+  itself would return. Nineteen tools today: list/get/deploy/rollback/
+  restart/status/deploy-history/logs/metrics for apps, list/get for
+  databases, list/get for service templates, list/get/health for nodes,
+  and list for preview environments and alert rules. Read-and-suggest
+  only, per the architecture rule: nothing here reaches into the
+  reconciler directly, and no tool deletes a resource or touches
+  secrets/resource limits.
 - Live end-to-end test suite: whole-chain push-to-HTTPS, rollback in
   both directions, the real git webhook path, database reconciliation,
   non-default port routing, and node placement. Doesn't yet exercise
