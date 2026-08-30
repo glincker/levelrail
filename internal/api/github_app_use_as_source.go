@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -10,16 +9,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/webhook"
 )
-
-// useGitHubRepoAsSourceRequest is
-// POST /api/v1/github-app/repos/{owner}/{repo}/use-as-source's body,
-// mirroring useGitLabProjectAsSourceRequest/useBitbucketRepoAsSourceRequest.
-type useGitHubRepoAsSourceRequest struct {
-	AppName   string `json:"app_name"`
-	Branch    string `json:"branch,omitempty"`
-	BuildType string `json:"build_type,omitempty"`
-	BuildPath string `json:"build_path,omitempty"`
-}
 
 // useGitHubRepoAsSourceResponse is gitSourceResource extended with
 // whether the push webhook was actually auto-registered. Unlike
@@ -61,35 +50,12 @@ func (rt *Router) handleUseGitHubRepoAsSource(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	var req useGitHubRepoAsSourceRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
-		return
-	}
-	if req.AppName == "" {
-		writeError(w, http.StatusBadRequest, "app_name is required")
-		return
-	}
-	buildType, err := normalizeGitSourceBuildType(req.BuildType)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	if buildType == "railpack" && req.BuildPath != "" {
-		writeError(w, http.StatusBadRequest, "build_path is not meaningful for build_type \"railpack\"")
+	req, buildType, ok := rt.decodeUseAsSourceRequest(w, r, "api: use github repo as source")
+	if !ok {
 		return
 	}
 
 	ctx := r.Context()
-	if _, err := rt.apps.GetDesiredService(ctx, req.AppName); errors.Is(err, store.ErrServiceNotFound) {
-		writeError(w, http.StatusNotFound, "app not found")
-		return
-	} else if err != nil {
-		rt.logger.Error("api: use github repo as source: load app failed", slog.String("error", err.Error()), slog.String("app_name", req.AppName))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-
 	instanceURL, token, err := rt.mintGitHubAppInstallationToken(ctx)
 	if err != nil {
 		rt.writeGitHubAppTokenError(w, "api: mint github app installation token for use-as-source failed", err)

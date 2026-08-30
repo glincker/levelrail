@@ -55,6 +55,47 @@ function disconnected(provider: GitProviderStatus['provider']): GitProviderStatu
   }
 }
 
+// mockFetchRoutes stubs global fetch from a "METHOD url" -> response
+// table, so each test only ever states which endpoints it needs and
+// what they return, not a fresh vi.fn implementation reimplementing the
+// same "look up url+method, else reject" dispatch every time.
+function mockFetchRoutes(
+  routes: Record<string, () => Promise<Response>>,
+): ReturnType<typeof vi.fn> {
+  const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+    const url = requestUrlOf(input)
+    const method = init?.method ?? 'GET'
+    const handler = routes[`${method} ${url}`]
+    if (handler) return handler()
+    return Promise.reject(new Error(`unexpected fetch: ${method} ${url}`))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  return fetchMock
+}
+
+function jsonRoute(body: unknown, status = 200): () => Promise<Response> {
+  return () => Promise.resolve(fakeJsonResponse(body, status))
+}
+
+const fakeGitHubRepo = {
+  full_name: 'acme/app',
+  name: 'app',
+  owner_login: 'acme',
+  private: false,
+  default_branch: 'main',
+  clone_url: 'https://github.com/acme/app.git',
+}
+
+const fakeGitLabProject = {
+  id: 7,
+  name: 'web',
+  path_with_namespace: 'acme/web',
+  clone_url: 'https://gitlab.example.com/acme/web.git',
+  default_branch: 'main',
+  visibility: 'private',
+  web_url: 'https://gitlab.example.com/acme/web',
+}
+
 function renderPicker() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -88,15 +129,9 @@ describe('GitRepoSourcePicker', () => {
 
   beforeEach(() => {
     providers = [disconnected('github'), disconnected('gitlab'), disconnected('bitbucket')]
-    fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-      const url = requestUrlOf(input)
-      const method = init?.method ?? 'GET'
-      if (url === '/api/v1/git-providers' && method === 'GET') {
-        return Promise.resolve(fakeJsonResponse(providers))
-      }
-      return Promise.reject(new Error(`unexpected fetch: ${method} ${url}`))
+    fetchMock = mockFetchRoutes({
+      'GET /api/v1/git-providers': () => Promise.resolve(fakeJsonResponse(providers)),
     })
-    vi.stubGlobal('fetch', fetchMock)
   })
 
   afterEach(() => {
@@ -139,29 +174,10 @@ describe('GitRepoSourcePicker', () => {
       disconnected('gitlab'),
       disconnected('bitbucket'),
     ]
-    fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-      const url = requestUrlOf(input)
-      const method = init?.method ?? 'GET'
-      if (url === '/api/v1/git-providers' && method === 'GET') {
-        return Promise.resolve(fakeJsonResponse(providers))
-      }
-      if (url === '/api/v1/github-app/repos' && method === 'GET') {
-        return Promise.resolve(
-          fakeJsonResponse([
-            {
-              full_name: 'acme/app',
-              name: 'app',
-              owner_login: 'acme',
-              private: false,
-              default_branch: 'main',
-              clone_url: 'https://github.com/acme/app.git',
-            },
-          ]),
-        )
-      }
-      return Promise.reject(new Error(`unexpected fetch: ${method} ${url}`))
+    fetchMock = mockFetchRoutes({
+      'GET /api/v1/git-providers': jsonRoute(providers),
+      'GET /api/v1/github-app/repos': jsonRoute([fakeGitHubRepo]),
     })
-    vi.stubGlobal('fetch', fetchMock)
 
     renderPicker()
 
@@ -176,32 +192,13 @@ describe('GitRepoSourcePicker', () => {
       disconnected('gitlab'),
       disconnected('bitbucket'),
     ]
-    fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-      const url = requestUrlOf(input)
-      const method = init?.method ?? 'GET'
-      if (url === '/api/v1/git-providers' && method === 'GET') {
-        return Promise.resolve(fakeJsonResponse(providers))
-      }
-      if (url === '/api/v1/github-app/repos' && method === 'GET') {
-        return Promise.resolve(
-          fakeJsonResponse([
-            {
-              full_name: 'acme/app',
-              name: 'app',
-              owner_login: 'acme',
-              private: false,
-              default_branch: 'main',
-              clone_url: 'https://github.com/acme/app.git',
-            },
-          ]),
-        )
-      }
-      if (url === '/api/v1/github-app/repos/acme/app/branches' && method === 'GET') {
-        return Promise.resolve(fakeJsonResponse([{ name: 'main', commit_sha: 'abc123' }]))
-      }
-      return Promise.reject(new Error(`unexpected fetch: ${method} ${url}`))
+    fetchMock = mockFetchRoutes({
+      'GET /api/v1/git-providers': jsonRoute(providers),
+      'GET /api/v1/github-app/repos': jsonRoute([fakeGitHubRepo]),
+      'GET /api/v1/github-app/repos/acme/app/branches': jsonRoute([
+        { name: 'main', commit_sha: 'abc123' },
+      ]),
     })
-    vi.stubGlobal('fetch', fetchMock)
 
     const { onSelect, container } = renderPicker()
 
@@ -231,33 +228,14 @@ describe('GitRepoSourcePicker', () => {
       { provider: 'gitlab', connected: true, can_list_branches: true, can_register_webhook: true, can_auth_clone: false },
       disconnected('bitbucket'),
     ]
-    fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-      const url = requestUrlOf(input)
-      const method = init?.method ?? 'GET'
-      if (url === '/api/v1/git-providers' && method === 'GET') {
-        return Promise.resolve(fakeJsonResponse(providers))
-      }
-      if (url === '/api/v1/gitlab-app/projects' && method === 'GET') {
-        return Promise.resolve(
-          fakeJsonResponse([
-            {
-              id: 7,
-              name: 'web',
-              path_with_namespace: 'acme/web',
-              clone_url: 'https://gitlab.example.com/acme/web.git',
-              default_branch: 'main',
-              visibility: 'private',
-              web_url: 'https://gitlab.example.com/acme/web',
-            },
-          ]),
-        )
-      }
-      if (url === '/api/v1/gitlab-app/projects/7/branches' && method === 'GET') {
-        return Promise.resolve(fakeJsonResponse([{ name: 'main', commit_sha: 'abc' }, { name: 'dev', commit_sha: 'def' }]))
-      }
-      return Promise.reject(new Error(`unexpected fetch: ${method} ${url}`))
+    fetchMock = mockFetchRoutes({
+      'GET /api/v1/git-providers': jsonRoute(providers),
+      'GET /api/v1/gitlab-app/projects': jsonRoute([fakeGitLabProject]),
+      'GET /api/v1/gitlab-app/projects/7/branches': jsonRoute([
+        { name: 'main', commit_sha: 'abc' },
+        { name: 'dev', commit_sha: 'def' },
+      ]),
     })
-    vi.stubGlobal('fetch', fetchMock)
 
     const { onSelect, container } = renderPicker()
 
@@ -291,30 +269,10 @@ describe('GitRepoSourcePicker', () => {
       { provider: 'gitlab', connected: true, can_list_branches: false, can_register_webhook: true, can_auth_clone: false },
       disconnected('bitbucket'),
     ]
-    fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-      const url = requestUrlOf(input)
-      const method = init?.method ?? 'GET'
-      if (url === '/api/v1/git-providers' && method === 'GET') {
-        return Promise.resolve(fakeJsonResponse(providers))
-      }
-      if (url === '/api/v1/gitlab-app/projects' && method === 'GET') {
-        return Promise.resolve(
-          fakeJsonResponse([
-            {
-              id: 7,
-              name: 'web',
-              path_with_namespace: 'acme/web',
-              clone_url: 'https://gitlab.example.com/acme/web.git',
-              default_branch: 'main',
-              visibility: 'private',
-              web_url: 'https://gitlab.example.com/acme/web',
-            },
-          ]),
-        )
-      }
-      return Promise.reject(new Error(`unexpected fetch: ${method} ${url}`))
+    fetchMock = mockFetchRoutes({
+      'GET /api/v1/git-providers': jsonRoute(providers),
+      'GET /api/v1/gitlab-app/projects': jsonRoute([fakeGitLabProject]),
     })
-    vi.stubGlobal('fetch', fetchMock)
 
     const { container } = renderPicker()
 
