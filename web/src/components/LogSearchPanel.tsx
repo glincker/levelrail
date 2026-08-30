@@ -48,6 +48,7 @@ export function LogSearchPanel({ appName }: { appName: string }) {
     q: debouncedQuery.trim() || undefined,
   })
   const entries = data ?? []
+  const search = { query: debouncedQuery, rangeKey, setQuery, setRangeKey }
 
   // A state-backed callback ref (not useRef): useVirtualizer needs a
   // re-render once the scroll container actually mounts so
@@ -157,13 +158,7 @@ export function LogSearchPanel({ appName }: { appName: string }) {
         ) : error ? (
           <p className="px-1 py-2 text-sm text-destructive">{error.message}</p>
         ) : entries.length === 0 ? (
-          <LogSearchEmptyState
-            resourceKind="app"
-            query={debouncedQuery}
-            rangeKey={rangeKey}
-            setQuery={setQuery}
-            setRangeKey={setRangeKey}
-          />
+          <LogSearchEmptyState resourceKind="app" search={search} />
         ) : (
           <>
             <p className="mb-1.5 px-1 text-xs text-muted-foreground">

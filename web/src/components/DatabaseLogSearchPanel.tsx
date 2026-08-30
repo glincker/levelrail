@@ -44,6 +44,7 @@ export function DatabaseLogSearchPanel({
     q: debouncedQuery.trim() || undefined,
   })
   const entries = data ?? []
+  const search = { query: debouncedQuery, rangeKey, setQuery, setRangeKey }
 
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null)
 
@@ -143,13 +144,7 @@ export function DatabaseLogSearchPanel({
         ) : error ? (
           <p className="px-1 py-2 text-sm text-destructive">{error.message}</p>
         ) : entries.length === 0 ? (
-          <LogSearchEmptyState
-            resourceKind="database"
-            query={debouncedQuery}
-            rangeKey={rangeKey}
-            setQuery={setQuery}
-            setRangeKey={setRangeKey}
-          />
+          <LogSearchEmptyState resourceKind="database" search={search} />
         ) : (
           <>
             <p className="mb-1.5 px-1 text-xs text-muted-foreground">

@@ -10,19 +10,21 @@ const WIDEST_RANGE_KEY: TimeRangeKey = '7d'
 // against a different endpoint, so the "why is this empty, and what do I
 // do about it" copy and the Clear filters action are identical apart
 // from which resource kind's name appears in the fallback sentence.
-export function LogSearchEmptyState({
-  resourceKind,
-  query,
-  rangeKey,
-  setQuery,
-  setRangeKey,
-}: {
-  resourceKind: 'app' | 'database'
+export interface LogSearchState {
   query: string
   rangeKey: TimeRangeKey
   setQuery: (value: string) => void
   setRangeKey: (value: TimeRangeKey) => void
+}
+
+export function LogSearchEmptyState({
+  resourceKind,
+  search,
+}: {
+  resourceKind: 'app' | 'database'
+  search: LogSearchState
 }) {
+  const { query, rangeKey, setQuery, setRangeKey } = search
   const canBroaden = query.trim() !== '' || rangeKey !== WIDEST_RANGE_KEY
 
   function clearFilters() {
