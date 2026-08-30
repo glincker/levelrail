@@ -113,6 +113,24 @@ Run `levelrail-cli apps create -h` for the full set of flags, and
 `apps rollback`, `apps restart`, `apps logs`, `databases create`, and
 so on).
 
+### Guided setup
+
+Don't want to hand-write `app.yaml` or look up every flag first? Run
+the wizard instead:
+
+```
+./levelrail-cli apps create --interactive
+```
+
+It asks for the app name, its source (a git repository URL or an
+existing Docker image reference), the container port, an optional
+domain, an optional health check path (defaults to `/healthz`), and
+optional memory/CPU limits, then asks whether to write the result to
+`app.yaml` in the current directory or create the app directly against
+the control plane API. `-i` is the short form of `--interactive`, and
+it cannot be combined with `--name`/`--image`/`--repo`/`--file`, since
+the wizard prompts for those itself.
+
 Note: today, every app is exactly one container. Multi-service apps
 (a web process plus a worker sidecar under one `app.yaml`) aren't
 supported end to end yet, even though the spec's `services` field is

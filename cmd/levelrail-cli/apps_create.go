@@ -40,6 +40,10 @@ type createFlags struct {
 	service   string
 	yes       bool
 	jsonOut   bool
+	// interactive backs --interactive: runs a step-by-step wizard
+	// instead of requiring every flag up front. See
+	// apps_create_interactive.go's runAppsCreateWizard.
+	interactive bool
 
 	// attachDatabase, attachDatabaseEnvVar, attachDatabaseField back
 	// --attach-database and its two optional refinements: a post-create
@@ -520,7 +524,8 @@ func parseMemoryBytes(s string) (int64, error) {
 // runAppsCreate is the I/O shell around planFromFlags: parse flags, read
 // --file and detect local git if needed, execute the plan against a
 // real Client, and print the result. Returns the process exit code.
-func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+// stdin is only ever read from when --interactive is given.
+func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	var tokenFlag, apiURLFlag string
 	f, err := parseCreateFlags(prog, args, stderr, &tokenFlag, &apiURLFlag)
 	if err != nil {
@@ -528,6 +533,13 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 			return exitOK
 		}
 		return exitUsage
+	}
+
+	if f.interactive {
+		if f.name != "" || f.image != "" || f.repo != "" || f.file != "" {
+			return reportError(stdout, stderr, f.jsonOut, newValidationError("--interactive runs its own step-by-step prompts and cannot be combined with --name, --image, --repo, or --file"))
+		}
+		return runAppsCreateWizard(stdin, stdout, stderr, tokenFlag, apiURLFlag, f.jsonOut, lookupEnv, prog)
 	}
 
 	var fileSpec *spec.Spec
@@ -563,13 +575,8 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("create app %q: %w", plan.CreateBody.Name, err))
 	}
 
-	if plan.Build != nil {
-		if !f.jsonOut {
-			_, _ = fmt.Fprintf(stderr, "app %q created, building from %s (ref %s)...\n", created.Name, plan.Build.RepoURL, plan.Build.Ref)
-		}
-		if _, buildErr := client.TriggerBuild(ctx, created.Name, *plan.Build); buildErr != nil {
-			return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("app %q was created but the build failed: %w", created.Name, buildErr))
-		}
+	if buildErr := triggerCreatePlanBuild(ctx, client, created, plan, stderr, f.jsonOut); buildErr != nil {
+		return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("app %q was created but the build failed: %w", created.Name, buildErr))
 	}
 
 	if f.attachDatabase != "" {
@@ -582,7 +589,28 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		}
 	}
 
-	final, err := client.GetApp(ctx, created.Name)
+	return fetchAndPrintCreatedApp(ctx, client, created.Name, stdout, stderr, f.jsonOut)
+}
+
+// triggerCreatePlanBuild triggers plan's build (a no-op returning nil
+// when plan.Build is nil, the existing-image path), shared between the
+// flag-driven and wizard-driven "apps create" I/O shells.
+func triggerCreatePlanBuild(ctx context.Context, client *Client, created appResource, plan createPlan, stderr io.Writer, jsonOut bool) error {
+	if plan.Build == nil {
+		return nil
+	}
+	if !jsonOut {
+		_, _ = fmt.Fprintf(stderr, "app %q created, building from %s (ref %s)...\n", created.Name, plan.Build.RepoURL, plan.Build.Ref)
+	}
+	_, err := client.TriggerBuild(ctx, created.Name, *plan.Build)
+	return err
+}
+
+// fetchAndPrintCreatedApp re-fetches name's now-final state and prints
+// it, the shared tail of every "apps create" path once the app (and, if
+// applicable, its build) already succeeded.
+func fetchAndPrintCreatedApp(ctx context.Context, client *Client, name string, stdout, stderr io.Writer, jsonOut bool) int {
+	final, err := client.GetApp(ctx, name)
 	if err != nil {
 		// The app (and, if applicable, its build) already succeeded by
 		// this point; a failure here only means the CLI can't show the
@@ -590,11 +618,11 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		// deliberately doesn't call reportError's "the whole command
 		// failed" path. Still exits non-zero: an agent driving this CLI
 		// should not treat "couldn't confirm the result" as success.
-		_, _ = fmt.Fprintf(stderr, "app %q created, but re-fetching its final state failed: %v\n", created.Name, err)
+		_, _ = fmt.Fprintf(stderr, "app %q created, but re-fetching its final state failed: %v\n", name, err)
 		return exitNetwork
 	}
 
-	if f.jsonOut {
+	if jsonOut {
 		if err := writeJSONValue(stdout, final); err != nil {
 			_, _ = fmt.Fprintln(stderr, err)
 			return exitNetwork
@@ -636,8 +664,10 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.StringVar(&f.attachDatabase, "attach-database", "", "name of an existing managed database to attach after create (injects a connection env var, see --attach-database-env-var/--attach-database-field)")
 	fs.StringVar(&f.attachDatabaseEnvVar, "attach-database-env-var", "", "env var name the attached database's value is injected as (default: DATABASE_URL); only meaningful with --attach-database")
 	fs.StringVar(&f.attachDatabaseField, "attach-database-field", "", "which field to inject: url, host, port, username, password, or database (default: url); only meaningful with --attach-database")
-	fs.BoolVar(&f.yes, "yes", false, "accept defaults without prompting (reserved: this command never prompts today, so this is currently a no-op accepted for forward compatibility and script portability)")
+	fs.BoolVar(&f.yes, "yes", false, "accept defaults without prompting (reserved: no-op outside --interactive, accepted for forward compatibility and script portability)")
 	fs.BoolVar(&f.yes, "y", false, "shorthand for --yes")
+	fs.BoolVar(&f.interactive, "interactive", false, "run a step-by-step wizard instead of specifying flags: prompts for name, source, port, domain, health check, and resource limits, then writes app.yaml or calls the API")
+	fs.BoolVar(&f.interactive, "i", false, "shorthand for --interactive")
 	fs.BoolVar(&f.jsonOut, "json", false, "print the created app as JSON to stdout and nothing else")
 	fs.StringVar(tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
@@ -671,12 +701,22 @@ func appsCreateUsage(prog string) string {
   %[1]s apps create --name NAME --image IMAGE --port PORT [flags]
   %[1]s apps create --name NAME --port PORT --repo URL --image-repo REPO [flags]
   %[1]s apps create --file app.yaml [flags]
+  %[1]s apps create --interactive
 
 Creates an app, either by registering an existing image, or by
 triggering a real build from a git repository. Flags present skip any
-corresponding prompt; flags absent (outside --json/--yes) currently fail
-with a clear error rather than prompting, so this command behaves the
-same whether a human or a script is driving it.
+corresponding prompt; flags absent (outside --json/--yes/--interactive)
+fail with a clear error rather than prompting, so this command behaves
+the same whether a human or a script is driving it, unless --interactive
+is given.
+
+Interactive path:
+  --interactive, -i   run a step-by-step wizard: prompts for name,
+                       source (git repo or Docker image), port, domain,
+                       health check path, and resource limits, then asks
+                       whether to write app.yaml or create the app via
+                       the API. Cannot be combined with --name, --image,
+                       --repo, or --file.
 
 Existing-image path:
   --name string        app name (required)

@@ -10,15 +10,11 @@
 // (flyctl launch, railway up, vercel):
 //
 //   - Every required input has a flag. Supplying all of them skips every
-//     prompt; this first pass does not implement an interactive fallback
-//     at all (see apps_create.go's own doc comment on why that's scoped
-//     out), so a missing required flag is always reported as an
-//     immediate, actionable error rather than a hang on stdin. That is
-//     stricter than the competitive pattern, not a shortcut around it:
-//     it is exactly what makes this safe to drive from CI or an agent
-//     with no TTY at all, the specific failure mode noted about
-//     Railway's own CLI having to retrofit non-interactive support under
-//     pressure.
+//     prompt, so a missing required flag is reported as an immediate,
+//     actionable error rather than a hang on stdin: safe to drive from
+//     CI or an agent with no TTY at all. "apps create --interactive" is
+//     the one deliberate exception, a step-by-step wizard for a human
+//     at a real terminal (see apps_create_interactive.go).
 //   - --json switches every command's stdout to a single parseable JSON
 //     value (the result, or {"error": "..."} on failure) and nothing
 //     else; diagnostics always go to stderr, in both modes.

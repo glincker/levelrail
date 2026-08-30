@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"os"
 )
 
 // runApps dispatches "apps <verb> [flags]" to one of create/list/get.
@@ -17,7 +18,7 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		_, _ = fmt.Fprint(stdout, appsUsage(prog))
 		return exitOK
 	case "create":
-		return runAppsCreate(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsCreate(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "list":
 		return runAppsList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "get":
@@ -63,7 +64,7 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 
 func appsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s apps create [flags]         create an app (existing image, git build, or --file)
+  %[1]s apps create [flags]         create an app (existing image, git build, --file, or --interactive)
   %[1]s apps list [flags]             list apps
   %[1]s apps get <name> [flags]       show one app
   %[1]s apps deploy <name> [flags]   deploy an image to an existing app
