@@ -62,6 +62,23 @@ export function LogTerminal({
 }) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const parentRef = useRef<HTMLDivElement>(null)
+  // The toggle button unmounts and remounts as a fresh DOM node across
+  // the fullscreen transition (the Dialog portals `body` elsewhere
+  // entirely), so the browser's own "what had focus before the popup
+  // opened" tracking loses it: by the time Base UI's focus manager reads
+  // it, the old node is already gone and activeElement has fallen back to
+  // <body>, and its own focus-restore heuristic has nothing to restore
+  // to. This ref plus the effect below own that instead: it always
+  // points at whichever button instance is currently mounted, and gets
+  // focused explicitly on the fullscreen -> non-fullscreen transition.
+  const toggleButtonRef = useRef<HTMLButtonElement>(null)
+  const wasFullscreenRef = useRef(false)
+  useEffect(() => {
+    if (wasFullscreenRef.current && !isFullscreen) {
+      toggleButtonRef.current?.focus()
+    }
+    wasFullscreenRef.current = isFullscreen
+  }, [isFullscreen])
   // Distinguishes a scroll event caused by the auto-scroll effect below
   // from one caused by the user dragging the scrollbar/wheel/trackpad,
   // so the scroll handler does not immediately re-pause right after an
@@ -181,6 +198,7 @@ export function LogTerminal({
       </div>
 
       <button
+        ref={toggleButtonRef}
         type="button"
         onClick={() => {
           setIsFullscreen((prev) => !prev)

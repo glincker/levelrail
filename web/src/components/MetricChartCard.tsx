@@ -11,6 +11,7 @@ import {
   type LabelProps,
 } from 'recharts'
 import {
+  chartAccessibleSummary,
   type ChartMarker,
   type ChartRow,
   type ChartUnit,
@@ -125,7 +126,11 @@ export function MetricChartCard({
           No data in this range.
         </p>
       ) : (
-        <div className="mt-2 h-56">
+        <div
+          className="mt-2 h-56"
+          role="img"
+          aria-label={chartAccessibleSummary(rows, unit, title)}
+        >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={rows}

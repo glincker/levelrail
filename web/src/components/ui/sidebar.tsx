@@ -370,6 +370,8 @@ function SidebarContent({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       data-slot="sidebar-content"
       data-sidebar="content"
+      role="navigation"
+      aria-label="Primary"
       className={cn(
         'no-scrollbar flex min-h-0 flex-1 flex-col gap-0 overflow-auto group-data-[collapsible=icon]:overflow-hidden',
         className,
@@ -515,6 +517,7 @@ function SidebarMenuButton({
     props: mergeProps<'button'>(
       {
         className: cn(sidebarMenuButtonVariants({ variant, size }), className),
+        'aria-current': isActive ? 'page' : undefined,
       },
       props,
     ),

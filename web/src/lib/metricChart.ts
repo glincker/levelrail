@@ -114,6 +114,27 @@ export function latestReading(rows: ChartRow[], unit: ChartUnit): string | null 
   return null
 }
 
+// A text alternative for the recharts SVG, which has no accessible
+// content of its own: read by role="img"'s aria-label on the chart's
+// wrapping element (MetricChartCard) instead of leaving a screen reader
+// with nothing but silent tick-label text nodes.
+export function chartAccessibleSummary(
+  rows: ChartRow[],
+  unit: ChartUnit,
+  title: string,
+): string {
+  const values = rows
+    .map((row) => row.primary)
+    .filter((value): value is number => value !== undefined)
+  if (values.length === 0) {
+    return `${title} chart, no data in this range.`
+  }
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const current = values[values.length - 1] as number
+  return `${title} chart. Current ${formatMetricValue(unit, current)}, ranging from ${formatMetricValue(unit, min)} to ${formatMetricValue(unit, max)} over ${values.length} data points.`
+}
+
 export interface MergedChartQuery {
   rows: ChartRow[]
   isLoading: boolean

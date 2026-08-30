@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LogTerminal } from './LogTerminal'
@@ -45,5 +45,32 @@ describe('LogTerminal fullscreen toggle', () => {
 
     await user.click(screen.getByRole('button', { name: 'Exit fullscreen' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('moves focus into the dialog on open and closes on Escape, returning focus to the trigger', async () => {
+    const user = userEvent.setup()
+    renderTerminal()
+
+    const trigger = screen.getByRole('button', { name: 'View fullscreen' })
+    await user.click(trigger)
+
+    const dialog = await screen.findByRole('dialog')
+    // Base UI queues initial focus via a microtask plus an animation
+    // frame (FloatingFocusManager's enqueueFocus), not synchronously on
+    // mount, so this has to poll rather than assert immediately.
+    await waitFor(() => {
+      expect(dialog).toContainElement(document.activeElement as HTMLElement)
+    })
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    // Our own effect (LogTerminal.tsx) restores focus on the next tick
+    // after the fullscreen -> non-fullscreen transition, not
+    // synchronously, so this also has to poll.
+    await waitFor(() => {
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: 'View fullscreen' }),
+      )
+    })
   })
 })
