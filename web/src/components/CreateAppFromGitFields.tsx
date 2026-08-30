@@ -384,7 +384,17 @@ export function CreateAppFromGitFields({
   })
 
   const busy = createApp.isPending || buildMutation.isPending
+  // Locks name/port/domain forever once the app record exists: none of
+  // the three are resent on a retry (see buildInputFrom and onSubmit
+  // above), so editing them after step 1 succeeded would silently have
+  // no effect. Domain already tells the user it can be changed later
+  // from the app's Domains tab.
   const locked = createdName !== null
+  // The git/build fields ARE resent on every retry, so a failed build
+  // trigger must not leave them stuck disabled: that's the only way a
+  // user can act on the "fix the fields above and submit again" error
+  // below. Re-lock them while a request is actually in flight.
+  const buildFieldsLocked = busy || (locked && !buildMutation.isError)
 
   return (
     <form
@@ -440,7 +450,7 @@ export function CreateAppFromGitFields({
         getValues={getValues}
         setValue={setValue}
         watch={watch}
-        disabled={locked}
+        disabled={buildFieldsLocked}
       />
 
       <Field>

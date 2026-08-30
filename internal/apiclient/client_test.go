@@ -492,6 +492,52 @@ func TestClient_SetOrganizationEnv(t *testing.T) {
 	}
 }
 
+func TestClient_GetEnvironmentEnv(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"LOG_LEVEL": "info"})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.GetEnvironmentEnv(context.Background(), "env_1")
+	if err != nil {
+		t.Fatalf("GetEnvironmentEnv() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/environments/env_1/env" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/environments/env_1/env", gotMethod, gotPath)
+	}
+	if got["LOG_LEVEL"] != "info" {
+		t.Errorf("GetEnvironmentEnv() = %+v, want LOG_LEVEL=info", got)
+	}
+}
+
+func TestClient_SetEnvironmentEnv(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody map[string]string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(gotBody)
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.SetEnvironmentEnv(context.Background(), "env_1", map[string]string{"LOG_LEVEL": "info"})
+	if err != nil {
+		t.Fatalf("SetEnvironmentEnv() error = %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/environments/env_1/env" {
+		t.Errorf("method/path = %s %s, want PUT /api/v1/environments/env_1/env", gotMethod, gotPath)
+	}
+	if got["LOG_LEVEL"] != "info" {
+		t.Errorf("SetEnvironmentEnv() = %+v, want LOG_LEVEL=info", got)
+	}
+}
+
 func TestClient_CreateEnvironment(t *testing.T) {
 	var gotMethod, gotPath string
 	var gotBody CreateEnvironmentRequest

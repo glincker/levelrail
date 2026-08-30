@@ -29,6 +29,10 @@ func runAppsEnvironments(prog string, args []string, stdout, stderr io.Writer, l
 		return runAppsEnvironmentsList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
 		return runAppsEnvironmentsDelete(prog, args[1:], stdout, stderr, lookupEnv)
+	case "env-get":
+		return runAppsEnvironmentsEnvGet(prog, args[1:], stdout, stderr, lookupEnv)
+	case "env-set":
+		return runAppsEnvironmentsEnvSet(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps environments subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsEnvironmentsUsage(prog))
@@ -41,8 +45,13 @@ func appsEnvironmentsUsage(prog string) string {
   %[1]s apps environments create <project-id> --name NAME [flags]   create an environment under a project
   %[1]s apps environments list <project-id> [flags]                     list a project's environments
   %[1]s apps environments delete <id> [flags]                           delete an environment
+  %[1]s apps environments env-get <id> [flags]                          show an environment's shared env vars
+  %[1]s apps environments env-set <id> --var KEY=VALUE [flags]      replace an environment's shared env vars
 
-Tag an app with an environment via "%[1]s apps set-environment".
+Tag an app with an environment via "%[1]s apps set-environment". An
+environment's shared env vars sit between its project's own shared env
+vars and a tagged app's own env: overriding the project's, overridden by
+the app's.
 
 Run "%[1]s apps environments <subcommand> -h" for a subcommand's own
 flags.
@@ -150,21 +159,40 @@ Flags:
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
+// apiFlagPtrs bundles apiFlagSet's three pointer outputs so
+// parseEnvironmentIDCommand stays under golangci-lint's parameter-count
+// limit.
+type apiFlagPtrs struct {
+	token, apiURL *string
+	jsonOut       *bool
+}
+
+// parseEnvironmentIDCommand parses the standard flag set plus the single
+// "environment id" positional argument shared by delete/env-get/env-set.
+// exitCode is only meaningful when ok is false.
+func parseEnvironmentIDCommand(fs *flag.FlagSet, args []string, stderr io.Writer, prog, cmdName string, flags apiFlagPtrs) (id, tokenFlag, apiURLFlag string, jsonOut bool, exitCode int, ok bool) {
+	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
+		if err == flag.ErrHelp {
+			return "", "", "", false, exitOK, false
+		}
+		return "", "", "", false, exitUsage, false
+	}
+
+	id, argOK := requireOneArg(fs, stderr, prog, cmdName, "environment id")
+	if !argOK {
+		return "", "", "", false, exitUsage, false
+	}
+
+	return id, *flags.token, *flags.apiURL, *flags.jsonOut, 0, true
+}
+
 func runAppsEnvironmentsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps environments delete", "print {} to stdout on success instead of a plain confirmation", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsDeleteUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
-	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
-
-	id, ok := requireOneArg(fs, stderr, prog, "apps environments delete", "environment id")
+	id, tokenFlag, apiURLFlag, jsonOut, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments delete", apiFlagPtrs{tokenFlagP, apiURLFlagP, jsonOutP})
 	if !ok {
-		return exitUsage
+		return exitCode
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
@@ -189,5 +217,78 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --json                    print {} to stdout on success instead of a plain confirmation
   -h, --help              show this help
+`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}
+
+func runAppsEnvironmentsEnvGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps environments env-get", "print the env vars as a JSON object to stdout and nothing else", stderr)
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsEnvGetUsage(prog)) }
+
+	id, tokenFlag, apiURLFlag, jsonOut, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments env-get", apiFlagPtrs{tokenFlagP, apiURLFlagP, jsonOutP})
+	if !ok {
+		return exitCode
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	vars, err := client.GetEnvironmentEnv(context.Background(), id)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get env vars for environment %q: %w", id, err))
+	}
+
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, vars, func() { printEnvVarsTable(stdout, vars) })
+}
+
+func appsEnvironmentsEnvGetUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s apps environments env-get <id> [flags]
+
+Shows an environment's shared env vars: overrides its project's own
+shared env vars, and is itself overridden by any app tagged with it.
+
+Flags:
+  --token string          API token (default: %[2]s env var, then the credentials file)
+  --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --json                    print the env vars as a JSON object to stdout, nothing else
+  -h, --help              show this help
+`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}
+
+func runAppsEnvironmentsEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps environments env-set", "print the resulting env vars as a JSON object to stdout and nothing else", stderr)
+	vars := stringMapFlag{}
+	fs.Var(vars, "var", "shared env var as KEY=VALUE, repeatable; omit entirely to clear every var")
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsEnvSetUsage(prog)) }
+
+	id, tokenFlag, apiURLFlag, jsonOut, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments env-set", apiFlagPtrs{tokenFlagP, apiURLFlagP, jsonOutP})
+	if !ok {
+		return exitCode
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	updated, err := client.SetEnvironmentEnv(context.Background(), id, vars)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set env vars for environment %q: %w", id, err))
+	}
+
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, updated, func() {
+		_, _ = fmt.Fprintf(stdout, "environment %q env vars replaced (%d set)\n", id, len(updated))
+	})
+}
+
+func appsEnvironmentsEnvSetUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s apps environments env-set <id> --var KEY=VALUE [--var KEY=VALUE ...] [flags]
+
+Replaces an environment's entire set of shared env vars in one call,
+the same full-replace semantics PUT /apps/{name}'s own env field has.
+Every key not passed via --var is removed; running with no --var flags
+clears every var.
+
+Flags:
+  --var KEY=VALUE          shared env var, repeatable; omit entirely to clear every var
+  --token string           API token (default: %[2]s env var, then the credentials file)
+  --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
+  --json                     print the resulting env vars as a JSON object to stdout, nothing else
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

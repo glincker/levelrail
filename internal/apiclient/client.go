@@ -637,6 +637,10 @@ func environmentsCollectionPath(projectID string) string {
 	return "/api/v1/projects/" + PathEscape(projectID) + "/environments"
 }
 
+func environmentPath(id string) string {
+	return "/api/v1/environments/" + PathEscape(id)
+}
+
 // CreateEnvironment calls POST /api/v1/projects/{id}/environments.
 func (c *Client) CreateEnvironment(ctx context.Context, projectID string, req CreateEnvironmentRequest) (EnvironmentResource, error) {
 	var out EnvironmentResource
@@ -653,7 +657,22 @@ func (c *Client) ListEnvironments(ctx context.Context, projectID string) ([]Envi
 
 // DeleteEnvironment calls DELETE /api/v1/environments/{id}.
 func (c *Client) DeleteEnvironment(ctx context.Context, id string) error {
-	return c.do(ctx, http.MethodDelete, "/api/v1/environments/"+PathEscape(id), nil, nil)
+	return c.do(ctx, http.MethodDelete, environmentPath(id), nil, nil)
+}
+
+// GetEnvironmentEnv calls GET /api/v1/environments/{id}/env.
+func (c *Client) GetEnvironmentEnv(ctx context.Context, id string) (map[string]string, error) {
+	var out map[string]string
+	err := c.do(ctx, http.MethodGet, environmentPath(id)+"/env", nil, &out)
+	return out, err
+}
+
+// SetEnvironmentEnv calls PUT /api/v1/environments/{id}/env: a full
+// replace, mirroring PUT /apps/{name}'s own env field semantics.
+func (c *Client) SetEnvironmentEnv(ctx context.Context, id string, vars map[string]string) (map[string]string, error) {
+	var out map[string]string
+	err := c.do(ctx, http.MethodPut, environmentPath(id)+"/env", vars, &out)
+	return out, err
 }
 
 // SetAppEnvironment calls PUT /api/v1/apps/{name}/environment. An empty
@@ -748,6 +767,16 @@ func (c *Client) DrainNode(ctx context.Context, id, targetNodeID string) (DrainN
 func (c *Client) GetNodeHealth(ctx context.Context, id string) ([]ConditionResource, error) {
 	var out []ConditionResource
 	err := c.do(ctx, http.MethodGet, nodePath(id)+"/health", nil, &out)
+	return out, err
+}
+
+// GetNodePatchStatus calls GET /api/v1/nodes/{id}/patch-status: the
+// latest OS-patch reading HostPatchCollector wrote for id, or
+// Checked == false if it has never checked (unsupported package manager,
+// or the collector hasn't run yet).
+func (c *Client) GetNodePatchStatus(ctx context.Context, id string) (NodePatchStatusResource, error) {
+	var out NodePatchStatusResource
+	err := c.do(ctx, http.MethodGet, nodePath(id)+"/patch-status", nil, &out)
 	return out, err
 }
 

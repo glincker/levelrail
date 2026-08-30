@@ -291,6 +291,144 @@ func TestHandleGitPushWebhook_GitLabTokenHeader_WrongToken_Rejected(t *testing.T
 	}
 }
 
+// bitbucketPushBody builds a Bitbucket-shaped repo:push payload for
+// branch, always at commit "bb-sha1": the same fixed-commit convention
+// pushBody's own doc comment establishes.
+func bitbucketPushBody(branch string) []byte {
+	b, _ := json.Marshal(map[string]any{
+		"push": map[string]any{
+			"changes": []map[string]any{
+				{"new": map[string]any{"type": "branch", "name": branch, "target": map[string]any{"hash": "bb-sha1"}}},
+			},
+		},
+	})
+	return b
+}
+
+// TestHandleGitPushWebhook_BitbucketSignatureHeader_TriggersDeploy
+// proves the same webhook route also accepts Bitbucket's own payload
+// shape and X-Hub-Signature header (HMAC-SHA256 like GitHub's
+// X-Hub-Signature-256, just without the "-256" suffix), selected by
+// X-Event-Key: repo:push (webhook.ParsePushEventForProvider's own doc
+// comment).
+func TestHandleGitPushWebhook_BitbucketSignatureHeader_TriggersDeploy(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://bitbucket.org/org/web.git","branch":"main","build_type":"dockerfile"}`)
+
+	var fetchCalls []fakeGitSourceFetchCall
+	rt.gitSourceFetch = newFakeGitSourceFetch(&fetchCalls, t.TempDir(), new(bool), nil)
+	fb := &fakeBuilder{tag: "web:bb-sha1"}
+	rt.builder = fb
+
+	body := bitbucketPushBody("main")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+	req.Header.Set("X-Event-Key", "repo:push")
+	req.Header.Set("X-Hub-Signature", sign([]byte(created.WebhookSecret), body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if fb.calls != 1 {
+		t.Fatalf("builder called %d times, want 1", fb.calls)
+	}
+	if fb.lastReq.CommitSHA != "bb-sha1" {
+		t.Errorf("deploy request CommitSHA = %q, want bb-sha1", fb.lastReq.CommitSHA)
+	}
+}
+
+// TestHandleGitPushWebhook_BitbucketWrongSignature_Rejected proves a
+// wrong X-Hub-Signature is rejected the same way a wrong
+// X-Hub-Signature-256 already is.
+func TestHandleGitPushWebhook_BitbucketWrongSignature_Rejected(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	connectGitSource(t, rt, cookie, `{"repo_url":"https://bitbucket.org/org/web.git","branch":"main"}`)
+	rt.builder = &fakeBuilder{tag: "web:bb-sha1"}
+
+	body := bitbucketPushBody("main")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+	req.Header.Set("X-Event-Key", "repo:push")
+	req.Header.Set("X-Hub-Signature", sign([]byte("not-the-real-secret"), body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusUnauthorized, rec.Body.String())
+	}
+}
+
+// TestVerifyGitPushWebhookAuth covers the full header matrix
+// verifyGitPushWebhookAuth branches on, including the case none of the
+// three known headers are present, which must fail closed rather than
+// pass by default.
+func TestVerifyGitPushWebhookAuth(t *testing.T) {
+	secret := "s3cr3t"
+	body := []byte(`{"ref":"refs/heads/main","after":"sha1"}`)
+
+	tests := []struct {
+		name    string
+		headers map[string]string
+		want    bool
+	}{
+		{
+			name:    "github valid signature",
+			headers: map[string]string{"X-Hub-Signature-256": sign([]byte(secret), body)},
+			want:    true,
+		},
+		{
+			name:    "github wrong signature",
+			headers: map[string]string{"X-Hub-Signature-256": sign([]byte("wrong"), body)},
+			want:    false,
+		},
+		{
+			name:    "gitlab valid token",
+			headers: map[string]string{"X-Gitlab-Token": secret},
+			want:    true,
+		},
+		{
+			name:    "gitlab wrong token",
+			headers: map[string]string{"X-Gitlab-Token": "wrong"},
+			want:    false,
+		},
+		{
+			name:    "bitbucket valid signature",
+			headers: map[string]string{"X-Hub-Signature": sign([]byte(secret), body)},
+			want:    true,
+		},
+		{
+			name:    "bitbucket wrong signature",
+			headers: map[string]string{"X-Hub-Signature": sign([]byte("wrong"), body)},
+			want:    false,
+		},
+		{
+			name:    "no known header present",
+			headers: map[string]string{},
+			want:    false,
+		},
+		{
+			name:    "gitlab token takes precedence when multiple headers present",
+			headers: map[string]string{"X-Gitlab-Token": secret, "X-Hub-Signature": sign([]byte("wrong"), body)},
+			want:    true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := http.Header{}
+			for k, v := range tt.headers {
+				h.Set(k, v)
+			}
+			if got := verifyGitPushWebhookAuth(secret, body, h); got != tt.want {
+				t.Errorf("verifyGitPushWebhookAuth() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestHandleGitPushWebhook_PrivateRepo_PassesToken(t *testing.T) {
 	secrets := newFakeGitSourceSecrets()
 	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)

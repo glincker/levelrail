@@ -159,9 +159,9 @@ func (rt *Router) handleUseGitLabProjectAsSource(w http.ResponseWriter, r *http.
 		return
 	}
 
-	baseURL, err := rt.githubAppBaseURL(ctx)
+	baseURL, err := rt.controlPlaneBaseURL(ctx)
 	if err != nil {
-		if errors.Is(err, errGitHubAppNoPrimaryDomain) {
+		if errors.Is(err, errNoPrimaryDomain) {
 			writeError(w, http.StatusConflict, "git source connected, but set a primary domain in ingress settings before gitlab can reach a webhook here")
 			return
 		}

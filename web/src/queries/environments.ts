@@ -17,6 +17,11 @@ export const environmentKeys = {
   all: ['environments'] as const,
   list: (projectId: string) =>
     [...environmentKeys.all, 'list', projectId] as const,
+  // No fetch-by-id endpoint exists (this file's own doc comment), so
+  // "detail" is only ever a query-key namespace, e.g. for
+  // queries/environmentEnv.ts's own shared env vars, never a fetcher of
+  // its own.
+  detail: (id: string) => [...environmentKeys.all, 'detail', id] as const,
 }
 
 export async function fetchEnvironments(

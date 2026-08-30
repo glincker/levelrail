@@ -31,6 +31,7 @@ import {
   useDisconnectGitLabApp,
   useGitLabAppStatus,
 } from '../queries/gitlabApp'
+import { SetPrimaryDomainPrompt } from './SetPrimaryDomainPrompt'
 
 // Status card for the GitLab App connection: not connected / configured
 // but not yet authorized / connected as <instance>. Unlike GitHub's
@@ -89,17 +90,20 @@ export function GitLabAppConnectionCard() {
                 {status.instance_url}
               </p>
             ) : null}
-            {status.connected && !status.authorized ? (
+            {status.connected && !status.authorized && status.base_url ? (
               <p className="text-sm text-muted-foreground">
                 The OAuth Application is configured but hasn&apos;t been
                 authorized yet. Click Connect to finish.
               </p>
             ) : null}
+            {status.connected && !status.authorized && !status.base_url ? (
+              <SetPrimaryDomainPrompt />
+            ) : null}
           </div>
 
           {status.connected ? (
             <div className="flex shrink-0 items-center gap-2">
-              {!status.authorized ? (
+              {!status.authorized && status.base_url ? (
                 <Button
                   type="button"
                   size="sm"
@@ -169,7 +173,11 @@ export function GitLabAppConnectionCard() {
           )}
         </div>
       </CardContent>
-      <ConfigureDialog open={configureOpen} onOpenChange={setConfigureOpen} />
+      <ConfigureDialog
+        open={configureOpen}
+        onOpenChange={setConfigureOpen}
+        baseURL={status.base_url}
+      />
     </Card>
   )
 }
@@ -183,9 +191,11 @@ export function GitLabAppConnectionCard() {
 function ConfigureDialog({
   open,
   onOpenChange,
+  baseURL,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
+  baseURL?: string
 }) {
   const connect = useConnectGitLabApp()
   const [instanceURL, setInstanceURL] = useState('https://gitlab.com')
@@ -244,9 +254,13 @@ function ConfigureDialog({
           <DialogDescription>
             Create one in your GitLab instance under Applications, with
             redirect URI{' '}
-            <code className="text-xs">
-              {window.location.origin}/api/v1/gitlab-app/callback
-            </code>{' '}
+            {baseURL ? (
+              <code className="text-xs">{baseURL}/api/v1/gitlab-app/callback</code>
+            ) : (
+              <span className="text-amber-700 dark:text-amber-400">
+                set a primary domain in domain settings first
+              </span>
+            )}{' '}
             and scope <code className="text-xs">api</code>, then paste the
             resulting client ID and secret here.
           </DialogDescription>

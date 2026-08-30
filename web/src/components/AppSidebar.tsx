@@ -29,6 +29,7 @@ import { useAuthUsername } from '../hooks/useAuthUsername'
 import { useLogout } from '../queries/auth'
 import { AppScopedSidebar } from './AppScopedSidebar'
 import { DatabaseScopedSidebar } from './DatabaseScopedSidebar'
+import { SettingsScopedSidebar } from './SettingsScopedSidebar'
 
 // Matches /apps/<name> and any nested path under it, capturing <name>.
 // Deliberately excludes the bare /apps list route (no trailing segment)
@@ -44,24 +45,17 @@ const APP_SCOPE_PATTERN = /^\/apps\/([^/]+)/
 // if/else-if rather than needing extra precedence handling.
 const DATABASE_SCOPE_PATTERN = /^\/databases\/([^/]+)/
 
-// The shadcn sidebar-07/dashboard-01 shape (docs-local/research/
-// dashboard-redesign/cross-cutting-sidebar-patterns.md), minus the team
-// switcher: Phase 1 is single-admin with nothing to switch between, so
-// that header slot is deliberately not built rather than built for a
-// workspace-of-one. Primary nav lives in SidebarContent, a secondary
-// group (Settings, Docs) sits pinned above the account footer via
-// `mt-auto` on its own SidebarGroup, matching the research's two-zone
-// bottom structure.
-//
-// Vercel-style dynamic/contextual nav: this single
-// component now has three rendering paths, chosen by the current pathname
-// rather than separate components swapped in by __root.tsx. That
-// keeps the brand header, account footer, and outer Sidebar/SidebarRail
-// chrome (identical in every mode) written once, and makes the "which
-// mode" decision live in exactly one place (the two scope patterns
-// below) instead of being duplicated between a parent chooser and this
-// file. Databases now gets the same scoped treatment Apps got first, per
-// the spec's own "fast-follow once this pattern is proven once" note.
+// Anchors on /settings itself (no captured name, unlike the two
+// patterns above), covering both the hub (/settings) and every leaf
+// page under it (/settings/github-app, etc). Checked after the app/
+// database patterns below purely by convention, since /settings/ can
+// never overlap with /apps/ or /databases/.
+const SETTINGS_SCOPE_PATTERN = /^\/settings(\/|$)/
+
+// Renders one of four nav modes by pathname (global, app-scoped,
+// database-scoped, settings-scoped) in a single component so the brand
+// header, account footer, and outer chrome stay written once instead of
+// duplicated across a parent chooser and per-mode components.
 export function AppSidebar() {
   const brand = useBrand()
   const username = useAuthUsername()
@@ -69,6 +63,7 @@ export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const scopedAppName = pathname.match(APP_SCOPE_PATTERN)?.[1]
   const scopedDatabaseName = pathname.match(DATABASE_SCOPE_PATTERN)?.[1]
+  const isSettingsScoped = SETTINGS_SCOPE_PATTERN.test(pathname)
 
   return (
     <Sidebar collapsible="icon" variant="floating">
@@ -98,6 +93,8 @@ export function AppSidebar() {
           <DatabaseScopedSidebar
             name={decodeURIComponent(scopedDatabaseName)}
           />
+        ) : isSettingsScoped ? (
+          <SettingsScopedSidebar />
         ) : (
           <>
             <SidebarGroup>
@@ -133,12 +130,6 @@ export function AppSidebar() {
                       <span>Databases</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                  {/* Lightweight, non-auth organizational grouping
-                      (repo-plan section 6's Phase 4 note on resisting a
-                      permission matrix: this is deliberately not that),
-                      sitting alongside Apps/Databases since it's the
-                      same "resource an operator browses day to day"
-                      category those two are, not admin configuration. */}
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       render={<Link to="/projects" />}
@@ -149,11 +140,6 @@ export function AppSidebar() {
                       <span>Projects</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                  {/* Promoted from Settings (design spec item 1,
-                      2026-08-14): multi-node placement is a real
-                      resource kind an operator manages day to day, the
-                      same category as Apps/Databases, not admin
-                      configuration. */}
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       render={<Link to="/nodes" />}
@@ -164,13 +150,6 @@ export function AppSidebar() {
                       <span>Nodes</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                  {/* Centralized cross-app domain list plus the
-                      platform-wide ACME/primary-domain settings
-                      (internal/api/ingress_settings.go): the same
-                      "resource an operator browses day to day" category
-                      Apps/Databases/Projects/Nodes already sit in, not
-                      folded under Settings since it aggregates real,
-                      per-app routing state, not account configuration. */}
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       render={<Link to="/domains" />}
@@ -185,13 +164,9 @@ export function AppSidebar() {
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {/* Pinned to the bottom of the content area, just above the
-                account footer: the two-zone structure dashboard-01's
-                NavSecondary establishes. mt-auto on the group itself, not
-                a spacer element, so it works regardless of how much
-                primary nav exists above it. Single entry point into the
-                settings hub (routes/settings/index.tsx) rather than
-                listing every settings page here. */}
+            {/* Single entry point into the settings hub; the grouped
+                sub-nav (SettingsScopedSidebar) takes over once inside
+                /settings/*. */}
             <SidebarGroup className="mt-auto">
               <SidebarGroupLabel>Settings</SidebarGroupLabel>
               <SidebarGroupContent>

@@ -32,36 +32,26 @@ import { useIngressSettings } from '../queries/domains'
 import {
   useConnectGitHubAppManually,
   useDisconnectGitHubApp,
+  useGitHubAppManifestPreview,
   useGitHubAppStatus,
 } from '../queries/githubApp'
+import { SetPrimaryDomainPrompt } from './SetPrimaryDomainPrompt'
 
 // Status card for the GitHub App connection: not connected / connected
 // as <account> but not yet installed / connected and installed on
-// <account>. The "Add GitHub App" action is a real, full-page browser
-// navigation (window.location.href to
-// GET /api/v1/github-app/register/start), not a fetch call:
-// GitHub's manifest flow is inherently a form POST from the browser to
-// github.com, followed by GitHub's own confirmation page, followed by a
-// redirect back here (internal/api/github_app_register.go's own doc
-// comment covers this in full). A fetch/XHR call cannot drive that
-// sequence; only a real navigation can.
-//
-// Two connect paths, side by side, matching Coolify's own GitHub App
-// screen (Automated vs Manual installation): the automated manifest
-// flow needs a real, publicly reachable primary domain, since GitHub's
-// own servers redirect there for the lifetime of the App registration,
-// not just for this browser session (see githubAppBaseURL's own doc
-// comment on the backend). An operator whose domain isn't live yet, or
-// who prefers creating the App by hand on github.com, uses the manual
-// dialog instead: same end state (a connected App), no domain required
-// to save the credentials, since ManualConnectDialog itself never talks
-// to GitHub, it only stores what the operator already has.
+// <account>. Two connect paths, side by side (Automated vs Manual),
+// matching Coolify's own GitHub App screen: automated needs a real,
+// publicly reachable primary domain (GitHub's servers redirect there
+// for the App's whole registration lifetime); manual lets an operator
+// paste credentials for an App they created themselves, no domain
+// required.
 export function GitHubAppConnectionCard() {
   const { data: status } = useGitHubAppStatus()
   const { data: ingressSettings } = useIngressSettings()
   const disconnect = useDisconnectGitHubApp()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [manualOpen, setManualOpen] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   const hasPrimaryDomain = Boolean(ingressSettings.primary_domain)
   const baseURL = status.base_url ?? ''
@@ -95,6 +85,11 @@ export function GitHubAppConnectionCard() {
                   <Badge variant="warning">not installed yet</Badge>
                 )}
               </div>
+            ) : null}
+            {status.connected ? (
+              <p className="font-mono text-sm text-muted-foreground">
+                {status.instance_url}
+              </p>
             ) : (
               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <XCircleIcon className="size-4" />
@@ -109,14 +104,7 @@ export function GitHubAppConnectionCard() {
               </p>
             ) : null}
             {!status.connected && !hasPrimaryDomain ? (
-              <p className="flex items-center gap-1.5 text-sm text-amber-700 dark:text-amber-400">
-                <WarningIcon className="size-3.5" />
-                Set a primary domain in{' '}
-                <Link to="/domains" className="underline">
-                  domain settings
-                </Link>{' '}
-                first for automated setup, or connect manually below.
-              </p>
+              <SetPrimaryDomainPrompt />
             ) : null}
             {!status.connected && hasPrimaryDomain && baseURL ? (
               <p className="flex items-start gap-1.5 text-sm text-amber-700 dark:text-amber-400">
@@ -218,7 +206,7 @@ export function GitHubAppConnectionCard() {
                 size="sm"
                 disabled={!hasPrimaryDomain}
                 onClick={() => {
-                  window.location.href = '/api/v1/github-app/register/start'
+                  setPreviewOpen(true)
                 }}
               >
                 <GithubLogoIcon className="size-4" />
@@ -229,19 +217,176 @@ export function GitHubAppConnectionCard() {
         </div>
       </CardContent>
       <ManualConnectDialog open={manualOpen} onOpenChange={setManualOpen} />
+      <ManifestPreviewDialog open={previewOpen} onOpenChange={setPreviewOpen} />
     </Card>
   )
 }
 
-// ManualConnectDialog is Coolify's "Manual installation" card, adapted
-// to a dialog: an operator creates the App themselves at
-// github.com/settings/apps/new (no manifest, no redirect back here) and
-// pastes the resulting credentials in directly. Every field GitHub's
-// own App "General" settings page shows. installation_id/account_login
-// are optional: an App saved without them still connects (status.installed
-// stays false), the same two-step shape the automated flow's own
-// install-after-create step has, see handleConnectGitHubAppManually's
-// own doc comment.
+// ManifestPreviewDialog shows exactly what handleStartGitHubAppRegistration
+// is about to send GitHub before the browser navigates away: GitHub's
+// own manifest confirmation page only lets an operator edit the App
+// name, nothing else (callback/webhook/permissions must already be
+// correct), so this is the one real chance to review them first. Fetches
+// GET /api/v1/github-app/register/preview only while open (read-only,
+// mints no CSRF state), and confirming does the same full-page
+// navigation the old direct button click used to, just with an
+// operator-editable name carried along as ?name=.
+function ManifestPreviewDialog({
+  open,
+  onOpenChange,
+}: Readonly<{
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}>) {
+  const [instanceURL, setInstanceURL] = useState('')
+  const trimmedInstanceURL = instanceURL.trim()
+  const { data: preview, isLoading, isError, error } = useGitHubAppManifestPreview(
+    trimmedInstanceURL,
+    open,
+  )
+  const [name, setName] = useState('')
+  // Empty means "untouched": falls back to the fetched default rather
+  // than syncing it into state via an effect (React's own guidance
+  // against setState-in-effect for derived initial values). Also
+  // matches handleConfirm's own "blank name param means let the backend
+  // pick" behavior below.
+  const displayName = name === '' ? (preview?.app_name ?? '') : name
+
+  function handleConfirm() {
+    const params = new URLSearchParams()
+    if (name.trim() !== '') {
+      params.set('name', name.trim())
+    }
+    if (trimmedInstanceURL !== '') {
+      params.set('instance_url', trimmedInstanceURL)
+    }
+    window.location.href = `/api/v1/github-app/register/start?${params.toString()}`
+  }
+
+  function renderPreviewBody() {
+    if (isLoading) {
+      return <p className="text-sm text-muted-foreground">Loading...</p>
+    }
+    if (isError) {
+      return (
+        <p className="text-sm text-destructive">
+          {error instanceof Error ? error.message : 'Could not load a preview.'}
+        </p>
+      )
+    }
+    if (!preview) {
+      return null
+    }
+    return (
+      <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
+        <Field>
+          <FieldLabel htmlFor="gh-preview-instance-url">
+            GitHub instance
+          </FieldLabel>
+          <Input
+            id="gh-preview-instance-url"
+            className="font-mono"
+            autoComplete="off"
+            spellCheck={false}
+            value={instanceURL}
+            onChange={(e) => {
+              setInstanceURL(e.target.value)
+            }}
+            placeholder="https://github.com"
+          />
+          <FieldDescription>
+            Leave blank for github.com. Self-hosted GitHub Enterprise
+            Server instances work too, e.g. https://github.example.com.
+          </FieldDescription>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="gh-preview-name">App name</FieldLabel>
+          <Input
+            id="gh-preview-name"
+            value={displayName}
+            onChange={(e) => {
+              setName(e.target.value)
+            }}
+          />
+          <FieldDescription>
+            The one field GitHub itself lets you change on its own
+            confirmation page too.
+          </FieldDescription>
+        </Field>
+        <div className="space-y-1.5 text-sm">
+          <UrlRow label="Homepage" value={preview.homepage_url} />
+          <UrlRow label="Callback" value={preview.callback_url} />
+          <UrlRow label="Setup" value={preview.setup_url} />
+          <UrlRow
+            label="Webhook"
+            value={preview.webhook_url}
+            note={preview.webhook_active ? undefined : 'declared, not yet active'}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <p className="text-sm font-medium text-foreground">Permissions requested</p>
+          <ul className="space-y-1 text-sm text-muted-foreground">
+            {Object.entries(preview.permissions).map(([key, level]) => (
+              <li key={key} className="font-mono text-xs">
+                {key}: {level}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) {
+          setName('')
+          setInstanceURL('')
+        }
+        onOpenChange(next)
+      }}
+    >
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Review before connecting to GitHub</DialogTitle>
+          <DialogDescription>
+            GitHub&apos;s own confirmation page only lets you rename the App;
+            everything else below is fixed before your browser leaves this
+            page.
+          </DialogDescription>
+        </DialogHeader>
+        {renderPreviewBody()}
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button type="button" disabled={!preview} onClick={handleConfirm}>
+            Continue to GitHub
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function UrlRow({ label, value, note }: { label: string; value: string; note?: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="truncate text-right font-mono text-xs">
+        {value}
+        {note ? <span className="ml-1.5 text-amber-700 dark:text-amber-400">({note})</span> : null}
+      </span>
+    </div>
+  )
+}
+
+// ManualConnectDialog: an operator creates the App themselves at
+// github.com/settings/apps/new and pastes the resulting credentials
+// in directly. installation_id/account_login are optional: an App
+// saved without them still connects (status.installed stays false).
 function ManualConnectDialog({
   open,
   onOpenChange,
@@ -250,6 +395,7 @@ function ManualConnectDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const connect = useConnectGitHubAppManually()
+  const [instanceURL, setInstanceURL] = useState('')
   const [appID, setAppID] = useState('')
   const [clientID, setClientID] = useState('')
   const [clientSecret, setClientSecret] = useState('')
@@ -259,6 +405,7 @@ function ManualConnectDialog({
   const [accountLogin, setAccountLogin] = useState('')
 
   function resetForm() {
+    setInstanceURL('')
     setAppID('')
     setClientID('')
     setClientSecret('')
@@ -289,6 +436,7 @@ function ManualConnectDialog({
       {
         app_id: appIDNum,
         client_id: clientID.trim(),
+        instance_url: instanceURL.trim() || undefined,
         client_secret: clientSecret,
         webhook_secret: webhookSecret,
         private_key: privateKey,
@@ -337,12 +485,34 @@ function ManualConnectDialog({
               className="underline"
             >
               github.com/settings/apps/new
-            </a>
-            , then paste the resulting credentials here. No primary domain
-            required to save these: only automated setup needs one.
+            </a>{' '}
+            (or your GitHub Enterprise Server instance&apos;s own
+            /settings/apps/new), then paste the resulting credentials here.
+            No primary domain required to save these: only automated setup
+            needs one.
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
+          <Field>
+            <FieldLabel htmlFor="gh-instance-url">
+              GitHub instance (optional)
+            </FieldLabel>
+            <Input
+              id="gh-instance-url"
+              className="font-mono"
+              autoComplete="off"
+              spellCheck={false}
+              value={instanceURL}
+              onChange={(e) => {
+                setInstanceURL(e.target.value)
+              }}
+              placeholder="https://github.com"
+            />
+            <FieldDescription>
+              Leave blank for github.com. Self-hosted instances work too,
+              e.g. https://github.example.com.
+            </FieldDescription>
+          </Field>
           <Field>
             <FieldLabel htmlFor="gh-app-id">App ID</FieldLabel>
             <Input

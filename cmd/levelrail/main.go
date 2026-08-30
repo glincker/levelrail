@@ -160,6 +160,13 @@ const (
 	// short enough that a real hang is caught well within a minute.
 	defaultNodeHeartbeatTimeout = 45 * time.Second
 
+	// defaultOSPatchCheckInterval governs HostPatchCollector: unlike disk
+	// space or container metrics, this shells out to a package manager
+	// (internal/telemetry/hostpatch.go), real process cost an operator may
+	// want to tune, so an hour is a conservative default rather than
+	// metricsCollectionInterval's 15s.
+	defaultOSPatchCheckInterval = 1 * time.Hour
+
 	// defaultBackupSchedulerInterval is how often internal/backup.Scheduler
 	// checks which databases have a due cron schedule (wave-2 roadmap
 	// item 6), env-overridable via APP_BACKUP_SCHEDULER_INTERVAL
@@ -500,6 +507,13 @@ func run(logger *slog.Logger) error {
 		go func() {
 			if err := diskCollector.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
 				logger.Error("telemetry host disk collector stopped", slog.String("error", err.Error()))
+			}
+		}()
+
+		patchCollector := telemetry.NewHostPatchCollector(nil, "node:"+meshCfg.localNodeID, telemetryDB, osPatchCheckInterval(), logger)
+		go func() {
+			if err := patchCollector.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+				logger.Error("telemetry host patch collector stopped", slog.String("error", err.Error()))
 			}
 		}()
 	}
@@ -1109,6 +1123,20 @@ func nodeHeartbeatTimeout() time.Duration {
 	return d
 }
 
+// osPatchCheckInterval reads APP_OS_PATCH_CHECK_INTERVAL, the same
+// env-var-with-default shape as nodeHeartbeatInterval above.
+func osPatchCheckInterval() time.Duration {
+	raw := os.Getenv("APP_OS_PATCH_CHECK_INTERVAL")
+	if raw == "" {
+		return defaultOSPatchCheckInterval
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		return defaultOSPatchCheckInterval
+	}
+	return d
+}
+
 func loadBrand() (*brand.Brand, error) {
 	path := os.Getenv("APP_BRAND_FILE")
 	if path == "" {
@@ -1499,7 +1527,7 @@ func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent
 // deployRecorder and logBroadcaster are both always non-nil (constructed
 // unconditionally in run, unlike builder/secretsManager/webhookHandler
 // which are each independently optional): api.WithDeployRecorder,
-// api.WithDeployLogStore, and api.WithLogBroadcaster are all applied
+// api.WithDeployLogQuerier, and api.WithLogBroadcaster are all applied
 // unconditionally, the same way api.WithTelemetryQuerier and
 // api.WithAlertRules already are for telemetryDB/alertingDB.
 // handleTriggerBuild (internal/api/builds.go) still degrades gracefully
@@ -1570,7 +1598,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithScheduledTaskRunner(scheduledTaskRunner),
 		api.WithCertExpiryWarningWindow(certExpiryWarningWindow(logger)),
 		api.WithPublicHost(publicHost()),
-		api.WithDeployLogStore(telemetryDB),
+		api.WithDeployLogQuerier(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),
 		api.WithLogBroadcaster(logBroadcaster),
 		// emailSender is always non-nil (run() builds it unconditionally):
@@ -1916,6 +1944,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithRegistryCredentials(deps.db),
 		application.WithProjectEnv(deps.db),
 		application.WithOrganizationEnv(deps.db),
+		application.WithEnvironmentEnv(deps.db),
 		application.WithNetworkPrefix(deps.networkPrefix),
 	}
 	if deps.secretsManager != nil {

@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -101,6 +102,63 @@ func TestHandleListDatabases(t *testing.T) {
 	}
 	if len(list) != 1 || list[0].Name != "main" {
 		t.Fatalf("list = %+v, want one database named main", list)
+	}
+}
+
+// TestHandleListDatabases_Status covers the batched status field
+// (databaseListResource), the same one-healthy/one-broken/one-pending
+// shape TestHandleListApps_Status covers for apps.
+func TestHandleListDatabases_Status(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	for _, name := range []string{"healthy-db", "broken-db", "pending-db"} {
+		if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{
+			Name: name, Engine: store.EnginePostgres, Version: "16",
+		}); err != nil {
+			t.Fatalf("seed %s: %v", name, err)
+		}
+	}
+	if err := db.UpsertConditions(ctx, "database/healthy-db", []reconcile.Condition{
+		{Type: "Ready", Status: reconcile.ConditionTrue, Reason: "Running"},
+	}); err != nil {
+		t.Fatalf("upsert healthy-db conditions: %v", err)
+	}
+	if err := db.UpsertConditions(ctx, "database/broken-db", []reconcile.Condition{
+		{Type: "Ready", Status: reconcile.ConditionFalse, Reason: "CrashLoop"},
+	}); err != nil {
+		t.Fatalf("upsert broken-db conditions: %v", err)
+	}
+	// pending-db deliberately gets no UpsertConditions call at all.
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got []databaseListResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got) != 3 {
+		t.Fatalf("got %d databases, want 3", len(got))
+	}
+
+	byName := map[string]databaseListResource{}
+	for _, d := range got {
+		byName[d.Name] = d
+	}
+
+	if s := byName["healthy-db"].Status; s.Label != "Healthy" || s.Variant != "success" {
+		t.Errorf("healthy-db status = %+v, want Healthy/success", s)
+	}
+	if s := byName["broken-db"].Status; s.Label != "Attention needed" || s.Variant != "destructive" {
+		t.Errorf("broken-db status = %+v, want Attention needed/destructive", s)
+	}
+	if s := byName["pending-db"].Status; s.Label != "No status yet" || s.Variant != "muted" {
+		t.Errorf("pending-db status = %+v, want No status yet/muted", s)
 	}
 }
 

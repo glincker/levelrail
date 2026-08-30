@@ -6,9 +6,9 @@ import {
   KeyIcon,
   LockKeyIcon,
   UsersIcon,
-  BuildingsIcon,
   GithubLogoIcon,
   GitlabLogoIcon,
+  GitBranchIcon,
   WebhooksLogoIcon,
   CloudArrowUpIcon,
   CloudCheckIcon,
@@ -76,12 +76,6 @@ const sections: SettingsSection[] = [
         title: 'OAuth sign-in',
         description: 'Let people sign in with Google or GitHub.',
       },
-      {
-        to: '/settings/organizations',
-        icon: BuildingsIcon,
-        title: 'Organizations',
-        description: 'Group related projects under an organization.',
-      },
     ],
   },
   {
@@ -98,6 +92,12 @@ const sections: SettingsSection[] = [
         icon: GitlabLogoIcon,
         title: 'GitLab App',
         description: 'gitlab.com or self-hosted project access for git-based deploys.',
+      },
+      {
+        to: '/settings/bitbucket-app',
+        icon: GitBranchIcon,
+        title: 'Bitbucket App',
+        description: 'Bitbucket Cloud repository access for git-based deploys.',
       },
       {
         to: '/settings/notification-channels',

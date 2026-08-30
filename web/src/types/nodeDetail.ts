@@ -63,3 +63,17 @@ export interface DrainNodeResponse {
   moved_databases: string[]
   errors?: string[]
 }
+
+// Response body for GET /api/v1/nodes/{id}/patch-status
+// (internal/api/node_patch_status.go's nodePatchStatusResponse): the
+// latest OS-patch reading HostPatchCollector wrote for this node.
+// `checked` distinguishes "never checked" (no supported package manager,
+// or the collector hasn't run yet) from a checked, genuinely empty
+// `total`; UI code must branch on `checked` first, never infer "unknown"
+// from `total === 0`.
+export interface NodePatchStatusResource {
+  checked: boolean
+  total: number
+  security: number
+  checked_at?: string
+}
