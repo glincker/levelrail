@@ -62,6 +62,34 @@ func withRegistryCredentialField(base createRegistryCredentialRequest, mutate fu
 	return base
 }
 
+func TestValidateUpdateRegistryCredentialRequest(t *testing.T) {
+	valid := updateRegistryCredentialRequest{Name: "ghcr-bot", RegistryHost: "ghcr.io", Username: "bot"}
+	tests := []struct {
+		name    string
+		req     updateRegistryCredentialRequest
+		wantErr bool
+	}{
+		{name: "valid, no password rotation", req: valid, wantErr: false},
+		{name: "valid, password rotated", req: withUpdateRegistryCredentialField(valid, func(r *updateRegistryCredentialRequest) { r.Password = "new-tok" }), wantErr: false},
+		{name: "missing name", req: withUpdateRegistryCredentialField(valid, func(r *updateRegistryCredentialRequest) { r.Name = "" }), wantErr: true},
+		{name: "missing registry_host", req: withUpdateRegistryCredentialField(valid, func(r *updateRegistryCredentialRequest) { r.RegistryHost = "" }), wantErr: true},
+		{name: "missing username", req: withUpdateRegistryCredentialField(valid, func(r *updateRegistryCredentialRequest) { r.Username = "" }), wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateUpdateRegistryCredentialRequest(tt.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateUpdateRegistryCredentialRequest(%+v) error = %v, wantErr %v", tt.req, err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func withUpdateRegistryCredentialField(base updateRegistryCredentialRequest, mutate func(*updateRegistryCredentialRequest)) updateRegistryCredentialRequest {
+	mutate(&base)
+	return base
+}
+
 func TestRegistryCredentialRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
@@ -71,6 +99,8 @@ func TestRegistryCredentialRoutes_RequireAuth(t *testing.T) {
 	}{
 		{http.MethodGet, "/api/v1/registry-credentials"},
 		{http.MethodPost, "/api/v1/registry-credentials"},
+		{http.MethodGet, "/api/v1/registry-credentials/regcred_x"},
+		{http.MethodPut, "/api/v1/registry-credentials/regcred_x"},
 		{http.MethodDelete, "/api/v1/registry-credentials/regcred_x"},
 	}
 	for _, r := range routes {
@@ -191,6 +221,142 @@ func TestHandleCreateRegistryCredential_DuplicateName_Conflict(t *testing.T) {
 	}
 }
 
+func TestHandleGetRegistryCredential_NotFound(t *testing.T) {
+	rt, db := newTestRouterWithRegistryCredentialSecrets(t, &fakeRegistryCredentialSecretsSetter{})
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/registry-credentials/regcred_missing", ""))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleUpdateRegistryCredential_Success(t *testing.T) {
+	setter := &fakeRegistryCredentialSecretsSetter{}
+	rt, db := newTestRouterWithRegistryCredentialSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	createRec := httptest.NewRecorder()
+	createBody := `{"name":"ghcr-bot","registry_host":"ghcr.io","username":"bot","password":"tok"}`
+	rt.Handler().ServeHTTP(createRec, authedRequest(t, cookie, http.MethodPost, "/api/v1/registry-credentials", createBody))
+	var created registryCredentialResource
+	if err := json.NewDecoder(createRec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	setter.calls = nil
+
+	updateRec := httptest.NewRecorder()
+	updateBody := `{"name":"ghcr-bot-renamed","registry_host":"ghcr.io","username":"new-user"}`
+	rt.Handler().ServeHTTP(updateRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/registry-credentials/"+created.ID, updateBody))
+	if updateRec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", updateRec.Code, http.StatusOK, updateRec.Body.String())
+	}
+
+	var got registryCredentialResource
+	if err := json.NewDecoder(updateRec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got.Name != "ghcr-bot-renamed" || got.Username != "new-user" {
+		t.Errorf("response = %+v, want the updated fields", got)
+	}
+	if len(setter.calls) != 0 {
+		t.Errorf("SetValue calls = %d, want 0 when the request carries no password", len(setter.calls))
+	}
+}
+
+func TestHandleUpdateRegistryCredential_RotatesPassword(t *testing.T) {
+	setter := &fakeRegistryCredentialSecretsSetter{}
+	rt, db := newTestRouterWithRegistryCredentialSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	createRec := httptest.NewRecorder()
+	createBody := `{"name":"ghcr-bot","registry_host":"ghcr.io","username":"bot","password":"tok"}`
+	rt.Handler().ServeHTTP(createRec, authedRequest(t, cookie, http.MethodPost, "/api/v1/registry-credentials", createBody))
+	var created registryCredentialResource
+	if err := json.NewDecoder(createRec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	setter.calls = nil
+
+	updateRec := httptest.NewRecorder()
+	updateBody := `{"name":"ghcr-bot","registry_host":"ghcr.io","username":"bot","password":"rotated-tok"}`
+	rt.Handler().ServeHTTP(updateRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/registry-credentials/"+created.ID, updateBody))
+	if updateRec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", updateRec.Code, http.StatusOK, updateRec.Body.String())
+	}
+	if strings.Contains(updateRec.Body.String(), "rotated-tok") {
+		t.Errorf("response body = %s, password must never be echoed back", updateRec.Body.String())
+	}
+
+	if len(setter.calls) != 1 {
+		t.Fatalf("SetValue calls = %d, want 1", len(setter.calls))
+	}
+	wantKey := store.RegistryCredentialSecretsKey(created.ID)
+	if setter.calls[0].serviceName != wantKey || setter.calls[0].envKey != "password" || setter.calls[0].plaintext != "rotated-tok" {
+		t.Errorf("SetValue call = %+v, want serviceName=%q envKey=password plaintext=rotated-tok", setter.calls[0], wantKey)
+	}
+}
+
+func TestHandleUpdateRegistryCredential_NotFound(t *testing.T) {
+	rt, db := newTestRouterWithRegistryCredentialSecrets(t, &fakeRegistryCredentialSecretsSetter{})
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	body := `{"name":"x","registry_host":"ghcr.io","username":"bot"}`
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/registry-credentials/regcred_missing", body))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNotFound, rec.Body.String())
+	}
+}
+
+func TestHandleUpdateRegistryCredential_DuplicateName_Conflict(t *testing.T) {
+	setter := &fakeRegistryCredentialSecretsSetter{}
+	rt, db := newTestRouterWithRegistryCredentialSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	firstRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(firstRec, authedRequest(t, cookie, http.MethodPost, "/api/v1/registry-credentials", `{"name":"ghcr-bot","registry_host":"ghcr.io","username":"bot","password":"tok"}`))
+	var first registryCredentialResource
+	if err := json.NewDecoder(firstRec.Body).Decode(&first); err != nil {
+		t.Fatalf("decode first create response: %v", err)
+	}
+
+	secondRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(secondRec, authedRequest(t, cookie, http.MethodPost, "/api/v1/registry-credentials", `{"name":"other-bot","registry_host":"ghcr.io","username":"bot","password":"tok"}`))
+	var second registryCredentialResource
+	if err := json.NewDecoder(secondRec.Body).Decode(&second); err != nil {
+		t.Fatalf("decode second create response: %v", err)
+	}
+
+	updateRec := httptest.NewRecorder()
+	updateBody := `{"name":"ghcr-bot","registry_host":"ghcr.io","username":"bot"}`
+	rt.Handler().ServeHTTP(updateRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/registry-credentials/"+second.ID, updateBody))
+	if updateRec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d, body = %s", updateRec.Code, http.StatusConflict, updateRec.Body.String())
+	}
+}
+
+func TestHandleUpdateRegistryCredential_SameNameNoConflict(t *testing.T) {
+	setter := &fakeRegistryCredentialSecretsSetter{}
+	rt, db := newTestRouterWithRegistryCredentialSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	createRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(createRec, authedRequest(t, cookie, http.MethodPost, "/api/v1/registry-credentials", `{"name":"ghcr-bot","registry_host":"ghcr.io","username":"bot","password":"tok"}`))
+	var created registryCredentialResource
+	if err := json.NewDecoder(createRec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+
+	updateRec := httptest.NewRecorder()
+	updateBody := `{"name":"ghcr-bot","registry_host":"ghcr.io","username":"renamed-user"}`
+	rt.Handler().ServeHTTP(updateRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/registry-credentials/"+created.ID, updateBody))
+	if updateRec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s (unchanged own name must not conflict with itself)", updateRec.Code, http.StatusOK, updateRec.Body.String())
+	}
+}
+
 func TestHandleListAndDeleteRegistryCredential(t *testing.T) {
 	setter := &fakeRegistryCredentialSecretsSetter{}
 	rt, db := newTestRouterWithRegistryCredentialSecrets(t, setter)
@@ -212,6 +378,19 @@ func TestHandleListAndDeleteRegistryCredential(t *testing.T) {
 	}
 	if len(list) != 1 || list[0].ID != created.ID {
 		t.Fatalf("list = %+v, want exactly the created credential", list)
+	}
+
+	getRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(getRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/registry-credentials/"+created.ID, ""))
+	if getRec.Code != http.StatusOK {
+		t.Fatalf("get status = %d, want %d, body = %s", getRec.Code, http.StatusOK, getRec.Body.String())
+	}
+	var got registryCredentialResource
+	if err := json.NewDecoder(getRec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode get response: %v", err)
+	}
+	if got.ID != created.ID || strings.Contains(getRec.Body.String(), "tok") {
+		t.Errorf("get response = %s, want the created credential with no password field", getRec.Body.String())
 	}
 
 	deleteRec := httptest.NewRecorder()

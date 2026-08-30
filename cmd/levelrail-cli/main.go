@@ -74,6 +74,10 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runCloudflareTunnel(prog, args[1:], stdout, stderr, lookupEnv)
 	case "channels":
 		return runChannels(prog, args[1:], stdout, stderr, lookupEnv)
+	case "backup-targets":
+		return runBackupTargets(prog, args[1:], stdout, stderr, lookupEnv)
+	case "registry-credentials":
+		return runRegistryCredentials(prog, args[1:], stdout, stderr, lookupEnv)
 	case "nodes":
 		return runNodes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "users":
@@ -109,6 +113,8 @@ Usage:
   %[1]s backups list|trigger|restore <database> [flags]   database backup history, manual trigger, and restore
   %[1]s cloudflare-tunnel get|set|disconnect [flags]   expose the control plane through a Cloudflare Tunnel
   %[1]s channels list|create|delete|test [flags]           manage notification channels (Slack, Discord, Telegram, email, Pushover, webhook)
+  %[1]s backup-targets list|get|create|update|delete [flags]   manage connected S3-compatible backup destinations
+  %[1]s registry-credentials list|get|create|update|delete [flags]   manage private container registry pull credentials
   %[1]s nodes list|get|delete [flags]                        manage nodes
   %[1]s nodes join-token [flags]                             mint a one-time node enrollment token
   %[1]s nodes cordon|uncordon|drain|health|workloads <id> [flags]   node scheduling and maintenance

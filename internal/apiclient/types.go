@@ -512,6 +512,79 @@ type ScheduledTaskRequest struct {
 	Enabled  bool     `json:"enabled"`
 }
 
+// BackupTargetResource mirrors internal/api's backupTargetResource
+// (internal/api/backup_targets.go). No credential fields: access_key_id
+// and secret_access_key are write-only, accepted through
+// CreateBackupTargetRequest/UpdateBackupTargetRequest and never echoed
+// back in any response.
+type BackupTargetResource struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Provider  string `json:"provider"`
+	Endpoint  string `json:"endpoint,omitempty"`
+	Region    string `json:"region,omitempty"`
+	Bucket    string `json:"bucket"`
+	CreatedAt string `json:"created_at"`
+}
+
+// CreateBackupTargetRequest mirrors internal/api's
+// createBackupTargetRequest: AccessKeyID/SecretAccessKey are required
+// here, unlike UpdateBackupTargetRequest where they're optional.
+type CreateBackupTargetRequest struct {
+	Name            string `json:"name"`
+	Provider        string `json:"provider"`
+	Endpoint        string `json:"endpoint,omitempty"`
+	Region          string `json:"region,omitempty"`
+	Bucket          string `json:"bucket"`
+	AccessKeyID     string `json:"access_key_id"`
+	SecretAccessKey string `json:"secret_access_key"`
+}
+
+// UpdateBackupTargetRequest mirrors internal/api's
+// updateBackupTargetRequest. Blank AccessKeyID/SecretAccessKey keep the
+// target's existing stored credentials; set together, they rotate them.
+type UpdateBackupTargetRequest struct {
+	Name            string `json:"name"`
+	Provider        string `json:"provider"`
+	Endpoint        string `json:"endpoint,omitempty"`
+	Region          string `json:"region,omitempty"`
+	Bucket          string `json:"bucket"`
+	AccessKeyID     string `json:"access_key_id,omitempty"`
+	SecretAccessKey string `json:"secret_access_key,omitempty"`
+}
+
+// RegistryCredentialResource mirrors internal/api's
+// registryCredentialResource (internal/api/registry_credentials.go). No
+// password field, the same write-only convention BackupTargetResource
+// uses for its own credentials.
+type RegistryCredentialResource struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	RegistryHost string `json:"registry_host"`
+	Username     string `json:"username"`
+	CreatedAt    string `json:"created_at"`
+}
+
+// CreateRegistryCredentialRequest mirrors internal/api's
+// createRegistryCredentialRequest: Password is required here, unlike
+// UpdateRegistryCredentialRequest where it's optional.
+type CreateRegistryCredentialRequest struct {
+	Name         string `json:"name"`
+	RegistryHost string `json:"registry_host"`
+	Username     string `json:"username"`
+	Password     string `json:"password"`
+}
+
+// UpdateRegistryCredentialRequest mirrors internal/api's
+// updateRegistryCredentialRequest. A blank Password keeps the
+// credential's existing stored password; a non-blank one rotates it.
+type UpdateRegistryCredentialRequest struct {
+	Name         string `json:"name"`
+	RegistryHost string `json:"registry_host"`
+	Username     string `json:"username"`
+	Password     string `json:"password,omitempty"`
+}
+
 // OrganizationResource mirrors internal/api's organizationResource
 // (internal/api/organizations.go).
 type OrganizationResource struct {

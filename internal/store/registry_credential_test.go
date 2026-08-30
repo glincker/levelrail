@@ -97,6 +97,39 @@ func TestListRegistryCredentials_OrderedByCreation(t *testing.T) {
 	}
 }
 
+func TestUpdateRegistryCredential(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	cred := newTestRegistryCredential()
+	if err := db.SaveRegistryCredential(ctx, cred); err != nil {
+		t.Fatalf("SaveRegistryCredential() error = %v", err)
+	}
+
+	if err := db.UpdateRegistryCredential(ctx, cred.ID, "renamed", "registry.example.com", "new-user"); err != nil {
+		t.Fatalf("UpdateRegistryCredential() error = %v", err)
+	}
+
+	got, err := db.GetRegistryCredential(ctx, cred.ID)
+	if err != nil {
+		t.Fatalf("GetRegistryCredential() error = %v", err)
+	}
+	want := RegistryCredential{ID: cred.ID, Name: "renamed", RegistryHost: "registry.example.com", Username: "new-user", CreatedAt: cred.CreatedAt}
+	if got != want {
+		t.Errorf("GetRegistryCredential() after update = %+v, want %+v", got, want)
+	}
+}
+
+func TestUpdateRegistryCredential_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	err := db.UpdateRegistryCredential(ctx, "regcred_missing", "x", "registry.example.com", "user")
+	if !errors.Is(err, ErrRegistryCredentialNotFound) {
+		t.Fatalf("UpdateRegistryCredential() error = %v, want ErrRegistryCredentialNotFound", err)
+	}
+}
+
 func TestDeleteRegistryCredential(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

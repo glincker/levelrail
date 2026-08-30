@@ -71,6 +71,39 @@ func TestListBackupTargets_OrderedByCreation(t *testing.T) {
 	}
 }
 
+func TestUpdateBackupTarget(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	target := newTestBackupTarget()
+	if err := db.SaveBackupTarget(ctx, target); err != nil {
+		t.Fatalf("SaveBackupTarget() error = %v", err)
+	}
+
+	if err := db.UpdateBackupTarget(ctx, target.ID, "renamed", BackupProviderAWS, "", "us-east-1", "new-bucket"); err != nil {
+		t.Fatalf("UpdateBackupTarget() error = %v", err)
+	}
+
+	got, err := db.GetBackupTarget(ctx, target.ID)
+	if err != nil {
+		t.Fatalf("GetBackupTarget() error = %v", err)
+	}
+	want := BackupTarget{ID: target.ID, Name: "renamed", Provider: BackupProviderAWS, Endpoint: "", Region: "us-east-1", Bucket: "new-bucket", CreatedAt: target.CreatedAt}
+	if got != want {
+		t.Errorf("GetBackupTarget() after update = %+v, want %+v", got, want)
+	}
+}
+
+func TestUpdateBackupTarget_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	err := db.UpdateBackupTarget(ctx, "bkt_missing", "x", BackupProviderAWS, "", "us-east-1", "bucket")
+	if !errors.Is(err, ErrBackupTargetNotFound) {
+		t.Fatalf("UpdateBackupTarget() error = %v, want ErrBackupTargetNotFound", err)
+	}
+}
+
 func TestDeleteBackupTarget(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

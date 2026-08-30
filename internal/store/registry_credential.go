@@ -112,6 +112,24 @@ func (db *DB) ListRegistryCredentials(ctx context.Context) ([]RegistryCredential
 	return out, nil
 }
 
+// UpdateRegistryCredential replaces name/registry_host/username for an
+// existing row, the same full-replace contract UpdateBackupTarget uses for
+// its own sibling resource. Rotating the password is a separate write to
+// internal/secrets under this row's existing RegistryCredentialSecretsKey,
+// not this function's concern. Returns ErrRegistryCredentialNotFound if id
+// doesn't exist.
+func (db *DB) UpdateRegistryCredential(ctx context.Context, id, name, registryHost, username string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE registry_credentials
+		SET name = ?, registry_host = ?, username = ?
+		WHERE id = ?
+	`, name, registryHost, username, id)
+	if err != nil {
+		return fmt.Errorf("store: update registry credential %q: %w", id, err)
+	}
+	return rowsAffectedOrNotFound(res, ErrRegistryCredentialNotFound, "update registry credential %q", id)
+}
+
 // DeleteRegistryCredential removes a registry credential row. It does
 // not touch internal/secrets: the caller deletes the password secret
 // separately, after this succeeds, the same ordering BackupTarget uses.
