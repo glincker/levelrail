@@ -1,6 +1,6 @@
 # Roadmap
 
-Status as of 2026-08-16 (refreshed against current `main`), not the
+Status as of 2026-08-30 (refreshed against current `main`), not the
 aspirational plan. See CLAUDE.md in the
 repo for the full phase-by-phase design doc if you want the long version.
 The build has moved further and less linearly than that phase plan
@@ -24,12 +24,33 @@ are still open. This page describes what's actually true today.
 - Static-site builds (`build.type: static`), with a frontend surface to
   configure them (a static tab in the git build-source picker) and a
   dashboard card listing existing static sites.
+- Docker Compose as a deploy target: `internal/compose` parses a
+  supported subset of `compose.yaml`, including per-service `build:`
+  directives, and expands it into per-service builds/deploys via the
+  same multi-service fan-out `DeploySpec` uses, with a frontend Compose
+  creation flow.
+- A curated ~15-entry service template catalog (ADR 015: reverses the
+  original "not chasing Coolify's 280 templates" non-goal, once Compose
+  support existed to build it on), served over the API and browsable
+  from the creation wizard. Every template's Compose body is written
+  fresh for this platform, not copied from another project's dataset.
 - Git webhook receiver with HMAC-SHA256 signature verification, branch
   gating, and SHA-pinned fetch (no `git` CLI shelling).
 - Persisted per-app git source and multi-app GitHub webhook support,
   with per-app HMAC secrets and PAT auth.
 - GitHub App connect flow: manifest self-registration, org/repo/branch
-  picker, and installation-token minting, wired in by default.
+  picker, and installation-token minting, wired in by default. GitHub
+  Enterprise Server (self-hosted instances) supported alongside
+  github.com.
+- GitLab (gitlab.com or self-hosted) and Bitbucket Cloud as full
+  alternative git providers: OAuth connect, repo/branch picker, and
+  webhook-triggered auto-deploy, the same as GitHub. A single shared
+  picker component is used everywhere a repo gets chosen (the app
+  creation wizard, an existing app's git-source settings), so the
+  provider you connect doesn't change the mental model; GitHub's own
+  webhook auto-registration degrades gracefully to a manual
+  paste-the-secret banner if a pre-existing App installation predates
+  the permission it now requests.
 - Embedded Caddy ingress with automatic TLS and domain routing. TLS
   today defaults to an internal, self-signed issuer; a public ACME
   issuer exists and is toggleable but is still unverified against a
@@ -39,8 +60,8 @@ are still open. This page describes what's actually true today.
 - Managed Redis as a first-class, volume-backed resource. Managed
   Postgres also exists (see In progress for scope caveats).
 - MySQL as a third database engine, via a dynamic engine registry.
-- HTTP API for app CRUD and deploy trigger/history, with a single admin
-  user and session auth. No teams or RBAC yet.
+- HTTP API for app CRUD and deploy trigger/history, with real
+  multi-user session auth (see Dashboard and auth, below).
 - Frontend app list and detail views, with a live build-log viewer and
   route-level code splitting.
 - Rollback: previous images are retained, with deploy history and full
@@ -82,11 +103,18 @@ are still open. This page describes what's actually true today.
   container's logs surfaced automatically in the UI.
 - Live app log streaming over SSE, separate from historical search.
 - Node-level metrics dashboard.
+- Per-node OS package-update status (a periodic collector, surfaced as
+  a single current fact on the node detail page and via
+  `levelrail nodes patch-status`), not an automatic patcher.
 - TLS certificate renewal visibility.
 - Docker disk, image, and volume pruning from the dashboard.
 - Control-plane data-directory disk usage (total/free bytes) surfaced
   in Settings > General, alongside Docker's own image/volume/build-cache
   accounting.
+- Managed database observability: log search, live SSE log tail, and
+  metrics for every database engine, not just apps. Shares the actual
+  query implementation with the app-scoped equivalents rather than a
+  parallel implementation.
 
 **Multi-node**
 
@@ -108,11 +136,27 @@ are still open. This page describes what's actually true today.
 
 - API tokens with scoped abilities, first-run registration, login rate
   limiting, session TTL, and an admin recovery CLI subcommand.
+- Real multi-user accounts, not a single shared admin: per-user email
+  sign-in or OAuth, TOTP two-factor with recovery codes, and per-user
+  scoped abilities (the same ability model API tokens already had,
+  now on human accounts too, so a session is no longer implicitly
+  root). A full audit log records every request through the same
+  ability-check hook, queryable from Settings.
 - Full sidebar shell with dark mode and a settings area split into
   Account, Security, General, and Tokens.
 - Create App and Create Database dialogs, with health-check and
-  resource-limit editors.
-- Lightweight, non-RBAC project grouping.
+  resource-limit editors. Resource limits cover memory, CPU, swap
+  (Docker's combined memory+swap ceiling, validated to never be set
+  below the memory limit), and CPU pinning (`cpuset-cpus`), for both
+  apps and databases.
+- A settings hub with global command-palette search and a sub-sidebar
+  grouping settings pages by category.
+- Lightweight, non-RBAC project grouping, plus an organization tier
+  above projects and an environment tier (staging/production-style
+  labels) between a project and an individual app, each with its own
+  shared env-var layer: organization env vars, then project env vars,
+  then environment env vars, then the app's own env, in that
+  override order.
 - Custom Docker labels escape hatch.
 - App clone.
 - Database public-accessibility toggle with host port exposure.
@@ -120,7 +164,10 @@ are still open. This page describes what's actually true today.
   restore (Postgres, MySQL, and Redis all live-verified, including
   Redis's stop-write-start RDB reload path), and browser download of
   backup files.
-- Accessibility fixes (ARIA labels on row inputs).
+- Accessibility fixes: ARIA labels on row inputs, a dialog focus-restore
+  fix on the log viewer's fullscreen toggle, `aria-current` on active
+  sidebar navigation, an accessible text summary for the metrics
+  chart's SVG, and a primary navigation landmark.
 - Environment variable editing: a row-by-row table and a raw
   paste/format "developer view" for plain vars, both listing secret
   keys inline as write-only and lockable for visibility, with actual
@@ -137,20 +184,23 @@ are still open. This page describes what's actually true today.
   reconciler is wired to secrets management and backups are
   live-verified, but full parity with Redis and MySQL hasn't been
   confirmed.
-- **Dashboard "rich interactions" phase.** Command palette, richer
-  empty/loading states, keyboard navigation. Not yet detailed or
-  dispatched.
-- **Database backup-schedule UI.** The backend route exists; the
-  frontend is parked pending a gap-scan review.
+- **Dashboard "rich interactions" phase.** Command palette and a
+  settings sub-nav have shipped (see Done); richer empty/loading
+  states and broader keyboard navigation are the remaining, still
+  undispatched part of this phase.
+- **Database backup-schedule UI.** Shipped (`BackupScheduleForm`,
+  see Done); this line is kept only as a pointer in case a gap
+  surfaces on real use.
 - **Multi-service apps.** Backend fan-out is real: an `apps` table
   links N desired services under one app, and
   `POST /api/v1/apps/{name}/deploy-spec` fans a `services:` map out
   into independent per-service builds and deploys, each tracked
-  separately. The git webhook handler auto-fans-out too, when a
-  `Services` map is configured on it. But the actual per-app
-  git-source webhook path used for real connected repos still looks
-  up exactly one service, and there's no frontend for any of this. Not
-  end-to-end yet.
+  separately, with a real frontend (a services tab plus
+  `DeploySpecForm`) driving it. Webhook-triggered auto-deploy for a
+  multi-service app is real too, but via a separate, simpler mechanism
+  (`GitSource.AdditionalServices`: a flat list of sibling services
+  independently rebuilt on push) rather than `DeploySpec`'s
+  compose-aware fan-out; the two paths aren't unified yet.
 - **Real public ACME.** The Caddy ACME issuer type, a settings toggle,
   and form validation are all built and wired end to end (Settings >
   Domains). Only unit-tested against the config shape so far, not
@@ -159,13 +209,14 @@ are still open. This page describes what's actually true today.
 
 ## Not started
 
-- Team/multi-user access, RBAC, and an audit log. There's a hard single
-  admin user, API tokens scope abilities rather than human users, and
-  no audit log exists anywhere.
-- Preview environments per pull request. Depends on multi-service
-  support landing end-to-end first.
-- Docker Compose as a deploy target, a template catalog, and the MCP
-  server.
+- Named roles (a curated small role set, e.g. "operator"/"viewer")
+  rather than hand-picking an ability list per user. Multi-user
+  accounts and per-user abilities are real (see Done); this would be a
+  convenience layer on top, not a functional gap.
+- Preview environments per pull request. Depends on the webhook path
+  and `DeploySpec`'s fan-out unifying first (see Multi-service apps,
+  above).
+- The MCP server.
 - Live, in-place resource-limit application without a restart. A saved
   health-check or resource-limit change doesn't reconcile into the
   already-running container until a restart forces a new one (the
@@ -180,8 +231,6 @@ Pulled directly from the project's own non-goals:
 - Not building a scheduler with bin-packing, affinity rules, or
   autoscaling in v1.
 - Not building a service mesh. WireGuard plus DNS is enough.
-- Not chasing Coolify's 280 one-click templates. Ten good ones beat 280
-  stale ones.
 - Not supporting Windows or non-Linux nodes.
 - Not building a managed cloud offering until the self-hosted version
   has real users.
