@@ -83,6 +83,10 @@ type (
 	createUserRequest          = apiclient.CreateUserRequest
 	updateUserAbilitiesRequest = apiclient.UpdateUserAbilitiesRequest
 	roleResource               = apiclient.RoleResource
+
+	secretKeyResource   = apiclient.SecretKeyResource
+	gitSourceResource   = apiclient.GitSourceResource
+	setGitSourceRequest = apiclient.SetGitSourceRequest
 )
 
 // NewClient builds a Client. See apiclient.NewClient.

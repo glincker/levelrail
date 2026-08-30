@@ -26,6 +26,8 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "get":
 		return runDatabasesGet(prog, args[1:], stdout, stderr, lookupEnv)
+	case "delete":
+		return runDatabasesDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown databases subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, databasesUsage(prog))
@@ -39,6 +41,7 @@ func databasesUsage(prog string) string {
   %[1]s databases create --interactive  guided, step-by-step creation
   %[1]s databases list [flags]         list databases
   %[1]s databases get <name> [flags]   show one database
+  %[1]s databases delete <name> [flags]  remove a database's desired state
 
 Run "%[1]s databases <subcommand> -h" for a subcommand's own flags.
 `, prog)

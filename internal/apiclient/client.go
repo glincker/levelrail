@@ -211,6 +211,30 @@ func (c *Client) RestartApp(ctx context.Context, name string) (AppResource, erro
 	return out, err
 }
 
+// StopApp calls POST /api/v1/apps/{name}/stop: marks the service
+// suspended, so the reconciler stops (and leaves stopped) its container
+// on the next pass, without touching desired state otherwise.
+func (c *Client) StopApp(ctx context.Context, name string) (AppResource, error) {
+	var out AppResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/stop", nil, &out)
+	return out, err
+}
+
+// StartApp calls POST /api/v1/apps/{name}/start: clears the suspended
+// flag StopApp set, letting the reconciler bring the container back.
+func (c *Client) StartApp(ctx context.Context, name string) (AppResource, error) {
+	var out AppResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/start", nil, &out)
+	return out, err
+}
+
+// DeleteApp calls DELETE /api/v1/apps/{name}: removes the app's desired
+// state (internal/api/apps.go's own handleDeleteApp doc comment covers
+// the known gap that this does not itself stop the running container).
+func (c *Client) DeleteApp(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name), nil, nil)
+}
+
 // GetDeployStatus calls GET /api/v1/apps/{name}/deploys: the application
 // controller's current stored reconcile conditions, not a deploy history
 // log (internal/api/deploys.go's own handleDeployHistory doc comment).
@@ -265,6 +289,11 @@ func (c *Client) ListDatabases(ctx context.Context) ([]DatabaseResource, error) 
 	var out []DatabaseResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/databases", nil, &out)
 	return out, err
+}
+
+// DeleteDatabase calls DELETE /api/v1/databases/{name}.
+func (c *Client) DeleteDatabase(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name), nil, nil)
 }
 
 // ListDatabaseEngines calls GET /api/v1/database-engines: every engine
@@ -464,9 +493,48 @@ func (c *Client) GetSession(ctx context.Context) (SessionInfoResource, error) {
 // SetSecret calls PUT /api/v1/apps/{name}/secrets/{key}. No response
 // body beyond the status (internal/api/secrets.go's handleSetSecret
 // returns 204 on success), matching that handler's own doc comment on
-// why a secret's value is never echoed back.
-func (c *Client) SetSecret(ctx context.Context, name, key, value string) error {
-	return c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key), SetSecretRequest{Value: value}, nil)
+// why a secret's value is never echoed back. overwriteLocked bypasses
+// the server's 409-if-locked guard, the same escape hatch the dashboard's
+// SecretsEditor exposes.
+func (c *Client) SetSecret(ctx context.Context, name, key, value string, overwriteLocked bool) error {
+	return c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key), SetSecretRequest{Value: value, OverwriteLocked: overwriteLocked}, nil)
+}
+
+// ListSecrets calls GET /api/v1/apps/{name}/secrets: every known secret
+// key for the app with its locked state, never a value.
+func (c *Client) ListSecrets(ctx context.Context, name string) ([]SecretKeyResource, error) {
+	var out []SecretKeyResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/secrets", nil, &out)
+	return out, err
+}
+
+// SetSecretLock calls POST /api/v1/apps/{name}/secrets/{key}/lock:
+// toggles the accidental-overwrite guard SetSecret's overwriteLocked
+// bypasses. Reversible either direction, not a permanent write-once
+// marker.
+func (c *Client) SetSecretLock(ctx context.Context, name, key string, locked bool) error {
+	return c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key)+"/lock", SetSecretLockRequest{Locked: locked}, nil)
+}
+
+// GetGitSource calls GET /api/v1/apps/{name}/git-source.
+func (c *Client) GetGitSource(ctx context.Context, name string) (GitSourceResource, error) {
+	var out GitSourceResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/git-source", nil, &out)
+	return out, err
+}
+
+// SetGitSource calls PUT /api/v1/apps/{name}/git-source: connects a repo
+// (creating a new webhook secret) the first time it's called for an
+// app, or edits the connection on every call after.
+func (c *Client) SetGitSource(ctx context.Context, name string, req SetGitSourceRequest) (GitSourceResource, error) {
+	var out GitSourceResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/git-source", req, &out)
+	return out, err
+}
+
+// DeleteGitSource calls DELETE /api/v1/apps/{name}/git-source.
+func (c *Client) DeleteGitSource(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/git-source", nil, nil)
 }
 
 // ListServiceTemplates calls GET /api/v1/service-templates: the full
