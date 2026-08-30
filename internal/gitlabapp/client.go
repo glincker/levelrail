@@ -266,17 +266,22 @@ func (c *Client) ListBranches(ctx context.Context, instanceURL, accessToken stri
 type createWebhookRequest struct {
 	URL                   string `json:"url"`
 	PushEvents            bool   `json:"push_events"`
+	MergeRequestsEvents   bool   `json:"merge_requests_events"`
 	Token                 string `json:"token"`
 	EnableSSLVerification bool   `json:"enable_ssl_verification"`
 }
 
-// CreateProjectWebhook registers a push-events webhook on projectID
-// pointed at hookURL, authenticated by GitLab's own X-Gitlab-Token
-// scheme (secretToken echoed back on every delivery, not an HMAC
-// signature the way GitHub's webhooks work).
+// CreateProjectWebhook registers a push- and merge-request-events
+// webhook on projectID pointed at hookURL, authenticated by GitLab's
+// own X-Gitlab-Token scheme (secretToken echoed back on every
+// delivery, not an HMAC signature the way GitHub's webhooks work).
+// merge_requests_events must be requested explicitly: without it
+// GitLab never sends the "Merge Request Hook" delivery
+// internal/webhook's GitLab pull-request parsing expects, so preview
+// environments would silently never trigger for a connected project.
 func (c *Client) CreateProjectWebhook(ctx context.Context, instanceURL, accessToken string, projectID int64, hookURL, secretToken string) error {
 	body, err := json.Marshal(createWebhookRequest{
-		URL: hookURL, PushEvents: true, Token: secretToken, EnableSSLVerification: true,
+		URL: hookURL, PushEvents: true, MergeRequestsEvents: true, Token: secretToken, EnableSSLVerification: true,
 	})
 	if err != nil {
 		return fmt.Errorf("gitlabapp: marshal webhook request: %w", err)
