@@ -1,8 +1,13 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ArrowDownIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  ArrowDownIcon,
+  ArrowsInIcon,
+  ArrowsOutIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { stripAnsiCodes } from '../lib/ansi'
 import type { LogLine } from '../hooks/useLogStream'
+import { Dialog, DialogContent, DialogTitle } from './ui/dialog'
 
 const ROW_HEIGHT_PX = 20
 // How close to the bottom (px) still counts as "at the bottom" for
@@ -35,6 +40,7 @@ export function LogTerminal({
   heightClassName = 'h-[65vh]',
   emptyStateMessage = 'Waiting for log output...',
   emptyStatePulse = true,
+  isFinished = false,
 }: {
   lines: LogLine[]
   isPaused: boolean
@@ -46,7 +52,15 @@ export function LogTerminal({
   // image-sourced deploy, which has no build step to wait on): the
   // pulsing dot otherwise implies output is still coming.
   emptyStatePulse?: boolean
+  // True once the underlying process (e.g. a deploy attempt) has reached
+  // a terminal state. Stops force-scrolling on new lines even if the
+  // user never manually scrolled away from the bottom, so a user reading
+  // historical output isn't yanked to the bottom after the process is
+  // already done. Live app/database log streams never finish, so callers
+  // for those simply omit this.
+  isFinished?: boolean
 }) {
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const parentRef = useRef<HTMLDivElement>(null)
   // Distinguishes a scroll event caused by the auto-scroll effect below
   // from one caused by the user dragging the scrollbar/wheel/trackpad,
@@ -70,7 +84,7 @@ export function LogTerminal({
   // implementations get wrong: scrolling up to read an earlier line
   // must not get yanked back to the bottom by the next line arriving.
   useEffect(() => {
-    if (isPaused || lines.length === 0) {
+    if (isPaused || isFinished || lines.length === 0) {
       return
     }
     isAutoScrollingRef.current = true
@@ -81,7 +95,7 @@ export function LogTerminal({
     return () => {
       window.clearTimeout(clearGuard)
     }
-  }, [lines.length, isPaused, virtualizer])
+  }, [lines.length, isPaused, isFinished, virtualizer])
 
   const handleScroll = useCallback(() => {
     if (isAutoScrollingRef.current) {
@@ -109,12 +123,18 @@ export function LogTerminal({
 
   const virtualItems = virtualizer.getVirtualItems()
 
-  return (
-    <div className="relative flex-1">
+  const body = (
+    <div
+      className={
+        isFullscreen
+          ? 'relative flex min-h-0 flex-1 flex-col'
+          : 'relative flex-1'
+      }
+    >
       <div
         ref={parentRef}
         onScroll={handleScroll}
-        className={`${heightClassName} overflow-auto rounded-lg border border-neutral-800 bg-neutral-950 font-mono text-xs leading-5 text-neutral-200`}
+        className={`${isFullscreen ? 'h-full' : heightClassName} overflow-auto rounded-lg border border-neutral-800 bg-neutral-950 font-mono text-xs leading-5 text-neutral-200`}
       >
         {lines.length === 0 ? (
           <p className="flex items-center gap-2 px-3 py-2 text-neutral-500">
@@ -160,6 +180,21 @@ export function LogTerminal({
         )}
       </div>
 
+      <button
+        type="button"
+        onClick={() => {
+          setIsFullscreen((prev) => !prev)
+        }}
+        aria-label={isFullscreen ? 'Exit fullscreen' : 'View fullscreen'}
+        className="absolute top-2 right-2 rounded p-1 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
+      >
+        {isFullscreen ? (
+          <ArrowsInIcon className="size-3.5" aria-hidden="true" />
+        ) : (
+          <ArrowsOutIcon className="size-3.5" aria-hidden="true" />
+        )}
+      </button>
+
       {isPaused && (
         <button
           type="button"
@@ -171,5 +206,29 @@ export function LogTerminal({
         </button>
       )}
     </div>
+  )
+
+  if (!isFullscreen) {
+    return body
+  }
+
+  return (
+    <Dialog
+      open
+      onOpenChange={(next) => {
+        if (!next) {
+          setIsFullscreen(false)
+        }
+      }}
+    >
+      <DialogContent
+        size="fullscreen"
+        showCloseButton={false}
+        className="flex flex-col"
+      >
+        <DialogTitle className="sr-only">Log output</DialogTitle>
+        {body}
+      </DialogContent>
+    </Dialog>
   )
 }
