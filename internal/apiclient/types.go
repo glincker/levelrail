@@ -748,6 +748,53 @@ type DrainNodeResponse struct {
 	Errors         []string `json:"errors,omitempty"`
 }
 
+// AlertRuleResource mirrors internal/api's ruleResource
+// (internal/api/alerts.go). Threshold-kind fields (Metric, Comparator,
+// Threshold, ForDuration) and crashloop-kind fields
+// (RestartCountThreshold, RestartWindow) are both present on the wire;
+// only the ones matching Kind are meaningful, mirroring alerting.Rule's
+// own shape.
+type AlertRuleResource struct {
+	ID         string `json:"id,omitempty"`
+	Name       string `json:"name"`
+	Kind       string `json:"kind"`
+	ResourceID string `json:"resource_id,omitempty"`
+	ChannelID  string `json:"channel_id,omitempty"`
+
+	Metric      string  `json:"metric,omitempty"`
+	Comparator  string  `json:"comparator,omitempty"`
+	Threshold   float64 `json:"threshold"`
+	ForDuration string  `json:"for_duration,omitempty"`
+
+	RestartCountThreshold int    `json:"restart_count_threshold"`
+	RestartWindow         string `json:"restart_window,omitempty"`
+
+	NotifyURL  string `json:"notify_url,omitempty"`
+	NotifyKind string `json:"notify_kind,omitempty"`
+	Enabled    bool   `json:"enabled"`
+
+	Firing          bool       `json:"firing,omitempty"`
+	PendingSince    *time.Time `json:"pending_since,omitempty"`
+	FiringSince     *time.Time `json:"firing_since,omitempty"`
+	LastEvaluatedAt *time.Time `json:"last_evaluated_at,omitempty"`
+	LastValue       *float64   `json:"last_value,omitempty"`
+}
+
+// MetricPointResource mirrors internal/api's metricPoint
+// (internal/api/metrics.go): one aggregated bucket of a queried metric.
+type MetricPointResource struct {
+	Timestamp time.Time `json:"timestamp"`
+	Value     float64   `json:"value"`
+	Count     int       `json:"count"`
+}
+
+// AppMetricsResource mirrors internal/api's metricsResponse
+// (internal/api/metrics.go).
+type AppMetricsResource struct {
+	Metric string                `json:"metric"`
+	Points []MetricPointResource `json:"points"`
+}
+
 // apiErrorBody is the JSON shape every non-2xx response from the
 // control plane returns (internal/api/respond.go's own apiError).
 type apiErrorBody struct {

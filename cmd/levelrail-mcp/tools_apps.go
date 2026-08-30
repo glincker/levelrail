@@ -69,6 +69,17 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 	})
 
 	mcp.AddTool(server, &mcp.Tool{
+		Name:        "rollback_app",
+		Description: "Point an existing app's desired image back at an older, already-built image tag. Identical request to deploy_app (there is no separate rollback endpoint server-side, matching how cmd/levelrail-cli's own 'apps rollback' and the web dashboard's 'Rollback to this build' button both work); given as its own tool so a rollback intent doesn't have to be expressed by re-purposing deploy_app. Asynchronous: use get_app_status to watch it converge.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployAppInput) (*mcp.CallToolResult, apiclient.AppResource, error) {
+		app, err := client.DeployApp(ctx, in.Name, in.Image)
+		if err != nil {
+			return nil, apiclient.AppResource{}, fmt.Errorf("roll back app %q to image %q: %w", in.Name, in.Image, err)
+		}
+		return nil, app, nil
+	})
+
+	mcp.AddTool(server, &mcp.Tool{
 		Name:        "restart_app",
 		Description: "Force an app's running container to be recreated with no image change.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.AppResource, error) {
