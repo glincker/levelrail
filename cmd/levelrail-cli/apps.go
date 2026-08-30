@@ -50,11 +50,11 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	case "exec":
 		return runAppsExec(prog, args[1:], stdout, stderr, lookupEnv)
 	case "log-drain":
-		return runAppsLogDrain(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsLogDrain(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "scheduled-tasks":
-		return runAppsScheduledTasks(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsScheduledTasks(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "organizations":
-		return runAppsOrganizations(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsOrganizations(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "environments":
 		return runAppsEnvironments(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // args is non-empty here: the len(args)==0 guard above already returned, same as every other case in this switch
 	case "set-environment":
