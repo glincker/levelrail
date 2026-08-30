@@ -17,8 +17,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { AbilitiesField } from './AbilitiesField'
+import { RoleSelect } from './RoleSelect'
 import { toast } from './ui/toast'
 import { useCreateUser } from '../queries/users'
+import { useRoles, roleForAbilities } from '../queries/roles'
 
 // AbilityRoot-gated (POST /api/v1/auth/users, internal/api/users.go's
 // handleCreateUser doc comment): the caller picks the new user's
@@ -50,6 +52,7 @@ type CreateUserFormValues = z.infer<typeof createUserSchema>
 export function CreateUserDialog() {
   const [open, setOpen] = useState(false)
   const createUser = useCreateUser()
+  const { data: roles } = useRoles()
   const { control, register, handleSubmit, formState, reset } =
     useForm<CreateUserFormValues>({
       resolver: zodResolver(createUserSchema),
@@ -65,6 +68,10 @@ export function CreateUserDialog() {
   }
 
   const onSubmit = handleSubmit((values) => {
+    // A curated role match sends `role` (server-resolved, roles.go),
+    // otherwise the hand-picked `abilities` list: whichever the current
+    // checkbox state actually represents, RoleSelect's own derivation.
+    const matchedRole = roleForAbilities(roles, values.abilities)
     createUser.mutate(
       {
         email: values.email.trim(),
@@ -72,7 +79,9 @@ export function CreateUserDialog() {
           ? { display_name: values.displayName.trim() }
           : {}),
         password: values.password,
-        abilities: values.abilities,
+        ...(matchedRole
+          ? { role: matchedRole.name }
+          : { abilities: values.abilities }),
       },
       {
         onSuccess: (user) => {
@@ -141,11 +150,18 @@ export function CreateUserDialog() {
             control={control}
             name="abilities"
             render={({ field }) => (
-              <AbilitiesField
-                value={field.value}
-                onChange={field.onChange}
-                error={formState.errors.abilities}
-              />
+              <div className="space-y-4">
+                <RoleSelect
+                  roles={roles}
+                  abilities={field.value}
+                  onChange={field.onChange}
+                />
+                <AbilitiesField
+                  value={field.value}
+                  onChange={field.onChange}
+                  error={formState.errors.abilities}
+                />
+              </div>
             )}
           />
 

@@ -161,7 +161,3 @@ worth naming plainly rather than leaving implicit:
   for a multi-service app still goes through a separate, simpler
   mechanism (a flat list of sibling services rebuilt independently on
   push) rather than that same fan-out; the two paths aren't unified.
-- Named roles. Teams aren't a hard gap: multi-user accounts, per-user
-  scoped abilities, and a full audit log are all real. What's missing
-  is a curated small role set (e.g. "operator"/"viewer") as a
-  convenience layer over hand-picking an ability list per user.

@@ -71,6 +71,10 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// refuses self-edits inside the handler (self-lockout guard): a root
 	// caller may change any other user's abilities, never their own.
 	mux.HandleFunc("PUT /api/v1/users/{id}/abilities", rt.requireAbility(AbilityRoot, rt.handleUpdateUserAbilities))
+	// Curated role presets (roles.go): static, non-sensitive metadata,
+	// AbilityRead like the user list itself, so any signed-in caller can
+	// populate a role picker even without AbilityRoot.
+	mux.HandleFunc("GET /api/v1/roles", rt.requireAbility(AbilityRead, rt.handleListRoles))
 
 	// OAuth sign-in (Google, GitHub). /providers, /start, /callback are
 	// all necessarily public; /link/start is requireAuth-gated (see its

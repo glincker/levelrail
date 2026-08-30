@@ -53,6 +53,7 @@ export function UserTable({ users }: { users: UserResource[] }) {
             <TableHead>Email</TableHead>
             <TableHead>Display name</TableHead>
             <TableHead>Signs in with</TableHead>
+            <TableHead>Role</TableHead>
             <TableHead>Abilities</TableHead>
             <TableHead>Last login</TableHead>
             <TableHead />
@@ -78,6 +79,15 @@ export function UserTable({ users }: { users: UserResource[] }) {
                 </TableCell>
                 <TableCell>{user.display_name}</TableCell>
                 <TableCell>{authMethods(user)}</TableCell>
+                <TableCell>
+                  {user.role ? (
+                    <Badge variant={user.role === 'admin' ? 'destructive' : 'outline'}>
+                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                    </Badge>
+                  ) : (
+                    <Badge variant="muted">Custom</Badge>
+                  )}
+                </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {user.abilities.map((ability) => (

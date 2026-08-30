@@ -343,3 +343,107 @@ func TestHandleUpdateUserAbilities_NotFound(t *testing.T) {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNotFound, rec.Body.String())
 	}
 }
+
+// TestHandleCreateUser_WithRoleAppliesAbilitySet proves a role field
+// resolves to the curated ability set (roles.go) rather than requiring
+// the caller to spell out the abilities themselves.
+func TestHandleCreateUser_WithRoleAppliesAbilitySet(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"email":"operator@example.com","password":"a-real-password","role":"operator"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/auth/users", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	var got userResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Role != "operator" {
+		t.Errorf("Role = %q, want %q", got.Role, "operator")
+	}
+
+	saved, err := db.GetUserByEmail(context.Background(), "operator@example.com")
+	if err != nil {
+		t.Fatalf("GetUserByEmail() error = %v", err)
+	}
+	want := []string{AbilityRead, AbilityReadSensitive, AbilityWrite, AbilityDeploy}
+	if len(saved.Abilities) != len(want) {
+		t.Fatalf("Abilities = %v, want %v", saved.Abilities, want)
+	}
+	for i, a := range want {
+		if saved.Abilities[i] != a {
+			t.Errorf("Abilities[%d] = %q, want %q", i, saved.Abilities[i], a)
+		}
+	}
+}
+
+// TestHandleCreateUser_UnknownRoleRejected proves an unrecognized role
+// name is a 400, not silently ignored in favor of Abilities.
+func TestHandleCreateUser_UnknownRoleRejected(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"email":"second@example.com","password":"a-real-password","role":"superadmin","abilities":["read"]}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/auth/users", body))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	if _, err := db.GetUserByEmail(context.Background(), "second@example.com"); !errors.Is(err, store.ErrUserNotFound) {
+		t.Error("a rejected create must not have created a user")
+	}
+}
+
+// TestHandleUpdateUserAbilities_WithRoleAppliesAbilitySet mirrors the
+// create-user role case for the update route.
+func TestHandleUpdateUserAbilities_WithRoleAppliesAbilitySet(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	other := storeUserWithAbilitiesForTest(t, db, "other@example.com", []string{AbilityRead})
+
+	body := `{"role":"viewer"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/users/"+other.ID+"/abilities", body))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got userResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Role != "viewer" {
+		t.Errorf("Role = %q, want %q", got.Role, "viewer")
+	}
+	if len(got.Abilities) != 1 || got.Abilities[0] != AbilityRead {
+		t.Errorf("Abilities = %v, want [read]", got.Abilities)
+	}
+}
+
+// TestHandleUpdateUserAbilities_CustomAbilitiesReportNoRole proves a hand
+// -picked ability list that doesn't match any curated preset comes back
+// with an empty Role, the "Custom" case the frontend falls back to.
+func TestHandleUpdateUserAbilities_CustomAbilitiesReportNoRole(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	other := storeUserWithAbilitiesForTest(t, db, "other@example.com", []string{AbilityRead})
+
+	body := `{"abilities":["read","write"]}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/users/"+other.ID+"/abilities", body))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got userResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Role != "" {
+		t.Errorf("Role = %q, want empty for a custom ability set", got.Role)
+	}
+}
