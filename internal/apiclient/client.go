@@ -267,6 +267,31 @@ func (c *Client) ListDatabases(ctx context.Context) ([]DatabaseResource, error) 
 	return out, err
 }
 
+// ListDatabaseEngines calls GET /api/v1/database-engines: every engine
+// this control plane can actually create, backing the creation wizard's
+// engine picker instead of a hardcoded list.
+func (c *Client) ListDatabaseEngines(ctx context.Context) ([]DatabaseEngineResource, error) {
+	var out []DatabaseEngineResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/database-engines", nil, &out)
+	return out, err
+}
+
+// SetDatabaseResources calls PUT /api/v1/databases/{name}/resources:
+// applies memory/CPU limits to name, replacing whatever was set before.
+func (c *Client) SetDatabaseResources(ctx context.Context, name string, resources *ServiceResources) (DatabaseResource, error) {
+	var out DatabaseResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/databases/"+PathEscape(name)+"/resources", SetDatabaseResourcesRequest{Resources: resources}, &out)
+	return out, err
+}
+
+// SetDatabasePublicAccess calls PUT /api/v1/databases/{name}/public-access:
+// exposes name on the host at port (0 requests auto-assignment).
+func (c *Client) SetDatabasePublicAccess(ctx context.Context, name string, port int) (DatabasePublicAccessResource, error) {
+	var out DatabasePublicAccessResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/databases/"+PathEscape(name)+"/public-access", SetDatabasePublicAccessRequest{Port: port}, &out)
+	return out, err
+}
+
 // ExecApp calls POST /api/v1/apps/{name}/exec: runs command (plus args)
 // inside the app's currently running container and returns its
 // stdout/stderr/exit code once it finishes. AbilityRoot-gated

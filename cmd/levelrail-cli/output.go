@@ -188,6 +188,20 @@ func printDatabaseHuman(out io.Writer, d databaseResource) {
 	if d.NodeID != "" {
 		_, _ = fmt.Fprintf(out, "node:     %s\n", d.NodeID)
 	}
+	if d.Resources != nil {
+		if d.Resources.MemoryBytes > 0 {
+			_, _ = fmt.Fprintf(out, "memory:   %d bytes\n", d.Resources.MemoryBytes)
+		}
+		if d.Resources.NanoCPUs > 0 {
+			_, _ = fmt.Fprintf(out, "cpu:      %.2f cores\n", float64(d.Resources.NanoCPUs)/1e9)
+		}
+	}
+	if d.PubliclyAccessible {
+		_, _ = fmt.Fprintf(out, "public:   yes (port %d)\n", d.PublicPort)
+	}
+	if d.BackupSchedule != "" {
+		_, _ = fmt.Fprintf(out, "backup:   %s (target %s)\n", d.BackupSchedule, d.BackupTargetID)
+	}
 }
 
 // printDatabasesTable prints a compact, aligned table of databases

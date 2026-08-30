@@ -136,6 +136,24 @@ Note: today, every app is exactly one container. Multi-service apps
 supported end to end yet, even though the spec's `services` field is
 a map.
 
+`databases create` has the same guided mode:
+
+```
+./levelrail-cli databases create --interactive
+```
+
+It asks for the database name, its engine (from the live registry at
+`GET /api/v1/database-engines`, so a newly added engine shows up here
+automatically), a version (defaulting to the engine's own suggested
+version), optional memory/CPU limits, whether to expose it outside the
+Docker network, and an optional backup schedule. Unlike the apps wizard,
+this one always creates the database against the control plane API:
+`app.yaml`'s `databases:` block has no field for resource limits or
+public access, and nothing in the deploy pipeline reads it to provision
+a real database today, so there is no file-output mode to fall back to.
+`-i` is the short form of `--interactive` here too, and it cannot be
+combined with `--name`/`--engine`/`--version`.
+
 ## Where to go next
 
 - [docs/architecture.md](architecture.md): how the control plane, the

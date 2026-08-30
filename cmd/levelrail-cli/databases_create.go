@@ -73,18 +73,22 @@ func planDatabaseCreate(f createDatabaseFlags) (databaseResource, error) {
 // version); no --file path like "apps create" has, since there is no
 // databases: block support to parse here beyond what internal/spec
 // already covers for app.yaml's own services, and adding one would be
-// scope this command doesn't need to carry.
-func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+// scope this command doesn't need to carry. --interactive/-i runs a
+// step-by-step wizard instead (databases_create_interactive.go); stdin
+// is only ever read from when that flag is given.
+func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs := flag.NewFlagSet(prog+" databases create", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	var tokenFlag, apiURLFlag, name, engine, version string
-	var jsonOut bool
+	var jsonOut, interactive bool
 	fs.StringVar(&name, "name", "", "database name (required)")
 	fs.StringVar(&engine, "engine", "", "database engine: "+strings.Join(supportedEngineParams, ", ")+" (required)")
 	fs.StringVar(&version, "version", "", "engine version, e.g. \"16\" (required)")
 	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
 	fs.BoolVar(&jsonOut, "json", false, "print the created database as JSON to stdout and nothing else")
+	fs.BoolVar(&interactive, "interactive", false, "run a step-by-step wizard instead of specifying flags: prompts for name, engine, version, resource limits, public access, and a backup schedule, then creates the database via the API")
+	fs.BoolVar(&interactive, "i", false, "shorthand for --interactive")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, databasesCreateUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -92,6 +96,13 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 			return exitOK
 		}
 		return exitUsage
+	}
+
+	if interactive {
+		if name != "" || engine != "" || version != "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--interactive runs its own step-by-step prompts and cannot be combined with --name, --engine, or --version"))
+		}
+		return runDatabasesCreateWizard(stdin, stdout, stderr, tokenFlag, apiURLFlag, jsonOut, lookupEnv, prog)
 	}
 
 	plan, err := planDatabaseCreate(createDatabaseFlags{name: name, engine: engine, version: version})
@@ -121,6 +132,7 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 func databasesCreateUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s databases create --name NAME --engine ENGINE --version VERSION [flags]
+  %[1]s databases create --interactive
 
 Creates a managed database's desired state. Creating a postgres database
 here always succeeds; the reconciler will refuse to actually start it
@@ -135,6 +147,11 @@ Flags:
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --json                     print the created database as JSON to stdout, nothing else
+  --interactive, -i    run a step-by-step wizard: prompts for name, engine,
+                             version, resource limits, public access, and a
+                             backup schedule, then creates the database via
+                             the API. Cannot be combined with --name,
+                             --engine, or --version.
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL, strings.Join(supportedEngineParams, ", "))
 }
