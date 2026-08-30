@@ -110,6 +110,7 @@ message AgentRequest {
     ListByPrefixRequest list_by_prefix = 8;
     EnsureVolumeRequest ensure_volume = 9;
     WatchEventsRequest watch_events = 10;
+    UpdateResourcesRequest update_resources = 11;
   }
 }
 
@@ -223,6 +224,14 @@ message StopRequest {
 message RemoveRequest {
   string id = 1;
   bool force = 2;
+}
+
+// UpdateResourcesRequest applies new memory/CPU/swap/cpuset limits to an
+// already-running container in place, via the Engine API's own
+// ContainerUpdate call, without recreating it.
+message UpdateResourcesRequest {
+  string id = 1;
+  Resources resources = 2;
 }
 
 message ListImagesRequest {

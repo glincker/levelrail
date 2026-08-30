@@ -65,6 +65,10 @@ func (f *fakeRuntime) Remove(_ context.Context, _ string, _ bool) error {
 	return nil // unused by Reconcile
 }
 
+func (f *fakeRuntime) UpdateResources(_ context.Context, _ string, _ docker.Resources) error {
+	return nil // unused by Reconcile
+}
+
 func (f *fakeRuntime) Events(_ context.Context) (<-chan docker.Event, <-chan error) {
 	return nil, nil // unused by Reconcile
 }

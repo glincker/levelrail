@@ -92,6 +92,17 @@ func (t *GRPCTransport) Remove(ctx context.Context, id string, force bool) error
 	return err
 }
 
+// UpdateResources implements Transport (docker.Runtime).
+func (t *GRPCTransport) UpdateResources(ctx context.Context, id string, resources docker.Resources) error {
+	_, err := t.mux.Call(ctx, &agentpb.AgentRequest{
+		Op: &agentpb.AgentRequest_UpdateResources{UpdateResources: &agentpb.UpdateResourcesRequest{
+			Id:        id,
+			Resources: resourcesToPB(&resources),
+		}},
+	})
+	return err
+}
+
 // ListImages implements Transport (docker.Runtime).
 func (t *GRPCTransport) ListImages(ctx context.Context, repo string) ([]docker.ImageInfo, error) {
 	resp, err := t.mux.Call(ctx, &agentpb.AgentRequest{

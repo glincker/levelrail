@@ -60,6 +60,10 @@ type databaseResource struct {
 	// PUT /api/v1/databases/{name}/resources (handleSetDatabaseResources),
 	// mirroring the node/project routes' shape rather than appResource's.
 	Resources *store.ServiceResources `json:"resources,omitempty"`
+	// ResourcesAppliedLive: see appResource's identically-named field
+	// doc comment. Only ever set by handleSetDatabaseResources; every
+	// other handler returning a databaseResource leaves it false.
+	ResourcesAppliedLive bool `json:"resources_applied_live,omitempty"`
 }
 
 func toDatabaseResource(d store.DesiredDatabase) databaseResource {
@@ -396,7 +400,15 @@ func (rt *Router) handleSetDatabaseResources(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	rt.reloadAndWriteDatabase(w, r, name, "set database resources")
+	saved, err := rt.databases.GetDesiredDatabase(r.Context(), name)
+	if err != nil {
+		rt.logger.Error("api: set database resources: reload after update failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	resp := toDatabaseResource(*saved)
+	resp.ResourcesAppliedLive = rt.applyResourcesLive(r.Context(), saved.NodeID, databaseContainerName(name), saved.Resources)
+	writeJSON(w, http.StatusOK, resp)
 }
 
 // handleDatabaseStatus handles GET /api/v1/databases/{name}/status: the

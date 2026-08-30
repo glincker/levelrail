@@ -181,8 +181,17 @@ export function DatabaseResourceLimitsEditor({
     setResources.mutate(
       { name: database.name, resources: toResources(values) },
       {
-        onSuccess: () => {
-          toast.add({ title: 'Resource limits saved.', type: 'success' })
+        onSuccess: (updated) => {
+          // See ResourceLimitsEditor's identical branch: the backend
+          // pushes new limits onto a running container live whenever one
+          // exists, so only say "will apply later" when it genuinely
+          // couldn't.
+          toast.add({
+            title: updated.resources_applied_live
+              ? 'Resource limits updated.'
+              : 'Resource limits saved. Will apply on next restart.',
+            type: 'success',
+          })
         },
       },
     )

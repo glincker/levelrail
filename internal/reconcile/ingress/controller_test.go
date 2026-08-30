@@ -154,7 +154,10 @@ func (f *fakeRuntime) ListByPrefix(_ context.Context, _ string) ([]docker.Contai
 }
 func (f *fakeRuntime) Stop(_ context.Context, _ string, _ time.Duration) error { return nil }
 func (f *fakeRuntime) Remove(_ context.Context, _ string, _ bool) error        { return nil }
-func (f *fakeRuntime) EnsureVolume(_ context.Context, _ string) error          { return nil }
+func (f *fakeRuntime) UpdateResources(_ context.Context, _ string, _ docker.Resources) error {
+	return nil
+}
+func (f *fakeRuntime) EnsureVolume(_ context.Context, _ string) error { return nil }
 
 func (f *fakeRuntime) EnsureNetwork(_ context.Context, _ string) (string, error) {
 	return "", nil

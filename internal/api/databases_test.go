@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -426,6 +427,39 @@ func TestHandleSetDatabaseResources_NilClears(t *testing.T) {
 	}
 	if d.Resources != nil {
 		t.Errorf("stored Resources = %+v, want nil", d.Resources)
+	}
+}
+
+// TestHandleSetDatabaseResources_AppliedLive mirrors
+// TestHandleUpdateApp_ResourcesAppliedLive for databases: a running
+// container gets the new limits pushed immediately via UpdateResources,
+// reported back as resources_applied_live.
+func TestHandleSetDatabaseResources_AppliedLive(t *testing.T) {
+	fake := &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "db-c1", Running: true}}
+	rt, db := newTestRouterWithExecRuntime(t, fake)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed database: %v", err)
+	}
+
+	body := `{"resources":{"memory_bytes":536870912}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/resources", body))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got databaseResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !got.ResourcesAppliedLive {
+		t.Error("resources_applied_live = false, want true: a running container should get the update immediately")
+	}
+	if fake.updateResourcesCalls != 1 || fake.updateResourcesID != "db-c1" {
+		t.Errorf("updateResourcesCalls=%d updateResourcesID=%q, want 1/db-c1", fake.updateResourcesCalls, fake.updateResourcesID)
 	}
 }
 

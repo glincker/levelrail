@@ -41,14 +41,22 @@ type fakeRuntime struct {
 	volumes    map[string]bool
 	nextID     int
 
-	ensureVolumeErr error
-	createErr       error
-	startErr        error
-	stopErr         error
-	removeErr       error
+	ensureVolumeErr    error
+	createErr          error
+	startErr           error
+	stopErr            error
+	removeErr          error
+	updateResourcesErr error
 
-	createCalls       int
-	ensureVolumeCalls int
+	createCalls          int
+	ensureVolumeCalls    int
+	updateResourcesCalls int
+	// lastUpdateResourcesID/lastUpdateResources record the most recent
+	// UpdateResources call's arguments, for tests asserting a
+	// resource-only diff converges via a live update rather than a
+	// recreate.
+	lastUpdateResourcesID string
+	lastUpdateResources   docker.Resources
 	// lastCreateEnv records the Env of the most recent Create call, so a
 	// test can assert exactly what a controller sent (e.g. which
 	// MYSQL_*/POSTGRES_* keys), not just that Create was called.
@@ -173,6 +181,18 @@ func (f *fakeRuntime) Remove(_ context.Context, id string, _ bool) error {
 		if cs.ID == id {
 			delete(f.containers, name)
 		}
+	}
+	return nil
+}
+
+func (f *fakeRuntime) UpdateResources(_ context.Context, id string, resources docker.Resources) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.updateResourcesCalls++
+	f.lastUpdateResourcesID = id
+	f.lastUpdateResources = resources
+	if f.updateResourcesErr != nil {
+		return f.updateResourcesErr
 	}
 	return nil
 }

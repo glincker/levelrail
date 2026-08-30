@@ -384,6 +384,25 @@ func (c *Client) Remove(ctx context.Context, id string, force bool) error {
 	return nil
 }
 
+// UpdateResources implements Runtime, via the Engine API's own
+// ContainerUpdate call. This adjusts the container's cgroup limits in
+// place; it never touches image, env, ports, mounts, or any other part
+// of the container's configuration.
+func (c *Client) UpdateResources(ctx context.Context, id string, resources Resources) error {
+	update := container.UpdateConfig{
+		Resources: container.Resources{
+			Memory:     resources.MemoryBytes,
+			NanoCPUs:   resources.NanoCPUs,
+			MemorySwap: resources.SwapMemoryBytes,
+			CpusetCpus: resources.CPUSetCPUs,
+		},
+	}
+	if _, err := c.cli.ContainerUpdate(ctx, id, update); err != nil {
+		return fmt.Errorf("docker: update resources for container %s: %w", id, err)
+	}
+	return nil
+}
+
 // EnsureVolume implements Runtime. Docker's VolumeCreate is itself
 // idempotent by name (creating a volume that already exists returns the
 // existing volume, not an error), so this is a thin wrapper, not a

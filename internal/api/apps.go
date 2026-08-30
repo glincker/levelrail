@@ -121,6 +121,14 @@ type appResource struct {
 	// StorageTargetID already establish above: set it via PUT/DELETE
 	// /api/v1/apps/{name}/log-drain (apps_log_drain.go) instead.
 	LogDrain *store.LogDrain `json:"log_drain,omitempty"`
+	// ResourcesAppliedLive is response-only, set by handleUpdateApp:
+	// whether the new Resources value was already pushed onto a
+	// currently running container via the Engine API's live
+	// ContainerUpdate (applyResourcesLiveToReplicas), rather than
+	// waiting for the next deploy or restart to take effect. False
+	// still means the value is saved and will apply next time the
+	// container is recreated; it never means the save itself failed.
+	ResourcesAppliedLive bool `json:"resources_applied_live,omitempty"`
 }
 
 func toAppResource(svc store.DesiredService) appResource {
@@ -420,6 +428,14 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	// value happening to look right.
 	req.NodeID = existing.NodeID
 	req.ProjectID = existing.ProjectID
+	// Re-fetch rather than reusing req.toDesiredService(): NodeID and
+	// RestartNonce (both needed to compute the real running container's
+	// name, desiredServiceContainerNames) are response-only fields this
+	// endpoint's request body never carries, the same boundary NodeID's
+	// own doc comment establishes.
+	if saved, err := rt.apps.GetDesiredService(r.Context(), name); err == nil {
+		req.ResourcesAppliedLive = rt.applyResourcesLiveToReplicas(r.Context(), *saved)
+	}
 	writeJSON(w, http.StatusOK, req)
 }
 

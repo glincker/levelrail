@@ -138,6 +138,10 @@ func (f *fakeRuntime) Stop(_ context.Context, id string, _ time.Duration) error 
 	return nil
 }
 
+func (f *fakeRuntime) UpdateResources(_ context.Context, _ string, _ docker.Resources) error {
+	return nil
+}
+
 func (f *fakeRuntime) Remove(_ context.Context, id string, _ bool) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()

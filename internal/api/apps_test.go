@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -698,6 +699,74 @@ func TestHandleUpdateApp(t *testing.T) {
 	rt.Handler().ServeHTTP(recInvalid, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", `{"port":0}`))
 	if recInvalid.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d", recInvalid.Code, http.StatusBadRequest)
+	}
+}
+
+// TestHandleUpdateApp_ResourcesAppliedLive covers the live-resource-
+// update fast path (docs/roadmap.md's "Live, in-place resource-limit
+// application without a restart"): saving new resource limits pushes
+// them onto a running container immediately via UpdateResources and
+// reports resources_applied_live true, but falls back to false (still
+// saving successfully) when there's no running container to push onto,
+// docs/roadmap.md's own "In progress" wording for that fallback case.
+func TestHandleUpdateApp_ResourcesAppliedLive(t *testing.T) {
+	const update = `{"name":"web","image":"levelrail/web:1","port":3000,"resources":{"memory_bytes":268435456}}`
+
+	newRunningRouter := func(t *testing.T) (*Router, *store.DB, *fakeExecAppRuntime) {
+		t.Helper()
+		fake := &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "c1", Running: true}}
+		rt, db := newTestRouterWithExecRuntime(t, fake)
+		return rt, db, fake
+	}
+	newIdleRouter := func(t *testing.T) (*Router, *store.DB, *fakeExecAppRuntime) {
+		t.Helper()
+		rt, db := newTestRouter(t) // no WithExecRuntime configured
+		return rt, db, nil
+	}
+
+	tests := []struct {
+		name        string
+		newRouter   func(t *testing.T) (*Router, *store.DB, *fakeExecAppRuntime)
+		wantApplied bool
+	}{
+		{name: "running container", newRouter: newRunningRouter, wantApplied: true},
+		{name: "no running container", newRouter: newIdleRouter, wantApplied: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, db, fake := tt.newRouter(t)
+			cookie := loginTestSession(t, rt, db)
+			if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+				t.Fatalf("seed: %v", err)
+			}
+
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", update))
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+			}
+			var resp appResource
+			if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+				t.Fatalf("decode response: %v", err)
+			}
+			if resp.ResourcesAppliedLive != tt.wantApplied {
+				t.Errorf("resources_applied_live = %v, want %v", resp.ResourcesAppliedLive, tt.wantApplied)
+			}
+
+			// Saving must succeed either way: a live-apply miss only
+			// means the value takes effect on the next deploy/restart
+			// instead of immediately, never a save failure.
+			svc, err := db.GetDesiredService(context.Background(), "web")
+			if err != nil {
+				t.Fatalf("GetDesiredService after update: %v", err)
+			}
+			if svc.Resources == nil || svc.Resources.MemoryBytes != 268435456 {
+				t.Errorf("saved resources = %+v, want MemoryBytes 268435456", svc.Resources)
+			}
+			if tt.wantApplied && (fake.updateResourcesCalls != 1 || fake.updateResourcesID != "c1") {
+				t.Errorf("updateResourcesCalls=%d updateResourcesID=%q, want 1/c1", fake.updateResourcesCalls, fake.updateResourcesID)
+			}
+		})
 	}
 }
 

@@ -44,6 +44,9 @@ export interface DatabaseResource {
   // handleUpdateApp, so this field is settable only through its own
   // dedicated route.
   resources?: ServiceResources | null
+  // resources_applied_live: see appDetail.ts's identically-named field
+  // doc comment. Only ever set by PUT /api/v1/databases/{name}/resources.
+  resources_applied_live?: boolean
   // backup_target_id/backup_schedule/backup_retain: response-only, the
   // same boundary publicly_accessible/public_port already establish. Set
   // or cleared via PUT/DELETE /api/v1/databases/{name}/backup-schedule

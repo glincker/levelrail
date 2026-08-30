@@ -117,6 +117,9 @@ func (f *fakeExecRuntime) Stop(_ context.Context, id string, _ time.Duration) er
 	return f.stopErr
 }
 func (f *fakeExecRuntime) Remove(context.Context, string, bool) error { return nil }
+func (f *fakeExecRuntime) UpdateResources(context.Context, string, docker.Resources) error {
+	return nil
+}
 func (f *fakeExecRuntime) EnsureVolume(context.Context, string) error { return nil }
 func (f *fakeExecRuntime) EnsureNetwork(context.Context, string) (string, error) {
 	return "", nil

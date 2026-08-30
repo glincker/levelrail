@@ -87,6 +87,17 @@ func Execute(ctx context.Context, rt docker.Runtime, req *agentpb.AgentRequest, 
 		}
 		resp.Result = emptyResult()
 
+	case *agentpb.AgentRequest_UpdateResources:
+		resources := resourcesFromPB(op.UpdateResources.GetResources())
+		if resources == nil {
+			resources = &docker.Resources{}
+		}
+		if err := rt.UpdateResources(ctx, op.UpdateResources.GetId(), *resources); err != nil {
+			resp.Error = err.Error()
+			return resp
+		}
+		resp.Result = emptyResult()
+
 	case *agentpb.AgentRequest_ListImages:
 		images, err := rt.ListImages(ctx, op.ListImages.GetRepo())
 		if err != nil {
