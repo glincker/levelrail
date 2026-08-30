@@ -184,9 +184,13 @@ are still open. This page describes what's actually true today.
   secret values set through a separate Secrets card. Not a single
   unified list the way it was originally scoped, but the write-only/
   lock behavior for secrets is real.
-- "Restart required" toast after saving a health-check or
-  resource-limit change, with a one-click restart action. Env changes
-  don't trigger it.
+- "Restart required" toast after saving a health-check change, with a
+  one-click restart action. A resource-limit change no longer needs
+  one in the common case: it applies live to any currently running
+  container via the Engine API's `ContainerUpdate`, falling back to
+  the same restart-required toast only when no container is running
+  yet or the live update itself fails. Env changes don't trigger it
+  either way.
 - Named roles: three curated ability-set presets (admin, operator,
   viewer, `internal/api/roles.go`) applied to a user in one action via
   `role` on create/update, instead of hand-picking abilities one at a
@@ -231,11 +235,6 @@ are still open. This page describes what's actually true today.
 - Preview environments per pull request. Not built; no longer blocked
   on the webhook and `DeploySpec` fan-out paths unifying, since that
   work has landed (see Multi-service apps, above).
-- Live, in-place resource-limit application without a restart. A saved
-  health-check or resource-limit change doesn't reconcile into the
-  already-running container until a restart forces a new one (the
-  shipped "restart required" toast is the operator-facing workaround,
-  not a fix to the underlying gap).
 
 ## Explicitly out of scope
 
