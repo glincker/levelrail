@@ -439,6 +439,19 @@ type setAppNodeRequest struct {
 // service on a node that will never reconcile it (resolveNodeTransport,
 // cmd/levelrail/main.go, would otherwise just skip it forever with
 // nothing surfaced beyond a log line).
+// reloadAndWriteApp reloads name's desired service and writes it as the
+// response, the common tail every app-mutation handler in this file needs.
+// logContext names the calling handler for the error log line.
+func (rt *Router) reloadAndWriteApp(w http.ResponseWriter, r *http.Request, name, logContext string) {
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if err != nil {
+		rt.logger.Error("api: "+logContext+": reload after update failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toAppResource(*svc))
+}
+
 func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -474,13 +487,7 @@ func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	svc, err := rt.apps.GetDesiredService(r.Context(), name)
-	if err != nil {
-		rt.logger.Error("api: set app node: reload after update failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	writeJSON(w, http.StatusOK, toAppResource(*svc))
+	rt.reloadAndWriteApp(w, r, name, "set app node")
 }
 
 // setAppProjectRequest is PUT /api/v1/apps/{name}/project's body, the
@@ -527,13 +534,7 @@ func (rt *Router) handleSetAppProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	svc, err := rt.apps.GetDesiredService(r.Context(), name)
-	if err != nil {
-		rt.logger.Error("api: set app project: reload after update failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	writeJSON(w, http.StatusOK, toAppResource(*svc))
+	rt.reloadAndWriteApp(w, r, name, "set app project")
 }
 
 // handleRestartApp handles POST /api/v1/apps/{name}/restart: force a
@@ -554,13 +555,7 @@ func (rt *Router) handleRestartApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	svc, err := rt.apps.GetDesiredService(r.Context(), name)
-	if err != nil {
-		rt.logger.Error("api: restart app: reload after restart failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	writeJSON(w, http.StatusOK, toAppResource(*svc))
+	rt.reloadAndWriteApp(w, r, name, "restart app")
 }
 
 // handleStopApp handles POST /api/v1/apps/{name}/stop: sets Suspended,
@@ -580,13 +575,7 @@ func (rt *Router) handleStopApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	svc, err := rt.apps.GetDesiredService(r.Context(), name)
-	if err != nil {
-		rt.logger.Error("api: stop app: reload after stop failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	writeJSON(w, http.StatusOK, toAppResource(*svc))
+	rt.reloadAndWriteApp(w, r, name, "stop app")
 }
 
 // handleStartApp handles POST /api/v1/apps/{name}/start: clears
@@ -604,13 +593,7 @@ func (rt *Router) handleStartApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	svc, err := rt.apps.GetDesiredService(r.Context(), name)
-	if err != nil {
-		rt.logger.Error("api: start app: reload after start failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	writeJSON(w, http.StatusOK, toAppResource(*svc))
+	rt.reloadAndWriteApp(w, r, name, "start app")
 }
 
 // handleDeleteApp handles DELETE /api/v1/apps/{name}. See

@@ -134,13 +134,7 @@ func (rt *Router) handleSetAppEnvironment(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	svc, err := rt.apps.GetDesiredService(r.Context(), name)
-	if err != nil {
-		rt.logger.Error("api: reload app after environment assignment failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	writeJSON(w, http.StatusOK, toAppResource(*svc))
+	rt.reloadAndWriteApp(w, r, name, "set app environment")
 }
 
 // randomEnvironmentID mirrors randomProjectID exactly.
