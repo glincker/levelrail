@@ -30,6 +30,23 @@ import { Badge } from '@/components/ui/badge'
 // AppDetail. It does not resolve DNS or probe a TLS cert to confirm the
 // domain actually works, that's a real, documented future item, not
 // something silently faked here.
+// Builds the "Resource limits set" checklist row's detail sentence,
+// mentioning swap/CPU pinning only when actually set so the common case
+// (just memory/CPU, or nothing) stays a short sentence.
+function resourceLimitsSummary(resources: AppDetail['resources']): string {
+  const parts = [
+    `Memory ${formatBytes(resources?.memory_bytes)}`,
+    `CPU ${formatNanoCpus(resources?.nano_cpus)}`,
+  ]
+  if (resources?.swap_memory_bytes) {
+    parts.push(`swap ${formatBytes(resources.swap_memory_bytes)}`)
+  }
+  if (resources?.cpuset_cpus) {
+    parts.push(`pinned to CPUs ${resources.cpuset_cpus}`)
+  }
+  return `${parts.join(', ')}.`
+}
+
 export function AppOverviewHero({
   app,
   conditions,
@@ -41,7 +58,10 @@ export function AppOverviewHero({
   const primaryDomain = app.domains?.[0] ?? null
   const hasHealthCheck = Boolean(app.health?.readiness || app.health?.liveness)
   const hasResourceLimits = Boolean(
-    app.resources?.memory_bytes || app.resources?.nano_cpus,
+    app.resources?.memory_bytes ||
+      app.resources?.nano_cpus ||
+      app.resources?.swap_memory_bytes ||
+      app.resources?.cpuset_cpus,
   )
 
   // Both queries are supplementary signals for the "Domain connected"
@@ -160,7 +180,7 @@ export function AppOverviewHero({
               label="Resource limits set"
               detail={
                 hasResourceLimits
-                  ? `Memory ${formatBytes(app.resources?.memory_bytes)}, CPU ${formatNanoCpus(app.resources?.nano_cpus)}.`
+                  ? resourceLimitsSummary(app.resources)
                   : 'No memory or CPU limit set, a valid choice, not a problem, worth revisiting if usage needs to stay predictable.'
               }
               action={

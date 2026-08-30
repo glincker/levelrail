@@ -64,6 +64,14 @@ export function AppOverview({ app }: { app: AppDetail }) {
             label="CPU limit"
             value={formatNanoCpus(app.resources?.nano_cpus)}
           />
+          <Field
+            label="Swap limit"
+            value={formatBytes(app.resources?.swap_memory_bytes)}
+          />
+          <Field
+            label="CPU pinning"
+            value={app.resources?.cpuset_cpus || 'not set'}
+          />
           <div>
             <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
               Deploy strategy
