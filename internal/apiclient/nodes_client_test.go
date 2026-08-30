@@ -261,3 +261,25 @@ func TestClient_GetNodeHealth(t *testing.T) {
 		t.Errorf("GetNodeHealth() = %+v, want one Heartbeat condition", got)
 	}
 }
+
+func TestClient_GetNodePatchStatus(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(NodePatchStatusResource{Checked: true, Total: 3, Security: 1})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.GetNodePatchStatus(context.Background(), "nd_1")
+	if err != nil {
+		t.Fatalf("GetNodePatchStatus() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/nodes/nd_1/patch-status" {
+		t.Errorf("request = %s %s, want GET /api/v1/nodes/nd_1/patch-status", gotMethod, gotPath)
+	}
+	if !got.Checked || got.Total != 3 || got.Security != 1 {
+		t.Errorf("GetNodePatchStatus() = %+v, want checked=true total=3 security=1", got)
+	}
+}

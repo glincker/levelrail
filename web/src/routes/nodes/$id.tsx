@@ -13,6 +13,7 @@ import { ConditionsPanel } from '../../components/ConditionsPanel'
 import { CordonNodeDialog } from '../../components/CordonNodeDialog'
 import { DrainNodeDialog } from '../../components/DrainNodeDialog'
 import { NodeMetricsDashboard } from '../../components/NodeMetricsDashboard'
+import { NodePatchStatusCard } from '../../components/NodePatchStatusCard'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -233,6 +234,8 @@ function NodeDetailPage() {
           ) : null}
         </CardContent>
       </Card>
+
+      <NodePatchStatusCard nodeId={id} />
 
       <NodeMetricsDashboard nodeId={id} />
 

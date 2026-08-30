@@ -63,6 +63,7 @@ type (
 	setNodeWorkloadsRequest     = apiclient.SetNodeWorkloadsRequest
 	createNodeJoinTokenResponse = apiclient.CreateNodeJoinTokenResponse
 	drainNodeResponse           = apiclient.DrainNodeResponse
+	nodePatchStatusResource     = apiclient.NodePatchStatusResource
 
 	organizationResource          = apiclient.OrganizationResource
 	createOrganizationRequest     = apiclient.CreateOrganizationRequest
