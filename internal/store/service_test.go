@@ -19,8 +19,10 @@ func TestSaveAndGetDesiredService(t *testing.T) {
 		Domains: []string{"app.example.com", "www.app.example.com"},
 		Env:     map[string]string{"NODE_ENV": "production"},
 		Resources: &ServiceResources{
-			MemoryBytes: 512 * 1024 * 1024,
-			NanoCPUs:    500_000_000,
+			MemoryBytes:     512 * 1024 * 1024,
+			NanoCPUs:        500_000_000,
+			SwapMemoryBytes: 1024 * 1024 * 1024,
+			CPUSetCPUs:      "0-1",
 		},
 		Health: &ServiceHealth{
 			Readiness: &ServiceProbe{Path: "/healthz", Interval: 5 * time.Second, Timeout: 2 * time.Second},

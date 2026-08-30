@@ -50,7 +50,12 @@ func TestSpecServiceFromDesired(t *testing.T) {
 		Domains:   []string{"a.example.com", "b.example.com"},
 		Env:       map[string]string{"FOO": "bar"},
 		SecretEnv: []string{"TOKEN"},
-		Resources: &store.ServiceResources{MemoryBytes: 256 * 1024 * 1024, NanoCPUs: 250_000_000},
+		Resources: &store.ServiceResources{
+			MemoryBytes:     256 * 1024 * 1024,
+			NanoCPUs:        250_000_000,
+			SwapMemoryBytes: 512 * 1024 * 1024,
+			CPUSetCPUs:      "0-1",
+		},
 		Health: &store.ServiceHealth{
 			Readiness: &store.ServiceProbe{Path: "/ready", Interval: 5 * time.Second, Timeout: 2 * time.Second, Failures: 3},
 			Liveness:  &store.ServiceProbe{Path: "/live", Interval: 30 * time.Second},
@@ -77,6 +82,9 @@ func TestSpecServiceFromDesired(t *testing.T) {
 	}
 	if got.Resources == nil || got.Resources.Memory != "256Mi" || got.Resources.CPU != 0.25 {
 		t.Errorf("Resources = %+v, want Memory=256Mi CPU=0.25", got.Resources)
+	}
+	if got.Resources.SwapMemory != "512Mi" || got.Resources.CPUSet != "0-1" {
+		t.Errorf("Resources = %+v, want SwapMemory=512Mi CPUSet=0-1", got.Resources)
 	}
 	if got.Health == nil || got.Health.Readiness == nil {
 		t.Fatalf("Health.Readiness is nil, want set")

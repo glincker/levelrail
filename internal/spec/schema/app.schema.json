@@ -98,7 +98,9 @@
       "additionalProperties": false,
       "properties": {
         "memory": { "type": "string", "pattern": "^[0-9]+(Mi|Gi)$" },
-        "cpu": { "type": "number", "exclusiveMinimum": 0 }
+        "cpu": { "type": "number", "exclusiveMinimum": 0 },
+        "swapMemory": { "type": "string", "pattern": "^[0-9]+(Mi|Gi)$" },
+        "cpuSet": { "type": "string", "pattern": "^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$" }
       }
     },
     "envValue": {

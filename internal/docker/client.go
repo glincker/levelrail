@@ -252,8 +252,10 @@ func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.Ho
 	}
 	if spec.Resources != nil {
 		hostConfig.Resources = container.Resources{
-			Memory:   spec.Resources.MemoryBytes,
-			NanoCPUs: spec.Resources.NanoCPUs,
+			Memory:     spec.Resources.MemoryBytes,
+			NanoCPUs:   spec.Resources.NanoCPUs,
+			MemorySwap: spec.Resources.SwapMemoryBytes,
+			CpusetCpus: spec.Resources.CPUSetCPUs,
 		}
 	}
 	if len(spec.DNS) > 0 {

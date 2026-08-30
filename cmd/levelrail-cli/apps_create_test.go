@@ -375,7 +375,7 @@ func TestPlanFromFlags(t *testing.T) {
 				"web": {
 					Build:     spec.Build{Type: spec.BuildDockerfile},
 					Port:      3000,
-					Resources: &spec.Resources{Memory: "512Mi", CPU: 0.5},
+					Resources: &spec.Resources{Memory: "512Mi", CPU: 0.5, SwapMemory: "1Gi", CPUSet: "0-1"},
 					Health:    &spec.Health{Readiness: &spec.Probe{Path: "/healthz", Interval: "5s", Timeout: "2s", Failures: 3}},
 				},
 			}},
@@ -388,6 +388,12 @@ func TestPlanFromFlags(t *testing.T) {
 				}
 				if p.CreateBody.Resources.NanoCPUs != 500_000_000 {
 					t.Errorf("NanoCPUs = %d, want 500000000", p.CreateBody.Resources.NanoCPUs)
+				}
+				if p.CreateBody.Resources.SwapMemoryBytes != 1024*1024*1024 {
+					t.Errorf("SwapMemoryBytes = %d, want %d", p.CreateBody.Resources.SwapMemoryBytes, 1024*1024*1024)
+				}
+				if p.CreateBody.Resources.CPUSetCPUs != "0-1" {
+					t.Errorf("CPUSetCPUs = %q, want %q", p.CreateBody.Resources.CPUSetCPUs, "0-1")
 				}
 				if p.CreateBody.Health == nil || p.CreateBody.Health.Readiness == nil {
 					t.Fatalf("Health.Readiness = nil, want non-nil")

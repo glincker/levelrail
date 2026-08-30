@@ -14,8 +14,10 @@ import (
 // contract, never on the control plane's internal Go types. ServiceProbe
 // and ServiceHealth below share that same reasoning.
 type ServiceResources struct {
-	MemoryBytes int64 `json:"memory_bytes,omitempty"`
-	NanoCPUs    int64 `json:"nano_cpus,omitempty"`
+	MemoryBytes     int64  `json:"memory_bytes,omitempty"`
+	NanoCPUs        int64  `json:"nano_cpus,omitempty"`
+	SwapMemoryBytes int64  `json:"swap_memory_bytes,omitempty"`
+	CPUSetCPUs      string `json:"cpuset_cpus,omitempty"`
 }
 
 // ServiceProbe mirrors one of AppResource.Health's two probes (readiness

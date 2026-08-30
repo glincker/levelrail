@@ -134,6 +134,13 @@ type Probe struct {
 type Resources struct {
 	Memory string  `yaml:"memory,omitempty"`
 	CPU    float64 `yaml:"cpu,omitempty"`
+	// SwapMemory caps memory plus swap combined, the same "512Mi"/"1Gi"
+	// shape as Memory (Docker's own MemorySwap semantics); only
+	// meaningful alongside Memory, see Validate.
+	SwapMemory string `yaml:"swapMemory,omitempty"`
+	// CPUSet pins the container to specific host CPUs, Docker's own
+	// cpuset-cpus format (e.g. "0-3" or "0,2").
+	CPUSet string `yaml:"cpuSet,omitempty"`
 }
 
 // Supported managed database engines: Postgres and Redis shipped as

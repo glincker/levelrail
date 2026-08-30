@@ -39,6 +39,34 @@ func TestContainerSpecDNSRoundTrip(t *testing.T) {
 	}
 }
 
+func TestResourcesRoundTrip(t *testing.T) {
+	tests := []struct {
+		name string
+		res  *docker.Resources
+	}{
+		{name: "nil resources", res: nil},
+		{name: "memory and cpu only", res: &docker.Resources{MemoryBytes: 512 * 1024 * 1024, NanoCPUs: 500_000_000}},
+		{
+			name: "swap and cpuset alongside memory and cpu",
+			res: &docker.Resources{
+				MemoryBytes:     512 * 1024 * 1024,
+				NanoCPUs:        500_000_000,
+				SwapMemoryBytes: 1024 * 1024 * 1024,
+				CPUSetCPUs:      "0-1",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			back := resourcesFromPB(resourcesToPB(tt.res))
+			if !reflect.DeepEqual(back, tt.res) {
+				t.Errorf("resourcesFromPB(resourcesToPB(%+v)) = %+v, want %+v", tt.res, back, tt.res)
+			}
+		})
+	}
+}
+
 // TestContainerSpecFromPB_NilDoesNotPanic matches this file's every
 // other from-PB conversion's own nil-safety contract (see
 // containerStateFromPB, resourcesFromPB): a nil *agentpb.ContainerSpec

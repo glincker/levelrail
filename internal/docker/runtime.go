@@ -39,6 +39,12 @@ type PortBinding struct {
 type Resources struct {
 	MemoryBytes int64
 	NanoCPUs    int64
+	// SwapMemoryBytes is Docker's own MemorySwap: total memory plus swap
+	// combined, only meaningful alongside MemoryBytes.
+	SwapMemoryBytes int64
+	// CPUSetCPUs pins the container to specific host CPUs, Docker's own
+	// cpuset-cpus format (e.g. "0-3" or "0,2").
+	CPUSetCPUs string
 }
 
 // ContainerState is the observed state of a single container, trimmed to
