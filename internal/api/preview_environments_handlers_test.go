@@ -207,6 +207,28 @@ func TestHandleSetPreviewEnabled_NoGitSource(t *testing.T) {
 	}
 }
 
+// TestHandleTeardownPreviewEnvironment_ResponseIsPlainText guards the fix
+// for the same reflected-XSS pattern CodeQL flagged in
+// handleGitPushWebhook: this response's message embeds
+// preview.PreviewAppID, built from a webhook-sourced PR number, so it
+// must never be served without an explicit non-HTML content type.
+func TestHandleTeardownPreviewEnvironment_ResponseIsPlainText(t *testing.T) {
+	rt, _, secret, _ := setUpPreviewApp(t)
+
+	body := githubPullRequestBody("opened", 42, "sha1", "main")
+	if rec := sendPullRequestWebhook(rt, secret, body); rec.Code != http.StatusOK {
+		t.Fatalf("opened: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	rec := rt.teardownAndRecord(t, "web", 42)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("teardown: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if ct := rec.Header().Get("Content-Type"); ct != "text/plain; charset=utf-8" {
+		t.Errorf("Content-Type = %q, want %q", ct, "text/plain; charset=utf-8")
+	}
+}
+
 func TestHandleTeardownPreviewEnvironment_NotFound(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

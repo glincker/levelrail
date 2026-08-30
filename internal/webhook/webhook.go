@@ -349,6 +349,12 @@ func ParsePushEvent(body []byte) (PushEvent, error) {
 // response and does not wait for one, actual progress streaming to a UI
 // is TASKS.md 1.9's job.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Every success/ignored-branch response below is a plain status line
+	// that can embed a webhook-payload field a pusher controls (ev.Ref):
+	// an explicit text/plain content type stops any client from ever
+	// MIME-sniffing one of those bodies as HTML.
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+
 	body, err := io.ReadAll(io.LimitReader(r.Body, maxPayloadBytes+1))
 	if err != nil {
 		h.log.Warn("webhook: failed to read request body", "error", err)
