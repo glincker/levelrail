@@ -55,12 +55,18 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsScheduledTasks(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "organizations":
 		return runAppsOrganizations(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "projects":
+		return runAppsProjects(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "environments":
 		return runAppsEnvironments(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // args is non-empty here: the len(args)==0 guard above already returned, same as every other case in this switch
 	case "set-environment":
 		return runAppsSetEnvironment(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "clear-environment":
 		return runAppsClearEnvironment(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "set-project":
+		return runAppsSetProject(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "clear-project":
+		return runAppsClearProject(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "previews":
 		return runAppsPreviews(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "secrets":
@@ -95,9 +101,12 @@ func appsUsage(prog string) string {
   %[1]s apps log-drain get|set|clear <name> [flags]   configure an external log drain
   %[1]s apps scheduled-tasks <verb> [flags]   manage cron-scheduled commands run inside the app's container
   %[1]s apps organizations <verb> [flags]   manage organizations, which group projects
+  %[1]s apps projects <verb> [flags]   manage projects, which group apps and databases
   %[1]s apps environments <verb> [flags]   manage a project's environments (staging, production, ...)
   %[1]s apps set-environment <name> <environment-id> [flags]   tag an app with an environment
   %[1]s apps clear-environment <name> [flags]   remove an app's environment tag
+  %[1]s apps set-project <name> <project-id> [flags]   move an app into a project
+  %[1]s apps clear-project <name> [flags]   remove an app's project assignment
   %[1]s apps previews <verb> [flags]   manage preview environments per pull request
   %[1]s apps secrets <verb> [flags]   manage an app's encrypted secret values
   %[1]s apps git-source <verb> [flags]   connect a repo for auto-deploy-on-push

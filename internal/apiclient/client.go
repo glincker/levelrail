@@ -703,11 +703,60 @@ func (c *Client) DeleteOrganization(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodDelete, organizationPath(id), nil, nil)
 }
 
+func projectsCollectionPath() string {
+	return "/api/v1/projects"
+}
+
+func projectPath(id string) string {
+	return projectsCollectionPath() + "/" + PathEscape(id)
+}
+
+// CreateProject calls POST /api/v1/projects.
+func (c *Client) CreateProject(ctx context.Context, req CreateProjectRequest) (ProjectResource, error) {
+	var out ProjectResource
+	err := c.do(ctx, http.MethodPost, projectsCollectionPath(), req, &out)
+	return out, err
+}
+
+// ListProjects calls GET /api/v1/projects.
+func (c *Client) ListProjects(ctx context.Context) ([]ProjectResource, error) {
+	var out []ProjectResource
+	err := c.do(ctx, http.MethodGet, projectsCollectionPath(), nil, &out)
+	return out, err
+}
+
+// GetProject calls GET /api/v1/projects/{id}.
+func (c *Client) GetProject(ctx context.Context, id string) (ProjectResource, error) {
+	var out ProjectResource
+	err := c.do(ctx, http.MethodGet, projectPath(id), nil, &out)
+	return out, err
+}
+
+// DeleteProject calls DELETE /api/v1/projects/{id}.
+func (c *Client) DeleteProject(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, projectPath(id), nil, nil)
+}
+
+// GetProjectEnv calls GET /api/v1/projects/{id}/env.
+func (c *Client) GetProjectEnv(ctx context.Context, id string) (map[string]string, error) {
+	var out map[string]string
+	err := c.do(ctx, http.MethodGet, projectPath(id)+"/env", nil, &out)
+	return out, err
+}
+
+// SetProjectEnv calls PUT /api/v1/projects/{id}/env: a full replace,
+// mirroring PUT /apps/{name}'s own env field semantics.
+func (c *Client) SetProjectEnv(ctx context.Context, id string, vars map[string]string) (map[string]string, error) {
+	var out map[string]string
+	err := c.do(ctx, http.MethodPut, projectPath(id)+"/env", vars, &out)
+	return out, err
+}
+
 // SetProjectOrganization calls PUT /api/v1/projects/{id}/organization.
 // An empty orgID clears the assignment. Returns the updated project.
 func (c *Client) SetProjectOrganization(ctx context.Context, projectID, orgID string) (ProjectResource, error) {
 	var out ProjectResource
-	err := c.do(ctx, http.MethodPut, "/api/v1/projects/"+PathEscape(projectID)+"/organization", SetProjectOrganizationRequest{OrgID: orgID}, &out)
+	err := c.do(ctx, http.MethodPut, projectPath(projectID)+"/organization", SetProjectOrganizationRequest{OrgID: orgID}, &out)
 	return out, err
 }
 
@@ -797,6 +846,22 @@ func (c *Client) SetEnvironmentEnv(ctx context.Context, id string, vars map[stri
 func (c *Client) SetAppEnvironment(ctx context.Context, name, environmentID string) (AppResource, error) {
 	var out AppResource
 	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/environment", SetAppEnvironmentRequest{EnvironmentID: environmentID}, &out)
+	return out, err
+}
+
+// SetAppProject calls PUT /api/v1/apps/{name}/project. An empty
+// projectID clears the assignment. Returns the updated app.
+func (c *Client) SetAppProject(ctx context.Context, name, projectID string) (AppResource, error) {
+	var out AppResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/project", SetAppProjectRequest{ProjectID: projectID}, &out)
+	return out, err
+}
+
+// SetDatabaseProject calls PUT /api/v1/databases/{name}/project. An
+// empty projectID clears the assignment. Returns the updated database.
+func (c *Client) SetDatabaseProject(ctx context.Context, name, projectID string) (DatabaseResource, error) {
+	var out DatabaseResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/databases/"+PathEscape(name)+"/project", SetDatabaseProjectRequest{ProjectID: projectID}, &out)
 	return out, err
 }
 

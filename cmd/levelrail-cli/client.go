@@ -72,7 +72,10 @@ type (
 	organizationResource          = apiclient.OrganizationResource
 	createOrganizationRequest     = apiclient.CreateOrganizationRequest
 	projectResource               = apiclient.ProjectResource
+	createProjectRequest          = apiclient.CreateProjectRequest
 	setProjectOrganizationRequest = apiclient.SetProjectOrganizationRequest
+	setAppProjectRequest          = apiclient.SetAppProjectRequest
+	setDatabaseProjectRequest     = apiclient.SetDatabaseProjectRequest
 	environmentResource           = apiclient.EnvironmentResource
 	createEnvironmentRequest      = apiclient.CreateEnvironmentRequest
 	setAppEnvironmentRequest      = apiclient.SetAppEnvironmentRequest

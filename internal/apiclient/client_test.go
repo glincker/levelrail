@@ -422,6 +422,138 @@ func TestClient_DeleteOrganization(t *testing.T) {
 	}
 }
 
+func TestClient_CreateProject(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody CreateProjectRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(ProjectResource{ID: "proj_1", Name: gotBody.Name, CreatedAt: "2026-08-16T00:00:00Z"})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.CreateProject(context.Background(), CreateProjectRequest{Name: "my-saas"})
+	if err != nil {
+		t.Fatalf("CreateProject() error = %v", err)
+	}
+	if gotMethod != http.MethodPost || gotPath != "/api/v1/projects" {
+		t.Errorf("method/path = %s %s, want POST /api/v1/projects", gotMethod, gotPath)
+	}
+	if got.ID != "proj_1" || got.Name != "my-saas" {
+		t.Errorf("CreateProject() = %+v, want id proj_1 name my-saas", got)
+	}
+}
+
+func TestClient_ListProjects(t *testing.T) {
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]ProjectResource{{ID: "proj_1", Name: "my-saas"}})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.ListProjects(context.Background())
+	if err != nil {
+		t.Fatalf("ListProjects() error = %v", err)
+	}
+	if gotPath != "/api/v1/projects" {
+		t.Errorf("path = %q, want /api/v1/projects", gotPath)
+	}
+	if len(got) != 1 || got[0].ID != "proj_1" {
+		t.Errorf("ListProjects() = %+v, want one proj_1", got)
+	}
+}
+
+func TestClient_GetProject(t *testing.T) {
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(ProjectResource{ID: "proj_1", Name: "my-saas"})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.GetProject(context.Background(), "proj_1")
+	if err != nil {
+		t.Fatalf("GetProject() error = %v", err)
+	}
+	if gotPath != "/api/v1/projects/proj_1" {
+		t.Errorf("path = %q, want /api/v1/projects/proj_1", gotPath)
+	}
+	if got.Name != "my-saas" {
+		t.Errorf("Name = %q, want my-saas", got.Name)
+	}
+}
+
+func TestClient_DeleteProject(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	if err := client.DeleteProject(context.Background(), "proj_1"); err != nil {
+		t.Fatalf("DeleteProject() error = %v", err)
+	}
+	if gotMethod != http.MethodDelete || gotPath != "/api/v1/projects/proj_1" {
+		t.Errorf("method/path = %s %s, want DELETE /api/v1/projects/proj_1", gotMethod, gotPath)
+	}
+}
+
+func TestClient_GetProjectEnv(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"LOG_LEVEL": "info"})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.GetProjectEnv(context.Background(), "proj_1")
+	if err != nil {
+		t.Fatalf("GetProjectEnv() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/projects/proj_1/env" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/projects/proj_1/env", gotMethod, gotPath)
+	}
+	if got["LOG_LEVEL"] != "info" {
+		t.Errorf("GetProjectEnv() = %+v, want LOG_LEVEL=info", got)
+	}
+}
+
+func TestClient_SetProjectEnv(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody map[string]string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(gotBody)
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.SetProjectEnv(context.Background(), "proj_1", map[string]string{"LOG_LEVEL": "info"})
+	if err != nil {
+		t.Fatalf("SetProjectEnv() error = %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/projects/proj_1/env" {
+		t.Errorf("method/path = %s %s, want PUT /api/v1/projects/proj_1/env", gotMethod, gotPath)
+	}
+	if got["LOG_LEVEL"] != "info" {
+		t.Errorf("SetProjectEnv() = %+v, want LOG_LEVEL=info", got)
+	}
+}
+
 func TestClient_SetProjectOrganization(t *testing.T) {
 	var gotMethod, gotPath string
 	var gotBody SetProjectOrganizationRequest
@@ -623,6 +755,54 @@ func TestClient_SetAppEnvironment(t *testing.T) {
 	}
 	if got.EnvironmentID != "env_1" {
 		t.Errorf("EnvironmentID = %q, want env_1", got.EnvironmentID)
+	}
+}
+
+func TestClient_SetAppProject(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody SetAppProjectRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(AppResource{Name: "web", ProjectID: gotBody.ProjectID})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.SetAppProject(context.Background(), "web", "proj_1")
+	if err != nil {
+		t.Fatalf("SetAppProject() error = %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/apps/web/project" {
+		t.Errorf("method/path = %s %s, want PUT /api/v1/apps/web/project", gotMethod, gotPath)
+	}
+	if got.ProjectID != "proj_1" {
+		t.Errorf("ProjectID = %q, want proj_1", got.ProjectID)
+	}
+}
+
+func TestClient_SetDatabaseProject(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody SetDatabaseProjectRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(DatabaseResource{Name: "db", ProjectID: gotBody.ProjectID})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.SetDatabaseProject(context.Background(), "db", "proj_1")
+	if err != nil {
+		t.Fatalf("SetDatabaseProject() error = %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/databases/db/project" {
+		t.Errorf("method/path = %s %s, want PUT /api/v1/databases/db/project", gotMethod, gotPath)
+	}
+	if got.ProjectID != "proj_1" {
+		t.Errorf("ProjectID = %q, want proj_1", got.ProjectID)
 	}
 }
 
