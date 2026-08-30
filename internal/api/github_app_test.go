@@ -93,8 +93,16 @@ type fakeGitHubAppClient struct {
 	repos    []githubapp.Repo
 	reposErr error
 
+	repo    githubapp.Repo
+	repoErr error
+
 	branches    []githubapp.Branch
 	branchesErr error
+
+	createHookErr  error
+	createHookURL  string
+	createHookSec  string
+	createHookCall bool
 }
 
 func (f *fakeGitHubAppClient) CheckInstanceReachable(_ context.Context, instanceURL string) error {
@@ -127,9 +135,21 @@ func (f *fakeGitHubAppClient) ListInstallationRepos(_ context.Context, instanceU
 	return f.repos, f.reposErr
 }
 
+func (f *fakeGitHubAppClient) GetRepo(_ context.Context, instanceURL, _, _, _ string) (githubapp.Repo, error) {
+	f.gotInstanceURL = instanceURL
+	return f.repo, f.repoErr
+}
+
 func (f *fakeGitHubAppClient) ListBranches(_ context.Context, instanceURL, _, _, _ string) ([]githubapp.Branch, error) {
 	f.gotInstanceURL = instanceURL
 	return f.branches, f.branchesErr
+}
+
+func (f *fakeGitHubAppClient) CreateRepoWebhook(_ context.Context, _, _, _, _, hookURL, secret string) error {
+	f.createHookCall = true
+	f.createHookURL = hookURL
+	f.createHookSec = secret
+	return f.createHookErr
 }
 
 func TestHandleGetGitHubAppStatus_NotConnected(t *testing.T) {

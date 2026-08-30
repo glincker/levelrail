@@ -117,6 +117,50 @@ func TestClient_ListProjects_Paginates(t *testing.T) {
 	}
 }
 
+func TestClient_ListBranches_Paginates(t *testing.T) {
+	var calls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if r.URL.Path != "/api/v4/projects/7/repository/branches" {
+			t.Errorf("path = %q, want /api/v4/projects/7/repository/branches", r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bearer at-1" {
+			t.Errorf("Authorization header = %q, want Bearer at-1", r.Header.Get("Authorization"))
+		}
+		page := r.URL.Query().Get("page")
+		w.Header().Set("Content-Type", "application/json")
+		if page == "1" {
+			branches := make([]branchResponse, listPerPage)
+			for i := range branches {
+				branches[i] = branchResponse{Name: "b"}
+				branches[i].Commit.ID = "sha"
+			}
+			_ = json.NewEncoder(w).Encode(branches)
+			return
+		}
+		last := branchResponse{Name: "main"}
+		last.Commit.ID = "abc123"
+		_ = json.NewEncoder(w).Encode([]branchResponse{last})
+	}))
+	defer srv.Close()
+
+	c := &Client{HTTP: srv.Client()}
+	got, err := c.ListBranches(context.Background(), srv.URL, "at-1", 7)
+	if err != nil {
+		t.Fatalf("ListBranches() error = %v", err)
+	}
+	if len(got) != listPerPage+1 {
+		t.Errorf("len(got) = %d, want %d", len(got), listPerPage+1)
+	}
+	if calls != 2 {
+		t.Errorf("calls = %d, want 2 pages fetched", calls)
+	}
+	last := got[len(got)-1]
+	if last.Name != "main" || last.CommitSHA != "abc123" {
+		t.Errorf("last branch = %+v, want name=main commit_sha=abc123", last)
+	}
+}
+
 func TestClient_GetProject(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v4/projects/42" {

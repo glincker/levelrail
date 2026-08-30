@@ -228,6 +228,41 @@ func (c *Client) GetProject(ctx context.Context, instanceURL, accessToken string
 	return toProject(resp), nil
 }
 
+// Branch is one branch of one project.
+type Branch struct {
+	Name      string
+	CommitSHA string
+}
+
+type branchResponse struct {
+	Name   string `json:"name"`
+	Commit struct {
+		ID string `json:"id"`
+	} `json:"commit"`
+}
+
+// ListBranches lists every branch of projectID, across as many pages as
+// GitLab returns full pages for, the same pagination shape ListProjects
+// uses.
+func (c *Client) ListBranches(ctx context.Context, instanceURL, accessToken string, projectID int64) ([]Branch, error) {
+	var out []Branch
+	for page := 1; page <= listPageCap; page++ {
+		var resp []branchResponse
+		u := fmt.Sprintf("%s/projects/%s/repository/branches?per_page=%d&page=%d",
+			apiBaseURL(instanceURL), strconv.FormatInt(projectID, 10), listPerPage, page)
+		if err := c.do(ctx, http.MethodGet, u, "Bearer "+accessToken, nil, &resp); err != nil {
+			return nil, err
+		}
+		for _, b := range resp {
+			out = append(out, Branch{Name: b.Name, CommitSHA: b.Commit.ID})
+		}
+		if len(resp) < listPerPage {
+			break
+		}
+	}
+	return out, nil
+}
+
 type createWebhookRequest struct {
 	URL                   string `json:"url"`
 	PushEvents            bool   `json:"push_events"`

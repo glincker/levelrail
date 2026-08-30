@@ -89,6 +89,9 @@ type fakeGitLabAppClient struct {
 	project    gitlabapp.Project
 	projectErr error
 
+	branches    []gitlabapp.Branch
+	branchesErr error
+
 	createHookErr  error
 	createHookURL  string
 	createHookTok  string
@@ -111,6 +114,10 @@ func (f *fakeGitLabAppClient) ListProjects(_ context.Context, _, _ string) ([]gi
 
 func (f *fakeGitLabAppClient) GetProject(_ context.Context, _, _ string, _ int64) (gitlabapp.Project, error) {
 	return f.project, f.projectErr
+}
+
+func (f *fakeGitLabAppClient) ListBranches(_ context.Context, _, _ string, _ int64) ([]gitlabapp.Branch, error) {
+	return f.branches, f.branchesErr
 }
 
 func (f *fakeGitLabAppClient) CreateProjectWebhook(_ context.Context, _, _ string, _ int64, hookURL, secretToken string) error {

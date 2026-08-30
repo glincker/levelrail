@@ -43,18 +43,20 @@ type GitHubAppSecrets interface {
 
 // GitHubAppClient is the surface internal/api needs from
 // internal/githubapp.Client: manifest code exchange, installation
-// lookup and token minting, and repo/branch listing. *githubapp.Client
-// satisfies this structurally; tests substitute a hand-written fake
-// (github_app_test.go), the same "narrow, consumer-defined interface"
-// shape every other external-system boundary in this package uses
-// (Builder, DockerPinger, BackupRunner).
+// lookup and token minting, repo/branch listing, and repo webhook
+// registration. *githubapp.Client satisfies this structurally; tests
+// substitute a hand-written fake (github_app_test.go), the same
+// "narrow, consumer-defined interface" shape every other external-system
+// boundary in this package uses (Builder, DockerPinger, BackupRunner).
 type GitHubAppClient interface {
 	CheckInstanceReachable(ctx context.Context, instanceURL string) error
 	ExchangeManifestCode(ctx context.Context, instanceURL, code string) (githubapp.Credentials, error)
 	GetInstallation(ctx context.Context, instanceURL, appJWT string, installationID int64) (githubapp.InstallationInfo, error)
 	MintInstallationToken(ctx context.Context, instanceURL, appJWT string, installationID int64) (githubapp.InstallationToken, error)
 	ListInstallationRepos(ctx context.Context, instanceURL, token string) ([]githubapp.Repo, error)
+	GetRepo(ctx context.Context, instanceURL, token, owner, repo string) (githubapp.Repo, error)
 	ListBranches(ctx context.Context, instanceURL, token, owner, repo string) ([]githubapp.Branch, error)
+	CreateRepoWebhook(ctx context.Context, instanceURL, token, owner, repo, hookURL, secret string) error
 }
 
 // gitHubAppStatusResource is the wire shape for GET /api/v1/github-app.

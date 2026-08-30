@@ -2,6 +2,8 @@
 // (internal/api/github_app.go, github_app_repos.go), matching their
 // resource structs field for field.
 
+import type { GitSourceResource } from './gitSource'
+
 // GitHubAppStatus mirrors gitHubAppStatusResource
 // (internal/api/github_app.go). Deliberately no secret fields: the
 // backend never echoes client_secret/webhook_secret/private_key back in
@@ -58,6 +60,29 @@ export interface GitHubAppRepo {
 export interface GitHubAppBranch {
   name: string
   commit_sha: string
+}
+
+// GitHubAppUseRepoAsSourceRequest mirrors useGitHubRepoAsSourceRequest
+// (internal/api/github_app_use_as_source.go).
+export interface GitHubAppUseRepoAsSourceRequest {
+  app_name: string
+  branch?: string
+  build_type?: 'dockerfile' | 'railpack' | 'static'
+  build_path?: string
+}
+
+// GitHubAppUseRepoAsSourceResponse mirrors
+// useGitHubRepoAsSourceResponse (internal/api/github_app_use_as_source.go):
+// the same GitSourceResource shape PUT .../git-source itself returns,
+// extended with whether the push webhook was actually auto-registered.
+// webhook_registered is false, with webhook_error explaining why, when
+// the connected installation's permissions don't allow registering a
+// webhook yet (an installation that predates the App requesting
+// "Repository hooks: write") -- see that handler's own doc comment for
+// why this degrades instead of failing the whole request.
+export interface GitHubAppUseRepoAsSourceResponse extends GitSourceResource {
+  webhook_registered: boolean
+  webhook_error?: string
 }
 
 // GitHubAppManifestPreview mirrors githubAppManifestPreviewResource

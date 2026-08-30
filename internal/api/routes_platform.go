@@ -301,6 +301,13 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/registry-credentials", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateRegistryCredential))
 	mux.HandleFunc("DELETE /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteRegistryCredential))
 
+	// Aggregated git provider capability summary (git_providers.go): one
+	// AbilityReadSensitive call the git-source picker uses instead of the
+	// three AbilityRoot status endpoints below, so a non-root deploy-scoped
+	// user can open the app creation wizard without hitting a 403. See
+	// handleListGitProviders's own doc comment.
+	mux.HandleFunc("GET /api/v1/git-providers", rt.requireAbility(AbilityReadSensitive, rt.handleListGitProviders))
+
 	// GitHub App connection: the manifest-based registration flow,
 	// installation, and repo/branch browsing through it
 	// (internal/api/github_app.go, github_app_register.go,
@@ -324,7 +331,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// AbilityReadSensitive: see handleListGitHubAppRepos's own doc
 	// comment for why reading already-connected repo/branch names is a
 	// materially different (lower) risk class than changing the
-	// connection itself.
+	// connection itself. use-as-source is AbilityWriteSensitive, matching
+	// PUT .../git-source's own tier and GitLab/Bitbucket's own
+	// use-as-source routes below: it performs that exact action.
 	mux.HandleFunc("GET /api/v1/github-app", rt.requireAbility(AbilityRoot, rt.handleGetGitHubAppStatus))
 	mux.HandleFunc("DELETE /api/v1/github-app", rt.requireAbility(AbilityRoot, rt.handleDisconnectGitHubApp))
 	mux.HandleFunc("PUT /api/v1/github-app/manual", rt.requireAbility(AbilityRoot, rt.handleConnectGitHubAppManually))
@@ -334,6 +343,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/github-app/installed", rt.requireAbility(AbilityRoot, rt.handleGitHubAppInstalled))
 	mux.HandleFunc("GET /api/v1/github-app/repos", rt.requireAbility(AbilityReadSensitive, rt.handleListGitHubAppRepos))
 	mux.HandleFunc("GET /api/v1/github-app/repos/{owner}/{repo}/branches", rt.requireAbility(AbilityReadSensitive, rt.handleListGitHubAppBranches))
+	mux.HandleFunc("POST /api/v1/github-app/repos/{owner}/{repo}/use-as-source", rt.requireAbility(AbilityWriteSensitive, rt.handleUseGitHubRepoAsSource))
 
 	// GitLab App: the OAuth-Application counterpart of the GitHub App
 	// routes above, same ability tiers for the same reasons. connect and
@@ -347,6 +357,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/gitlab-app/connect", rt.requireAbility(AbilityRoot, rt.handleStartGitLabAppConnect))
 	mux.HandleFunc("GET /api/v1/gitlab-app/callback", rt.requireAbility(AbilityRoot, rt.handleGitLabAppCallback))
 	mux.HandleFunc("GET /api/v1/gitlab-app/projects", rt.requireAbility(AbilityReadSensitive, rt.handleListGitLabAppProjects))
+	mux.HandleFunc("GET /api/v1/gitlab-app/projects/{id}/branches", rt.requireAbility(AbilityReadSensitive, rt.handleListGitLabAppBranches))
 	mux.HandleFunc("POST /api/v1/gitlab-app/projects/{id}/use-as-source", rt.requireAbility(AbilityWriteSensitive, rt.handleUseGitLabProjectAsSource))
 
 	// Bitbucket App: the OAuth-consumer counterpart of the GitLab App

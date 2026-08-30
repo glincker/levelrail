@@ -17,6 +17,7 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import type {
+  GitLabAppBranch,
   GitLabAppConnectRequest,
   GitLabAppProject,
   GitLabAppStatus,
@@ -30,6 +31,7 @@ export const gitlabAppKeys = {
   all: ['gitlab-app'] as const,
   status: () => [...gitlabAppKeys.all, 'status'] as const,
   projects: () => [...gitlabAppKeys.all, 'projects'] as const,
+  branches: (projectID: number) => [...gitlabAppKeys.all, 'branches', projectID] as const,
 }
 
 export async function fetchGitLabAppStatus(): Promise<GitLabAppStatus> {
@@ -126,6 +128,27 @@ export function useGitLabAppProjects(enabled: boolean) {
     queryKey: gitlabAppKeys.projects(),
     queryFn: fetchGitLabAppProjects,
     enabled,
+  })
+}
+
+// GET /api/v1/gitlab-app/projects/{id}/branches
+// (handleListGitLabAppBranches).
+export async function fetchGitLabAppBranches(projectID: number): Promise<GitLabAppBranch[]> {
+  const res = await fetch(`/api/v1/gitlab-app/projects/${projectID}/branches`)
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `fetch gitlab app branches failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as GitLabAppBranch[]
+}
+
+export function useGitLabAppBranches(projectID: number, enabled: boolean) {
+  return useQuery({
+    queryKey: gitlabAppKeys.branches(projectID),
+    queryFn: () => fetchGitLabAppBranches(projectID),
+    enabled: enabled && projectID > 0,
   })
 }
 

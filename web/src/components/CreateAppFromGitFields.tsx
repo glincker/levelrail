@@ -26,6 +26,7 @@ import { triggerBuild, type TriggerBuildInput } from '../queries/builds'
 import { deployKeys } from '../queries/deploys'
 import { deployAttemptKeys } from '../queries/deployAttempts'
 import { gitSourceKeys, setGitSource } from '../queries/gitSources'
+import { connectGitHubRepoAsSource } from '../queries/githubApp'
 import { connectGitLabProjectAsSource } from '../queries/gitlabApp'
 import { connectBitbucketRepoAsSource } from '../queries/bitbucketApp'
 import type { GitSourceBuildType, GitSourceResource } from '../types/gitSource'
@@ -247,26 +248,37 @@ function gitSourceBuildFields(
 // GitBuildSourceFields) falls back to the generic endpoint, exactly the
 // path GitSourceCard.tsx's own manual connect form already uses.
 //
-// GitLab and Bitbucket both have a real "use as source" endpoint that
-// registers a push webhook automatically (queries/gitlabApp.ts,
-// queries/bitbucketApp.ts). GitHub does not yet (see
-// GitRepoSourcePicker.tsx's own doc comment: no repo-hook registration
-// call exists in internal/githubapp/client.go), so a GitHub pick degrades
-// to the same generic endpoint manual mode uses, which stores the
-// git_source row and returns a webhook URL/secret to add by hand. That
-// degradation, and closing GitHub's own auto-registration gap, is PR 2's
-// job per the proposal, not this one's.
+// All three providers now have a real "use as source" endpoint that
+// registers a push webhook (queries/githubApp.ts, queries/gitlabApp.ts,
+// queries/bitbucketApp.ts). GitHub's own version can still come back with
+// autoRegistered: false plus a webhookError: an installation that
+// predates the App requesting repository_hooks:write can't register a
+// webhook at all (see GitHubAppUseRepoAsSourceResponse's own doc
+// comment), so that specific, structural failure degrades to connecting
+// the source and surfacing the webhook URL/secret for manual setup,
+// exactly the same banner shape the plain manual/generic path below
+// already renders.
 async function connectGitSourceFor(
   name: string,
   values: FormOutput,
   source: GitRepoSourceValue | null,
-): Promise<{ resource: GitSourceResource; autoRegistered: boolean }> {
+): Promise<{ resource: GitSourceResource; autoRegistered: boolean; webhookError?: string }> {
   const repoUrl = values.repoUrl.trim()
   const branch = values.ref.trim()
   const { buildType, buildPath } = gitSourceBuildFields(values)
   const effective =
     source && source.repoUrl === repoUrl && source.branch === branch ? source : null
 
+  if (effective?.providerRef?.kind === 'github') {
+    const { webhook_registered: webhookRegistered, webhook_error: webhookError, ...resource } =
+      await connectGitHubRepoAsSource(effective.providerRef.owner, effective.providerRef.repo, {
+        app_name: name,
+        branch,
+        build_type: buildType,
+        build_path: buildPath,
+      })
+    return { resource, autoRegistered: webhookRegistered, webhookError }
+  }
   if (effective?.providerRef?.kind === 'gitlab') {
     const resource = await connectGitLabProjectAsSource(effective.providerRef.projectId, {
       app_name: name,
@@ -677,9 +689,9 @@ export function CreateAppFromGitFields({
         <Alert>
           <AlertDescription className="space-y-2">
             <p>
-              Git source connected. This provider doesn&apos;t register a
-              webhook automatically yet, add these to the repository&apos;s
-              settings for pushes to auto-deploy:
+              Git source connected.{' '}
+              {connectSourceMutation.data.webhookError ??
+                "This provider doesn't register a webhook automatically yet, add these to the repository's settings for pushes to auto-deploy:"}
             </p>
             <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
               <code className="min-w-0 flex-1 overflow-x-auto text-xs break-all">

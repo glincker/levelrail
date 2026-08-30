@@ -62,10 +62,24 @@ vi.mock('./GitRepoSourcePicker', () => ({
             provider: 'github',
             repoUrl: 'https://github.com/example/gh-repo.git',
             branch: 'main',
+            providerRef: { kind: 'github', owner: 'example', repo: 'gh-repo' },
           })
         }}
       >
         Pick GitHub repo (test)
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          onSelect({
+            provider: 'github',
+            repoUrl: 'https://github.com/example/legacy-install.git',
+            branch: 'main',
+            providerRef: { kind: 'github', owner: 'example', repo: 'legacy-install' },
+          })
+        }}
+      >
+        Pick GitHub repo on a legacy install (test)
       </button>
       <button
         type="button"
@@ -185,6 +199,44 @@ describe('CreateAppFromGitFields', () => {
         return Promise.resolve(fakeJsonResponse(fakeGitSourceResource(), 201))
       }
       if (
+        url === '/api/v1/github-app/repos/example/gh-repo/use-as-source' &&
+        method === 'POST'
+      ) {
+        return Promise.resolve(
+          fakeJsonResponse(
+            {
+              ...fakeGitSourceResource({
+                repo_url: 'https://github.com/example/gh-repo.git',
+              }),
+              webhook_registered: true,
+            },
+            201,
+          ),
+        )
+      }
+      if (
+        url === '/api/v1/github-app/repos/example/legacy-install/use-as-source' &&
+        method === 'POST'
+      ) {
+        // The permission-denied degrade path (piece 2): an installation
+        // that predates the App requesting repository_hooks:write still
+        // gets a connected git source, just with webhook_registered:false
+        // and a webhook_error explaining the manual fallback.
+        return Promise.resolve(
+          fakeJsonResponse(
+            {
+              ...fakeGitSourceResource({
+                repo_url: 'https://github.com/example/legacy-install.git',
+              }),
+              webhook_registered: false,
+              webhook_error:
+                "this github app installation doesn't have permission to register webhooks yet",
+            },
+            201,
+          ),
+        )
+      }
+      if (
         url === '/api/v1/gitlab-app/projects/42/use-as-source' &&
         method === 'POST'
       ) {
@@ -286,7 +338,7 @@ describe('CreateAppFromGitFields', () => {
     expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(1)
   })
 
-  it('connects the git source via the generic endpoint for a GitHub pick, then triggers the build', async () => {
+  it('connects the git source via use-as-source for a GitHub pick, then triggers the build', async () => {
     const user = userEvent.setup()
     const { onCreated } = renderForm()
 
@@ -303,19 +355,65 @@ describe('CreateAppFromGitFields', () => {
     // Bug 1 (docs-local/research/git-provider-connect-ux-unification-
     // proposal.md): the GitHub wizard path used to create the app and
     // trigger a build without ever creating a git_source row, so no
-    // webhook could ever match a future push. GitHub has no dedicated
-    // use-as-source route yet (that's PR 2), so this must degrade to the
-    // generic connect endpoint, but it must still happen.
-    const connectCalls = callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')
+    // webhook could ever match a future push. GitHub now has its own
+    // dedicated use-as-source route (piece 2), the same shape GitLab/
+    // Bitbucket already had, so this must call it rather than degrading
+    // to the generic endpoint.
+    const connectCalls = callsTo(
+      fetchMock,
+      '/api/v1/github-app/repos/example/gh-repo/use-as-source',
+      'POST',
+    )
     expect(connectCalls).toHaveLength(1)
     const body = JSON.parse(connectCalls[0]?.init?.body as string) as {
-      repo_url: string
+      app_name: string
       branch: string
     }
-    expect(body.repo_url).toBe('https://github.com/example/gh-repo.git')
+    expect(body.app_name).toBe('demo-app')
     expect(body.branch).toBe('main')
 
     expect(callsTo(fetchMock, '/api/v1/apps/demo-app/builds', 'POST')).toHaveLength(1)
+    // No manual-webhook banner: the webhook registered automatically.
+    expect(
+      screen.queryByText(/doesn't have permission to register webhooks/),
+    ).not.toBeInTheDocument()
+    expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(0)
+  })
+
+  // The actual permission-degradation path this task cared most about:
+  // an installation that predates the App requesting
+  // repository_hooks:write still connects the git source (the operator
+  // isn't left half-configured), and the UI surfaces the webhook URL and
+  // secret to add by hand instead of silently pretending it auto-
+  // registered, or failing the whole submit.
+  it('still connects the source and shows the manual webhook banner when github denies webhook registration', async () => {
+    const user = userEvent.setup()
+    const { onCreated } = renderForm()
+
+    await screen.findByLabelText('Name')
+    await user.click(
+      screen.getByRole('button', { name: 'Pick GitHub repo on a legacy install (test)' }),
+    )
+    await user.type(screen.getByLabelText('Port'), '3000')
+
+    await user.click(screen.getByRole('button', { name: 'Build and deploy' }))
+
+    await waitFor(() => {
+      expect(onCreated).toHaveBeenCalledTimes(1)
+    })
+
+    expect(
+      callsTo(fetchMock, '/api/v1/github-app/repos/example/legacy-install/use-as-source', 'POST'),
+    ).toHaveLength(1)
+    expect(callsTo(fetchMock, '/api/v1/apps/demo-app/builds', 'POST')).toHaveLength(1)
+
+    // The source is connected (build still runs, per the assertion
+    // above); the degrade banner explains why auto-deploy needs a manual
+    // step, using the backend's own webhook_error message.
+    await screen.findByText(
+      /doesn't have permission to register webhooks yet/,
+    )
+    expect(screen.getByText('wh_secret_abc')).toBeInTheDocument()
   })
 
   it('connects the git source via use-as-source for a GitLab pick, then triggers the build', async () => {

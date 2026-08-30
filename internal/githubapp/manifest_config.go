@@ -21,17 +21,24 @@ type ManifestConfig struct {
 	DefaultEvents      []string          `yaml:"default_events"`
 }
 
-// DefaultManifestConfig is what BuildManifest has always requested:
-// contents:read + metadata:read (BuildManifest's own doc comment
-// explains why exactly these two), no webhook events. Returned by
-// LoadManifestConfig whenever no config file is present, so this
-// feature is entirely additive: a zero-config deployment sees no
-// behavior change from before ManifestConfig existed.
+// DefaultManifestConfig is what BuildManifest requests: contents:read +
+// metadata:read (BuildManifest's own doc comment explains why) plus
+// repository_hooks:write, so a freshly registered App can call
+// Client.CreateRepoWebhook to auto-register a repo's push webhook. No
+// webhook events. Returned by LoadManifestConfig whenever no config
+// file is present.
+//
+// GitHub does not retroactively grant a new permission to an existing
+// installation, so an App installed before this permission was added
+// here keeps failing CreateRepoWebhook with ErrPermissionDenied until
+// reinstalled; see internal/api's handleUseGitHubRepoAsSource for how
+// that's handled rather than treated as fatal.
 func DefaultManifestConfig() ManifestConfig {
 	return ManifestConfig{
 		DefaultPermissions: map[string]string{
-			"contents": "read",
-			"metadata": "read",
+			"contents":         "read",
+			"metadata":         "read",
+			"repository_hooks": "write",
 		},
 		DefaultEvents: []string{},
 	}

@@ -69,6 +69,68 @@ func TestHandleListGitLabAppProjects_Success(t *testing.T) {
 	}
 }
 
+func TestHandleListGitLabAppBranches_NotAuthorized(t *testing.T) {
+	rt, db := newTestRouterWithGitLabApp(t, newFakeGitLabAppSecrets(), &fakeGitLabAppClient{})
+	cookie := loginTestSession(t, rt, db)
+	seedGitLabAppConnection(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/gitlab-app/projects/1/branches", ""))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want 409, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestHandleListGitLabAppBranches_InvalidProjectID(t *testing.T) {
+	secrets := authorizedGitLabSecrets(t)
+	rt, db := newTestRouterWithGitLabApp(t, secrets, &fakeGitLabAppClient{})
+	cookie := loginTestSession(t, rt, db)
+	seedGitLabAppConnection(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/gitlab-app/projects/not-a-number/branches", ""))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestHandleListGitLabAppBranches_Success(t *testing.T) {
+	fakeClient := &fakeGitLabAppClient{
+		branches: []gitlabapp.Branch{
+			{Name: "main", CommitSHA: "abc123"},
+			{Name: "dev", CommitSHA: "def456"},
+		},
+	}
+	secrets := authorizedGitLabSecrets(t)
+	rt, db := newTestRouterWithGitLabApp(t, secrets, fakeClient)
+	cookie := loginTestSession(t, rt, db)
+	seedGitLabAppConnection(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/gitlab-app/projects/1/branches", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `"name":"main"`) || !strings.Contains(body, `"name":"dev"`) {
+		t.Errorf("body = %s, missing expected branches", body)
+	}
+}
+
+func TestHandleListGitLabAppBranches_UpstreamListError(t *testing.T) {
+	fakeClient := &fakeGitLabAppClient{branchesErr: errFakeSecretNotSet}
+	secrets := authorizedGitLabSecrets(t)
+	rt, db := newTestRouterWithGitLabApp(t, secrets, fakeClient)
+	cookie := loginTestSession(t, rt, db)
+	seedGitLabAppConnection(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/gitlab-app/projects/1/branches", ""))
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("status = %d, want 502, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestGitLabAppProjectRoutes_PlainReadTokenForbidden(t *testing.T) {
 	rt, db := newTestRouterWithGitLabApp(t, newFakeGitLabAppSecrets(), &fakeGitLabAppClient{})
 	ctx := context.Background()

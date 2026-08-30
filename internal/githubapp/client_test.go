@@ -3,6 +3,7 @@ package githubapp
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -237,5 +238,99 @@ func TestListBranches_UsesInstallationToken(t *testing.T) {
 	}
 	if len(branches) != 1 || branches[0].Name != "main" || branches[0].CommitSHA != "abc123" {
 		t.Errorf("ListBranches() = %+v, unexpected", branches)
+	}
+}
+
+func TestGetRepo_UsesInstallationToken(t *testing.T) {
+	var gotPath, gotAuth string
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotAuth = r.Header.Get("Authorization")
+		_ = json.NewEncoder(w).Encode(repoResponse{
+			FullName: "acme/widgets", Name: "widgets", DefaultBranch: "main",
+		})
+	})
+
+	repo, err := c.GetRepo(context.Background(), "", "install-token", "acme", "widgets")
+	if err != nil {
+		t.Fatalf("GetRepo() error = %v", err)
+	}
+	if gotPath != "/repos/acme/widgets" {
+		t.Errorf("path = %q, want /repos/acme/widgets", gotPath)
+	}
+	if gotAuth != "Bearer install-token" {
+		t.Errorf("Authorization = %q, want Bearer install-token", gotAuth)
+	}
+	if repo.FullName != "acme/widgets" || repo.DefaultBranch != "main" {
+		t.Errorf("GetRepo() = %+v, unexpected", repo)
+	}
+}
+
+func TestCreateRepoWebhook_SendsSecretAndEvents(t *testing.T) {
+	var gotPath, gotMethod, gotAuth string
+	var gotBody createRepoHookRequest
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		gotAuth = r.Header.Get("Authorization")
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		w.WriteHeader(http.StatusCreated)
+	})
+
+	err := c.CreateRepoWebhook(context.Background(), "", "install-token", "acme", "widgets", "https://deploy.example.com/api/v1/webhooks/github/web", "whsecret")
+	if err != nil {
+		t.Fatalf("CreateRepoWebhook() error = %v", err)
+	}
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %q, want POST", gotMethod)
+	}
+	if gotPath != "/repos/acme/widgets/hooks" {
+		t.Errorf("path = %q, want /repos/acme/widgets/hooks", gotPath)
+	}
+	if gotAuth != "Bearer install-token" {
+		t.Errorf("Authorization = %q, want Bearer install-token", gotAuth)
+	}
+	if len(gotBody.Events) != 1 || gotBody.Events[0] != "push" {
+		t.Errorf("events = %v, want [push]", gotBody.Events)
+	}
+	if gotBody.Config.Secret != "whsecret" {
+		t.Errorf("config.secret = %q, want whsecret", gotBody.Config.Secret)
+	}
+	if gotBody.Config.URL != "https://deploy.example.com/api/v1/webhooks/github/web" {
+		t.Errorf("config.url = %q, unexpected", gotBody.Config.URL)
+	}
+	if !gotBody.Active {
+		t.Error("active = false, want true")
+	}
+}
+
+func TestCreateRepoWebhook_PermissionDenied(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"message":"Resource not accessible by integration"}`))
+	})
+
+	err := c.CreateRepoWebhook(context.Background(), "", "install-token", "acme", "widgets", "https://deploy.example.com/hook", "sec")
+	if err == nil {
+		t.Fatal("CreateRepoWebhook() error = nil, want a 403 error")
+	}
+	if !errors.Is(err, ErrPermissionDenied) {
+		t.Errorf("errors.Is(%v, ErrPermissionDenied) = false, want true", err)
+	}
+}
+
+func TestCreateRepoWebhook_ErrorResponse(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+	})
+
+	err := c.CreateRepoWebhook(context.Background(), "", "install-token", "acme", "widgets", "https://deploy.example.com/hook", "sec")
+	if err == nil {
+		t.Fatal("CreateRepoWebhook() error = nil, want an error")
+	}
+	if errors.Is(err, ErrPermissionDenied) {
+		t.Error("errors.Is(err, ErrPermissionDenied) = true, want false for a 502")
 	}
 }
