@@ -45,6 +45,7 @@ type GitLabAppClient interface {
 	RefreshToken(ctx context.Context, instanceURL, clientID, clientSecret, refreshToken string) (gitlabapp.Tokens, error)
 	ListProjects(ctx context.Context, instanceURL, accessToken string) ([]gitlabapp.Project, error)
 	GetProject(ctx context.Context, instanceURL, accessToken string, projectID int64) (gitlabapp.Project, error)
+	ListBranches(ctx context.Context, instanceURL, accessToken string, projectID int64) ([]gitlabapp.Branch, error)
 	CreateProjectWebhook(ctx context.Context, instanceURL, accessToken string, projectID int64, hookURL, secretToken string) error
 }
 

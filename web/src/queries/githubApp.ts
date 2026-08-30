@@ -25,8 +25,11 @@ import type {
   GitHubAppManualConnectRequest,
   GitHubAppRepo,
   GitHubAppStatus,
+  GitHubAppUseRepoAsSourceRequest,
+  GitHubAppUseRepoAsSourceResponse,
 } from '../types/githubApp'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { gitSourceKeys } from './gitSources'
 
 export const githubAppKeys = {
   all: ['github-app'] as const,
@@ -222,5 +225,49 @@ export function useGitHubAppBranches(
     queryKey: githubAppKeys.branches(owner, repo),
     queryFn: () => fetchGitHubAppBranches(owner, repo),
     enabled: enabled && owner !== '' && repo !== '',
+  })
+}
+
+// POST /api/v1/github-app/repos/{owner}/{repo}/use-as-source
+// (handleUseGitHubRepoAsSource): connects the repo as appName's git
+// source and registers a push webhook with the installation token,
+// mirroring queries/gitlabApp.ts's connectGitLabProjectAsSource. Unlike
+// that call, the response's webhook_registered may be false (see
+// GitHubAppUseRepoAsSourceResponse's own doc comment): this is not an
+// error, callers read that field rather than treating a resolved
+// promise as "webhook auto-registered".
+export async function connectGitHubRepoAsSource(
+  owner: string,
+  repo: string,
+  req: GitHubAppUseRepoAsSourceRequest,
+): Promise<GitHubAppUseRepoAsSourceResponse> {
+  const res = await fetch(
+    `/api/v1/github-app/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/use-as-source`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `use github repo as source failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as GitHubAppUseRepoAsSourceResponse
+}
+
+export function useConnectGitHubRepoAsSource() {
+  const queryClient = useQueryClient()
+  return useMutation<
+    GitHubAppUseRepoAsSourceResponse,
+    ApiError,
+    { owner: string; repo: string; req: GitHubAppUseRepoAsSourceRequest }
+  >({
+    mutationFn: ({ owner, repo, req }) => connectGitHubRepoAsSource(owner, repo, req),
+    onSuccess: (resource, variables) => {
+      queryClient.setQueryData(gitSourceKeys.detail(variables.req.app_name), resource)
+    },
   })
 }

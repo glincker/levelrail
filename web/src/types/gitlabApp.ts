@@ -32,6 +32,13 @@ export interface GitLabAppProject {
   web_url: string
 }
 
+// GitLabAppBranch mirrors gitLabAppBranchResource
+// (internal/api/gitlab_app_projects.go).
+export interface GitLabAppBranch {
+  name: string
+  commit_sha: string
+}
+
 // GitLabAppUseProjectAsSourceRequest mirrors
 // useGitLabProjectAsSourceRequest (internal/api/gitlab_app_projects.go).
 export interface GitLabAppUseProjectAsSourceRequest {

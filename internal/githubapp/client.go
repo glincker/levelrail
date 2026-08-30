@@ -1,8 +1,10 @@
 package githubapp
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -144,6 +146,49 @@ func (c *Client) do(ctx context.Context, baseURL, method, path string, authHeade
 	}
 	return nil
 }
+
+// doWithBody is do's sibling for the one call in this client that sends
+// a JSON request body (CreateRepoWebhook): every other endpoint is a
+// GET or a bodyless POST, which is why do itself deliberately has no
+// body parameter (see its own doc comment).
+func (c *Client) doWithBody(ctx context.Context, baseURL, method, path, authHeader string, body []byte) error {
+	req, err := http.NewRequestWithContext(ctx, method, baseURL+path, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("githubapp: build request: %w", err)
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("X-GitHub-Api-Version", apiVersion)
+	req.Header.Set("Content-Type", "application/json")
+	if authHeader != "" {
+		req.Header.Set("Authorization", authHeader)
+	}
+
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return fmt.Errorf("githubapp: request %s %s: %w", method, path, err)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		snippet, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySnippet))
+		apiErr := &apiError{StatusCode: resp.StatusCode, Body: string(snippet)}
+		if resp.StatusCode == http.StatusForbidden {
+			return fmt.Errorf("%w: %w", ErrPermissionDenied, apiErr)
+		}
+		return apiErr
+	}
+	return nil
+}
+
+// ErrPermissionDenied wraps the API error GitHub returns for a request
+// the installation's granted permissions don't allow, e.g.
+// CreateRepoWebhook on an installation that predates the App requesting
+// "Repository hooks: write" (manifest.go's own doc comment). GitHub
+// signals this with 403 Forbidden, not a distinct error code; callers
+// check errors.Is(err, ErrPermissionDenied) rather than a status code.
+var ErrPermissionDenied = errors.New("githubapp: permission denied by github")
 
 func (c *Client) baseURL() string {
 	if c.BaseURL != "" {
@@ -355,6 +400,26 @@ func (c *Client) ListInstallationRepos(ctx context.Context, instanceURL, token s
 	return out, nil
 }
 
+// GetRepo looks up a single repository by owner/repo, authenticated
+// with an installation access token the same way ListInstallationRepos
+// is.
+func (c *Client) GetRepo(ctx context.Context, instanceURL, token, owner, repo string) (Repo, error) {
+	var resp repoResponse
+	baseURL := c.APIBaseURL(instanceURL)
+	path := fmt.Sprintf("/repos/%s/%s", url.PathEscape(owner), url.PathEscape(repo))
+	if err := c.do(ctx, baseURL, http.MethodGet, path, bearerPrefix+token, &resp); err != nil {
+		return Repo{}, err
+	}
+	return Repo{
+		FullName:      resp.FullName,
+		Name:          resp.Name,
+		OwnerLogin:    resp.Owner.Login,
+		Private:       resp.Private,
+		DefaultBranch: resp.DefaultBranch,
+		HTMLURL:       resp.HTMLURL,
+	}, nil
+}
+
 // Branch is one branch of one repository.
 type Branch struct {
 	Name      string
@@ -388,4 +453,42 @@ func (c *Client) ListBranches(ctx context.Context, instanceURL, token, owner, re
 		}
 	}
 	return out, nil
+}
+
+type createRepoHookConfig struct {
+	URL         string `json:"url"`
+	ContentType string `json:"content_type"`
+	Secret      string `json:"secret"`
+}
+
+type createRepoHookRequest struct {
+	Name   string               `json:"name"`
+	Active bool                 `json:"active"`
+	Events []string             `json:"events"`
+	Config createRepoHookConfig `json:"config"`
+}
+
+// CreateRepoWebhook registers a push webhook on owner/repo pointed at
+// hookURL, authenticated with an installation access token. Distinct
+// from the App's own hook_attributes (see this package's own doc
+// comment): that's a single, App-wide webhook GitHub never delivers to
+// (Active: false); this is a real, per-repo classic webhook, the same
+// mechanism GitLab's and Bitbucket's own CreateProjectWebhook/
+// CreateRepoWebhook use. Requires "Repository hooks: write"
+// (manifest.go's DefaultManifestConfig); on an installation that
+// predates that permission, GitHub rejects this with 403
+// (ErrPermissionDenied), which callers should degrade around rather
+// than treat as fatal.
+func (c *Client) CreateRepoWebhook(ctx context.Context, instanceURL, token, owner, repo, hookURL, secret string) error {
+	body, err := json.Marshal(createRepoHookRequest{ //nolint:gosec // secret is sent to GitHub to configure delivery signing, not a leaked credential
+		Name:   "web",
+		Active: true,
+		Events: []string{"push"},
+		Config: createRepoHookConfig{URL: hookURL, ContentType: "json", Secret: secret},
+	})
+	if err != nil {
+		return fmt.Errorf("githubapp: marshal webhook request: %w", err)
+	}
+	path := fmt.Sprintf("/repos/%s/%s/hooks", url.PathEscape(owner), url.PathEscape(repo))
+	return c.doWithBody(ctx, c.APIBaseURL(instanceURL), http.MethodPost, path, bearerPrefix+token, body)
 }

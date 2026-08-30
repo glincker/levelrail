@@ -67,6 +67,49 @@ func (rt *Router) handleListGitLabAppProjects(w http.ResponseWriter, r *http.Req
 	writeJSON(w, http.StatusOK, out)
 }
 
+// gitLabAppBranchResource is one entry of
+// GET /api/v1/gitlab-app/projects/{id}/branches.
+type gitLabAppBranchResource struct {
+	Name      string `json:"name"`
+	CommitSHA string `json:"commit_sha"`
+}
+
+// handleListGitLabAppBranches handles
+// GET /api/v1/gitlab-app/projects/{id}/branches, the same
+// AbilityReadSensitive tier and reasoning as handleListGitLabAppProjects.
+func (rt *Router) handleListGitLabAppBranches(w http.ResponseWriter, r *http.Request) {
+	if rt.gitlabAppSecrets == nil {
+		writeError(w, http.StatusNotImplemented, "the gitlab app connection requires a master key to be configured on this control plane")
+		return
+	}
+
+	projectID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || projectID <= 0 {
+		writeError(w, http.StatusBadRequest, "id must be a positive integer")
+		return
+	}
+
+	ctx := r.Context()
+	conn, accessToken, err := rt.gitlabAccessToken(ctx)
+	if err != nil {
+		rt.writeGitLabAppTokenError(w, "api: mint gitlab access token for branch listing failed", err)
+		return
+	}
+
+	branches, err := rt.gitlabAppClient.ListBranches(ctx, conn.InstanceURL, accessToken, projectID)
+	if err != nil {
+		rt.logger.Error("api: list gitlab project branches failed", slog.String("error", err.Error()), slog.Int64("project_id", projectID))
+		writeError(w, http.StatusBadGateway, "failed to list branches from gitlab")
+		return
+	}
+
+	out := make([]gitLabAppBranchResource, 0, len(branches))
+	for _, b := range branches {
+		out = append(out, gitLabAppBranchResource{Name: b.Name, CommitSHA: b.CommitSHA})
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
 // useGitLabProjectAsSourceRequest is
 // POST /api/v1/gitlab-app/projects/{id}/use-as-source's body: which app
 // this project becomes the connected git source for, plus the same

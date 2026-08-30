@@ -15,19 +15,13 @@ import {
 } from '@/components/ui/select'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import {
-  useGitHubAppBranches,
-  useGitHubAppRepos,
-  useGitHubAppStatus,
-} from '../queries/githubApp'
-import { useGitLabAppProjects, useGitLabAppStatus } from '../queries/gitlabApp'
-import {
-  useBitbucketAppBranches,
-  useBitbucketAppRepos,
-  useBitbucketAppStatus,
-} from '../queries/bitbucketApp'
+import { useGitHubAppBranches, useGitHubAppRepos } from '../queries/githubApp'
+import { useGitLabAppBranches, useGitLabAppProjects } from '../queries/gitlabApp'
+import { useBitbucketAppBranches, useBitbucketAppRepos } from '../queries/bitbucketApp'
+import { useGitProviders } from '../queries/gitProviders'
 import type { GitLabAppProject } from '../types/gitlabApp'
 import type { BitbucketAppRepo } from '../types/bitbucketApp'
+import type { GitProviderStatus } from '../types/gitProviders'
 
 // GitRepoSourcePicker is the shared "step 1" of both CreateAppFromGitFields
 // (this PR) and, per the connect-UX unification proposal's PR 3, a future
@@ -39,21 +33,26 @@ import type { BitbucketAppRepo } from '../types/bitbucketApp'
 // (no continuous deployment), and the GitLab/Bitbucket settings-page paths
 // never triggered a first build (nothing running until a manual push).
 //
-// GitLab has no branch-listing API yet (proposal section 3), so its row is
-// a free-text branch field prefilled with the project's default_branch
-// rather than a select; GitHub and Bitbucket both support branch listing
-// and get a real Select. Adding GitLab branch listing is explicitly out of
-// scope here (proposal PR 2).
+// Connection status and per-provider capability (branch listing, webhook
+// registration) come from one aggregated GET /api/v1/git-providers call
+// (useGitProviders) rather than three separate per-provider status
+// queries: see that hook's own doc comment for why. Each row reads its
+// own can_list_branches flag to decide whether to render a branch Select
+// or a free-text fallback, rather than hardcoding "GitLab doesn't have
+// this": proposal section 3's own closing point, now that piece 1 (GitLab
+// ListBranches) has closed that gap, is that the flag stays the source of
+// truth going forward instead of a per-provider assumption baked into the
+// component.
 export type GitRepoSourceProvider = 'github' | 'gitlab' | 'bitbucket' | 'manual'
 
-// providerRef carries what the gitlab/bitbucket "use as source" endpoints
-// need beyond a plain clone URL (a numeric project id, or a workspace +
-// repo slug pair): see connectGitLabProjectAsSource/
-// connectBitbucketRepoAsSource in queries/gitlabApp.ts and
-// queries/bitbucketApp.ts. GitHub and manual picks have no such endpoint to
-// call yet (proposal section 3: GitHub's own use-as-source route doesn't
-// exist), so both degrade to the generic PUT .../git-source call instead,
-// which needs nothing beyond repoUrl/branch/token.
+// providerRef carries what each provider's "use as source" endpoint needs
+// beyond a plain clone URL: GitHub's owner+repo pair
+// (connectGitHubRepoAsSource, queries/githubApp.ts), GitLab's numeric
+// project id (connectGitLabProjectAsSource, queries/gitlabApp.ts), or
+// Bitbucket's workspace+repo slug pair (connectBitbucketRepoAsSource,
+// queries/bitbucketApp.ts). Manual picks have no such endpoint: they
+// degrade to the generic PUT .../git-source call, which needs nothing
+// beyond repoUrl/branch/token.
 export interface GitRepoSourceValue {
   provider: GitRepoSourceProvider
   repoUrl: string
@@ -63,8 +62,26 @@ export interface GitRepoSourceValue {
    *  connection itself, not a caller-supplied token. */
   token?: string
   providerRef?:
+    | { kind: 'github'; owner: string; repo: string }
     | { kind: 'gitlab'; projectId: number }
     | { kind: 'bitbucket'; workspace: string; repoSlug: string }
+}
+
+// findProvider looks up one provider's aggregated status by name,
+// defaulting to "not connected, no capabilities" if the backend response
+// somehow omits it: every row already guards its "connected" UI on this
+// value, so a missing entry degrades to the same not-connected empty
+// state a real disconnected provider gets, never a crash.
+function findProvider(providers: GitProviderStatus[], name: GitProviderStatus['provider']): GitProviderStatus {
+  return (
+    providers.find((p) => p.provider === name) ?? {
+      provider: name,
+      connected: false,
+      can_list_branches: false,
+      can_register_webhook: false,
+      can_auth_clone: false,
+    }
+  )
 }
 
 function ProviderStatusRow({
@@ -98,21 +115,19 @@ function ProviderStatusRow({
 }
 
 function GitHubProviderRow({
+  provider,
   disabled,
   onSelect,
 }: {
+  provider: GitProviderStatus
   disabled?: boolean
   onSelect: (value: GitRepoSourceValue) => void
 }) {
-  const { data: status } = useGitHubAppStatus()
-  const enabled = status.connected && status.installed
+  const enabled = provider.connected
   const repos = useGitHubAppRepos(enabled)
   const [selectedRepo, setSelectedRepo] = useState('')
-  const branches = useGitHubAppBranches(
-    selectedRepo.split('/')[0] ?? '',
-    selectedRepo.split('/')[1] ?? '',
-    selectedRepo !== '',
-  )
+  const [owner, repoName] = selectedRepo ? selectedRepo.split('/') : ['', '']
+  const branches = useGitHubAppBranches(owner ?? '', repoName ?? '', selectedRepo !== '')
 
   const repoByFullName = useMemo(() => {
     const map = new Map<string, { cloneUrl: string; defaultBranch: string }>()
@@ -172,8 +187,13 @@ function GitHubProviderRow({
                 onValueChange={(ref) => {
                   if (typeof ref !== 'string') return
                   const repo = repoByFullName.get(selectedRepo)
-                  if (repo) {
-                    onSelect({ provider: 'github', repoUrl: repo.cloneUrl, branch: ref })
+                  if (repo && owner && repoName) {
+                    onSelect({
+                      provider: 'github',
+                      repoUrl: repo.cloneUrl,
+                      branch: ref,
+                      providerRef: { kind: 'github', owner, repo: repoName },
+                    })
                   }
                 }}
                 disabled={disabled}
@@ -203,17 +223,22 @@ function GitHubProviderRow({
 }
 
 function GitLabProviderRow({
+  provider,
   disabled,
   onSelect,
 }: {
+  provider: GitProviderStatus
   disabled?: boolean
   onSelect: (value: GitRepoSourceValue) => void
 }) {
-  const { data: status } = useGitLabAppStatus()
-  const enabled = status.connected && status.authorized
+  const enabled = provider.connected
   const projects = useGitLabAppProjects(enabled)
   const [selectedProject, setSelectedProject] = useState<GitLabAppProject | null>(null)
   const [branch, setBranch] = useState('')
+  const branches = useGitLabAppBranches(
+    selectedProject?.id ?? 0,
+    provider.can_list_branches && selectedProject !== null,
+  )
 
   function selectProject(project: GitLabAppProject) {
     setSelectedProject(project)
@@ -266,7 +291,41 @@ function GitLabProviderRow({
             ) : null}
           </Field>
 
-          {selectedProject ? (
+          {selectedProject && provider.can_list_branches ? (
+            <Field>
+              <FieldLabel htmlFor="git-picker-gitlab-branch">Branch</FieldLabel>
+              <Select
+                onValueChange={(ref) => {
+                  if (typeof ref !== 'string') return
+                  onSelect({
+                    provider: 'gitlab',
+                    repoUrl: selectedProject.clone_url,
+                    branch: ref,
+                    providerRef: { kind: 'gitlab', projectId: selectedProject.id },
+                  })
+                }}
+                disabled={disabled}
+              >
+                <SelectTrigger id="git-picker-gitlab-branch" className="w-full">
+                  <SelectValue
+                    placeholder={branches.isLoading ? 'Loading branches...' : 'Select a branch'}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {(branches.data ?? []).map((b) => (
+                    <SelectItem key={b.name} value={b.name}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {branches.isError ? (
+                <p className="text-sm text-destructive">{branches.error.message}</p>
+              ) : null}
+            </Field>
+          ) : null}
+
+          {selectedProject && !provider.can_list_branches ? (
             <Field>
               <FieldLabel htmlFor="git-picker-gitlab-branch">Branch</FieldLabel>
               <Input
@@ -290,8 +349,8 @@ function GitLabProviderRow({
                 }}
               />
               <p className="text-xs text-muted-foreground">
-                GitLab has no branch-listing API here yet, so this is a text field
-                prefilled with the project&apos;s default branch.
+                This GitLab connection doesn&apos;t support branch listing, so this is a
+                text field prefilled with the project&apos;s default branch.
               </p>
             </Field>
           ) : null}
@@ -302,14 +361,15 @@ function GitLabProviderRow({
 }
 
 function BitbucketProviderRow({
+  provider,
   disabled,
   onSelect,
 }: {
+  provider: GitProviderStatus
   disabled?: boolean
   onSelect: (value: GitRepoSourceValue) => void
 }) {
-  const { data: status } = useBitbucketAppStatus()
-  const enabled = status.connected && status.authorized
+  const enabled = provider.connected
   const repos = useBitbucketAppRepos(enabled)
   const [selectedRepo, setSelectedRepo] = useState('')
   const [workspace, repoSlug] = selectedRepo ? selectedRepo.split('/') : ['', '']
@@ -513,6 +573,10 @@ export function GitRepoSourcePicker({
   onSelect: (value: GitRepoSourceValue) => void
 }) {
   const [selected, setSelected] = useState<GitRepoSourceValue | null>(null)
+  const { data: providers } = useGitProviders()
+  const github = findProvider(providers, 'github')
+  const gitlab = findProvider(providers, 'gitlab')
+  const bitbucket = findProvider(providers, 'bitbucket')
 
   function handleSelect(value: GitRepoSourceValue) {
     setSelected(value)
@@ -522,11 +586,11 @@ export function GitRepoSourcePicker({
   return (
     <div className="space-y-3">
       <div className="space-y-4 rounded-lg border border-dashed border-border p-3">
-        <GitHubProviderRow disabled={disabled} onSelect={handleSelect} />
+        <GitHubProviderRow provider={github} disabled={disabled} onSelect={handleSelect} />
         <div className="border-t border-border" />
-        <GitLabProviderRow disabled={disabled} onSelect={handleSelect} />
+        <GitLabProviderRow provider={gitlab} disabled={disabled} onSelect={handleSelect} />
         <div className="border-t border-border" />
-        <BitbucketProviderRow disabled={disabled} onSelect={handleSelect} />
+        <BitbucketProviderRow provider={bitbucket} disabled={disabled} onSelect={handleSelect} />
         <div className="border-t border-border pt-2">
           <ManualSourceRow disabled={disabled} onSelect={handleSelect} />
         </div>
