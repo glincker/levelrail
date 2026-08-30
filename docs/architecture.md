@@ -84,8 +84,11 @@ in the database (`internal/ingress/certstorage.go` implements
 `certmagic.Storage` over `internal/store`) so certs are shared across
 nodes rather than pinned to whichever machine issued them.
 
-One real, open gap: certificates today come from an internal, self-signed
-issuer. Public ACME issuance against a live domain is not wired up yet.
+TLS today defaults to an internal, self-signed issuer. A real Caddy ACME
+issuer, a settings toggle, and form validation are built and wired end to
+end; the one open gap is that issuance has only been unit-tested at the
+config level, not yet spot-checked against a real domain issuing a real
+cert.
 
 ## State
 
