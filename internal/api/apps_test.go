@@ -712,59 +712,62 @@ func TestHandleUpdateApp(t *testing.T) {
 func TestHandleUpdateApp_ResourcesAppliedLive(t *testing.T) {
 	const update = `{"name":"web","image":"levelrail/web:1","port":3000,"resources":{"memory_bytes":268435456}}`
 
-	t.Run("running container", func(t *testing.T) {
+	newRunningRouter := func(t *testing.T) (*Router, *store.DB, *fakeExecAppRuntime) {
+		t.Helper()
 		fake := &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "c1", Running: true}}
 		rt, db := newTestRouterWithExecRuntime(t, fake)
-		cookie := loginTestSession(t, rt, db)
-		if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-			t.Fatalf("seed: %v", err)
-		}
-
-		rec := httptest.NewRecorder()
-		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", update))
-		if rec.Code != http.StatusOK {
-			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
-		}
-		var resp appResource
-		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
-			t.Fatalf("decode response: %v", err)
-		}
-		if !resp.ResourcesAppliedLive {
-			t.Error("resources_applied_live = false, want true: a running container should get the update immediately")
-		}
-		if fake.updateResourcesCalls != 1 || fake.updateResourcesID != "c1" {
-			t.Errorf("updateResourcesCalls=%d updateResourcesID=%q, want 1/c1", fake.updateResourcesCalls, fake.updateResourcesID)
-		}
-	})
-
-	t.Run("no running container", func(t *testing.T) {
+		return rt, db, fake
+	}
+	newIdleRouter := func(t *testing.T) (*Router, *store.DB, *fakeExecAppRuntime) {
+		t.Helper()
 		rt, db := newTestRouter(t) // no WithExecRuntime configured
-		cookie := loginTestSession(t, rt, db)
-		if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-			t.Fatalf("seed: %v", err)
-		}
+		return rt, db, nil
+	}
 
-		rec := httptest.NewRecorder()
-		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", update))
-		if rec.Code != http.StatusOK {
-			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
-		}
-		var resp appResource
-		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
-			t.Fatalf("decode response: %v", err)
-		}
-		if resp.ResourcesAppliedLive {
-			t.Error("resources_applied_live = true with no runtime resolver configured, want false")
-		}
+	tests := []struct {
+		name        string
+		newRouter   func(t *testing.T) (*Router, *store.DB, *fakeExecAppRuntime)
+		wantApplied bool
+	}{
+		{name: "running container", newRouter: newRunningRouter, wantApplied: true},
+		{name: "no running container", newRouter: newIdleRouter, wantApplied: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, db, fake := tt.newRouter(t)
+			cookie := loginTestSession(t, rt, db)
+			if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+				t.Fatalf("seed: %v", err)
+			}
 
-		svc, err := db.GetDesiredService(context.Background(), "web")
-		if err != nil {
-			t.Fatalf("GetDesiredService after update: %v", err)
-		}
-		if svc.Resources == nil || svc.Resources.MemoryBytes != 268435456 {
-			t.Errorf("saved resources = %+v, want MemoryBytes 268435456", svc.Resources)
-		}
-	})
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", update))
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+			}
+			var resp appResource
+			if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+				t.Fatalf("decode response: %v", err)
+			}
+			if resp.ResourcesAppliedLive != tt.wantApplied {
+				t.Errorf("resources_applied_live = %v, want %v", resp.ResourcesAppliedLive, tt.wantApplied)
+			}
+
+			// Saving must succeed either way: a live-apply miss only
+			// means the value takes effect on the next deploy/restart
+			// instead of immediately, never a save failure.
+			svc, err := db.GetDesiredService(context.Background(), "web")
+			if err != nil {
+				t.Fatalf("GetDesiredService after update: %v", err)
+			}
+			if svc.Resources == nil || svc.Resources.MemoryBytes != 268435456 {
+				t.Errorf("saved resources = %+v, want MemoryBytes 268435456", svc.Resources)
+			}
+			if tt.wantApplied && (fake.updateResourcesCalls != 1 || fake.updateResourcesID != "c1") {
+				t.Errorf("updateResourcesCalls=%d updateResourcesID=%q, want 1/c1", fake.updateResourcesCalls, fake.updateResourcesID)
+			}
+		})
+	}
 }
 
 func TestHandleDeleteApp(t *testing.T) {
