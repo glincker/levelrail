@@ -57,9 +57,18 @@ are still open. This page describes what's actually true today.
   live domain (see In progress).
 - Envelope encryption for secrets, with env injection at
   container-create time.
-- Managed Redis as a first-class, volume-backed resource. Managed
-  Postgres also exists (see In progress for scope caveats).
+- Managed Redis as a first-class, volume-backed resource.
 - MySQL as a third database engine, via a dynamic engine registry.
+- Managed Postgres at full parity with Redis and MySQL, audited
+  feature-by-feature: resource limits, public-access toggle with host
+  port exposure, scheduled/cron backups with retention, backup and
+  restore (`pg_dump`/`psql`, live-verified), log search and live SSE
+  log tail, metrics, generated credentials via envelope encryption,
+  volume persistence across container replacement, node placement, and
+  the dashboard/CLI surfaces for all of the above. Every capability is
+  implemented generically across the engine registry rather than
+  per-engine, so this was never a partial build, only an unverified
+  claim.
 - HTTP API for app CRUD and deploy trigger/history, with real
   multi-user session auth (see Dashboard and auth, below).
 - Frontend app list and detail views, with a live build-log viewer and
@@ -201,10 +210,6 @@ are still open. This page describes what's actually true today.
 
 ## In progress
 
-- **Managed Postgres.** Further along than earlier notes suggested: the
-  reconciler is wired to secrets management and backups are
-  live-verified, but full parity with Redis and MySQL hasn't been
-  confirmed.
 - **Dashboard "rich interactions" phase.** Command palette and a
   settings sub-nav have shipped (see Done); richer empty/loading
   states and broader keyboard navigation are the remaining, still
