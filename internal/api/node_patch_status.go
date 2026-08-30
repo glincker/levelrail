@@ -16,6 +16,8 @@ import (
 // without losing the last real reading.
 const osPatchLookback = 48 * time.Hour
 
+const errInternal = "internal error"
+
 // nodePatchStatusResponse is GET /api/v1/nodes/{id}/patch-status's wire
 // shape. Checked distinguishes "never checked" (no sample yet: unknown
 // package manager, or the collector hasn't run) from Total == 0 (checked,
@@ -44,7 +46,7 @@ func (rt *Router) handleGetNodePatchStatus(w http.ResponseWriter, r *http.Reques
 		return
 	} else if err != nil {
 		rt.logger.Error("api: get node patch status: look up node failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, errInternal)
 		return
 	}
 
@@ -54,7 +56,7 @@ func (rt *Router) handleGetNodePatchStatus(w http.ResponseWriter, r *http.Reques
 	total, err := rt.telemetry.QueryMetrics(r.Context(), nodeResourceID(id), telemetry.MetricOSPatchesAvailable, from, now)
 	if err != nil {
 		rt.logger.Error("api: get node patch status: query total failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, errInternal)
 		return
 	}
 	if len(total) == 0 {
@@ -65,7 +67,7 @@ func (rt *Router) handleGetNodePatchStatus(w http.ResponseWriter, r *http.Reques
 	security, err := rt.telemetry.QueryMetrics(r.Context(), nodeResourceID(id), telemetry.MetricOSSecurityPatchesAvailable, from, now)
 	if err != nil {
 		rt.logger.Error("api: get node patch status: query security failed", slog.String("error", err.Error()), slog.String("node_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, errInternal)
 		return
 	}
 

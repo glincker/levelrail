@@ -6,9 +6,40 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon } from '@phosphor-icons/react'
 import { useNodePatchStatus } from '../queries/nodes'
+import type { NodePatchStatusResource } from '../types/nodeDetail'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import type { VariantProps } from 'class-variance-authority'
+
+type PatchState = 'loading' | 'unknown' | 'up-to-date' | 'updates' | 'security'
+
+type PatchStatusConfig = {
+  icon: Icon
+  variant: VariantProps<typeof badgeVariants>['variant']
+  label: string
+}
+
+function resolvePatchState(
+  isPending: boolean,
+  isError: boolean,
+  data: NodePatchStatusResource | undefined
+): PatchState {
+  if (isPending) return 'loading'
+  if (isError || !data?.checked) return 'unknown'
+  if (data.total === 0) return 'up-to-date'
+  if (data.security > 0) return 'security'
+  return 'updates'
+}
+
+function updatesLabel(data: NodePatchStatusResource | undefined): string {
+  if (!data?.checked) return ''
+  return `${data.total} update${data.total === 1 ? '' : 's'} available`
+}
+
+function securityLabel(data: NodePatchStatusResource | undefined): string {
+  if (!data?.checked) return ''
+  return `${data.total} update${data.total === 1 ? '' : 's'} available, ${data.security} security`
+}
 
 // GET /api/v1/nodes/{id}/patch-status (internal/api/node_patch_status.go):
 // this node's latest available-OS-updates reading
@@ -17,56 +48,28 @@ import type { VariantProps } from 'class-variance-authority'
 // available, 1 security"), the same reasoning that handler's own doc
 // comment gives for reading the sample directly instead of through the
 // generic /metrics time-series query NodeMetricsDashboard uses.
-export function NodePatchStatusCard({ nodeId }: { nodeId: string }) {
-  const { data, isPending, isError } = useNodePatchStatus(nodeId)
-
-  const state = isPending
-    ? 'loading'
-    : isError || !data.checked
-      ? 'unknown'
-      : data.total === 0
-        ? 'up-to-date'
-        : data.security > 0
-          ? 'security'
-          : 'updates'
-
-  const config: Record<
-    typeof state,
-    {
-      icon: Icon
-      variant: VariantProps<typeof badgeVariants>['variant']
-      label: string
-    }
-  > = {
-    loading: { icon: QuestionIcon, variant: 'muted', label: 'Checking...' },
-    unknown: {
-      icon: QuestionIcon,
-      variant: 'muted',
-      label: 'Unknown, not checked',
-    },
-    'up-to-date': {
-      icon: CheckCircleIcon,
-      variant: 'success',
-      label: 'Up to date',
-    },
-    updates: {
-      icon: WarningIcon,
-      variant: 'warning',
-      label:
-        data && data.checked
-          ? `${data.total} update${data.total === 1 ? '' : 's'} available`
-          : '',
-    },
-    security: {
-      icon: WarningCircleIcon,
-      variant: 'destructive',
-      label:
-        data && data.checked
-          ? `${data.total} update${data.total === 1 ? '' : 's'} available, ${data.security} security`
-          : '',
-    },
+function patchStatusConfig(
+  state: PatchState,
+  data: NodePatchStatusResource | undefined
+): PatchStatusConfig {
+  switch (state) {
+    case 'loading':
+      return { icon: QuestionIcon, variant: 'muted', label: 'Checking...' }
+    case 'unknown':
+      return { icon: QuestionIcon, variant: 'muted', label: 'Unknown, not checked' }
+    case 'up-to-date':
+      return { icon: CheckCircleIcon, variant: 'success', label: 'Up to date' }
+    case 'security':
+      return { icon: WarningCircleIcon, variant: 'destructive', label: securityLabel(data) }
+    default:
+      return { icon: WarningIcon, variant: 'warning', label: updatesLabel(data) }
   }
-  const { icon: StatusIcon, variant, label } = config[state]
+}
+
+export function NodePatchStatusCard({ nodeId }: Readonly<{ nodeId: string }>) {
+  const { data, isPending, isError } = useNodePatchStatus(nodeId)
+  const state = resolvePatchState(isPending, isError, data)
+  const { icon: StatusIcon, variant, label } = patchStatusConfig(state, data)
 
   return (
     <Card>

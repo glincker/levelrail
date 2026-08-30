@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -140,31 +141,7 @@ func (rt *Router) handleQueryNodeMetrics(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var all []telemetry.Sample
-	resourceCount := 0
-	var queryErrCount int
-	for _, svc := range services {
-		samples, err := rt.telemetry.QueryMetrics(r.Context(), resourceIDForApp(svc.Name), metric, from, to)
-		if err != nil {
-			queryErrCount++
-		}
-		if len(samples) > 0 {
-			resourceCount++
-			all = append(all, samples...)
-		}
-	}
-	// A federated query per service can partially fail the same way a
-	// single app's own query can (ADR 008); with no per-service error
-	// detail worth surfacing to the caller here (ResourceCount already
-	// tells the frontend how many services actually contributed), this
-	// is a warning log only, not a request failure, unless nothing came
-	// back at all, at which point returning an empty, valid series is
-	// still correct: a node with no placed services (or none reporting
-	// in range) is a real, non-error state (Query's own doc comment).
-	if queryErrCount > 0 {
-		rt.logger.Warn("api: query node metrics: partial result",
-			slog.String("node_id", id), slog.String("metric", metric), slog.Int("failed_services", queryErrCount))
-	}
+	all, resourceCount := rt.queryPlacedServiceSamples(r.Context(), id, metric, services, from, to)
 
 	summed := telemetry.SumAcrossResources(nodeResourceID(id), metric, all)
 	aggregated := telemetry.Aggregate(summed, from, step)
@@ -174,6 +151,34 @@ func (rt *Router) handleQueryNodeMetrics(w http.ResponseWriter, r *http.Request)
 	}
 
 	writeJSON(w, http.StatusOK, nodeMetricsResponse{Metric: metric, Points: points, ResourceCount: resourceCount})
+}
+
+// queryPlacedServiceSamples fans metric out across every service placed on
+// this node and concatenates the results. A federated query per service can
+// partially fail the same way a single app's own query can (ADR 008); with
+// no per-service error detail worth surfacing to the caller (the returned
+// resourceCount already tells the frontend how many services contributed),
+// a partial failure is logged as a warning here rather than returned as an
+// error.
+func (rt *Router) queryPlacedServiceSamples(ctx context.Context, nodeID, metric string, services []store.DesiredService, from, to time.Time) ([]telemetry.Sample, int) {
+	var all []telemetry.Sample
+	resourceCount := 0
+	var queryErrCount int
+	for _, svc := range services {
+		samples, err := rt.telemetry.QueryMetrics(ctx, resourceIDForApp(svc.Name), metric, from, to)
+		if err != nil {
+			queryErrCount++
+		}
+		if len(samples) > 0 {
+			resourceCount++
+			all = append(all, samples...)
+		}
+	}
+	if queryErrCount > 0 {
+		rt.logger.Warn("api: query node metrics: partial result",
+			slog.String("node_id", nodeID), slog.String("metric", metric), slog.Int("failed_services", queryErrCount))
+	}
+	return all, resourceCount
 }
 
 // writeNodeHostMetric answers a nodeHostMetrics query: unlike the sum-
