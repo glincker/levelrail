@@ -84,8 +84,11 @@ in the database (`internal/ingress/certstorage.go` implements
 `certmagic.Storage` over `internal/store`) so certs are shared across
 nodes rather than pinned to whichever machine issued them.
 
-One real, open gap: certificates today come from an internal, self-signed
-issuer. Public ACME issuance against a live domain is not wired up yet.
+TLS today defaults to an internal, self-signed issuer. A real Caddy ACME
+issuer, a settings toggle, and form validation are built and wired end to
+end; the one open gap is that issuance has only been unit-tested at the
+config level, not yet spot-checked against a real domain issuing a real
+cert.
 
 ## State
 
@@ -145,16 +148,20 @@ extra client-side plumbing.
 
 ## What's still ahead of the code
 
-A few pieces described in the platform's design are not built yet, worth
-naming plainly rather than leaving implicit:
+A few pieces described in the platform's design aren't finished yet,
+worth naming plainly rather than leaving implicit:
 
-- Public ACME certificate issuance (ingress currently uses an internal,
-  self-signed issuer).
-- Multi-service apps: every app today is exactly one container; the
-  app-spec schema allows multiple services per app, but the deploy path
-  only ever drives one.
-- Teams, RBAC, and an audit log: there's a single admin user today, API
-  tokens carry fixed scopes rather than per-user permissions, and no
-  audit log exists anywhere in the codebase.
-- An install/upgrade path for Levelrail itself (packaging, a systemd
-  unit, a documented upgrade script).
+- Public ACME certificate issuance, verified against a live domain.
+  Ingress defaults to an internal, self-signed issuer; a real Caddy
+  ACME issuer, settings toggle, and form validation are built and
+  wired end to end, but only unit-tested at the config level so far.
+- Multi-service apps, fully unified. The app-spec schema's `services`
+  map genuinely fans out into independent per-service builds/deploys
+  (backend and frontend both real), but webhook-triggered auto-deploy
+  for a multi-service app still goes through a separate, simpler
+  mechanism (a flat list of sibling services rebuilt independently on
+  push) rather than that same fan-out; the two paths aren't unified.
+- Named roles. Teams aren't a hard gap: multi-user accounts, per-user
+  scoped abilities, and a full audit log are all real. What's missing
+  is a curated small role set (e.g. "operator"/"viewer") as a
+  convenience layer over hand-picking an ability list per user.
