@@ -57,20 +57,10 @@ func runAppsSecretsList(prog string, args []string, stdout, stderr io.Writer, lo
 		fs.PrintDefaults()
 	}
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
-	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
-
-	name, ok := requireOneArg(fs, stderr, prog, "apps secrets list", "app name")
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, tokenFlagP, apiURLFlagP, jsonOutP, stderr, prog, "apps secrets list", lookupEnv)
 	if !ok {
-		return exitUsage
+		return exitCode
 	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 
 	keys, err := client.ListSecrets(context.Background(), name)
 	if err != nil {

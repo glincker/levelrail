@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 )
@@ -54,20 +53,10 @@ func runAppsGitSourceGet(prog string, args []string, stdout, stderr io.Writer, l
 		fs.PrintDefaults()
 	}
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
-	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
-
-	name, ok := requireOneArg(fs, stderr, prog, "apps git-source get", "app name")
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, tokenFlagP, apiURLFlagP, jsonOutP, stderr, prog, "apps git-source get", lookupEnv)
 	if !ok {
-		return exitUsage
+		return exitCode
 	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 
 	gs, err := client.GetGitSource(context.Background(), name)
 	if err != nil {
@@ -98,25 +87,15 @@ func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, l
 		fs.PrintDefaults()
 	}
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
-	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
-
-	name, ok := requireOneArg(fs, stderr, prog, "apps git-source set", "app name")
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, tokenFlagP, apiURLFlagP, jsonOutP, stderr, prog, "apps git-source set", lookupEnv)
 	if !ok {
-		return exitUsage
+		return exitCode
 	}
 	if repoURL == "" {
 		_, _ = fmt.Fprintf(stderr, "%s: apps git-source set requires --repo-url\n\n", prog)
 		fs.Usage()
 		return exitUsage
 	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 
 	gs, err := client.SetGitSource(context.Background(), name, setGitSourceRequest{
 		RepoURL:   repoURL,
@@ -147,20 +126,10 @@ func runAppsGitSourceDelete(prog string, args []string, stdout, stderr io.Writer
 		fs.PrintDefaults()
 	}
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
-	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
-
-	name, ok := requireOneArg(fs, stderr, prog, "apps git-source delete", "app name")
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, tokenFlagP, apiURLFlagP, jsonOutP, stderr, prog, "apps git-source delete", lookupEnv)
 	if !ok {
-		return exitUsage
+		return exitCode
 	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 
 	if err := client.DeleteGitSource(context.Background(), name); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete git source for app %q: %w", name, err))

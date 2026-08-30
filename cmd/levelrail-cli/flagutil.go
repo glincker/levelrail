@@ -78,6 +78,30 @@ func requireOneArg(fs *flag.FlagSet, stderr io.Writer, prog, cmdLabel, argLabel 
 	return rest[0], true
 }
 
+// parseSingleArgClient runs the parse-flags-then-require-one-arg-then-
+// build-client sequence every "verb <name> [flags]" subcommand needs
+// before its own request logic diverges (apps git-source get/set/delete,
+// apps secrets list, the identical shape apps_group.go/apps_log_drain.go
+// already established). ok is false once fs.Parse, --help, or the
+// missing-arg check has already written its own message to stderr; the
+// caller should return exitCode unchanged in that case.
+func parseSingleArgClient(fs *flag.FlagSet, args []string, tokenFlagP, apiURLFlagP *string, jsonOutP *bool, stderr io.Writer, prog, cmdLabel string, lookupEnv func(string) (string, bool)) (client *Client, name string, jsonOut bool, exitCode int, ok bool) {
+	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
+		if err == flag.ErrHelp {
+			return nil, "", false, exitOK, false
+		}
+		return nil, "", false, exitUsage, false
+	}
+	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+
+	name, ok = requireOneArg(fs, stderr, prog, cmdLabel, "app name")
+	if !ok {
+		return nil, "", false, exitUsage, false
+	}
+
+	return apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv), name, jsonOut, exitOK, true
+}
+
 // reorderArgsFlagsFirst rewrites args so every flag (and its value, if
 // it takes one) is moved before any positional argument, then hands
 // back a slice fs.Parse can consume normally.
