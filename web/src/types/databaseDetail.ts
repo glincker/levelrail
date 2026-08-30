@@ -11,7 +11,7 @@
 // create/edit affordance for it yet (no PUT /databases/{name}/node
 // route), so this type exists to display it, never to send it back.
 
-import type { ServiceResources } from './appDetail'
+import type { AppStatusSummary, ServiceResources } from './appDetail'
 export type { ServiceResources } from './appDetail'
 
 export type DatabaseEngine = 'postgres' | 'redis' | 'mysql'
@@ -53,4 +53,14 @@ export interface DatabaseResource {
   backup_schedule?: string
   backup_retain?: number
   backup_retain_days?: number
+}
+
+// GET /api/v1/databases' own wire shape (internal/api/databases.go's
+// databaseListResource): DatabaseResource plus a batched status summary
+// computed from one query across every listed database's conditions,
+// not present on the detail endpoint's DatabaseResource. Deliberately
+// its own type, mirroring AppListEntry's exact reasoning (appDetail.ts):
+// GET /api/v1/databases/{name} never sends `status`.
+export interface DatabaseListEntry extends DatabaseResource {
+  status: AppStatusSummary
 }
