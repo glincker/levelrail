@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
-import { useBackupTargets } from '../queries/backupTargets'
+import { useBackupTargetsOptional } from '../queries/backupTargets'
 import {
   useClearDatabaseBackupSchedule,
   useSetDatabaseBackupSchedule,
@@ -147,7 +147,7 @@ function toFieldValues(database: DatabaseResource): ScheduleFormValues {
 }
 
 export function BackupScheduleForm({ database }: { database: DatabaseResource }) {
-  const { data: targets } = useBackupTargets()
+  const targets = useBackupTargetsOptional().data ?? []
   const setSchedule = useSetDatabaseBackupSchedule()
   const clearSchedule = useClearDatabaseBackupSchedule()
   const { control, register, handleSubmit, watch, formState } =

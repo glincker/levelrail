@@ -6,6 +6,7 @@ import { toast } from '@/components/ui/toast'
 import { GitLabAppConnectionCard } from '../../components/GitLabAppConnectionCard'
 import { GitLabAppProjectsCard } from '../../components/GitLabAppProjectsCard'
 import { gitlabAppStatusQueryOptions } from '../../queries/gitlabApp'
+import { PageSpinner } from '@/components/ui/page-spinner'
 
 // Account-level, mirroring routes/settings/github-app.tsx's own
 // structure and placement.
@@ -13,6 +14,7 @@ export const Route = createFileRoute('/settings/gitlab-app')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(gitlabAppStatusQueryOptions()),
   component: GitLabAppSettingsPage,
+  pendingComponent: PageSpinner,
 })
 
 function GitLabAppSettingsPage() {

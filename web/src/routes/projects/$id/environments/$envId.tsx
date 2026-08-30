@@ -16,7 +16,7 @@ import { appListQueryOptions } from '../../../../queries/apps'
 import { Breadcrumbs } from '../../../../components/Breadcrumbs'
 import { DeleteEnvironmentDialog } from '../../../../components/DeleteEnvironmentDialog'
 import { EnvironmentEnvEditor } from '../../../../components/EnvironmentEnvEditor'
-import { AppRow } from '../../../../components/AppRow'
+import { AppRow, RowSkeleton } from '../../../../components/AppRow'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
@@ -43,6 +43,7 @@ export const Route = createFileRoute('/projects/$id/environments/$envId')({
       queryClient.ensureQueryData(environmentEnvQueryOptions(envId)).catch(() => undefined),
     ]),
   component: EnvironmentDetailPage,
+  pendingComponent: EnvironmentDetailPending,
   errorComponent: EnvironmentDetailError,
 })
 
@@ -173,6 +174,23 @@ function EnvironmentDetailPage() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// Route-level fallback for the loader's pending phase: the environment's
+// own name isn't known yet, so this shows a generic title placeholder
+// above RowSkeleton rows for the tagged-apps list, mirroring
+// routes/organizations/$id.tsx's own pendingComponent shape.
+function EnvironmentDetailPending() {
+  return (
+    <div className="space-y-6">
+      <div className="h-6 w-48 animate-pulse rounded bg-muted" />
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
+        {Array.from({ length: 4 }, (_, i) => (
+          <RowSkeleton key={i} />
+        ))}
+      </div>
     </div>
   )
 }

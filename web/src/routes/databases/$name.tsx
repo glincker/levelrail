@@ -10,6 +10,7 @@ import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { DeleteDatabaseDialog } from '../../components/DeleteDatabaseDialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+import { PageSpinner } from '@/components/ui/page-spinner'
 
 // Database detail layout route, mirroring routes/apps/$name.tsx's own
 // split (the Databases fast-follow to that same treatment): this file
@@ -35,6 +36,7 @@ export const Route = createFileRoute('/databases/$name')({
       queryClient.ensureQueryData(databaseStatusQueryOptions(name)),
     ]),
   component: DatabaseDetailLayout,
+  pendingComponent: PageSpinner,
   errorComponent: DatabaseDetailError,
 })
 

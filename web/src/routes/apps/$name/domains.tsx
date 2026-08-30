@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
 import { certificatesQueryOptions } from '../../../queries/certificates'
 import { DomainEditor } from '../../../components/DomainEditor'
+import { PageSpinner } from '@/components/ui/page-spinner'
 
 // Former "domains" tab, now a real deep-linkable route. Reads app data
 // from the query cache the parent layout route's loader already primed;
@@ -10,6 +11,7 @@ export const Route = createFileRoute('/apps/$name/domains')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(certificatesQueryOptions()),
   component: DomainsSection,
+  pendingComponent: PageSpinner,
 })
 
 function DomainsSection() {

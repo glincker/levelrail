@@ -200,6 +200,17 @@ are still open. This page describes what's actually true today.
   fix on the log viewer's fullscreen toggle, `aria-current` on active
   sidebar navigation, an accessible text summary for the metrics
   chart's SVG, and a primary navigation landmark.
+- Dashboard "rich interactions" phase complete: the settings hub's
+  command-palette search and sub-nav (above), empty states across every
+  list view (apps, databases, deploy history, log search, and more)
+  replaced with an icon+message+CTA pattern instead of bare "no items"
+  text, keyboard navigation audited with no fixes needed (Base UI
+  primitives already handle it correctly), and loading states audited
+  across every route and data-fetching component: skeleton placeholders
+  shaped like the eventual list/table/card content, a centered spinner
+  for single-form or single-detail pages, and a progressive-rendering
+  fix on the database overview page so its already-loaded header and
+  status no longer wait on the Backups card's own secondary fetch.
 - Environment variable editing: a row-by-row table and a raw
   paste/format "developer view" for plain vars, both listing secret
   keys inline as write-only and lockable for visibility, with actual
@@ -223,10 +234,6 @@ are still open. This page describes what's actually true today.
 
 ## In progress
 
-- **Dashboard "rich interactions" phase.** Command palette and a
-  settings sub-nav have shipped (see Done); richer empty/loading
-  states and broader keyboard navigation are the remaining, still
-  undispatched part of this phase.
 - **Database backup-schedule UI.** Shipped (`BackupScheduleForm`,
   see Done); this line is kept only as a pointer in case a gap
   surfaces on real use.

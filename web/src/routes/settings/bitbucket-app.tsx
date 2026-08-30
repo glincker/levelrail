@@ -6,6 +6,7 @@ import { toast } from '@/components/ui/toast'
 import { BitbucketAppConnectionCard } from '../../components/BitbucketAppConnectionCard'
 import { BitbucketAppReposCard } from '../../components/BitbucketAppReposCard'
 import { bitbucketAppStatusQueryOptions } from '../../queries/bitbucketApp'
+import { PageSpinner } from '@/components/ui/page-spinner'
 
 // Account-level, mirroring routes/settings/gitlab-app.tsx's own
 // structure and placement.
@@ -13,6 +14,7 @@ export const Route = createFileRoute('/settings/bitbucket-app')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(bitbucketAppStatusQueryOptions()),
   component: BitbucketAppSettingsPage,
+  pendingComponent: PageSpinner,
 })
 
 function BitbucketAppSettingsPage() {

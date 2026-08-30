@@ -20,6 +20,7 @@ import {
   type ActivityEvent,
   type ActivityKind,
 } from '../queries/activity'
+import { ListSkeleton } from '@/components/ui/list-skeleton'
 
 // Global, always-visible entry point for the bounded activity feed
 // queries/activity.ts builds (see that module's own doc comment for
@@ -109,7 +110,9 @@ export function NotificationBell() {
           <PopoverTitle>Notifications</PopoverTitle>
         </PopoverHeader>
         {isLoading ? (
-          <p className="px-2 py-3 text-sm text-muted-foreground">Loading...</p>
+          <div className="px-2 py-3">
+            <ListSkeleton rows={3} />
+          </div>
         ) : hasEvents ? (
           <div className="flex flex-col">
             {events.map((event) => (

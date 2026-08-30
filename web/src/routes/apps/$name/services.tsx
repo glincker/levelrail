@@ -2,12 +2,14 @@ import { createFileRoute } from '@tanstack/react-router'
 import { appGroupQueryOptions } from '../../../queries/appGroup'
 import { AppServicesPanel } from '../../../components/AppServicesPanel'
 import { DeploySpecForm } from '../../../components/DeploySpecForm'
+import { PageSpinner } from '@/components/ui/page-spinner'
 
 // Safe to visit for a single-service app too, see AppServicesPanel's own comment.
 export const Route = createFileRoute('/apps/$name/services')({
   loader: ({ context: { queryClient }, params: { name } }) =>
     queryClient.ensureQueryData(appGroupQueryOptions(name)),
   component: ServicesSection,
+  pendingComponent: PageSpinner,
 })
 
 function ServicesSection() {

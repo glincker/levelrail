@@ -6,6 +6,7 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { LogSearchEmptyState } from './LogSearchEmptyState'
+import { Skeleton } from './ui/skeleton'
 import {
   DEFAULT_TIME_RANGE_KEY,
   TIME_RANGE_PRESETS,
@@ -21,6 +22,24 @@ import {
 
 const ROW_HEIGHT_PX = 22
 const SEARCH_DEBOUNCE_MS = 300
+
+// Log-line-shaped placeholder for the search's own in-flight window,
+// mirroring LogSearchPanel.tsx's own skeleton exactly (see this file's
+// header comment on why the two panels stay parallel duplicates).
+const SKELETON_ROW_WIDTHS = ['w-3/4', 'w-1/2', 'w-5/6', 'w-2/3', 'w-1/3']
+
+function LogSearchSkeleton() {
+  return (
+    <div
+      className="space-y-1.5 rounded-lg border border-neutral-800 bg-neutral-950 p-3"
+      aria-hidden="true"
+    >
+      {SKELETON_ROW_WIDTHS.map((width, i) => (
+        <Skeleton key={i} className={`h-3 ${width} bg-neutral-800`} />
+      ))}
+    </div>
+  )
+}
 
 export function DatabaseLogSearchPanel({
   databaseName,
@@ -138,9 +157,7 @@ export function DatabaseLogSearchPanel({
 
       <div className="mt-3">
         {isLoading ? (
-          <p className="px-1 py-2 text-sm text-muted-foreground">
-            Searching...
-          </p>
+          <LogSearchSkeleton />
         ) : error ? (
           <p className="px-1 py-2 text-sm text-destructive">{error.message}</p>
         ) : entries.length === 0 ? (

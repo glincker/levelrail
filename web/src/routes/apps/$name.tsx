@@ -19,6 +19,7 @@ import { StopStartAppButton } from '../../components/StopStartAppButton'
 import { ConvergenceIndicator } from '../../components/ConvergenceIndicator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+import { PageSpinner } from '@/components/ui/page-spinner'
 
 // Matches the 13 real section routes under /apps/$name/* (see
 // AppScopedSidebar.tsx's own nav, the source of truth for these labels):
@@ -69,6 +70,7 @@ export const Route = createFileRoute('/apps/$name')({
       queryClient.ensureQueryData(deployStatusQueryOptions(name)),
     ]),
   component: AppDetailLayout,
+  pendingComponent: PageSpinner,
   errorComponent: AppDetailError,
 })
 

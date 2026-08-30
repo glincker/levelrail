@@ -17,6 +17,7 @@ import {
   fetchAuditLog,
   type AuditLogEntry,
 } from '../../queries/auditLog'
+import { TableSkeleton } from '../../components/ui/table-skeleton'
 
 // AbilityRoot-gated (GET /api/v1/audit-log): who changed what, across
 // every session and API token. Same sensitivity tier as the node and
@@ -25,6 +26,7 @@ export const Route = createFileRoute('/settings/audit-log')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(auditLogQueryOptions()),
   component: AuditLogSettingsPage,
+  pendingComponent: AuditLogSettingsPending,
 })
 
 function formatDate(iso: string): string {
@@ -157,6 +159,18 @@ function AuditLogSettingsPage() {
           {loadingMore ? 'Loading...' : 'Load older entries'}
         </Button>
       ) : null}
+    </div>
+  )
+}
+
+// Route-level fallback for the loader's pending phase, matching this
+// page's own 6-column table shape so the skeleton doesn't jump when real
+// rows swap in.
+function AuditLogSettingsPending() {
+  return (
+    <div className="space-y-6">
+      <h1 className="text-lg font-semibold text-foreground">Audit log</h1>
+      <TableSkeleton columnCount={6} rowCount={8} />
     </div>
   )
 }

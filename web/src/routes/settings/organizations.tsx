@@ -3,6 +3,7 @@ import { BuildingsIcon } from '@phosphor-icons/react/dist/ssr'
 import { organizationListQueryOptions, useOrganizations } from '../../queries/organizations'
 import { OrganizationTable } from '../../components/OrganizationTable'
 import { CreateOrganizationDialog } from '../../components/CreateOrganizationDialog'
+import { TableSkeleton } from '../../components/ui/table-skeleton'
 
 // Account-level, mirroring routes/settings/notification-channels.tsx:
 // an organization groups projects, assigned from a project's own detail
@@ -12,6 +13,7 @@ export const Route = createFileRoute('/settings/organizations')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(organizationListQueryOptions()),
   component: OrganizationsPage,
+  pendingComponent: OrganizationsPending,
 })
 
 function OrganizationsPage() {
@@ -37,6 +39,20 @@ function OrganizationsPage() {
         <CreateOrganizationDialog />
       </div>
       <OrganizationTable organizations={organizations} />
+    </div>
+  )
+}
+
+// Route-level fallback for the loader's pending phase, matching
+// OrganizationTable's own 3-column shape so the skeleton doesn't jump
+// when real rows swap in.
+function OrganizationsPending() {
+  return (
+    <div className="space-y-6">
+      <h1 className="text-lg font-semibold text-foreground">
+        Organizations
+      </h1>
+      <TableSkeleton columnCount={3} />
     </div>
   )
 }

@@ -9,8 +9,14 @@ import { appListQueryOptions } from '../../../queries/apps'
 import { databaseListQueryOptions } from '../../../queries/databases'
 import { environmentListQueryOptions } from '../../../queries/environments'
 import { useOrganizationListOptional } from '../../../queries/organizations'
-import { AppRow } from '../../../components/AppRow'
-import { DatabaseRow } from '../../../components/DatabaseRow'
+import {
+  AppRow,
+  RowSkeleton as AppRowSkeleton,
+} from '../../../components/AppRow'
+import {
+  DatabaseRow,
+  RowSkeleton as DatabaseRowSkeleton,
+} from '../../../components/DatabaseRow'
 import { Breadcrumbs } from '../../../components/Breadcrumbs'
 import { DeleteProjectDialog } from '../../../components/DeleteProjectDialog'
 import { MoveToOrganizationDialog } from '../../../components/MoveToOrganizationDialog'
@@ -44,6 +50,7 @@ export const Route = createFileRoute('/projects/$id/')({
       queryClient.ensureQueryData(environmentListQueryOptions(id)),
     ]),
   component: ProjectDetailPage,
+  pendingComponent: ProjectDetailPending,
   errorComponent: ProjectDetailError,
 })
 
@@ -161,6 +168,48 @@ function ProjectDetailPage() {
 
 // fetchProject (queries/projects.ts) throws a plain ApiError for a 404,
 // mirroring NodeDetailError/DatabaseDetailError.
+// Route-level fallback for the loader's pending phase: the project's own
+// name isn't known yet, so this shows a generic title placeholder above
+// RowSkeleton rows for both the apps and databases cards, mirroring
+// routes/organizations/$id.tsx's own pendingComponent shape.
+function ProjectDetailPending() {
+  return (
+    <div className="space-y-6">
+      <div className="h-6 w-48 animate-pulse rounded bg-muted" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <PackageIcon className="size-4" />
+            Apps
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-hidden rounded-b-lg border-t border-border">
+            {Array.from({ length: 3 }, (_, i) => (
+              <AppRowSkeleton key={i} />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DatabaseIcon className="size-4" />
+            Databases
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-hidden rounded-b-lg border-t border-border">
+            {Array.from({ length: 2 }, (_, i) => (
+              <DatabaseRowSkeleton key={i} />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 function ProjectDetailError({ error }: { error: Error }) {
   return (
     <Alert variant="destructive">

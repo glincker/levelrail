@@ -4,6 +4,7 @@ import { CloudArrowUpIcon } from '@phosphor-icons/react/dist/ssr'
 import { backupTargetListQueryOptions } from '../../queries/backupTargets'
 import { BackupTargetTable } from '../../components/BackupTargetTable'
 import { CreateBackupTargetDialog } from '../../components/CreateBackupTargetDialog'
+import { TableSkeleton } from '@/components/ui/table-skeleton'
 
 // Account-level, not scoped to one app or database, so it lives under
 // routes/settings/ next to tokens.tsx rather than under routes/apps/ or
@@ -23,6 +24,7 @@ export const Route = createFileRoute('/settings/backup-targets')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(backupTargetListQueryOptions()),
   component: BackupTargetsPage,
+  pendingComponent: BackupTargetsPending,
 })
 
 function BackupTargetsPage() {
@@ -49,6 +51,20 @@ function BackupTargetsPage() {
         <CreateBackupTargetDialog />
       </div>
       <BackupTargetTable targets={targets} />
+    </div>
+  )
+}
+
+// Route-level fallback for the loader's pending phase, matching
+// BackupTargetTable's own 6-column shape so the skeleton doesn't jump
+// when real rows swap in.
+function BackupTargetsPending() {
+  return (
+    <div className="space-y-6">
+      <h1 className="text-lg font-semibold text-foreground">
+        Backup targets
+      </h1>
+      <TableSkeleton columnCount={6} />
     </div>
   )
 }

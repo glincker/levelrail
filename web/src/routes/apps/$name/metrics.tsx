@@ -4,6 +4,7 @@ import {
   useDeployAttempts,
 } from '../../../queries/deployAttempts'
 import { MetricsDashboard } from '../../../components/MetricsDashboard'
+import { PageSpinner } from '@/components/ui/page-spinner'
 
 // Former "metrics" tab, now a real deep-linkable route. MetricsDashboard
 // now plots real multi-attempt deploy history (see that component's own
@@ -17,6 +18,7 @@ export const Route = createFileRoute('/apps/$name/metrics')({
   loader: ({ context: { queryClient }, params: { name } }) =>
     queryClient.ensureQueryData(deployAttemptsQueryOptions(name)),
   component: MetricsSection,
+  pendingComponent: PageSpinner,
 })
 
 function MetricsSection() {

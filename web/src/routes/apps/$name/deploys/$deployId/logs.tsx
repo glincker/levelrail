@@ -23,6 +23,7 @@ import { DeploySection } from '../../../../../components/DeploySection'
 import { DeployMetaCard } from '../../../../../components/DeployMetaCard'
 import { DeployQuickLinks } from '../../../../../components/DeployQuickLinks'
 import { ConditionsPanel } from '../../../../../components/ConditionsPanel'
+import { PageSpinner } from '@/components/ui/page-spinner'
 
 // 'image' attempts (a bare image-tag redeploy/rollback) have no build
 // step, so they never produce log lines: see types/deployAttempt.ts's
@@ -48,6 +49,7 @@ export const Route = createFileRoute('/apps/$name/deploys/$deployId/logs')({
   loader: ({ context: { queryClient }, params: { name } }) =>
     queryClient.ensureQueryData(deployAttemptsQueryOptions(name)),
   component: DeployLogsPage,
+  pendingComponent: PageSpinner,
 })
 
 function DeployLogsPage() {

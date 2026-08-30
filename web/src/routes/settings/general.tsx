@@ -34,6 +34,7 @@ import {
 } from '../../queries/certificates'
 import type { CertificateStatus } from '../../queries/certificates'
 import { CleanUpDockerDialog } from '../../components/CleanUpDockerDialog'
+import { PageSpinner } from '@/components/ui/page-spinner'
 
 // Platform info comes from the already-warm /api/v1/brand cache via
 // useBrand() (primed by routes/__root.tsx's loader). Build version lives
@@ -45,6 +46,7 @@ export const Route = createFileRoute('/settings/general')({
       queryClient.ensureQueryData(certificatesQueryOptions()),
     ]),
   component: GeneralSettingsPage,
+  pendingComponent: PageSpinner,
 })
 
 function ConfiguredRow({

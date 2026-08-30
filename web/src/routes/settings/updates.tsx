@@ -14,11 +14,13 @@ import {
 } from '../../components/ui/card'
 import { updatesQueryOptions } from '../../queries/updates'
 import type { UpdateStatus } from '../../queries/updates'
+import { PageSpinner } from '../../components/ui/page-spinner'
 
 export const Route = createFileRoute('/settings/updates')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(updatesQueryOptions()),
   component: UpdatesSettingsPage,
+  pendingComponent: PageSpinner,
 })
 
 function UpdatesSettingsPage() {

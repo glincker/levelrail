@@ -4,6 +4,7 @@ import {
   useCloudflareTunnelSettings,
 } from '../../queries/cloudflareTunnel'
 import { CloudflareTunnelCard } from '../../components/CloudflareTunnelCard'
+import { PageSpinner } from '../../components/ui/page-spinner'
 
 // Instance-level, not scoped to one app: lives under routes/settings/
 // next to email.tsx and github-app.tsx, the same reasoning those files'
@@ -17,6 +18,7 @@ export const Route = createFileRoute('/settings/cloudflare-tunnel')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(cloudflareTunnelSettingsQueryOptions()),
   component: CloudflareTunnelSettingsPage,
+  pendingComponent: PageSpinner,
 })
 
 function CloudflareTunnelSettingsPage() {

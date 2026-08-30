@@ -12,6 +12,7 @@ import {
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import type { VariantProps } from 'class-variance-authority'
 import { EmptyState } from '@/components/ui/empty-state'
+import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { CreateAlertRuleDialog } from './CreateAlertRuleDialog'
 import { DeleteAlertRuleDialog } from './DeleteAlertRuleDialog'
 import { useAlertRules } from '../queries/alerts'
@@ -263,7 +264,7 @@ export function AlertRulesPanel({ appName }: { appName: string }) {
 
       <div className="mt-3">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <TableSkeleton columnCount={8} rowCount={3} />
         ) : error ? (
           <p className="text-sm text-destructive">{error.message}</p>
         ) : rules.length === 0 ? (

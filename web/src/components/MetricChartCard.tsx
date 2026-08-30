@@ -20,6 +20,7 @@ import {
   latestReading,
 } from '../lib/metricChart'
 import type { ResolvedTimeRange } from '../lib/timeRange'
+import { Skeleton } from './ui/skeleton'
 
 // The presentational half of a metric line chart: axes, tooltip,
 // loading/error/empty states, and optional vertical marker lines drawn
@@ -118,7 +119,7 @@ export function MetricChartCard({
         ) : null}
       </div>
       {isLoading ? (
-        <p className="mt-6 text-sm text-muted-foreground">Loading...</p>
+        <Skeleton className="mt-2 h-56 w-full" />
       ) : error ? (
         <p className="mt-6 text-sm text-destructive">{error.message}</p>
       ) : rows.length === 0 ? (

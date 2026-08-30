@@ -29,9 +29,11 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { toast } from '@/components/ui/toast'
+import { Skeleton } from '@/components/ui/skeleton'
+import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { formatBytes } from '../lib/format'
 import { ApiError } from '../lib/apiError'
-import { useBackupTargets } from '../queries/backupTargets'
+import { useBackupTargetsOptional } from '../queries/backupTargets'
 import {
   BACKUP_HISTORY_PAGE_SIZE,
   backupDownloadURL,
@@ -53,11 +55,12 @@ import type {
 // POST/GET /api/v1/databases/{name}/backups (internal/api/backups.go).
 // Rendered from routes/databases/$name/overview.tsx, the database detail
 // page's one section route today. The backup target picker reads
-// useBackupTargets (queries/backupTargets.ts), the same suspense query
-// routes/settings/backup-targets.tsx already primes; overview.tsx's own
-// loader primes it again here so this Card never suspends past a route
-// boundary with nothing to catch it, the same reasoning that route's own
-// Promise.all already applies to the database detail/status pair.
+// useBackupTargetsOptional (queries/backupTargets.ts), the same
+// non-suspending hook StorageAttachmentCard already uses on the app
+// Overview route: this Card's target list is a secondary concern the
+// overview page's own loader must not block its already-loaded
+// database/conditions data on, so it degrades to an empty list while
+// loading or on error rather than suspending the whole route.
 //
 // Backup history itself is a plain, non-suspense useQuery
 // (useBackupHistory), the same "optional section, not something the
@@ -149,9 +152,14 @@ function NoTargetsConfigured() {
 }
 
 function TriggerBackupRow({ databaseName }: { databaseName: string }) {
-  const { data: targets } = useBackupTargets()
+  const targetsQuery = useBackupTargetsOptional()
+  const targets = targetsQuery.data ?? []
   const [targetId, setTargetId] = useState<string>('')
   const triggerBackup = useTriggerBackup(databaseName)
+
+  if (targetsQuery.isLoading) {
+    return <Skeleton className="h-16 w-full" />
+  }
 
   if (targets.length === 0) {
     return <NoTargetsConfigured />
@@ -256,7 +264,7 @@ function DownloadBackupLink({
 // useInfiniteQuery, mirroring routes/settings/audit-log.tsx's pattern
 // for its own cursor-paginated endpoint.
 function BackupHistoryTable({ databaseName }: { databaseName: string }) {
-  const { data: targets } = useBackupTargets()
+  const targetsQuery = useBackupTargetsOptional()
   const { data, isLoading, error } = useBackupHistory(databaseName)
   const firstPage = useMemo(() => data ?? [], [data])
   const [olderRows, setOlderRows] = useState<BackupHistoryRecord[]>([])
@@ -296,12 +304,13 @@ function BackupHistoryTable({ databaseName }: { databaseName: string }) {
   }
 
   const targetName = useMemo(() => {
+    const targets = targetsQuery.data ?? []
     const byId = new Map(targets.map((t) => [t.id, t.name]))
     return (targetId: string) => byId.get(targetId) ?? 'Deleted target'
-  }, [targets])
+  }, [targetsQuery.data])
 
   if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading...</p>
+    return <TableSkeleton columnCount={6} rowCount={3} />
   }
   if (error) {
     return <p className="text-sm text-destructive">{error.message}</p>

@@ -4,6 +4,7 @@ import { PackageIcon } from '@phosphor-icons/react/dist/ssr'
 import { registryCredentialListQueryOptions } from '../../queries/registryCredentials'
 import { RegistryCredentialTable } from '../../components/RegistryCredentialTable'
 import { CreateRegistryCredentialDialog } from '../../components/CreateRegistryCredentialDialog'
+import { TableSkeleton } from '@/components/ui/table-skeleton'
 
 // Account-level, same reasoning settings/backup-targets.tsx's own doc
 // comment gives: a registry credential isn't scoped to one app, it's
@@ -13,6 +14,7 @@ export const Route = createFileRoute('/settings/registry-credentials')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(registryCredentialListQueryOptions()),
   component: RegistryCredentialsPage,
+  pendingComponent: RegistryCredentialsPending,
 })
 
 function RegistryCredentialsPage() {
@@ -40,6 +42,20 @@ function RegistryCredentialsPage() {
         <CreateRegistryCredentialDialog />
       </div>
       <RegistryCredentialTable credentials={credentials} />
+    </div>
+  )
+}
+
+// Route-level fallback for the loader's pending phase, matching
+// RegistryCredentialTable's own 5-column shape so the skeleton doesn't
+// jump when real rows swap in.
+function RegistryCredentialsPending() {
+  return (
+    <div className="space-y-6">
+      <h1 className="text-lg font-semibold text-foreground">
+        Registry credentials
+      </h1>
+      <TableSkeleton columnCount={5} />
     </div>
   )
 }

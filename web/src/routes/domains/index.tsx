@@ -9,7 +9,11 @@ import {
   domainsQueryOptions,
   ingressSettingsQueryOptions,
 } from '../../queries/domains'
-import { DOMAIN_LIST_GRID, DomainRow } from '../../components/DomainRow'
+import {
+  DOMAIN_LIST_GRID,
+  DomainRow,
+  RowSkeleton,
+} from '../../components/DomainRow'
 import { CloudflareDnsCard } from '../../components/CloudflareDnsCard'
 import { IngressSettingsCard } from '../../components/IngressSettingsCard'
 import { EmptyState } from '../../components/ui/empty-state'
@@ -32,6 +36,7 @@ export const Route = createFileRoute('/domains/')({
       queryClient.ensureQueryData(cloudflareDnsSettingsQueryOptions()),
     ]),
   component: DomainsPage,
+  pendingComponent: DomainsPending,
 })
 
 function ListHeader() {
@@ -156,6 +161,37 @@ function DomainsPage() {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+// Route-level fallback for the loader's pending phase: the ingress and
+// Cloudflare DNS cards below the header have no per-page skeleton of
+// their own yet (both are single-form panels, not lists), so this shows
+// generic card-shaped placeholders for them plus RowSkeleton rows for the
+// app domains table, mirroring AppListPending's own reasoning.
+function DomainsPending() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-lg font-semibold text-foreground">Domains</h1>
+      </div>
+      <div className="h-32 animate-pulse rounded-lg border border-border bg-card" />
+      <div className="h-24 animate-pulse rounded-lg border border-border bg-card" />
+      <div>
+        <div className="mb-3 flex items-center gap-2">
+          <GlobeIcon className="size-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-foreground">
+            App domains
+          </h2>
+        </div>
+        <div className="overflow-hidden rounded-lg border border-border bg-card">
+          <ListHeader />
+          {Array.from({ length: 6 }, (_, i) => (
+            <RowSkeleton key={i} />
+          ))}
+        </div>
       </div>
     </div>
   )
