@@ -119,6 +119,15 @@ func gitCheckoutWithToken(ctx context.Context, repoURL, sha, token string) (dir 
 // single-service deploy plus the older deployAdditionalServices walk
 // below, unchanged.
 func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
+	// Every success/partial-failure response below is a plain status
+	// line that can embed webhook-payload fields a pusher or PR author
+	// controls (a branch name, a PR's base ref): an explicit text/plain
+	// content type stops any client from ever MIME-sniffing one of
+	// those bodies as HTML. writeError's own writeJSON call overrides
+	// this to application/json for the error paths below, which is
+	// correct: this only needs to cover the plain-text success paths.
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+
 	name := r.PathValue("name")
 
 	if rt.gitSourceSecrets == nil {
@@ -172,7 +181,7 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 		status, message := rt.handlePullRequestWebhookEvent(r.Context(), name, *gs, prEv)
 		w.WriteHeader(status)
-		if _, err := fmt.Fprintf(w, "%s", message); err != nil { //nolint:gosec // plain-text status line for an unauthenticated webhook caller (GitHub/GitLab/Bitbucket), never rendered as HTML; message is server-composed, not attacker HTML/script content
+		if _, err := fmt.Fprint(w, message); err != nil { //nolint:gosec // gosec's taint check can't see the text/plain Content-Type set above this function's entry, which is the actual mitigation for a client ever interpreting message's webhook-payload-derived fields as markup
 			rt.logger.Warn("api: git push webhook: failed to write response body", slog.String("error", err.Error()), slog.String("name", name))
 		}
 		return
