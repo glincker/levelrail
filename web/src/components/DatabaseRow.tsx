@@ -1,7 +1,8 @@
 import { Link } from '@tanstack/react-router'
 import { CaretRightIcon, DatabaseIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
-import type { DatabaseResource } from '../types/databaseDetail'
+import type { DatabaseListEntry } from '../types/databaseDetail'
+import { StatusDot } from './AppRow'
 
 // Shared column grid between the sticky header (routes/databases/index.tsx)
 // and every row below (DatabaseRow, RowSkeleton), mirroring AppRow's own
@@ -13,14 +14,12 @@ export const DATABASE_LIST_GRID =
   'grid grid-cols-[2rem_minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_1rem] items-center gap-3'
 
 // Links by database.name, the only identifier databaseResource carries,
-// same as AppRow keying off app.name. No live status dot here for the
-// same N+1 reasoning AppRow's own comment gives: rendering one would
-// mean an extra GET /api/v1/databases/{name}/status per row, exactly
-// the kind of per-row fetch the project's virtualization requirement
-// exists to avoid (lists over 50 items must stay cheap to render).
-// Current reconcile status lives on the detail route's
-// ConditionsPanel instead.
-export function DatabaseRow({ database }: { database: DatabaseResource }) {
+// same as AppRow keying off app.name. The status dot is backed by GET
+// /api/v1/databases' own batched status field (databaseListResource,
+// internal/api/databases.go), the database counterpart to AppRow's own
+// GET /api/v1/apps status field, computed server-side from one query
+// across every listed database's conditions, no per-row fetch.
+export function DatabaseRow({ database }: { database: DatabaseListEntry }) {
   return (
     <Link
       to="/databases/$name"
@@ -31,8 +30,9 @@ export function DatabaseRow({ database }: { database: DatabaseResource }) {
         <DatabaseIcon className="size-4" aria-hidden="true" />
       </span>
 
-      <span className="min-w-0 truncate text-sm font-medium text-foreground">
-        {database.name}
+      <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
+        <StatusDot status={database.status} />
+        <span className="truncate">{database.name}</span>
       </span>
 
       <span className="min-w-0">

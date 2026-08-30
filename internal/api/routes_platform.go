@@ -192,6 +192,10 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// boundary and nil-telemetry 501 shape as every route above, and the
 	// same query-param contract as GET /apps/{name}/metrics above it.
 	mux.HandleFunc("GET /api/v1/nodes/{id}/metrics", rt.requireAbility(AbilityRoot, rt.handleQueryNodeMetrics))
+	// Latest OS-patch reading (internal/telemetry/hostpatch.go's
+	// HostPatchCollector), a single current fact rather than a time
+	// series, same AbilityRoot boundary as every other node route.
+	mux.HandleFunc("GET /api/v1/nodes/{id}/patch-status", rt.requireAbility(AbilityRoot, rt.handleGetNodePatchStatus))
 
 	// Certificates (TLS renewal visibility): this project treats
 	// "a cert renewal fails silently at 3am" as its central

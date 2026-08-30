@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import {
   Field,
   FieldDescription,
+  FieldError,
   FieldHint,
   FieldLabel,
 } from '@/components/ui/field'
@@ -108,10 +109,18 @@ function formFromResource(g: GitSourceResource): FormState {
   }
 }
 
-// additionalServicesPayload drops rows with a blank service name (an
-// operator mid-edit adding a new row) rather than sending them as an
-// empty-string key, which the backend rejects as a self-reference-shaped
-// but meaningless entry.
+// A row only counts as "incomplete" once the operator has actually put
+// something into it: a brand new row's buildType already defaults to
+// 'dockerfile' with an empty buildPath, so an untouched blank row is not
+// flagged, only one where buildPath or buildType diverges from that
+// default while the name is still empty.
+function incompleteRowIndexes(rows: AdditionalServiceRow[]): number[] {
+  return rows
+    .map((row, index) => ({ row, index }))
+    .filter(({ row }) => !row.serviceName.trim() && (row.buildPath.trim() !== '' || row.buildType !== 'dockerfile'))
+    .map(({ index }) => index)
+}
+
 function additionalServicesPayload(rows: AdditionalServiceRow[]): Record<string, GitSourceBuild> | undefined {
   const entries = rows
     .filter((row) => row.serviceName.trim())
@@ -137,6 +146,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
   const [justConnected, setJustConnected] = useState<GitSourceResource | null>(null)
   const [secretCopied, setSecretCopied] = useState(false)
   const [urlCopied, setUrlCopied] = useState(false)
+  const [additionalServicesError, setAdditionalServicesError] = useState<string | null>(null)
 
   const notConnected = query.error instanceof ApiError && query.error.status === 404
   const otherError = query.error && !notConnected ? query.error : null
@@ -145,11 +155,13 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
     setForm(prefill)
     setEditing(true)
     setJustConnected(null)
+    setAdditionalServicesError(null)
   }
 
   function cancelEdit() {
     setEditing(false)
     setForm(emptyForm())
+    setAdditionalServicesError(null)
   }
 
   function submit() {
@@ -157,6 +169,16 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
       toast.add({ title: 'Repository URL is required.', type: 'error' })
       return
     }
+    const incomplete = incompleteRowIndexes(form.additionalServices)
+    if (incomplete.length > 0) {
+      const rowLabel = incomplete.length === 1 ? 'Row' : 'Rows'
+      const rowNumbers = incomplete.map((index) => index + 1).join(', ')
+      setAdditionalServicesError(
+        `${rowLabel} ${rowNumbers} ${incomplete.length === 1 ? 'is' : 'are'} missing a service name.`,
+      )
+      return
+    }
+    setAdditionalServicesError(null)
     setGitSource.mutate(
       {
         repo_url: form.repoUrl.trim(),
@@ -217,6 +239,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
       ...form,
       additionalServices: form.additionalServices.map((row, i) => (i === index ? { ...row, ...patch } : row)),
     })
+    setAdditionalServicesError(null)
   }
 
   function removeAdditionalServiceRow(index: number) {
@@ -224,6 +247,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
       ...form,
       additionalServices: form.additionalServices.filter((_, i) => i !== index),
     })
+    setAdditionalServicesError(null)
   }
 
   return (
@@ -511,6 +535,9 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                   Add service
                 </Button>
               </div>
+              <FieldError
+                errors={additionalServicesError ? [{ message: additionalServicesError }] : undefined}
+              />
             </Field>
 
             <div className="flex gap-2">
