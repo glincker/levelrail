@@ -39,7 +39,7 @@ func (rt *Router) handleStartBitbucketAppConnect(w http.ResponseWriter, r *http.
 	}
 	if err != nil {
 		rt.logger.Error("api: get bitbucket app connection for connect failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, errInternal)
 		return
 	}
 
@@ -50,14 +50,14 @@ func (rt *Router) handleStartBitbucketAppConnect(w http.ResponseWriter, r *http.
 			return
 		}
 		rt.logger.Error("api: get ingress settings for bitbucket app connect failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, errInternal)
 		return
 	}
 
 	state, err := rt.bitbucketAppState.begin("")
 	if err != nil {
 		rt.logger.Error("api: begin bitbucket app oauth state failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, errInternal)
 		return
 	}
 
@@ -99,7 +99,7 @@ func (rt *Router) handleBitbucketAppCallback(w http.ResponseWriter, r *http.Requ
 	}
 	if err != nil {
 		rt.logger.Error("api: get bitbucket app connection for callback failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, errInternal)
 		return
 	}
 
@@ -107,7 +107,7 @@ func (rt *Router) handleBitbucketAppCallback(w http.ResponseWriter, r *http.Requ
 	consumerSecret, err := rt.bitbucketAppSecrets.Resolve(ctx, secretsKey, bitbucketAppSecretKey)
 	if err != nil {
 		rt.logger.Error("api: resolve bitbucket app secret failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, errInternal)
 		return
 	}
 
@@ -119,7 +119,7 @@ func (rt *Router) handleBitbucketAppCallback(w http.ResponseWriter, r *http.Requ
 	}
 	if err := rt.saveBitbucketTokens(ctx, tokens); err != nil {
 		rt.logger.Error("api: save bitbucket oauth tokens failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, errInternal)
 		return
 	}
 
@@ -238,5 +238,5 @@ func (rt *Router) writeBitbucketAppTokenError(w http.ResponseWriter, logMsg stri
 		return
 	}
 	rt.logger.Error(logMsg, slog.String("error", err.Error()))
-	writeError(w, http.StatusInternalServerError, "internal error")
+	writeError(w, http.StatusInternalServerError, errInternal)
 }

@@ -234,10 +234,10 @@ export function GitHubAppConnectionCard() {
 function ManifestPreviewDialog({
   open,
   onOpenChange,
-}: {
+}: Readonly<{
   open: boolean
   onOpenChange: (open: boolean) => void
-}) {
+}>) {
   const [instanceURL, setInstanceURL] = useState('')
   const trimmedInstanceURL = instanceURL.trim()
   const { data: preview, isLoading, isError, error } = useGitHubAppManifestPreview(
@@ -263,6 +263,80 @@ function ManifestPreviewDialog({
     window.location.href = `/api/v1/github-app/register/start?${params.toString()}`
   }
 
+  function renderPreviewBody() {
+    if (isLoading) {
+      return <p className="text-sm text-muted-foreground">Loading...</p>
+    }
+    if (isError) {
+      return (
+        <p className="text-sm text-destructive">
+          {error instanceof Error ? error.message : 'Could not load a preview.'}
+        </p>
+      )
+    }
+    if (!preview) {
+      return null
+    }
+    return (
+      <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
+        <Field>
+          <FieldLabel htmlFor="gh-preview-instance-url">
+            GitHub instance
+          </FieldLabel>
+          <Input
+            id="gh-preview-instance-url"
+            className="font-mono"
+            autoComplete="off"
+            spellCheck={false}
+            value={instanceURL}
+            onChange={(e) => {
+              setInstanceURL(e.target.value)
+            }}
+            placeholder="https://github.com"
+          />
+          <FieldDescription>
+            Leave blank for github.com. Self-hosted GitHub Enterprise
+            Server instances work too, e.g. https://github.example.com.
+          </FieldDescription>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="gh-preview-name">App name</FieldLabel>
+          <Input
+            id="gh-preview-name"
+            value={displayName}
+            onChange={(e) => {
+              setName(e.target.value)
+            }}
+          />
+          <FieldDescription>
+            The one field GitHub itself lets you change on its own
+            confirmation page too.
+          </FieldDescription>
+        </Field>
+        <div className="space-y-1.5 text-sm">
+          <UrlRow label="Homepage" value={preview.homepage_url} />
+          <UrlRow label="Callback" value={preview.callback_url} />
+          <UrlRow label="Setup" value={preview.setup_url} />
+          <UrlRow
+            label="Webhook"
+            value={preview.webhook_url}
+            note={preview.webhook_active ? undefined : 'declared, not yet active'}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <p className="text-sm font-medium text-foreground">Permissions requested</p>
+          <ul className="space-y-1 text-sm text-muted-foreground">
+            {Object.entries(preview.permissions).map(([key, level]) => (
+              <li key={key} className="font-mono text-xs">
+                {key}: {level}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <Dialog
       open={open}
@@ -283,70 +357,7 @@ function ManifestPreviewDialog({
             page.
           </DialogDescription>
         </DialogHeader>
-        {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading...</p>
-        ) : isError ? (
-          <p className="text-sm text-destructive">
-            {error instanceof Error ? error.message : 'Could not load a preview.'}
-          </p>
-        ) : preview ? (
-          <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
-            <Field>
-              <FieldLabel htmlFor="gh-preview-instance-url">
-                GitHub instance
-              </FieldLabel>
-              <Input
-                id="gh-preview-instance-url"
-                className="font-mono"
-                autoComplete="off"
-                spellCheck={false}
-                value={instanceURL}
-                onChange={(e) => {
-                  setInstanceURL(e.target.value)
-                }}
-                placeholder="https://github.com"
-              />
-              <FieldDescription>
-                Leave blank for github.com. Self-hosted GitHub Enterprise
-                Server instances work too, e.g. https://github.example.com.
-              </FieldDescription>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="gh-preview-name">App name</FieldLabel>
-              <Input
-                id="gh-preview-name"
-                value={displayName}
-                onChange={(e) => {
-                  setName(e.target.value)
-                }}
-              />
-              <FieldDescription>
-                The one field GitHub itself lets you change on its own
-                confirmation page too.
-              </FieldDescription>
-            </Field>
-            <div className="space-y-1.5 text-sm">
-              <UrlRow label="Homepage" value={preview.homepage_url} />
-              <UrlRow label="Callback" value={preview.callback_url} />
-              <UrlRow label="Setup" value={preview.setup_url} />
-              <UrlRow
-                label="Webhook"
-                value={preview.webhook_url}
-                note={preview.webhook_active ? undefined : 'declared, not yet active'}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <p className="text-sm font-medium text-foreground">Permissions requested</p>
-              <ul className="space-y-1 text-sm text-muted-foreground">
-                {Object.entries(preview.permissions).map(([key, level]) => (
-                  <li key={key} className="font-mono text-xs">
-                    {key}: {level}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        ) : null}
+        {renderPreviewBody()}
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel

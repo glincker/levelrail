@@ -23,15 +23,21 @@ const bitbucketEventKeyHeader = "repo:push"
 // null, which this package must recognize rather than panic on.
 type bitbucketPushPayload struct {
 	Push struct {
-		Changes []struct {
-			New *struct {
-				Name   string `json:"name"`
-				Target struct {
-					Hash string `json:"hash"`
-				} `json:"target"`
-			} `json:"new"`
-		} `json:"changes"`
+		Changes []bitbucketPushChange `json:"changes"`
 	} `json:"push"`
+}
+
+type bitbucketPushChange struct {
+	New *bitbucketPushRef `json:"new"`
+}
+
+type bitbucketPushRef struct {
+	Name   string              `json:"name"`
+	Target bitbucketPushTarget `json:"target"`
+}
+
+type bitbucketPushTarget struct {
+	Hash string `json:"hash"`
 }
 
 // ParseBitbucketPushEvent decodes body as a Bitbucket repo:push webhook

@@ -39,7 +39,7 @@ func toBitbucketAppRepoResource(r bitbucketapp.Repo) bitbucketAppRepoResource {
 // identical reason.
 func (rt *Router) handleListBitbucketAppRepos(w http.ResponseWriter, r *http.Request) {
 	if rt.bitbucketAppSecrets == nil {
-		writeError(w, http.StatusNotImplemented, "the bitbucket app connection requires a master key to be configured on this control plane")
+		writeError(w, http.StatusNotImplemented, errBitbucketMasterKeyRequired)
 		return
 	}
 
@@ -77,7 +77,7 @@ type bitbucketAppBranchResource struct {
 // handleListGitHubAppBranches.
 func (rt *Router) handleListBitbucketAppBranches(w http.ResponseWriter, r *http.Request) {
 	if rt.bitbucketAppSecrets == nil {
-		writeError(w, http.StatusNotImplemented, "the bitbucket app connection requires a master key to be configured on this control plane")
+		writeError(w, http.StatusNotImplemented, errBitbucketMasterKeyRequired)
 		return
 	}
 
@@ -126,7 +126,7 @@ type useBitbucketRepoAsSourceRequest struct {
 // once an operator pastes a token into the app's git-source card.
 func (rt *Router) handleUseBitbucketRepoAsSource(w http.ResponseWriter, r *http.Request) {
 	if rt.bitbucketAppSecrets == nil {
-		writeError(w, http.StatusNotImplemented, "the bitbucket app connection requires a master key to be configured on this control plane")
+		writeError(w, http.StatusNotImplemented, errBitbucketMasterKeyRequired)
 		return
 	}
 	if rt.gitSourceSecrets == nil {
@@ -167,7 +167,7 @@ func (rt *Router) handleUseBitbucketRepoAsSource(w http.ResponseWriter, r *http.
 		return
 	} else if err != nil {
 		rt.logger.Error("api: use bitbucket repo as source: load app failed", slog.String("error", err.Error()), slog.String("app_name", req.AppName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, errInternal)
 		return
 	}
 
@@ -197,7 +197,7 @@ func (rt *Router) handleUseBitbucketRepoAsSource(w http.ResponseWriter, r *http.
 	})
 	if err != nil {
 		rt.logger.Error("api: use bitbucket repo as source: connect git source failed", slog.String("error", err.Error()), slog.String("app_name", req.AppName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, errInternal)
 		return
 	}
 
@@ -208,14 +208,14 @@ func (rt *Router) handleUseBitbucketRepoAsSource(w http.ResponseWriter, r *http.
 			return
 		}
 		rt.logger.Error("api: get base url for bitbucket webhook registration failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, errInternal)
 		return
 	}
 
 	webhookSecret, err := rt.gitSourceSecrets.Resolve(ctx, store.GitSourceSecretsKey(req.AppName), gitSourceSecretKey)
 	if err != nil {
 		rt.logger.Error("api: resolve git source webhook secret for bitbucket hook registration failed", slog.String("error", err.Error()), slog.String("app_name", req.AppName))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, errInternal)
 		return
 	}
 

@@ -60,6 +60,8 @@ func (c *Client) CheckInstanceReachable(ctx context.Context, instanceURL string)
 // explicit version rather than floating on whatever the default is.
 const apiVersion = "2022-11-28"
 
+const bearerPrefix = "Bearer "
+
 // Client is a small, purpose-built GitHub REST API client covering only
 // what this control plane needs: manifest code exchange, installation
 // lookup, installation token minting, and repository/branch listing.
@@ -244,7 +246,7 @@ type installationResponse struct {
 func (c *Client) GetInstallation(ctx context.Context, instanceURL, appJWT string, installationID int64) (InstallationInfo, error) {
 	var resp installationResponse
 	path := "/app/installations/" + strconv.FormatInt(installationID, 10)
-	if err := c.do(ctx, c.APIBaseURL(instanceURL), http.MethodGet, path, "Bearer "+appJWT, &resp); err != nil {
+	if err := c.do(ctx, c.APIBaseURL(instanceURL), http.MethodGet, path, bearerPrefix+appJWT, &resp); err != nil {
 		return InstallationInfo{}, err
 	}
 	return InstallationInfo{ID: resp.ID, AppID: resp.AppID, AccountLogin: resp.Account.Login}, nil
@@ -274,7 +276,7 @@ type installationTokenResponse struct {
 func (c *Client) MintInstallationToken(ctx context.Context, instanceURL, appJWT string, installationID int64) (InstallationToken, error) {
 	var resp installationTokenResponse
 	path := "/app/installations/" + strconv.FormatInt(installationID, 10) + "/access_tokens"
-	if err := c.do(ctx, c.APIBaseURL(instanceURL), http.MethodPost, path, "Bearer "+appJWT, &resp); err != nil {
+	if err := c.do(ctx, c.APIBaseURL(instanceURL), http.MethodPost, path, bearerPrefix+appJWT, &resp); err != nil {
 		return InstallationToken{}, err
 	}
 	expiresAt, err := time.Parse(time.RFC3339, resp.ExpiresAt)
@@ -333,7 +335,7 @@ func (c *Client) ListInstallationRepos(ctx context.Context, instanceURL, token s
 	for page := 1; page <= listPageCap; page++ {
 		var resp listRepositoriesResponse
 		path := fmt.Sprintf("/installation/repositories?per_page=%d&page=%d", listPerPage, page)
-		if err := c.do(ctx, baseURL, http.MethodGet, path, "Bearer "+token, &resp); err != nil {
+		if err := c.do(ctx, baseURL, http.MethodGet, path, bearerPrefix+token, &resp); err != nil {
 			return nil, err
 		}
 		for _, r := range resp.Repositories {
@@ -375,7 +377,7 @@ func (c *Client) ListBranches(ctx context.Context, instanceURL, token, owner, re
 		var resp []branchResponse
 		path := fmt.Sprintf("/repos/%s/%s/branches?per_page=%d&page=%d",
 			url.PathEscape(owner), url.PathEscape(repo), listPerPage, page)
-		if err := c.do(ctx, baseURL, http.MethodGet, path, "Bearer "+token, &resp); err != nil {
+		if err := c.do(ctx, baseURL, http.MethodGet, path, bearerPrefix+token, &resp); err != nil {
 			return nil, err
 		}
 		for _, b := range resp {

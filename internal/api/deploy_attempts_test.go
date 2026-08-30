@@ -157,7 +157,7 @@ func TestHandleDeployLogStream_AttemptBelongsToDifferentApp(t *testing.T) {
 
 func TestHandleDeployLogStream_FinishedAttempt_ReplaysPersistedLog(t *testing.T) {
 	db := openTestDB(t)
-	fakeLogStore := &fakeDeployLogStore{
+	fakeLogStore := &fakeDeployLogQuerier{
 		entries: map[string][]sseTestEntry{
 			"dep_done": {
 				{Message: "line one", Stream: "stdout"},
@@ -165,7 +165,7 @@ func TestHandleDeployLogStream_FinishedAttempt_ReplaysPersistedLog(t *testing.T)
 			},
 		},
 	}
-	rt := NewRouter(nil, testBrand(), db, WithDeployLogStore(fakeLogStore))
+	rt := NewRouter(nil, testBrand(), db, WithDeployLogQuerier(fakeLogStore))
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
 
@@ -214,7 +214,7 @@ func TestHandleDeployLogStream_FinishedAttempt_ReplaysPersistedLog(t *testing.T)
 }
 
 func TestHandleDeployLogStream_FinishedAttempt_NoLogStoreConfigured(t *testing.T) {
-	rt, db := newTestRouter(t) // no WithDeployLogStore
+	rt, db := newTestRouter(t) // no WithDeployLogQuerier
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
 
@@ -418,8 +418,8 @@ func loginViaServer(t *testing.T, srv *httptest.Server, db *store.DB) *http.Cook
 	return nil
 }
 
-// fakeDeployLogStore is a hand-written fake for DeployLogStore.
-type fakeDeployLogStore struct {
+// fakeDeployLogQuerier is a hand-written fake for DeployLogQuerier.
+type fakeDeployLogQuerier struct {
 	entries map[string][]sseTestEntry
 }
 
@@ -428,7 +428,7 @@ type sseTestEntry struct {
 	Stream  string
 }
 
-func (f *fakeDeployLogStore) QueryDeployLog(_ context.Context, attemptID string) ([]telemetry.DeployLogEntry, error) {
+func (f *fakeDeployLogQuerier) QueryDeployLog(_ context.Context, attemptID string) ([]telemetry.DeployLogEntry, error) {
 	var out []telemetry.DeployLogEntry
 	for _, e := range f.entries[attemptID] {
 		out = append(out, telemetry.DeployLogEntry{AttemptID: attemptID, Stream: e.Stream, Message: e.Message})

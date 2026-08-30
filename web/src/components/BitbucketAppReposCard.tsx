@@ -123,10 +123,10 @@ export function BitbucketAppReposCard() {
 function UseAsSourceDialog({
   repo,
   onOpenChange,
-}: {
+}: Readonly<{
   repo: BitbucketAppRepo | null
   onOpenChange: (open: boolean) => void
-}) {
+}>) {
   const apps = useQuery(appListQueryOptions())
   const useAsSource = useConnectBitbucketRepoAsSource()
   const [appName, setAppName] = useState('')

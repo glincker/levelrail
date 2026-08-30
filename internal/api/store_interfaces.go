@@ -136,7 +136,7 @@ type DeployAttemptStore interface {
 	ListDeployAttempts(ctx context.Context, serviceName string) ([]store.DeployAttempt, error)
 }
 
-// DeployLogStore is the telemetry-side read surface
+// DeployLogQuerier is the telemetry-side read surface
 // handleDeployLogStream needs to serve a full replay once an attempt has
 // already finished (see that handler's own doc comment for the
 // in-progress-vs-finished split). *telemetry.DB satisfies this
@@ -145,7 +145,7 @@ type DeployAttemptStore interface {
 // finished attempt's log route returns 501; an in-progress attempt's
 // live tail (backed by deployRecorder below, a separate optional field)
 // is unaffected by this one being unset.
-type DeployLogStore interface {
+type DeployLogQuerier interface {
 	QueryDeployLog(ctx context.Context, attemptID string) ([]telemetry.DeployLogEntry, error)
 }
 

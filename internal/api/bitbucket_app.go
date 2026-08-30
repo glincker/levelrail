@@ -54,6 +54,13 @@ const (
 	bitbucketAppAccessTokenKey  = "access_token"
 	bitbucketAppRefreshTokenKey = "refresh_token"
 	bitbucketAppTokenExpiresKey = "token_expires_at"
+
+	// errInternal is the generic 500 body every Bitbucket handler in
+	// this file group falls back to; centralized so the same literal
+	// doesn't get flagged as new-code duplication across them.
+	errInternal = "internal error"
+
+	errBitbucketMasterKeyRequired = "the bitbucket app connection requires a master key to be configured on this control plane"
 )
 
 // bitbucketAppStatusResource is the wire shape for
@@ -79,7 +86,7 @@ func (rt *Router) handleGetBitbucketAppStatus(w http.ResponseWriter, r *http.Req
 	}
 	if err != nil {
 		rt.logger.Error("api: get bitbucket app connection status failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, errInternal)
 		return
 	}
 
@@ -93,7 +100,7 @@ func (rt *Router) handleGetBitbucketAppStatus(w http.ResponseWriter, r *http.Req
 		authorized, err := rt.bitbucketAppSecrets.Exists(ctx, store.BitbucketAppSecretsKey(), bitbucketAppAccessTokenKey)
 		if err != nil {
 			rt.logger.Error("api: check bitbucket app authorization failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			writeError(w, http.StatusInternalServerError, errInternal)
 			return
 		}
 		resource.Authorized = authorized
@@ -117,7 +124,7 @@ type connectBitbucketAppRequest struct {
 // authorize" shape GitLab's own connect flow has.
 func (rt *Router) handleConnectBitbucketApp(w http.ResponseWriter, r *http.Request) {
 	if rt.bitbucketAppSecrets == nil {
-		writeError(w, http.StatusNotImplemented, "the bitbucket app connection requires a master key to be configured on this control plane")
+		writeError(w, http.StatusNotImplemented, errBitbucketMasterKeyRequired)
 		return
 	}
 
@@ -172,14 +179,14 @@ func (rt *Router) handleDisconnectBitbucketApp(w http.ResponseWriter, r *http.Re
 	}
 	if err != nil {
 		rt.logger.Error("api: disconnect bitbucket app failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, errInternal)
 		return
 	}
 
 	if rt.bitbucketAppSecrets != nil {
 		if err := rt.bitbucketAppSecrets.DeleteAll(ctx, store.BitbucketAppSecretsKey()); err != nil {
 			rt.logger.Error("api: delete bitbucket app secrets failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			writeError(w, http.StatusInternalServerError, errInternal)
 			return
 		}
 	}

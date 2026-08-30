@@ -158,7 +158,7 @@ type Router struct {
 	restoreHistory            RestoreHistoryStore             // always set, same "core Store interface" shape as backupHistory above
 	restoreRunner             RestoreRunner                   // nil is valid: POST /api/v1/databases/{name}/restore returns 501, same shape as backupRunner above
 	deployAttempts            DeployAttemptStore              // always set, same "core Store interface" shape as certs/staticSites above
-	deployLogStore            DeployLogStore                  // nil is valid: a finished attempt's log route returns 501, same shape as secrets/telemetry/alertRules above
+	deployLogStore            DeployLogQuerier                // nil is valid: a finished attempt's log route returns 501, same shape as secrets/telemetry/alertRules above
 	deployRecorder            *deploylog.Recorder             // nil is valid: an in-progress attempt's live tail returns 501, and handleTriggerBuild falls back to build.SlogProgress with no persisted log, same "not configured" shape as builder/telemetry above
 	logBroadcaster            *telemetry.LogBroadcaster       // nil is valid: GET /apps/{name}/logs/stream returns 501, same "not configured" shape as deployRecorder above
 	deployNotifyTargets       DeployNotifyTargets             // nil is valid: deploy-notify-target routes return 501, same shape as alertRules above

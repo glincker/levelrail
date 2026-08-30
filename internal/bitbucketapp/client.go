@@ -251,6 +251,11 @@ func toRepo(r repoResponse) Repo {
 // per_page covers the same realistic ceiling.
 const listPageCap = 20
 
+const (
+	bearerPrefix    = "Bearer "
+	repositoriesAPI = "/repositories/"
+)
+
 type pagedRepoResponse struct {
 	Values []repoResponse `json:"values"`
 	Next   string         `json:"next"`
@@ -267,7 +272,7 @@ func (c *Client) ListRepos(ctx context.Context, accessToken string) ([]Repo, err
 	next := c.apiBaseURL() + "/repositories?role=member&pagelen=100"
 	for page := 0; page < listPageCap && next != ""; page++ {
 		var resp pagedRepoResponse
-		if err := c.do(ctx, http.MethodGet, next, "Bearer "+accessToken, nil, &resp); err != nil {
+		if err := c.do(ctx, http.MethodGet, next, bearerPrefix+accessToken, nil, &resp); err != nil {
 			return nil, err
 		}
 		for _, r := range resp.Values {
@@ -282,8 +287,8 @@ func (c *Client) ListRepos(ctx context.Context, accessToken string) ([]Repo, err
 // full name.
 func (c *Client) GetRepo(ctx context.Context, accessToken, fullName string) (Repo, error) {
 	var resp repoResponse
-	u := c.apiBaseURL() + "/repositories/" + fullName
-	if err := c.do(ctx, http.MethodGet, u, "Bearer "+accessToken, nil, &resp); err != nil {
+	u := c.apiBaseURL() + repositoriesAPI + fullName
+	if err := c.do(ctx, http.MethodGet, u, bearerPrefix+accessToken, nil, &resp); err != nil {
 		return Repo{}, err
 	}
 	return toRepo(resp), nil
@@ -311,10 +316,10 @@ type pagedBranchResponse struct {
 // the same cursor-pagination shape ListRepos follows.
 func (c *Client) ListBranches(ctx context.Context, accessToken, fullName string) ([]Branch, error) {
 	var out []Branch
-	next := c.apiBaseURL() + "/repositories/" + fullName + "/refs/branches?pagelen=100"
+	next := c.apiBaseURL() + repositoriesAPI + fullName + "/refs/branches?pagelen=100"
 	for page := 0; page < listPageCap && next != ""; page++ {
 		var resp pagedBranchResponse
-		if err := c.do(ctx, http.MethodGet, next, "Bearer "+accessToken, nil, &resp); err != nil {
+		if err := c.do(ctx, http.MethodGet, next, bearerPrefix+accessToken, nil, &resp); err != nil {
 			return nil, err
 		}
 		for _, b := range resp.Values {
@@ -350,6 +355,6 @@ func (c *Client) CreateRepoWebhook(ctx context.Context, accessToken, fullName, h
 	if err != nil {
 		return fmt.Errorf("bitbucketapp: marshal webhook request: %w", err)
 	}
-	u := c.apiBaseURL() + "/repositories/" + fullName + "/hooks"
-	return c.do(ctx, http.MethodPost, u, "Bearer "+accessToken, bytes.NewReader(body), nil)
+	u := c.apiBaseURL() + repositoriesAPI + fullName + "/hooks"
+	return c.do(ctx, http.MethodPost, u, bearerPrefix+accessToken, bytes.NewReader(body), nil)
 }

@@ -1403,7 +1403,7 @@ func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent
 // deployRecorder and logBroadcaster are both always non-nil (constructed
 // unconditionally in run, unlike builder/secretsManager/webhookHandler
 // which are each independently optional): api.WithDeployRecorder,
-// api.WithDeployLogStore, and api.WithLogBroadcaster are all applied
+// api.WithDeployLogQuerier, and api.WithLogBroadcaster are all applied
 // unconditionally, the same way api.WithTelemetryQuerier and
 // api.WithAlertRules already are for telemetryDB/alertingDB.
 // handleTriggerBuild (internal/api/builds.go) still degrades gracefully
@@ -1474,7 +1474,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithScheduledTaskRunner(scheduledTaskRunner),
 		api.WithCertExpiryWarningWindow(certExpiryWarningWindow(logger)),
 		api.WithPublicHost(publicHost()),
-		api.WithDeployLogStore(telemetryDB),
+		api.WithDeployLogQuerier(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),
 		api.WithLogBroadcaster(logBroadcaster),
 		// emailSender is always non-nil (run() builds it unconditionally):

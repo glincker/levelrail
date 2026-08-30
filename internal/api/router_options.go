@@ -334,13 +334,13 @@ func WithBuilder(b Builder) Option {
 	return func(rt *Router) { rt.builder = b }
 }
 
-// WithDeployLogStore enables a finished deploy attempt's full log replay
+// WithDeployLogQuerier enables a finished deploy attempt's full log replay
 // on GET /api/v1/apps/{name}/deploys/{deployId}/logs. Without one
 // configured (the default), that route returns 501 for an attempt that
 // has already finished; an in-progress attempt's live tail is unaffected
 // (see WithDeployRecorder). cmd/levelrail/main.go passes the same
 // *telemetry.DB internal/deploylog.Recorder writes to.
-func WithDeployLogStore(s DeployLogStore) Option {
+func WithDeployLogQuerier(s DeployLogQuerier) Option {
 	return func(rt *Router) { rt.deployLogStore = s }
 }
 

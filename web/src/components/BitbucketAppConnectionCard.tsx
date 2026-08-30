@@ -189,11 +189,11 @@ function ConfigureDialog({
   open,
   onOpenChange,
   baseURL,
-}: {
+}: Readonly<{
   open: boolean
   onOpenChange: (open: boolean) => void
   baseURL?: string
-}) {
+}>) {
   const connect = useConnectBitbucketApp()
   const [key, setKey] = useState('')
   const [secret, setSecret] = useState('')
