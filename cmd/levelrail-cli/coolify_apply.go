@@ -54,7 +54,7 @@ func applyMigration(ctx context.Context, client *Client, report *migrationReport
 		a.Applied = true
 
 		for key, value := range a.Service.EnvLiteral {
-			if err := client.SetSecret(ctx, created.Name, key, value); err != nil {
+			if err := client.SetSecret(ctx, created.Name, key, value, false); err != nil {
 				a.SecretsFailed = append(a.SecretsFailed, key)
 				continue
 			}

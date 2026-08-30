@@ -35,6 +35,12 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsRollback(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restart":
 		return runAppsRestart(prog, args[1:], stdout, stderr, lookupEnv)
+	case "stop":
+		return runAppsStop(prog, args[1:], stdout, stderr, lookupEnv)
+	case "start":
+		return runAppsStart(prog, args[1:], stdout, stderr, lookupEnv)
+	case "delete":
+		return runAppsDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
 		return runAppsStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	case "network":
@@ -57,6 +63,10 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsClearEnvironment(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "previews":
 		return runAppsPreviews(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "secrets":
+		return runAppsSecrets(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "git-source":
+		return runAppsGitSource(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps subcommand %q\n\n", prog, args[0]) //nolint:gosec // same guard as above
 		_, _ = fmt.Fprint(stderr, appsUsage(prog))
@@ -75,6 +85,9 @@ func appsUsage(prog string) string {
   %[1]s apps group <name> [flags]   show name's sibling services under the same multi-service app
   %[1]s apps rollback <name> [flags]   redeploy an older image (same endpoint as deploy)
   %[1]s apps restart <name> [flags]     recreate the running container, no image change
+  %[1]s apps stop <name> [flags]        stop an app's running container
+  %[1]s apps start <name> [flags]       start an app previously stopped
+  %[1]s apps delete <name> [flags]      remove an app's desired state
   %[1]s apps status <name> [flags]   show an app's current reconcile conditions
   %[1]s apps network <name> [flags]   show the live traffic path: container port, host port, running
   %[1]s apps logs <name> [flags]     search an app's stored log entries
@@ -86,6 +99,8 @@ func appsUsage(prog string) string {
   %[1]s apps set-environment <name> <environment-id> [flags]   tag an app with an environment
   %[1]s apps clear-environment <name> [flags]   remove an app's environment tag
   %[1]s apps previews <verb> [flags]   manage preview environments per pull request
+  %[1]s apps secrets <verb> [flags]   manage an app's encrypted secret values
+  %[1]s apps git-source <verb> [flags]   connect a repo for auto-deploy-on-push
 
 Run "%[1]s apps <subcommand> -h" for a subcommand's own flags.
 `, prog)

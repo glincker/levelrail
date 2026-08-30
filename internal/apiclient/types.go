@@ -401,7 +401,52 @@ type ServiceTemplateDetail struct {
 // SetSecretRequest mirrors internal/api's setSecretRequest
 // (internal/api/secrets.go).
 type SetSecretRequest struct {
-	Value string `json:"value"`
+	Value           string `json:"value"`
+	OverwriteLocked bool   `json:"overwrite_locked"`
+}
+
+// SecretKeyResource mirrors internal/api's secretKeyResource
+// (internal/api/secrets.go): a secret's key and locked state, never its
+// value.
+type SecretKeyResource struct {
+	Key    string `json:"key"`
+	Locked bool   `json:"locked"`
+}
+
+// SetSecretLockRequest mirrors internal/api's setSecretLockRequest
+// (internal/api/secrets.go).
+type SetSecretLockRequest struct {
+	Locked bool `json:"locked"`
+}
+
+// GitSourceResource mirrors internal/api's gitSourceResource
+// (internal/api/git_sources.go). AdditionalServices/Services (the
+// multi-service fan-out fields) are deliberately not carried here: this
+// client's SetGitSourceRequest only covers the single-service connect
+// flow "apps deploy-spec" already handles for the multi-service case.
+type GitSourceResource struct {
+	ServiceName    string `json:"service_name"`
+	RepoURL        string `json:"repo_url"`
+	Branch         string `json:"branch"`
+	BuildType      string `json:"build_type"`
+	BuildPath      string `json:"build_path,omitempty"`
+	HasToken       bool   `json:"has_token"`
+	WebhookURL     string `json:"webhook_url"`
+	WebhookSecret  string `json:"webhook_secret,omitempty"`
+	PreviewEnabled bool   `json:"preview_enabled"`
+	CreatedAt      string `json:"created_at"`
+	UpdatedAt      string `json:"updated_at"`
+}
+
+// SetGitSourceRequest mirrors internal/api's setGitSourceRequest
+// (internal/api/git_sources.go), minus the multi-service Services/
+// AdditionalServices fields (see GitSourceResource's own doc comment).
+type SetGitSourceRequest struct {
+	RepoURL   string `json:"repo_url"`
+	Branch    string `json:"branch,omitempty"`
+	BuildType string `json:"build_type,omitempty"`
+	BuildPath string `json:"build_path,omitempty"`
+	Token     string `json:"token,omitempty"`
 }
 
 // NotificationChannelResource mirrors internal/api's
