@@ -90,20 +90,30 @@ type createBackupTargetRequest struct {
 // S3 round trip on every create call) would make this endpoint's latency
 // and failure modes depend on network access to a third-party service
 // it has no other reason to need.
-func validateCreateBackupTargetRequest(req createBackupTargetRequest) error {
-	if req.Name == "" {
+// validateBackupTargetFields checks name/provider/endpoint/bucket, the
+// fields createBackupTargetRequest and updateBackupTargetRequest validate
+// identically; each then layers its own credential-field rules on top.
+func validateBackupTargetFields(name, provider, endpoint, bucket string) error {
+	if name == "" {
 		return errors.New("name is required")
 	}
-	switch req.Provider {
+	switch provider {
 	case store.BackupProviderAWS, store.BackupProviderR2, store.BackupProviderCustom:
 	default:
 		return fmt.Errorf("provider must be one of %q, %q, %q", store.BackupProviderAWS, store.BackupProviderR2, store.BackupProviderCustom)
 	}
-	if req.Bucket == "" {
+	if bucket == "" {
 		return errors.New("bucket is required")
 	}
-	if req.Endpoint == "" && req.Provider != store.BackupProviderAWS {
+	if endpoint == "" && provider != store.BackupProviderAWS {
 		return errors.New("endpoint is required for r2 and custom providers")
+	}
+	return nil
+}
+
+func validateCreateBackupTargetRequest(req createBackupTargetRequest) error {
+	if err := validateBackupTargetFields(req.Name, req.Provider, req.Endpoint, req.Bucket); err != nil {
+		return err
 	}
 	if req.AccessKeyID == "" {
 		return errors.New("access_key_id is required")
@@ -131,19 +141,8 @@ type updateBackupTargetRequest struct {
 }
 
 func validateUpdateBackupTargetRequest(req updateBackupTargetRequest) error {
-	if req.Name == "" {
-		return errors.New("name is required")
-	}
-	switch req.Provider {
-	case store.BackupProviderAWS, store.BackupProviderR2, store.BackupProviderCustom:
-	default:
-		return fmt.Errorf("provider must be one of %q, %q, %q", store.BackupProviderAWS, store.BackupProviderR2, store.BackupProviderCustom)
-	}
-	if req.Bucket == "" {
-		return errors.New("bucket is required")
-	}
-	if req.Endpoint == "" && req.Provider != store.BackupProviderAWS {
-		return errors.New("endpoint is required for r2 and custom providers")
+	if err := validateBackupTargetFields(req.Name, req.Provider, req.Endpoint, req.Bucket); err != nil {
+		return err
 	}
 	if (req.AccessKeyID == "") != (req.SecretAccessKey == "") {
 		return errors.New("access_key_id and secret_access_key must be set together to rotate credentials")
