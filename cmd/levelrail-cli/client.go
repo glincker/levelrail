@@ -76,6 +76,8 @@ type (
 	environmentResource           = apiclient.EnvironmentResource
 	createEnvironmentRequest      = apiclient.CreateEnvironmentRequest
 	setAppEnvironmentRequest      = apiclient.SetAppEnvironmentRequest
+	previewEnvironmentResource    = apiclient.PreviewEnvironmentResource
+	setPreviewEnabledRequest      = apiclient.SetPreviewEnabledRequest
 
 	userResource               = apiclient.UserResource
 	createUserRequest          = apiclient.CreateUserRequest

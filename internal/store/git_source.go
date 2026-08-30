@@ -48,9 +48,17 @@ type GitSource struct {
 	// git source that only ever used AdditionalServices: a webhook keeps
 	// walking AdditionalServices exactly as before when this is empty,
 	// see handleGitPushWebhook's own doc comment.
-	Services  map[string]spec.Service
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Services map[string]spec.Service
+	// PreviewEnabled opts an app into preview environments per pull
+	// request (migrations/0064_preview_environments.sql): off by
+	// default, like every other opt-in feature toggle in this codebase.
+	// Set only via SetGitSourcePreviewEnabled, the same "SaveGitSource
+	// never writes it" shape AppID/ProjectID's own doc comments already
+	// establish for a value that must never move silently on an
+	// unrelated connect-form edit.
+	PreviewEnabled bool
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 // GitSourceBuild is one additional service's own build config within
@@ -116,7 +124,7 @@ func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
 // ErrGitSourceNotFound if none is.
 func (db *DB) GetGitSource(ctx context.Context, serviceName string) (*GitSource, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT service_name, repo_url, branch, build_type, build_path, additional_services, services_spec, created_at, updated_at
+		SELECT service_name, repo_url, branch, build_type, build_path, additional_services, services_spec, preview_enabled, created_at, updated_at
 		FROM service_git_sources WHERE service_name = ?
 	`, serviceName)
 	g, err := scanGitSource(row.Scan)
@@ -180,15 +188,45 @@ func (db *DB) DeleteGitSource(ctx context.Context, serviceName string) error {
 	return nil
 }
 
+// SetGitSourcePreviewEnabled toggles a connected git source's preview
+// environments opt-in; returns ErrGitSourceNotFound if no source is
+// connected for serviceName. A separate setter rather than a
+// SaveGitSource field, the same "an ordinary edit must never silently
+// move it" shape UpdateServiceSuspended already establishes for
+// DesiredService.Suspended.
+func (db *DB) SetGitSourcePreviewEnabled(ctx context.Context, serviceName string, enabled bool) error {
+	value := 0
+	if enabled {
+		value = 1
+	}
+	res, err := db.ExecContext(ctx, `
+		UPDATE service_git_sources SET preview_enabled = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		WHERE service_name = ?
+	`, value, serviceName)
+	if err != nil {
+		return fmt.Errorf("store: set git source %q preview enabled: %w", serviceName, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: set git source %q preview enabled: rows affected: %w", serviceName, err)
+	}
+	if n == 0 {
+		return ErrGitSourceNotFound
+	}
+	return nil
+}
+
 func scanGitSource(scan func(dest ...any) error) (*GitSource, error) {
 	var (
 		g                       GitSource
 		additionalJSON, svcJSON string
+		previewEnabled          int
 		createdAt, updatedAt    string
 	)
-	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &additionalJSON, &svcJSON, &createdAt, &updatedAt); err != nil {
+	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &additionalJSON, &svcJSON, &previewEnabled, &createdAt, &updatedAt); err != nil {
 		return nil, err
 	}
+	g.PreviewEnabled = previewEnabled != 0
 	if err := json.Unmarshal([]byte(additionalJSON), &g.AdditionalServices); err != nil {
 		return nil, fmt.Errorf("unmarshal additional_services: %w", err)
 	}

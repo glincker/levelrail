@@ -55,6 +55,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsSetEnvironment(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "clear-environment":
 		return runAppsClearEnvironment(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "previews":
+		return runAppsPreviews(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps subcommand %q\n\n", prog, args[0]) //nolint:gosec // same guard as above
 		_, _ = fmt.Fprint(stderr, appsUsage(prog))
@@ -83,6 +85,7 @@ func appsUsage(prog string) string {
   %[1]s apps environments <verb> [flags]   manage a project's environments (staging, production, ...)
   %[1]s apps set-environment <name> <environment-id> [flags]   tag an app with an environment
   %[1]s apps clear-environment <name> [flags]   remove an app's environment tag
+  %[1]s apps previews <verb> [flags]   manage preview environments per pull request
 
 Run "%[1]s apps <subcommand> -h" for a subcommand's own flags.
 `, prog)

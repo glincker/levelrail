@@ -314,6 +314,7 @@ type Store interface {
 	DomainStore
 	DomainBasicAuthStore
 	GitSourceStore
+	PreviewEnvironmentStore
 	GitHubAppStore
 	GitLabAppStore
 	BitbucketAppStore

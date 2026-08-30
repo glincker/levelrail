@@ -119,6 +119,15 @@ func gitCheckoutWithToken(ctx context.Context, repoURL, sha, token string) (dir 
 // single-service deploy plus the older deployAdditionalServices walk
 // below, unchanged.
 func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
+	// Every success/partial-failure response below is a plain status
+	// line that can embed webhook-payload fields a pusher or PR author
+	// controls (a branch name, a PR's base ref): an explicit text/plain
+	// content type stops any client from ever MIME-sniffing one of
+	// those bodies as HTML. writeError's own writeJSON call overrides
+	// this to application/json for the error paths below, which is
+	// correct: this only needs to cover the plain-text success paths.
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+
 	name := r.PathValue("name")
 
 	if rt.gitSourceSecrets == nil {
@@ -163,6 +172,21 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if webhook.IsPullRequestEvent(r.Header) {
+		prEv, err := webhook.ParsePullRequestEventForProvider(body, r.Header)
+		if err != nil {
+			rt.logger.Warn("api: git push webhook: malformed pull request payload", slog.String("error", err.Error()), slog.String("name", name))
+			writeError(w, http.StatusBadRequest, "malformed payload")
+			return
+		}
+		status, message := rt.handlePullRequestWebhookEvent(r.Context(), name, *gs, prEv)
+		w.WriteHeader(status)
+		if _, err := fmt.Fprint(w, message); err != nil { //nolint:gosec // gosec's taint check can't see the text/plain Content-Type set above this function's entry, which is the actual mitigation for a client ever interpreting message's webhook-payload-derived fields as markup
+			rt.logger.Warn("api: git push webhook: failed to write response body", slog.String("error", err.Error()), slog.String("name", name))
+		}
+		return
+	}
+
 	ev, err := webhook.ParsePushEventForProvider(body, r.Header.Get("X-Event-Key"))
 	if err != nil {
 		rt.logger.Warn("api: git push webhook: malformed payload", slog.String("error", err.Error()), slog.String("name", name))
@@ -196,20 +220,11 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hasToken, err := rt.gitSourceSecrets.Exists(r.Context(), secretsKey, gitSourceTokenKey)
+	token, err := rt.resolveGitSourceDeployToken(r.Context(), name)
 	if err != nil {
-		rt.logger.Error("api: git push webhook: check deploy token failed", slog.String("error", err.Error()), slog.String("name", name))
+		rt.logger.Error("api: git push webhook: resolve deploy token failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
-	}
-	var token string
-	if hasToken {
-		token, err = rt.gitSourceSecrets.Resolve(r.Context(), secretsKey, gitSourceTokenKey)
-		if err != nil {
-			rt.logger.Error("api: git push webhook: resolve deploy token failed", slog.String("error", err.Error()), slog.String("name", name))
-			writeError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
 	}
 
 	sourceDir, cleanup, err := rt.gitSourceFetch(r.Context(), gs.RepoURL, ev.After, token)
@@ -273,6 +288,27 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 	if _, err := fmt.Fprintf(w, "deploy triggered: %s (%d additional service(s) failed)\n", tag, additionalFailed); err != nil {
 		rt.logger.Warn("api: git push webhook: failed to write response body", slog.String("error", err.Error()), slog.String("name", name))
 	}
+}
+
+// resolveGitSourceDeployToken returns name's connected git source's
+// deploy token, or "" if none was ever set (the ordinary public-repo
+// case): shared by handleGitPushWebhook's own push path and
+// deployPreviewEnvironment (preview_environments.go), so both resolve a
+// private-repo credential exactly the same way.
+func (rt *Router) resolveGitSourceDeployToken(ctx context.Context, name string) (string, error) {
+	secretsKey := store.GitSourceSecretsKey(name)
+	hasToken, err := rt.gitSourceSecrets.Exists(ctx, secretsKey, gitSourceTokenKey)
+	if err != nil {
+		return "", fmt.Errorf("check deploy token: %w", err)
+	}
+	if !hasToken {
+		return "", nil
+	}
+	token, err := rt.gitSourceSecrets.Resolve(ctx, secretsKey, gitSourceTokenKey)
+	if err != nil {
+		return "", fmt.Errorf("resolve deploy token: %w", err)
+	}
+	return token, nil
 }
 
 // deployAdditionalServices rebuilds and redeploys each sibling service in

@@ -51,6 +51,19 @@ are still open. This page describes what's actually true today.
   webhook auto-registration degrades gracefully to a manual
   paste-the-secret banner if a pre-existing App installation predates
   the permission it now requests.
+- Preview environments per pull request: opt-in per app
+  (`GitSource.PreviewEnabled`, off by default). Opening or updating a
+  pull request against a preview-enabled app's target branch deploys an
+  independent `<app>-pr-<number>` app from the PR's head commit, reusing
+  the app's own build config; closing or merging the PR tears it down
+  automatically. A configured control-plane primary domain gets a
+  `pr-<number>.<app>.<domain>` subdomain; without one, the preview is
+  reachable by host:port like any domain-less app. GitHub only for now
+  (`pull_request` events); GitLab (Merge Request Hook) and Bitbucket
+  (`pullrequest:*`) webhook payloads are parsed too, but end-to-end
+  testing has only covered GitHub. Wired into the dashboard (a card
+  alongside git source settings: toggle, active-preview list, manual
+  teardown) and the CLI (`apps previews list/teardown/enable/disable`).
 - Embedded Caddy ingress with automatic TLS and domain routing. TLS
   today defaults to an internal, self-signed issuer; a public ACME
   issuer exists and is toggleable but is still unverified against a
@@ -237,9 +250,9 @@ are still open. This page describes what's actually true today.
 
 ## Not started
 
-- Preview environments per pull request. Not built; no longer blocked
-  on the webhook and `DeploySpec` fan-out paths unifying, since that
-  work has landed (see Multi-service apps, above).
+Nothing currently on this list: preview environments (this page's own
+"Done" section, above) and live in-place resource-limit application
+were the last two items here, and both have since shipped.
 
 ## Explicitly out of scope
 

@@ -170,6 +170,7 @@ type Router struct {
 	notificationChannels      NotificationChannels            // nil is valid: notification-channel routes return 501, same shape as deployNotifyTargets above
 	notificationChannelTester NotificationChannelTester       // nil is valid: the test-send routes return 501, same shape as deployNotifier above
 	gitSources                GitSourceStore                  // always set, same "core Store interface" shape as backupTargets above: listing/getting/deleting a git source needs no secrets configuration, only connecting one does
+	previewEnvironments       PreviewEnvironmentStore         // always set, same "core Store interface" shape as gitSources above: listing/tearing down a preview needs no extra secrets configuration, deploying a new one reuses gitSourceSecrets/gitSourceFetch/builder already above
 	gitSourceSecrets          GitSourceSecrets                // nil is valid: PUT /apps/{name}/git-source and the git-push webhook route both return 501, same shape as backupSecrets above
 	gitSourceFetch            gitSourceFetchFunc              // git-source fetcher for handleGitPushWebhook; always non-nil, defaulted to gitCheckoutWithToken in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape fetch/listBranches above already use
 	githubApp                 GitHubAppStore                  // always set, same "core Store interface" shape as backupTargets/certs above: the connection row/its absence is always queryable, no secrets configuration needed just to read status
@@ -237,6 +238,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		backupHistory:           s,
 		restoreHistory:          s,
 		gitSources:              s,
+		previewEnvironments:     s,
 		githubApp:               s,
 		githubAppClient:         githubapp.NewClient(),
 		githubAppState:          newPendingState(),
