@@ -159,10 +159,18 @@ Flags:
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
+// apiFlagPtrs bundles apiFlagSet's three pointer outputs so
+// parseEnvironmentIDCommand stays under golangci-lint's parameter-count
+// limit.
+type apiFlagPtrs struct {
+	token, apiURL *string
+	jsonOut       *bool
+}
+
 // parseEnvironmentIDCommand parses the standard flag set plus the single
 // "environment id" positional argument shared by delete/env-get/env-set.
 // exitCode is only meaningful when ok is false.
-func parseEnvironmentIDCommand(fs *flag.FlagSet, args []string, stderr io.Writer, prog, cmdName string, tokenFlagP, apiURLFlagP *string, jsonOutP *bool) (id, tokenFlag, apiURLFlag string, jsonOut bool, exitCode int, ok bool) {
+func parseEnvironmentIDCommand(fs *flag.FlagSet, args []string, stderr io.Writer, prog, cmdName string, flags apiFlagPtrs) (id, tokenFlag, apiURLFlag string, jsonOut bool, exitCode int, ok bool) {
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
 		if err == flag.ErrHelp {
 			return "", "", "", false, exitOK, false
@@ -175,14 +183,14 @@ func parseEnvironmentIDCommand(fs *flag.FlagSet, args []string, stderr io.Writer
 		return "", "", "", false, exitUsage, false
 	}
 
-	return id, *tokenFlagP, *apiURLFlagP, *jsonOutP, 0, true
+	return id, *flags.token, *flags.apiURL, *flags.jsonOut, 0, true
 }
 
 func runAppsEnvironmentsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps environments delete", "print {} to stdout on success instead of a plain confirmation", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsDeleteUsage(prog)) }
 
-	id, tokenFlag, apiURLFlag, jsonOut, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments delete", tokenFlagP, apiURLFlagP, jsonOutP)
+	id, tokenFlag, apiURLFlag, jsonOut, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments delete", apiFlagPtrs{tokenFlagP, apiURLFlagP, jsonOutP})
 	if !ok {
 		return exitCode
 	}
@@ -216,7 +224,7 @@ func runAppsEnvironmentsEnvGet(prog string, args []string, stdout, stderr io.Wri
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps environments env-get", "print the env vars as a JSON object to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsEnvGetUsage(prog)) }
 
-	id, tokenFlag, apiURLFlag, jsonOut, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments env-get", tokenFlagP, apiURLFlagP, jsonOutP)
+	id, tokenFlag, apiURLFlag, jsonOut, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments env-get", apiFlagPtrs{tokenFlagP, apiURLFlagP, jsonOutP})
 	if !ok {
 		return exitCode
 	}
@@ -251,7 +259,7 @@ func runAppsEnvironmentsEnvSet(prog string, args []string, stdout, stderr io.Wri
 	fs.Var(vars, "var", "shared env var as KEY=VALUE, repeatable; omit entirely to clear every var")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsEnvSetUsage(prog)) }
 
-	id, tokenFlag, apiURLFlag, jsonOut, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments env-set", tokenFlagP, apiURLFlagP, jsonOutP)
+	id, tokenFlag, apiURLFlag, jsonOut, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments env-set", apiFlagPtrs{tokenFlagP, apiURLFlagP, jsonOutP})
 	if !ok {
 		return exitCode
 	}
