@@ -106,13 +106,13 @@ type OrganizationEnvStore interface {
 	ListOrganizationEnvVarsForProject(ctx context.Context, projectID string) (map[string]string, error)
 }
 
-// EnvironmentEnvStore is the narrow surface this controller needs to
+// EnvironmentEnvLister is the narrow surface this controller needs to
 // resolve store.DesiredService.EnvironmentID's shared env vars, the tier
 // between ProjectEnvStore and this service's own Env (resolveEnv's own
 // doc comment on precedence). Unlike OrganizationEnvStore, no join is
 // needed: EnvironmentID already lives directly on DesiredService.
 // *store.DB satisfies this structurally.
-type EnvironmentEnvStore interface {
+type EnvironmentEnvLister interface {
 	ListEnvironmentEnvVars(ctx context.Context, environmentID string) (map[string]string, error)
 }
 
@@ -157,7 +157,7 @@ type Controller struct {
 	storageTargets StorageTargetStore      // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
 	projectEnv     ProjectEnvStore         // nil is valid: project vars are just skipped, see WithProjectEnv
 	orgEnv         OrganizationEnvStore    // nil is valid: organization vars are just skipped, see WithOrganizationEnv
-	environmentEnv EnvironmentEnvStore     // nil is valid: environment vars are just skipped, see WithEnvironmentEnv
+	environmentEnv EnvironmentEnvLister     // nil is valid: environment vars are just skipped, see WithEnvironmentEnv
 	networkPrefix  string                  // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
 	registryCreds  RegistryCredentialStore // nil is valid: a service with no RegistryCredentialID never needs one, see WithRegistryCredentials
 	databases      DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
@@ -272,9 +272,9 @@ func WithOrganizationEnv(s OrganizationEnvStore) Option {
 // shared env vars as resolveEnv's middle layer, applied above
 // WithProjectEnv/WithOrganizationEnv and below the service's own Env.
 // Same "purely an organizational label" reasoning as WithProjectEnv: a
-// service with an EnvironmentID but no EnvironmentEnvStore configured
+// service with an EnvironmentID but no EnvironmentEnvLister configured
 // does not fail Reconcile, environment vars are just silently skipped.
-func WithEnvironmentEnv(s EnvironmentEnvStore) Option {
+func WithEnvironmentEnv(s EnvironmentEnvLister) Option {
 	return func(ctrl *Controller) { ctrl.environmentEnv = s }
 }
 

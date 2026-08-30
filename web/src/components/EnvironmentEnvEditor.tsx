@@ -10,9 +10,9 @@ import { toast } from '@/components/ui/toast'
 // resolveEnv.
 export function EnvironmentEnvEditor({
   environmentId,
-}: {
+}: Readonly<{
   environmentId: string
-}) {
+}>) {
   const { data: env } = useEnvironmentEnv(environmentId)
   const setEnv = useSetEnvironmentEnv(environmentId)
 

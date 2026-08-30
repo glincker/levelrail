@@ -1436,33 +1436,33 @@ func (f *fakeProjectEnvStore) ListProjectEnvVars(_ context.Context, projectID st
 func TestController_Reconcile_NoTierID_EnvStoreNeverConsulted(t *testing.T) {
 	tests := []struct {
 		name    string
-		options func(projectEnv *fakeProjectEnvStore, orgEnv *fakeOrganizationEnvStore, environmentEnv *fakeEnvironmentEnvStore) []Option
-		calls   func(projectEnv *fakeProjectEnvStore, orgEnv *fakeOrganizationEnvStore, environmentEnv *fakeEnvironmentEnvStore) int
+		options func(projectEnv *fakeProjectEnvStore, orgEnv *fakeOrganizationEnvStore, environmentEnv *fakeEnvironmentEnvLister) []Option
+		calls   func(projectEnv *fakeProjectEnvStore, orgEnv *fakeOrganizationEnvStore, environmentEnv *fakeEnvironmentEnvLister) int
 	}{
 		{
 			name: "ProjectEnv",
-			options: func(p *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvStore) []Option {
+			options: func(p *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvLister) []Option {
 				return []Option{WithProjectEnv(p)}
 			},
-			calls: func(p *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvStore) int {
+			calls: func(p *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvLister) int {
 				return p.calls
 			},
 		},
 		{
 			name: "OrganizationEnv",
-			options: func(_ *fakeProjectEnvStore, o *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvStore) []Option {
+			options: func(_ *fakeProjectEnvStore, o *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvLister) []Option {
 				return []Option{WithOrganizationEnv(o)}
 			},
-			calls: func(_ *fakeProjectEnvStore, o *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvStore) int {
+			calls: func(_ *fakeProjectEnvStore, o *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvLister) int {
 				return o.calls
 			},
 		},
 		{
 			name: "EnvironmentEnv",
-			options: func(_ *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, e *fakeEnvironmentEnvStore) []Option {
+			options: func(_ *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, e *fakeEnvironmentEnvLister) []Option {
 				return []Option{WithEnvironmentEnv(e)}
 			},
-			calls: func(_ *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, e *fakeEnvironmentEnvStore) int {
+			calls: func(_ *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, e *fakeEnvironmentEnvLister) int {
 				return e.calls
 			},
 		},
@@ -1472,7 +1472,7 @@ func TestController_Reconcile_NoTierID_EnvStoreNeverConsulted(t *testing.T) {
 			rt := newFakeRuntime(0)
 			projectEnv := &fakeProjectEnvStore{}
 			orgEnv := &fakeOrganizationEnvStore{}
-			environmentEnv := &fakeEnvironmentEnvStore{}
+			environmentEnv := &fakeEnvironmentEnvLister{}
 			desired := &store.DesiredService{
 				Name: "web", Image: "img:v1", Port: 80,
 				Env: map[string]string{"NODE_ENV": "production"},
@@ -1545,7 +1545,7 @@ func TestController_Reconcile_EnvironmentEnv_MergedAboveProjectLayer(t *testing.
 	projectEnv := &fakeProjectEnvStore{vars: map[string]map[string]string{
 		"proj_1": {"LOG_LEVEL": "info", "REGION": "us-east-1"},
 	}}
-	environmentEnv := &fakeEnvironmentEnvStore{vars: map[string]map[string]string{
+	environmentEnv := &fakeEnvironmentEnvLister{vars: map[string]map[string]string{
 		"env_1": {"LOG_LEVEL": "debug"},
 	}}
 	desired := &store.DesiredService{
@@ -1587,17 +1587,17 @@ func (f *fakeOrganizationEnvStore) ListOrganizationEnvVarsForProject(_ context.C
 	return f.vars[projectID], nil
 }
 
-// fakeEnvironmentEnvStore is a hand-written fake for EnvironmentEnvStore,
+// fakeEnvironmentEnvLister is a hand-written fake for EnvironmentEnvLister,
 // same pattern as fakeProjectEnvStore above, but keyed directly by
 // environmentID: unlike fakeOrganizationEnvStore, no join is needed since
 // EnvironmentID already lives directly on DesiredService.
-type fakeEnvironmentEnvStore struct {
+type fakeEnvironmentEnvLister struct {
 	vars  map[string]map[string]string
 	err   error
 	calls int
 }
 
-func (f *fakeEnvironmentEnvStore) ListEnvironmentEnvVars(_ context.Context, environmentID string) (map[string]string, error) {
+func (f *fakeEnvironmentEnvLister) ListEnvironmentEnvVars(_ context.Context, environmentID string) (map[string]string, error) {
 	f.calls++
 	if f.err != nil {
 		return nil, f.err
@@ -1617,7 +1617,7 @@ func TestController_Reconcile_OrgEnv_MergedBelowProjectLayer(t *testing.T) {
 	projectEnv := &fakeProjectEnvStore{vars: map[string]map[string]string{
 		"proj_1": {"LOG_LEVEL": "info", "NODE_ENV": "development", "TIER": "project"},
 	}}
-	environmentEnv := &fakeEnvironmentEnvStore{vars: map[string]map[string]string{
+	environmentEnv := &fakeEnvironmentEnvLister{vars: map[string]map[string]string{
 		"env_1": {"LOG_LEVEL": "warn", "TIER": "environment"},
 	}}
 	desired := &store.DesiredService{
@@ -1651,23 +1651,23 @@ func TestController_Reconcile_OrgEnv_MergedBelowProjectLayer(t *testing.T) {
 func TestController_Reconcile_EnvStore_ResolverErrorPropagates(t *testing.T) {
 	tests := []struct {
 		name    string
-		options func(projectEnv *fakeProjectEnvStore, orgEnv *fakeOrganizationEnvStore, environmentEnv *fakeEnvironmentEnvStore) []Option
+		options func(projectEnv *fakeProjectEnvStore, orgEnv *fakeOrganizationEnvStore, environmentEnv *fakeEnvironmentEnvLister) []Option
 	}{
 		{
 			name: "ProjectEnv",
-			options: func(p *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvStore) []Option {
+			options: func(p *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvLister) []Option {
 				return []Option{WithProjectEnv(p)}
 			},
 		},
 		{
 			name: "OrganizationEnv",
-			options: func(_ *fakeProjectEnvStore, o *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvStore) []Option {
+			options: func(_ *fakeProjectEnvStore, o *fakeOrganizationEnvStore, _ *fakeEnvironmentEnvLister) []Option {
 				return []Option{WithOrganizationEnv(o)}
 			},
 		},
 		{
 			name: "EnvironmentEnv",
-			options: func(_ *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, e *fakeEnvironmentEnvStore) []Option {
+			options: func(_ *fakeProjectEnvStore, _ *fakeOrganizationEnvStore, e *fakeEnvironmentEnvLister) []Option {
 				return []Option{WithEnvironmentEnv(e)}
 			},
 		},
@@ -1677,7 +1677,7 @@ func TestController_Reconcile_EnvStore_ResolverErrorPropagates(t *testing.T) {
 			rt := newFakeRuntime(0)
 			projectEnv := &fakeProjectEnvStore{err: errors.New("db unavailable")}
 			orgEnv := &fakeOrganizationEnvStore{err: errors.New("db unavailable")}
-			environmentEnv := &fakeEnvironmentEnvStore{err: errors.New("db unavailable")}
+			environmentEnv := &fakeEnvironmentEnvLister{err: errors.New("db unavailable")}
 			desired := &store.DesiredService{
 				Name: "web", Image: "img:v1", Port: 80,
 				ProjectID:     "proj_1",

@@ -159,21 +159,32 @@ Flags:
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
+// parseEnvironmentIDCommand parses the standard flag set plus the single
+// "environment id" positional argument shared by delete/env-get/env-set.
+// exitCode is only meaningful when ok is false.
+func parseEnvironmentIDCommand(fs *flag.FlagSet, args []string, stderr io.Writer, prog, cmdName string, tokenFlagP, apiURLFlagP *string, jsonOutP *bool) (id, tokenFlag, apiURLFlag string, jsonOut bool, exitCode int, ok bool) {
+	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
+		if err == flag.ErrHelp {
+			return "", "", "", false, exitOK, false
+		}
+		return "", "", "", false, exitUsage, false
+	}
+
+	id, argOK := requireOneArg(fs, stderr, prog, cmdName, "environment id")
+	if !argOK {
+		return "", "", "", false, exitUsage, false
+	}
+
+	return id, *tokenFlagP, *apiURLFlagP, *jsonOutP, 0, true
+}
+
 func runAppsEnvironmentsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps environments delete", "print {} to stdout on success instead of a plain confirmation", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsDeleteUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
-	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
-
-	id, ok := requireOneArg(fs, stderr, prog, "apps environments delete", "environment id")
+	id, tokenFlag, apiURLFlag, jsonOut, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments delete", tokenFlagP, apiURLFlagP, jsonOutP)
 	if !ok {
-		return exitUsage
+		return exitCode
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
@@ -205,17 +216,9 @@ func runAppsEnvironmentsEnvGet(prog string, args []string, stdout, stderr io.Wri
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps environments env-get", "print the env vars as a JSON object to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsEnvGetUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
-	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
-
-	id, ok := requireOneArg(fs, stderr, prog, "apps environments env-get", "environment id")
+	id, tokenFlag, apiURLFlag, jsonOut, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments env-get", tokenFlagP, apiURLFlagP, jsonOutP)
 	if !ok {
-		return exitUsage
+		return exitCode
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
@@ -248,17 +251,9 @@ func runAppsEnvironmentsEnvSet(prog string, args []string, stdout, stderr io.Wri
 	fs.Var(vars, "var", "shared env var as KEY=VALUE, repeatable; omit entirely to clear every var")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsEnvSetUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
-	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
-
-	id, ok := requireOneArg(fs, stderr, prog, "apps environments env-set", "environment id")
+	id, tokenFlag, apiURLFlag, jsonOut, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments env-set", tokenFlagP, apiURLFlagP, jsonOutP)
 	if !ok {
-		return exitUsage
+		return exitCode
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
