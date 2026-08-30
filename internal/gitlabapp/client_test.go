@@ -208,6 +208,9 @@ func TestClient_CreateProjectWebhook(t *testing.T) {
 	if !gotBody.PushEvents {
 		t.Error("push_events = false, want true")
 	}
+	if !gotBody.MergeRequestsEvents {
+		t.Error("merge_requests_events = false, want true")
+	}
 	if gotBody.Token != "the-secret" {
 		t.Errorf("token = %q, want the-secret", gotBody.Token)
 	}

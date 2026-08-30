@@ -154,8 +154,14 @@ func TestClient_CreateRepoWebhook_SendsSecret(t *testing.T) {
 		t.Errorf("body secret = %v, want whsecret", gotBody["secret"])
 	}
 	events, _ := gotBody["events"].([]any)
-	if len(events) != 1 || events[0] != "repo:push" {
-		t.Errorf("body events = %v, want [repo:push]", gotBody["events"])
+	want := []string{"repo:push", "pullrequest:created", "pullrequest:updated", "pullrequest:fulfilled", "pullrequest:rejected"}
+	if len(events) != len(want) {
+		t.Fatalf("body events = %v, want %v", gotBody["events"], want)
+	}
+	for i, w := range want {
+		if events[i] != w {
+			t.Errorf("body events[%d] = %v, want %q", i, events[i], w)
+		}
 	}
 }
 

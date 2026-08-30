@@ -338,18 +338,22 @@ type createWebhookRequest struct {
 	Secret      string   `json:"secret"`
 }
 
-// CreateRepoWebhook registers a repo:push webhook on fullName
-// ("workspace/repo_slug") pointed at hookURL, with secret set as the
-// value Bitbucket signs each delivery's X-Hub-Signature header with
-// (HMAC-SHA256, the same header name GitHub uses for its own SHA-1
-// predecessor, see internal/api/git_webhook.go's own verification
-// branch for the distinction).
+// CreateRepoWebhook registers a repo:push and pullrequest:* webhook on
+// fullName ("workspace/repo_slug") pointed at hookURL, with secret set
+// as the value Bitbucket signs each delivery's X-Hub-Signature header
+// with (HMAC-SHA256, the same header name GitHub uses for its own
+// SHA-1 predecessor, see internal/api/git_webhook.go's own
+// verification branch for the distinction). Each pull request event
+// key must be requested explicitly: without them Bitbucket never
+// delivers the events internal/webhook's Bitbucket pull-request
+// parsing expects, so preview environments would silently never
+// trigger for a connected repo.
 func (c *Client) CreateRepoWebhook(ctx context.Context, accessToken, fullName, hookURL, secret string) error {
 	body, err := json.Marshal(createWebhookRequest{ //nolint:gosec // secret is sent to Bitbucket to configure delivery signing, not a leaked credential
 		Description: "Levelrail push deploy",
 		URL:         hookURL,
 		Active:      true,
-		Events:      []string{"repo:push"},
+		Events:      []string{"repo:push", "pullrequest:created", "pullrequest:updated", "pullrequest:fulfilled", "pullrequest:rejected"},
 		Secret:      secret,
 	})
 	if err != nil {
