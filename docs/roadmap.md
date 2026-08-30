@@ -78,6 +78,12 @@ are still open. This page describes what's actually true today.
   commands: pull every app off a live Coolify or Dokploy instance and
   either write app.yaml files or apply them directly to a target
   Levelrail instance.
+- An MCP server (`cmd/levelrail-mcp`), wrapping the same versioned REST
+  API and bearer-token model the CLI already uses, so a token scoped to
+  fewer abilities than a tool needs gets the same 403 the REST API
+  itself would return. Twelve tools today: list/get/deploy/restart/
+  status/deploy-history/logs for apps, list/get for databases, and
+  list/get for service templates.
 - Live end-to-end test suite: whole-chain push-to-HTTPS, rollback in
   both directions, the real git webhook path, database reconciliation,
   non-default port routing, and node placement. Doesn't yet exercise
@@ -216,7 +222,6 @@ are still open. This page describes what's actually true today.
 - Preview environments per pull request. Depends on the webhook path
   and `DeploySpec`'s fan-out unifying first (see Multi-service apps,
   above).
-- The MCP server.
 - Live, in-place resource-limit application without a restart. A saved
   health-check or resource-limit change doesn't reconcile into the
   already-running container until a restart forces a new one (the
