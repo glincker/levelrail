@@ -187,6 +187,13 @@ are still open. This page describes what's actually true today.
 - "Restart required" toast after saving a health-check or
   resource-limit change, with a one-click restart action. Env changes
   don't trigger it.
+- Named roles: three curated ability-set presets (admin, operator,
+  viewer, `internal/api/roles.go`) applied to a user in one action via
+  `role` on create/update, instead of hand-picking abilities one at a
+  time. `GET /api/v1/roles` lists the presets; the users settings page's
+  create/edit dialogs get a role dropdown that falls back to "Custom"
+  for a hand-picked set; the CLI's `users create`/`users set-abilities`
+  take a `--role` flag as an alternative to `--abilities`.
 
 ## In progress
 
@@ -219,10 +226,6 @@ are still open. This page describes what's actually true today.
 
 ## Not started
 
-- Named roles (a curated small role set, e.g. "operator"/"viewer")
-  rather than hand-picking an ability list per user. Multi-user
-  accounts and per-user abilities are real (see Done); this would be a
-  convenience layer on top, not a functional gap.
 - Preview environments per pull request. Depends on the webhook path
   and `DeploySpec`'s fan-out unifying first (see Multi-service apps,
   above).

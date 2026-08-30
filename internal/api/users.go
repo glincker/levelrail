@@ -20,12 +20,17 @@ type userResource struct {
 	HasPassword bool       `json:"has_password"`
 	Providers   []string   `json:"providers"`
 	Abilities   []string   `json:"abilities"`
+	Role        string     `json:"role,omitempty"`
 	IsFirstUser bool       `json:"is_first_user"`
 	CreatedAt   time.Time  `json:"created_at"`
 	LastLoginAt *time.Time `json:"last_login_at,omitempty"`
 }
 
+// toUserResource sets Role from roleForAbilities: empty (omitted from
+// the response) when Abilities doesn't exactly match a curated preset,
+// the "Custom" case in the UI.
 func toUserResource(u store.User, providers []string) userResource {
+	role, _ := roleForAbilities(u.Abilities)
 	return userResource{
 		ID:          u.ID,
 		Email:       u.Email,
@@ -33,6 +38,7 @@ func toUserResource(u store.User, providers []string) userResource {
 		HasPassword: u.PasswordHash != nil,
 		Providers:   providers,
 		Abilities:   u.Abilities,
+		Role:        role,
 		IsFirstUser: u.IsFirstUser,
 		CreatedAt:   u.CreatedAt,
 		LastLoginAt: u.LastLoginAt,
@@ -71,15 +77,21 @@ type createUserRequest struct {
 	DisplayName string   `json:"display_name"`
 	Password    string   `json:"password"`
 	Abilities   []string `json:"abilities"`
+	// Role, when non-empty, names a curated preset (roles.go) applied
+	// instead of Abilities: a convenience for the common cases, not a
+	// second permission model. Abilities is still required when Role is
+	// empty, unchanged from before this field existed.
+	Role string `json:"role,omitempty"`
 }
 
 // handleCreateUser handles POST /api/v1/auth/users: how every user after
 // the first gets created, now that POST /auth/register only ever creates
 // the first (see that handler's doc comment). AbilityRoot-gated (see
-// router.go's registration): the caller picks the new user's Abilities,
-// so only a caller who already has every ability may hand out any subset
-// of them. Abilities is required, no default: the root caller must
-// explicitly choose what the new account can do.
+// router.go's registration): the caller picks the new user's Abilities
+// (directly, or via Role), so only a caller who already has every
+// ability may hand out any subset of them. One of Abilities/Role is
+// required, no default: the root caller must explicitly choose what the
+// new account can do.
 func (rt *Router) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	var req createUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -94,7 +106,8 @@ func (rt *Router) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "password must be at least 8 characters")
 		return
 	}
-	if err := validateAbilities(req.Abilities); err != nil {
+	abilities, err := resolveAbilities(req.Role, req.Abilities)
+	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -121,7 +134,7 @@ func (rt *Router) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 		Email:        req.Email,
 		DisplayName:  displayName,
 		PasswordHash: &hashStr,
-		Abilities:    req.Abilities,
+		Abilities:    abilities,
 		CreatedAt:    time.Now(),
 	}
 	if err := rt.auth.CreateUser(r.Context(), user); errors.Is(err, store.ErrUserEmailExists) {
@@ -138,6 +151,9 @@ func (rt *Router) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 
 type updateUserAbilitiesRequest struct {
 	Abilities []string `json:"abilities"`
+	// Role, when non-empty, names a curated preset (roles.go) applied
+	// instead of Abilities, same as createUserRequest.Role.
+	Role string `json:"role,omitempty"`
 }
 
 // handleUpdateUserAbilities handles PUT /api/v1/users/{id}/abilities:
@@ -158,12 +174,13 @@ func (rt *Router) handleUpdateUserAbilities(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if err := validateAbilities(req.Abilities); err != nil {
+	abilities, err := resolveAbilities(req.Role, req.Abilities)
+	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err := rt.auth.UpdateUserAbilities(r.Context(), id, req.Abilities); errors.Is(err, store.ErrUserNotFound) {
+	if err := rt.auth.UpdateUserAbilities(r.Context(), id, abilities); errors.Is(err, store.ErrUserNotFound) {
 		writeError(w, http.StatusNotFound, "user not found")
 		return
 	} else if err != nil {

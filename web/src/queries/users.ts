@@ -17,16 +17,24 @@ export interface UserResource {
   has_password: boolean
   providers: string[]
   abilities: Ability[]
+  // role is the curated preset (internal/api/roles.go) this user's
+  // Abilities exactly matches, e.g. "operator"; absent when Abilities
+  // doesn't match any preset (the "Custom" case).
+  role?: string
   is_first_user: boolean
   created_at: string
   last_login_at?: string
 }
 
+// CreateUserRequest's abilities/role are mutually exclusive: role, when
+// set, takes precedence server-side (resolveAbilities), so callers
+// should send exactly one.
 export interface CreateUserRequest {
   email: string
   display_name?: string
   password: string
-  abilities: Ability[]
+  abilities?: Ability[]
+  role?: string
 }
 
 export const userKeys = {
@@ -105,9 +113,12 @@ export function useDeleteUser() {
   })
 }
 
+// UpdateUserAbilitiesRequest's abilities/role are mutually exclusive,
+// same precedence as CreateUserRequest.
 export interface UpdateUserAbilitiesRequest {
   id: string
-  abilities: Ability[]
+  abilities?: Ability[]
+  role?: string
 }
 
 // PUT /api/v1/users/{id}/abilities: AbilityRoot-gated, and the handler
@@ -124,7 +135,9 @@ export async function updateUserAbilities(
     {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ abilities: req.abilities }),
+      body: JSON.stringify(
+        req.role ? { role: req.role } : { abilities: req.abilities },
+      ),
     },
   )
   if (!res.ok) {
