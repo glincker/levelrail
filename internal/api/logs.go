@@ -2,12 +2,10 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
 	"log/slog"
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
@@ -30,11 +28,21 @@ type logsResponse struct {
 	Entries []logEntryResource `json:"entries"`
 }
 
-// handleQueryLogs handles GET /api/v1/apps/{name}/logs. Query params:
-// from/to (RFC3339, same default window as handleQueryMetrics), q (a
-// full-text search phrase; empty means every log line in range,
-// matching telemetry.QueryLogs' own "empty query" contract).
+// handleQueryLogs handles GET /api/v1/apps/{name}/logs; see
+// queryResourceLogs for the shared implementation.
 func (rt *Router) handleQueryLogs(w http.ResponseWriter, r *http.Request) {
+	rt.queryResourceLogs(w, r, rt.lookupAppResource, "query logs", "app")
+}
+
+// queryResourceLogs is the shared body behind handleQueryLogs and
+// handleQueryDatabaseLogs (database_logs.go): resolve name via lookup,
+// then apply the same query params to both resource kinds (from/to
+// RFC3339, same default window as handleQueryMetrics; q, a full-text
+// search phrase, empty meaning every log line in range per
+// telemetry.QueryLogs' own "empty query" contract). opName and noun feed
+// the log lines and 404 message so an app 404 reads "app not found" and
+// a database 404 reads "database not found".
+func (rt *Router) queryResourceLogs(w http.ResponseWriter, r *http.Request, lookup resourceLookup, opName, noun string) {
 	if rt.telemetry == nil {
 		writeError(w, http.StatusNotImplemented, "telemetry is not configured on this control plane")
 		return
@@ -42,11 +50,12 @@ func (rt *Router) handleQueryLogs(w http.ResponseWriter, r *http.Request) {
 
 	name := r.PathValue("name")
 
-	if _, err := rt.apps.GetDesiredService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
-		writeError(w, http.StatusNotFound, "app not found")
+	resourceID, found, err := lookup(r.Context(), name)
+	if !found && err == nil {
+		writeError(w, http.StatusNotFound, noun+" not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: query logs: load app failed", slog.String("error", err.Error()), slog.String("name", name))
+		rt.logger.Error("api: "+opName+": load "+noun+" failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
@@ -58,17 +67,17 @@ func (rt *Router) handleQueryLogs(w http.ResponseWriter, r *http.Request) {
 	}
 	query := r.URL.Query().Get("q")
 
-	entries, err := rt.telemetry.QueryLogs(r.Context(), resourceIDForApp(name), from, to, query)
+	entries, err := rt.telemetry.QueryLogs(r.Context(), resourceID, from, to, query)
 	if err != nil {
 		if len(entries) == 0 {
-			rt.logger.Error("api: query logs failed", slog.String("error", err.Error()), slog.String("name", name))
+			rt.logger.Error("api: "+opName+" failed", slog.String("error", err.Error()), slog.String("name", name))
 			writeError(w, http.StatusInternalServerError, "internal error")
 			return
 		}
 		// Same partial-result handling as handleQueryMetrics: a
 		// federated query with some data back is a warning, not a
 		// failure, per ADR 008.
-		rt.logger.Warn("api: query logs: partial result", slog.String("error", err.Error()), slog.String("name", name))
+		rt.logger.Warn("api: "+opName+": partial result", slog.String("error", err.Error()), slog.String("name", name))
 	}
 
 	out := make([]logEntryResource, len(entries))
