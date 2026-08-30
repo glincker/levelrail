@@ -5,6 +5,7 @@ import { useDatabaseLogSearch } from '../queries/databaseLogs'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
+import { LogSearchEmptyState } from './LogSearchEmptyState'
 import {
   DEFAULT_TIME_RANGE_KEY,
   TIME_RANGE_PRESETS,
@@ -43,6 +44,7 @@ export function DatabaseLogSearchPanel({
     q: debouncedQuery.trim() || undefined,
   })
   const entries = data ?? []
+  const search = { query: debouncedQuery, rangeKey, setQuery, setRangeKey }
 
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null)
 
@@ -142,10 +144,7 @@ export function DatabaseLogSearchPanel({
         ) : error ? (
           <p className="px-1 py-2 text-sm text-destructive">{error.message}</p>
         ) : entries.length === 0 ? (
-          <p className="px-1 py-2 text-sm text-muted-foreground">
-            No log entries in this range
-            {debouncedQuery ? ' matching your search' : ''}.
-          </p>
+          <LogSearchEmptyState resourceKind="database" search={search} />
         ) : (
           <>
             <p className="mb-1.5 px-1 text-xs text-muted-foreground">

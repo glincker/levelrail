@@ -323,7 +323,7 @@ function BuildFromSourceForm({ appName }: { appName: string }) {
 // change must not make it harder to reach.
 export function DeployTriggerForm({ appName }: { appName: string }) {
   return (
-    <Card className="ring-primary/20">
+    <Card id="deploy-trigger-form" className="ring-primary/20">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <RocketIcon className="size-4" />
