@@ -1,13 +1,11 @@
 package api
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
@@ -44,10 +42,20 @@ const liveLogBackfillWindow = 5 * time.Minute
 const liveLogBackfillMaxLines = 200
 
 // handleLiveLogStream handles GET /api/v1/apps/{name}/logs/stream: an
-// SSE stream of one app's container log output, live. 501 if either
+// SSE stream of one app's container log output, live; see
+// streamResourceLogs for the shared implementation and the
+// backfill-to-live handoff this depends on.
+func (rt *Router) handleLiveLogStream(w http.ResponseWriter, r *http.Request) {
+	rt.streamResourceLogs(w, r, rt.lookupAppResource, "live log stream", "app")
+}
+
+// streamResourceLogs is the shared body behind handleLiveLogStream and
+// handleLiveDatabaseLogStream (database_logs.go). 501 if either
 // rt.telemetry (WithTelemetryQuerier) or rt.logBroadcaster
 // (WithLogBroadcaster) isn't configured, since a live view needs both:
-// the store for backfill, the broadcaster for everything after.
+// the store for backfill, the broadcaster for everything after. opName
+// and noun feed the log lines and 404 message so an app 404 reads
+// "app not found" and a database 404 reads "database not found".
 //
 // The backfill-to-live handoff, and the gap it closes: Subscribe is
 // called first, before the backfill query, and subscribeTime (the
@@ -74,7 +82,7 @@ const liveLogBackfillMaxLines = 200
 // microsecond-scale race in practice, not a realistic operational
 // concern, and is called out here rather than either quietly ignored or
 // overclaimed as fully solved.
-func (rt *Router) handleLiveLogStream(w http.ResponseWriter, r *http.Request) {
+func (rt *Router) streamResourceLogs(w http.ResponseWriter, r *http.Request, lookup resourceLookup, opName, noun string) {
 	if rt.telemetry == nil || rt.logBroadcaster == nil {
 		writeError(w, http.StatusNotImplemented, "live log streaming is not configured on this control plane")
 		return
@@ -82,16 +90,15 @@ func (rt *Router) handleLiveLogStream(w http.ResponseWriter, r *http.Request) {
 
 	name := r.PathValue("name")
 
-	if _, err := rt.apps.GetDesiredService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
-		writeError(w, http.StatusNotFound, "app not found")
+	resourceID, found, err := lookup(r.Context(), name)
+	if !found && err == nil {
+		writeError(w, http.StatusNotFound, noun+" not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: live log stream: load app failed", slog.String("error", err.Error()), slog.String("name", name))
+		rt.logger.Error("api: "+opName+": load "+noun+" failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-
-	resourceID := resourceIDForApp(name)
 
 	// Subscribe before querying backfill: see this function's own doc
 	// comment for why that ordering, not the reverse, is what closes the
@@ -111,14 +118,14 @@ func (rt *Router) handleLiveLogStream(w http.ResponseWriter, r *http.Request) {
 		// means the store itself is unhealthy, worth surfacing as a real
 		// error rather than silently opening a live view with no
 		// context.
-		rt.logger.Error("api: live log stream: backfill query failed", slog.String("error", err.Error()), slog.String("name", name))
+		rt.logger.Error("api: "+opName+": backfill query failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
 	flusher, ok := startSSE(w)
 	if !ok {
-		rt.logger.Error("api: live log stream: response writer does not support flushing", slog.String("name", name))
+		rt.logger.Error("api: "+opName+": response writer does not support flushing", slog.String("name", name))
 		return
 	}
 	// See handleDeployLogStream's identical comment (deploy_attempts.go)

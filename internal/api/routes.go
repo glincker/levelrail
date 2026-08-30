@@ -240,6 +240,18 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/databases/{name}", rt.requireAbility(AbilityWrite, rt.handleDeleteDatabase))
 	mux.HandleFunc("GET /api/v1/databases/{name}/status", rt.requireAbility(AbilityRead, rt.handleDatabaseStatus))
 
+	// Telemetry query, the database counterpart to
+	// GET /apps/{name}/metrics, /logs, /logs/stream above: same
+	// TelemetryQuerier/logBroadcaster gating (501 when unconfigured).
+	// database_metrics.go/database_logs.go share the actual query/stream
+	// logic with their app equivalents via queryResourceMetrics/
+	// queryResourceLogs/streamResourceLogs (metrics.go/logs.go/
+	// live_logs.go), parameterized on a resourceLookup, not a
+	// hand-copied duplicate.
+	mux.HandleFunc("GET /api/v1/databases/{name}/metrics", rt.requireAbility(AbilityRead, rt.handleQueryDatabaseMetrics))
+	mux.HandleFunc("GET /api/v1/databases/{name}/logs", rt.requireAbility(AbilityRead, rt.handleQueryDatabaseLogs))
+	mux.HandleFunc("GET /api/v1/databases/{name}/logs/stream", rt.requireAbility(AbilityRead, rt.handleLiveDatabaseLogStream))
+
 	// Placement (TASKS.md 3.3), the database counterpart to
 	// PUT /apps/{name}/node above: same AbilityRoot gating.
 	mux.HandleFunc("PUT /api/v1/databases/{name}/node", rt.requireAbility(AbilityRoot, rt.handleSetDatabaseNode))

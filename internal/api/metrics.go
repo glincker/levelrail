@@ -31,6 +31,25 @@ func resourceIDForApp(name string) string {
 	return "service:" + name
 }
 
+// resourceLookup confirms name identifies an existing resource of some
+// kind (app, database, ...) for telemetry purposes and resolves the
+// resourceID it's stored under. found is false only when the resource
+// genuinely doesn't exist, distinct from err which signals a real
+// failure reaching the store; the shared query/stream handlers below
+// turn that distinction into 404 vs 500.
+type resourceLookup func(ctx context.Context, name string) (resourceID string, found bool, err error)
+
+// lookupAppResource is the app-kind resourceLookup, backing
+// handleQueryLogs, handleLiveLogStream, and handleQueryMetrics.
+func (rt *Router) lookupAppResource(ctx context.Context, name string) (string, bool, error) {
+	if _, err := rt.apps.GetDesiredService(ctx, name); errors.Is(err, store.ErrServiceNotFound) {
+		return "", false, nil
+	} else if err != nil {
+		return "", false, err
+	}
+	return resourceIDForApp(name), true, nil
+}
+
 // defaultQueryWindow is the lookback applied when a caller omits `from`,
 // a reasonable default for "what's this app doing right now" rather
 // than requiring every dashboard request to compute and pass an
@@ -48,11 +67,21 @@ type metricsResponse struct {
 	Points []metricPoint `json:"points"`
 }
 
-// handleQueryMetrics handles GET /api/v1/apps/{name}/metrics.
-// Query params: metric (required), from/to (RFC3339, default now-1h to
-// now), step (a Go duration string like "60s"; omitted or "0" means raw,
-// unaggregated samples, per telemetry.Aggregate's own step<=0 contract).
+// handleQueryMetrics handles GET /api/v1/apps/{name}/metrics; see
+// queryResourceMetrics for the shared implementation.
 func (rt *Router) handleQueryMetrics(w http.ResponseWriter, r *http.Request) {
+	rt.queryResourceMetrics(w, r, rt.lookupAppResource, "query metrics", "app")
+}
+
+// queryResourceMetrics is the shared body behind handleQueryMetrics and
+// handleQueryDatabaseMetrics (database_metrics.go): resolve name via
+// lookup, then apply the same query params to both resource kinds
+// (metric required; from/to RFC3339, default now-1h to now; step a Go
+// duration string like "60s", omitted or "0" meaning raw unaggregated
+// samples per telemetry.Aggregate's own step<=0 contract). opName and
+// noun feed the log lines and 404 message so an app 404 reads
+// "app not found" and a database 404 reads "database not found".
+func (rt *Router) queryResourceMetrics(w http.ResponseWriter, r *http.Request, lookup resourceLookup, opName, noun string) {
 	if rt.telemetry == nil {
 		writeError(w, http.StatusNotImplemented, "telemetry is not configured on this control plane")
 		return
@@ -60,11 +89,12 @@ func (rt *Router) handleQueryMetrics(w http.ResponseWriter, r *http.Request) {
 
 	name := r.PathValue("name")
 
-	if _, err := rt.apps.GetDesiredService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
-		writeError(w, http.StatusNotFound, "app not found")
+	resourceID, found, err := lookup(r.Context(), name)
+	if !found && err == nil {
+		writeError(w, http.StatusNotFound, noun+" not found")
 		return
 	} else if err != nil {
-		rt.logger.Error("api: query metrics: load app failed", slog.String("error", err.Error()), slog.String("name", name))
+		rt.logger.Error("api: "+opName+": load "+noun+" failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
@@ -87,7 +117,7 @@ func (rt *Router) handleQueryMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	samples, err := rt.telemetry.QueryMetrics(r.Context(), resourceIDForApp(name), metric, from, to)
+	samples, err := rt.telemetry.QueryMetrics(r.Context(), resourceID, metric, from, to)
 	if err != nil {
 		// A federated query with a partial result (ADR 008: some agents
 		// unreachable) still has real data to return; only a total
@@ -97,11 +127,11 @@ func (rt *Router) handleQueryMetrics(w http.ResponseWriter, r *http.Request) {
 		// shape, so this checks the one signal available: whether
 		// anything at all came back.
 		if len(samples) == 0 {
-			rt.logger.Error("api: query metrics failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("metric", metric))
+			rt.logger.Error("api: "+opName+" failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("metric", metric))
 			writeError(w, http.StatusInternalServerError, "internal error")
 			return
 		}
-		rt.logger.Warn("api: query metrics: partial result", slog.String("error", err.Error()), slog.String("name", name), slog.String("metric", metric))
+		rt.logger.Warn("api: "+opName+": partial result", slog.String("error", err.Error()), slog.String("name", name), slog.String("metric", metric))
 	}
 
 	aggregated := telemetry.Aggregate(samples, from, step)

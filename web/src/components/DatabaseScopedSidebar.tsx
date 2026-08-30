@@ -3,6 +3,8 @@ import {
   ArrowLeftIcon,
   SquaresFourIcon,
   CpuIcon,
+  PulseIcon,
+  ScrollIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   SidebarGroup,
@@ -20,17 +22,14 @@ import { summarizeDatabaseStatus } from '../lib/databaseStatus'
 // direct structural sibling of AppScopedSidebar.tsx: rendered in place of
 // the global nav whenever the current route is under /databases/$name/*.
 //
-// Two nav items, not eight: Databases has two real sections today
-// (Overview, which folds in the engine/version/node summary and
-// ConditionsPanel's reconcile status, plus Resources for memory/CPU
-// limits). There is still no domains/environment/health/metrics/logs/
-// alerts equivalent for a database resource, and no frontend
-// connection-string/credentials display exists to justify further
-// nested routes either (grepped for one, the only "credentials" hit in
-// the whole frontend is the unrelated change-password flow;
-// cmd/levelrail's database_credentials.go is a CLI subcommand, not a web
-// UI surface). A short nav that looks sparse is more honest than padding
-// this out to match Apps's section count.
+// Four nav items now, not two: Overview and Resources (unchanged) plus
+// Metrics and Logs (internal/api/database_metrics.go,
+// internal/api/database_logs.go), closing the observability gap this
+// sidebar used to document as missing. Still no domains/environment/
+// health/alerts equivalent, and still no frontend connection-string/
+// credentials display (cmd/levelrail's database_credentials.go remains a
+// CLI-only subcommand): those stay genuinely absent, not just
+// undocumented.
 //
 // Reads database name/status from the same query cache
 // routes/databases/$name.tsx's layout route loader already primed
@@ -94,6 +93,28 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
               >
                 <CpuIcon />
                 <span>Resources</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={
+                  <Link to="/databases/$name/metrics" params={{ name }} />
+                }
+                isActive={pathname.endsWith('/metrics')}
+                tooltip="Metrics"
+              >
+                <PulseIcon />
+                <span>Metrics</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={<Link to="/databases/$name/logs" params={{ name }} />}
+                isActive={pathname.endsWith('/logs')}
+                tooltip="Logs"
+              >
+                <ScrollIcon />
+                <span>Logs</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

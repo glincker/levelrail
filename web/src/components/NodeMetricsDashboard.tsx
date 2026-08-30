@@ -249,9 +249,9 @@ export function NodeMetricsDashboard({ nodeId }: { nodeId: string }) {
             sum.
           </p>
           <p className="mt-2">
-            Databases placed on this node aren&apos;t included: only app service
-            containers are collected today, the same gap the per-app metrics
-            view documents.
+            Databases placed on this node aren&apos;t included in this sum: they
+            have their own per-database Metrics/Logs views now, but this
+            node-level total still only adds up app service containers.
           </p>
         </AlertDescription>
       </Alert>
