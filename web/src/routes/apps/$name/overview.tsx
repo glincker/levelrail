@@ -13,6 +13,7 @@ import { PortEditor } from '../../../components/PortEditor'
 import { DeployStrategyEditor } from '../../../components/DeployStrategyEditor'
 import { ConditionsPanel } from '../../../components/ConditionsPanel'
 import { GitSourceCard } from '../../../components/GitSourceCard'
+import { PreviewEnvironmentsCard } from '../../../components/PreviewEnvironmentsCard'
 import { StorageAttachmentCard } from '../../../components/StorageAttachmentCard'
 import { LogDrainCard } from '../../../components/LogDrainCard'
 import { DatabaseAttachmentCard } from '../../../components/DatabaseAttachmentCard'
@@ -60,6 +61,7 @@ function OverviewSection() {
       <AppQuickStats appName={name} />
       <AppOverview app={app} />
       <GitSourceCard app={app} />
+      <PreviewEnvironmentsCard app={app} />
       <StorageAttachmentCard app={app} />
       <LogDrainCard app={app} />
       <DatabaseAttachmentCard app={app} />

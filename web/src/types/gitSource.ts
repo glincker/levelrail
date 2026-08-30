@@ -55,6 +55,11 @@ export interface GitSourceResource {
   has_token: boolean
   webhook_url: string
   webhook_secret?: string
+  // preview_enabled mirrors store.GitSource.PreviewEnabled: read-only
+  // here, set via PUT /api/v1/apps/{name}/preview-settings
+  // (queries/previewEnvironments.ts's setPreviewEnabled), not this
+  // resource's own PUT.
+  preview_enabled: boolean
   created_at: string
   updated_at: string
 }

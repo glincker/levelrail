@@ -513,6 +513,26 @@ type SetAppEnvironmentRequest struct {
 	EnvironmentID string `json:"environment_id"`
 }
 
+// PreviewEnvironmentResource mirrors internal/api's
+// previewEnvironmentResource (internal/api/preview_environments_handlers.go).
+type PreviewEnvironmentResource struct {
+	PRNumber     int    `json:"pr_number"`
+	PreviewAppID string `json:"preview_app_id"`
+	Branch       string `json:"branch"`
+	HeadSHA      string `json:"head_sha"`
+	Domain       string `json:"domain,omitempty"`
+	Status       string `json:"status"`
+	StatusReason string `json:"status_reason,omitempty"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
+}
+
+// SetPreviewEnabledRequest mirrors internal/api's
+// setPreviewEnabledRequest.
+type SetPreviewEnabledRequest struct {
+	Enabled bool `json:"enabled"`
+}
+
 // SetAppDatabaseRequest mirrors internal/api's setAppDatabaseRequest
 // (apps_database.go). EnvVar and Field are both optional: the server
 // defaults them ("DATABASE_URL"/"url") when left blank.

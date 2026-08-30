@@ -41,6 +41,17 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// own doc comment establishes for the single-app path.
 	mux.HandleFunc("POST /api/v1/webhooks/github/{name}", rt.handleGitPushWebhook)
 
+	// Preview environments per pull request (preview_environments.go/
+	// preview_environments_handlers.go): opt-in per app, off by default.
+	// AbilityWriteSensitive for the toggle, matching PUT .../git-source's
+	// own tier since it's the same connect-time-adjacent configuration
+	// surface; AbilityRead for the list, matching GET .../git-source;
+	// AbilityDeploy for the manual teardown, the same lifecycle-action
+	// tier POST .../restart and POST .../stop already use.
+	mux.HandleFunc("PUT /api/v1/apps/{name}/preview-settings", rt.requireAbility(AbilityWriteSensitive, rt.handleSetPreviewEnabled))
+	mux.HandleFunc("GET /api/v1/apps/{name}/previews", rt.requireAbility(AbilityRead, rt.handleListPreviewEnvironments))
+	mux.HandleFunc("POST /api/v1/apps/{name}/previews/{number}/teardown", rt.requireAbility(AbilityDeploy, rt.handleTeardownPreviewEnvironment))
+
 	// Telemetry query (TASKS.md 2.3): metrics and logs for one app,
 	// fanned out through a Federator (today, exactly one local source).
 	mux.HandleFunc("GET /api/v1/apps/{name}/metrics", rt.requireAbility(AbilityRead, rt.handleQueryMetrics))

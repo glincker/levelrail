@@ -23,6 +23,10 @@ type GitSourceStore interface {
 	SaveGitSource(ctx context.Context, g store.GitSource) error
 	GetGitSource(ctx context.Context, serviceName string) (*store.GitSource, error)
 	DeleteGitSource(ctx context.Context, serviceName string) error
+	// SetGitSourcePreviewEnabled backs PUT
+	// /api/v1/apps/{name}/preview-settings (preview_environments_handlers.go):
+	// the opt-in toggle for preview environments per pull request.
+	SetGitSourcePreviewEnabled(ctx context.Context, serviceName string, enabled bool) error
 }
 
 // GitSourceSecrets is the surface a git source's connect flow and the
@@ -80,8 +84,12 @@ type gitSourceResource struct {
 	HasToken      bool                    `json:"has_token"`
 	WebhookURL    string                  `json:"webhook_url"`
 	WebhookSecret string                  `json:"webhook_secret,omitempty"`
-	CreatedAt     time.Time               `json:"created_at"`
-	UpdatedAt     time.Time               `json:"updated_at"`
+	// PreviewEnabled mirrors store.GitSource.PreviewEnabled: read-only
+	// here, set via PUT /api/v1/apps/{name}/preview-settings
+	// (preview_environments_handlers.go), not this resource's own PUT.
+	PreviewEnabled bool      `json:"preview_enabled"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }
 
 // gitSourceWebhookPath is the relative API path GitHub's own webhook
@@ -108,6 +116,7 @@ func toGitSourceResource(g store.GitSource, hasToken bool) gitSourceResource {
 		Services:           g.Services,
 		HasToken:           hasToken,
 		WebhookURL:         gitSourceWebhookPath(g.ServiceName),
+		PreviewEnabled:     g.PreviewEnabled,
 		CreatedAt:          g.CreatedAt,
 		UpdatedAt:          g.UpdatedAt,
 	}

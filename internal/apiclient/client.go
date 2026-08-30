@@ -692,6 +692,30 @@ func (c *Client) GetEnvironmentEnv(ctx context.Context, id string) (map[string]s
 	return out, err
 }
 
+// ListPreviewEnvironments calls GET /api/v1/apps/{name}/previews: every
+// active pull-request preview for an app.
+func (c *Client) ListPreviewEnvironments(ctx context.Context, appName string) ([]PreviewEnvironmentResource, error) {
+	var out []PreviewEnvironmentResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(appName)+"/previews", nil, &out)
+	return out, err
+}
+
+// TeardownPreviewEnvironment calls POST
+// /api/v1/apps/{name}/previews/{number}/teardown: the manual safety net
+// alongside a pull request's own automatic close-triggered teardown.
+func (c *Client) TeardownPreviewEnvironment(ctx context.Context, appName string, prNumber int) error {
+	path := fmt.Sprintf("/api/v1/apps/%s/previews/%d/teardown", PathEscape(appName), prNumber)
+	return c.do(ctx, http.MethodPost, path, nil, nil)
+}
+
+// SetPreviewEnabled calls PUT /api/v1/apps/{name}/preview-settings: the
+// opt-in toggle for preview environments per pull request.
+func (c *Client) SetPreviewEnabled(ctx context.Context, appName string, enabled bool) (SetPreviewEnabledRequest, error) {
+	var out SetPreviewEnabledRequest
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/preview-settings", SetPreviewEnabledRequest{Enabled: enabled}, &out)
+	return out, err
+}
+
 // SetEnvironmentEnv calls PUT /api/v1/environments/{id}/env: a full
 // replace, mirroring PUT /apps/{name}'s own env field semantics.
 func (c *Client) SetEnvironmentEnv(ctx context.Context, id string, vars map[string]string) (map[string]string, error) {
