@@ -303,13 +303,16 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/backup-targets", rt.requireAbility(AbilityRead, rt.handleListBackupTargets))
 	mux.HandleFunc("POST /api/v1/backup-targets", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateBackupTarget))
 	mux.HandleFunc("GET /api/v1/backup-targets/{id}", rt.requireAbility(AbilityRead, rt.handleGetBackupTarget))
+	mux.HandleFunc("PUT /api/v1/backup-targets/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateBackupTarget))
 	mux.HandleFunc("DELETE /api/v1/backup-targets/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteBackupTarget))
 
 	// Registry credentials (registry_credentials.go): same ability tiers
-	// as backup targets just above, same reasoning (POST/DELETE handle
-	// live pull credentials).
+	// as backup targets just above, same reasoning (POST/PUT/DELETE
+	// handle live pull credentials).
 	mux.HandleFunc("GET /api/v1/registry-credentials", rt.requireAbility(AbilityRead, rt.handleListRegistryCredentials))
 	mux.HandleFunc("POST /api/v1/registry-credentials", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateRegistryCredential))
+	mux.HandleFunc("GET /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityRead, rt.handleGetRegistryCredential))
+	mux.HandleFunc("PUT /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateRegistryCredential))
 	mux.HandleFunc("DELETE /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteRegistryCredential))
 
 	// Aggregated git provider capability summary (git_providers.go): one

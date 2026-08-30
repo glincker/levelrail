@@ -54,6 +54,13 @@ type (
 	deploySpecServiceResult        = apiclient.DeploySpecServiceResult
 	deploySpecResult               = apiclient.DeploySpecResult
 
+	backupTargetResource            = apiclient.BackupTargetResource
+	createBackupTargetRequest       = apiclient.CreateBackupTargetRequest
+	updateBackupTargetRequest       = apiclient.UpdateBackupTargetRequest
+	registryCredentialResource      = apiclient.RegistryCredentialResource
+	createRegistryCredentialRequest = apiclient.CreateRegistryCredentialRequest
+	updateRegistryCredentialRequest = apiclient.UpdateRegistryCredentialRequest
+
 	notificationChannelResource      = apiclient.NotificationChannelResource
 	createNotificationChannelRequest = apiclient.CreateNotificationChannelRequest
 	testNotificationChannelRequest   = apiclient.TestNotificationChannelRequest

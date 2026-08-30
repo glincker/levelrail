@@ -20,6 +20,7 @@ type BackupTargetStore interface {
 	SaveBackupTarget(ctx context.Context, t store.BackupTarget) error
 	GetBackupTarget(ctx context.Context, id string) (store.BackupTarget, error)
 	ListBackupTargets(ctx context.Context) ([]store.BackupTarget, error)
+	UpdateBackupTarget(ctx context.Context, id, name, provider, endpoint, region, bucket string) error
 	DeleteBackupTarget(ctx context.Context, id string) error
 }
 
@@ -109,6 +110,43 @@ func validateCreateBackupTargetRequest(req createBackupTargetRequest) error {
 	}
 	if req.SecretAccessKey == "" {
 		return errors.New("secret_access_key is required")
+	}
+	return nil
+}
+
+// updateBackupTargetRequest is handleUpdateBackupTarget's request body:
+// the same shape createBackupTargetRequest uses, except AccessKeyID and
+// SecretAccessKey are optional. Left blank, the target's stored
+// credentials are kept unchanged; set together, they rotate the stored
+// credentials in place, so a leaked key doesn't require a delete and
+// recreate to fix.
+type updateBackupTargetRequest struct {
+	Name            string `json:"name"`
+	Provider        string `json:"provider"`
+	Endpoint        string `json:"endpoint,omitempty"`
+	Region          string `json:"region,omitempty"`
+	Bucket          string `json:"bucket"`
+	AccessKeyID     string `json:"access_key_id,omitempty"`
+	SecretAccessKey string `json:"secret_access_key,omitempty"`
+}
+
+func validateUpdateBackupTargetRequest(req updateBackupTargetRequest) error {
+	if req.Name == "" {
+		return errors.New("name is required")
+	}
+	switch req.Provider {
+	case store.BackupProviderAWS, store.BackupProviderR2, store.BackupProviderCustom:
+	default:
+		return fmt.Errorf("provider must be one of %q, %q, %q", store.BackupProviderAWS, store.BackupProviderR2, store.BackupProviderCustom)
+	}
+	if req.Bucket == "" {
+		return errors.New("bucket is required")
+	}
+	if req.Endpoint == "" && req.Provider != store.BackupProviderAWS {
+		return errors.New("endpoint is required for r2 and custom providers")
+	}
+	if (req.AccessKeyID == "") != (req.SecretAccessKey == "") {
+		return errors.New("access_key_id and secret_access_key must be set together to rotate credentials")
 	}
 	return nil
 }
@@ -208,6 +246,71 @@ func (rt *Router) handleCreateBackupTarget(w http.ResponseWriter, r *http.Reques
 	}
 
 	writeJSON(w, http.StatusCreated, toBackupTargetResource(target))
+}
+
+// handleUpdateBackupTarget handles PUT /api/v1/backup-targets/{id}:
+// AbilityWriteSensitive, the same tier as create and delete. A full
+// replace of name/provider/endpoint/region/bucket; credentials rotate only
+// when both access_key_id and secret_access_key are present in the
+// request, the same "written before the store row" ordering
+// handleCreateBackupTarget's own doc comment establishes.
+func (rt *Router) handleUpdateBackupTarget(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	if _, err := rt.backupTargets.GetBackupTarget(r.Context(), id); errors.Is(err, store.ErrBackupTargetNotFound) {
+		writeError(w, http.StatusNotFound, "backup target not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: update backup target: load failed", slog.String("error", err.Error()), slog.String("id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	var req updateBackupTargetRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if err := validateUpdateBackupTargetRequest(req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if req.AccessKeyID != "" {
+		if rt.backupSecrets == nil {
+			writeError(w, http.StatusNotImplemented, "backup targets are not configured on this control plane (no master key set)")
+			return
+		}
+		secretsKey := store.BackupTargetSecretsKey(id)
+		if err := rt.backupSecrets.SetValue(r.Context(), secretsKey, "access_key_id", req.AccessKeyID); err != nil {
+			rt.logger.Error("api: update backup target: set access_key_id failed", slog.String("error", err.Error()), slog.String("id", id))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+		if err := rt.backupSecrets.SetValue(r.Context(), secretsKey, "secret_access_key", req.SecretAccessKey); err != nil {
+			rt.logger.Error("api: update backup target: set secret_access_key failed", slog.String("error", err.Error()), slog.String("id", id))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+	}
+
+	if err := rt.backupTargets.UpdateBackupTarget(r.Context(), id, req.Name, req.Provider, req.Endpoint, req.Region, req.Bucket); err != nil {
+		if errors.Is(err, store.ErrBackupTargetNotFound) {
+			writeError(w, http.StatusNotFound, "backup target not found")
+			return
+		}
+		rt.logger.Error("api: update backup target failed", slog.String("error", err.Error()), slog.String("id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	updated, err := rt.backupTargets.GetBackupTarget(r.Context(), id)
+	if err != nil {
+		rt.logger.Error("api: update backup target: reload after update failed", slog.String("error", err.Error()), slog.String("id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toBackupTargetResource(updated))
 }
 
 // handleDeleteBackupTarget handles DELETE /api/v1/backup-targets/{id}.

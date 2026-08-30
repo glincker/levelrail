@@ -67,6 +67,36 @@ func withField(base createBackupTargetRequest, mutate func(*createBackupTargetRe
 	return base
 }
 
+func TestValidateUpdateBackupTargetRequest(t *testing.T) {
+	valid := updateBackupTargetRequest{Name: "primary", Provider: store.BackupProviderR2, Endpoint: "https://x.r2.cloudflarestorage.com", Bucket: "backups"}
+	tests := []struct {
+		name    string
+		req     updateBackupTargetRequest
+		wantErr bool
+	}{
+		{name: "valid, no credential rotation", req: valid, wantErr: false},
+		{name: "valid, credentials rotated together", req: withUpdateField(valid, func(r *updateBackupTargetRequest) { r.AccessKeyID, r.SecretAccessKey = "AKID", "shh" }), wantErr: false},
+		{name: "missing name", req: withUpdateField(valid, func(r *updateBackupTargetRequest) { r.Name = "" }), wantErr: true},
+		{name: "unknown provider", req: withUpdateField(valid, func(r *updateBackupTargetRequest) { r.Provider = "backblaze" }), wantErr: true},
+		{name: "missing bucket", req: withUpdateField(valid, func(r *updateBackupTargetRequest) { r.Bucket = "" }), wantErr: true},
+		{name: "only access_key_id set", req: withUpdateField(valid, func(r *updateBackupTargetRequest) { r.AccessKeyID = "AKID" }), wantErr: true},
+		{name: "only secret_access_key set", req: withUpdateField(valid, func(r *updateBackupTargetRequest) { r.SecretAccessKey = "shh" }), wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateUpdateBackupTargetRequest(tt.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateUpdateBackupTargetRequest(%+v) error = %v, wantErr %v", tt.req, err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func withUpdateField(base updateBackupTargetRequest, mutate func(*updateBackupTargetRequest)) updateBackupTargetRequest {
+	mutate(&base)
+	return base
+}
+
 func TestBackupTargetRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
@@ -77,6 +107,7 @@ func TestBackupTargetRoutes_RequireAuth(t *testing.T) {
 		{http.MethodGet, "/api/v1/backup-targets"},
 		{http.MethodPost, "/api/v1/backup-targets"},
 		{http.MethodGet, "/api/v1/backup-targets/bkt_x"},
+		{http.MethodPut, "/api/v1/backup-targets/bkt_x"},
 		{http.MethodDelete, "/api/v1/backup-targets/bkt_x"},
 	}
 	for _, r := range routes {
@@ -219,6 +250,116 @@ func TestHandleListAndGetBackupTarget(t *testing.T) {
 	rt.Handler().ServeHTTP(missingRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/backup-targets/bkt_missing", ""))
 	if missingRec.Code != http.StatusNotFound {
 		t.Fatalf("get missing status = %d, want %d", missingRec.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleUpdateBackupTarget_Success(t *testing.T) {
+	setter := &fakeBackupSecretsSetter{}
+	rt, db := newTestRouterWithBackupSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	createRec := httptest.NewRecorder()
+	createBody := `{"name":"primary","provider":"aws","bucket":"backups","access_key_id":"AKID","secret_access_key":"topsecret"}`
+	rt.Handler().ServeHTTP(createRec, authedRequest(t, cookie, http.MethodPost, "/api/v1/backup-targets", createBody))
+	var created backupTargetResource
+	if err := json.NewDecoder(createRec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	setter.calls = nil
+
+	updateRec := httptest.NewRecorder()
+	updateBody := `{"name":"renamed","provider":"r2","endpoint":"https://x.r2.cloudflarestorage.com","region":"auto","bucket":"new-bucket"}`
+	rt.Handler().ServeHTTP(updateRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/backup-targets/"+created.ID, updateBody))
+	if updateRec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", updateRec.Code, http.StatusOK, updateRec.Body.String())
+	}
+
+	var got backupTargetResource
+	if err := json.NewDecoder(updateRec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got.Name != "renamed" || got.Provider != "r2" || got.Bucket != "new-bucket" {
+		t.Errorf("response = %+v, want the updated fields", got)
+	}
+	if len(setter.calls) != 0 {
+		t.Errorf("SetValue calls = %d, want 0 when the request carries no credentials", len(setter.calls))
+	}
+
+	stored, err := db.GetBackupTarget(context.Background(), created.ID)
+	if err != nil {
+		t.Fatalf("GetBackupTarget() error = %v", err)
+	}
+	if stored.Name != "renamed" || stored.Bucket != "new-bucket" {
+		t.Errorf("stored target = %+v, want the updated fields", stored)
+	}
+}
+
+func TestHandleUpdateBackupTarget_RotatesCredentials(t *testing.T) {
+	setter := &fakeBackupSecretsSetter{}
+	rt, dbForLogin := newTestRouterWithBackupSecrets(t, setter)
+	cookie := loginTestSession(t, rt, dbForLogin)
+
+	createRec := httptest.NewRecorder()
+	createBody := `{"name":"primary","provider":"aws","bucket":"backups","access_key_id":"AKID","secret_access_key":"topsecret"}`
+	rt.Handler().ServeHTTP(createRec, authedRequest(t, cookie, http.MethodPost, "/api/v1/backup-targets", createBody))
+	var created backupTargetResource
+	if err := json.NewDecoder(createRec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	setter.calls = nil
+
+	updateRec := httptest.NewRecorder()
+	updateBody := `{"name":"primary","provider":"aws","bucket":"backups","access_key_id":"AKID2","secret_access_key":"rotated"}`
+	rt.Handler().ServeHTTP(updateRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/backup-targets/"+created.ID, updateBody))
+	if updateRec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", updateRec.Code, http.StatusOK, updateRec.Body.String())
+	}
+	if strings.Contains(updateRec.Body.String(), "AKID2") || strings.Contains(updateRec.Body.String(), "rotated") {
+		t.Errorf("response body = %s, credentials must never be echoed back", updateRec.Body.String())
+	}
+
+	if len(setter.calls) != 2 {
+		t.Fatalf("SetValue calls = %d, want 2 (access_key_id, secret_access_key)", len(setter.calls))
+	}
+	wantKey := store.BackupTargetSecretsKey(created.ID)
+	if setter.calls[0].serviceName != wantKey || setter.calls[0].envKey != "access_key_id" || setter.calls[0].plaintext != "AKID2" {
+		t.Errorf("first SetValue call = %+v, want access_key_id=AKID2", setter.calls[0])
+	}
+	if setter.calls[1].serviceName != wantKey || setter.calls[1].envKey != "secret_access_key" || setter.calls[1].plaintext != "rotated" {
+		t.Errorf("second SetValue call = %+v, want secret_access_key=rotated", setter.calls[1])
+	}
+}
+
+func TestHandleUpdateBackupTarget_NotFound(t *testing.T) {
+	setter := &fakeBackupSecretsSetter{}
+	rt, db := newTestRouterWithBackupSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	body := `{"name":"x","provider":"aws","bucket":"b"}`
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/backup-targets/bkt_missing", body))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNotFound, rec.Body.String())
+	}
+}
+
+func TestHandleUpdateBackupTarget_InvalidRequest(t *testing.T) {
+	setter := &fakeBackupSecretsSetter{}
+	rt, db := newTestRouterWithBackupSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	createRec := httptest.NewRecorder()
+	createBody := `{"name":"primary","provider":"aws","bucket":"backups","access_key_id":"AKID","secret_access_key":"topsecret"}`
+	rt.Handler().ServeHTTP(createRec, authedRequest(t, cookie, http.MethodPost, "/api/v1/backup-targets", createBody))
+	var created backupTargetResource
+	if err := json.NewDecoder(createRec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/backup-targets/"+created.ID, `{"name":""}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
 	}
 }
 

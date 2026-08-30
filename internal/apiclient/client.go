@@ -553,6 +553,100 @@ func (c *Client) GetServiceTemplate(ctx context.Context, id string) (ServiceTemp
 	return out, err
 }
 
+// backupTargetsCollectionPath builds /api/v1/backup-targets, and
+// backupTargetPath builds that same path plus /{id}: shared by every
+// backup-target method below, the same "one place the URL segment lives"
+// reasoning scheduledTasksCollectionPath's own doc comment gives.
+func backupTargetsCollectionPath() string {
+	return "/api/v1/backup-targets"
+}
+
+func backupTargetPath(id string) string {
+	return backupTargetsCollectionPath() + "/" + PathEscape(id)
+}
+
+// CreateBackupTarget calls POST /api/v1/backup-targets.
+func (c *Client) CreateBackupTarget(ctx context.Context, req CreateBackupTargetRequest) (BackupTargetResource, error) {
+	var out BackupTargetResource
+	err := c.do(ctx, http.MethodPost, backupTargetsCollectionPath(), req, &out)
+	return out, err
+}
+
+// ListBackupTargets calls GET /api/v1/backup-targets.
+func (c *Client) ListBackupTargets(ctx context.Context) ([]BackupTargetResource, error) {
+	var out []BackupTargetResource
+	err := c.do(ctx, http.MethodGet, backupTargetsCollectionPath(), nil, &out)
+	return out, err
+}
+
+// GetBackupTarget calls GET /api/v1/backup-targets/{id}.
+func (c *Client) GetBackupTarget(ctx context.Context, id string) (BackupTargetResource, error) {
+	var out BackupTargetResource
+	err := c.do(ctx, http.MethodGet, backupTargetPath(id), nil, &out)
+	return out, err
+}
+
+// UpdateBackupTarget calls PUT /api/v1/backup-targets/{id}: a full
+// replace of name/provider/endpoint/region/bucket, matching
+// handleUpdateBackupTarget's own contract. Credentials rotate only when
+// req carries both AccessKeyID and SecretAccessKey.
+func (c *Client) UpdateBackupTarget(ctx context.Context, id string, req UpdateBackupTargetRequest) (BackupTargetResource, error) {
+	var out BackupTargetResource
+	err := c.do(ctx, http.MethodPut, backupTargetPath(id), req, &out)
+	return out, err
+}
+
+// DeleteBackupTarget calls DELETE /api/v1/backup-targets/{id}.
+func (c *Client) DeleteBackupTarget(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, backupTargetPath(id), nil, nil)
+}
+
+// registryCredentialsCollectionPath builds /api/v1/registry-credentials,
+// and registryCredentialPath builds that same path plus /{id}.
+func registryCredentialsCollectionPath() string {
+	return "/api/v1/registry-credentials"
+}
+
+func registryCredentialPath(id string) string {
+	return registryCredentialsCollectionPath() + "/" + PathEscape(id)
+}
+
+// CreateRegistryCredential calls POST /api/v1/registry-credentials.
+func (c *Client) CreateRegistryCredential(ctx context.Context, req CreateRegistryCredentialRequest) (RegistryCredentialResource, error) {
+	var out RegistryCredentialResource
+	err := c.do(ctx, http.MethodPost, registryCredentialsCollectionPath(), req, &out)
+	return out, err
+}
+
+// ListRegistryCredentials calls GET /api/v1/registry-credentials.
+func (c *Client) ListRegistryCredentials(ctx context.Context) ([]RegistryCredentialResource, error) {
+	var out []RegistryCredentialResource
+	err := c.do(ctx, http.MethodGet, registryCredentialsCollectionPath(), nil, &out)
+	return out, err
+}
+
+// GetRegistryCredential calls GET /api/v1/registry-credentials/{id}.
+func (c *Client) GetRegistryCredential(ctx context.Context, id string) (RegistryCredentialResource, error) {
+	var out RegistryCredentialResource
+	err := c.do(ctx, http.MethodGet, registryCredentialPath(id), nil, &out)
+	return out, err
+}
+
+// UpdateRegistryCredential calls PUT /api/v1/registry-credentials/{id}: a
+// full replace of name/registry_host/username, matching
+// handleUpdateRegistryCredential's own contract. The password rotates
+// only when req carries one.
+func (c *Client) UpdateRegistryCredential(ctx context.Context, id string, req UpdateRegistryCredentialRequest) (RegistryCredentialResource, error) {
+	var out RegistryCredentialResource
+	err := c.do(ctx, http.MethodPut, registryCredentialPath(id), req, &out)
+	return out, err
+}
+
+// DeleteRegistryCredential calls DELETE /api/v1/registry-credentials/{id}.
+func (c *Client) DeleteRegistryCredential(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, registryCredentialPath(id), nil, nil)
+}
+
 // CreateNotificationChannel calls POST /api/v1/notification-channels.
 func (c *Client) CreateNotificationChannel(ctx context.Context, req CreateNotificationChannelRequest) (NotificationChannelResource, error) {
 	var out NotificationChannelResource

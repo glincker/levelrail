@@ -110,6 +110,24 @@ func (db *DB) ListBackupTargets(ctx context.Context) ([]BackupTarget, error) {
 	return out, nil
 }
 
+// UpdateBackupTarget replaces name/provider/endpoint/region/bucket for an
+// existing row, the same full-replace contract UpdateScheduledTask uses.
+// Credentials are not this function's concern: a caller rotating them
+// writes to internal/secrets separately, under the same
+// BackupTargetSecretsKey(id) this row's ID has always used.
+// Returns ErrBackupTargetNotFound if id doesn't exist.
+func (db *DB) UpdateBackupTarget(ctx context.Context, id, name, provider, endpoint, region, bucket string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE backup_targets
+		SET name = ?, provider = ?, endpoint = ?, region = ?, bucket = ?
+		WHERE id = ?
+	`, name, provider, endpoint, region, bucket, id)
+	if err != nil {
+		return fmt.Errorf("store: update backup target %q: %w", id, err)
+	}
+	return rowsAffectedOrNotFound(res, ErrBackupTargetNotFound, "update backup target %q", id)
+}
+
 // DeleteBackupTarget removes a backup target row. It does not touch
 // internal/secrets: the caller (internal/api's handleDeleteBackupTarget)
 // deletes the credential secret separately, after this succeeds, the
