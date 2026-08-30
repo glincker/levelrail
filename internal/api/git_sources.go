@@ -192,6 +192,58 @@ func normalizeGitSourceBuildType(buildType string) (string, error) {
 	}
 }
 
+// useRepoAsSourceRequest is the request body every provider's own
+// use-as-source handler decodes (GitHub, GitLab, Bitbucket): which app
+// the picked repo becomes the connected git source for, plus the same
+// optional build configuration handleSetGitSource's own request
+// accepts. One shared type rather than a separate, structurally
+// identical one per provider: the URL's own path parameters
+// (owner/repo, project id, workspace/repoSlug) identify which repo,
+// never this body, so the body shape has never actually differed.
+type useRepoAsSourceRequest struct {
+	AppName   string `json:"app_name"`
+	Branch    string `json:"branch,omitempty"`
+	BuildType string `json:"build_type,omitempty"`
+	BuildPath string `json:"build_path,omitempty"`
+}
+
+// decodeUseAsSourceRequest is the common preamble every provider's own
+// use-as-source handler needs before its own provider-specific repo
+// lookup: decode the body, validate app_name and build_type/build_path,
+// and confirm the target app exists. ok is false once this has already
+// written an HTTP error response, in which case the caller must return
+// immediately without writing anything else.
+func (rt *Router) decodeUseAsSourceRequest(w http.ResponseWriter, r *http.Request, logPrefix string) (req useRepoAsSourceRequest, buildType string, ok bool) {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return req, "", false
+	}
+	if req.AppName == "" {
+		writeError(w, http.StatusBadRequest, "app_name is required")
+		return req, "", false
+	}
+	buildType, err := normalizeGitSourceBuildType(req.BuildType)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return req, "", false
+	}
+	if buildType == "railpack" && req.BuildPath != "" {
+		writeError(w, http.StatusBadRequest, "build_path is not meaningful for build_type \"railpack\"")
+		return req, "", false
+	}
+
+	if _, err := rt.apps.GetDesiredService(r.Context(), req.AppName); errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return req, "", false
+	} else if err != nil {
+		rt.logger.Error(logPrefix+": load app failed", slog.String("error", err.Error()), slog.String("app_name", req.AppName))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return req, "", false
+	}
+
+	return req, buildType, true
+}
+
 // requireHTTPOrHTTPSScheme rejects any repoURL scheme go-git's client
 // registry would otherwise happily dial (notably "file", per
 // errRepoURLSchemeNotAllowed's own doc comment in git_branches.go): a

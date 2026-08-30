@@ -338,47 +338,62 @@ describe('CreateAppFromGitFields', () => {
     expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(1)
   })
 
-  it('connects the git source via use-as-source for a GitHub pick, then triggers the build', async () => {
-    const user = userEvent.setup()
-    const { onCreated } = renderForm()
+  // Bug 1 (docs-local/research/git-provider-connect-ux-unification-
+  // proposal.md): the GitHub wizard path used to create the app and
+  // trigger a build without ever creating a git_source row, so no
+  // webhook could ever match a future push. Bug 2: the GitLab/Bitbucket
+  // settings-page paths wire the git source and webhook correctly but
+  // never triggered a first build. All three providers now have their
+  // own dedicated use-as-source route (GitHub's added by piece 2, the
+  // same shape GitLab/Bitbucket already had), reached from the wizard
+  // here, so both the connect call and the build call must happen for
+  // every one of them, and the generic PUT .../git-source endpoint must
+  // never also fire.
+  it.each([
+    {
+      name: 'GitHub',
+      pickButton: 'Pick GitHub repo (test)',
+      connectURL: '/api/v1/github-app/repos/example/gh-repo/use-as-source',
+    },
+    {
+      name: 'GitLab',
+      pickButton: 'Pick GitLab project (test)',
+      connectURL: '/api/v1/gitlab-app/projects/42/use-as-source',
+    },
+    {
+      name: 'Bitbucket',
+      pickButton: 'Pick Bitbucket repo (test)',
+      connectURL: '/api/v1/bitbucket-app/repos/acme/app/use-as-source',
+    },
+  ])(
+    'connects the git source via use-as-source for a $name pick, then triggers the build',
+    async ({ pickButton, connectURL }) => {
+      const user = userEvent.setup()
+      const { onCreated } = renderForm()
 
-    await screen.findByLabelText('Name')
-    await user.click(screen.getByRole('button', { name: 'Pick GitHub repo (test)' }))
-    await user.type(screen.getByLabelText('Port'), '3000')
+      await screen.findByLabelText('Name')
+      await user.click(screen.getByRole('button', { name: pickButton }))
+      await user.type(screen.getByLabelText('Port'), '3000')
 
-    await user.click(screen.getByRole('button', { name: 'Build and deploy' }))
+      await user.click(screen.getByRole('button', { name: 'Build and deploy' }))
 
-    await waitFor(() => {
-      expect(onCreated).toHaveBeenCalledTimes(1)
-    })
+      await waitFor(() => {
+        expect(onCreated).toHaveBeenCalledTimes(1)
+      })
 
-    // Bug 1 (docs-local/research/git-provider-connect-ux-unification-
-    // proposal.md): the GitHub wizard path used to create the app and
-    // trigger a build without ever creating a git_source row, so no
-    // webhook could ever match a future push. GitHub now has its own
-    // dedicated use-as-source route (piece 2), the same shape GitLab/
-    // Bitbucket already had, so this must call it rather than degrading
-    // to the generic endpoint.
-    const connectCalls = callsTo(
-      fetchMock,
-      '/api/v1/github-app/repos/example/gh-repo/use-as-source',
-      'POST',
-    )
-    expect(connectCalls).toHaveLength(1)
-    const body = JSON.parse(connectCalls[0]?.init?.body as string) as {
-      app_name: string
-      branch: string
-    }
-    expect(body.app_name).toBe('demo-app')
-    expect(body.branch).toBe('main')
+      const connectCalls = callsTo(fetchMock, connectURL, 'POST')
+      expect(connectCalls).toHaveLength(1)
+      const body = JSON.parse(connectCalls[0]?.init?.body as string) as {
+        app_name: string
+        branch: string
+      }
+      expect(body.app_name).toBe('demo-app')
+      expect(body.branch).toBe('main')
 
-    expect(callsTo(fetchMock, '/api/v1/apps/demo-app/builds', 'POST')).toHaveLength(1)
-    // No manual-webhook banner: the webhook registered automatically.
-    expect(
-      screen.queryByText(/doesn't have permission to register webhooks/),
-    ).not.toBeInTheDocument()
-    expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(0)
-  })
+      expect(callsTo(fetchMock, '/api/v1/apps/demo-app/builds', 'POST')).toHaveLength(1)
+      expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(0)
+    },
+  )
 
   // The actual permission-degradation path this task cared most about:
   // an installation that predates the App requesting
@@ -414,73 +429,5 @@ describe('CreateAppFromGitFields', () => {
       /doesn't have permission to register webhooks yet/,
     )
     expect(screen.getByText('wh_secret_abc')).toBeInTheDocument()
-  })
-
-  it('connects the git source via use-as-source for a GitLab pick, then triggers the build', async () => {
-    const user = userEvent.setup()
-    const { onCreated } = renderForm()
-
-    await screen.findByLabelText('Name')
-    await user.click(screen.getByRole('button', { name: 'Pick GitLab project (test)' }))
-    await user.type(screen.getByLabelText('Port'), '3000')
-
-    await user.click(screen.getByRole('button', { name: 'Build and deploy' }))
-
-    await waitFor(() => {
-      expect(onCreated).toHaveBeenCalledTimes(1)
-    })
-
-    // Bug 2: the GitLab settings-page path wires the git source and
-    // webhook correctly but never triggered a first build. Here it's
-    // reached from the wizard instead, so both the connect call and the
-    // build call must happen.
-    const connectCalls = callsTo(
-      fetchMock,
-      '/api/v1/gitlab-app/projects/42/use-as-source',
-      'POST',
-    )
-    expect(connectCalls).toHaveLength(1)
-    const body = JSON.parse(connectCalls[0]?.init?.body as string) as {
-      app_name: string
-      branch: string
-    }
-    expect(body.app_name).toBe('demo-app')
-    expect(body.branch).toBe('main')
-
-    expect(callsTo(fetchMock, '/api/v1/apps/demo-app/builds', 'POST')).toHaveLength(1)
-    // The generic endpoint must not also be called: GitLab has its own
-    // dedicated connect route.
-    expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(0)
-  })
-
-  it('connects the git source via use-as-source for a Bitbucket pick, then triggers the build', async () => {
-    const user = userEvent.setup()
-    const { onCreated } = renderForm()
-
-    await screen.findByLabelText('Name')
-    await user.click(screen.getByRole('button', { name: 'Pick Bitbucket repo (test)' }))
-    await user.type(screen.getByLabelText('Port'), '3000')
-
-    await user.click(screen.getByRole('button', { name: 'Build and deploy' }))
-
-    await waitFor(() => {
-      expect(onCreated).toHaveBeenCalledTimes(1)
-    })
-
-    const connectCalls = callsTo(
-      fetchMock,
-      '/api/v1/bitbucket-app/repos/acme/app/use-as-source',
-      'POST',
-    )
-    expect(connectCalls).toHaveLength(1)
-    const body = JSON.parse(connectCalls[0]?.init?.body as string) as {
-      app_name: string
-      branch: string
-    }
-    expect(body.app_name).toBe('demo-app')
-    expect(body.branch).toBe('main')
-
-    expect(callsTo(fetchMock, '/api/v1/apps/demo-app/builds', 'POST')).toHaveLength(1)
-    expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(0)
   })
 })
