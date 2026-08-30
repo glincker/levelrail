@@ -44,6 +44,9 @@ func (f *fakeInspectRuntime) Stop(context.Context, string, time.Duration) error 
 func (f *fakeInspectRuntime) Remove(context.Context, string, bool) error {
 	panic("not used by databaseTelemetryTargets/databaseLogTargets")
 }
+func (f *fakeInspectRuntime) UpdateResources(context.Context, string, docker.Resources) error {
+	panic("not used by databaseTelemetryTargets/databaseLogTargets")
+}
 func (f *fakeInspectRuntime) EnsureVolume(context.Context, string) error {
 	panic("not used by databaseTelemetryTargets/databaseLogTargets")
 }

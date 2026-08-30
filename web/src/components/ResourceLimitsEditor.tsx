@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
+import { toast } from '@/components/ui/toast'
 import { useRestartRequiredToast } from '../hooks/useRestartRequiredToast'
 
 // Unit choice: memory is collected as a single whole-number MiB field
@@ -189,8 +190,16 @@ export function ResourceLimitsEditor({ app }: { app: AppDetail }) {
     updateApp.mutate(
       { ...app, resources: toResources(values) },
       {
-        onSuccess: () => {
-          notifyRestartRequired(app.name, 'Resource limits saved.')
+        onSuccess: (updated) => {
+          // The backend pushes the new limits onto a running container
+          // live (internal/api/apps.go's applyResourcesLiveToReplicas)
+          // whenever one exists; only fall back to the restart-required
+          // prompt when it genuinely couldn't (no container running yet).
+          if (updated.resources_applied_live) {
+            toast.add({ title: 'Resource limits updated.', type: 'success' })
+          } else {
+            notifyRestartRequired(app.name, 'Resource limits saved.')
+          }
         },
       },
     )

@@ -30,6 +30,11 @@ type fakeExecAppRuntime struct {
 	gotContainerID string
 	gotCmd         []string
 	execCalls      int
+
+	updateResourcesErr       error
+	updateResourcesCalls     int
+	updateResourcesID        string
+	updateResourcesResources docker.Resources
 }
 
 func (f *fakeExecAppRuntime) InspectByName(_ context.Context, _ string) (*docker.ContainerState, error) {
@@ -61,7 +66,13 @@ func (f *fakeExecAppRuntime) ListByPrefix(context.Context, string) ([]docker.Con
 }
 func (f *fakeExecAppRuntime) Stop(context.Context, string, time.Duration) error { return nil }
 func (f *fakeExecAppRuntime) Remove(context.Context, string, bool) error        { return nil }
-func (f *fakeExecAppRuntime) EnsureVolume(context.Context, string) error        { return nil }
+func (f *fakeExecAppRuntime) UpdateResources(_ context.Context, id string, resources docker.Resources) error {
+	f.updateResourcesCalls++
+	f.updateResourcesID = id
+	f.updateResourcesResources = resources
+	return f.updateResourcesErr
+}
+func (f *fakeExecAppRuntime) EnsureVolume(context.Context, string) error { return nil }
 func (f *fakeExecAppRuntime) EnsureNetwork(context.Context, string) (string, error) {
 	return "", nil
 }

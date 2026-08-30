@@ -16,29 +16,32 @@ import (
 // fakeRuntime (which only needs to prove delegation, not full
 // call/return behavior per method).
 type execRuntime struct {
-	inspectState *docker.ContainerState
-	inspectErr   error
-	createID     string
-	createErr    error
-	createSpec   docker.ContainerSpec
-	startErr     error
-	startID      string
-	stopErr      error
-	stopID       string
-	stopTimeout  time.Duration
-	removeErr    error
-	removeID     string
-	removeForce  bool
-	images       []docker.ImageInfo
-	imagesErr    error
-	imagesRepo   string
-	containers   []docker.ContainerState
-	prefixErr    error
-	prefix       string
-	volumeErr    error
-	volumeName   string
-	events       chan docker.Event
-	eventErrs    chan error
+	inspectState             *docker.ContainerState
+	inspectErr               error
+	createID                 string
+	createErr                error
+	createSpec               docker.ContainerSpec
+	startErr                 error
+	startID                  string
+	stopErr                  error
+	stopID                   string
+	stopTimeout              time.Duration
+	removeErr                error
+	removeID                 string
+	removeForce              bool
+	updateResourcesErr       error
+	updateResourcesID        string
+	updateResourcesResources docker.Resources
+	images                   []docker.ImageInfo
+	imagesErr                error
+	imagesRepo               string
+	containers               []docker.ContainerState
+	prefixErr                error
+	prefix                   string
+	volumeErr                error
+	volumeName               string
+	events                   chan docker.Event
+	eventErrs                chan error
 }
 
 func newExecRuntime() *execRuntime {
@@ -75,6 +78,11 @@ func (f *execRuntime) Stop(_ context.Context, id string, timeout time.Duration) 
 func (f *execRuntime) Remove(_ context.Context, id string, force bool) error {
 	f.removeID, f.removeForce = id, force
 	return f.removeErr
+}
+func (f *execRuntime) UpdateResources(_ context.Context, id string, resources docker.Resources) error {
+	f.updateResourcesID = id
+	f.updateResourcesResources = resources
+	return f.updateResourcesErr
 }
 func (f *execRuntime) EnsureVolume(_ context.Context, name string) error {
 	f.volumeName = name
@@ -228,6 +236,43 @@ func TestExecute_Remove(t *testing.T) {
 	}, nil)
 	if rt.removeID != "c1" || !rt.removeForce {
 		t.Errorf("removeID=%q removeForce=%v, want c1/true", rt.removeID, rt.removeForce)
+	}
+}
+
+func TestExecute_UpdateResources(t *testing.T) {
+	rt := newExecRuntime()
+	resp := Execute(context.Background(), rt, &agentpb.AgentRequest{
+		RequestId: "r1",
+		Op: &agentpb.AgentRequest_UpdateResources{UpdateResources: &agentpb.UpdateResourcesRequest{
+			Id: "c1",
+			Resources: &agentpb.Resources{
+				MemoryBytes:     512 << 20,
+				NanoCpus:        500_000_000,
+				SwapMemoryBytes: 1 << 30,
+				CpusetCpus:      "0-1",
+			},
+		}},
+	}, nil)
+	if resp.Error != "" || resp.GetEmpty() == nil {
+		t.Errorf("resp = %+v, want Error empty and Empty result set", resp)
+	}
+	want := docker.Resources{MemoryBytes: 512 << 20, NanoCPUs: 500_000_000, SwapMemoryBytes: 1 << 30, CPUSetCPUs: "0-1"}
+	if rt.updateResourcesID != "c1" || rt.updateResourcesResources != want {
+		t.Errorf("updateResourcesID=%q resources=%+v, want c1/%+v", rt.updateResourcesID, rt.updateResourcesResources, want)
+	}
+}
+
+func TestExecute_UpdateResources_RuntimeError(t *testing.T) {
+	rt := newExecRuntime()
+	rt.updateResourcesErr = errors.New("update failed")
+	resp := Execute(context.Background(), rt, &agentpb.AgentRequest{
+		RequestId: "r1",
+		Op: &agentpb.AgentRequest_UpdateResources{UpdateResources: &agentpb.UpdateResourcesRequest{
+			Id: "c1", Resources: &agentpb.Resources{MemoryBytes: 256 << 20},
+		}},
+	}, nil)
+	if resp.Error != "update failed" {
+		t.Errorf("resp.Error = %q, want %q", resp.Error, "update failed")
 	}
 }
 

@@ -45,24 +45,32 @@ type fakeRuntime struct {
 	nextID     int
 	hostPort   int
 
-	createErr       error
-	startErr        error
-	stopErr         error
-	removeErr       error
-	ensureVolumeErr error
+	createErr          error
+	startErr           error
+	stopErr            error
+	removeErr          error
+	ensureVolumeErr    error
+	updateResourcesErr error
 	// startErrOnce fails exactly the next Start call, then clears
 	// itself: the "broken container, but recreating it works" scenario,
 	// distinct from startErr's "every Start fails" shape.
 	startErrOnce error
 
-	createCalls       int
-	removeCalls       int
-	ensureVolumeCalls []string
-	lastCreateEnv     map[string]string
+	createCalls          int
+	removeCalls          int
+	updateResourcesCalls int
+	ensureVolumeCalls    []string
+	lastCreateEnv        map[string]string
 	// lastCreateSpec is the full spec passed to the most recent Create
 	// call, for assertions (like the mesh DNS wiring tests) that need
 	// more than just Env.
 	lastCreateSpec docker.ContainerSpec
+	// lastUpdateResourcesID/lastUpdateResources record the most recent
+	// UpdateResources call's arguments, for tests asserting a
+	// resource-only diff converges via a live update rather than a
+	// recreate.
+	lastUpdateResourcesID string
+	lastUpdateResources   docker.Resources
 
 	// networks, ensureNetworkCalls, ensureNetworkErr, removeNetworkErr,
 	// and callOrder back the per-app networking and rolling-deploy
@@ -154,6 +162,18 @@ func (f *fakeRuntime) Stop(_ context.Context, id string, _ time.Duration) error 
 		if cs.ID == id {
 			cs.Running = false
 		}
+	}
+	return nil
+}
+
+func (f *fakeRuntime) UpdateResources(_ context.Context, id string, resources docker.Resources) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.updateResourcesCalls++
+	f.lastUpdateResourcesID = id
+	f.lastUpdateResources = resources
+	if f.updateResourcesErr != nil {
+		return f.updateResourcesErr
 	}
 	return nil
 }

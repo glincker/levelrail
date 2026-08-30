@@ -240,6 +240,16 @@ type Runtime interface {
 	// container is an error, matching Docker's own default.
 	Remove(ctx context.Context, id string, force bool) error
 
+	// UpdateResources applies new memory, CPU, swap, and cpuset limits to
+	// an already-running container in place, via the Engine API's own
+	// ContainerUpdate call. Unlike every other resource-affecting change
+	// a controller can want (image, env, ports, health check), this one
+	// has a real live-update path: Docker itself supports adjusting a
+	// running container's cgroup limits without stopping it, so a
+	// reconciler can converge a resource-limit-only diff without the
+	// blue-green cutover a full recreate would otherwise force.
+	UpdateResources(ctx context.Context, id string, resources Resources) error
+
 	// EnsureVolume creates a named Docker volume if it doesn't already
 	// exist. Idempotent: calling it for a volume that's already present
 	// is not an error, matching the Engine API's own VolumeCreate

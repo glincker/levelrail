@@ -69,6 +69,11 @@ export interface AppDetail {
   domains?: string[]
   env?: Record<string, string>
   resources?: ServiceResources | null
+  // resources_applied_live is response-only (internal/api/apps.go's
+  // handleUpdateApp): whether the resources value just saved was already
+  // pushed onto a running container via a live Docker resource update,
+  // rather than waiting for the next deploy or restart.
+  resources_applied_live?: boolean
   health?: ServiceHealth | null
   strategy: DeployStrategy
   replicas: number
