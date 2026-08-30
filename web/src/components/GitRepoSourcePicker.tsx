@@ -143,7 +143,7 @@ function GitHubProviderRow({
   return (
     <div className="space-y-2">
       <ProviderStatusRow
-        icon={<GithubLogoIcon className="size-4" />}
+        icon={<GithubLogoIcon className="size-4" aria-hidden="true" />}
         name="GitHub"
         connected={enabled}
         settingsPath="/settings/github-app"
@@ -255,7 +255,7 @@ function GitLabProviderRow({
   return (
     <div className="space-y-2">
       <ProviderStatusRow
-        icon={<GitlabLogoIcon className="size-4" />}
+        icon={<GitlabLogoIcon className="size-4" aria-hidden="true" />}
         name="GitLab"
         connected={enabled}
         settingsPath="/settings/gitlab-app"
@@ -386,7 +386,7 @@ function BitbucketProviderRow({
   return (
     <div className="space-y-2">
       <ProviderStatusRow
-        icon={<GitBranchIcon className="size-4" />}
+        icon={<GitBranchIcon className="size-4" aria-hidden="true" />}
         name="Bitbucket"
         connected={enabled}
         settingsPath="/settings/bitbucket-app"
@@ -497,7 +497,7 @@ function ManualSourceRow({
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-        <LinkIcon className="size-4" />
+        <LinkIcon className="size-4" aria-hidden="true" />
         Or paste a repository URL
       </div>
       <div className="space-y-2 pl-6">
