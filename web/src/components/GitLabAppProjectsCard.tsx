@@ -43,7 +43,7 @@ import type { GitLabAppProject } from '../types/gitlabApp'
 
 // Connected-projects list, shown once the GitLab App is authorized: the
 // project picker for "use as source", the GitLab counterpart of
-// GitHubAppRepoPicker.tsx's repo picker, but reachable from the settings
+// GitRepoSourcePicker.tsx's repo picker, but reachable from the settings
 // page itself rather than only from CreateAppFromGitFields.tsx, since
 // this action targets an already-existing app (git_sources.go's
 // connectGitSource, the exact same step PUT .../git-source uses).

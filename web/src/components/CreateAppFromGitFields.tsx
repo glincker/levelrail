@@ -1,10 +1,14 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  CheckIcon,
+  CopyIcon,
+  WarningIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -21,8 +25,15 @@ import { useCreateApp } from '../queries/apps'
 import { triggerBuild, type TriggerBuildInput } from '../queries/builds'
 import { deployKeys } from '../queries/deploys'
 import { deployAttemptKeys } from '../queries/deployAttempts'
+import { gitSourceKeys, setGitSource } from '../queries/gitSources'
+import { connectGitLabProjectAsSource } from '../queries/gitlabApp'
+import { connectBitbucketRepoAsSource } from '../queries/bitbucketApp'
+import type { GitSourceBuildType, GitSourceResource } from '../types/gitSource'
 import { GitBuildSourceFields } from './GitBuildSourceFields'
-import { GitHubAppRepoPicker } from './GitHubAppRepoPicker'
+import {
+  GitRepoSourcePicker,
+  type GitRepoSourceValue,
+} from './GitRepoSourcePicker'
 
 // Build packs this form offers, matching GitBuildSourceFields' own tab
 // picker for what POST /api/v1/apps/{name}/builds actually supports:
@@ -192,6 +203,102 @@ function buildArgsRecord(
   return Object.keys(out).length > 0 ? out : undefined
 }
 
+// repoSlugFrom turns a clone URL into a reasonable app-name suggestion,
+// e.g. "https://github.com/acme/marketing-site.git" -> "marketing-site".
+// Only ever used to prefill the Name field when it's still blank (see
+// GitRepoSourcePicker's onSelect handler below), never to overwrite
+// something the operator already typed.
+function repoSlugFrom(repoUrl: string): string {
+  const cleaned = repoUrl.trim().replace(/\.git$/i, '').replace(/\/+$/, '')
+  const segments = cleaned.split(/[/:]/).filter(Boolean)
+  const last = segments[segments.length - 1] ?? ''
+  return last
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+// gitSourceBuildFields mirrors this form's own build-pack choice into the
+// git_source row's build_type/build_path, so a future webhook-triggered
+// build (once the connect call below succeeds) uses the same build
+// config as the very first one, not the git_source defaults. Only called
+// once buildType !== 'image' is already known true.
+function gitSourceBuildFields(
+  values: FormOutput,
+): { buildType: GitSourceBuildType; buildPath?: string } {
+  const buildType = values.buildType as GitSourceBuildType
+  return {
+    buildType,
+    buildPath:
+      buildType === 'dockerfile' ? values.dockerfilePath.trim() || undefined : undefined,
+  }
+}
+
+// connectGitSourceFor is the fix for both bugs docs-local/research/git-
+// provider-connect-ux-unification-proposal.md documents: every provider,
+// including GitHub, now gets an actual git_source row connected between
+// app creation and the first build, not just GitLab/Bitbucket.
+//
+// `source` is trusted only when its repoUrl/branch still match what's
+// actually in the form: GitBuildSourceFields' own Repository URL/Branch
+// inputs stay directly editable after a provider pick prefills them, so
+// a hand-edit after picking must not silently connect the wrong project.
+// A mismatch (or no pick at all, e.g. the operator typed straight into
+// GitBuildSourceFields) falls back to the generic endpoint, exactly the
+// path GitSourceCard.tsx's own manual connect form already uses.
+//
+// GitLab and Bitbucket both have a real "use as source" endpoint that
+// registers a push webhook automatically (queries/gitlabApp.ts,
+// queries/bitbucketApp.ts). GitHub does not yet (see
+// GitRepoSourcePicker.tsx's own doc comment: no repo-hook registration
+// call exists in internal/githubapp/client.go), so a GitHub pick degrades
+// to the same generic endpoint manual mode uses, which stores the
+// git_source row and returns a webhook URL/secret to add by hand. That
+// degradation, and closing GitHub's own auto-registration gap, is PR 2's
+// job per the proposal, not this one's.
+async function connectGitSourceFor(
+  name: string,
+  values: FormOutput,
+  source: GitRepoSourceValue | null,
+): Promise<{ resource: GitSourceResource; autoRegistered: boolean }> {
+  const repoUrl = values.repoUrl.trim()
+  const branch = values.ref.trim()
+  const { buildType, buildPath } = gitSourceBuildFields(values)
+  const effective =
+    source && source.repoUrl === repoUrl && source.branch === branch ? source : null
+
+  if (effective?.providerRef?.kind === 'gitlab') {
+    const resource = await connectGitLabProjectAsSource(effective.providerRef.projectId, {
+      app_name: name,
+      branch,
+      build_type: buildType,
+      build_path: buildPath,
+    })
+    return { resource, autoRegistered: true }
+  }
+  if (effective?.providerRef?.kind === 'bitbucket') {
+    const resource = await connectBitbucketRepoAsSource(
+      effective.providerRef.workspace,
+      effective.providerRef.repoSlug,
+      {
+        app_name: name,
+        branch,
+        build_type: buildType,
+        build_path: buildPath,
+      },
+    )
+    return { resource, autoRegistered: true }
+  }
+  const resource = await setGitSource(name, {
+    repo_url: repoUrl,
+    branch,
+    build_type: buildType,
+    build_path: buildPath,
+    token: effective?.provider === 'manual' ? effective.token : undefined,
+  })
+  return { resource, autoRegistered: false }
+}
+
 // Placeholder image tag POST /api/v1/apps is sent on step 1 of this
 // form's two-request sequence (create the app record, then trigger a
 // build). See CreateAppFromGitFields's own doc comment for the full
@@ -285,6 +392,20 @@ export function CreateAppFromGitFields({
   // below) already clears .data back to undefined, so there's nothing
   // extra to keep in sync by hand.
   const createdName = createApp.data?.name ?? null
+  // The last repo/branch/provider picked from GitRepoSourcePicker, kept
+  // separate from the zod-validated form fields (repoUrl/ref) since it
+  // carries provider metadata (which connect endpoint to call) that has
+  // no wire representation of its own. See connectGitSourceFor's own doc
+  // comment for how a stale value here (the form fields hand-edited after
+  // a pick) gets detected and ignored.
+  const [source, setSource] = useState<GitRepoSourceValue | null>(null)
+  // Copy-button state for the "add this webhook by hand" banner below,
+  // shown only for the generic (non-auto-registering) connect path. Reset
+  // is unnecessary beyond the dialog's own close-resets-everything effect:
+  // a fresh connect always renders a fresh banner with these starting
+  // false again anyway.
+  const [webhookUrlCopied, setWebhookUrlCopied] = useState(false)
+  const [webhookSecretCopied, setWebhookSecretCopied] = useState(false)
   // See this component's own doc comment for why this wraps
   // queries/builds.ts's triggerBuild() directly instead of using that
   // module's useTriggerBuild(appName) hook.
@@ -302,6 +423,20 @@ export function CreateAppFromGitFields({
       void queryClient.invalidateQueries({
         queryKey: deployAttemptKeys.list(variables.name),
       })
+    },
+  })
+  // Connects the git source between app creation and the first build, for
+  // every provider (see connectGitSourceFor's own doc comment for the two
+  // bugs this fixes). Not gated on `enabled`/`retry`: proceedAfterCreate
+  // below only calls mutate() when there's actually a repo to connect, and
+  // skips calling it again once it has already succeeded once this
+  // session (isSuccess), so a build-only retry never re-registers a
+  // second webhook on GitLab/Bitbucket.
+  const connectSourceMutation = useMutation({
+    mutationFn: ({ name, values }: { name: string; values: FormOutput }) =>
+      connectGitSourceFor(name, values, source),
+    onSuccess: (result, variables) => {
+      queryClient.setQueryData(gitSourceKeys.detail(variables.name), result.resource)
     },
   })
   const {
@@ -322,10 +457,13 @@ export function CreateAppFromGitFields({
     if (!open) {
       reset(DEFAULT_VALUES)
       createApp.reset()
+      connectSourceMutation.reset()
       buildMutation.reset()
+      setSource(null)
     }
     // Only reacting to the dialog's open transition, not to reset/
-    // createApp/buildMutation identity churn on every render.
+    // createApp/connectSourceMutation/buildMutation identity churn on
+    // every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
@@ -359,13 +497,36 @@ export function CreateAppFromGitFields({
     )
   }
 
+  // proceedAfterCreate runs the second and third of the three steps every
+  // provider now gets (connectGitSourceFor's own doc comment): connect
+  // the git source, then trigger the build. A failed connect does not
+  // block the build (onSettled, not onSuccess): the operator still gets a
+  // running app either way, just without auto-deploy-on-push until they
+  // reconnect it from the app's Overview page, the same degraded-but-
+  // working outcome GitSourceCard.tsx's own connect failure already
+  // leaves an existing app in.
+  function proceedAfterCreate(name: string, values: FormOutput) {
+    const needsSource =
+      values.buildType !== 'image' &&
+      values.repoUrl.trim() !== '' &&
+      values.ref.trim() !== ''
+    if (needsSource && !connectSourceMutation.isSuccess) {
+      connectSourceMutation.mutate(
+        { name, values },
+        { onSettled: () => { runBuild(name, values) } },
+      )
+      return
+    }
+    runBuild(name, values)
+  }
+
   const onSubmit = handleSubmit((values) => {
     if (createdName) {
       // Retry after a previous build failure: the app record already
-      // exists, so this resubmission only retries the build, using
-      // whatever values are currently in the form (e.g. a corrected
-      // ref).
-      runBuild(createdName, values)
+      // exists, so this resubmission only retries the build (and, if it
+      // didn't already succeed, the git source connect), using whatever
+      // values are currently in the form (e.g. a corrected ref).
+      proceedAfterCreate(createdName, values)
       return
     }
     createApp.mutate(
@@ -377,13 +538,14 @@ export function CreateAppFromGitFields({
       },
       {
         onSuccess: (created) => {
-          runBuild(created.name, values)
+          proceedAfterCreate(created.name, values)
         },
       },
     )
   })
 
-  const busy = createApp.isPending || buildMutation.isPending
+  const busy =
+    createApp.isPending || connectSourceMutation.isPending || buildMutation.isPending
   // Locks name/port/domain forever once the app record exists: none of
   // the three are resent on a retry (see buildInputFrom and onSubmit
   // above), so editing them after step 1 succeeded would silently have
@@ -403,6 +565,23 @@ export function CreateAppFromGitFields({
       }}
       className="space-y-4"
     >
+      {watch('buildType') !== 'image' ? (
+        <GitRepoSourcePicker
+          disabled={buildFieldsLocked}
+          onSelect={(value) => {
+            setSource(value)
+            setValue('repoUrl', value.repoUrl, { shouldValidate: true })
+            setValue('ref', value.branch, { shouldValidate: true })
+            if (!getValues('name').trim()) {
+              const slug = repoSlugFrom(value.repoUrl)
+              if (slug) {
+                setValue('name', slug, { shouldValidate: true })
+              }
+            }
+          }}
+        />
+      ) : null}
+
       <div className="flex flex-col gap-4 sm:flex-row">
         <Field className="flex-1">
           <FieldLabel htmlFor="git-app-name">Name</FieldLabel>
@@ -434,15 +613,6 @@ export function CreateAppFromGitFields({
         </Field>
       </div>
 
-      {watch('buildType') !== 'image' ? (
-        <GitHubAppRepoPicker
-          onSelect={(repoUrl, ref) => {
-            setValue('repoUrl', repoUrl, { shouldValidate: true })
-            setValue('ref', ref, { shouldValidate: true })
-          }}
-        />
-      ) : null}
-
       <GitBuildSourceFields
         control={control}
         register={register}
@@ -471,6 +641,12 @@ export function CreateAppFromGitFields({
         </FieldDescription>
       </Field>
 
+      {connectSourceMutation.isPending ? (
+        <Alert>
+          <AlertDescription>Connecting the git source...</AlertDescription>
+        </Alert>
+      ) : null}
+
       {buildMutation.isPending ? (
         <Alert>
           <AlertDescription>Triggering the build...</AlertDescription>
@@ -481,6 +657,73 @@ export function CreateAppFromGitFields({
         <Alert variant="destructive">
           <WarningIcon />
           <AlertDescription>{createApp.error.message}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {connectSourceMutation.isError ? (
+        <Alert variant="destructive">
+          <WarningIcon />
+          <AlertDescription>
+            App created, but connecting the git source failed:{' '}
+            {connectSourceMutation.error.message}. The build below still runs;
+            connect a git source afterward from the app&apos;s Overview page
+            for automatic deploys on push.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {connectSourceMutation.data && !connectSourceMutation.data.autoRegistered
+      && connectSourceMutation.data.resource.webhook_secret ? (
+        <Alert>
+          <AlertDescription className="space-y-2">
+            <p>
+              Git source connected. This provider doesn&apos;t register a
+              webhook automatically yet, add these to the repository&apos;s
+              settings for pushes to auto-deploy:
+            </p>
+            <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
+              <code className="min-w-0 flex-1 overflow-x-auto text-xs break-all">
+                {window.location.origin}
+                {connectSourceMutation.data.resource.webhook_url}
+              </code>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  void navigator.clipboard
+                    .writeText(
+                      `${window.location.origin}${connectSourceMutation.data?.resource.webhook_url ?? ''}`,
+                    )
+                    .then(() => { setWebhookUrlCopied(true) })
+                }}
+              >
+                {webhookUrlCopied ? <CheckIcon /> : <CopyIcon />}
+                {webhookUrlCopied ? 'Copied' : 'Copy'}
+              </Button>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
+              <code className="min-w-0 flex-1 overflow-x-auto text-xs break-all">
+                {connectSourceMutation.data.resource.webhook_secret}
+              </code>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const secret = connectSourceMutation.data?.resource.webhook_secret
+                  if (secret) {
+                    void navigator.clipboard.writeText(secret).then(() => {
+                      setWebhookSecretCopied(true)
+                    })
+                  }
+                }}
+              >
+                {webhookSecretCopied ? <CheckIcon /> : <CopyIcon />}
+                {webhookSecretCopied ? 'Copied' : 'Copy'}
+              </Button>
+            </div>
+          </AlertDescription>
         </Alert>
       ) : null}
 
@@ -499,11 +742,13 @@ export function CreateAppFromGitFields({
         <Button type="submit" disabled={busy}>
           {createApp.isPending
             ? 'Creating...'
-            : buildMutation.isPending
-              ? 'Building...'
-              : locked
-                ? 'Retry build'
-                : 'Build and deploy'}
+            : connectSourceMutation.isPending
+              ? 'Connecting...'
+              : buildMutation.isPending
+                ? 'Building...'
+                : locked
+                  ? 'Retry build'
+                  : 'Build and deploy'}
         </Button>
       </DialogFooter>
     </form>
