@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -249,5 +250,33 @@ func TestListNotificationDeliveries(t *testing.T) {
 	decodeStructured(t, result, &deliveries)
 	if len(deliveries) != 1 || deliveries[0].ID != "n1" {
 		t.Errorf("deliveries = %+v, want one delivery with id n1", deliveries)
+	}
+}
+
+func TestListAuditLog(t *testing.T) {
+	var gotQuery url.Values
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/audit-log" {
+			t.Errorf("path = %q, want /api/v1/audit-log", r.URL.Path)
+		}
+		gotQuery = r.URL.Query()
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]apiclient.AuditLogEntryResource{{ID: "a1", ActorName: "gagan", Method: "POST", Path: "/api/v1/apps/web/deploys", StatusCode: 200}})
+	})
+
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "list_audit_log",
+		Arguments: map[string]any{"limit": 10, "path": "/api/v1/apps/web/deploys", "method": "POST"},
+	})
+	if err != nil {
+		t.Fatalf("CallTool(list_audit_log) error = %v", err)
+	}
+	var entries []apiclient.AuditLogEntryResource
+	decodeStructured(t, result, &entries)
+	if len(entries) != 1 || entries[0].ID != "a1" {
+		t.Errorf("entries = %+v, want one entry with id a1", entries)
+	}
+	if gotQuery.Get("limit") != "10" || gotQuery.Get("path") != "/api/v1/apps/web/deploys" || gotQuery.Get("method") != "POST" {
+		t.Errorf("query = %v, want limit=10, path, and method to be forwarded", gotQuery)
 	}
 }

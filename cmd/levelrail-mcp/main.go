@@ -120,6 +120,7 @@ func newServer(client *apiclient.Client) *mcp.Server {
 	registerBackupVerificationTools(server, client)
 	registerDeployCompareTools(server, client)
 	registerNotificationTools(server, client)
+	registerAuditTools(server, client)
 
 	return server
 }
