@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BrandIcon, BRAND_ICON_NAMES, type BrandIconName } from './BrandIcon'
 import { BrowseTemplatesFields } from './BrowseTemplatesFields'
 import { CreateAppFields } from './CreateAppFields'
@@ -146,10 +147,16 @@ export function CreateResourceWizard({
   const [selected, setSelected] = useState<string | null>(null)
   // Presentation only, independent of `selected`: toggling this must
   // never remount step 2's form (that's what `key={selected}` below is
-  // actually keyed on), so it lives as its own piece of state. Always
-  // starts compact on a fresh open, same as `selected` starting at null.
-  const [fullscreen, setFullscreen] = useState(false)
+  // actually keyed on), so it lives as its own piece of state. Starts
+  // full screen: step 1's own options grid keeps growing (more database
+  // engines, more templates), and a small centered popup has no room to
+  // browse that comfortably, the same reason Coolify's own equivalent
+  // picker is a full page, not a modal. Collapsing back to compact stays
+  // available via the toggle for whoever prefers it once step 2's form
+  // is showing.
+  const [fullscreen, setFullscreen] = useState(true)
   const [search, setSearch] = useState('')
+  const [category, setCategory] = useState<'all' | 'applications' | 'databases'>('all')
   // Optional convenience, see useDatabaseEnginesOptional's own doc
   // comment: a slow/failed fetch just means step 1 shows the fixed
   // options without any database cards yet, never a blocked dialog.
@@ -178,12 +185,14 @@ export function CreateResourceWizard({
   const options = [...applicationOptions, ...databaseOptions]
 
   const normalizedSearch = search.trim().toLowerCase()
-  const filteredApplications = applicationOptions.filter((option) =>
-    matchesSearch(option, normalizedSearch),
-  )
-  const filteredDatabases = databaseOptions.filter((option) =>
-    matchesSearch(option, normalizedSearch),
-  )
+  const filteredApplications =
+    category === 'databases'
+      ? []
+      : applicationOptions.filter((option) => matchesSearch(option, normalizedSearch))
+  const filteredDatabases =
+    category === 'applications'
+      ? []
+      : databaseOptions.filter((option) => matchesSearch(option, normalizedSearch))
   const hasResults =
     filteredApplications.length > 0 || filteredDatabases.length > 0
 
@@ -194,8 +203,9 @@ export function CreateResourceWizard({
       // below already reset their own local form state off this same
       // `open` prop.
       setSelected(null)
-      setFullscreen(false)
+      setFullscreen(true)
       setSearch('')
+      setCategory('all')
     }
   }
 
@@ -285,6 +295,18 @@ export function CreateResourceWizard({
                 className="pl-8"
               />
             </div>
+            <Tabs
+              value={category}
+              onValueChange={(value) => {
+                setCategory(value as typeof category)
+              }}
+            >
+              <TabsList>
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="applications">Applications</TabsTrigger>
+                <TabsTrigger value="databases">Databases</TabsTrigger>
+              </TabsList>
+            </Tabs>
             {filteredApplications.length > 0 ? (
               <div className="space-y-2">
                 <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">

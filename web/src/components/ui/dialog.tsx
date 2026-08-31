@@ -69,11 +69,15 @@ const dialogContentVariants = cva(
   {
     variants: {
       size: {
-        // Exactly the classes this component hardcoded before the size
-        // variant existed. Any dialog that doesn't pass `size` renders
-        // byte-for-byte what it always has.
+        // `max-h-[85vh]` plus `overflow-y-auto`: a centered popup with
+        // content taller than the viewport (a long form, a growing
+        // options grid) otherwise has no height ceiling at all and
+        // overflows past both the top and bottom of the screen, pushing
+        // its own header and close button out of view. Capping height
+        // and scrolling internally is the same "the whole popup scrolls
+        // together" contract `fullscreen` already documents below.
         default:
-          'top-1/2 left-1/2 w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 sm:max-w-sm',
+          'top-1/2 left-1/2 max-h-[85vh] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto sm:max-w-sm',
         // No centering transform: `inset-*` positions and sizes the
         // popup directly against the viewport instead of a centered
         // fixed-width box, which is also what makes this fill available
