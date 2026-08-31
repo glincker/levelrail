@@ -92,6 +92,7 @@ function AppListPage() {
             New database
           </Button>
           <CreateResourceWizard
+            scope="applications"
             trigger={
               <Button size="sm">
                 <PlusIcon />
@@ -108,6 +109,7 @@ function AppListPage() {
           description="Deploy your first app to get started: push to a connected git repo, or create one directly if you already have a built image."
           action={
             <CreateResourceWizard
+              scope="applications"
               trigger={
                 <Button size="sm">
                   <PlusIcon />

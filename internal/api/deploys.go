@@ -73,48 +73,45 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusAccepted, toAppResource(updated))
 }
 
-// recordPlainDeployAttempt saves this task's judgment call for the
-// plain image-tag path: it deserves a deploy_attempts row for history
-// and rollback purposes just like the two build-triggering paths, even
-// though it has no real build step (no Dockerfile build happens, see
-// handleTriggerDeploy's own doc comment) and so nothing worth persisting
-// to the deploy-log store. The row is saved and immediately finished as
-// succeeded in one call, not started as "running" and finished later by
-// a background build: SaveDesiredService above has already fully
-// completed the only work this path does by the time this runs.
+// recordPlainDeployAttempt records a deploy_attempts row for the plain
+// image-tag path (create, update, and manual redeploy/rollback all share
+// it): it deserves history and rollback treatment just like the two
+// build-triggering paths, even with no build step to wait on. See
+// recordInstantDeployAttempt for the mechanics.
+func (rt *Router) recordPlainDeployAttempt(ctx context.Context, serviceName, image string) {
+	rt.recordInstantDeployAttempt(ctx, serviceName, image, store.DeployAttemptSourceImage)
+}
+
+// recordInstantDeployAttempt saves and immediately finishes (as
+// succeeded) a deploy_attempts row for a trigger with no build step and
+// no async work to wait on: the caller's own desired-state write has
+// already fully completed by the time this runs. source distinguishes
+// the plain image-tag path (recordPlainDeployAttempt) from the
+// compose/template fan-out path (apps_compose.go's handleDeployCompose),
+// which calls this directly with DeployAttemptSourceCompose once per
+// service.
 //
 // A failure here (minting the ID, or either store call) is logged, not
-// returned as this handler's own error: the desired-state write already
-// succeeded by this point, so a history-tracking hiccup must not turn an
-// otherwise-successful deploy trigger into a client-visible failure, the
-// same "must never block the real operation" choice
-// deploy.Pipeline.deployDockerfile's own metrics-recording already
-// makes.
-//
-// This path always finishes as succeeded (recordPlainDeployAttempt's own
-// doc comment: no real build step happens here), so the deploy-outcome
-// notification it dispatches, when rt.deployNotifier is configured, is
-// always a success notification for this trigger path. A future build
-// failure elsewhere in this same attempt's lifecycle isn't possible
-// today, matching FinishDeployAttempt's own hardcoded
-// DeployAttemptStatusSucceeded call just below.
-func (rt *Router) recordPlainDeployAttempt(ctx context.Context, serviceName, image string) {
+// returned as the caller's own error: the desired-state write already
+// succeeded, so a history-tracking hiccup must never turn an otherwise-
+// successful deploy trigger into a client-visible failure.
+func (rt *Router) recordInstantDeployAttempt(ctx context.Context, serviceName, image, source string) {
 	id, err := store.NewDeployAttemptID()
 	if err != nil {
-		rt.logger.Error("api: trigger deploy: mint deploy attempt id failed", slog.String("error", err.Error()), slog.String("name", serviceName))
+		rt.logger.Error("api: record deploy attempt: mint id failed", slog.String("error", err.Error()), slog.String("name", serviceName))
 		return
 	}
 	now := time.Now()
 	if err := rt.deployAttempts.SaveDeployAttempt(ctx, store.DeployAttempt{
 		ID: id, ServiceName: serviceName, Image: image,
-		Source: store.DeployAttemptSourceImage,
+		Source: source,
 		Status: store.DeployAttemptStatusRunning, StartedAt: now,
 	}); err != nil {
-		rt.logger.Error("api: trigger deploy: save deploy attempt failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
+		rt.logger.Error("api: record deploy attempt: save failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
 		return
 	}
 	if err := rt.deployAttempts.FinishDeployAttempt(ctx, id, store.DeployAttemptStatusSucceeded, time.Now(), ""); err != nil {
-		rt.logger.Error("api: trigger deploy: finish deploy attempt failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
+		rt.logger.Error("api: record deploy attempt: finish failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
 		return
 	}
 	if rt.deployNotifier != nil {
