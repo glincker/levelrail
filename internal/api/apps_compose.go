@@ -20,8 +20,17 @@ import (
 // appResource so it round-trips through the same shape every other app
 // read/write endpoint already uses.
 type composeDeployResponse struct {
-	AppID    string        `json:"app_id"`
-	Services []appResource `json:"services"`
+	AppID    string                `json:"app_id"`
+	Services []appResource         `json:"services"`
+	Notices  []composeNoticeResult `json:"notices,omitempty"`
+}
+
+// composeNoticeResult is the wire shape of compose.Notice: a compose
+// keyword that parsed but doesn't behave the way it would under real
+// Docker Compose, surfaced to the operator rather than silently dropped.
+type composeNoticeResult struct {
+	Level   string `json:"level"`
+	Message string `json:"message"`
 }
 
 // handleDeployCompose handles POST /api/v1/apps/{name}/compose: the
@@ -92,7 +101,13 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 		out = append(out, toAppResource(svc))
 	}
 
-	writeJSON(w, http.StatusOK, composeDeployResponse{AppID: name, Services: out})
+	fileNotices := file.Notices()
+	notices := make([]composeNoticeResult, 0, len(fileNotices))
+	for _, n := range fileNotices {
+		notices = append(notices, composeNoticeResult{Level: string(n.Level), Message: n.Message})
+	}
+
+	writeJSON(w, http.StatusOK, composeDeployResponse{AppID: name, Services: out, Notices: notices})
 }
 
 // generateComposeSecret resolves one compose.ResolveMagicVars

@@ -12,6 +12,11 @@ type rawFile struct {
 	Version  string                `yaml:"version"`
 	Services map[string]rawService `yaml:"services"`
 	Domains  map[string]string     `yaml:"x-levelrail-domains"`
+	// Networks is top-level networks:, decoded down to just its keys
+	// (a network's driver/config body decodes into the zero-field
+	// struct{} and is discarded): Notices only needs to know whether
+	// custom networks were declared at all, not their configuration.
+	Networks map[string]struct{} `yaml:"networks"`
 }
 
 type rawService struct {
@@ -21,6 +26,8 @@ type rawService struct {
 	Ports       []Port            `yaml:"ports"`
 	Volumes     []Volume          `yaml:"volumes"`
 	Labels      map[string]string `yaml:"labels"`
+	Networks    Networks          `yaml:"networks"`
+	Restart     string            `yaml:"restart"`
 }
 
 // Environment is environment:'s string-or-list union: a KEY: VALUE map,
@@ -53,6 +60,34 @@ func (e *Environment) UnmarshalYAML(node *yaml.Node) error {
 		return nil
 	default:
 		return fmt.Errorf("environment: must be a mapping or a list of KEY=VALUE strings")
+	}
+}
+
+// Networks is a service's own networks:'s list-or-map union: a plain
+// list of network names, or a map of name to per-network config
+// (aliases, ipv4_address, ...) this decodes down to just the name,
+// same reasoning as rawFile.Networks above.
+type Networks []string
+
+// UnmarshalYAML implements the list-or-map union described above.
+func (n *Networks) UnmarshalYAML(node *yaml.Node) error {
+	switch node.Kind {
+	case yaml.SequenceNode:
+		var items []string
+		if err := node.Decode(&items); err != nil {
+			return fmt.Errorf("networks: %w", err)
+		}
+		*n = items
+		return nil
+	case yaml.MappingNode:
+		names := make([]string, 0, len(node.Content)/2)
+		for i := 0; i < len(node.Content); i += 2 {
+			names = append(names, node.Content[i].Value)
+		}
+		*n = names
+		return nil
+	default:
+		return fmt.Errorf("networks: must be a list or map of network names")
 	}
 }
 

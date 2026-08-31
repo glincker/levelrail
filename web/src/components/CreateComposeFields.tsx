@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { Link } from '@tanstack/react-router'
 import {
   CheckCircleIcon,
+  InfoIcon,
   UploadSimpleIcon,
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -133,7 +134,7 @@ export function CreateComposeFields({
   }
 
   if (deployCompose.isSuccess) {
-    const { app_id: appId, services } = deployCompose.data
+    const { app_id: appId, services, notices } = deployCompose.data
     return (
       <div className="space-y-4">
         <Alert>
@@ -143,6 +144,12 @@ export function CreateComposeFields({
             deployed under &ldquo;{appId}&rdquo;.
           </AlertDescription>
         </Alert>
+        {notices?.map((notice, i) => (
+          <Alert key={i}>
+            {notice.level === 'warning' ? <WarningIcon /> : <InfoIcon />}
+            <AlertDescription>{notice.message}</AlertDescription>
+          </Alert>
+        ))}
         <ul className="space-y-2">
           {services.map((service) => (
             <li

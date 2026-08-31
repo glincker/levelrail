@@ -7,8 +7,11 @@
 // ValidateForBuild) allows build: for exactly that reason: it always
 // has a real checkout. Both paths share the same narrow scope
 // otherwise: environment/ports/volumes support only their short-form
-// syntax, and everything else (networks, depends_on, restart, ...)
-// parses but is ignored.
+// syntax, and depends_on parses but is ignored (reconciler-level
+// startup ordering, out of scope here). restart: and networks: parse
+// and are surfaced as non-blocking Notices instead of being silently
+// dropped or translated: see Notices for why neither has a real
+// translation onto how Levelrail runs a service.
 package compose
 
 import (
@@ -29,6 +32,10 @@ type File struct {
 	// ingress routing) and to resolve any ${SERVICE_FQDN_*} reference
 	// within that same service's environment (ResolveMagicVars).
 	Domains map[string]string
+	// Networks lists this file's own top-level networks: names, sorted.
+	// Only used by Notices to detect that custom networks were declared
+	// at all; Levelrail doesn't create per-network isolation from this.
+	Networks []string
 }
 
 // Service is one entry under services:.
@@ -39,6 +46,8 @@ type Service struct {
 	Ports       []Port
 	Volumes     []Volume
 	Labels      map[string]string
+	Networks    Networks
+	Restart     string
 }
 
 // Volume is one short-form "name:/container/path" entry.
@@ -72,6 +81,13 @@ func Parse(data []byte) (*File, error) {
 	f := &File{Version: raw.Version, Services: make(map[string]Service, len(raw.Services)), Domains: raw.Domains}
 	for name, svc := range raw.Services {
 		f.Services[name] = Service(svc)
+	}
+	if len(raw.Networks) > 0 {
+		f.Networks = make([]string, 0, len(raw.Networks))
+		for name := range raw.Networks {
+			f.Networks = append(f.Networks, name)
+		}
+		sort.Strings(f.Networks)
 	}
 	return f, nil
 }

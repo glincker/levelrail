@@ -295,3 +295,52 @@ func TestHandleDeployCompose_DomainAssignedFromExtension(t *testing.T) {
 		t.Errorf("Env[FRONTEND_URL] = %q, want https://app.example.com", svc.Env["FRONTEND_URL"])
 	}
 }
+
+func TestHandleDeployCompose_NoNoticesForPlainFile(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/compose", validComposeYAML))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got composeDeployResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got.Notices) != 0 {
+		t.Errorf("Notices = %+v, want none", got.Notices)
+	}
+}
+
+func TestHandleDeployCompose_RestartAndNetworksSurfaceAsNotices(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	yaml := "services:\n" +
+		"  web:\n" +
+		"    image: nginx:1.27\n" +
+		"    restart: always\n" +
+		"    networks: [frontend]\n"
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/compose", yaml))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got composeDeployResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got.Notices) != 2 {
+		t.Fatalf("Notices = %+v, want 2 entries (one restart note, one networks warning)", got.Notices)
+	}
+	if got.Notices[0].Level != "note" {
+		t.Errorf("Notices[0].Level = %q, want note", got.Notices[0].Level)
+	}
+	if got.Notices[1].Level != "warning" {
+		t.Errorf("Notices[1].Level = %q, want warning", got.Notices[1].Level)
+	}
+}
