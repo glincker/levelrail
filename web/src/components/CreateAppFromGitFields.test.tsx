@@ -164,7 +164,10 @@ function callsTo(
   method: string,
 ): { input: RequestInfo | URL; init?: RequestInit }[] {
   return fetchMock.mock.calls
-    .map(([input, init]: [RequestInfo | URL, RequestInit | undefined]) => ({ input, init }))
+    .map((call: unknown[]) => ({
+      input: call[0] as RequestInfo | URL,
+      init: call[1] as RequestInit | undefined,
+    }))
     .filter(
       ({ input, init }) =>
         requestUrlOf(input) === url && (init?.method ?? 'GET') === method,
