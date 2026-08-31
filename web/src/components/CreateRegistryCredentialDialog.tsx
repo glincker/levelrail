@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
 import { ApiError } from '../lib/apiError'
+import { useBrand } from '../hooks/useBrand'
 import { useCreateRegistryCredential } from '../queries/registryCredentials'
 
 // Mirrors validateCreateRegistryCredentialRequest (internal/api/
@@ -34,6 +35,11 @@ const createRegistryCredentialSchema = z.object({
   registry_host: z.string().trim().min(1, 'Registry host is required'),
   username: z.string().trim().min(1, 'Username is required'),
   password: z.string().min(1, 'Password is required'),
+  // A plain <input type="date"> value ("" or "YYYY-MM-DD"), converted to
+  // a full RFC3339 timestamp on submit. Optional: this platform cannot
+  // read an expiry out of an opaque credential string, so it's only ever
+  // what the operator already knows and chooses to record.
+  expires_at: z.string(),
 })
 
 type CreateRegistryCredentialFormValues = z.infer<
@@ -45,6 +51,7 @@ const defaultValues: CreateRegistryCredentialFormValues = {
   registry_host: '',
   username: '',
   password: '',
+  expires_at: '',
 }
 
 // Adds a username/password pair for pulling a private image, referenced
@@ -53,6 +60,8 @@ const defaultValues: CreateRegistryCredentialFormValues = {
 // ability tier CreateBackupTargetDialog's own doc comment explains for
 // the identical reason (a live credential in the request body).
 export function CreateRegistryCredentialDialog() {
+  const brand = useBrand()
+  const displayName = brand.ShortName || brand.Name
   const [open, setOpen] = useState(false)
   const [revealPassword, setRevealPassword] = useState(false)
   const createCredential = useCreateRegistryCredential()
@@ -78,6 +87,9 @@ export function CreateRegistryCredentialDialog() {
         registry_host: values.registry_host.trim(),
         username: values.username.trim(),
         password: values.password,
+        expires_at: values.expires_at
+          ? new Date(values.expires_at).toISOString()
+          : undefined,
       },
       {
         onSuccess: (created) => {
@@ -223,6 +235,24 @@ export function CreateRegistryCredentialDialog() {
                   </button>
                 </div>
                 <FieldError errors={[formState.errors.password]} />
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="registry-credential-expires-at">
+                  Expires{' '}
+                  <span className="text-muted-foreground">(optional)</span>
+                </FieldLabel>
+                <Input
+                  id="registry-credential-expires-at"
+                  type="date"
+                  {...register('expires_at')}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Only if you already know the expiry, e.g. a GitHub PAT or a
+                  cloud registry's short-lived token. {displayName} can't
+                  detect this on its own.
+                </p>
+                <FieldError errors={[formState.errors.expires_at]} />
               </Field>
 
               {generalError ? (

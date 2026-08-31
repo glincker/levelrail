@@ -124,3 +124,32 @@ export function useDeleteRegistryCredential() {
     },
   })
 }
+
+// POST /api/v1/registry-credentials/{id}/test
+// (handleTestRegistryCredential): authenticates the stored credential
+// against its registry host, without pulling anything. 204 on success,
+// 502 with a specific reason on failure, the same shape
+// notificationChannels.ts's testExistingNotificationChannel already
+// establishes for its own on-demand verification.
+export async function testRegistryCredential(id: string): Promise<void> {
+  const res = await fetch(
+    `/api/v1/registry-credentials/${encodeURIComponent(id)}/test`,
+    { method: 'POST' },
+  )
+  if (res.status === 204) {
+    return
+  }
+  throw new ApiError(
+    res.status,
+    await readErrorMessage(
+      res,
+      `test registry credential failed: ${res.status}`,
+    ),
+  )
+}
+
+export function useTestRegistryCredential() {
+  return useMutation<void, ApiError, string>({
+    mutationFn: testRegistryCredential,
+  })
+}
