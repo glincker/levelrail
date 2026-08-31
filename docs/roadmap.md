@@ -28,7 +28,11 @@ are still open. This page describes what's actually true today.
   supported subset of `compose.yaml`, including per-service `build:`
   directives, and expands it into per-service builds/deploys via the
   same multi-service fan-out `DeploySpec` uses, with a frontend Compose
-  creation flow.
+  creation flow. HTTP-based `healthcheck:` stanzas translate into real
+  readiness/liveness probes; `restart:` and `networks:` are parsed and
+  surfaced as informational notices rather than enforced, since the
+  reconciler always keeps containers running and every service in an
+  app already shares one network.
 - A curated ~15-entry service template catalog (ADR 015: reverses the
   original "not chasing Coolify's 280 templates" non-goal, once Compose
   support existed to build it on), served over the API and browsable
@@ -41,7 +45,14 @@ are still open. This page describes what's actually true today.
 - GitHub App connect flow: manifest self-registration, org/repo/branch
   picker, and installation-token minting, wired in by default. GitHub
   Enterprise Server (self-hosted instances) supported alongside
-  github.com.
+  github.com. Live installation-status detection: a check against
+  GitHub's API on each connection-status page load surfaces a
+  suspended/revoked installation as a UI badge, falling back to the
+  last known state if the check itself fails.
+- Registry credentials: stored credentials for private image registries
+  with a "test auth" action that validates them against the real
+  registry, plus expiry tracking (healthy/expiring-soon/expired), a
+  dashboard settings page, and CRUD via the API.
 - GitLab (gitlab.com or self-hosted) and Bitbucket Cloud as full
   alternative git providers: OAuth connect, repo/branch picker, and
   webhook-triggered auto-deploy, the same as GitHub. A single shared
@@ -64,12 +75,20 @@ are still open. This page describes what's actually true today.
   testing has only covered GitHub. Wired into the dashboard (a card
   alongside git source settings: toggle, active-preview list, manual
   teardown) and the CLI (`apps previews list/teardown/enable/disable`).
+  A scheduled TTL sweep also tears down any preview untouched for 7
+  days by default (`APP_PREVIEW_TTL`), independent of whether a
+  PR-closed webhook ever arrives, and the same sweep is callable
+  on demand as an MCP tool.
 - Embedded Caddy ingress with automatic TLS and domain routing. TLS
   today defaults to an internal, self-signed issuer; a public ACME
   issuer exists and is toggleable but is still unverified against a
   live domain (see In progress).
 - Envelope encryption for secrets, with env injection at
-  container-create time.
+  container-create time. Master-key rotation
+  (`POST /api/v1/system/master-key/rotate`, `levelrail-cli secrets
+  rotate-master-key`) re-wraps every stored per-service data-encryption
+  key under the new master key in one transaction; rotation age is
+  also checked by the doctor command below.
 - Managed Redis as a first-class, volume-backed resource.
 - MySQL as a third database engine, via a dynamic engine registry.
 - Managed Postgres at full parity with Redis and MySQL, audited
@@ -88,6 +107,16 @@ are still open. This page describes what's actually true today.
   route-level code splitting.
 - Rollback: previous images are retained, with deploy history and full
   build-log persistence. CLI `rollback` and `restart` subcommands.
+- Deploy comparison: `GET /api/v1/apps/{name}/deploys/compare` diffs
+  two deploy attempts' image tag and other snapshotted fields, with a
+  frontend view. Env vars, ports, domains, and resource limits aren't
+  snapshotted per attempt, so those aren't part of the diff yet.
+- Build-failure diagnosis: a deterministic pattern matcher over a
+  failed build or container's actual log text (Docker daemon down,
+  image pull/auth failure, missing Dockerfile, npm/pnpm errors, port
+  conflicts, readiness-probe timeout, OOM-kill), returning a matched
+  signature with an excerpt and suggestion instead of just raw logs.
+  Surfaced in the app overview page and as an MCP tool.
 - Deploy strategies: rolling, recreate, and blue-green, plus replica
   support.
 - One-shot container `exec`, gated to root-level API tokens.
@@ -96,6 +125,15 @@ are still open. This page describes what's actually true today.
   start without touching desired state.
 - `install.sh` (curl-pipe-sh) and a systemd unit for the control plane
   itself, safe to re-run as an upgrade path.
+- `levelrail-cli doctor`: a local preflight check (Docker daemon
+  reachability, disk space, and more). The same checks also run
+  server-side as a system doctor API endpoint, including a
+  master-key-rotation-age check; CLI only today, no dedicated
+  dashboard page yet.
+- Onboarding: a one-shot `/api/v1/onboarding` completion flag plus a
+  frontend wizard shown on first run.
+- `levelrail-cli completion bash|zsh|fish`: shell completion covering
+  every command and subcommand plus the global flags.
 - `levelrail migrate coolify` and `levelrail migrate dokploy` CLI
   commands: pull every app off a live Coolify or Dokploy instance and
   either write app.yaml files or apply them directly to a target
@@ -107,13 +145,21 @@ are still open. This page describes what's actually true today.
 - An MCP server (`cmd/levelrail-mcp`), wrapping the same versioned REST
   API and bearer-token model the CLI already uses, so a token scoped to
   fewer abilities than a tool needs gets the same 403 the REST API
-  itself would return. Nineteen tools today: list/get/deploy/rollback/
-  restart/status/deploy-history/logs/metrics for apps, list/get for
-  databases, list/get for service templates, list/get/health for nodes,
-  and list for preview environments and alert rules. Read-and-suggest
-  only, per the architecture rule: nothing here reaches into the
-  reconciler directly, and no tool deletes a resource or touches
-  secrets/resource limits.
+  itself would return. Thirty-three tools today, across apps (list,
+  get, deploy, deploy-compose, rollback, restart, status,
+  deploy-history, logs, metrics), databases (list/get), nodes
+  (list/get/health), service templates (list/get), feature flags
+  (list/get), resource recommendations (app and database), preview
+  environments (list, plus a sweep tool), alert rules (list), the audit
+  log (list), deploy comparison, build-failure diagnosis, and delivery
+  history for notifications, webhooks, and backup verifications (list).
+  Twenty-eight of the thirty-three are read-and-suggest; the other five
+  mutate something: deploy, deploy-compose, rollback, and restart for
+  apps (as documented before), plus the preview sweep, which tears down
+  stale preview environments on demand, the same action the scheduled
+  TTL sweep above (see Preview environments) performs automatically.
+  Nothing here reaches into the reconciler directly, and no tool
+  deletes a resource or touches secrets/resource limits.
 - Live end-to-end test suite: whole-chain push-to-HTTPS, rollback in
   both directions, the real git webhook path, database reconciliation,
   non-default port routing, and node placement. Doesn't yet exercise
@@ -126,14 +172,19 @@ are still open. This page describes what's actually true today.
   network IO, deploy count, build duration), with configurable
   retention.
 - Node-local log store with full-text search and structured (JSON) log
-  parsing.
+  parsing. Container logs are also downloadable as a file, separate
+  from the live/search views.
 - Federated query API across nodes, with time range, filtering, and
   aggregation.
 - Frontend metrics dashboard with a range selector, historical log
   search, and deploy markers overlaid on metric charts.
-- Threshold alerting over metrics, with webhook, Slack, Discord, email,
-  and Telegram notification channels, plus separate deploy-outcome
-  notifications.
+- Alerting over six rule kinds: the original threshold and crashloop
+  detection, plus certificate-expiry, OS-patch-status,
+  scheduled-task-failure, and node-disk-space, each with its own
+  evaluator. Eight notification channel kinds: webhook, Slack, Discord,
+  email, Telegram, Pushover, PagerDuty, and Microsoft Teams, plus
+  separate deploy-outcome notifications. Delivery history for every
+  notification channel is independently queryable via API/CLI/MCP.
 - Prometheus remote-read endpoint.
 - Crashloop detection, with the last 200 lines of the failing
   container's logs surfaced automatically in the UI.
@@ -151,6 +202,12 @@ are still open. This page describes what's actually true today.
   metrics for every database engine, not just apps. Shares the actual
   query implementation with the app-scoped equivalents rather than a
   parallel implementation.
+- Resource right-sizing: P95-based memory/CPU suggestions for apps and
+  databases from observed usage over a lookback window, with a
+  confidence level. A suggestion only, surfaced on the resources page;
+  it never auto-applies a limit change.
+- Webhook delivery history: list and manually replay past deliveries
+  per git source, via API/CLI/dashboard.
 
 **Multi-node**
 
@@ -171,13 +228,17 @@ are still open. This page describes what's actually true today.
 **Dashboard and auth**
 
 - API tokens with scoped abilities, first-run registration, login rate
-  limiting, session TTL, and an admin recovery CLI subcommand.
+  limiting, session TTL, and an admin recovery CLI subcommand. A
+  general token-bucket rate limit also applies across every
+  ability-gated route beyond login, stricter for writes than reads,
+  keyed per token, per session user, or per client IP if
+  unauthenticated, configurable via env vars.
 - Real multi-user accounts, not a single shared admin: per-user email
   sign-in or OAuth, TOTP two-factor with recovery codes, and per-user
   scoped abilities (the same ability model API tokens already had,
   now on human accounts too, so a session is no longer implicitly
   root). A full audit log records every request through the same
-  ability-check hook, queryable from Settings.
+  ability-check hook, queryable from Settings, with CSV export.
 - Full sidebar shell with dark mode and a settings area split into
   Account, Security, General, and Tokens.
 - Create App and Create Database dialogs, with health-check and
@@ -192,14 +253,24 @@ are still open. This page describes what's actually true today.
   labels) between a project and an individual app, each with its own
   shared env-var layer: organization env vars, then project env vars,
   then environment env vars, then the app's own env, in that
-  override order.
+  override order. An environment can be marked protected, which turns
+  a deploy or promotion into a 409 requiring explicit confirmation
+  (a dialog in the dashboard, a confirmation prompt in the CLI).
+  Environment promotion moves an app's image tag from a source
+  environment to a target one; env vars, ports, domains, and resource
+  limits are resolved live per environment rather than promoted, by
+  design.
 - Custom Docker labels escape hatch.
 - App clone.
 - Database public-accessibility toggle with host port exposure.
 - Scheduled/cron backups to S3-compatible storage, with backup history,
   restore (Postgres, MySQL, and Redis all live-verified, including
   Redis's stop-write-start RDB reload path), and browser download of
-  backup files.
+  backup files. Backup verification runs automatically right after
+  every scheduled backup (re-download, re-hash, compare checksum/size/
+  format against what was recorded at backup time) and can also be
+  triggered manually; neither does a live restore, so verification
+  itself is non-destructive.
 - Accessibility fixes: ARIA labels on row inputs, a dialog focus-restore
   fix on the log viewer's fullscreen toggle, `aria-current` on active
   sidebar navigation, an accessible text summary for the metrics
@@ -259,7 +330,13 @@ are still open. This page describes what's actually true today.
   `DeploySpec` logic instead of the older, simpler
   `GitSource.AdditionalServices` flat list. A git source with no
   `services:` map still falls back to `AdditionalServices` unchanged,
-  so existing single-service webhook setups are unaffected.
+  so existing single-service webhook setups are unaffected. The one
+  remaining single-service-only surface is `apps create --interactive`:
+  the wizard always writes exactly one service. Multi-service apps are
+  created by hand-writing multiple `services:` entries in `app.yaml`,
+  or through the deploy-spec API/UI above. Kept here rather than moved
+  to Done because of that wizard gap and because the live end-to-end
+  suite (see Done, above) doesn't yet exercise multi-service fan-out.
 - **Real public ACME.** The Caddy ACME issuer type, a settings toggle,
   and form validation are all built and wired end to end (Settings >
   Domains). Only unit-tested against the config shape so far, not
