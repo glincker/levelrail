@@ -663,6 +663,7 @@ func TestNewTools_Surface403(t *testing.T) {
 		{"get_latest_backup_verification", map[string]any{"name": "main", "backup_id": "bkp1"}},
 		{"compare_deploys", map[string]any{"name": "web", "from": "dep_1"}},
 		{"list_notification_deliveries", map[string]any{"id": "c1"}},
+		{"list_audit_log", map[string]any{}},
 	}
 
 	for _, tt := range tests {
