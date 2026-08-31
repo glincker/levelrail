@@ -427,6 +427,19 @@ type DockerPruner interface {
 	Prune(ctx context.Context, keep []string) docker.PruneResult
 }
 
+// RegistryAuthTester is the surface POST
+// /api/v1/registry-credentials/{id}/test needs: ask the control plane's
+// own local Docker daemon to authenticate against a registry host with a
+// username/password pair, without pulling anything. Fixed to this
+// control plane's own local daemon, the same DockerPinger/ImageLister/
+// DockerDiskUsager/DockerPruner reasoning above applies: adding this to
+// docker.Runtime would ripple into 6+ fakes for one narrowly-scoped
+// signal. *docker.Client satisfies this structurally via
+// TestRegistryAuth (internal/docker/client.go).
+type RegistryAuthTester interface {
+	TestRegistryAuth(ctx context.Context, host, username, password string) error
+}
+
 // NodeRuntimeResolver picks the docker.Runtime that owns a given
 // nodeID: the control plane's own local Docker daemon for "" (the
 // store's established "empty NodeID means this control plane's own

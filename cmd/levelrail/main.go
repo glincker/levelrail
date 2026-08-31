@@ -1647,6 +1647,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithImageLister(client),
 		api.WithDockerDiskUsager(client),
 		api.WithDockerPruner(client),
+		api.WithRegistryAuthTester(client),
 		api.WithDBPinger(db),
 		api.WithDoctorDiskWarningBytes(doctorDiskWarningBytes(logger)),
 		api.WithExecRuntime(func(nodeID string) (docker.Runtime, error) {

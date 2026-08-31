@@ -286,6 +286,14 @@ func WithDockerPinger(p DockerPinger) Option {
 	return func(rt *Router) { rt.dockerPinger = p }
 }
 
+// WithRegistryAuthTester enables POST
+// /api/v1/registry-credentials/{id}/test. Without one configured (the
+// default), that route returns 501, the same shape WithDockerPinger's
+// own absence produces for GET /api/v1/system/status.
+func WithRegistryAuthTester(t RegistryAuthTester) Option {
+	return func(rt *Router) { rt.registryAuthTester = t }
+}
+
 // WithImageLister enables GET /api/v1/apps/{name}/images. Without one
 // configured (the default), that route returns an empty list rather
 // than 501 or 404: the deploy trigger form's manual text input always

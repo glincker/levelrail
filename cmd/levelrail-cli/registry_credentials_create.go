@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"time"
 )
 
 // runRegistryCredentialsCreate implements "registry-credentials create":
@@ -12,11 +13,12 @@ import (
 // unlike "registry-credentials update" where rotating it is optional.
 func runRegistryCredentialsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "registry-credentials create", "print the created registry credential as JSON to stdout and nothing else", stderr)
-	var name, registryHost, username, password string
+	var name, registryHost, username, password, expiresAt string
 	fs.StringVar(&name, "name", "", "display name for the registry credential (required)")
 	fs.StringVar(&registryHost, "registry-host", "", "registry hostname, e.g. ghcr.io (required)")
 	fs.StringVar(&username, "username", "", "registry username (required)")
 	fs.StringVar(&password, "password", "", "registry password or token (required)")
+	fs.StringVar(&expiresAt, "expires-at", "", "optional RFC3339 expiry the operator already knows, e.g. from a GitHub PAT")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, registryCredentialsCreateUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -39,11 +41,19 @@ func runRegistryCredentialsCreate(prog string, args []string, stdout, stderr io.
 	if password == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--password is required"))
 	}
+	var expiresAtPtr *time.Time
+	if expiresAt != "" {
+		parsed, parseErr := time.Parse(time.RFC3339, expiresAt)
+		if parseErr != nil {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--expires-at must be RFC3339: %v", parseErr))
+		}
+		expiresAtPtr = &parsed
+	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 
 	created, err := client.CreateRegistryCredential(context.Background(), createRegistryCredentialRequest{
-		Name: name, RegistryHost: registryHost, Username: username, Password: password,
+		Name: name, RegistryHost: registryHost, Username: username, Password: password, ExpiresAt: expiresAtPtr,
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create registry credential %q: %w", name, err))
@@ -71,6 +81,7 @@ Flags:
   --registry-host string    registry hostname, e.g. ghcr.io (required)
   --username string         registry username (required)
   --password string         registry password or token (required)
+  --expires-at string       optional RFC3339 expiry the operator already knows
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --json                     print the created registry credential as JSON to stdout, nothing else

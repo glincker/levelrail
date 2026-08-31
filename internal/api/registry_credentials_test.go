@@ -4,11 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
+
+	cerrdefs "github.com/containerd/errdefs"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -18,12 +22,29 @@ import (
 // fakeBackupSecretsSetter already establishes for the backup-target
 // equivalent.
 type fakeRegistryCredentialSecretsSetter struct {
-	err   error
-	calls []struct{ serviceName, envKey, plaintext string }
+	err          error
+	calls        []struct{ serviceName, envKey, plaintext string }
+	resolveValue string
+	resolveErr   error
 }
 
 func (f *fakeRegistryCredentialSecretsSetter) SetValue(_ context.Context, serviceName, envKey, plaintext string) error {
 	f.calls = append(f.calls, struct{ serviceName, envKey, plaintext string }{serviceName, envKey, plaintext})
+	return f.err
+}
+
+func (f *fakeRegistryCredentialSecretsSetter) Resolve(_ context.Context, _, _ string) (string, error) {
+	return f.resolveValue, f.resolveErr
+}
+
+// fakeRegistryAuthTester is a hand-written fake for RegistryAuthTester.
+type fakeRegistryAuthTester struct {
+	err   error
+	calls []struct{ host, username, password string }
+}
+
+func (f *fakeRegistryAuthTester) TestRegistryAuth(_ context.Context, host, username, password string) error {
+	f.calls = append(f.calls, struct{ host, username, password string }{host, username, password})
 	return f.err
 }
 
@@ -32,6 +53,13 @@ func newTestRouterWithRegistryCredentialSecrets(t *testing.T, secrets RegistryCr
 	db := openTestDB(t)
 	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
 	return NewRouter(logger, testBrand(), db, WithRegistryCredentialSecrets(secrets)), db
+}
+
+func newTestRouterWithRegistryCredentialTest(t *testing.T, secrets RegistryCredentialSecretsSetter, tester RegistryAuthTester) (*Router, *store.DB) {
+	t.Helper()
+	db := openTestDB(t)
+	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
+	return NewRouter(logger, testBrand(), db, WithRegistryCredentialSecrets(secrets), WithRegistryAuthTester(tester)), db
 }
 
 func TestValidateCreateRegistryCredentialRequest(t *testing.T) {
@@ -102,6 +130,7 @@ func TestRegistryCredentialRoutes_RequireAuth(t *testing.T) {
 		{http.MethodGet, "/api/v1/registry-credentials/regcred_x"},
 		{http.MethodPut, "/api/v1/registry-credentials/regcred_x"},
 		{http.MethodDelete, "/api/v1/registry-credentials/regcred_x"},
+		{http.MethodPost, "/api/v1/registry-credentials/regcred_x/test"},
 	}
 	for _, r := range routes {
 		t.Run(r.method+" "+r.target, func(t *testing.T) {
@@ -403,5 +432,139 @@ func TestHandleListAndDeleteRegistryCredential(t *testing.T) {
 	rt.Handler().ServeHTTP(missingDeleteRec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/registry-credentials/regcred_missing", ""))
 	if missingDeleteRec.Code != http.StatusNotFound {
 		t.Fatalf("delete missing status = %d, want %d", missingDeleteRec.Code, http.StatusNotFound)
+	}
+}
+
+func createTestRegistryCredential(t *testing.T, rt *Router, cookie *http.Cookie, body string) registryCredentialResource {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/registry-credentials", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	var created registryCredentialResource
+	if err := json.NewDecoder(rec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	return created
+}
+
+func TestHandleTestRegistryCredential_NotConfigured(t *testing.T) {
+	setter := &fakeRegistryCredentialSecretsSetter{}
+	rt, db := newTestRouterWithRegistryCredentialSecrets(t, setter) // no WithRegistryAuthTester
+	cookie := loginTestSession(t, rt, db)
+
+	created := createTestRegistryCredential(t, rt, cookie, `{"name":"ghcr-bot","registry_host":"ghcr.io","username":"bot","password":"tok"}`)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/registry-credentials/"+created.ID+"/test", ""))
+	if rec.Code != http.StatusNotImplemented {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotImplemented)
+	}
+}
+
+func TestHandleTestRegistryCredential_NotFound(t *testing.T) {
+	setter := &fakeRegistryCredentialSecretsSetter{}
+	tester := &fakeRegistryAuthTester{}
+	rt, db := newTestRouterWithRegistryCredentialTest(t, setter, tester)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/registry-credentials/regcred_missing/test", ""))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleTestRegistryCredential_Success(t *testing.T) {
+	setter := &fakeRegistryCredentialSecretsSetter{resolveValue: "gh-token-real"}
+	tester := &fakeRegistryAuthTester{}
+	rt, db := newTestRouterWithRegistryCredentialTest(t, setter, tester)
+	cookie := loginTestSession(t, rt, db)
+
+	created := createTestRegistryCredential(t, rt, cookie, `{"name":"ghcr-bot","registry_host":"ghcr.io","username":"bot","password":"tok"}`)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/registry-credentials/"+created.ID+"/test", ""))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNoContent, rec.Body.String())
+	}
+	if len(tester.calls) != 1 {
+		t.Fatalf("TestRegistryAuth calls = %d, want 1", len(tester.calls))
+	}
+	call := tester.calls[0]
+	if call.host != "ghcr.io" || call.username != "bot" || call.password != "gh-token-real" {
+		t.Errorf("TestRegistryAuth call = %+v, want host=ghcr.io username=bot password=gh-token-real", call)
+	}
+}
+
+func TestHandleTestRegistryCredential_AuthRejected(t *testing.T) {
+	setter := &fakeRegistryCredentialSecretsSetter{resolveValue: "bad-tok"}
+	tester := &fakeRegistryAuthTester{err: fmt.Errorf("login failed: %w", cerrdefs.ErrUnauthenticated)}
+	rt, db := newTestRouterWithRegistryCredentialTest(t, setter, tester)
+	cookie := loginTestSession(t, rt, db)
+
+	created := createTestRegistryCredential(t, rt, cookie, `{"name":"ghcr-bot","registry_host":"ghcr.io","username":"bot","password":"tok"}`)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/registry-credentials/"+created.ID+"/test", ""))
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadGateway, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "authentication rejected") {
+		t.Errorf("body = %s, want an authentication-rejected message", rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), "bad-tok") {
+		t.Errorf("body = %s, password must never be echoed back", rec.Body.String())
+	}
+}
+
+func TestHandleTestRegistryCredential_Unreachable(t *testing.T) {
+	setter := &fakeRegistryCredentialSecretsSetter{resolveValue: "tok"}
+	tester := &fakeRegistryAuthTester{err: errors.New("dial tcp: connection refused")}
+	rt, db := newTestRouterWithRegistryCredentialTest(t, setter, tester)
+	cookie := loginTestSession(t, rt, db)
+
+	created := createTestRegistryCredential(t, rt, cookie, `{"name":"ghcr-bot","registry_host":"ghcr.io","username":"bot","password":"tok"}`)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/registry-credentials/"+created.ID+"/test", ""))
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadGateway, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "could not reach registry") {
+		t.Errorf("body = %s, want a could-not-reach message", rec.Body.String())
+	}
+}
+
+func TestHandleCreateRegistryCredential_ExpiresAt(t *testing.T) {
+	setter := &fakeRegistryCredentialSecretsSetter{}
+	rt, db := newTestRouterWithRegistryCredentialSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	expires := time.Now().Add(2 * time.Hour).UTC().Truncate(time.Second)
+	body := fmt.Sprintf(`{"name":"ghcr-bot","registry_host":"ghcr.io","username":"bot","password":"tok","expires_at":%q}`, expires.Format(time.RFC3339))
+	created := createTestRegistryCredential(t, rt, cookie, body)
+
+	if created.ExpiresAt == nil || !created.ExpiresAt.Equal(expires) {
+		t.Fatalf("ExpiresAt = %v, want %v", created.ExpiresAt, expires)
+	}
+	if created.ExpiryStatus != "expiring_soon" {
+		t.Errorf("ExpiryStatus = %q, want expiring_soon for an expiry 2 hours out", created.ExpiryStatus)
+	}
+}
+
+func TestHandleCreateRegistryCredential_NoExpiresAt(t *testing.T) {
+	setter := &fakeRegistryCredentialSecretsSetter{}
+	rt, db := newTestRouterWithRegistryCredentialSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	created := createTestRegistryCredential(t, rt, cookie, `{"name":"ghcr-bot","registry_host":"ghcr.io","username":"bot","password":"tok"}`)
+
+	if created.ExpiresAt != nil {
+		t.Errorf("ExpiresAt = %v, want nil when the request carries none", created.ExpiresAt)
+	}
+	if created.ExpiryStatus != "" {
+		t.Errorf("ExpiryStatus = %q, want empty when no expiry was set", created.ExpiryStatus)
 	}
 }

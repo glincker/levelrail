@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 // newRegistryCredentialEchoServer starts a test server that decodes a
@@ -201,6 +202,55 @@ func TestRun_RegistryCredentialsDelete_NotFound(t *testing.T) {
 	stderr := runCLIExpectAPIError(t, []string{"registry-credentials", "delete", "regcred_missing", "--api-url", srv.URL})
 	if !strings.Contains(stderr, "not found") {
 		t.Errorf("stderr = %q, want the server's not-found message", stderr)
+	}
+}
+
+func TestRun_RegistryCredentialsTest(t *testing.T) {
+	srv, gotPath, gotMethod := newNoContentEchoServer(t)
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"registry-credentials", "test", "regcred_1", "--api-url", srv.URL})
+	if *gotMethod != http.MethodPost || *gotPath != "/api/v1/registry-credentials/regcred_1/test" {
+		t.Errorf("request = %s %s, want POST /api/v1/registry-credentials/regcred_1/test", *gotMethod, *gotPath)
+	}
+	if !strings.Contains(stdout, "authenticated successfully") {
+		t.Errorf("stdout = %q, want a success confirmation", stdout)
+	}
+}
+
+func TestRun_RegistryCredentialsTest_Failure(t *testing.T) {
+	srv := newJSONErrorServer(t, http.StatusBadGateway, `{"error":"authentication rejected by registry: check the username and password"}`)
+
+	stderr := runCLIExpectAPIError(t, []string{"registry-credentials", "test", "regcred_1", "--api-url", srv.URL})
+	if !strings.Contains(stderr, "authentication rejected") {
+		t.Errorf("stderr = %q, want the server's rejection message", stderr)
+	}
+}
+
+func TestRun_RegistryCredentialsCreate_ExpiresAt(t *testing.T) {
+	var gotPath, gotMethod string
+	srv, gotBody := newRegistryCredentialEchoServer(t, "regcred_3", &gotPath, &gotMethod)
+
+	runCLIExpectOK(t, []string{
+		"registry-credentials", "create", "--name", "ghcr-bot", "--registry-host", "ghcr.io",
+		"--username", "bot", "--password", "tok", "--expires-at", "2027-01-01T00:00:00Z", "--api-url", srv.URL,
+	})
+	if gotBody.ExpiresAt == nil || !gotBody.ExpiresAt.Equal(time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC)) {
+		t.Errorf("request body ExpiresAt = %v, want 2027-01-01T00:00:00Z", gotBody.ExpiresAt)
+	}
+}
+
+func TestRun_RegistryCredentialsCreate_InvalidExpiresAt(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{
+		"registry-credentials", "create", "--name", "n", "--registry-host", "ghcr.io",
+		"--username", "u", "--password", "p", "--expires-at", "not-a-date",
+	}, &stdout, &stderr, envMap())
+	if got != exitValidation {
+		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitValidation, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "--expires-at must be RFC3339") {
+		t.Errorf("stderr = %q, want an RFC3339 validation error", stderr.String())
 	}
 }
 

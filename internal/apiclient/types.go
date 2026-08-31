@@ -760,33 +760,40 @@ type UpdateBackupTargetRequest struct {
 // RegistryCredentialResource mirrors internal/api's
 // registryCredentialResource (internal/api/registry_credentials.go). No
 // password field, the same write-only convention BackupTargetResource
-// uses for its own credentials.
+// uses for its own credentials. ExpiresAt/ExpiryStatus are operator-set
+// metadata, not something the platform infers from the credential
+// itself; ExpiryStatus is "healthy"/"expiring_soon"/"expired", empty
+// when no expiry was set.
 type RegistryCredentialResource struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	RegistryHost string `json:"registry_host"`
-	Username     string `json:"username"`
-	CreatedAt    string `json:"created_at"`
+	ID           string     `json:"id"`
+	Name         string     `json:"name"`
+	RegistryHost string     `json:"registry_host"`
+	Username     string     `json:"username"`
+	CreatedAt    string     `json:"created_at"`
+	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
+	ExpiryStatus string     `json:"expiry_status,omitempty"`
 }
 
 // CreateRegistryCredentialRequest mirrors internal/api's
 // createRegistryCredentialRequest: Password is required here, unlike
 // UpdateRegistryCredentialRequest where it's optional.
 type CreateRegistryCredentialRequest struct {
-	Name         string `json:"name"`
-	RegistryHost string `json:"registry_host"`
-	Username     string `json:"username"`
-	Password     string `json:"password"`
+	Name         string     `json:"name"`
+	RegistryHost string     `json:"registry_host"`
+	Username     string     `json:"username"`
+	Password     string     `json:"password"`
+	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
 }
 
 // UpdateRegistryCredentialRequest mirrors internal/api's
 // updateRegistryCredentialRequest. A blank Password keeps the
 // credential's existing stored password; a non-blank one rotates it.
 type UpdateRegistryCredentialRequest struct {
-	Name         string `json:"name"`
-	RegistryHost string `json:"registry_host"`
-	Username     string `json:"username"`
-	Password     string `json:"password,omitempty"`
+	Name         string     `json:"name"`
+	RegistryHost string     `json:"registry_host"`
+	Username     string     `json:"username"`
+	Password     string     `json:"password,omitempty"`
+	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
 }
 
 // OrganizationResource mirrors internal/api's organizationResource

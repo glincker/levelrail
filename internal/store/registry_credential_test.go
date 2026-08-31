@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 )
 
 func newTestRegistryCredential() RegistryCredential {
@@ -106,7 +107,8 @@ func TestUpdateRegistryCredential(t *testing.T) {
 		t.Fatalf("SaveRegistryCredential() error = %v", err)
 	}
 
-	if err := db.UpdateRegistryCredential(ctx, cred.ID, "renamed", "registry.example.com", "new-user"); err != nil {
+	expires := time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC)
+	if err := db.UpdateRegistryCredential(ctx, cred.ID, "renamed", "registry.example.com", "new-user", &expires); err != nil {
 		t.Fatalf("UpdateRegistryCredential() error = %v", err)
 	}
 
@@ -114,9 +116,11 @@ func TestUpdateRegistryCredential(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetRegistryCredential() error = %v", err)
 	}
-	want := RegistryCredential{ID: cred.ID, Name: "renamed", RegistryHost: "registry.example.com", Username: "new-user", CreatedAt: cred.CreatedAt}
-	if got != want {
-		t.Errorf("GetRegistryCredential() after update = %+v, want %+v", got, want)
+	if got.Name != "renamed" || got.RegistryHost != "registry.example.com" || got.Username != "new-user" {
+		t.Errorf("GetRegistryCredential() after update = %+v, want renamed/registry.example.com/new-user", got)
+	}
+	if got.ExpiresAt == nil || !got.ExpiresAt.Equal(expires) {
+		t.Errorf("GetRegistryCredential().ExpiresAt after update = %v, want %v", got.ExpiresAt, expires)
 	}
 }
 
@@ -124,7 +128,7 @@ func TestUpdateRegistryCredential_NotFound(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
 
-	err := db.UpdateRegistryCredential(ctx, "regcred_missing", "x", "registry.example.com", "user")
+	err := db.UpdateRegistryCredential(ctx, "regcred_missing", "x", "registry.example.com", "user", nil)
 	if !errors.Is(err, ErrRegistryCredentialNotFound) {
 		t.Fatalf("UpdateRegistryCredential() error = %v, want ErrRegistryCredentialNotFound", err)
 	}
