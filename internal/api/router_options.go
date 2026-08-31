@@ -188,6 +188,24 @@ func WithRestoreRunner(r RestoreRunner) Option {
 	return func(rt *Router) { rt.restoreRunner = r }
 }
 
+// WithServiceVolumeBackupRunner enables
+// POST /api/v1/apps/{name}/volumes/{volume}/backups. Without one
+// configured (the default), that route returns 501, the same
+// "not configured" shape WithBackupRunner's absence produces; listing
+// history and reading the schedule work regardless, the same "no live
+// runner needed" reasoning WithBackupRunner's own doc comment gives.
+func WithServiceVolumeBackupRunner(r ServiceVolumeBackupRunner) Option {
+	return func(rt *Router) { rt.serviceVolumeBackupRunner = r }
+}
+
+// WithServiceVolumeRestoreRunner enables
+// POST /api/v1/apps/{name}/volumes/{volume}/restore. Without one
+// configured (the default), that route returns 501, the same
+// "not configured" shape WithRestoreRunner's absence produces.
+func WithServiceVolumeRestoreRunner(r ServiceVolumeRestoreRunner) Option {
+	return func(rt *Router) { rt.serviceVolumeRestoreRunner = r }
+}
+
 // WithSessionTTL overrides how long a session cookie stays valid.
 // Without one configured, defaultSessionTTL (24h) applies. The project's
 // "no hardcoded thresholds, use env vars" rule is honored one layer up,

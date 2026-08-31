@@ -86,8 +86,15 @@ type BackupRunner interface {
 
 // backupHistoryResource is the wire shape for one backup attempt.
 type backupHistoryResource struct {
-	ID             string `json:"id"`
-	DatabaseName   string `json:"database_name"`
+	ID           string `json:"id"`
+	DatabaseName string `json:"database_name,omitempty"`
+	// ServiceName/VolumeName are set instead of DatabaseName when this
+	// attempt is an app service volume backup
+	// (store.BackupResourceKindVolume), never alongside it: the two
+	// identity shapes are mutually exclusive, mirroring
+	// store.BackupHistory's own doc comment.
+	ServiceName    string `json:"service_name,omitempty"`
+	VolumeName     string `json:"volume_name,omitempty"`
 	TargetID       string `json:"target_id"`
 	ObjectKey      string `json:"object_key"`
 	SizeBytes      int64  `json:"size_bytes"`
@@ -102,6 +109,8 @@ func toBackupHistoryResource(h store.BackupHistory) backupHistoryResource {
 	return backupHistoryResource{
 		ID:             h.ID,
 		DatabaseName:   h.DatabaseName,
+		ServiceName:    h.ServiceName,
+		VolumeName:     h.VolumeName,
 		TargetID:       h.TargetID,
 		ObjectKey:      h.ObjectKey,
 		SizeBytes:      h.SizeBytes,

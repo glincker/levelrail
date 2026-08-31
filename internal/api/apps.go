@@ -135,6 +135,12 @@ type appResource struct {
 	// container yet. No omitempty: like Suspended, always a definite
 	// state.
 	EnvDirty bool `json:"env_dirty"`
+	// Volumes are this app's named Docker volumes (store.DesiredService.
+	// Volumes), response-only like NodeID/ProjectID above: declared
+	// through app.yaml's volumes: field, not settable through this
+	// endpoint. See app_volume_backups.go/app_volume_restore.go for the
+	// backup/restore/schedule endpoints each one supports.
+	Volumes []appVolumeResource `json:"volumes,omitempty"`
 }
 
 func toAppResource(svc store.DesiredService) appResource {
@@ -177,6 +183,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		AppID:              svc.AppID,
 		LogDrain:           svc.LogDrain,
 		EnvDirty:           svc.EnvDirty,
+		Volumes:            toAppVolumeResources(svc),
 	}
 }
 
