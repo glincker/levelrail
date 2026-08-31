@@ -1,4 +1,5 @@
 import {
+  ArrowClockwiseIcon,
   ArrowSquareOutIcon,
   CheckCircleIcon,
   GlobeIcon,
@@ -15,8 +16,12 @@ import { formatBytes, formatNanoCpus } from '../lib/format'
 import { useAppNetwork } from '../queries/appNetwork'
 import { useCloudflareTunnelStatus } from '../queries/cloudflareTunnel'
 import { useGitSource } from '../queries/gitSources'
+import { useRestartApp } from '../queries/apps'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { toast } from '@/components/ui/toast'
 
 // The Overview page's redesigned top section: a hero (name, status,
 // domain, image, node) plus a setup checklist, combined into one panel
@@ -78,6 +83,7 @@ export function AppOverviewHero({
   // normal steady state, see queries/gitSources.ts), not an error to show.
   const { data: gitSource } = useGitSource(app.name)
   const hasGitSource = Boolean(gitSource)
+  const restartApp = useRestartApp()
 
   return (
     <Card>
@@ -89,6 +95,22 @@ export function AppOverviewHero({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
+        {app.env_dirty ? (
+          <EnvDirtyBanner
+            appName={app.name}
+            isRestarting={restartApp.isPending}
+            onRestart={() => {
+              restartApp.mutate(app.name, {
+                onSuccess: () => {
+                  toast.add({ title: `Restarting "${app.name}".`, type: 'success' })
+                },
+                onError: (error) => {
+                  toast.add({ title: error.message, type: 'error' })
+                },
+              })
+            }}
+          />
+        ) : null}
         <div className="flex flex-wrap items-center gap-x-8 gap-y-3 text-sm">
           <HeroField label="Domain">
             {primaryDomain ? (
@@ -216,6 +238,44 @@ export function AppOverviewHero({
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+// A dedicated banner, not a "Setup checklist" row: that checklist is
+// config-state only (see its own doc comment above), but env_dirty is a
+// transient pending-restart signal. Driven by app.env_dirty itself, not
+// local state, so it survives navigation and only clears once a real
+// restart or redeploy lands.
+function EnvDirtyBanner({
+  appName,
+  isRestarting,
+  onRestart,
+}: {
+  appName: string
+  isRestarting: boolean
+  onRestart: () => void
+}) {
+  return (
+    <Alert className="border-amber-600/40 dark:border-amber-400/40">
+      <WarningCircleIcon className="text-amber-600 dark:text-amber-400" />
+      <AlertTitle>Environment changes pending restart</AlertTitle>
+      <AlertDescription>
+        Env vars were saved since {appName}'s running container was last
+        recreated. They will not take effect until it is restarted.
+      </AlertDescription>
+      <AlertAction>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isRestarting}
+          onClick={onRestart}
+        >
+          <ArrowClockwiseIcon className="size-3.5" aria-hidden="true" />
+          {isRestarting ? 'Restarting...' : 'Restart now'}
+        </Button>
+      </AlertAction>
+    </Alert>
   )
 }
 

@@ -137,6 +137,12 @@ export interface AppDetail {
   // (useSetLogDrain/useClearLogDrain), the same node_id/project_id/
   // storage_target_id shape above.
   log_drain?: LogDrain | null
+  // env_dirty is response-only (internal/api/apps.go's appResource own
+  // doc comment): true means env vars were saved via PUT
+  // /api/v1/apps/{name} since the running container was last actually
+  // recreated, so the change is not live yet. No omitempty on the Go
+  // side, same always-present shape as suspended.
+  env_dirty: boolean
 }
 
 // GET /api/v1/apps' own wire shape (internal/api/apps.go's

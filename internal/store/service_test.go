@@ -1118,3 +1118,122 @@ func TestSaveDesiredService_RedeployDoesNotResetRestartNonce(t *testing.T) {
 		t.Errorf("RestartNonce = %q, want unchanged %q", got.RestartNonce, beforeRedeploy.RestartNonce)
 	}
 }
+
+// TestSaveDesiredService_EnvDirty_RoundTrip covers the opposite contract
+// from RestartNonce/Suspended above: EnvDirty is ordinary desired state,
+// written on every SaveDesiredService call like Env itself, not excluded
+// from full-record-replace semantics.
+func TestSaveDesiredService_EnvDirty_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080, EnvDirty: true}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !got.EnvDirty {
+		t.Error("EnvDirty = false, want true")
+	}
+}
+
+// TestSaveDesiredService_OrdinaryRedeployClearsEnvDirty is the deliberate
+// opposite of TestSaveDesiredService_RedeployDoesNotResetSuspended: an
+// ordinary redeploy (internal/deploy.Pipeline, apps_compose.go, and every
+// other caller that builds a fresh DesiredService from scratch) must
+// clear a stale EnvDirty, since the fresh container it creates picks up
+// whatever Env is being saved right now.
+func TestSaveDesiredService_OrdinaryRedeployClearsEnvDirty(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080, EnvDirty: true}); err != nil {
+		t.Fatalf("initial SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("redeploy SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.EnvDirty {
+		t.Error("EnvDirty = true, want false (a fresh desired-state save must clear it)")
+	}
+}
+
+// TestRestartService_ClearsEnvDirty covers RestartService's explicit
+// env_dirty = 0, the fresh-container-creation moment DesiredService.
+// EnvDirty's own doc comment says clears it, needed because RestartService
+// bypasses SaveDesiredService's own ordinary-write clearing entirely.
+func TestRestartService_ClearsEnvDirty(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080, EnvDirty: true}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.RestartService(ctx, "web"); err != nil {
+		t.Fatalf("RestartService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.EnvDirty {
+		t.Error("EnvDirty = true after restart, want false")
+	}
+}
+
+// TestUpdateServiceSuspended_ResumeClearsEnvDirty covers
+// UpdateServiceSuspended(false)'s explicit env_dirty = 0: resuming a
+// stopped app makes the reconciler create brand new containers (every
+// replica was torn down while suspended), the same fresh-container
+// moment RestartService already clears EnvDirty on.
+func TestUpdateServiceSuspended_ResumeClearsEnvDirty(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080, EnvDirty: true}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.UpdateServiceSuspended(ctx, "web", false); err != nil {
+		t.Fatalf("UpdateServiceSuspended(false) error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.EnvDirty {
+		t.Error("EnvDirty = true after resume, want false")
+	}
+}
+
+// TestUpdateServiceSuspended_StopDoesNotClearEnvDirty: unlike resuming,
+// stopping an app does not recreate anything, so a pending env edit must
+// stay flagged until the app is actually restarted or resumed.
+func TestUpdateServiceSuspended_StopDoesNotClearEnvDirty(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080, EnvDirty: true}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.UpdateServiceSuspended(ctx, "web", true); err != nil {
+		t.Fatalf("UpdateServiceSuspended(true) error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !got.EnvDirty {
+		t.Error("EnvDirty = false after stop, want true (stopping does not recreate a container)")
+	}
+}

@@ -98,6 +98,14 @@ type DesiredService struct {
 	HostPort *int
 	Domains  []string
 	Env      map[string]string
+	// EnvDirty is true when Env was saved through the update endpoint
+	// since the container was last recreated (migrations/0065): env is
+	// baked in at create time, so the change isn't live yet. Written by
+	// SaveDesiredService like Env itself, unlike RestartNonce/Suspended,
+	// so an ordinary fresh-state redeploy clears it for free; callers
+	// that bypass SaveDesiredService (RestartService,
+	// UpdateServiceSuspended(false)) clear it explicitly instead.
+	EnvDirty bool
 	// RegistryCredentialID is which store.RegistryCredential
 	// (migrations/0046_registry_credentials.sql) to authenticate with
 	// when pulling Image, resolved by internal/docker at container-
@@ -369,8 +377,8 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	}()
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, host_port, domains, env, secret_env, database_env, resources, health, node_id, strategy, replicas, labels, volumes, registry_credential_id, project_id, environment_id, app_id, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, NULL, NULL, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, host_port, domains, env, secret_env, env_dirty, database_env, resources, health, node_id, strategy, replicas, labels, volumes, registry_credential_id, project_id, environment_id, app_id, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, NULL, NULL, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
@@ -378,6 +386,7 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 			domains = excluded.domains,
 			env = excluded.env,
 			secret_env = excluded.secret_env,
+			env_dirty = excluded.env_dirty,
 			database_env = excluded.database_env,
 			resources = excluded.resources,
 			health = excluded.health,
@@ -387,7 +396,7 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 			volumes = excluded.volumes,
 			registry_credential_id = excluded.registry_credential_id,
 			updated_at = excluded.updated_at
-	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), string(domainsJSON), string(envJSON), string(secretEnvJSON), string(databaseEnvJSON), string(resourcesJSON), string(healthJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""})
+	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), string(domainsJSON), string(envJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(resourcesJSON), string(healthJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""})
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
@@ -588,9 +597,15 @@ func (db *DB) UpdateServiceApp(ctx context.Context, name, appID string) error {
 // Suspended on its next reconcile, the same level-triggered separation
 // DeleteDesiredService's own doc comment describes for delete.
 func (db *DB) UpdateServiceSuspended(ctx context.Context, name string, suspended bool) error {
-	res, err := db.ExecContext(ctx, `
-		UPDATE desired_services SET suspended = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
-	`, suspended, name)
+	query := `UPDATE desired_services SET suspended = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?`
+	if !suspended {
+		// Resuming clears env_dirty too: removeStale tore down every
+		// replica while suspended, so the next reconcile creates brand
+		// new containers from current desired state, the same "fresh
+		// container creation" moment RestartService already clears it on.
+		query = `UPDATE desired_services SET suspended = ?, env_dirty = 0, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?`
+	}
+	res, err := db.ExecContext(ctx, query, suspended, name)
 	if err != nil {
 		return fmt.Errorf("store: update suspended for service %q: %w", name, err)
 	}
@@ -622,8 +637,11 @@ func (db *DB) RestartService(ctx context.Context, name string) error {
 	}
 	nonce := hex.EncodeToString(buf)
 
+	// Also clears env_dirty: a restart recreates the container from
+	// current desired state, the same "fresh container creation" moment
+	// DesiredService.EnvDirty's own doc comment says clears it.
 	res, err := db.ExecContext(ctx, `
-		UPDATE desired_services SET restart_nonce = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+		UPDATE desired_services SET restart_nonce = ?, env_dirty = 0, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
 	`, nonce, name)
 	if err != nil {
 		return fmt.Errorf("store: restart service %q: %w", name, err)
@@ -756,7 +774,7 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, host_port, domains, env, secret_env, database_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id"
+const desiredServiceColumns = "name, image, port, host_port, domains, env, secret_env, env_dirty, database_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
@@ -769,7 +787,7 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 		hostPort                                                                                     sql.NullInt64
 		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                      string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &domainsJSON, &envJSON, &secretEnvJSON, &databaseEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String

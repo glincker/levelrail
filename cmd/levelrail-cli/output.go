@@ -84,6 +84,9 @@ func printAppHuman(out io.Writer, a appResource) {
 	if a.NodeID != "" {
 		_, _ = fmt.Fprintf(out, "node:     %s\n", a.NodeID)
 	}
+	if a.EnvDirty {
+		_, _ = fmt.Fprintln(out, "env:      pending restart (env vars saved since the running container was last recreated)")
+	}
 }
 
 // printAppsTable prints a compact, aligned table of apps: list output's
@@ -94,13 +97,17 @@ func printAppsTable(out io.Writer, apps []appResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "NAME\tIMAGE\tPORT\tNODE")
+	_, _ = fmt.Fprintln(tw, "NAME\tIMAGE\tPORT\tNODE\tENV")
 	for _, a := range apps {
 		node := a.NodeID
 		if node == "" {
 			node = "(local)"
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\t%s\n", a.Name, a.Image, a.Port, node)
+		env := "-"
+		if a.EnvDirty {
+			env = "pending restart"
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\t%s\t%s\n", a.Name, a.Image, a.Port, node, env)
 	}
 	_ = tw.Flush()
 }

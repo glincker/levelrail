@@ -1,7 +1,7 @@
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
+import { useRestartRequiredToast } from '../hooks/useRestartRequiredToast'
 import { EnvVarsForm } from './EnvVarsForm'
-import { toast } from '@/components/ui/toast'
 
 // Deliberately plain string values only: internal/deploy.requireNoUnresolvedEnv
 // still rejects app.yaml's `{ secret: true }` / `{ from: ... }` env
@@ -10,6 +10,7 @@ import { toast } from '@/components/ui/toast'
 // if this editor tried.
 export function EnvEditor({ app }: { app: AppDetail }) {
   const updateApp = useUpdateApp(app.name)
+  const notifyRestartRequired = useRestartRequiredToast()
 
   return (
     <EnvVarsForm
@@ -25,7 +26,7 @@ export function EnvEditor({ app }: { app: AppDetail }) {
           { ...app, env },
           {
             onSuccess: () => {
-              toast.add({ title: 'Variables saved.', type: 'success' })
+              notifyRestartRequired(app.name, 'Variables saved.')
             },
           },
         )
