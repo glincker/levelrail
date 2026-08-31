@@ -136,11 +136,7 @@ func runAppsLogDrainSet(prog string, args []string, stdout, stderr io.Writer, lo
 }
 
 func runAppsLogDrainClear(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" apps log-drain clear", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag string
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps log-drain clear", "print {\"cleared\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps log-drain clear <name> [flags]\n\nRemoves an app's log drain.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -152,6 +148,7 @@ func runAppsLogDrainClear(prog string, args []string, stdout, stderr io.Writer, 
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
 	name, ok := requireOneArg(fs, stderr, prog, "apps log-drain clear", "app name")
 	if !ok {
@@ -161,7 +158,15 @@ func runAppsLogDrainClear(prog string, args []string, stdout, stderr io.Writer, 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 
 	if err := client.ClearLogDrain(context.Background(), name); err != nil {
-		return reportError(stdout, stderr, false, fmt.Errorf("clear log drain for app %q: %w", name, err))
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("clear log drain for app %q: %w", name, err))
+	}
+
+	if jsonOut {
+		if err := writeJSONValue(stdout, map[string]bool{"cleared": true}); err != nil {
+			_, _ = fmt.Fprintln(stderr, err)
+			return exitNetwork
+		}
+		return exitOK
 	}
 	_, _ = fmt.Fprintf(stdout, "log drain removed for app %q\n", name)
 	return exitOK

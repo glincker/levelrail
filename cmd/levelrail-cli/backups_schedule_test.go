@@ -125,6 +125,21 @@ func TestRun_BackupsScheduleClear(t *testing.T) {
 	}
 }
 
+func TestRun_BackupsScheduleClear_JSON(t *testing.T) {
+	srv, _, _ := newNoContentEchoServer(t)
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"backups", "schedule", "clear", "main", "--api-url", srv.URL, "--json"})
+
+	var got map[string]bool
+	if err := json.Unmarshal([]byte(stdout), &got); err != nil {
+		t.Fatalf("stdout not valid JSON: %v (stdout=%q)", err, stdout)
+	}
+	if !got["cleared"] {
+		t.Errorf("stdout = %q, want {\"cleared\": true}", stdout)
+	}
+}
+
 func TestRun_BackupsScheduleClear_NoName(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"backups", "schedule", "clear"}, &stdout, &stderr, envMap())

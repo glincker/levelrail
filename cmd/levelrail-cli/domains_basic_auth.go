@@ -138,11 +138,7 @@ func runDomainsBasicAuthSet(prog string, args []string, stdout, stderr io.Writer
 }
 
 func runDomainsBasicAuthClear(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" domains basic-auth clear", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag string
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "domains basic-auth clear", "print the basic auth state as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains basic-auth clear <app> <domain> [flags]\n\nRemoves basic auth protection from <domain>.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -154,6 +150,7 @@ func runDomainsBasicAuthClear(prog string, args []string, stdout, stderr io.Writ
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
 	rest, ok := requireArgs(fs, stderr, prog, "domains basic-auth clear", "an app name and a domain", 2)
 	if !ok {
@@ -163,8 +160,17 @@ func runDomainsBasicAuthClear(prog string, args []string, stdout, stderr io.Writ
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 
-	if _, err := client.ClearDomainBasicAuth(context.Background(), appName, domain); err != nil {
-		return reportError(stdout, stderr, false, fmt.Errorf("clear basic auth for domain %q: %w", domain, err))
+	auth, err := client.ClearDomainBasicAuth(context.Background(), appName, domain)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("clear basic auth for domain %q: %w", domain, err))
+	}
+
+	if jsonOut {
+		if err := writeJSONValue(stdout, auth); err != nil {
+			_, _ = fmt.Fprintln(stderr, err)
+			return exitNetwork
+		}
+		return exitOK
 	}
 	_, _ = fmt.Fprintf(stdout, "basic auth removed for domain %q\n", domain)
 	return exitOK

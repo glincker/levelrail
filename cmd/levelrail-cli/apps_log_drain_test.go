@@ -139,6 +139,26 @@ func TestRun_AppsLogDrainClear(t *testing.T) {
 	}
 }
 
+func TestRun_AppsLogDrainClear_JSON(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "log-drain", "clear", "web", "--api-url", srv.URL, "--json"}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	var body map[string]bool
+	if err := json.Unmarshal(stdout.Bytes(), &body); err != nil {
+		t.Fatalf("stdout not valid JSON: %v (stdout=%q)", err, stdout.String())
+	}
+	if !body["cleared"] {
+		t.Errorf("stdout = %q, want {\"cleared\": true}", stdout.String())
+	}
+}
+
 func TestRun_AppsLogDrain_NoName(t *testing.T) {
 	assertUsageErrorMissingName(t, "log-drain", []string{"get", "set", "clear"})
 }
