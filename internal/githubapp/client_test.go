@@ -153,6 +153,40 @@ func TestGetInstallation_UsesBearerAppJWT(t *testing.T) {
 	}
 }
 
+func TestGetInstallation_SuspendedInstallationReportsSuspendedAt(t *testing.T) {
+	suspendedAt := "2026-08-20T00:00:00Z"
+	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(installationResponse{
+			ID:    99,
+			AppID: 42,
+			Account: struct {
+				Login string `json:"login"`
+			}{Login: "octocat"},
+			SuspendedAt: &suspendedAt,
+		})
+	})
+
+	info, err := c.GetInstallation(context.Background(), "", "the-app-jwt", 99)
+	if err != nil {
+		t.Fatalf("GetInstallation() error = %v", err)
+	}
+	if info.SuspendedAt != suspendedAt {
+		t.Errorf("SuspendedAt = %q, want %q", info.SuspendedAt, suspendedAt)
+	}
+}
+
+func TestGetInstallation_NotFoundWrapsErrInstallationNotFound(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"message":"Not Found"}`))
+	})
+
+	_, err := c.GetInstallation(context.Background(), "", "the-app-jwt", 99)
+	if !errors.Is(err, ErrInstallationNotFound) {
+		t.Fatalf("GetInstallation() error = %v, want errors.Is(err, ErrInstallationNotFound)", err)
+	}
+}
+
 func TestMintInstallationToken_ParsesExpiry(t *testing.T) {
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

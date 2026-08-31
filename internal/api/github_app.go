@@ -3,8 +3,10 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -73,10 +75,15 @@ type gitHubAppStatusResource struct {
 	// GitHub Enterprise Server support (migrations/0061), a real GHES
 	// base URL after. Empty when not connected, the same shape
 	// GitLabAppStatus's own instance_url already has.
-	InstanceURL  string `json:"instance_url,omitempty"`
-	Installed    bool   `json:"installed"`
-	AccountLogin string `json:"account_login,omitempty"`
-	CreatedAt    string `json:"created_at,omitempty"`
+	InstanceURL string `json:"instance_url,omitempty"`
+	Installed   bool   `json:"installed"`
+	// InstallationStatus is set only when the local row has an
+	// InstallationID and a live GitHub check actually ran: "installed",
+	// "suspended", or "not_found". Empty when there's nothing to check
+	// yet, or the check itself couldn't run (see handleGetGitHubAppStatus).
+	InstallationStatus string `json:"installation_status,omitempty"`
+	AccountLogin       string `json:"account_login,omitempty"`
+	CreatedAt          string `json:"created_at,omitempty"`
 	// BaseURL is controlPlaneBaseURL's own result, empty when no primary
 	// domain is configured yet. Surfaced here so the frontend can show
 	// exactly what host the automated flow's callback/webhook URLs will
@@ -125,7 +132,67 @@ func (rt *Router) handleGetGitHubAppStatus(w http.ResponseWriter, r *http.Reques
 	if conn.AccountLogin != nil {
 		resource.AccountLogin = *conn.AccountLogin
 	}
+
+	// Live check, on demand: without this, an operator who suspends or
+	// uninstalls the App on GitHub's own side keeps seeing "installed"
+	// here indefinitely, with the first real signal buried in a build or
+	// webhook failure instead. Only runs when there's an installation to
+	// check and a private key to sign the App JWT with; a check failure
+	// (network blip, secret not yet resolvable) falls back to the local
+	// row's state rather than flipping a working connection to look
+	// broken.
+	if conn.InstallationID != nil && rt.githubAppSecrets != nil {
+		state, accountLogin, checkErr := rt.checkGitHubAppInstallation(ctx, conn, *conn.InstallationID)
+		if checkErr != nil {
+			rt.logger.Warn("api: check github app installation status failed, showing last known state",
+				slog.String("error", checkErr.Error()), slog.Int64("installation_id", *conn.InstallationID))
+		} else {
+			resource.InstallationStatus = string(state)
+			resource.Installed = state == githubAppInstallationInstalled
+			if accountLogin != "" {
+				resource.AccountLogin = accountLogin
+			}
+		}
+	}
 	writeJSON(w, http.StatusOK, resource)
+}
+
+// githubAppInstallationState is checkGitHubAppInstallation's result:
+// distinguishes an installation GitHub still reports as active from one
+// that's suspended or gone entirely, states a plain Installed bool can't
+// tell apart.
+type githubAppInstallationState string
+
+const (
+	githubAppInstallationInstalled githubAppInstallationState = "installed"
+	githubAppInstallationSuspended githubAppInstallationState = "suspended"
+	githubAppInstallationNotFound  githubAppInstallationState = "not_found"
+)
+
+// checkGitHubAppInstallation asks GitHub directly whether installationID
+// is still active, rather than trusting conn.InstallationID being
+// non-nil: the same App-JWT auth handleGitHubAppInstalled already uses
+// to look installations up for real.
+func (rt *Router) checkGitHubAppInstallation(ctx context.Context, conn store.GitHubAppConnection, installationID int64) (githubAppInstallationState, string, error) {
+	privateKeyPEM, err := rt.githubAppSecrets.Resolve(ctx, store.GitHubAppSecretsKey(), "private_key")
+	if err != nil {
+		return "", "", fmt.Errorf("resolve github app private key: %w", err)
+	}
+	appJWT, err := githubapp.SignAppJWT(conn.AppID, []byte(privateKeyPEM), time.Now())
+	if err != nil {
+		return "", "", fmt.Errorf("sign github app jwt: %w", err)
+	}
+	info, err := rt.githubAppClient.GetInstallation(ctx, conn.InstanceURL, appJWT, installationID)
+	if errors.Is(err, githubapp.ErrInstallationNotFound) {
+		return githubAppInstallationNotFound, "", nil
+	}
+	if err != nil {
+		return "", "", fmt.Errorf("get github app installation: %w", err)
+	}
+	if info.SuspendedAt != "" {
+		return githubAppInstallationSuspended, info.AccountLogin, nil
+	}
+	return githubAppInstallationInstalled, info.AccountLogin, nil
 }
 
 // handleDisconnectGitHubApp handles DELETE /api/v1/github-app. See
