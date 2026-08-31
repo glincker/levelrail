@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build && tsc -b",
     "typecheck": "tsc -b",
+    "check-bundle-size": "node scripts/check-bundle-size.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
