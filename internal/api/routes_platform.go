@@ -182,6 +182,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// scoped to a project, tagged onto a service via its own app route.
 	mux.HandleFunc("GET /api/v1/projects/{id}/environments", rt.requireAbility(AbilityRead, rt.handleListEnvironments))
 	mux.HandleFunc("POST /api/v1/projects/{id}/environments", rt.requireAbility(AbilityWrite, rt.handleCreateEnvironment))
+	mux.HandleFunc("PATCH /api/v1/environments/{id}", rt.requireAbility(AbilityWrite, rt.handleUpdateEnvironment))
 	mux.HandleFunc("DELETE /api/v1/environments/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteEnvironment))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/environment", rt.requireAbility(AbilityWrite, rt.handleSetAppEnvironment))
 

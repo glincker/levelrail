@@ -7,5 +7,9 @@ export interface EnvironmentResource {
   id: string
   project_id: string
   name: string
+  // protected requires confirm: true on a deploy, rollback, or
+  // promotion targeting an app tagged with this environment
+  // (internal/api's deploys.go/promote.go).
+  protected: boolean
   created_at: string
 }

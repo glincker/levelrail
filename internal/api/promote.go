@@ -64,15 +64,18 @@ func toPromotePreviewResource(res promoteResolution) promotePreviewResource {
 }
 
 type promoteTriggerRequest struct {
-	To     string `json:"to"`
-	Target string `json:"target,omitempty"`
+	To      string `json:"to"`
+	Target  string `json:"target,omitempty"`
+	Confirm bool   `json:"confirm,omitempty"`
 }
 
 // handlePromoteApp handles POST /api/v1/apps/{name}/promote: points the
 // resolved target app's image at name's current image and redeploys it
 // through the exact same setDesiredImage/recordInstantDeployAttempt path
 // a plain trigger or rollback uses (deploys.go), rather than a separate
-// promotion-specific reconciliation mechanism.
+// promotion-specific reconciliation mechanism. Promoting into a protected
+// environment requires confirm: true, the same gate handleTriggerDeploy
+// enforces (environments.go's environmentNeedsConfirmation).
 func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -84,6 +87,11 @@ func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 
 	res, ok := rt.resolvePromotion(w, r, name, req.To, req.Target)
 	if !ok {
+		return
+	}
+
+	if environmentNeedsConfirmation(res.env, req.Confirm) {
+		writeEnvironmentConfirmationRequired(w, res.env)
 		return
 	}
 

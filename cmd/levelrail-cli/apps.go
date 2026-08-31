@@ -24,7 +24,7 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	case "get":
 		return runAppsGet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy":
-		return runAppsDeploy(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsDeploy(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "deploy-compose":
 		return runAppsDeployCompose(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-spec":
@@ -32,11 +32,11 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	case "group":
 		return runAppsGroup(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rollback":
-		return runAppsRollback(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsRollback(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "deploys":
 		return runAppsDeploys(prog, args[1:], stdout, stderr, lookupEnv)
 	case "promote":
-		return runAppsPromote(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+		return runAppsPromote(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin) //nolint:gosec // same guard as below
 	case "restart":
 		return runAppsRestart(prog, args[1:], stdout, stderr, lookupEnv)
 	case "stop":

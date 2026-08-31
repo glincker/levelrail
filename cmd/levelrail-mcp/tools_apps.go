@@ -50,7 +50,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		Name:        "deploy_app",
 		Description: "Point an existing app's desired image at a new tag. Asynchronous: returns once the desired state is saved, not once the new container is actually running; use get_app_status to watch it converge. Deploying an older, already-known tag is how a rollback is done.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployAppInput) (*mcp.CallToolResult, apiclient.AppResource, error) {
-		app, err := client.DeployApp(ctx, in.Name, in.Image)
+		app, err := client.DeployApp(ctx, in.Name, in.Image, in.Confirm)
 		if err != nil {
 			return nil, apiclient.AppResource{}, fmt.Errorf("deploy app %q to image %q: %w", in.Name, in.Image, err)
 		}
@@ -72,7 +72,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		Name:        "rollback_app",
 		Description: "Point an existing app's desired image back at an older, already-built image tag. Identical request to deploy_app (there is no separate rollback endpoint server-side, matching how cmd/levelrail-cli's own 'apps rollback' and the web dashboard's 'Rollback to this build' button both work); given as its own tool so a rollback intent doesn't have to be expressed by re-purposing deploy_app. Asynchronous: use get_app_status to watch it converge.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployAppInput) (*mcp.CallToolResult, apiclient.AppResource, error) {
-		app, err := client.DeployApp(ctx, in.Name, in.Image)
+		app, err := client.DeployApp(ctx, in.Name, in.Image, in.Confirm)
 		if err != nil {
 			return nil, apiclient.AppResource{}, fmt.Errorf("roll back app %q to image %q: %w", in.Name, in.Image, err)
 		}
@@ -157,8 +157,9 @@ type appNameInput struct {
 }
 
 type deployAppInput struct {
-	Name  string `json:"name" jsonschema:"the app's name"`
-	Image string `json:"image" jsonschema:"image reference to deploy, e.g. registry.example.com/org/app:tag"`
+	Name    string `json:"name" jsonschema:"the app's name"`
+	Image   string `json:"image" jsonschema:"image reference to deploy, e.g. registry.example.com/org/app:tag"`
+	Confirm bool   `json:"confirm,omitempty" jsonschema:"required true to deploy into an app tagged with a protected environment; omit or false fails with a 409 naming the environment if it's protected"`
 }
 
 type deployComposeInput struct {

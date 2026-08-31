@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { StackSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShieldWarningIcon, StackSimpleIcon } from '@phosphor-icons/react/dist/ssr'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useEnvironments } from '../queries/environments'
@@ -45,8 +45,14 @@ export function ProjectEnvironmentsPanel({
                 <Link
                   to="/projects/$id/environments/$envId"
                   params={{ id: projectId, envId: env.id }}
-                  className="hover:underline"
+                  className="flex items-center gap-1 hover:underline"
                 >
+                  {env.protected ? (
+                    <ShieldWarningIcon
+                      className="size-3.5 text-destructive"
+                      aria-label="Protected"
+                    />
+                  ) : null}
                   {env.name}
                 </Link>
                 <DeleteEnvironmentDialog

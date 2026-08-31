@@ -60,6 +60,55 @@ func TestHandleTriggerDeploy(t *testing.T) {
 	}
 }
 
+// TestHandleTriggerDeploy_ProtectedEnvironment covers the confirm: true
+// gate (environments.go's requireEnvironmentConfirmation): a deploy
+// targeting an app tagged with a protected environment is rejected with
+// a 409 and leaves desired state untouched until confirm is set.
+func TestHandleTriggerDeploy_ProtectedEnvironment(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveProject(ctx, store.Project{ID: "proj_1", Name: "my-saas", CreatedAt: "2026-08-20T00:00:00Z"}); err != nil {
+		t.Fatalf("seed project: %v", err)
+	}
+	if err := db.SaveEnvironment(ctx, store.Environment{ID: "env_prod", ProjectID: "proj_1", Name: "production", Protected: true, CreatedAt: "2026-08-20T00:00:00Z"}); err != nil {
+		t.Fatalf("seed environment: %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	if err := db.SetServiceEnvironment(ctx, "web", "env_prod"); err != nil {
+		t.Fatalf("tag app: %v", err)
+	}
+
+	recUnconfirmed := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recUnconfirmed, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/deploys", `{"image":"levelrail/web:2"}`))
+	if recUnconfirmed.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d; body = %s", recUnconfirmed.Code, http.StatusConflict, recUnconfirmed.Body.String())
+	}
+	svc, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService: %v", err)
+	}
+	if svc.Image != "levelrail/web:1" {
+		t.Errorf("an unconfirmed deploy into a protected environment must not change desired state, Image = %q", svc.Image)
+	}
+
+	recConfirmed := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recConfirmed, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/deploys", `{"image":"levelrail/web:2","confirm":true}`))
+	if recConfirmed.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d; body = %s", recConfirmed.Code, http.StatusAccepted, recConfirmed.Body.String())
+	}
+	svc, err = db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService: %v", err)
+	}
+	if svc.Image != "levelrail/web:2" {
+		t.Errorf("confirm: true deploy did not update Image, got %q", svc.Image)
+	}
+}
+
 // TestHandleTriggerDeploy_RecordsDeployAttempt covers this task's own
 // judgment call for the plain image-tag path: it has no real build step
 // (no Dockerfile build happens, see handleTriggerDeploy's own doc

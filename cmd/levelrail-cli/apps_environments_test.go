@@ -33,6 +33,62 @@ func TestRun_AppsEnvironmentsCreate(t *testing.T) {
 	}
 }
 
+func TestRun_AppsEnvironmentsCreate_Protected(t *testing.T) {
+	var gotBody createEnvironmentRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(environmentResource{ID: "env_1", ProjectID: "proj_1", Name: gotBody.Name, Protected: gotBody.Protected})
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{"apps", "environments", "create", "proj_1", "--name", "production", "--protected", "--api-url", srv.URL})
+	if !gotBody.Protected {
+		t.Errorf("request body Protected = false, want true")
+	}
+}
+
+func TestRun_AppsEnvironmentsUpdate(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody updateEnvironmentRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(environmentResource{ID: "env_1", Name: "production", Protected: gotBody.Protected})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "environments", "update", "env_1", "--protected", "--api-url", srv.URL})
+	if gotMethod != http.MethodPatch || gotPath != "/api/v1/environments/env_1" {
+		t.Errorf("request = %s %s, want PATCH /api/v1/environments/env_1", gotMethod, gotPath)
+	}
+	if !gotBody.Protected {
+		t.Errorf("request body Protected = false, want true")
+	}
+	if !strings.Contains(stdout, `environment "production" is now protected`) {
+		t.Errorf("stdout = %q, want a protected confirmation", stdout)
+	}
+}
+
+func TestRun_AppsEnvironmentsUpdate_Unprotect(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var gotBody updateEnvironmentRequest
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(environmentResource{ID: "env_1", Name: "production", Protected: gotBody.Protected})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "environments", "update", "env_1", "--protected=false", "--api-url", srv.URL})
+	if !strings.Contains(stdout, `environment "production" is now unprotected`) {
+		t.Errorf("stdout = %q, want an unprotected confirmation", stdout)
+	}
+}
+
 func TestRun_AppsEnvironmentsCreate_MissingName(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"apps", "environments", "create", "proj_1"}, &stdout, &stderr, envMap())

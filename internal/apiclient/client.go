@@ -153,9 +153,13 @@ func (c *Client) TriggerBuild(ctx context.Context, name string, req BuildTrigger
 // desired state is saved, not once a container is actually running it.
 // Also how a rollback is done: deploying an older, already-known tag
 // with this same method.
-func (c *Client) DeployApp(ctx context.Context, name, image string) (AppResource, error) {
+// confirm must be true to deploy into an app tagged with a protected
+// environment (internal/api/environments.go's environmentNeedsConfirmation);
+// otherwise the call fails with a 409, ignored when the app has no
+// protected environment.
+func (c *Client) DeployApp(ctx context.Context, name, image string, confirm bool) (AppResource, error) {
 	var out AppResource
-	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/deploys", DeployTriggerRequest{Image: image}, &out)
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/deploys", DeployTriggerRequest{Image: image, Confirm: confirm}, &out)
 	return out, err
 }
 
@@ -1084,6 +1088,13 @@ func (c *Client) CreateEnvironment(ctx context.Context, projectID string, req Cr
 func (c *Client) ListEnvironments(ctx context.Context, projectID string) ([]EnvironmentResource, error) {
 	var out []EnvironmentResource
 	err := c.do(ctx, http.MethodGet, environmentsCollectionPath(projectID), nil, &out)
+	return out, err
+}
+
+// UpdateEnvironment calls PATCH /api/v1/environments/{id}.
+func (c *Client) UpdateEnvironment(ctx context.Context, id string, req UpdateEnvironmentRequest) (EnvironmentResource, error) {
+	var out EnvironmentResource
+	err := c.do(ctx, http.MethodPatch, environmentPath(id), req, &out)
 	return out, err
 }
 

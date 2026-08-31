@@ -14,14 +14,20 @@ import (
 // the same deploy path "apps deploy"/"apps rollback" already use.
 // --target disambiguates when more than one app in --to belongs to the
 // project; omit it to let the server auto-discover the sole candidate.
-func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+//
+// --confirm/interactive-prompt behavior when --to is protected mirrors
+// apps_deploy.go's own doc comment: same server-side gate
+// (environmentNeedsConfirmation, internal/api/promote.go), same
+// client-side interactive fallback (resolveProtectedEnvironmentConfirmation).
+func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps promote", "print the result as JSON to stdout and nothing else", stderr)
 	var to, target string
-	var preview bool
+	var preview, confirm bool
 	fs.StringVar(&to, "to", "", "destination environment ID (required)")
 	fs.StringVar(&target, "target", "", "target app name, when more than one app in --to belongs to the same project")
 	fs.BoolVar(&preview, "preview", false, "show what promoting would change, without applying it")
 	fs.BoolVar(&preview, "dry-run", false, "alias for --preview")
+	fs.BoolVar(&confirm, "confirm", false, "confirm promoting into a protected environment; omit to be prompted interactively if needed")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPromoteUsage(prog)) }
 
 	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, tokenFlagP, apiURLFlagP, jsonOutP, stderr, prog, "apps promote", lookupEnv)
@@ -50,7 +56,18 @@ func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookup
 		return exitOK
 	}
 
-	updated, err := client.PromoteApp(ctx, name, promoteAppRequest{To: to, Target: target})
+	updated, err := client.PromoteApp(ctx, name, promoteAppRequest{To: to, Target: target, Confirm: confirm})
+	if !confirm {
+		if apiErr, ok := protectedEnvironmentError(err); ok {
+			confirmed, cerr := resolveProtectedEnvironmentConfirmation(apiErr.Message, stdin, stderr)
+			if cerr != nil {
+				return reportError(stdout, stderr, jsonOut, cerr)
+			}
+			if confirmed {
+				updated, err = client.PromoteApp(ctx, name, promoteAppRequest{To: to, Target: target, Confirm: true})
+			}
+		}
+	}
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("promote app %q: %w", name, err))
 	}
@@ -102,9 +119,13 @@ it, the same "only the image tag is compared" honesty
 ports, domains, and other service configuration are never part of this
 diff.
 
+If ENVIRONMENT_ID is protected, this fails unless --confirm is set or
+you type "yes" at the interactive prompt.
+
 Flags:
   --to string             destination environment ID (required)
   --target string        target app name, to disambiguate multiple apps in --to
+  --confirm                  confirm promoting into a protected environment, skipping the interactive prompt
   --preview                 show what would change, don't apply it
   --dry-run                 alias for --preview
   --token string          API token (default: %[2]s env var, then the credentials file)

@@ -15,6 +15,7 @@ import { environmentEnvQueryOptions } from '../../../../queries/environmentEnv'
 import { appListQueryOptions } from '../../../../queries/apps'
 import { Breadcrumbs } from '../../../../components/Breadcrumbs'
 import { DeleteEnvironmentDialog } from '../../../../components/DeleteEnvironmentDialog'
+import { ProtectedEnvironmentToggle } from '../../../../components/ProtectedEnvironmentToggle'
 import { EnvironmentEnvEditor } from '../../../../components/EnvironmentEnvEditor'
 import { AppRow, RowSkeleton } from '../../../../components/AppRow'
 import { Badge } from '@/components/ui/badge'
@@ -91,14 +92,22 @@ function EnvironmentDetailPage() {
             <StackSimpleIcon className="size-4 text-muted-foreground" />
             {environment.name}
           </h1>
-          <DeleteEnvironmentDialog
-            id={environment.id}
-            name={environment.name}
-            projectId={id}
-            onDeleted={() => {
-              void navigate({ to: '/projects/$id', params: { id } })
-            }}
-          />
+          <div className="flex items-center gap-4">
+            <ProtectedEnvironmentToggle
+              id={environment.id}
+              name={environment.name}
+              protectedFlag={environment.protected}
+              projectId={id}
+            />
+            <DeleteEnvironmentDialog
+              id={environment.id}
+              name={environment.name}
+              projectId={id}
+              onDeleted={() => {
+                void navigate({ to: '/projects/$id', params: { id } })
+              }}
+            />
+          </div>
         </div>
       </div>
 

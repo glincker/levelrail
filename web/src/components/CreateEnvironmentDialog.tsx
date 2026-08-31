@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
@@ -22,16 +23,22 @@ import { useCreateEnvironment } from '../queries/environments'
 
 // A single name field, mirroring CreateProjectDialog: an environment is
 // a staging/production-style label scoped to one project, tagged onto
-// an app via MoveToEnvironmentDialog.
+// an app via MoveToEnvironmentDialog. Protected can also be toggled
+// later from the environment's own detail page
+// (ProtectedEnvironmentToggle), this is just a convenience to set it at
+// creation time for an operator who already knows this will be
+// production.
 export function CreateEnvironmentDialog({ projectId }: { projectId: string }) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
+  const [protectedFlag, setProtectedFlag] = useState(false)
   const createEnvironment = useCreateEnvironment(projectId)
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
     if (!next) {
       setName('')
+      setProtectedFlag(false)
       createEnvironment.reset()
     }
   }
@@ -42,15 +49,18 @@ export function CreateEnvironmentDialog({ projectId }: { projectId: string }) {
     if (!trimmed) {
       return
     }
-    createEnvironment.mutate(trimmed, {
-      onSuccess: (created) => {
-        handleOpenChange(false)
-        toast.add({
-          title: `Environment "${created.name}" created.`,
-          type: 'success',
-        })
+    createEnvironment.mutate(
+      { name: trimmed, protected: protectedFlag },
+      {
+        onSuccess: (created) => {
+          handleOpenChange(false)
+          toast.add({
+            title: `Environment "${created.name}" created.`,
+            type: 'success',
+          })
+        },
       },
-    })
+    )
   }
 
   return (
@@ -83,6 +93,17 @@ export function CreateEnvironmentDialog({ projectId }: { projectId: string }) {
               autoFocus
             />
           </Field>
+
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox
+              checked={protectedFlag}
+              onCheckedChange={(checked) => {
+                setProtectedFlag(checked === true)
+              }}
+            />
+            Protected: require confirmation before a deploy, rollback, or
+            promote can target an app tagged with this environment
+          </label>
 
           {createEnvironment.isError ? (
             <Alert variant="destructive">

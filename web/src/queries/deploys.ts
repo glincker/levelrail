@@ -59,16 +59,29 @@ export function useDeployStatus(appName: string) {
 // There is no backend SSE endpoint yet for a live build/deploy log, so
 // this deliberately stays a fire-and-forget trigger, not a connection
 // this hook keeps open.
+//
+// confirm must be true to deploy into an app tagged with a protected
+// environment (internal/api's environmentNeedsConfirmation); callers
+// derive it from ProtectedEnvironmentNotice's own acknowledgment
+// checkbox, gated on useProtectedEnvironment (queries/environments.ts).
+export interface TriggerDeployInput {
+  image: string
+  confirm?: boolean
+}
+
 export async function triggerDeploy(
   appName: string,
-  image: string,
+  input: TriggerDeployInput,
 ): Promise<AppDetail> {
   const res = await fetch(
     `/api/v1/apps/${encodeURIComponent(appName)}/deploys`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image }),
+      body: JSON.stringify({
+        image: input.image,
+        confirm: input.confirm ?? false,
+      }),
     },
   )
   if (!res.ok) {
@@ -94,7 +107,7 @@ export async function triggerDeploy(
 export function useTriggerDeploy(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (image: string) => triggerDeploy(appName, image),
+    mutationFn: (input: TriggerDeployInput) => triggerDeploy(appName, input),
     onSuccess: (updated) => {
       queryClient.setQueryData(appKeys.detail(appName), updated)
       void queryClient.invalidateQueries({
