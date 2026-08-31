@@ -332,6 +332,44 @@ type ReplayWebhookDeliveryResult struct {
 	Message string `json:"message"`
 }
 
+// DeployCompareSide mirrors internal/api's deployCompareSide
+// (internal/api/deploy_compare.go): one side of a deploy comparison.
+// IsCurrent true and DeployID empty means this side is the app's current
+// live desired state, not a stored attempt.
+type DeployCompareSide struct {
+	DeployID   string     `json:"deploy_id,omitempty"`
+	IsCurrent  bool       `json:"is_current"`
+	Image      string     `json:"image"`
+	CommitSHA  string     `json:"commit_sha,omitempty"`
+	Source     string     `json:"source,omitempty"`
+	Status     string     `json:"status,omitempty"`
+	StartedAt  *time.Time `json:"started_at,omitempty"`
+	FinishedAt *time.Time `json:"finished_at,omitempty"`
+}
+
+// DeployCompareField mirrors internal/api's deployCompareField: one
+// field that differs between From and To.
+type DeployCompareField struct {
+	Field string `json:"field"`
+	From  string `json:"from"`
+	To    string `json:"to"`
+}
+
+// DeployCompareResource mirrors internal/api's deployCompareResource,
+// GET /api/v1/apps/{name}/deploys/compare's response.
+// UnsnapshottedFields and Note are the honest limitation this task's own
+// design note requires: deploy_attempts never snapshotted env/resources/
+// domains/etc per attempt, so those cannot be diffed across past deploys,
+// only reported as not tracked.
+type DeployCompareResource struct {
+	ServiceName         string               `json:"service_name"`
+	From                DeployCompareSide    `json:"from"`
+	To                  DeployCompareSide    `json:"to"`
+	Changes             []DeployCompareField `json:"changes"`
+	UnsnapshottedFields []string             `json:"unsnapshotted_fields"`
+	Note                string               `json:"note"`
+}
+
 // RestoreHistoryResource mirrors internal/api's restoreHistoryResource
 // (internal/api/restore.go).
 type RestoreHistoryResource struct {

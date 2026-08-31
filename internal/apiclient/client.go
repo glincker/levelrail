@@ -581,6 +581,23 @@ func (c *Client) ReplayWebhookDelivery(ctx context.Context, name, id string) (Re
 	return out, err
 }
 
+// CompareDeploys calls GET /api/v1/apps/{name}/deploys/compare: a
+// before/after diff of deploy attempt from against to, or against the
+// app's current live state when to is empty.
+func (c *Client) CompareDeploys(ctx context.Context, name, from, to string) (DeployCompareResource, error) {
+	path := "/api/v1/apps/" + PathEscape(name) + "/deploys/compare"
+	q := url.Values{}
+	q.Set("from", from)
+	if to != "" {
+		q.Set("to", to)
+	}
+	path += "?" + q.Encode()
+
+	var out DeployCompareResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
 // ListServiceTemplates calls GET /api/v1/service-templates: the full
 // catalog, without each entry's Compose body (see ServiceTemplateListItem).
 func (c *Client) ListServiceTemplates(ctx context.Context) ([]ServiceTemplateListItem, error) {

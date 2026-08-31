@@ -110,6 +110,10 @@ type (
 
 	webhookDeliveryResource     = apiclient.WebhookDeliveryResource
 	replayWebhookDeliveryResult = apiclient.ReplayWebhookDeliveryResult
+
+	deployCompareResource = apiclient.DeployCompareResource
+	deployCompareSide     = apiclient.DeployCompareSide
+	deployCompareField    = apiclient.DeployCompareField
 )
 
 // NewClient builds a Client. See apiclient.NewClient.

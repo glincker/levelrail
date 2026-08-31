@@ -194,6 +194,12 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// an app's own state.
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploy-attempts", rt.requireAbility(AbilityRead, rt.handleListDeployAttempts))
 
+	// Deploy comparison (deploy_compare.go): a before/after diff between
+	// two attempts, or one attempt against the app's current live state
+	// when ?to is omitted. AbilityRead, same sensitivity as the
+	// deploy-attempts list above.
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/compare", rt.requireAbility(AbilityRead, rt.handleCompareDeploys))
+
 	// Deploy-attempt build/log stream (deploy_attempts.go): SSE, serving
 	// either a live tail (attempt still running) or a full persisted
 	// replay (attempt already finished), the exact contract
