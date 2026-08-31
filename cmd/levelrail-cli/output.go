@@ -223,6 +223,26 @@ func printDatabasesTable(out io.Writer, dbs []databaseResource) {
 	_ = tw.Flush()
 }
 
+// printSystemStatusHuman prints "status" output. docker is the headline
+// line since an unreachable daemon is the single most fundamental
+// prerequisite this platform has: everything else here degrades
+// gracefully, Docker being down does not.
+func printSystemStatusHuman(out io.Writer, s systemStatusResource) {
+	if s.DockerConnected {
+		_, _ = fmt.Fprintln(out, "docker:              connected")
+	} else if s.DockerError != "" {
+		_, _ = fmt.Fprintf(out, "docker:              UNREACHABLE (%s)\n", s.DockerError)
+	} else {
+		_, _ = fmt.Fprintln(out, "docker:              unknown (no Docker reachability check configured)")
+	}
+	_, _ = fmt.Fprintf(out, "secrets configured:  %t\n", s.SecretsConfigured)
+	_, _ = fmt.Fprintf(out, "telemetry configured: %t\n", s.TelemetryConfigured)
+	_, _ = fmt.Fprintf(out, "alerts configured:   %t\n", s.AlertsConfigured)
+	if s.DataDirTotalBytes > 0 {
+		_, _ = fmt.Fprintf(out, "data dir:            %d free of %d bytes\n", s.DataDirFreeBytes, s.DataDirTotalBytes)
+	}
+}
+
 // printNodeHuman prints one node resource in a human-readable, non-JSON
 // form ("nodes get" output).
 func printNodeHuman(out io.Writer, n nodeResource) {

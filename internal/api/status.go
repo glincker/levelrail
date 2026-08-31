@@ -34,6 +34,11 @@ type systemStatusResponse struct {
 	// reportable false, never a 5xx" shape SecretsConfigured/
 	// TelemetryConfigured/AlertsConfigured already follow above.
 	DockerConnected bool `json:"docker_connected"`
+	// DockerError carries the Ping failure's own message when
+	// DockerConnected is false because Ping errored (never set for the
+	// "no DockerPinger configured" case): the raw daemon-unreachable text
+	// an operator needs to actually fix the problem, not just "false".
+	DockerError string `json:"docker_error,omitempty"`
 	// DockerDiskUsage is Docker's own storage accounting (images,
 	// containers, volumes, build cache), omitted entirely when no
 	// DockerDiskUsager is configured (WithDockerDiskUsager) or the
@@ -89,7 +94,11 @@ func (rt *Router) handleSystemStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if rt.dockerPinger != nil {
-		resp.DockerConnected = rt.dockerPinger.Ping(r.Context()) == nil
+		if err := rt.dockerPinger.Ping(r.Context()); err != nil {
+			resp.DockerError = err.Error()
+		} else {
+			resp.DockerConnected = true
+		}
 	}
 
 	if rt.dockerDiskUsage != nil {

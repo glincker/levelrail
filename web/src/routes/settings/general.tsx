@@ -383,6 +383,11 @@ function GeneralSettingsPage() {
             trueLabel="Connected"
             falseLabel="Not connected"
           />
+          {!status.docker_connected && status.docker_error ? (
+            <p className="pb-1.5 text-xs text-muted-foreground">
+              {status.docker_error}
+            </p>
+          ) : null}
         </CardContent>
       </Card>
 
