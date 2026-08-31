@@ -11,6 +11,7 @@ import {
   SlidersHorizontalIcon,
   HeartbeatIcon,
   CpuIcon,
+  HardDrivesIcon,
   PlugsConnectedIcon,
   PulseIcon,
   ScrollIcon,
@@ -36,8 +37,8 @@ import { summarizeAppStatus } from '../lib/appStatus'
 // in place of the global nav whenever the current route is under
 // /apps/$name/*. The section routes are grouped into Deploy (Overview,
 // Deploys, Domains, Network, Services), Configure (Environment, Source,
-// Deploy settings, Health, Resources, Integrations, Scheduled tasks,
-// Feature flags),
+// Deploy settings, Health, Resources, Volumes, Integrations, Scheduled
+// tasks, Feature flags),
 // and Observe (Metrics, Logs, Alerts, Exec), matching the
 // SidebarGroupLabel pattern the global sidebar's Settings group uses.
 //
@@ -195,6 +196,16 @@ export function AppScopedSidebar({ name }: { name: string }) {
               >
                 <CpuIcon />
                 <span>Resources</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={<Link to="/apps/$name/volumes" params={{ name }} />}
+                isActive={pathname.endsWith('/volumes')}
+                tooltip="Volumes"
+              >
+                <HardDrivesIcon />
+                <span>Volumes</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>

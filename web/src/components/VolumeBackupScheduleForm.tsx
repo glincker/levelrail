@@ -20,10 +20,10 @@ import {
 import { toast } from '@/components/ui/toast'
 import { useBackupTargetsOptional } from '../queries/backupTargets'
 import {
-  useClearDatabaseBackupSchedule,
-  useSetDatabaseBackupSchedule,
-} from '../queries/databases'
-import type { DatabaseResource } from '../types/databaseDetail'
+  useClearVolumeBackupSchedule,
+  useSetVolumeBackupSchedule,
+  useVolumeBackupSchedule,
+} from '../queries/volumeBackupSchedule'
 import {
   WEEKDAY_LABEL,
   fromCron,
@@ -33,56 +33,64 @@ import {
   type ScheduleFormValues,
 } from '../lib/cronSchedule'
 
-function scheduleSummary(database: DatabaseResource): string {
-  const retention = scheduleRetentionSummary(
-    database.backup_retain,
-    database.backup_retain_days,
-  )
-  return `Runs on schedule "${database.backup_schedule}", ${retention}.`
-}
-
-function toFieldValues(database: DatabaseResource): ScheduleFormValues {
+function toFieldValues(schedule: {
+  target_id?: string
+  schedule?: string
+  retain?: number
+  retain_days?: number
+}): ScheduleFormValues {
   return {
-    targetId: database.backup_target_id ?? '',
-    retain: String(database.backup_retain ?? 7),
-    retainDays: String(database.backup_retain_days ?? 0),
-    ...fromCron(database.backup_schedule),
+    targetId: schedule.target_id ?? '',
+    retain: String(schedule.retain ?? 7),
+    retainDays: String(schedule.retain_days ?? 0),
+    ...fromCron(schedule.schedule),
   }
 }
 
-export function BackupScheduleForm({
-  database,
+// VolumeBackupScheduleForm is BackupScheduleForm's exact app service
+// volume counterpart: same daily/weekly/custom-cron UI (shared via
+// lib/cronSchedule.ts), same "hidden entirely when no backup target is
+// connected yet" gate, wired against the volume's own dedicated
+// GET/PUT/DELETE .../backup-schedule endpoint instead of the fields
+// riding along on the app resource itself (see
+// queries/volumeBackupSchedule.ts's own header comment for why that
+// endpoint exists at all).
+export function VolumeBackupScheduleForm({
+  appName,
+  volumeName,
 }: {
-  database: DatabaseResource
+  appName: string
+  volumeName: string
 }) {
   const targets = useBackupTargetsOptional().data ?? []
-  const setSchedule = useSetDatabaseBackupSchedule()
-  const clearSchedule = useClearDatabaseBackupSchedule()
+  const scheduleQuery = useVolumeBackupSchedule(appName, volumeName)
+  const setSchedule = useSetVolumeBackupSchedule(appName, volumeName)
+  const clearSchedule = useClearVolumeBackupSchedule(appName, volumeName)
+  const schedule = scheduleQuery.data
   const { control, register, handleSubmit, watch, formState } =
     useForm<ScheduleFormValues>({
       resolver: zodResolver(scheduleSchema),
-      values: toFieldValues(database),
+      values: toFieldValues(schedule ?? {}),
       resetOptions: { keepDirtyValues: true },
     })
 
   const frequency = watch('frequency')
-  const scheduled = !!database.backup_schedule
+  const scheduled = !!schedule?.schedule
 
-  // No backup targets to schedule against yet: TriggerBackupRow already
-  // shows the "connect a target" prompt in this same card, so this
-  // section stays hidden rather than duplicating that message.
-  if (targets.length === 0) {
+  // No backup targets to schedule against yet: TriggerVolumeBackupRow
+  // already shows the "connect a target" prompt in this same card, the
+  // same reasoning BackupScheduleForm's own doc comment gives.
+  if (targets.length === 0 || scheduleQuery.isLoading) {
     return null
   }
 
   const onSubmit = handleSubmit((values) => {
     setSchedule.mutate(
       {
-        name: database.name,
-        targetId: values.targetId,
+        target_id: values.targetId,
         schedule: toCron(values),
         retain: Math.round(Number(values.retain)),
-        retainDays: Math.round(Number(values.retainDays)),
+        retain_days: Math.round(Number(values.retainDays)),
       },
       {
         onSuccess: () => {
@@ -100,7 +108,7 @@ export function BackupScheduleForm({
   })
 
   function handleClear() {
-    clearSchedule.mutate(database.name, {
+    clearSchedule.mutate(undefined, {
       onSuccess: () => {
         toast.add({ title: 'Backup schedule removed.', type: 'success' })
       },
@@ -114,6 +122,10 @@ export function BackupScheduleForm({
     })
   }
 
+  const scheduleSummary = scheduled
+    ? `Runs on schedule "${schedule?.schedule}", ${scheduleRetentionSummary(schedule?.retain, schedule?.retain_days)}.`
+    : 'No recurring backup configured for this volume.'
+
   return (
     <div className="space-y-3 rounded-lg border border-border p-4">
       <div className="flex items-start justify-between gap-2">
@@ -122,11 +134,7 @@ export function BackupScheduleForm({
             <ClockIcon className="size-4" aria-hidden="true" />
             Scheduled backups
           </h3>
-          <p className="text-sm text-muted-foreground">
-            {scheduled
-              ? scheduleSummary(database)
-              : 'No recurring backup configured for this database.'}
-          </p>
+          <p className="text-sm text-muted-foreground">{scheduleSummary}</p>
         </div>
         {scheduled ? (
           <Button
@@ -149,7 +157,7 @@ export function BackupScheduleForm({
         className="grid grid-cols-1 gap-3 sm:grid-cols-2"
       >
         <Field>
-          <FieldLabel htmlFor="backup-schedule-target">
+          <FieldLabel htmlFor="volume-backup-schedule-target">
             Backup target
           </FieldLabel>
           <Controller
@@ -162,7 +170,10 @@ export function BackupScheduleForm({
                   field.onChange(value ?? '')
                 }}
               >
-                <SelectTrigger id="backup-schedule-target" className="w-full">
+                <SelectTrigger
+                  id="volume-backup-schedule-target"
+                  className="w-full"
+                >
                   <SelectValue placeholder="Choose a backup target..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -179,7 +190,9 @@ export function BackupScheduleForm({
         </Field>
 
         <Field>
-          <FieldLabel htmlFor="backup-schedule-frequency">Frequency</FieldLabel>
+          <FieldLabel htmlFor="volume-backup-schedule-frequency">
+            Frequency
+          </FieldLabel>
           <Controller
             control={control}
             name="frequency"
@@ -191,7 +204,7 @@ export function BackupScheduleForm({
                 }}
               >
                 <SelectTrigger
-                  id="backup-schedule-frequency"
+                  id="volume-backup-schedule-frequency"
                   className="w-full"
                 >
                   <SelectValue />
@@ -208,7 +221,7 @@ export function BackupScheduleForm({
 
         {frequency === 'weekly' ? (
           <Field>
-            <FieldLabel htmlFor="backup-schedule-weekday">
+            <FieldLabel htmlFor="volume-backup-schedule-weekday">
               Day of week
             </FieldLabel>
             <Controller
@@ -222,7 +235,7 @@ export function BackupScheduleForm({
                   }}
                 >
                   <SelectTrigger
-                    id="backup-schedule-weekday"
+                    id="volume-backup-schedule-weekday"
                     className="w-full"
                   >
                     <SelectValue />
@@ -242,9 +255,9 @@ export function BackupScheduleForm({
 
         {frequency !== 'custom' ? (
           <Field>
-            <FieldLabel htmlFor="backup-schedule-time">Time</FieldLabel>
+            <FieldLabel htmlFor="volume-backup-schedule-time">Time</FieldLabel>
             <Input
-              id="backup-schedule-time"
+              id="volume-backup-schedule-time"
               type="time"
               {...register('time')}
             />
@@ -252,11 +265,11 @@ export function BackupScheduleForm({
           </Field>
         ) : (
           <Field className="sm:col-span-2">
-            <FieldLabel htmlFor="backup-schedule-cron">
+            <FieldLabel htmlFor="volume-backup-schedule-cron">
               Cron expression
             </FieldLabel>
             <Input
-              id="backup-schedule-cron"
+              id="volume-backup-schedule-cron"
               placeholder="0 3 * * *"
               className="font-mono"
               {...register('customCron')}
@@ -269,11 +282,11 @@ export function BackupScheduleForm({
         )}
 
         <Field>
-          <FieldLabel htmlFor="backup-schedule-retain">
+          <FieldLabel htmlFor="volume-backup-schedule-retain">
             Keep last N backups
           </FieldLabel>
           <Input
-            id="backup-schedule-retain"
+            id="volume-backup-schedule-retain"
             inputMode="numeric"
             className="max-w-32"
             {...register('retain')}
@@ -283,11 +296,11 @@ export function BackupScheduleForm({
         </Field>
 
         <Field>
-          <FieldLabel htmlFor="backup-schedule-retain-days">
+          <FieldLabel htmlFor="volume-backup-schedule-retain-days">
             Delete backups older than (days)
           </FieldLabel>
           <Input
-            id="backup-schedule-retain-days"
+            id="volume-backup-schedule-retain-days"
             inputMode="numeric"
             className="max-w-32"
             {...register('retainDays')}
