@@ -354,15 +354,22 @@ func (d *DeployDispatcher) Dispatch(ctx context.Context, resourceID string, ev D
 		return
 	}
 
+	trigger := "deploy-succeeded"
+	if !ev.Succeeded {
+		trigger = "deploy-failed"
+	}
+
 	for _, t := range targets {
 		if !t.Enabled {
 			continue
 		}
-		if err := sendDeployOutcome(ctx, d.client, d.sender, t, ev); err != nil {
+		sendErr := sendDeployOutcome(ctx, d.client, d.sender, t, ev)
+		if sendErr != nil {
 			d.logger.Error("alerting: deploy outcome notification failed",
 				slog.String("target_id", t.ID), slog.String("resource_id", resourceID),
 				slog.String("app_name", ev.AppName), slog.Bool("succeeded", ev.Succeeded),
-				slog.String("error", err.Error()))
+				slog.String("error", sendErr.Error()))
 		}
+		recordDelivery(ctx, d.db, d.logger, t.ChannelID, trigger, sendErr)
 	}
 }

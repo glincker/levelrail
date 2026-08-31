@@ -22,6 +22,7 @@ type LogsSource interface {
 type RuleStore interface {
 	ListEnabledRules(ctx context.Context) ([]Rule, error)
 	UpdateState(ctx context.Context, id string, pendingSince, firingSince *time.Time, firing bool, evaluatedAt time.Time, value *float64) error
+	RecordNotificationDelivery(ctx context.Context, d NotificationDelivery) error
 }
 
 // crashloopLogLines is TASKS.md 2.7's literal number: "the last 200
@@ -131,11 +132,18 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool) {
 		ev.LogLines = e.fetchRecentLogLines(ctx, r.ResourceID)
 	}
 
-	if err := e.newNotifier(r).Notify(ctx, ev); err != nil {
+	sendErr := e.newNotifier(r).Notify(ctx, ev)
+	if sendErr != nil {
 		e.logger.Error("alerting: notification failed",
 			slog.String("rule_id", r.ID), slog.String("resource_id", r.ResourceID),
-			slog.Bool("resolved", resolved), slog.String("error", err.Error()))
+			slog.Bool("resolved", resolved), slog.String("error", sendErr.Error()))
 	}
+
+	trigger := "alert-fired"
+	if resolved {
+		trigger = "alert-resolved"
+	}
+	recordDelivery(ctx, e.rules, e.logger, r.ChannelID, trigger, sendErr)
 }
 
 // fetchRecentLogLines returns the most recent up to crashloopLogLines

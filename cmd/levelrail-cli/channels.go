@@ -28,6 +28,8 @@ func runChannels(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runChannelsDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	case "test":
 		return runChannelsTest(prog, args[1:], stdout, stderr, lookupEnv)
+	case "deliveries":
+		return runChannelsDeliveries(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown channels subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, channelsUsage(prog))
@@ -41,6 +43,7 @@ func channelsUsage(prog string) string {
   %[1]s channels create --name NAME --kind KIND [flags]              connect a new notification channel
   %[1]s channels delete <id> [flags]                                    disconnect a channel
   %[1]s channels test <id> [flags]                                       send a real test message to a connected channel
+  %[1]s channels deliveries <id> [flags]                                lists a channel's recorded send history, newest first
 
 Valid --kind values: generic, slack, discord, telegram, email, pushover, pagerduty, teams.
 

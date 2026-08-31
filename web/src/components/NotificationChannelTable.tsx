@@ -16,6 +16,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from '@/components/ui/toast'
 import { BrandIcon } from './BrandIcon'
 import { DeleteNotificationChannelDialog } from './DeleteNotificationChannelDialog'
+import { NotificationDeliveryHistoryDialog } from './NotificationDeliveryHistoryDialog'
 import {
   CHANNEL_KIND_BRAND_ICON,
   CHANNEL_KIND_LABEL,
@@ -131,6 +132,7 @@ export function NotificationChannelTable({
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <TestButton channel={channel} />
+                    <NotificationDeliveryHistoryDialog channel={channel} />
                     <DeleteNotificationChannelDialog channel={channel} />
                   </div>
                 </TableCell>

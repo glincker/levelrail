@@ -11,6 +11,7 @@ import {
 import type {
   CreateNotificationChannelRequest,
   NotificationChannel,
+  NotificationDelivery,
   TestNotificationChannelRequest,
 } from '../types/notificationChannel'
 import { ApiError, readErrorMessage } from '../lib/apiError'
@@ -18,6 +19,8 @@ import { ApiError, readErrorMessage } from '../lib/apiError'
 export const notificationChannelKeys = {
   all: ['notification-channels'] as const,
   list: () => [...notificationChannelKeys.all, 'list'] as const,
+  deliveries: (id: string) =>
+    [...notificationChannelKeys.all, id, 'deliveries'] as const,
 }
 
 export async function fetchNotificationChannels(): Promise<
@@ -164,7 +167,53 @@ export async function testExistingNotificationChannel(
 }
 
 export function useTestExistingNotificationChannel() {
+  const queryClient = useQueryClient()
   return useMutation<void, ApiError, string>({
     mutationFn: testExistingNotificationChannel,
+    onSuccess: (_data, id) => {
+      void queryClient.invalidateQueries({
+        queryKey: notificationChannelKeys.deliveries(id),
+      })
+    },
+    onError: (_error, id) => {
+      void queryClient.invalidateQueries({
+        queryKey: notificationChannelKeys.deliveries(id),
+      })
+    },
   })
+}
+
+// GET /api/v1/notification-channels/{id}/deliveries
+// (handleListNotificationDeliveries): this channel's recorded send
+// history, newest first.
+export async function fetchNotificationDeliveries(
+  id: string,
+): Promise<NotificationDelivery[]> {
+  const res = await fetch(
+    `/api/v1/notification-channels/${encodeURIComponent(id)}/deliveries`,
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `fetch notification deliveries failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as NotificationDelivery[]
+}
+
+export function notificationDeliveriesQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: notificationChannelKeys.deliveries(id),
+    queryFn: () => fetchNotificationDeliveries(id),
+  })
+}
+
+// enabled defaults true; the delivery-history dialog passes false until
+// the operator actually opens it, so a channel table with many rows
+// never fires one deliveries request per row on page load.
+export function useNotificationDeliveries(id: string, enabled = true) {
+  return useQuery({ ...notificationDeliveriesQueryOptions(id), enabled })
 }
