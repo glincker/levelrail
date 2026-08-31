@@ -17,7 +17,8 @@ func newTestRouterWithNotificationChannels(t *testing.T) (*Router, *store.DB, *a
 	db := openTestDB(t)
 	adb := newTestAlertingDB(t)
 	tester := alerting.NewDeployDispatcher(adb, nil, nil, nil)
-	rt := NewRouter(nil, testBrand(), db, WithNotificationChannels(adb), WithNotificationChannelTester(tester))
+	rt := NewRouter(nil, testBrand(), db,
+		WithNotificationChannels(adb), WithNotificationChannelTester(tester), WithNotificationDeliveries(adb))
 	return rt, db, adb
 }
 
@@ -33,6 +34,7 @@ func TestNotificationChannelRoutes_NotConfigured(t *testing.T) {
 		{http.MethodDelete, "/api/v1/notification-channels/whatever", ""},
 		{http.MethodPost, "/api/v1/notification-channels/test", `{"kind":"slack","notify_url":"https://example.com"}`},
 		{http.MethodPost, "/api/v1/notification-channels/whatever/test", ""},
+		{http.MethodGet, "/api/v1/notification-channels/whatever/deliveries", ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.method+" "+tt.target, func(t *testing.T) {
@@ -300,6 +302,116 @@ func TestHandleTestExistingNotificationChannel_NotFound(t *testing.T) {
 	}
 }
 
+// TestHandleTestExistingNotificationChannel_RecordsDelivery proves a
+// test-send against an already-saved channel writes a delivery-history
+// row, not just a log line: the CLI/UI's own "when did this last work"
+// question depends on that write actually happening.
+func TestHandleTestExistingNotificationChannel_RecordsDelivery(t *testing.T) {
+	rt, db, adb := newTestRouterWithNotificationChannels(t)
+	cookie := loginTestSession(t, rt, db)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+	seedNotificationChannel(t, adb, "chn_1", alerting.NotifyGeneric, srv.URL)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/notification-channels/chn_1/test", ""))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNoContent, rec.Body.String())
+	}
+
+	deliveries, err := adb.ListNotificationDeliveries(t.Context(), "chn_1", 50, nil)
+	if err != nil {
+		t.Fatalf("ListNotificationDeliveries() error = %v", err)
+	}
+	if len(deliveries) != 1 {
+		t.Fatalf("got %d deliveries, want 1", len(deliveries))
+	}
+	if deliveries[0].Trigger != "test" || !deliveries[0].Success {
+		t.Errorf("delivery = %+v, want a successful test-trigger row", deliveries[0])
+	}
+}
+
+// TestHandleTestExistingNotificationChannel_RecordsFailedDelivery proves
+// a failed test-send still records a delivery row, with its error detail
+// preserved: the whole point of delivery history is surfacing failures,
+// not just successes.
+func TestHandleTestExistingNotificationChannel_RecordsFailedDelivery(t *testing.T) {
+	rt, db, adb := newTestRouterWithNotificationChannels(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNotificationChannel(t, adb, "chn_1", alerting.NotifyGeneric, "http://127.0.0.1:1/hook")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/notification-channels/chn_1/test", ""))
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadGateway, rec.Body.String())
+	}
+
+	deliveries, err := adb.ListNotificationDeliveries(t.Context(), "chn_1", 50, nil)
+	if err != nil {
+		t.Fatalf("ListNotificationDeliveries() error = %v", err)
+	}
+	if len(deliveries) != 1 {
+		t.Fatalf("got %d deliveries, want 1", len(deliveries))
+	}
+	if deliveries[0].Success || deliveries[0].Error == "" {
+		t.Errorf("delivery = %+v, want a failed row with a non-empty error", deliveries[0])
+	}
+}
+
+func TestHandleListNotificationDeliveries_NewestFirst(t *testing.T) {
+	rt, db, adb := newTestRouterWithNotificationChannels(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNotificationChannel(t, adb, "chn_1", alerting.NotifyGeneric, "https://example.com")
+	if err := adb.RecordNotificationDelivery(t.Context(), alerting.NotificationDelivery{ID: "ndl_1", ChannelID: "chn_1", Trigger: "deploy-succeeded", Success: true}); err != nil {
+		t.Fatalf("seed delivery 1: %v", err)
+	}
+	if err := adb.RecordNotificationDelivery(t.Context(), alerting.NotificationDelivery{ID: "ndl_2", ChannelID: "chn_1", Trigger: "deploy-failed", Success: false, Error: "boom"}); err != nil {
+		t.Fatalf("seed delivery 2: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/notification-channels/chn_1/deliveries", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	var got []notificationDeliveryResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("got %d deliveries, want 2", len(got))
+	}
+	if got[0].ID != "ndl_2" || got[1].ID != "ndl_1" {
+		t.Errorf("got IDs [%s, %s], want [ndl_2, ndl_1] (newest first)", got[0].ID, got[1].ID)
+	}
+}
+
+func TestHandleListNotificationDeliveries_ChannelNotFound(t *testing.T) {
+	rt, db, _ := newTestRouterWithNotificationChannels(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/notification-channels/ghost/deliveries", ""))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleListNotificationDeliveries_InvalidLimit(t *testing.T) {
+	rt, db, adb := newTestRouterWithNotificationChannels(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNotificationChannel(t, adb, "chn_1", alerting.NotifyGeneric, "https://example.com")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/notification-channels/chn_1/deliveries?limit=0", ""))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
 func TestNotificationChannelRoutes_RequireAuth(t *testing.T) {
 	rt, db, _ := newTestRouterWithNotificationChannels(t)
 	_ = db
@@ -312,6 +424,7 @@ func TestNotificationChannelRoutes_RequireAuth(t *testing.T) {
 		{http.MethodDelete, "/api/v1/notification-channels/chn_1"},
 		{http.MethodPost, "/api/v1/notification-channels/test"},
 		{http.MethodPost, "/api/v1/notification-channels/chn_1/test"},
+		{http.MethodGet, "/api/v1/notification-channels/chn_1/deliveries"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.method, func(t *testing.T) {

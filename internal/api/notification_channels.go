@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -35,6 +36,13 @@ type NotificationChannels interface {
 // *alerting.DeployDispatcher satisfies this structurally.
 type NotificationChannelTester interface {
 	SendTest(ctx context.Context, kind alerting.NotifyKind, notifyURL string) error
+}
+
+// NotificationDeliveryStore is the surface the delivery-history route and
+// test-send recording need. *alerting.DB satisfies this structurally.
+type NotificationDeliveryStore interface {
+	RecordNotificationDelivery(ctx context.Context, d alerting.NotificationDelivery) error
+	ListNotificationDeliveries(ctx context.Context, channelID string, limit int, before *time.Time) ([]alerting.NotificationDelivery, error)
 }
 
 type notificationChannelResource struct {
@@ -249,9 +257,119 @@ func (rt *Router) handleTestExistingNotificationChannel(w http.ResponseWriter, r
 
 	ctx, cancel := context.WithTimeout(r.Context(), notificationChannelTestTimeout)
 	defer cancel()
-	if err := rt.notificationChannelTester.SendTest(ctx, channel.Kind, channel.NotifyURL); err != nil {
-		writeError(w, http.StatusBadGateway, fmt.Sprintf("test notification failed: %s", err.Error()))
+	sendErr := rt.notificationChannelTester.SendTest(ctx, channel.Kind, channel.NotifyURL)
+	rt.recordNotificationDelivery(r.Context(), id, "test", sendErr)
+	if sendErr != nil {
+		writeError(w, http.StatusBadGateway, fmt.Sprintf("test notification failed: %s", sendErr.Error()))
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// recordNotificationDelivery persists one delivery-history row for an
+// existing-channel send (currently only the test-send route above; real
+// deploy-outcome and alert-rule sends record their own history directly
+// in internal/alerting, since those dispatch loops never pass through
+// this package). No-op, logged not returned, when notificationDeliveries
+// isn't configured or the write itself fails: a history-tracking failure
+// must never affect the response this handler already sent.
+func (rt *Router) recordNotificationDelivery(ctx context.Context, channelID, trigger string, sendErr error) {
+	if rt.notificationDeliveries == nil {
+		return
+	}
+	id, err := alerting.NewNotificationDeliveryID()
+	if err != nil {
+		rt.logger.Error("api: generate notification delivery id failed", slog.String("error", err.Error()))
+		return
+	}
+	errMsg := ""
+	if sendErr != nil {
+		errMsg = sendErr.Error()
+	}
+	d := alerting.NotificationDelivery{ID: id, ChannelID: channelID, Trigger: trigger, Success: sendErr == nil, Error: errMsg}
+	if err := rt.notificationDeliveries.RecordNotificationDelivery(ctx, d); err != nil {
+		rt.logger.Error("api: record notification delivery failed", slog.String("channel_id", channelID), slog.String("error", err.Error()))
+	}
+}
+
+// notificationDeliveryResource is the wire shape for one delivery-history
+// row, mirroring alerting.NotificationDelivery field-for-field.
+type notificationDeliveryResource struct {
+	ID        string `json:"id"`
+	ChannelID string `json:"channel_id"`
+	Trigger   string `json:"trigger"`
+	Success   bool   `json:"success"`
+	Error     string `json:"error,omitempty"`
+	CreatedAt string `json:"created_at"`
+}
+
+func toNotificationDeliveryResource(d alerting.NotificationDelivery) notificationDeliveryResource {
+	return notificationDeliveryResource{
+		ID: d.ID, ChannelID: d.ChannelID, Trigger: d.Trigger,
+		Success: d.Success, Error: d.Error, CreatedAt: d.CreatedAt,
+	}
+}
+
+const (
+	defaultNotificationDeliveryLimit = 50
+	maxNotificationDeliveryLimit     = 200
+)
+
+// handleListNotificationDeliveries handles GET
+// /api/v1/notification-channels/{id}/deliveries: every recorded send
+// attempt for this channel, newest first, cursor-paginated by ?before
+// (an RFC3339 timestamp) the same way GET /api/v1/audit-log already is.
+// ?limit defaults to defaultNotificationDeliveryLimit, capped at
+// maxNotificationDeliveryLimit.
+func (rt *Router) handleListNotificationDeliveries(w http.ResponseWriter, r *http.Request) {
+	if rt.notificationChannels == nil || rt.notificationDeliveries == nil {
+		writeError(w, http.StatusNotImplemented, "notification delivery history is not configured on this control plane")
+		return
+	}
+
+	id := r.PathValue("id")
+	if _, err := rt.notificationChannels.GetNotificationChannel(r.Context(), id); errors.Is(err, alerting.ErrNotificationChannelNotFound) {
+		writeError(w, http.StatusNotFound, "notification channel not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: list notification deliveries: load channel failed", slog.String("error", err.Error()), slog.String("id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	limit := defaultNotificationDeliveryLimit
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil || n <= 0 {
+			writeError(w, http.StatusBadRequest, "limit must be a positive integer")
+			return
+		}
+		limit = n
+	}
+	if limit > maxNotificationDeliveryLimit {
+		limit = maxNotificationDeliveryLimit
+	}
+
+	var before *time.Time
+	if raw := r.URL.Query().Get("before"); raw != "" {
+		t, err := time.Parse(time.RFC3339, raw)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "before must be an RFC3339 timestamp")
+			return
+		}
+		before = &t
+	}
+
+	deliveries, err := rt.notificationDeliveries.ListNotificationDeliveries(r.Context(), id, limit, before)
+	if err != nil {
+		rt.logger.Error("api: list notification deliveries failed", slog.String("error", err.Error()), slog.String("id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	out := make([]notificationDeliveryResource, len(deliveries))
+	for i, d := range deliveries {
+		out[i] = toNotificationDeliveryResource(d)
+	}
+	writeJSON(w, http.StatusOK, out)
 }

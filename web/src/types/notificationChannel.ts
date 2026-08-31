@@ -32,3 +32,14 @@ export interface TestNotificationChannelRequest {
   kind: NotificationChannelKind
   notify_url: string
 }
+
+// Matches internal/api's notificationDeliveryResource
+// (internal/api/notification_channels.go).
+export interface NotificationDelivery {
+  id: string
+  channel_id: string
+  trigger: string
+  success: boolean
+  error?: string
+  created_at: string
+}

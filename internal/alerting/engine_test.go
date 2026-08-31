@@ -53,6 +53,14 @@ func (f *fakeRuleStore) get(id string) Rule {
 	return f.rules[id]
 }
 
+// RecordNotificationDelivery is a no-op: none of fakeRuleStore's own
+// tests exercise a ChannelID-attached rule (see
+// TestEngine_Tick_MixedLegacyAndChannelRules_BothDispatch's own comment
+// on why that case runs against a real *DB instead).
+func (f *fakeRuleStore) RecordNotificationDelivery(_ context.Context, _ NotificationDelivery) error {
+	return nil
+}
+
 // fakeLogsSource supports crashloop log-line attachment tests.
 type fakeLogsSource struct {
 	entries []telemetry.LogEntry
@@ -325,6 +333,86 @@ func TestEngine_Tick_MixedLegacyAndChannelRules_BothDispatch(t *testing.T) {
 	}
 	if gotChannelURL != "https://hooks.slack.com/x" {
 		t.Errorf("channel-attached rule NotifyURL = %q, want resolved from chn_1", gotChannelURL)
+	}
+}
+
+// TestEngine_Dispatch_RecordsDeliveryForChannelAttachedRule proves a
+// rule's real send writes delivery history when it's attached to a
+// channel, and writes none for a legacy rule with no ChannelID.
+func TestEngine_Dispatch_RecordsDeliveryForChannelAttachedRule(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveNotificationChannel(ctx, NotificationChannel{ID: "chn_1", Name: "Team Slack", Kind: NotifySlack, NotifyURL: "https://hooks.slack.com/x", Enabled: true}); err != nil {
+		t.Fatalf("seed channel: %v", err)
+	}
+	legacy := Rule{ID: "r_legacy", Kind: KindThreshold, ResourceID: "service:web", Metric: "cpu_percent",
+		Comparator: GreaterThan, Threshold: 80, NotifyURL: "https://legacy.example.com/hook", NotifyKind: NotifyDiscord, Enabled: true}
+	channelAttached := Rule{ID: "r_channel", Kind: KindThreshold, ResourceID: "service:web", Metric: "cpu_percent",
+		Comparator: GreaterThan, Threshold: 80, ChannelID: "chn_1", Enabled: true}
+	if err := db.SaveRule(ctx, legacy); err != nil {
+		t.Fatalf("seed legacy rule: %v", err)
+	}
+	if err := db.SaveRule(ctx, channelAttached); err != nil {
+		t.Fatalf("seed channel-attached rule: %v", err)
+	}
+
+	metrics := &fakeMetricsSource{samples: []telemetry.Sample{{Timestamp: time.Now(), Value: 95}}}
+	engine := NewEngine(db, metrics, nil, nil, func(Rule) Notifier { return &spyNotifier{} }, nil)
+
+	if err := engine.Tick(ctx); err != nil {
+		t.Fatalf("Tick() error = %v", err)
+	}
+
+	deliveries, err := db.ListNotificationDeliveries(ctx, "chn_1", 50, nil)
+	if err != nil {
+		t.Fatalf("ListNotificationDeliveries() error = %v", err)
+	}
+	if len(deliveries) != 1 {
+		t.Fatalf("got %d deliveries for chn_1, want 1 (only the channel-attached rule writes history)", len(deliveries))
+	}
+	if deliveries[0].Trigger != "alert-fired" || !deliveries[0].Success {
+		t.Errorf("delivery = %+v, want a successful alert-fired row", deliveries[0])
+	}
+}
+
+// TestEngine_Dispatch_RecordsFailedDeliveryOnResolve proves a resolved
+// (not firing) transition records an alert-resolved delivery, and that a
+// notifier failure is recorded as a failed row with its error preserved.
+func TestEngine_Dispatch_RecordsFailedDeliveryOnResolve(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveNotificationChannel(ctx, NotificationChannel{ID: "chn_1", Name: "Team Slack", Kind: NotifySlack, NotifyURL: "https://hooks.slack.com/x", Enabled: true}); err != nil {
+		t.Fatalf("seed channel: %v", err)
+	}
+	r := Rule{ID: "r1", Kind: KindThreshold, ResourceID: "service:web", Metric: "cpu_percent",
+		Comparator: GreaterThan, Threshold: 80, ChannelID: "chn_1", Enabled: true}
+	if err := db.SaveRule(ctx, r); err != nil {
+		t.Fatalf("seed rule: %v", err)
+	}
+	firingSince := time.Now().Add(-time.Minute)
+	if err := db.UpdateState(ctx, "r1", nil, &firingSince, true, time.Now(), nil); err != nil {
+		t.Fatalf("seed firing state: %v", err)
+	}
+
+	metrics := &fakeMetricsSource{samples: []telemetry.Sample{{Timestamp: time.Now(), Value: 10}}} // below threshold: resolves
+	spy := &spyNotifier{err: errors.New("receiver returned status 500")}
+	engine := NewEngine(db, metrics, nil, nil, func(Rule) Notifier { return spy }, nil)
+
+	if err := engine.Tick(ctx); err != nil {
+		t.Fatalf("Tick() error = %v", err)
+	}
+
+	deliveries, err := db.ListNotificationDeliveries(ctx, "chn_1", 50, nil)
+	if err != nil {
+		t.Fatalf("ListNotificationDeliveries() error = %v", err)
+	}
+	if len(deliveries) != 1 {
+		t.Fatalf("got %d deliveries, want 1", len(deliveries))
+	}
+	if deliveries[0].Trigger != "alert-resolved" || deliveries[0].Success || deliveries[0].Error == "" {
+		t.Errorf("delivery = %+v, want a failed alert-resolved row with a non-empty error", deliveries[0])
 	}
 }
 

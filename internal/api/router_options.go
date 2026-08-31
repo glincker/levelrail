@@ -245,6 +245,14 @@ func WithNotificationChannelTester(t NotificationChannelTester) Option {
 	return func(rt *Router) { rt.notificationChannelTester = t }
 }
 
+// WithNotificationDeliveries enables the delivery-history route and
+// records a delivery row for every existing-channel test-send. Without
+// one, the deliveries route returns 501 and test-send simply skips
+// recording.
+func WithNotificationDeliveries(d NotificationDeliveryStore) Option {
+	return func(rt *Router) { rt.notificationDeliveries = d }
+}
+
 // WithDataDir enables disk-usage reporting on GET /api/v1/system/status.
 // path should be the same APP_DATA_DIR the control plane itself was
 // started with. Without one configured (the default), the status
