@@ -387,6 +387,36 @@ type DeployCompareResource struct {
 	Note                string               `json:"note"`
 }
 
+// PromotePreviewSide mirrors internal/api's promotePreviewSide
+// (internal/api/promote.go): one side of a promotion preview, always
+// live desired state (there is no DeployID/CommitSHA/Status to show).
+type PromotePreviewSide struct {
+	AppName string `json:"app_name"`
+	Image   string `json:"image"`
+}
+
+// PromotePreviewResource mirrors internal/api's promotePreviewResource,
+// GET /api/v1/apps/{name}/promote/preview's response.
+type PromotePreviewResource struct {
+	SourceApp           string               `json:"source_app"`
+	TargetApp           string               `json:"target_app"`
+	Environment         EnvironmentResource  `json:"environment"`
+	From                PromotePreviewSide   `json:"from"`
+	To                  PromotePreviewSide   `json:"to"`
+	Changes             []DeployCompareField `json:"changes"`
+	UnsnapshottedFields []string             `json:"unsnapshotted_fields"`
+	Note                string               `json:"note"`
+}
+
+// PromoteAppRequest mirrors internal/api's promoteTriggerRequest:
+// POST /api/v1/apps/{name}/promote's body. Target is optional, the same
+// "auto-discover the sole candidate, or disambiguate" contract
+// PromotePreview's own Target query param has.
+type PromoteAppRequest struct {
+	To     string `json:"to"`
+	Target string `json:"target,omitempty"`
+}
+
 // RestoreHistoryResource mirrors internal/api's restoreHistoryResource
 // (internal/api/restore.go).
 type RestoreHistoryResource struct {

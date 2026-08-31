@@ -14,6 +14,7 @@ import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { CloneAppDialog } from '../../components/CloneAppDialog'
 import { DeleteAppDialog } from '../../components/DeleteAppDialog'
 import { DeployTriggerForm } from '../../components/DeployTriggerForm'
+import { PromoteAppDialog } from '../../components/PromoteAppDialog'
 import { RestartAppButton } from '../../components/RestartAppButton'
 import { StopStartAppButton } from '../../components/StopStartAppButton'
 import { ConvergenceIndicator } from '../../components/ConvergenceIndicator'
@@ -130,6 +131,7 @@ function AppDetailLayout() {
         <div className="flex items-center gap-2">
           <StopStartAppButton name={app.name} suspended={app.suspended} />
           <RestartAppButton name={app.name} />
+          <PromoteAppDialog appName={app.name} projectId={app.project_id} />
           <CloneAppDialog name={app.name} />
           <DeleteAppDialog name={app.name} />
         </div>
