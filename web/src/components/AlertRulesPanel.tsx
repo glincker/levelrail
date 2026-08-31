@@ -110,6 +110,9 @@ function formatCondition(rule: AlertRule): string {
   if (rule.kind === 'cert_expiry') {
     return 'any certificate expiring soon or expired (platform-wide)'
   }
+  if (rule.kind === 'patch_status') {
+    return 'any node over its pending security-patch threshold (platform-wide)'
+  }
   return `${rule.restart_count_threshold} restarts in ${rule.restart_window ?? '?'}`
 }
 
@@ -126,6 +129,9 @@ function formatLastValue(rule: AlertRule): string {
   }
   if (rule.kind === 'cert_expiry') {
     return `${rule.last_value.toFixed(1)} days to earliest expiry`
+  }
+  if (rule.kind === 'patch_status') {
+    return `${rule.last_value} security patches (highest across nodes)`
   }
   return String(rule.last_value)
 }

@@ -7,6 +7,7 @@ import {
   PlusCircleIcon,
   ArrowCounterClockwiseIcon,
   ShieldWarningIcon,
+  WrenchIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -48,6 +49,13 @@ import type {
 // rejects anyway.
 const GO_DURATION_REGEX = /^-?(\d+(\.\d+)?(ns|us|µs|ms|s|m|h))+$/
 
+// DEFAULT_PATCH_STATUS_THRESHOLD mirrors
+// internal/alerting.DefaultPatchStatusThreshold: display-only copy for
+// the patch_status description below, since a patch_status rule has no
+// per-rule threshold field to show instead (the real, enforced value
+// lives engine-wide, set by APP_ALERT_PATCH_STATUS_THRESHOLD).
+const DEFAULT_PATCH_STATUS_THRESHOLD = 1
+
 const KIND_OPTIONS: {
   value: AlertRuleKind
   label: string
@@ -56,6 +64,7 @@ const KIND_OPTIONS: {
   { value: 'threshold', label: 'Threshold', Icon: GaugeIcon },
   { value: 'crashloop', label: 'Crashloop', Icon: ArrowCounterClockwiseIcon },
   { value: 'cert_expiry', label: 'Certificate expiry', Icon: ShieldWarningIcon },
+  { value: 'patch_status', label: 'Node patch status', Icon: WrenchIcon },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -74,7 +83,7 @@ const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
 const createAlertRuleSchema = z
   .object({
     name: z.string().trim().min(1, 'Name is required'),
-    kind: z.enum(['threshold', 'crashloop', 'cert_expiry']),
+    kind: z.enum(['threshold', 'crashloop', 'cert_expiry', 'patch_status']),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
     threshold: z.coerce.number({ error: 'Must be a number' }),
@@ -85,10 +94,10 @@ const createAlertRuleSchema = z
     enabled: z.boolean(),
   })
   .superRefine((data, ctx) => {
-    // cert_expiry needs none of the threshold/crashloop fields: it
-    // watches every certificate on the control plane platform-wide, not
-    // a metric or a restart count.
-    if (data.kind === 'cert_expiry') {
+    // cert_expiry and patch_status need none of the threshold/crashloop
+    // fields: they watch every certificate, or every node, on the
+    // control plane platform-wide, not a metric or a restart count.
+    if (data.kind === 'cert_expiry' || data.kind === 'patch_status') {
       return
     }
 
@@ -205,7 +214,7 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
       req.restart_count_threshold = values.restartCountThreshold
       req.restart_window = values.restartWindow.trim()
     }
-    // cert_expiry sends no kind-specific fields at all.
+    // cert_expiry and patch_status send no kind-specific fields at all.
     createRule.mutate(req, {
       onSuccess: () => {
         handleOpenChange(false)
@@ -232,8 +241,9 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
           <DialogDescription>
             A threshold rule watches a metric; a crashloop rule watches
             container restarts; a certificate expiry rule watches every
-            certificate on the control plane. All three notify the same way
-            once they fire.
+            certificate on the control plane; a node patch status rule
+            watches every node&apos;s pending OS security patches. All four
+            notify the same way once they fire.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -283,6 +293,14 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
               Watches every certificate on the whole control plane, not just
               this app&apos;s own domains, and fires as soon as any of them
               is expiring soon or already expired.
+            </p>
+          ) : kind === 'patch_status' ? (
+            <p className="text-sm text-muted-foreground">
+              Watches every node on the whole control plane, not just the
+              ones this app happens to run on, and fires as soon as any
+              node has at least {DEFAULT_PATCH_STATUS_THRESHOLD} pending OS
+              security patch (the control plane&apos;s configured
+              threshold, overridable via APP_ALERT_PATCH_STATUS_THRESHOLD).
             </p>
           ) : kind === 'threshold' ? (
             <>

@@ -110,8 +110,11 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 	}
 
 	kind := alerting.Kind(a.Kind)
-	if kind != alerting.KindThreshold && kind != alerting.KindCrashloop && kind != alerting.KindCertExpiry {
-		return alerting.Rule{}, fmt.Errorf("kind must be %q, %q, or %q", alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry)
+	switch kind {
+	case alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus:
+	default:
+		return alerting.Rule{}, fmt.Errorf("kind must be %q, %q, %q, or %q",
+			alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus)
 	}
 
 	forDuration, err := parseOptionalDuration(a.ForDuration)
