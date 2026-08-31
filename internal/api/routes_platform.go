@@ -71,6 +71,11 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// in this router, including the deploy-log stream at
 	// GET .../deploys/{deployId}/logs above.
 	mux.HandleFunc("GET /api/v1/apps/{name}/logs/stream", rt.requireAbility(AbilityRead, rt.handleLiveLogStream))
+	// Log export (a plain-text attachment of a bounded window, see
+	// logs_download.go): same AbilityRead boundary as the query/stream
+	// routes above, since it reads the same store through the same
+	// telemetry.QueryLogs call, nothing more sensitive than either.
+	mux.HandleFunc("GET /api/v1/apps/{name}/logs/download", rt.requireAbility(AbilityRead, rt.handleDownloadLogs))
 
 	// Alerting (TASKS.md 2.5/2.7): threshold and crashloop rules scoped
 	// to one app, fanned through a *alerting.DB when configured (see
