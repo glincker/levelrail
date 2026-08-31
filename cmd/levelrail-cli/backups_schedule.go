@@ -96,11 +96,7 @@ func runBackupsScheduleSet(prog string, args []string, stdout, stderr io.Writer,
 }
 
 func runBackupsScheduleClear(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" backups schedule clear", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag string
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "backups schedule clear", "print {\"cleared\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s backups schedule clear <database> [flags]\n\nRemoves <database>'s recurring backup schedule. Past backup history is\nunaffected.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -112,6 +108,7 @@ func runBackupsScheduleClear(prog string, args []string, stdout, stderr io.Write
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
 	name, ok := requireOneArg(fs, stderr, prog, "backups schedule clear", "database name")
 	if !ok {
@@ -121,7 +118,15 @@ func runBackupsScheduleClear(prog string, args []string, stdout, stderr io.Write
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 
 	if err := client.ClearBackupSchedule(context.Background(), name); err != nil {
-		return reportError(stdout, stderr, false, fmt.Errorf("clear backup schedule for database %q: %w", name, err))
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("clear backup schedule for database %q: %w", name, err))
+	}
+
+	if jsonOut {
+		if err := writeJSONValue(stdout, map[string]bool{"cleared": true}); err != nil {
+			_, _ = fmt.Fprintln(stderr, err)
+			return exitNetwork
+		}
+		return exitOK
 	}
 	_, _ = fmt.Fprintf(stdout, "backup schedule removed for database %q\n", name)
 	return exitOK
