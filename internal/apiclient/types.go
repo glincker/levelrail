@@ -981,6 +981,18 @@ type SystemDoctorResource struct {
 	Checks []DoctorCheckResource `json:"checks"`
 }
 
+// UpdatesResource mirrors internal/api's updateStatusResource
+// (internal/api/updates.go): the running version compared against
+// GitHub's latest published release. LatestVersion/ReleaseURL/PublishedAt
+// are all nil when no release has ever been published.
+type UpdatesResource struct {
+	CurrentVersion  string  `json:"current_version"`
+	LatestVersion   *string `json:"latest_version"`
+	UpdateAvailable bool    `json:"update_available"`
+	ReleaseURL      *string `json:"release_url"`
+	PublishedAt     *string `json:"published_at"`
+}
+
 // RotateMasterKeyRequest mirrors internal/api's rotateMasterKeyRequest:
 // the new master key, read from a file or stdin by the CLI so it never
 // appears as a bare command-line argument.

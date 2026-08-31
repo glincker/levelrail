@@ -86,6 +86,7 @@ type (
 	systemStatusResource        = apiclient.SystemStatusResource
 	doctorCheckResource         = apiclient.DoctorCheckResource
 	systemDoctorResource        = apiclient.SystemDoctorResource
+	updatesResource             = apiclient.UpdatesResource
 	nodeResource                = apiclient.NodeResource
 	setNodeWorkloadsRequest     = apiclient.SetNodeWorkloadsRequest
 	createNodeJoinTokenResponse = apiclient.CreateNodeJoinTokenResponse

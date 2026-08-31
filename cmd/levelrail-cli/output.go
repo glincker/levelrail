@@ -342,6 +342,24 @@ func doctorStatusLabel(status string) string {
 	}
 }
 
+// printUpdatesHuman prints "version" output.
+func printUpdatesHuman(out io.Writer, u updatesResource) {
+	_, _ = fmt.Fprintf(out, "running version:    %s\n", u.CurrentVersion)
+	if u.LatestVersion == nil {
+		_, _ = fmt.Fprintln(out, "latest release:      none published yet")
+		return
+	}
+	_, _ = fmt.Fprintf(out, "latest release:      %s\n", *u.LatestVersion)
+	if u.UpdateAvailable {
+		_, _ = fmt.Fprintln(out, "update available:   yes")
+		if u.ReleaseURL != nil {
+			_, _ = fmt.Fprintf(out, "release url:          %s\n", *u.ReleaseURL)
+		}
+	} else {
+		_, _ = fmt.Fprintln(out, "update available:   no, up to date")
+	}
+}
+
 // printNodeHuman prints one node resource in a human-readable, non-JSON
 // form ("nodes get" output).
 func printNodeHuman(out io.Writer, n nodeResource) {
