@@ -37,6 +37,8 @@ import {
 } from '../queries/backupHistory'
 import { RestoreBackupDialog } from './RestoreBackupDialog'
 import { RestoreHistoryTable } from './RestoreHistoryTable'
+import { CloneRestoreDialog } from './CloneRestoreDialog'
+import { CloneRestoreHistoryTable } from './CloneRestoreHistoryTable'
 import { BackupScheduleForm } from './BackupScheduleForm'
 import { BackupVerificationBadge } from './BackupVerificationBadge'
 import { StatusBadge } from './backupAttemptStatus'
@@ -68,6 +70,12 @@ import type { DatabaseResource } from '../types/databaseDetail'
 // self-terminating-polling way BackupHistoryTable already shows backup
 // attempts. StatusBadge/formatDate/AttemptStatus live in
 // backupAttemptStatus.tsx, shared between the two tables.
+//
+// CloneRestoreDialog/CloneRestoreHistoryTable (POST/GET .../restore-as-new,
+// .../clone-restores, internal/api/database_clone_restore.go) sit right
+// next to the in-place restore controls above: the non-destructive
+// alternative, restoring a backup into a brand-new database instead of
+// overwriting this one's own live data.
 
 // Empty state shown in place of the picker/button when no backup target
 // is connected yet: a target picker with nothing to pick from would just
@@ -336,6 +344,10 @@ function BackupHistoryTable({ databaseName }: { databaseName: string }) {
                         databaseName={databaseName}
                         backup={record}
                       />
+                      <CloneRestoreDialog
+                        databaseName={databaseName}
+                        backup={record}
+                      />
                     </div>
                   ) : null}
                 </TableCell>
@@ -378,6 +390,7 @@ export function BackupsSection({ database }: { database: DatabaseResource }) {
         <TriggerBackupRow databaseName={databaseName} />
         <BackupHistoryTable databaseName={databaseName} />
         <RestoreHistoryTable databaseName={databaseName} />
+        <CloneRestoreHistoryTable databaseName={databaseName} />
       </CardContent>
     </Card>
   )

@@ -12,7 +12,7 @@ import (
 var ErrServiceVolumeBackupNotFound = errors.New("store: service volume backup schedule not found")
 
 // ServiceVolumeBackupConfig is one service volume's scheduled-backup
-// config: migrations/0074_service_volume_backups.sql's own row, the
+// config: migrations/0075_service_volume_backups.sql's own row, the
 // volume counterpart of DesiredDatabase's BackupTargetID/BackupSchedule/
 // BackupRetain/BackupRetainDays fields. ServiceName/VolumeName identify
 // the volume the same way internal/api's resolveServiceVolume does:

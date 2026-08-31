@@ -36,7 +36,7 @@ type ServiceVolumeBackupRunner interface {
 // backup schedule handlers need: the volume counterpart of
 // SetDatabaseBackupSchedule/GetDatabaseBackupSchedule-shaped access, kept
 // as its own table (service_volume_backups) rather than columns on
-// desired_services, see migrations/0074's own doc comment.
+// desired_services, see migrations/0075's own doc comment.
 type ServiceVolumeBackupScheduleStore interface {
 	SetServiceVolumeBackupSchedule(ctx context.Context, serviceName, volumeName, targetID, schedule string, retain, retainDays int) error
 	GetServiceVolumeBackupSchedule(ctx context.Context, serviceName, volumeName string) (store.ServiceVolumeBackupConfig, error)

@@ -117,7 +117,27 @@ func (r *RestoreRunner) RunRestore(ctx context.Context, historyID, databaseName,
 // way runDumpAndUpload is split out of RunBackup: keeps RunRestore's own
 // body a flat "start, run, finish" sequence.
 func (r *RestoreRunner) runDownloadAndRestore(ctx context.Context, databaseName, backupHistoryID, engine, containerName string) error {
-	bh, err := r.Store.GetBackupHistory(ctx, backupHistoryID)
+	return downloadAndRestore(ctx, r.Store, r.Secrets, r.Downloader, r.Restorer, databaseName, backupHistoryID, engine, containerName)
+}
+
+// backupResolver is the subset of RestoreHistoryStore downloadAndRestore
+// needs to resolve a backup attempt down to a downloadable object:
+// narrower than the full interface so CloneRestoreRunner (clone_restore_
+// runner.go) can share this function without also implementing the
+// restore-history bookkeeping methods it has no use for.
+type backupResolver interface {
+	GetBackupHistory(ctx context.Context, id string) (store.BackupHistory, error)
+	GetBackupTarget(ctx context.Context, id string) (store.BackupTarget, error)
+}
+
+// downloadAndRestore resolves backupHistoryID down to a live object via
+// resolver and secrets, downloads it, and restores it into containerName,
+// the shared work behind both RestoreRunner.runDownloadAndRestore (an
+// in-place restore) and CloneRestoreRunner.RunCloneRestore (restore into a
+// freshly created database): the download-and-apply mechanics are
+// identical either way, only what happens before and after differ.
+func downloadAndRestore(ctx context.Context, resolver backupResolver, secrets SecretsResolver, downloader Downloader, restorer Restorer, databaseName, backupHistoryID, engine, containerName string) error {
+	bh, err := resolver.GetBackupHistory(ctx, backupHistoryID)
 	if err != nil {
 		return fmt.Errorf("get backup history %q: %w", backupHistoryID, err)
 	}
@@ -125,17 +145,17 @@ func (r *RestoreRunner) runDownloadAndRestore(ctx context.Context, databaseName,
 		return fmt.Errorf("backup %q has status %q, not %q: refusing to restore from an attempt that did not succeed", backupHistoryID, bh.Status, store.BackupStatusSucceeded)
 	}
 
-	target, err := r.Store.GetBackupTarget(ctx, bh.TargetID)
+	target, err := resolver.GetBackupTarget(ctx, bh.TargetID)
 	if err != nil {
 		return fmt.Errorf("get backup target %q: %w", bh.TargetID, err)
 	}
 
 	secretsKey := store.BackupTargetSecretsKey(bh.TargetID)
-	accessKeyID, err := r.Secrets.Resolve(ctx, secretsKey, "access_key_id")
+	accessKeyID, err := secrets.Resolve(ctx, secretsKey, "access_key_id")
 	if err != nil {
 		return fmt.Errorf("resolve access key id for target %q: %w", bh.TargetID, err)
 	}
-	secretAccessKey, err := r.Secrets.Resolve(ctx, secretsKey, "secret_access_key")
+	secretAccessKey, err := secrets.Resolve(ctx, secretsKey, "secret_access_key")
 	if err != nil {
 		return fmt.Errorf("resolve secret access key for target %q: %w", bh.TargetID, err)
 	}
@@ -149,7 +169,7 @@ func (r *RestoreRunner) runDownloadAndRestore(ctx context.Context, databaseName,
 		SecretAccessKey: secretAccessKey,
 	}
 
-	dump, err := r.Downloader.Download(ctx, dest, bh.ObjectKey)
+	dump, err := downloader.Download(ctx, dest, bh.ObjectKey)
 	if err != nil {
 		return fmt.Errorf("download backup %q object %q: %w", backupHistoryID, bh.ObjectKey, err)
 	}
@@ -157,7 +177,7 @@ func (r *RestoreRunner) runDownloadAndRestore(ctx context.Context, databaseName,
 		_ = dump.Close()
 	}()
 
-	if err := r.Restorer.Restore(ctx, engine, containerName, dump); err != nil {
+	if err := restorer.Restore(ctx, engine, containerName, dump); err != nil {
 		return fmt.Errorf("restore database %q from backup %q: %w", databaseName, backupHistoryID, err)
 	}
 	return nil

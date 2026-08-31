@@ -25,7 +25,7 @@ const (
 // doesn't match any row.
 var ErrBackupHistoryNotFound = errors.New("store: backup history record not found")
 
-// Backup resource kinds migrations/0074_service_volume_backups.sql's own
+// Backup resource kinds migrations/0075_service_volume_backups.sql's own
 // CHECK constraint accepts: which of the two things a backup_history row
 // describes. BackupResourceKindDatabase is the zero value's effective
 // meaning for every row written before this constant existed.
@@ -47,7 +47,7 @@ type BackupHistory struct {
 	ID           string
 	DatabaseName string
 	// ResourceKind is BackupResourceKindDatabase for every row written
-	// before migrations/0074 added this column: that migration's own
+	// before migrations/0075 added this column: that migration's own
 	// DEFAULT 'database' makes this the real, correct value for those
 	// rows, not a placeholder.
 	ResourceKind   string

@@ -206,6 +206,8 @@ type Router struct {
 	backupTargetTester             BackupTargetTester               // nil is valid: POST /api/v1/backup-targets/{id}/test returns 501, same shape as registryAuthTester above
 	restoreHistory                 RestoreHistoryStore              // always set, same "core Store interface" shape as backupHistory above
 	restoreRunner                  RestoreRunner                    // nil is valid: POST /api/v1/databases/{name}/restore returns 501, same shape as backupRunner above
+	cloneRestoreHistory            CloneRestoreHistoryStore         // always set, same "core Store interface" shape as restoreHistory above
+	cloneRestoreRunner             CloneRestoreRunner               // nil is valid: POST /api/v1/databases/{name}/restore-as-new returns 501, same shape as restoreRunner above
 	serviceVolumeBackupHistory     ServiceVolumeBackupHistoryStore  // always set, same "core Store interface" shape as backupHistory above
 	serviceVolumeBackupSchedule    ServiceVolumeBackupScheduleStore // always set, same "core Store interface" shape as backupTargets above: reading a volume's schedule needs no runner configuration, only triggering a manual backup does
 	serviceVolumeBackupRunner      ServiceVolumeBackupRunner        // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/backups returns 501, same shape as backupRunner above
@@ -333,6 +335,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		bitbucketAppState:           newPendingState(),
 		onboarding:                  s,
 		webhookDeliveries:           s,
+		cloneRestoreHistory:         s,
 	}
 	for _, opt := range opts {
 		opt(rt)
