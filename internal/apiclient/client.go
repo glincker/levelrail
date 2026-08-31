@@ -244,6 +244,21 @@ func (c *Client) GetDeployStatus(ctx context.Context, name string) ([]ConditionR
 	return out, err
 }
 
+// DiagnoseApp calls GET /api/v1/apps/{name}/diagnose
+// (internal/api/diagnose.go's handleDiagnoseApp): a read-only,
+// deterministic explanation of the app's newest deploy failure or
+// crashloop state. deployID pins the diagnosis to one past attempt
+// (?deploy_id=); empty means "the app's newest attempt."
+func (c *Client) DiagnoseApp(ctx context.Context, name, deployID string) (DiagnosisResource, error) {
+	path := "/api/v1/apps/" + PathEscape(name) + "/diagnose"
+	if deployID != "" {
+		path += "?deploy_id=" + url.QueryEscape(deployID)
+	}
+	var out DiagnosisResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
 // GetAppNetwork calls GET /api/v1/apps/{name}/network
 // (internal/api/network.go's handleGetAppNetwork).
 func (c *Client) GetAppNetwork(ctx context.Context, name string) (NetworkResource, error) {

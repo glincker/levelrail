@@ -202,6 +202,13 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// as the deploy-attempts list above.
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/logs", rt.requireAbility(AbilityRead, rt.handleDeployLogStream))
 
+	// Read-only failure diagnosis (diagnose.go): synthesizes the app's
+	// newest (or ?deploy_id=-pinned) deploy attempt, current reconcile
+	// conditions, and crashloop state into a deterministic explanation.
+	// AbilityRead, same sensitivity as the routes above; never writes
+	// anything.
+	mux.HandleFunc("GET /api/v1/apps/{name}/diagnose", rt.requireAbility(AbilityRead, rt.handleDiagnoseApp))
+
 	// Manual build trigger (see Builder/WithBuilder above and
 	// handleTriggerBuild's own doc comment): builds an image from a git
 	// source through the same internal/deploy.Pipeline the webhook

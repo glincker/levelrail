@@ -53,6 +53,8 @@ type (
 	deploySpecRequest              = apiclient.DeploySpecRequest
 	deploySpecServiceResult        = apiclient.DeploySpecServiceResult
 	deploySpecResult               = apiclient.DeploySpecResult
+	diagnosisResource              = apiclient.DiagnosisResource
+	diagnosisSignal                = apiclient.DiagnosisSignal
 
 	backupTargetResource            = apiclient.BackupTargetResource
 	createBackupTargetRequest       = apiclient.CreateBackupTargetRequest

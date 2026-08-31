@@ -128,6 +128,23 @@ func printConditionsHuman(out io.Writer, conditions []conditionResource) {
 	_ = tw.Flush()
 }
 
+// printDiagnosisHuman prints "apps diagnose" output.
+func printDiagnosisHuman(out io.Writer, d diagnosisResource) {
+	_, _ = fmt.Fprintf(out, "confidence:  %s\n", d.Confidence)
+	if d.DeployAttemptID != "" {
+		_, _ = fmt.Fprintf(out, "deploy id:   %s\n", d.DeployAttemptID)
+	}
+	_, _ = fmt.Fprintf(out, "\n%s\n", d.Explanation)
+	_, _ = fmt.Fprintf(out, "\nsuggested next step:\n  %s\n", d.Suggestion)
+	if len(d.MatchedSignals) == 0 {
+		return
+	}
+	_, _ = fmt.Fprintln(out, "\nmatched signals:")
+	for _, s := range d.MatchedSignals {
+		_, _ = fmt.Fprintf(out, "  [%s] %s\n", s.Source, s.Excerpt)
+	}
+}
+
 // printAppNetworkHuman prints "apps network" output: the live traffic
 // path, container's declared port plus whatever host port Docker
 // currently has bound.
