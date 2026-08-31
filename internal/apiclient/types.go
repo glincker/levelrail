@@ -512,6 +512,41 @@ type ScheduledTaskRequest struct {
 	Enabled  bool     `json:"enabled"`
 }
 
+// FeatureFlagResource mirrors internal/api's featureFlagResource
+// (internal/api/feature_flags.go). Key is globally unique across the
+// whole platform, not just within ServiceName: see that file's own
+// migration comment for why.
+type FeatureFlagResource struct {
+	ID                string    `json:"id,omitempty"`
+	Key               string    `json:"key"`
+	Name              string    `json:"name"`
+	Description       string    `json:"description,omitempty"`
+	ServiceName       string    `json:"service_name,omitempty"`
+	Enabled           bool      `json:"enabled"`
+	RolloutPercentage int       `json:"rollout_percentage"`
+	CreatedAt         time.Time `json:"created_at,omitempty"`
+	UpdatedAt         time.Time `json:"updated_at,omitempty"`
+}
+
+// FeatureFlagRequest mirrors the fields internal/api's featureFlagResource
+// actually reads from a create/update request body. Key is only read on
+// create; an update ignores it (ID and ServiceName always come from the
+// URL, same as ScheduledTaskRequest above).
+type FeatureFlagRequest struct {
+	Key               string `json:"key,omitempty"`
+	Name              string `json:"name"`
+	Description       string `json:"description,omitempty"`
+	Enabled           bool   `json:"enabled"`
+	RolloutPercentage int    `json:"rollout_percentage"`
+}
+
+// EvaluateFlagResource mirrors internal/api's evaluateFlagResource: the
+// tiny shape GET /api/v1/flags/evaluate/{key} returns.
+type EvaluateFlagResource struct {
+	Key     string `json:"key"`
+	Enabled bool   `json:"enabled"`
+}
+
 // BackupTargetResource mirrors internal/api's backupTargetResource
 // (internal/api/backup_targets.go). No credential fields: access_key_id
 // and secret_access_key are write-only, accepted through

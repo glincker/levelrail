@@ -763,6 +763,69 @@ func (c *Client) RunScheduledTask(ctx context.Context, name, id string) (Schedul
 	return out, err
 }
 
+// featureFlagsCollectionPath builds /api/v1/apps/{name}/flags, and
+// featureFlagPath builds that same path plus /{id}: shared by every
+// feature-flag CRUD method below, the same "one place for the segment"
+// reasoning scheduledTasksCollectionPath's own doc comment gives.
+func featureFlagsCollectionPath(name string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/flags"
+}
+
+func featureFlagPath(name, id string) string {
+	return featureFlagsCollectionPath(name) + "/" + PathEscape(id)
+}
+
+// CreateFeatureFlag calls POST /api/v1/apps/{name}/flags.
+func (c *Client) CreateFeatureFlag(ctx context.Context, name string, req FeatureFlagRequest) (FeatureFlagResource, error) {
+	var out FeatureFlagResource
+	err := c.do(ctx, http.MethodPost, featureFlagsCollectionPath(name), req, &out)
+	return out, err
+}
+
+// ListFeatureFlags calls GET /api/v1/apps/{name}/flags.
+func (c *Client) ListFeatureFlags(ctx context.Context, name string) ([]FeatureFlagResource, error) {
+	var out []FeatureFlagResource
+	err := c.do(ctx, http.MethodGet, featureFlagsCollectionPath(name), nil, &out)
+	return out, err
+}
+
+// GetFeatureFlag calls GET /api/v1/apps/{name}/flags/{id}.
+func (c *Client) GetFeatureFlag(ctx context.Context, name, id string) (FeatureFlagResource, error) {
+	var out FeatureFlagResource
+	err := c.do(ctx, http.MethodGet, featureFlagPath(name, id), nil, &out)
+	return out, err
+}
+
+// UpdateFeatureFlag calls PUT /api/v1/apps/{name}/flags/{id}: a full
+// replace of Name/Description/Enabled/RolloutPercentage, not a partial
+// patch, matching handleUpdateFeatureFlag's own contract. Key is never
+// updated once created.
+func (c *Client) UpdateFeatureFlag(ctx context.Context, name, id string, req FeatureFlagRequest) (FeatureFlagResource, error) {
+	var out FeatureFlagResource
+	err := c.do(ctx, http.MethodPut, featureFlagPath(name, id), req, &out)
+	return out, err
+}
+
+// DeleteFeatureFlag calls DELETE /api/v1/apps/{name}/flags/{id}.
+func (c *Client) DeleteFeatureFlag(ctx context.Context, name, id string) error {
+	return c.do(ctx, http.MethodDelete, featureFlagPath(name, id), nil, nil)
+}
+
+// EvaluateFeatureFlag calls GET /api/v1/flags/evaluate/{key}, optionally
+// with an identifier query param for consistent percentage-rollout
+// bucketing. Flat, not nested under an app: see
+// internal/api/feature_flags.go's own handleEvaluateFeatureFlag doc
+// comment for why.
+func (c *Client) EvaluateFeatureFlag(ctx context.Context, key, identifier string) (EvaluateFlagResource, error) {
+	path := "/api/v1/flags/evaluate/" + PathEscape(key)
+	if identifier != "" {
+		path += "?identifier=" + url.QueryEscape(identifier)
+	}
+	var out EvaluateFlagResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
 func organizationsCollectionPath() string {
 	return "/api/v1/organizations"
 }

@@ -84,6 +84,23 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/scheduled-tasks/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteScheduledTask))
 	mux.HandleFunc("POST /api/v1/apps/{name}/scheduled-tasks/{id}/run", rt.requireAbility(AbilityDeploy, rt.handleRunScheduledTaskNow))
 
+	// Feature flags (feature_flags.go): a boolean plus optional gradual
+	// rollout percentage a running app's own code reads live via the
+	// evaluate route below, never baked into a container at create time.
+	// CRUD sits at AbilityWrite/AbilityRead, the same ordinary
+	// config-mutation tier scheduled tasks above use. Evaluate is a
+	// separate, flat, AbilityRead-only route (no app name in its URL:
+	// see handleEvaluateFeatureFlag's own doc comment for why), the
+	// hot-path endpoint an app calls at runtime with a minimally-scoped
+	// read-only token, reusing the existing token/ability system with no
+	// new auth surface.
+	mux.HandleFunc("POST /api/v1/apps/{name}/flags", rt.requireAbility(AbilityWrite, rt.handleCreateFeatureFlag))
+	mux.HandleFunc("GET /api/v1/apps/{name}/flags", rt.requireAbility(AbilityRead, rt.handleListFeatureFlags))
+	mux.HandleFunc("GET /api/v1/apps/{name}/flags/{id}", rt.requireAbility(AbilityRead, rt.handleGetFeatureFlag))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/flags/{id}", rt.requireAbility(AbilityWrite, rt.handleUpdateFeatureFlag))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/flags/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteFeatureFlag))
+	mux.HandleFunc("GET /api/v1/flags/evaluate/{key}", rt.requireAbility(AbilityRead, rt.handleEvaluateFeatureFlag))
+
 	// Deploy-outcome notifications (wave-2 roadmap item #5): a Slack/
 	// Discord/Telegram/generic-webhook/email ping fired once per deploy
 	// attempt reaching a terminal state, distinct from the threshold/

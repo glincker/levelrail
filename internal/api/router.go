@@ -200,6 +200,7 @@ type Router struct {
 	auditLog                  AuditStore                      // always set, same "core Store interface" shape as backupTargets/certs above: requireAbility's audit hook (auth.go) writes through this on every request, GET /api/v1/audit-log (audit.go) reads through it
 	scheduledTasks            ScheduledTaskStore              // always set, same "core Store interface" shape as backupTargets above: CRUD on a scheduled task needs no runner configuration, only actually running one does
 	scheduledTaskRunner       ScheduledTaskRunner             // nil is valid: POST .../scheduled-tasks/{id}/run returns 501, same shape as backupRunner above
+	featureFlags              FeatureFlagStore                // always set, same "core Store interface" shape as scheduledTasks above
 	bitbucketApp              BitbucketAppStore               // always set, same "core Store interface" shape as gitlabApp above
 	bitbucketAppSecrets       BitbucketAppSecrets             // nil is valid: every bitbucket-app route that needs it returns 501, same shape as gitlabAppSecrets above
 	bitbucketAppClient        BitbucketAppClient              // always set (NewRouter defaults it to a real *bitbucketapp.Client), overridable in this package's own tests
@@ -267,6 +268,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		updatesCache:            newUpdatesCache(),
 		auditLog:                s,
 		scheduledTasks:          s,
+		featureFlags:            s,
 		bitbucketApp:            s,
 		bitbucketAppClient:      bitbucketapp.NewClient(),
 		bitbucketAppState:       newPendingState(),

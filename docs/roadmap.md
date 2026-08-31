@@ -235,6 +235,13 @@ are still open. This page describes what's actually true today.
   create/edit dialogs get a role dropdown that falls back to "Custom"
   for a hand-picked set; the CLI's `users create`/`users set-abilities`
   take a `--role` flag as an alternative to `--abilities`.
+- Feature flags: a boolean plus an optional gradual rollout percentage,
+  scoped to an app, read live at runtime by the app's own code via
+  `GET /api/v1/flags/evaluate/{key}` and a read-scoped API token, no
+  redeploy or restart involved since the value is never baked into a
+  container. Full CRUD under `/api/v1/apps/{name}/flags`, a dashboard
+  tab with live toggle and rollout controls, and a `flags` CLI command
+  group. See `docs/feature-flags.md`.
 
 ## In progress
 
