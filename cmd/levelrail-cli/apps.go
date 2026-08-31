@@ -44,13 +44,13 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	case "status":
 		return runAppsStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	case "diagnose":
-		return runAppsDiagnose(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsDiagnose(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "network":
 		return runAppsNetwork(prog, args[1:], stdout, stderr, lookupEnv)
 	case "logs":
 		return runAppsLogs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "exec":
-		return runAppsExec(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsExec(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "log-drain":
 		return runAppsLogDrain(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "scheduled-tasks":
