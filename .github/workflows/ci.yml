@@ -258,6 +258,10 @@ jobs:
         working-directory: web
         run: npm exec --no -- vite build
 
+      - name: Bundle size budget
+        working-directory: web
+        run: npm run check-bundle-size
+
       - name: tsc
         working-directory: web
         run: npm exec --no -- tsc --noEmit
