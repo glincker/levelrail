@@ -68,6 +68,11 @@ type ContainerState struct {
 type VolumeMount struct {
 	Name          string
 	ContainerPath string
+	// ReadOnly mounts the volume read-only inside the container. False
+	// (read-write) for every caller before internal/backup's volume
+	// archiver started setting it explicitly true, so this is
+	// byte-identical to every mount created before this field existed.
+	ReadOnly bool
 }
 
 // ContainerSpec is desired state for a container a controller wants to

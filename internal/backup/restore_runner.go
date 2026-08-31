@@ -49,6 +49,10 @@ type RestoreRunner struct {
 	Secrets    SecretsResolver
 	Downloader Downloader
 	Restorer   Restorer
+	// VolumeRestorer backs RunVolumeRestore the same way Restorer backs
+	// RunRestore. nil is valid, the same "optional capability" shape
+	// Runner.VolumeArchiver's own doc comment establishes.
+	VolumeRestorer VolumeRestorer
 	// Now returns the current time, matching Runner.Now's own "field, not
 	// time.Now called directly" reasoning for deterministic tests.
 	Now func() time.Time
@@ -155,6 +159,93 @@ func (r *RestoreRunner) runDownloadAndRestore(ctx context.Context, databaseName,
 
 	if err := r.Restorer.Restore(ctx, engine, containerName, dump); err != nil {
 		return fmt.Errorf("restore database %q from backup %q: %w", databaseName, backupHistoryID, err)
+	}
+	return nil
+}
+
+// RunVolumeRestore downloads the object recorded by backupHistoryID and
+// applies it to dockerVolumeName (serviceName's Docker volume backing
+// its volumeName-named app.yaml volume) as its new, complete contents,
+// recording the attempt in store.RestoreHistory exactly the way
+// RunRestore does for a database. See RunRestore's own doc comment for
+// the full reasoning this mirrors, including the identical refusal to
+// proceed against a backup whose Status isn't store.BackupStatusSucceeded.
+func (r *RestoreRunner) RunVolumeRestore(ctx context.Context, historyID, serviceName, volumeName, dockerVolumeName, backupHistoryID string) error {
+	startedAt := r.now()
+
+	if err := r.Store.StartRestoreHistory(ctx, store.RestoreHistory{
+		ID:              historyID,
+		ResourceKind:    store.BackupResourceKindVolume,
+		ServiceName:     serviceName,
+		VolumeName:      volumeName,
+		BackupHistoryID: backupHistoryID,
+		StartedAt:       startedAt.UTC().Format(time.RFC3339),
+	}); err != nil {
+		return fmt.Errorf("backup: start restore history %q: %w", historyID, err)
+	}
+
+	runErr := r.runDownloadAndRestoreVolume(ctx, dockerVolumeName, backupHistoryID)
+
+	status := store.BackupStatusSucceeded
+	errMsg := ""
+	if runErr != nil {
+		status = store.BackupStatusFailed
+		errMsg = runErr.Error()
+	}
+	finishedAt := r.now().UTC().Format(time.RFC3339)
+	if err := r.Store.FinishRestoreHistory(ctx, historyID, status, errMsg, finishedAt); err != nil {
+		return fmt.Errorf("backup: finish restore history %q: %w", historyID, err)
+	}
+	return runErr
+}
+
+// runDownloadAndRestoreVolume is RunVolumeRestore's actual work, the
+// volume counterpart of runDownloadAndRestore: identical resolution of
+// the source backup and its destination credentials, VolumeRestorer.
+// Restore standing in for Restorer.Restore.
+func (r *RestoreRunner) runDownloadAndRestoreVolume(ctx context.Context, dockerVolumeName, backupHistoryID string) error {
+	bh, err := r.Store.GetBackupHistory(ctx, backupHistoryID)
+	if err != nil {
+		return fmt.Errorf("get backup history %q: %w", backupHistoryID, err)
+	}
+	if bh.Status != store.BackupStatusSucceeded {
+		return fmt.Errorf("backup %q has status %q, not %q: refusing to restore from an attempt that did not succeed", backupHistoryID, bh.Status, store.BackupStatusSucceeded)
+	}
+
+	target, err := r.Store.GetBackupTarget(ctx, bh.TargetID)
+	if err != nil {
+		return fmt.Errorf("get backup target %q: %w", bh.TargetID, err)
+	}
+
+	secretsKey := store.BackupTargetSecretsKey(bh.TargetID)
+	accessKeyID, err := r.Secrets.Resolve(ctx, secretsKey, "access_key_id")
+	if err != nil {
+		return fmt.Errorf("resolve access key id for target %q: %w", bh.TargetID, err)
+	}
+	secretAccessKey, err := r.Secrets.Resolve(ctx, secretsKey, "secret_access_key")
+	if err != nil {
+		return fmt.Errorf("resolve secret access key for target %q: %w", bh.TargetID, err)
+	}
+
+	dest := Destination{
+		Provider:        target.Provider,
+		Endpoint:        target.Endpoint,
+		Region:          target.Region,
+		Bucket:          target.Bucket,
+		AccessKeyID:     accessKeyID,
+		SecretAccessKey: secretAccessKey,
+	}
+
+	archive, err := r.Downloader.Download(ctx, dest, bh.ObjectKey)
+	if err != nil {
+		return fmt.Errorf("download backup %q object %q: %w", backupHistoryID, bh.ObjectKey, err)
+	}
+	defer func() {
+		_ = archive.Close()
+	}()
+
+	if err := r.VolumeRestorer.Restore(ctx, dockerVolumeName, archive); err != nil {
+		return fmt.Errorf("restore volume %q from backup %q: %w", dockerVolumeName, backupHistoryID, err)
 	}
 	return nil
 }
