@@ -31,6 +31,7 @@ function EnabledToggle({ appName, flag }: { appName: string; flag: FeatureFlag }
     <Switch
       checked={flag.enabled}
       disabled={updateFlag.isPending}
+      aria-label={`${flag.enabled ? 'Disable' : 'Enable'} ${flag.name}`}
       onCheckedChange={(checked) => {
         updateFlag.mutate(
           {
@@ -96,6 +97,7 @@ function RolloutInput({ appName, flag }: { appName: string; flag: FeatureFlag })
         className="h-8 w-16"
         value={value}
         disabled={updateFlag.isPending}
+        aria-label={`Rollout percentage for ${flag.name}`}
         onChange={(e) => setValue(e.target.value)}
         onBlur={commit}
       />
