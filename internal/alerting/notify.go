@@ -56,6 +56,11 @@ type Event struct {
 	// EvaluateScheduledTaskFailure. Empty for every other rule kind and
 	// for resolved events.
 	TaskFailureNotice string
+	// DomainHealthNotices is populated only for a firing (not resolved)
+	// domain_health event: one line per unhealthy domain on this rule's
+	// own app, from EvaluateDomainHealth. Nil for every other rule kind
+	// and for resolved events.
+	DomainHealthNotices []string
 }
 
 // Notifier sends one Event somewhere. Every notify* function below
@@ -130,6 +135,7 @@ type genericPayload struct {
 	DiskSpaceNotices     []string   `json:"disk_space_notices,omitempty"`
 	ResourceUsageNotices []string   `json:"resource_usage_notices,omitempty"`
 	TaskFailureNotice    string     `json:"task_failure_notice,omitempty"`
+	DomainHealthNotices  []string   `json:"domain_health_notices,omitempty"`
 }
 
 func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Event) error {
@@ -140,6 +146,7 @@ func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Even
 		CertNotices: ev.CertNotices, PatchNotices: ev.PatchNotices, DiskSpaceNotices: ev.DiskSpaceNotices,
 		ResourceUsageNotices: ev.ResourceUsageNotices,
 		TaskFailureNotice:    ev.TaskFailureNotice,
+		DomainHealthNotices:  ev.DomainHealthNotices,
 	}
 	return postJSON(ctx, client, url, payload)
 }
@@ -339,6 +346,9 @@ func summaryText(ev Event) string {
 	}
 	if ev.TaskFailureNotice != "" {
 		fmt.Fprintf(&b, "\nScheduled task: %s", ev.TaskFailureNotice)
+	}
+	if len(ev.DomainHealthNotices) > 0 {
+		fmt.Fprintf(&b, "\nDomains:\n- %s", strings.Join(ev.DomainHealthNotices, "\n- "))
 	}
 	return b.String()
 }

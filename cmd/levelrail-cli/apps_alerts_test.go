@@ -156,6 +156,33 @@ func TestRun_AppsAlertsCreate_NodeResourceUsage_NoExtraFieldsRequired(t *testing
 	}
 }
 
+func TestRun_AppsAlertsCreate_DomainHealth_NoExtraFieldsRequired(t *testing.T) {
+	var gotBody createAlertRuleRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(alertRuleResource{ID: "alr_6", Name: gotBody.Name, Kind: gotBody.Kind, Enabled: gotBody.Enabled})
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{
+		"apps", "alerts", "create", "web",
+		"--name", "domain-watch", "--kind", "domain_health",
+		"--api-url", srv.URL,
+	}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if gotBody.Kind != "domain_health" {
+		t.Errorf("request body Kind = %q, want domain_health", gotBody.Kind)
+	}
+	if !strings.Contains(stdout.String(), `alert rule "domain-watch" (id alr_6, kind domain_health) created for app "web"`) {
+		t.Errorf("stdout = %q, want a creation confirmation", stdout.String())
+	}
+}
+
 func TestRun_AppsAlertsCreate_ScheduledTaskFailure(t *testing.T) {
 	var gotBody createAlertRuleRequest
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

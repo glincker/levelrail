@@ -122,6 +122,10 @@ function formatCondition(rule: AlertRule): string {
   if (rule.kind === 'scheduled_task_failure') {
     return `task ${rule.scheduled_task_id ?? '?'} fails ${rule.restart_count_threshold} runs in a row`
   }
+  if (rule.kind === 'domain_health') {
+    const forPart = rule.for_duration ? ` for ${rule.for_duration}` : ''
+    return `any of this app's own domains not resolving correctly or pointing elsewhere${forPart}`
+  }
   return `${rule.restart_count_threshold} restarts in ${rule.restart_window ?? '?'}`
 }
 
@@ -153,6 +157,9 @@ function formatLastValue(rule: AlertRule): string {
   }
   if (rule.kind === 'scheduled_task_failure') {
     return `${rule.last_value} consecutive failures`
+  }
+  if (rule.kind === 'domain_health') {
+    return `${rule.last_value} domain(s) unhealthy`
   }
   return String(rule.last_value)
 }
@@ -285,10 +292,10 @@ export function AlertRulesPanel({ appName }: { appName: string }) {
             Alert rules
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Threshold, crashloop, certificate expiry, and scheduled task
-            failure rules over this app&apos;s metrics, restarts, and jobs.
-            Notifies via webhook, Slack, or Discord on a firing/resolved
-            transition.
+            Threshold, crashloop, certificate expiry, scheduled task
+            failure, and domain health rules over this app&apos;s metrics,
+            restarts, jobs, and domains. Notifies via webhook, Slack, or
+            Discord on a firing/resolved transition.
           </p>
         </div>
         <div className="flex items-center gap-3">

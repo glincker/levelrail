@@ -262,3 +262,15 @@ func (rt *Router) handleCheckDomain(w http.ResponseWriter, r *http.Request) {
 	resp := rt.runDomainCheck(r.Context(), domain, expectedHost, inferred)
 	writeJSON(w, http.StatusOK, resp)
 }
+
+// CheckDomainStatus exposes runDomainCheck to internal/alerting's
+// kind=domain_health evaluator (see alerting.DomainCheckSource), the same
+// DNS check handleCheckDomain itself runs. Uses rt.publicHost only: unlike
+// an HTTP handler, an engine tick has no request Host header to fall back
+// on for advertisedHost's own best-effort guess, so a domain_health rule
+// needs APP_PUBLIC_HOST configured to evaluate meaningfully; without it
+// every domain simply reports domainCheckStatusUnconfigured, which
+// EvaluateDomainHealth treats as inconclusive, not unhealthy.
+func (rt *Router) CheckDomainStatus(ctx context.Context, domain string) (string, error) {
+	return rt.runDomainCheck(ctx, domain, rt.publicHost, false).Status, nil
+}
