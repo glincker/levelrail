@@ -172,6 +172,13 @@ type Router struct {
 	// passes the same resolved value to both). 0 means "use the
 	// default", set via WithCertExpiryWarningWindow.
 	certExpiryWarningWindow time.Duration
+	// nodeAlertThresholds are the same four kind-specific thresholds
+	// cmd/levelrail/main.go passes to alerting.NewEngine, mirrored here so
+	// GET /api/v1/nodes/{id} can live-evaluate one node's own current
+	// alert_status via alerting.CheckNodeAlertStatus without waiting for
+	// Engine's next tick. 0 means "use that kind's own default", set via
+	// WithNodeAlertThresholds.
+	nodeAlertThresholds nodeAlertThresholds
 	// previewTTL overrides defaultPreviewTTL (preview_environments_sweep.go):
 	// how long a preview environment can go without a webhook update
 	// before SweepStalePreviewEnvironments tears it down as a fallback

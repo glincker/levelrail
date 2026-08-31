@@ -83,36 +83,16 @@ func EvaluateNodeDiskSpace(ctx context.Context, nodes NodeSource, metrics Metric
 	)
 
 	for _, node := range all {
-		resourceID := nodeDiskResourceID(node.ID)
-
-		usedSamples, err := metrics.QueryMetrics(ctx, resourceID, telemetry.MetricDiskUsedBytes, from, now)
-		if err != nil {
-			logger.Warn("alerting: evaluate node_disk_space rule: query node disk usage failed, skipping node",
-				slog.String("rule_id", r.ID), slog.String("node_id", node.ID), slog.String("error", err.Error()))
+		percent, have, firing := evaluateNodeDiskSpaceForNode(ctx, metrics, r.ID, node, thresholdPercent, from, now, logger)
+		if !have {
 			continue
 		}
-		totalSamples, err := metrics.QueryMetrics(ctx, resourceID, telemetry.MetricDiskTotalBytes, from, now)
-		if err != nil {
-			logger.Warn("alerting: evaluate node_disk_space rule: query node disk capacity failed, skipping node",
-				slog.String("rule_id", r.ID), slog.String("node_id", node.ID), slog.String("error", err.Error()))
-			continue
-		}
-		if len(usedSamples) == 0 || len(totalSamples) == 0 {
-			continue
-		}
-
-		total := totalSamples[len(totalSamples)-1].Value
-		if total <= 0 {
-			continue
-		}
-		used := usedSamples[len(usedSamples)-1].Value
-		percent := used / total * 100
 
 		if !haveMaxValue || percent > maxValue {
 			maxValue, haveMaxValue = percent, true
 		}
 
-		if percent >= thresholdPercent {
+		if firing {
 			anyUnhealthy = true
 			notices = append(notices, diskSpaceNotice(node, percent, thresholdPercent))
 		}
@@ -124,6 +104,38 @@ func EvaluateNodeDiskSpace(ctx context.Context, nodes NodeSource, metrics Metric
 	}
 
 	return advanceState(next, r, anyUnhealthy, 0, now), notices, nil
+}
+
+// evaluateNodeDiskSpaceForNode is one node's own check within
+// EvaluateNodeDiskSpace's loop, pulled out so node_alert_status.go's
+// live, single-node check can call the identical logic on demand. have
+// is false when there is no recent sample to judge.
+func evaluateNodeDiskSpaceForNode(ctx context.Context, metrics MetricsSource, ruleID string, node store.Node, thresholdPercent float64, from, now time.Time, logger *slog.Logger) (percent float64, have, firing bool) {
+	resourceID := nodeDiskResourceID(node.ID)
+
+	usedSamples, err := metrics.QueryMetrics(ctx, resourceID, telemetry.MetricDiskUsedBytes, from, now)
+	if err != nil {
+		logger.Warn("alerting: evaluate node_disk_space rule: query node disk usage failed, skipping node",
+			slog.String("rule_id", ruleID), slog.String("node_id", node.ID), slog.String("error", err.Error()))
+		return 0, false, false
+	}
+	totalSamples, err := metrics.QueryMetrics(ctx, resourceID, telemetry.MetricDiskTotalBytes, from, now)
+	if err != nil {
+		logger.Warn("alerting: evaluate node_disk_space rule: query node disk capacity failed, skipping node",
+			slog.String("rule_id", ruleID), slog.String("node_id", node.ID), slog.String("error", err.Error()))
+		return 0, false, false
+	}
+	if len(usedSamples) == 0 || len(totalSamples) == 0 {
+		return 0, false, false
+	}
+
+	total := totalSamples[len(totalSamples)-1].Value
+	if total <= 0 {
+		return 0, false, false
+	}
+	used := usedSamples[len(usedSamples)-1].Value
+	percent = used / total * 100
+	return percent, true, percent >= thresholdPercent
 }
 
 func diskSpaceNotice(node store.Node, percent, threshold float64) string {

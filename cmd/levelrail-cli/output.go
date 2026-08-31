@@ -382,6 +382,12 @@ func printNodeHuman(out io.Writer, n nodeResource) {
 	_, _ = fmt.Fprintf(out, "accepts app workloads:   %t\n", n.AcceptsAppWorkloads)
 	_, _ = fmt.Fprintf(out, "accepts build workloads: %t\n", n.AcceptsBuildWorkloads)
 	_, _ = fmt.Fprintf(out, "created at:              %s\n", n.CreatedAt.Format(time.RFC3339))
+	if n.AlertStatus != nil {
+		_, _ = fmt.Fprintf(out, "alert status:\n")
+		_, _ = fmt.Fprintf(out, "  patch status:          %s\n", n.AlertStatus.PatchStatus)
+		_, _ = fmt.Fprintf(out, "  node disk space:       %s\n", n.AlertStatus.NodeDiskSpace)
+		_, _ = fmt.Fprintf(out, "  node resource usage:   %s\n", n.AlertStatus.NodeResourceUsage)
+	}
 }
 
 // printNodesTable prints a compact, aligned table of nodes ("nodes list"

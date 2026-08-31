@@ -398,6 +398,36 @@ func WithCertExpiryWarningWindow(d time.Duration) Option {
 	return func(rt *Router) { rt.certExpiryWarningWindow = d }
 }
 
+// nodeAlertThresholds mirrors the four threshold arguments
+// alerting.NewEngine takes for its node-scoped rules (patch_status,
+// node_disk_space, node_resource_usage's CPU and memory signals), so GET
+// /api/v1/nodes/{id} can pass the identical values into
+// alerting.CheckNodeAlertStatus. 0 on any field means "use that kind's
+// own default".
+type nodeAlertThresholds struct {
+	patchStatus   float64
+	nodeDiskSpace float64
+	nodeCPU       float64
+	nodeMemory    float64
+}
+
+// WithNodeAlertThresholds sets the thresholds GET /api/v1/nodes/{id} uses
+// for its live alert_status section, the same values
+// cmd/levelrail/main.go already resolves (from APP_ALERT_PATCH_STATUS_THRESHOLD,
+// APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT, APP_ALERT_NODE_CPU_THRESHOLD_PERCENT,
+// APP_ALERT_NODE_MEMORY_THRESHOLD_BYTES) and passes to alerting.NewEngine, so
+// a rule's scheduled evaluation and a node's on-demand check never disagree.
+func WithNodeAlertThresholds(patchStatus, nodeDiskSpace, nodeCPU, nodeMemory float64) Option {
+	return func(rt *Router) {
+		rt.nodeAlertThresholds = nodeAlertThresholds{
+			patchStatus:   patchStatus,
+			nodeDiskSpace: nodeDiskSpace,
+			nodeCPU:       nodeCPU,
+			nodeMemory:    nodeMemory,
+		}
+	}
+}
+
 // WithPreviewTTL overrides how long a preview environment can go without
 // a webhook update before SweepStalePreviewEnvironments tears it down.
 // Without one configured (or passed as 0), defaultPreviewTTL (7 days)

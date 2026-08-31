@@ -7,12 +7,25 @@ import (
 	"io"
 )
 
+// nodesHealthResponse is "nodes health"'s combined --json shape: the
+// stored reconcile conditions plus a live re-check of whether any
+// node-scoped alert kind is currently firing for this specific node, so
+// one command answers "is this node unhealthy right now" without a
+// second, separate query against an app-scoped alerts list.
+type nodesHealthResponse struct {
+	Conditions  []conditionResource      `json:"conditions"`
+	AlertStatus *nodeAlertStatusResource `json:"alert_status,omitempty"`
+}
+
 // runNodesHealth implements "nodes health <id>": GET
-// /api/v1/nodes/{id}/health, the node health controller's stored
-// reconcile conditions, printed with the same printConditionsHuman
-// table "apps status" already uses for an app's own conditions.
+// /api/v1/nodes/{id}/health for the node health controller's stored
+// reconcile conditions (printed with the same printConditionsHuman table
+// "apps status" already uses), plus GET /api/v1/nodes/{id}'s live
+// alert_status, so this one command covers both "is the node reachable"
+// and "has a platform-wide alert rule actually fired because of this
+// node" in one place.
 func runNodesHealth(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "nodes health", "print conditions as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "nodes health", "print conditions and alert status as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesHealthUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -35,14 +48,28 @@ func runNodesHealth(prog string, args []string, stdout, stderr io.Writer, lookup
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get health for node %q: %w", id, err))
 	}
 
+	// A node's alert_status is best-effort here: if the node lookup
+	// fails, the conditions above are still worth printing, so this
+	// falls back to nil (omitted) rather than failing the whole command.
+	var alertStatus *nodeAlertStatusResource
+	if node, err := client.GetNode(context.Background(), id); err == nil {
+		alertStatus = node.AlertStatus
+	}
+
 	if jsonOut {
-		if err := writeJSONValue(stdout, conditions); err != nil {
+		if err := writeJSONValue(stdout, nodesHealthResponse{Conditions: conditions, AlertStatus: alertStatus}); err != nil {
 			_, _ = fmt.Fprintln(stderr, err)
 			return exitNetwork
 		}
 		return exitOK
 	}
 	printConditionsHuman(stdout, conditions)
+	if alertStatus != nil {
+		_, _ = fmt.Fprintf(stdout, "\nalert status:\n")
+		_, _ = fmt.Fprintf(stdout, "  patch status:          %s\n", alertStatus.PatchStatus)
+		_, _ = fmt.Fprintf(stdout, "  node disk space:       %s\n", alertStatus.NodeDiskSpace)
+		_, _ = fmt.Fprintf(stdout, "  node resource usage:   %s\n", alertStatus.NodeResourceUsage)
+	}
 	return exitOK
 }
 

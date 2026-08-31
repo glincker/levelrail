@@ -126,18 +126,8 @@ func EvaluateNodeResourceUsage(ctx context.Context, nodes NodeSource, services N
 	)
 
 	for _, node := range all {
-		placed, err := services.ListDesiredServicesByNode(ctx, node.ID)
-		if err != nil {
-			logger.Warn("alerting: evaluate node_resource_usage rule: list placed services failed, skipping node",
-				slog.String("rule_id", r.ID), slog.String("node_id", node.ID), slog.String("error", err.Error()))
-			continue
-		}
-		if len(placed) == 0 {
-			continue
-		}
-
-		cpuSum, haveCPU := sumLatestServiceMetric(ctx, metrics, placed, nodeResourceUsageCPUMetric, from, now, r.ID, node.ID, logger)
-		memSum, haveMem := sumLatestServiceMetric(ctx, metrics, placed, nodeResourceUsageMemoryMetric, from, now, r.ID, node.ID, logger)
+		cpuSum, memSum, haveCPU, haveMem, overCPU, overMem := evaluateNodeResourceUsageForNode(
+			ctx, services, metrics, r.ID, node, cpuThresholdPercent, memoryThresholdBytes, from, now, logger)
 		if !haveCPU && !haveMem {
 			continue
 		}
@@ -146,8 +136,6 @@ func EvaluateNodeResourceUsage(ctx context.Context, nodes NodeSource, services N
 			maxCPU, haveMaxCPU = cpuSum, true
 		}
 
-		overCPU := haveCPU && cpuSum >= cpuThresholdPercent
-		overMem := haveMem && memSum >= memoryThresholdBytes
 		if overCPU || overMem {
 			anyUnhealthy = true
 			notices = append(notices, nodeResourceUsageNotice(node, overCPU, cpuSum, cpuThresholdPercent, overMem, memSum, memoryThresholdBytes))
@@ -184,6 +172,35 @@ func sumLatestServiceMetric(ctx context.Context, metrics MetricsSource, placed [
 		haveAny = true
 	}
 	return sum, haveAny
+}
+
+// evaluateNodeResourceUsageForNode is one node's own check within
+// EvaluateNodeResourceUsage's loop, pulled out so node_alert_status.go's
+// live, single-node check can call the identical logic on demand.
+// haveCPU/haveMem are false when there is no recent sample to judge for
+// that signal; a placed-services lookup failure is logged and treated
+// the same as "nothing placed," matching the loop's own skip-and-move-on
+// stance.
+func evaluateNodeResourceUsageForNode(ctx context.Context, services NodeServiceSource, metrics MetricsSource, ruleID string, node store.Node, cpuThresholdPercent, memoryThresholdBytes float64, from, now time.Time, logger *slog.Logger) (cpuSum, memSum float64, haveCPU, haveMem, overCPU, overMem bool) {
+	placed, err := services.ListDesiredServicesByNode(ctx, node.ID)
+	if err != nil {
+		logger.Warn("alerting: evaluate node_resource_usage rule: list placed services failed, skipping node",
+			slog.String("rule_id", ruleID), slog.String("node_id", node.ID), slog.String("error", err.Error()))
+		return 0, 0, false, false, false, false
+	}
+	if len(placed) == 0 {
+		return 0, 0, false, false, false, false
+	}
+
+	cpuSum, haveCPU = sumLatestServiceMetric(ctx, metrics, placed, nodeResourceUsageCPUMetric, from, now, ruleID, node.ID, logger)
+	memSum, haveMem = sumLatestServiceMetric(ctx, metrics, placed, nodeResourceUsageMemoryMetric, from, now, ruleID, node.ID, logger)
+	if !haveCPU && !haveMem {
+		return cpuSum, memSum, false, false, false, false
+	}
+
+	overCPU = haveCPU && cpuSum >= cpuThresholdPercent
+	overMem = haveMem && memSum >= memoryThresholdBytes
+	return cpuSum, memSum, haveCPU, haveMem, overCPU, overMem
 }
 
 func nodeResourceUsageNotice(node store.Node, overCPU bool, cpuPercent, cpuThreshold float64, overMem bool, memBytes, memThreshold float64) string {

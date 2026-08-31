@@ -38,6 +38,26 @@ export interface NodeResource {
   accepts_app_workloads: boolean
   accepts_build_workloads: boolean
   created_at: string
+  // AlertStatus is only present on GET /api/v1/nodes/{id} (the single-
+  // node fetch), never the list response, and is absent when telemetry
+  // isn't configured on this control plane. It's a live re-evaluation of
+  // this node's own standing for each node-scoped, platform-wide alert
+  // kind, not a rule's stored aggregate value (which only ever names the
+  // worst node across the whole fleet, never which one).
+  alert_status?: NodeAlertStatusResource
+}
+
+// Each field is 'ok' (no recent breach), 'firing' (this node is over
+// threshold right now), or 'unknown' (no recent sample to judge, e.g. the
+// collector hasn't run yet): 'unknown' must never be treated the same as
+// 'ok' by UI code, the same "don't silently confirm what you can't see"
+// stance the backend evaluators already take.
+export type NodeAlertState = 'ok' | 'firing' | 'unknown'
+
+export interface NodeAlertStatusResource {
+  patch_status: NodeAlertState
+  node_disk_space: NodeAlertState
+  node_resource_usage: NodeAlertState
 }
 
 // Response body for POST /api/v1/nodes/join-tokens
