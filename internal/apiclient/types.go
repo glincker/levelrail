@@ -775,6 +775,25 @@ type SystemStatusResource struct {
 	DockerError         string `json:"docker_error,omitempty"`
 }
 
+// DoctorCheckResource mirrors internal/api's doctorCheckResource: one
+// preflight check's result (Status is "ok", "warn", "fail", or
+// "unknown").
+type DoctorCheckResource struct {
+	Code    string `json:"code"`
+	Name    string `json:"name"`
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+
+// SystemDoctorResource mirrors internal/api's systemDoctorResponse
+// (internal/api/doctor.go): the "levelrail-cli doctor" preflight
+// bundle, a superset of SystemStatusResource above. OK is false only
+// when at least one check's Status is "fail"; "warn" doesn't affect it.
+type SystemDoctorResource struct {
+	OK     bool                  `json:"ok"`
+	Checks []DoctorCheckResource `json:"checks"`
+}
+
 // SetNodeWorkloadsRequest mirrors internal/api's setNodeWorkloadsRequest:
 // a full replace of both fields, not a partial patch.
 type SetNodeWorkloadsRequest struct {

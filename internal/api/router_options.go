@@ -283,6 +283,25 @@ func WithDockerDiskUsager(u DockerDiskUsager) Option {
 	return func(rt *Router) { rt.dockerDiskUsage = u }
 }
 
+// WithDBPinger enables the database check on GET /api/v1/system/doctor.
+// Without one configured (the default), that check reports unknown, the
+// same "optional signal, absence is not an error" shape WithDockerPinger's
+// own absence already has.
+func WithDBPinger(p DBPinger) Option {
+	return func(rt *Router) { rt.dbPinger = p }
+}
+
+// WithDoctorDiskWarningBytes overrides the free-space floor GET
+// /api/v1/system/doctor's disk_space check warns below. Without one
+// configured (or passed as 0), defaultDoctorDiskWarningBytes (1GiB)
+// applies. Same "no hardcoded thresholds, use env vars" shape as
+// WithCertExpiryWarningWindow: this package never reads the environment
+// directly, cmd/levelrail/main.go reads APP_DOCTOR_DISK_WARNING_BYTES
+// and passes the parsed value here.
+func WithDoctorDiskWarningBytes(n int64) Option {
+	return func(rt *Router) { rt.doctorDiskWarningBytes = n }
+}
+
 // WithDockerPruner enables POST /api/v1/system/prune. Without one
 // configured (the default), that route returns 501, the same
 // "not configured" shape WithBuilder's own absence produces.

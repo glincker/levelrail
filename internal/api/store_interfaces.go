@@ -393,6 +393,15 @@ type DockerDiskUsager interface {
 	DiskUsage(ctx context.Context) (docker.DiskUsage, error)
 }
 
+// DBPinger is the surface GET /api/v1/system/doctor needs to report
+// the control plane's own SQLite reachability, the same narrow,
+// single-purpose shape DockerPinger above already establishes.
+// *store.DB satisfies this structurally via its embedded *sql.DB's
+// PingContext method.
+type DBPinger interface {
+	PingContext(ctx context.Context) error
+}
+
 // DockerPruner is the surface POST /api/v1/system/prune needs: run every
 // cleanup stage internal/docker/prune.go supports and report what
 // happened. Unlike DockerDiskUsager (a read), this is a destructive-ish

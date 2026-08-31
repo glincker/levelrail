@@ -26,6 +26,11 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// signals plus disk usage, AbilityRead like everything else an
 	// authenticated operator can passively view.
 	mux.HandleFunc("GET /api/v1/system/status", rt.requireAbility(AbilityRead, rt.handleSystemStatus))
+	// Doctor (levelrail-cli doctor): a superset preflight bundle of the
+	// same individual checks above, plus a few doctor-only ones (data
+	// dir writability, ingress port availability, SQLite reachability),
+	// AbilityRead like system/status above.
+	mux.HandleFunc("GET /api/v1/system/doctor", rt.requireAbility(AbilityRead, rt.handleSystemDoctor))
 	// POST /system/prune deletes real Docker resources (stopped
 	// containers, dangling images, anonymous volumes, unused build
 	// cache) fleet-wide, not scoped to one app: AbilityRoot, the same
