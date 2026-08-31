@@ -68,6 +68,23 @@ func (c *Client) Ping(ctx context.Context) error {
 	return nil
 }
 
+// TestRegistryAuth asks the daemon to authenticate against host with
+// username/password, the daemon's own `docker login`-equivalent check,
+// without pulling anything. Same narrow-interface-on-the-concrete-type
+// reasoning as Ping above: internal/api.RegistryAuthTester is the
+// consumer boundary, satisfied structurally by *Client alone.
+func (c *Client) TestRegistryAuth(ctx context.Context, host, username, password string) error {
+	_, err := c.cli.RegistryLogin(ctx, registry.AuthConfig{
+		ServerAddress: host,
+		Username:      username,
+		Password:      password,
+	})
+	if err != nil {
+		return fmt.Errorf("docker: registry login %q: %w", host, err)
+	}
+	return nil
+}
+
 // InspectByName implements Runtime.
 func (c *Client) InspectByName(ctx context.Context, name string) (*ContainerState, error) {
 	f := filters.NewArgs()

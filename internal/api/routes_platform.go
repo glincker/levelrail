@@ -355,6 +355,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityRead, rt.handleGetRegistryCredential))
 	mux.HandleFunc("PUT /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateRegistryCredential))
 	mux.HandleFunc("DELETE /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteRegistryCredential))
+	mux.HandleFunc("POST /api/v1/registry-credentials/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestRegistryCredential))
 
 	// Aggregated git provider capability summary (git_providers.go): one
 	// AbilityReadSensitive call the git-source picker uses instead of the

@@ -116,6 +116,7 @@ type Router struct {
 	images                 ImageLister            // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
 	dockerDiskUsage        DockerDiskUsager       // nil is valid: GET /system/status omits its docker_disk_usage field, same "optional signal, absence is not an error" shape as dockerPinger above
 	dockerPruner           DockerPruner           // nil is valid: POST /system/prune returns 501, same shape as builder/secrets above
+	registryAuthTester     RegistryAuthTester     // nil is valid: POST /api/v1/registry-credentials/{id}/test returns 501, same shape as dockerPinger above
 	execRuntime            NodeRuntimeResolver    // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
 	certs                  CertStore              // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
 	ingressSettings        IngressSettingsStore   // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
