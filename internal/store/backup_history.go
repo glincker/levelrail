@@ -27,16 +27,20 @@ var ErrBackupHistoryNotFound = errors.New("store: backup history record not foun
 
 // BackupHistory is one attempted backup of one database to one backup
 // target. Error is empty unless Status is BackupStatusFailed.
+// ChecksumSHA256 is empty until FinishBackupHistory records a succeeded
+// attempt's dump checksum (empty for a running or failed attempt, and for
+// any row written before migrations/0069_backup_verification.sql).
 type BackupHistory struct {
-	ID           string
-	DatabaseName string
-	TargetID     string
-	ObjectKey    string
-	SizeBytes    int64
-	Status       string
-	Error        string
-	StartedAt    string
-	FinishedAt   string
+	ID             string
+	DatabaseName   string
+	TargetID       string
+	ObjectKey      string
+	SizeBytes      int64
+	Status         string
+	Error          string
+	StartedAt      string
+	FinishedAt     string
+	ChecksumSHA256 string
 }
 
 // StartBackupHistory records a backup attempt beginning, status
@@ -56,17 +60,19 @@ func (db *DB) StartBackupHistory(ctx context.Context, h BackupHistory) error {
 }
 
 // FinishBackupHistory updates a running backup history row to its final
-// status. sizeBytes and errMsg are both ignored (left as-is / not
-// applicable) when status is BackupStatusRunning, which callers should
+// status. sizeBytes, checksum, and errMsg are all ignored (left as-is /
+// not applicable) when status is BackupStatusRunning, which callers should
 // never actually pass here since StartBackupHistory already wrote that
 // state; FinishBackupHistory exists specifically for the succeeded/failed
-// transition.
-func (db *DB) FinishBackupHistory(ctx context.Context, id, status string, sizeBytes int64, errMsg, finishedAt string) error {
+// transition. checksum is the dump's SHA-256, hex-encoded, computed by
+// Runner while streaming it to the upload target; empty on a failed
+// attempt, since there is no complete dump to have hashed.
+func (db *DB) FinishBackupHistory(ctx context.Context, id, status string, sizeBytes int64, checksum, errMsg, finishedAt string) error {
 	res, err := db.ExecContext(ctx, `
 		UPDATE backup_history
-		SET status = ?, size_bytes = ?, error = ?, finished_at = ?
+		SET status = ?, size_bytes = ?, checksum_sha256 = ?, error = ?, finished_at = ?
 		WHERE id = ?
-	`, status, sizeBytes, errMsg, finishedAt, id)
+	`, status, sizeBytes, checksum, errMsg, finishedAt, id)
 	if err != nil {
 		return fmt.Errorf("store: finish backup history %q: %w", id, err)
 	}
@@ -90,10 +96,10 @@ func (db *DB) FinishBackupHistory(ctx context.Context, id, status string, sizeBy
 func (db *DB) GetBackupHistory(ctx context.Context, id string) (BackupHistory, error) {
 	var h BackupHistory
 	err := db.QueryRowContext(ctx, `
-		SELECT id, database_name, target_id, object_key, size_bytes, status, error, started_at, finished_at
+		SELECT id, database_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256
 		FROM backup_history
 		WHERE id = ?
-	`, id).Scan(&h.ID, &h.DatabaseName, &h.TargetID, &h.ObjectKey, &h.SizeBytes, &h.Status, &h.Error, &h.StartedAt, &h.FinishedAt)
+	`, id).Scan(&h.ID, &h.DatabaseName, &h.TargetID, &h.ObjectKey, &h.SizeBytes, &h.Status, &h.Error, &h.StartedAt, &h.FinishedAt, &h.ChecksumSHA256)
 	if errors.Is(err, sql.ErrNoRows) {
 		return BackupHistory{}, ErrBackupHistoryNotFound
 	}
@@ -222,7 +228,7 @@ func (db *DB) ListBackupHistory(ctx context.Context, databaseName string, limit 
 	)
 	if before != nil {
 		rows, err = db.QueryContext(ctx, `
-			SELECT id, database_name, target_id, object_key, size_bytes, status, error, started_at, finished_at
+			SELECT id, database_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256
 			FROM backup_history
 			WHERE database_name = ? AND started_at < ?
 			ORDER BY started_at DESC
@@ -230,7 +236,7 @@ func (db *DB) ListBackupHistory(ctx context.Context, databaseName string, limit 
 		`, databaseName, before.UTC().Format(time.RFC3339), limit)
 	} else {
 		rows, err = db.QueryContext(ctx, `
-			SELECT id, database_name, target_id, object_key, size_bytes, status, error, started_at, finished_at
+			SELECT id, database_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256
 			FROM backup_history
 			WHERE database_name = ?
 			ORDER BY started_at DESC
@@ -247,7 +253,7 @@ func (db *DB) ListBackupHistory(ctx context.Context, databaseName string, limit 
 	var out []BackupHistory
 	for rows.Next() {
 		var h BackupHistory
-		if err := rows.Scan(&h.ID, &h.DatabaseName, &h.TargetID, &h.ObjectKey, &h.SizeBytes, &h.Status, &h.Error, &h.StartedAt, &h.FinishedAt); err != nil {
+		if err := rows.Scan(&h.ID, &h.DatabaseName, &h.TargetID, &h.ObjectKey, &h.SizeBytes, &h.Status, &h.Error, &h.StartedAt, &h.FinishedAt, &h.ChecksumSHA256); err != nil {
 			return nil, fmt.Errorf("store: scan backup history row: %w", err)
 		}
 		out = append(out, h)

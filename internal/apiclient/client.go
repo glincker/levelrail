@@ -482,6 +482,26 @@ func (c *Client) ListBackups(ctx context.Context, name string, opts ListBackupsO
 	return out, err
 }
 
+// VerifyBackup calls POST /api/v1/databases/{name}/backups/{historyId}/verify:
+// re-downloads a previously succeeded backup and checks it for corruption,
+// returning as soon as the attempt is recorded and under way, not once the
+// download and checks actually finish. ListBackupVerifications is how a
+// caller finds out whether it passed.
+func (c *Client) VerifyBackup(ctx context.Context, name, historyID string) (BackupVerificationResource, error) {
+	var out BackupVerificationResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/backups/"+PathEscape(historyID)+"/verify", nil, &out)
+	return out, err
+}
+
+// ListBackupVerifications calls
+// GET /api/v1/databases/{name}/backups/{historyId}/verifications: every
+// verification attempt made against one backup, newest first.
+func (c *Client) ListBackupVerifications(ctx context.Context, name, historyID string) ([]BackupVerificationResource, error) {
+	var out []BackupVerificationResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/backups/"+PathEscape(historyID)+"/verifications", nil, &out)
+	return out, err
+}
+
 // TriggerRestore calls POST /api/v1/databases/{name}/restore: overwrites
 // name's live data in place from a previously succeeded backup attempt.
 // The single most destructive call this Client makes; callers must gate

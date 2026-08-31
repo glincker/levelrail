@@ -29,6 +29,16 @@ export function formatNanoCpus(nanoCpus?: number | null): string {
   return `${cores.toFixed(2)} cores`
 }
 
+// formatDate renders an RFC3339 timestamp (as every attempt-history
+// record in this app carries: BackupHistoryRecord.started_at,
+// RestoreHistoryRecord.started_at, BackupVerificationRecord.started_at,
+// and each type's own optional finished_at) in the viewer's local time,
+// falling back to a placeholder for a field that hasn't been filled in
+// yet (e.g. finished_at on a still-running attempt).
+export function formatDate(iso: string | undefined, fallback: string): string {
+  return iso ? new Date(iso).toLocaleString() : fallback
+}
+
 export function formatDurationNs(nanoseconds?: number | null): string {
   if (!nanoseconds || nanoseconds <= 0) {
     return 'not set'

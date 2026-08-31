@@ -33,7 +33,7 @@ func TestStartAndFinishBackupHistory_Succeeded(t *testing.T) {
 		t.Fatalf("status after Start = %q, want %q", got.Status, BackupStatusRunning)
 	}
 
-	if err := db.FinishBackupHistory(ctx, "bkh_1", BackupStatusSucceeded, 4096, "", "2026-08-14T00:01:00Z"); err != nil {
+	if err := db.FinishBackupHistory(ctx, "bkh_1", BackupStatusSucceeded, 4096, "abc123checksum", "", "2026-08-14T00:01:00Z"); err != nil {
 		t.Fatalf("FinishBackupHistory() error = %v", err)
 	}
 
@@ -50,6 +50,9 @@ func TestStartAndFinishBackupHistory_Succeeded(t *testing.T) {
 	if got.FinishedAt != "2026-08-14T00:01:00Z" {
 		t.Errorf("FinishedAt = %q, want the value passed to Finish", got.FinishedAt)
 	}
+	if got.ChecksumSHA256 != "abc123checksum" {
+		t.Errorf("ChecksumSHA256 = %q, want the value passed to Finish", got.ChecksumSHA256)
+	}
 }
 
 func TestFinishBackupHistory_Failed_RecordsError(t *testing.T) {
@@ -64,7 +67,7 @@ func TestFinishBackupHistory_Failed_RecordsError(t *testing.T) {
 		t.Fatalf("StartBackupHistory() error = %v", err)
 	}
 
-	if err := db.FinishBackupHistory(ctx, "bkh_1", BackupStatusFailed, 512, "upload: access denied", "2026-08-14T00:01:00Z"); err != nil {
+	if err := db.FinishBackupHistory(ctx, "bkh_1", BackupStatusFailed, 512, "", "upload: access denied", "2026-08-14T00:01:00Z"); err != nil {
 		t.Fatalf("FinishBackupHistory() error = %v", err)
 	}
 
@@ -81,7 +84,7 @@ func TestFinishBackupHistory_NotFound(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
 
-	err := db.FinishBackupHistory(ctx, "bkh_missing", BackupStatusSucceeded, 0, "", "2026-08-14T00:01:00Z")
+	err := db.FinishBackupHistory(ctx, "bkh_missing", BackupStatusSucceeded, 0, "", "", "2026-08-14T00:01:00Z")
 	if !errors.Is(err, ErrBackupHistoryNotFound) {
 		t.Fatalf("FinishBackupHistory() error = %v, want ErrBackupHistoryNotFound", err)
 	}
@@ -128,7 +131,7 @@ func TestPruneBackupHistory_KeepsNewestSucceeded(t *testing.T) {
 		}); err != nil {
 			t.Fatalf("StartBackupHistory(%s) error = %v", id, err)
 		}
-		if err := db.FinishBackupHistory(ctx, id, BackupStatusSucceeded, 1, "", startedAt); err != nil {
+		if err := db.FinishBackupHistory(ctx, id, BackupStatusSucceeded, 1, "", "", startedAt); err != nil {
 			t.Fatalf("FinishBackupHistory(%s) error = %v", id, err)
 		}
 	}
@@ -173,7 +176,7 @@ func TestPruneBackupHistory_ReturnsPrunedTargetAndObjectKey(t *testing.T) {
 		}); err != nil {
 			t.Fatalf("StartBackupHistory(%s) error = %v", id, err)
 		}
-		if err := db.FinishBackupHistory(ctx, id, BackupStatusSucceeded, 1, "", startedAt); err != nil {
+		if err := db.FinishBackupHistory(ctx, id, BackupStatusSucceeded, 1, "", "", startedAt); err != nil {
 			t.Fatalf("FinishBackupHistory(%s) error = %v", id, err)
 		}
 	}
@@ -211,7 +214,7 @@ func TestPruneBackupHistory_NeverTouchesFailedOrRunning(t *testing.T) {
 			t.Fatalf("StartBackupHistory(%s) error = %v", id, err)
 		}
 		if status != BackupStatusRunning {
-			if err := db.FinishBackupHistory(ctx, id, status, 1, "", startedAt); err != nil {
+			if err := db.FinishBackupHistory(ctx, id, status, 1, "", "", startedAt); err != nil {
 				t.Fatalf("FinishBackupHistory(%s) error = %v", id, err)
 			}
 		}
@@ -258,7 +261,7 @@ func TestPruneBackupHistory_ZeroOrNegativeKeepDeletesNothing(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("StartBackupHistory() error = %v", err)
 	}
-	if err := db.FinishBackupHistory(ctx, "bkh_1", BackupStatusSucceeded, 1, "", "2026-08-14T00:00:00Z"); err != nil {
+	if err := db.FinishBackupHistory(ctx, "bkh_1", BackupStatusSucceeded, 1, "", "", "2026-08-14T00:00:00Z"); err != nil {
 		t.Fatalf("FinishBackupHistory() error = %v", err)
 	}
 
@@ -345,7 +348,7 @@ func TestPruneBackupHistory_RetentionDimensions(t *testing.T) {
 				}); err != nil {
 					t.Fatalf("StartBackupHistory(%s) error = %v", id, err)
 				}
-				if err := db.FinishBackupHistory(ctx, id, BackupStatusSucceeded, 1, "", dates[i]); err != nil {
+				if err := db.FinishBackupHistory(ctx, id, BackupStatusSucceeded, 1, "", "", dates[i]); err != nil {
 					t.Fatalf("FinishBackupHistory(%s) error = %v", id, err)
 				}
 			}

@@ -439,6 +439,16 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// See handleDownloadBackup's own doc comment for the full reasoning.
 	mux.HandleFunc("GET /api/v1/databases/{name}/backups/{historyId}/download", rt.requireAbility(AbilityReadSensitive, rt.handleDownloadBackup))
 
+	// Backup verification: re-download a succeeded backup and confirm it
+	// is still intact (checksum, size, and a lightweight structural
+	// check), without ever attempting a live restore. AbilityWriteSensitive
+	// for the trigger, matching the manual backup trigger route above
+	// exactly (see handleVerifyBackup's own doc comment for why); listing
+	// past attempts is ordinary AbilityRead, matching history listing
+	// above.
+	mux.HandleFunc("POST /api/v1/databases/{name}/backups/{historyId}/verify", rt.requireAbility(AbilityWriteSensitive, rt.handleVerifyBackup))
+	mux.HandleFunc("GET /api/v1/databases/{name}/backups/{historyId}/verifications", rt.requireAbility(AbilityRead, rt.handleListBackupVerifications))
+
 	// Scheduled backup config, per database (wave-2 roadmap item 6):
 	// which backup target, cron schedule, and retention count
 	// internal/backup.Scheduler uses for this database, if any.

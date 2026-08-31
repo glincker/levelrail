@@ -3,6 +3,8 @@ package backup
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"io"
 	"strings"
@@ -16,8 +18,8 @@ type fakeHistoryStore struct {
 	targets  map[string]store.BackupTarget
 	started  []store.BackupHistory
 	finished []struct {
-		id, status, errMsg, finishedAt string
-		size                           int64
+		id, status, checksum, errMsg, finishedAt string
+		size                                     int64
 	}
 	getErr    error
 	startErr  error
@@ -43,14 +45,14 @@ func (f *fakeHistoryStore) StartBackupHistory(_ context.Context, h store.BackupH
 	return nil
 }
 
-func (f *fakeHistoryStore) FinishBackupHistory(_ context.Context, id, status string, sizeBytes int64, errMsg, finishedAt string) error {
+func (f *fakeHistoryStore) FinishBackupHistory(_ context.Context, id, status string, sizeBytes int64, checksum, errMsg, finishedAt string) error {
 	if f.finishErr != nil {
 		return f.finishErr
 	}
 	f.finished = append(f.finished, struct {
-		id, status, errMsg, finishedAt string
-		size                           int64
-	}{id, status, errMsg, finishedAt, sizeBytes})
+		id, status, checksum, errMsg, finishedAt string
+		size                                     int64
+	}{id, status, checksum, errMsg, finishedAt, sizeBytes})
 	return nil
 }
 
@@ -150,6 +152,10 @@ func TestRunner_RunBackup_Success(t *testing.T) {
 	if got.errMsg != "" {
 		t.Errorf("finish errMsg = %q, want empty", got.errMsg)
 	}
+	wantChecksum := sha256.Sum256([]byte("dump-bytes"))
+	if got.checksum != hex.EncodeToString(wantChecksum[:]) {
+		t.Errorf("finish checksum = %q, want sha256(%q) = %x", got.checksum, "dump-bytes", wantChecksum)
+	}
 
 	if up.gotBody != "dump-bytes" {
 		t.Errorf("uploaded body = %q, want %q", up.gotBody, "dump-bytes")
@@ -226,6 +232,9 @@ func TestRunner_RunBackup_UploadFails_RecordsFailureWithBytesSeen(t *testing.T) 
 	}
 	if hs.finished[0].size != int64(len("twelve-bytes")) {
 		t.Errorf("finish size = %d, want %d (bytes read before the upload failed)", hs.finished[0].size, len("twelve-bytes"))
+	}
+	if hs.finished[0].checksum != "" {
+		t.Errorf("finish checksum = %q, want empty (upload never completed)", hs.finished[0].checksum)
 	}
 }
 

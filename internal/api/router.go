@@ -159,6 +159,8 @@ type Router struct {
 	backupHistory             BackupHistoryStore              // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
 	backupRunner              BackupRunner                    // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
 	backupDownloader          BackupDownloader                // nil is valid: GET .../backups/{historyId}/download returns 501, same shape as backupRunner above
+	backupVerifications       BackupVerificationStore         // always set, same "core Store interface" shape as backupHistory above: listing verification attempts needs no runner configuration, only triggering a new one does
+	backupVerifier            BackupVerifier                  // nil is valid: POST .../backups/{historyId}/verify returns 501, same shape as backupRunner above
 	restoreHistory            RestoreHistoryStore             // always set, same "core Store interface" shape as backupHistory above
 	restoreRunner             RestoreRunner                   // nil is valid: POST /api/v1/databases/{name}/restore returns 501, same shape as backupRunner above
 	deployAttempts            DeployAttemptStore              // always set, same "core Store interface" shape as certs/staticSites above
@@ -242,6 +244,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		backupTargets:           s,
 		registryCredentials:     s,
 		backupHistory:           s,
+		backupVerifications:     s,
 		restoreHistory:          s,
 		gitSources:              s,
 		previewEnvironments:     s,

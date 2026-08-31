@@ -29,6 +29,7 @@ type (
 	domainBasicAuthResource        = apiclient.DomainBasicAuthResource
 	setDomainBasicAuthRequest      = apiclient.SetDomainBasicAuthRequest
 	backupHistoryResource          = apiclient.BackupHistoryResource
+	backupVerificationResource     = apiclient.BackupVerificationResource
 	restoreHistoryResource         = apiclient.RestoreHistoryResource
 	sessionInfoResource            = apiclient.SessionInfoResource
 	databaseResource               = apiclient.DatabaseResource
