@@ -60,6 +60,7 @@ type Engine struct {
 	certExpiryWarningWindow     time.Duration
 	certRenewalStalledThreshold time.Duration
 	patchStatusThreshold        float64
+	nodeDiskSpaceThreshold      float64
 }
 
 // NewEngine builds an Engine. newNotifier defaults to a Notifier with no
@@ -72,8 +73,9 @@ type Engine struct {
 // certExpiryWarningWindow and certRenewalStalledThreshold fall back to
 // DefaultCertExpiryWarningWindow/DefaultCertRenewalStalledThreshold when
 // passed as 0; patchStatusThreshold falls back to
-// DefaultPatchStatusThreshold the same way.
-func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker *RestartTracker, certs CertSource, scheduledTasks ScheduledTaskSource, certExpiryWarningWindow, certRenewalStalledThreshold time.Duration, nodes NodeSource, patchStatusThreshold float64, newNotifier func(Rule) Notifier, logger *slog.Logger) *Engine {
+// DefaultPatchStatusThreshold and nodeDiskSpaceThreshold falls back to
+// DefaultNodeDiskSpaceThresholdPercent the same way.
+func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker *RestartTracker, certs CertSource, scheduledTasks ScheduledTaskSource, certExpiryWarningWindow, certRenewalStalledThreshold time.Duration, nodes NodeSource, patchStatusThreshold, nodeDiskSpaceThreshold float64, newNotifier func(Rule) Notifier, logger *slog.Logger) *Engine {
 	if newNotifier == nil {
 		newNotifier = func(r Rule) Notifier { return NewNotifier(nil, nil, r) }
 	}
@@ -89,11 +91,14 @@ func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker 
 	if patchStatusThreshold <= 0 {
 		patchStatusThreshold = DefaultPatchStatusThreshold
 	}
+	if nodeDiskSpaceThreshold <= 0 {
+		nodeDiskSpaceThreshold = DefaultNodeDiskSpaceThresholdPercent
+	}
 	return &Engine{
 		rules: rules, metrics: metrics, logs: logs, tracker: tracker, certs: certs, nodes: nodes, scheduledTasks: scheduledTasks,
 		newNotifier: newNotifier, logger: logger,
 		certExpiryWarningWindow: certExpiryWarningWindow, certRenewalStalledThreshold: certRenewalStalledThreshold,
-		patchStatusThreshold: patchStatusThreshold,
+		patchStatusThreshold: patchStatusThreshold, nodeDiskSpaceThreshold: nodeDiskSpaceThreshold,
 	}
 }
 
@@ -114,7 +119,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 
 	for _, r := range rules {
 		var next Rule
-		var certNotices, patchNotices []string
+		var certNotices, patchNotices, diskSpaceNotices []string
 		var taskFailureNotice string
 		switch r.Kind {
 		case KindThreshold:
@@ -155,6 +160,16 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindNodeDiskSpace:
+			if e.nodes == nil {
+				e.logger.Warn("alerting: node_disk_space rule found but no node source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			next, diskSpaceNotices, err = EvaluateNodeDiskSpace(ctx, e.nodes, e.metrics, r, e.nodeDiskSpaceThreshold, now, e.logger)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		default:
 			e.logger.Warn("alerting: rule has unknown kind, skipping", slog.String("rule_id", r.ID), slog.String("kind", string(r.Kind)))
 			continue
@@ -170,9 +185,9 @@ func (e *Engine) Tick(ctx context.Context) error {
 
 		switch {
 		case becameFiring:
-			e.dispatch(ctx, next, false, certNotices, patchNotices, taskFailureNotice)
+			e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, taskFailureNotice)
 		case becameResolved:
-			e.dispatch(ctx, next, true, nil, nil, "")
+			e.dispatch(ctx, next, true, nil, nil, nil, "")
 		}
 	}
 
@@ -185,7 +200,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 // persisted successfully before dispatch is called, so a lost
 // notification doesn't leave the rule's stored state inconsistent with
 // reality, only the operator momentarily uninformed.
-func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotices, patchNotices []string, taskFailureNotice string) {
+func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotices, patchNotices, diskSpaceNotices []string, taskFailureNotice string) {
 	// r.Enabled is already resolved against its attached channel
 	// (scanRule): a disabled channel silences the rule the same way
 	// DeployDispatcher.Dispatch skips a target with a disabled channel.
@@ -202,6 +217,9 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	}
 	if r.Kind == KindPatchStatus && !resolved {
 		ev.PatchNotices = patchNotices
+	}
+	if r.Kind == KindNodeDiskSpace && !resolved {
+		ev.DiskSpaceNotices = diskSpaceNotices
 	}
 	if r.Kind == KindScheduledTaskFailure && !resolved {
 		ev.TaskFailureNotice = taskFailureNotice

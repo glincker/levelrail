@@ -8,6 +8,14 @@ import (
 	"time"
 )
 
+// MetricDiskUsedBytes and MetricDiskTotalBytes are the sample metric
+// names HostDiskCollector writes, and the names internal/api and
+// internal/alerting read back.
+const (
+	MetricDiskUsedBytes  = "disk_used_bytes"
+	MetricDiskTotalBytes = "disk_total_bytes"
+)
+
 // diskSpaceFromStatfs is the pure part of a disk-space reading, split
 // out from diskSpaceBytes below so the arithmetic is table-testable
 // without a real filesystem. used is total minus the blocks an
@@ -61,8 +69,8 @@ func (c *HostDiskCollector) CollectOnce(ctx context.Context) error {
 	}
 	now := time.Now()
 	return c.store.WriteSamples(ctx, []Sample{
-		{ResourceID: c.resourceID, Metric: "disk_total_bytes", Timestamp: now, Value: float64(total)},
-		{ResourceID: c.resourceID, Metric: "disk_used_bytes", Timestamp: now, Value: float64(used)},
+		{ResourceID: c.resourceID, Metric: MetricDiskTotalBytes, Timestamp: now, Value: float64(total)},
+		{ResourceID: c.resourceID, Metric: MetricDiskUsedBytes, Timestamp: now, Value: float64(used)},
 	})
 }
 

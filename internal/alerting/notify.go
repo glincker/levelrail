@@ -40,6 +40,11 @@ type Event struct {
 	// threshold, from EvaluatePatchStatus. Nil for every other rule kind
 	// and for resolved events.
 	PatchNotices []string
+	// DiskSpaceNotices is populated only for a firing (not resolved)
+	// node_disk_space event: one line per node over its disk-usage
+	// threshold, from EvaluateNodeDiskSpace. Nil for every other rule
+	// kind and for resolved events.
+	DiskSpaceNotices []string
 	// TaskFailureNotice is populated only for a firing (not resolved)
 	// scheduled_task_failure event: the failing task's command,
 	// consecutive-failure count, and last status, from
@@ -117,6 +122,7 @@ type genericPayload struct {
 	LogLines          []string   `json:"log_lines,omitempty"`
 	CertNotices       []string   `json:"cert_notices,omitempty"`
 	PatchNotices      []string   `json:"patch_notices,omitempty"`
+	DiskSpaceNotices  []string   `json:"disk_space_notices,omitempty"`
 	TaskFailureNotice string     `json:"task_failure_notice,omitempty"`
 }
 
@@ -125,7 +131,8 @@ func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Even
 		RuleID: ev.Rule.ID, RuleName: ev.Rule.Name, Kind: string(ev.Rule.Kind),
 		ResourceID: ev.Rule.ResourceID, Resolved: ev.Resolved, Value: ev.Rule.LastValue,
 		Firing: ev.Rule.Firing, FiringSince: ev.Rule.FiringSince, LogLines: ev.LogLines,
-		CertNotices: ev.CertNotices, PatchNotices: ev.PatchNotices, TaskFailureNotice: ev.TaskFailureNotice,
+		CertNotices: ev.CertNotices, PatchNotices: ev.PatchNotices, DiskSpaceNotices: ev.DiskSpaceNotices,
+		TaskFailureNotice: ev.TaskFailureNotice,
 	}
 	return postJSON(ctx, client, url, payload)
 }
@@ -316,6 +323,9 @@ func summaryText(ev Event) string {
 	}
 	if len(ev.PatchNotices) > 0 {
 		fmt.Fprintf(&b, "\nNodes:\n- %s", strings.Join(ev.PatchNotices, "\n- "))
+	}
+	if len(ev.DiskSpaceNotices) > 0 {
+		fmt.Fprintf(&b, "\nDisk space:\n- %s", strings.Join(ev.DiskSpaceNotices, "\n- "))
 	}
 	if ev.TaskFailureNotice != "" {
 		fmt.Fprintf(&b, "\nScheduled task: %s", ev.TaskFailureNotice)
