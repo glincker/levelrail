@@ -154,6 +154,35 @@ a real database today, so there is no file-output mode to fall back to.
 `-i` is the short form of `--interactive` here too, and it cannot be
 combined with `--name`/`--engine`/`--version`.
 
+### Shell completion
+
+`levelrail-cli` can generate a completion script for bash, zsh, or fish,
+covering every command and subcommand (`apps organizations env-set`,
+`channels deliveries`, and so on) plus the global `--token`/`--api-url`/
+`--json`/`--help` flags. It does not complete flag values or positional
+arguments like app names.
+
+```
+# bash
+source <(levelrail-cli completion bash)
+# or, to install permanently:
+levelrail-cli completion bash | sudo tee /etc/bash_completion.d/levelrail-cli > /dev/null
+
+# zsh
+source <(levelrail-cli completion zsh)
+# or, to install permanently, save it as a file named "_levelrail-cli"
+# somewhere on $fpath:
+levelrail-cli completion zsh > "${fpath[1]}/_levelrail-cli"
+
+# fish
+levelrail-cli completion fish | source
+# or, to install permanently:
+levelrail-cli completion fish > ~/.config/fish/completions/levelrail-cli.fish
+```
+
+Run `levelrail-cli completion -h` for the same instructions from the CLI
+itself.
+
 ## Where to go next
 
 - [docs/architecture.md](architecture.md): how the control plane, the
