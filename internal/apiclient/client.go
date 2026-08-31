@@ -665,6 +665,18 @@ func (c *Client) TriggerCloneRestore(ctx context.Context, name string, req Trigg
 	return out, err
 }
 
+// TriggerVolumeCloneRestore calls
+// POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new: the app
+// service volume counterpart of TriggerCloneRestore. Creates a brand-new,
+// standalone Docker volume and restores a previously succeeded backup of
+// name/volume into it, never touching that volume's own live contents.
+func (c *Client) TriggerVolumeCloneRestore(ctx context.Context, name, volume string, req TriggerVolumeCloneRestoreRequest) (VolumeCloneRestoreResource, error) {
+	var out VolumeCloneRestoreResource
+	path := "/api/v1/apps/" + PathEscape(name) + "/volumes/" + PathEscape(volume) + "/restore-as-new"
+	err := c.do(ctx, http.MethodPost, path, req, &out)
+	return out, err
+}
+
 // GetSession calls GET /api/v1/auth/session using this Client's bearer
 // token, exactly the same auth mechanism every other method on this
 // type uses. The server gates this route with requireAuth,

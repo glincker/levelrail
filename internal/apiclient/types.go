@@ -498,6 +498,28 @@ type TriggerCloneRestoreRequest struct {
 	Resources *ServiceResources `json:"resources,omitempty"`
 }
 
+// VolumeCloneRestoreResource mirrors internal/api's
+// volumeCloneRestoreResource (internal/api/app_volume_clone_restore.go):
+// one "restore as new volume" attempt.
+type VolumeCloneRestoreResource struct {
+	ID                string `json:"id"`
+	SourceServiceName string `json:"source_service_name"`
+	SourceVolumeName  string `json:"source_volume_name"`
+	NewVolumeName     string `json:"new_volume_name"`
+	BackupHistoryID   string `json:"backup_history_id"`
+	Status            string `json:"status"`
+	Error             string `json:"error,omitempty"`
+	StartedAt         string `json:"started_at"`
+	FinishedAt        string `json:"finished_at,omitempty"`
+}
+
+// TriggerVolumeCloneRestoreRequest mirrors internal/api's
+// volumeCloneRestoreRequest.
+type TriggerVolumeCloneRestoreRequest struct {
+	BackupID      string `json:"backup_id"`
+	NewVolumeName string `json:"new_volume_name,omitempty"`
+}
+
 // OnboardingStateResource mirrors internal/api's onboardingStateResource
 // (internal/api/onboarding.go).
 type OnboardingStateResource struct {

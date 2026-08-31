@@ -1789,6 +1789,19 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 				Downloader: backup.S3Downloader{},
 				Restorer:   &backup.ContainerRestorer{Runtime: client},
 			}),
+			// "Restore as new volume"
+			// (internal/api/app_volume_clone_restore.go): the app service
+			// volume counterpart of the database clone-restore just above.
+			// Simpler than CloneRestoreRunner: a bare Docker volume has no
+			// reconciler to wait on, so Volumes (client itself, already a
+			// docker.Runtime) creates it synchronously before restoring.
+			api.WithVolumeCloneRestoreRunner(&backup.VolumeCloneRestoreRunner{
+				Store:          db,
+				Secrets:        secretsManager,
+				Downloader:     backup.S3Downloader{},
+				VolumeRestorer: &backup.ContainerVolumeRestorer{Runtime: client},
+				Volumes:        client,
+			}),
 			// The plain-download counterpart of the restore runner above:
 			// same secretsManager dependency and same backup.S3Downloader,
 			// but hands the object stream straight back to internal/api

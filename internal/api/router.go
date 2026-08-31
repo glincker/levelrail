@@ -213,6 +213,8 @@ type Router struct {
 	serviceVolumeBackupRunner      ServiceVolumeBackupRunner        // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/backups returns 501, same shape as backupRunner above
 	serviceVolumeRestoreHistory    ServiceVolumeRestoreHistoryStore // always set, same "core Store interface" shape as restoreHistory above
 	serviceVolumeRestoreRunner     ServiceVolumeRestoreRunner       // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore returns 501, same shape as restoreRunner above
+	volumeCloneRestoreHistory      VolumeCloneRestoreHistoryStore   // always set, same "core Store interface" shape as cloneRestoreHistory above
+	volumeCloneRestoreRunner       VolumeCloneRestoreRunner         // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new returns 501, same shape as cloneRestoreRunner above
 	deployAttempts                 DeployAttemptStore               // always set, same "core Store interface" shape as certs/staticSites above
 	deployLogStore                 DeployLogQuerier                 // nil is valid: a finished attempt's log route returns 501, same shape as secrets/telemetry/alertRules above
 	deployRecorder                 *deploylog.Recorder              // nil is valid: an in-progress attempt's live tail returns 501, and handleTriggerBuild falls back to build.SlogProgress with no persisted log, same "not configured" shape as builder/telemetry above
@@ -336,6 +338,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		onboarding:                  s,
 		webhookDeliveries:           s,
 		cloneRestoreHistory:         s,
+		volumeCloneRestoreHistory:   s,
 	}
 	for _, opt := range opts {
 		opt(rt)

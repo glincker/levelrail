@@ -220,11 +220,21 @@ func (r *RestoreRunner) RunVolumeRestore(ctx context.Context, historyID, service
 }
 
 // runDownloadAndRestoreVolume is RunVolumeRestore's actual work, the
-// volume counterpart of runDownloadAndRestore: identical resolution of
-// the source backup and its destination credentials, VolumeRestorer.
-// Restore standing in for Restorer.Restore.
+// volume counterpart of runDownloadAndRestore.
 func (r *RestoreRunner) runDownloadAndRestoreVolume(ctx context.Context, dockerVolumeName, backupHistoryID string) error {
-	bh, err := r.Store.GetBackupHistory(ctx, backupHistoryID)
+	return downloadAndRestoreVolume(ctx, r.Store, r.Secrets, r.Downloader, r.VolumeRestorer, dockerVolumeName, backupHistoryID)
+}
+
+// downloadAndRestoreVolume resolves backupHistoryID down to a live object
+// via resolver and secrets, downloads it, and restores it into
+// dockerVolumeName, the volume counterpart of downloadAndRestore: shared
+// between RestoreRunner.runDownloadAndRestoreVolume (an in-place restore)
+// and VolumeCloneRestoreRunner.RunVolumeCloneRestore (restore into a
+// freshly created volume), the same "identical download-and-apply
+// mechanics, only what happens before and after differs" reasoning
+// downloadAndRestore's own doc comment gives.
+func downloadAndRestoreVolume(ctx context.Context, resolver backupResolver, secrets SecretsResolver, downloader Downloader, restorer VolumeRestorer, dockerVolumeName, backupHistoryID string) error {
+	bh, err := resolver.GetBackupHistory(ctx, backupHistoryID)
 	if err != nil {
 		return fmt.Errorf("get backup history %q: %w", backupHistoryID, err)
 	}
@@ -232,17 +242,17 @@ func (r *RestoreRunner) runDownloadAndRestoreVolume(ctx context.Context, dockerV
 		return fmt.Errorf("backup %q has status %q, not %q: refusing to restore from an attempt that did not succeed", backupHistoryID, bh.Status, store.BackupStatusSucceeded)
 	}
 
-	target, err := r.Store.GetBackupTarget(ctx, bh.TargetID)
+	target, err := resolver.GetBackupTarget(ctx, bh.TargetID)
 	if err != nil {
 		return fmt.Errorf("get backup target %q: %w", bh.TargetID, err)
 	}
 
 	secretsKey := store.BackupTargetSecretsKey(bh.TargetID)
-	accessKeyID, err := r.Secrets.Resolve(ctx, secretsKey, "access_key_id")
+	accessKeyID, err := secrets.Resolve(ctx, secretsKey, "access_key_id")
 	if err != nil {
 		return fmt.Errorf("resolve access key id for target %q: %w", bh.TargetID, err)
 	}
-	secretAccessKey, err := r.Secrets.Resolve(ctx, secretsKey, "secret_access_key")
+	secretAccessKey, err := secrets.Resolve(ctx, secretsKey, "secret_access_key")
 	if err != nil {
 		return fmt.Errorf("resolve secret access key for target %q: %w", bh.TargetID, err)
 	}
@@ -256,7 +266,7 @@ func (r *RestoreRunner) runDownloadAndRestoreVolume(ctx context.Context, dockerV
 		SecretAccessKey: secretAccessKey,
 	}
 
-	archive, err := r.Downloader.Download(ctx, dest, bh.ObjectKey)
+	archive, err := downloader.Download(ctx, dest, bh.ObjectKey)
 	if err != nil {
 		return fmt.Errorf("download backup %q object %q: %w", backupHistoryID, bh.ObjectKey, err)
 	}
@@ -264,7 +274,7 @@ func (r *RestoreRunner) runDownloadAndRestoreVolume(ctx context.Context, dockerV
 		_ = archive.Close()
 	}()
 
-	if err := r.VolumeRestorer.Restore(ctx, dockerVolumeName, archive); err != nil {
+	if err := restorer.Restore(ctx, dockerVolumeName, archive); err != nil {
 		return fmt.Errorf("restore volume %q from backup %q: %w", dockerVolumeName, backupHistoryID, err)
 	}
 	return nil
