@@ -31,6 +31,8 @@ type composeDeployResponse struct {
 // service is saved directly via SaveDesiredService, the same path
 // POST /api/v1/apps (a pre-built image, no build step) already uses,
 // since every compose service here already carries a resolved image.
+// Each saved service also gets its own deploy_attempts row, so a
+// compose/template deploy shows up in that service's own deploy history.
 func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	if name == "" {
@@ -86,6 +88,7 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 			rt.internalError(w, "api: deploy compose: save service failed", err, slog.String("service", svc.Name))
 			return
 		}
+		rt.recordInstantDeployAttempt(r.Context(), svc.Name, svc.Image, store.DeployAttemptSourceCompose)
 		out = append(out, toAppResource(svc))
 	}
 
