@@ -71,3 +71,24 @@ export function logSearchQueryOptions(
 export function useLogSearch(appName: string, params: LogSearchParams) {
   return useQuery(logSearchQueryOptions(appName, params))
 }
+
+// GET /api/v1/apps/{name}/logs/download (internal/api/logs_download.go),
+// same from/to/q params as fetchLogEntries above but a plain-text
+// attachment, not JSON. Not a TanStack Query fetcher for the same reason
+// backupDownloadURL (queries/backupHistory.ts) isn't: the response is a
+// raw file stream, consumed as a plain browser navigation target (an
+// <a href download>), auth riding along on the same httpOnly session
+// cookie every other same-origin request already relies on.
+export function logDownloadURL(
+  appName: string,
+  params: LogSearchParams,
+): string {
+  const query = new URLSearchParams({
+    from: params.from.toISOString(),
+    to: params.to.toISOString(),
+  })
+  if (params.q) {
+    query.set('q', params.q)
+  }
+  return `/api/v1/apps/${encodeURIComponent(appName)}/logs/download?${query.toString()}`
+}

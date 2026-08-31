@@ -1,9 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { MagnifyingGlassIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
-import { useLogSearch } from '../queries/logs'
+import {
+  DownloadSimpleIcon,
+  MagnifyingGlassIcon,
+  XIcon,
+} from '@phosphor-icons/react/dist/ssr'
+import { logDownloadURL, useLogSearch } from '../queries/logs'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
-import { Button } from './ui/button'
+import { Button, buttonVariants } from './ui/button'
 import { Input } from './ui/input'
 import { LogSearchEmptyState } from './LogSearchEmptyState'
 import { Skeleton } from './ui/skeleton'
@@ -138,6 +142,18 @@ export function LogSearchPanel({ appName }: { appName: string }) {
           >
             Refresh
           </Button>
+          <a
+            href={logDownloadURL(appName, {
+              from: range.from,
+              to: range.to,
+              q: debouncedQuery.trim() || undefined,
+            })}
+            download
+            className={buttonVariants({ variant: 'outline', size: 'sm' })}
+          >
+            <DownloadSimpleIcon className="size-3.5" aria-hidden="true" />
+            Download logs
+          </a>
         </div>
       </div>
 
