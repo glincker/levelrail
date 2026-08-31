@@ -155,6 +155,20 @@ func WithBackupDownloader(d BackupDownloader) Option {
 	return func(rt *Router) { rt.backupDownloader = d }
 }
 
+// WithBackupVerifier enables
+// POST /api/v1/databases/{name}/backups/{historyId}/verify. Without one
+// configured (the default), that route returns 501, the same
+// "not configured" shape WithBackupRunner's absence produces: verifying
+// needs the identical live secretsManager WithBackupRunner and
+// WithBackupDownloader already depend on, to resolve a target's
+// credentials and re-download the object. Listing past verification
+// attempts (GET .../verifications) works regardless, the same "listing
+// needs no live runner" reasoning WithBackupRunner's own doc comment
+// gives for backup history.
+func WithBackupVerifier(v BackupVerifier) Option {
+	return func(rt *Router) { rt.backupVerifier = v }
+}
+
 // WithRestoreRunner enables POST /api/v1/databases/{name}/restore.
 // Without one configured (the default), that route returns 501, the same
 // "not configured" shape WithBackupRunner's absence produces; listing

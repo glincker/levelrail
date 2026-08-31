@@ -2,7 +2,10 @@ package backup
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"hash"
 	"io"
 	"time"
 
@@ -23,7 +26,7 @@ type SecretsResolver interface {
 type HistoryStore interface {
 	GetBackupTarget(ctx context.Context, id string) (store.BackupTarget, error)
 	StartBackupHistory(ctx context.Context, h store.BackupHistory) error
-	FinishBackupHistory(ctx context.Context, id, status string, sizeBytes int64, errMsg, finishedAt string) error
+	FinishBackupHistory(ctx context.Context, id, status string, sizeBytes int64, checksum, errMsg, finishedAt string) error
 }
 
 // Runner ties a Dumper and an Uploader to store and internal/secrets:
@@ -85,7 +88,7 @@ func (r *Runner) RunBackup(ctx context.Context, historyID, databaseName, engine,
 		return fmt.Errorf("backup: start history %q: %w", historyID, err)
 	}
 
-	size, runErr := r.runDumpAndUpload(ctx, databaseName, engine, containerName, targetID, objectKey)
+	size, checksum, runErr := r.runDumpAndUpload(ctx, databaseName, engine, containerName, targetID, objectKey)
 
 	status := store.BackupStatusSucceeded
 	errMsg := ""
@@ -94,7 +97,7 @@ func (r *Runner) RunBackup(ctx context.Context, historyID, databaseName, engine,
 		errMsg = runErr.Error()
 	}
 	finishedAt := r.now().UTC().Format(time.RFC3339)
-	if err := r.Store.FinishBackupHistory(ctx, historyID, status, size, errMsg, finishedAt); err != nil {
+	if err := r.Store.FinishBackupHistory(ctx, historyID, status, size, checksum, errMsg, finishedAt); err != nil {
 		return fmt.Errorf("backup: finish history %q: %w", historyID, err)
 	}
 	return runErr
@@ -103,26 +106,30 @@ func (r *Runner) RunBackup(ctx context.Context, historyID, databaseName, engine,
 // runDumpAndUpload is RunBackup's actual work, split out so RunBackup's
 // own body stays a flat "start, run, finish" sequence instead of nesting
 // three levels of error handling around the history bookkeeping above
-// and below it.
-func (r *Runner) runDumpAndUpload(ctx context.Context, databaseName, engine, containerName, targetID, objectKey string) (int64, error) {
+// and below it. The returned checksum is the dump's SHA-256, hex-encoded,
+// computed while it streams through to the uploader rather than in a
+// second pass over the object: countingReader already sits between the
+// dump and the uploader to track size, so hashing there too costs nothing
+// extra in I/O, only a running hash.Hash.
+func (r *Runner) runDumpAndUpload(ctx context.Context, databaseName, engine, containerName, targetID, objectKey string) (size int64, checksum string, err error) {
 	dest, err := r.ResolveDestination(ctx, targetID)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
 	dump, err := r.Dumper.Dump(ctx, engine, containerName)
 	if err != nil {
-		return 0, fmt.Errorf("dump database %q: %w", databaseName, err)
+		return 0, "", fmt.Errorf("dump database %q: %w", databaseName, err)
 	}
 	defer func() {
 		_ = dump.Close()
 	}()
 
-	counted := &countingReader{r: dump}
+	counted := &countingReader{r: dump, hash: sha256.New()}
 	if err := r.Uploader.Upload(ctx, dest, objectKey, counted, -1); err != nil {
-		return counted.n, fmt.Errorf("upload backup for %q to target %q: %w", databaseName, targetID, err)
+		return counted.n, "", fmt.Errorf("upload backup for %q to target %q: %w", databaseName, targetID, err)
 	}
-	return counted.n, nil
+	return counted.n, hex.EncodeToString(counted.hash.Sum(nil)), nil
 }
 
 // ResolveDestination resolves targetID's stored config and live secrets
@@ -161,14 +168,20 @@ func (r *Runner) ResolveDestination(ctx context.Context, targetID string) (Desti
 // actually left the dump, not a size the Uploader happens to report,
 // which not every S3-compatible implementation reliably surfaces on
 // error) without the Dumper or Uploader needing to know about
-// store.BackupHistory at all.
+// store.BackupHistory at all. hash accumulates the same bytes, giving
+// RunBackup a checksum alongside the size for free once the Uploader has
+// read the stream to completion.
 type countingReader struct {
-	r io.Reader
-	n int64
+	r    io.Reader
+	hash hash.Hash
+	n    int64
 }
 
 func (c *countingReader) Read(p []byte) (int, error) {
 	n, err := c.r.Read(p)
-	c.n += int64(n)
+	if n > 0 {
+		c.n += int64(n)
+		c.hash.Write(p[:n]) //nolint:errcheck // hash.Hash.Write never returns an error, per its own documented contract
+	}
 	return n, err
 }

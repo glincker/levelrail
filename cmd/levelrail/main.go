@@ -1679,6 +1679,15 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 				Secrets:    secretsManager,
 				Downloader: backup.S3Downloader{},
 			}),
+			// Re-downloads and re-checks a succeeded backup's own stored
+			// object for corruption, never attempting a live restore: same
+			// secretsManager dependency and same backup.S3Downloader as the
+			// plain-download runner just above.
+			api.WithBackupVerifier(&backup.VerifyRunner{
+				Store:      db,
+				Secrets:    secretsManager,
+				Downloader: backup.S3Downloader{},
+			}),
 			// GitHub App connection: reads and writes through
 			// secretsManager directly rather than a separate runner
 			// type, see api.GitHubAppSecrets's own doc comment for why.

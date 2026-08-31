@@ -321,6 +321,7 @@ type Store interface {
 	BackupTargetStore
 	RegistryCredentialStore
 	BackupHistoryStore
+	BackupVerificationStore
 	RestoreHistoryStore
 	ProjectStore
 	OrganizationStore

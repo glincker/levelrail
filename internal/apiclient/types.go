@@ -257,15 +257,32 @@ type SetDomainBasicAuthRequest struct {
 // BackupHistoryResource mirrors internal/api's backupHistoryResource
 // (internal/api/backups.go).
 type BackupHistoryResource struct {
-	ID           string `json:"id"`
-	DatabaseName string `json:"database_name"`
-	TargetID     string `json:"target_id"`
-	ObjectKey    string `json:"object_key"`
-	SizeBytes    int64  `json:"size_bytes"`
-	Status       string `json:"status"`
-	Error        string `json:"error,omitempty"`
-	StartedAt    string `json:"started_at"`
-	FinishedAt   string `json:"finished_at,omitempty"`
+	ID             string `json:"id"`
+	DatabaseName   string `json:"database_name"`
+	TargetID       string `json:"target_id"`
+	ObjectKey      string `json:"object_key"`
+	SizeBytes      int64  `json:"size_bytes"`
+	Status         string `json:"status"`
+	Error          string `json:"error,omitempty"`
+	StartedAt      string `json:"started_at"`
+	FinishedAt     string `json:"finished_at,omitempty"`
+	ChecksumSHA256 string `json:"checksum_sha256,omitempty"`
+}
+
+// BackupVerificationResource mirrors internal/api's
+// backupVerificationResource (internal/api/backup_verify.go).
+type BackupVerificationResource struct {
+	ID              string `json:"id"`
+	BackupHistoryID string `json:"backup_history_id"`
+	Status          string `json:"status"`
+	ChecksumMatch   bool   `json:"checksum_match"`
+	SizeMatch       bool   `json:"size_match"`
+	FormatValid     bool   `json:"format_valid"`
+	DownloadedBytes int64  `json:"downloaded_bytes"`
+	Error           string `json:"error,omitempty"`
+	CheckedBy       string `json:"checked_by,omitempty"`
+	StartedAt       string `json:"started_at"`
+	FinishedAt      string `json:"finished_at,omitempty"`
 }
 
 // TriggerBackupRequest mirrors internal/api's triggerBackupRequest.

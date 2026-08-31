@@ -33,6 +33,10 @@ func runBackups(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runBackupsRestore(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "schedule":
 		return runBackupsSchedule(prog, args[1:], stdout, stderr, lookupEnv)
+	case "verify":
+		return runBackupsVerify(prog, args[1:], stdout, stderr, lookupEnv)
+	case "verifications":
+		return runBackupsVerifications(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown backups subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, backupsUsage(prog))
@@ -47,6 +51,8 @@ func backupsUsage(prog string) string {
   %[1]s backups restore <database> --backup ID --confirm NAME [flags]   restore a database from a backup (destructive)
   %[1]s backups schedule set <database> --target ID --cron EXPR [flags] configure a recurring backup
   %[1]s backups schedule clear <database> [flags]                       remove a recurring backup
+  %[1]s backups verify <database> --backup ID [flags]                   verify a backup is intact (no live restore)
+  %[1]s backups verifications <database> --backup ID [flags]            list past verification attempts for a backup
 
 Run "%[1]s backups <subcommand> -h" for a subcommand's own flags.
 `, prog)

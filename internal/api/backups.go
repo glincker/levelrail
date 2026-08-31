@@ -86,28 +86,30 @@ type BackupRunner interface {
 
 // backupHistoryResource is the wire shape for one backup attempt.
 type backupHistoryResource struct {
-	ID           string `json:"id"`
-	DatabaseName string `json:"database_name"`
-	TargetID     string `json:"target_id"`
-	ObjectKey    string `json:"object_key"`
-	SizeBytes    int64  `json:"size_bytes"`
-	Status       string `json:"status"`
-	Error        string `json:"error,omitempty"`
-	StartedAt    string `json:"started_at"`
-	FinishedAt   string `json:"finished_at,omitempty"`
+	ID             string `json:"id"`
+	DatabaseName   string `json:"database_name"`
+	TargetID       string `json:"target_id"`
+	ObjectKey      string `json:"object_key"`
+	SizeBytes      int64  `json:"size_bytes"`
+	Status         string `json:"status"`
+	Error          string `json:"error,omitempty"`
+	StartedAt      string `json:"started_at"`
+	FinishedAt     string `json:"finished_at,omitempty"`
+	ChecksumSHA256 string `json:"checksum_sha256,omitempty"`
 }
 
 func toBackupHistoryResource(h store.BackupHistory) backupHistoryResource {
 	return backupHistoryResource{
-		ID:           h.ID,
-		DatabaseName: h.DatabaseName,
-		TargetID:     h.TargetID,
-		ObjectKey:    h.ObjectKey,
-		SizeBytes:    h.SizeBytes,
-		Status:       h.Status,
-		Error:        h.Error,
-		StartedAt:    h.StartedAt,
-		FinishedAt:   h.FinishedAt,
+		ID:             h.ID,
+		DatabaseName:   h.DatabaseName,
+		TargetID:       h.TargetID,
+		ObjectKey:      h.ObjectKey,
+		SizeBytes:      h.SizeBytes,
+		Status:         h.Status,
+		Error:          h.Error,
+		StartedAt:      h.StartedAt,
+		FinishedAt:     h.FinishedAt,
+		ChecksumSHA256: h.ChecksumSHA256,
 	}
 }
 

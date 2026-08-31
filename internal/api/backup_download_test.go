@@ -41,10 +41,14 @@ func newTestRouterWithBackupDownloader(t *testing.T, downloader BackupDownloader
 // seedSucceededBackupForAPI writes a store.BackupHistory row directly
 // (bypassing Runner entirely, the same "seed the row a handler needs to
 // find" shortcut seedBackupTargetForAPI already takes for backup targets)
-// so download tests can exercise handleDownloadBackup without a real
-// Runner ever having run.
-func seedSucceededBackupForAPI(t *testing.T, db *store.DB, id, databaseName string) {
+// so download and verify tests can exercise their own handlers without a
+// real Runner ever having run. Every caller in this package uses "bkh_1"
+// as the ID; only databaseName varies (some tests need two databases with
+// their own backup rows), so the ID is fixed here rather than threaded
+// through as a parameter every call site would just repeat identically.
+func seedSucceededBackupForAPI(t *testing.T, db *store.DB, databaseName string) {
 	t.Helper()
+	const id = "bkh_1"
 	h := store.BackupHistory{
 		ID:           id,
 		DatabaseName: databaseName,
@@ -55,7 +59,7 @@ func seedSucceededBackupForAPI(t *testing.T, db *store.DB, id, databaseName stri
 	if err := db.StartBackupHistory(context.Background(), h); err != nil {
 		t.Fatalf("StartBackupHistory() error = %v", err)
 	}
-	if err := db.FinishBackupHistory(context.Background(), id, store.BackupStatusSucceeded, 1024, "", "2026-08-14T03:01:00Z"); err != nil {
+	if err := db.FinishBackupHistory(context.Background(), id, store.BackupStatusSucceeded, 1024, "", "", "2026-08-14T03:01:00Z"); err != nil {
 		t.Fatalf("FinishBackupHistory() error = %v", err)
 	}
 }
@@ -128,7 +132,7 @@ func TestHandleDownloadBackup_BelongsToDifferentDatabase(t *testing.T) {
 		}
 	}
 	seedBackupTargetForAPI(t, db)
-	seedSucceededBackupForAPI(t, db, "bkh_1", "other")
+	seedSucceededBackupForAPI(t, db, "other")
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/backups/bkh_1/download", ""))
@@ -173,7 +177,7 @@ func TestHandleDownloadBackup_Success(t *testing.T) {
 		t.Fatalf("seed: %v", err)
 	}
 	seedBackupTargetForAPI(t, db)
-	seedSucceededBackupForAPI(t, db, "bkh_1", "main")
+	seedSucceededBackupForAPI(t, db, "main")
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/backups/bkh_1/download", ""))
@@ -203,7 +207,7 @@ func TestHandleDownloadBackup_DownloaderFails(t *testing.T) {
 		t.Fatalf("seed: %v", err)
 	}
 	seedBackupTargetForAPI(t, db)
-	seedSucceededBackupForAPI(t, db, "bkh_1", "main")
+	seedSucceededBackupForAPI(t, db, "main")
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/backups/bkh_1/download", ""))
