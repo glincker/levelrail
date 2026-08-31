@@ -244,6 +244,21 @@ func (c *Client) GetDeployStatus(ctx context.Context, name string) ([]ConditionR
 	return out, err
 }
 
+// DiagnoseApp calls GET /api/v1/apps/{name}/diagnose
+// (internal/api/diagnose.go's handleDiagnoseApp): a read-only,
+// deterministic explanation of the app's newest deploy failure or
+// crashloop state. deployID pins the diagnosis to one past attempt
+// (?deploy_id=); empty means "the app's newest attempt."
+func (c *Client) DiagnoseApp(ctx context.Context, name, deployID string) (DiagnosisResource, error) {
+	path := "/api/v1/apps/" + PathEscape(name) + "/diagnose"
+	if deployID != "" {
+		path += "?deploy_id=" + url.QueryEscape(deployID)
+	}
+	var out DiagnosisResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
 // GetAppNetwork calls GET /api/v1/apps/{name}/network
 // (internal/api/network.go's handleGetAppNetwork).
 func (c *Client) GetAppNetwork(ctx context.Context, name string) (NetworkResource, error) {
@@ -708,6 +723,20 @@ func (c *Client) TestNotificationChannel(ctx context.Context, kind, notifyURL st
 // an already-saved channel's own kind/notify_url.
 func (c *Client) TestExistingNotificationChannel(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodPost, "/api/v1/notification-channels/"+PathEscape(id)+"/test", nil, nil)
+}
+
+// ListNotificationDeliveries calls GET
+// /api/v1/notification-channels/{id}/deliveries: this channel's send
+// history, newest first, up to limit rows (0 leaves the server's own
+// default in place).
+func (c *Client) ListNotificationDeliveries(ctx context.Context, id string, limit int) ([]NotificationDeliveryResource, error) {
+	path := "/api/v1/notification-channels/" + PathEscape(id) + "/deliveries"
+	if limit > 0 {
+		path += "?limit=" + strconv.Itoa(limit)
+	}
+	var out []NotificationDeliveryResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
 }
 
 // GetLogDrain calls GET /api/v1/apps/{name}/log-drain: the app's

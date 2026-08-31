@@ -345,6 +345,74 @@ func TestDeployDispatcher_Dispatch_NoTargets_NoPanic(t *testing.T) {
 	dispatcher.Dispatch(context.Background(), "service:web", DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
 }
 
+// TestDeployDispatcher_Dispatch_RecordsDeliveryForChannelAttachedTarget
+// proves a real deploy-outcome send writes delivery history for a
+// channel-attached target, and that a legacy (no ChannelID) target
+// writes none: there is no channel-scoped history to write to for a
+// legacy target.
+func TestDeployDispatcher_Dispatch_RecordsDeliveryForChannelAttachedTarget(t *testing.T) {
+	db := newTestDeployNotifyDB(t)
+	ctx := context.Background()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	if err := db.SaveNotificationChannel(ctx, NotificationChannel{ID: "chn_1", Name: "Team Slack", Kind: NotifyGeneric, NotifyURL: srv.URL, Enabled: true}); err != nil {
+		t.Fatalf("seed channel: %v", err)
+	}
+	if err := db.SaveDeployTarget(ctx, DeployTarget{ID: "dnt_channel", ResourceID: "service:web", ChannelID: "chn_1", Enabled: true}); err != nil {
+		t.Fatalf("seed channel-attached target: %v", err)
+	}
+	if err := db.SaveDeployTarget(ctx, DeployTarget{ID: "dnt_legacy", ResourceID: "service:web", NotifyURL: srv.URL, NotifyKind: NotifyGeneric, Enabled: true}); err != nil {
+		t.Fatalf("seed legacy target: %v", err)
+	}
+
+	dispatcher := NewDeployDispatcher(db, nil, nil, nil)
+	dispatcher.Dispatch(ctx, "service:web", DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
+
+	deliveries, err := db.ListNotificationDeliveries(ctx, "chn_1", 50, nil)
+	if err != nil {
+		t.Fatalf("ListNotificationDeliveries() error = %v", err)
+	}
+	if len(deliveries) != 1 {
+		t.Fatalf("got %d deliveries for chn_1, want 1 (only the channel-attached target writes history)", len(deliveries))
+	}
+	if deliveries[0].Trigger != "deploy-succeeded" || !deliveries[0].Success {
+		t.Errorf("delivery = %+v, want a successful deploy-succeeded row", deliveries[0])
+	}
+}
+
+// TestDeployDispatcher_Dispatch_RecordsFailedDelivery proves a failed
+// send still records a delivery row with its error detail, and the
+// deploy-failed trigger.
+func TestDeployDispatcher_Dispatch_RecordsFailedDelivery(t *testing.T) {
+	db := newTestDeployNotifyDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveNotificationChannel(ctx, NotificationChannel{ID: "chn_1", Name: "Team Slack", Kind: NotifyGeneric, NotifyURL: "http://127.0.0.1:1/hook", Enabled: true}); err != nil {
+		t.Fatalf("seed channel: %v", err)
+	}
+	if err := db.SaveDeployTarget(ctx, DeployTarget{ID: "dnt_1", ResourceID: "service:web", ChannelID: "chn_1", Enabled: true}); err != nil {
+		t.Fatalf("seed target: %v", err)
+	}
+
+	dispatcher := NewDeployDispatcher(db, nil, nil, nil)
+	dispatcher.Dispatch(ctx, "service:web", DeployOutcome{AppName: "web", Image: "web:1", Succeeded: false, Error: "buildkit: boom"})
+
+	deliveries, err := db.ListNotificationDeliveries(ctx, "chn_1", 50, nil)
+	if err != nil {
+		t.Fatalf("ListNotificationDeliveries() error = %v", err)
+	}
+	if len(deliveries) != 1 {
+		t.Fatalf("got %d deliveries, want 1", len(deliveries))
+	}
+	if deliveries[0].Trigger != "deploy-failed" || deliveries[0].Success || deliveries[0].Error == "" {
+		t.Errorf("delivery = %+v, want a failed deploy-failed row with a non-empty error", deliveries[0])
+	}
+}
+
 func TestDeployDispatcher_Dispatch_TargetSendFailure_DoesNotPanic(t *testing.T) {
 	db := newTestDeployNotifyDB(t)
 	ctx := context.Background()

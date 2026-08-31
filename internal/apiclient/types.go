@@ -519,6 +519,17 @@ type TestNotificationChannelRequest struct {
 	NotifyURL string `json:"notify_url"`
 }
 
+// NotificationDeliveryResource mirrors internal/api's
+// notificationDeliveryResource (internal/api/notification_channels.go).
+type NotificationDeliveryResource struct {
+	ID        string `json:"id"`
+	ChannelID string `json:"channel_id"`
+	Trigger   string `json:"trigger"`
+	Success   bool   `json:"success"`
+	Error     string `json:"error,omitempty"`
+	CreatedAt string `json:"created_at"`
+}
+
 // ScheduledTaskResource mirrors internal/api's scheduledTaskResource
 // (internal/api/scheduled_tasks.go). Command is a real argv (no shell),
 // and LastRun* describe only the single most recent run in place: there
@@ -851,6 +862,26 @@ type DrainNodeResponse struct {
 	MovedServices  []string `json:"moved_services"`
 	MovedDatabases []string `json:"moved_databases"`
 	Errors         []string `json:"errors,omitempty"`
+}
+
+// DiagnosisSignal mirrors internal/api's diagnosisSignalResource: one
+// piece of evidence a diagnosis signature matched against.
+type DiagnosisSignal struct {
+	Source  string `json:"source"`
+	Excerpt string `json:"excerpt"`
+}
+
+// DiagnosisResource mirrors internal/api's diagnosisResource
+// (internal/api/diagnose.go): GET /api/v1/apps/{name}/diagnose's
+// response, a deterministic explanation of a deploy failure or
+// crashloop synthesized from internal/diagnose, never from an external
+// model.
+type DiagnosisResource struct {
+	Explanation     string            `json:"explanation"`
+	Suggestion      string            `json:"suggestion"`
+	Confidence      string            `json:"confidence"`
+	MatchedSignals  []DiagnosisSignal `json:"matched_signals"`
+	DeployAttemptID string            `json:"deploy_attempt_id,omitempty"`
 }
 
 // AlertRuleResource mirrors internal/api's ruleResource

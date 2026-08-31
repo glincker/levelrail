@@ -53,6 +53,8 @@ type (
 	deploySpecRequest              = apiclient.DeploySpecRequest
 	deploySpecServiceResult        = apiclient.DeploySpecServiceResult
 	deploySpecResult               = apiclient.DeploySpecResult
+	diagnosisResource              = apiclient.DiagnosisResource
+	diagnosisSignal                = apiclient.DiagnosisSignal
 
 	backupTargetResource            = apiclient.BackupTargetResource
 	createBackupTargetRequest       = apiclient.CreateBackupTargetRequest
@@ -64,6 +66,7 @@ type (
 	notificationChannelResource      = apiclient.NotificationChannelResource
 	createNotificationChannelRequest = apiclient.CreateNotificationChannelRequest
 	testNotificationChannelRequest   = apiclient.TestNotificationChannelRequest
+	notificationDeliveryResource     = apiclient.NotificationDeliveryResource
 	logDrainResource                 = apiclient.LogDrainResource
 	setLogDrainRequest               = apiclient.SetLogDrainRequest
 

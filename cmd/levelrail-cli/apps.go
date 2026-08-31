@@ -43,12 +43,14 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
 		return runAppsStatus(prog, args[1:], stdout, stderr, lookupEnv)
+	case "diagnose":
+		return runAppsDiagnose(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "network":
 		return runAppsNetwork(prog, args[1:], stdout, stderr, lookupEnv)
 	case "logs":
 		return runAppsLogs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "exec":
-		return runAppsExec(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsExec(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "log-drain":
 		return runAppsLogDrain(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "scheduled-tasks":
@@ -97,6 +99,7 @@ func appsUsage(prog string) string {
   %[1]s apps start <name> [flags]       start an app previously stopped
   %[1]s apps delete <name> [flags]      remove an app's desired state
   %[1]s apps status <name> [flags]   show an app's current reconcile conditions
+  %[1]s apps diagnose <name> [--deploy ID] [flags]   explain a failed deploy or crashloop
   %[1]s apps network <name> [flags]   show the live traffic path: container port, host port, running
   %[1]s apps logs <name> [flags]     search an app's stored log entries
   %[1]s apps exec <name> -- <cmd> [args...]   run a command in the app's container, exits with its real exit code
