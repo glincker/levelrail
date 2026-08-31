@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 const validComposeYAML = `
@@ -62,6 +63,49 @@ func TestHandleDeployCompose_CreatesAppAndServices(t *testing.T) {
 	}
 	if len(services) != 2 {
 		t.Fatalf("ListServicesByApp() returned %d services, want 2", len(services))
+	}
+}
+
+// TestHandleDeployCompose_RecordsDeployAttempts covers the gap found via
+// live testing (deploying a template such as "Homepage" showed the
+// reconciler's own real rollout, but the Deploys tab stayed "No deploys
+// yet"): each service a compose file fans out into must get its own
+// deploy_attempts row, source compose, the same way a plain image
+// create/update already does under source image.
+func TestHandleDeployCompose_RecordsDeployAttempts(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/compose", validComposeYAML))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	for _, tt := range []struct {
+		service string
+		image   string
+	}{
+		{service: "myapp-web", image: "nginx:1.27"},
+		{service: "myapp-redis", image: "redis:7"},
+	} {
+		attempts, err := db.ListDeployAttempts(ctx, tt.service)
+		if err != nil {
+			t.Fatalf("ListDeployAttempts(%q) error = %v", tt.service, err)
+		}
+		if len(attempts) != 1 {
+			t.Fatalf("service %q: got %d deploy attempts, want 1", tt.service, len(attempts))
+		}
+		if attempts[0].Image != tt.image {
+			t.Errorf("service %q: Image = %q, want %q", tt.service, attempts[0].Image, tt.image)
+		}
+		if attempts[0].Source != store.DeployAttemptSourceCompose {
+			t.Errorf("service %q: Source = %q, want %q", tt.service, attempts[0].Source, store.DeployAttemptSourceCompose)
+		}
+		if attempts[0].Status != store.DeployAttemptStatusSucceeded {
+			t.Errorf("service %q: Status = %q, want %q", tt.service, attempts[0].Status, store.DeployAttemptStatusSucceeded)
+		}
 	}
 }
 

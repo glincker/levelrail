@@ -68,12 +68,16 @@ const (
 // Deploy attempt trigger sources, one per real call site: the
 // unattended git-push webhook (internal/webhook), a manual git-source
 // build triggered from the dashboard (internal/api/deploy_attempts.go's
-// beginBuildDeployAttempt), and a plain image-tag redeploy/rollback with
-// no build step (internal/api/deploys.go's recordPlainDeployAttempt).
+// beginBuildDeployAttempt), a plain image-tag create/update/redeploy/
+// rollback with no build step (internal/api/deploys.go's
+// recordPlainDeployAttempt), and a Docker Compose file or service
+// template fanning out into one or more services under one app
+// (internal/api/apps_compose.go's handleDeployCompose).
 const (
 	DeployAttemptSourceWebhook = "webhook"
 	DeployAttemptSourceManual  = "manual"
 	DeployAttemptSourceImage   = "image"
+	DeployAttemptSourceCompose = "compose"
 )
 
 // deployAttemptIDPrefix mirrors internal/api/tokens.go's "tok_" prefix
