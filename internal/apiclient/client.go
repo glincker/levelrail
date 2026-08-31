@@ -752,6 +752,13 @@ func (c *Client) DeleteBackupTarget(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodDelete, backupTargetPath(id), nil, nil)
 }
 
+// TestBackupTarget calls POST /api/v1/backup-targets/{id}/test: probes
+// the target's stored credentials against its configured bucket, without
+// uploading or deleting anything.
+func (c *Client) TestBackupTarget(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodPost, backupTargetPath(id)+"/test", nil, nil)
+}
+
 // registryCredentialsCollectionPath builds /api/v1/registry-credentials,
 // and registryCredentialPath builds that same path plus /{id}.
 func registryCredentialsCollectionPath() string {
