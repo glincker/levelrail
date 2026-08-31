@@ -597,10 +597,15 @@ func run(logger *slog.Logger) error {
 	// alerting.NodeSource, so a kind=patch_status rule lists the same
 	// fleet GET /api/v1/nodes does, and alerting.NodeServiceSource, so a
 	// kind=node_resource_usage rule sums the same placed-service metrics
-	// GET /api/v1/nodes/{id}/metrics already sums for its dashboard.
+	// GET /api/v1/nodes/{id}/metrics already sums for its dashboard. db
+	// also satisfies alerting.AppDomainSource, so a kind=domain_health
+	// rule reads the same app's configured domains GET /api/v1/apps/
+	// {name} does; apiRouter satisfies alerting.DomainCheckSource via its
+	// own CheckDomainStatus, the same DNS check GET .../domains/
+	// {domain}/check runs.
 	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, db, db,
 		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), db, patchStatusThreshold(logger), nodeDiskSpaceThreshold(logger),
-		db, nodeCPUThreshold(logger), nodeMemoryThreshold(logger), alertingNewNotifier, logger)
+		db, nodeCPUThreshold(logger), nodeMemoryThreshold(logger), db, apiRouter, domainHealthCheckInterval(logger), alertingNewNotifier, logger)
 	go func() {
 		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("alerting engine stopped", slog.String("error", err.Error()))
@@ -2024,6 +2029,28 @@ func nodeMemoryThreshold(logger *slog.Logger) float64 {
 		return 0
 	}
 	return v
+}
+
+// domainHealthCheckInterval reads APP_ALERT_DOMAIN_HEALTH_CHECK_INTERVAL
+// as a Go duration string, the same env-var-with-default shape
+// certExpiryWarningWindow above already uses: how often a
+// kind=domain_health rule performs a real DNS lookup, independent of
+// alertEvaluationInterval itself (a DNS check is a real outbound network
+// call, unlike every other rule kind's local metrics/store read). Returns
+// 0 (alerting's own signal to fall back to
+// alerting.DefaultDomainHealthCheckInterval) when unset or unparseable,
+// logging a warning in the latter case.
+func domainHealthCheckInterval(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_ALERT_DOMAIN_HEALTH_CHECK_INTERVAL")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_ALERT_DOMAIN_HEALTH_CHECK_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return d
 }
 
 // previewTTL reads APP_PREVIEW_TTL as a Go duration string, the same

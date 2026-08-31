@@ -222,7 +222,7 @@ func TestEngine_Tick_NodeResourceUsageFires_NotifiesOnceThenDoesNotDoubleFire(t 
 	r := nodeResourceUsageRule()
 	rules := newFakeRuleStore(r)
 	spy := &spyNotifier{}
-	engine := NewEngine(rules, metrics, nil, nil, nil, nil, 0, 0, nodes, 0, 0, services, 80, 0, func(Rule) Notifier { return spy }, nil)
+	engine := NewEngine(rules, metrics, nil, nil, nil, nil, 0, 0, nodes, 0, 0, services, 80, 0, nil, nil, 0, func(Rule) Notifier { return spy }, nil)
 
 	if err := engine.Tick(context.Background()); err != nil {
 		t.Fatalf("first Tick() error = %v", err)

@@ -117,10 +117,10 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 
 	kind := alerting.Kind(a.Kind)
 	switch kind {
-	case alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage:
+	case alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth:
 	default:
-		return alerting.Rule{}, fmt.Errorf("kind must be %q, %q, %q, %q, %q, %q, or %q",
-			alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage)
+		return alerting.Rule{}, fmt.Errorf("kind must be %q, %q, %q, %q, %q, %q, %q, or %q",
+			alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth)
 	}
 
 	forDuration, err := parseOptionalDuration(a.ForDuration)

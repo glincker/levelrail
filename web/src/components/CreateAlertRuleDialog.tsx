@@ -11,6 +11,7 @@ import {
   WrenchIcon,
   HardDriveIcon,
   CpuIcon,
+  GlobeIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -88,6 +89,7 @@ const KIND_OPTIONS: {
   { value: 'scheduled_task_failure', label: 'Scheduled task failure', Icon: ClockCountdownIcon },
   { value: 'node_disk_space', label: 'Node disk space', Icon: HardDriveIcon },
   { value: 'node_resource_usage', label: 'Node CPU/memory usage', Icon: CpuIcon },
+  { value: 'domain_health', label: 'Domain health', Icon: GlobeIcon },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -114,6 +116,7 @@ const createAlertRuleSchema = z
       'scheduled_task_failure',
       'node_disk_space',
       'node_resource_usage',
+      'domain_health',
     ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
@@ -148,6 +151,20 @@ const createAlertRuleSchema = z
           path: ['metric'],
         })
       }
+      if (data.forDuration && !GO_DURATION_REGEX.test(data.forDuration)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must look like a duration, e.g. "2m" or "30s"',
+          path: ['forDuration'],
+        })
+      }
+      return
+    }
+
+    // domain_health needs no required fields either: it watches every
+    // domain already configured on this app. for_duration is still
+    // optional here, the same debounce threshold's own uses.
+    if (data.kind === 'domain_health') {
       if (data.forDuration && !GO_DURATION_REGEX.test(data.forDuration)) {
         ctx.addIssue({
           code: 'custom',
@@ -279,6 +296,8 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
     } else if (values.kind === 'scheduled_task_failure') {
       req.scheduled_task_id = values.scheduledTaskId
       req.restart_count_threshold = values.restartCountThreshold
+    } else if (values.kind === 'domain_health') {
+      req.for_duration = values.forDuration.trim() || undefined
     }
     // cert_expiry, patch_status, node_disk_space, and node_resource_usage
     // send no kind-specific fields at all.
@@ -313,8 +332,9 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
             disk space rule watches every node&apos;s disk usage
             percentage; a node CPU/memory usage rule watches every
             node&apos;s summed CPU and memory usage; a scheduled task
-            failure rule watches one of this app&apos;s scheduled tasks.
-            All seven notify the same way once they fire.
+            failure rule watches one of this app&apos;s scheduled tasks; a
+            domain health rule watches every domain configured on this
+            app. All eight notify the same way once they fire.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -395,6 +415,32 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
               so unlike CPU it&apos;s an absolute floor, not a
               proportion.
             </p>
+          ) : kind === 'domain_health' ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Watches every domain currently configured on this app
+                (unlike cert_expiry above, scoped to this app&apos;s own
+                domains, not the whole control plane) and fires if any of
+                them stops resolving to this control plane or starts
+                pointing elsewhere, e.g. a CNAME silently repointed away.
+              </p>
+              <Field>
+                <FieldLabel htmlFor="rule-domain-health-for-duration">
+                  For duration (optional)
+                </FieldLabel>
+                <Input
+                  id="rule-domain-health-for-duration"
+                  placeholder="e.g. 10m"
+                  {...register('forDuration')}
+                />
+                <FieldDescription>
+                  Require a bad DNS check to persist this long before
+                  firing, so one transient lookup blip doesn&apos;t page
+                  anyone. Leave blank to fire on the first bad check.
+                </FieldDescription>
+                <FieldError errors={[formState.errors.forDuration]} />
+              </Field>
+            </>
           ) : kind === 'threshold' ? (
             <>
               <Field>

@@ -13,7 +13,7 @@ import (
 // Kind distinguishes what a Rule evaluates.
 type Kind string
 
-// The seven rule kinds this package evaluates; see Rule's own doc
+// The eight rule kinds this package evaluates; see Rule's own doc
 // comment for which fields each uses. KindCertExpiry, KindPatchStatus,
 // KindNodeDiskSpace, and KindNodeResourceUsage use none of Rule's
 // threshold/crashloop fields: they watch every certificate
@@ -22,6 +22,10 @@ type Kind string
 // (node_resource_usage.go) platform-wide, not a single Metric or
 // RestartWindow, so ResourceID on any of the four is only ever a
 // display label, not something their evaluator filters by.
+// KindDomainHealth is app-scoped like KindThreshold/KindCrashloop
+// (ResourceID picks out a real app), but watches every domain currently
+// configured on that app rather than a single Metric; see
+// domain_health.go.
 const (
 	KindThreshold            Kind = "threshold"
 	KindCrashloop            Kind = "crashloop"
@@ -30,6 +34,7 @@ const (
 	KindScheduledTaskFailure Kind = "scheduled_task_failure"
 	KindNodeDiskSpace        Kind = "node_disk_space"
 	KindNodeResourceUsage    Kind = "node_resource_usage"
+	KindDomainHealth         Kind = "domain_health"
 )
 
 // Comparator is how a threshold Rule compares the latest sample value

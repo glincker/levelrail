@@ -4,7 +4,8 @@
 // fields ignored for a crashloop rule and vice versa" shape rather than
 // two separate response types, because that's what the server actually
 // sends back for both kinds through one endpoint.
-
+//
+// cert_expiry watches every certificate on the whole control plane, not
 // just this app's own domains, and patch_status watches every node's
 // pending OS security patches the same way: neither uses any of the
 // threshold/crashloop fields below, matching internal/alerting.Rule's
@@ -14,6 +15,10 @@
 // scheduled_task_failure watches one of this app's scheduled tasks'
 // consecutive-failure count, reusing restart_count_threshold as that
 // count's threshold; see internal/alerting.Rule's own doc comment.
+// domain_health watches every domain configured on this app itself
+// (app-scoped, unlike the four platform-wide kinds above), needing none
+// of the threshold/crashloop fields either, though for_duration
+// optionally debounces a single check.
 export type AlertRuleKind =
   | 'threshold'
   | 'crashloop'
@@ -22,6 +27,7 @@ export type AlertRuleKind =
   | 'scheduled_task_failure'
   | 'node_disk_space'
   | 'node_resource_usage'
+  | 'domain_health'
 
 export type Comparator = '>' | '<' | '>=' | '<='
 

@@ -109,7 +109,11 @@ func newTestEngine(rules *fakeRuleStore, metrics MetricsSource, logs LogsSource,
 }
 
 func newTestEngineWithTasks(rules *fakeRuleStore, metrics MetricsSource, logs LogsSource, tracker *RestartTracker, tasks ScheduledTaskSource, spy *spyNotifier) *Engine {
-	return NewEngine(rules, metrics, logs, tracker, nil, tasks, 0, 0, nil, 0, 0, nil, 0, 0, func(Rule) Notifier { return spy }, nil)
+	return NewEngine(rules, metrics, logs, tracker, nil, tasks, 0, 0, nil, 0, 0, nil, 0, 0, nil, nil, 0, func(Rule) Notifier { return spy }, nil)
+}
+
+func newTestEngineWithDomainHealth(rules *fakeRuleStore, apps AppDomainSource, checker DomainCheckSource, checkInterval time.Duration, spy *spyNotifier) *Engine {
+	return NewEngine(rules, nil, nil, nil, nil, nil, 0, 0, nil, 0, 0, nil, 0, 0, apps, checker, checkInterval, func(Rule) Notifier { return spy }, nil)
 }
 
 func TestEngine_Tick_ThresholdFires_NotifiesOnce(t *testing.T) {
@@ -324,7 +328,7 @@ func TestEngine_Tick_MixedLegacyAndChannelRules_BothDispatch(t *testing.T) {
 
 	metrics := &fakeMetricsSource{samples: []telemetry.Sample{{Timestamp: time.Now(), Value: 95}}}
 	spy := &spyNotifier{}
-	engine := NewEngine(db, metrics, nil, nil, nil, nil, 0, 0, nil, 0, 0, nil, 0, 0, func(Rule) Notifier { return spy }, nil)
+	engine := NewEngine(db, metrics, nil, nil, nil, nil, 0, 0, nil, 0, 0, nil, 0, 0, nil, nil, 0, func(Rule) Notifier { return spy }, nil)
 
 	if err := engine.Tick(ctx); err != nil {
 		t.Fatalf("Tick() error = %v", err)
@@ -374,7 +378,7 @@ func TestEngine_Dispatch_RecordsDeliveryForChannelAttachedRule(t *testing.T) {
 	}
 
 	metrics := &fakeMetricsSource{samples: []telemetry.Sample{{Timestamp: time.Now(), Value: 95}}}
-	engine := NewEngine(db, metrics, nil, nil, nil, nil, 0, 0, nil, 0, 0, nil, 0, 0, func(Rule) Notifier { return &spyNotifier{} }, nil)
+	engine := NewEngine(db, metrics, nil, nil, nil, nil, 0, 0, nil, 0, 0, nil, 0, 0, nil, nil, 0, func(Rule) Notifier { return &spyNotifier{} }, nil)
 
 	if err := engine.Tick(ctx); err != nil {
 		t.Fatalf("Tick() error = %v", err)
@@ -414,7 +418,7 @@ func TestEngine_Dispatch_RecordsFailedDeliveryOnResolve(t *testing.T) {
 
 	metrics := &fakeMetricsSource{samples: []telemetry.Sample{{Timestamp: time.Now(), Value: 10}}} // below threshold: resolves
 	spy := &spyNotifier{err: errors.New("receiver returned status 500")}
-	engine := NewEngine(db, metrics, nil, nil, nil, nil, 0, 0, nil, 0, 0, nil, 0, 0, func(Rule) Notifier { return spy }, nil)
+	engine := NewEngine(db, metrics, nil, nil, nil, nil, 0, 0, nil, 0, 0, nil, 0, 0, nil, nil, 0, func(Rule) Notifier { return spy }, nil)
 
 	if err := engine.Tick(ctx); err != nil {
 		t.Fatalf("Tick() error = %v", err)
@@ -451,7 +455,7 @@ func TestEngine_Tick_DisabledChannel_SilencesRule(t *testing.T) {
 
 	metrics := &fakeMetricsSource{samples: []telemetry.Sample{{Timestamp: time.Now(), Value: 95}}}
 	spy := &spyNotifier{}
-	engine := NewEngine(db, metrics, nil, nil, nil, nil, 0, 0, nil, 0, 0, nil, 0, 0, func(Rule) Notifier { return spy }, nil)
+	engine := NewEngine(db, metrics, nil, nil, nil, nil, 0, 0, nil, 0, 0, nil, 0, 0, nil, nil, 0, func(Rule) Notifier { return spy }, nil)
 
 	if err := engine.Tick(ctx); err != nil {
 		t.Fatalf("Tick() error = %v", err)
