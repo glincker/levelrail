@@ -14,6 +14,7 @@ import { useBrand } from '../hooks/useBrand'
 import { STATUS_DOT_COLOR } from '../lib/appStatus'
 import { CreateResourceWizard } from './CreateResourceWizard'
 import { OnboardingFlow } from './OnboardingFlow'
+import { AlertingQuickSetupPrompt } from './AlertingQuickSetupPrompt'
 import { useCompleteOnboarding } from '../queries/onboarding'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -53,7 +54,8 @@ export function DashboardOverview({
     }
   }, [hasApps, onboardingCompleted, markOnboardingComplete])
 
-  if (apps.length === 0) {
+  const [firstApp] = apps
+  if (!firstApp) {
     return onboardingCompleted ? <WelcomeEmptyState /> : <OnboardingFlow />
   }
 
@@ -72,6 +74,8 @@ export function DashboardOverview({
           }
         />
       </div>
+
+      <AlertingQuickSetupPrompt carrierAppName={firstApp.name} />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="Total apps" value={apps.length} icon={<PackageIcon />} />
