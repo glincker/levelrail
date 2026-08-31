@@ -75,6 +75,8 @@ type (
 	evaluateFlagResource = apiclient.EvaluateFlagResource
 
 	systemStatusResource        = apiclient.SystemStatusResource
+	doctorCheckResource         = apiclient.DoctorCheckResource
+	systemDoctorResource        = apiclient.SystemDoctorResource
 	nodeResource                = apiclient.NodeResource
 	setNodeWorkloadsRequest     = apiclient.SetNodeWorkloadsRequest
 	createNodeJoinTokenResponse = apiclient.CreateNodeJoinTokenResponse

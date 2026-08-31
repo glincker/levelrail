@@ -250,6 +250,40 @@ func printSystemStatusHuman(out io.Writer, s systemStatusResource) {
 	}
 }
 
+// printSystemDoctorHuman prints "doctor" output: one row per check, no
+// color, the same plain-text convention printSystemStatusHuman's own
+// UNREACHABLE line above already uses instead of ANSI codes.
+func printSystemDoctorHuman(out io.Writer, d systemDoctorResource) {
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "STATUS\tCHECK\tMESSAGE")
+	for _, c := range d.Checks {
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\n", doctorStatusLabel(c.Status), c.Name, c.Message)
+	}
+	_ = tw.Flush()
+
+	if d.OK {
+		_, _ = fmt.Fprintln(out, "\nAll checks passed.")
+	} else {
+		_, _ = fmt.Fprintln(out, "\nOne or more checks failed. See above.")
+	}
+}
+
+// doctorStatusLabel upper-cases a check's status for the human table,
+// the same emphasis-through-caps convention printSystemStatusHuman's
+// own "UNREACHABLE" already uses in place of color.
+func doctorStatusLabel(status string) string {
+	switch status {
+	case "ok":
+		return "OK"
+	case "warn":
+		return "WARN"
+	case "fail":
+		return "FAIL"
+	default:
+		return "UNKNOWN"
+	}
+}
+
 // printNodeHuman prints one node resource in a human-readable, non-JSON
 // form ("nodes get" output).
 func printNodeHuman(out io.Writer, n nodeResource) {
