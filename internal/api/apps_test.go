@@ -702,6 +702,72 @@ func TestHandleUpdateApp(t *testing.T) {
 	}
 }
 
+// TestHandleUpdateApp_ImageChange_RecordsDeployAttempt covers the same
+// gap as TestHandleCreateApp_RecordsDeployAttempt for the update path: an
+// ordinary PUT that happens to change Image is functionally a redeploy
+// and must show up in deploy history the same way handleTriggerDeploy's
+// own image-tag redeploy already does.
+func TestHandleUpdateApp_ImageChange_RecordsDeployAttempt(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", `{"image":"levelrail/web:2","port":3000}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	attempts, err := db.ListDeployAttempts(ctx, "web")
+	if err != nil {
+		t.Fatalf("ListDeployAttempts() error = %v", err)
+	}
+	if len(attempts) != 1 {
+		t.Fatalf("expected 1 deploy attempt recorded, got %d", len(attempts))
+	}
+	if attempts[0].Image != "levelrail/web:2" {
+		t.Errorf("Image = %q, want %q", attempts[0].Image, "levelrail/web:2")
+	}
+	if attempts[0].Source != store.DeployAttemptSourceImage {
+		t.Errorf("Source = %q, want %q", attempts[0].Source, store.DeployAttemptSourceImage)
+	}
+	if attempts[0].Status != store.DeployAttemptStatusSucceeded {
+		t.Errorf("Status = %q, want %q", attempts[0].Status, store.DeployAttemptStatusSucceeded)
+	}
+}
+
+// TestHandleUpdateApp_SameImage_NoDeployAttemptRecorded covers the
+// converse of TestHandleUpdateApp_ImageChange_RecordsDeployAttempt: an
+// update that leaves Image unchanged (e.g. editing only Port or Labels)
+// is not a redeploy and must not add a misleading history row.
+func TestHandleUpdateApp_SameImage_NoDeployAttemptRecorded(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", `{"image":"levelrail/web:1","port":4000}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	attempts, err := db.ListDeployAttempts(ctx, "web")
+	if err != nil {
+		t.Fatalf("ListDeployAttempts() error = %v", err)
+	}
+	if len(attempts) != 0 {
+		t.Errorf("expected 0 deploy attempts recorded for an image-unchanged update, got %d", len(attempts))
+	}
+}
+
 // TestHandleUpdateApp_ResourcesAppliedLive covers the live-resource-
 // update fast path (docs/roadmap.md's "Live, in-place resource-limit
 // application without a restart"): saving new resource limits pushes

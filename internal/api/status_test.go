@@ -102,6 +102,26 @@ func TestHandleSystemStatus_DockerConnected_Erroring(t *testing.T) {
 	if got.DockerConnected {
 		t.Error("DockerConnected = true, want false (WithDockerPinger configured but Ping errors)")
 	}
+	if got.DockerError != "daemon unreachable" {
+		t.Errorf("DockerError = %q, want %q", got.DockerError, "daemon unreachable")
+	}
+}
+
+func TestHandleSystemStatus_DockerConnected_Healthy_NoError(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(nil, testBrand(), db, WithDockerPinger(&fakeDockerPinger{}))
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/system/status", ""))
+
+	var got systemStatusResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.DockerError != "" {
+		t.Errorf("DockerError = %q, want empty when Ping succeeds", got.DockerError)
+	}
 }
 
 // fakeDockerDiskUsager is a hand-written fake for DockerDiskUsager,

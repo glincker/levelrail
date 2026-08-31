@@ -418,6 +418,13 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	// An image change here is functionally the same redeploy action as
+	// handleTriggerDeploy, which already records one: an ordinary PUT
+	// that happens to change Image must not be a blind spot in deploy
+	// history just because it went through this endpoint instead.
+	if req.Image != existing.Image {
+		rt.recordPlainDeployAttempt(r.Context(), name, req.Image)
+	}
 	// SaveDesiredService never touches node_id or project_id (their own
 	// doc comments explain why), so the response reflects existing's
 	// placement and project, not req's: req.NodeID/req.ProjectID are

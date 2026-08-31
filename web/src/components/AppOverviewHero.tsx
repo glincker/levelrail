@@ -14,6 +14,7 @@ import { summarizeAppStatus } from '../lib/appStatus'
 import { formatBytes, formatNanoCpus } from '../lib/format'
 import { useAppNetwork } from '../queries/appNetwork'
 import { useCloudflareTunnelStatus } from '../queries/cloudflareTunnel'
+import { useGitSource } from '../queries/gitSources'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
@@ -72,6 +73,11 @@ export function AppOverviewHero({
   const { data: network } = useAppNetwork(app.name)
   const { data: tunnelStatus } = useCloudflareTunnelStatus()
   const tunnelAvailable = tunnelStatus?.enabled && tunnelStatus.status === 'connected'
+  // Same "supplementary signal, plain query" reasoning as network/tunnel
+  // above: a 404 here just means no git source is connected yet (its own
+  // normal steady state, see queries/gitSources.ts), not an error to show.
+  const { data: gitSource } = useGitSource(app.name)
+  const hasGitSource = Boolean(gitSource)
 
   return (
     <Card>
@@ -155,6 +161,22 @@ export function AppOverviewHero({
                         'A public URL is available via the connected Cloudflare Tunnel.',
                       to: '/settings/cloudflare-tunnel',
                     }
+              }
+              appName={app.name}
+            />
+            <ChecklistRow
+              met={hasGitSource}
+              severity="neutral"
+              label="Git source connected"
+              detail={
+                hasGitSource
+                  ? `Pushes to ${gitSource?.branch ?? 'the target branch'} auto-deploy this app.`
+                  : 'No git source connected yet; deploys happen manually or via the API until one is.'
+              }
+              action={
+                hasGitSource
+                  ? undefined
+                  : { label: 'Connect a git source', to: '/apps/$name/source' }
               }
               appName={app.name}
             />
@@ -246,7 +268,14 @@ function ChecklistRow({
   severity: 'warning' | 'neutral'
   label: string
   detail: string
-  action?: { label: string; to: '/apps/$name/domains' | '/apps/$name/health' | '/apps/$name/resources' }
+  action?: {
+    label: string
+    to:
+      | '/apps/$name/domains'
+      | '/apps/$name/health'
+      | '/apps/$name/resources'
+      | '/apps/$name/source'
+  }
   // A second, distinct CTA for an unmet checklist item, scoped to
   // routes with no {name} param (unlike action above): today only the
   // "Domain connected" row's Cloudflare Tunnel pointer uses this, kept

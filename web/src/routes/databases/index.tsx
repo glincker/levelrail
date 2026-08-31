@@ -68,6 +68,7 @@ function DatabaseListPage() {
             </span>
           ) : null}
           <CreateResourceWizard
+            scope="databases"
             trigger={
               <Button size="sm">
                 <PlusIcon />
@@ -84,6 +85,7 @@ function DatabaseListPage() {
           description="Create a managed Postgres, MySQL, or Redis database and reference it from an app's environment, credentials are injected automatically."
           action={
             <CreateResourceWizard
+              scope="databases"
               trigger={
                 <Button size="sm">
                   <PlusIcon />

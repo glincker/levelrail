@@ -721,6 +721,21 @@ type NodePatchStatusResource struct {
 	CheckedAt *time.Time `json:"checked_at,omitempty"`
 }
 
+// SystemStatusResource mirrors internal/api's systemStatusResponse
+// (internal/api/status.go): DockerConnected/DockerError are this
+// control plane's own local Docker daemon reachability, not a per-node
+// signal (see docker_connected's own doc comment on internal/api/status.go
+// for why: multi-node Docker reachability forwarding isn't wired yet).
+type SystemStatusResource struct {
+	SecretsConfigured   bool   `json:"secrets_configured"`
+	TelemetryConfigured bool   `json:"telemetry_configured"`
+	AlertsConfigured    bool   `json:"alerts_configured"`
+	DataDirTotalBytes   int64  `json:"data_dir_total_bytes,omitempty"`
+	DataDirFreeBytes    int64  `json:"data_dir_free_bytes,omitempty"`
+	DockerConnected     bool   `json:"docker_connected"`
+	DockerError         string `json:"docker_error,omitempty"`
+}
+
 // SetNodeWorkloadsRequest mirrors internal/api's setNodeWorkloadsRequest:
 // a full replace of both fields, not a partial patch.
 type SetNodeWorkloadsRequest struct {
