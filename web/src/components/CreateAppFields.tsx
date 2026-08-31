@@ -8,7 +8,13 @@ import { DialogFooter } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldError,
+  FieldHint,
+  FieldLabel,
+  FieldSectionLabel,
+} from '@/components/ui/field'
 import {
   Select,
   SelectContent,
@@ -16,10 +22,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { useCreateApp, useSetAppNode } from '../queries/apps'
 import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
+import { useFormDraft } from '../hooks/useFormDraft'
+import {
+  HEALTH_CHECK_DEFAULT_PATH,
+  healthCheckFrom,
+} from '../lib/healthCheckDefaults'
+import { DraftRestoredNotice } from './DraftRestoredNotice'
 import {
   LOCAL_NODE_VALUE,
   NO_PROJECT_VALUE,
@@ -84,6 +97,23 @@ const createAppSchema = z.object({
       (v) => v === '' || (/^\d+$/.test(v) && Number(v) > 0),
       'Replicas must be a positive whole number, or left blank for the default',
     ),
+  healthCheckEnabled: z.boolean(),
+  healthCheckPath: z.string().trim(),
+}).superRefine((values, ctx) => {
+  if (!values.healthCheckEnabled) return
+  if (!values.healthCheckPath) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Health check path is required',
+      path: ['healthCheckPath'],
+    })
+  } else if (!values.healthCheckPath.startsWith('/')) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Path must start with /',
+      path: ['healthCheckPath'],
+    })
+  }
 })
 
 type CreateAppFormInput = z.input<typeof createAppSchema>
@@ -97,19 +127,23 @@ const DEFAULT_VALUES: CreateAppFormInput = {
   project: NO_PROJECT_VALUE,
   strategy: STRATEGY_DEFAULT_VALUE,
   replicas: '',
+  // Mirrors the CLI's interactive wizard default (apps_create_
+  // interactive.go): a health check is on by default at the documented
+  // /healthz convention, since most apps benefit from one and it's easy
+  // to turn off for the ones that don't implement it.
+  healthCheckEnabled: true,
+  healthCheckPath: HEALTH_CHECK_DEFAULT_PATH,
 }
 
-// The name/image/port(/node) field set and its submit logic, factored
-// out of what used to be CreateAppDialog's own body so the exact same
-// validation/mutation code backs both that standalone dialog and
-// CreateResourceWizard's step 2 "Docker image" path:
-// one schema, one useCreateApp call, not copy-pasted a second time for
-// the wizard. Only name/image/port are collected (the app spec's
-// minimal essentials are build, domains, and port; domains/env/
-// resources/health are real fields the backend accepts but out of
-// scope here, a manually-created app via this form is the "already
+// The name/image/port(/node/health) field set and its submit logic,
+// factored out of what used to be CreateAppDialog's own body so the
+// exact same validation/mutation code backs both that standalone dialog
+// and CreateResourceWizard's step 2 "Docker image" path: one schema, one
+// useCreateApp call, not copy-pasted a second time for the wizard.
+// domains/env/resources are real fields the backend accepts but stay out
+// of scope here, a manually-created app via this form is the "already
 // have a built image" path, distinct from and unaffected by the
-// git-push spec path).
+// git-push spec path.
 export function CreateAppFields({
   open,
   onCreated,
@@ -150,7 +184,7 @@ export function CreateAppFields({
   // entirely when the dialog closes (see CreateResourceWizard.tsx), so a
   // fresh open already gets a fresh useState(false) here.
   const [showAdvanced, setShowAdvanced] = useState(false)
-  const { control, register, handleSubmit, formState, reset } = useForm<
+  const { control, register, handleSubmit, formState, reset, watch } = useForm<
     CreateAppFormInput,
     unknown,
     CreateAppFormOutput
@@ -169,6 +203,16 @@ export function CreateAppFields({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
+  const { restoredFromDraft, discardDraft, dismissDraftNotice, clearDraft } =
+    useFormDraft({
+      storageKey: 'app-create-app-draft',
+      open,
+      watch,
+      reset,
+      defaultValues: DEFAULT_VALUES,
+    })
+  const healthCheckEnabled = watch('healthCheckEnabled')
+
   const onSubmit = handleSubmit((values) => {
     const nodeId = values.node ?? LOCAL_NODE_VALUE
     createApp.mutate(
@@ -186,6 +230,7 @@ export function CreateAppFields({
             ? undefined
             : values.strategy,
         replicas: values.replicas === '' ? undefined : Number(values.replicas),
+        health: healthCheckFrom(values.healthCheckEnabled, values.healthCheckPath),
         // Unlike node placement, project assignment is sent directly in
         // this same create request: handleCreateApp's own doc comment
         // (internal/api/apps.go) explains why that's safe at create
@@ -199,6 +244,7 @@ export function CreateAppFields({
       },
       {
         onSuccess: (created) => {
+          clearDraft()
           onCreated()
           toast.add({
             title: `App "${created.name}" created.`,
@@ -227,47 +273,97 @@ export function CreateAppFields({
       }}
       className="space-y-4"
     >
-      <Field>
-        <FieldLabel htmlFor="app-name">Name</FieldLabel>
-        <Input
-          id="app-name"
-          placeholder="e.g. marketing-site"
-          {...register('name')}
+      {restoredFromDraft ? (
+        <DraftRestoredNotice
+          onDiscard={discardDraft}
+          onDismiss={dismissDraftNotice}
         />
-        <FieldError errors={[formState.errors.name]} />
-      </Field>
+      ) : null}
 
-      <Field>
-        <FieldLabel htmlFor="app-image">Image</FieldLabel>
-        <Input
-          id="app-image"
-          placeholder="e.g. ghcr.io/you/app:latest"
-          {...register('image')}
-        />
-        <FieldHint>
-          The image to run, including a tag. Don&rsquo;t have one built yet?
-          Pick the git option in step 1 instead and we&rsquo;ll build it for
-          you.
-        </FieldHint>
-        <FieldError errors={[formState.errors.image]} />
-      </Field>
+      <div className="space-y-4">
+        <FieldSectionLabel>Basics</FieldSectionLabel>
+        <Field>
+          <FieldLabel htmlFor="app-name">Name</FieldLabel>
+          <Input
+            id="app-name"
+            placeholder="e.g. marketing-site"
+            {...register('name')}
+          />
+          <FieldError errors={[formState.errors.name]} />
+        </Field>
 
-      <Field>
-        <FieldLabel htmlFor="app-port">Port</FieldLabel>
-        <Input
-          id="app-port"
-          type="number"
-          step="1"
-          min="1"
-          placeholder="e.g. 3000"
-          {...register('port')}
-        />
-        <FieldHint>
-          The port your app listens on inside its container, e.g. 3000 for a
-          typical Next.js app.
-        </FieldHint>
-        <FieldError errors={[formState.errors.port]} />
-      </Field>
+        <Field>
+          <FieldLabel htmlFor="app-image">Image</FieldLabel>
+          <Input
+            id="app-image"
+            placeholder="e.g. ghcr.io/you/app:latest"
+            {...register('image')}
+          />
+          <FieldHint>
+            The image to run, including a tag. Don&rsquo;t have one built yet?
+            Pick the git option in step 1 instead and we&rsquo;ll build it for
+            you.
+          </FieldHint>
+          <FieldError errors={[formState.errors.image]} />
+        </Field>
+      </div>
+
+      <div className="space-y-4">
+        <FieldSectionLabel>Networking</FieldSectionLabel>
+        <Field>
+          <FieldLabel htmlFor="app-port">Port</FieldLabel>
+          <Input
+            id="app-port"
+            type="number"
+            step="1"
+            min="1"
+            placeholder="e.g. 3000"
+            {...register('port')}
+          />
+          <FieldHint>
+            The port your app listens on inside its container, e.g. 3000 for a
+            typical Next.js app.
+          </FieldHint>
+          <FieldError errors={[formState.errors.port]} />
+        </Field>
+      </div>
+
+      <div className="space-y-4">
+        <FieldSectionLabel>Health check</FieldSectionLabel>
+        <Field orientation="horizontal">
+          <Controller
+            control={control}
+            name="healthCheckEnabled"
+            render={({ field }) => (
+              <Switch
+                id="app-health-enabled"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            )}
+          />
+          <FieldLabel htmlFor="app-health-enabled">
+            Enable a health check
+          </FieldLabel>
+        </Field>
+        {healthCheckEnabled ? (
+          <Field>
+            <FieldLabel htmlFor="app-health-path">Path</FieldLabel>
+            <Input
+              id="app-health-path"
+              className="font-mono"
+              placeholder={HEALTH_CHECK_DEFAULT_PATH}
+              {...register('healthCheckPath')}
+            />
+            <FieldHint>
+              Checked before cutting traffic to a new container, and to
+              detect a crashed one afterward. Change or turn this off if your
+              app doesn&rsquo;t serve this path.
+            </FieldHint>
+            <FieldError errors={[formState.errors.healthCheckPath]} />
+          </Field>
+        ) : null}
+      </div>
 
       {nodes.length > 0 || projects.length > 0 ? (
         <button

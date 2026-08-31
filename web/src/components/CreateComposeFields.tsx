@@ -16,6 +16,8 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
 import { useDeployCompose } from '../queries/compose'
+import { useFormDraft } from '../hooks/useFormDraft'
+import { DraftRestoredNotice } from './DraftRestoredNotice'
 
 // Same app-name shape validateAppResource (internal/api/apps.go)
 // ultimately enforces server-side; this is fast client-side feedback
@@ -72,7 +74,7 @@ export function CreateComposeFields({
   const deployCompose = useDeployCompose()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [fileError, setFileError] = useState<string | null>(null)
-  const { register, handleSubmit, formState, reset, setValue } = useForm<
+  const { register, handleSubmit, formState, reset, setValue, watch } = useForm<
     FormInput,
     unknown,
     FormOutput
@@ -91,11 +93,26 @@ export function CreateComposeFields({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  const onSubmit = handleSubmit((values) => {
-    deployCompose.mutate({
-      name: values.name.trim(),
-      composeYaml: values.compose,
+  // Neither field is secret: name is an app-group name, compose is the
+  // pasted/uploaded YAML body itself, exactly what the operator would
+  // otherwise lose to a refresh or crash mid-paste.
+  const { restoredFromDraft, discardDraft, dismissDraftNotice, clearDraft } =
+    useFormDraft({
+      storageKey: 'app-create-compose-draft',
+      open,
+      watch,
+      reset,
+      defaultValues: DEFAULT_VALUES,
     })
+
+  const onSubmit = handleSubmit((values) => {
+    deployCompose.mutate(
+      {
+        name: values.name.trim(),
+        composeYaml: values.compose,
+      },
+      { onSuccess: clearDraft },
+    )
   })
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -173,6 +190,13 @@ export function CreateComposeFields({
       }}
       className="space-y-4"
     >
+      {restoredFromDraft ? (
+        <DraftRestoredNotice
+          onDiscard={discardDraft}
+          onDismiss={dismissDraftNotice}
+        />
+      ) : null}
+
       <Field>
         <FieldLabel htmlFor="compose-app-name">Name</FieldLabel>
         <Input
