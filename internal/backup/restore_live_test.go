@@ -340,3 +340,424 @@ func TestContainerRestorer_Restore_Redis_Live(t *testing.T) {
 		t.Errorf("unrelated_key EXISTS = %q, want \"0\" (gone), restore should have replaced it with the pre-overwrite snapshot", goneOut)
 	}
 }
+
+// waitMariaDBReady mirrors waitMySQLReady: MariaDB's official image runs
+// the same two-phase entrypoint (temporary init server, then the real
+// one) MySQL's does, so a single successful probe carries the same
+// false-ready risk waitMySQLReady's own doc comment describes.
+func waitMariaDBReady(ctx context.Context, t *testing.T, rt docker.Runtime, containerName string, probe []string, timeout time.Duration) {
+	t.Helper()
+	waitReady(ctx, t, rt, containerName, probe, timeout)
+	time.Sleep(2 * time.Second)
+	waitReady(ctx, t, rt, containerName, probe, timeout)
+}
+
+// TestContainerRestorer_Restore_MariaDB_Live is
+// TestContainerRestorer_Restore_MySQL_Live's exact MariaDB counterpart:
+// real container, real dump, a real overwriting change, a real restore,
+// and a direct query against the live database afterward. MariaDB 11's
+// image removes the mysql client binary entirely (see mariadbRestoreCmd's
+// own doc comment), so this is the only proof the mariadb client and
+// MARIADB_* env vars actually work end to end, not just that the command
+// string looks plausible on paper.
+func TestContainerRestorer_Restore_MariaDB_Live(t *testing.T) {
+	rt := liveRuntime(t)
+	ctx := context.Background()
+
+	const name = "levelrail-test-restore-mariadb"
+	removeContainerIfExists(ctx, t, rt, name)
+	t.Cleanup(func() { removeContainerIfExists(context.Background(), t, rt, name) })
+
+	id, err := rt.Create(ctx, docker.ContainerSpec{
+		Name:  name,
+		Image: "mariadb:11",
+		Env: map[string]string{
+			"MARIADB_ROOT_PASSWORD": "leveltestroot",
+			"MARIADB_DATABASE":      "leveltest",
+			"MARIADB_USER":          "leveltest",
+			"MARIADB_PASSWORD":      "leveltestpass",
+		},
+	})
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	if err := rt.Start(ctx, id); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	waitMariaDBReady(ctx, t, rt, name, []string{"sh", "-c", `mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" leveltest -e "SELECT 1"`}, 60*time.Second)
+
+	originalMarker := "levelrail-restore-live-original-mariadb-7c2f"
+	seed, err := rt.Exec(ctx, name, []string{"sh", "-c",
+		`mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" leveltest -e "CREATE TABLE restore_probe (val varchar(128)); INSERT INTO restore_probe VALUES ('` + originalMarker + `');"`,
+	})
+	if err != nil {
+		t.Fatalf("Exec() seed error = %v", err)
+	}
+	if _, err := io.Copy(io.Discard, seed); err != nil {
+		t.Fatalf("seeding original data: %v", err)
+	}
+	_ = seed.Close()
+
+	d := &ContainerDumper{Runtime: rt}
+	dumpStream, err := d.Dump(ctx, store.EngineMariaDB, name)
+	if err != nil {
+		t.Fatalf("Dump() error = %v", err)
+	}
+	var dumpBuf bytes.Buffer
+	if _, err := io.Copy(&dumpBuf, dumpStream); err != nil {
+		t.Fatalf("reading Dump() stream error = %v", err)
+	}
+	_ = dumpStream.Close()
+	if !strings.Contains(dumpBuf.String(), originalMarker) {
+		t.Fatalf("captured dump does not contain the original marker %q, test setup is broken", originalMarker)
+	}
+
+	overwriteMarker := "levelrail-restore-live-overwritten-mariadb-4b8e"
+	overwrite, err := rt.Exec(ctx, name, []string{"sh", "-c",
+		`mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" leveltest -e "DROP TABLE restore_probe; CREATE TABLE unrelated_table (val varchar(128)); INSERT INTO unrelated_table VALUES ('` + overwriteMarker + `');"`,
+	})
+	if err != nil {
+		t.Fatalf("Exec() overwrite error = %v", err)
+	}
+	if _, err := io.Copy(io.Discard, overwrite); err != nil {
+		t.Fatalf("overwriting data: %v", err)
+	}
+	_ = overwrite.Close()
+
+	r := &ContainerRestorer{Runtime: rt}
+	if err := r.Restore(ctx, store.EngineMariaDB, name, bytes.NewReader(dumpBuf.Bytes())); err != nil {
+		t.Fatalf("Restore() error = %v", err)
+	}
+
+	check, err := rt.Exec(ctx, name, []string{"sh", "-c", `mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" leveltest -N -e "SELECT val FROM restore_probe;"`})
+	if err != nil {
+		t.Fatalf("Exec() post-restore check error = %v", err)
+	}
+	checkOut, err := io.ReadAll(check)
+	_ = check.Close()
+	if err != nil {
+		t.Fatalf("reading post-restore check: %v", err)
+	}
+	if !strings.Contains(string(checkOut), originalMarker) {
+		t.Errorf("restore_probe after restore = %q, want it to contain the original marker %q", checkOut, originalMarker)
+	}
+
+	goneCheck, err := rt.Exec(ctx, name, []string{"sh", "-c", `mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" leveltest -N -e "SHOW TABLES LIKE 'unrelated_table';"`})
+	if err != nil {
+		t.Fatalf("Exec() overwrite-gone check error = %v", err)
+	}
+	goneOut, err := io.ReadAll(goneCheck)
+	_ = goneCheck.Close()
+	if err != nil {
+		t.Fatalf("reading overwrite-gone check: %v", err)
+	}
+	if strings.Contains(string(goneOut), "unrelated_table") {
+		t.Errorf("unrelated_table still exists after restore (output %q), want the overwrite fully replaced, not merged", goneOut)
+	}
+}
+
+// TestContainerRestorer_Restore_ClickHouse_Live proves clickhouseRestoreCmd
+// against a real ClickHouse container: real dump, a real overwriting
+// change, a real restore, then a direct query against the live database.
+// clickhouseDumpCmd's DDL-plus-INSERT script (see its own doc comment) has
+// no equivalent in the fake-client unit tests for whether the SQL it
+// generates is actually valid to feed back into a real server; this is
+// that proof, including that CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT grants
+// the non-default user clickhouseRestoreCmd runs as enough privilege to
+// drop and recreate the database.
+func TestContainerRestorer_Restore_ClickHouse_Live(t *testing.T) {
+	rt := liveRuntime(t)
+	ctx := context.Background()
+
+	const name = "levelrail-test-restore-clickhouse"
+	removeContainerIfExists(ctx, t, rt, name)
+	t.Cleanup(func() { removeContainerIfExists(context.Background(), t, rt, name) })
+
+	id, err := rt.Create(ctx, docker.ContainerSpec{
+		Name:  name,
+		Image: "clickhouse/clickhouse-server:24.8",
+		Env: map[string]string{
+			"CLICKHOUSE_DB":                        "leveltest",
+			"CLICKHOUSE_USER":                      "leveltest",
+			"CLICKHOUSE_PASSWORD":                  "leveltestpass",
+			"CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT": "1",
+		},
+	})
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	if err := rt.Start(ctx, id); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	// --database "$CLICKHOUSE_DB" here, not a bare SELECT 1: the entrypoint
+	// creates that database after the server starts accepting connections,
+	// so a probe with no database context can pass before it exists, the
+	// same false-ready window postgresDumpCmd's own live test guards
+	// against (see waitReady's caller there).
+	waitReady(ctx, t, rt, name, []string{"sh", "-c", `clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --database "$CLICKHOUSE_DB" --query "SELECT 1"`}, 30*time.Second)
+
+	originalMarker := "levelrail-restore-live-original-clickhouse-5e9a"
+	seed, err := rt.Exec(ctx, name, []string{"sh", "-c",
+		`clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --database "$CLICKHOUSE_DB" --query "CREATE TABLE restore_probe (val String) ENGINE = MergeTree ORDER BY val" && clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --database "$CLICKHOUSE_DB" --query "INSERT INTO restore_probe VALUES ('` + originalMarker + `')"`,
+	})
+	if err != nil {
+		t.Fatalf("Exec() seed error = %v", err)
+	}
+	if _, err := io.Copy(io.Discard, seed); err != nil {
+		t.Fatalf("seeding original data: %v", err)
+	}
+	_ = seed.Close()
+
+	d := &ContainerDumper{Runtime: rt}
+	dumpStream, err := d.Dump(ctx, store.EngineClickHouse, name)
+	if err != nil {
+		t.Fatalf("Dump() error = %v", err)
+	}
+	var dumpBuf bytes.Buffer
+	if _, err := io.Copy(&dumpBuf, dumpStream); err != nil {
+		t.Fatalf("reading Dump() stream error = %v", err)
+	}
+	_ = dumpStream.Close()
+	if !strings.Contains(dumpBuf.String(), originalMarker) {
+		t.Fatalf("captured dump does not contain the original marker %q, test setup is broken", originalMarker)
+	}
+
+	overwriteMarker := "levelrail-restore-live-overwritten-clickhouse-1d6c"
+	overwrite, err := rt.Exec(ctx, name, []string{"sh", "-c",
+		`clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --database "$CLICKHOUSE_DB" --query "DROP TABLE restore_probe" && clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --database "$CLICKHOUSE_DB" --query "CREATE TABLE unrelated_table (val String) ENGINE = MergeTree ORDER BY val" && clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --database "$CLICKHOUSE_DB" --query "INSERT INTO unrelated_table VALUES ('` + overwriteMarker + `')"`,
+	})
+	if err != nil {
+		t.Fatalf("Exec() overwrite error = %v", err)
+	}
+	if _, err := io.Copy(io.Discard, overwrite); err != nil {
+		t.Fatalf("overwriting data: %v", err)
+	}
+	_ = overwrite.Close()
+
+	r := &ContainerRestorer{Runtime: rt}
+	if err := r.Restore(ctx, store.EngineClickHouse, name, bytes.NewReader(dumpBuf.Bytes())); err != nil {
+		t.Fatalf("Restore() error = %v", err)
+	}
+
+	check, err := rt.Exec(ctx, name, []string{"sh", "-c", `clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --database "$CLICKHOUSE_DB" --query "SELECT val FROM restore_probe"`})
+	if err != nil {
+		t.Fatalf("Exec() post-restore check error = %v", err)
+	}
+	checkOut, err := io.ReadAll(check)
+	_ = check.Close()
+	if err != nil {
+		t.Fatalf("reading post-restore check: %v", err)
+	}
+	if !strings.Contains(string(checkOut), originalMarker) {
+		t.Errorf("restore_probe after restore = %q, want it to contain the original marker %q", checkOut, originalMarker)
+	}
+
+	goneCheck, err := rt.Exec(ctx, name, []string{"sh", "-c", `clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --database "$CLICKHOUSE_DB" --query "SHOW TABLES"`})
+	if err != nil {
+		t.Fatalf("Exec() overwrite-gone check error = %v", err)
+	}
+	goneOut, err := io.ReadAll(goneCheck)
+	_ = goneCheck.Close()
+	if err != nil {
+		t.Fatalf("reading overwrite-gone check: %v", err)
+	}
+	if strings.Contains(string(goneOut), "unrelated_table") {
+		t.Errorf("unrelated_table still exists after restore (output %q), want the overwrite fully replaced, not merged", goneOut)
+	}
+}
+
+// TestContainerRestorer_Restore_KeyDB_Live is
+// TestContainerRestorer_Restore_Redis_Live's exact KeyDB counterpart: same
+// write-then-stop-then-start RDB reload path, but through keydb-cli
+// against the eqalpha/keydb image, proving restoreRedisLike's cliBin
+// parameterization actually works against the real binary, not just
+// redis-cli under a different name in a fake client's recorded calls.
+func TestContainerRestorer_Restore_KeyDB_Live(t *testing.T) {
+	rt := liveRuntime(t)
+	ctx := context.Background()
+
+	const name = "levelrail-test-restore-keydb"
+	removeContainerIfExists(ctx, t, rt, name)
+	t.Cleanup(func() { removeContainerIfExists(context.Background(), t, rt, name) })
+
+	id, err := rt.Create(ctx, docker.ContainerSpec{
+		Name:  name,
+		Image: "eqalpha/keydb:latest",
+	})
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	if err := rt.Start(ctx, id); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	waitReady(ctx, t, rt, name, []string{"keydb-cli", "PING"}, 15*time.Second)
+
+	originalMarker := "levelrail-restore-live-original-keydb-3a7d"
+	seed, err := rt.Exec(ctx, name, []string{"keydb-cli", "SET", "restore_probe", originalMarker})
+	if err != nil {
+		t.Fatalf("Exec() seed error = %v", err)
+	}
+	if _, err := io.Copy(io.Discard, seed); err != nil {
+		t.Fatalf("seeding original data: %v", err)
+	}
+	_ = seed.Close()
+
+	d := &ContainerDumper{Runtime: rt}
+	dumpStream, err := d.Dump(ctx, store.EngineKeyDB, name)
+	if err != nil {
+		t.Fatalf("Dump() error = %v", err)
+	}
+	var dumpBuf bytes.Buffer
+	if _, err := io.Copy(&dumpBuf, dumpStream); err != nil {
+		t.Fatalf("reading Dump() stream error = %v", err)
+	}
+	_ = dumpStream.Close()
+	if !strings.Contains(dumpBuf.String(), originalMarker) {
+		t.Fatalf("captured dump does not contain the original marker %q, test setup is broken", originalMarker)
+	}
+
+	overwriteMarker := "levelrail-restore-live-overwritten-keydb-8f1b"
+	overwrite, err := rt.Exec(ctx, name, []string{"sh", "-c",
+		"keydb-cli DEL restore_probe && keydb-cli SET unrelated_key " + overwriteMarker,
+	})
+	if err != nil {
+		t.Fatalf("Exec() overwrite error = %v", err)
+	}
+	if _, err := io.Copy(io.Discard, overwrite); err != nil {
+		t.Fatalf("overwriting data: %v", err)
+	}
+	_ = overwrite.Close()
+
+	r := &ContainerRestorer{Runtime: rt}
+	if err := r.Restore(ctx, store.EngineKeyDB, name, bytes.NewReader(dumpBuf.Bytes())); err != nil {
+		t.Fatalf("Restore() error = %v", err)
+	}
+
+	waitReady(ctx, t, rt, name, []string{"keydb-cli", "PING"}, 15*time.Second)
+
+	check, err := rt.Exec(ctx, name, []string{"keydb-cli", "GET", "restore_probe"})
+	if err != nil {
+		t.Fatalf("Exec() post-restore check error = %v", err)
+	}
+	checkOut, err := io.ReadAll(check)
+	_ = check.Close()
+	if err != nil {
+		t.Fatalf("reading post-restore check: %v", err)
+	}
+	if !strings.Contains(string(checkOut), originalMarker) {
+		t.Errorf("restore_probe after restore = %q, want it to contain the original marker %q", checkOut, originalMarker)
+	}
+
+	goneCheck, err := rt.Exec(ctx, name, []string{"keydb-cli", "EXISTS", "unrelated_key"})
+	if err != nil {
+		t.Fatalf("Exec() overwrite-gone check error = %v", err)
+	}
+	goneOut, err := io.ReadAll(goneCheck)
+	_ = goneCheck.Close()
+	if err != nil {
+		t.Fatalf("reading overwrite-gone check: %v", err)
+	}
+	if !strings.Contains(string(goneOut), "0") {
+		t.Errorf("unrelated_key EXISTS = %q, want \"0\" (gone), restore should have replaced it with the pre-overwrite snapshot", goneOut)
+	}
+}
+
+// TestContainerRestorer_Restore_Dragonfly_Live is
+// TestContainerRestorer_Restore_Redis_Live's Dragonfly counterpart, with
+// the container started the same way internal/reconcile/database's
+// Controller starts one: --dbfilename dump as the command override, so
+// the RDB restoreRedisLike writes to /data/dump.rdb is the exact file
+// Dragonfly reloads on startup (its own default dbfilename embeds a
+// timestamp and would never match). Also guards dragonflyDumpCmd's own
+// stdout redirect: without it, SAVE's "OK" reply lands ahead of the RDB
+// bytes and the restored container fails to come back up at all.
+func TestContainerRestorer_Restore_Dragonfly_Live(t *testing.T) {
+	rt := liveRuntime(t)
+	ctx := context.Background()
+
+	const name = "levelrail-test-restore-dragonfly"
+	removeContainerIfExists(ctx, t, rt, name)
+	t.Cleanup(func() { removeContainerIfExists(context.Background(), t, rt, name) })
+
+	id, err := rt.Create(ctx, docker.ContainerSpec{
+		Name:    name,
+		Image:   "docker.dragonflydb.io/dragonflydb/dragonfly:v1.27.1",
+		Command: []string{"--dbfilename", "dump"},
+	})
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	if err := rt.Start(ctx, id); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	waitReady(ctx, t, rt, name, []string{"redis-cli", "PING"}, 15*time.Second)
+
+	originalMarker := "levelrail-restore-live-original-dragonfly-2c9f"
+	seed, err := rt.Exec(ctx, name, []string{"redis-cli", "SET", "restore_probe", originalMarker})
+	if err != nil {
+		t.Fatalf("Exec() seed error = %v", err)
+	}
+	if _, err := io.Copy(io.Discard, seed); err != nil {
+		t.Fatalf("seeding original data: %v", err)
+	}
+	_ = seed.Close()
+
+	d := &ContainerDumper{Runtime: rt}
+	dumpStream, err := d.Dump(ctx, store.EngineDragonfly, name)
+	if err != nil {
+		t.Fatalf("Dump() error = %v", err)
+	}
+	var dumpBuf bytes.Buffer
+	if _, err := io.Copy(&dumpBuf, dumpStream); err != nil {
+		t.Fatalf("reading Dump() stream error = %v", err)
+	}
+	_ = dumpStream.Close()
+	if !strings.Contains(dumpBuf.String(), originalMarker) {
+		t.Fatalf("captured dump does not contain the original marker %q, test setup is broken", originalMarker)
+	}
+
+	overwriteMarker := "levelrail-restore-live-overwritten-dragonfly-6e3a"
+	overwrite, err := rt.Exec(ctx, name, []string{"sh", "-c",
+		"redis-cli DEL restore_probe && redis-cli SET unrelated_key " + overwriteMarker,
+	})
+	if err != nil {
+		t.Fatalf("Exec() overwrite error = %v", err)
+	}
+	if _, err := io.Copy(io.Discard, overwrite); err != nil {
+		t.Fatalf("overwriting data: %v", err)
+	}
+	_ = overwrite.Close()
+
+	r := &ContainerRestorer{Runtime: rt}
+	if err := r.Restore(ctx, store.EngineDragonfly, name, bytes.NewReader(dumpBuf.Bytes())); err != nil {
+		t.Fatalf("Restore() error = %v", err)
+	}
+
+	waitReady(ctx, t, rt, name, []string{"redis-cli", "PING"}, 15*time.Second)
+
+	check, err := rt.Exec(ctx, name, []string{"redis-cli", "GET", "restore_probe"})
+	if err != nil {
+		t.Fatalf("Exec() post-restore check error = %v", err)
+	}
+	checkOut, err := io.ReadAll(check)
+	_ = check.Close()
+	if err != nil {
+		t.Fatalf("reading post-restore check: %v", err)
+	}
+	if !strings.Contains(string(checkOut), originalMarker) {
+		t.Errorf("restore_probe after restore = %q, want it to contain the original marker %q", checkOut, originalMarker)
+	}
+
+	goneCheck, err := rt.Exec(ctx, name, []string{"redis-cli", "EXISTS", "unrelated_key"})
+	if err != nil {
+		t.Fatalf("Exec() overwrite-gone check error = %v", err)
+	}
+	goneOut, err := io.ReadAll(goneCheck)
+	_ = goneCheck.Close()
+	if err != nil {
+		t.Fatalf("reading overwrite-gone check: %v", err)
+	}
+	if !strings.Contains(string(goneOut), "0") {
+		t.Errorf("unrelated_key EXISTS = %q, want \"0\" (gone), restore should have replaced it with the pre-overwrite snapshot", goneOut)
+	}
+}
