@@ -35,6 +35,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsRollback(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploys":
 		return runAppsDeploys(prog, args[1:], stdout, stderr, lookupEnv)
+	case "promote":
+		return runAppsPromote(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "restart":
 		return runAppsRestart(prog, args[1:], stdout, stderr, lookupEnv)
 	case "stop":
@@ -48,7 +50,7 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	case "diagnose":
 		return runAppsDiagnose(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "network":
-		return runAppsNetwork(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsNetwork(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "logs":
 		return runAppsLogs(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "exec":
@@ -97,6 +99,7 @@ func appsUsage(prog string) string {
   %[1]s apps group <name> [flags]   show name's sibling services under the same multi-service app
   %[1]s apps rollback <name> [flags]   redeploy an older image (same endpoint as deploy)
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
+  %[1]s apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--preview] [flags]   promote name's image onto a sibling app in another environment
   %[1]s apps restart <name> [flags]     recreate the running container, no image change
   %[1]s apps stop <name> [flags]        stop an app's running container
   %[1]s apps start <name> [flags]       start an app previously stopped

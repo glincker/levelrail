@@ -60,14 +60,8 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated := *existing
-	updated.Image = req.Image
-	// A real redeploy (rollback runs through this same endpoint, see the
-	// doc comment above), so it clears a pending env change like
-	// RestartService does; updated started from existing and would
-	// otherwise carry a stale true forward.
-	updated.EnvDirty = false
-	if err := rt.apps.SaveDesiredService(r.Context(), updated); err != nil {
+	updated, err := rt.setDesiredImage(r.Context(), *existing, req.Image)
+	if err != nil {
 		rt.logger.Error("api: trigger deploy failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
@@ -76,6 +70,20 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 	rt.recordPlainDeployAttempt(r.Context(), name, req.Image)
 
 	writeJSON(w, http.StatusAccepted, toAppResource(updated))
+}
+
+// setDesiredImage points existing's image at image and saves it: the
+// same mutation handleTriggerDeploy and handlePromoteApp (promote.go)
+// both drive, clearing EnvDirty the same way RestartService already
+// does for a real redeploy.
+func (rt *Router) setDesiredImage(ctx context.Context, existing store.DesiredService, image string) (store.DesiredService, error) {
+	updated := existing
+	updated.Image = image
+	updated.EnvDirty = false
+	if err := rt.apps.SaveDesiredService(ctx, updated); err != nil {
+		return store.DesiredService{}, err
+	}
+	return updated, nil
 }
 
 // recordPlainDeployAttempt records a deploy_attempts row for the plain

@@ -115,6 +115,10 @@ type (
 	deployCompareResource = apiclient.DeployCompareResource
 	deployCompareSide     = apiclient.DeployCompareSide
 	deployCompareField    = apiclient.DeployCompareField
+
+	promotePreviewResource = apiclient.PromotePreviewResource
+	promotePreviewSide     = apiclient.PromotePreviewSide
+	promoteAppRequest      = apiclient.PromoteAppRequest
 )
 
 // NewClient builds a Client. See apiclient.NewClient.

@@ -618,6 +618,33 @@ func (c *Client) CompareDeploys(ctx context.Context, name, from, to string) (Dep
 	return out, err
 }
 
+// PreviewPromotion calls GET /api/v1/apps/{name}/promote/preview: what
+// promoting name's current image into environmentID would change,
+// without applying it. target disambiguates when more than one app in
+// environmentID belongs to the same project; leave it empty to let the
+// server auto-discover the sole candidate.
+func (c *Client) PreviewPromotion(ctx context.Context, name, environmentID, target string) (PromotePreviewResource, error) {
+	path := "/api/v1/apps/" + PathEscape(name) + "/promote/preview"
+	q := url.Values{}
+	q.Set("to", environmentID)
+	if target != "" {
+		q.Set("target", target)
+	}
+	path += "?" + q.Encode()
+
+	var out PromotePreviewResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
+// PromoteApp calls POST /api/v1/apps/{name}/promote: points the
+// resolved target app's image at name's current image and redeploys it.
+func (c *Client) PromoteApp(ctx context.Context, name string, req PromoteAppRequest) (AppResource, error) {
+	var out AppResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/promote", req, &out)
+	return out, err
+}
+
 // ListServiceTemplates calls GET /api/v1/service-templates: the full
 // catalog, without each entry's Compose body (see ServiceTemplateListItem).
 func (c *Client) ListServiceTemplates(ctx context.Context) ([]ServiceTemplateListItem, error) {
