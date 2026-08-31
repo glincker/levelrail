@@ -70,7 +70,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"basic-auth":     {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 	}},
 	"backups": {subs: map[string]*cmdNode{
-		"list": nil, "trigger": nil, "restore": nil, "verify": nil, "verifications": nil,
+		"list": nil, "trigger": nil, "restore": nil, "restore-as-new": nil, "verify": nil, "verifications": nil,
 		"schedule": {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 	}},
 	"cloudflare-tunnel":    {subs: map[string]*cmdNode{"get": nil, "set": nil, "disconnect": nil}},

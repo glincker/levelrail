@@ -1753,6 +1753,17 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 				Downloader: backup.S3Downloader{},
 				Restorer:   &backup.ContainerRestorer{Runtime: client},
 			}),
+			// "Restore as new database" (internal/api/database_clone_
+			// restore.go): the non-destructive counterpart just above,
+			// same secretsManager/downloader/restorer dependencies, but
+			// waits for a freshly created database to come up instead of
+			// overwriting one that already exists.
+			api.WithCloneRestoreRunner(&backup.CloneRestoreRunner{
+				Store:      db,
+				Secrets:    secretsManager,
+				Downloader: backup.S3Downloader{},
+				Restorer:   &backup.ContainerRestorer{Runtime: client},
+			}),
 			// The plain-download counterpart of the restore runner above:
 			// same secretsManager dependency and same backup.S3Downloader,
 			// but hands the object stream straight back to internal/api

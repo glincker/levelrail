@@ -323,6 +323,7 @@ type Store interface {
 	BackupHistoryStore
 	BackupVerificationStore
 	RestoreHistoryStore
+	CloneRestoreHistoryStore
 	ProjectStore
 	OrganizationStore
 	EnvironmentStore

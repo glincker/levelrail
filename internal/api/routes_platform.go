@@ -502,6 +502,15 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/databases/{name}/restore", rt.requireAbility(AbilityRoot, rt.handleTriggerRestore))
 	mux.HandleFunc("GET /api/v1/databases/{name}/restores", rt.requireAbility(AbilityRead, rt.handleListRestoreHistory))
 
+	// Restore as a new database (database_clone_restore.go): the
+	// non-destructive counterpart just above, AbilityWriteSensitive
+	// rather than AbilityRoot, see handleCloneRestore's own doc comment
+	// for why this endpoint doesn't need the top tier the in-place
+	// restore route does. History listing is ordinary AbilityRead, the
+	// same boundary the in-place restore history route above draws.
+	mux.HandleFunc("POST /api/v1/databases/{name}/restore-as-new", rt.requireAbility(AbilityWriteSensitive, rt.handleCloneRestore))
+	mux.HandleFunc("GET /api/v1/databases/{name}/clone-restores", rt.requireAbility(AbilityRead, rt.handleListCloneRestores))
+
 	// Object-storage attachment, per app (apps_storage.go): which
 	// connected backup_targets bucket (the same S3-compatible connection
 	// a database's scheduled backups can already point at, reused rather

@@ -555,6 +555,16 @@ func (c *Client) TriggerRestore(ctx context.Context, name, backupID string) (Res
 	return out, err
 }
 
+// TriggerCloneRestore calls POST /api/v1/databases/{name}/restore-as-new:
+// the non-destructive counterpart to TriggerRestore above. Creates a
+// brand-new database and restores a previously succeeded backup of name
+// into it, never touching name's own live data.
+func (c *Client) TriggerCloneRestore(ctx context.Context, name string, req TriggerCloneRestoreRequest) (CloneRestoreResource, error) {
+	var out CloneRestoreResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/restore-as-new", req, &out)
+	return out, err
+}
+
 // GetSession calls GET /api/v1/auth/session using this Client's bearer
 // token, exactly the same auth mechanism every other method on this
 // type uses. The server gates this route with requireAuth,
