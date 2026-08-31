@@ -131,10 +131,16 @@ the control plane API. `-i` is the short form of `--interactive`, and
 it cannot be combined with `--name`/`--image`/`--repo`/`--file`, since
 the wizard prompts for those itself.
 
-Note: today, every app is exactly one container. Multi-service apps
-(a web process plus a worker sidecar under one `app.yaml`) aren't
-supported end to end yet, even though the spec's `services` field is
-a map.
+Note: this wizard only creates single-service apps; it always writes
+exactly one entry under `services:`. Multi-service apps (a web process
+plus a worker sidecar under one `app.yaml`) do work end to end, just
+not through this wizard: hand-write multiple entries in `app.yaml`'s
+`services:` map, or use `POST /api/v1/apps/{name}/deploy-spec` (and
+its dashboard equivalent, an app's Services tab) to fan a `services:`
+map out into independent per-service builds and deploys. See
+[docs/roadmap.md](roadmap.md) for the current caveats on that path
+(the wizard gap here, and end-to-end test coverage still being
+single-service-only).
 
 `databases create` has the same guided mode:
 
