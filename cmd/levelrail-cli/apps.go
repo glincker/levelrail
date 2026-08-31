@@ -33,6 +33,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsGroup(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rollback":
 		return runAppsRollback(prog, args[1:], stdout, stderr, lookupEnv)
+	case "deploys":
+		return runAppsDeploys(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restart":
 		return runAppsRestart(prog, args[1:], stdout, stderr, lookupEnv)
 	case "stop":
@@ -48,7 +50,7 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	case "network":
 		return runAppsNetwork(prog, args[1:], stdout, stderr, lookupEnv)
 	case "logs":
-		return runAppsLogs(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsLogs(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "exec":
 		return runAppsExec(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "log-drain":
@@ -94,6 +96,7 @@ func appsUsage(prog string) string {
   %[1]s apps deploy-spec <name> --file app.yaml --repo-url <url> --ref <ref> [flags]   fan an app.yaml's services: map out into N independent builds under one app
   %[1]s apps group <name> [flags]   show name's sibling services under the same multi-service app
   %[1]s apps rollback <name> [flags]   redeploy an older image (same endpoint as deploy)
+  %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
   %[1]s apps restart <name> [flags]     recreate the running container, no image change
   %[1]s apps stop <name> [flags]        stop an app's running container
   %[1]s apps start <name> [flags]       start an app previously stopped

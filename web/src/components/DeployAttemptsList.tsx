@@ -1,8 +1,10 @@
 import { Link } from '@tanstack/react-router'
+import { useState } from 'react'
 import {
   ScrollIcon,
   ArrowCounterClockwiseIcon,
   RocketLaunchIcon,
+  GitDiffIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { DeployAttempt } from '../types/deployAttempt'
 import type { ReconcileCondition } from '../types/deploy'
@@ -18,6 +20,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from '@/components/ui/toast'
 
@@ -64,6 +67,14 @@ export function DeployAttemptsList({
   attempts: DeployAttempt[]
   conditions?: ReconcileCondition[]
 }) {
+  // Capped at 2: a comparison is always between exactly two points (or
+  // one point and "current", the per-row Compare-to-current button
+  // below), so a third pick replaces the oldest selection rather than
+  // growing an N-way comparison this feature doesn't support. Declared
+  // before the empty-state early return below so hook order stays fixed
+  // regardless of attempts.length.
+  const [selected, setSelected] = useState<string[]>([])
+
   if (attempts.length === 0) {
     return (
       <Card>
@@ -89,10 +100,50 @@ export function DeployAttemptsList({
 
   const latestAttemptId = attempts[0]?.id
 
+  const toggleSelected = (id: string) => {
+    setSelected((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id)
+      if (prev.length < 2) return [...prev, id]
+      return [...prev.slice(1), id]
+    })
+  }
+
+  // Ordered oldest-first so "from" always reads as the earlier deploy
+  // regardless of the order the two rows were clicked in.
+  const compareSelectedSearch = (() => {
+    if (selected.length !== 2) return null
+    const [a, b] = selected
+      .map((id) => attempts.find((x) => x.id === id))
+      .filter((x): x is DeployAttempt => x !== undefined)
+      .sort((x, y) => new Date(x.started_at).getTime() - new Date(y.started_at).getTime())
+    if (!a || !b) return null
+    return { from: a.id, to: b.id }
+  })()
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
         <CardTitle>Deploy history</CardTitle>
+        {compareSelectedSearch ? (
+          <Button
+            size="sm"
+            nativeButton={false}
+            render={
+              <Link
+                to="/apps/$name/deploys/compare"
+                params={{ name: appName }}
+                search={compareSelectedSearch}
+              />
+            }
+          >
+            <GitDiffIcon className="size-3.5" data-icon="inline-start" />
+            Compare selected
+          </Button>
+        ) : selected.length === 1 ? (
+          <p className="text-xs text-muted-foreground">
+            Select one more deploy to compare
+          </p>
+        ) : null}
       </CardHeader>
       <CardContent>
         <ul className="-mx-4 divide-y divide-border">
@@ -103,6 +154,8 @@ export function DeployAttemptsList({
               attempt={a}
               isLatestAttempt={a.id === latestAttemptId}
               conditions={conditions}
+              isSelected={selected.includes(a.id)}
+              onToggleSelected={() => toggleSelected(a.id)}
             />
           ))}
         </ul>
@@ -116,11 +169,15 @@ function DeployAttemptRow({
   attempt,
   isLatestAttempt,
   conditions,
+  isSelected,
+  onToggleSelected,
 }: {
   appName: string
   attempt: DeployAttempt
   isLatestAttempt: boolean
   conditions: ReconcileCondition[]
+  isSelected: boolean
+  onToggleSelected: () => void
 }) {
   const triggerDeploy = useTriggerDeploy(appName)
   const StatusIcon = DEPLOY_ATTEMPT_STATUS_ICON[attempt.status]
@@ -151,6 +208,12 @@ function DeployAttemptRow({
 
   return (
     <li className="flex items-start gap-3 px-4 py-3 first:pt-0 last:pb-0">
+      <Checkbox
+        className="mt-1"
+        checked={isSelected}
+        onCheckedChange={onToggleSelected}
+        aria-label={`Select ${attempt.image} to compare`}
+      />
       <Badge
         variant={DEPLOY_ATTEMPT_STATUS_BADGE_VARIANT[attempt.status]}
         className="mt-0.5 shrink-0 rounded-full"
@@ -203,6 +266,21 @@ function DeployAttemptRow({
         >
           <ScrollIcon className="size-3.5" data-icon="inline-start" />
           Logs
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          nativeButton={false}
+          render={
+            <Link
+              to="/apps/$name/deploys/compare"
+              params={{ name: appName }}
+              search={{ from: attempt.id }}
+            />
+          }
+        >
+          <GitDiffIcon className="size-3.5" data-icon="inline-start" />
+          Compare to current
         </Button>
         {attempt.status === 'succeeded' ? (
           <Button
