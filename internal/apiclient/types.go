@@ -975,6 +975,42 @@ type DiagnosisResource struct {
 	DeployAttemptID string            `json:"deploy_attempt_id,omitempty"`
 }
 
+// DimensionRecommendationResource mirrors internal/api's
+// dimensionRecommendationResource
+// (internal/api/resource_recommendation.go): one resource dimension's
+// (memory or cpu) right-sizing suggestion. CurrentLimit/SuggestedLimit
+// are bytes for memory, nano-CPUs for cpu, the same raw-unit convention
+// AppResource.Resources already uses. Action is "" when there isn't
+// enough data, or no limit is currently set, to responsibly suggest a
+// change.
+type DimensionRecommendationResource struct {
+	Dimension      string  `json:"dimension"`
+	SampleCount    int     `json:"sample_count"`
+	DataSufficient bool    `json:"data_sufficient"`
+	Confidence     string  `json:"confidence"`
+	CurrentLimit   int64   `json:"current_limit"`
+	P95Usage       float64 `json:"p95_usage"`
+	P99Usage       float64 `json:"p99_usage"`
+	SuggestedLimit int64   `json:"suggested_limit"`
+	Action         string  `json:"action,omitempty"`
+	Reason         string  `json:"reason"`
+}
+
+// ResourceRecommendationResource mirrors internal/api's
+// resourceRecommendationResource (internal/api/resource_recommendation.go):
+// GET /api/v1/apps/{name}/resource-recommendation's response, a
+// deterministic memory/CPU right-sizing suggestion synthesized from
+// internal/rightsizing over the app's own historical usage samples,
+// never from an external model, and never applied automatically.
+type ResourceRecommendationResource struct {
+	ServiceName    string                          `json:"service_name"`
+	LookbackWindow string                          `json:"lookback_window"`
+	Memory         DimensionRecommendationResource `json:"memory"`
+	CPU            DimensionRecommendationResource `json:"cpu"`
+	OOMDetectedAt  string                          `json:"oom_detected_at,omitempty"`
+	OOMExcerpt     string                          `json:"oom_excerpt,omitempty"`
+}
+
 // AlertRuleResource mirrors internal/api's ruleResource
 // (internal/api/alerts.go). Threshold-kind fields (Metric, Comparator,
 // Threshold, ForDuration) and crashloop-kind fields

@@ -366,6 +366,18 @@ func WithCertExpiryWarningWindow(d time.Duration) Option {
 	return func(rt *Router) { rt.certExpiryWarningWindow = d }
 }
 
+// WithResourceRecommendationLookback overrides how far back GET
+// /api/v1/apps/{name}/resource-recommendation looks for usage history
+// (handleAppResourceRecommendation). Without one configured (or passed as
+// 0), defaultResourceRecommendationLookback (7 days) applies. Same "no
+// hardcoded thresholds, use env vars" shape as WithSessionTTL/
+// WithCertExpiryWarningWindow: this package never reads the environment
+// directly, cmd/levelrail/main.go reads APP_RESOURCE_RECOMMENDATION_LOOKBACK
+// and passes the parsed duration here.
+func WithResourceRecommendationLookback(d time.Duration) Option {
+	return func(rt *Router) { rt.resourceRecommendationLookback = d }
+}
+
 // WithPublicHost sets the IP or hostname GET
 // /api/v1/apps/{name}/domains/{domain}/check tells an operator to point
 // their DNS record at (domain_check.go's advertisedHost). Without one

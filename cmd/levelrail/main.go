@@ -1601,6 +1601,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// for their own always-non-nil dependencies.
 		api.WithScheduledTaskRunner(scheduledTaskRunner),
 		api.WithCertExpiryWarningWindow(certExpiryWarningWindow(logger)),
+		api.WithResourceRecommendationLookback(resourceRecommendationLookback(logger)),
 		api.WithPublicHost(publicHost()),
 		api.WithDeployLogQuerier(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),
@@ -1830,6 +1831,26 @@ func certExpiryWarningWindow(logger *slog.Logger) time.Duration {
 	d, err := time.ParseDuration(raw)
 	if err != nil {
 		logger.Warn("invalid APP_CERT_EXPIRY_WARNING_WINDOW, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return d
+}
+
+// resourceRecommendationLookback reads APP_RESOURCE_RECOMMENDATION_LOOKBACK
+// as a Go duration string, the same env-var-with-default shape
+// certExpiryWarningWindow above already uses for its own duration-typed
+// option. Returns 0 (api's own signal to fall back to its internal
+// default, api.defaultResourceRecommendationLookback) when unset or
+// unparseable, logging a warning in the latter case so a typo'd env var
+// is visible rather than silently ignored.
+func resourceRecommendationLookback(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_RESOURCE_RECOMMENDATION_LOOKBACK")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_RESOURCE_RECOMMENDATION_LOOKBACK, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return 0
 	}
 	return d

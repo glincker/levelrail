@@ -113,6 +113,7 @@ func newServer(client *apiclient.Client) *mcp.Server {
 	registerAlertTools(server, client)
 	registerAppMetricsTools(server, client)
 	registerDiagnosticTools(server, client)
+	registerResourceRecommendationTools(server, client)
 	registerFeatureFlagTools(server, client)
 	registerSystemTools(server, client)
 	registerWebhookTools(server, client)

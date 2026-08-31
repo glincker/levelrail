@@ -259,6 +259,17 @@ func (c *Client) DiagnoseApp(ctx context.Context, name, deployID string) (Diagno
 	return out, err
 }
 
+// GetAppResourceRecommendation calls GET
+// /api/v1/apps/{name}/resource-recommendation
+// (internal/api/resource_recommendation.go's handleAppResourceRecommendation):
+// a read-only, deterministic memory/CPU right-sizing suggestion derived
+// from the app's own historical usage.
+func (c *Client) GetAppResourceRecommendation(ctx context.Context, name string) (ResourceRecommendationResource, error) {
+	var out ResourceRecommendationResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/resource-recommendation", nil, &out)
+	return out, err
+}
+
 // GetAppNetwork calls GET /api/v1/apps/{name}/network
 // (internal/api/network.go's handleGetAppNetwork).
 func (c *Client) GetAppNetwork(ctx context.Context, name string) (NetworkResource, error) {

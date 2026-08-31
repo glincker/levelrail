@@ -49,6 +49,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	case "diagnose":
 		return runAppsDiagnose(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "resource-recommendation":
+		return runAppsResourceRecommendation(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "network":
 		return runAppsNetwork(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "logs":
@@ -106,6 +108,7 @@ func appsUsage(prog string) string {
   %[1]s apps delete <name> [flags]      remove an app's desired state
   %[1]s apps status <name> [flags]   show an app's current reconcile conditions
   %[1]s apps diagnose <name> [--deploy ID] [flags]   explain a failed deploy or crashloop
+  %[1]s apps resource-recommendation <name> [flags]   suggest memory/CPU limits from historical usage
   %[1]s apps network <name> [flags]   show the live traffic path: container port, host port, running
   %[1]s apps logs <name> [flags]     search an app's stored log entries
   %[1]s apps exec <name> -- <cmd> [args...]   run a command in the app's container, exits with its real exit code
