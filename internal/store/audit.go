@@ -3,9 +3,9 @@ package store
 import (
 	"context"
 	"crypto/rand"
-	"database/sql"
 	"encoding/base64"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -77,34 +77,51 @@ func (db *DB) SaveAuditEntry(ctx context.Context, e AuditEntry) error {
 	return nil
 }
 
+// AuditEntryFilter narrows ListAuditEntries to a specific resource's own
+// audit trail, e.g. an app's config-changing requests (Path set to that
+// app's exact path, Method to "PUT"). A zero-value filter applies no
+// narrowing, the same behavior ListAuditEntries always had.
+type AuditEntryFilter struct {
+	Path   string
+	Method string
+}
+
 // ListAuditEntries returns up to limit audit log rows, newest first.
 // before, when non-nil, restricts the result to entries strictly older
 // than that timestamp, so a caller pages backward through a large table
 // by re-issuing this call with the last returned row's CreatedAt: cursor
 // pagination, not offset pagination, the same reasoning this function's
 // own doc comment in the task spec calls for (an OFFSET query degrades
-// linearly as the table grows; this one doesn't).
-func (db *DB) ListAuditEntries(ctx context.Context, limit int, before *time.Time) ([]AuditEntry, error) {
+// linearly as the table grows; this one doesn't). filter narrows by
+// exact path and/or method match.
+func (db *DB) ListAuditEntries(ctx context.Context, limit int, before *time.Time, filter AuditEntryFilter) ([]AuditEntry, error) {
+	query := `
+		SELECT id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at
+		FROM audit_log
+	`
 	var (
-		rows *sql.Rows
-		err  error
+		conditions []string
+		args       []any
 	)
 	if before != nil {
-		rows, err = db.QueryContext(ctx, `
-			SELECT id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at
-			FROM audit_log
-			WHERE created_at < ?
-			ORDER BY created_at DESC
-			LIMIT ?
-		`, FormatAuditTime(*before), limit)
-	} else {
-		rows, err = db.QueryContext(ctx, `
-			SELECT id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at
-			FROM audit_log
-			ORDER BY created_at DESC
-			LIMIT ?
-		`, limit)
+		conditions = append(conditions, "created_at < ?")
+		args = append(args, FormatAuditTime(*before))
 	}
+	if filter.Path != "" {
+		conditions = append(conditions, "path = ?")
+		args = append(args, filter.Path)
+	}
+	if filter.Method != "" {
+		conditions = append(conditions, "method = ?")
+		args = append(args, filter.Method)
+	}
+	if len(conditions) > 0 {
+		query += "WHERE " + strings.Join(conditions, " AND ") + "\n"
+	}
+	query += "ORDER BY created_at DESC\nLIMIT ?"
+	args = append(args, limit)
+
+	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("store: list audit entries: %w", err)
 	}

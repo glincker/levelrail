@@ -285,7 +285,7 @@ type TokenStore interface {
 // shape certs/staticSites/backupTargets already have.
 type AuditStore interface {
 	SaveAuditEntry(ctx context.Context, e store.AuditEntry) error
-	ListAuditEntries(ctx context.Context, limit int, before *time.Time) ([]store.AuditEntry, error)
+	ListAuditEntries(ctx context.Context, limit int, before *time.Time, filter store.AuditEntryFilter) ([]store.AuditEntry, error)
 }
 
 // Store is the full surface NewRouter needs. *store.DB satisfies it
