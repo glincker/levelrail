@@ -7,8 +7,11 @@ import {
   ShareNetworkIcon,
   StackIcon,
   BracketsCurlyIcon,
+  GitBranchIcon,
+  SlidersHorizontalIcon,
   HeartbeatIcon,
   CpuIcon,
+  PlugsConnectedIcon,
   PulseIcon,
   ScrollIcon,
   BellIcon,
@@ -30,9 +33,10 @@ import { summarizeAppStatus } from '../lib/appStatus'
 
 // The app-scoped half of AppSidebar's Vercel-style dynamic nav: rendered
 // in place of the global nav whenever the current route is under
-// /apps/$name/*. The 10 section routes are grouped into Deploy
-// (Overview, Deploys, Domains, Network), Configure (Environment, Health,
-// Resources), and Observe (Metrics, Logs, Alerts), matching the
+// /apps/$name/*. The section routes are grouped into Deploy (Overview,
+// Deploys, Domains, Network, Services), Configure (Environment, Source,
+// Deploy settings, Health, Resources, Integrations, Scheduled tasks),
+// and Observe (Metrics, Logs, Alerts, Exec), matching the
 // SidebarGroupLabel pattern the global sidebar's Settings group uses.
 //
 // Reads app name/status from the same query cache routes/apps/$name.tsx's
@@ -151,6 +155,28 @@ export function AppScopedSidebar({ name }: { name: string }) {
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton
+                render={<Link to="/apps/$name/source" params={{ name }} />}
+                isActive={pathname.endsWith('/source')}
+                tooltip="Source"
+              >
+                <GitBranchIcon />
+                <span>Source</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={
+                  <Link to="/apps/$name/deploy-settings" params={{ name }} />
+                }
+                isActive={pathname.endsWith('/deploy-settings')}
+                tooltip="Deploy settings"
+              >
+                <SlidersHorizontalIcon />
+                <span>Deploy settings</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
                 render={<Link to="/apps/$name/health" params={{ name }} />}
                 isActive={pathname.endsWith('/health')}
                 tooltip="Health"
@@ -167,6 +193,18 @@ export function AppScopedSidebar({ name }: { name: string }) {
               >
                 <CpuIcon />
                 <span>Resources</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={
+                  <Link to="/apps/$name/integrations" params={{ name }} />
+                }
+                isActive={pathname.endsWith('/integrations')}
+                tooltip="Integrations"
+              >
+                <PlugsConnectedIcon />
+                <span>Integrations</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>

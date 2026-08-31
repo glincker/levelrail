@@ -21,7 +21,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { PageSpinner } from '@/components/ui/page-spinner'
 
-// Matches the 13 real section routes under /apps/$name/* (see
+// Matches the 16 real section routes under /apps/$name/* (see
 // AppScopedSidebar.tsx's own nav, the source of truth for these labels):
 // the breadcrumb's trailing "sub-page" segment, keyed by the pathname's
 // last segment. /overview is included even though it's the default
@@ -33,8 +33,11 @@ const APP_SECTION_LABELS: Record<string, string> = {
   network: 'Network',
   services: 'Services',
   environment: 'Environment',
+  source: 'Source',
+  'deploy-settings': 'Deploy settings',
   health: 'Health',
   resources: 'Resources',
+  integrations: 'Integrations',
   'scheduled-tasks': 'Scheduled tasks',
   metrics: 'Metrics',
   logs: 'Logs',
