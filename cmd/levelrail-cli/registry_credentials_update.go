@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"time"
 )
 
 // runRegistryCredentialsUpdate implements "registry-credentials update
@@ -14,11 +15,12 @@ import (
 // existing stored password; given, it rotates it.
 func runRegistryCredentialsUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "registry-credentials update", "print the updated registry credential as JSON to stdout and nothing else", stderr)
-	var name, registryHost, username, password string
+	var name, registryHost, username, password, expiresAt string
 	fs.StringVar(&name, "name", "", "display name for the registry credential (required)")
 	fs.StringVar(&registryHost, "registry-host", "", "registry hostname, e.g. ghcr.io (required)")
 	fs.StringVar(&username, "username", "", "registry username (required)")
 	fs.StringVar(&password, "password", "", "new registry password or token; omit to keep the existing one")
+	fs.StringVar(&expiresAt, "expires-at", "", "optional RFC3339 expiry the operator already knows; omit to clear it")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, registryCredentialsUpdateUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -43,11 +45,19 @@ func runRegistryCredentialsUpdate(prog string, args []string, stdout, stderr io.
 	if username == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--username is required"))
 	}
+	var expiresAtPtr *time.Time
+	if expiresAt != "" {
+		parsed, parseErr := time.Parse(time.RFC3339, expiresAt)
+		if parseErr != nil {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--expires-at must be RFC3339: %v", parseErr))
+		}
+		expiresAtPtr = &parsed
+	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 
 	updated, err := client.UpdateRegistryCredential(context.Background(), id, updateRegistryCredentialRequest{
-		Name: name, RegistryHost: registryHost, Username: username, Password: password,
+		Name: name, RegistryHost: registryHost, Username: username, Password: password, ExpiresAt: expiresAtPtr,
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("update registry credential %q: %w", id, err))
@@ -68,15 +78,17 @@ func registryCredentialsUpdateUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s registry-credentials update <id> --name NAME --registry-host HOST --username USER [flags]
 
-Updates a registry credential's name/registry host/username. Add
+Updates a registry credential's name/registry host/username/expiry. Add
 --password to rotate its stored password in the same call; omit it to
-leave the password unchanged.
+leave the password unchanged. --expires-at is a full replace like the
+other fields: omit it to clear a previously-set expiry.
 
 Flags:
   --name string             display name for the registry credential (required)
   --registry-host string    registry hostname, e.g. ghcr.io (required)
   --username string         registry username (required)
   --password string         new registry password or token, omit to keep the existing one
+  --expires-at string       optional RFC3339 expiry, omit to clear it
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --json                     print the updated registry credential as JSON to stdout, nothing else

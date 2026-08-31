@@ -787,6 +787,14 @@ func (c *Client) DeleteRegistryCredential(ctx context.Context, id string) error 
 	return c.do(ctx, http.MethodDelete, registryCredentialPath(id), nil, nil)
 }
 
+// TestRegistryCredential calls POST
+// /api/v1/registry-credentials/{id}/test: authenticates the credential's
+// stored username/password against its registry host, without pulling
+// anything.
+func (c *Client) TestRegistryCredential(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodPost, registryCredentialPath(id)+"/test", nil, nil)
+}
+
 // CreateNotificationChannel calls POST /api/v1/notification-channels.
 func (c *Client) CreateNotificationChannel(ctx context.Context, req CreateNotificationChannelRequest) (NotificationChannelResource, error) {
 	var out NotificationChannelResource
