@@ -1333,6 +1333,14 @@ func (c *Client) GetSystemDoctor(ctx context.Context) (SystemDoctorResource, err
 	return out, err
 }
 
+// GetUpdates calls GET /api/v1/updates: the running control plane
+// version against GitHub's latest published release.
+func (c *Client) GetUpdates(ctx context.Context) (UpdatesResource, error) {
+	var out UpdatesResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/updates", nil, &out)
+	return out, err
+}
+
 // RotateMasterKey calls POST /api/v1/system/master-key/rotate: re-wraps
 // every stored DEK from the control plane's currently active master key
 // to newMasterKey, live, in one atomic step.

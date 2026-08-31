@@ -50,6 +50,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/internal/version"
 	"github.com/GLINCKER/levelrail/internal/webhook"
 	"github.com/GLINCKER/levelrail/web"
 )
@@ -231,6 +232,8 @@ func main() {
 }
 
 func run(logger *slog.Logger) error {
+	logger.Info("starting", slog.String("version", version.Version))
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 

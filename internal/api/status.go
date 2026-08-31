@@ -12,9 +12,10 @@ import (
 // General settings page, replacing the "nothing here yet" placeholder
 // that page's own comment previously documented. DockerConnected covers
 // daemon connectivity (see DockerPinger and its doc comment on why this
-// isn't a docker.Runtime method); no version string yet (no build-time
-// version variable exists anywhere in this codebase yet), a real,
-// separate follow-up, not faked here.
+// isn't a docker.Runtime method). The running build version lives at
+// GET /api/v1/updates instead (internal/version.Version), not duplicated
+// here, since that endpoint already compares it against GitHub's latest
+// release.
 type systemStatusResponse struct {
 	SecretsConfigured   bool `json:"secrets_configured"`
 	TelemetryConfigured bool `json:"telemetry_configured"`
