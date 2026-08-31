@@ -40,7 +40,7 @@ func secretsUsage(prog string) string {
 Rotates the control plane's envelope-encryption master key: every
 stored per-app data encryption key is re-wrapped under a new master key
 in one atomic step, live, while the control plane keeps serving.
-Read docs/design/master-key-rotation.md before running this in production.
+Read docs/master-key-rotation.md before running this in production.
 
 Run "%[1]s secrets rotate-master-key -h" for its own flags.
 `, prog)
@@ -51,7 +51,7 @@ func runSecretsRotateMasterKey(prog string, args []string, stdout, stderr io.Wri
 	var newKeyFile string
 	fs.StringVar(&newKeyFile, "new-key-file", "", `path to a file holding the new master key (an age identity string, e.g. a fresh "master.key" or the output of generating one); pass "-" to read from stdin instead. Required. Never pass the key itself as a bare argument, it would leak into shell history and process listings.`)
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s secrets rotate-master-key --new-key-file PATH [flags]\n\nRe-wraps every stored data encryption key from the currently active\nmaster key to the new one, in a single atomic operation on the control\nplane. Reads the new key from a file (or stdin with -) so it never\nappears as a bare command-line argument. See\ndocs/design/master-key-rotation.md for the full procedure, including\nwhat to do next if the master key is sourced from APP_MASTER_KEY rather\nthan a file.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s secrets rotate-master-key --new-key-file PATH [flags]\n\nRe-wraps every stored data encryption key from the currently active\nmaster key to the new one, in a single atomic operation on the control\nplane. Reads the new key from a file (or stdin with -) so it never\nappears as a bare command-line argument. See\ndocs/master-key-rotation.md for the full procedure, including\nwhat to do next if the master key is sourced from APP_MASTER_KEY rather\nthan a file.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 

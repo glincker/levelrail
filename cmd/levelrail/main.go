@@ -1236,7 +1236,7 @@ func devFixturesFile() string {
 // from APP_MASTER_KEY: api.WithMasterKeyRotation uses that to decide
 // whether a rotation can persist the new key to disk itself, or must
 // warn the operator to update the env var out of band instead (see
-// docs/design/master-key-rotation.md).
+// docs/master-key-rotation.md).
 func loadSecretsManager(db *store.DB, dataDir string) (mgr *secrets.Manager, masterKeyFilePath string, err error) {
 	if serialized := os.Getenv("APP_MASTER_KEY"); serialized != "" {
 		mk, err := secrets.LoadMasterKey(serialized)
