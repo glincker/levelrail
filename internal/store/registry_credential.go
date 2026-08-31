@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 )
 
 // ErrRegistryCredentialNotFound is returned by GetRegistryCredential and
@@ -22,6 +23,10 @@ type RegistryCredential struct {
 	RegistryHost string
 	Username     string
 	CreatedAt    string
+	// ExpiresAt is operator-provided, never inferred: this platform has
+	// no way to read an expiry out of an opaque credential string. Nil
+	// means no expiry was set.
+	ExpiresAt *time.Time
 }
 
 // RegistryCredentialSecretsKey is the internal/secrets serviceName a
@@ -35,9 +40,9 @@ func RegistryCredentialSecretsKey(id string) string {
 // INSERT" pattern BackupTarget uses.
 func (db *DB) SaveRegistryCredential(ctx context.Context, c RegistryCredential) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO registry_credentials (id, name, registry_host, username, created_at)
-		VALUES (?, ?, ?, ?, ?)
-	`, c.ID, c.Name, c.RegistryHost, c.Username, c.CreatedAt)
+		INSERT INTO registry_credentials (id, name, registry_host, username, created_at, expires_at)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, c.ID, c.Name, c.RegistryHost, c.Username, c.CreatedAt, formatTimePtr(c.ExpiresAt))
 	if err != nil {
 		return fmt.Errorf("store: save registry credential %q: %w", c.ID, err)
 	}
@@ -48,16 +53,20 @@ func (db *DB) SaveRegistryCredential(ctx context.Context, c RegistryCredential) 
 // ErrRegistryCredentialNotFound.
 func (db *DB) GetRegistryCredential(ctx context.Context, id string) (RegistryCredential, error) {
 	var c RegistryCredential
+	var expiresAt sql.NullString
 	err := db.QueryRowContext(ctx, `
-		SELECT id, name, registry_host, username, created_at
+		SELECT id, name, registry_host, username, created_at, expires_at
 		FROM registry_credentials
 		WHERE id = ?
-	`, id).Scan(&c.ID, &c.Name, &c.RegistryHost, &c.Username, &c.CreatedAt)
+	`, id).Scan(&c.ID, &c.Name, &c.RegistryHost, &c.Username, &c.CreatedAt, &expiresAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return RegistryCredential{}, ErrRegistryCredentialNotFound
 	}
 	if err != nil {
 		return RegistryCredential{}, fmt.Errorf("store: get registry credential %q: %w", id, err)
+	}
+	if c.ExpiresAt, err = parseTimePtr(expiresAt); err != nil {
+		return RegistryCredential{}, fmt.Errorf("store: parse expires_at for registry credential %q: %w", id, err)
 	}
 	return c, nil
 }
@@ -69,16 +78,20 @@ func (db *DB) GetRegistryCredential(ctx context.Context, id string) (RegistryCre
 // deploy resolves it this way, not by ID.
 func (db *DB) GetRegistryCredentialByName(ctx context.Context, name string) (RegistryCredential, error) {
 	var c RegistryCredential
+	var expiresAt sql.NullString
 	err := db.QueryRowContext(ctx, `
-		SELECT id, name, registry_host, username, created_at
+		SELECT id, name, registry_host, username, created_at, expires_at
 		FROM registry_credentials
 		WHERE name = ?
-	`, name).Scan(&c.ID, &c.Name, &c.RegistryHost, &c.Username, &c.CreatedAt)
+	`, name).Scan(&c.ID, &c.Name, &c.RegistryHost, &c.Username, &c.CreatedAt, &expiresAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return RegistryCredential{}, ErrRegistryCredentialNotFound
 	}
 	if err != nil {
 		return RegistryCredential{}, fmt.Errorf("store: get registry credential by name %q: %w", name, err)
+	}
+	if c.ExpiresAt, err = parseTimePtr(expiresAt); err != nil {
+		return RegistryCredential{}, fmt.Errorf("store: parse expires_at for registry credential %q: %w", name, err)
 	}
 	return c, nil
 }
@@ -87,7 +100,7 @@ func (db *DB) GetRegistryCredentialByName(ctx context.Context, name string) (Reg
 // first.
 func (db *DB) ListRegistryCredentials(ctx context.Context) ([]RegistryCredential, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, name, registry_host, username, created_at
+		SELECT id, name, registry_host, username, created_at, expires_at
 		FROM registry_credentials
 		ORDER BY created_at
 	`)
@@ -101,8 +114,12 @@ func (db *DB) ListRegistryCredentials(ctx context.Context) ([]RegistryCredential
 	var out []RegistryCredential
 	for rows.Next() {
 		var c RegistryCredential
-		if err := rows.Scan(&c.ID, &c.Name, &c.RegistryHost, &c.Username, &c.CreatedAt); err != nil {
+		var expiresAt sql.NullString
+		if err := rows.Scan(&c.ID, &c.Name, &c.RegistryHost, &c.Username, &c.CreatedAt, &expiresAt); err != nil {
 			return nil, fmt.Errorf("store: scan registry credential row: %w", err)
+		}
+		if c.ExpiresAt, err = parseTimePtr(expiresAt); err != nil {
+			return nil, fmt.Errorf("store: parse expires_at for registry credential %q: %w", c.ID, err)
 		}
 		out = append(out, c)
 	}
@@ -112,18 +129,18 @@ func (db *DB) ListRegistryCredentials(ctx context.Context) ([]RegistryCredential
 	return out, nil
 }
 
-// UpdateRegistryCredential replaces name/registry_host/username for an
-// existing row, the same full-replace contract UpdateBackupTarget uses for
-// its own sibling resource. Rotating the password is a separate write to
-// internal/secrets under this row's existing RegistryCredentialSecretsKey,
-// not this function's concern. Returns ErrRegistryCredentialNotFound if id
-// doesn't exist.
-func (db *DB) UpdateRegistryCredential(ctx context.Context, id, name, registryHost, username string) error {
+// UpdateRegistryCredential replaces name/registry_host/username/expiresAt
+// for an existing row, the same full-replace contract UpdateBackupTarget
+// uses for its own sibling resource. Rotating the password is a separate
+// write to internal/secrets under this row's existing
+// RegistryCredentialSecretsKey, not this function's concern. Returns
+// ErrRegistryCredentialNotFound if id doesn't exist.
+func (db *DB) UpdateRegistryCredential(ctx context.Context, id, name, registryHost, username string, expiresAt *time.Time) error {
 	res, err := db.ExecContext(ctx, `
 		UPDATE registry_credentials
-		SET name = ?, registry_host = ?, username = ?
+		SET name = ?, registry_host = ?, username = ?, expires_at = ?
 		WHERE id = ?
-	`, name, registryHost, username, id)
+	`, name, registryHost, username, formatTimePtr(expiresAt), id)
 	if err != nil {
 		return fmt.Errorf("store: update registry credential %q: %w", id, err)
 	}
