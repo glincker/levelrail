@@ -35,6 +35,11 @@ type fakeBuilder struct {
 
 	notify chan deploy.Request
 
+	// release, when non-nil, blocks Deploy from returning until closed:
+	// lets a test hold the background build open to observe the deploy
+	// attempt is still "running" before letting it finish.
+	release chan struct{}
+
 	// multiCalls, lastMultiReq, multiOutcomes, and multiErr back
 	// DeploySpec, apps_multi_test.go's own fake surface: multiOutcomes
 	// (set explicitly) takes priority when non-nil, otherwise DeploySpec
@@ -94,6 +99,9 @@ func (f *fakeBuilder) Deploy(_ context.Context, req deploy.Request, progress fun
 	f.mu.Unlock()
 	if f.notify != nil {
 		f.notify <- req
+	}
+	if f.release != nil {
+		<-f.release
 	}
 	if f.err != nil {
 		return "", f.err
@@ -591,6 +599,7 @@ func TestHandleTriggerBuild_PreservesCustomLabels(t *testing.T) {
 // "succeeded" once fakeBuilder.Deploy returns.
 func TestHandleTriggerBuild_RecordsDeployAttempt_Succeeded(t *testing.T) {
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
+	fb.release = make(chan struct{})
 	fetch := newFakeFetch(t.TempDir(), nil)
 	db := openTestDB(t)
 	telemetryDB := newTestTelemetryDB(t)
@@ -602,9 +611,9 @@ func TestHandleTriggerBuild_RecordsDeployAttempt_Succeeded(t *testing.T) {
 
 	_, resp := postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main"}`)
 
-	// Immediately after the handler returns, before the build goroutine
-	// has necessarily run at all, the attempt row must already exist and
-	// be "running": that is the entire point of returning early.
+	// fb.release is still open, so Deploy cannot have returned yet
+	// regardless of goroutine scheduling: the attempt is guaranteed to
+	// still be "running" here, not just likely to be.
 	running, err := db.GetDeployAttempt(context.Background(), resp.ID)
 	if err != nil {
 		t.Fatalf("GetDeployAttempt() error = %v", err)
@@ -612,6 +621,8 @@ func TestHandleTriggerBuild_RecordsDeployAttempt_Succeeded(t *testing.T) {
 	if running.Status != store.DeployAttemptStatusRunning {
 		t.Errorf("Status immediately after response = %q, want %q", running.Status, store.DeployAttemptStatusRunning)
 	}
+
+	close(fb.release)
 
 	a := awaitDeployAttemptFinished(t, db, resp.ID)
 	if a.Status != store.DeployAttemptStatusSucceeded {
