@@ -16,6 +16,13 @@ export interface GitHubAppStatus {
   // GitHub Enterprise Server one is connected, empty when not connected.
   instance_url?: string
   installed: boolean
+  // installation_status is set only when the backend actually ran a live
+  // check against GitHub (an installation_id is on record and a private
+  // key was available to sign the check with): 'installed' | 'suspended'
+  // | 'not_found'. Empty when there's nothing to check yet, or the check
+  // itself couldn't run, in which case installed falls back to the last
+  // known local state.
+  installation_status?: 'installed' | 'suspended' | 'not_found'
   account_login?: string
   created_at?: string
   // base_url is what handleStartGitHubAppRegistration's manifest and

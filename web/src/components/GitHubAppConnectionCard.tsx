@@ -37,6 +37,7 @@ import {
   useGitHubAppStatus,
 } from '../queries/githubApp'
 import { SetPrimaryDomainPrompt } from './SetPrimaryDomainPrompt'
+import type { GitHubAppStatus } from '@/types/githubApp'
 
 // Status card for the GitHub App connection: not connected / connected
 // as <account> but not yet installed / connected and installed on
@@ -80,11 +81,7 @@ export function GitHubAppConnectionCard() {
               <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                 <CheckCircleIcon className="size-4 text-green-600 dark:text-green-400" />
                 Connected
-                {status.installed && status.account_login ? (
-                  <Badge variant="success">as {status.account_login}</Badge>
-                ) : (
-                  <Badge variant="warning">not installed yet</Badge>
-                )}
+                <InstallationBadge status={status} />
               </div>
             ) : null}
             {status.connected ? (
@@ -97,12 +94,8 @@ export function GitHubAppConnectionCard() {
                 Not connected
               </div>
             )}
-            {status.connected && !status.installed ? (
-              <p className="text-sm text-muted-foreground">
-                The App was created but hasn&apos;t been installed on an account
-                or organization yet. Finish installing it on GitHub to pick
-                repositories.
-              </p>
+            {status.connected ? (
+              <InstallationStatusMessage status={status} />
             ) : null}
             {!status.connected && !hasPrimaryDomain ? (
               <SetPrimaryDomainPrompt />
@@ -221,6 +214,60 @@ export function GitHubAppConnectionCard() {
       <ManifestPreviewDialog open={previewOpen} onOpenChange={setPreviewOpen} />
     </Card>
   )
+}
+
+// InstallationBadge shows a distinct badge for each of the four states
+// handleGetGitHubAppStatus can report: active, suspended (still
+// installed on GitHub but usable by no one), not_found (uninstalled or
+// deleted on GitHub's side), and never-installed. Suspended and
+// not_found look different from each other and from "not installed yet"
+// on purpose: they mean an operator has to go fix something on GitHub,
+// not just finish a setup step still in progress.
+function InstallationBadge({ status }: Readonly<{ status: GitHubAppStatus }>) {
+  if (status.installation_status === 'suspended') {
+    return <Badge variant="destructive">suspended on GitHub</Badge>
+  }
+  if (status.installation_status === 'not_found') {
+    return <Badge variant="destructive">installation not found</Badge>
+  }
+  if (status.installed && status.account_login) {
+    return <Badge variant="success">as {status.account_login}</Badge>
+  }
+  return <Badge variant="warning">not installed yet</Badge>
+}
+
+// InstallationStatusMessage is InstallationBadge's explanatory sibling:
+// the badge alone doesn't say what to do about a suspended or missing
+// installation.
+function InstallationStatusMessage({ status }: Readonly<{ status: GitHubAppStatus }>) {
+  if (status.installation_status === 'suspended') {
+    return (
+      <p className="text-sm text-muted-foreground">
+        GitHub reports this installation as suspended. Builds and repo
+        browsing will fail until an admin un-suspends it from the App&apos;s
+        page on GitHub.
+      </p>
+    )
+  }
+  if (status.installation_status === 'not_found') {
+    return (
+      <p className="text-sm text-muted-foreground">
+        GitHub no longer has this installation on record, most likely
+        because it was uninstalled there. Disconnect and reinstall the App
+        to restore private-repository access.
+      </p>
+    )
+  }
+  if (!status.installed) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        The App was created but hasn&apos;t been installed on an account
+        or organization yet. Finish installing it on GitHub to pick
+        repositories.
+      </p>
+    )
+  }
+  return null
 }
 
 // ManifestPreviewDialog shows exactly what handleStartGitHubAppRegistration

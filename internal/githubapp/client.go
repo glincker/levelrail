@@ -266,11 +266,16 @@ func (c *Client) ExchangeManifestCode(ctx context.Context, instanceURL, code str
 // (AccountLogin) and to defend against a cross-App installation_id
 // (AppID, checked by the caller against the App's own stored ID before
 // trusting this installation at all: see handleGitHubAppInstalled's own
-// doc comment for why that check exists).
+// doc comment for why that check exists). SuspendedAt is non-empty when
+// an org admin suspended the installation without uninstalling it: GitHub
+// keeps returning 200 for a suspended installation, only access tokens
+// and API calls made with them start failing, so this is the only signal
+// that distinguishes "suspended" from "installed" at this call.
 type InstallationInfo struct {
 	ID           int64
 	AppID        int64
 	AccountLogin string
+	SuspendedAt  string
 }
 
 type installationResponse struct {
@@ -282,7 +287,15 @@ type installationResponse struct {
 	Account struct {
 		Login string `json:"login"`
 	} `json:"account"`
+	SuspendedAt *string `json:"suspended_at"`
 }
+
+// ErrInstallationNotFound wraps the API error GitHub returns for an
+// installation_id that no longer exists (the App was fully uninstalled),
+// the GetInstallation counterpart to ErrPermissionDenied. GitHub signals
+// this with 404 Not Found; callers check
+// errors.Is(err, ErrInstallationNotFound) rather than a status code.
+var ErrInstallationNotFound = errors.New("githubapp: installation not found")
 
 // GetInstallation looks up an installation by ID, authenticated as the
 // App itself (appJWT, from SignAppJWT) rather than as the installation:
@@ -292,9 +305,17 @@ func (c *Client) GetInstallation(ctx context.Context, instanceURL, appJWT string
 	var resp installationResponse
 	path := "/app/installations/" + strconv.FormatInt(installationID, 10)
 	if err := c.do(ctx, c.APIBaseURL(instanceURL), http.MethodGet, path, bearerPrefix+appJWT, &resp); err != nil {
+		var apiErr *apiError
+		if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound {
+			return InstallationInfo{}, fmt.Errorf("%w: %w", ErrInstallationNotFound, err)
+		}
 		return InstallationInfo{}, err
 	}
-	return InstallationInfo{ID: resp.ID, AppID: resp.AppID, AccountLogin: resp.Account.Login}, nil
+	info := InstallationInfo{ID: resp.ID, AppID: resp.AppID, AccountLogin: resp.Account.Login}
+	if resp.SuspendedAt != nil {
+		info.SuspendedAt = *resp.SuspendedAt
+	}
+	return info, nil
 }
 
 // InstallationToken is MintInstallationToken's result: a short-lived

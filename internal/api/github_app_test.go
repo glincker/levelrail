@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -268,6 +270,116 @@ func TestHandleDisconnectGitHubApp_NotFound(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/github-app", ""))
 	if rec.Code != http.StatusNotFound {
 		t.Errorf("status = %d, want 404 (nothing connected)", rec.Code)
+	}
+}
+
+// TestHandleGetGitHubAppStatus_LiveCheckSuspended proves the status
+// endpoint actually asks GitHub about the installation rather than
+// trusting the local row: an operator suspending the App on GitHub's
+// side must flip installed to false and surface installation_status
+// distinctly from a plain uninstalled/never-connected state.
+func TestHandleGetGitHubAppStatus_LiveCheckSuspended(t *testing.T) {
+	secrets := newFakeGitHubAppSecrets()
+	fakeClient := &fakeGitHubAppClient{
+		installation: githubapp.InstallationInfo{ID: 7, AppID: 42, AccountLogin: "octocat", SuspendedAt: "2026-08-20T00:00:00Z"},
+	}
+	rt, db := newTestRouterWithGitHubApp(t, secrets, fakeClient)
+	cookie := loginTestSession(t, rt, db)
+	seedInstalledGitHubApp(t, db, secrets)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/github-app", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `"installed":false`) {
+		t.Errorf("body = %s, want installed:false for a suspended installation", body)
+	}
+	if !strings.Contains(body, `"installation_status":"suspended"`) {
+		t.Errorf("body = %s, want installation_status:suspended", body)
+	}
+}
+
+// TestHandleGetGitHubAppStatus_LiveCheckNotFound proves a fully
+// uninstalled/deleted installation (GitHub returns 404) is reported as
+// its own distinct state, not lumped in with "suspended" or a generic
+// error.
+func TestHandleGetGitHubAppStatus_LiveCheckNotFound(t *testing.T) {
+	secrets := newFakeGitHubAppSecrets()
+	fakeClient := &fakeGitHubAppClient{
+		installationErr: fmt.Errorf("%w: githubapp: github api returned 404", githubapp.ErrInstallationNotFound),
+	}
+	rt, db := newTestRouterWithGitHubApp(t, secrets, fakeClient)
+	cookie := loginTestSession(t, rt, db)
+	seedInstalledGitHubApp(t, db, secrets)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/github-app", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `"installed":false`) {
+		t.Errorf("body = %s, want installed:false for a not-found installation", body)
+	}
+	if !strings.Contains(body, `"installation_status":"not_found"`) {
+		t.Errorf("body = %s, want installation_status:not_found", body)
+	}
+}
+
+// TestHandleGetGitHubAppStatus_LiveCheckInstalled proves the ordinary,
+// healthy case: GitHub confirms an active installation, installed stays
+// true, and installation_status reports it explicitly rather than
+// staying empty.
+func TestHandleGetGitHubAppStatus_LiveCheckInstalled(t *testing.T) {
+	secrets := newFakeGitHubAppSecrets()
+	fakeClient := &fakeGitHubAppClient{
+		installation: githubapp.InstallationInfo{ID: 7, AppID: 42, AccountLogin: "octocat"},
+	}
+	rt, db := newTestRouterWithGitHubApp(t, secrets, fakeClient)
+	cookie := loginTestSession(t, rt, db)
+	seedInstalledGitHubApp(t, db, secrets)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/github-app", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `"installed":true`) {
+		t.Errorf("body = %s, want installed:true", body)
+	}
+	if !strings.Contains(body, `"installation_status":"installed"`) {
+		t.Errorf("body = %s, want installation_status:installed", body)
+	}
+}
+
+// TestHandleGetGitHubAppStatus_LiveCheckErrorFallsBack proves a live
+// check that fails for an unrelated reason (a transient network error
+// here, standing in for anything that isn't a definitive 404) falls back
+// to the local row's own state instead of flipping a working connection
+// to look broken.
+func TestHandleGetGitHubAppStatus_LiveCheckErrorFallsBack(t *testing.T) {
+	secrets := newFakeGitHubAppSecrets()
+	fakeClient := &fakeGitHubAppClient{
+		installationErr: errors.New("connection reset by peer"),
+	}
+	rt, db := newTestRouterWithGitHubApp(t, secrets, fakeClient)
+	cookie := loginTestSession(t, rt, db)
+	seedInstalledGitHubApp(t, db, secrets)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/github-app", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `"installed":true`) {
+		t.Errorf("body = %s, want installed:true (fallback to local row)", body)
+	}
+	if strings.Contains(body, `"installation_status"`) {
+		t.Errorf("body = %s, want no installation_status when the check itself failed", body)
 	}
 }
 

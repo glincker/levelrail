@@ -191,6 +191,12 @@ func isGitHubHTTPSRepoURL(repoURL, instanceHost string) bool {
 // keep working regardless. Checks the connected instance's own host
 // (GHE or github.com) rather than assuming github.com, so a private
 // repo on a GitHub Enterprise Server installation authenticates too.
+//
+// A minting failure past the two expected sentinels (not connected / not
+// installed, e.g. the App got suspended on GitHub's side) is logged at
+// Error, not Warn: repoURL matched the connected instance's own host, so
+// this is very likely a private repo about to fail an unauthenticated
+// clone anyway, and that later clone error alone won't say why.
 func (rt *Router) tokenForRepo(ctx context.Context, repoURL string) string {
 	if rt.githubAppSecrets == nil {
 		return ""
@@ -210,7 +216,8 @@ func (rt *Router) tokenForRepo(ctx context.Context, repoURL string) string {
 	_, token, err := rt.mintGitHubAppInstallationToken(ctx)
 	if err != nil {
 		if !errors.Is(err, errGitHubAppNotConnected) && !errors.Is(err, errGitHubAppNotInstalled) {
-			rt.logger.Warn("api: trigger build: mint github app installation token failed, falling back to an unauthenticated clone", slog.String("error", err.Error()))
+			rt.logger.Error("api: mint github app installation token failed, falling back to an unauthenticated clone that will likely fail for a private repo",
+				slog.String("error", err.Error()), slog.String("repo_url", repoURL))
 		}
 		return ""
 	}
