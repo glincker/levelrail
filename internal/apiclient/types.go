@@ -436,6 +436,29 @@ type TriggerRestoreRequest struct {
 	BackupID string `json:"backup_id"`
 }
 
+// CloneRestoreResource mirrors internal/api's cloneRestoreResource
+// (internal/api/database_clone_restore.go): one "restore as new database"
+// attempt.
+type CloneRestoreResource struct {
+	ID                 string `json:"id"`
+	SourceDatabaseName string `json:"source_database_name"`
+	NewDatabaseName    string `json:"new_database_name"`
+	BackupHistoryID    string `json:"backup_history_id"`
+	Status             string `json:"status"`
+	Error              string `json:"error,omitempty"`
+	StartedAt          string `json:"started_at"`
+	FinishedAt         string `json:"finished_at,omitempty"`
+}
+
+// TriggerCloneRestoreRequest mirrors internal/api's cloneRestoreRequest.
+type TriggerCloneRestoreRequest struct {
+	BackupID  string            `json:"backup_id"`
+	NewName   string            `json:"new_name"`
+	Version   string            `json:"version,omitempty"`
+	ProjectID string            `json:"project_id,omitempty"`
+	Resources *ServiceResources `json:"resources,omitempty"`
+}
+
 // OnboardingStateResource mirrors internal/api's onboardingStateResource
 // (internal/api/onboarding.go).
 type OnboardingStateResource struct {

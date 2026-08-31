@@ -44,6 +44,8 @@ type (
 	backupScheduleResource          = apiclient.BackupScheduleResource
 	setBackupScheduleRequest        = apiclient.SetBackupScheduleRequest
 	triggerRestoreRequest           = apiclient.TriggerRestoreRequest
+	cloneRestoreResource            = apiclient.CloneRestoreResource
+	triggerCloneRestoreRequest      = apiclient.TriggerCloneRestoreRequest
 	setAppDatabaseRequest           = apiclient.SetAppDatabaseRequest
 	appDatabaseResource             = apiclient.AppDatabaseResource
 	appStatusSummary                = apiclient.AppStatusSummary

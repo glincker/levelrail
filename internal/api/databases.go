@@ -161,9 +161,13 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
-// handleCreateDatabase handles POST /api/v1/databases. Rejects a name
-// that already exists, the same conflict-not-overwrite convention
-// handleCreateApp establishes.
+// createDesiredDatabase is handleCreateDatabase's own creation body,
+// factored out so handleCloneRestore (database_clone_restore.go) can
+// create a "restore as new database" target through the exact same path
+// rather than a second, duplicated one: same conflict check, same
+// SaveDesiredDatabase call, same trailing project assignment. Writes the
+// HTTP response itself on failure and returns ok=false, the same shape
+// loadDatabaseForRunner already establishes.
 //
 // Creating a postgres database here always succeeds at the store layer:
 // the reconciler (internal/reconcile/database) will refuse to actually
@@ -178,49 +182,60 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 // has no existing project assignment to clobber, so this handler is
 // allowed to call UpdateDatabaseProject as a trailing step after the
 // create succeeds, while an ordinary PUT-driven update still can't.
-func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
-	var req databaseResource
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
-		return
-	}
+func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, req databaseResource) bool {
 	if err := validateDatabaseResource(req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
-		return
+		return false
 	}
 	if err := rt.validateProjectID(r.Context(), req.ProjectID); err != nil {
 		if errors.Is(err, store.ErrProjectNotFound) {
 			writeError(w, http.StatusBadRequest, "unknown project_id")
-			return
+			return false
 		}
 		rt.logger.Error("api: create database: check project failed", slog.String("error", err.Error()), slog.String("project_id", req.ProjectID))
 		writeError(w, http.StatusInternalServerError, "internal error")
-		return
+		return false
 	}
 
 	_, err := rt.databases.GetDesiredDatabase(r.Context(), req.Name)
 	if err == nil {
 		writeError(w, http.StatusConflict, "a database with this name already exists")
-		return
+		return false
 	}
 	if !errors.Is(err, store.ErrDatabaseNotFound) {
 		rt.logger.Error("api: create database: check existing failed", slog.String("error", err.Error()), slog.String("name", req.Name))
 		writeError(w, http.StatusInternalServerError, "internal error")
-		return
+		return false
 	}
 
 	if err := rt.databases.SaveDesiredDatabase(r.Context(), req.toDesiredDatabase()); err != nil {
 		rt.logger.Error("api: create database failed", slog.String("error", err.Error()), slog.String("name", req.Name))
 		writeError(w, http.StatusInternalServerError, "internal error")
-		return
+		return false
 	}
 
 	if req.ProjectID != "" {
 		if err := rt.databases.UpdateDatabaseProject(r.Context(), req.Name, req.ProjectID); err != nil {
 			rt.logger.Error("api: create database: assign project failed", slog.String("error", err.Error()), slog.String("name", req.Name), slog.String("project_id", req.ProjectID))
 			writeError(w, http.StatusInternalServerError, "internal error")
-			return
+			return false
 		}
+	}
+	return true
+}
+
+// handleCreateDatabase handles POST /api/v1/databases. Rejects a name
+// that already exists, the same conflict-not-overwrite convention
+// handleCreateApp establishes. See createDesiredDatabase's own doc
+// comment for the actual creation logic.
+func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
+	var req databaseResource
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if !rt.createDesiredDatabase(w, r, req) {
+		return
 	}
 	writeJSON(w, http.StatusCreated, req)
 }

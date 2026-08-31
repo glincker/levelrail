@@ -188,6 +188,16 @@ func WithRestoreRunner(r RestoreRunner) Option {
 	return func(rt *Router) { rt.restoreRunner = r }
 }
 
+// WithCloneRestoreRunner enables
+// POST /api/v1/databases/{name}/restore-as-new. Without one configured
+// (the default), that route returns 501, the same "not configured" shape
+// WithRestoreRunner's absence produces; listing clone-restore history
+// (GET .../clone-restores) works regardless, the same "listing needs no
+// live runner" reasoning WithRestoreRunner's own doc comment gives.
+func WithCloneRestoreRunner(r CloneRestoreRunner) Option {
+	return func(rt *Router) { rt.cloneRestoreRunner = r }
+}
+
 // WithSessionTTL overrides how long a session cookie stays valid.
 // Without one configured, defaultSessionTTL (24h) applies. The project's
 // "no hardcoded thresholds, use env vars" rule is honored one layer up,
