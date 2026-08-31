@@ -135,13 +135,19 @@ function OptionCard({
 // is duplicated here, this component only owns which step and which
 // option is showing).
 //
-// Both the apps and databases list routes render this same component as
-// their "New app"/"New database" trigger, always opening fresh on step 1:
-// see handleOpenChange.
+// `scope` lets a caller that already declared intent (the apps or
+// databases list's own "New" button) skip the other category entirely
+// instead of just pre-filtering a switchable tab: crossing categories
+// from a page that already said which one you want is not a real use
+// case, and a still-visible "All" tab would recreate the same mixed grid
+// the scoping exists to remove. Leave it undefined for a generic entry
+// point (dashboard overview) that has no such intent yet.
 export function CreateResourceWizard({
   trigger,
+  scope,
 }: {
   trigger: React.ReactElement
+  scope?: 'applications' | 'databases'
 }) {
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
@@ -157,6 +163,9 @@ export function CreateResourceWizard({
   const [fullscreen, setFullscreen] = useState(true)
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<'all' | 'applications' | 'databases'>('all')
+  // A scoped wizard has nothing to switch between, so the tabs never
+  // render and the active category is just the fixed scope.
+  const activeCategory = scope ?? category
   // Optional convenience, see useDatabaseEnginesOptional's own doc
   // comment: a slow/failed fetch just means step 1 shows the fixed
   // options without any database cards yet, never a blocked dialog.
@@ -186,11 +195,11 @@ export function CreateResourceWizard({
 
   const normalizedSearch = search.trim().toLowerCase()
   const filteredApplications =
-    category === 'databases'
+    activeCategory === 'databases'
       ? []
       : applicationOptions.filter((option) => matchesSearch(option, normalizedSearch))
   const filteredDatabases =
-    category === 'applications'
+    activeCategory === 'applications'
       ? []
       : databaseOptions.filter((option) => matchesSearch(option, normalizedSearch))
   const hasResults =
@@ -241,6 +250,13 @@ export function CreateResourceWizard({
             : "We'll set this database up on your server and connect it automatically, no manual configuration needed."
     : ''
 
+  const pickerTitle =
+    scope === 'applications'
+      ? 'New application'
+      : scope === 'databases'
+        ? 'New database'
+        : 'New resource'
+
   const gridClassName = fullscreen
     ? 'grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5'
     : 'grid grid-cols-2 gap-3'
@@ -276,7 +292,7 @@ export function CreateResourceWizard({
           <>
             <DialogHeader>
               <DialogTitle className={fullscreen ? 'text-lg' : undefined}>
-                New resource
+                {pickerTitle}
               </DialogTitle>
               <DialogDescription>Pick a starting point.</DialogDescription>
             </DialogHeader>
@@ -295,18 +311,20 @@ export function CreateResourceWizard({
                 className="pl-8"
               />
             </div>
-            <Tabs
-              value={category}
-              onValueChange={(value) => {
-                setCategory(value as typeof category)
-              }}
-            >
-              <TabsList>
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="applications">Applications</TabsTrigger>
-                <TabsTrigger value="databases">Databases</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            {scope === undefined ? (
+              <Tabs
+                value={category}
+                onValueChange={(value) => {
+                  setCategory(value as typeof category)
+                }}
+              >
+                <TabsList>
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="applications">Applications</TabsTrigger>
+                  <TabsTrigger value="databases">Databases</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            ) : null}
             {filteredApplications.length > 0 ? (
               <div className="space-y-2">
                 <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
