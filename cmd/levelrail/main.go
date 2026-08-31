@@ -573,7 +573,14 @@ func run(logger *slog.Logger) error {
 
 	alertingFederator := telemetry.NewLocalFederator(telemetryDB)
 	alertingNewNotifier := func(r alerting.Rule) alerting.Notifier { return alerting.NewNotifier(nil, emailSender, r) }
-	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, alertingNewNotifier, logger)
+	// db (the same *store.DB every other cert-storage reader in this
+	// function uses) satisfies alerting.CertSource structurally, so a
+	// kind=cert_expiry rule reads the exact same certificate storage GET
+	// /api/v1/certificates does (api.WithCertExpiryWarningWindow below
+	// reads the identical env var, so the two can never silently
+	// disagree on when "expiring_soon" starts).
+	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, db,
+		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), alertingNewNotifier, logger)
 	go func() {
 		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("alerting engine stopped", slog.String("error", err.Error()))
@@ -1850,12 +1857,15 @@ func sessionTTL(logger *slog.Logger) time.Duration {
 
 // certExpiryWarningWindow reads APP_CERT_EXPIRY_WARNING_WINDOW as a Go
 // duration string, the same env-var-with-default shape sessionTTL above
-// already uses for api.WithSessionTTL, applied here to
+// already uses for api.WithSessionTTL, applied here to both
 // api.WithCertExpiryWarningWindow (GET /api/v1/certificates's
-// "expiring_soon" threshold). Returns 0 (api's own signal to fall back
-// to its internal default, api.defaultCertExpiryWarningWindow) when
-// unset or unparseable, logging a warning in the latter case so a
-// typo'd env var is visible rather than silently ignored.
+// "expiring_soon" threshold) and alerting.NewEngine's own cert-expiry
+// evaluation, so the dashboard and a kind=cert_expiry alert rule always
+// agree on when a certificate becomes a concern. Returns 0 (both
+// callers' own signal to fall back to their internal default,
+// alerting.DefaultCertExpiryWarningWindow) when unset or unparseable,
+// logging a warning in the latter case so a typo'd env var is visible
+// rather than silently ignored.
 func certExpiryWarningWindow(logger *slog.Logger) time.Duration {
 	raw := os.Getenv("APP_CERT_EXPIRY_WARNING_WINDOW")
 	if raw == "" {
@@ -1864,6 +1874,28 @@ func certExpiryWarningWindow(logger *slog.Logger) time.Duration {
 	d, err := time.ParseDuration(raw)
 	if err != nil {
 		logger.Warn("invalid APP_CERT_EXPIRY_WARNING_WINDOW, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return d
+}
+
+// certRenewalStalledThreshold reads APP_CERT_RENEWAL_STALLED_THRESHOLD
+// as a Go duration string, the same env-var-with-default shape
+// certExpiryWarningWindow above already uses, applied here to
+// alerting.NewEngine: how long a kind=cert_expiry rule waits with a
+// certificate's NotAfter unchanged before flagging it as a stronger
+// "renewal appears stalled" signal (EvaluateCertExpiry's own doc
+// comment). Returns 0 (alerting's own signal to fall back to
+// alerting.DefaultCertRenewalStalledThreshold) when unset or
+// unparseable.
+func certRenewalStalledThreshold(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_CERT_RENEWAL_STALLED_THRESHOLD")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_CERT_RENEWAL_STALLED_THRESHOLD, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return 0
 	}
 	return d

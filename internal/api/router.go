@@ -144,9 +144,11 @@ type Router struct {
 	// updatesCache caches fetchLatestRelease's result; always non-nil,
 	// constructed in NewRouter.
 	updatesCache *updatesCache
-	// certExpiryWarningWindow overrides defaultCertExpiryWarningWindow
-	// for GET /api/v1/certificates's "expiring_soon" threshold. 0 means
-	// "use the default", set via WithCertExpiryWarningWindow.
+	// certExpiryWarningWindow overrides alerting.DefaultCertExpiryWarningWindow
+	// for GET /api/v1/certificates's "expiring_soon" threshold, and for a
+	// kind=cert_expiry alert rule's own evaluation (cmd/levelrail/main.go
+	// passes the same resolved value to both). 0 means "use the
+	// default", set via WithCertExpiryWarningWindow.
 	certExpiryWarningWindow time.Duration
 	// previewTTL overrides defaultPreviewTTL (preview_environments_sweep.go):
 	// how long a preview environment can go without a webhook update

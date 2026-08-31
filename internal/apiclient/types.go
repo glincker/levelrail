@@ -687,6 +687,28 @@ type EvaluateFlagResource struct {
 	Enabled bool   `json:"enabled"`
 }
 
+// CreateAlertRuleRequest mirrors the fields internal/api's ruleResource
+// actually reads from a create request body; id and resource_id always
+// come from the server (alerting.NewRuleID, the app name in the URL),
+// never the body, so this type has no fields for either. A
+// kind=cert_expiry rule needs none of the threshold or crashloop fields
+// below: it watches every stored certificate platform-wide, not this
+// rule's own resource_id.
+type CreateAlertRuleRequest struct {
+	Name                  string  `json:"name"`
+	Kind                  string  `json:"kind"`
+	Metric                string  `json:"metric,omitempty"`
+	Comparator            string  `json:"comparator,omitempty"`
+	Threshold             float64 `json:"threshold,omitempty"`
+	ForDuration           string  `json:"for_duration,omitempty"`
+	RestartCountThreshold int     `json:"restart_count_threshold,omitempty"`
+	RestartWindow         string  `json:"restart_window,omitempty"`
+	ChannelID             string  `json:"channel_id,omitempty"`
+	NotifyURL             string  `json:"notify_url,omitempty"`
+	NotifyKind            string  `json:"notify_kind,omitempty"`
+	Enabled               bool    `json:"enabled"`
+}
+
 // BackupTargetResource mirrors internal/api's backupTargetResource
 // (internal/api/backup_targets.go). No credential fields: access_key_id
 // and secret_access_key are write-only, accepted through
@@ -1033,7 +1055,9 @@ type ResourceRecommendationResource struct {
 // Threshold, ForDuration) and crashloop-kind fields
 // (RestartCountThreshold, RestartWindow) are both present on the wire;
 // only the ones matching Kind are meaningful, mirroring alerting.Rule's
-// own shape.
+// own shape. A kind=cert_expiry rule uses neither group: it watches
+// every stored certificate platform-wide, not this rule's own
+// resource_id.
 type AlertRuleResource struct {
 	ID         string `json:"id,omitempty"`
 	Name       string `json:"name"`

@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -171,6 +172,10 @@ func TestCertificatesRoute_RequireAuth(t *testing.T) {
 	}
 }
 
+// TestStatusForExpiry exercises the same bucketing this handler now
+// delegates to (alerting.CertExpiryStatus, cert_expiry.go), so a
+// regression there fails a test in this package too, not just
+// internal/alerting's own.
 func TestStatusForExpiry(t *testing.T) {
 	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	const window = 14 * 24 * time.Hour
@@ -188,8 +193,8 @@ func TestStatusForExpiry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := statusForExpiry(tt.notAfter, now, window); got != tt.want {
-				t.Errorf("statusForExpiry(%v, %v, %v) = %q, want %q", tt.notAfter, now, window, got, tt.want)
+			if got := alerting.CertExpiryStatus(tt.notAfter, now, window); got != tt.want {
+				t.Errorf("alerting.CertExpiryStatus(%v, %v, %v) = %q, want %q", tt.notAfter, now, window, got, tt.want)
 			}
 		})
 	}

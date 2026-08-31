@@ -1305,6 +1305,18 @@ func (c *Client) ListAlertRules(ctx context.Context, name string) ([]AlertRuleRe
 	return out, err
 }
 
+// CreateAlertRule calls POST /api/v1/apps/{name}/alerts.
+func (c *Client) CreateAlertRule(ctx context.Context, name string, req CreateAlertRuleRequest) (AlertRuleResource, error) {
+	var out AlertRuleResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/alerts", req, &out)
+	return out, err
+}
+
+// DeleteAlertRule calls DELETE /api/v1/apps/{name}/alerts/{id}.
+func (c *Client) DeleteAlertRule(ctx context.Context, name, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/alerts/"+PathEscape(id), nil, nil)
+}
+
 // QueryAppMetrics calls GET /api/v1/apps/{name}/metrics?metric=&from=&to=&step=
 // (internal/api/metrics.go's handleQueryMetrics). from/to are sent as
 // RFC3339; step of zero omits the query param, matching the server's own

@@ -356,12 +356,13 @@ func WithScheduledTaskRunner(r ScheduledTaskRunner) Option {
 
 // WithCertExpiryWarningWindow overrides how far ahead of a certificate's
 // expiry GET /api/v1/certificates starts reporting "expiring_soon"
-// instead of "healthy" (see statusForExpiry). Without one configured (or
-// passed as 0), defaultCertExpiryWarningWindow (14 days) applies. Same
-// "no hardcoded thresholds, use env vars" shape as WithSessionTTL: this
-// package never reads the environment directly, cmd/levelrail/main.go
-// reads APP_CERT_EXPIRY_WARNING_WINDOW and passes the parsed duration
-// here.
+// instead of "healthy" (see alerting.CertExpiryStatus). Without one
+// configured (or passed as 0), alerting.DefaultCertExpiryWarningWindow
+// (14 days) applies. Same "no hardcoded thresholds, use env vars" shape
+// as WithSessionTTL: this package never reads the environment directly,
+// cmd/levelrail/main.go reads APP_CERT_EXPIRY_WARNING_WINDOW and passes
+// the parsed duration here, and to alerting.NewEngine for a
+// kind=cert_expiry rule's own evaluation.
 func WithCertExpiryWarningWindow(d time.Duration) Option {
 	return func(rt *Router) { rt.certExpiryWarningWindow = d }
 }

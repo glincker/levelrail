@@ -76,6 +76,9 @@ type (
 	scheduledTaskResource = apiclient.ScheduledTaskResource
 	scheduledTaskRequest  = apiclient.ScheduledTaskRequest
 
+	alertRuleResource      = apiclient.AlertRuleResource
+	createAlertRuleRequest = apiclient.CreateAlertRuleRequest
+
 	featureFlagResource  = apiclient.FeatureFlagResource
 	featureFlagRequest   = apiclient.FeatureFlagRequest
 	evaluateFlagResource = apiclient.EvaluateFlagResource
