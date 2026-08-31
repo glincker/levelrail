@@ -327,6 +327,7 @@ type Store interface {
 	ServiceVolumeBackupScheduleStore
 	ServiceVolumeRestoreHistoryStore
 	CloneRestoreHistoryStore
+	VolumeCloneRestoreHistoryStore
 	ProjectStore
 	OrganizationStore
 	EnvironmentStore

@@ -216,6 +216,17 @@ func WithCloneRestoreRunner(r CloneRestoreRunner) Option {
 	return func(rt *Router) { rt.cloneRestoreRunner = r }
 }
 
+// WithVolumeCloneRestoreRunner enables
+// POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new. Without one
+// configured (the default), that route returns 501, the same
+// "not configured" shape WithServiceVolumeRestoreRunner's absence
+// produces; listing clone-restore history (GET .../clone-restores) works
+// regardless, the same "listing needs no live runner" reasoning
+// WithCloneRestoreRunner's own doc comment gives.
+func WithVolumeCloneRestoreRunner(r VolumeCloneRestoreRunner) Option {
+	return func(rt *Router) { rt.volumeCloneRestoreRunner = r }
+}
+
 // WithSessionTTL overrides how long a session cookie stays valid.
 // Without one configured, defaultSessionTTL (24h) applies. The project's
 // "no hardcoded thresholds, use env vars" rule is honored one layer up,

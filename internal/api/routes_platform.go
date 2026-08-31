@@ -521,6 +521,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// lesser risk tier just because the target is a filesystem.
 	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/restore", rt.requireAbility(AbilityRoot, rt.handleTriggerVolumeRestore))
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/restores", rt.requireAbility(AbilityRead, rt.handleListVolumeRestoreHistory))
+	// Restore as a new volume (app_volume_clone_restore.go): the
+	// non-destructive counterpart just above, the same AbilityWriteSensitive
+	// tier the database clone-restore route below uses, see
+	// handleVolumeCloneRestore's own doc comment for why.
+	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new", rt.requireAbility(AbilityWriteSensitive, rt.handleVolumeCloneRestore))
+	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/clone-restores", rt.requireAbility(AbilityRead, rt.handleListVolumeCloneRestores))
 	// Restore as a new database (database_clone_restore.go): the
 	// non-destructive counterpart just above, AbilityWriteSensitive
 	// rather than AbilityRoot, see handleCloneRestore's own doc comment

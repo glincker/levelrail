@@ -38,6 +38,8 @@ import {
 } from '../queries/volumeBackupHistory'
 import { useVolumeRestoreHistory } from '../queries/volumeRestoreHistory'
 import { RestoreVolumeBackupDialog } from './RestoreVolumeBackupDialog'
+import { VolumeCloneRestoreDialog } from './VolumeCloneRestoreDialog'
+import { VolumeCloneRestoreHistoryTable } from './VolumeCloneRestoreHistoryTable'
 import { VolumeBackupScheduleForm } from './VolumeBackupScheduleForm'
 import { VolumeBackupVerificationBadge } from './VolumeBackupVerificationBadge'
 import { StatusBadge } from './backupAttemptStatus'
@@ -52,6 +54,12 @@ import type { AppVolume } from '../types/appDetail'
 // volume picker BackupsSection never needed, and every sub-component
 // below takes an explicit volumeName instead of assuming there's only
 // one.
+//
+// VolumeCloneRestoreDialog's "restore as new volume" creates a bare,
+// standalone Docker volume with no app or app.yaml attached to it and no
+// detail page anywhere in this app: an operator can see it happened here,
+// in VolumeCloneRestoreHistoryTable, and reference the new volume by name
+// elsewhere, but attaching it to a running app is a manual step today.
 //
 // See queries/volumeBackupHistory.ts, queries/volumeRestoreHistory.ts,
 // queries/volumeBackupVerification.ts, queries/volumeBackupSchedule.ts
@@ -325,6 +333,11 @@ function VolumeBackupHistoryTable({
                         volumeName={volumeName}
                         backup={record}
                       />
+                      <VolumeCloneRestoreDialog
+                        appName={appName}
+                        volumeName={volumeName}
+                        backup={record}
+                      />
                     </div>
                   ) : null}
                 </TableCell>
@@ -504,6 +517,10 @@ export function AppVolumeBackupsSection({
               volumeName={volumeName}
             />
             <VolumeRestoreHistoryTable
+              appName={appName}
+              volumeName={volumeName}
+            />
+            <VolumeCloneRestoreHistoryTable
               appName={appName}
               volumeName={volumeName}
             />
