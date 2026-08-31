@@ -202,6 +202,33 @@ func TestHandleCreateAlertRule_NodeDiskSpaceSuccess(t *testing.T) {
 	}
 }
 
+// TestHandleCreateAlertRule_NodeResourceUsageSuccess checks that a
+// kind=node_resource_usage rule needs none of the threshold/crashloop
+// fields either: EvaluateNodeResourceUsage
+// (internal/alerting/node_resource_usage.go) watches every node's
+// summed CPU/memory usage platform-wide, not this rule's own
+// ResourceID, the same shape kind=node_disk_space already uses.
+func TestHandleCreateAlertRule_NodeResourceUsageSuccess(t *testing.T) {
+	rt, db, _ := newTestRouterWithAlerting(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	body := `{"name":"node load watch","kind":"node_resource_usage","notify_url":"https://example.com/hook","enabled":true}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/alerts", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	var got ruleResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Kind != "node_resource_usage" {
+		t.Errorf("Kind = %q, want node_resource_usage", got.Kind)
+	}
+}
+
 // TestHandleCreateAlertRule_ScheduledTaskFailureSuccess checks that a
 // kind=scheduled_task_failure rule requires and accepts a
 // scheduled_task_id belonging to this app, reusing

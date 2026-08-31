@@ -129,6 +129,33 @@ func TestRun_AppsAlertsCreate_NodeDiskSpace_NoExtraFieldsRequired(t *testing.T) 
 	}
 }
 
+func TestRun_AppsAlertsCreate_NodeResourceUsage_NoExtraFieldsRequired(t *testing.T) {
+	var gotBody createAlertRuleRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(alertRuleResource{ID: "alr_5", Name: gotBody.Name, Kind: gotBody.Kind, Enabled: gotBody.Enabled})
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{
+		"apps", "alerts", "create", "web",
+		"--name", "node-load-watch", "--kind", "node_resource_usage",
+		"--api-url", srv.URL,
+	}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if gotBody.Kind != "node_resource_usage" {
+		t.Errorf("request body Kind = %q, want node_resource_usage", gotBody.Kind)
+	}
+	if !strings.Contains(stdout.String(), `alert rule "node-load-watch" (id alr_5, kind node_resource_usage) created for app "web"`) {
+		t.Errorf("stdout = %q, want a creation confirmation", stdout.String())
+	}
+}
+
 func TestRun_AppsAlertsCreate_ScheduledTaskFailure(t *testing.T) {
 	var gotBody createAlertRuleRequest
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

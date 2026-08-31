@@ -45,6 +45,11 @@ type Event struct {
 	// threshold, from EvaluateNodeDiskSpace. Nil for every other rule
 	// kind and for resolved events.
 	DiskSpaceNotices []string
+	// ResourceUsageNotices is populated only for a firing (not resolved)
+	// node_resource_usage event: one line per node over its CPU and/or
+	// memory threshold, from EvaluateNodeResourceUsage. Nil for every
+	// other rule kind and for resolved events.
+	ResourceUsageNotices []string
 	// TaskFailureNotice is populated only for a firing (not resolved)
 	// scheduled_task_failure event: the failing task's command,
 	// consecutive-failure count, and last status, from
@@ -111,19 +116,20 @@ func NewNotifier(client *http.Client, sender email.Sender, r Rule) Notifier {
 // receiver that isn't Slack or Discord specifically (a custom
 // integration, a paging system, a log aggregator).
 type genericPayload struct {
-	RuleID            string     `json:"rule_id"`
-	RuleName          string     `json:"rule_name"`
-	Kind              string     `json:"kind"`
-	ResourceID        string     `json:"resource_id"`
-	Resolved          bool       `json:"resolved"`
-	Value             *float64   `json:"value,omitempty"`
-	Firing            bool       `json:"firing"`
-	FiringSince       *time.Time `json:"firing_since,omitempty"`
-	LogLines          []string   `json:"log_lines,omitempty"`
-	CertNotices       []string   `json:"cert_notices,omitempty"`
-	PatchNotices      []string   `json:"patch_notices,omitempty"`
-	DiskSpaceNotices  []string   `json:"disk_space_notices,omitempty"`
-	TaskFailureNotice string     `json:"task_failure_notice,omitempty"`
+	RuleID               string     `json:"rule_id"`
+	RuleName             string     `json:"rule_name"`
+	Kind                 string     `json:"kind"`
+	ResourceID           string     `json:"resource_id"`
+	Resolved             bool       `json:"resolved"`
+	Value                *float64   `json:"value,omitempty"`
+	Firing               bool       `json:"firing"`
+	FiringSince          *time.Time `json:"firing_since,omitempty"`
+	LogLines             []string   `json:"log_lines,omitempty"`
+	CertNotices          []string   `json:"cert_notices,omitempty"`
+	PatchNotices         []string   `json:"patch_notices,omitempty"`
+	DiskSpaceNotices     []string   `json:"disk_space_notices,omitempty"`
+	ResourceUsageNotices []string   `json:"resource_usage_notices,omitempty"`
+	TaskFailureNotice    string     `json:"task_failure_notice,omitempty"`
 }
 
 func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Event) error {
@@ -132,7 +138,8 @@ func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Even
 		ResourceID: ev.Rule.ResourceID, Resolved: ev.Resolved, Value: ev.Rule.LastValue,
 		Firing: ev.Rule.Firing, FiringSince: ev.Rule.FiringSince, LogLines: ev.LogLines,
 		CertNotices: ev.CertNotices, PatchNotices: ev.PatchNotices, DiskSpaceNotices: ev.DiskSpaceNotices,
-		TaskFailureNotice: ev.TaskFailureNotice,
+		ResourceUsageNotices: ev.ResourceUsageNotices,
+		TaskFailureNotice:    ev.TaskFailureNotice,
 	}
 	return postJSON(ctx, client, url, payload)
 }
@@ -326,6 +333,9 @@ func summaryText(ev Event) string {
 	}
 	if len(ev.DiskSpaceNotices) > 0 {
 		fmt.Fprintf(&b, "\nDisk space:\n- %s", strings.Join(ev.DiskSpaceNotices, "\n- "))
+	}
+	if len(ev.ResourceUsageNotices) > 0 {
+		fmt.Fprintf(&b, "\nResource usage:\n- %s", strings.Join(ev.ResourceUsageNotices, "\n- "))
 	}
 	if ev.TaskFailureNotice != "" {
 		fmt.Fprintf(&b, "\nScheduled task: %s", ev.TaskFailureNotice)

@@ -592,9 +592,12 @@ func run(logger *slog.Logger) error {
 	// reads the identical env var, so the two can never silently
 	// disagree on when "expiring_soon" starts). db also satisfies
 	// alerting.NodeSource, so a kind=patch_status rule lists the same
-	// fleet GET /api/v1/nodes does.
+	// fleet GET /api/v1/nodes does, and alerting.NodeServiceSource, so a
+	// kind=node_resource_usage rule sums the same placed-service metrics
+	// GET /api/v1/nodes/{id}/metrics already sums for its dashboard.
 	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, db, db,
-		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), db, patchStatusThreshold(logger), nodeDiskSpaceThreshold(logger), alertingNewNotifier, logger)
+		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), db, patchStatusThreshold(logger), nodeDiskSpaceThreshold(logger),
+		db, nodeCPUThreshold(logger), nodeMemoryThreshold(logger), alertingNewNotifier, logger)
 	go func() {
 		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("alerting engine stopped", slog.String("error", err.Error()))
@@ -1961,6 +1964,48 @@ func nodeDiskSpaceThreshold(logger *slog.Logger) float64 {
 	v, err := strconv.ParseFloat(raw, 64)
 	if err != nil {
 		logger.Warn("invalid APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return v
+}
+
+// nodeCPUThreshold reads APP_ALERT_NODE_CPU_THRESHOLD_PERCENT as a
+// float, the same env-var-with-default shape nodeDiskSpaceThreshold
+// above already uses: how much summed CPU (percent) a node's placed
+// containers can use before a kind=node_resource_usage rule fires on
+// its CPU signal. Returns 0 (alerting's own signal to fall back to
+// alerting.DefaultNodeCPUThresholdPercent) when unset or unparseable,
+// logging a warning in the latter case.
+func nodeCPUThreshold(logger *slog.Logger) float64 {
+	raw := os.Getenv("APP_ALERT_NODE_CPU_THRESHOLD_PERCENT")
+	if raw == "" {
+		return 0
+	}
+	v, err := strconv.ParseFloat(raw, 64)
+	if err != nil {
+		logger.Warn("invalid APP_ALERT_NODE_CPU_THRESHOLD_PERCENT, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return v
+}
+
+// nodeMemoryThreshold reads APP_ALERT_NODE_MEMORY_THRESHOLD_BYTES as a
+// float, the same shape as nodeCPUThreshold: how much summed memory
+// (bytes) a node's placed containers can use before a
+// kind=node_resource_usage rule fires on its memory signal. Bytes, not
+// percent: see alerting.DefaultNodeMemoryThresholdBytes' own doc comment
+// for why no honest node-capacity percentage exists for memory. Returns
+// 0 (alerting's own signal to fall back to
+// alerting.DefaultNodeMemoryThresholdBytes) when unset or unparseable,
+// logging a warning in the latter case.
+func nodeMemoryThreshold(logger *slog.Logger) float64 {
+	raw := os.Getenv("APP_ALERT_NODE_MEMORY_THRESHOLD_BYTES")
+	if raw == "" {
+		return 0
+	}
+	v, err := strconv.ParseFloat(raw, 64)
+	if err != nil {
+		logger.Warn("invalid APP_ALERT_NODE_MEMORY_THRESHOLD_BYTES, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return 0
 	}
 	return v
