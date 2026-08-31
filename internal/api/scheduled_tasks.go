@@ -56,6 +56,9 @@ type scheduledTaskResource struct {
 	LastRunAt     *time.Time `json:"last_run_at,omitempty"`
 	LastRunStatus string     `json:"last_run_status,omitempty"`
 	LastRunOutput string     `json:"last_run_output,omitempty"`
+	// ConsecutiveFailures mirrors store.ScheduledTask's own field: what a
+	// kind=scheduled_task_failure alert rule (internal/alerting) watches.
+	ConsecutiveFailures int `json:"consecutive_failures"`
 
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
@@ -63,16 +66,17 @@ type scheduledTaskResource struct {
 
 func toScheduledTaskResource(t store.ScheduledTask) scheduledTaskResource {
 	return scheduledTaskResource{
-		ID:            t.ID,
-		ServiceName:   t.ServiceName,
-		Command:       t.Command,
-		Schedule:      t.Schedule,
-		Enabled:       t.Enabled,
-		LastRunAt:     t.LastRunAt,
-		LastRunStatus: t.LastRunStatus,
-		LastRunOutput: t.LastRunOutput,
-		CreatedAt:     t.CreatedAt,
-		UpdatedAt:     t.UpdatedAt,
+		ID:                  t.ID,
+		ServiceName:         t.ServiceName,
+		Command:             t.Command,
+		Schedule:            t.Schedule,
+		Enabled:             t.Enabled,
+		LastRunAt:           t.LastRunAt,
+		LastRunStatus:       t.LastRunStatus,
+		LastRunOutput:       t.LastRunOutput,
+		ConsecutiveFailures: t.ConsecutiveFailures,
+		CreatedAt:           t.CreatedAt,
+		UpdatedAt:           t.UpdatedAt,
 	}
 }
 

@@ -637,6 +637,9 @@ type ScheduledTaskResource struct {
 	LastRunAt     *time.Time `json:"last_run_at,omitempty"`
 	LastRunStatus string     `json:"last_run_status,omitempty"`
 	LastRunOutput string     `json:"last_run_output,omitempty"`
+	// ConsecutiveFailures mirrors internal/api's own field: what a
+	// kind=scheduled_task_failure alert rule watches.
+	ConsecutiveFailures int `json:"consecutive_failures"`
 
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
@@ -703,10 +706,14 @@ type CreateAlertRuleRequest struct {
 	ForDuration           string  `json:"for_duration,omitempty"`
 	RestartCountThreshold int     `json:"restart_count_threshold,omitempty"`
 	RestartWindow         string  `json:"restart_window,omitempty"`
-	ChannelID             string  `json:"channel_id,omitempty"`
-	NotifyURL             string  `json:"notify_url,omitempty"`
-	NotifyKind            string  `json:"notify_kind,omitempty"`
-	Enabled               bool    `json:"enabled"`
+	// ScheduledTaskID is kind=scheduled_task_failure-only: which of this
+	// app's scheduled tasks the rule watches. RestartCountThreshold above
+	// doubles as its consecutive-failure threshold.
+	ScheduledTaskID string `json:"scheduled_task_id,omitempty"`
+	ChannelID       string `json:"channel_id,omitempty"`
+	NotifyURL       string `json:"notify_url,omitempty"`
+	NotifyKind      string `json:"notify_kind,omitempty"`
+	Enabled         bool   `json:"enabled"`
 }
 
 // BackupTargetResource mirrors internal/api's backupTargetResource
@@ -1083,6 +1090,8 @@ type AlertRuleResource struct {
 
 	RestartCountThreshold int    `json:"restart_count_threshold"`
 	RestartWindow         string `json:"restart_window,omitempty"`
+
+	ScheduledTaskID string `json:"scheduled_task_id,omitempty"`
 
 	NotifyURL  string `json:"notify_url,omitempty"`
 	NotifyKind string `json:"notify_kind,omitempty"`

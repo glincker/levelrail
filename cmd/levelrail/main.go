@@ -590,9 +590,11 @@ func run(logger *slog.Logger) error {
 	// kind=cert_expiry rule reads the exact same certificate storage GET
 	// /api/v1/certificates does (api.WithCertExpiryWarningWindow below
 	// reads the identical env var, so the two can never silently
-	// disagree on when "expiring_soon" starts).
-	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, db,
-		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), alertingNewNotifier, logger)
+	// disagree on when "expiring_soon" starts). db also satisfies
+	// alerting.NodeSource, so a kind=patch_status rule lists the same
+	// fleet GET /api/v1/nodes does.
+	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, db, db,
+		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), db, patchStatusThreshold(logger), alertingNewNotifier, logger)
 	go func() {
 		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("alerting engine stopped", slog.String("error", err.Error()))
@@ -1913,6 +1915,27 @@ func certRenewalStalledThreshold(logger *slog.Logger) time.Duration {
 		return 0
 	}
 	return d
+}
+
+// patchStatusThreshold reads APP_ALERT_PATCH_STATUS_THRESHOLD as a
+// float, the same env-var-with-default shape certExpiryWarningWindow
+// above already uses, applied here to alerting.NewEngine: how many
+// pending security patches a node can have before a kind=patch_status
+// rule fires. Returns 0 (alerting's own signal to fall back to
+// alerting.DefaultPatchStatusThreshold) when unset or unparseable,
+// logging a warning in the latter case so a typo'd env var is visible
+// rather than silently ignored.
+func patchStatusThreshold(logger *slog.Logger) float64 {
+	raw := os.Getenv("APP_ALERT_PATCH_STATUS_THRESHOLD")
+	if raw == "" {
+		return 0
+	}
+	v, err := strconv.ParseFloat(raw, 64)
+	if err != nil {
+		logger.Warn("invalid APP_ALERT_PATCH_STATUS_THRESHOLD, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return v
 }
 
 // previewTTL reads APP_PREVIEW_TTL as a Go duration string, the same

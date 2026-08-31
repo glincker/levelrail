@@ -56,6 +56,11 @@ type ruleResource struct {
 	RestartCountThreshold int    `json:"restart_count_threshold"`
 	RestartWindow         string `json:"restart_window,omitempty"`
 
+	// KindScheduledTaskFailure-only field: which of this app's scheduled
+	// tasks the rule watches. RestartCountThreshold above doubles as its
+	// consecutive-failure threshold; see alerting.Rule's own doc comment.
+	ScheduledTaskID string `json:"scheduled_task_id,omitempty"`
+
 	NotifyURL  string `json:"notify_url,omitempty"`
 	NotifyKind string `json:"notify_kind,omitempty"`
 	Enabled    bool   `json:"enabled"`
@@ -83,6 +88,7 @@ func toRuleResource(r alerting.Rule) ruleResource {
 		Comparator:            string(r.Comparator),
 		Threshold:             r.Threshold,
 		RestartCountThreshold: r.RestartCountThreshold,
+		ScheduledTaskID:       r.ScheduledTaskID,
 		NotifyURL:             r.NotifyURL,
 		NotifyKind:            string(r.NotifyKind),
 		Enabled:               r.Enabled,
@@ -110,8 +116,11 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 	}
 
 	kind := alerting.Kind(a.Kind)
-	if kind != alerting.KindThreshold && kind != alerting.KindCrashloop && kind != alerting.KindCertExpiry {
-		return alerting.Rule{}, fmt.Errorf("kind must be %q, %q, or %q", alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry)
+	switch kind {
+	case alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure:
+	default:
+		return alerting.Rule{}, fmt.Errorf("kind must be %q, %q, %q, %q, or %q",
+			alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure)
 	}
 
 	forDuration, err := parseOptionalDuration(a.ForDuration)
@@ -134,6 +143,7 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 		ForDuration:           forDuration,
 		RestartCountThreshold: a.RestartCountThreshold,
 		RestartWindow:         restartWindow,
+		ScheduledTaskID:       a.ScheduledTaskID,
 		ChannelID:             a.ChannelID,
 		NotifyURL:             a.NotifyURL,
 		NotifyKind:            alerting.NotifyKind(a.NotifyKind),
@@ -157,6 +167,13 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 		}
 		if r.RestartWindow <= 0 {
 			return alerting.Rule{}, errors.New("restart_window must be a positive duration for a crashloop rule")
+		}
+	case alerting.KindScheduledTaskFailure:
+		if r.ScheduledTaskID == "" {
+			return alerting.Rule{}, errors.New("scheduled_task_id is required for a scheduled_task_failure rule")
+		}
+		if r.RestartCountThreshold <= 0 {
+			return alerting.Rule{}, errors.New("restart_count_threshold must be a positive integer for a scheduled_task_failure rule")
 		}
 	}
 
@@ -218,6 +235,23 @@ func (rt *Router) handleCreateAlertRule(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
+	}
+
+	// A scheduled_task_id must actually belong to this app, the same
+	// ownership check loadOwnedScheduledTask (scheduled_tasks.go) applies
+	// when a caller reaches a task through its own app URL: without it, a
+	// caller who can guess another app's task ID could point a rule
+	// created through this app's URL at that task instead.
+	if rule.ScheduledTaskID != "" {
+		task, err := rt.scheduledTasks.GetScheduledTask(r.Context(), rule.ScheduledTaskID)
+		if errors.Is(err, store.ErrScheduledTaskNotFound) || (err == nil && task.ServiceName != name) {
+			writeError(w, http.StatusBadRequest, "unknown scheduled_task_id")
+			return
+		} else if err != nil {
+			rt.logger.Error("api: create alert rule: look up scheduled task failed", slog.String("error", err.Error()), slog.String("scheduled_task_id", rule.ScheduledTaskID))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
 	}
 
 	// Validated against the real registry first, same as

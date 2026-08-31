@@ -13,16 +13,19 @@ import (
 // Kind distinguishes what a Rule evaluates.
 type Kind string
 
-// The three rule kinds this package evaluates; see Rule's own doc comment
-// for which fields each uses. KindCertExpiry uses none of Rule's
-// threshold/crashloop fields: it watches every stored certificate
-// platform-wide (cert_expiry.go), not a single Metric or RestartWindow,
-// so ResourceID on a cert_expiry rule is only ever a display label, not
-// something EvaluateCertExpiry filters by.
+// The five rule kinds this package evaluates; see Rule's own doc comment
+// for which fields each uses. KindCertExpiry and KindPatchStatus use
+// none of Rule's threshold/crashloop fields: they watch every
+// certificate (cert_expiry.go) or every node (patch_status.go)
+// platform-wide, not a single Metric or RestartWindow, so ResourceID on
+// either kind is only ever a display label, not something their
+// evaluator filters by.
 const (
-	KindThreshold  Kind = "threshold"
-	KindCrashloop  Kind = "crashloop"
-	KindCertExpiry Kind = "cert_expiry"
+	KindThreshold            Kind = "threshold"
+	KindCrashloop            Kind = "crashloop"
+	KindCertExpiry           Kind = "cert_expiry"
+	KindPatchStatus          Kind = "patch_status"
+	KindScheduledTaskFailure Kind = "scheduled_task_failure"
 )
 
 // Comparator is how a threshold Rule compares the latest sample value
@@ -74,9 +77,18 @@ type Rule struct {
 	Threshold   float64
 	ForDuration time.Duration
 
-	// Crashloop-kind fields.
+	// Crashloop-kind fields. RestartCountThreshold is also reused, with
+	// the same "N events triggers firing" meaning, by a
+	// KindScheduledTaskFailure rule: there it counts consecutive failed
+	// runs (store.ScheduledTask.ConsecutiveFailures) rather than restarts
+	// within RestartWindow, which that kind leaves unused.
 	RestartCountThreshold int
 	RestartWindow         time.Duration
+
+	// ScheduledTaskID is the KindScheduledTaskFailure-only field: which
+	// of ResourceID's app's scheduled tasks this rule watches. Empty for
+	// every other kind.
+	ScheduledTaskID string
 
 	// ChannelID attaches an already-connected NotificationChannel; empty
 	// for legacy rules, which use NotifyURL/NotifyKind below directly.
@@ -125,10 +137,10 @@ func (db *DB) SaveRule(ctx context.Context, r Rule) error {
 		INSERT INTO alert_rules (
 			id, name, kind, resource_id,
 			metric, comparator, threshold, for_duration_seconds,
-			restart_count_threshold, restart_window_seconds,
+			restart_count_threshold, restart_window_seconds, scheduled_task_id,
 			channel_id, notify_url, notify_kind, enabled,
 			created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (id) DO UPDATE SET
 			name = excluded.name,
 			kind = excluded.kind,
@@ -139,6 +151,7 @@ func (db *DB) SaveRule(ctx context.Context, r Rule) error {
 			for_duration_seconds = excluded.for_duration_seconds,
 			restart_count_threshold = excluded.restart_count_threshold,
 			restart_window_seconds = excluded.restart_window_seconds,
+			scheduled_task_id = excluded.scheduled_task_id,
 			channel_id = excluded.channel_id,
 			notify_url = excluded.notify_url,
 			notify_kind = excluded.notify_kind,
@@ -147,7 +160,7 @@ func (db *DB) SaveRule(ctx context.Context, r Rule) error {
 	`,
 		r.ID, r.Name, string(r.Kind), r.ResourceID,
 		r.Metric, string(r.Comparator), r.Threshold, int64(r.ForDuration.Seconds()),
-		r.RestartCountThreshold, int64(r.RestartWindow.Seconds()),
+		r.RestartCountThreshold, int64(r.RestartWindow.Seconds()), r.ScheduledTaskID,
 		nullIfEmpty(r.ChannelID), r.NotifyURL, string(r.NotifyKind), boolToInt(r.Enabled),
 		now, now,
 	)
@@ -285,7 +298,7 @@ func (db *DB) UpdateState(ctx context.Context, id string, pendingSince, firingSi
 const ruleSelectColumns = `
 	SELECT r.id, r.name, r.kind, r.resource_id,
 		r.metric, r.comparator, r.threshold, r.for_duration_seconds,
-		r.restart_count_threshold, r.restart_window_seconds,
+		r.restart_count_threshold, r.restart_window_seconds, r.scheduled_task_id,
 		r.channel_id, COALESCE(c.notify_url, r.notify_url), COALESCE(c.kind, r.notify_kind),
 		r.enabled, c.enabled,
 		r.pending_since, r.firing, r.firing_since, r.last_evaluated_at, r.last_value
@@ -308,7 +321,7 @@ func scanRule(scan func(dest ...any) error) (*Rule, error) {
 	err := scan(
 		&r.ID, &r.Name, &kind, &r.ResourceID,
 		&r.Metric, &comparator, &r.Threshold, &forDurationSeconds,
-		&r.RestartCountThreshold, &restartWindowSeconds,
+		&r.RestartCountThreshold, &restartWindowSeconds, &r.ScheduledTaskID,
 		&channelID, &r.NotifyURL, &notifyKind,
 		&enabledInt, &channelEnabled,
 		&pendingSince, &firingInt, &firingSince, &lastEvaluatedAt, &lastValue,

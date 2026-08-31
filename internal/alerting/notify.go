@@ -35,6 +35,17 @@ type Event struct {
 	// EvaluateCertExpiry, flagging a stalled-looking renewal specially.
 	// Nil for every other rule kind and for resolved events.
 	CertNotices []string
+	// PatchNotices is populated only for a firing (not resolved)
+	// patch_status event: one line per node over its security-patch
+	// threshold, from EvaluatePatchStatus. Nil for every other rule kind
+	// and for resolved events.
+	PatchNotices []string
+	// TaskFailureNotice is populated only for a firing (not resolved)
+	// scheduled_task_failure event: the failing task's command,
+	// consecutive-failure count, and last status, from
+	// EvaluateScheduledTaskFailure. Empty for every other rule kind and
+	// for resolved events.
+	TaskFailureNotice string
 }
 
 // Notifier sends one Event somewhere. Every notify* function below
@@ -95,16 +106,18 @@ func NewNotifier(client *http.Client, sender email.Sender, r Rule) Notifier {
 // receiver that isn't Slack or Discord specifically (a custom
 // integration, a paging system, a log aggregator).
 type genericPayload struct {
-	RuleID      string     `json:"rule_id"`
-	RuleName    string     `json:"rule_name"`
-	Kind        string     `json:"kind"`
-	ResourceID  string     `json:"resource_id"`
-	Resolved    bool       `json:"resolved"`
-	Value       *float64   `json:"value,omitempty"`
-	Firing      bool       `json:"firing"`
-	FiringSince *time.Time `json:"firing_since,omitempty"`
-	LogLines    []string   `json:"log_lines,omitempty"`
-	CertNotices []string   `json:"cert_notices,omitempty"`
+	RuleID            string     `json:"rule_id"`
+	RuleName          string     `json:"rule_name"`
+	Kind              string     `json:"kind"`
+	ResourceID        string     `json:"resource_id"`
+	Resolved          bool       `json:"resolved"`
+	Value             *float64   `json:"value,omitempty"`
+	Firing            bool       `json:"firing"`
+	FiringSince       *time.Time `json:"firing_since,omitempty"`
+	LogLines          []string   `json:"log_lines,omitempty"`
+	CertNotices       []string   `json:"cert_notices,omitempty"`
+	PatchNotices      []string   `json:"patch_notices,omitempty"`
+	TaskFailureNotice string     `json:"task_failure_notice,omitempty"`
 }
 
 func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Event) error {
@@ -112,7 +125,7 @@ func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Even
 		RuleID: ev.Rule.ID, RuleName: ev.Rule.Name, Kind: string(ev.Rule.Kind),
 		ResourceID: ev.Rule.ResourceID, Resolved: ev.Resolved, Value: ev.Rule.LastValue,
 		Firing: ev.Rule.Firing, FiringSince: ev.Rule.FiringSince, LogLines: ev.LogLines,
-		CertNotices: ev.CertNotices,
+		CertNotices: ev.CertNotices, PatchNotices: ev.PatchNotices, TaskFailureNotice: ev.TaskFailureNotice,
 	}
 	return postJSON(ctx, client, url, payload)
 }
@@ -300,6 +313,12 @@ func summaryText(ev Event) string {
 	}
 	if len(ev.CertNotices) > 0 {
 		fmt.Fprintf(&b, "\nCertificates:\n- %s", strings.Join(ev.CertNotices, "\n- "))
+	}
+	if len(ev.PatchNotices) > 0 {
+		fmt.Fprintf(&b, "\nNodes:\n- %s", strings.Join(ev.PatchNotices, "\n- "))
+	}
+	if ev.TaskFailureNotice != "" {
+		fmt.Fprintf(&b, "\nScheduled task: %s", ev.TaskFailureNotice)
 	}
 	return b.String()
 }
