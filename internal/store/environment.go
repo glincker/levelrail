@@ -14,19 +14,24 @@ var ErrEnvironmentNotFound = errors.New("store: environment not found")
 // Environment labels a service (e.g. "staging", "production") within
 // one project (migrations/0054). Unlike Project/Organization,
 // environments are owned by their project: deleting the project cascades.
+//
+// Protected (migrations/0070) requires confirm: true on a deploy,
+// rollback, or promotion targeting an app tagged with this environment
+// (internal/api's deploys.go and promote.go).
 type Environment struct {
 	ID        string
 	ProjectID string
 	Name      string
+	Protected bool
 	CreatedAt string
 }
 
 // SaveEnvironment inserts a new environment row, insert-only.
 func (db *DB) SaveEnvironment(ctx context.Context, e Environment) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO environments (id, project_id, name, created_at)
-		VALUES (?, ?, ?, ?)
-	`, e.ID, e.ProjectID, e.Name, e.CreatedAt)
+		INSERT INTO environments (id, project_id, name, protected, created_at)
+		VALUES (?, ?, ?, ?, ?)
+	`, e.ID, e.ProjectID, e.Name, e.Protected, e.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("store: save environment %q: %w", e.ID, err)
 	}
@@ -38,10 +43,10 @@ func (db *DB) SaveEnvironment(ctx context.Context, e Environment) error {
 func (db *DB) GetEnvironment(ctx context.Context, id string) (Environment, error) {
 	var e Environment
 	err := db.QueryRowContext(ctx, `
-		SELECT id, project_id, name, created_at
+		SELECT id, project_id, name, protected, created_at
 		FROM environments
 		WHERE id = ?
-	`, id).Scan(&e.ID, &e.ProjectID, &e.Name, &e.CreatedAt)
+	`, id).Scan(&e.ID, &e.ProjectID, &e.Name, &e.Protected, &e.CreatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Environment{}, ErrEnvironmentNotFound
 	}
@@ -55,7 +60,7 @@ func (db *DB) GetEnvironment(ctx context.Context, id string) (Environment, error
 // oldest first.
 func (db *DB) ListEnvironmentsByProject(ctx context.Context, projectID string) ([]Environment, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, project_id, name, created_at
+		SELECT id, project_id, name, protected, created_at
 		FROM environments
 		WHERE project_id = ?
 		ORDER BY created_at
@@ -70,7 +75,7 @@ func (db *DB) ListEnvironmentsByProject(ctx context.Context, projectID string) (
 	var out []Environment
 	for rows.Next() {
 		var e Environment
-		if err := rows.Scan(&e.ID, &e.ProjectID, &e.Name, &e.CreatedAt); err != nil {
+		if err := rows.Scan(&e.ID, &e.ProjectID, &e.Name, &e.Protected, &e.CreatedAt); err != nil {
 			return nil, fmt.Errorf("store: scan environment row: %w", err)
 		}
 		out = append(out, e)
@@ -79,6 +84,23 @@ func (db *DB) ListEnvironmentsByProject(ctx context.Context, projectID string) (
 		return nil, fmt.Errorf("store: iterate environment rows: %w", err)
 	}
 	return out, nil
+}
+
+// SetEnvironmentProtected updates one environment's protected flag.
+// Returns ErrEnvironmentNotFound if id doesn't match any row.
+func (db *DB) SetEnvironmentProtected(ctx context.Context, id string, protected bool) error {
+	res, err := db.ExecContext(ctx, `UPDATE environments SET protected = ? WHERE id = ?`, protected, id)
+	if err != nil {
+		return fmt.Errorf("store: set environment %q protected: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: set environment %q protected: %w", id, err)
+	}
+	if n == 0 {
+		return ErrEnvironmentNotFound
+	}
+	return nil
 }
 
 // DeleteEnvironment removes an environment row. desired_services.

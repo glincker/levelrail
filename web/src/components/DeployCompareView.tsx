@@ -1,13 +1,18 @@
+import { useState } from 'react'
 import {
   ArrowRightIcon,
   ArrowCounterClockwiseIcon,
   InfoIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { DeployCompare, DeployCompareSide } from '../types/deployCompare'
+import type { EnvironmentResource } from '../types/environment'
+import { useApp } from '../queries/apps'
 import { useTriggerDeploy } from '../queries/deploys'
+import { useProtectedEnvironment } from '../queries/environments'
 import { formatDeployDuration } from '../lib/deployDuration'
 import { DEPLOY_ATTEMPT_SOURCE_LABEL } from '../lib/deployAttemptPresentation'
 import type { DeployAttemptSource } from '../types/deployAttempt'
+import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -36,11 +41,36 @@ export function DeployCompareView({
   appName: string
   compare: DeployCompare
 }) {
+  const { data: app } = useApp(appName)
+  const protectedEnv = useProtectedEnvironment(app)
+  const [ackProtected, setAckProtected] = useState(false)
+
   return (
     <div className="space-y-4">
+      {protectedEnv?.protected ? (
+        <ProtectedEnvironmentNotice
+          id="deploy-compare-ack-protected"
+          environmentName={protectedEnv.name}
+          acknowledged={ackProtected}
+          onAcknowledgedChange={setAckProtected}
+        />
+      ) : null}
+
       <div className="grid gap-4 sm:grid-cols-2">
-        <DeployCompareSideCard appName={appName} label="From" side={compare.from} />
-        <DeployCompareSideCard appName={appName} label="To" side={compare.to} />
+        <DeployCompareSideCard
+          appName={appName}
+          label="From"
+          side={compare.from}
+          protectedEnv={protectedEnv}
+          ackProtected={ackProtected}
+        />
+        <DeployCompareSideCard
+          appName={appName}
+          label="To"
+          side={compare.to}
+          protectedEnv={protectedEnv}
+          ackProtected={ackProtected}
+        />
       </div>
 
       <Card>
@@ -96,23 +126,30 @@ function DeployCompareSideCard({
   appName,
   label,
   side,
+  protectedEnv,
+  ackProtected,
 }: {
   appName: string
   label: string
   side: DeployCompareSide
+  protectedEnv: EnvironmentResource | undefined
+  ackProtected: boolean
 }) {
   const triggerDeploy = useTriggerDeploy(appName)
 
   const handleRollback = () => {
-    triggerDeploy.mutate(side.image, {
-      onSuccess: () => {
-        toast.add({
-          title: 'Rollback triggered.',
-          description: `Redeploying ${side.image}.`,
-          type: 'success',
-        })
+    triggerDeploy.mutate(
+      { image: side.image, confirm: ackProtected },
+      {
+        onSuccess: () => {
+          toast.add({
+            title: 'Rollback triggered.',
+            description: `Redeploying ${side.image}.`,
+            type: 'success',
+          })
+        },
       },
-    })
+    )
   }
 
   return (
@@ -159,7 +196,10 @@ function DeployCompareSideCard({
             size="sm"
             className="mt-1"
             onClick={handleRollback}
-            disabled={triggerDeploy.isPending}
+            disabled={
+              triggerDeploy.isPending ||
+              (protectedEnv?.protected && !ackProtected)
+            }
           >
             <ArrowCounterClockwiseIcon
               className="size-3.5"

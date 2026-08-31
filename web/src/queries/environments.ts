@@ -59,16 +59,24 @@ export function useEnvironmentListOptional(projectId: string) {
   return useQuery({ ...environmentListQueryOptions(projectId), retry: false })
 }
 
+interface CreateEnvironmentInput {
+  name: string
+  protected?: boolean
+}
+
 export async function createEnvironment(
   projectId: string,
-  name: string,
+  input: CreateEnvironmentInput,
 ): Promise<EnvironmentResource> {
   const res = await fetch(
     `/api/v1/projects/${encodeURIComponent(projectId)}/environments`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({
+        name: input.name,
+        protected: input.protected ?? false,
+      }),
     },
   )
   if (!res.ok) {
@@ -83,13 +91,66 @@ export async function createEnvironment(
 export function useCreateEnvironment(projectId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (name: string) => createEnvironment(projectId, name),
+    mutationFn: (input: CreateEnvironmentInput) =>
+      createEnvironment(projectId, input),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: environmentKeys.list(projectId),
       })
     },
   })
+}
+
+// PATCH /api/v1/environments/{id} (handleUpdateEnvironment): the only
+// field this ever changes today, matching the API's own scope.
+export async function setEnvironmentProtected(
+  id: string,
+  protectedValue: boolean,
+): Promise<EnvironmentResource> {
+  const res = await fetch(`/api/v1/environments/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ protected: protectedValue }),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `update environment failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as EnvironmentResource
+}
+
+export function useSetEnvironmentProtected(projectId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, protected: next }: { id: string; protected: boolean }) =>
+      setEnvironmentProtected(id, next),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: environmentKeys.list(projectId),
+      })
+    },
+  })
+}
+
+// Looks up whether app's tagged environment (if any) is protected,
+// without a fetch-by-id endpoint to call directly (this file's own doc
+// comment): loads its project's whole environment list, the same
+// already-cheap list every environment lookup in this codebase uses, and
+// finds the one app.environment_id names. Degrades to undefined (project
+// not yet known, no environment tag, or a still-loading/failed list)
+// rather than blocking whatever form is asking, the same graceful
+// fallback useEnvironmentListOptional's own doc comment establishes.
+export function useProtectedEnvironment(app: {
+  project_id?: string
+  environment_id?: string
+}): EnvironmentResource | undefined {
+  const list = useEnvironmentListOptional(app.project_id ?? '')
+  if (!app.environment_id) {
+    return undefined
+  }
+  return list.data?.find((e) => e.id === app.environment_id)
 }
 
 // DELETE /api/v1/environments/{id} (handleDeleteEnvironment): any app

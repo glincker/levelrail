@@ -24,6 +24,7 @@ import { toast } from '@/components/ui/toast'
 import { useEnvironmentListOptional } from '../queries/environments'
 import { usePromoteApp, usePromotePreview } from '../queries/promote'
 import { ApiError } from '../lib/apiError'
+import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
 
 // PromoteAppDialog is "apps promote" (cmd/levelrail-cli/apps_promote.go)
 // and POST/GET /api/v1/apps/{name}/promote[/preview]
@@ -44,24 +45,27 @@ export function PromoteAppDialog({
   const [open, setOpen] = useState(false)
   const [environmentId, setEnvironmentId] = useState('')
   const [target, setTarget] = useState('')
+  const [ackProtected, setAckProtected] = useState(false)
 
   const environmentList = useEnvironmentListOptional(projectId ?? '')
   const environments = environmentList.data ?? []
   const preview = usePromotePreview(appName, environmentId, target)
   const promote = usePromoteApp(appName)
+  const selectedEnvironment = environments.find((e) => e.id === environmentId)
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
     if (!next) {
       setEnvironmentId('')
       setTarget('')
+      setAckProtected(false)
       promote.reset()
     }
   }
 
   function handlePromote() {
     promote.mutate(
-      { to: environmentId, target },
+      { to: environmentId, target, confirm: ackProtected },
       {
         onSuccess: (updated) => {
           setOpen(false)
@@ -118,6 +122,7 @@ export function PromoteAppDialog({
                 onValueChange={(value) => {
                   setEnvironmentId(value ?? '')
                   setTarget('')
+                  setAckProtected(false)
                 }}
               >
                 <SelectTrigger id="promote-target-environment" className="w-full">
@@ -185,6 +190,15 @@ export function PromoteAppDialog({
                 )}
               </div>
             ) : null}
+
+            {selectedEnvironment?.protected ? (
+              <ProtectedEnvironmentNotice
+                id="promote-ack-protected"
+                environmentName={selectedEnvironment.name}
+                acknowledged={ackProtected}
+                onAcknowledgedChange={setAckProtected}
+              />
+            ) : null}
           </div>
         )}
 
@@ -211,7 +225,8 @@ export function PromoteAppDialog({
               !environmentId ||
               !preview.data ||
               isNoop ||
-              promote.isPending
+              promote.isPending ||
+              (selectedEnvironment?.protected && !ackProtected)
             }
             onClick={handlePromote}
           >

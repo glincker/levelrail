@@ -115,6 +115,47 @@ func TestDeleteProject_CascadesEnvironments(t *testing.T) {
 	}
 }
 
+func TestSetEnvironmentProtected_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	seedTestProject(t, db)
+
+	env := Environment{ID: "env_1", ProjectID: "proj_1", Name: "production", CreatedAt: "2026-08-20T00:00:00Z"}
+	if err := db.SaveEnvironment(ctx, env); err != nil {
+		t.Fatalf("SaveEnvironment() error = %v", err)
+	}
+
+	if err := db.SetEnvironmentProtected(ctx, env.ID, true); err != nil {
+		t.Fatalf("SetEnvironmentProtected(true) error = %v", err)
+	}
+	got, err := db.GetEnvironment(ctx, env.ID)
+	if err != nil {
+		t.Fatalf("GetEnvironment() error = %v", err)
+	}
+	if !got.Protected {
+		t.Errorf("Protected = false after SetEnvironmentProtected(true), want true")
+	}
+
+	if err := db.SetEnvironmentProtected(ctx, env.ID, false); err != nil {
+		t.Fatalf("SetEnvironmentProtected(false) error = %v", err)
+	}
+	got, err = db.GetEnvironment(ctx, env.ID)
+	if err != nil {
+		t.Fatalf("GetEnvironment() error = %v", err)
+	}
+	if got.Protected {
+		t.Errorf("Protected = true after SetEnvironmentProtected(false), want false")
+	}
+}
+
+func TestSetEnvironmentProtected_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.SetEnvironmentProtected(context.Background(), "env_missing", true)
+	if !errors.Is(err, ErrEnvironmentNotFound) {
+		t.Fatalf("SetEnvironmentProtected() error = %v, want ErrEnvironmentNotFound", err)
+	}
+}
+
 func TestSetServiceEnvironment_RoundTrip(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

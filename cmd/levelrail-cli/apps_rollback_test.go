@@ -107,6 +107,38 @@ func TestRun_AppsRollback_APIError(t *testing.T) {
 	}
 }
 
+// TestRun_AppsRollback_ProtectedEnvironment_InteractivePromptConfirms
+// mirrors apps_deploy_test.go's own confirm-retry coverage: rollback
+// sends the exact same request, so the exact same 409/confirm/retry
+// mechanics apply.
+func TestRun_AppsRollback_ProtectedEnvironment_InteractivePromptConfirms(t *testing.T) {
+	srv, calls := protectedEnvironmentDeployServer(t)
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := runAppsRollback("levelrail-cli-test", []string{"web", "--image", "levelrail/web:old", "--api-url", srv.URL}, &stdout, &stderr, envMap(), strings.NewReader("yes\n"))
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if *calls != 2 {
+		t.Errorf("calls = %d, want 2 (blocked, then confirmed retry)", *calls)
+	}
+}
+
+func TestRun_AppsRollback_ProtectedEnvironment_ConfirmFlagSkipsPrompt(t *testing.T) {
+	srv, calls := protectedEnvironmentDeployServer(t)
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := runAppsRollback("levelrail-cli-test", []string{"web", "--image", "levelrail/web:old", "--confirm", "--api-url", srv.URL}, &stdout, &stderr, envMap(), strings.NewReader(""))
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if *calls != 1 {
+		t.Errorf("calls = %d, want 1 (no retry needed)", *calls)
+	}
+}
+
 func TestRun_AppsRollback_Help(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"apps", "rollback", "-h"}, &stdout, &stderr, envMap())

@@ -8,7 +8,10 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import type { DeployAttempt } from '../types/deployAttempt'
 import type { ReconcileCondition } from '../types/deploy'
+import type { EnvironmentResource } from '../types/environment'
+import { useApp } from '../queries/apps'
 import { useTriggerDeploy } from '../queries/deploys'
+import { useProtectedEnvironment } from '../queries/environments'
 import { formatDeployDuration } from '../lib/deployDuration'
 import { computeDeployStages } from '../lib/deployStages'
 import {
@@ -17,6 +20,7 @@ import {
   DEPLOY_ATTEMPT_STATUS_ICON,
   DEPLOY_ATTEMPT_STATUS_LABEL,
 } from '../lib/deployAttemptPresentation'
+import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -74,6 +78,9 @@ export function DeployAttemptsList({
   // before the empty-state early return below so hook order stays fixed
   // regardless of attempts.length.
   const [selected, setSelected] = useState<string[]>([])
+  const [ackProtected, setAckProtected] = useState(false)
+  const { data: app } = useApp(appName)
+  const protectedEnv = useProtectedEnvironment(app)
 
   if (attempts.length === 0) {
     return (
@@ -146,6 +153,14 @@ export function DeployAttemptsList({
         ) : null}
       </CardHeader>
       <CardContent>
+        {protectedEnv?.protected ? (
+          <ProtectedEnvironmentNotice
+            id="deploy-attempts-ack-protected"
+            environmentName={protectedEnv.name}
+            acknowledged={ackProtected}
+            onAcknowledgedChange={setAckProtected}
+          />
+        ) : null}
         <ul className="-mx-4 divide-y divide-border">
           {attempts.map((a) => (
             <DeployAttemptRow
@@ -156,6 +171,8 @@ export function DeployAttemptsList({
               conditions={conditions}
               isSelected={selected.includes(a.id)}
               onToggleSelected={() => toggleSelected(a.id)}
+              protectedEnv={protectedEnv}
+              ackProtected={ackProtected}
             />
           ))}
         </ul>
@@ -171,6 +188,8 @@ function DeployAttemptRow({
   conditions,
   isSelected,
   onToggleSelected,
+  protectedEnv,
+  ackProtected,
 }: {
   appName: string
   attempt: DeployAttempt
@@ -178,6 +197,8 @@ function DeployAttemptRow({
   conditions: ReconcileCondition[]
   isSelected: boolean
   onToggleSelected: () => void
+  protectedEnv: EnvironmentResource | undefined
+  ackProtected: boolean
 }) {
   const triggerDeploy = useTriggerDeploy(appName)
   const StatusIcon = DEPLOY_ATTEMPT_STATUS_ICON[attempt.status]
@@ -195,15 +216,18 @@ function DeployAttemptRow({
     : undefined
 
   const handleRollback = () => {
-    triggerDeploy.mutate(attempt.image, {
-      onSuccess: () => {
-        toast.add({
-          title: 'Rollback triggered.',
-          description: `Redeploying ${attempt.image}.`,
-          type: 'success',
-        })
+    triggerDeploy.mutate(
+      { image: attempt.image, confirm: ackProtected },
+      {
+        onSuccess: () => {
+          toast.add({
+            title: 'Rollback triggered.',
+            description: `Redeploying ${attempt.image}.`,
+            type: 'success',
+          })
+        },
       },
-    })
+    )
   }
 
   return (
@@ -287,7 +311,10 @@ function DeployAttemptRow({
             variant="outline"
             size="sm"
             onClick={handleRollback}
-            disabled={triggerDeploy.isPending}
+            disabled={
+              triggerDeploy.isPending ||
+              (protectedEnv?.protected && !ackProtected)
+            }
           >
             <ArrowCounterClockwiseIcon
               className="size-3.5"

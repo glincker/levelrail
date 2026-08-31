@@ -19,15 +19,21 @@ type environmentResource struct {
 	ID        string `json:"id"`
 	ProjectID string `json:"project_id"`
 	Name      string `json:"name"`
+	Protected bool   `json:"protected"`
 	CreatedAt string `json:"created_at"`
 }
 
 func toEnvironmentResource(e store.Environment) environmentResource {
-	return environmentResource{ID: e.ID, ProjectID: e.ProjectID, Name: e.Name, CreatedAt: e.CreatedAt}
+	return environmentResource{ID: e.ID, ProjectID: e.ProjectID, Name: e.Name, Protected: e.Protected, CreatedAt: e.CreatedAt}
 }
 
 type createEnvironmentRequest struct {
-	Name string `json:"name"`
+	Name      string `json:"name"`
+	Protected bool   `json:"protected,omitempty"`
+}
+
+type updateEnvironmentRequest struct {
+	Protected bool `json:"protected"`
 }
 
 // handleListEnvironments handles GET /api/v1/projects/{id}/environments.
@@ -75,13 +81,47 @@ func (rt *Router) handleCreateEnvironment(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	e := store.Environment{ID: id, ProjectID: projectID, Name: req.Name, CreatedAt: time.Now().UTC().Format(time.RFC3339)}
+	e := store.Environment{ID: id, ProjectID: projectID, Name: req.Name, Protected: req.Protected, CreatedAt: time.Now().UTC().Format(time.RFC3339)}
 	if err := rt.environments.SaveEnvironment(r.Context(), e); err != nil {
 		rt.logger.Error("api: create environment failed", slog.String("error", err.Error()), slog.String("id", id))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 	writeJSON(w, http.StatusCreated, toEnvironmentResource(e))
+}
+
+// handleUpdateEnvironment handles PATCH /api/v1/environments/{id}: today
+// this only ever changes protected, since name/project have no other
+// caller-facing edit path either (an environment is otherwise
+// create-or-delete, matching how a project's own name is immutable
+// too).
+func (rt *Router) handleUpdateEnvironment(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	var req updateEnvironmentRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	err := rt.environments.SetEnvironmentProtected(r.Context(), id, req.Protected)
+	if errors.Is(err, store.ErrEnvironmentNotFound) {
+		writeError(w, http.StatusNotFound, "environment not found")
+		return
+	}
+	if err != nil {
+		rt.logger.Error("api: update environment failed", slog.String("error", err.Error()), slog.String("id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	e, err := rt.environments.GetEnvironment(r.Context(), id)
+	if err != nil {
+		rt.logger.Error("api: update environment: reload failed", slog.String("error", err.Error()), slog.String("id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toEnvironmentResource(e))
 }
 
 // handleDeleteEnvironment handles DELETE /api/v1/environments/{id}.
@@ -137,6 +177,44 @@ func (rt *Router) handleSetAppEnvironment(w http.ResponseWriter, r *http.Request
 	rt.reloadAndWriteApp(w, r, name, "set app environment")
 }
 
+// environmentNeedsConfirmation reports whether env is protected and
+// confirm wasn't already given: the pure predicate behind
+// requireEnvironmentConfirmation below and handlePromoteApp's own
+// already-loaded res.env check (promote.go), since promotion targets an
+// environment it has loaded before this package would otherwise reload
+// it by ID.
+func environmentNeedsConfirmation(env store.Environment, confirm bool) bool {
+	return env.Protected && !confirm
+}
+
+func writeEnvironmentConfirmationRequired(w http.ResponseWriter, env store.Environment) {
+	writeError(w, http.StatusConflict, fmt.Sprintf("environment %q is protected; set confirm: true to proceed", env.Name))
+}
+
+// requireEnvironmentConfirmation is handleTriggerDeploy's (deploys.go)
+// own gate: an app with no environment, or one tagged with an
+// unprotected environment, always passes. A missing environmentID
+// reference degrades to "not protected" rather than blocking the caller
+// with a validation error this endpoint isn't otherwise responsible for.
+func (rt *Router) requireEnvironmentConfirmation(ctx context.Context, w http.ResponseWriter, environmentID string, confirm bool) bool {
+	if environmentID == "" {
+		return true
+	}
+	env, err := rt.environments.GetEnvironment(ctx, environmentID)
+	if errors.Is(err, store.ErrEnvironmentNotFound) {
+		return true
+	}
+	if err != nil {
+		rt.internalError(w, "api: check environment protection failed", err, slog.String("environment_id", environmentID))
+		return false
+	}
+	if environmentNeedsConfirmation(env, confirm) {
+		writeEnvironmentConfirmationRequired(w, env)
+		return false
+	}
+	return true
+}
+
 // randomEnvironmentID mirrors randomProjectID exactly.
 func randomEnvironmentID() (string, error) {
 	buf := make([]byte, 9)
@@ -152,6 +230,7 @@ type EnvironmentStore interface {
 	GetEnvironment(ctx context.Context, id string) (store.Environment, error)
 	ListEnvironmentsByProject(ctx context.Context, projectID string) ([]store.Environment, error)
 	DeleteEnvironment(ctx context.Context, id string) error
+	SetEnvironmentProtected(ctx context.Context, id string, protected bool) error
 	SetServiceEnvironment(ctx context.Context, serviceName, envID string) error
 	// SetEnvironmentEnvVars/ListEnvironmentEnvVars back GET/PUT
 	// /api/v1/environments/{id}/env (environment_env.go): shared env vars

@@ -121,7 +121,8 @@ type BuildTriggerResponse struct {
 // now-updated desired state), the same shape CreateApp/GetApp already
 // use, so no separate response type is needed here.
 type DeployTriggerRequest struct {
-	Image string `json:"image"`
+	Image   string `json:"image"`
+	Confirm bool   `json:"confirm,omitempty"`
 }
 
 // ComposeDeployResult mirrors internal/api's composeDeployResponse
@@ -413,8 +414,9 @@ type PromotePreviewResource struct {
 // "auto-discover the sole candidate, or disambiguate" contract
 // PromotePreview's own Target query param has.
 type PromoteAppRequest struct {
-	To     string `json:"to"`
-	Target string `json:"target,omitempty"`
+	To      string `json:"to"`
+	Target  string `json:"target,omitempty"`
+	Confirm bool   `json:"confirm,omitempty"`
 }
 
 // RestoreHistoryResource mirrors internal/api's restoreHistoryResource
@@ -811,13 +813,21 @@ type EnvironmentResource struct {
 	ID        string `json:"id"`
 	ProjectID string `json:"project_id"`
 	Name      string `json:"name"`
+	Protected bool   `json:"protected"`
 	CreatedAt string `json:"created_at"`
 }
 
 // CreateEnvironmentRequest mirrors internal/api's
 // createEnvironmentRequest.
 type CreateEnvironmentRequest struct {
-	Name string `json:"name"`
+	Name      string `json:"name"`
+	Protected bool   `json:"protected,omitempty"`
+}
+
+// UpdateEnvironmentRequest mirrors internal/api's
+// updateEnvironmentRequest (PATCH /api/v1/environments/{id}).
+type UpdateEnvironmentRequest struct {
+	Protected bool `json:"protected"`
 }
 
 // SetAppEnvironmentRequest mirrors internal/api's

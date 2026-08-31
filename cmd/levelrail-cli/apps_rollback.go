@@ -32,15 +32,20 @@ import (
 // endpoint this CLI could use to resolve "the previous tag" on its own,
 // so the caller must already know which tag to roll back to either way
 // (see apps_deploy.go's own doc comment on that same gap).
-func runAppsRollback(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+//
+// --confirm/interactive-prompt behavior on a protected environment
+// mirrors apps_deploy.go's own doc comment exactly: same server-side
+// gate, same client-side fallback.
+func runAppsRollback(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs := flag.NewFlagSet(prog+" apps rollback", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	var tokenFlag, apiURLFlag, image string
-	var jsonOut bool
+	var jsonOut, confirm bool
 	fs.StringVar(&image, "image", "", "older, already-built image reference to roll back to, e.g. registry.example.com/org/app:tag (required)")
 	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
 	fs.BoolVar(&jsonOut, "json", false, "print the updated app as JSON to stdout and nothing else")
+	fs.BoolVar(&confirm, "confirm", false, "confirm rolling back into a protected environment; omit to be prompted interactively if needed")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsRollbackUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -63,8 +68,20 @@ func runAppsRollback(prog string, args []string, stdout, stderr io.Writer, looku
 	}
 
 	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	ctx := context.Background()
 
-	updated, err := client.DeployApp(context.Background(), name, image)
+	updated, err := client.DeployApp(ctx, name, image, confirm)
+	if !confirm {
+		if apiErr, ok := protectedEnvironmentError(err); ok {
+			confirmed, cerr := resolveProtectedEnvironmentConfirmation(apiErr.Message, stdin, stderr)
+			if cerr != nil {
+				return reportError(stdout, stderr, jsonOut, cerr)
+			}
+			if confirmed {
+				updated, err = client.DeployApp(ctx, name, image, true)
+			}
+		}
+	}
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("roll back app %q: %w", name, err))
 	}
@@ -99,11 +116,15 @@ This command does not validate that IMAGE exists or ever ran
 successfully before returning: exit 0 only means the server accepted
 the request, not that the rollback converged. A typo'd or never-built
 tag, or the app's already-current image, both report the same success
-here; check "%[1]s apps status <name>" to confirm the reconcile
+here; check "%[1]s apps status <name>" to confirm the rollback
 actually landed before treating this as done.
+
+If the app is tagged with a protected environment, this fails unless
+--confirm is set or you type "yes" at the interactive prompt.
 
 Flags:
   --image string          older, already-built image reference to roll back to (required)
+  --confirm                  confirm rolling back into a protected environment, skipping the interactive prompt
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --json                    print the updated app as JSON to stdout, nothing else

@@ -58,6 +58,10 @@ export function usePromotePreview(
 interface PromoteAppInput {
   to: string
   target: string
+  // confirm must be true to promote into a protected environment
+  // (internal/api's environmentNeedsConfirmation); derived from
+  // PromoteAppDialog's own ProtectedEnvironmentNotice acknowledgment.
+  confirm?: boolean
 }
 
 export async function promoteApp(
@@ -72,6 +76,7 @@ export async function promoteApp(
       body: JSON.stringify({
         to: input.to,
         target: input.target || undefined,
+        confirm: input.confirm ?? false,
       }),
     },
   )

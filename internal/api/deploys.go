@@ -24,7 +24,8 @@ func applicationControllerName(appName string) string {
 }
 
 type deployTriggerRequest struct {
-	Image string `json:"image"`
+	Image   string `json:"image"`
+	Confirm bool   `json:"confirm,omitempty"`
 }
 
 // handleTriggerDeploy handles POST /api/v1/apps/{name}/deploys. It
@@ -35,7 +36,9 @@ type deployTriggerRequest struct {
 // rollback ("pointing desired.Image back at an older tag and
 // reconciling converges to it the same way any other redeploy does"),
 // run forward with a newer tag instead of an older one. The build that
-// produces that tag (1.4/1.5) is not this endpoint's job.
+// produces that tag (1.4/1.5) is not this endpoint's job. If name is
+// tagged with a protected environment, confirm: true is required
+// (requireEnvironmentConfirmation, environments.go).
 func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -57,6 +60,10 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Image == "" {
 		writeError(w, http.StatusBadRequest, "image is required")
+		return
+	}
+
+	if !rt.requireEnvironmentConfirmation(r.Context(), w, existing.EnvironmentID, req.Confirm) {
 		return
 	}
 

@@ -100,6 +100,56 @@ func TestRun_AppsPromote_Apply(t *testing.T) {
 	}
 }
 
+// protectedEnvironmentPromoteServer mirrors
+// protectedEnvironmentDeployServer (apps_deploy_test.go) for the promote
+// endpoint's own request/response shape.
+func protectedEnvironmentPromoteServer(t *testing.T) (*httptest.Server, *int) {
+	t.Helper()
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		var body promoteAppRequest
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		w.Header().Set("Content-Type", "application/json")
+		if !body.Confirm {
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(`{"error":"environment \"production\" is protected; set confirm: true to proceed"}`))
+			return
+		}
+		w.WriteHeader(http.StatusAccepted)
+		_ = json.NewEncoder(w).Encode(appResource{Name: "web-prod", Image: "levelrail/web:2", Port: 3000})
+	}))
+	return srv, &calls
+}
+
+func TestRun_AppsPromote_ProtectedEnvironment_InteractivePromptConfirms(t *testing.T) {
+	srv, calls := protectedEnvironmentPromoteServer(t)
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := runAppsPromote("levelrail-cli-test", []string{"web-staging", "--to", "env_prod", "--api-url", srv.URL}, &stdout, &stderr, envMap(), strings.NewReader("yes\n"))
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if *calls != 2 {
+		t.Errorf("calls = %d, want 2 (blocked, then confirmed retry)", *calls)
+	}
+}
+
+func TestRun_AppsPromote_ProtectedEnvironment_ConfirmFlagSkipsPrompt(t *testing.T) {
+	srv, calls := protectedEnvironmentPromoteServer(t)
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := runAppsPromote("levelrail-cli-test", []string{"web-staging", "--to", "env_prod", "--confirm", "--api-url", srv.URL}, &stdout, &stderr, envMap(), strings.NewReader(""))
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if *calls != 1 {
+		t.Errorf("calls = %d, want 1 (no retry needed)", *calls)
+	}
+}
+
 func TestRun_AppsPromote_MissingTo(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"apps", "promote", "web-staging"}, &stdout, &stderr, envMap())

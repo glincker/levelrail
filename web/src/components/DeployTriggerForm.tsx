@@ -1,11 +1,15 @@
+import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useNavigate } from '@tanstack/react-router'
 import { GitBranchIcon, RocketIcon } from '@phosphor-icons/react/dist/ssr'
+import { useApp } from '../queries/apps'
 import { useTriggerDeploy } from '../queries/deploys'
 import { useTriggerBuild } from '../queries/builds'
 import { useImageTagsOptional } from '../queries/images'
+import { useProtectedEnvironment } from '../queries/environments'
+import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -44,7 +48,10 @@ type TriggerFormValues = z.infer<typeof triggerSchema>
 // "deploying..." state beyond the mutation's own pending flag: any of
 // those would imply a live process this endpoint doesn't actually drive.
 function DeployExistingImageForm({ appName }: { appName: string }) {
+  const { data: app } = useApp(appName)
   const triggerDeploy = useTriggerDeploy(appName)
+  const protectedEnv = useProtectedEnvironment(app)
+  const [ackProtected, setAckProtected] = useState(false)
   // Optional convenience only, the same graceful-degradation shape
   // useNodeListOptional's own doc comment establishes (queries/nodes.ts):
   // a failure or empty result here must never block this form's core
@@ -61,16 +68,20 @@ function DeployExistingImageForm({ appName }: { appName: string }) {
     })
 
   const onSubmit = handleSubmit((values) => {
-    triggerDeploy.mutate(values.image.trim(), {
-      onSuccess: () => {
-        reset({ image: '' })
-        toast.add({
-          title: 'Deploy triggered.',
-          description: 'Check the Overview tab for the outcome.',
-          type: 'success',
-        })
+    triggerDeploy.mutate(
+      { image: values.image.trim(), confirm: ackProtected },
+      {
+        onSuccess: () => {
+          reset({ image: '' })
+          setAckProtected(false)
+          toast.add({
+            title: 'Deploy triggered.',
+            description: 'Check the Overview tab for the outcome.',
+            type: 'success',
+          })
+        },
       },
-    })
+    )
   })
 
   return (
@@ -126,10 +137,24 @@ function DeployExistingImageForm({ appName }: { appName: string }) {
             }
           />
         </Field>
-        <Button type="submit" disabled={triggerDeploy.isPending}>
+        <Button
+          type="submit"
+          disabled={
+            triggerDeploy.isPending ||
+            (protectedEnv?.protected && !ackProtected)
+          }
+        >
           {triggerDeploy.isPending ? 'Triggering...' : 'Deploy'}
         </Button>
       </form>
+      {protectedEnv?.protected ? (
+        <ProtectedEnvironmentNotice
+          id="deploy-existing-image-ack-protected"
+          environmentName={protectedEnv.name}
+          acknowledged={ackProtected}
+          onAcknowledgedChange={setAckProtected}
+        />
+      ) : null}
       {triggerDeploy.isError ? (
         <Alert variant="destructive" className="mt-3">
           <AlertDescription>{triggerDeploy.error.message}</AlertDescription>

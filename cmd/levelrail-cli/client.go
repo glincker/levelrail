@@ -98,6 +98,7 @@ type (
 	setDatabaseProjectRequest      = apiclient.SetDatabaseProjectRequest
 	environmentResource            = apiclient.EnvironmentResource
 	createEnvironmentRequest       = apiclient.CreateEnvironmentRequest
+	updateEnvironmentRequest       = apiclient.UpdateEnvironmentRequest
 	setAppEnvironmentRequest       = apiclient.SetAppEnvironmentRequest
 	previewEnvironmentResource     = apiclient.PreviewEnvironmentResource
 	setPreviewEnabledRequest       = apiclient.SetPreviewEnabledRequest

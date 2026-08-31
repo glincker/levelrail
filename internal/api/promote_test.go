@@ -245,6 +245,48 @@ func TestHandlePromoteApp(t *testing.T) {
 	}
 }
 
+// TestHandlePromoteApp_ProtectedEnvironment covers the confirm: true
+// gate (environments.go's environmentNeedsConfirmation), checked against
+// the "to" environment itself rather than the resolved target app's own
+// tag: seedPromotionFixture's own target (web-prod) is what's checked
+// here since it's exactly the app tagged with env_prod.
+func TestHandlePromoteApp_ProtectedEnvironment(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedPromotionFixture(t, db)
+	ctx := context.Background()
+
+	if err := db.SetEnvironmentProtected(ctx, "env_prod", true); err != nil {
+		t.Fatalf("SetEnvironmentProtected: %v", err)
+	}
+
+	recUnconfirmed := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recUnconfirmed, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web-staging/promote", `{"to":"env_prod"}`))
+	if recUnconfirmed.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d; body = %s", recUnconfirmed.Code, http.StatusConflict, recUnconfirmed.Body.String())
+	}
+	target, err := db.GetDesiredService(ctx, "web-prod")
+	if err != nil {
+		t.Fatalf("GetDesiredService: %v", err)
+	}
+	if target.Image != "levelrail/web:1" {
+		t.Errorf("an unconfirmed promote into a protected environment must not change desired state, Image = %q", target.Image)
+	}
+
+	recConfirmed := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recConfirmed, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web-staging/promote", `{"to":"env_prod","confirm":true}`))
+	if recConfirmed.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d; body = %s", recConfirmed.Code, http.StatusAccepted, recConfirmed.Body.String())
+	}
+	target, err = db.GetDesiredService(ctx, "web-prod")
+	if err != nil {
+		t.Fatalf("GetDesiredService: %v", err)
+	}
+	if target.Image != "levelrail/web:2" {
+		t.Errorf("confirm: true promote did not update Image, got %q", target.Image)
+	}
+}
+
 func TestHandlePromoteApp_TargetEqualsSource(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

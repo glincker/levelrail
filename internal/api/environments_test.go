@@ -19,6 +19,7 @@ func TestEnvironmentsRoutes_RequireAuth(t *testing.T) {
 	}{
 		{http.MethodGet, "/api/v1/projects/proj_1/environments"},
 		{http.MethodPost, "/api/v1/projects/proj_1/environments"},
+		{http.MethodPatch, "/api/v1/environments/env_1"},
 		{http.MethodDelete, "/api/v1/environments/env_1"},
 		{http.MethodPut, "/api/v1/apps/web/environment"},
 		{http.MethodGet, "/api/v1/environments/env_1/env"},
@@ -57,6 +58,79 @@ func TestHandleCreateEnvironment(t *testing.T) {
 	}
 	if got.Name != "staging" || got.ProjectID != "proj_1" || got.ID == "" {
 		t.Errorf("response = %+v, want name=staging project_id=proj_1 and a real id", got)
+	}
+	if got.Protected {
+		t.Errorf("Protected = true, want false (not set in request)")
+	}
+}
+
+func TestHandleCreateEnvironment_Protected(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveProject(ctx, store.Project{ID: "proj_1", Name: "my-saas", CreatedAt: "2026-08-20T00:00:00Z"}); err != nil {
+		t.Fatalf("seed project: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/projects/proj_1/environments", `{"name":"production","protected":true}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	var got environmentResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !got.Protected {
+		t.Errorf("Protected = false, want true")
+	}
+}
+
+func TestHandleUpdateEnvironment(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveProject(ctx, store.Project{ID: "proj_1", Name: "my-saas", CreatedAt: "2026-08-20T00:00:00Z"}); err != nil {
+		t.Fatalf("seed project: %v", err)
+	}
+	if err := db.SaveEnvironment(ctx, store.Environment{ID: "env_1", ProjectID: "proj_1", Name: "production", CreatedAt: "2026-08-20T00:00:00Z"}); err != nil {
+		t.Fatalf("seed env: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPatch, "/api/v1/environments/env_1", `{"protected":true}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got environmentResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !got.Protected {
+		t.Errorf("Protected = false, want true")
+	}
+
+	env, err := db.GetEnvironment(ctx, "env_1")
+	if err != nil {
+		t.Fatalf("GetEnvironment() error = %v", err)
+	}
+	if !env.Protected {
+		t.Errorf("stored Protected = false, want true")
+	}
+}
+
+func TestHandleUpdateEnvironment_NotFound(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPatch, "/api/v1/environments/ghost", `{"protected":true}`))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
 	}
 }
 
