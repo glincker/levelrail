@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -89,12 +90,23 @@ func (rt *Router) handleDiagnoseApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// A build-phase failure means no container ever started, so the
+	// runtime telemetry query would always come back empty; the real
+	// error text (npm/pip/compiler output) lives in the persisted build
+	// log instead.
+	var recentLogs []string
+	if attemptFailedDuringBuild(attempt) {
+		recentLogs = rt.diagnoseBuildLogs(ctx, name, attempt.ID)
+	} else {
+		recentLogs = rt.diagnoseRecentLogs(ctx, name)
+	}
+
 	in := diagnose.Input{
 		ServiceName:    name,
 		Attempt:        toAttemptSignal(attempt),
 		Conditions:     toConditionSignals(conditions),
 		Crashloop:      rt.diagnoseCrashloop(ctx, name),
-		RecentLogLines: rt.diagnoseRecentLogs(ctx, name),
+		RecentLogLines: recentLogs,
 	}
 
 	attemptID := ""
@@ -187,6 +199,42 @@ func (rt *Router) diagnoseRecentLogs(ctx context.Context, name string) []string 
 	entries, err := rt.telemetry.QueryLogs(ctx, resourceIDForApp(name), now.Add(-diagnosticLogWindow), now, "")
 	if err != nil {
 		rt.logger.Warn("api: diagnose app: query logs failed", slog.String("error", err.Error()), slog.String("name", name))
+		return nil
+	}
+	if len(entries) > diagnosticLogLines {
+		entries = entries[len(entries)-diagnosticLogLines:]
+	}
+	lines := make([]string, 0, len(entries))
+	for _, e := range entries {
+		lines = append(lines, e.Message)
+	}
+	return lines
+}
+
+// buildStepErrorMarker is the literal substring internal/deploy.Pipeline
+// wraps a build step's own error with (deploy.go's deployDockerfile and
+// deployRailpack); its presence is the only signal available today for
+// "this attempt failed before any container started," short of adding a
+// dedicated phase column to store.DeployAttempt.
+const buildStepErrorMarker = ": build: "
+
+func attemptFailedDuringBuild(attempt *store.DeployAttempt) bool {
+	return attempt != nil && attempt.Status == store.DeployAttemptStatusFailed && strings.Contains(attempt.Error, buildStepErrorMarker)
+}
+
+// diagnoseBuildLogs is best-effort, same reasoning as diagnoseRecentLogs:
+// no deploy log store configured, no persisted log for this attempt, or a
+// query failure all just mean the build-failure signatures have nothing
+// to match against. QueryDeployLog returns attemptID's full log
+// unwindowed, so the same line cap diagnosticLogLines applies to runtime
+// logs is applied here too.
+func (rt *Router) diagnoseBuildLogs(ctx context.Context, name, attemptID string) []string {
+	if rt.deployLogStore == nil {
+		return nil
+	}
+	entries, err := rt.deployLogStore.QueryDeployLog(ctx, attemptID)
+	if err != nil {
+		rt.logger.Warn("api: diagnose app: query build log failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("deploy_attempt_id", attemptID))
 		return nil
 	}
 	if len(entries) > diagnosticLogLines {
