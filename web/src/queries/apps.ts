@@ -15,6 +15,7 @@ import type {
   AppListEntry,
   DeployStrategy,
   LogDrain,
+  ServiceHealth,
 } from '../types/appDetail'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
@@ -130,13 +131,17 @@ export function useUpdateApp(name: string) {
 
 // Request body for POST /api/v1/apps (internal/api/apps.go's
 // handleCreateApp), deliberately narrower than the full appResource
-// shape AppDetail models: env/resources/health are real fields the
-// endpoint accepts, but CreateAppDialog only ever collects
-// name/image/port (a manually-created app here is the "already have a
-// built image" path in the app spec's model). domains is included since
-// CreateAppFromGitFields collects one optional domain up front; the
-// server still runs validateAppResource against whatever arrives, so
-// leaving the rest undefined is safe, not a bypass.
+// shape AppDetail models: env/resources are real fields the endpoint
+// accepts, but CreateAppDialog only ever collects name/image/port (a
+// manually-created app here is the "already have a built image" path in
+// the app spec's model). domains is included since CreateAppFromGitFields
+// collects one optional domain up front; the server still runs
+// validateAppResource against whatever arrives, so leaving the rest
+// undefined is safe, not a bypass. health is included since both
+// CreateAppFields and CreateAppFromGitFields now offer an optional
+// health-check path, defaulting to /healthz the same way
+// docs/app-spec-reference.md's own example and the CLI's interactive
+// wizard (apps_create_interactive.go) already do.
 // strategy/replicas are optional here on purpose: CreateAppFields only
 // renders them as opt-in fields (leaving either blank omits it from the
 // request body entirely), and the server's own validateAppResource
@@ -159,6 +164,7 @@ export interface CreateAppRequest {
   replicas?: number
   project_id?: string
   domains?: string[]
+  health?: ServiceHealth
 }
 
 // POST /api/v1/apps. Rejects a name that already exists with a 409

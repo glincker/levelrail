@@ -182,6 +182,23 @@ function FieldHint({
   )
 }
 
+// A small uppercase subheading for grouping related fields in a longer
+// form (e.g. "Source", "Networking", "Health check"), matching the
+// tracking-wide muted style CreateResourceWizard.tsx already uses for its
+// own step-1 "Applications"/"Databases" groupings.
+function FieldSectionLabel({ className, ...props }: React.ComponentProps<'h3'>) {
+  return (
+    <h3
+      data-slot="field-section-label"
+      className={cn(
+        'text-xs font-medium tracking-wide text-muted-foreground uppercase',
+        className,
+      )}
+      {...props}
+    />
+  )
+}
+
 function FieldSeparator({
   children,
   className,
@@ -271,6 +288,7 @@ export {
   FieldError,
   FieldGroup,
   FieldLegend,
+  FieldSectionLabel,
   FieldSeparator,
   FieldSet,
   FieldContent,

@@ -32,8 +32,23 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { cn } from '@/lib/utils'
 import { useGitBranches } from '../queries/gitBranches'
+import { BrandIcon, type BrandIconName } from './BrandIcon'
 import type { FormInput, FormOutput } from './CreateAppFromGitFields'
+
+// Purely a URL-string match, not framework/build detection: which git
+// host a pasted repo URL looks like, so the field can show that host's
+// mark once it recognizes one. `null` (no icon) for anything else,
+// including a self-hosted GitLab/Bitbucket instance under a different
+// domain.
+function gitHostIconName(repoUrl: string): BrandIconName | null {
+  const value = repoUrl.trim().toLowerCase()
+  if (value.includes('github.com')) return 'github'
+  if (value.includes('gitlab.com')) return 'gitlab'
+  if (value.includes('bitbucket.org')) return 'bitbucket'
+  return null
+}
 
 // GitBuildSourceFields is CreateAppFromGitFields' git-source input
 // group: repository URL, a real branch picker backed by
@@ -92,6 +107,7 @@ export function GitBuildSourceFields({
   const [showAdvanced, setShowAdvanced] = useState(false)
   const branchesQuery = useGitBranches(loadedRepoUrl)
   const branches = branchesQuery.data ?? []
+  const hostIcon = gitHostIconName(watch('repoUrl'))
 
   return (
     <>
@@ -100,15 +116,23 @@ export function GitBuildSourceFields({
           <Field>
             <FieldLabel htmlFor="git-app-repo-url">Repository URL</FieldLabel>
             <div className="flex gap-2">
-              <Input
-                id="git-app-repo-url"
-                className="flex-1 font-mono"
-                placeholder="https://github.com/you/app.git"
-                autoComplete="off"
-                spellCheck={false}
-                disabled={disabled}
-                {...register('repoUrl')}
-              />
+              <div className="relative flex-1">
+                {hostIcon ? (
+                  <BrandIcon
+                    name={hostIcon}
+                    className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2"
+                  />
+                ) : null}
+                <Input
+                  id="git-app-repo-url"
+                  className={cn('font-mono', hostIcon ? 'pl-8' : undefined)}
+                  placeholder="https://github.com/you/app.git"
+                  autoComplete="off"
+                  spellCheck={false}
+                  disabled={disabled}
+                  {...register('repoUrl')}
+                />
+              </div>
               <Button
                 type="button"
                 variant="outline"

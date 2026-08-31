@@ -430,4 +430,58 @@ describe('CreateAppFromGitFields', () => {
     )
     expect(screen.getByText('wh_secret_abc')).toBeInTheDocument()
   })
+
+  it('defaults the health check on at /healthz and sends it on create', async () => {
+    const user = userEvent.setup()
+    renderForm()
+
+    await screen.findByLabelText('Name')
+    expect(screen.getByLabelText('Path')).toHaveValue('/healthz')
+
+    await user.type(screen.getByLabelText('Name'), 'demo-app')
+    await user.type(screen.getByLabelText('Port'), '3000')
+    await user.type(
+      screen.getByLabelText('Repository URL'),
+      'https://github.com/example/private-repo.git',
+    )
+    await user.type(screen.getByLabelText(/Branch, tag, or commit/), 'main')
+
+    await user.click(screen.getByRole('button', { name: 'Build and deploy' }))
+
+    await waitFor(() => {
+      expect(callsTo(fetchMock, '/api/v1/apps', 'POST')).toHaveLength(1)
+    })
+    const body = JSON.parse(
+      callsTo(fetchMock, '/api/v1/apps', 'POST')[0]?.init?.body as string,
+    ) as { health?: { readiness?: { path: string }; liveness?: { path: string } } }
+    expect(body.health?.readiness?.path).toBe('/healthz')
+    expect(body.health?.liveness?.path).toBe('/healthz')
+  })
+
+  it('omits health entirely once the health check toggle is turned off', async () => {
+    const user = userEvent.setup()
+    renderForm()
+
+    await screen.findByLabelText('Name')
+    await user.click(screen.getByRole('switch', { name: 'Enable a health check' }))
+    expect(screen.queryByLabelText('Path')).not.toBeInTheDocument()
+
+    await user.type(screen.getByLabelText('Name'), 'demo-app')
+    await user.type(screen.getByLabelText('Port'), '3000')
+    await user.type(
+      screen.getByLabelText('Repository URL'),
+      'https://github.com/example/private-repo.git',
+    )
+    await user.type(screen.getByLabelText(/Branch, tag, or commit/), 'main')
+
+    await user.click(screen.getByRole('button', { name: 'Build and deploy' }))
+
+    await waitFor(() => {
+      expect(callsTo(fetchMock, '/api/v1/apps', 'POST')).toHaveLength(1)
+    })
+    const body = JSON.parse(
+      callsTo(fetchMock, '/api/v1/apps', 'POST')[0]?.init?.body as string,
+    ) as { health?: unknown }
+    expect(body.health).toBeUndefined()
+  })
 })

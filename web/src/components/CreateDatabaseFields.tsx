@@ -8,7 +8,13 @@ import { DialogFooter } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldError,
+  FieldHint,
+  FieldLabel,
+  FieldSectionLabel,
+} from '@/components/ui/field'
 import {
   Select,
   SelectContent,
@@ -22,6 +28,8 @@ import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
 import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
 import { useSystemStatusOptional } from '../queries/systemStatus'
+import { useFormDraft } from '../hooks/useFormDraft'
+import { DraftRestoredNotice } from './DraftRestoredNotice'
 import {
   LOCAL_NODE_VALUE,
   NO_PROJECT_VALUE,
@@ -171,14 +179,11 @@ export function CreateDatabaseFields({
     node: LOCAL_NODE_VALUE,
     project: NO_PROJECT_VALUE,
   }
-  const { control, register, handleSubmit, formState, reset, watch } = useForm<
-    CreateDatabaseFormInput,
-    unknown,
-    CreateDatabaseFormOutput
-  >({
-    resolver: zodResolver(createDatabaseSchema),
-    defaultValues,
-  })
+  const { control, register, handleSubmit, formState, reset, watch, setValue, getValues } =
+    useForm<CreateDatabaseFormInput, unknown, CreateDatabaseFormOutput>({
+      resolver: zodResolver(createDatabaseSchema),
+      defaultValues,
+    })
   const watchedEngine = watch('engine')
 
   useEffect(() => {
@@ -190,6 +195,36 @@ export function CreateDatabaseFields({
     // createDatabase/defaultValues identity churn on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
+
+  // Elevates the version field's placeholder (the engine's own
+  // documented default, from GET /api/v1/database-engines) into a real
+  // pre-filled value the operator can still override, rather than
+  // leaving it blank. Skipped once the operator has actually typed into
+  // the field, or if a draft/restore already populated it (checked via
+  // the live value, not dirtyFields: a restored value is set through
+  // reset(), which never marks a field dirty).
+  useEffect(() => {
+    if (formState.dirtyFields.version) return
+    if (getValues('version').trim() !== '') return
+    const fallback = engines.find((e) => e.id === watchedEngine)?.default_version
+    if (fallback) {
+      setValue('version', fallback)
+    }
+    // Only reacting to the engine changing or the engine registry
+    // arriving, not to formState/getValues/setValue identity churn.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedEngine, engines])
+
+  // No secret field exists on this form: database credentials are
+  // generated server-side, never collected here.
+  const { restoredFromDraft, discardDraft, dismissDraftNotice, clearDraft } =
+    useFormDraft({
+      storageKey: `app-create-database-draft:${engine ?? (watchedEngine || 'unspecified')}`,
+      open,
+      watch,
+      reset,
+      defaultValues,
+    })
 
   const onSubmit = handleSubmit((values) => {
     const nodeId = values.node ?? LOCAL_NODE_VALUE
@@ -207,6 +242,7 @@ export function CreateDatabaseFields({
       },
       {
         onSuccess: (created) => {
+          clearDraft()
           onCreated()
           toast.add({
             title: `Database "${created.name}" created.`,
@@ -235,6 +271,13 @@ export function CreateDatabaseFields({
       }}
       className="space-y-4"
     >
+      {restoredFromDraft ? (
+        <DraftRestoredNotice
+          onDiscard={discardDraft}
+          onDismiss={dismissDraftNotice}
+        />
+      ) : null}
+
       {CREDENTIALED_ENGINES.has(watchedEngine) &&
       systemStatus.data?.secrets_configured === false ? (
         // Warning, not a gate: submission below is never disabled on
@@ -261,66 +304,70 @@ export function CreateDatabaseFields({
           </p>
         </div>
       ) : null}
-      <Field>
-        <FieldLabel htmlFor="database-name">Name</FieldLabel>
-        <Input
-          id="database-name"
-          placeholder="e.g. main"
-          {...register('name')}
-        />
-        <FieldError errors={[formState.errors.name]} />
-      </Field>
 
-      {engine ? null : (
+      <div className="space-y-4">
+        <FieldSectionLabel>Basics</FieldSectionLabel>
         <Field>
-          <FieldLabel htmlFor="database-engine">Engine</FieldLabel>
-          <Controller
-            control={control}
-            name="engine"
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger id="database-engine" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {engines.map((option) => (
-                    <SelectItem key={option.id} value={option.id}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+          <FieldLabel htmlFor="database-name">Name</FieldLabel>
+          <Input
+            id="database-name"
+            placeholder="e.g. main"
+            {...register('name')}
           />
-          <FieldHint>
-            Postgres or MySQL suit relational data that needs joins and
-            transactions. Redis has no credentials to configure and suits
-            caching, queues, and other ephemeral state.
-          </FieldHint>
-          <FieldError errors={[formState.errors.engine]} />
+          <FieldError errors={[formState.errors.name]} />
         </Field>
-      )}
 
-      <Field>
-        <FieldLabel htmlFor="database-version">Version</FieldLabel>
-        <Input
-          id="database-version"
-          placeholder={
-            engines.find((e) => e.id === watchedEngine)?.default_version
-          }
-          {...register('version')}
-        />
-        {DOCKER_HUB_OFFICIAL_IMAGE[watchedEngine] ? (
-          <FieldHint
-            href={`https://hub.docker.com/_/${DOCKER_HUB_OFFICIAL_IMAGE[watchedEngine]}/tags`}
-            linkText="See available versions"
-          >
-            A major version like &quot;16&quot;, matching an image tag that
-            actually exists.
-          </FieldHint>
-        ) : null}
-        <FieldError errors={[formState.errors.version]} />
-      </Field>
+        {engine ? null : (
+          <Field>
+            <FieldLabel htmlFor="database-engine">Engine</FieldLabel>
+            <Controller
+              control={control}
+              name="engine"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger id="database-engine" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {engines.map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <FieldHint>
+              Postgres or MySQL suit relational data that needs joins and
+              transactions. Redis has no credentials to configure and suits
+              caching, queues, and other ephemeral state.
+            </FieldHint>
+            <FieldError errors={[formState.errors.engine]} />
+          </Field>
+        )}
+
+        <Field>
+          <FieldLabel htmlFor="database-version">Version</FieldLabel>
+          <Input
+            id="database-version"
+            placeholder={
+              engines.find((e) => e.id === watchedEngine)?.default_version
+            }
+            {...register('version')}
+          />
+          {DOCKER_HUB_OFFICIAL_IMAGE[watchedEngine] ? (
+            <FieldHint
+              href={`https://hub.docker.com/_/${DOCKER_HUB_OFFICIAL_IMAGE[watchedEngine]}/tags`}
+              linkText="See available versions"
+            >
+              A major version like &quot;16&quot;, matching an image tag that
+              actually exists.
+            </FieldHint>
+          ) : null}
+          <FieldError errors={[formState.errors.version]} />
+        </Field>
+      </div>
 
       {nodes.length > 0 || projects.length > 0 ? (
         <button

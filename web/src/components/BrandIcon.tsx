@@ -1,8 +1,11 @@
 import type { ComponentType, SVGProps } from 'react'
+import BitbucketLogo from '@thesvg/react/bitbucket'
 import ClickhouseLogo from '@thesvg/react/clickhouse'
 import DiscordLogo from '@thesvg/react/discord'
 import DockerLogo from '@thesvg/react/docker'
 import DragonflyLogo from '@thesvg/react/dragonfly'
+import GitHubLogo from '@thesvg/react/github'
+import GitLabLogo from '@thesvg/react/gitlab'
 import GoLogo from '@thesvg/react/go'
 import JavaLogo from '@thesvg/react/java'
 import KeydbLogo from '@thesvg/react/keydb'
@@ -38,6 +41,9 @@ export type BrandIconName =
   | 'telegram'
   | 'pagerduty'
   | 'microsoft-teams'
+  | 'github'
+  | 'gitlab'
+  | 'bitbucket'
 
 const BRAND_ICONS: Record<
   BrandIconName,
@@ -60,6 +66,9 @@ const BRAND_ICONS: Record<
   telegram: TelegramLogo,
   pagerduty: PagerdutyLogo,
   'microsoft-teams': MicrosoftTeamsLogo,
+  github: GitHubLogo,
+  gitlab: GitLabLogo,
+  bitbucket: BitbucketLogo,
 }
 
 // All names in BRAND_ICONS, for callers that need to enumerate the
@@ -84,6 +93,9 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'telegram',
   'pagerduty',
   'microsoft-teams',
+  'github',
+  'gitlab',
+  'bitbucket',
 ]
 
 export interface BrandIconProps extends SVGProps<SVGSVGElement> {

@@ -4,13 +4,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import {
-  CheckIcon,
-  CopyIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
 import { DialogFooter } from '@/components/ui/dialog'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -19,7 +13,9 @@ import {
   FieldError,
   FieldHint,
   FieldLabel,
+  FieldSectionLabel,
 } from '@/components/ui/field'
+import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { useCreateApp } from '../queries/apps'
 import { triggerBuild, type TriggerBuildInput } from '../queries/builds'
@@ -30,11 +26,19 @@ import { connectGitHubRepoAsSource } from '../queries/githubApp'
 import { connectGitLabProjectAsSource } from '../queries/gitlabApp'
 import { connectBitbucketRepoAsSource } from '../queries/bitbucketApp'
 import type { GitSourceBuildType, GitSourceResource } from '../types/gitSource'
+import { useFormDraft } from '../hooks/useFormDraft'
+import {
+  HEALTH_CHECK_DEFAULT_PATH,
+  healthCheckFrom,
+} from '../lib/healthCheckDefaults'
+import { DraftRestoredNotice } from './DraftRestoredNotice'
 import { GitBuildSourceFields } from './GitBuildSourceFields'
+import { GitDeployStatusAlerts } from './GitDeployStatusAlerts'
 import {
   GitRepoSourcePicker,
   type GitRepoSourceValue,
 } from './GitRepoSourcePicker'
+import { GitSourceWebhookBanner } from './GitSourceWebhookBanner'
 
 // Build packs this form offers, matching GitBuildSourceFields' own tab
 // picker for what POST /api/v1/apps/{name}/builds actually supports:
@@ -87,6 +91,8 @@ const createAppFromGitSchema = z
         (v) => v === '' || DOMAIN_PATTERN.test(v),
         'Enter a valid domain, e.g. app.example.com',
       ),
+    healthCheckEnabled: z.boolean(),
+    healthCheckPath: z.string().trim(),
   })
   .superRefine((values, ctx) => {
     if (values.buildType === 'image') {
@@ -129,6 +135,22 @@ const createAppFromGitSchema = z
       })
     }
   })
+  .superRefine((values, ctx) => {
+    if (!values.healthCheckEnabled) return
+    if (!values.healthCheckPath) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Health check path is required',
+        path: ['healthCheckPath'],
+      })
+    } else if (!values.healthCheckPath.startsWith('/')) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Path must start with /',
+        path: ['healthCheckPath'],
+      })
+    }
+  })
 
 export type FormInput = z.input<typeof createAppFromGitSchema>
 export type FormOutput = z.output<typeof createAppFromGitSchema>
@@ -145,6 +167,11 @@ const DEFAULT_VALUES: FormInput = {
   buildArgs: [],
   image: '',
   domain: '',
+  // Mirrors the CLI's interactive wizard default
+  // (apps_create_interactive.go): on by default at the documented
+  // /healthz convention.
+  healthCheckEnabled: true,
+  healthCheckPath: HEALTH_CHECK_DEFAULT_PATH,
 }
 
 // build.path is only ever sent for build.type: dockerfile: railpack has
@@ -411,13 +438,6 @@ export function CreateAppFromGitFields({
   // comment for how a stale value here (the form fields hand-edited after
   // a pick) gets detected and ignored.
   const [source, setSource] = useState<GitRepoSourceValue | null>(null)
-  // Copy-button state for the "add this webhook by hand" banner below,
-  // shown only for the generic (non-auto-registering) connect path. Reset
-  // is unnecessary beyond the dialog's own close-resets-everything effect:
-  // a fresh connect always renders a fresh banner with these starting
-  // false again anyway.
-  const [webhookUrlCopied, setWebhookUrlCopied] = useState(false)
-  const [webhookSecretCopied, setWebhookSecretCopied] = useState(false)
   // See this component's own doc comment for why this wraps
   // queries/builds.ts's triggerBuild() directly instead of using that
   // module's useTriggerBuild(appName) hook.
@@ -479,11 +499,26 @@ export function CreateAppFromGitFields({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
+  // No secret field lives in this form's own values: the manual "deploy
+  // token" GitRepoSourcePicker collects for a private repo stays in that
+  // component's own local state (see `source` above), never flows into
+  // this form's RHF values, so nothing needs excluding from the draft.
+  const { restoredFromDraft, discardDraft, dismissDraftNotice, clearDraft } =
+    useFormDraft({
+      storageKey: 'app-create-app-git-draft',
+      open,
+      watch,
+      reset,
+      defaultValues: DEFAULT_VALUES,
+    })
+  const healthCheckEnabled = watch('healthCheckEnabled')
+
   function runBuild(name: string, values: FormOutput) {
     buildMutation.mutate(
       { name, input: buildInputFrom(values) },
       {
         onSuccess: (result) => {
+          clearDraft()
           onCreated()
           toast.add({
             title: `App "${name}" created, build triggered.`,
@@ -547,6 +582,7 @@ export function CreateAppFromGitFields({
         image: `${values.name.trim()}:${PENDING_BUILD_TAG}`,
         port: values.port,
         domains: values.domain.trim() ? [values.domain.trim()] : undefined,
+        health: healthCheckFrom(values.healthCheckEnabled, values.healthCheckPath),
       },
       {
         onSuccess: (created) => {
@@ -577,25 +613,33 @@ export function CreateAppFromGitFields({
       }}
       className="space-y-4"
     >
-      {watch('buildType') !== 'image' ? (
-        <GitRepoSourcePicker
-          disabled={buildFieldsLocked}
-          onSelect={(value) => {
-            setSource(value)
-            setValue('repoUrl', value.repoUrl, { shouldValidate: true })
-            setValue('ref', value.branch, { shouldValidate: true })
-            if (!getValues('name').trim()) {
-              const slug = repoSlugFrom(value.repoUrl)
-              if (slug) {
-                setValue('name', slug, { shouldValidate: true })
-              }
-            }
-          }}
+      {restoredFromDraft ? (
+        <DraftRestoredNotice
+          onDiscard={discardDraft}
+          onDismiss={dismissDraftNotice}
         />
       ) : null}
 
-      <div className="flex flex-col gap-4 sm:flex-row">
-        <Field className="flex-1">
+      <div className="space-y-4">
+        <FieldSectionLabel>Source</FieldSectionLabel>
+        {watch('buildType') !== 'image' ? (
+          <GitRepoSourcePicker
+            disabled={buildFieldsLocked}
+            onSelect={(value) => {
+              setSource(value)
+              setValue('repoUrl', value.repoUrl, { shouldValidate: true })
+              setValue('ref', value.branch, { shouldValidate: true })
+              if (!getValues('name').trim()) {
+                const slug = repoSlugFrom(value.repoUrl)
+                if (slug) {
+                  setValue('name', slug, { shouldValidate: true })
+                }
+              }
+            }}
+          />
+        ) : null}
+
+        <Field>
           <FieldLabel htmlFor="git-app-name">Name</FieldLabel>
           <Input
             id="git-app-name"
@@ -605,8 +649,24 @@ export function CreateAppFromGitFields({
           />
           <FieldError errors={[formState.errors.name]} />
         </Field>
+      </div>
 
-        <Field className="flex-1">
+      <div className="space-y-4">
+        <FieldSectionLabel>Build</FieldSectionLabel>
+        <GitBuildSourceFields
+          control={control}
+          register={register}
+          formState={formState}
+          getValues={getValues}
+          setValue={setValue}
+          watch={watch}
+          disabled={buildFieldsLocked}
+        />
+      </div>
+
+      <div className="space-y-4">
+        <FieldSectionLabel>Networking</FieldSectionLabel>
+        <Field>
           <FieldLabel htmlFor="git-app-port">Port</FieldLabel>
           <Input
             id="git-app-port"
@@ -623,131 +683,81 @@ export function CreateAppFromGitFields({
           </FieldHint>
           <FieldError errors={[formState.errors.port]} />
         </Field>
+
+        <Field>
+          <FieldLabel htmlFor="git-app-domain">Domain (optional)</FieldLabel>
+          <Input
+            id="git-app-domain"
+            className="font-mono"
+            placeholder="app.example.com"
+            autoComplete="off"
+            spellCheck={false}
+            disabled={locked}
+            {...register('domain')}
+          />
+          <FieldError errors={[formState.errors.domain]} />
+          <FieldDescription>
+            Routed once its DNS record points here. A TLS certificate is
+            issued automatically, or add this later from the app&apos;s
+            Domains tab.
+          </FieldDescription>
+        </Field>
       </div>
 
-      <GitBuildSourceFields
-        control={control}
-        register={register}
-        formState={formState}
-        getValues={getValues}
-        setValue={setValue}
-        watch={watch}
-        disabled={buildFieldsLocked}
+      <div className="space-y-4">
+        <FieldSectionLabel>Health check</FieldSectionLabel>
+        <Field orientation="horizontal">
+          <Switch
+            id="git-app-health-enabled"
+            checked={healthCheckEnabled}
+            onCheckedChange={(checked) => {
+              setValue('healthCheckEnabled', checked, { shouldValidate: true })
+            }}
+            disabled={locked}
+          />
+          <FieldLabel htmlFor="git-app-health-enabled">
+            Enable a health check
+          </FieldLabel>
+        </Field>
+        {healthCheckEnabled ? (
+          <Field>
+            <FieldLabel htmlFor="git-app-health-path">Path</FieldLabel>
+            <Input
+              id="git-app-health-path"
+              className="font-mono"
+              placeholder={HEALTH_CHECK_DEFAULT_PATH}
+              disabled={locked}
+              {...register('healthCheckPath')}
+            />
+            <FieldHint>
+              Checked before cutting traffic to a new container, and to
+              detect a crashed one afterward. Railpack-detected apps that
+              don&rsquo;t serve this path should turn it off.
+            </FieldHint>
+            <FieldError errors={[formState.errors.healthCheckPath]} />
+          </Field>
+        ) : null}
+      </div>
+
+      <GitDeployStatusAlerts
+        connectingSource={connectSourceMutation.isPending}
+        triggeringBuild={buildMutation.isPending}
+        createAppError={createApp.isError ? createApp.error.message : undefined}
+        connectSourceError={
+          connectSourceMutation.isError
+            ? connectSourceMutation.error.message
+            : undefined
+        }
+        buildError={buildMutation.isError ? buildMutation.error.message : undefined}
       />
-
-      <Field>
-        <FieldLabel htmlFor="git-app-domain">Domain (optional)</FieldLabel>
-        <Input
-          id="git-app-domain"
-          className="font-mono"
-          placeholder="app.example.com"
-          autoComplete="off"
-          spellCheck={false}
-          disabled={locked}
-          {...register('domain')}
-        />
-        <FieldError errors={[formState.errors.domain]} />
-        <FieldDescription>
-          Routed once its DNS record points here. A TLS certificate is issued
-          automatically, or add this later from the app&apos;s Domains tab.
-        </FieldDescription>
-      </Field>
-
-      {connectSourceMutation.isPending ? (
-        <Alert>
-          <AlertDescription>Connecting the git source...</AlertDescription>
-        </Alert>
-      ) : null}
-
-      {buildMutation.isPending ? (
-        <Alert>
-          <AlertDescription>Triggering the build...</AlertDescription>
-        </Alert>
-      ) : null}
-
-      {createApp.isError ? (
-        <Alert variant="destructive">
-          <WarningIcon />
-          <AlertDescription>{createApp.error.message}</AlertDescription>
-        </Alert>
-      ) : null}
-
-      {connectSourceMutation.isError ? (
-        <Alert variant="destructive">
-          <WarningIcon />
-          <AlertDescription>
-            App created, but connecting the git source failed:{' '}
-            {connectSourceMutation.error.message}. The build below still runs;
-            connect a git source afterward from the app&apos;s Overview page
-            for automatic deploys on push.
-          </AlertDescription>
-        </Alert>
-      ) : null}
 
       {connectSourceMutation.data && !connectSourceMutation.data.autoRegistered
       && connectSourceMutation.data.resource.webhook_secret ? (
-        <Alert>
-          <AlertDescription className="space-y-2">
-            <p>
-              Git source connected.{' '}
-              {connectSourceMutation.data.webhookError ??
-                "This provider doesn't register a webhook automatically yet, add these to the repository's settings for pushes to auto-deploy:"}
-            </p>
-            <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
-              <code className="min-w-0 flex-1 overflow-x-auto text-xs break-all">
-                {window.location.origin}
-                {connectSourceMutation.data.resource.webhook_url}
-              </code>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  void navigator.clipboard
-                    .writeText(
-                      `${window.location.origin}${connectSourceMutation.data?.resource.webhook_url ?? ''}`,
-                    )
-                    .then(() => { setWebhookUrlCopied(true) })
-                }}
-              >
-                {webhookUrlCopied ? <CheckIcon /> : <CopyIcon />}
-                {webhookUrlCopied ? 'Copied' : 'Copy'}
-              </Button>
-            </div>
-            <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
-              <code className="min-w-0 flex-1 overflow-x-auto text-xs break-all">
-                {connectSourceMutation.data.resource.webhook_secret}
-              </code>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  const secret = connectSourceMutation.data?.resource.webhook_secret
-                  if (secret) {
-                    void navigator.clipboard.writeText(secret).then(() => {
-                      setWebhookSecretCopied(true)
-                    })
-                  }
-                }}
-              >
-                {webhookSecretCopied ? <CheckIcon /> : <CopyIcon />}
-                {webhookSecretCopied ? 'Copied' : 'Copy'}
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      ) : null}
-
-      {buildMutation.isError ? (
-        <Alert variant="destructive">
-          <WarningIcon />
-          <AlertDescription>
-            App created, but triggering the build failed:{' '}
-            {buildMutation.error.message}. Fix the fields above and submit again
-            to retry.
-          </AlertDescription>
-        </Alert>
+        <GitSourceWebhookBanner
+          webhookUrl={`${window.location.origin}${connectSourceMutation.data.resource.webhook_url}`}
+          webhookSecret={connectSourceMutation.data.resource.webhook_secret}
+          webhookError={connectSourceMutation.data.webhookError}
+        />
       ) : null}
 
       <DialogFooter>

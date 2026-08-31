@@ -12,4 +12,9 @@ import { cleanup } from '@testing-library/react'
 // file rather than per-file.
 afterEach(() => {
   cleanup()
+  // Draft autosave (hooks/useFormDraft.ts) writes real localStorage
+  // entries under jsdom, which otherwise leak between tests in the same
+  // file (and between files, since jsdom's window persists across the
+  // run).
+  window.localStorage.clear()
 })
