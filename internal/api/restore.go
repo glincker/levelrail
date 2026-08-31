@@ -31,8 +31,13 @@ type RestoreRunner interface {
 
 // restoreHistoryResource is the wire shape for one restore attempt.
 type restoreHistoryResource struct {
-	ID              string `json:"id"`
-	DatabaseName    string `json:"database_name"`
+	ID           string `json:"id"`
+	DatabaseName string `json:"database_name,omitempty"`
+	// ServiceName/VolumeName mirror backupHistoryResource's own identical
+	// fields (backups.go): set instead of DatabaseName for a volume
+	// restore, never alongside it.
+	ServiceName     string `json:"service_name,omitempty"`
+	VolumeName      string `json:"volume_name,omitempty"`
 	BackupHistoryID string `json:"backup_history_id"`
 	Status          string `json:"status"`
 	Error           string `json:"error,omitempty"`
@@ -44,6 +49,8 @@ func toRestoreHistoryResource(h store.RestoreHistory) restoreHistoryResource {
 	return restoreHistoryResource{
 		ID:              h.ID,
 		DatabaseName:    h.DatabaseName,
+		ServiceName:     h.ServiceName,
+		VolumeName:      h.VolumeName,
 		BackupHistoryID: h.BackupHistoryID,
 		Status:          h.Status,
 		Error:           h.Error,

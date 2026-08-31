@@ -415,10 +415,18 @@ func run(logger *slog.Logger) error {
 	var backupVerifyRunner *backup.VerifyRunner
 	if secretsManager != nil {
 		backupRunner = &backup.Runner{
-			Store:    db,
-			Secrets:  secretsManager,
-			Dumper:   &backup.ContainerDumper{Runtime: client},
-			Uploader: backup.S3Uploader{},
+			Store:   db,
+			Secrets: secretsManager,
+			Dumper:  &backup.ContainerDumper{Runtime: client},
+			// VolumeArchiver backs RunVolumeBackup (app service volume
+			// backups), the same *Runner instance RunBackup already uses
+			// for databases: api.WithBackupRunner and
+			// api.WithServiceVolumeBackupRunner below are both wired to
+			// this identical value, one implementation serving both
+			// resource kinds through the same upload/history/scheduling
+			// pipeline.
+			VolumeArchiver: &backup.ContainerVolumeArchiver{Runtime: client},
+			Uploader:       backup.S3Uploader{},
 		}
 		backupVerifyRunner = &backup.VerifyRunner{
 			Store:      db,
@@ -1733,6 +1741,20 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// hazard as api.WithSecretSetter above: both are skipped
 		// entirely, not passed with a nil secretsManager inside a
 		// non-nil interface value, whenever no master key is configured.
+		// restoreRunner is shared between api.WithRestoreRunner (database
+		// restores) and api.WithServiceVolumeRestoreRunner (volume
+		// restores) below, the same "one implementation, two resource
+		// kinds" shape backupRunner above already establishes for the
+		// forward direction: RestoreRunner.VolumeRestorer makes
+		// RunVolumeRestore available on the identical instance
+		// RunRestore already uses.
+		restoreRunner := &backup.RestoreRunner{
+			Store:          db,
+			Secrets:        secretsManager,
+			Downloader:     backup.S3Downloader{},
+			Restorer:       &backup.ContainerRestorer{Runtime: client},
+			VolumeRestorer: &backup.ContainerVolumeRestorer{Runtime: client},
+		}
 		opts = append(opts,
 			api.WithBackupSecrets(secretsManager),
 			// Registry credentials (build.type: image's optional
@@ -1740,6 +1762,13 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			// nil-interface hazard as everything else in this block.
 			api.WithRegistryCredentialSecrets(secretsManager),
 			api.WithBackupRunner(backupRunner),
+			// App service volume backups (internal/backup's own volume
+			// archiver/restorer, wired above): the same backupRunner/
+			// restoreRunner instances the database routes just above
+			// use, since Runner/RestoreRunner now cover both resource
+			// kinds through the identical upload/download/history/
+			// scheduling pipeline.
+			api.WithServiceVolumeBackupRunner(backupRunner),
 			// The restore counterpart of the backup runner just above:
 			// same secretsManager dependency (a restore resolves the same
 			// stored target credentials a backup wrote), same nil check,
@@ -1747,12 +1776,8 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			// docker.Runtime, since ContainerRestorer needs
 			// ExecWithInput the same way ContainerDumper above needs
 			// Exec).
-			api.WithRestoreRunner(&backup.RestoreRunner{
-				Store:      db,
-				Secrets:    secretsManager,
-				Downloader: backup.S3Downloader{},
-				Restorer:   &backup.ContainerRestorer{Runtime: client},
-			}),
+			api.WithRestoreRunner(restoreRunner),
+			api.WithServiceVolumeRestoreRunner(restoreRunner),
 			// "Restore as new database" (internal/api/database_clone_
 			// restore.go): the non-destructive counterpart just above,
 			// same secretsManager/downloader/restorer dependencies, but

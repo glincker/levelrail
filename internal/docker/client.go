@@ -349,9 +349,10 @@ func toDockerMounts(volumes []VolumeMount) []mount.Mount {
 	out := make([]mount.Mount, 0, len(volumes))
 	for _, v := range volumes {
 		out = append(out, mount.Mount{
-			Type:   mount.TypeVolume,
-			Source: v.Name,
-			Target: v.ContainerPath,
+			Type:     mount.TypeVolume,
+			Source:   v.Name,
+			Target:   v.ContainerPath,
+			ReadOnly: v.ReadOnly,
 		})
 	}
 	return out

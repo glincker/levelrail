@@ -70,6 +70,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runDomains(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backups":
 		return runBackups(prog, args[1:], stdout, stderr, lookupEnv)
+	case "app-volume-backups":
+		return runAppVolumeBackups(prog, args[1:], stdout, stderr, lookupEnv)
 	case "cloudflare-tunnel":
 		return runCloudflareTunnel(prog, args[1:], stdout, stderr, lookupEnv)
 	case "channels":
@@ -125,6 +127,7 @@ Usage:
   %[1]s databases get <name> [flags]   show one database
   %[1]s domains list [flags]           list every app's domains in one call
   %[1]s backups list|trigger|restore <database> [flags]   database backup history, manual trigger, and restore
+  %[1]s app-volume-backups list|trigger|restore <app> <volume> [flags]   app volume backup history, manual trigger, and restore
   %[1]s cloudflare-tunnel get|set|disconnect [flags]   expose the control plane through a Cloudflare Tunnel
   %[1]s channels list|create|delete|test [flags]           manage notification channels (Slack, Discord, Telegram, email, Pushover, webhook)
   %[1]s backup-targets list|get|create|update|delete [flags]   manage connected S3-compatible backup destinations

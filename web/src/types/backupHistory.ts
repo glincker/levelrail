@@ -14,7 +14,12 @@ export type BackupStatus = 'running' | 'succeeded' | 'failed'
 
 export interface BackupHistoryRecord {
   id: string
-  database_name: string
+  // database_name is set for a database backup, service_name/volume_name
+  // for an app service volume backup (internal/api/app_volume_backups.go)
+  // instead, never both: the two identity shapes are mutually exclusive.
+  database_name?: string
+  service_name?: string
+  volume_name?: string
   target_id: string
   object_key?: string
   size_bytes?: number

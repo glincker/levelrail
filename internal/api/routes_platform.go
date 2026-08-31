@@ -502,6 +502,25 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/databases/{name}/restore", rt.requireAbility(AbilityRoot, rt.handleTriggerRestore))
 	mux.HandleFunc("GET /api/v1/databases/{name}/restores", rt.requireAbility(AbilityRead, rt.handleListRestoreHistory))
 
+	// App service volume backups (app_volume_backups.go/
+	// app_volume_backup_download.go/app_volume_backup_verify.go): the
+	// exact same ability tiers as the database routes just above, applied
+	// to a service's named volume instead of a managed database. See
+	// those handlers' own doc comments for the per-route reasoning this
+	// mirrors.
+	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/backups", rt.requireAbility(AbilityWriteSensitive, rt.handleTriggerVolumeBackup))
+	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups", rt.requireAbility(AbilityRead, rt.handleListVolumeBackupHistory))
+	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/download", rt.requireAbility(AbilityReadSensitive, rt.handleDownloadVolumeBackup))
+	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verify", rt.requireAbility(AbilityWriteSensitive, rt.handleVerifyVolumeBackup))
+	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verifications", rt.requireAbility(AbilityRead, rt.handleListVolumeBackupVerifications))
+	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backup-schedule", rt.requireAbility(AbilityRead, rt.handleGetVolumeBackupSchedule))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/volumes/{volume}/backup-schedule", rt.requireAbility(AbilityWriteSensitive, rt.handleSetVolumeBackupSchedule))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/volumes/{volume}/backup-schedule", rt.requireAbility(AbilityWriteSensitive, rt.handleClearVolumeBackupSchedule))
+	// AbilityRoot, matching the database restore route above exactly: see
+	// handleTriggerVolumeRestore's own doc comment for why this is not a
+	// lesser risk tier just because the target is a filesystem.
+	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/restore", rt.requireAbility(AbilityRoot, rt.handleTriggerVolumeRestore))
+	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/restores", rt.requireAbility(AbilityRead, rt.handleListVolumeRestoreHistory))
 	// Restore as a new database (database_clone_restore.go): the
 	// non-destructive counterpart just above, AbilityWriteSensitive
 	// rather than AbilityRoot, see handleCloneRestore's own doc comment

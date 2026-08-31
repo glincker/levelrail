@@ -24,6 +24,18 @@ import (
 type ScheduleStore interface {
 	ListScheduledDatabases(ctx context.Context) ([]store.DesiredDatabase, error)
 	PruneBackupHistory(ctx context.Context, databaseName string, keep int, olderThan time.Time) ([]store.PrunedBackup, error)
+	// ListScheduledServiceVolumes/PruneServiceVolumeBackupHistory/
+	// ResolveServiceVolumeDockerName are the volume counterparts of the
+	// two database methods above plus one extra resolution step a
+	// database schedule doesn't need: store.ServiceVolumeBackupConfig
+	// only carries a volume's logical name (what an operator wrote in
+	// app.yaml), never its real Docker volume name, so RunVolumeBackup's
+	// dockerVolumeName parameter has to be resolved fresh every tick, the
+	// same "re-derive, never cache" principle this whole interface
+	// already follows for which databases/volumes are even scheduled.
+	ListScheduledServiceVolumes(ctx context.Context) ([]store.ServiceVolumeBackupConfig, error)
+	PruneServiceVolumeBackupHistory(ctx context.Context, serviceName, volumeName string, keep int, olderThan time.Time) ([]store.PrunedBackup, error)
+	ResolveServiceVolumeDockerName(ctx context.Context, serviceName, volumeName string) (string, error)
 }
 
 // ScheduledBackupRunner is the surface Scheduler needs to actually run a
@@ -40,6 +52,10 @@ type ScheduleStore interface {
 // block rather than separate manual/scheduled config shapes.
 type ScheduledBackupRunner interface {
 	RunBackup(ctx context.Context, historyID, databaseName, engine, containerName, targetID string) error
+	// RunVolumeBackup matches api.ServiceVolumeBackupRunner's shape
+	// (internal/api/app_volume_backups.go); *Runner satisfies both, the
+	// volume counterpart of RunBackup's own doc comment.
+	RunVolumeBackup(ctx context.Context, historyID, serviceName, volumeName, dockerVolumeName, targetID string) error
 	// ResolveDestination resolves a backup target ID into a live
 	// Destination (*Runner.ResolveDestination, runner.go), the same
 	// resolution RunBackup does internally before every upload. Needed
@@ -130,6 +146,14 @@ type Scheduler struct {
 
 	mu      sync.Mutex
 	nextRun map[string]time.Time
+	// volumeNextRun is nextRun's exact counterpart for service volumes,
+	// a second map rather than one shared map with a prefixed key: a
+	// database name and a "service:volume" pair could otherwise collide
+	// on a pathological name (nothing stops an operator naming a database
+	// the same string a volume's composite key would produce), and two
+	// independent maps make that structurally impossible instead of
+	// merely unlikely.
+	volumeNextRun map[string]time.Time
 }
 
 // NewScheduler builds a Scheduler ready to Tick or Run. logger defaults
@@ -141,12 +165,23 @@ func NewScheduler(store ScheduleStore, runner ScheduledBackupRunner, deleter Del
 		logger = slog.Default()
 	}
 	return &Scheduler{
-		Store:   store,
-		Runner:  runner,
-		Deleter: deleter,
-		Logger:  logger,
-		nextRun: make(map[string]time.Time),
+		Store:         store,
+		Runner:        runner,
+		Deleter:       deleter,
+		Logger:        logger,
+		nextRun:       make(map[string]time.Time),
+		volumeNextRun: make(map[string]time.Time),
 	}
+}
+
+// volumeScheduleKey is volumeNextRun's map key for one service volume:
+// an unexported string, never persisted or compared against anything
+// outside this in-memory map, so its exact shape only needs to be
+// collision-free between two different (service, volume) pairs, which a
+// literal separator neither name can itself contain (app.yaml's own
+// service/volume names are plain identifiers) already guarantees.
+func volumeScheduleKey(serviceName, volumeName string) string {
+	return serviceName + "/" + volumeName
 }
 
 func (s *Scheduler) now() time.Time {
@@ -241,6 +276,61 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 		}
 	}
 
+	if verrs := s.tickServiceVolumes(ctx, now); verrs != nil {
+		errs = append(errs, verrs)
+	}
+
+	return errors.Join(errs...)
+}
+
+// tickServiceVolumes is Tick's volume evaluation, split into its own
+// method rather than inlined into Tick's already-long database loop:
+// identical shape (list what's due, arm-then-run, forget what's no
+// longer scheduled), applied to store.ServiceVolumeBackupConfig instead
+// of store.DesiredDatabase, using volumeNextRun instead of nextRun. Called
+// with s.mu already held by Tick.
+func (s *Scheduler) tickServiceVolumes(ctx context.Context, now time.Time) error {
+	volumes, err := s.Store.ListScheduledServiceVolumes(ctx)
+	if err != nil {
+		return fmt.Errorf("backup: scheduler: list scheduled service volumes: %w", err)
+	}
+
+	seen := make(map[string]struct{}, len(volumes))
+	var errs []error
+
+	for _, v := range volumes {
+		key := volumeScheduleKey(v.ServiceName, v.VolumeName)
+		seen[key] = struct{}{}
+
+		sched, perr := cronexpr.Parse(v.BackupSchedule)
+		if perr != nil {
+			s.log().Warn("backup: scheduler: invalid volume schedule, skipping",
+				slog.String("service", v.ServiceName), slog.String("volume", v.VolumeName), slog.String("schedule", v.BackupSchedule), slog.String("error", perr.Error()))
+			continue
+		}
+
+		next, known := s.volumeNextRun[key]
+		if !known {
+			s.volumeNextRun[key] = sched.Next(now)
+			continue
+		}
+		if now.Before(next) {
+			continue
+		}
+
+		s.volumeNextRun[key] = sched.Next(now)
+
+		if rerr := s.runScheduledVolume(ctx, v); rerr != nil {
+			errs = append(errs, fmt.Errorf("service %q volume %q: %w", v.ServiceName, v.VolumeName, rerr))
+		}
+	}
+
+	for key := range s.volumeNextRun {
+		if _, ok := seen[key]; !ok {
+			delete(s.volumeNextRun, key)
+		}
+	}
+
 	return errors.Join(errs...)
 }
 
@@ -290,6 +380,63 @@ func (s *Scheduler) runScheduled(ctx context.Context, d store.DesiredDatabase) e
 			s.log().Info("backup: scheduled retention pruned old backup history rows",
 				slog.String("database", d.Name), slog.Int("deleted", len(pruned)))
 			s.deletePrunedObjects(ctx, d.Name, pruned)
+		}
+	}
+
+	return nil
+}
+
+// runScheduledVolume is runScheduled's exact volume counterpart:
+// identical shape (run, verify, prune, best-effort delete pruned
+// objects), RunVolumeBackup/PruneServiceVolumeBackupHistory standing in
+// for RunBackup/PruneBackupHistory. Reuses verifyScheduled and
+// deletePrunedObjects as-is rather than forking them: both already take
+// their "what is this for" argument as a plain label string for logging
+// only, so volumeScheduleKey's "service/volume" string fits that
+// parameter exactly as well as a database name does.
+func (s *Scheduler) runScheduledVolume(ctx context.Context, v store.ServiceVolumeBackupConfig) error {
+	label := volumeScheduleKey(v.ServiceName, v.VolumeName)
+
+	dockerVolumeName, err := s.Store.ResolveServiceVolumeDockerName(ctx, v.ServiceName, v.VolumeName)
+	if err != nil {
+		return fmt.Errorf("resolve docker volume name: %w", err)
+	}
+
+	historyID, err := randomScheduledBackupHistoryID()
+	if err != nil {
+		return fmt.Errorf("generate history id: %w", err)
+	}
+
+	if runErr := s.Runner.RunVolumeBackup(ctx, historyID, v.ServiceName, v.VolumeName, dockerVolumeName, v.BackupTargetID); runErr != nil {
+		s.log().Error("backup: scheduled volume run failed",
+			slog.String("service_volume", label), slog.String("id", historyID), slog.String("error", runErr.Error()))
+		return runErr
+	}
+
+	if s.Verifier != nil {
+		// engine "" (volumes have no database engine): VerifyRunner's own
+		// validateFormat treats that as "no engine-specific magic-byte
+		// check available" and still runs the checksum/size checks that
+		// carry most of verification's real value, see that function's
+		// own doc comment.
+		s.verifyScheduled(ctx, label, historyID, "")
+	}
+
+	if v.BackupRetain > 0 || v.BackupRetainDays > 0 {
+		var olderThan time.Time
+		if v.BackupRetainDays > 0 {
+			olderThan = s.now().AddDate(0, 0, -v.BackupRetainDays)
+		}
+		pruned, pruneErr := s.Store.PruneServiceVolumeBackupHistory(ctx, v.ServiceName, v.VolumeName, v.BackupRetain, olderThan)
+		if pruneErr != nil {
+			s.log().Error("backup: scheduled volume retention prune failed",
+				slog.String("service_volume", label), slog.String("error", pruneErr.Error()))
+			return nil
+		}
+		if len(pruned) > 0 {
+			s.log().Info("backup: scheduled volume retention pruned old backup history rows",
+				slog.String("service_volume", label), slog.Int("deleted", len(pruned)))
+			s.deletePrunedObjects(ctx, label, pruned)
 		}
 	}
 

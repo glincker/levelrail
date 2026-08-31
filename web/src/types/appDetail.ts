@@ -143,6 +143,22 @@ export interface AppDetail {
   // recreated, so the change is not live yet. No omitempty on the Go
   // side, same always-present shape as suspended.
   env_dirty: boolean
+  // volumes carries `omitempty` on the Go side and is response-only
+  // (internal/api/apps.go's appResource own doc comment): this app's
+  // named Docker volumes, declared through app.yaml's volumes: field,
+  // undefined meaning none declared. See queries/volumeBackupHistory.ts
+  // and AppVolumeBackupsSection for the backup/restore/schedule
+  // endpoints each one supports.
+  volumes?: AppVolume[]
+}
+
+// Matches internal/api/apps.go's appVolumeResource exactly: one of an
+// app's named Docker volumes. `name` is the logical name an operator
+// wrote in app.yaml, not the resolved, platform-prefixed Docker volume
+// name.
+export interface AppVolume {
+  name: string
+  container_path: string
 }
 
 // GET /api/v1/apps' own wire shape (internal/api/apps.go's

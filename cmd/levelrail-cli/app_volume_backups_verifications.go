@@ -1,0 +1,73 @@
+package main
+
+import (
+	"context"
+	"flag"
+	"fmt"
+	"io"
+)
+
+// runAppVolumeBackupsVerifications implements "app-volume-backups
+// verifications <app> <volume> --backup ID":
+// GET /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verifications
+// (internal/api/app_volume_backup_verify.go's own
+// handleListVolumeBackupVerifications), mirroring
+// runBackupsVerifications's exact shape (backups_verifications.go) for
+// the volume resource kind. Reuses printBackupVerificationsTable
+// (backups_verifications.go) as-is: the table shape is identical.
+func runAppVolumeBackupsVerifications(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "app-volume-backups verifications", "print verification history as a JSON array to stdout and nothing else", stderr)
+	var backupID string
+	fs.StringVar(&backupID, "backup", "", "id of a backup to show verification history for (required)")
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appVolumeBackupsVerificationsUsage(prog)) }
+
+	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
+		if err == flag.ErrHelp {
+			return exitOK
+		}
+		return exitUsage
+	}
+	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+
+	rest, ok := requireArgs(fs, stderr, prog, "app-volume-backups verifications", "an app name and a volume name", 2)
+	if !ok {
+		return exitUsage
+	}
+	name, volume := rest[0], rest[1]
+
+	if backupID == "" {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--backup is required"))
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+
+	verifications, err := client.ListVolumeBackupVerifications(context.Background(), name, volume, backupID)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list verifications for backup %q: %w", backupID, err))
+	}
+
+	if jsonOut {
+		if err := writeJSONValue(stdout, verifications); err != nil {
+			_, _ = fmt.Fprintln(stderr, err)
+			return exitNetwork
+		}
+		return exitOK
+	}
+	printBackupVerificationsTable(stdout, verifications)
+	return exitOK
+}
+
+func appVolumeBackupsVerificationsUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s app-volume-backups verifications <app> <volume> --backup ID [flags]
+
+Lists a backup's verification attempt history, newest first.
+
+Flags:
+  --backup string          id of a backup to show verification history for (required)
+  --token string           API token (default: %[2]s env var, then the credentials file)
+  --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
+  --json                     print verification history as a JSON array to stdout, nothing else
+  -h, --help               show this help
+`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}

@@ -1,6 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
-import { z } from 'zod'
 import { ClockIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -25,116 +24,21 @@ import {
   useSetDatabaseBackupSchedule,
 } from '../queries/databases'
 import type { DatabaseResource } from '../types/databaseDetail'
-
-// Only exposes daily/weekly at a fixed time plus a raw cron escape
-// hatch, not the full 5-field grammar internal/cronexpr actually parses.
-const WEEKDAY_LABEL: Record<string, string> = {
-  '0': 'Sunday',
-  '1': 'Monday',
-  '2': 'Tuesday',
-  '3': 'Wednesday',
-  '4': 'Thursday',
-  '5': 'Friday',
-  '6': 'Saturday',
-}
-
-const scheduleSchema = z
-  .object({
-    targetId: z.string().trim().min(1, 'Choose a backup target'),
-    frequency: z.enum(['daily', 'weekly', 'custom']),
-    time: z.string().trim(),
-    weekday: z.string().trim(),
-    customCron: z.string().trim(),
-    retain: z.string().trim(),
-    retainDays: z.string().trim(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.frequency === 'custom') {
-      if (data.customCron.split(/\s+/).filter(Boolean).length !== 5) {
-        ctx.addIssue({
-          code: 'custom',
-          message:
-            'Cron expression needs 5 fields: minute hour day-of-month month day-of-week',
-          path: ['customCron'],
-        })
-      }
-    } else if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(data.time)) {
-      ctx.addIssue({ code: 'custom', message: 'Enter a valid time', path: ['time'] })
-    }
-    const retain = Number(data.retain)
-    if (!Number.isInteger(retain) || retain < 0) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Retention must be a whole number, 0 or more',
-        path: ['retain'],
-      })
-    }
-    const retainDays = Number(data.retainDays)
-    if (!Number.isInteger(retainDays) || retainDays < 0) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Retention must be a whole number, 0 or more',
-        path: ['retainDays'],
-      })
-    }
-  })
-
-type ScheduleFormValues = z.infer<typeof scheduleSchema>
-
-function toCron(values: ScheduleFormValues): string {
-  if (values.frequency === 'custom') {
-    return values.customCron.trim()
-  }
-  const timeParts = values.time.split(':')
-  const hour = String(Number(timeParts[0] ?? '0'))
-  const minute = String(Number(timeParts[1] ?? '0'))
-  if (values.frequency === 'daily') {
-    return `${minute} ${hour} * * *`
-  }
-  return `${minute} ${hour} * * ${values.weekday}`
-}
-
-// Inverse of toCron; anything not matching its daily/weekly shapes falls
-// back to the custom cron field with the raw string intact.
-function fromCron(
-  cron: string | undefined,
-): Pick<ScheduleFormValues, 'frequency' | 'time' | 'weekday' | 'customCron'> {
-  const raw = cron ?? ''
-  const parts = raw.trim().split(/\s+/)
-  const isNum = (s: string) => /^\d{1,2}$/.test(s)
-  if (parts.length === 5) {
-    const minute = parts[0] ?? ''
-    const hour = parts[1] ?? ''
-    const dom = parts[2] ?? ''
-    const month = parts[3] ?? ''
-    const dow = parts[4] ?? ''
-    if (dom === '*' && month === '*' && isNum(minute) && isNum(hour)) {
-      const time = `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`
-      if (dow === '*') {
-        return { frequency: 'daily', time, weekday: '0', customCron: raw }
-      }
-      if (isNum(dow)) {
-        return { frequency: 'weekly', time, weekday: dow, customCron: raw }
-      }
-    }
-  }
-  return { frequency: 'custom', time: '03:00', weekday: '0', customCron: raw }
-}
+import {
+  WEEKDAY_LABEL,
+  fromCron,
+  scheduleRetentionSummary,
+  scheduleSchema,
+  toCron,
+  type ScheduleFormValues,
+} from '../lib/cronSchedule'
 
 function scheduleSummary(database: DatabaseResource): string {
-  const parts = [`Runs on schedule "${database.backup_schedule}"`]
-  const retain = database.backup_retain ?? 0
-  const retainDays = database.backup_retain_days ?? 0
-  if (retain > 0) {
-    parts.push(`keeping the last ${retain} backups`)
-  }
-  if (retainDays > 0) {
-    parts.push(`deleting backups older than ${retainDays} days`)
-  }
-  if (retain <= 0 && retainDays <= 0) {
-    parts.push('keeping every backup')
-  }
-  return parts.join(', ') + '.'
+  const retention = scheduleRetentionSummary(
+    database.backup_retain,
+    database.backup_retain_days,
+  )
+  return `Runs on schedule "${database.backup_schedule}", ${retention}.`
 }
 
 function toFieldValues(database: DatabaseResource): ScheduleFormValues {
@@ -146,7 +50,11 @@ function toFieldValues(database: DatabaseResource): ScheduleFormValues {
   }
 }
 
-export function BackupScheduleForm({ database }: { database: DatabaseResource }) {
+export function BackupScheduleForm({
+  database,
+}: {
+  database: DatabaseResource
+}) {
   const targets = useBackupTargetsOptional().data ?? []
   const setSchedule = useSetDatabaseBackupSchedule()
   const clearSchedule = useClearDatabaseBackupSchedule()
@@ -215,7 +123,9 @@ export function BackupScheduleForm({ database }: { database: DatabaseResource })
             Scheduled backups
           </h3>
           <p className="text-sm text-muted-foreground">
-            {scheduled ? scheduleSummary(database) : 'No recurring backup configured for this database.'}
+            {scheduled
+              ? scheduleSummary(database)
+              : 'No recurring backup configured for this database.'}
           </p>
         </div>
         {scheduled ? (
@@ -239,7 +149,9 @@ export function BackupScheduleForm({ database }: { database: DatabaseResource })
         className="grid grid-cols-1 gap-3 sm:grid-cols-2"
       >
         <Field>
-          <FieldLabel htmlFor="backup-schedule-target">Backup target</FieldLabel>
+          <FieldLabel htmlFor="backup-schedule-target">
+            Backup target
+          </FieldLabel>
           <Controller
             control={control}
             name="targetId"
@@ -278,7 +190,10 @@ export function BackupScheduleForm({ database }: { database: DatabaseResource })
                   field.onChange(value ?? 'daily')
                 }}
               >
-                <SelectTrigger id="backup-schedule-frequency" className="w-full">
+                <SelectTrigger
+                  id="backup-schedule-frequency"
+                  className="w-full"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -293,7 +208,9 @@ export function BackupScheduleForm({ database }: { database: DatabaseResource })
 
         {frequency === 'weekly' ? (
           <Field>
-            <FieldLabel htmlFor="backup-schedule-weekday">Day of week</FieldLabel>
+            <FieldLabel htmlFor="backup-schedule-weekday">
+              Day of week
+            </FieldLabel>
             <Controller
               control={control}
               name="weekday"
@@ -304,7 +221,10 @@ export function BackupScheduleForm({ database }: { database: DatabaseResource })
                     field.onChange(value ?? '0')
                   }}
                 >
-                  <SelectTrigger id="backup-schedule-weekday" className="w-full">
+                  <SelectTrigger
+                    id="backup-schedule-weekday"
+                    className="w-full"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -323,12 +243,18 @@ export function BackupScheduleForm({ database }: { database: DatabaseResource })
         {frequency !== 'custom' ? (
           <Field>
             <FieldLabel htmlFor="backup-schedule-time">Time</FieldLabel>
-            <Input id="backup-schedule-time" type="time" {...register('time')} />
+            <Input
+              id="backup-schedule-time"
+              type="time"
+              {...register('time')}
+            />
             <FieldError errors={[formState.errors.time]} />
           </Field>
         ) : (
           <Field className="sm:col-span-2">
-            <FieldLabel htmlFor="backup-schedule-cron">Cron expression</FieldLabel>
+            <FieldLabel htmlFor="backup-schedule-cron">
+              Cron expression
+            </FieldLabel>
             <Input
               id="backup-schedule-cron"
               placeholder="0 3 * * *"
@@ -343,7 +269,9 @@ export function BackupScheduleForm({ database }: { database: DatabaseResource })
         )}
 
         <Field>
-          <FieldLabel htmlFor="backup-schedule-retain">Keep last N backups</FieldLabel>
+          <FieldLabel htmlFor="backup-schedule-retain">
+            Keep last N backups
+          </FieldLabel>
           <Input
             id="backup-schedule-retain"
             inputMode="numeric"

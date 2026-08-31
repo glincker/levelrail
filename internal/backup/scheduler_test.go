@@ -25,6 +25,18 @@ type fakeScheduleStore struct {
 	}
 	pruneReturn []store.PrunedBackup
 	pruneErr    error
+
+	volumes           []store.ServiceVolumeBackupConfig
+	volumeListErr     error
+	volumePrunedCalls []struct {
+		service, volume string
+		keep            int
+		olderThan       time.Time
+	}
+	volumePruneReturn []store.PrunedBackup
+	volumePruneErr    error
+	resolveVolumeName map[string]string // "service/volume" -> docker volume name
+	resolveVolumeErr  error
 }
 
 func (f *fakeScheduleStore) ListScheduledDatabases(context.Context) ([]store.DesiredDatabase, error) {
@@ -48,6 +60,37 @@ func (f *fakeScheduleStore) PruneBackupHistory(_ context.Context, databaseName s
 	return f.pruneReturn, nil
 }
 
+func (f *fakeScheduleStore) ListScheduledServiceVolumes(context.Context) ([]store.ServiceVolumeBackupConfig, error) {
+	if f.volumeListErr != nil {
+		return nil, f.volumeListErr
+	}
+	return f.volumes, nil
+}
+
+func (f *fakeScheduleStore) PruneServiceVolumeBackupHistory(_ context.Context, serviceName, volumeName string, keep int, olderThan time.Time) ([]store.PrunedBackup, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.volumePrunedCalls = append(f.volumePrunedCalls, struct {
+		service, volume string
+		keep            int
+		olderThan       time.Time
+	}{serviceName, volumeName, keep, olderThan})
+	if f.volumePruneErr != nil {
+		return nil, f.volumePruneErr
+	}
+	return f.volumePruneReturn, nil
+}
+
+func (f *fakeScheduleStore) ResolveServiceVolumeDockerName(_ context.Context, serviceName, volumeName string) (string, error) {
+	if f.resolveVolumeErr != nil {
+		return "", f.resolveVolumeErr
+	}
+	if name, ok := f.resolveVolumeName[serviceName+"/"+volumeName]; ok {
+		return name, nil
+	}
+	return "app-" + serviceName + "-" + volumeName, nil
+}
+
 // fakeScheduledRunner is Scheduler's own fake for ScheduledBackupRunner:
 // records every call, and can be told to fail either always or for
 // specific database names.
@@ -61,6 +104,11 @@ type fakeScheduledRunner struct {
 	resolveCalls  []string
 	resolveErr    error
 	resolveResult Destination
+
+	volumeCalls []struct {
+		historyID, service, volume, dockerVolume, targetID string
+	}
+	volumeFailFor map[string]error
 }
 
 func (f *fakeScheduledRunner) RunBackup(_ context.Context, historyID, databaseName, engine, containerName, targetID string) error {
@@ -71,6 +119,20 @@ func (f *fakeScheduledRunner) RunBackup(_ context.Context, historyID, databaseNa
 	}{historyID, databaseName, engine, containerName, targetID})
 	if f.failFor != nil {
 		if err, ok := f.failFor[databaseName]; ok {
+			return err
+		}
+	}
+	return nil
+}
+
+func (f *fakeScheduledRunner) RunVolumeBackup(_ context.Context, historyID, serviceName, volumeName, dockerVolumeName, targetID string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.volumeCalls = append(f.volumeCalls, struct {
+		historyID, service, volume, dockerVolume, targetID string
+	}{historyID, serviceName, volumeName, dockerVolumeName, targetID})
+	if f.volumeFailFor != nil {
+		if err, ok := f.volumeFailFor[serviceName+"/"+volumeName]; ok {
 			return err
 		}
 	}

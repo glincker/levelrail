@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -659,6 +660,46 @@ func (db *DB) RestartService(ctx context.Context, name string) error {
 // ErrServiceNotFound is returned by GetDesiredService when no service
 // has that name.
 var ErrServiceNotFound = errors.New("store: service not found")
+
+// ErrServiceVolumeNotFound is returned by ResolveServiceVolumeDockerName
+// when serviceName has no volume by that logical name.
+var ErrServiceVolumeNotFound = errors.New("store: service volume not found")
+
+// ServiceVolumeDockerName finds svc's real Docker volume whose logical
+// name (spec.Volume.Name, what an operator wrote in app.yaml) is
+// volumeName, deriving it back from ServiceVolume.Name by stripping the
+// fixed prefix internal/deploy's own volumeName() always applies
+// ("app-"+svc.Name+"-"): ServiceVolume itself only stores the already-
+// resolved Docker volume name (this struct's own doc comment), not the
+// logical one it came from, so this is the one place that direction gets
+// reversed. Exact-prefix stripping, not a generic split, so a logical
+// name that itself contains "-" is never misparsed.
+func ServiceVolumeDockerName(svc DesiredService, volumeName string) (string, bool) {
+	prefix := "app-" + svc.Name + "-"
+	for _, v := range svc.Volumes {
+		if strings.TrimPrefix(v.Name, prefix) == volumeName {
+			return v.Name, true
+		}
+	}
+	return "", false
+}
+
+// ResolveServiceVolumeDockerName looks up serviceName and resolves
+// volumeName to its real Docker volume name, the single DB-round-trip
+// convenience ServiceVolumeDockerName's own callers that don't already
+// have a DesiredService in hand need (internal/backup.Scheduler's own
+// per-tick volume evaluation).
+func (db *DB) ResolveServiceVolumeDockerName(ctx context.Context, serviceName, volumeName string) (string, error) {
+	svc, err := db.GetDesiredService(ctx, serviceName)
+	if err != nil {
+		return "", err
+	}
+	dockerName, ok := ServiceVolumeDockerName(*svc, volumeName)
+	if !ok {
+		return "", ErrServiceVolumeNotFound
+	}
+	return dockerName, nil
+}
 
 // GetDesiredService returns the desired state for name, or
 // ErrServiceNotFound if no such service has been saved.

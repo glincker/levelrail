@@ -41,6 +41,12 @@ type Runner struct {
 	Secrets  SecretsResolver
 	Dumper   Dumper
 	Uploader Uploader
+	// VolumeArchiver backs RunVolumeBackup the same way Dumper backs
+	// RunBackup. nil is valid: a control plane with no volume-backup
+	// callers configured (today, none do this by default) simply never
+	// calls RunVolumeBackup, the same "optional capability" shape this
+	// codebase already uses for Scheduler.Deleter/Verifier.
+	VolumeArchiver VolumeArchiver
 	// Now returns the current time. A field, not time.Now called
 	// directly, so tests get deterministic timestamps without a real
 	// clock dependency; production code leaves it nil and RunBackup
@@ -128,6 +134,71 @@ func (r *Runner) runDumpAndUpload(ctx context.Context, databaseName, engine, con
 	counted := &countingReader{r: dump, hash: sha256.New()}
 	if err := r.Uploader.Upload(ctx, dest, objectKey, counted, -1); err != nil {
 		return counted.n, "", fmt.Errorf("upload backup for %q to target %q: %w", databaseName, targetID, err)
+	}
+	return counted.n, hex.EncodeToString(counted.hash.Sum(nil)), nil
+}
+
+// RunVolumeBackup archives dockerVolumeName (serviceName's Docker volume
+// backing its volumeName-named app.yaml volume) and uploads the result
+// to targetID, recording the attempt in store.BackupHistory exactly the
+// way RunBackup does for a database: the same running-then-succeeded-or-
+// failed row, the same historyID-minted-by-the-caller contract, the same
+// expectation of running in a goroutine the caller has already detached.
+// See RunBackup's own doc comment for the reasoning this mirrors in
+// full; this only differs in what it dumps (VolumeArchiver.Archive
+// instead of Dumper.Dump) and what identifies the row
+// (ServiceName/VolumeName/ResourceKind instead of DatabaseName).
+func (r *Runner) RunVolumeBackup(ctx context.Context, historyID, serviceName, volumeName, dockerVolumeName, targetID string) error {
+	startedAt := r.now()
+	objectKey := fmt.Sprintf("volumes/%s/%s/%s.tar", serviceName, volumeName, startedAt.UTC().Format("20060102T150405Z"))
+
+	if err := r.Store.StartBackupHistory(ctx, store.BackupHistory{
+		ID:           historyID,
+		ResourceKind: store.BackupResourceKindVolume,
+		ServiceName:  serviceName,
+		VolumeName:   volumeName,
+		TargetID:     targetID,
+		ObjectKey:    objectKey,
+		StartedAt:    startedAt.UTC().Format(time.RFC3339),
+	}); err != nil {
+		return fmt.Errorf("backup: start history %q: %w", historyID, err)
+	}
+
+	size, checksum, runErr := r.runArchiveAndUpload(ctx, dockerVolumeName, targetID, objectKey)
+
+	status := store.BackupStatusSucceeded
+	errMsg := ""
+	if runErr != nil {
+		status = store.BackupStatusFailed
+		errMsg = runErr.Error()
+	}
+	finishedAt := r.now().UTC().Format(time.RFC3339)
+	if err := r.Store.FinishBackupHistory(ctx, historyID, status, size, checksum, errMsg, finishedAt); err != nil {
+		return fmt.Errorf("backup: finish history %q: %w", historyID, err)
+	}
+	return runErr
+}
+
+// runArchiveAndUpload is RunVolumeBackup's actual work, the volume
+// counterpart of runDumpAndUpload: identical shape, VolumeArchiver.
+// Archive standing in for Dumper.Dump.
+func (r *Runner) runArchiveAndUpload(ctx context.Context, dockerVolumeName, targetID, objectKey string) (size int64, checksum string, err error) {
+	dest, err := r.ResolveDestination(ctx, targetID)
+	if err != nil {
+		return 0, "", err
+	}
+
+	archive, err := r.VolumeArchiver.Archive(ctx, dockerVolumeName)
+	if err != nil {
+		return 0, "", fmt.Errorf("archive volume %q: %w", dockerVolumeName, err)
+	}
+	defer func() {
+		_ = archive.Close()
+	}()
+
+	counted := &countingReader{r: archive, hash: sha256.New()}
+	if err := r.Uploader.Upload(ctx, dest, objectKey, counted, -1); err != nil {
+		return counted.n, "", fmt.Errorf("upload volume backup for %q to target %q: %w", dockerVolumeName, targetID, err)
 	}
 	return counted.n, hex.EncodeToString(counted.hash.Sum(nil)), nil
 }

@@ -11,7 +11,12 @@ export type RestoreStatus = 'running' | 'succeeded' | 'failed'
 
 export interface RestoreHistoryRecord {
   id: string
-  database_name: string
+  // database_name is set for a database restore, service_name/volume_name
+  // for an app service volume restore instead, never both, mirroring
+  // types/backupHistory.ts's BackupHistoryRecord's identical fields.
+  database_name?: string
+  service_name?: string
+  volume_name?: string
   backup_history_id: string
   status: RestoreStatus
   error?: string
