@@ -591,7 +591,7 @@ func run(logger *slog.Logger) error {
 	// /api/v1/certificates does (api.WithCertExpiryWarningWindow below
 	// reads the identical env var, so the two can never silently
 	// disagree on when "expiring_soon" starts).
-	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, db,
+	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, db, db,
 		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), alertingNewNotifier, logger)
 	go func() {
 		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {

@@ -190,6 +190,42 @@ func TestRecordScheduledTaskRun(t *testing.T) {
 	}
 }
 
+func TestRecordScheduledTaskRun_ConsecutiveFailuresCountsAndResets(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	seedScheduledTaskService(t, db, "web")
+
+	task := newTestScheduledTask("st_1", "web")
+	if err := db.SaveScheduledTask(ctx, task); err != nil {
+		t.Fatalf("SaveScheduledTask() error = %v", err)
+	}
+
+	now := time.Date(2026, 8, 15, 3, 0, 0, 0, time.UTC)
+	for i, status := range []string{ScheduledTaskStatusFailed, ScheduledTaskStatusTimeout, ScheduledTaskStatusContainerNotRunning} {
+		if err := db.RecordScheduledTaskRun(ctx, task.ID, now.Add(time.Duration(i)*time.Minute), status, ""); err != nil {
+			t.Fatalf("RecordScheduledTaskRun() error = %v", err)
+		}
+	}
+	got, err := db.GetScheduledTask(ctx, task.ID)
+	if err != nil {
+		t.Fatalf("GetScheduledTask() error = %v", err)
+	}
+	if got.ConsecutiveFailures != 3 {
+		t.Fatalf("ConsecutiveFailures = %d, want 3 after three non-success runs in a row", got.ConsecutiveFailures)
+	}
+
+	if err := db.RecordScheduledTaskRun(ctx, task.ID, now.Add(time.Hour), ScheduledTaskStatusSuccess, ""); err != nil {
+		t.Fatalf("RecordScheduledTaskRun() error = %v", err)
+	}
+	got, err = db.GetScheduledTask(ctx, task.ID)
+	if err != nil {
+		t.Fatalf("GetScheduledTask() error = %v", err)
+	}
+	if got.ConsecutiveFailures != 0 {
+		t.Errorf("ConsecutiveFailures = %d, want 0 reset after a success", got.ConsecutiveFailures)
+	}
+}
+
 func TestRecordScheduledTaskRun_NotFound(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

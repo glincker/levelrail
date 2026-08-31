@@ -56,6 +56,11 @@ function LastRunCell({ task }: { task: ScheduledTask }) {
       <span className="text-xs text-muted-foreground">
         {new Date(task.last_run_at).toLocaleString()}
       </span>
+      {task.consecutive_failures > 0 ? (
+        <span className="text-xs text-destructive">
+          {task.consecutive_failures} in a row
+        </span>
+      ) : null}
       {task.last_run_output ? (
         <details className="text-xs">
           <summary className="cursor-pointer text-muted-foreground underline underline-offset-2">

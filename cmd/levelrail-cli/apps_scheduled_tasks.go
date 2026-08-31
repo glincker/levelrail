@@ -172,9 +172,9 @@ func printScheduledTasksTable(out io.Writer, tasks []scheduledTaskResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tCOMMAND\tSCHEDULE\tENABLED\tLAST RUN")
+	_, _ = fmt.Fprintln(tw, "ID\tCOMMAND\tSCHEDULE\tENABLED\tLAST RUN\tCONSECUTIVE FAILURES")
 	for _, t := range tasks {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%t\t%s\n", t.ID, strings.Join(t.Command, " "), t.Schedule, t.Enabled, lastRunSummary(t))
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%t\t%s\t%d\n", t.ID, strings.Join(t.Command, " "), t.Schedule, t.Enabled, lastRunSummary(t), t.ConsecutiveFailures)
 	}
 	_ = tw.Flush()
 }
@@ -240,6 +240,9 @@ func printScheduledTaskHuman(out io.Writer, t scheduledTaskResource) {
 	_, _ = fmt.Fprintf(out, "schedule:  %s\n", t.Schedule)
 	_, _ = fmt.Fprintf(out, "enabled:   %t\n", t.Enabled)
 	_, _ = fmt.Fprintf(out, "last run:  %s\n", lastRunSummary(t))
+	if t.ConsecutiveFailures > 0 {
+		_, _ = fmt.Fprintf(out, "consecutive failures: %d\n", t.ConsecutiveFailures)
+	}
 	if t.LastRunOutput != "" {
 		_, _ = fmt.Fprintf(out, "output:\n%s\n", t.LastRunOutput)
 	}

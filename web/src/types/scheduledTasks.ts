@@ -21,6 +21,10 @@ export interface ScheduledTask {
   last_run_at?: string
   last_run_status?: ScheduledTaskRunStatus
   last_run_output?: string
+  // consecutive_failures is what a kind=scheduled_task_failure alert
+  // rule (see types/alerts.ts) watches: runs in a row that were not
+  // "success", reset to 0 on the next success.
+  consecutive_failures: number
   created_at: string
   updated_at: string
 }

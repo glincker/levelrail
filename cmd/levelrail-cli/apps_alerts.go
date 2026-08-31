@@ -40,13 +40,17 @@ func appsAlertsUsage(prog string) string {
   %[1]s apps alerts create <app> --kind threshold --metric METRIC --comparator OP --threshold N [flags]
   %[1]s apps alerts create <app> --kind crashloop --restart-count-threshold N --restart-window DURATION [flags]
   %[1]s apps alerts create <app> --kind cert_expiry [flags]
+  %[1]s apps alerts create <app> --kind scheduled_task_failure --scheduled-task-id ID --restart-count-threshold N [flags]
   %[1]s apps alerts delete <app> <id> [flags]
 
 Manages an app's alert rules. A threshold rule watches a metric; a
 crashloop rule watches container restarts; a cert_expiry rule watches
 every certificate on the whole control plane (not just this app's own
-domains) and needs no metric/threshold/restart flags at all. All three
-notify the same way once they fire.
+domains) and needs no metric/threshold/restart flags at all; a
+scheduled_task_failure rule watches one of this app's scheduled tasks'
+consecutive-failure count (see "apps scheduled-tasks list"), reusing
+--restart-count-threshold as that count's threshold. All four notify the
+same way once they fire.
 
 Run "%[1]s apps alerts <subcommand> -h" for a subcommand's own flags.
 `, prog)
@@ -114,6 +118,8 @@ func alertRuleCondition(r alertRuleResource) string {
 		return fmt.Sprintf("%d restarts in %s", r.RestartCountThreshold, r.RestartWindow)
 	case "cert_expiry":
 		return "any certificate expiring soon or expired (platform-wide)"
+	case "scheduled_task_failure":
+		return fmt.Sprintf("task %s fails %d runs in a row", r.ScheduledTaskID, r.RestartCountThreshold)
 	default:
 		return "-"
 	}
@@ -140,17 +146,19 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 		threshold                                   float64
 		restartCountThreshold                       int
 		restartWindow                               string
+		scheduledTaskID                             string
 		channelID, notifyURL, notifyKind            string
 		disabled                                    bool
 	)
 	fs.StringVar(&name, "name", "", "display name for the rule (required)")
-	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry (required)")
+	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, scheduled_task_failure (required)")
 	fs.StringVar(&metric, "metric", "", "metric name (--kind threshold only, required for that kind)")
 	fs.StringVar(&comparator, "comparator", "", "one of >, <, >=, <= (--kind threshold only, required for that kind)")
 	fs.Float64Var(&threshold, "threshold", 0, "threshold value (--kind threshold only)")
 	fs.StringVar(&forDuration, "for-duration", "", "how long the condition must hold before firing, e.g. \"2m\" (--kind threshold only, optional)")
-	fs.IntVar(&restartCountThreshold, "restart-count-threshold", 0, "restart count that triggers firing (--kind crashloop only, required for that kind)")
+	fs.IntVar(&restartCountThreshold, "restart-count-threshold", 0, "restart count (--kind crashloop) or consecutive-failure count (--kind scheduled_task_failure) that triggers firing, required for both kinds")
 	fs.StringVar(&restartWindow, "restart-window", "", "time window restarts are counted in, e.g. \"5m\" (--kind crashloop only, required for that kind)")
+	fs.StringVar(&scheduledTaskID, "scheduled-task-id", "", "which of this app's scheduled tasks to watch (--kind scheduled_task_failure only, required for that kind; see \"apps scheduled-tasks list\")")
 	fs.StringVar(&channelID, "channel-id", "", "attach an already-connected notification channel (see \"channels list\")")
 	fs.StringVar(&notifyURL, "notify-url", "", "legacy alternative to --channel-id: a raw webhook URL/destination")
 	fs.StringVar(&notifyKind, "notify-kind", "", "legacy alternative to --channel-id: generic, slack, discord, telegram, email, pushover, pagerduty, teams")
@@ -191,16 +199,23 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 	case "cert_expiry":
 		// No kind-specific flags: a cert_expiry rule watches every
 		// certificate on the control plane, not this app's own metrics.
+	case "scheduled_task_failure":
+		if scheduledTaskID == "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--scheduled-task-id is required for --kind scheduled_task_failure"))
+		}
+		if restartCountThreshold <= 0 {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--restart-count-threshold must be a positive integer for --kind scheduled_task_failure"))
+		}
 	case "":
-		return reportError(stdout, stderr, jsonOut, newValidationError("--kind is required (threshold, crashloop, or cert_expiry)"))
+		return reportError(stdout, stderr, jsonOut, newValidationError("--kind is required (threshold, crashloop, cert_expiry, or scheduled_task_failure)"))
 	default:
-		return reportError(stdout, stderr, jsonOut, newValidationError("--kind %q is not valid: must be threshold, crashloop, or cert_expiry", kind))
+		return reportError(stdout, stderr, jsonOut, newValidationError("--kind %q is not valid: must be threshold, crashloop, cert_expiry, or scheduled_task_failure", kind))
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
 	created, err := client.CreateAlertRule(context.Background(), appName, createAlertRuleRequest{
 		Name: name, Kind: kind, Metric: metric, Comparator: comparator, Threshold: threshold, ForDuration: forDuration,
-		RestartCountThreshold: restartCountThreshold, RestartWindow: restartWindow,
+		RestartCountThreshold: restartCountThreshold, RestartWindow: restartWindow, ScheduledTaskID: scheduledTaskID,
 		ChannelID: channelID, NotifyURL: notifyURL, NotifyKind: notifyKind,
 		Enabled: !disabled,
 	})
@@ -224,21 +239,26 @@ func appsAlertsCreateUsage(prog string) string {
   %[1]s apps alerts create <app> --name NAME --kind threshold --metric METRIC --comparator OP --threshold N [flags]
   %[1]s apps alerts create <app> --name NAME --kind crashloop --restart-count-threshold N --restart-window DURATION [flags]
   %[1]s apps alerts create <app> --name NAME --kind cert_expiry [flags]
+  %[1]s apps alerts create <app> --name NAME --kind scheduled_task_failure --scheduled-task-id ID --restart-count-threshold N [flags]
 
 Creates a new alert rule for <app>. A cert_expiry rule is
 platform-wide (it watches every certificate on the control plane, not
 just <app>'s own domains); <app> only decides where it shows up in
-"apps alerts list", not what it evaluates.
+"apps alerts list", not what it evaluates. A scheduled_task_failure rule
+watches one of <app>'s own scheduled tasks (--scheduled-task-id must
+belong to <app>; see "apps scheduled-tasks list") and fires once it has
+failed --restart-count-threshold runs in a row.
 
 Flags:
   --name string                        display name for the rule (required)
-  --kind string                        threshold, crashloop, or cert_expiry (required)
+  --kind string                        threshold, crashloop, cert_expiry, or scheduled_task_failure (required)
   --metric string                      metric name (--kind threshold only)
   --comparator string                  >, <, >=, or <= (--kind threshold only)
   --threshold float                    threshold value (--kind threshold only)
   --for-duration string                how long the condition must hold before firing, e.g. "2m" (--kind threshold only)
-  --restart-count-threshold int        restart count that triggers firing (--kind crashloop only)
+  --restart-count-threshold int        restart count (--kind crashloop) or consecutive-failure count (--kind scheduled_task_failure) that triggers firing
   --restart-window string              time window restarts are counted in, e.g. "5m" (--kind crashloop only)
+  --scheduled-task-id string           which of <app>'s scheduled tasks to watch (--kind scheduled_task_failure only)
   --channel-id string                  attach an already-connected notification channel
   --notify-url string                  legacy alternative to --channel-id
   --notify-kind string                 legacy alternative to --channel-id

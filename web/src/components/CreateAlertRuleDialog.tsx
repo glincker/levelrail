@@ -7,6 +7,7 @@ import {
   PlusCircleIcon,
   ArrowCounterClockwiseIcon,
   ShieldWarningIcon,
+  ClockCountdownIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -31,6 +32,7 @@ import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui
 import { toast } from '@/components/ui/toast'
 import { useCreateAlertRule } from '../queries/alerts'
 import { useNotificationChannelsOptional } from '../queries/notificationChannels'
+import { useScheduledTasks } from '../queries/scheduledTasks'
 import { CHANNEL_KIND_LABEL } from './notificationChannelKind'
 import type {
   AlertRuleKind,
@@ -56,6 +58,7 @@ const KIND_OPTIONS: {
   { value: 'threshold', label: 'Threshold', Icon: GaugeIcon },
   { value: 'crashloop', label: 'Crashloop', Icon: ArrowCounterClockwiseIcon },
   { value: 'cert_expiry', label: 'Certificate expiry', Icon: ShieldWarningIcon },
+  { value: 'scheduled_task_failure', label: 'Scheduled task failure', Icon: ClockCountdownIcon },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -74,13 +77,14 @@ const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
 const createAlertRuleSchema = z
   .object({
     name: z.string().trim().min(1, 'Name is required'),
-    kind: z.enum(['threshold', 'crashloop', 'cert_expiry']),
+    kind: z.enum(['threshold', 'crashloop', 'cert_expiry', 'scheduled_task_failure']),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
     threshold: z.coerce.number({ error: 'Must be a number' }),
     forDuration: z.string().trim(),
     restartCountThreshold: z.coerce.number({ error: 'Must be a number' }),
     restartWindow: z.string().trim(),
+    scheduledTaskId: z.string(),
     channelId: z.string(),
     enabled: z.boolean(),
   })
@@ -105,6 +109,27 @@ const createAlertRuleSchema = z
           code: 'custom',
           message: 'Must look like a duration, e.g. "2m" or "30s"',
           path: ['forDuration'],
+        })
+      }
+      return
+    }
+
+    if (data.kind === 'scheduled_task_failure') {
+      if (!data.scheduledTaskId) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Choose which scheduled task to watch',
+          path: ['scheduledTaskId'],
+        })
+      }
+      if (
+        !Number.isInteger(data.restartCountThreshold) ||
+        data.restartCountThreshold <= 0
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must be a positive whole number',
+          path: ['restartCountThreshold'],
         })
       }
       return
@@ -155,6 +180,7 @@ const DEFAULT_VALUES: CreateAlertRuleFormInput = {
   forDuration: '2m',
   restartCountThreshold: 5,
   restartWindow: '5m',
+  scheduledTaskId: '',
   channelId: '',
   enabled: true,
 }
@@ -171,6 +197,8 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
   const createRule = useCreateAlertRule(appName)
   const channelsQuery = useNotificationChannelsOptional()
   const channels = channelsQuery.data ?? []
+  const scheduledTasksQuery = useScheduledTasks(appName)
+  const scheduledTasks = scheduledTasksQuery.data ?? []
   const { control, register, handleSubmit, formState, reset, watch } = useForm<
     CreateAlertRuleFormInput,
     unknown,
@@ -204,6 +232,9 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
     } else if (values.kind === 'crashloop') {
       req.restart_count_threshold = values.restartCountThreshold
       req.restart_window = values.restartWindow.trim()
+    } else if (values.kind === 'scheduled_task_failure') {
+      req.scheduled_task_id = values.scheduledTaskId
+      req.restart_count_threshold = values.restartCountThreshold
     }
     // cert_expiry sends no kind-specific fields at all.
     createRule.mutate(req, {
@@ -232,8 +263,9 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
           <DialogDescription>
             A threshold rule watches a metric; a crashloop rule watches
             container restarts; a certificate expiry rule watches every
-            certificate on the control plane. All three notify the same way
-            once they fire.
+            certificate on the control plane; a scheduled task failure rule
+            watches one of this app&apos;s scheduled tasks. All four notify
+            the same way once they fire.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -343,6 +375,53 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
                   {...register('forDuration')}
                 />
                 <FieldError errors={[formState.errors.forDuration]} />
+              </Field>
+            </>
+          ) : kind === 'scheduled_task_failure' ? (
+            <>
+              <Field>
+                <FieldLabel htmlFor="rule-scheduled-task">
+                  Scheduled task
+                </FieldLabel>
+                {scheduledTasks.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    This app has no scheduled tasks yet. Create one from the
+                    Scheduled tasks section first.
+                  </p>
+                ) : (
+                  <Controller
+                    control={control}
+                    name="scheduledTaskId"
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger id="rule-scheduled-task" className="w-full">
+                          <SelectValue placeholder="Choose a scheduled task" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {scheduledTasks.map((task) => (
+                            <SelectItem key={task.id} value={task.id}>
+                              {task.command.join(' ')}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                )}
+                <FieldError errors={[formState.errors.scheduledTaskId]} />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="rule-scheduled-task-failures">
+                  Consecutive failures threshold
+                </FieldLabel>
+                <Input
+                  id="rule-scheduled-task-failures"
+                  type="number"
+                  step="1"
+                  min="1"
+                  {...register('restartCountThreshold')}
+                />
+                <FieldError errors={[formState.errors.restartCountThreshold]} />
               </Field>
             </>
           ) : (

@@ -8,7 +8,14 @@
 // cert_expiry watches every certificate on the whole control plane, not
 // just this app's own domains: none of the threshold/crashloop fields
 // below apply to it, matching internal/alerting.Rule's own shape.
-export type AlertRuleKind = 'threshold' | 'crashloop' | 'cert_expiry'
+// scheduled_task_failure watches one of this app's scheduled tasks'
+// consecutive-failure count, reusing restart_count_threshold as that
+// count's threshold; see internal/alerting.Rule's own doc comment.
+export type AlertRuleKind =
+  | 'threshold'
+  | 'crashloop'
+  | 'cert_expiry'
+  | 'scheduled_task_failure'
 
 export type Comparator = '>' | '<' | '>=' | '<='
 
@@ -43,6 +50,11 @@ export interface AlertRule {
   restart_count_threshold: number
   restart_window?: string
 
+  // scheduled_task_failure-only: which of this app's scheduled tasks the
+  // rule watches. restart_count_threshold above doubles as its
+  // consecutive-failure threshold.
+  scheduled_task_id?: string
+
   // notify_url/notify_kind are the *resolved* values: the attached
   // channel's own when channel_id is set, this rule's legacy columns
   // otherwise (rules created before notification channels existed).
@@ -76,6 +88,7 @@ export interface CreateAlertRuleRequest {
   for_duration?: string
   restart_count_threshold?: number
   restart_window?: string
+  scheduled_task_id?: string
   channel_id?: string
   notify_url?: string
   notify_kind?: NotifyKind
