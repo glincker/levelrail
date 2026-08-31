@@ -42,17 +42,19 @@ func appsAlertsUsage(prog string) string {
   %[1]s apps alerts create <app> --kind cert_expiry [flags]
   %[1]s apps alerts create <app> --kind patch_status [flags]
   %[1]s apps alerts create <app> --kind scheduled_task_failure --scheduled-task-id ID --restart-count-threshold N [flags]
+  %[1]s apps alerts create <app> --kind node_disk_space [flags]
   %[1]s apps alerts delete <app> <id> [flags]
 
 Manages an app's alert rules. A threshold rule watches a metric; a
 crashloop rule watches container restarts; a cert_expiry rule watches
 every certificate on the whole control plane (not just this app's own
-domains) and a patch_status rule watches every node's pending OS
-security patches the same way, neither needing any
+domains), a patch_status rule watches every node's pending OS security
+patches the same way, and a node_disk_space rule watches every node's
+disk usage percentage the same way too, none of the three needing any
 metric/threshold/restart flags; a scheduled_task_failure rule watches
 one of this app's scheduled tasks' consecutive-failure count (see "apps
 scheduled-tasks list"), reusing --restart-count-threshold as that
-count's threshold. All five notify the same way once they fire.
+count's threshold. All six notify the same way once they fire.
 
 Run "%[1]s apps alerts <subcommand> -h" for a subcommand's own flags.
 `, prog)
@@ -122,6 +124,8 @@ func alertRuleCondition(r alertRuleResource) string {
 		return "any certificate expiring soon or expired (platform-wide)"
 	case "patch_status":
 		return "any node over its pending security-patch threshold (platform-wide)"
+	case "node_disk_space":
+		return "any node over its disk-usage percentage threshold (platform-wide)"
 	case "scheduled_task_failure":
 		return fmt.Sprintf("task %s fails %d runs in a row", r.ScheduledTaskID, r.RestartCountThreshold)
 	default:
@@ -155,7 +159,7 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 		disabled                                    bool
 	)
 	fs.StringVar(&name, "name", "", "display name for the rule (required)")
-	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure (required)")
+	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space (required)")
 	fs.StringVar(&metric, "metric", "", "metric name (--kind threshold only, required for that kind)")
 	fs.StringVar(&comparator, "comparator", "", "one of >, <, >=, <= (--kind threshold only, required for that kind)")
 	fs.Float64Var(&threshold, "threshold", 0, "threshold value (--kind threshold only)")
@@ -200,10 +204,12 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 		if restartWindow == "" {
 			return reportError(stdout, stderr, jsonOut, newValidationError("--restart-window is required for --kind crashloop"))
 		}
-	case "cert_expiry", "patch_status":
+	case "cert_expiry", "patch_status", "node_disk_space":
 		// No kind-specific flags: a cert_expiry rule watches every
-		// certificate on the control plane, and a patch_status rule
-		// watches every node, neither tied to this app's own metrics.
+		// certificate on the control plane, a patch_status rule watches
+		// every node's pending OS security patches, and a node_disk_space
+		// rule watches every node's disk usage, none tied to this app's
+		// own metrics.
 	case "scheduled_task_failure":
 		if scheduledTaskID == "" {
 			return reportError(stdout, stderr, jsonOut, newValidationError("--scheduled-task-id is required for --kind scheduled_task_failure"))
@@ -212,9 +218,9 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 			return reportError(stdout, stderr, jsonOut, newValidationError("--restart-count-threshold must be a positive integer for --kind scheduled_task_failure"))
 		}
 	case "":
-		return reportError(stdout, stderr, jsonOut, newValidationError("--kind is required (threshold, crashloop, cert_expiry, patch_status, or scheduled_task_failure)"))
+		return reportError(stdout, stderr, jsonOut, newValidationError("--kind is required (threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, or node_disk_space)"))
 	default:
-		return reportError(stdout, stderr, jsonOut, newValidationError("--kind %q is not valid: must be threshold, crashloop, cert_expiry, patch_status, or scheduled_task_failure", kind))
+		return reportError(stdout, stderr, jsonOut, newValidationError("--kind %q is not valid: must be threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, or node_disk_space", kind))
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
@@ -246,20 +252,22 @@ func appsAlertsCreateUsage(prog string) string {
   %[1]s apps alerts create <app> --name NAME --kind cert_expiry [flags]
   %[1]s apps alerts create <app> --name NAME --kind patch_status [flags]
   %[1]s apps alerts create <app> --name NAME --kind scheduled_task_failure --scheduled-task-id ID --restart-count-threshold N [flags]
+  %[1]s apps alerts create <app> --name NAME --kind node_disk_space [flags]
 
-Creates a new alert rule for <app>. cert_expiry and patch_status rules
-are platform-wide (cert_expiry watches every certificate on the control
-plane, patch_status watches every node's pending OS security patches,
-neither limited to <app>'s own domains or workloads); <app> only
-decides where the rule shows up in "apps alerts list", not what it
-evaluates. A scheduled_task_failure rule watches one of <app>'s own
-scheduled tasks (--scheduled-task-id must belong to <app>; see "apps
+Creates a new alert rule for <app>. cert_expiry, patch_status, and
+node_disk_space rules are platform-wide (cert_expiry watches every
+certificate on the control plane, patch_status watches every node's
+pending OS security patches, node_disk_space watches every node's disk
+usage percentage, none limited to <app>'s own domains or workloads);
+<app> only decides where the rule shows up in "apps alerts list", not
+what it evaluates. A scheduled_task_failure rule watches one of <app>'s
+own scheduled tasks (--scheduled-task-id must belong to <app>; see "apps
 scheduled-tasks list") and fires once it has failed
 --restart-count-threshold runs in a row.
 
 Flags:
   --name string                        display name for the rule (required)
-  --kind string                        threshold, crashloop, cert_expiry, patch_status, or scheduled_task_failure (required)
+  --kind string                        threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, or node_disk_space (required)
   --metric string                      metric name (--kind threshold only)
   --comparator string                  >, <, >=, or <= (--kind threshold only)
   --threshold float                    threshold value (--kind threshold only)

@@ -9,6 +9,7 @@ import {
   ShieldWarningIcon,
   ClockCountdownIcon,
   WrenchIcon,
+  HardDriveIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -58,6 +59,12 @@ const GO_DURATION_REGEX = /^-?(\d+(\.\d+)?(ns|us|µs|ms|s|m|h))+$/
 // lives engine-wide, set by APP_ALERT_PATCH_STATUS_THRESHOLD).
 const DEFAULT_PATCH_STATUS_THRESHOLD = 1
 
+// DEFAULT_NODE_DISK_SPACE_THRESHOLD_PERCENT mirrors
+// internal/alerting.DefaultNodeDiskSpaceThresholdPercent the same way,
+// for the node_disk_space description below (the real, enforced value
+// lives engine-wide, set by APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT).
+const DEFAULT_NODE_DISK_SPACE_THRESHOLD_PERCENT = 90
+
 const KIND_OPTIONS: {
   value: AlertRuleKind
   label: string
@@ -68,6 +75,7 @@ const KIND_OPTIONS: {
   { value: 'cert_expiry', label: 'Certificate expiry', Icon: ShieldWarningIcon },
   { value: 'patch_status', label: 'Node patch status', Icon: WrenchIcon },
   { value: 'scheduled_task_failure', label: 'Scheduled task failure', Icon: ClockCountdownIcon },
+  { value: 'node_disk_space', label: 'Node disk space', Icon: HardDriveIcon },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -86,7 +94,14 @@ const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
 const createAlertRuleSchema = z
   .object({
     name: z.string().trim().min(1, 'Name is required'),
-    kind: z.enum(['threshold', 'crashloop', 'cert_expiry', 'patch_status', 'scheduled_task_failure']),
+    kind: z.enum([
+      'threshold',
+      'crashloop',
+      'cert_expiry',
+      'patch_status',
+      'scheduled_task_failure',
+      'node_disk_space',
+    ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
     threshold: z.coerce.number({ error: 'Must be a number' }),
@@ -98,10 +113,15 @@ const createAlertRuleSchema = z
     enabled: z.boolean(),
   })
   .superRefine((data, ctx) => {
-    // cert_expiry and patch_status need none of the threshold/crashloop
-    // fields: they watch every certificate, or every node, on the
-    // control plane platform-wide, not a metric or a restart count.
-    if (data.kind === 'cert_expiry' || data.kind === 'patch_status') {
+    // cert_expiry, patch_status, and node_disk_space need none of the
+    // threshold/crashloop fields: they watch every certificate, every
+    // node's patch status, or every node's disk usage, on the control
+    // plane platform-wide, not a metric or a restart count.
+    if (
+      data.kind === 'cert_expiry' ||
+      data.kind === 'patch_status' ||
+      data.kind === 'node_disk_space'
+    ) {
       return
     }
 
@@ -245,7 +265,8 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
       req.scheduled_task_id = values.scheduledTaskId
       req.restart_count_threshold = values.restartCountThreshold
     }
-    // cert_expiry and patch_status send no kind-specific fields at all.
+    // cert_expiry, patch_status, and node_disk_space send no
+    // kind-specific fields at all.
     createRule.mutate(req, {
       onSuccess: () => {
         handleOpenChange(false)
@@ -273,9 +294,11 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
             A threshold rule watches a metric; a crashloop rule watches
             container restarts; a certificate expiry rule watches every
             certificate on the control plane; a node patch status rule
-            watches every node&apos;s pending OS security patches; a
-            scheduled task failure rule watches one of this app&apos;s
-            scheduled tasks. All five notify the same way once they fire.
+            watches every node&apos;s pending OS security patches; a node
+            disk space rule watches every node&apos;s disk usage
+            percentage; a scheduled task failure rule watches one of this
+            app&apos;s scheduled tasks. All six notify the same way once
+            they fire.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -333,6 +356,15 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
               node has at least {DEFAULT_PATCH_STATUS_THRESHOLD} pending OS
               security patch (the control plane&apos;s configured
               threshold, overridable via APP_ALERT_PATCH_STATUS_THRESHOLD).
+            </p>
+          ) : kind === 'node_disk_space' ? (
+            <p className="text-sm text-muted-foreground">
+              Watches every node&apos;s disk usage on the whole control
+              plane, not just the ones this app happens to run on, and
+              fires as soon as any node&apos;s disk is at least{' '}
+              {DEFAULT_NODE_DISK_SPACE_THRESHOLD_PERCENT}% used (the
+              control plane&apos;s configured threshold, overridable via
+              APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT).
             </p>
           ) : kind === 'threshold' ? (
             <>
