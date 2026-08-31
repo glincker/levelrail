@@ -601,6 +601,20 @@ func TestContainerRestorer_Restore_MariaDB_Live(t *testing.T) {
 	}
 }
 
+// waitClickHouseReady mirrors waitMySQLReady: the official
+// clickhouse-server image's entrypoint also runs a temporary background
+// server to process docker-entrypoint-initdb.d init scripts (triggered
+// here by CLICKHOUSE_DB/CLICKHOUSE_USER/CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT
+// populating that directory), then kills it and execs the real server in
+// its place, so a single successful probe carries the same false-ready
+// risk waitMySQLReady's own doc comment describes for MySQL.
+func waitClickHouseReady(ctx context.Context, t *testing.T, rt docker.Runtime, containerName string, probe []string, timeout time.Duration) {
+	t.Helper()
+	waitReady(ctx, t, rt, containerName, probe, timeout)
+	time.Sleep(2 * time.Second)
+	waitReady(ctx, t, rt, containerName, probe, timeout)
+}
+
 // TestContainerRestorer_Restore_ClickHouse_Live proves clickhouseRestoreCmd
 // against a real ClickHouse container: real dump, a real overwriting
 // change, a real restore, then a direct query against the live database.
@@ -639,7 +653,7 @@ func TestContainerRestorer_Restore_ClickHouse_Live(t *testing.T) {
 	// so a probe with no database context can pass before it exists, the
 	// same false-ready window postgresDumpCmd's own live test guards
 	// against (see waitReady's caller there).
-	waitReady(ctx, t, rt, name, []string{"sh", "-c", `clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --database "$CLICKHOUSE_DB" --query "SELECT 1"`}, 30*time.Second)
+	waitClickHouseReady(ctx, t, rt, name, []string{"sh", "-c", `clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --database "$CLICKHOUSE_DB" --query "SELECT 1"`}, 30*time.Second)
 
 	originalMarker := "levelrail-restore-live-original-clickhouse-5e9a"
 	seed, err := rt.Exec(ctx, name, []string{"sh", "-c",
