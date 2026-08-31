@@ -70,14 +70,17 @@ const (
 // build triggered from the dashboard (internal/api/deploy_attempts.go's
 // beginBuildDeployAttempt), a plain image-tag create/update/redeploy/
 // rollback with no build step (internal/api/deploys.go's
-// recordPlainDeployAttempt), and a Docker Compose file or service
-// template fanning out into one or more services under one app
-// (internal/api/apps_compose.go's handleDeployCompose).
+// recordPlainDeployAttempt), a Docker Compose file or service template
+// fanning out into one or more services under one app
+// (internal/api/apps_compose.go's handleDeployCompose), and promoting
+// another app's image across environments within the same project
+// (internal/api/promote.go's handlePromoteApp).
 const (
 	DeployAttemptSourceWebhook = "webhook"
 	DeployAttemptSourceManual  = "manual"
 	DeployAttemptSourceImage   = "image"
 	DeployAttemptSourceCompose = "compose"
+	DeployAttemptSourcePromote = "promote"
 )
 
 // deployAttemptIDPrefix mirrors internal/api/tokens.go's "tok_" prefix

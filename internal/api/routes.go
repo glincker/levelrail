@@ -200,6 +200,14 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// deploy-attempts list above.
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/compare", rt.requireAbility(AbilityRead, rt.handleCompareDeploys))
 
+	// Promotion (promote.go): move a known-good image from this app to a
+	// sibling app tagged with another environment in the same project,
+	// through the exact same deploy path a plain trigger uses. Preview is
+	// AbilityRead like the comparison view above; the trigger itself is
+	// AbilityDeploy, matching POST .../deploys.
+	mux.HandleFunc("GET /api/v1/apps/{name}/promote/preview", rt.requireAbility(AbilityRead, rt.handlePromotePreview))
+	mux.HandleFunc("POST /api/v1/apps/{name}/promote", rt.requireAbility(AbilityDeploy, rt.handlePromoteApp))
+
 	// Deploy-attempt build/log stream (deploy_attempts.go): SSE, serving
 	// either a live tail (attempt still running) or a full persisted
 	// replay (attempt already finished), the exact contract

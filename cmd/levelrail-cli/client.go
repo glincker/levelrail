@@ -118,6 +118,10 @@ type (
 	deployCompareSide     = apiclient.DeployCompareSide
 	deployCompareField    = apiclient.DeployCompareField
 
+	promotePreviewResource = apiclient.PromotePreviewResource
+	promotePreviewSide     = apiclient.PromotePreviewSide
+	promoteAppRequest      = apiclient.PromoteAppRequest
+
 	auditLogEntryResource = apiclient.AuditLogEntryResource
 	listAuditLogOptions   = apiclient.ListAuditLogOptions
 )
