@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 
+	smithyhttp "github.com/aws/smithy-go/transport/http"
+
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -31,6 +33,43 @@ func newTestRouterWithBackupSecrets(t *testing.T, secrets BackupSecretsSetter) (
 	db := openTestDB(t)
 	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
 	return NewRouter(logger, testBrand(), db, WithBackupSecrets(secrets)), db
+}
+
+// fakeBackupTargetTester is a hand-written fake for BackupTargetTester.
+type fakeBackupTargetTester struct {
+	err   error
+	calls []string
+}
+
+func (f *fakeBackupTargetTester) TestTarget(_ context.Context, targetID string) error {
+	f.calls = append(f.calls, targetID)
+	return f.err
+}
+
+func newTestRouterWithBackupTargetTest(t *testing.T, secrets BackupSecretsSetter, tester BackupTargetTester) (*Router, *store.DB) {
+	t.Helper()
+	db := openTestDB(t)
+	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
+	return NewRouter(logger, testBrand(), db, WithBackupSecrets(secrets), WithBackupTargetTester(tester)), db
+}
+
+// createTestBackupTarget mirrors createTestRegistryCredential's shape
+// (registry_credentials_test.go), narrowed to a fixed body: every
+// handleTestBackupTarget test below needs is one connected target to
+// test against, never a specific name/provider/bucket combination.
+func createTestBackupTarget(t *testing.T, rt *Router, cookie *http.Cookie) backupTargetResource {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	body := `{"name":"primary","provider":"aws","bucket":"backups","access_key_id":"AKID","secret_access_key":"topsecret"}`
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/backup-targets", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	var created backupTargetResource
+	if err := json.NewDecoder(rec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	return created
 }
 
 func TestValidateCreateBackupTargetRequest(t *testing.T) {
@@ -109,6 +148,7 @@ func TestBackupTargetRoutes_RequireAuth(t *testing.T) {
 		{http.MethodGet, "/api/v1/backup-targets/bkt_x"},
 		{http.MethodPut, "/api/v1/backup-targets/bkt_x"},
 		{http.MethodDelete, "/api/v1/backup-targets/bkt_x"},
+		{http.MethodPost, "/api/v1/backup-targets/bkt_x/test"},
 	}
 	for _, r := range routes {
 		t.Run(r.method+" "+r.target, func(t *testing.T) {
@@ -419,5 +459,113 @@ func TestHandleDeleteBackupTarget_BlockedByHistory(t *testing.T) {
 	rt.Handler().ServeHTTP(delRec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/backup-targets/"+created.ID, ""))
 	if delRec.Code != http.StatusConflict {
 		t.Fatalf("delete status = %d, want %d, body = %s", delRec.Code, http.StatusConflict, delRec.Body.String())
+	}
+}
+
+func TestHandleTestBackupTarget_NotConfigured(t *testing.T) {
+	setter := &fakeBackupSecretsSetter{}
+	rt, db := newTestRouterWithBackupSecrets(t, setter) // no WithBackupTargetTester
+	cookie := loginTestSession(t, rt, db)
+
+	created := createTestBackupTarget(t, rt, cookie)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/backup-targets/"+created.ID+"/test", ""))
+	if rec.Code != http.StatusNotImplemented {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotImplemented)
+	}
+}
+
+func TestHandleTestBackupTarget_NotFound(t *testing.T) {
+	setter := &fakeBackupSecretsSetter{}
+	tester := &fakeBackupTargetTester{}
+	rt, db := newTestRouterWithBackupTargetTest(t, setter, tester)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/backup-targets/bkt_missing/test", ""))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleTestBackupTarget_Success(t *testing.T) {
+	setter := &fakeBackupSecretsSetter{}
+	tester := &fakeBackupTargetTester{}
+	rt, db := newTestRouterWithBackupTargetTest(t, setter, tester)
+	cookie := loginTestSession(t, rt, db)
+
+	created := createTestBackupTarget(t, rt, cookie)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/backup-targets/"+created.ID+"/test", ""))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNoContent, rec.Body.String())
+	}
+	if len(tester.calls) != 1 || tester.calls[0] != created.ID {
+		t.Fatalf("TestTarget calls = %v, want [%s]", tester.calls, created.ID)
+	}
+}
+
+func TestHandleTestBackupTarget_AuthRejected(t *testing.T) {
+	setter := &fakeBackupSecretsSetter{}
+	tester := &fakeBackupTargetTester{err: &smithyhttp.ResponseError{
+		Response: &smithyhttp.Response{Response: &http.Response{StatusCode: http.StatusForbidden}},
+		Err:      errors.New("403 Forbidden"),
+	}}
+	rt, db := newTestRouterWithBackupTargetTest(t, setter, tester)
+	cookie := loginTestSession(t, rt, db)
+
+	created := createTestBackupTarget(t, rt, cookie)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/backup-targets/"+created.ID+"/test", ""))
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadGateway, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "authentication rejected") {
+		t.Errorf("body = %s, want an authentication-rejected message", rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), "topsecret") || strings.Contains(rec.Body.String(), "AKID") {
+		t.Errorf("body = %s, credentials must never be echoed back", rec.Body.String())
+	}
+}
+
+func TestHandleTestBackupTarget_BucketNotFound(t *testing.T) {
+	setter := &fakeBackupSecretsSetter{}
+	tester := &fakeBackupTargetTester{err: &smithyhttp.ResponseError{
+		Response: &smithyhttp.Response{Response: &http.Response{StatusCode: http.StatusNotFound}},
+		Err:      errors.New("404 Not Found"),
+	}}
+	rt, db := newTestRouterWithBackupTargetTest(t, setter, tester)
+	cookie := loginTestSession(t, rt, db)
+
+	created := createTestBackupTarget(t, rt, cookie)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/backup-targets/"+created.ID+"/test", ""))
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadGateway, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "bucket not found") {
+		t.Errorf("body = %s, want a bucket-not-found message", rec.Body.String())
+	}
+}
+
+func TestHandleTestBackupTarget_Unreachable(t *testing.T) {
+	setter := &fakeBackupSecretsSetter{}
+	tester := &fakeBackupTargetTester{err: errors.New("dial tcp: connection refused")}
+	rt, db := newTestRouterWithBackupTargetTest(t, setter, tester)
+	cookie := loginTestSession(t, rt, db)
+
+	created := createTestBackupTarget(t, rt, cookie)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/backup-targets/"+created.ID+"/test", ""))
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadGateway, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "could not reach backup target") {
+		t.Errorf("body = %s, want a could-not-reach message", rec.Body.String())
 	}
 }

@@ -96,7 +96,9 @@ var keydbDumpCmd = []string{"keydb-cli", "--rdb", "-"}
 // not RDB, so this forces RDB explicitly via SAVE's own format argument
 // (a synchronous, blocking snapshot) to a fixed filename, then reads that
 // file back. Dragonfly ships redis-cli for Redis-protocol compatibility.
-var dragonflyDumpCmd = []string{"sh", "-c", "redis-cli SAVE RDB dump.rdb && exec cat /data/dump.rdb"}
+// SAVE's own "OK" reply is redirected away from stdout, or it lands ahead
+// of the RDB bytes cat writes next and corrupts the magic header.
+var dragonflyDumpCmd = []string{"sh", "-c", "redis-cli SAVE RDB dump.rdb > /dev/null && exec cat /data/dump.rdb"}
 
 // clickhouseDumpCmd dumps each table's DDL plus rows as INSERT
 // statements rather than native BACKUP/RESTORE, which needs a

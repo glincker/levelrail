@@ -11,8 +11,25 @@ import (
 	"net/http"
 	"time"
 
+	smithyhttp "github.com/aws/smithy-go/transport/http"
+
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+// backupTargetTestTimeout bounds the synchronous connectivity check
+// handleTestBackupTarget runs, the same shape
+// registryCredentialTestTimeout bounds its own synchronous test.
+const backupTargetTestTimeout = 10 * time.Second
+
+// BackupTargetTester is the surface the test-connection handler needs
+// from internal/backup.TargetTester: probe one target's configured
+// bucket over its stored credentials, without uploading or deleting
+// anything. *backup.TargetTester satisfies this structurally;
+// internal/api never resolves a backup target's credentials directly,
+// the same boundary BackupSecretsSetter's own doc comment describes.
+type BackupTargetTester interface {
+	TestTarget(ctx context.Context, targetID string) error
+}
 
 // BackupTargetStore is the store surface the backup target handlers
 // need.
@@ -343,6 +360,61 @@ func (rt *Router) handleDeleteBackupTarget(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleTestBackupTarget handles POST /api/v1/backup-targets/{id}/test:
+// probes the stored credentials against the target's configured bucket
+// with a HeadBucket call (internal/backup.S3Tester), no upload or delete
+// involved. Catches a bad or stale credential, or a renamed/deleted
+// bucket, before the next scheduled backup fails against it silently,
+// the same "verify a stored credential by actually using it, once, on
+// demand" shape handleTestRegistryCredential already establishes for
+// registry credentials.
+func (rt *Router) handleTestBackupTarget(w http.ResponseWriter, r *http.Request) {
+	if rt.backupTargetTester == nil {
+		writeError(w, http.StatusNotImplemented, "backup target testing is not configured on this control plane (no master key set)")
+		return
+	}
+
+	id := r.PathValue("id")
+	if _, err := rt.backupTargets.GetBackupTarget(r.Context(), id); errors.Is(err, store.ErrBackupTargetNotFound) {
+		writeError(w, http.StatusNotFound, "backup target not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: test backup target: load failed", slog.String("error", err.Error()), slog.String("id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), backupTargetTestTimeout)
+	defer cancel()
+	if err := rt.backupTargetTester.TestTarget(ctx, id); err != nil {
+		writeError(w, http.StatusBadGateway, backupTargetTestErrorMessage(err))
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// backupTargetTestErrorMessage classifies a failed TestTarget error into
+// the two specific reasons HeadBucket's own contract can actually
+// distinguish (see api_op_HeadBucket.go's doc comment: a generic 403 for
+// a rejected credential, a generic 404 for a missing bucket, no body
+// either way) versus everything else (endpoint unreachable, TLS
+// failure, timeout). Never includes the access key or secret: the
+// wrapped error carries only the endpoint's own HTTP response, which
+// never echoes back what it was given, the same guarantee
+// registryAuthTestErrorMessage's own doc comment relies on.
+func backupTargetTestErrorMessage(err error) string {
+	var respErr *smithyhttp.ResponseError
+	if errors.As(err, &respErr) {
+		switch respErr.HTTPStatusCode() {
+		case http.StatusUnauthorized, http.StatusForbidden:
+			return "authentication rejected by the storage endpoint: check the access key id and secret access key"
+		case http.StatusNotFound:
+			return "bucket not found at the configured endpoint: check the bucket name, region, and endpoint"
+		}
+	}
+	return fmt.Sprintf("could not reach backup target: %s", err.Error())
 }
 
 // randomBackupTargetID mirrors randomNodeJoinTokenID's exact shape
