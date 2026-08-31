@@ -199,6 +199,18 @@ const (
 	// need for minute-granularity checks, unlike a cron schedule that can
 	// legitimately fire every minute.
 	defaultPreviewSweepInterval = 1 * time.Hour
+
+	// defaultAPIRateLimitReadRPM/defaultAPIRateLimitWriteRPM are
+	// api.WithAPIRateLimit's per-actor (token, session, or IP) budget
+	// when APP_API_RATE_LIMIT_READ_RPM/APP_API_RATE_LIMIT_WRITE_RPM are
+	// unset (apiRateLimitReadRPM/apiRateLimitWriteRPM below). 600 read
+	// req/min (10/s) comfortably covers a dashboard's own polling plus a
+	// CLI script checking deploy status every few seconds; 120 write
+	// req/min (2/s) is far above any real deploy/restart/delete cadence a
+	// human or CI pipeline drives, so only a runaway loop or a
+	// compromised token hammering the API ever hits it.
+	defaultAPIRateLimitReadRPM  = 600
+	defaultAPIRateLimitWriteRPM = 120
 )
 
 func main() {
@@ -1627,6 +1639,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithNotificationChannelTester(deployDispatcher),
 		api.WithNotificationDeliveries(alertingDB),
 		api.WithSessionTTL(sessionTTL(logger)),
+		api.WithAPIRateLimit(apiRateLimitReadRPM(logger), apiRateLimitWriteRPM(logger)),
 		api.WithDataDir(dataDir),
 		api.WithDockerPinger(client),
 		api.WithImageLister(client),
@@ -1977,6 +1990,34 @@ func doctorDiskWarningBytes(logger *slog.Logger) int64 {
 	if err != nil {
 		logger.Warn("invalid APP_DOCTOR_DISK_WARNING_BYTES, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return 0
+	}
+	return n
+}
+
+// apiRateLimitReadRPM/apiRateLimitWriteRPM read
+// APP_API_RATE_LIMIT_READ_RPM/APP_API_RATE_LIMIT_WRITE_RPM, the values
+// api.WithAPIRateLimit configures. Unlike sessionTTL and friends above,
+// api.WithAPIRateLimit has no built-in fallback of its own (0 there means
+// "disabled", not "use the default"), so this resolves the real value
+// once, here, the same shape previewSweepInterval already uses for
+// api.Router.RunPreviewSweeper's own interval.
+func apiRateLimitReadRPM(logger *slog.Logger) int {
+	return apiRateLimitRPM(logger, "APP_API_RATE_LIMIT_READ_RPM", defaultAPIRateLimitReadRPM)
+}
+
+func apiRateLimitWriteRPM(logger *slog.Logger) int {
+	return apiRateLimitRPM(logger, "APP_API_RATE_LIMIT_WRITE_RPM", defaultAPIRateLimitWriteRPM)
+}
+
+func apiRateLimitRPM(logger *slog.Logger, envVar string, fallback int) int {
+	raw := os.Getenv(envVar)
+	if raw == "" {
+		return fallback
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n < 0 {
+		logger.Warn("invalid "+envVar+", using the default", slog.String("value", raw), slog.Int("default", fallback))
+		return fallback
 	}
 	return n
 }

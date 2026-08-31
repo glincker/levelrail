@@ -326,6 +326,12 @@ func (rt *Router) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 func (rt *Router) requireAbility(required string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if userID, ok := rt.currentSessionUserID(r); ok {
+			if rt.apiRateLimit != nil {
+				if allowed, retryAfter := rt.apiRateLimit.allow(required, "session:"+userID); !allowed {
+					writeRateLimited(w, retryAfter)
+					return
+				}
+			}
 			gated := func(w http.ResponseWriter, r *http.Request) {
 				user, err := rt.auth.GetUserByID(r.Context(), userID)
 				if errors.Is(err, store.ErrUserNotFound) {
@@ -349,8 +355,24 @@ func (rt *Router) requireAbility(required string, next http.HandlerFunc) http.Ha
 
 		token, ok := bearerToken(r)
 		if !ok {
+			if rt.apiRateLimit != nil {
+				if allowed, retryAfter := rt.apiRateLimit.allow(required, "ip:"+clientIP(r)); !allowed {
+					writeRateLimited(w, retryAfter)
+					return
+				}
+			}
 			writeError(w, http.StatusUnauthorized, "authentication required")
 			return
+		}
+
+		// Keyed by the token's own hash, not its DB record ID: this runs
+		// before the lookup below, so a leaked token gets throttled even
+		// while repeatedly hitting an already-revoked or expired record.
+		if rt.apiRateLimit != nil {
+			if allowed, retryAfter := rt.apiRateLimit.allow(required, "token:"+hashToken(token)); !allowed {
+				writeRateLimited(w, retryAfter)
+				return
+			}
 		}
 
 		rec, err := rt.tokens.GetAPITokenByHash(r.Context(), hashToken(token))

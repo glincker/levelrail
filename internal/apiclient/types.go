@@ -1141,8 +1141,18 @@ type apiErrorBody struct {
 type APIError struct {
 	StatusCode int
 	Message    string
+	// RetryAfter is parsed from the response's Retry-After header
+	// (seconds form only, the only form this control plane ever sends),
+	// 0 when absent. Currently only the general per-actor rate limiter
+	// (429 Too Many Requests, internal/api/api_rate_limit.go) sets it,
+	// but any future response carrying the header gets the same
+	// treatment for free.
+	RetryAfter time.Duration
 }
 
 func (e *APIError) Error() string {
+	if e.RetryAfter > 0 {
+		return fmt.Sprintf("server returned %d: %s (retry after %s)", e.StatusCode, e.Message, e.RetryAfter)
+	}
 	return fmt.Sprintf("server returned %d: %s", e.StatusCode, e.Message)
 }

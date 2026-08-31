@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestExtractErrorMessage(t *testing.T) {
@@ -102,6 +104,79 @@ func TestClient_APIErrorStatus(t *testing.T) {
 	}
 	if apiErr.Message != "an app with this name already exists" {
 		t.Errorf("Message = %q, want %q", apiErr.Message, "an app with this name already exists")
+	}
+}
+
+func TestClient_APIErrorRetryAfter(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Retry-After", "30")
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = w.Write([]byte(`{"error":"rate limit exceeded, retry after 30s"}`))
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	_, err := client.ListApps(context.Background())
+	if err == nil {
+		t.Fatalf("ListApps() error = nil, want an error for a 429 response")
+	}
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("error type = %T, want *APIError", err)
+	}
+	if apiErr.StatusCode != http.StatusTooManyRequests {
+		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusTooManyRequests)
+	}
+	if apiErr.RetryAfter != 30*time.Second {
+		t.Errorf("RetryAfter = %v, want 30s", apiErr.RetryAfter)
+	}
+	if !strings.Contains(apiErr.Error(), "retry after") {
+		t.Errorf("Error() = %q, want it to mention the retry delay", apiErr.Error())
+	}
+}
+
+func TestClient_APIError_NoRetryAfterHeader(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"error":"conflict"}`))
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	_, err := client.ListApps(context.Background())
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("error type = %T, want *APIError", err)
+	}
+	if apiErr.RetryAfter != 0 {
+		t.Errorf("RetryAfter = %v, want 0 when the header is absent", apiErr.RetryAfter)
+	}
+}
+
+func TestRetryAfterHeader(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  string
+		want time.Duration
+	}{
+		{name: "absent", raw: "", want: 0},
+		{name: "valid seconds", raw: "30", want: 30 * time.Second},
+		{name: "zero", raw: "0", want: 0},
+		{name: "negative", raw: "-5", want: 0},
+		{name: "not a number", raw: "Wed, 21 Oct 2015 07:28:00 GMT", want: 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := http.Header{}
+			if tt.raw != "" {
+				h.Set("Retry-After", tt.raw)
+			}
+			if got := retryAfterHeader(h); got != tt.want {
+				t.Errorf("retryAfterHeader(%q) = %v, want %v", tt.raw, got, tt.want)
+			}
+		})
 	}
 }
 
