@@ -278,6 +278,11 @@ type TokenStore interface {
 	TouchAPITokenLastUsed(ctx context.Context, id string) error
 }
 
+// OnboardingStore is defined in onboarding.go, next to the handlers that
+// use it (the same "single-file feature" shape scheduled_task.go/
+// feature_flags.go already use, rather than every store interface living
+// in this file).
+
 // AuditStore is the store surface requireAbility's audit hook
 // (internal/api/auth.go) and GET /api/v1/audit-log (audit.go) need:
 // insert-only recording plus newest-first, cursor-paginated reading.
@@ -328,6 +333,7 @@ type Store interface {
 	AuditStore
 	ScheduledTaskStore
 	FeatureFlagStore
+	OnboardingStore
 }
 
 // SecretSetter is the surface the secrets handlers need from

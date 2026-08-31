@@ -206,6 +206,7 @@ type Router struct {
 	bitbucketAppSecrets       BitbucketAppSecrets             // nil is valid: every bitbucket-app route that needs it returns 501, same shape as gitlabAppSecrets above
 	bitbucketAppClient        BitbucketAppClient              // always set (NewRouter defaults it to a real *bitbucketapp.Client), overridable in this package's own tests
 	bitbucketAppState         *pendingState                   // always set (NewRouter constructs one unconditionally); purely in-memory OAuth CSRF state, see pendingState's own doc comment
+	onboarding                OnboardingStore                 // always set, same "core Store interface, not an optional plug-in" shape as ingressSettings above: the row always exists (migrations/0067's own seeded row)
 	dbPinger                  DBPinger                        // nil is valid: GET /system/doctor reports its database check as unknown, same shape as dockerPinger above
 	doctorDiskWarningBytes    int64                           // 0 means "use defaultDoctorDiskWarningBytes", set via WithDoctorDiskWarningBytes
 }
@@ -275,6 +276,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		bitbucketApp:            s,
 		bitbucketAppClient:      bitbucketapp.NewClient(),
 		bitbucketAppState:       newPendingState(),
+		onboarding:              s,
 	}
 	for _, opt := range opts {
 		opt(rt)
