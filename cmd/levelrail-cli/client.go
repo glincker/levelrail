@@ -119,6 +119,9 @@ type (
 	promotePreviewResource = apiclient.PromotePreviewResource
 	promotePreviewSide     = apiclient.PromotePreviewSide
 	promoteAppRequest      = apiclient.PromoteAppRequest
+
+	auditLogEntryResource = apiclient.AuditLogEntryResource
+	listAuditLogOptions   = apiclient.ListAuditLogOptions
 )
 
 // NewClient builds a Client. See apiclient.NewClient.

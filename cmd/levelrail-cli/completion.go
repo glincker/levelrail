@@ -82,6 +82,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"health": nil, "patch-status": nil,
 	}},
 	"status":     nil,
+	"audit-log":  nil,
 	"doctor":     nil,
 	"users":      {subs: map[string]*cmdNode{"list": nil, "create": nil, "set-abilities": nil, "delete": nil, "roles": nil}},
 	"migrate":    {subs: map[string]*cmdNode{"coolify": nil, "dokploy": nil, "caprover": nil}},

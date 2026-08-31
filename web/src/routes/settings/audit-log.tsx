@@ -1,7 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { ClockCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  ClockCounterClockwiseIcon,
+  DownloadSimpleIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   Table,
   TableBody,
@@ -11,8 +14,9 @@ import {
   TableRow,
 } from '../../components/ui/table'
 import { Badge } from '../../components/ui/badge'
-import { Button } from '../../components/ui/button'
+import { Button, buttonVariants } from '../../components/ui/button'
 import {
+  auditLogExportURL,
   auditLogQueryOptions,
   fetchAuditLog,
   type AuditLogEntry,
@@ -42,6 +46,24 @@ function StatusBadge({ status }: { status: number }) {
   const ok = status >= 200 && status < 300
   return (
     <Badge variant={ok ? 'success' : 'destructive'}>{status}</Badge>
+  )
+}
+
+// Downloads GET /api/v1/audit-log?format=csv as a plain browser
+// navigation (<a href download>), the same pattern
+// BackupsSection.tsx's DownloadBackupLink already establishes for a raw,
+// non-JSON response: no fetch/blob dance needed since auth rides along
+// on the same httpOnly session cookie every same-origin request uses.
+function ExportAuditLogLink() {
+  return (
+    <a
+      href={auditLogExportURL()}
+      download
+      className={buttonVariants({ variant: 'outline', size: 'sm' })}
+    >
+      <DownloadSimpleIcon className="size-3.5" aria-hidden="true" />
+      Export CSV
+    </a>
   )
 }
 
@@ -77,19 +99,22 @@ function AuditLogSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <ClockCounterClockwiseIcon className="size-4" />
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+            <ClockCounterClockwiseIcon className="size-4" />
+          </div>
+          <div>
+            <h1 className="text-lg font-semibold text-foreground">
+              Audit log
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Who changed what: every write, deploy, or root-tier request,
+              newest first. Read-only requests aren't recorded here.
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">
-            Audit log
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Who changed what: every write, deploy, or root-tier request,
-            newest first. Read-only requests aren't recorded here.
-          </p>
-        </div>
+        {entries.length > 0 ? <ExportAuditLogLink /> : null}
       </div>
 
       {entries.length === 0 ? (
