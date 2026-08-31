@@ -13,16 +13,18 @@ import (
 // Kind distinguishes what a Rule evaluates.
 type Kind string
 
-// The four rule kinds this package evaluates; see Rule's own doc comment
-// for which fields each uses. KindCertExpiry uses none of Rule's
-// threshold/crashloop fields: it watches every stored certificate
-// platform-wide (cert_expiry.go), not a single Metric or RestartWindow,
-// so ResourceID on a cert_expiry rule is only ever a display label, not
-// something EvaluateCertExpiry filters by.
+// The five rule kinds this package evaluates; see Rule's own doc comment
+// for which fields each uses. KindCertExpiry and KindPatchStatus use
+// none of Rule's threshold/crashloop fields: they watch every
+// certificate (cert_expiry.go) or every node (patch_status.go)
+// platform-wide, not a single Metric or RestartWindow, so ResourceID on
+// either kind is only ever a display label, not something their
+// evaluator filters by.
 const (
 	KindThreshold            Kind = "threshold"
 	KindCrashloop            Kind = "crashloop"
 	KindCertExpiry           Kind = "cert_expiry"
+	KindPatchStatus          Kind = "patch_status"
 	KindScheduledTaskFailure Kind = "scheduled_task_failure"
 )
 

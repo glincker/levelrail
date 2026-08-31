@@ -52,25 +52,28 @@ type Engine struct {
 	logs           LogsSource
 	tracker        *RestartTracker
 	certs          CertSource
+	nodes          NodeSource
 	scheduledTasks ScheduledTaskSource
 	newNotifier    func(Rule) Notifier
 	logger         *slog.Logger
 
 	certExpiryWarningWindow     time.Duration
 	certRenewalStalledThreshold time.Duration
+	patchStatusThreshold        float64
 }
 
 // NewEngine builds an Engine. newNotifier defaults to a Notifier with no
 // email capability configured if nil; a real caller passes a closure
 // capturing an email.Sender instead. certs may be nil if no cert
 // storage is configured; a kind=cert_expiry rule then logs a warning and
-// is skipped each tick rather than evaluated. scheduledTasks may
-// likewise be nil, in which case a kind=scheduled_task_failure rule is
-// skipped the same way. certExpiryWarningWindow and
-// certRenewalStalledThreshold fall back to
+// is skipped each tick rather than evaluated. nodes and scheduledTasks
+// may likewise be nil, in which case a kind=patch_status or
+// kind=scheduled_task_failure rule is skipped the same way.
+// certExpiryWarningWindow and certRenewalStalledThreshold fall back to
 // DefaultCertExpiryWarningWindow/DefaultCertRenewalStalledThreshold when
-// passed as 0.
-func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker *RestartTracker, certs CertSource, scheduledTasks ScheduledTaskSource, certExpiryWarningWindow, certRenewalStalledThreshold time.Duration, newNotifier func(Rule) Notifier, logger *slog.Logger) *Engine {
+// passed as 0; patchStatusThreshold falls back to
+// DefaultPatchStatusThreshold the same way.
+func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker *RestartTracker, certs CertSource, scheduledTasks ScheduledTaskSource, certExpiryWarningWindow, certRenewalStalledThreshold time.Duration, nodes NodeSource, patchStatusThreshold float64, newNotifier func(Rule) Notifier, logger *slog.Logger) *Engine {
 	if newNotifier == nil {
 		newNotifier = func(r Rule) Notifier { return NewNotifier(nil, nil, r) }
 	}
@@ -83,10 +86,14 @@ func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker 
 	if certRenewalStalledThreshold <= 0 {
 		certRenewalStalledThreshold = DefaultCertRenewalStalledThreshold
 	}
+	if patchStatusThreshold <= 0 {
+		patchStatusThreshold = DefaultPatchStatusThreshold
+	}
 	return &Engine{
-		rules: rules, metrics: metrics, logs: logs, tracker: tracker, certs: certs, scheduledTasks: scheduledTasks,
+		rules: rules, metrics: metrics, logs: logs, tracker: tracker, certs: certs, nodes: nodes, scheduledTasks: scheduledTasks,
 		newNotifier: newNotifier, logger: logger,
 		certExpiryWarningWindow: certExpiryWarningWindow, certRenewalStalledThreshold: certRenewalStalledThreshold,
+		patchStatusThreshold: patchStatusThreshold,
 	}
 }
 
@@ -107,7 +114,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 
 	for _, r := range rules {
 		var next Rule
-		var certNotices []string
+		var certNotices, patchNotices []string
 		var taskFailureNotice string
 		switch r.Kind {
 		case KindThreshold:
@@ -124,6 +131,16 @@ func (e *Engine) Tick(ctx context.Context) error {
 				continue
 			}
 			next, certNotices, err = EvaluateCertExpiry(ctx, e.certs, e.rules, r, e.certExpiryWarningWindow, e.certRenewalStalledThreshold, now, e.logger)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindPatchStatus:
+			if e.nodes == nil {
+				e.logger.Warn("alerting: patch_status rule found but no node source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			next, patchNotices, err = EvaluatePatchStatus(ctx, e.nodes, e.metrics, r, e.patchStatusThreshold, now, e.logger)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
@@ -153,9 +170,9 @@ func (e *Engine) Tick(ctx context.Context) error {
 
 		switch {
 		case becameFiring:
-			e.dispatch(ctx, next, false, certNotices, taskFailureNotice)
+			e.dispatch(ctx, next, false, certNotices, patchNotices, taskFailureNotice)
 		case becameResolved:
-			e.dispatch(ctx, next, true, nil, "")
+			e.dispatch(ctx, next, true, nil, nil, "")
 		}
 	}
 
@@ -168,7 +185,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 // persisted successfully before dispatch is called, so a lost
 // notification doesn't leave the rule's stored state inconsistent with
 // reality, only the operator momentarily uninformed.
-func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotices []string, taskFailureNotice string) {
+func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotices, patchNotices []string, taskFailureNotice string) {
 	// r.Enabled is already resolved against its attached channel
 	// (scanRule): a disabled channel silences the rule the same way
 	// DeployDispatcher.Dispatch skips a target with a disabled channel.
@@ -182,6 +199,9 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	}
 	if r.Kind == KindCertExpiry && !resolved {
 		ev.CertNotices = certNotices
+	}
+	if r.Kind == KindPatchStatus && !resolved {
+		ev.PatchNotices = patchNotices
 	}
 	if r.Kind == KindScheduledTaskFailure && !resolved {
 		ev.TaskFailureNotice = taskFailureNotice

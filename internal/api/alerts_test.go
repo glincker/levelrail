@@ -150,6 +150,32 @@ func TestHandleCreateAlertRule_CertExpirySuccess(t *testing.T) {
 	}
 }
 
+// TestHandleCreateAlertRule_PatchStatusSuccess checks that a
+// kind=patch_status rule needs none of the threshold/crashloop fields
+// either: EvaluatePatchStatus (internal/alerting/patch_status.go) watches
+// every node platform-wide, not this rule's own ResourceID, the same
+// shape kind=cert_expiry already uses.
+func TestHandleCreateAlertRule_PatchStatusSuccess(t *testing.T) {
+	rt, db, _ := newTestRouterWithAlerting(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	body := `{"name":"patch status watch","kind":"patch_status","notify_url":"https://example.com/hook","enabled":true}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/alerts", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	var got ruleResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Kind != "patch_status" {
+		t.Errorf("Kind = %q, want patch_status", got.Kind)
+	}
+}
+
 // TestHandleCreateAlertRule_ScheduledTaskFailureSuccess checks that a
 // kind=scheduled_task_failure rule requires and accepts a
 // scheduled_task_id belonging to this app, reusing

@@ -5,16 +5,17 @@
 // two separate response types, because that's what the server actually
 // sends back for both kinds through one endpoint.
 
-// cert_expiry watches every certificate on the whole control plane, not
-// just this app's own domains: none of the threshold/crashloop fields
-// below apply to it, matching internal/alerting.Rule's own shape.
-// scheduled_task_failure watches one of this app's scheduled tasks'
-// consecutive-failure count, reusing restart_count_threshold as that
-// count's threshold; see internal/alerting.Rule's own doc comment.
+// just this app's own domains, and patch_status watches every node's
+// pending OS security patches the same way: neither uses any of the
+// threshold/crashloop fields below, matching internal/alerting.Rule's
+// own shape. scheduled_task_failure watches one of this app's scheduled
+// tasks' consecutive-failure count, reusing restart_count_threshold as
+// that count's threshold; see internal/alerting.Rule's own doc comment.
 export type AlertRuleKind =
   | 'threshold'
   | 'crashloop'
   | 'cert_expiry'
+  | 'patch_status'
   | 'scheduled_task_failure'
 
 export type Comparator = '>' | '<' | '>=' | '<='
