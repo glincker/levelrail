@@ -162,6 +162,9 @@ func appsLogsUsage(prog string) string {
 Searches an app's already-stored log entries (historical search, not a
 live tail; there is no streaming log route today).
 
+Output goes to stdout only (errors and usage go to stderr), so redirect
+it to save a copy: %[1]s apps logs <name> --since 24h > app.log
+
 Flags:
   --since string          how far back to search, e.g. "1h", "30m" (default: 1h)
   --from string            RFC3339 start of the search window (overrides --since)
