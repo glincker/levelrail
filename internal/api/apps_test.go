@@ -836,6 +836,241 @@ func TestHandleUpdateApp_ResourcesAppliedLive(t *testing.T) {
 	}
 }
 
+// TestHandleUpdateApp_EnvDirty covers the restart-required signal an
+// env-var save must set: unlike a health check or resource limit save,
+// there is no live-apply path for env vars (a container's environment is
+// immutable after creation), so the save must at least make the pending
+// state honest and persistent instead of silently doing nothing.
+func TestHandleUpdateApp_EnvDirty(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	// Saving an env change sets env_dirty true, both in the response and
+	// in the store.
+	update := `{"name":"web","image":"levelrail/web:1","port":3000,"env":{"FOO":"bar"}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", update))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	var resp appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if !resp.EnvDirty {
+		t.Error("env_dirty = false in response, want true after an env change")
+	}
+	saved, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !saved.EnvDirty {
+		t.Error("EnvDirty = false in store, want true after an env change")
+	}
+
+	// A later save that leaves Env untouched (e.g. a health check edit
+	// sent through the same PUT) must not clear the flag: it stays
+	// pending until a real restart or redeploy.
+	updateHealth := `{"name":"web","image":"levelrail/web:1","port":3000,"env":{"FOO":"bar"},"health":{"readiness":{"path":"/healthz"}}}`
+	rec2 := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec2, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", updateHealth))
+	if rec2.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec2.Code, http.StatusOK, rec2.Body.String())
+	}
+	saved, err = db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !saved.EnvDirty {
+		t.Error("EnvDirty = false after an unrelated save, want it to stay true")
+	}
+}
+
+// TestHandleUpdateApp_EnvDirty_ImageChangeClears covers the case where
+// this same PUT also changes Image: that is functionally the same
+// redeploy action as handleTriggerDeploy (see this handler's own doc
+// comment on imageChanged), so the fresh container it creates picks up
+// whatever Env is being saved right now, and env_dirty must not be left
+// set.
+func TestHandleUpdateApp_EnvDirty_ImageChangeClears(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000, EnvDirty: true}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	update := `{"name":"web","image":"levelrail/web:2","port":3000,"env":{"FOO":"bar"}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", update))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	var resp appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if resp.EnvDirty {
+		t.Error("env_dirty = true in response, want false when this save also redeploys a new image")
+	}
+	saved, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if saved.EnvDirty {
+		t.Error("EnvDirty = true in store, want false when this save also redeploys a new image")
+	}
+}
+
+// TestHandleCreateApp_EnvDirty_AlwaysFalse guards against a client lying
+// about a brand-new app's env_dirty: toDesiredService never carries it
+// into the INSERT, so the response must never echo anything but false.
+func TestHandleCreateApp_EnvDirty_AlwaysFalse(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	create := `{"name":"web","image":"levelrail/web:1","port":3000,"env_dirty":true}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", create))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	var resp appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if resp.EnvDirty {
+		t.Error("env_dirty = true in create response, want false regardless of client input")
+	}
+	saved, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if saved.EnvDirty {
+		t.Error("EnvDirty = true in store, want false for a brand-new app")
+	}
+}
+
+// TestHandleRestartApp_ClearsEnvDirty covers RestartService's own clearing
+// of env_dirty at the HTTP layer: a restart is a real container
+// recreation, so it must clear the restart-required flag that an earlier
+// env save set.
+func TestHandleRestartApp_ClearsEnvDirty(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000, EnvDirty: true}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/restart", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.EnvDirty {
+		t.Error("EnvDirty = true after restart, want false")
+	}
+}
+
+// TestHandleTriggerDeploy_ClearsEnvDirty covers handleTriggerDeploy's own
+// clearing of env_dirty: rollback runs through this same endpoint (see
+// its own doc comment), and both a forward redeploy and a rollback
+// create a fresh container that picks up whatever Env is currently saved.
+func TestHandleTriggerDeploy_ClearsEnvDirty(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000, EnvDirty: true}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/deploys", `{"image":"levelrail/web:2"}`))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.EnvDirty {
+		t.Error("EnvDirty = true after a deploy trigger, want false")
+	}
+}
+
+// TestHandleStartApp_ClearsEnvDirty covers UpdateServiceSuspended(false)'s
+// own clearing of env_dirty: resuming a stopped app makes the reconciler
+// create brand new containers (every replica was torn down while
+// suspended), the same fresh-container moment restart/redeploy clear it
+// on.
+func TestHandleStartApp_ClearsEnvDirty(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000, EnvDirty: true}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	if err := db.UpdateServiceSuspended(ctx, "web", true); err != nil {
+		t.Fatalf("seed suspended: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/start", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.EnvDirty {
+		t.Error("EnvDirty = true after start, want false")
+	}
+}
+
+// TestHandleStopApp_DoesNotClearEnvDirty: unlike start, stopping an app
+// does not recreate anything, so a pending env edit must stay flagged.
+func TestHandleStopApp_DoesNotClearEnvDirty(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000, EnvDirty: true}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/stop", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !got.EnvDirty {
+		t.Error("EnvDirty = false after stop, want true (stopping does not recreate a container)")
+	}
+}
+
 func TestHandleDeleteApp(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

@@ -57,6 +57,10 @@ type AppResource struct {
 	// EnvironmentID mirrors internal/api's appResource.EnvironmentID:
 	// response-only, set via PUT /api/v1/apps/{name}/environment.
 	EnvironmentID string `json:"environment_id,omitempty"`
+	// EnvDirty mirrors internal/api's appResource.EnvDirty: true means
+	// Env was saved since the running container was last recreated, so
+	// the change is not live yet. Clears on restart or redeploy.
+	EnvDirty bool `json:"env_dirty"`
 }
 
 // LogDrainResource mirrors internal/api's logDrainResource

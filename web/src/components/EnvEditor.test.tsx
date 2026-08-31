@@ -43,6 +43,7 @@ const app: AppDetail = {
   strategy: 'rolling',
   replicas: 1,
   suspended: false,
+  env_dirty: false,
   env: { FOO: 'own-value', SHADOWED: 'own-shadow' },
   project_id: 'proj_1',
   environment_id: 'env_1',

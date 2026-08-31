@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"net/http"
 	"strings"
 
@@ -129,6 +130,11 @@ type appResource struct {
 	// still means the value is saved and will apply next time the
 	// container is recreated; it never means the save itself failed.
 	ResourcesAppliedLive bool `json:"resources_applied_live,omitempty"`
+	// EnvDirty is response-only (store.DesiredService.EnvDirty's own doc
+	// comment): true means an env save is not live on the running
+	// container yet. No omitempty: like Suspended, always a definite
+	// state.
+	EnvDirty bool `json:"env_dirty"`
 }
 
 func toAppResource(svc store.DesiredService) appResource {
@@ -170,6 +176,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		Suspended:          svc.Suspended,
 		AppID:              svc.AppID,
 		LogDrain:           svc.LogDrain,
+		EnvDirty:           svc.EnvDirty,
 	}
 }
 
@@ -359,6 +366,12 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		rt.recordPlainDeployAttempt(r.Context(), req.Name, req.Image)
 	}
 
+	// A new app is never dirty regardless of what the client sent:
+	// toDesiredService never carries EnvDirty into the INSERT (it's
+	// response-only), so echoing anything but false here would lie about
+	// what was actually persisted.
+	req.EnvDirty = false
+
 	writeJSON(w, http.StatusCreated, req)
 }
 
@@ -408,7 +421,19 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := rt.apps.SaveDesiredService(r.Context(), req.toDesiredService()); err != nil {
+	// imageChanged also makes this PUT a real redeploy (see
+	// recordPlainDeployAttempt below), so it clears EnvDirty the same way
+	// RestartService/handleTriggerDeploy do; otherwise EnvDirty latches
+	// true the moment Env changes and stays true across an unrelated
+	// save (e.g. a health check edit sent via the same PUT).
+	imageChanged := req.Image != existing.Image
+	desired := req.toDesiredService()
+	if imageChanged {
+		desired.EnvDirty = false
+	} else {
+		desired.EnvDirty = existing.EnvDirty || !maps.Equal(existing.Env, req.Env)
+	}
+	if err := rt.apps.SaveDesiredService(r.Context(), desired); err != nil {
 		var domainTaken *store.ErrDomainTaken
 		if errors.As(err, &domainTaken) {
 			writeError(w, http.StatusConflict, domainTaken.Error())
@@ -422,7 +447,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	// handleTriggerDeploy, which already records one: an ordinary PUT
 	// that happens to change Image must not be a blind spot in deploy
 	// history just because it went through this endpoint instead.
-	if req.Image != existing.Image {
+	if imageChanged {
 		rt.recordPlainDeployAttempt(r.Context(), name, req.Image)
 	}
 	// SaveDesiredService never touches node_id or project_id (their own
@@ -442,6 +467,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	// own doc comment establishes.
 	if saved, err := rt.apps.GetDesiredService(r.Context(), name); err == nil {
 		req.ResourcesAppliedLive = rt.applyResourcesLiveToReplicas(r.Context(), *saved)
+		req.EnvDirty = saved.EnvDirty
 	}
 	writeJSON(w, http.StatusOK, req)
 }

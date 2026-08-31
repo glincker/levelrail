@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
+import { useRestartRequiredToast } from '../hooks/useRestartRequiredToast'
 import { projectDetailQueryOptions } from '../queries/projects'
 import { organizationEnvQueryOptions } from '../queries/organizationEnv'
 import { projectEnvQueryOptions } from '../queries/projectEnv'
@@ -10,7 +11,6 @@ import { computeInheritedEnv, inheritedOnlyEnv } from '../lib/envProvenance'
 import { EnvVarsForm } from './EnvVarsForm'
 import { EnvActivityPanel } from './EnvActivityPanel'
 import { Badge } from '@/components/ui/badge'
-import { toast } from '@/components/ui/toast'
 
 // Deliberately plain string values only: internal/deploy.requireNoUnresolvedEnv
 // still rejects app.yaml's `{ secret: true }` / `{ from: ... }` env
@@ -19,6 +19,7 @@ import { toast } from '@/components/ui/toast'
 // if this editor tried.
 export function EnvEditor({ app }: { app: AppDetail }) {
   const updateApp = useUpdateApp(app.name)
+  const notifyRestartRequired = useRestartRequiredToast()
 
   const projectId = app.project_id
   const environmentId = app.environment_id
@@ -88,7 +89,7 @@ export function EnvEditor({ app }: { app: AppDetail }) {
             { ...app, env },
             {
               onSuccess: () => {
-                toast.add({ title: 'Variables saved.', type: 'success' })
+                notifyRestartRequired(app.name, 'Variables saved.')
               },
             },
           )
