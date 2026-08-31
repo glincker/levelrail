@@ -39,6 +39,7 @@ type Service struct {
 	Ports       []Port
 	Volumes     []Volume
 	Labels      map[string]string
+	Healthcheck *Healthcheck
 }
 
 // Volume is one short-form "name:/container/path" entry.
