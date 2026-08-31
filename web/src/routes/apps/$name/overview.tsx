@@ -9,14 +9,7 @@ import { AppOverviewHero } from '../../../components/AppOverviewHero'
 import { AppQuickStats } from '../../../components/AppQuickStats'
 import { AppOverview } from '../../../components/AppOverview'
 import { DeployInProgressBanner } from '../../../components/DeployInProgressBanner'
-import { PortEditor } from '../../../components/PortEditor'
-import { DeployStrategyEditor } from '../../../components/DeployStrategyEditor'
 import { ConditionsPanel } from '../../../components/ConditionsPanel'
-import { GitSourceCard } from '../../../components/GitSourceCard'
-import { PreviewEnvironmentsCard } from '../../../components/PreviewEnvironmentsCard'
-import { StorageAttachmentCard } from '../../../components/StorageAttachmentCard'
-import { LogDrainCard } from '../../../components/LogDrainCard'
-import { DatabaseAttachmentCard } from '../../../components/DatabaseAttachmentCard'
 import { PageSpinner } from '@/components/ui/page-spinner'
 
 // Former "overview" tab of routes/apps/$name.tsx's Tabs component, now a
@@ -30,7 +23,11 @@ import { PageSpinner } from '@/components/ui/page-spinner'
 // is the redesigned top of the page; AppOverview below it is the
 // pre-existing raw field grid (memory/CPU/strategy/replicas/probes,
 // plus the Node/Project move dialogs), unchanged, just no longer the
-// only thing on the page.
+// only thing on the page. Git source, preview environments, storage/log
+// drain/database attachments, port, and deploy strategy moved out to
+// their own Source/Deploy settings/Integrations tabs (source.tsx,
+// deploy-settings.tsx, integrations.tsx): this page is an at-a-glance
+// summary again, not every editor stacked in one scroll.
 //
 // This route's own loader primes deploy-attempts (queries/deployAttempts.ts),
 // the same query DeployAttemptsList already uses, so a running latest
@@ -62,13 +59,6 @@ function OverviewSection() {
       <AppOverviewHero app={app} conditions={conditions} />
       <AppQuickStats appName={name} />
       <AppOverview app={app} />
-      <GitSourceCard app={app} />
-      <PreviewEnvironmentsCard app={app} />
-      <StorageAttachmentCard app={app} />
-      <LogDrainCard app={app} />
-      <DatabaseAttachmentCard app={app} />
-      <PortEditor app={app} />
-      <DeployStrategyEditor app={app} />
       <ConditionsPanel conditions={conditions} />
     </div>
   )
