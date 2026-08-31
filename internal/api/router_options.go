@@ -169,6 +169,15 @@ func WithBackupVerifier(v BackupVerifier) Option {
 	return func(rt *Router) { rt.backupVerifier = v }
 }
 
+// WithBackupTargetTester enables POST /api/v1/backup-targets/{id}/test.
+// Without one configured (the default), that route returns 501, the same
+// "not configured" shape WithRegistryAuthTester's absence produces for
+// registry credentials: both need a live secretsManager to resolve a
+// stored credential before using it.
+func WithBackupTargetTester(t BackupTargetTester) Option {
+	return func(rt *Router) { rt.backupTargetTester = t }
+}
+
 // WithRestoreRunner enables POST /api/v1/databases/{name}/restore.
 // Without one configured (the default), that route returns 501, the same
 // "not configured" shape WithBackupRunner's absence produces; listing

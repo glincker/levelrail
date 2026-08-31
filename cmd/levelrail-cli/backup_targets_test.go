@@ -207,6 +207,28 @@ func TestRun_BackupTargetsDelete_Conflict(t *testing.T) {
 	}
 }
 
+func TestRun_BackupTargetsTest(t *testing.T) {
+	srv, gotPath, gotMethod := newNoContentEchoServer(t)
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"backup-targets", "test", "bkt_1", "--api-url", srv.URL})
+	if *gotMethod != http.MethodPost || *gotPath != "/api/v1/backup-targets/bkt_1/test" {
+		t.Errorf("request = %s %s, want POST /api/v1/backup-targets/bkt_1/test", *gotMethod, *gotPath)
+	}
+	if !strings.Contains(stdout, "connected successfully") {
+		t.Errorf("stdout = %q, want a success confirmation", stdout)
+	}
+}
+
+func TestRun_BackupTargetsTest_Failure(t *testing.T) {
+	srv := newJSONErrorServer(t, http.StatusBadGateway, `{"error":"authentication rejected by the storage endpoint: check the access key id and secret access key"}`)
+
+	stderr := runCLIExpectAPIError(t, []string{"backup-targets", "test", "bkt_1", "--api-url", srv.URL})
+	if !strings.Contains(stderr, "authentication rejected") {
+		t.Errorf("stderr = %q, want the server's rejection message", stderr)
+	}
+}
+
 func TestRun_BackupTargets_Help(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"backup-targets", "-h"}, &stdout, &stderr, envMap())

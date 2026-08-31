@@ -1761,6 +1761,14 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			// object for corruption, never attempting a live restore: the
 			// same instance scheduler.Verifier below uses automatically.
 			api.WithBackupVerifier(backupVerifyRunner),
+			// Probes a target's bucket over its stored credentials with a
+			// cheap HeadBucket call: same secretsManager dependency, same
+			// nil-interface hazard as everything else in this block.
+			api.WithBackupTargetTester(&backup.TargetTester{
+				Store:   db,
+				Secrets: secretsManager,
+				Tester:  backup.S3Tester{},
+			}),
 			// GitHub App connection: reads and writes through
 			// secretsManager directly rather than a separate runner
 			// type, see api.GitHubAppSecrets's own doc comment for why.

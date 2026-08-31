@@ -1,4 +1,7 @@
-import { CloudArrowUpIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  CloudArrowUpIcon,
+  PlugsConnectedIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   Table,
   TableBody,
@@ -8,13 +11,52 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { toast } from '@/components/ui/toast'
 import { DeleteBackupTargetDialog } from './DeleteBackupTargetDialog'
 import { PROVIDER_LABEL } from './backupTargetProvider'
+import { useTestBackupTarget } from '../queries/backupTargets'
 import type { BackupTarget } from '../types/backupTarget'
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString()
+}
+
+// Mirrors RegistryCredentialTable.tsx's own TestButton exactly: same
+// loading/success/failure states, same toast pattern, for the
+// identical "verify a stored credential by actually using it, once, on
+// demand" action against a different resource.
+function TestButton({ target }: { target: BackupTarget }) {
+  const testTarget = useTestBackupTarget()
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      disabled={testTarget.isPending}
+      onClick={() => {
+        testTarget.mutate(target.id, {
+          onSuccess: () => {
+            toast.add({
+              title: `"${target.name}" connected successfully.`,
+              type: 'success',
+            })
+          },
+          onError: (error) => {
+            toast.add({
+              title: `"${target.name}" failed to connect.`,
+              description: error.message,
+              type: 'error',
+            })
+          },
+        })
+      }}
+    >
+      <PlugsConnectedIcon className="size-3.5" aria-hidden="true" />
+      {testTarget.isPending ? 'Testing...' : 'Test connection'}
+    </Button>
+  )
 }
 
 // Only the destination itself: bucket, provider, region/endpoint,
@@ -79,7 +121,10 @@ export function BackupTargetTable({ targets }: { targets: BackupTarget[] }) {
                 {formatDate(target.created_at)}
               </TableCell>
               <TableCell className="text-right">
-                <DeleteBackupTargetDialog target={target} />
+                <div className="flex justify-end gap-2">
+                  <TestButton target={target} />
+                  <DeleteBackupTargetDialog target={target} />
+                </div>
               </TableCell>
             </TableRow>
           ))}

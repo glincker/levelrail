@@ -136,3 +136,29 @@ export function useDeleteBackupTarget() {
     },
   })
 }
+
+// POST /api/v1/backup-targets/{id}/test (handleTestBackupTarget): probes
+// the target's stored credentials against its configured bucket, without
+// uploading or deleting anything. 204 on success, 502 with a specific
+// reason on failure, the same shape registryCredentials.ts's
+// testRegistryCredential already establishes for its own on-demand
+// verification.
+export async function testBackupTarget(id: string): Promise<void> {
+  const res = await fetch(
+    `/api/v1/backup-targets/${encodeURIComponent(id)}/test`,
+    { method: 'POST' },
+  )
+  if (res.status === 204) {
+    return
+  }
+  throw new ApiError(
+    res.status,
+    await readErrorMessage(res, `test backup target failed: ${res.status}`),
+  )
+}
+
+export function useTestBackupTarget() {
+  return useMutation<void, ApiError, string>({
+    mutationFn: testBackupTarget,
+  })
+}
