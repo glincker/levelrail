@@ -28,6 +28,8 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesGet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
 		return runDatabasesDelete(prog, args[1:], stdout, stderr, lookupEnv)
+	case "resource-recommendation":
+		return runDatabasesResourceRecommendation(prog, args[1:], stdout, stderr, lookupEnv)
 	case "set-project":
 		return runDatabasesSetProject(prog, args[1:], stdout, stderr, lookupEnv)
 	case "clear-project":
@@ -46,6 +48,7 @@ func databasesUsage(prog string) string {
   %[1]s databases list [flags]         list databases
   %[1]s databases get <name> [flags]   show one database
   %[1]s databases delete <name> [flags]  remove a database's desired state
+  %[1]s databases resource-recommendation <name> [flags]  suggest memory/CPU limits from historical usage
   %[1]s databases set-project <name> <project-id> [flags]  move a database into a project
   %[1]s databases clear-project <name> [flags]  remove a database's project assignment
 

@@ -19,8 +19,23 @@ func registerResourceRecommendationTools(server *mcp.Server, client *apiclient.C
 		}
 		return nil, result, nil
 	})
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "get_database_resource_recommendation",
+		Description: "Suggest memory and CPU limits for a managed database based on its own historical usage (p95/p99 over a lookback window) and current limits: the database-kind counterpart to get_resource_recommendation, same deterministic engine and same OOM-signal weighting. Read-only, changes nothing, and the suggestion is never applied automatically.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in databaseResourceRecommendationInput) (*mcp.CallToolResult, apiclient.ResourceRecommendationResource, error) {
+		result, err := client.GetDatabaseResourceRecommendation(ctx, in.Name)
+		if err != nil {
+			return nil, apiclient.ResourceRecommendationResource{}, fmt.Errorf("get resource recommendation for database %q: %w", in.Name, err)
+		}
+		return nil, result, nil
+	})
 }
 
 type resourceRecommendationInput struct {
 	Name string `json:"name" jsonschema:"the app's name"`
+}
+
+type databaseResourceRecommendationInput struct {
+	Name string `json:"name" jsonschema:"the database's name"`
 }

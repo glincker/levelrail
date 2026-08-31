@@ -61,7 +61,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"git-source":         {subs: map[string]*cmdNode{"get": nil, "set": nil, "delete": nil}},
 		"webhook-deliveries": {subs: map[string]*cmdNode{"list": nil, "replay": nil}},
 	}},
-	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "delete": nil, "set-project": nil, "clear-project": nil}},
+	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "delete": nil, "resource-recommendation": nil, "set-project": nil, "clear-project": nil}},
 	"auth":      {subs: map[string]*cmdNode{"login": nil, "whoami": nil}},
 	"tokens":    {subs: map[string]*cmdNode{"create": nil, "list": nil, "revoke": nil}},
 	"domains": {subs: map[string]*cmdNode{

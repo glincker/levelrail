@@ -1036,11 +1036,15 @@ type DimensionRecommendationResource struct {
 }
 
 // ResourceRecommendationResource mirrors internal/api's
-// resourceRecommendationResource (internal/api/resource_recommendation.go):
-// GET /api/v1/apps/{name}/resource-recommendation's response, a
-// deterministic memory/CPU right-sizing suggestion synthesized from
-// internal/rightsizing over the app's own historical usage samples,
-// never from an external model, and never applied automatically.
+// resourceRecommendationResource: the shared response shape for both
+// GET /api/v1/apps/{name}/resource-recommendation
+// (internal/api/resource_recommendation.go) and
+// GET /api/v1/databases/{name}/resource-recommendation
+// (internal/api/database_resource_recommendation.go), a deterministic
+// memory/CPU right-sizing suggestion synthesized from internal/rightsizing
+// over the resource's own historical usage samples, never from an
+// external model, and never applied automatically. ServiceName holds the
+// app or database name either way.
 type ResourceRecommendationResource struct {
 	ServiceName    string                          `json:"service_name"`
 	LookbackWindow string                          `json:"lookback_window"`
