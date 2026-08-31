@@ -89,18 +89,19 @@ type (
 	drainNodeResponse           = apiclient.DrainNodeResponse
 	nodePatchStatusResource     = apiclient.NodePatchStatusResource
 
-	organizationResource          = apiclient.OrganizationResource
-	createOrganizationRequest     = apiclient.CreateOrganizationRequest
-	projectResource               = apiclient.ProjectResource
-	createProjectRequest          = apiclient.CreateProjectRequest
-	setProjectOrganizationRequest = apiclient.SetProjectOrganizationRequest
-	setAppProjectRequest          = apiclient.SetAppProjectRequest
-	setDatabaseProjectRequest     = apiclient.SetDatabaseProjectRequest
-	environmentResource           = apiclient.EnvironmentResource
-	createEnvironmentRequest      = apiclient.CreateEnvironmentRequest
-	setAppEnvironmentRequest      = apiclient.SetAppEnvironmentRequest
-	previewEnvironmentResource    = apiclient.PreviewEnvironmentResource
-	setPreviewEnabledRequest      = apiclient.SetPreviewEnabledRequest
+	organizationResource           = apiclient.OrganizationResource
+	createOrganizationRequest      = apiclient.CreateOrganizationRequest
+	projectResource                = apiclient.ProjectResource
+	createProjectRequest           = apiclient.CreateProjectRequest
+	setProjectOrganizationRequest  = apiclient.SetProjectOrganizationRequest
+	setAppProjectRequest           = apiclient.SetAppProjectRequest
+	setDatabaseProjectRequest      = apiclient.SetDatabaseProjectRequest
+	environmentResource            = apiclient.EnvironmentResource
+	createEnvironmentRequest       = apiclient.CreateEnvironmentRequest
+	setAppEnvironmentRequest       = apiclient.SetAppEnvironmentRequest
+	previewEnvironmentResource     = apiclient.PreviewEnvironmentResource
+	setPreviewEnabledRequest       = apiclient.SetPreviewEnabledRequest
+	sweepPreviewEnvironmentsResult = apiclient.SweepPreviewEnvironmentsResult
 
 	userResource               = apiclient.UserResource
 	createUserRequest          = apiclient.CreateUserRequest

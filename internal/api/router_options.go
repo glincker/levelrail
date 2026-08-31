@@ -366,6 +366,17 @@ func WithCertExpiryWarningWindow(d time.Duration) Option {
 	return func(rt *Router) { rt.certExpiryWarningWindow = d }
 }
 
+// WithPreviewTTL overrides how long a preview environment can go without
+// a webhook update before SweepStalePreviewEnvironments tears it down.
+// Without one configured (or passed as 0), defaultPreviewTTL (7 days)
+// applies. Same "no hardcoded thresholds, use env vars" shape as
+// WithCertExpiryWarningWindow: this package never reads the environment
+// directly, cmd/levelrail/main.go reads APP_PREVIEW_TTL and passes the
+// parsed duration here.
+func WithPreviewTTL(d time.Duration) Option {
+	return func(rt *Router) { rt.previewTTL = d }
+}
+
 // WithResourceRecommendationLookback overrides how far back GET
 // /api/v1/apps/{name}/resource-recommendation looks for usage history
 // (handleAppResourceRecommendation). Without one configured (or passed as

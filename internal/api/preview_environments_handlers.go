@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -22,13 +23,24 @@ type previewEnvironmentResource struct {
 	StatusReason string `json:"status_reason,omitempty"`
 	CreatedAt    string `json:"created_at"`
 	UpdatedAt    string `json:"updated_at"`
+	// Stale reports whether this preview is old enough that
+	// SweepStalePreviewEnvironments would tear it down on its next tick:
+	// UpdatedAt older than effectivePreviewTTL. A malformed UpdatedAt
+	// (should never happen; every write goes through
+	// time.Now().UTC().Format(time.RFC3339Nano)) is reported as not
+	// stale rather than guessed at.
+	Stale bool `json:"stale"`
 }
 
-func toPreviewEnvironmentResource(p store.PreviewEnvironment) previewEnvironmentResource {
+func (rt *Router) toPreviewEnvironmentResource(p store.PreviewEnvironment) previewEnvironmentResource {
+	stale := false
+	if updatedAt, err := time.Parse(time.RFC3339Nano, p.UpdatedAt); err == nil {
+		stale = time.Since(updatedAt) > rt.effectivePreviewTTL()
+	}
 	return previewEnvironmentResource{
 		PRNumber: p.PRNumber, PreviewAppID: p.PreviewAppID, Branch: p.Branch, HeadSHA: p.HeadSHA,
 		Domain: p.Domain, Status: p.Status, StatusReason: p.StatusReason,
-		CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
+		CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt, Stale: stale,
 	}
 }
 
@@ -49,7 +61,7 @@ func (rt *Router) handleListPreviewEnvironments(w http.ResponseWriter, r *http.R
 
 	out := make([]previewEnvironmentResource, 0, len(previews))
 	for _, p := range previews {
-		out = append(out, toPreviewEnvironmentResource(p))
+		out = append(out, rt.toPreviewEnvironmentResource(p))
 	}
 	writeJSON(w, http.StatusOK, out)
 }

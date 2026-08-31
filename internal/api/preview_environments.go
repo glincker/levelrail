@@ -26,6 +26,7 @@ type PreviewEnvironmentStore interface {
 	GetPreviewEnvironmentByAppAndPR(ctx context.Context, appName string, prNumber int) (*store.PreviewEnvironment, error)
 	ListPreviewEnvironmentsByApp(ctx context.Context, appName string) ([]store.PreviewEnvironment, error)
 	DeletePreviewEnvironment(ctx context.Context, id string) error
+	ListStalePreviewEnvironments(ctx context.Context, cutoff time.Time) ([]store.PreviewEnvironment, error)
 }
 
 // previewAppName is the naming scheme every preview deploys under. Every

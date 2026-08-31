@@ -59,10 +59,12 @@ describe('PreviewEnvironmentsCard', () => {
   let fetchMock: ReturnType<typeof vi.fn>
   let previewEnabled: boolean
   let gitSourceConnected: boolean
+  let staleFixture: boolean
 
   beforeEach(() => {
     previewEnabled = false
     gitSourceConnected = true
+    staleFixture = false
     fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrlOf(input)
       const method = init?.method ?? 'GET'
@@ -92,6 +94,7 @@ describe('PreviewEnvironmentsCard', () => {
                     status: 'active',
                     created_at: '2026-01-01T00:00:00Z',
                     updated_at: '2026-01-01T00:00:00Z',
+                    stale: staleFixture,
                   },
                 ]
               : [],
@@ -101,6 +104,9 @@ describe('PreviewEnvironmentsCard', () => {
       }
       if (url === '/api/v1/apps/demo-app/previews/42/teardown' && method === 'POST') {
         return Promise.resolve(fakeJsonResponse(null, 200))
+      }
+      if (url === '/api/v1/previews/sweep' && method === 'POST') {
+        return Promise.resolve(fakeJsonResponse({ swept: 1 }, 200))
       }
       return Promise.reject(new Error(`unexpected fetch: ${method} ${url}`))
     })
@@ -158,5 +164,33 @@ describe('PreviewEnvironmentsCard', () => {
         requestUrlOf(input as RequestInfo) === '/api/v1/apps/demo-app/previews/42/teardown' && (init as RequestInit)?.method === 'POST',
       )).toBe(true)
     })
+  })
+
+  it('shows a stale badge and sweep button for a stale preview, and sweeps on click', async () => {
+    previewEnabled = true
+    staleFixture = true
+    const user = userEvent.setup()
+    renderCard()
+
+    await screen.findByText('PR #42')
+    expect(screen.getByText('Stale')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /sweep stale previews/i }))
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([input, init]) =>
+        requestUrlOf(input as RequestInfo) === '/api/v1/previews/sweep' && (init as RequestInit)?.method === 'POST',
+      )).toBe(true)
+    })
+  })
+
+  it('omits the stale badge and sweep button when no preview is stale', async () => {
+    previewEnabled = true
+    staleFixture = false
+    renderCard()
+
+    await screen.findByText('PR #42')
+    expect(screen.queryByText('Stale')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /sweep stale previews/i })).not.toBeInTheDocument()
   })
 })

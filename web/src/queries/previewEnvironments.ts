@@ -108,3 +108,30 @@ export function useSetPreviewEnabled(appName: string) {
     },
   })
 }
+
+// sweepStalePreviewEnvironments/useSweepStalePreviewEnvironments:
+// POST /api/v1/previews/sweep, the manual trigger for the TTL fallback
+// that already runs automatically in the background
+// (internal/api/preview_environments_sweep.go), tearing down any preview
+// whose pull-request-closed webhook never arrived. Cross-app, so success
+// invalidates every app's own preview list, not just one.
+export async function sweepStalePreviewEnvironments(): Promise<{ swept: number }> {
+  const res = await fetch('/api/v1/previews/sweep', { method: 'POST' })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `sweep preview environments failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as { swept: number }
+}
+
+export function useSweepStalePreviewEnvironments() {
+  const queryClient = useQueryClient()
+  return useMutation<{ swept: number }, ApiError, void>({
+    mutationFn: () => sweepStalePreviewEnvironments(),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: previewEnvironmentKeys.all })
+    },
+  })
+}

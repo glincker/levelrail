@@ -1,6 +1,8 @@
 import {
   ArrowSquareOutIcon,
+  BroomIcon,
   CheckCircleIcon,
+  ClockIcon,
   GitPullRequestIcon,
   SpinnerIcon,
   TrashIcon,
@@ -16,6 +18,7 @@ import { toast } from '@/components/ui/toast'
 import { useGitSource } from '../queries/gitSources'
 import {
   useSetPreviewEnabled,
+  useSweepStalePreviewEnvironments,
   useTeardownPreviewEnvironment,
   usePreviewEnvironments,
 } from '../queries/previewEnvironments'
@@ -71,10 +74,12 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
   const gitSource = useGitSource(app.name)
   const setPreviewEnabled = useSetPreviewEnabled(app.name)
   const teardown = useTeardownPreviewEnvironment(app.name)
+  const sweep = useSweepStalePreviewEnvironments()
   const previews = usePreviewEnvironments(app.name)
 
   const connected = !!gitSource.data
   const enabled = gitSource.data?.preview_enabled ?? false
+  const hasStale = previews.data?.some((p) => p.stale) ?? false
 
   function toggle(next: boolean) {
     setPreviewEnabled.mutate(next, {
@@ -101,13 +106,39 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
     })
   }
 
+  function sweepStale() {
+    sweep.mutate(undefined, {
+      onSuccess: (result) => {
+        toast.add({ title: `Swept ${result.swept} stale preview environment(s) across all apps.`, type: 'success' })
+      },
+      onError: (error: ApiError) => {
+        toast.add({ title: 'Could not sweep stale previews.', description: error.message, type: 'error' })
+      },
+    })
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <GitPullRequestIcon className="size-4 text-muted-foreground" />
-          Preview environments
-        </CardTitle>
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2">
+            <GitPullRequestIcon className="size-4 text-muted-foreground" />
+            Preview environments
+          </CardTitle>
+          {hasStale ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={sweep.isPending}
+              onClick={sweepStale}
+              title="Tears down every stale preview across all apps, not just this one."
+            >
+              <BroomIcon />
+              Sweep stale previews
+            </Button>
+          ) : null}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between gap-4">
@@ -144,6 +175,12 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-sm">PR #{preview.pr_number}</span>
                       <PreviewStatusBadge status={preview.status} />
+                      {preview.stale ? (
+                        <Badge variant="warning" className="rounded-full">
+                          <ClockIcon className="size-3" aria-hidden="true" />
+                          Stale
+                        </Badge>
+                      ) : null}
                     </div>
                     <p className="truncate text-xs text-muted-foreground">
                       <span className="font-mono">{preview.branch}</span>

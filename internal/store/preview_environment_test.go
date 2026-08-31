@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 )
 
 func testPreviewEnvironment() PreviewEnvironment {
@@ -128,6 +129,35 @@ func TestDeletePreviewEnvironment_NotFound(t *testing.T) {
 	err := db.DeletePreviewEnvironment(context.Background(), "prev_missing")
 	if !errors.Is(err, ErrPreviewEnvironmentNotFound) {
 		t.Fatalf("DeletePreviewEnvironment() error = %v, want ErrPreviewEnvironmentNotFound", err)
+	}
+}
+
+func TestListStalePreviewEnvironments(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	stale := testPreviewEnvironment()
+	stale.ID, stale.UpdatedAt = "prev_stale", "2020-01-01T00:00:00Z"
+	fresh := testPreviewEnvironment()
+	fresh.ID, fresh.PRNumber, fresh.PreviewAppID, fresh.UpdatedAt = "prev_fresh", 7, "web-pr-7", "2030-01-01T00:00:00Z"
+
+	for _, p := range []PreviewEnvironment{stale, fresh} {
+		if err := db.SavePreviewEnvironment(ctx, p); err != nil {
+			t.Fatalf("SavePreviewEnvironment(%q) error = %v", p.ID, err)
+		}
+	}
+
+	cutoff, err := time.Parse(time.RFC3339Nano, "2025-01-01T00:00:00Z")
+	if err != nil {
+		t.Fatalf("time.Parse() error = %v", err)
+	}
+
+	got, err := db.ListStalePreviewEnvironments(ctx, cutoff)
+	if err != nil {
+		t.Fatalf("ListStalePreviewEnvironments() error = %v", err)
+	}
+	if len(got) != 1 || got[0].ID != stale.ID {
+		t.Fatalf("ListStalePreviewEnvironments() = %+v, want only %q", got, stale.ID)
 	}
 }
 

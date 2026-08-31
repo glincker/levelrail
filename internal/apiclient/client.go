@@ -1123,6 +1123,15 @@ func (c *Client) SetPreviewEnabled(ctx context.Context, appName string, enabled 
 	return out, err
 }
 
+// SweepPreviewEnvironments calls POST /api/v1/previews/sweep: the manual
+// trigger for the TTL fallback that tears down any preview environment
+// whose pull-request-closed webhook never arrived, cross-app.
+func (c *Client) SweepPreviewEnvironments(ctx context.Context) (SweepPreviewEnvironmentsResult, error) {
+	var out SweepPreviewEnvironmentsResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/previews/sweep", nil, &out)
+	return out, err
+}
+
 // SetEnvironmentEnv calls PUT /api/v1/environments/{id}/env: a full
 // replace, mirroring PUT /apps/{name}'s own env field semantics.
 func (c *Client) SetEnvironmentEnv(ctx context.Context, id string, vars map[string]string) (map[string]string, error) {

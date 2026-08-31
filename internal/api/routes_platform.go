@@ -61,6 +61,14 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/previews", rt.requireAbility(AbilityRead, rt.handleListPreviewEnvironments))
 	mux.HandleFunc("POST /api/v1/apps/{name}/previews/{number}/teardown", rt.requireAbility(AbilityDeploy, rt.handleTeardownPreviewEnvironment))
 
+	// Preview environment TTL sweep (preview_environments_sweep.go): the
+	// fallback for a pull-request-closed webhook delivery that never
+	// arrived, cross-app since staleness is a control-plane-wide sweep,
+	// not a per-app one. Same manual-trigger-alongside-the-automatic-path
+	// shape as POST .../previews/{number}/teardown above, same
+	// AbilityDeploy tier.
+	mux.HandleFunc("POST /api/v1/previews/sweep", rt.requireAbility(AbilityDeploy, rt.handleSweepPreviewEnvironments))
+
 	// Telemetry query (TASKS.md 2.3): metrics and logs for one app,
 	// fanned out through a Federator (today, exactly one local source).
 	mux.HandleFunc("GET /api/v1/apps/{name}/metrics", rt.requireAbility(AbilityRead, rt.handleQueryMetrics))

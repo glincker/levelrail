@@ -839,12 +839,19 @@ type PreviewEnvironmentResource struct {
 	StatusReason string `json:"status_reason,omitempty"`
 	CreatedAt    string `json:"created_at"`
 	UpdatedAt    string `json:"updated_at"`
+	Stale        bool   `json:"stale"`
 }
 
 // SetPreviewEnabledRequest mirrors internal/api's
 // setPreviewEnabledRequest.
 type SetPreviewEnabledRequest struct {
 	Enabled bool `json:"enabled"`
+}
+
+// SweepPreviewEnvironmentsResult mirrors internal/api's
+// sweepPreviewEnvironmentsResponse (preview_environments_sweep.go).
+type SweepPreviewEnvironmentsResult struct {
+	Swept int `json:"swept"`
 }
 
 // SetAppDatabaseRequest mirrors internal/api's setAppDatabaseRequest
