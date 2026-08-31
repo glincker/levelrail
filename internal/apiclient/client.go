@@ -1223,6 +1223,14 @@ func (c *Client) GetSystemStatus(ctx context.Context) (SystemStatusResource, err
 	return out, err
 }
 
+// GetOnboardingState calls GET /api/v1/onboarding: whether the
+// first-run onboarding flow has been completed.
+func (c *Client) GetOnboardingState(ctx context.Context) (OnboardingStateResource, error) {
+	var out OnboardingStateResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/onboarding", nil, &out)
+	return out, err
+}
+
 // GetSystemDoctor calls GET /api/v1/system/doctor: the "levelrail-cli
 // doctor" preflight bundle, a superset of GetSystemStatus above.
 func (c *Client) GetSystemDoctor(ctx context.Context) (SystemDoctorResource, error) {
