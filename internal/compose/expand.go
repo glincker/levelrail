@@ -22,23 +22,28 @@ import (
 //
 // svc.Build.Type must be spec.BuildCompose; anything else is a caller
 // bug, not a user-facing error.
-func ExpandBuildService(svc spec.Service, sourceDir string) (map[string]spec.Service, error) {
+//
+// warnings carries one message per expanded service whose healthcheck:
+// is a real, non-HTTP check (see resolveHealthcheck): the caller is
+// expected to surface these to the operator, since that service's health
+// is deliberately left unset rather than guessed.
+func ExpandBuildService(svc spec.Service, sourceDir string) (services map[string]spec.Service, warnings []string, err error) {
 	if svc.Build.Type != spec.BuildCompose {
-		return nil, fmt.Errorf("compose: expand: build.type is %q, not %q", svc.Build.Type, spec.BuildCompose)
+		return nil, nil, fmt.Errorf("compose: expand: build.type is %q, not %q", svc.Build.Type, spec.BuildCompose)
 	}
 
 	composePath := filepath.Join(sourceDir, svc.Build.Path)
 	data, err := os.ReadFile(composePath) //nolint:gosec // svc.Build.Path is app.yaml-declared, resolved against a real git checkout, the same trust boundary every other build.type's own Path already has
 	if err != nil {
-		return nil, fmt.Errorf("compose: read %q: %w", svc.Build.Path, err)
+		return nil, nil, fmt.Errorf("compose: read %q: %w", svc.Build.Path, err)
 	}
 
 	f, err := Parse(data)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := f.ValidateForBuild(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// composeDir is the directory a compose service's own build.context
@@ -52,19 +57,24 @@ func ExpandBuildService(svc spec.Service, sourceDir string) (map[string]spec.Ser
 	out := make(map[string]spec.Service, len(f.Services))
 	for _, key := range sortedServiceNames(f) {
 		csvc := f.Services[key]
-		expanded, err := toSpecService(key, csvc, f.Domains[key], composeDir)
+		expanded, warning, err := toSpecService(key, csvc, f.Domains[key], composeDir)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
+		}
+		if warning != "" {
+			warnings = append(warnings, warning)
 		}
 		out[key] = expanded
 	}
-	return out, nil
+	return out, warnings, nil
 }
 
 // toSpecService converts one compose.Service, already validated by
 // ValidateForBuild, into the spec.Service ExpandBuildService returns
-// for it.
-func toSpecService(key string, csvc Service, domain string, composeDir string) (spec.Service, error) {
+// for it, plus a non-empty warning when its healthcheck: is a real,
+// non-HTTP check that has to be left untranslated (see
+// resolveHealthcheck).
+func toSpecService(key string, csvc Service, domain string, composeDir string) (spec.Service, string, error) {
 	for envKey, v := range csvc.Environment {
 		if vars := FindMagicVars(v); len(vars) > 0 {
 			// Magic vars (SERVICE_PASSWORD_*, SERVICE_FQDN_*, ...) need
@@ -75,7 +85,7 @@ func toSpecService(key string, csvc Service, domain string, composeDir string) (
 			// yet: passing the token through unresolved would silently
 			// start a container with a literal "${SERVICE_...}" string
 			// in its env, a worse failure than rejecting it loudly here.
-			return spec.Service{}, fmt.Errorf("compose: service %q: env %q: magic var %q is not supported for build.type: compose, use a literal value or a real secret instead", key, envKey, vars[0].Token)
+			return spec.Service{}, "", fmt.Errorf("compose: service %q: env %q: magic var %q is not supported for build.type: compose, use a literal value or a real secret instead", key, envKey, vars[0].Token)
 		}
 	}
 
@@ -110,7 +120,14 @@ func toSpecService(key string, csvc Service, domain string, composeDir string) (
 	for _, v := range csvc.Volumes {
 		s.Volumes = append(s.Volumes, spec.Volume{Name: v.Name, Path: v.ContainerPath})
 	}
-	return s, nil
+
+	health, warning, err := resolveHealthcheck(key, csvc.Healthcheck)
+	if err != nil {
+		return spec.Service{}, "", err
+	}
+	s.Health = health.toSpecHealth()
+
+	return s, warning, nil
 }
 
 // buildContext defaults an unset build.context (Compose's own rule: a

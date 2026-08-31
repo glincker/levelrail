@@ -39,7 +39,7 @@ func TestTemplates_ComposeParsesAndValidates(t *testing.T) {
 			if err := f.Validate(); err != nil {
 				t.Fatalf("template %q: (*compose.File).Validate() error = %v", tpl.ID, err)
 			}
-			if _, err := compose.ToDesiredServices("test", f); err != nil {
+			if _, _, err := compose.ToDesiredServices("test", f); err != nil {
 				t.Fatalf("template %q: compose.ToDesiredServices() error = %v", tpl.ID, err)
 			}
 		})
