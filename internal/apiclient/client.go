@@ -555,6 +555,106 @@ func (c *Client) TriggerRestore(ctx context.Context, name, backupID string) (Res
 	return out, err
 }
 
+// volumeBackupsPath builds /api/v1/apps/{name}/volumes/{volume}/backups,
+// shared by every app service volume backup method below, the same
+// path-building-helper shape domainAuthPath already establishes for its
+// own two-segment resource path.
+func volumeBackupsPath(name, volume string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/volumes/" + PathEscape(volume) + "/backups"
+}
+
+// TriggerVolumeBackup calls
+// POST /api/v1/apps/{name}/volumes/{volume}/backups: the app service
+// volume counterpart of TriggerBackup.
+func (c *Client) TriggerVolumeBackup(ctx context.Context, name, volume, targetID string) (BackupHistoryResource, error) {
+	var out BackupHistoryResource
+	err := c.do(ctx, http.MethodPost, volumeBackupsPath(name, volume), TriggerBackupRequest{TargetID: targetID}, &out)
+	return out, err
+}
+
+// ListVolumeBackups calls GET /api/v1/apps/{name}/volumes/{volume}/backups:
+// the app service volume counterpart of ListBackups.
+func (c *Client) ListVolumeBackups(ctx context.Context, name, volume string, opts ListBackupsOptions) ([]BackupHistoryResource, error) {
+	path := volumeBackupsPath(name, volume)
+	q := url.Values{}
+	if opts.Limit > 0 {
+		q.Set("limit", strconv.Itoa(opts.Limit))
+	}
+	if opts.Before != "" {
+		q.Set("before", opts.Before)
+	}
+	if enc := q.Encode(); enc != "" {
+		path += "?" + enc
+	}
+	var out []BackupHistoryResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
+// GetVolumeBackupSchedule calls
+// GET /api/v1/apps/{name}/volumes/{volume}/backup-schedule: the app
+// service volume counterpart of the schedule fields riding along on
+// GET .../databases/{name} for a database (a service can have many
+// volumes, so there is no single app resource to embed this in, hence
+// its own dedicated GET here).
+func (c *Client) GetVolumeBackupSchedule(ctx context.Context, name, volume string) (VolumeBackupScheduleResource, error) {
+	var out VolumeBackupScheduleResource
+	err := c.do(ctx, http.MethodGet, volumeBackupSchedulePath(name, volume), nil, &out)
+	return out, err
+}
+
+// volumeBackupSchedulePath builds
+// /api/v1/apps/{name}/volumes/{volume}/backup-schedule.
+func volumeBackupSchedulePath(name, volume string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/volumes/" + PathEscape(volume) + "/backup-schedule"
+}
+
+// SetVolumeBackupSchedule calls
+// PUT /api/v1/apps/{name}/volumes/{volume}/backup-schedule: the app
+// service volume counterpart of SetBackupSchedule.
+func (c *Client) SetVolumeBackupSchedule(ctx context.Context, name, volume string, req SetVolumeBackupScheduleRequest) (VolumeBackupScheduleResource, error) {
+	var out VolumeBackupScheduleResource
+	err := c.do(ctx, http.MethodPut, volumeBackupSchedulePath(name, volume), req, &out)
+	return out, err
+}
+
+// ClearVolumeBackupSchedule calls
+// DELETE /api/v1/apps/{name}/volumes/{volume}/backup-schedule: the app
+// service volume counterpart of ClearBackupSchedule.
+func (c *Client) ClearVolumeBackupSchedule(ctx context.Context, name, volume string) error {
+	return c.do(ctx, http.MethodDelete, volumeBackupSchedulePath(name, volume), nil, nil)
+}
+
+// VerifyVolumeBackup calls
+// POST /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verify:
+// the app service volume counterpart of VerifyBackup.
+func (c *Client) VerifyVolumeBackup(ctx context.Context, name, volume, historyID string) (BackupVerificationResource, error) {
+	var out BackupVerificationResource
+	err := c.do(ctx, http.MethodPost, volumeBackupsPath(name, volume)+"/"+PathEscape(historyID)+"/verify", nil, &out)
+	return out, err
+}
+
+// ListVolumeBackupVerifications calls
+// GET /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verifications:
+// the app service volume counterpart of ListBackupVerifications.
+func (c *Client) ListVolumeBackupVerifications(ctx context.Context, name, volume, historyID string) ([]BackupVerificationResource, error) {
+	var out []BackupVerificationResource
+	err := c.do(ctx, http.MethodGet, volumeBackupsPath(name, volume)+"/"+PathEscape(historyID)+"/verifications", nil, &out)
+	return out, err
+}
+
+// TriggerVolumeRestore calls
+// POST /api/v1/apps/{name}/volumes/{volume}/restore: overwrites the
+// named app service volume's live contents in place from a previously
+// succeeded backup attempt, the app service volume counterpart of
+// TriggerRestore. The same "single most destructive call" warning
+// TriggerRestore's own doc comment gives applies identically here.
+func (c *Client) TriggerVolumeRestore(ctx context.Context, name, volume, backupID string) (RestoreHistoryResource, error) {
+	var out RestoreHistoryResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/volumes/"+PathEscape(volume)+"/restore", TriggerRestoreRequest{BackupID: backupID}, &out)
+	return out, err
+}
+
 // GetSession calls GET /api/v1/auth/session using this Client's bearer
 // token, exactly the same auth mechanism every other method on this
 // type uses. The server gates this route with requireAuth,

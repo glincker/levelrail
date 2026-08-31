@@ -61,6 +61,19 @@ type AppResource struct {
 	// Env was saved since the running container was last recreated, so
 	// the change is not live yet. Clears on restart or redeploy.
 	EnvDirty bool `json:"env_dirty"`
+	// Volumes mirrors internal/api's appResource.Volumes: this app's
+	// declared named Docker volumes, response-only (declared through
+	// app.yaml, not settable here).
+	Volumes []AppVolumeResource `json:"volumes,omitempty"`
+}
+
+// AppVolumeResource mirrors internal/api's appVolumeResource
+// (app_volumes.go): one of an app's named Docker volumes, identified by
+// its logical name (what an operator wrote in app.yaml), not the
+// resolved, platform-prefixed Docker volume name.
+type AppVolumeResource struct {
+	Name          string `json:"name"`
+	ContainerPath string `json:"container_path"`
 }
 
 // LogDrainResource mirrors internal/api's logDrainResource
@@ -256,10 +269,13 @@ type SetDomainBasicAuthRequest struct {
 }
 
 // BackupHistoryResource mirrors internal/api's backupHistoryResource
-// (internal/api/backups.go).
+// (internal/api/backups.go). ServiceName/VolumeName are set instead of
+// DatabaseName for an app service volume backup, never alongside it.
 type BackupHistoryResource struct {
 	ID             string `json:"id"`
-	DatabaseName   string `json:"database_name"`
+	DatabaseName   string `json:"database_name,omitempty"`
+	ServiceName    string `json:"service_name,omitempty"`
+	VolumeName     string `json:"volume_name,omitempty"`
 	TargetID       string `json:"target_id"`
 	ObjectKey      string `json:"object_key"`
 	SizeBytes      int64  `json:"size_bytes"`
@@ -420,10 +436,13 @@ type PromoteAppRequest struct {
 }
 
 // RestoreHistoryResource mirrors internal/api's restoreHistoryResource
-// (internal/api/restore.go).
+// (internal/api/restore.go). ServiceName/VolumeName mirror
+// BackupHistoryResource's own identical fields above.
 type RestoreHistoryResource struct {
 	ID              string `json:"id"`
-	DatabaseName    string `json:"database_name"`
+	DatabaseName    string `json:"database_name,omitempty"`
+	ServiceName     string `json:"service_name,omitempty"`
+	VolumeName      string `json:"volume_name,omitempty"`
 	BackupHistoryID string `json:"backup_history_id"`
 	Status          string `json:"status"`
 	Error           string `json:"error,omitempty"`
@@ -434,6 +453,26 @@ type RestoreHistoryResource struct {
 // TriggerRestoreRequest mirrors internal/api's triggerRestoreRequest.
 type TriggerRestoreRequest struct {
 	BackupID string `json:"backup_id"`
+}
+
+// VolumeBackupScheduleResource mirrors internal/api's
+// volumeBackupScheduleResource (internal/api/app_volume_backups.go).
+type VolumeBackupScheduleResource struct {
+	ServiceName string `json:"service_name"`
+	VolumeName  string `json:"volume_name"`
+	TargetID    string `json:"target_id,omitempty"`
+	Schedule    string `json:"schedule,omitempty"`
+	Retain      int    `json:"retain,omitempty"`
+	RetainDays  int    `json:"retain_days,omitempty"`
+}
+
+// SetVolumeBackupScheduleRequest mirrors internal/api's
+// setVolumeBackupScheduleRequest.
+type SetVolumeBackupScheduleRequest struct {
+	TargetID   string `json:"target_id"`
+	Schedule   string `json:"schedule"`
+	Retain     int    `json:"retain,omitempty"`
+	RetainDays int    `json:"retain_days,omitempty"`
 }
 
 // OnboardingStateResource mirrors internal/api's onboardingStateResource
