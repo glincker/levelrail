@@ -354,7 +354,10 @@ export function BrowseTemplatesFields({
           <AlertDescription>{templatesQuery.error.message}</AlertDescription>
         </Alert>
       ) : (
-        <div className="max-h-96 space-y-4 overflow-y-auto">
+        // No independent scroll region: the owning DialogContent is the
+        // single scroll owner (dialog.tsx). A fixed max-h box here used
+        // to clip whichever category header landed just above it.
+        <div className="space-y-4">
           {categories.map((category) => (
             <div key={category} className="space-y-2">
               <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
