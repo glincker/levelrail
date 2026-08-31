@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"time"
 )
 
 // previewEnvironmentIDPrefix mirrors deployAttemptIDPrefix's own
@@ -186,6 +187,38 @@ func (db *DB) DeletePreviewEnvironment(ctx context.Context, id string) error {
 		return ErrPreviewEnvironmentNotFound
 	}
 	return nil
+}
+
+// ListStalePreviewEnvironments returns every preview environment last
+// updated before cutoff, oldest first: the TTL sweep's fallback path for
+// a pull-request-closed webhook that never arrived (see
+// internal/store/webhook_delivery.go's own reasoning for why that
+// happens). String comparison against a UTC RFC3339Nano cutoff, the same
+// convention ListWebhookDeliveries's own before-cursor already uses.
+func (db *DB) ListStalePreviewEnvironments(ctx context.Context, cutoff time.Time) ([]PreviewEnvironment, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT `+previewEnvironmentColumns+`
+		FROM preview_environments WHERE updated_at < ? ORDER BY updated_at ASC
+	`, cutoff.UTC().Format(time.RFC3339Nano))
+	if err != nil {
+		return nil, fmt.Errorf("store: list stale preview environments: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var out []PreviewEnvironment
+	for rows.Next() {
+		p, err := scanPreviewEnvironment(rows.Scan)
+		if err != nil {
+			return nil, fmt.Errorf("store: scan preview environment row: %w", err)
+		}
+		out = append(out, *p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate preview environment rows: %w", err)
+	}
+	return out, nil
 }
 
 const previewEnvironmentColumns = "id, app_name, pr_number, preview_app_id, environment_id, branch, head_sha, domain, status, status_reason, created_at, updated_at"

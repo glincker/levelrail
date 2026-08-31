@@ -190,6 +190,15 @@ const (
 	// the same reasoning as defaultBackupSchedulerInterval just above:
 	// standard 5-field cron has no granularity finer than a minute.
 	defaultScheduledTaskSchedulerInterval = 1 * time.Minute
+
+	// defaultPreviewSweepInterval is how often api.Router.RunPreviewSweeper
+	// checks for preview environments stale past their TTL
+	// (api.defaultPreviewTTL, 7 days), env-overridable via
+	// APP_PREVIEW_SWEEP_INTERVAL (previewSweepInterval below). An hour,
+	// not backupSchedulerInterval's one minute: a days-scale TTL has no
+	// need for minute-granularity checks, unlike a cron schedule that can
+	// legitimately fire every minute.
+	defaultPreviewSweepInterval = 1 * time.Hour
 )
 
 func main() {
@@ -447,9 +456,10 @@ func run(logger *slog.Logger) error {
 		logger.Warn("webhook not configured", slog.String("error", err.Error()))
 	}
 
+	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, emailSender, scheduledTaskRunner)
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
-		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, emailSender, scheduledTaskRunner),
+		Handler:           apiHandler,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -605,6 +615,19 @@ func run(logger *slog.Logger) error {
 	go func() {
 		if err := scheduledTaskScheduler.Run(ctx, scheduledTaskSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("scheduled task scheduler stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	// Preview environment TTL sweep (api.Router.RunPreviewSweeper,
+	// internal/api/preview_environments_sweep.go): the fallback for a
+	// pull-request-closed webhook delivery that never arrived, tearing
+	// down any preview environment stale past its TTL on its own tick.
+	// Always runs, the same "always non-nil, no secretsManager gate"
+	// shape as the scheduled task scheduler just above: nothing about
+	// this loop needs a master key configured.
+	go func() {
+		if err := apiRouter.RunPreviewSweeper(ctx, previewSweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("preview sweeper stopped", slog.String("error", err.Error()))
 		}
 	}()
 
@@ -1583,7 +1606,7 @@ func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent
 // internal/api importing internal/agent.Registry directly (see
 // api.NodeRuntimeResolver's own doc comment for why this stays a
 // closure over resolveNodeTransport instead of a new dependency edge).
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, backupVerifyRunner *backup.VerifyRunner, agentRegistry *agent.Registry, emailSender email.Sender, scheduledTaskRunner *scheduledtask.Runner) http.Handler {
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, backupVerifyRunner *backup.VerifyRunner, agentRegistry *agent.Registry, emailSender email.Sender, scheduledTaskRunner *scheduledtask.Runner) (http.Handler, *api.Router) {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
@@ -1615,6 +1638,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithScheduledTaskRunner(scheduledTaskRunner),
 		api.WithCertExpiryWarningWindow(certExpiryWarningWindow(logger)),
 		api.WithResourceRecommendationLookback(resourceRecommendationLookback(logger)),
+		api.WithPreviewTTL(previewTTL(logger)),
 		api.WithPublicHost(publicHost()),
 		api.WithDeployLogQuerier(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),
@@ -1722,13 +1746,14 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		opts = append(opts, api.WithGitHubAppManifestConfig(manifestCfg))
 	}
 
+	rt := api.NewRouter(logger, b, db, opts...)
 	mux := http.NewServeMux()
-	mux.Handle("/api/", api.NewRouter(logger, b, db, opts...).Handler())
+	mux.Handle("/api/", rt.Handler())
 	if webhookHandler != nil {
 		mux.Handle("POST /webhook", webhookHandler)
 	}
 	mux.Handle("/", web.Handler())
-	return mux
+	return mux, rt
 }
 
 // backupSchedulerInterval reads APP_BACKUP_SCHEDULER_INTERVAL as a Go
@@ -1840,6 +1865,46 @@ func certExpiryWarningWindow(logger *slog.Logger) time.Duration {
 	if err != nil {
 		logger.Warn("invalid APP_CERT_EXPIRY_WARNING_WINDOW, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return 0
+	}
+	return d
+}
+
+// previewTTL reads APP_PREVIEW_TTL as a Go duration string, the same
+// env-var-with-default shape certExpiryWarningWindow above already uses
+// for api.WithCertExpiryWarningWindow, applied here to api.WithPreviewTTL
+// (how long a preview environment can go with no webhook update before
+// api.Router.SweepStalePreviewEnvironments tears it down). Returns 0
+// (api's own signal to fall back to its internal default,
+// api.defaultPreviewTTL) when unset or unparseable, logging a warning in
+// the latter case so a typo'd env var is visible rather than silently
+// ignored.
+func previewTTL(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_PREVIEW_TTL")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_PREVIEW_TTL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return d
+}
+
+// previewSweepInterval reads APP_PREVIEW_SWEEP_INTERVAL as a Go duration
+// string, the same env-var-with-default shape backupSchedulerInterval
+// already uses: unlike previewTTL above, api.Router.RunPreviewSweeper
+// takes its interval directly with no built-in fallback of its own, so
+// this resolves the real value once, here.
+func previewSweepInterval(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_PREVIEW_SWEEP_INTERVAL")
+	if raw == "" {
+		return defaultPreviewSweepInterval
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_PREVIEW_SWEEP_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return defaultPreviewSweepInterval
 	}
 	return d
 }

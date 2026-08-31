@@ -25,6 +25,19 @@ func TestRun_AppsPreviewsList(t *testing.T) {
 	}
 }
 
+func TestRun_AppsPreviewsList_ShowsStale(t *testing.T) {
+	var gotPath string
+	srv := newListEchoServer(t, &gotPath, []previewEnvironmentResource{
+		{PRNumber: 42, PreviewAppID: "web-pr-42", Branch: "feature-x", Status: "active", UpdatedAt: "2020-01-01T00:00:00Z", Stale: true},
+	})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "previews", "list", "web", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "yes") {
+		t.Errorf("stdout = %q, want the STALE column to show yes", stdout)
+	}
+}
+
 func TestRun_AppsPreviewsList_Empty(t *testing.T) {
 	var gotPath string
 	srv := newListEchoServer(t, &gotPath, []previewEnvironmentResource{})
@@ -82,6 +95,25 @@ func TestRun_AppsPreviewsEnable(t *testing.T) {
 	}
 	if !strings.Contains(stdout, "enabled") {
 		t.Errorf("stdout = %q, want an enabled confirmation", stdout)
+	}
+}
+
+func TestRun_AppsPreviewsSweep(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(sweepPreviewEnvironmentsResult{Swept: 3})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "previews", "sweep", "--api-url", srv.URL})
+	if gotMethod != http.MethodPost || gotPath != "/api/v1/previews/sweep" {
+		t.Errorf("request = %s %s, want POST /api/v1/previews/sweep", gotMethod, gotPath)
+	}
+	if !strings.Contains(stdout, "swept 3") {
+		t.Errorf("stdout = %q, want the swept count reported", stdout)
 	}
 }
 

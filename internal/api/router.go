@@ -148,6 +148,12 @@ type Router struct {
 	// for GET /api/v1/certificates's "expiring_soon" threshold. 0 means
 	// "use the default", set via WithCertExpiryWarningWindow.
 	certExpiryWarningWindow time.Duration
+	// previewTTL overrides defaultPreviewTTL (preview_environments_sweep.go):
+	// how long a preview environment can go without a webhook update
+	// before SweepStalePreviewEnvironments tears it down as a fallback
+	// for a missed pull-request-closed webhook delivery. 0 means "use
+	// the default", set via WithPreviewTTL.
+	previewTTL time.Duration
 	// resourceRecommendationLookback overrides
 	// defaultResourceRecommendationLookback for GET
 	// /api/v1/apps/{name}/resource-recommendation's usage-history window.

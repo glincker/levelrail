@@ -15,4 +15,5 @@ export interface PreviewEnvironment {
   status_reason?: string
   created_at: string
   updated_at: string
+  stale: boolean
 }
