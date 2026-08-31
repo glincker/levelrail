@@ -176,6 +176,76 @@ func TestHandleCreateAlertRule_PatchStatusSuccess(t *testing.T) {
 	}
 }
 
+// TestHandleCreateAlertRule_ScheduledTaskFailureSuccess checks that a
+// kind=scheduled_task_failure rule requires and accepts a
+// scheduled_task_id belonging to this app, reusing
+// restart_count_threshold as its consecutive-failure threshold (see
+// alerting.Rule's own doc comment).
+func TestHandleCreateAlertRule_ScheduledTaskFailureSuccess(t *testing.T) {
+	rt, db, _ := newTestRouterWithAlerting(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	task := store.ScheduledTask{ID: "sct_1", ServiceName: "web", Command: []string{"./cleanup.sh"}, Schedule: "0 3 * * *"}
+	if err := db.SaveScheduledTask(context.Background(), task); err != nil {
+		t.Fatalf("seed scheduled task: %v", err)
+	}
+
+	body := `{"name":"cleanup failing","kind":"scheduled_task_failure","scheduled_task_id":"sct_1","restart_count_threshold":3,"notify_url":"https://example.com/hook","enabled":true}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/alerts", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	var got ruleResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.ScheduledTaskID != "sct_1" || got.RestartCountThreshold != 3 {
+		t.Errorf("got = %+v, want ScheduledTaskID=sct_1 RestartCountThreshold=3", got)
+	}
+}
+
+// TestHandleCreateAlertRule_ScheduledTaskFailure_MissingTaskID checks
+// toRule's own validation: a scheduled_task_failure rule needs a
+// scheduled_task_id, the same way a crashloop rule needs a
+// restart_count_threshold.
+func TestHandleCreateAlertRule_ScheduledTaskFailure_MissingTaskID(t *testing.T) {
+	rt, db, _ := newTestRouterWithAlerting(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	body := `{"name":"cleanup failing","kind":"scheduled_task_failure","restart_count_threshold":3,"enabled":true}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/alerts", body))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+// TestHandleCreateAlertRule_ScheduledTaskFailure_TaskBelongsToOtherApp
+// checks the ownership guard: a scheduled_task_id from a different app
+// must be rejected, the same information-hiding reasoning
+// handleDeleteAlertRule's own doc comment gives for its ResourceID
+// check.
+func TestHandleCreateAlertRule_ScheduledTaskFailure_TaskBelongsToOtherApp(t *testing.T) {
+	rt, db, _ := newTestRouterWithAlerting(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	seedApp(t, db, "api")
+	task := store.ScheduledTask{ID: "sct_1", ServiceName: "api", Command: []string{"./cleanup.sh"}, Schedule: "0 3 * * *"}
+	if err := db.SaveScheduledTask(context.Background(), task); err != nil {
+		t.Fatalf("seed scheduled task: %v", err)
+	}
+
+	body := `{"name":"cleanup failing","kind":"scheduled_task_failure","scheduled_task_id":"sct_1","restart_count_threshold":3,"enabled":true}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/alerts", body))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
 // TestHandleCreateAlertRule_ResourceIDNotCallerSuppliable checks that a
 // caller-supplied resource_id in the request body is discarded in favor
 // of resourceIDForApp(name): a rule created through /apps/web/alerts is

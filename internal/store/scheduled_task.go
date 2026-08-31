@@ -49,6 +49,12 @@ type ScheduledTask struct {
 	// this field (see this table's own migration comment); this struct
 	// never re-truncates it.
 	LastRunOutput string
+	// ConsecutiveFailures counts runs in a row that were not
+	// ScheduledTaskStatusSuccess, reset to 0 by RecordScheduledTaskRun on
+	// a success. What a kind=scheduled_task_failure alert rule
+	// (internal/alerting) polls, so repeated failure is visible without
+	// this table keeping a full run history.
+	ConsecutiveFailures int
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -78,7 +84,7 @@ func (db *DB) SaveScheduledTask(ctx context.Context, t ScheduledTask) error {
 // ErrScheduledTaskNotFound.
 func (db *DB) GetScheduledTask(ctx context.Context, id string) (ScheduledTask, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT id, service_name, command, schedule, enabled, last_run_at, last_run_status, last_run_output, created_at, updated_at
+		SELECT id, service_name, command, schedule, enabled, last_run_at, last_run_status, last_run_output, consecutive_failures, created_at, updated_at
 		FROM scheduled_tasks
 		WHERE id = ?
 	`, id)
@@ -97,7 +103,7 @@ func (db *DB) GetScheduledTask(ctx context.Context, id string) (ScheduledTask, e
 // ListBackupTargets already uses.
 func (db *DB) ListScheduledTasksForService(ctx context.Context, serviceName string) ([]ScheduledTask, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, service_name, command, schedule, enabled, last_run_at, last_run_status, last_run_output, created_at, updated_at
+		SELECT id, service_name, command, schedule, enabled, last_run_at, last_run_status, last_run_output, consecutive_failures, created_at, updated_at
 		FROM scheduled_tasks
 		WHERE service_name = ?
 		ORDER BY created_at
@@ -114,7 +120,7 @@ func (db *DB) ListScheduledTasksForService(ctx context.Context, serviceName stri
 // 0048_scheduled_tasks.sql, supports exactly this filter).
 func (db *DB) ListEnabledScheduledTasks(ctx context.Context) ([]ScheduledTask, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, service_name, command, schedule, enabled, last_run_at, last_run_status, last_run_output, created_at, updated_at
+		SELECT id, service_name, command, schedule, enabled, last_run_at, last_run_status, last_run_output, consecutive_failures, created_at, updated_at
 		FROM scheduled_tasks
 		WHERE enabled = 1
 		ORDER BY created_at
@@ -150,15 +156,18 @@ func (db *DB) UpdateScheduledTask(ctx context.Context, id string, command []stri
 // RecordScheduledTaskRun writes the outcome of one run (scheduled or
 // manual "run now") back onto a task's own row: the same in-place
 // "latest attempt" shape this table's own migration comment explains,
-// not an append-only history. Returns ErrScheduledTaskNotFound if id
-// doesn't exist, e.g. the task was deleted between being picked up by a
-// tick and this call.
+// not an append-only history. consecutive_failures resets to 0 on a
+// success and increments otherwise, computed in SQL rather than
+// read-then-write so a concurrent run can't race it. Returns
+// ErrScheduledTaskNotFound if id doesn't exist, e.g. the task was
+// deleted between being picked up by a tick and this call.
 func (db *DB) RecordScheduledTaskRun(ctx context.Context, id string, ranAt time.Time, status, output string) error {
 	res, err := db.ExecContext(ctx, `
 		UPDATE scheduled_tasks
-		SET last_run_at = ?, last_run_status = ?, last_run_output = ?, updated_at = ?
+		SET last_run_at = ?, last_run_status = ?, last_run_output = ?, updated_at = ?,
+			consecutive_failures = CASE WHEN ? = ? THEN 0 ELSE consecutive_failures + 1 END
 		WHERE id = ?
-	`, formatTime(ranAt), status, output, formatTime(ranAt), id)
+	`, formatTime(ranAt), status, output, formatTime(ranAt), status, ScheduledTaskStatusSuccess, id)
 	if err != nil {
 		return fmt.Errorf("store: record scheduled task run %q: %w", id, err)
 	}
@@ -202,7 +211,7 @@ func scanScheduledTask(scan func(dest ...any) error) (*ScheduledTask, error) {
 		lastRunAt            sql.NullString
 		createdAt, updatedAt string
 	)
-	if err := scan(&t.ID, &t.ServiceName, &cmdJSON, &t.Schedule, &enabled, &lastRunAt, &t.LastRunStatus, &t.LastRunOutput, &createdAt, &updatedAt); err != nil {
+	if err := scan(&t.ID, &t.ServiceName, &cmdJSON, &t.Schedule, &enabled, &lastRunAt, &t.LastRunStatus, &t.LastRunOutput, &t.ConsecutiveFailures, &createdAt, &updatedAt); err != nil {
 		return nil, err
 	}
 

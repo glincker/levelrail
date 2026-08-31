@@ -593,7 +593,7 @@ func run(logger *slog.Logger) error {
 	// disagree on when "expiring_soon" starts). db also satisfies
 	// alerting.NodeSource, so a kind=patch_status rule lists the same
 	// fleet GET /api/v1/nodes does.
-	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, db,
+	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, db, db,
 		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), db, patchStatusThreshold(logger), alertingNewNotifier, logger)
 	go func() {
 		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {

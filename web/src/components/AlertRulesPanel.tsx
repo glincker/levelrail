@@ -113,6 +113,9 @@ function formatCondition(rule: AlertRule): string {
   if (rule.kind === 'patch_status') {
     return 'any node over its pending security-patch threshold (platform-wide)'
   }
+  if (rule.kind === 'scheduled_task_failure') {
+    return `task ${rule.scheduled_task_id ?? '?'} fails ${rule.restart_count_threshold} runs in a row`
+  }
   return `${rule.restart_count_threshold} restarts in ${rule.restart_window ?? '?'}`
 }
 
@@ -132,6 +135,9 @@ function formatLastValue(rule: AlertRule): string {
   }
   if (rule.kind === 'patch_status') {
     return `${rule.last_value} security patches (highest across nodes)`
+  }
+  if (rule.kind === 'scheduled_task_failure') {
+    return `${rule.last_value} consecutive failures`
   }
   return String(rule.last_value)
 }
@@ -264,9 +270,10 @@ export function AlertRulesPanel({ appName }: { appName: string }) {
             Alert rules
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Threshold and crashloop rules over this app&apos;s metrics and
-            restarts. Notifies via webhook, Slack, or Discord on a
-            firing/resolved transition.
+            Threshold, crashloop, certificate expiry, and scheduled task
+            failure rules over this app&apos;s metrics, restarts, and jobs.
+            Notifies via webhook, Slack, or Discord on a firing/resolved
+            transition.
           </p>
         </div>
         <div className="flex items-center gap-3">

@@ -102,6 +102,49 @@ func TestRun_AppsAlertsCreate_PatchStatus_NoExtraFieldsRequired(t *testing.T) {
 	}
 }
 
+func TestRun_AppsAlertsCreate_ScheduledTaskFailure(t *testing.T) {
+	var gotBody createAlertRuleRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(alertRuleResource{
+			ID: "alr_3", Name: gotBody.Name, Kind: gotBody.Kind,
+			ScheduledTaskID: gotBody.ScheduledTaskID, RestartCountThreshold: gotBody.RestartCountThreshold, Enabled: gotBody.Enabled,
+		})
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{
+		"apps", "alerts", "create", "web",
+		"--name", "cleanup-failing", "--kind", "scheduled_task_failure", "--scheduled-task-id", "sct_1", "--restart-count-threshold", "3",
+		"--api-url", srv.URL, "--json",
+	}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if gotBody.Kind != "scheduled_task_failure" || gotBody.ScheduledTaskID != "sct_1" || gotBody.RestartCountThreshold != 3 {
+		t.Errorf("request body = %+v, want a scheduled_task_failure rule on sct_1 with threshold 3", gotBody)
+	}
+	if !strings.Contains(stdout.String(), `"id": "alr_3"`) {
+		t.Errorf("stdout = %q, want the created rule as JSON", stdout.String())
+	}
+}
+
+func TestRun_AppsAlertsCreate_ScheduledTaskFailureMissingTaskID(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{
+		"apps", "alerts", "create", "web", "--name", "x", "--kind", "scheduled_task_failure", "--restart-count-threshold", "3",
+	}, &stdout, &stderr, envMap())
+	if got != exitValidation {
+		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitValidation, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "--scheduled-task-id is required") {
+		t.Errorf("stderr = %q, want a missing --scheduled-task-id error", stderr.String())
+	}
+}
+
 func TestRun_AppsAlertsCreate_MissingKind(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"apps", "alerts", "create", "web", "--name", "x"}, &stdout, &stderr, envMap())
