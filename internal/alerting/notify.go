@@ -30,6 +30,11 @@ type Event struct {
 	// per TASKS.md 2.7's literal requirement. Nil for threshold rules
 	// and for resolved events.
 	LogLines []string
+	// CertNotices is populated only for a firing (not resolved)
+	// cert_expiry event: one line per non-healthy certificate, from
+	// EvaluateCertExpiry, flagging a stalled-looking renewal specially.
+	// Nil for every other rule kind and for resolved events.
+	CertNotices []string
 }
 
 // Notifier sends one Event somewhere. Every notify* function below
@@ -99,6 +104,7 @@ type genericPayload struct {
 	Firing      bool       `json:"firing"`
 	FiringSince *time.Time `json:"firing_since,omitempty"`
 	LogLines    []string   `json:"log_lines,omitempty"`
+	CertNotices []string   `json:"cert_notices,omitempty"`
 }
 
 func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Event) error {
@@ -106,6 +112,7 @@ func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Even
 		RuleID: ev.Rule.ID, RuleName: ev.Rule.Name, Kind: string(ev.Rule.Kind),
 		ResourceID: ev.Rule.ResourceID, Resolved: ev.Resolved, Value: ev.Rule.LastValue,
 		Firing: ev.Rule.Firing, FiringSince: ev.Rule.FiringSince, LogLines: ev.LogLines,
+		CertNotices: ev.CertNotices,
 	}
 	return postJSON(ctx, client, url, payload)
 }
@@ -290,6 +297,9 @@ func summaryText(ev Event) string {
 	}
 	if len(ev.LogLines) > 0 {
 		fmt.Fprintf(&b, "\nLast %d log lines:\n```\n%s\n```", len(ev.LogLines), strings.Join(ev.LogLines, "\n"))
+	}
+	if len(ev.CertNotices) > 0 {
+		fmt.Fprintf(&b, "\nCertificates:\n- %s", strings.Join(ev.CertNotices, "\n- "))
 	}
 	return b.String()
 }

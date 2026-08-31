@@ -6,6 +6,7 @@ import {
   GaugeIcon,
   PlusCircleIcon,
   ArrowCounterClockwiseIcon,
+  ShieldWarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -54,6 +55,7 @@ const KIND_OPTIONS: {
 }[] = [
   { value: 'threshold', label: 'Threshold', Icon: GaugeIcon },
   { value: 'crashloop', label: 'Crashloop', Icon: ArrowCounterClockwiseIcon },
+  { value: 'cert_expiry', label: 'Certificate expiry', Icon: ShieldWarningIcon },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -72,7 +74,7 @@ const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
 const createAlertRuleSchema = z
   .object({
     name: z.string().trim().min(1, 'Name is required'),
-    kind: z.enum(['threshold', 'crashloop']),
+    kind: z.enum(['threshold', 'crashloop', 'cert_expiry']),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
     threshold: z.coerce.number({ error: 'Must be a number' }),
@@ -83,6 +85,13 @@ const createAlertRuleSchema = z
     enabled: z.boolean(),
   })
   .superRefine((data, ctx) => {
+    // cert_expiry needs none of the threshold/crashloop fields: it
+    // watches every certificate on the control plane platform-wide, not
+    // a metric or a restart count.
+    if (data.kind === 'cert_expiry') {
+      return
+    }
+
     if (data.kind === 'threshold') {
       if (!data.metric) {
         ctx.addIssue({
@@ -192,10 +201,11 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
       req.comparator = values.comparator
       req.threshold = values.threshold
       req.for_duration = values.forDuration.trim() || undefined
-    } else {
+    } else if (values.kind === 'crashloop') {
       req.restart_count_threshold = values.restartCountThreshold
       req.restart_window = values.restartWindow.trim()
     }
+    // cert_expiry sends no kind-specific fields at all.
     createRule.mutate(req, {
       onSuccess: () => {
         handleOpenChange(false)
@@ -221,7 +231,9 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
           </DialogTitle>
           <DialogDescription>
             A threshold rule watches a metric; a crashloop rule watches
-            container restarts. Both notify the same way once they fire.
+            container restarts; a certificate expiry rule watches every
+            certificate on the control plane. All three notify the same way
+            once they fire.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -266,7 +278,13 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
             />
           </Field>
 
-          {kind === 'threshold' ? (
+          {kind === 'cert_expiry' ? (
+            <p className="text-sm text-muted-foreground">
+              Watches every certificate on the whole control plane, not just
+              this app&apos;s own domains, and fires as soon as any of them
+              is expiring soon or already expired.
+            </p>
+          ) : kind === 'threshold' ? (
             <>
               <Field>
                 <FieldLabel htmlFor="rule-metric">Metric</FieldLabel>

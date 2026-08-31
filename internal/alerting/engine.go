@@ -18,11 +18,16 @@ type LogsSource interface {
 }
 
 // RuleStore is the narrow store surface Engine needs: list what to
-// evaluate, persist the result. *DB satisfies this structurally.
+// evaluate, persist the result. *DB satisfies this structurally. The
+// two CertExpiry methods are what a kind=cert_expiry rule uses to
+// remember its per-domain state across ticks (EvaluateCertExpiry,
+// cert_expiry.go); every other rule kind never calls them.
 type RuleStore interface {
 	ListEnabledRules(ctx context.Context) ([]Rule, error)
 	UpdateState(ctx context.Context, id string, pendingSince, firingSince *time.Time, firing bool, evaluatedAt time.Time, value *float64) error
 	RecordNotificationDelivery(ctx context.Context, d NotificationDelivery) error
+	UpsertCertExpiryObservation(ctx context.Context, o CertExpiryObservation) error
+	ListCertExpiryObservations(ctx context.Context, ruleID string) ([]CertExpiryObservation, error)
 }
 
 // crashloopLogLines is TASKS.md 2.7's literal number: "the last 200
@@ -46,21 +51,40 @@ type Engine struct {
 	metrics     MetricsSource
 	logs        LogsSource
 	tracker     *RestartTracker
+	certs       CertSource
 	newNotifier func(Rule) Notifier
 	logger      *slog.Logger
+
+	certExpiryWarningWindow     time.Duration
+	certRenewalStalledThreshold time.Duration
 }
 
 // NewEngine builds an Engine. newNotifier defaults to a Notifier with no
 // email capability configured if nil; a real caller passes a closure
-// capturing an email.Sender instead.
-func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker *RestartTracker, newNotifier func(Rule) Notifier, logger *slog.Logger) *Engine {
+// capturing an email.Sender instead. certs may be nil if no cert
+// storage is configured; a kind=cert_expiry rule then logs a warning and
+// is skipped each tick rather than evaluated. certExpiryWarningWindow
+// and certRenewalStalledThreshold fall back to
+// DefaultCertExpiryWarningWindow/DefaultCertRenewalStalledThreshold when
+// passed as 0.
+func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker *RestartTracker, certs CertSource, certExpiryWarningWindow, certRenewalStalledThreshold time.Duration, newNotifier func(Rule) Notifier, logger *slog.Logger) *Engine {
 	if newNotifier == nil {
 		newNotifier = func(r Rule) Notifier { return NewNotifier(nil, nil, r) }
 	}
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Engine{rules: rules, metrics: metrics, logs: logs, tracker: tracker, newNotifier: newNotifier, logger: logger}
+	if certExpiryWarningWindow <= 0 {
+		certExpiryWarningWindow = DefaultCertExpiryWarningWindow
+	}
+	if certRenewalStalledThreshold <= 0 {
+		certRenewalStalledThreshold = DefaultCertRenewalStalledThreshold
+	}
+	return &Engine{
+		rules: rules, metrics: metrics, logs: logs, tracker: tracker, certs: certs,
+		newNotifier: newNotifier, logger: logger,
+		certExpiryWarningWindow: certExpiryWarningWindow, certRenewalStalledThreshold: certRenewalStalledThreshold,
+	}
 }
 
 // Tick evaluates every enabled rule once. Errors from individual rules
@@ -80,6 +104,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 
 	for _, r := range rules {
 		var next Rule
+		var certNotices []string
 		switch r.Kind {
 		case KindThreshold:
 			next, err = EvaluateThreshold(ctx, e.metrics, r, now)
@@ -89,6 +114,16 @@ func (e *Engine) Tick(ctx context.Context) error {
 			}
 		case KindCrashloop:
 			next = EvaluateCrashloop(e.tracker, r, now)
+		case KindCertExpiry:
+			if e.certs == nil {
+				e.logger.Warn("alerting: cert_expiry rule found but no cert source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			next, certNotices, err = EvaluateCertExpiry(ctx, e.certs, e.rules, r, e.certExpiryWarningWindow, e.certRenewalStalledThreshold, now, e.logger)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		default:
 			e.logger.Warn("alerting: rule has unknown kind, skipping", slog.String("rule_id", r.ID), slog.String("kind", string(r.Kind)))
 			continue
@@ -104,9 +139,9 @@ func (e *Engine) Tick(ctx context.Context) error {
 
 		switch {
 		case becameFiring:
-			e.dispatch(ctx, next, false)
+			e.dispatch(ctx, next, false, certNotices)
 		case becameResolved:
-			e.dispatch(ctx, next, true)
+			e.dispatch(ctx, next, true, nil)
 		}
 	}
 
@@ -119,7 +154,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 // persisted successfully before dispatch is called, so a lost
 // notification doesn't leave the rule's stored state inconsistent with
 // reality, only the operator momentarily uninformed.
-func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool) {
+func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotices []string) {
 	// r.Enabled is already resolved against its attached channel
 	// (scanRule): a disabled channel silences the rule the same way
 	// DeployDispatcher.Dispatch skips a target with a disabled channel.
@@ -130,6 +165,9 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool) {
 	ev := Event{Rule: r, Resolved: resolved}
 	if r.Kind == KindCrashloop && !resolved {
 		ev.LogLines = e.fetchRecentLogLines(ctx, r.ResourceID)
+	}
+	if r.Kind == KindCertExpiry && !resolved {
+		ev.CertNotices = certNotices
 	}
 
 	sendErr := e.newNotifier(r).Notify(ctx, ev)

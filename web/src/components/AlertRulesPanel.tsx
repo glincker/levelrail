@@ -107,6 +107,9 @@ function formatCondition(rule: AlertRule): string {
     const forPart = rule.for_duration ? ` for ${rule.for_duration}` : ''
     return `${rule.metric ?? '?'} ${rule.comparator ?? '?'} ${rule.threshold}${forPart}`
   }
+  if (rule.kind === 'cert_expiry') {
+    return 'any certificate expiring soon or expired (platform-wide)'
+  }
   return `${rule.restart_count_threshold} restarts in ${rule.restart_window ?? '?'}`
 }
 
@@ -118,9 +121,13 @@ function formatLastValue(rule: AlertRule): string {
   if (rule.last_value === undefined) {
     return '-'
   }
-  return rule.kind === 'crashloop'
-    ? `${rule.last_value} restarts`
-    : String(rule.last_value)
+  if (rule.kind === 'crashloop') {
+    return `${rule.last_value} restarts`
+  }
+  if (rule.kind === 'cert_expiry') {
+    return `${rule.last_value.toFixed(1)} days to earliest expiry`
+  }
+  return String(rule.last_value)
 }
 
 // Shows enough of notify_url to identify the destination (host, plus a

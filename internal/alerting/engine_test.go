@@ -61,6 +61,18 @@ func (f *fakeRuleStore) RecordNotificationDelivery(_ context.Context, _ Notifica
 	return nil
 }
 
+// UpsertCertExpiryObservation/ListCertExpiryObservations satisfy
+// RuleStore for tests that don't exercise a cert_expiry rule
+// (cert_expiry_test.go uses a dedicated fakeCertExpiryObservationStore
+// instead, since those tests need real per-domain state).
+func (f *fakeRuleStore) UpsertCertExpiryObservation(_ context.Context, _ CertExpiryObservation) error {
+	return nil
+}
+
+func (f *fakeRuleStore) ListCertExpiryObservations(_ context.Context, _ string) ([]CertExpiryObservation, error) {
+	return nil, nil
+}
+
 // fakeLogsSource supports crashloop log-line attachment tests.
 type fakeLogsSource struct {
 	entries []telemetry.LogEntry
@@ -93,7 +105,7 @@ func (s *spyNotifier) calls() []Event {
 }
 
 func newTestEngine(rules *fakeRuleStore, metrics MetricsSource, logs LogsSource, tracker *RestartTracker, spy *spyNotifier) *Engine {
-	return NewEngine(rules, metrics, logs, tracker, func(Rule) Notifier { return spy }, nil)
+	return NewEngine(rules, metrics, logs, tracker, nil, 0, 0, func(Rule) Notifier { return spy }, nil)
 }
 
 func TestEngine_Tick_ThresholdFires_NotifiesOnce(t *testing.T) {
@@ -308,7 +320,7 @@ func TestEngine_Tick_MixedLegacyAndChannelRules_BothDispatch(t *testing.T) {
 
 	metrics := &fakeMetricsSource{samples: []telemetry.Sample{{Timestamp: time.Now(), Value: 95}}}
 	spy := &spyNotifier{}
-	engine := NewEngine(db, metrics, nil, nil, func(Rule) Notifier { return spy }, nil)
+	engine := NewEngine(db, metrics, nil, nil, nil, 0, 0, func(Rule) Notifier { return spy }, nil)
 
 	if err := engine.Tick(ctx); err != nil {
 		t.Fatalf("Tick() error = %v", err)
@@ -358,7 +370,7 @@ func TestEngine_Dispatch_RecordsDeliveryForChannelAttachedRule(t *testing.T) {
 	}
 
 	metrics := &fakeMetricsSource{samples: []telemetry.Sample{{Timestamp: time.Now(), Value: 95}}}
-	engine := NewEngine(db, metrics, nil, nil, func(Rule) Notifier { return &spyNotifier{} }, nil)
+	engine := NewEngine(db, metrics, nil, nil, nil, 0, 0, func(Rule) Notifier { return &spyNotifier{} }, nil)
 
 	if err := engine.Tick(ctx); err != nil {
 		t.Fatalf("Tick() error = %v", err)
@@ -398,7 +410,7 @@ func TestEngine_Dispatch_RecordsFailedDeliveryOnResolve(t *testing.T) {
 
 	metrics := &fakeMetricsSource{samples: []telemetry.Sample{{Timestamp: time.Now(), Value: 10}}} // below threshold: resolves
 	spy := &spyNotifier{err: errors.New("receiver returned status 500")}
-	engine := NewEngine(db, metrics, nil, nil, func(Rule) Notifier { return spy }, nil)
+	engine := NewEngine(db, metrics, nil, nil, nil, 0, 0, func(Rule) Notifier { return spy }, nil)
 
 	if err := engine.Tick(ctx); err != nil {
 		t.Fatalf("Tick() error = %v", err)
@@ -435,7 +447,7 @@ func TestEngine_Tick_DisabledChannel_SilencesRule(t *testing.T) {
 
 	metrics := &fakeMetricsSource{samples: []telemetry.Sample{{Timestamp: time.Now(), Value: 95}}}
 	spy := &spyNotifier{}
-	engine := NewEngine(db, metrics, nil, nil, func(Rule) Notifier { return spy }, nil)
+	engine := NewEngine(db, metrics, nil, nil, nil, 0, 0, func(Rule) Notifier { return spy }, nil)
 
 	if err := engine.Tick(ctx); err != nil {
 		t.Fatalf("Tick() error = %v", err)

@@ -125,6 +125,31 @@ func TestHandleCreateAlertRule_CrashloopSuccess(t *testing.T) {
 	}
 }
 
+// TestHandleCreateAlertRule_CertExpirySuccess checks that a
+// kind=cert_expiry rule needs none of the threshold/crashloop fields:
+// EvaluateCertExpiry (internal/alerting/cert_expiry.go) watches every
+// stored certificate platform-wide, not this rule's own ResourceID.
+func TestHandleCreateAlertRule_CertExpirySuccess(t *testing.T) {
+	rt, db, _ := newTestRouterWithAlerting(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	body := `{"name":"cert expiry watch","kind":"cert_expiry","notify_url":"https://example.com/hook","enabled":true}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/alerts", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	var got ruleResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Kind != "cert_expiry" {
+		t.Errorf("Kind = %q, want cert_expiry", got.Kind)
+	}
+}
+
 // TestHandleCreateAlertRule_ResourceIDNotCallerSuppliable checks that a
 // caller-supplied resource_id in the request body is discarded in favor
 // of resourceIDForApp(name): a rule created through /apps/web/alerts is

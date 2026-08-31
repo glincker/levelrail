@@ -5,7 +5,10 @@
 // two separate response types, because that's what the server actually
 // sends back for both kinds through one endpoint.
 
-export type AlertRuleKind = 'threshold' | 'crashloop'
+// cert_expiry watches every certificate on the whole control plane, not
+// just this app's own domains: none of the threshold/crashloop fields
+// below apply to it, matching internal/alerting.Rule's own shape.
+export type AlertRuleKind = 'threshold' | 'crashloop' | 'cert_expiry'
 
 export type Comparator = '>' | '<' | '>=' | '<='
 
