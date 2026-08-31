@@ -1264,6 +1264,72 @@ func (c *Client) QueryAppMetrics(ctx context.Context, name, metric string, from,
 	return out, err
 }
 
+// auditLogQuery builds GET /api/v1/audit-log's query string, shared by
+// ListAuditLog and DownloadAuditLogCSV so the CSV export can't drift
+// from the JSON list's own filter params.
+func auditLogQuery(opts ListAuditLogOptions) url.Values {
+	q := url.Values{}
+	if opts.Limit > 0 {
+		q.Set("limit", strconv.Itoa(opts.Limit))
+	}
+	if opts.Before != "" {
+		q.Set("before", opts.Before)
+	}
+	if opts.Path != "" {
+		q.Set("path", opts.Path)
+	}
+	if opts.Method != "" {
+		q.Set("method", opts.Method)
+	}
+	return q
+}
+
+// ListAuditLog calls GET /api/v1/audit-log: every recorded write/
+// deploy/root-tier request, newest first, cursor-paginated by
+// opts.Before.
+func (c *Client) ListAuditLog(ctx context.Context, opts ListAuditLogOptions) ([]AuditLogEntryResource, error) {
+	path := "/api/v1/audit-log"
+	if enc := auditLogQuery(opts).Encode(); enc != "" {
+		path += "?" + enc
+	}
+	var out []AuditLogEntryResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
+// DownloadAuditLogCSV calls GET /api/v1/audit-log?format=csv: the same
+// rows ListAuditLog returns, as a raw CSV file rather than JSON. Built
+// as its own request rather than through do(), since the response body
+// is a CSV file to pass through unmodified, not a JSON value to decode.
+func (c *Client) DownloadAuditLogCSV(ctx context.Context, opts ListAuditLogOptions) ([]byte, error) {
+	q := auditLogQuery(opts)
+	q.Set("format", "csv")
+	path := "/api/v1/audit-log?" + q.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
+	if err != nil {
+		return nil, fmt.Errorf("build request: %w", err)
+	}
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+
+	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
+	if err != nil {
+		return nil, fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read response body: %w", err)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data)}
+	}
+	return data, nil
+}
+
 // PathEscape guards against a name containing characters that would
 // otherwise change the request's URL shape (a "/" turning one path
 // segment into two, for instance). Server-side validation is the real

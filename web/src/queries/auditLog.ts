@@ -26,18 +26,30 @@ export const auditLogKeys = {
     [...auditLogKeys.all, 'scoped', path, method] as const,
 }
 
-export async function fetchAuditLog(opts: {
+export interface AuditLogQueryOptions {
   limit?: number
   before?: string
   path?: string
   method?: string
-} = {}): Promise<AuditLogEntry[]> {
+}
+
+// buildAuditLogParams is the one place that turns AuditLogQueryOptions
+// into GET /api/v1/audit-log's query string, shared by fetchAuditLog and
+// auditLogExportURL so the CSV export can't drift from the JSON list's
+// own filter params.
+function buildAuditLogParams(opts: AuditLogQueryOptions): URLSearchParams {
   const params = new URLSearchParams()
   if (opts.limit) params.set('limit', String(opts.limit))
   if (opts.before) params.set('before', opts.before)
   if (opts.path) params.set('path', opts.path)
   if (opts.method) params.set('method', opts.method)
-  const qs = params.toString()
+  return params
+}
+
+export async function fetchAuditLog(
+  opts: AuditLogQueryOptions = {},
+): Promise<AuditLogEntry[]> {
+  const qs = buildAuditLogParams(opts).toString()
   const res = await fetch(`/api/v1/audit-log${qs ? `?${qs}` : ''}`)
   if (!res.ok) {
     throw new ApiError(
@@ -46,6 +58,28 @@ export async function fetchAuditLog(opts: {
     )
   }
   return (await res.json()) as AuditLogEntry[]
+}
+
+// AUDIT_LOG_EXPORT_LIMIT mirrors internal/api/audit.go's own
+// maxAuditLogLimit: the export always asks for the server's largest
+// allowed page rather than whatever page size the live table happens to
+// be showing, since an export is meant to be as complete as one request
+// can make it.
+export const AUDIT_LOG_EXPORT_LIMIT = 200
+
+// auditLogExportURL builds GET /api/v1/audit-log?format=csv's URL for
+// the current filter state (path/method), reusing buildAuditLogParams
+// rather than re-deriving the query string. Consumed as a plain <a href
+// download> browser navigation, not a fetch: the response is a raw CSV
+// file, not JSON, the same reasoning backupDownloadURL's own doc comment
+// gives for the backup download link, and auth rides along on the same
+// httpOnly session cookie.
+export function auditLogExportURL(
+  opts: Omit<AuditLogQueryOptions, 'limit' | 'before'> = {},
+): string {
+  const params = buildAuditLogParams({ ...opts, limit: AUDIT_LOG_EXPORT_LIMIT })
+  params.set('format', 'csv')
+  return `/api/v1/audit-log?${params.toString()}`
 }
 
 export function auditLogQueryOptions(before?: string) {

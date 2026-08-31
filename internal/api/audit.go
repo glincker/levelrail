@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/csv"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -140,19 +141,17 @@ const (
 	maxAuditLogLimit     = 200
 )
 
-// handleListAuditLog handles GET /api/v1/audit-log: every recorded
-// write/deploy/root-tier request, newest first, cursor-paginated by
-// ?before (an RFC3339 timestamp) so a large table never needs offset
-// pagination. ?limit defaults to defaultAuditLogLimit, capped at
-// maxAuditLogLimit. ?path and ?method narrow to one resource's own
-// trail (e.g. an app's config-change history), both exact match.
-func (rt *Router) handleListAuditLog(w http.ResponseWriter, r *http.Request) {
-	limit := defaultAuditLogLimit
+// parseAuditLogQuery reads handleListAuditLog's shared ?limit/?before/
+// ?path/?method params, writing the request's own 400 response and
+// returning ok=false on the first invalid one so the handler can bail
+// out without duplicating that response shape per format.
+func parseAuditLogQuery(w http.ResponseWriter, r *http.Request) (limit int, before *time.Time, filter store.AuditEntryFilter, ok bool) {
+	limit = defaultAuditLogLimit
 	if raw := r.URL.Query().Get("limit"); raw != "" {
 		n, err := strconv.Atoi(raw)
 		if err != nil || n <= 0 {
 			writeError(w, http.StatusBadRequest, "limit must be a positive integer")
-			return
+			return 0, nil, store.AuditEntryFilter{}, false
 		}
 		limit = n
 	}
@@ -160,19 +159,36 @@ func (rt *Router) handleListAuditLog(w http.ResponseWriter, r *http.Request) {
 		limit = maxAuditLogLimit
 	}
 
-	var before *time.Time
 	if raw := r.URL.Query().Get("before"); raw != "" {
 		t, err := time.Parse(time.RFC3339, raw)
 		if err != nil {
 			writeError(w, http.StatusBadRequest, "before must be an RFC3339 timestamp")
-			return
+			return 0, nil, store.AuditEntryFilter{}, false
 		}
 		before = &t
 	}
 
-	filter := store.AuditEntryFilter{
+	filter = store.AuditEntryFilter{
 		Path:   r.URL.Query().Get("path"),
 		Method: r.URL.Query().Get("method"),
+	}
+	return limit, before, filter, true
+}
+
+// handleListAuditLog handles GET /api/v1/audit-log: every recorded
+// write/deploy/root-tier request, newest first, cursor-paginated by
+// ?before (an RFC3339 timestamp) so a large table never needs offset
+// pagination. ?limit defaults to defaultAuditLogLimit, capped at
+// maxAuditLogLimit. ?path and ?method narrow to one resource's own
+// trail (e.g. an app's config-change history), both exact match.
+// ?format=csv returns the same rows as a CSV download instead of JSON,
+// for compliance/record-keeping export; the row shape is identical to
+// auditLogEntryResource, so it can never leak a field the JSON view
+// doesn't already expose.
+func (rt *Router) handleListAuditLog(w http.ResponseWriter, r *http.Request) {
+	limit, before, filter, ok := parseAuditLogQuery(w, r)
+	if !ok {
+		return
 	}
 
 	entries, err := rt.auditLog.ListAuditEntries(r.Context(), limit, before, filter)
@@ -181,9 +197,46 @@ func (rt *Router) handleListAuditLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.URL.Query().Get("format") == "csv" {
+		rt.writeAuditLogCSV(w, entries)
+		return
+	}
+
 	out := make([]auditLogEntryResource, len(entries))
 	for i, e := range entries {
 		out[i] = toAuditLogEntryResource(e)
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// auditLogCSVHeader is the CSV export's column order, field-for-field
+// with auditLogEntryResource's own JSON keys.
+var auditLogCSVHeader = []string{
+	"id", "actor_type", "actor_id", "actor_name", "ability",
+	"method", "path", "status_code", "remote_addr", "created_at",
+}
+
+// writeAuditLogCSV writes entries as a CSV file attachment. limit
+// already caps the row count (maxAuditLogLimit), so this writes directly
+// to w through csv.Writer rather than buffering the whole body into a
+// byte slice first; the status line is committed before any row is
+// written, so a mid-write failure can only be logged, not turned into an
+// error response.
+func (rt *Router) writeAuditLogCSV(w http.ResponseWriter, entries []store.AuditEntry) {
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", `attachment; filename="audit-log.csv"`)
+	w.WriteHeader(http.StatusOK)
+
+	cw := csv.NewWriter(w)
+	_ = cw.Write(auditLogCSVHeader)
+	for _, e := range entries {
+		_ = cw.Write([]string{
+			e.ID, e.ActorType, e.ActorID, e.ActorName, e.Ability,
+			e.Method, e.Path, strconv.Itoa(e.StatusCode), e.RemoteAddr, e.CreatedAt,
+		})
+	}
+	cw.Flush()
+	if err := cw.Error(); err != nil {
+		rt.logger.Warn("api: write audit log csv failed", slog.String("error", err.Error()))
+	}
 }
