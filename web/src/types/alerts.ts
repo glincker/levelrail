@@ -6,9 +6,11 @@
 // sends back for both kinds through one endpoint.
 
 // cert_expiry watches every certificate on the whole control plane, not
-// just this app's own domains: none of the threshold/crashloop fields
-// below apply to it, matching internal/alerting.Rule's own shape.
-export type AlertRuleKind = 'threshold' | 'crashloop' | 'cert_expiry'
+// just this app's own domains, and patch_status watches every node's
+// pending OS security patches the same way: neither uses any of the
+// threshold/crashloop fields below, matching internal/alerting.Rule's
+// own shape.
+export type AlertRuleKind = 'threshold' | 'crashloop' | 'cert_expiry' | 'patch_status'
 
 export type Comparator = '>' | '<' | '>=' | '<='
 

@@ -300,7 +300,7 @@ func TestEngine_Tick_CertExpiryFires_NotifiesOnceThenDoesNotDoubleFire(t *testin
 	r := Rule{ID: "r1", Name: "cert watch", Kind: KindCertExpiry, Enabled: true}
 	rules := newFakeRuleStore(r)
 	spy := &spyNotifier{}
-	engine := NewEngine(rules, nil, nil, nil, certs, 14*24*time.Hour, time.Hour, func(Rule) Notifier { return spy }, nil)
+	engine := NewEngine(rules, nil, nil, nil, certs, 14*24*time.Hour, time.Hour, nil, 0, func(Rule) Notifier { return spy }, nil)
 
 	if err := engine.Tick(context.Background()); err != nil {
 		t.Fatalf("first Tick() error = %v", err)

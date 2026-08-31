@@ -40,13 +40,16 @@ func appsAlertsUsage(prog string) string {
   %[1]s apps alerts create <app> --kind threshold --metric METRIC --comparator OP --threshold N [flags]
   %[1]s apps alerts create <app> --kind crashloop --restart-count-threshold N --restart-window DURATION [flags]
   %[1]s apps alerts create <app> --kind cert_expiry [flags]
+  %[1]s apps alerts create <app> --kind patch_status [flags]
   %[1]s apps alerts delete <app> <id> [flags]
 
 Manages an app's alert rules. A threshold rule watches a metric; a
 crashloop rule watches container restarts; a cert_expiry rule watches
 every certificate on the whole control plane (not just this app's own
-domains) and needs no metric/threshold/restart flags at all. All three
-notify the same way once they fire.
+domains); a patch_status rule watches every node's pending OS security
+patches the same way. Neither cert_expiry nor patch_status needs any
+metric/threshold/restart flags. All four notify the same way once they
+fire.
 
 Run "%[1]s apps alerts <subcommand> -h" for a subcommand's own flags.
 `, prog)
@@ -114,6 +117,8 @@ func alertRuleCondition(r alertRuleResource) string {
 		return fmt.Sprintf("%d restarts in %s", r.RestartCountThreshold, r.RestartWindow)
 	case "cert_expiry":
 		return "any certificate expiring soon or expired (platform-wide)"
+	case "patch_status":
+		return "any node over its pending security-patch threshold (platform-wide)"
 	default:
 		return "-"
 	}
@@ -144,7 +149,7 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 		disabled                                    bool
 	)
 	fs.StringVar(&name, "name", "", "display name for the rule (required)")
-	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry (required)")
+	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status (required)")
 	fs.StringVar(&metric, "metric", "", "metric name (--kind threshold only, required for that kind)")
 	fs.StringVar(&comparator, "comparator", "", "one of >, <, >=, <= (--kind threshold only, required for that kind)")
 	fs.Float64Var(&threshold, "threshold", 0, "threshold value (--kind threshold only)")
@@ -188,13 +193,14 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 		if restartWindow == "" {
 			return reportError(stdout, stderr, jsonOut, newValidationError("--restart-window is required for --kind crashloop"))
 		}
-	case "cert_expiry":
+	case "cert_expiry", "patch_status":
 		// No kind-specific flags: a cert_expiry rule watches every
-		// certificate on the control plane, not this app's own metrics.
+		// certificate on the control plane, and a patch_status rule
+		// watches every node, neither tied to this app's own metrics.
 	case "":
-		return reportError(stdout, stderr, jsonOut, newValidationError("--kind is required (threshold, crashloop, or cert_expiry)"))
+		return reportError(stdout, stderr, jsonOut, newValidationError("--kind is required (threshold, crashloop, cert_expiry, or patch_status)"))
 	default:
-		return reportError(stdout, stderr, jsonOut, newValidationError("--kind %q is not valid: must be threshold, crashloop, or cert_expiry", kind))
+		return reportError(stdout, stderr, jsonOut, newValidationError("--kind %q is not valid: must be threshold, crashloop, cert_expiry, or patch_status", kind))
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
@@ -224,15 +230,18 @@ func appsAlertsCreateUsage(prog string) string {
   %[1]s apps alerts create <app> --name NAME --kind threshold --metric METRIC --comparator OP --threshold N [flags]
   %[1]s apps alerts create <app> --name NAME --kind crashloop --restart-count-threshold N --restart-window DURATION [flags]
   %[1]s apps alerts create <app> --name NAME --kind cert_expiry [flags]
+  %[1]s apps alerts create <app> --name NAME --kind patch_status [flags]
 
-Creates a new alert rule for <app>. A cert_expiry rule is
-platform-wide (it watches every certificate on the control plane, not
-just <app>'s own domains); <app> only decides where it shows up in
-"apps alerts list", not what it evaluates.
+Creates a new alert rule for <app>. cert_expiry and patch_status rules
+are platform-wide (cert_expiry watches every certificate on the control
+plane, patch_status watches every node's pending OS security patches,
+neither limited to <app>'s own domains or workloads); <app> only
+decides where the rule shows up in "apps alerts list", not what it
+evaluates.
 
 Flags:
   --name string                        display name for the rule (required)
-  --kind string                        threshold, crashloop, or cert_expiry (required)
+  --kind string                        threshold, crashloop, cert_expiry, or patch_status (required)
   --metric string                      metric name (--kind threshold only)
   --comparator string                  >, <, >=, or <= (--kind threshold only)
   --threshold float                    threshold value (--kind threshold only)
