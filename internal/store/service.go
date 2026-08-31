@@ -99,7 +99,7 @@ type DesiredService struct {
 	Domains  []string
 	Env      map[string]string
 	// EnvDirty is true when Env was saved through the update endpoint
-	// since the container was last recreated (migrations/0065): env is
+	// since the container was last recreated (migrations/0066): env is
 	// baked in at create time, so the change isn't live yet. Written by
 	// SaveDesiredService like Env itself, unlike RestartNonce/Suspended,
 	// so an ordinary fresh-state redeploy clears it for free; callers
