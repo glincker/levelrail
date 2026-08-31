@@ -125,7 +125,7 @@ describe('AlertingQuickSetupPrompt', () => {
     )
     expect(ruleCreateCalls).toHaveLength(4)
     const kinds = ruleCreateCalls.map((call) => {
-      const init = call[1] as RequestInit
+      const init = (call as unknown[])[1] as RequestInit
       return (JSON.parse(init.body as string) as { kind: string }).kind
     })
     expect(kinds).toEqual([
