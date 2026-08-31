@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
 import { GitSourceCard } from '../../../components/GitSourceCard'
 import { PreviewEnvironmentsCard } from '../../../components/PreviewEnvironmentsCard'
+import { WebhookDeliveriesPanel } from '../../../components/WebhookDeliveriesPanel'
 
 // Former Overview-page cards, split out here since a preview environment
 // is meaningless without a connected git source: the two belong together
@@ -18,6 +19,7 @@ function SourceSection() {
   return (
     <div className="space-y-6">
       <GitSourceCard app={app} />
+      <WebhookDeliveriesPanel app={app} />
       <PreviewEnvironmentsCard app={app} />
     </div>
   )

@@ -300,6 +300,38 @@ type ListBackupsOptions struct {
 	Before string
 }
 
+// WebhookDeliveryResource mirrors internal/api's webhookDeliveryResource
+// (internal/api/webhook_deliveries.go): one recorded inbound
+// git-provider webhook request.
+type WebhookDeliveryResource struct {
+	ID               string    `json:"id"`
+	ServiceName      string    `json:"service_name"`
+	Provider         string    `json:"provider"`
+	EventType        string    `json:"event_type"`
+	SignatureValid   bool      `json:"signature_valid"`
+	Matched          bool      `json:"matched"`
+	StatusCode       int       `json:"status_code"`
+	Payload          string    `json:"payload"`
+	PayloadTruncated bool      `json:"payload_truncated"`
+	Error            string    `json:"error,omitempty"`
+	ReceivedAt       time.Time `json:"received_at"`
+}
+
+// ListWebhookDeliveriesOptions is ListWebhookDeliveries' pagination
+// input, the same shape ListBackupsOptions establishes.
+type ListWebhookDeliveriesOptions struct {
+	Limit  int
+	Before string
+}
+
+// ReplayWebhookDeliveryResult mirrors internal/api's
+// replayWebhookDeliveryResult: the status/message a replayed delivery's
+// re-run processing produced.
+type ReplayWebhookDeliveryResult struct {
+	Status  int    `json:"status"`
+	Message string `json:"message"`
+}
+
 // RestoreHistoryResource mirrors internal/api's restoreHistoryResource
 // (internal/api/restore.go).
 type RestoreHistoryResource struct {

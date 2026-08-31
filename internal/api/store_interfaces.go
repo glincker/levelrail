@@ -143,6 +143,16 @@ type DeployAttemptStore interface {
 	ListDeployAttempts(ctx context.Context, serviceName string) ([]store.DeployAttempt, error)
 }
 
+// WebhookDeliveryStore is the store surface real inbound webhook
+// delivery history needs: row-per-delivery CRUD backing
+// GET /api/v1/apps/{name}/webhook-deliveries and its replay endpoint.
+// *store.DB satisfies this structurally.
+type WebhookDeliveryStore interface {
+	SaveWebhookDelivery(ctx context.Context, d store.WebhookDelivery) error
+	GetWebhookDelivery(ctx context.Context, id string) (*store.WebhookDelivery, error)
+	ListWebhookDeliveries(ctx context.Context, serviceName string, limit int, before *time.Time) ([]store.WebhookDelivery, error)
+}
+
 // DeployLogQuerier is the telemetry-side read surface
 // handleDeployLogStream needs to serve a full replay once an attempt has
 // already finished (see that handler's own doc comment for the
@@ -334,6 +344,7 @@ type Store interface {
 	ScheduledTaskStore
 	FeatureFlagStore
 	OnboardingStore
+	WebhookDeliveryStore
 }
 
 // SecretSetter is the surface the secrets handlers need from

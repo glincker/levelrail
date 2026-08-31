@@ -209,6 +209,7 @@ type Router struct {
 	onboarding                OnboardingStore                 // always set, same "core Store interface, not an optional plug-in" shape as ingressSettings above: the row always exists (migrations/0067's own seeded row)
 	dbPinger                  DBPinger                        // nil is valid: GET /system/doctor reports its database check as unknown, same shape as dockerPinger above
 	doctorDiskWarningBytes    int64                           // 0 means "use defaultDoctorDiskWarningBytes", set via WithDoctorDiskWarningBytes
+	webhookDeliveries         WebhookDeliveryStore            // always set, same "core Store interface" shape as deployAttempts above
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
@@ -277,6 +278,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		bitbucketAppClient:      bitbucketapp.NewClient(),
 		bitbucketAppState:       newPendingState(),
 		onboarding:              s,
+		webhookDeliveries:       s,
 	}
 	for _, opt := range opts {
 		opt(rt)

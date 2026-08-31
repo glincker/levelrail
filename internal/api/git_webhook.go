@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -135,8 +136,23 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	body, err := io.ReadAll(io.LimitReader(r.Body, webhook.MaxPayloadBytes+1))
+	if err != nil {
+		rt.logger.Warn("api: git push webhook: read request body failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusBadRequest, "cannot read request body")
+		return
+	}
+	if len(body) > webhook.MaxPayloadBytes {
+		rt.logger.Warn("api: git push webhook: request body exceeds max payload size", slog.String("name", name), slog.Int("max_bytes", webhook.MaxPayloadBytes))
+		writeError(w, http.StatusBadRequest, "request body too large")
+		return
+	}
+
+	provider, eventType, headerFields := detectWebhookProviderAndEvent(r.Header)
+
 	gs, err := rt.gitSources.GetGitSource(r.Context(), name)
 	if errors.Is(err, store.ErrGitSourceNotFound) {
+		rt.saveWebhookDelivery(r.Context(), name, provider, eventType, headerFields, false, false, http.StatusNotFound, body, "no git source connected for this app")
 		writeError(w, http.StatusNotFound, "no git source connected for this app")
 		return
 	}
@@ -154,84 +170,77 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := io.ReadAll(io.LimitReader(r.Body, webhook.MaxPayloadBytes+1))
-	if err != nil {
-		rt.logger.Warn("api: git push webhook: read request body failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusBadRequest, "cannot read request body")
-		return
-	}
-	if len(body) > webhook.MaxPayloadBytes {
-		rt.logger.Warn("api: git push webhook: request body exceeds max payload size", slog.String("name", name), slog.Int("max_bytes", webhook.MaxPayloadBytes))
-		writeError(w, http.StatusBadRequest, "request body too large")
-		return
-	}
-
 	if !verifyGitPushWebhookAuth(secret, body, r.Header) {
 		rt.logger.Warn("api: git push webhook: signature verification failed", slog.String("name", name), slog.String("remote_addr", r.RemoteAddr))
+		rt.saveWebhookDelivery(r.Context(), name, provider, eventType, headerFields, false, true, http.StatusUnauthorized, body, "invalid signature")
 		writeError(w, http.StatusUnauthorized, "invalid signature")
 		return
 	}
 
-	if webhook.IsPullRequestEvent(r.Header) {
-		prEv, err := webhook.ParsePullRequestEventForProvider(body, r.Header)
+	status, message := rt.processGitPushWebhookPayload(r.Context(), name, *gs, body, r.Header)
+	deliveryErr := ""
+	if status >= http.StatusBadRequest {
+		deliveryErr = message
+	}
+	rt.saveWebhookDelivery(r.Context(), name, provider, eventType, headerFields, true, true, status, body, deliveryErr)
+
+	w.WriteHeader(status)
+	if _, err := fmt.Fprint(w, message); err != nil { //nolint:gosec // gosec's taint check can't see the text/plain Content-Type set above this function's entry, which is the actual mitigation for a client ever interpreting message's webhook-payload-derived fields as markup
+		rt.logger.Warn("api: git push webhook: failed to write response body", slog.String("error", err.Error()), slog.String("name", name))
+	}
+}
+
+// processGitPushWebhookPayload runs the real push/pull-request handling
+// logic against an already signature-verified body and header, returning
+// the status/message handleGitPushWebhook writes to its caller. Extracted
+// so handleReplayWebhookDelivery (webhook_deliveries.go) can re-run the
+// identical processing path against a stored payload instead of forking
+// a second copy of it.
+func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string, gs store.GitSource, body []byte, header http.Header) (status int, message string) {
+	if webhook.IsPullRequestEvent(header) {
+		prEv, err := webhook.ParsePullRequestEventForProvider(body, header)
 		if err != nil {
 			rt.logger.Warn("api: git push webhook: malformed pull request payload", slog.String("error", err.Error()), slog.String("name", name))
-			writeError(w, http.StatusBadRequest, "malformed payload")
-			return
+			return http.StatusBadRequest, "malformed payload"
 		}
-		status, message := rt.handlePullRequestWebhookEvent(r.Context(), name, *gs, prEv)
-		w.WriteHeader(status)
-		if _, err := fmt.Fprint(w, message); err != nil { //nolint:gosec // gosec's taint check can't see the text/plain Content-Type set above this function's entry, which is the actual mitigation for a client ever interpreting message's webhook-payload-derived fields as markup
-			rt.logger.Warn("api: git push webhook: failed to write response body", slog.String("error", err.Error()), slog.String("name", name))
-		}
-		return
+		return rt.handlePullRequestWebhookEvent(ctx, name, gs, prEv)
 	}
 
-	ev, err := webhook.ParsePushEventForProvider(body, r.Header.Get("X-Event-Key"))
+	ev, err := webhook.ParsePushEventForProvider(body, header.Get("X-Event-Key"))
 	if err != nil {
 		rt.logger.Warn("api: git push webhook: malformed payload", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusBadRequest, "malformed payload")
-		return
+		return http.StatusBadRequest, "malformed payload"
 	}
 
 	targetCfg := webhook.Config{Branch: gs.Branch}
 	if ev.Ref != targetCfg.TargetRef() {
 		rt.logger.Info("api: git push webhook: ignoring push to non-target branch", slog.String("name", name), slog.String("ref", ev.Ref), slog.String("want_ref", targetCfg.TargetRef()))
-		w.WriteHeader(http.StatusOK)
-		if _, err := fmt.Fprintf(w, "ignored: push to %q, deploys trigger on %q only\n", ev.Ref, targetCfg.TargetRef()); err != nil {
-			rt.logger.Warn("api: git push webhook: failed to write response body", slog.String("error", err.Error()), slog.String("name", name))
-		}
-		return
+		return http.StatusOK, fmt.Sprintf("ignored: push to %q, deploys trigger on %q only\n", ev.Ref, targetCfg.TargetRef())
 	}
 
 	if rt.builder == nil {
-		writeError(w, http.StatusNotImplemented, "git push deploys are not configured on this control plane")
-		return
+		return http.StatusNotImplemented, "git push deploys are not configured on this control plane"
 	}
 
-	existing, err := rt.apps.GetDesiredService(r.Context(), name)
+	existing, err := rt.apps.GetDesiredService(ctx, name)
 	if errors.Is(err, store.ErrServiceNotFound) {
-		writeError(w, http.StatusNotFound, "app not found")
-		return
+		return http.StatusNotFound, "app not found"
 	}
 	if err != nil {
 		rt.logger.Error("api: git push webhook: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
+		return http.StatusInternalServerError, "internal error"
 	}
 
-	token, err := rt.resolveGitSourceDeployToken(r.Context(), name)
+	token, err := rt.resolveGitSourceDeployToken(ctx, name)
 	if err != nil {
 		rt.logger.Error("api: git push webhook: resolve deploy token failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
+		return http.StatusInternalServerError, "internal error"
 	}
 
-	sourceDir, cleanup, err := rt.gitSourceFetch(r.Context(), gs.RepoURL, ev.After, token)
+	sourceDir, cleanup, err := rt.gitSourceFetch(ctx, gs.RepoURL, ev.After, token)
 	if err != nil {
 		rt.logger.Error("api: git push webhook: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("commit", ev.After))
-		writeError(w, http.StatusInternalServerError, "deploy failed")
-		return
+		return http.StatusInternalServerError, "deploy failed"
 	}
 	defer cleanup()
 
@@ -246,16 +255,12 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 		if appName == "" {
 			appName = name
 		}
-		failed := rt.deployServicesSpecFanout(r.Context(), appName, *gs, sourceDir, ev.After)
+		failed := rt.deployServicesSpecFanout(ctx, appName, gs, sourceDir, ev.After)
 		status := http.StatusOK
 		if failed > 0 {
 			status = http.StatusMultiStatus
 		}
-		w.WriteHeader(status)
-		if _, err := fmt.Fprintf(w, "services deploy triggered for app %q (%d service(s) failed)\n", appName, failed); err != nil {
-			rt.logger.Warn("api: git push webhook: failed to write response body", slog.String("error", err.Error()), slog.String("name", name))
-		}
-		return
+		return status, fmt.Sprintf("services deploy triggered for app %q (%d service(s) failed)\n", appName, failed)
 	}
 
 	svcSpec := specServiceFromDesired(*existing, spec.Build{Type: gs.BuildType, Path: gs.BuildPath})
@@ -268,25 +273,68 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 		ImageRepo:   name,
 	}
 
-	_, progress, finishAttempt := rt.beginBuildDeployAttempt(r.Context(), buildReq, store.DeployAttemptSourceWebhook)
-	tag, err := rt.builder.Deploy(r.Context(), buildReq, progress)
+	_, progress, finishAttempt := rt.beginBuildDeployAttempt(ctx, buildReq, store.DeployAttemptSourceWebhook)
+	tag, err := rt.builder.Deploy(ctx, buildReq, progress)
 	finishAttempt(err)
 	if err != nil {
 		rt.logger.Error("api: git push webhook: deploy failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("commit", ev.After))
-		writeError(w, http.StatusInternalServerError, "deploy failed")
-		return
+		return http.StatusInternalServerError, "deploy failed"
 	}
 	rt.logger.Info("api: git push webhook: deploy triggered", slog.String("name", name), slog.String("commit", ev.After), slog.String("tag", tag))
 
-	additionalFailed := rt.deployAdditionalServices(r.Context(), gs.AdditionalServices, sourceDir, ev.After)
+	additionalFailed := rt.deployAdditionalServices(ctx, gs.AdditionalServices, sourceDir, ev.After)
 
-	status := http.StatusOK
+	status = http.StatusOK
 	if additionalFailed > 0 {
 		status = http.StatusMultiStatus
 	}
-	w.WriteHeader(status)
-	if _, err := fmt.Fprintf(w, "deploy triggered: %s (%d additional service(s) failed)\n", tag, additionalFailed); err != nil {
-		rt.logger.Warn("api: git push webhook: failed to write response body", slog.String("error", err.Error()), slog.String("name", name))
+	return status, fmt.Sprintf("deploy triggered: %s (%d additional service(s) failed)\n", tag, additionalFailed)
+}
+
+// detectWebhookProviderAndEvent identifies which provider sent a webhook
+// request and what kind of event it was, from headers alone: debug
+// metadata for the delivery record, nothing here changes how the request
+// is processed. GitHub Enterprise Server sends the identical
+// X-GitHub-Event header github.com does, so both are reported as
+// "github"; there is no header that distinguishes them.
+// headerFields carries the raw values of the event-discriminator headers
+// (never a signature or token header), what processGitPushWebhookPayload
+// needs to take the identical branch on replay.
+func detectWebhookProviderAndEvent(header http.Header) (provider, eventType string, headerFields map[string]string) {
+	headerFields = map[string]string{
+		"X-GitHub-Event": header.Get("X-GitHub-Event"),
+		"X-Gitlab-Event": header.Get("X-Gitlab-Event"),
+		"X-Event-Key":    header.Get("X-Event-Key"),
+	}
+	switch {
+	case headerFields["X-Gitlab-Event"] != "":
+		return "gitlab", headerFields["X-Gitlab-Event"], headerFields
+	case headerFields["X-GitHub-Event"] != "":
+		return "github", headerFields["X-GitHub-Event"], headerFields
+	case headerFields["X-Event-Key"] != "":
+		return "bitbucket", headerFields["X-Event-Key"], headerFields
+	default:
+		return "unknown", "unknown", headerFields
+	}
+}
+
+// saveWebhookDelivery persists one inbound webhook delivery record,
+// logging and swallowing any store error: a history-tracking failure
+// must never block or fail the webhook response itself, the same
+// "optional signal" reasoning beginBuildDeployAttempt's own doc comment
+// establishes for deploy_attempts.
+func (rt *Router) saveWebhookDelivery(ctx context.Context, name, provider, eventType string, headerFields map[string]string, signatureValid, matched bool, statusCode int, payload []byte, errMsg string) {
+	id, err := store.NewWebhookDeliveryID()
+	if err != nil {
+		rt.logger.Error("api: save webhook delivery: mint id failed", slog.String("error", err.Error()), slog.String("name", name))
+		return
+	}
+	if err := rt.webhookDeliveries.SaveWebhookDelivery(ctx, store.WebhookDelivery{
+		ID: id, ServiceName: name, Provider: provider, EventType: eventType,
+		HeaderFields: headerFields, SignatureValid: signatureValid, Matched: matched,
+		StatusCode: statusCode, Payload: payload, Error: errMsg, ReceivedAt: time.Now(),
+	}); err != nil {
+		rt.logger.Error("api: save webhook delivery failed", slog.String("error", err.Error()), slog.String("name", name))
 	}
 }
 

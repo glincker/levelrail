@@ -107,6 +107,9 @@ type (
 	secretKeyResource   = apiclient.SecretKeyResource
 	gitSourceResource   = apiclient.GitSourceResource
 	setGitSourceRequest = apiclient.SetGitSourceRequest
+
+	webhookDeliveryResource     = apiclient.WebhookDeliveryResource
+	replayWebhookDeliveryResult = apiclient.ReplayWebhookDeliveryResult
 )
 
 // NewClient builds a Client. See apiclient.NewClient.
