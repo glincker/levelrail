@@ -96,26 +96,16 @@ func EvaluatePatchStatus(ctx context.Context, nodes NodeSource, metrics MetricsS
 	)
 
 	for _, node := range all {
-		samples, err := metrics.QueryMetrics(ctx, nodePatchResourceID(node.ID), telemetry.MetricOSSecurityPatchesAvailable, from, now)
-		if err != nil {
-			// One node's metrics query failing must not block evaluating
-			// every other node, the same "one broken resource must not
-			// block the rest" stance ListCertificates takes on a single
-			// malformed certificate.
-			logger.Warn("alerting: evaluate patch_status rule: query node patch status failed, skipping node",
-				slog.String("rule_id", r.ID), slog.String("node_id", node.ID), slog.String("error", err.Error()))
-			continue
-		}
-		if len(samples) == 0 {
+		value, have, firing := evaluatePatchStatusForNode(ctx, metrics, r.ID, node, threshold, from, now, logger)
+		if !have {
 			continue
 		}
 
-		value := samples[len(samples)-1].Value
 		if !haveMaxValue || value > maxValue {
 			maxValue, haveMaxValue = value, true
 		}
 
-		if value >= threshold {
+		if firing {
 			anyUnhealthy = true
 			notices = append(notices, patchStatusNotice(node, value, threshold))
 		}
@@ -127,6 +117,25 @@ func EvaluatePatchStatus(ctx context.Context, nodes NodeSource, metrics MetricsS
 	}
 
 	return advanceState(next, r, anyUnhealthy, 0, now), notices, nil
+}
+
+// evaluatePatchStatusForNode is one node's own check within
+// EvaluatePatchStatus's loop, pulled out so node_alert_status.go's live,
+// single-node check can call the identical logic without waiting for
+// Engine's next tick. have is false when there is no recent sample to
+// judge, matching the loop's own "skip, don't confirm or deny" stance.
+func evaluatePatchStatusForNode(ctx context.Context, metrics MetricsSource, ruleID string, node store.Node, threshold float64, from, now time.Time, logger *slog.Logger) (value float64, have, firing bool) {
+	samples, err := metrics.QueryMetrics(ctx, nodePatchResourceID(node.ID), telemetry.MetricOSSecurityPatchesAvailable, from, now)
+	if err != nil {
+		logger.Warn("alerting: evaluate patch_status rule: query node patch status failed, skipping node",
+			slog.String("rule_id", ruleID), slog.String("node_id", node.ID), slog.String("error", err.Error()))
+		return 0, false, false
+	}
+	if len(samples) == 0 {
+		return 0, false, false
+	}
+	value = samples[len(samples)-1].Value
+	return value, true, value >= threshold
 }
 
 func patchStatusNotice(node store.Node, value, threshold float64) string {

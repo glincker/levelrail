@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -54,6 +55,28 @@ type nodeResource struct {
 	AcceptsAppWorkloads   bool      `json:"accepts_app_workloads"`
 	AcceptsBuildWorkloads bool      `json:"accepts_build_workloads"`
 	CreatedAt             time.Time `json:"created_at"`
+	// AlertStatus is only populated by handleGetNode (a single-node
+	// fetch), never handleListNodes: it costs a handful of live metrics
+	// queries per kind, which is fine for one node on its own detail page
+	// but would multiply into a real N+1 if run for every row in the node
+	// list. nil when telemetry isn't configured on this control plane.
+	AlertStatus *nodeAlertStatusResource `json:"alert_status,omitempty"`
+}
+
+// nodeAlertStatusResource is alerting.NodeAlertStatus's wire shape: each
+// field is "ok", "firing", or "unknown" (alerting.NodeAlertState).
+type nodeAlertStatusResource struct {
+	PatchStatus       string `json:"patch_status"`
+	NodeDiskSpace     string `json:"node_disk_space"`
+	NodeResourceUsage string `json:"node_resource_usage"`
+}
+
+func toNodeAlertStatusResource(s alerting.NodeAlertStatus) nodeAlertStatusResource {
+	return nodeAlertStatusResource{
+		PatchStatus:       string(s.PatchStatus),
+		NodeDiskSpace:     string(s.NodeDiskSpace),
+		NodeResourceUsage: string(s.NodeResourceUsage),
+	}
 }
 
 func toNodeResource(n store.Node) nodeResource {
@@ -118,7 +141,12 @@ func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
-// handleGetNode handles GET /api/v1/nodes/{id}.
+// handleGetNode handles GET /api/v1/nodes/{id}. When telemetry is
+// configured, the response also carries alert_status: a live re-evaluation
+// of this node's patch_status/node_disk_space/node_resource_usage
+// standing via alerting.CheckNodeAlertStatus, not a rule's stored
+// aggregate LastValue (which only ever names the worst node across the
+// whole fleet, never which one).
 func (rt *Router) handleGetNode(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	n, err := rt.nodes.GetNode(r.Context(), id)
@@ -131,7 +159,16 @@ func (rt *Router) handleGetNode(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	writeJSON(w, http.StatusOK, toNodeResource(*n))
+
+	res := toNodeResource(*n)
+	if rt.telemetry != nil {
+		th := rt.nodeAlertThresholds
+		status := alerting.CheckNodeAlertStatus(r.Context(), *n, rt.apps, rt.telemetry,
+			th.patchStatus, th.nodeDiskSpace, th.nodeCPU, th.nodeMemory, time.Now(), rt.logger)
+		wire := toNodeAlertStatusResource(status)
+		res.AlertStatus = &wire
+	}
+	writeJSON(w, http.StatusOK, res)
 }
 
 // handleDeleteNode handles DELETE /api/v1/nodes/{id}. Idempotent at the

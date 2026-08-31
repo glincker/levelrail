@@ -92,6 +92,7 @@ type (
 	createNodeJoinTokenResponse = apiclient.CreateNodeJoinTokenResponse
 	drainNodeResponse           = apiclient.DrainNodeResponse
 	nodePatchStatusResource     = apiclient.NodePatchStatusResource
+	nodeAlertStatusResource     = apiclient.NodeAlertStatusResource
 
 	organizationResource           = apiclient.OrganizationResource
 	createOrganizationRequest      = apiclient.CreateOrganizationRequest

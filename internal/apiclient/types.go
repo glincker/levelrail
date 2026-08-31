@@ -933,6 +933,21 @@ type NodeResource struct {
 	AcceptsAppWorkloads   bool      `json:"accepts_app_workloads"`
 	AcceptsBuildWorkloads bool      `json:"accepts_build_workloads"`
 	CreatedAt             time.Time `json:"created_at"`
+	// AlertStatus is only set by GET /api/v1/nodes/{id} (a single-node
+	// fetch), never the list endpoint; nil when telemetry isn't
+	// configured on the control plane.
+	AlertStatus *NodeAlertStatusResource `json:"alert_status,omitempty"`
+}
+
+// NodeAlertStatusResource mirrors internal/api's nodeAlertStatusResource
+// (internal/api/nodes.go): each field is "ok", "firing", or "unknown",
+// a live re-evaluation of this one node's own standing for that
+// node-scoped, platform-wide alert kind, not a rule's stored aggregate
+// value.
+type NodeAlertStatusResource struct {
+	PatchStatus       string `json:"patch_status"`
+	NodeDiskSpace     string `json:"node_disk_space"`
+	NodeResourceUsage string `json:"node_resource_usage"`
 }
 
 // NodePatchStatusResource mirrors internal/api's nodePatchStatusResponse

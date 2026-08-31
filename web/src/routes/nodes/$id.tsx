@@ -12,6 +12,7 @@ import type { NodeStatus } from '../../types/nodeDetail'
 import { ConditionsPanel } from '../../components/ConditionsPanel'
 import { CordonNodeDialog } from '../../components/CordonNodeDialog'
 import { DrainNodeDialog } from '../../components/DrainNodeDialog'
+import { NodeAlertStatusCard } from '../../components/NodeAlertStatusCard'
 import { NodeMetricsDashboard } from '../../components/NodeMetricsDashboard'
 import { NodePatchStatusCard } from '../../components/NodePatchStatusCard'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -236,6 +237,8 @@ function NodeDetailPage() {
           ) : null}
         </CardContent>
       </Card>
+
+      <NodeAlertStatusCard nodeId={id} />
 
       <NodePatchStatusCard nodeId={id} />
 

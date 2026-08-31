@@ -14,6 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/nodehealth"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
 func seedNode(t *testing.T, db *store.DB, id, name string) {
@@ -87,6 +88,83 @@ func TestHandleGetNode(t *testing.T) {
 	}
 	if got.ID != "node_a" || got.Name != "alpha" {
 		t.Errorf("got = %+v, want ID=node_a Name=alpha", got)
+	}
+}
+
+// TestHandleGetNode_NoTelemetry_OmitsAlertStatus confirms alert_status is
+// left out entirely (not a JSON null, not a false "all ok") when this
+// control plane has no telemetry configured to evaluate against.
+func TestHandleGetNode_NoTelemetry_OmitsAlertStatus(t *testing.T) {
+	rt, db := newTestRouter(t) // no WithTelemetryQuerier, no WithNodeAlertThresholds
+	cookie := loginTestSession(t, rt, db)
+	seedNode(t, db, "node_a", "alpha")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/nodes/node_a", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var got nodeResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.AlertStatus != nil {
+		t.Errorf("AlertStatus = %+v, want nil when telemetry isn't configured", got.AlertStatus)
+	}
+}
+
+// TestHandleGetNode_WithTelemetry_NoSamples_ReportsUnknown is the
+// "collector hasn't run yet" case: alert_status must be present but
+// every kind unknown, never a false "ok".
+func TestHandleGetNode_WithTelemetry_NoSamples_ReportsUnknown(t *testing.T) {
+	rt, db, _ := newTestRouterWithTelemetry(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNode(t, db, "node_a", "alpha")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/nodes/node_a", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var got nodeResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.AlertStatus == nil {
+		t.Fatal("AlertStatus = nil, want a populated struct when telemetry is configured")
+	}
+	if got.AlertStatus.PatchStatus != "unknown" || got.AlertStatus.NodeDiskSpace != "unknown" || got.AlertStatus.NodeResourceUsage != "unknown" {
+		t.Errorf("AlertStatus = %+v, want every kind unknown with no samples written yet", got.AlertStatus)
+	}
+}
+
+// TestHandleGetNode_WithTelemetry_PatchOverThreshold_ReportsFiring is a
+// live re-evaluation, not a stale rule value: writing a fresh sample and
+// re-fetching the node must reflect it immediately, on the same request,
+// with no rule and no engine tick involved at all.
+func TestHandleGetNode_WithTelemetry_PatchOverThreshold_ReportsFiring(t *testing.T) {
+	rt, db, tdb := newTestRouterWithTelemetry(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNode(t, db, "node_a", "alpha")
+
+	now := time.Now().UTC()
+	if err := tdb.WriteSamples(context.Background(), []telemetry.Sample{
+		{ResourceID: "node:node_a", Metric: telemetry.MetricOSSecurityPatchesAvailable, Timestamp: now, Value: 3},
+	}); err != nil {
+		t.Fatalf("seed samples: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/nodes/node_a", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var got nodeResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.AlertStatus == nil || got.AlertStatus.PatchStatus != "firing" {
+		t.Errorf("AlertStatus = %+v, want patch_status firing (3 security patches pending, default threshold is 1)", got.AlertStatus)
 	}
 }
 
