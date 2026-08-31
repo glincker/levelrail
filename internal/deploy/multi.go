@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sort"
 	"time"
 
@@ -85,11 +86,14 @@ func (p *Pipeline) DeploySpec(ctx context.Context, req MultiRequest, progress fu
 		return nil, fmt.Errorf("deploy: app %q: no app store configured for a multi-service deploy (see WithAppStore)", req.AppName)
 	}
 
-	services, err := expandComposeServices(req.Services, req.SourceDir)
+	services, healthWarnings, err := expandComposeServices(req.Services, req.SourceDir)
 	if err != nil {
 		return nil, fmt.Errorf("deploy: app %q: %w", req.AppName, err)
 	}
 	req.Services = services
+	for _, warning := range healthWarnings {
+		p.logger.Warn("deploy: compose healthcheck not translatable to a readiness probe", slog.String("app", req.AppName), slog.String("detail", warning))
+	}
 
 	appID, err := p.ensureApp(ctx, req.AppName)
 	if err != nil {
@@ -144,7 +148,7 @@ func (p *Pipeline) DeploySpec(ctx context.Context, req MultiRequest, progress fu
 // key collision between an expanded compose service and any other
 // entry (compose-expanded or not): silently picking one would deploy
 // the wrong thing under a name the operator didn't expect.
-func expandComposeServices(services map[string]spec.Service, sourceDir string) (map[string]spec.Service, error) {
+func expandComposeServices(services map[string]spec.Service, sourceDir string) (out map[string]spec.Service, warnings []string, err error) {
 	hasCompose := false
 	for _, svc := range services {
 		if svc.Build.Type == spec.BuildCompose {
@@ -153,31 +157,32 @@ func expandComposeServices(services map[string]spec.Service, sourceDir string) (
 		}
 	}
 	if !hasCompose {
-		return services, nil
+		return services, nil, nil
 	}
 
-	out := make(map[string]spec.Service, len(services))
+	out = make(map[string]spec.Service, len(services))
 	for key, svc := range services {
 		if svc.Build.Type != spec.BuildCompose {
 			if _, exists := out[key]; exists {
-				return nil, fmt.Errorf("service %q collides with a service another compose file already declared", key)
+				return nil, nil, fmt.Errorf("service %q collides with a service another compose file already declared", key)
 			}
 			out[key] = svc
 			continue
 		}
 
-		expanded, err := compose.ExpandBuildService(svc, sourceDir)
+		expanded, expandedWarnings, err := compose.ExpandBuildService(svc, sourceDir)
 		if err != nil {
-			return nil, fmt.Errorf("service %q: %w", key, err)
+			return nil, nil, fmt.Errorf("service %q: %w", key, err)
 		}
+		warnings = append(warnings, expandedWarnings...)
 		for expandedKey, expandedSvc := range expanded {
 			if _, exists := out[expandedKey]; exists {
-				return nil, fmt.Errorf("service %q: compose service %q collides with another service of the same name", key, expandedKey)
+				return nil, nil, fmt.Errorf("service %q: compose service %q collides with another service of the same name", key, expandedKey)
 			}
 			out[expandedKey] = expandedSvc
 		}
 	}
-	return out, nil
+	return out, warnings, nil
 }
 
 // ensureApp returns name's store.App ID, creating the row (ID == Name)

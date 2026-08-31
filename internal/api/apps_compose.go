@@ -75,10 +75,13 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	services, err := compose.ToDesiredServices(name, file)
+	services, healthWarnings, err := compose.ToDesiredServices(name, file)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
+	}
+	for _, warning := range healthWarnings {
+		rt.logger.Warn("api: deploy compose: healthcheck not translatable to a readiness probe", slog.String("app", name), slog.String("detail", warning))
 	}
 	for i := range services {
 		key := strings.TrimPrefix(services[i].Name, name+"-")

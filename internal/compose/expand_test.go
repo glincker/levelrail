@@ -40,7 +40,7 @@ services:
 `)
 
 	svc := spec.Service{Build: spec.Build{Type: spec.BuildCompose, Path: "docker-compose.yml"}}
-	out, err := ExpandBuildService(svc, sourceDir)
+	out, _, err := ExpandBuildService(svc, sourceDir)
 	if err != nil {
 		t.Fatalf("ExpandBuildService() error = %v", err)
 	}
@@ -92,7 +92,7 @@ services:
 `)
 
 	svc := spec.Service{Build: spec.Build{Type: spec.BuildCompose, Path: "docker-compose.yml"}}
-	out, err := ExpandBuildService(svc, sourceDir)
+	out, _, err := ExpandBuildService(svc, sourceDir)
 	if err != nil {
 		t.Fatalf("ExpandBuildService() error = %v", err)
 	}
@@ -115,7 +115,7 @@ services:
 `)
 
 	svc := spec.Service{Build: spec.Build{Type: spec.BuildCompose, Path: "docker-compose.yml"}}
-	out, err := ExpandBuildService(svc, sourceDir)
+	out, _, err := ExpandBuildService(svc, sourceDir)
 	if err != nil {
 		t.Fatalf("ExpandBuildService() error = %v", err)
 	}
@@ -134,7 +134,7 @@ services:
 `)
 
 	svc := spec.Service{Build: spec.Build{Type: spec.BuildCompose, Path: "services/api/docker-compose.yml"}}
-	out, err := ExpandBuildService(svc, sourceDir)
+	out, _, err := ExpandBuildService(svc, sourceDir)
 	if err != nil {
 		t.Fatalf("ExpandBuildService() error = %v", err)
 	}
@@ -156,12 +156,66 @@ services:
 `)
 
 	svc := spec.Service{Build: spec.Build{Type: spec.BuildCompose, Path: "docker-compose.yml"}}
-	out, err := ExpandBuildService(svc, sourceDir)
+	out, _, err := ExpandBuildService(svc, sourceDir)
 	if err != nil {
 		t.Fatalf("ExpandBuildService() error = %v", err)
 	}
 	if got := out["web"].Domains; len(got) != 1 || got[0] != "app.example.com" {
 		t.Errorf("web.Domains = %v, want [app.example.com]", got)
+	}
+}
+
+func TestExpandBuildService_TranslatableHealthcheck_PopulatesReadiness(t *testing.T) {
+	sourceDir := t.TempDir()
+	writeComposeFile(t, sourceDir, "docker-compose.yml", `
+services:
+  web:
+    build: ./web
+    healthcheck:
+      test: curl -f http://localhost:3000/healthz
+      interval: 20s
+`)
+
+	svc := spec.Service{Build: spec.Build{Type: spec.BuildCompose, Path: "docker-compose.yml"}}
+	out, warnings, err := ExpandBuildService(svc, sourceDir)
+	if err != nil {
+		t.Fatalf("ExpandBuildService() error = %v", err)
+	}
+	if len(warnings) != 0 {
+		t.Errorf("warnings = %v, want none", warnings)
+	}
+	web := out["web"]
+	if web.Health == nil || web.Health.Readiness == nil {
+		t.Fatal("web.Health.Readiness = nil, want a populated readiness probe")
+	}
+	if web.Health.Readiness.Path != "/healthz" {
+		t.Errorf("web.Health.Readiness.Path = %q, want /healthz", web.Health.Readiness.Path)
+	}
+	if web.Health.Readiness.Interval != "20s" {
+		t.Errorf("web.Health.Readiness.Interval = %q, want 20s", web.Health.Readiness.Interval)
+	}
+}
+
+func TestExpandBuildService_NonHTTPHealthcheck_LeavesHealthUnsetAndWarns(t *testing.T) {
+	sourceDir := t.TempDir()
+	writeComposeFile(t, sourceDir, "docker-compose.yml", `
+services:
+  cache:
+    image: redis:7
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+`)
+
+	svc := spec.Service{Build: spec.Build{Type: spec.BuildCompose, Path: "docker-compose.yml"}}
+	out, warnings, err := ExpandBuildService(svc, sourceDir)
+	if err != nil {
+		t.Fatalf("ExpandBuildService() error = %v", err)
+	}
+	if out["cache"].Health != nil {
+		t.Errorf("cache.Health = %+v, want nil (no fabricated check)", out["cache"].Health)
+	}
+	if len(warnings) != 1 {
+		t.Fatalf("warnings = %v, want exactly one", warnings)
 	}
 }
 
@@ -176,7 +230,7 @@ services:
 `)
 
 	svc := spec.Service{Build: spec.Build{Type: spec.BuildCompose, Path: "docker-compose.yml"}}
-	_, err := ExpandBuildService(svc, sourceDir)
+	_, _, err := ExpandBuildService(svc, sourceDir)
 	if err == nil {
 		t.Fatal("ExpandBuildService() error = nil, want a magic-var rejection error")
 	}
@@ -196,7 +250,7 @@ services:
 `)
 
 	svc := spec.Service{Build: spec.Build{Type: spec.BuildCompose, Path: "docker-compose.yml"}}
-	_, err := ExpandBuildService(svc, sourceDir)
+	_, _, err := ExpandBuildService(svc, sourceDir)
 	if err == nil {
 		t.Fatal("ExpandBuildService() error = nil, want a bind-mount rejection error")
 	}
@@ -204,14 +258,14 @@ services:
 
 func TestExpandBuildService_WrongBuildType_ReturnsCallerError(t *testing.T) {
 	svc := spec.Service{Build: spec.Build{Type: spec.BuildDockerfile}}
-	if _, err := ExpandBuildService(svc, t.TempDir()); err == nil {
+	if _, _, err := ExpandBuildService(svc, t.TempDir()); err == nil {
 		t.Fatal("ExpandBuildService() error = nil, want an error for a non-compose build type")
 	}
 }
 
 func TestExpandBuildService_MissingFile_ReturnsClearError(t *testing.T) {
 	svc := spec.Service{Build: spec.Build{Type: spec.BuildCompose, Path: "does-not-exist.yml"}}
-	if _, err := ExpandBuildService(svc, t.TempDir()); err == nil {
+	if _, _, err := ExpandBuildService(svc, t.TempDir()); err == nil {
 		t.Fatal("ExpandBuildService() error = nil, want a file-not-found error")
 	}
 }

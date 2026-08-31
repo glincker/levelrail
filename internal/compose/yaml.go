@@ -28,6 +28,43 @@ type rawService struct {
 	Labels      map[string]string `yaml:"labels"`
 	Networks    Networks          `yaml:"networks"`
 	Restart     string            `yaml:"restart"`
+	Healthcheck *Healthcheck      `yaml:"healthcheck"`
+}
+
+// Healthcheck is one service's healthcheck: block, Docker Compose's own
+// command-based health check schema (test/interval/timeout/retries/
+// start_period). Never executed: this platform's own health model is
+// HTTP-path based, so resolveHealthcheck (healthcheck.go) extracts a
+// readiness path from a curl/wget test when it can, and leaves health
+// unset otherwise.
+type Healthcheck struct {
+	Test        healthcheckTest `yaml:"test"`
+	Interval    string          `yaml:"interval"`
+	Timeout     string          `yaml:"timeout"`
+	Retries     int             `yaml:"retries"`
+	StartPeriod string          `yaml:"start_period"`
+}
+
+// healthcheckTest is healthcheck.test's string-or-list union: a bare
+// string is Compose's own shorthand for ["CMD-SHELL", "<string>"].
+type healthcheckTest []string
+
+// UnmarshalYAML implements the union described above.
+func (t *healthcheckTest) UnmarshalYAML(node *yaml.Node) error {
+	switch node.Kind {
+	case yaml.ScalarNode:
+		*t = []string{"CMD-SHELL", node.Value}
+		return nil
+	case yaml.SequenceNode:
+		var items []string
+		if err := node.Decode(&items); err != nil {
+			return fmt.Errorf("healthcheck: test: %w", err)
+		}
+		*t = items
+		return nil
+	default:
+		return fmt.Errorf("healthcheck: test: must be a string or a list")
+	}
 }
 
 // Environment is environment:'s string-or-list union: a KEY: VALUE map,

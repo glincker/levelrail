@@ -59,6 +59,64 @@ services:
 	}
 }
 
+func TestParse_Healthcheck_StringForm(t *testing.T) {
+	f, err := Parse([]byte(`
+services:
+  web:
+    image: nginx:1.27
+    healthcheck:
+      test: curl -f http://localhost/health
+      interval: 10s
+      timeout: 2s
+      retries: 3
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	hc := f.Services["web"].Healthcheck
+	if hc == nil {
+		t.Fatal("Healthcheck = nil, want a parsed block")
+	}
+	want := []string{"CMD-SHELL", "curl -f http://localhost/health"}
+	if len(hc.Test) != 2 || hc.Test[0] != want[0] || hc.Test[1] != want[1] {
+		t.Errorf("Test = %v, want %v (bare string implies CMD-SHELL)", hc.Test, want)
+	}
+	if hc.Interval != "10s" || hc.Timeout != "2s" || hc.Retries != 3 {
+		t.Errorf("hc = %+v, want Interval=10s Timeout=2s Retries=3", hc)
+	}
+}
+
+func TestParse_Healthcheck_ListForm(t *testing.T) {
+	f, err := Parse([]byte(`
+services:
+  web:
+    image: nginx:1.27
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	hc := f.Services["web"].Healthcheck
+	if hc == nil || len(hc.Test) != 4 || hc.Test[0] != "CMD" {
+		t.Errorf("Test = %+v, want [CMD curl -f http://localhost/health]", hc)
+	}
+}
+
+func TestParse_NoHealthcheck_StaysNil(t *testing.T) {
+	f, err := Parse([]byte(`
+services:
+  web:
+    image: nginx:1.27
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if f.Services["web"].Healthcheck != nil {
+		t.Errorf("Healthcheck = %+v, want nil", f.Services["web"].Healthcheck)
+	}
+}
+
 func TestValidate_Invalid(t *testing.T) {
 	tests := []struct {
 		name string

@@ -12,9 +12,14 @@ import (
 // appName as their AppID (matching the naming convention
 // internal/deploy's own multi-service fan-out uses). Runs Validate
 // first, so a caller only needs to call this one function.
-func ToDesiredServices(appName string, f *File) ([]store.DesiredService, error) {
+//
+// warnings carries one message per service whose healthcheck: is a real,
+// non-HTTP check (see resolveHealthcheck): the caller is expected to
+// surface these to the operator (log line, response field, ...) since
+// that service's health is deliberately left unset rather than guessed.
+func ToDesiredServices(appName string, f *File) (services []store.DesiredService, warnings []string, err error) {
 	if err := f.Validate(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	names := sortedServiceNames(f)
@@ -22,7 +27,7 @@ func ToDesiredServices(appName string, f *File) ([]store.DesiredService, error) 
 	for _, key := range names {
 		svc := f.Services[key]
 		if err := spec.ValidateLabels(svc.Labels); err != nil {
-			return nil, fmt.Errorf("service %q: %w", key, err)
+			return nil, nil, fmt.Errorf("service %q: %w", key, err)
 		}
 
 		d := store.DesiredService{
@@ -45,9 +50,19 @@ func ToDesiredServices(appName string, f *File) ([]store.DesiredService, error) 
 				ContainerPath: v.ContainerPath,
 			})
 		}
+
+		health, warning, err := resolveHealthcheck(key, svc.Healthcheck)
+		if err != nil {
+			return nil, nil, err
+		}
+		if warning != "" {
+			warnings = append(warnings, warning)
+		}
+		d.Health = health.toStoreHealth()
+
 		out = append(out, d)
 	}
-	return out, nil
+	return out, warnings, nil
 }
 
 // volumeName gives a compose service's own logical volume name a

@@ -48,6 +48,7 @@ type Service struct {
 	Labels      map[string]string
 	Networks    Networks
 	Restart     string
+	Healthcheck *Healthcheck
 }
 
 // Volume is one short-form "name:/container/path" entry.
