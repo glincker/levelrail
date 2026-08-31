@@ -35,7 +35,7 @@ func TestSaveAndListAuditEntries_NewestFirst(t *testing.T) {
 		t.Fatalf("SaveAuditEntry(newer) error = %v", err)
 	}
 
-	got, err := db.ListAuditEntries(ctx, 50, nil)
+	got, err := db.ListAuditEntries(ctx, 50, nil, AuditEntryFilter{})
 	if err != nil {
 		t.Fatalf("ListAuditEntries() error = %v", err)
 	}
@@ -65,7 +65,7 @@ func TestListAuditEntries_Limit(t *testing.T) {
 		}
 	}
 
-	got, err := db.ListAuditEntries(ctx, 2, nil)
+	got, err := db.ListAuditEntries(ctx, 2, nil, AuditEntryFilter{})
 	if err != nil {
 		t.Fatalf("ListAuditEntries() error = %v", err)
 	}
@@ -95,7 +95,7 @@ func TestListAuditEntries_BeforeCursor(t *testing.T) {
 		t.Fatalf("parse cursor: %v", err)
 	}
 
-	got, err := db.ListAuditEntries(ctx, 50, &cursor)
+	got, err := db.ListAuditEntries(ctx, 50, &cursor, AuditEntryFilter{})
 	if err != nil {
 		t.Fatalf("ListAuditEntries(before) error = %v", err)
 	}
@@ -109,11 +109,42 @@ func TestListAuditEntries_BeforeCursor(t *testing.T) {
 
 func TestListAuditEntries_Empty(t *testing.T) {
 	db := openTestDB(t)
-	got, err := db.ListAuditEntries(context.Background(), 50, nil)
+	got, err := db.ListAuditEntries(context.Background(), 50, nil, AuditEntryFilter{})
 	if err != nil {
 		t.Fatalf("ListAuditEntries() error = %v", err)
 	}
 	if len(got) != 0 {
 		t.Fatalf("len(got) = %d, want 0 for an empty table", len(got))
+	}
+}
+
+func TestListAuditEntries_FilterByPathAndMethod(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	appUpdate := testAuditEntry("aud_put", "2026-01-01T00:00:00.000000000Z")
+	appUpdate.Method = "PUT"
+	appUpdate.Path = "/api/v1/apps/web"
+
+	appDelete := testAuditEntry("aud_delete", "2026-01-01T00:00:01.000000000Z")
+	appDelete.Method = "DELETE"
+	appDelete.Path = "/api/v1/apps/web"
+
+	otherApp := testAuditEntry("aud_other", "2026-01-01T00:00:02.000000000Z")
+	otherApp.Method = "PUT"
+	otherApp.Path = "/api/v1/apps/other"
+
+	for _, e := range []AuditEntry{appUpdate, appDelete, otherApp} {
+		if err := db.SaveAuditEntry(ctx, e); err != nil {
+			t.Fatalf("SaveAuditEntry(%s) error = %v", e.ID, err)
+		}
+	}
+
+	got, err := db.ListAuditEntries(ctx, 50, nil, AuditEntryFilter{Path: "/api/v1/apps/web", Method: "PUT"})
+	if err != nil {
+		t.Fatalf("ListAuditEntries(filter) error = %v", err)
+	}
+	if len(got) != 1 || got[0].ID != "aud_put" {
+		t.Fatalf("ListAuditEntries(filter) = %+v, want only aud_put", got)
 	}
 }
