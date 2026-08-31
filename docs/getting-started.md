@@ -199,3 +199,6 @@ itself.
   differs from Coolify, Dokploy, CapRover, Dokku, and Kamal.
 - [docs/roadmap.md](roadmap.md): what's shipped, what's in progress,
   and what's not started yet.
+- [docs/master-key-rotation.md](master-key-rotation.md): rotating the
+  envelope-encryption master key.
+- [CHANGELOG.md](../CHANGELOG.md): what changed between releases.
