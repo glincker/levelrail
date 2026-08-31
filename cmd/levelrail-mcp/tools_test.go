@@ -239,6 +239,41 @@ func TestListDeploys(t *testing.T) {
 	}
 }
 
+func TestDiagnoseAppFailure(t *testing.T) {
+	var gotPath, gotQuery string
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotQuery = r.URL.Query().Get("deploy_id")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(apiclient.DiagnosisResource{
+			Explanation:     "The container could not bind to its configured port.",
+			Suggestion:      "Free up the port or change app.yaml.",
+			Confidence:      "high",
+			MatchedSignals:  []apiclient.DiagnosisSignal{{Source: "deploy_attempt.error", Excerpt: "port is already allocated"}},
+			DeployAttemptID: "dep_1",
+		})
+	})
+
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "diagnose_app_failure",
+		Arguments: map[string]any{"name": "web", "deploy_id": "dep_1"},
+	})
+	if err != nil {
+		t.Fatalf("CallTool(diagnose_app_failure) error = %v", err)
+	}
+	if gotPath != "/api/v1/apps/web/diagnose" {
+		t.Errorf("path = %q, want /api/v1/apps/web/diagnose", gotPath)
+	}
+	if gotQuery != "dep_1" {
+		t.Errorf("deploy_id query = %q, want %q", gotQuery, "dep_1")
+	}
+	var diagnosis apiclient.DiagnosisResource
+	decodeStructured(t, result, &diagnosis)
+	if diagnosis.Confidence != "high" || len(diagnosis.MatchedSignals) != 1 {
+		t.Errorf("diagnosis = %+v, want confidence=high with one matched signal", diagnosis)
+	}
+}
+
 func TestGetAppLogs(t *testing.T) {
 	var gotQuery string
 	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
@@ -618,6 +653,7 @@ func TestNewTools_Surface403(t *testing.T) {
 		{"list_preview_environments", map[string]any{"name": "web"}},
 		{"list_alert_rules", map[string]any{"name": "web"}},
 		{"get_app_metrics", map[string]any{"name": "web", "metric": "cpu_percent"}},
+		{"diagnose_app_failure", map[string]any{"name": "web"}},
 	}
 
 	for _, tt := range tests {

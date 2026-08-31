@@ -10,6 +10,7 @@ import { AppQuickStats } from '../../../components/AppQuickStats'
 import { AppOverview } from '../../../components/AppOverview'
 import { DeployInProgressBanner } from '../../../components/DeployInProgressBanner'
 import { ConditionsPanel } from '../../../components/ConditionsPanel'
+import { DiagnosisPanel } from '../../../components/DiagnosisPanel'
 import { PageSpinner } from '@/components/ui/page-spinner'
 
 // Former "overview" tab of routes/apps/$name.tsx's Tabs component, now a
@@ -57,6 +58,11 @@ function OverviewSection() {
         />
       ) : null}
       <AppOverviewHero app={app} conditions={conditions} />
+      <DiagnosisPanel
+        appName={name}
+        conditions={conditions}
+        latestAttemptStatus={latestAttempt?.status}
+      />
       <AppQuickStats appName={name} />
       <AppOverview app={app} />
       <ConditionsPanel conditions={conditions} />

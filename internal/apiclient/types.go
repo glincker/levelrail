@@ -832,6 +832,26 @@ type DrainNodeResponse struct {
 	Errors         []string `json:"errors,omitempty"`
 }
 
+// DiagnosisSignal mirrors internal/api's diagnosisSignalResource: one
+// piece of evidence a diagnosis signature matched against.
+type DiagnosisSignal struct {
+	Source  string `json:"source"`
+	Excerpt string `json:"excerpt"`
+}
+
+// DiagnosisResource mirrors internal/api's diagnosisResource
+// (internal/api/diagnose.go): GET /api/v1/apps/{name}/diagnose's
+// response, a deterministic explanation of a deploy failure or
+// crashloop synthesized from internal/diagnose, never from an external
+// model.
+type DiagnosisResource struct {
+	Explanation     string            `json:"explanation"`
+	Suggestion      string            `json:"suggestion"`
+	Confidence      string            `json:"confidence"`
+	MatchedSignals  []DiagnosisSignal `json:"matched_signals"`
+	DeployAttemptID string            `json:"deploy_attempt_id,omitempty"`
+}
+
 // AlertRuleResource mirrors internal/api's ruleResource
 // (internal/api/alerts.go). Threshold-kind fields (Metric, Comparator,
 // Threshold, ForDuration) and crashloop-kind fields

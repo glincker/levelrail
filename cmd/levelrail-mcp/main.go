@@ -112,6 +112,7 @@ func newServer(client *apiclient.Client) *mcp.Server {
 	registerPreviewTools(server, client)
 	registerAlertTools(server, client)
 	registerAppMetricsTools(server, client)
+	registerDiagnosticTools(server, client)
 
 	return server
 }
