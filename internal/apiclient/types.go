@@ -992,6 +992,32 @@ type AppMetricsResource struct {
 	Points []MetricPointResource `json:"points"`
 }
 
+// AuditLogEntryResource mirrors internal/api's auditLogEntryResource
+// (internal/api/audit.go).
+type AuditLogEntryResource struct {
+	ID         string `json:"id"`
+	ActorType  string `json:"actor_type"`
+	ActorID    string `json:"actor_id"`
+	ActorName  string `json:"actor_name"`
+	Ability    string `json:"ability"`
+	Method     string `json:"method"`
+	Path       string `json:"path"`
+	StatusCode int    `json:"status_code"`
+	RemoteAddr string `json:"remote_addr"`
+	CreatedAt  string `json:"created_at"`
+}
+
+// ListAuditLogOptions is ListAuditLog's and DownloadAuditLogCSV's shared
+// query input, mirroring GET /api/v1/audit-log's own ?limit/?before/
+// ?path/?method params (internal/api/audit.go). Zero values omit the
+// param, the same convention ListBackupsOptions establishes.
+type ListAuditLogOptions struct {
+	Limit  int
+	Before string
+	Path   string
+	Method string
+}
+
 // apiErrorBody is the JSON shape every non-2xx response from the
 // control plane returns (internal/api/respond.go's own apiError).
 type apiErrorBody struct {

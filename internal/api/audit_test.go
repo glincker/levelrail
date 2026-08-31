@@ -2,10 +2,13 @@ package api
 
 import (
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -295,6 +298,73 @@ func TestAuditLogRoute_FilterByPathAndMethod(t *testing.T) {
 	}
 	if got[0].Path != "/api/v1/apps/web" || got[0].Method != http.MethodPut {
 		t.Errorf("got[0] = %+v, want path=/api/v1/apps/web method=PUT", got[0])
+	}
+}
+
+// TestAuditLogRoute_CSVExport proves ?format=csv returns the same rows
+// as the JSON view, as a CSV attachment, respecting the same ?path/
+// ?method filters.
+func TestAuditLogRoute_CSVExport(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create app status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	csvRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(csvRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/audit-log?format=csv&path="+url.QueryEscape("/api/v1/apps")+"&method=POST", ""))
+	if csvRec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", csvRec.Code, http.StatusOK, csvRec.Body.String())
+	}
+	if ct := csvRec.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/csv") {
+		t.Errorf("Content-Type = %q, want text/csv prefix", ct)
+	}
+	if cd := csvRec.Header().Get("Content-Disposition"); !strings.Contains(cd, "attachment") {
+		t.Errorf("Content-Disposition = %q, want an attachment", cd)
+	}
+
+	reader := csv.NewReader(strings.NewReader(csvRec.Body.String()))
+	rows, err := reader.ReadAll()
+	if err != nil {
+		t.Fatalf("parse csv: %v", err)
+	}
+	if len(rows) != 2 {
+		t.Fatalf("len(rows) = %d, want 2 (header + one entry), got %v", len(rows), rows)
+	}
+	wantHeader := []string{"id", "actor_type", "actor_id", "actor_name", "ability", "method", "path", "status_code", "remote_addr", "created_at"}
+	if !reflect.DeepEqual(rows[0], wantHeader) {
+		t.Errorf("header row = %v, want %v", rows[0], wantHeader)
+	}
+	if rows[1][5] != http.MethodPost || rows[1][6] != "/api/v1/apps" {
+		t.Errorf("row = %v, want method=POST path=/api/v1/apps", rows[1])
+	}
+	if rows[1][7] != strconv.Itoa(http.StatusCreated) {
+		t.Errorf("status_code column = %q, want %d", rows[1][7], http.StatusCreated)
+	}
+}
+
+// TestAuditLogRoute_CSVExport_RequiresRoot proves the CSV export shares
+// the JSON endpoint's own AbilityRoot gate rather than a looser one.
+func TestAuditLogRoute_CSVExport_RequiresRoot(t *testing.T) {
+	rt, db := newTestRouter(t)
+	ctx := context.Background()
+
+	const plaintext = "read-only-token-csv" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_ro_csv", Name: "read only", TokenHash: hashToken(plaintext), Abilities: []string{AbilityRead}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/audit-log?format=csv", nil)
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want %d: a read-scoped token must not reach the audit log csv export", rec.Code, http.StatusForbidden)
 	}
 }
 

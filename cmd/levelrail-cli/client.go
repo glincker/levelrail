@@ -115,6 +115,9 @@ type (
 	deployCompareResource = apiclient.DeployCompareResource
 	deployCompareSide     = apiclient.DeployCompareSide
 	deployCompareField    = apiclient.DeployCompareField
+
+	auditLogEntryResource = apiclient.AuditLogEntryResource
+	listAuditLogOptions   = apiclient.ListAuditLogOptions
 )
 
 // NewClient builds a Client. See apiclient.NewClient.
