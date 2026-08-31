@@ -149,12 +149,19 @@ var signatures = []signature{
 	},
 	{
 		reason:      "possible_oom_kill",
-		patterns:    []string{"oomkilled", "out of memory", "exit code 137", "code: 137", "exit status 137"},
+		patterns:    OOMLogPatterns,
 		confidence:  ConfidenceMedium,
 		explanation: "A signal consistent with the container being killed for using too much memory (OOM) was found.",
 		suggestion:  "Check the service's memory usage against app.yaml's resources.memory limit, and consider raising it or reducing the app's memory footprint.",
 	},
 }
+
+// OOMLogPatterns are the lowercase substrings that identify a log line as
+// an OOM-kill signal, shared with internal/rightsizing so that package's
+// resource-recommendation engine treats "this app was OOM-killed" as the
+// same tracked signal this package already diagnoses, not a second,
+// possibly-drifting definition of the same thing.
+var OOMLogPatterns = []string{"oomkilled", "out of memory", "exit code 137", "code: 137", "exit status 137"}
 
 // crashloopSignature is checked separately from signatures above: its
 // match isn't a text pattern, it's CrashloopInput.Firing. Deliberately

@@ -145,6 +145,46 @@ func printDiagnosisHuman(out io.Writer, d diagnosisResource) {
 	}
 }
 
+// printResourceRecommendationHuman prints "apps resource-recommendation"
+// output.
+func printResourceRecommendationHuman(out io.Writer, r resourceRecommendationResource) {
+	_, _ = fmt.Fprintf(out, "app:      %s\n", r.ServiceName)
+	_, _ = fmt.Fprintf(out, "lookback: %s\n", r.LookbackWindow)
+	if r.OOMDetectedAt != "" {
+		_, _ = fmt.Fprintf(out, "\nOOM signal: killed on %s\n  %s\n", r.OOMDetectedAt, r.OOMExcerpt)
+	}
+	_, _ = fmt.Fprintln(out, "\nmemory:")
+	printDimensionRecommendationHuman(out, r.Memory, formatRecommendationBytes)
+	_, _ = fmt.Fprintln(out, "\ncpu:")
+	printDimensionRecommendationHuman(out, r.CPU, formatRecommendationNanoCPUs)
+}
+
+func printDimensionRecommendationHuman(out io.Writer, d dimensionRecommendationResource, format func(int64) string) {
+	_, _ = fmt.Fprintf(out, "  current limit:    %s\n", format(d.CurrentLimit))
+	_, _ = fmt.Fprintf(out, "  samples:          %d (confidence: %s)\n", d.SampleCount, d.Confidence)
+	if d.SampleCount > 0 {
+		_, _ = fmt.Fprintf(out, "  p95 / p99 usage:  %s / %s\n", format(int64(d.P95Usage)), format(int64(d.P99Usage)))
+	}
+	if d.Action != "" {
+		_, _ = fmt.Fprintf(out, "  suggested action: %s to roughly %s\n", d.Action, format(d.SuggestedLimit))
+	}
+	_, _ = fmt.Fprintf(out, "  reason:           %s\n", d.Reason)
+}
+
+func formatRecommendationBytes(bytes int64) string {
+	if bytes <= 0 {
+		return "not set"
+	}
+	return fmt.Sprintf("%d MiB", bytes/1_048_576)
+}
+
+func formatRecommendationNanoCPUs(nanoCPUs int64) string {
+	if nanoCPUs <= 0 {
+		return "not set"
+	}
+	return fmt.Sprintf("%.2f cores", float64(nanoCPUs)/1e9)
+}
+
 // printAppNetworkHuman prints "apps network" output: the live traffic
 // path, container's declared port plus whatever host port Docker
 // currently has bound.

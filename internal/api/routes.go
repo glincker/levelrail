@@ -215,6 +215,14 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// anything.
 	mux.HandleFunc("GET /api/v1/apps/{name}/diagnose", rt.requireAbility(AbilityRead, rt.handleDiagnoseApp))
 
+	// Read-only resource right-sizing suggestion
+	// (resource_recommendation.go): synthesizes the app's historical
+	// CPU/memory usage and current limits into a deterministic
+	// raise/lower/keep suggestion per dimension. AbilityRead, same
+	// sensitivity as diagnose above; never writes anything, never applied
+	// automatically.
+	mux.HandleFunc("GET /api/v1/apps/{name}/resource-recommendation", rt.requireAbility(AbilityRead, rt.handleAppResourceRecommendation))
+
 	// Manual build trigger (see Builder/WithBuilder above and
 	// handleTriggerBuild's own doc comment): builds an image from a git
 	// source through the same internal/deploy.Pipeline the webhook
