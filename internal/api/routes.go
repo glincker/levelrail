@@ -33,6 +33,12 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// not AbilityWrite (which a narrower, single-app token could hold).
 	mux.HandleFunc("POST /api/v1/system/prune", rt.requireAbility(AbilityRoot, rt.handleSystemPrune))
 
+	// First-run onboarding state: AbilityRead to check it, AbilityWrite to
+	// dismiss/complete it, same tier as any other low-blast-radius
+	// per-instance flag (not AbilityRoot, unlike ingress settings).
+	mux.HandleFunc("GET /api/v1/onboarding", rt.requireAbility(AbilityRead, rt.handleGetOnboardingState))
+	mux.HandleFunc("POST /api/v1/onboarding/complete", rt.requireAbility(AbilityWrite, rt.handleCompleteOnboarding))
+
 	// Updates (Settings > Updates page): running version vs. GitHub's
 	// latest published release, AbilityRead like system/status above.
 	mux.HandleFunc("GET /api/v1/updates", rt.requireAbility(AbilityRead, rt.handleGetUpdates))
