@@ -51,8 +51,12 @@ func newTestRouterWithVolumeBackupRunner(t *testing.T, runner ServiceVolumeBacku
 	return NewRouter(logger, testBrand(), db, WithServiceVolumeBackupRunner(runner)), db
 }
 
-func seedServiceWithVolume(t *testing.T, db *store.DB, serviceName, logicalVolume string) {
+// seedServiceWithVolume seeds a service named "web" with one volume
+// named "data": every test in this package that needs a volume-bearing
+// service uses that exact pair, so neither is parameterized.
+func seedServiceWithVolume(t *testing.T, db *store.DB) {
 	t.Helper()
+	const serviceName, logicalVolume = "web", "data"
 	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
 		Name:  serviceName,
 		Image: "levelrail/thesvg:abc1234",
@@ -92,7 +96,7 @@ func TestVolumeBackupRoutes_RequireAuth(t *testing.T) {
 func TestHandleTriggerVolumeBackup_NoRunnerConfigured(t *testing.T) {
 	rt, db := newTestRouter(t) // no WithServiceVolumeBackupRunner
 	cookie := loginTestSession(t, rt, db)
-	seedServiceWithVolume(t, db, "web", "data")
+	seedServiceWithVolume(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/volumes/data/backups", `{"target_id":"bkt_test1"}`))
@@ -118,7 +122,7 @@ func TestHandleTriggerVolumeBackup_VolumeNotFound(t *testing.T) {
 	runner := newFakeVolumeBackupRunner()
 	rt, db := newTestRouterWithVolumeBackupRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
-	seedServiceWithVolume(t, db, "web", "data")
+	seedServiceWithVolume(t, db)
 	seedBackupTargetForAPI(t, db)
 
 	rec := httptest.NewRecorder()
@@ -132,7 +136,7 @@ func TestHandleTriggerVolumeBackup_Success(t *testing.T) {
 	runner := newFakeVolumeBackupRunner()
 	rt, db := newTestRouterWithVolumeBackupRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
-	seedServiceWithVolume(t, db, "web", "data")
+	seedServiceWithVolume(t, db)
 	seedBackupTargetForAPI(t, db)
 
 	rec := httptest.NewRecorder()
@@ -162,7 +166,7 @@ func TestHandleVolumeBackupSchedule_SetGetClear(t *testing.T) {
 	runner := newFakeVolumeBackupRunner()
 	rt, db := newTestRouterWithVolumeBackupRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
-	seedServiceWithVolume(t, db, "web", "data")
+	seedServiceWithVolume(t, db)
 	seedBackupTargetForAPI(t, db)
 
 	rec := httptest.NewRecorder()
@@ -208,7 +212,7 @@ func TestHandleListVolumeBackupHistory_Success(t *testing.T) {
 	runner := newFakeVolumeBackupRunner()
 	rt, db := newTestRouterWithVolumeBackupRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
-	seedServiceWithVolume(t, db, "web", "data")
+	seedServiceWithVolume(t, db)
 	target := seedBackupTargetForAPI(t, db)
 
 	if err := db.StartBackupHistory(context.Background(), store.BackupHistory{

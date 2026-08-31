@@ -52,7 +52,7 @@ func newTestRouterWithVolumeRestoreRunner(t *testing.T, runner ServiceVolumeRest
 func TestHandleTriggerVolumeRestore_NoRunnerConfigured(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	seedServiceWithVolume(t, db, "web", "data")
+	seedServiceWithVolume(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/volumes/data/restore", `{"backup_id":"bkh_1"}`))
@@ -65,7 +65,7 @@ func TestHandleTriggerVolumeRestore_BackupNotFound(t *testing.T) {
 	runner := newFakeVolumeRestoreRunner()
 	rt, db := newTestRouterWithVolumeRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
-	seedServiceWithVolume(t, db, "web", "data")
+	seedServiceWithVolume(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/volumes/data/restore", `{"backup_id":"bkh_missing"}`))
@@ -111,7 +111,7 @@ func TestHandleTriggerVolumeRestore_RefusesUnsuccessfulBackup(t *testing.T) {
 	runner := newFakeVolumeRestoreRunner()
 	rt, db := newTestRouterWithVolumeRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
-	seedServiceWithVolume(t, db, "web", "data")
+	seedServiceWithVolume(t, db)
 	target := seedBackupTargetForAPI(t, db)
 
 	if err := db.StartBackupHistory(context.Background(), store.BackupHistory{
@@ -133,7 +133,7 @@ func TestHandleTriggerVolumeRestore_Success(t *testing.T) {
 	runner := newFakeVolumeRestoreRunner()
 	rt, db := newTestRouterWithVolumeRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
-	seedServiceWithVolume(t, db, "web", "data")
+	seedServiceWithVolume(t, db)
 	target := seedBackupTargetForAPI(t, db)
 
 	if err := db.StartBackupHistory(context.Background(), store.BackupHistory{
@@ -172,7 +172,7 @@ func TestHandleTriggerVolumeRestore_Success(t *testing.T) {
 func TestHandleListVolumeRestoreHistory_Success(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	seedServiceWithVolume(t, db, "web", "data")
+	seedServiceWithVolume(t, db)
 	target := seedBackupTargetForAPI(t, db)
 
 	if err := db.StartBackupHistory(context.Background(), store.BackupHistory{

@@ -14,7 +14,7 @@ func TestHandleDownloadVolumeBackup_Success(t *testing.T) {
 	downloader := &fakeBackupDownloader{content: "tar-bytes"}
 	rt, db := newTestRouterWithBackupDownloader(t, downloader)
 	cookie := loginTestSession(t, rt, db)
-	seedServiceWithVolume(t, db, "web", "data")
+	seedServiceWithVolume(t, db)
 	target := seedBackupTargetForAPI(t, db)
 
 	if err := db.StartBackupHistory(context.Background(), store.BackupHistory{
@@ -76,7 +76,7 @@ func TestHandleVerifyVolumeBackup_Success(t *testing.T) {
 	verifier := &fakeBackupVerifier{}
 	rt, db := newTestRouterWithBackupVerifier(t, verifier)
 	cookie := loginTestSession(t, rt, db)
-	seedServiceWithVolume(t, db, "web", "data")
+	seedServiceWithVolume(t, db)
 	target := seedBackupTargetForAPI(t, db)
 
 	if err := db.StartBackupHistory(context.Background(), store.BackupHistory{

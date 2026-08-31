@@ -10,14 +10,21 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
+// testVolumeName is the one real Docker volume this file's live test
+// round-trips against. A plain const, not a runInVolume parameter: this
+// file has exactly one live test, so there is nothing for that parameter
+// to actually vary across, and threading it through would only add an
+// argument every call site has to repeat identically.
+const testVolumeName = "levelrail-test-volbackup-roundtrip"
+
 // runInVolume execs cmd inside a short-lived helper container mounting
-// volumeName read-write at volumeMountPath, the same shape
+// testVolumeName read-write at volumeMountPath, the same shape
 // createVolumeHelper (volume_helper.go) establishes, used here only to
 // seed/inspect test data directly rather than through the archiver/
 // restorer under test.
-func runInVolume(ctx context.Context, t *testing.T, rt docker.Runtime, volumeName string, cmd []string) string {
+func runInVolume(ctx context.Context, t *testing.T, rt docker.Runtime, cmd []string) string {
 	t.Helper()
-	id, err := createVolumeHelper(ctx, rt, volumeName, "volbackup-live-helper", false)
+	id, err := createVolumeHelper(ctx, rt, testVolumeName, "volbackup-live-helper", false)
 	if err != nil {
 		t.Fatalf("createVolumeHelper() error = %v", err)
 	}
@@ -50,8 +57,7 @@ func TestContainerVolumeArchiver_Restorer_RoundTrip_Live(t *testing.T) {
 	rt := liveRuntime(t)
 	ctx := context.Background()
 
-	const volumeName = "levelrail-test-volbackup-roundtrip"
-	if err := rt.EnsureVolume(ctx, volumeName); err != nil {
+	if err := rt.EnsureVolume(ctx, testVolumeName); err != nil {
 		t.Fatalf("EnsureVolume() error = %v", err)
 	}
 	// No RemoveVolume on docker.Runtime today (only docker.Client's own
@@ -60,12 +66,12 @@ func TestContainerVolumeArchiver_Restorer_RoundTrip_Live(t *testing.T) {
 	// from this package): the volume is left behind after this test, the
 	// same small, honest gap left open rather than reaching for a raw
 	// docker CLI shell-out this codebase's own rules forbid.
-	runInVolume(ctx, t, rt, volumeName, []string{"sh", "-c",
+	runInVolume(ctx, t, rt, []string{"sh", "-c",
 		"rm -rf " + volumeMountPath + "/* " + volumeMountPath + "/.[!.]* 2>/dev/null; mkdir -p " + volumeMountPath + "/sub && echo original-file > " + volumeMountPath + "/file.txt && echo original-nested > " + volumeMountPath + "/sub/nested.txt && echo original-dotfile > " + volumeMountPath + "/.hidden",
 	})
 
 	a := &ContainerVolumeArchiver{Runtime: rt}
-	archiveStream, err := a.Archive(ctx, volumeName)
+	archiveStream, err := a.Archive(ctx, testVolumeName)
 	if err != nil {
 		t.Fatalf("Archive() error = %v", err)
 	}
@@ -82,28 +88,28 @@ func TestContainerVolumeArchiver_Restorer_RoundTrip_Live(t *testing.T) {
 	// dotfile entirely, proving a real, distinguishable change happened
 	// before restore runs, and that restore must recreate deleted
 	// entries, not just overwrite existing ones.
-	runInVolume(ctx, t, rt, volumeName, []string{"sh", "-c",
+	runInVolume(ctx, t, rt, []string{"sh", "-c",
 		"echo corrupted > " + volumeMountPath + "/file.txt && rm -rf " + volumeMountPath + "/sub " + volumeMountPath + "/.hidden",
 	})
-	corrupted := runInVolume(ctx, t, rt, volumeName, []string{"cat", volumeMountPath + "/file.txt"})
+	corrupted := runInVolume(ctx, t, rt, []string{"cat", volumeMountPath + "/file.txt"})
 	if strings.TrimSpace(corrupted) != "corrupted" {
 		t.Fatalf("corruption step did not take effect, got %q", corrupted)
 	}
 
 	r := &ContainerVolumeRestorer{Runtime: rt}
-	if err := r.Restore(ctx, volumeName, bytes.NewReader(archiveBuf.Bytes())); err != nil {
+	if err := r.Restore(ctx, testVolumeName, bytes.NewReader(archiveBuf.Bytes())); err != nil {
 		t.Fatalf("Restore() error = %v", err)
 	}
 
-	gotFile := strings.TrimSpace(runInVolume(ctx, t, rt, volumeName, []string{"cat", volumeMountPath + "/file.txt"}))
+	gotFile := strings.TrimSpace(runInVolume(ctx, t, rt, []string{"cat", volumeMountPath + "/file.txt"}))
 	if gotFile != "original-file" {
 		t.Errorf("file.txt after restore = %q, want %q", gotFile, "original-file")
 	}
-	gotNested := strings.TrimSpace(runInVolume(ctx, t, rt, volumeName, []string{"cat", volumeMountPath + "/sub/nested.txt"}))
+	gotNested := strings.TrimSpace(runInVolume(ctx, t, rt, []string{"cat", volumeMountPath + "/sub/nested.txt"}))
 	if gotNested != "original-nested" {
 		t.Errorf("sub/nested.txt after restore = %q, want %q", gotNested, "original-nested")
 	}
-	gotDotfile := strings.TrimSpace(runInVolume(ctx, t, rt, volumeName, []string{"cat", volumeMountPath + "/.hidden"}))
+	gotDotfile := strings.TrimSpace(runInVolume(ctx, t, rt, []string{"cat", volumeMountPath + "/.hidden"}))
 	if gotDotfile != "original-dotfile" {
 		t.Errorf(".hidden after restore = %q, want %q", gotDotfile, "original-dotfile")
 	}
