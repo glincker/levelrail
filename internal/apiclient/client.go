@@ -696,6 +696,20 @@ func (c *Client) TestExistingNotificationChannel(ctx context.Context, id string)
 	return c.do(ctx, http.MethodPost, "/api/v1/notification-channels/"+PathEscape(id)+"/test", nil, nil)
 }
 
+// ListNotificationDeliveries calls GET
+// /api/v1/notification-channels/{id}/deliveries: this channel's send
+// history, newest first, up to limit rows (0 leaves the server's own
+// default in place).
+func (c *Client) ListNotificationDeliveries(ctx context.Context, id string, limit int) ([]NotificationDeliveryResource, error) {
+	path := "/api/v1/notification-channels/" + PathEscape(id) + "/deliveries"
+	if limit > 0 {
+		path += "?limit=" + strconv.Itoa(limit)
+	}
+	var out []NotificationDeliveryResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
 // GetLogDrain calls GET /api/v1/apps/{name}/log-drain: the app's
 // currently configured external log-forwarding sink. Returns *APIError
 // with StatusCode 404 (via errors.As) if the app doesn't exist or has no

@@ -66,6 +66,7 @@ type (
 	notificationChannelResource      = apiclient.NotificationChannelResource
 	createNotificationChannelRequest = apiclient.CreateNotificationChannelRequest
 	testNotificationChannelRequest   = apiclient.TestNotificationChannelRequest
+	notificationDeliveryResource     = apiclient.NotificationDeliveryResource
 	logDrainResource                 = apiclient.LogDrainResource
 	setLogDrainRequest               = apiclient.SetLogDrainRequest
 

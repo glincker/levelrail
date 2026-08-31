@@ -1582,6 +1582,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDeployNotifier(deployDispatcher),
 		api.WithNotificationChannels(alertingDB),
 		api.WithNotificationChannelTester(deployDispatcher),
+		api.WithNotificationDeliveries(alertingDB),
 		api.WithSessionTTL(sessionTTL(logger)),
 		api.WithDataDir(dataDir),
 		api.WithDockerPinger(client),

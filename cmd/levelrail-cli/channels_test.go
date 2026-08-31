@@ -169,6 +169,47 @@ func TestRun_ChannelsTest(t *testing.T) {
 		http.MethodPost, "/api/v1/notification-channels/chn_1/test")
 }
 
+func TestRun_ChannelsDeliveries(t *testing.T) {
+	var gotPath string
+	srv := newListEchoServer(t, &gotPath, []notificationDeliveryResource{
+		{ID: "ndl_1", ChannelID: "chn_1", Trigger: "deploy-failed", Success: false, Error: "boom", CreatedAt: "2026-08-15T00:00:00Z"},
+	})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"channels", "deliveries", "chn_1", "--api-url", srv.URL})
+	if gotPath != "/api/v1/notification-channels/chn_1/deliveries" {
+		t.Errorf("path = %q, want /api/v1/notification-channels/chn_1/deliveries", gotPath)
+	}
+	if !strings.Contains(stdout, "deploy-failed") || !strings.Contains(stdout, "failed") || !strings.Contains(stdout, "boom") {
+		t.Errorf("stdout = %q, want the trigger, status, and error listed", stdout)
+	}
+}
+
+func TestRun_ChannelsDeliveries_LimitFlag(t *testing.T) {
+	var gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]notificationDeliveryResource{})
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{"channels", "deliveries", "chn_1", "--limit", "5", "--api-url", srv.URL})
+	if gotQuery != "limit=5" {
+		t.Errorf("query = %q, want limit=5", gotQuery)
+	}
+}
+
+func TestRun_ChannelsDeliveries_Empty(t *testing.T) {
+	srv := newListEchoServer(t, nil, []notificationDeliveryResource{})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"channels", "deliveries", "chn_1", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "no recorded deliveries") {
+		t.Errorf("stdout = %q, want a no-deliveries message", stdout)
+	}
+}
+
 func TestRun_Channels_Help(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"channels", "-h"}, &stdout, &stderr, envMap())

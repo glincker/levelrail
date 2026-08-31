@@ -119,6 +119,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/notification-channels/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteNotificationChannel))
 	mux.HandleFunc("POST /api/v1/notification-channels/test", rt.requireAbility(AbilityWrite, rt.handleTestNotificationChannel))
 	mux.HandleFunc("POST /api/v1/notification-channels/{id}/test", rt.requireAbility(AbilityWrite, rt.handleTestExistingNotificationChannel))
+	mux.HandleFunc("GET /api/v1/notification-channels/{id}/deliveries", rt.requireAbility(AbilityRead, rt.handleListNotificationDeliveries))
 
 	// Prometheus remote read (TASKS.md 2.6). Gated by requireAbility the
 	// same as every other read route, not left open: leaving a metrics

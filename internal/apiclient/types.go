@@ -487,6 +487,17 @@ type TestNotificationChannelRequest struct {
 	NotifyURL string `json:"notify_url"`
 }
 
+// NotificationDeliveryResource mirrors internal/api's
+// notificationDeliveryResource (internal/api/notification_channels.go).
+type NotificationDeliveryResource struct {
+	ID        string `json:"id"`
+	ChannelID string `json:"channel_id"`
+	Trigger   string `json:"trigger"`
+	Success   bool   `json:"success"`
+	Error     string `json:"error,omitempty"`
+	CreatedAt string `json:"created_at"`
+}
+
 // ScheduledTaskResource mirrors internal/api's scheduledTaskResource
 // (internal/api/scheduled_tasks.go). Command is a real argv (no shell),
 // and LastRun* describe only the single most recent run in place: there
