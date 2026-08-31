@@ -146,9 +146,10 @@ func printDiagnosisHuman(out io.Writer, d diagnosisResource) {
 }
 
 // printResourceRecommendationHuman prints "apps resource-recommendation"
-// output.
-func printResourceRecommendationHuman(out io.Writer, r resourceRecommendationResource) {
-	_, _ = fmt.Fprintf(out, "app:      %s\n", r.ServiceName)
+// and "databases resource-recommendation" output; label distinguishes the
+// two ("app" or "database") since the wire type itself is shared.
+func printResourceRecommendationHuman(out io.Writer, label string, r resourceRecommendationResource) {
+	_, _ = fmt.Fprintf(out, "%s:      %s\n", label, r.ServiceName)
 	_, _ = fmt.Fprintf(out, "lookback: %s\n", r.LookbackWindow)
 	if r.OOMDetectedAt != "" {
 		_, _ = fmt.Fprintf(out, "\nOOM signal: killed on %s\n  %s\n", r.OOMDetectedAt, r.OOMExcerpt)
