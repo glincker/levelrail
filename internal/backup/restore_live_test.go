@@ -341,6 +341,151 @@ func TestContainerRestorer_Restore_Redis_Live(t *testing.T) {
 	}
 }
 
+// waitMongoReady mirrors waitMySQLReady: the official mongo image's
+// entrypoint also runs a temporary, auth-disabled server to create the
+// root user before shutting it down and starting the real, --auth-enabled
+// one, the same two-phase handoff waitMySQLReady's own doc comment
+// describes for MySQL.
+func waitMongoReady(ctx context.Context, t *testing.T, rt docker.Runtime, containerName string, probe []string, timeout time.Duration) {
+	t.Helper()
+	waitReady(ctx, t, rt, containerName, probe, timeout)
+	time.Sleep(2 * time.Second)
+	waitReady(ctx, t, rt, containerName, probe, timeout)
+}
+
+// TestContainerRestorer_Restore_MongoDB_Live proves mongoRestoreCmd's
+// drop-then-restore fix against a real MongoDB container: seed a
+// collection, dump it, then create a collection that did not exist at
+// backup time. mongorestore --archive --drop alone only drops collections
+// present in the archive, so without the mongosh pre-step this new
+// collection would survive restore untouched, exactly the gap a live
+// investigation confirmed. This test fails against the old command and
+// passes against mongoRestoreCmd's current one.
+func TestContainerRestorer_Restore_MongoDB_Live(t *testing.T) {
+	rt := liveRuntime(t)
+	ctx := context.Background()
+
+	const name = "levelrail-test-restore-mongodb"
+	removeContainerIfExists(ctx, t, rt, name)
+	t.Cleanup(func() { removeContainerIfExists(context.Background(), t, rt, name) })
+
+	id, err := rt.Create(ctx, docker.ContainerSpec{
+		Name:  name,
+		Image: "mongo:7",
+		Env: map[string]string{
+			"MONGO_INITDB_ROOT_USERNAME": "leveltest",
+			"MONGO_INITDB_ROOT_PASSWORD": "leveltestpass",
+		},
+	})
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	if err := rt.Start(ctx, id); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	pingProbe := []string{"sh", "-c", `mongosh --quiet --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "db.runCommand({ping:1})"`}
+	waitMongoReady(ctx, t, rt, name, pingProbe, 60*time.Second)
+
+	originalMarker := "levelrail-restore-live-original-mongodb-9d4c"
+	seed, err := rt.Exec(ctx, name, []string{"sh", "-c",
+		`mongosh --quiet --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "db.getSiblingDB('leveltest').restore_probe.insertOne({val: '` + originalMarker + `'})"`,
+	})
+	if err != nil {
+		t.Fatalf("Exec() seed error = %v", err)
+	}
+	if _, err := io.Copy(io.Discard, seed); err != nil {
+		t.Fatalf("seeding original data: %v", err)
+	}
+	_ = seed.Close()
+
+	d := &ContainerDumper{Runtime: rt}
+	dumpStream, err := d.Dump(ctx, store.EngineMongoDB, name)
+	if err != nil {
+		t.Fatalf("Dump() error = %v", err)
+	}
+	var dumpBuf bytes.Buffer
+	if _, err := io.Copy(&dumpBuf, dumpStream); err != nil {
+		t.Fatalf("reading Dump() stream error = %v", err)
+	}
+	_ = dumpStream.Close()
+	if !strings.Contains(dumpBuf.String(), originalMarker) {
+		t.Fatalf("captured dump does not contain the original marker %q, test setup is broken", originalMarker)
+	}
+
+	// The reproduction from the investigation: a collection created after
+	// the backup was taken, absent from the archive entirely, so
+	// mongorestore --drop alone has nothing in the archive to trigger a
+	// drop for it.
+	overwriteMarker := "levelrail-restore-live-overwritten-mongodb-5b8f"
+	overwrite, err := rt.Exec(ctx, name, []string{"sh", "-c",
+		`mongosh --quiet --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "db.getSiblingDB('leveltest').restore_probe.drop(); db.getSiblingDB('leveltest').unrelated_collection.insertOne({val: '` + overwriteMarker + `'})"`,
+	})
+	if err != nil {
+		t.Fatalf("Exec() overwrite error = %v", err)
+	}
+	if _, err := io.Copy(io.Discard, overwrite); err != nil {
+		t.Fatalf("overwriting data: %v", err)
+	}
+	_ = overwrite.Close()
+
+	r := &ContainerRestorer{Runtime: rt}
+	if err := r.Restore(ctx, store.EngineMongoDB, name, bytes.NewReader(dumpBuf.Bytes())); err != nil {
+		t.Fatalf("Restore() error = %v", err)
+	}
+
+	// Verify directly against the live database: restore_probe (with the
+	// original marker) must be back, and unrelated_collection, created
+	// after the backup and never present in the archive, must be gone,
+	// proving the mongosh pre-step actually cleared it rather than
+	// mongorestore --drop silently leaving it in place.
+	check, err := rt.Exec(ctx, name, []string{"sh", "-c",
+		`mongosh --quiet --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "print(JSON.stringify(db.getSiblingDB('leveltest').restore_probe.find().toArray()))"`,
+	})
+	if err != nil {
+		t.Fatalf("Exec() post-restore check error = %v", err)
+	}
+	checkOut, err := io.ReadAll(check)
+	_ = check.Close()
+	if err != nil {
+		t.Fatalf("reading post-restore check: %v", err)
+	}
+	if !strings.Contains(string(checkOut), originalMarker) {
+		t.Errorf("restore_probe after restore = %q, want it to contain the original marker %q", checkOut, originalMarker)
+	}
+
+	goneCheck, err := rt.Exec(ctx, name, []string{"sh", "-c",
+		`mongosh --quiet --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "print(db.getSiblingDB('leveltest').getCollectionNames().join(','))"`,
+	})
+	if err != nil {
+		t.Fatalf("Exec() overwrite-gone check error = %v", err)
+	}
+	goneOut, err := io.ReadAll(goneCheck)
+	_ = goneCheck.Close()
+	if err != nil {
+		t.Fatalf("reading overwrite-gone check: %v", err)
+	}
+	if strings.Contains(string(goneOut), "unrelated_collection") {
+		t.Errorf("unrelated_collection still exists after restore (output %q), want it gone: it was created after the backup and never present in the archive", goneOut)
+	}
+
+	// The root user itself lives in admin.system.users, which the archive
+	// also carries (mongodump with no --db captures the whole server); this
+	// confirms the mongosh pre-step's exclusion of admin never broke
+	// authentication.
+	authCheck, err := rt.Exec(ctx, name, pingProbe)
+	if err != nil {
+		t.Fatalf("Exec() auth-still-works check error = %v", err)
+	}
+	authOut, err := io.ReadAll(authCheck)
+	_ = authCheck.Close()
+	if err != nil {
+		t.Fatalf("reading auth-still-works check: %v", err)
+	}
+	if !strings.Contains(string(authOut), "ok: 1") {
+		t.Errorf("post-restore ping = %q, want root auth to still work after restore", authOut)
+	}
+}
+
 // waitMariaDBReady mirrors waitMySQLReady: MariaDB's official image runs
 // the same two-phase entrypoint (temporary init server, then the real
 // one) MySQL's does, so a single successful probe carries the same

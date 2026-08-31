@@ -69,7 +69,7 @@ func TestContainerRestorer_Restore_MongoDB(t *testing.T) {
 	if rt.gotStdin != dump {
 		t.Errorf("stdin = %q, want %q", rt.gotStdin, dump)
 	}
-	wantCmd := []string{"sh", "-c", `exec mongorestore --archive --drop --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin`}
+	wantCmd := []string{"sh", "-c", `mongosh --quiet --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval 'db.getMongo().getDBNames().forEach(function(n){if(n!=="admin"&&n!=="local"&&n!=="config"){db.getSiblingDB(n).dropDatabase()}})' && exec mongorestore --archive --drop --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin`}
 	if !reflect.DeepEqual(rt.gotInputCmd, wantCmd) {
 		t.Errorf("cmd = %v, want %v", rt.gotInputCmd, wantCmd)
 	}

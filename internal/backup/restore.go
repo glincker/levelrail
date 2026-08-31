@@ -169,10 +169,20 @@ var mysqlRestoreCmd = []string{"sh", "-c", `mysql -uroot -p"$MYSQL_ROOT_PASSWORD
 // mysql client binary entirely.
 var mariadbRestoreCmd = []string{"sh", "-c", `mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $MARIADB_DATABASE; CREATE DATABASE $MARIADB_DATABASE;" && exec mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"`}
 
-// mongoRestoreCmd feeds mongoDumpCmd's own --archive output back in via
-// mongorestore --archive --drop, the same full drop-and-replace semantics
-// postgresRestoreCmd and mysqlRestoreCmd achieve their own way.
-var mongoRestoreCmd = []string{"sh", "-c", `exec mongorestore --archive --drop --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin`}
+// mongoRestoreCmd first drops every non-system database so a collection or
+// database created after the backup was taken does not survive restore,
+// then feeds mongoDumpCmd's own --archive output into mongorestore --drop.
+// --drop alone is not enough: it only drops collections that are present in
+// the archive, so anything added post-backup would otherwise pass through
+// untouched, which is the exact gap this command closes.
+//
+// The mongosh eval only ever calls dropDatabase() on names outside
+// {admin, config, local}, MongoDB's own reserved system databases. admin
+// holds user credentials and roles, config and local hold replication and
+// cluster metadata; dropping any of them would break authentication or
+// cluster state rather than restore user data, so this exclusion list is
+// never optional and must never be narrowed or removed.
+var mongoRestoreCmd = []string{"sh", "-c", `mongosh --quiet --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval 'db.getMongo().getDBNames().forEach(function(n){if(n!=="admin"&&n!=="local"&&n!=="config"){db.getSiblingDB(n).dropDatabase()}})' && exec mongorestore --archive --drop --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin`}
 
 // clickhouseRestoreCmd drops and recreates $CLICKHOUSE_DB (same
 // full-replace reasoning as mysqlRestoreCmd), then reconnects with it as
