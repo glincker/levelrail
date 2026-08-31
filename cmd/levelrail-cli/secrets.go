@@ -46,14 +46,31 @@ Run "%[1]s secrets rotate-master-key -h" for its own flags.
 `, prog)
 }
 
+func secretsRotateMasterKeyUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s secrets rotate-master-key --new-key-file PATH [flags]
+
+Re-wraps every stored data encryption key from the currently active
+master key to the new one, in a single atomic operation on the control
+plane. Reads the new key from a file (or stdin with -) so it never
+appears as a bare command-line argument. See docs/master-key-rotation.md
+for the full procedure, including what to do next if the master key is
+sourced from APP_MASTER_KEY rather than a file.
+
+Flags:
+  --new-key-file string    path to a file holding the new master key (an age identity string; pass "-" to read from stdin instead). Required.
+  --token string           API token (default: %[2]s env var, then the credentials file)
+  --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
+  --json                     print the rotation result as JSON to stdout, nothing else
+  -h, --help               show this help
+`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}
+
 func runSecretsRotateMasterKey(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "secrets rotate-master-key", "print the rotation result as JSON to stdout and nothing else", stderr)
 	var newKeyFile string
 	fs.StringVar(&newKeyFile, "new-key-file", "", `path to a file holding the new master key (an age identity string, e.g. a fresh "master.key" or the output of generating one); pass "-" to read from stdin instead. Required. Never pass the key itself as a bare argument, it would leak into shell history and process listings.`)
-	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s secrets rotate-master-key --new-key-file PATH [flags]\n\nRe-wraps every stored data encryption key from the currently active\nmaster key to the new one, in a single atomic operation on the control\nplane. Reads the new key from a file (or stdin with -) so it never\nappears as a bare command-line argument. See\ndocs/master-key-rotation.md for the full procedure, including\nwhat to do next if the master key is sourced from APP_MASTER_KEY rather\nthan a file.\n\nFlags:\n", prog)
-		fs.PrintDefaults()
-	}
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, secretsRotateMasterKeyUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
 		if err == flag.ErrHelp {

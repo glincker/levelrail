@@ -31,18 +31,16 @@ import type { DatabaseResource } from '../types/databaseDetail'
 // different port as a real change, not an edit-in-place, and this UI
 // keeps that one-directional shape rather than pretending the port can
 // be changed without an explicit disable/re-enable round trip.
-// Redis, unlike Postgres/MySQL, runs with no password for a managed
-// database in this project (internal/reconcile/database/controller.go's
-// own doc comment: "Redis can run safely with no password configured",
-// true only as long as it's never reachable from outside the Docker
-// network). Publishing its port to the host removes that "safely"
-// clause entirely: exposure means unauthenticated read/write access to
-// the whole dataset, not just "reachable," a materially different risk
-// than Postgres/MySQL's real generated passwords. A generic warning
-// here would flatten that difference, so Redis gets its own copy plus
-// an explicit confirmation checkbox gating the toggle; the other two
-// engines keep the single passive warning banner.
-const NO_AUTH_ENGINES = new Set(['redis'])
+// Redis, KeyDB, and Dragonfly all run passwordless by default in this
+// project (internal/reconcile/database/controller.go and address.go's
+// SupportsField group all three as the same no-auth family: KeyDB and
+// Dragonfly are Redis-protocol-compatible forks that reuse Redis's
+// posture directly). Publishing any of their ports to the host means
+// unauthenticated read/write access to the whole dataset, a materially
+// different risk than Postgres/MySQL's generated passwords, so this
+// family gets its own copy plus an explicit confirmation checkbox
+// gating the toggle; the other engines keep the single passive warning.
+const NO_AUTH_ENGINES = new Set(['redis', 'keydb', 'dragonfly'])
 
 export function DatabasePublicAccessCard({
   database,
