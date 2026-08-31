@@ -48,6 +48,16 @@ type ScheduledBackupRunner interface {
 	ResolveDestination(ctx context.Context, targetID string) (Destination, error)
 }
 
+// ScheduledVerifier matches api.BackupVerifier's shape (internal/api/backup_verify.go);
+// *VerifyRunner satisfies both, so cmd/levelrail/main.go shares one instance.
+type ScheduledVerifier interface {
+	VerifyBackup(ctx context.Context, verificationID, backupHistoryID, engine, checkedBy string) error
+}
+
+// ScheduledVerificationCheckedBy is the CheckedBy value Scheduler records for its
+// own automatic verification, distinguishing it from a manual one in the UI/CLI.
+const ScheduledVerificationCheckedBy = "scheduler"
+
 // Scheduler periodically checks which databases have a due cron
 // schedule (store.DesiredDatabase's BackupSchedule/BackupTargetID/
 // BackupRetain, migrations/0023_scheduled_backups.sql) and runs a
@@ -105,7 +115,13 @@ type Scheduler struct {
 	// (e.g. backupRunner itself being nil when no master key is
 	// configured, cmd/levelrail/main.go).
 	Deleter Deleter
-	Logger  *slog.Logger
+	// Verifier, if set, re-checks a scheduled backup right after it
+	// succeeds (runScheduled). nil disables auto-verification, same
+	// optional-capability shape as Deleter above. Set directly like Now
+	// below, not a constructor param, to keep NewScheduler's signature
+	// stable for existing call sites.
+	Verifier ScheduledVerifier
+	Logger   *slog.Logger
 	// Now returns the current time, the same testable-clock field
 	// Runner.Now already establishes in runner.go: production code
 	// leaves it nil and Tick falls back to time.Now, tests set it for
@@ -255,6 +271,10 @@ func (s *Scheduler) runScheduled(ctx context.Context, d store.DesiredDatabase) e
 		return runErr
 	}
 
+	if s.Verifier != nil {
+		s.verifyScheduled(ctx, d.Name, historyID, d.Engine)
+	}
+
 	if d.BackupRetain > 0 || d.BackupRetainDays > 0 {
 		var olderThan time.Time
 		if d.BackupRetainDays > 0 {
@@ -274,6 +294,24 @@ func (s *Scheduler) runScheduled(ctx context.Context, d store.DesiredDatabase) e
 	}
 
 	return nil
+}
+
+// verifyScheduled re-checks the backup historyID just created, once. A
+// failure is logged, not returned: VerifyBackup already persisted the
+// outcome to store.BackupVerification, the same "don't let a secondary
+// concern mask an already-successful backup" reasoning runScheduled
+// applies to a retention prune failure.
+func (s *Scheduler) verifyScheduled(ctx context.Context, databaseName, historyID, engine string) {
+	verificationID, err := randomScheduledBackupVerificationID()
+	if err != nil {
+		s.log().Error("backup: scheduled verification: generate id failed",
+			slog.String("database", databaseName), slog.String("backup_id", historyID), slog.String("error", err.Error()))
+		return
+	}
+	if err := s.Verifier.VerifyBackup(ctx, verificationID, historyID, engine, ScheduledVerificationCheckedBy); err != nil {
+		s.log().Warn("backup: scheduled verification failed",
+			slog.String("database", databaseName), slog.String("backup_id", historyID), slog.String("error", err.Error()))
+	}
 }
 
 // deletePrunedObjects best-effort deletes the bucket object behind every
@@ -357,4 +395,15 @@ func randomScheduledBackupHistoryID() (string, error) {
 		return "", fmt.Errorf("backup: generate scheduled backup history id: %w", err)
 	}
 	return "bkh_" + base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+// randomScheduledBackupVerificationID mirrors api's own
+// randomBackupVerificationID (backup_verify.go): 9 random bytes,
+// URL-safe base64, "bkv_" prefix.
+func randomScheduledBackupVerificationID() (string, error) {
+	buf := make([]byte, 9)
+	if _, err := rand.Read(buf); err != nil {
+		return "", fmt.Errorf("backup: generate scheduled backup verification id: %w", err)
+	}
+	return "bkv_" + base64.RawURLEncoding.EncodeToString(buf), nil
 }

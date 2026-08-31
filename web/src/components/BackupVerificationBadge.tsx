@@ -55,7 +55,11 @@ export function BackupVerificationBadge({
 
   return (
     <div className="flex items-center gap-2">
-      <VerificationStatusBadge status={latest?.status} error={latest?.error} />
+      <VerificationStatusBadge
+        status={latest?.status}
+        error={latest?.error}
+        checkedBy={latest?.checked_by}
+      />
       <Button
         type="button"
         variant="outline"
@@ -69,13 +73,21 @@ export function BackupVerificationBadge({
   )
 }
 
+// Mirrors internal/backup.ScheduledVerificationCheckedBy: the scheduler's
+// sentinel value for a verification it ran automatically.
+const AUTO_VERIFIED_CHECKED_BY = 'scheduler'
+
 function VerificationStatusBadge({
   status,
   error,
+  checkedBy,
 }: {
   status?: 'running' | 'passed' | 'failed'
   error?: string
+  checkedBy?: string
 }) {
+  const auto = checkedBy === AUTO_VERIFIED_CHECKED_BY
+
   if (!status) {
     return (
       <Badge variant="muted" className="rounded-full">
@@ -87,7 +99,7 @@ function VerificationStatusBadge({
     return (
       <Badge variant="muted" className="rounded-full">
         <SpinnerIcon className="size-3 animate-spin" aria-hidden="true" />
-        Verifying...
+        {auto ? 'Auto-verifying...' : 'Verifying...'}
       </Badge>
     )
   }
@@ -99,14 +111,18 @@ function VerificationStatusBadge({
         title={error}
       >
         <ShieldWarningIcon className="size-3" aria-hidden="true" />
-        Failed verification
+        {auto ? 'Failed auto-verification' : 'Failed verification'}
       </Badge>
     )
   }
   return (
-    <Badge variant="success" className="rounded-full">
+    <Badge
+      variant="success"
+      className="rounded-full"
+      title={auto ? 'Verified automatically after the scheduled backup' : undefined}
+    >
       <ShieldCheckIcon className="size-3" aria-hidden="true" />
-      Verified
+      {auto ? 'Auto-verified' : 'Verified'}
     </Badge>
   )
 }

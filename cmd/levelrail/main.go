@@ -385,12 +385,21 @@ func run(logger *slog.Logger) error {
 	// one gate, per rootHandler's own doc comment on why backups need a
 	// master key at all.
 	var backupRunner *backup.Runner
+	// backupVerifyRunner, like backupRunner above, is shared between the
+	// manual verify trigger (api.WithBackupVerifier) and the scheduler's
+	// automatic post-backup check below.
+	var backupVerifyRunner *backup.VerifyRunner
 	if secretsManager != nil {
 		backupRunner = &backup.Runner{
 			Store:    db,
 			Secrets:  secretsManager,
 			Dumper:   &backup.ContainerDumper{Runtime: client},
 			Uploader: backup.S3Uploader{},
+		}
+		backupVerifyRunner = &backup.VerifyRunner{
+			Store:      db,
+			Secrets:    secretsManager,
+			Downloader: backup.S3Downloader{},
 		}
 	}
 
@@ -440,7 +449,7 @@ func run(logger *slog.Logger) error {
 
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
-		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, agentRegistry, emailSender, scheduledTaskRunner),
+		Handler:           rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, emailSender, scheduledTaskRunner),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -574,6 +583,10 @@ func run(logger *slog.Logger) error {
 	// either.
 	if backupRunner != nil {
 		scheduler := backup.NewScheduler(db, backupRunner, backup.S3Deleter{}, logger)
+		// Every scheduled backup is auto-verified right after it
+		// completes, no opt-in toggle: same "just works" default the
+		// manual verify button already gives an operator on demand.
+		scheduler.Verifier = backupVerifyRunner
 		go func() {
 			if err := scheduler.Run(ctx, backupSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 				logger.Error("backup scheduler stopped", slog.String("error", err.Error()))
@@ -1570,7 +1583,7 @@ func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent
 // internal/api importing internal/agent.Registry directly (see
 // api.NodeRuntimeResolver's own doc comment for why this stays a
 // closure over resolveNodeTransport instead of a new dependency edge).
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, agentRegistry *agent.Registry, emailSender email.Sender, scheduledTaskRunner *scheduledtask.Runner) http.Handler {
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, backupVerifyRunner *backup.VerifyRunner, agentRegistry *agent.Registry, emailSender email.Sender, scheduledTaskRunner *scheduledtask.Runner) http.Handler {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
@@ -1681,14 +1694,9 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 				Downloader: backup.S3Downloader{},
 			}),
 			// Re-downloads and re-checks a succeeded backup's own stored
-			// object for corruption, never attempting a live restore: same
-			// secretsManager dependency and same backup.S3Downloader as the
-			// plain-download runner just above.
-			api.WithBackupVerifier(&backup.VerifyRunner{
-				Store:      db,
-				Secrets:    secretsManager,
-				Downloader: backup.S3Downloader{},
-			}),
+			// object for corruption, never attempting a live restore: the
+			// same instance scheduler.Verifier below uses automatically.
+			api.WithBackupVerifier(backupVerifyRunner),
 			// GitHub App connection: reads and writes through
 			// secretsManager directly rather than a separate runner
 			// type, see api.GitHubAppSecrets's own doc comment for why.

@@ -109,6 +109,27 @@ func (f *fakeDeleter) Delete(_ context.Context, dest Destination, key string) er
 	return f.err
 }
 
+// fakeVerifier is Scheduler's own fake for ScheduledVerifier: records
+// every call, and can be told to fail so tests can prove a verification
+// failure is logged rather than turning a successful scheduled run into
+// a reported Tick error.
+type fakeVerifier struct {
+	mu    sync.Mutex
+	calls []struct {
+		verificationID, backupHistoryID, engine, checkedBy string
+	}
+	err error
+}
+
+func (f *fakeVerifier) VerifyBackup(_ context.Context, verificationID, backupHistoryID, engine, checkedBy string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.calls = append(f.calls, struct {
+		verificationID, backupHistoryID, engine, checkedBy string
+	}{verificationID, backupHistoryID, engine, checkedBy})
+	return f.err
+}
+
 func scheduledDB(name, schedule string, retain int) store.DesiredDatabase {
 	return store.DesiredDatabase{
 		Name: name, Engine: store.EnginePostgres, Version: "16",
@@ -531,5 +552,79 @@ func TestScheduler_Run_StopsOnContextCancel(t *testing.T) {
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("Run() did not return after context cancellation")
+	}
+}
+
+// TestScheduler_Tick_VerifiesAfterSuccess: a Verifier configured on the
+// Scheduler must be called exactly once, against the backup that was
+// just created, with CheckedBy ScheduledVerificationCheckedBy so it
+// reads as an automatic check rather than a manual one.
+func TestScheduler_Tick_VerifiesAfterSuccess(t *testing.T) {
+	fakeStore := &fakeScheduleStore{dbs: []store.DesiredDatabase{scheduledDB("main", "0 3 * * *", 0)}}
+	runner := &fakeScheduledRunner{}
+	verifier := &fakeVerifier{}
+	s := NewScheduler(fakeStore, runner, nil, nil)
+	s.Verifier = verifier
+
+	s.Now = func() time.Time { return time.Date(2026, 8, 15, 1, 0, 0, 0, time.UTC) }
+	_ = s.Tick(context.Background())
+	s.Now = func() time.Time { return time.Date(2026, 8, 15, 3, 0, 0, 0, time.UTC) }
+	if err := s.Tick(context.Background()); err != nil {
+		t.Fatalf("Tick() error = %v", err)
+	}
+
+	if len(verifier.calls) != 1 {
+		t.Fatalf("verify calls = %d, want 1", len(verifier.calls))
+	}
+	call := verifier.calls[0]
+	if len(runner.calls) != 1 || call.backupHistoryID != runner.calls[0].historyID {
+		t.Errorf("verify backupHistoryID = %q, want the same id RunBackup was called with (%+v)", call.backupHistoryID, runner.calls)
+	}
+	if call.engine != store.EnginePostgres {
+		t.Errorf("verify engine = %q, want %q", call.engine, store.EnginePostgres)
+	}
+	if call.checkedBy != ScheduledVerificationCheckedBy {
+		t.Errorf("verify checkedBy = %q, want %q", call.checkedBy, ScheduledVerificationCheckedBy)
+	}
+}
+
+// TestScheduler_Tick_NilVerifierSkipsVerification: Verifier is an
+// optional capability (see Scheduler.Verifier's own doc comment); a
+// Scheduler with none configured must still run its backup fine and
+// must not panic trying to verify it.
+func TestScheduler_Tick_NilVerifierSkipsVerification(t *testing.T) {
+	fakeStore := &fakeScheduleStore{dbs: []store.DesiredDatabase{scheduledDB("main", "0 3 * * *", 0)}}
+	s := NewScheduler(fakeStore, &fakeScheduledRunner{}, nil, nil)
+
+	s.Now = func() time.Time { return time.Date(2026, 8, 15, 1, 0, 0, 0, time.UTC) }
+	_ = s.Tick(context.Background())
+	s.Now = func() time.Time { return time.Date(2026, 8, 15, 3, 0, 0, 0, time.UTC) }
+	if err := s.Tick(context.Background()); err != nil {
+		t.Fatalf("Tick() error = %v", err)
+	}
+}
+
+// TestScheduler_Tick_VerificationFailureDoesNotFailTick is the same
+// "half-succeeded work must not mask an already-successful backup" case
+// TestScheduler_Tick_DeleteFailureDoesNotFailTick covers for pruning,
+// applied to verification: the backup itself already succeeded and is
+// already durably recorded, so a verification failure must be logged,
+// never turn a successful Tick into a reported error.
+func TestScheduler_Tick_VerificationFailureDoesNotFailTick(t *testing.T) {
+	fakeStore := &fakeScheduleStore{dbs: []store.DesiredDatabase{scheduledDB("main", "0 3 * * *", 0)}}
+	runner := &fakeScheduledRunner{}
+	verifier := &fakeVerifier{err: errors.New("checksum mismatch")}
+	s := NewScheduler(fakeStore, runner, nil, nil)
+	s.Verifier = verifier
+
+	s.Now = func() time.Time { return time.Date(2026, 8, 15, 1, 0, 0, 0, time.UTC) }
+	_ = s.Tick(context.Background())
+	s.Now = func() time.Time { return time.Date(2026, 8, 15, 3, 0, 0, 0, time.UTC) }
+	if err := s.Tick(context.Background()); err != nil {
+		t.Fatalf("Tick() error = %v, want nil (a verification failure must not fail Tick)", err)
+	}
+
+	if len(verifier.calls) != 1 {
+		t.Fatalf("verify calls = %d, want 1 (attempted despite the eventual failure)", len(verifier.calls))
 	}
 }
