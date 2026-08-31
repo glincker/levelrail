@@ -137,6 +137,14 @@ type Router struct {
 	// domainChecks rate-limits handleCheckDomain's real DNS lookups per
 	// domain; always non-nil, constructed in NewRouter.
 	domainChecks *domainCheckCache
+	// apiRateLimit is the general per-actor request budget requireAbility
+	// enforces (api_rate_limit.go). nil is valid: NewRouter leaves it
+	// unset, so existing tests and any embedder that never opts in see
+	// unthrottled behavior, the same "nil is valid" shape secrets/
+	// telemetry above already establish. cmd/levelrail/main.go is the one
+	// place that enables it for the real running control plane, via
+	// WithAPIRateLimit.
+	apiRateLimit *apiRateLimit
 	// fetchLatestRelease is handleGetUpdates' GitHub Releases lookup;
 	// always non-nil, defaulted to defaultFetchLatestRelease in
 	// NewRouter, overridable in tests the same way lookupHost is above.

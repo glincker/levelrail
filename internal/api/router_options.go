@@ -459,3 +459,21 @@ func WithDeployRecorder(r *deploylog.Recorder) Option {
 func WithLogBroadcaster(b *telemetry.LogBroadcaster) Option {
 	return func(rt *Router) { rt.logBroadcaster = b }
 }
+
+// WithAPIRateLimit enables a general per-actor rate limit across every
+// requireAbility-gated route (api_rate_limit.go): read-tier (AbilityRead)
+// requests get readPerMinute budget, everything else (write,
+// write:sensitive, deploy, root) gets the stricter writePerMinute
+// budget, keyed per bearer token, per session user, or per client IP for
+// an unauthenticated caller. Either argument <= 0 disables that tier.
+// Without this option (the default), the whole check is skipped:
+// existing tests and any embedder that never opts in see unthrottled
+// behavior, the same "nil is valid" shape WithSecretSetter's own absence
+// already establishes. This package never reads the environment
+// directly: cmd/levelrail/main.go reads APP_API_RATE_LIMIT_READ_RPM /
+// APP_API_RATE_LIMIT_WRITE_RPM and calls this unconditionally with their
+// resolved (env-or-default) values, so the real control plane is always
+// protected even when an operator never sets either env var.
+func WithAPIRateLimit(readPerMinute, writePerMinute int) Option {
+	return func(rt *Router) { rt.apiRateLimit = newAPIRateLimit(readPerMinute, writePerMinute) }
+}

@@ -91,7 +91,7 @@ func decodeResponse(resp *http.Response, out any) error {
 		return fmt.Errorf("read response body: %w", err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data)}
+		return &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header)}
 	}
 	if out != nil && len(data) > 0 {
 		if err := json.Unmarshal(data, out); err != nil {
@@ -118,6 +118,23 @@ func ExtractErrorMessage(data []byte) string {
 		return "(empty response body)"
 	}
 	return trimmed
+}
+
+// retryAfterHeader parses a Retry-After response header as a delay,
+// seconds form only (the only form this control plane ever sends,
+// internal/api/api_rate_limit.go's own writeRateLimited): 0 if absent or
+// not a plain non-negative integer, so a caller checking APIError.RetryAfter
+// only sees a real value when the server actually sent one it can trust.
+func retryAfterHeader(h http.Header) time.Duration {
+	raw := h.Get("Retry-After")
+	if raw == "" {
+		return 0
+	}
+	seconds, err := strconv.Atoi(raw)
+	if err != nil || seconds < 0 {
+		return 0
+	}
+	return time.Duration(seconds) * time.Second
 }
 
 // CreateApp calls POST /api/v1/apps.
@@ -1395,7 +1412,7 @@ func (c *Client) DownloadAuditLogCSV(ctx context.Context, opts ListAuditLogOptio
 		return nil, fmt.Errorf("read response body: %w", err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data)}
+		return nil, &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header)}
 	}
 	return data, nil
 }
