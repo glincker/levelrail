@@ -17,6 +17,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -1587,6 +1588,8 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithImageLister(client),
 		api.WithDockerDiskUsager(client),
 		api.WithDockerPruner(client),
+		api.WithDBPinger(db),
+		api.WithDoctorDiskWarningBytes(doctorDiskWarningBytes(logger)),
 		api.WithExecRuntime(func(nodeID string) (docker.Runtime, error) {
 			return resolveNodeTransport(client, agentRegistry, nodeID)
 		}),
@@ -1820,6 +1823,26 @@ func certExpiryWarningWindow(logger *slog.Logger) time.Duration {
 		return 0
 	}
 	return d
+}
+
+// doctorDiskWarningBytes reads APP_DOCTOR_DISK_WARNING_BYTES, the same
+// env-var-with-default shape certExpiryWarningWindow above already uses
+// for api.WithCertExpiryWarningWindow, applied here to
+// api.WithDoctorDiskWarningBytes ("levelrail-cli doctor"'s disk_space
+// check threshold). Returns 0 (api's own signal to fall back to its
+// internal default, api.defaultDoctorDiskWarningBytes) when unset or
+// unparseable, logging a warning in the latter case.
+func doctorDiskWarningBytes(logger *slog.Logger) int64 {
+	raw := os.Getenv("APP_DOCTOR_DISK_WARNING_BYTES")
+	if raw == "" {
+		return 0
+	}
+	n, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		logger.Warn("invalid APP_DOCTOR_DISK_WARNING_BYTES, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return n
 }
 
 // publicHost reads APP_PUBLIC_HOST: the IP address or hostname operators

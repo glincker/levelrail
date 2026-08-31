@@ -1128,6 +1128,14 @@ func (c *Client) GetSystemStatus(ctx context.Context) (SystemStatusResource, err
 	return out, err
 }
 
+// GetSystemDoctor calls GET /api/v1/system/doctor: the "levelrail-cli
+// doctor" preflight bundle, a superset of GetSystemStatus above.
+func (c *Client) GetSystemDoctor(ctx context.Context) (SystemDoctorResource, error) {
+	var out SystemDoctorResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/system/doctor", nil, &out)
+	return out, err
+}
+
 // ListAlertRules calls GET /api/v1/apps/{name}/alerts: every alert rule
 // scoped to name, including disabled ones.
 func (c *Client) ListAlertRules(ctx context.Context, name string) ([]AlertRuleResource, error) {
