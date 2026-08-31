@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sort"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -22,6 +23,8 @@ type fakeStore struct {
 	// every service, standing in for a real database failure distinct
 	// from "not found".
 	failGetDEK error
+	rotatedAt  time.Time
+	rotatedOK  bool
 }
 
 func newFakeStore() *fakeStore {
@@ -128,6 +131,36 @@ func (f *fakeStore) SetSecretLocked(_ context.Context, serviceName, envKey strin
 	}
 	f.locked[serviceName][envKey] = locked
 	return nil
+}
+
+// RotateServiceDEKs mirrors *store.DB's own transactional behavior: it
+// builds every rewrapped DEK into a temporary map first, and only
+// applies it to f.deks if every row's rewrap succeeded, the same
+// all-or-nothing guarantee the real SQL transaction gives.
+func (f *fakeStore) RotateServiceDEKs(_ context.Context, rewrap func(serviceName string, wrapped []byte) ([]byte, error)) error {
+	var names []string
+	for name := range f.deks {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	rewrapped := make(map[string][]byte, len(names))
+	for _, name := range names {
+		newWrapped, err := rewrap(name, f.deks[name])
+		if err != nil {
+			return err
+		}
+		rewrapped[name] = newWrapped
+	}
+
+	f.deks = rewrapped
+	f.rotatedAt = time.Now().UTC()
+	f.rotatedOK = true
+	return nil
+}
+
+func (f *fakeStore) GetMasterKeyRotatedAt(_ context.Context) (time.Time, bool, error) {
+	return f.rotatedAt, f.rotatedOK, nil
 }
 
 func testManager(t *testing.T) (*Manager, *fakeStore) {

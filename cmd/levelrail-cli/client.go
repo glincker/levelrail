@@ -129,6 +129,8 @@ type (
 
 	auditLogEntryResource = apiclient.AuditLogEntryResource
 	listAuditLogOptions   = apiclient.ListAuditLogOptions
+
+	rotateMasterKeyResult = apiclient.RotateMasterKeyResult
 )
 
 // NewClient builds a Client. See apiclient.NewClient.

@@ -30,6 +30,14 @@ const defaultDoctorDiskWarningBytes = 1 << 30 // 1GiB
 // stuck check must never hang the whole doctor response.
 const doctorPingTimeout = 2 * time.Second
 
+// defaultDoctorMasterKeyRotationWarnAge is the age GET
+// /api/v1/system/doctor's master_key_rotation check warns beyond,
+// overridable via APP_DOCTOR_MASTER_KEY_ROTATION_WARN_DAYS
+// (WithDoctorMasterKeyRotationWarnAge). A soft nudge, never fail: this
+// platform has no way to know whether skipping a rotation is actually
+// unsafe for a given operator.
+const defaultDoctorMasterKeyRotationWarnAge = 365 * 24 * time.Hour
+
 type doctorCheckResource struct {
 	Code    string `json:"code"`
 	Name    string `json:"name"`
@@ -58,6 +66,7 @@ func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 		doctorCheckPort(80),
 		doctorCheckPort(443),
 		rt.doctorCheckDatabase(ctx),
+		rt.doctorCheckMasterKeyRotation(ctx),
 	}
 
 	ok := true
@@ -156,4 +165,34 @@ func (rt *Router) doctorCheckDatabase(ctx context.Context) doctorCheckResource {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusFail, Message: err.Error()}
 	}
 	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "reachable"}
+}
+
+// doctorCheckMasterKeyRotation surfaces how long it has been since the
+// envelope-encryption master key was last rotated (RotateMasterKey), a
+// soft nudge per section 4.10/10 of this project's own design doc:
+// never fail, since this platform cannot know whether skipping
+// rotation is actually unsafe for a given operator.
+func (rt *Router) doctorCheckMasterKeyRotation(ctx context.Context) doctorCheckResource {
+	const code, name = "master_key_rotation", "Master key rotation"
+	if rt.masterKeyRotator == nil {
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "no master key configured"}
+	}
+
+	rotatedAt, ok, err := rt.masterKeyRotator.GetMasterKeyRotatedAt(ctx)
+	if err != nil {
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: fmt.Sprintf("could not read rotation history: %s", err)}
+	}
+	if !ok {
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "never rotated (informational, not a requirement)"}
+	}
+
+	age := time.Since(rotatedAt)
+	threshold := rt.doctorMasterKeyRotationWarnAge
+	if threshold <= 0 {
+		threshold = defaultDoctorMasterKeyRotationWarnAge
+	}
+	if age > threshold {
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusWarn, Message: fmt.Sprintf("last rotated %s ago, consider rotating again", age.Round(time.Hour))}
+	}
+	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: fmt.Sprintf("last rotated %s ago", age.Round(time.Hour))}
 }

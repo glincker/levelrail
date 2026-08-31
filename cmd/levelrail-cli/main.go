@@ -90,6 +90,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runDoctor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "users":
 		return runUsers(prog, args[1:], stdout, stderr, lookupEnv)
+	case "secrets":
+		return runSecrets(prog, args[1:], stdout, stderr, lookupEnv)
 	case "migrate":
 		return runMigrate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "completion":
@@ -133,6 +135,7 @@ Usage:
   %[1]s audit-log [flags]                                     who changed what, --format csv to export
   %[1]s doctor [flags]                                        local preflight health check: Docker, disk, ports, database
   %[1]s users list|create|set-abilities|delete|roles [flags]   manage users and their abilities, directly or via a curated role
+  %[1]s secrets rotate-master-key --new-key-file PATH [flags]   rotate the envelope-encryption master key
   %[1]s auth login [flags]             authenticate and persist a new API token
   %[1]s auth whoami [flags]           show who the current token authenticates as
   %[1]s tokens create|list|revoke [flags]   manage API tokens (requires a live session, see "%[1]s tokens -h")

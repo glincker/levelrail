@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -30,6 +32,14 @@ type Store interface {
 	ListSecretKeys(ctx context.Context, serviceName string) ([]store.SecretKeyInfo, error)
 	GetSecretKeyLocked(ctx context.Context, serviceName, envKey string) (exists, locked bool, err error)
 	SetSecretLocked(ctx context.Context, serviceName, envKey string, locked bool) error
+	// RotateServiceDEKs rewraps every stored DEK in one transaction:
+	// rewrap is called once per (serviceName, wrapped DEK) row, and any
+	// error it returns aborts and rolls back the whole rotation, never
+	// leaving some rows migrated and others not. See rotate.go.
+	RotateServiceDEKs(ctx context.Context, rewrap func(serviceName string, wrapped []byte) ([]byte, error)) error
+	// GetMasterKeyRotatedAt returns the last time RotateServiceDEKs
+	// committed successfully, or ok=false if it never has.
+	GetMasterKeyRotatedAt(ctx context.Context) (rotatedAt time.Time, ok bool, err error)
 }
 
 // ErrValueNotFound means no secret value has been set for a given
@@ -53,7 +63,11 @@ var ErrSecretLocked = errors.New("secrets: value is locked")
 // a raw DEK or handle wrapping/unwrapping themselves.
 type Manager struct {
 	store Store
-	mk    *MasterKey
+	// mu guards mk: RotateMasterKey takes the write lock for the whole
+	// rotation so no concurrent dekFor/Resolve call can read the old key
+	// or create a new DEK wrapped under it mid-rotation.
+	mu sync.RWMutex
+	mk *MasterKey
 }
 
 // NewManager builds a Manager. mk is the control plane's master key,
@@ -146,7 +160,7 @@ func (m *Manager) Resolve(ctx context.Context, serviceName, envKey string) (stri
 		return "", fmt.Errorf("secrets: get value for %q/%q: %w", serviceName, envKey, err)
 	}
 
-	dek, err := m.mk.UnwrapDEK(WrappedDEK(wrapped))
+	dek, err := m.masterKey().UnwrapDEK(WrappedDEK(wrapped))
 	if err != nil {
 		return "", fmt.Errorf("secrets: unwrap DEK for %q: %w", serviceName, err)
 	}
@@ -189,15 +203,17 @@ func (m *Manager) DeleteAll(ctx context.Context, serviceName string) error {
 // DEK is wrapped once and reused to encrypt many values fast, and this
 // never overwrites an existing wrapped DEK.
 func (m *Manager) dekFor(ctx context.Context, serviceName string) ([]byte, error) {
+	mk := m.masterKey()
+
 	wrapped, err := m.store.GetServiceDEK(ctx, serviceName)
 	if err == nil {
-		return m.mk.UnwrapDEK(WrappedDEK(wrapped))
+		return mk.UnwrapDEK(WrappedDEK(wrapped))
 	}
 	if !errors.Is(err, store.ErrServiceDEKNotFound) {
 		return nil, fmt.Errorf("secrets: get DEK for %q: %w", serviceName, err)
 	}
 
-	raw, newlyWrapped, err := m.mk.GenerateDEK()
+	raw, newlyWrapped, err := mk.GenerateDEK()
 	if err != nil {
 		return nil, fmt.Errorf("secrets: generate DEK for %q: %w", serviceName, err)
 	}
@@ -205,4 +221,57 @@ func (m *Manager) dekFor(ctx context.Context, serviceName string) ([]byte, error
 		return nil, fmt.Errorf("secrets: save DEK for %q: %w", serviceName, err)
 	}
 	return raw, nil
+}
+
+// masterKey returns the currently active master key. Held only for the
+// duration of the read: RotateMasterKey takes the write lock for an
+// entire rotation, but a caller here only needs a stable pointer, not
+// the lock, for the crypto operation that follows.
+func (m *Manager) masterKey() *MasterKey {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.mk
+}
+
+// RotateMasterKey re-wraps every stored DEK from the manager's currently
+// active master key to newMasterKey (its serialized age identity
+// string), then swaps the active key on success. Held for the whole
+// operation is Manager's write lock, so no concurrent SetValue/Resolve
+// call can create a new DEK under the old key, or read one under it,
+// while rotation is in flight: dekFor/Resolve above are blocked, not
+// racing, for that window.
+//
+// Returns the rotation's timestamp on success. On any failure (a
+// corrupt stored DEK, most likely), nothing changes: the DB rotation
+// itself is transactional (Store.RotateServiceDEKs) and the in-memory
+// key is only swapped after that transaction commits.
+func (m *Manager) RotateMasterKey(ctx context.Context, newMasterKey string) (time.Time, error) {
+	newKey, err := LoadMasterKey(newMasterKey)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("secrets: rotate master key: load new key: %w", err)
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if err := RotateStoredDEKs(ctx, m.store, m.mk, newKey); err != nil {
+		return time.Time{}, err
+	}
+	m.mk = newKey
+
+	rotatedAt, ok, err := m.store.GetMasterKeyRotatedAt(ctx)
+	if err != nil || !ok {
+		return time.Now().UTC(), nil
+	}
+	return rotatedAt, nil
+}
+
+// GetMasterKeyRotatedAt returns the last time RotateMasterKey succeeded,
+// or ok=false if it never has.
+func (m *Manager) GetMasterKeyRotatedAt(ctx context.Context) (time.Time, bool, error) {
+	rotatedAt, ok, err := m.store.GetMasterKeyRotatedAt(ctx)
+	if err != nil {
+		return time.Time{}, false, fmt.Errorf("secrets: get master key rotated at: %w", err)
+	}
+	return rotatedAt, ok, nil
 }

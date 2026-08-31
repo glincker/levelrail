@@ -277,6 +277,29 @@ func WithDataDir(path string) Option {
 	return func(rt *Router) { rt.dataDir = path }
 }
 
+// WithMasterKeyRotation enables POST
+// /api/v1/system/master-key/rotate and the doctor's rotation-age check.
+// masterKeyFilePath should be the on-disk path the running control plane
+// loaded its master key from, or "" if it came from APP_MASTER_KEY
+// instead: see MasterKeyRotator's own doc comment for what that
+// distinction changes about a rotation's response. Without this option
+// configured (the default), the route returns 501, the same shape
+// WithSecretSetter's own absence produces.
+func WithMasterKeyRotation(r MasterKeyRotator, masterKeyFilePath string) Option {
+	return func(rt *Router) {
+		rt.masterKeyRotator = r
+		rt.masterKeyFilePath = masterKeyFilePath
+	}
+}
+
+// WithDoctorMasterKeyRotationWarnAge overrides the age GET
+// /api/v1/system/doctor's master_key_rotation check warns beyond, the
+// same env-var-overridable-threshold shape WithDoctorDiskWarningBytes
+// already establishes for disk_space.
+func WithDoctorMasterKeyRotationWarnAge(d time.Duration) Option {
+	return func(rt *Router) { rt.doctorMasterKeyRotationWarnAge = d }
+}
+
 // WithDockerPinger enables Docker daemon connectivity reporting on
 // GET /api/v1/system/status. Without one configured (the default), the
 // response's DockerConnected field simply stays false, the same

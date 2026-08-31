@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 )
 
 // This file is pure byte storage for TASKS.md 1.7's envelope encryption:
@@ -224,4 +225,86 @@ func (db *DB) DeleteServiceSecrets(ctx context.Context, serviceName string) erro
 		return fmt.Errorf("store: delete service secrets for %q: commit: %w", serviceName, err)
 	}
 	return nil
+}
+
+// RotateServiceDEKs reads every row in service_secrets, calls rewrap
+// once per row, writes back whatever it returns, and records the
+// rotation timestamp, all in one transaction: if rewrap returns an
+// error for any row, nothing is written, matching DeleteServiceSecrets's
+// own defer-rollback pattern. Callers (internal/secrets.RotateStoredDEKs)
+// supply rewrap to do the actual unwrap-under-old-key/wrap-under-new-key
+// work; this file only ever sees opaque bytes.
+func (db *DB) RotateServiceDEKs(ctx context.Context, rewrap func(serviceName string, wrapped []byte) ([]byte, error)) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: rotate service DEKs: begin transaction: %w", err)
+	}
+	defer func() {
+		_ = tx.Rollback() // no-op if Commit already succeeded
+	}()
+
+	rows, err := tx.QueryContext(ctx, `SELECT service_name, wrapped_dek FROM service_secrets`)
+	if err != nil {
+		return fmt.Errorf("store: rotate service DEKs: list: %w", err)
+	}
+	type serviceDEK struct {
+		serviceName string
+		wrapped     []byte
+	}
+	var deks []serviceDEK
+	for rows.Next() {
+		var d serviceDEK
+		if err := rows.Scan(&d.serviceName, &d.wrapped); err != nil {
+			_ = rows.Close()
+			return fmt.Errorf("store: rotate service DEKs: scan: %w", err)
+		}
+		deks = append(deks, d)
+	}
+	rowsErr := rows.Err()
+	_ = rows.Close()
+	if rowsErr != nil {
+		return fmt.Errorf("store: rotate service DEKs: %w", rowsErr)
+	}
+
+	for _, d := range deks {
+		newWrapped, err := rewrap(d.serviceName, d.wrapped)
+		if err != nil {
+			return fmt.Errorf("store: rotate service DEKs: %w", err)
+		}
+		if _, err := tx.ExecContext(ctx, `
+			UPDATE service_secrets SET wrapped_dek = ? WHERE service_name = ?
+		`, newWrapped, d.serviceName); err != nil {
+			return fmt.Errorf("store: rotate service DEKs: update %q: %w", d.serviceName, err)
+		}
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO master_key_rotation (id, rotated_at) VALUES (1, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		ON CONFLICT (id) DO UPDATE SET rotated_at = excluded.rotated_at
+	`); err != nil {
+		return fmt.Errorf("store: rotate service DEKs: record rotation timestamp: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: rotate service DEKs: commit: %w", err)
+	}
+	return nil
+}
+
+// GetMasterKeyRotatedAt returns the last time RotateServiceDEKs
+// committed successfully, or ok=false if it never has.
+func (db *DB) GetMasterKeyRotatedAt(ctx context.Context) (rotatedAt time.Time, ok bool, err error) {
+	var raw string
+	scanErr := db.QueryRowContext(ctx, `SELECT rotated_at FROM master_key_rotation WHERE id = 1`).Scan(&raw)
+	if errors.Is(scanErr, sql.ErrNoRows) {
+		return time.Time{}, false, nil
+	}
+	if scanErr != nil {
+		return time.Time{}, false, fmt.Errorf("store: get master key rotated at: %w", scanErr)
+	}
+	t, parseErr := time.Parse(time.RFC3339Nano, raw)
+	if parseErr != nil {
+		return time.Time{}, false, fmt.Errorf("store: get master key rotated at: parse timestamp: %w", parseErr)
+	}
+	return t, true, nil
 }

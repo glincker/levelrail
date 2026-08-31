@@ -18,6 +18,8 @@ package secrets
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"filippo.io/age"
 )
@@ -67,4 +69,36 @@ func LoadMasterKey(serialized string) (*MasterKey, error) {
 // it anywhere other than the deliberately chosen key storage location.
 func (mk *MasterKey) String() string {
 	return mk.identity.String()
+}
+
+// PersistMasterKeyFile atomically writes serialized (a MasterKey's
+// String() output) to path: written to a temp file in the same
+// directory first, then renamed into place, so a crash mid-write can
+// never leave a truncated, unloadable key file behind.
+func PersistMasterKeyFile(path, serialized string) error {
+	dir := filepath.Dir(path)
+	tmp, err := os.CreateTemp(dir, ".master-key-*.tmp")
+	if err != nil {
+		return fmt.Errorf("secrets: persist master key file: create temp file: %w", err)
+	}
+	tmpPath := tmp.Name()
+	defer func() {
+		_ = os.Remove(tmpPath) // no-op once the rename below succeeds
+	}()
+
+	if err := tmp.Chmod(0o600); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("secrets: persist master key file: chmod temp file: %w", err)
+	}
+	if _, err := tmp.WriteString(serialized); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("secrets: persist master key file: write temp file: %w", err)
+	}
+	if err := tmp.Close(); err != nil {
+		return fmt.Errorf("secrets: persist master key file: close temp file: %w", err)
+	}
+	if err := os.Rename(tmpPath, path); err != nil {
+		return fmt.Errorf("secrets: persist master key file: rename into place: %w", err)
+	}
+	return nil
 }
