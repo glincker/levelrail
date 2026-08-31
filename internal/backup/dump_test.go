@@ -184,7 +184,7 @@ func TestContainerDumper_Dump(t *testing.T) {
 			engine:      store.EngineDragonfly,
 			containerID: "db-cache",
 			content:     "rdb-bytes",
-			wantCmd:     []string{"sh", "-c", "redis-cli SAVE RDB dump.rdb && exec cat /data/dump.rdb"},
+			wantCmd:     []string{"sh", "-c", "redis-cli SAVE RDB dump.rdb > /dev/null && exec cat /data/dump.rdb"},
 		},
 	}
 
