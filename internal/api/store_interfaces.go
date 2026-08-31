@@ -327,6 +327,7 @@ type Store interface {
 	RecoveryCodeStore
 	AuditStore
 	ScheduledTaskStore
+	FeatureFlagStore
 }
 
 // SecretSetter is the surface the secrets handlers need from

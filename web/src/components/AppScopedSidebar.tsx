@@ -17,6 +17,7 @@ import {
   BellIcon,
   TerminalIcon,
   ClockCountdownIcon,
+  FlagIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   SidebarGroup,
@@ -35,7 +36,8 @@ import { summarizeAppStatus } from '../lib/appStatus'
 // in place of the global nav whenever the current route is under
 // /apps/$name/*. The section routes are grouped into Deploy (Overview,
 // Deploys, Domains, Network, Services), Configure (Environment, Source,
-// Deploy settings, Health, Resources, Integrations, Scheduled tasks),
+// Deploy settings, Health, Resources, Integrations, Scheduled tasks,
+// Feature flags),
 // and Observe (Metrics, Logs, Alerts, Exec), matching the
 // SidebarGroupLabel pattern the global sidebar's Settings group uses.
 //
@@ -217,6 +219,18 @@ export function AppScopedSidebar({ name }: { name: string }) {
               >
                 <ClockCountdownIcon />
                 <span>Scheduled tasks</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={
+                  <Link to="/apps/$name/feature-flags" params={{ name }} />
+                }
+                isActive={pathname.endsWith('/feature-flags')}
+                tooltip="Feature flags"
+              >
+                <FlagIcon />
+                <span>Feature flags</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
