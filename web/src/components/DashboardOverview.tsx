@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
 import {
   PackageIcon,
@@ -12,6 +13,8 @@ import type { AppListEntry } from '../types/appDetail'
 import { useBrand } from '../hooks/useBrand'
 import { STATUS_DOT_COLOR } from '../lib/appStatus'
 import { CreateResourceWizard } from './CreateResourceWizard'
+import { OnboardingFlow } from './OnboardingFlow'
+import { useCompleteOnboarding } from '../queries/onboarding'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -28,9 +31,30 @@ function bucketApps(apps: AppListEntry[]) {
   return { healthy, attention, building }
 }
 
-export function DashboardOverview({ apps }: { apps: AppListEntry[] }) {
+export function DashboardOverview({
+  apps,
+  onboardingCompleted,
+}: {
+  apps: AppListEntry[]
+  onboardingCompleted: boolean
+}) {
+  // Belt-and-suspenders: a first app created some way other than the
+  // onboarding checklist's own "Deploy an app" button (the CLI, the API
+  // directly, or the ordinary "New app" button) still needs to mark
+  // onboarding complete, so the checklist doesn't reappear if every app
+  // later gets deleted back down to zero. OnboardingFlow's own "Skip
+  // setup" button covers the other way this flag gets set.
+  const completeOnboarding = useCompleteOnboarding()
+  const hasApps = apps.length > 0
+  const { mutate: markOnboardingComplete } = completeOnboarding
+  useEffect(() => {
+    if (hasApps && !onboardingCompleted) {
+      markOnboardingComplete()
+    }
+  }, [hasApps, onboardingCompleted, markOnboardingComplete])
+
   if (apps.length === 0) {
-    return <WelcomeEmptyState />
+    return onboardingCompleted ? <WelcomeEmptyState /> : <OnboardingFlow />
   }
 
   const { healthy, attention, building } = bucketApps(apps)
