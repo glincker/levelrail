@@ -70,6 +70,7 @@ type (
 	scheduledTaskResource = apiclient.ScheduledTaskResource
 	scheduledTaskRequest  = apiclient.ScheduledTaskRequest
 
+	systemStatusResource        = apiclient.SystemStatusResource
 	nodeResource                = apiclient.NodeResource
 	setNodeWorkloadsRequest     = apiclient.SetNodeWorkloadsRequest
 	createNodeJoinTokenResponse = apiclient.CreateNodeJoinTokenResponse

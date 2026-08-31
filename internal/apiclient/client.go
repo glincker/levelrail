@@ -1056,6 +1056,15 @@ func (c *Client) GetNodePatchStatus(ctx context.Context, id string) (NodePatchSt
 	return out, err
 }
 
+// GetSystemStatus calls GET /api/v1/system/status: this control plane's
+// own configured/not-configured signals, including local Docker daemon
+// reachability (DockerConnected/DockerError).
+func (c *Client) GetSystemStatus(ctx context.Context) (SystemStatusResource, error) {
+	var out SystemStatusResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/system/status", nil, &out)
+	return out, err
+}
+
 // ListAlertRules calls GET /api/v1/apps/{name}/alerts: every alert rule
 // scoped to name, including disabled ones.
 func (c *Client) ListAlertRules(ctx context.Context, name string) ([]AlertRuleResource, error) {

@@ -40,6 +40,10 @@ export interface SystemStatus {
   data_dir_total_bytes?: number
   data_dir_free_bytes?: number
   docker_connected: boolean
+  // docker_error is the Ping failure's own message, set only when
+  // docker_connected is false because Ping actually errored (never set
+  // for "no Docker reachability check configured").
+  docker_error?: string
   docker_disk_usage?: DockerDiskUsage
 }
 
@@ -82,4 +86,20 @@ export function useSystemStatus() {
 // blocking or erroring.
 export function useSystemStatusOptional() {
   return useQuery({ ...systemStatusQueryOptions(), retry: false })
+}
+
+// Same cadence as queries/activity.ts's ACTIVITY_POLL_INTERVAL_MS (that
+// module's own comment: frequent enough to notice on the next glance,
+// not frequent enough to read as always-on polling per section 4.8).
+// This lives in routes/__root.tsx (DockerHealthBanner), mounted for
+// every authenticated route, so an outage clears itself without a
+// manual refresh once Docker comes back.
+const DOCKER_HEALTH_POLL_INTERVAL_MS = 30_000
+
+export function useDockerHealthPoll() {
+  return useQuery({
+    ...systemStatusQueryOptions(),
+    retry: false,
+    refetchInterval: DOCKER_HEALTH_POLL_INTERVAL_MS,
+  })
 }
