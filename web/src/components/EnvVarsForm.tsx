@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
-import { useFieldArray, useForm } from 'react-hook-form'
+import { useFieldArray, useForm, useWatch, type Control } from 'react-hook-form'
 import { z } from 'zod'
 import {
   ClipboardTextIcon,
@@ -72,12 +72,37 @@ export interface EnvVarsFormProps {
   isPending: boolean
   errorMessage?: string
   onSave: (vars: Record<string, string>) => void
+  // Renders next to a row's key input, keyed off that row's live (not
+  // just initial) key value: EnvEditor uses this to show which shared
+  // tier, if any, an effective value would fall back to.
+  renderKeyBadge?: (key: string) => React.ReactNode
+  // Read-only rows for keys the effective env resolves from a shared
+  // tier that this editor's own values map doesn't set, so they're
+  // visible without being part of the editable/save-able field array.
+  inheritedRows?: { key: string; value: string; badge: React.ReactNode }[]
+}
+
+// Wraps a single row's key badge in its own component so only that
+// row re-renders on keystroke, via useWatch scoped to one field path.
+function EnvRowBadge({
+  control,
+  index,
+  renderKeyBadge,
+}: {
+  control: Control<EnvFormValues>
+  index: number
+  renderKeyBadge: (key: string) => React.ReactNode
+}) {
+  const key = useWatch({ control, name: `vars.${index}.key` })
+  return <>{renderKeyBadge(key)}</>
 }
 
 // Shared add/remove-list, paste-.env-import, full-replace-save form,
 // used by both EnvEditor (an app's own env) and OrganizationEnvEditor
 // (an organization's shared env): identical interaction shape, only the
-// data source, copy, and save mutation differ per caller.
+// data source, copy, and save mutation differ per caller. renderKeyBadge
+// and inheritedRows are optional and only used by EnvEditor, to show
+// shared-tier provenance inline.
 export function EnvVarsForm({
   title,
   description,
@@ -87,6 +112,8 @@ export function EnvVarsForm({
   isPending,
   errorMessage,
   onSave,
+  renderKeyBadge,
+  inheritedRows,
 }: EnvVarsFormProps) {
   const { control, register, handleSubmit, formState, getValues } =
     useForm<EnvFormValues>({
@@ -175,6 +202,15 @@ export function EnvVarsForm({
                           : undefined
                       }
                     />
+                    {renderKeyBadge ? (
+                      <div className="mt-1">
+                        <EnvRowBadge
+                          control={control}
+                          index={index}
+                          renderKeyBadge={renderKeyBadge}
+                        />
+                      </div>
+                    ) : null}
                   </div>
                   <div className="flex flex-1 items-start gap-2">
                     <Input
@@ -199,6 +235,30 @@ export function EnvVarsForm({
               ))}
             </FieldGroup>
           )}
+          {inheritedRows && inheritedRows.length > 0 ? (
+            <div className="space-y-2 rounded-md border border-dashed border-border p-3">
+              <p className="text-xs font-medium text-muted-foreground">
+                Inherited from a shared tier, not part of this app&rsquo;s own
+                variables
+              </p>
+              <div className="space-y-1.5">
+                {inheritedRows.map((row) => (
+                  <div
+                    key={row.key}
+                    className="flex flex-wrap items-center gap-2 text-sm"
+                  >
+                    <span className="font-mono text-foreground">
+                      {row.key}
+                    </span>
+                    <span className="max-w-[16rem] truncate font-mono text-muted-foreground">
+                      {row.value}
+                    </span>
+                    {row.badge}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
           <div className="flex items-center gap-2 pt-1">
             <Button
               type="button"

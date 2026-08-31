@@ -248,6 +248,56 @@ func TestAuditLogRoute_Pagination(t *testing.T) {
 	}
 }
 
+// TestAuditLogRoute_FilterByPathAndMethod proves ?path and ?method scope
+// the result to one resource's own config-change trail (the shape
+// EnvEditor's recent-activity panel relies on): a PUT to one app's own
+// path, filtered by that exact path and method, must exclude a POST to
+// the collection endpoint and a PUT to a different app's path.
+func TestAuditLogRoute_FilterByPathAndMethod(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	createRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(createRec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`))
+	if createRec.Code != http.StatusCreated {
+		t.Fatalf("create app status = %d, want %d, body = %s", createRec.Code, http.StatusCreated, createRec.Body.String())
+	}
+
+	otherCreateRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(otherCreateRec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"worker","image":"levelrail/worker:1","port":4000}`))
+	if otherCreateRec.Code != http.StatusCreated {
+		t.Fatalf("create other app status = %d, want %d, body = %s", otherCreateRec.Code, http.StatusCreated, otherCreateRec.Body.String())
+	}
+
+	updateRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(updateRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", `{"name":"web","image":"levelrail/web:2","port":3000,"env":{"FOO":"bar"}}`))
+	if updateRec.Code != http.StatusOK {
+		t.Fatalf("update app status = %d, want %d, body = %s", updateRec.Code, http.StatusOK, updateRec.Body.String())
+	}
+
+	otherUpdateRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(otherUpdateRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/worker", `{"name":"worker","image":"levelrail/worker:2","port":4000}`))
+	if otherUpdateRec.Code != http.StatusOK {
+		t.Fatalf("update other app status = %d, want %d, body = %s", otherUpdateRec.Code, http.StatusOK, otherUpdateRec.Body.String())
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/audit-log?path="+url.QueryEscape("/api/v1/apps/web")+"&method=PUT", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	var got []auditLogEntryResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("len(got) = %d, want 1, got %+v", len(got), got)
+	}
+	if got[0].Path != "/api/v1/apps/web" || got[0].Method != http.MethodPut {
+		t.Errorf("got[0] = %+v, want path=/api/v1/apps/web method=PUT", got[0])
+	}
+}
+
 func TestHandleListAuditLog_InvalidLimit(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

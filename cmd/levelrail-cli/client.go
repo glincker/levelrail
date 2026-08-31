@@ -70,6 +70,10 @@ type (
 	scheduledTaskResource = apiclient.ScheduledTaskResource
 	scheduledTaskRequest  = apiclient.ScheduledTaskRequest
 
+	featureFlagResource  = apiclient.FeatureFlagResource
+	featureFlagRequest   = apiclient.FeatureFlagRequest
+	evaluateFlagResource = apiclient.EvaluateFlagResource
+
 	systemStatusResource        = apiclient.SystemStatusResource
 	nodeResource                = apiclient.NodeResource
 	setNodeWorkloadsRequest     = apiclient.SetNodeWorkloadsRequest

@@ -144,7 +144,8 @@ const (
 // write/deploy/root-tier request, newest first, cursor-paginated by
 // ?before (an RFC3339 timestamp) so a large table never needs offset
 // pagination. ?limit defaults to defaultAuditLogLimit, capped at
-// maxAuditLogLimit.
+// maxAuditLogLimit. ?path and ?method narrow to one resource's own
+// trail (e.g. an app's config-change history), both exact match.
 func (rt *Router) handleListAuditLog(w http.ResponseWriter, r *http.Request) {
 	limit := defaultAuditLogLimit
 	if raw := r.URL.Query().Get("limit"); raw != "" {
@@ -169,7 +170,12 @@ func (rt *Router) handleListAuditLog(w http.ResponseWriter, r *http.Request) {
 		before = &t
 	}
 
-	entries, err := rt.auditLog.ListAuditEntries(r.Context(), limit, before)
+	filter := store.AuditEntryFilter{
+		Path:   r.URL.Query().Get("path"),
+		Method: r.URL.Query().Get("method"),
+	}
+
+	entries, err := rt.auditLog.ListAuditEntries(r.Context(), limit, before, filter)
 	if err != nil {
 		rt.internalError(w, "api: list audit log failed", err)
 		return
