@@ -113,6 +113,9 @@ function formatCondition(rule: AlertRule): string {
   if (rule.kind === 'patch_status') {
     return 'any node over its pending security-patch threshold (platform-wide)'
   }
+  if (rule.kind === 'node_disk_space') {
+    return 'any node over its disk-usage percentage threshold (platform-wide)'
+  }
   if (rule.kind === 'scheduled_task_failure') {
     return `task ${rule.scheduled_task_id ?? '?'} fails ${rule.restart_count_threshold} runs in a row`
   }
@@ -135,6 +138,9 @@ function formatLastValue(rule: AlertRule): string {
   }
   if (rule.kind === 'patch_status') {
     return `${rule.last_value} security patches (highest across nodes)`
+  }
+  if (rule.kind === 'node_disk_space') {
+    return `${rule.last_value.toFixed(1)}% disk used (highest across nodes)`
   }
   if (rule.kind === 'scheduled_task_failure') {
     return `${rule.last_value} consecutive failures`

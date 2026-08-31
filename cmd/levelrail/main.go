@@ -594,7 +594,7 @@ func run(logger *slog.Logger) error {
 	// alerting.NodeSource, so a kind=patch_status rule lists the same
 	// fleet GET /api/v1/nodes does.
 	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, db, db,
-		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), db, patchStatusThreshold(logger), alertingNewNotifier, logger)
+		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), db, patchStatusThreshold(logger), nodeDiskSpaceThreshold(logger), alertingNewNotifier, logger)
 	go func() {
 		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("alerting engine stopped", slog.String("error", err.Error()))
@@ -1933,6 +1933,27 @@ func patchStatusThreshold(logger *slog.Logger) float64 {
 	v, err := strconv.ParseFloat(raw, 64)
 	if err != nil {
 		logger.Warn("invalid APP_ALERT_PATCH_STATUS_THRESHOLD, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return v
+}
+
+// nodeDiskSpaceThreshold reads APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT
+// as a float, the same env-var-with-default shape patchStatusThreshold
+// above already uses, applied here to alerting.NewEngine: how full
+// (percent used) a node's disk can get before a kind=node_disk_space
+// rule fires. Returns 0 (alerting's own signal to fall back to
+// alerting.DefaultNodeDiskSpaceThresholdPercent) when unset or
+// unparseable, logging a warning in the latter case so a typo'd env var
+// is visible rather than silently ignored.
+func nodeDiskSpaceThreshold(logger *slog.Logger) float64 {
+	raw := os.Getenv("APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT")
+	if raw == "" {
+		return 0
+	}
+	v, err := strconv.ParseFloat(raw, 64)
+	if err != nil {
+		logger.Warn("invalid APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return 0
 	}
 	return v
