@@ -9,10 +9,11 @@
 // pending OS security patches the same way: neither uses any of the
 // threshold/crashloop fields below, matching internal/alerting.Rule's
 // own shape. node_disk_space watches every node's disk usage percentage
-// platform-wide the same way too. scheduled_task_failure watches one of
-// this app's scheduled tasks' consecutive-failure count, reusing
-// restart_count_threshold as that count's threshold; see
-// internal/alerting.Rule's own doc comment.
+// platform-wide the same way too, and node_resource_usage watches every
+// node's summed CPU and memory usage the same way as well.
+// scheduled_task_failure watches one of this app's scheduled tasks'
+// consecutive-failure count, reusing restart_count_threshold as that
+// count's threshold; see internal/alerting.Rule's own doc comment.
 export type AlertRuleKind =
   | 'threshold'
   | 'crashloop'
@@ -20,6 +21,7 @@ export type AlertRuleKind =
   | 'patch_status'
   | 'scheduled_task_failure'
   | 'node_disk_space'
+  | 'node_resource_usage'
 
 export type Comparator = '>' | '<' | '>=' | '<='
 

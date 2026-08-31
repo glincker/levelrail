@@ -53,6 +53,7 @@ type Engine struct {
 	tracker        *RestartTracker
 	certs          CertSource
 	nodes          NodeSource
+	nodeServices   NodeServiceSource
 	scheduledTasks ScheduledTaskSource
 	newNotifier    func(Rule) Notifier
 	logger         *slog.Logger
@@ -61,6 +62,8 @@ type Engine struct {
 	certRenewalStalledThreshold time.Duration
 	patchStatusThreshold        float64
 	nodeDiskSpaceThreshold      float64
+	nodeCPUThreshold            float64
+	nodeMemoryThreshold         float64
 }
 
 // NewEngine builds an Engine. newNotifier defaults to a Notifier with no
@@ -73,9 +76,13 @@ type Engine struct {
 // certExpiryWarningWindow and certRenewalStalledThreshold fall back to
 // DefaultCertExpiryWarningWindow/DefaultCertRenewalStalledThreshold when
 // passed as 0; patchStatusThreshold falls back to
-// DefaultPatchStatusThreshold and nodeDiskSpaceThreshold falls back to
-// DefaultNodeDiskSpaceThresholdPercent the same way.
-func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker *RestartTracker, certs CertSource, scheduledTasks ScheduledTaskSource, certExpiryWarningWindow, certRenewalStalledThreshold time.Duration, nodes NodeSource, patchStatusThreshold, nodeDiskSpaceThreshold float64, newNotifier func(Rule) Notifier, logger *slog.Logger) *Engine {
+// DefaultPatchStatusThreshold, nodeDiskSpaceThreshold falls back to
+// DefaultNodeDiskSpaceThresholdPercent, and nodeCPUThreshold/
+// nodeMemoryThreshold fall back to DefaultNodeCPUThresholdPercent/
+// DefaultNodeMemoryThresholdBytes, all the same way. nodeServices may be
+// nil, in which case a kind=node_resource_usage rule is skipped the same
+// way a kind=patch_status rule is when nodes is nil.
+func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker *RestartTracker, certs CertSource, scheduledTasks ScheduledTaskSource, certExpiryWarningWindow, certRenewalStalledThreshold time.Duration, nodes NodeSource, patchStatusThreshold, nodeDiskSpaceThreshold float64, nodeServices NodeServiceSource, nodeCPUThreshold, nodeMemoryThreshold float64, newNotifier func(Rule) Notifier, logger *slog.Logger) *Engine {
 	if newNotifier == nil {
 		newNotifier = func(r Rule) Notifier { return NewNotifier(nil, nil, r) }
 	}
@@ -94,11 +101,18 @@ func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker 
 	if nodeDiskSpaceThreshold <= 0 {
 		nodeDiskSpaceThreshold = DefaultNodeDiskSpaceThresholdPercent
 	}
+	if nodeCPUThreshold <= 0 {
+		nodeCPUThreshold = DefaultNodeCPUThresholdPercent
+	}
+	if nodeMemoryThreshold <= 0 {
+		nodeMemoryThreshold = DefaultNodeMemoryThresholdBytes
+	}
 	return &Engine{
-		rules: rules, metrics: metrics, logs: logs, tracker: tracker, certs: certs, nodes: nodes, scheduledTasks: scheduledTasks,
+		rules: rules, metrics: metrics, logs: logs, tracker: tracker, certs: certs, nodes: nodes, nodeServices: nodeServices, scheduledTasks: scheduledTasks,
 		newNotifier: newNotifier, logger: logger,
 		certExpiryWarningWindow: certExpiryWarningWindow, certRenewalStalledThreshold: certRenewalStalledThreshold,
 		patchStatusThreshold: patchStatusThreshold, nodeDiskSpaceThreshold: nodeDiskSpaceThreshold,
+		nodeCPUThreshold: nodeCPUThreshold, nodeMemoryThreshold: nodeMemoryThreshold,
 	}
 }
 
@@ -119,7 +133,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 
 	for _, r := range rules {
 		var next Rule
-		var certNotices, patchNotices, diskSpaceNotices []string
+		var certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices []string
 		var taskFailureNotice string
 		switch r.Kind {
 		case KindThreshold:
@@ -170,6 +184,16 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindNodeResourceUsage:
+			if e.nodes == nil || e.nodeServices == nil {
+				e.logger.Warn("alerting: node_resource_usage rule found but no node/service source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			next, resourceUsageNotices, err = EvaluateNodeResourceUsage(ctx, e.nodes, e.nodeServices, e.metrics, r, e.nodeCPUThreshold, e.nodeMemoryThreshold, now, e.logger)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		default:
 			e.logger.Warn("alerting: rule has unknown kind, skipping", slog.String("rule_id", r.ID), slog.String("kind", string(r.Kind)))
 			continue
@@ -185,9 +209,9 @@ func (e *Engine) Tick(ctx context.Context) error {
 
 		switch {
 		case becameFiring:
-			e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, taskFailureNotice)
+			e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, taskFailureNotice)
 		case becameResolved:
-			e.dispatch(ctx, next, true, nil, nil, nil, "")
+			e.dispatch(ctx, next, true, nil, nil, nil, nil, "")
 		}
 	}
 
@@ -200,7 +224,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 // persisted successfully before dispatch is called, so a lost
 // notification doesn't leave the rule's stored state inconsistent with
 // reality, only the operator momentarily uninformed.
-func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotices, patchNotices, diskSpaceNotices []string, taskFailureNotice string) {
+func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices []string, taskFailureNotice string) {
 	// r.Enabled is already resolved against its attached channel
 	// (scanRule): a disabled channel silences the rule the same way
 	// DeployDispatcher.Dispatch skips a target with a disabled channel.
@@ -220,6 +244,9 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	}
 	if r.Kind == KindNodeDiskSpace && !resolved {
 		ev.DiskSpaceNotices = diskSpaceNotices
+	}
+	if r.Kind == KindNodeResourceUsage && !resolved {
+		ev.ResourceUsageNotices = resourceUsageNotices
 	}
 	if r.Kind == KindScheduledTaskFailure && !resolved {
 		ev.TaskFailureNotice = taskFailureNotice

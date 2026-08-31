@@ -10,6 +10,7 @@ import {
   ClockCountdownIcon,
   WrenchIcon,
   HardDriveIcon,
+  CpuIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -65,6 +66,16 @@ const DEFAULT_PATCH_STATUS_THRESHOLD = 1
 // lives engine-wide, set by APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT).
 const DEFAULT_NODE_DISK_SPACE_THRESHOLD_PERCENT = 90
 
+// DEFAULT_NODE_CPU_THRESHOLD_PERCENT/DEFAULT_NODE_MEMORY_THRESHOLD_GIB
+// mirror internal/alerting.DefaultNodeCPUThresholdPercent/
+// DefaultNodeMemoryThresholdBytes for the node_resource_usage
+// description below (the real, enforced values live engine-wide, set by
+// APP_ALERT_NODE_CPU_THRESHOLD_PERCENT/
+// APP_ALERT_NODE_MEMORY_THRESHOLD_BYTES). Memory is shown in GiB, not
+// raw bytes, purely for readability here; the env var itself is bytes.
+const DEFAULT_NODE_CPU_THRESHOLD_PERCENT = 80
+const DEFAULT_NODE_MEMORY_THRESHOLD_GIB = 4
+
 const KIND_OPTIONS: {
   value: AlertRuleKind
   label: string
@@ -76,6 +87,7 @@ const KIND_OPTIONS: {
   { value: 'patch_status', label: 'Node patch status', Icon: WrenchIcon },
   { value: 'scheduled_task_failure', label: 'Scheduled task failure', Icon: ClockCountdownIcon },
   { value: 'node_disk_space', label: 'Node disk space', Icon: HardDriveIcon },
+  { value: 'node_resource_usage', label: 'Node CPU/memory usage', Icon: CpuIcon },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -101,6 +113,7 @@ const createAlertRuleSchema = z
       'patch_status',
       'scheduled_task_failure',
       'node_disk_space',
+      'node_resource_usage',
     ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
@@ -113,14 +126,16 @@ const createAlertRuleSchema = z
     enabled: z.boolean(),
   })
   .superRefine((data, ctx) => {
-    // cert_expiry, patch_status, and node_disk_space need none of the
-    // threshold/crashloop fields: they watch every certificate, every
-    // node's patch status, or every node's disk usage, on the control
-    // plane platform-wide, not a metric or a restart count.
+    // cert_expiry, patch_status, node_disk_space, and node_resource_usage
+    // need none of the threshold/crashloop fields: they watch every
+    // certificate, every node's patch status, every node's disk usage, or
+    // every node's CPU/memory usage, on the control plane platform-wide,
+    // not a metric or a restart count.
     if (
       data.kind === 'cert_expiry' ||
       data.kind === 'patch_status' ||
-      data.kind === 'node_disk_space'
+      data.kind === 'node_disk_space' ||
+      data.kind === 'node_resource_usage'
     ) {
       return
     }
@@ -265,8 +280,8 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
       req.scheduled_task_id = values.scheduledTaskId
       req.restart_count_threshold = values.restartCountThreshold
     }
-    // cert_expiry, patch_status, and node_disk_space send no
-    // kind-specific fields at all.
+    // cert_expiry, patch_status, node_disk_space, and node_resource_usage
+    // send no kind-specific fields at all.
     createRule.mutate(req, {
       onSuccess: () => {
         handleOpenChange(false)
@@ -296,9 +311,10 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
             certificate on the control plane; a node patch status rule
             watches every node&apos;s pending OS security patches; a node
             disk space rule watches every node&apos;s disk usage
-            percentage; a scheduled task failure rule watches one of this
-            app&apos;s scheduled tasks. All six notify the same way once
-            they fire.
+            percentage; a node CPU/memory usage rule watches every
+            node&apos;s summed CPU and memory usage; a scheduled task
+            failure rule watches one of this app&apos;s scheduled tasks.
+            All seven notify the same way once they fire.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -365,6 +381,19 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
               {DEFAULT_NODE_DISK_SPACE_THRESHOLD_PERCENT}% used (the
               control plane&apos;s configured threshold, overridable via
               APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT).
+            </p>
+          ) : kind === 'node_resource_usage' ? (
+            <p className="text-sm text-muted-foreground">
+              Watches every node&apos;s summed CPU and memory usage across
+              its placed containers, on the whole control plane, and
+              fires as soon as either crosses its threshold: CPU at{' '}
+              {DEFAULT_NODE_CPU_THRESHOLD_PERCENT}% (overridable via
+              APP_ALERT_NODE_CPU_THRESHOLD_PERCENT), memory at{' '}
+              {DEFAULT_NODE_MEMORY_THRESHOLD_GIB} GiB (overridable via
+              APP_ALERT_NODE_MEMORY_THRESHOLD_BYTES). Memory has no
+              honest node-capacity percentage to compare against today,
+              so unlike CPU it&apos;s an absolute floor, not a
+              proportion.
             </p>
           ) : kind === 'threshold' ? (
             <>
