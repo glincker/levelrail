@@ -1,12 +1,14 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestSystemDoctorRoute_RequiresAuth(t *testing.T) {
@@ -45,10 +47,10 @@ func TestHandleSystemDoctor_NothingConfigured(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if len(got.Checks) != 6 {
-		t.Fatalf("len(Checks) = %d, want 6", len(got.Checks))
+	if len(got.Checks) != 7 {
+		t.Fatalf("len(Checks) = %d, want 7", len(got.Checks))
 	}
-	for _, code := range []string{"docker", "database", "disk_space", "data_dir_writable"} {
+	for _, code := range []string{"docker", "database", "disk_space", "data_dir_writable", "master_key_rotation"} {
 		if c := doctorCheckByCode(t, got.Checks, code); c.Status != doctorStatusUnknown {
 			t.Errorf("%s status = %q, want %q (nothing configured)", code, c.Status, doctorStatusUnknown)
 		}
@@ -173,5 +175,41 @@ func TestDoctorCheckPort_Available(t *testing.T) {
 	c := doctorCheckPort(port)
 	if c.Status != doctorStatusOK {
 		t.Errorf("status = %q, want %q (freshly released port)", c.Status, doctorStatusOK)
+	}
+}
+
+func TestDoctorCheckMasterKeyRotation_NeverRotated(t *testing.T) {
+	rt, _ := newTestRouterWithMasterKeyRotator(t, &fakeMasterKeyRotator{historyOK: false}, "")
+	c := rt.doctorCheckMasterKeyRotation(context.Background())
+	if c.Status != doctorStatusOK {
+		t.Errorf("status = %q, want %q (never rotated is informational, not a warning)", c.Status, doctorStatusOK)
+	}
+}
+
+func TestDoctorCheckMasterKeyRotation_RecentlyRotated(t *testing.T) {
+	rt, _ := newTestRouterWithMasterKeyRotator(t, &fakeMasterKeyRotator{historyOK: true, historyAt: time.Now().Add(-time.Hour)}, "")
+	c := rt.doctorCheckMasterKeyRotation(context.Background())
+	if c.Status != doctorStatusOK {
+		t.Errorf("status = %q, want %q (rotated an hour ago, well under the default warn age)", c.Status, doctorStatusOK)
+	}
+}
+
+func TestDoctorCheckMasterKeyRotation_StaleWarns(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db,
+		WithMasterKeyRotation(&fakeMasterKeyRotator{historyOK: true, historyAt: time.Now().Add(-48 * time.Hour)}, ""),
+		WithDoctorMasterKeyRotationWarnAge(24*time.Hour),
+	)
+	c := rt.doctorCheckMasterKeyRotation(context.Background())
+	if c.Status != doctorStatusWarn {
+		t.Errorf("status = %q, want %q (48h old, past the 24h configured threshold)", c.Status, doctorStatusWarn)
+	}
+}
+
+func TestDoctorCheckMasterKeyRotation_NotConfigured(t *testing.T) {
+	rt, _ := newTestRouter(t)
+	c := rt.doctorCheckMasterKeyRotation(context.Background())
+	if c.Status != doctorStatusUnknown {
+		t.Errorf("status = %q, want %q (no master key configured)", c.Status, doctorStatusUnknown)
 	}
 }

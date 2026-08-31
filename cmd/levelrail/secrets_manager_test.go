@@ -12,7 +12,7 @@ import (
 
 func TestLoadOrGenerateMasterKey_GeneratesOnFirstCall(t *testing.T) {
 	dataDir := t.TempDir()
-	mk, err := loadOrGenerateMasterKey(dataDir)
+	mk, _, err := loadOrGenerateMasterKey(dataDir)
 	if err != nil {
 		t.Fatalf("loadOrGenerateMasterKey() error = %v", err)
 	}
@@ -23,12 +23,12 @@ func TestLoadOrGenerateMasterKey_GeneratesOnFirstCall(t *testing.T) {
 
 func TestLoadOrGenerateMasterKey_PersistsAndReuses(t *testing.T) {
 	dataDir := t.TempDir()
-	first, err := loadOrGenerateMasterKey(dataDir)
+	first, _, err := loadOrGenerateMasterKey(dataDir)
 	if err != nil {
 		t.Fatalf("first loadOrGenerateMasterKey() error = %v", err)
 	}
 
-	second, err := loadOrGenerateMasterKey(dataDir)
+	second, _, err := loadOrGenerateMasterKey(dataDir)
 	if err != nil {
 		t.Fatalf("second loadOrGenerateMasterKey() error = %v", err)
 	}
@@ -40,11 +40,15 @@ func TestLoadOrGenerateMasterKey_PersistsAndReuses(t *testing.T) {
 
 func TestLoadOrGenerateMasterKey_PersistedFilePath(t *testing.T) {
 	dataDir := t.TempDir()
-	if _, err := loadOrGenerateMasterKey(dataDir); err != nil {
+	_, gotPath, err := loadOrGenerateMasterKey(dataDir)
+	if err != nil {
 		t.Fatalf("loadOrGenerateMasterKey() error = %v", err)
 	}
 
 	keyPath := filepath.Join(dataDir, masterKeyFilename)
+	if gotPath != keyPath {
+		t.Errorf("loadOrGenerateMasterKey() keyPath = %q, want %q", gotPath, keyPath)
+	}
 	info, err := os.Stat(keyPath)
 	if err != nil {
 		t.Fatalf("stat persisted key file: %v", err)
@@ -83,11 +87,37 @@ func TestLoadSecretsManager_EnvVarTakesPriorityOverPersistedFile(t *testing.T) {
 		}
 	})
 
-	mgr, err := loadSecretsManager(db, dataDir)
+	mgr, masterKeyFilePath, err := loadSecretsManager(db, dataDir)
 	if err != nil {
 		t.Fatalf("loadSecretsManager() error = %v, want success: an env var should never even look at the invalid persisted file", err)
 	}
 	if mgr == nil {
 		t.Fatal("loadSecretsManager() returned a nil manager")
+	}
+	if masterKeyFilePath != "" {
+		t.Errorf("masterKeyFilePath = %q, want empty for an env-sourced master key", masterKeyFilePath)
+	}
+}
+
+func TestLoadSecretsManager_ReturnsFilePathWhenFileSourced(t *testing.T) {
+	dataDir := t.TempDir()
+	ctx := context.Background()
+	db, err := store.Open(ctx, filepath.Join(t.TempDir(), "levelrail.db"))
+	if err != nil {
+		t.Fatalf("open test db: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("closing test db: %v", err)
+		}
+	})
+
+	_, masterKeyFilePath, err := loadSecretsManager(db, dataDir)
+	if err != nil {
+		t.Fatalf("loadSecretsManager() error = %v", err)
+	}
+	want := filepath.Join(dataDir, masterKeyFilename)
+	if masterKeyFilePath != want {
+		t.Errorf("masterKeyFilePath = %q, want %q", masterKeyFilePath, want)
 	}
 }

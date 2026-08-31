@@ -123,6 +123,19 @@ type Router struct {
 	domains                DomainStore            // always set, same shape as ingressSettings above: service_domains is always queryable, empty is a valid, non-error result
 	domainBasicAuth        DomainBasicAuthStore   // always set, same "core Store interface" shape as domains above
 	domainBasicAuthSecrets DomainBasicAuthSecrets // nil is valid: PUT/DELETE .../domains/{domain}/auth return 501, same shape as cloudflareTunnelSecrets above
+	masterKeyRotator       MasterKeyRotator       // nil is valid: POST /system/master-key/rotate returns 501, same shape as domainBasicAuthSecrets above
+	// masterKeyFilePath is where the currently active master key came
+	// from on disk, "" if it was sourced from APP_MASTER_KEY instead
+	// (see cmd/levelrail/main.go's loadSecretsManager). A successful
+	// rotation rewrites this file so a restart picks up the new key
+	// automatically; the env-var case has no such path and the rotation
+	// response warns instead. Set via WithMasterKeyRotation.
+	masterKeyFilePath string
+	// doctorMasterKeyRotationWarnAge overrides
+	// defaultDoctorMasterKeyRotationWarnAge for the doctor's
+	// master_key_rotation check. 0 means "use the default", set via
+	// WithDoctorMasterKeyRotationWarnAge.
+	doctorMasterKeyRotationWarnAge time.Duration
 	// publicHost is APP_PUBLIC_HOST: the IP or hostname operators should
 	// point a DNS record at to reach this control plane's embedded
 	// ingress. "" means "not configured", set via WithPublicHost;

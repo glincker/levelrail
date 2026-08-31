@@ -981,6 +981,24 @@ type SystemDoctorResource struct {
 	Checks []DoctorCheckResource `json:"checks"`
 }
 
+// RotateMasterKeyRequest mirrors internal/api's rotateMasterKeyRequest:
+// the new master key, read from a file or stdin by the CLI so it never
+// appears as a bare command-line argument.
+type RotateMasterKeyRequest struct {
+	NewMasterKey string `json:"newMasterKey"`
+}
+
+// RotateMasterKeyResult mirrors internal/api's rotateMasterKeyResponse.
+// Warning is non-empty exactly when the operator has a required
+// follow-up before the control plane's next restart: either the master
+// key is env-sourced (update APP_MASTER_KEY out of band) or the file
+// write itself failed (update the key file by hand).
+type RotateMasterKeyResult struct {
+	RotatedAt       time.Time `json:"rotatedAt"`
+	PersistedToFile bool      `json:"persistedToFile"`
+	Warning         string    `json:"warning,omitempty"`
+}
+
 // SetNodeWorkloadsRequest mirrors internal/api's setNodeWorkloadsRequest:
 // a full replace of both fields, not a partial patch.
 type SetNodeWorkloadsRequest struct {

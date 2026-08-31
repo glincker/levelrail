@@ -37,6 +37,10 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// gate handleDrainNode uses for its own fleet-wide, no-undo action,
 	// not AbilityWrite (which a narrower, single-app token could hold).
 	mux.HandleFunc("POST /api/v1/system/prune", rt.requireAbility(AbilityRoot, rt.handleSystemPrune))
+	// Master key rotation re-wraps every stored DEK live: AbilityRoot,
+	// the same fleet-wide-blast-radius tier as prune above, not
+	// AbilityWrite (SecretSetter's own gate for a single app's values).
+	mux.HandleFunc("POST /api/v1/system/master-key/rotate", rt.requireAbility(AbilityRoot, rt.handleRotateMasterKey))
 
 	// First-run onboarding state: AbilityRead to check it, AbilityWrite to
 	// dismiss/complete it, same tier as any other low-blast-radius

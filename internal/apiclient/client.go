@@ -1333,6 +1333,15 @@ func (c *Client) GetSystemDoctor(ctx context.Context) (SystemDoctorResource, err
 	return out, err
 }
 
+// RotateMasterKey calls POST /api/v1/system/master-key/rotate: re-wraps
+// every stored DEK from the control plane's currently active master key
+// to newMasterKey, live, in one atomic step.
+func (c *Client) RotateMasterKey(ctx context.Context, newMasterKey string) (RotateMasterKeyResult, error) {
+	var out RotateMasterKeyResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/system/master-key/rotate", RotateMasterKeyRequest{NewMasterKey: newMasterKey}, &out)
+	return out, err
+}
+
 // ListAlertRules calls GET /api/v1/apps/{name}/alerts: every alert rule
 // scoped to name, including disabled ones.
 func (c *Client) ListAlertRules(ctx context.Context, name string) ([]AlertRuleResource, error) {

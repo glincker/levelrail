@@ -372,7 +372,7 @@ func run(logger *slog.Logger) error {
 	}()
 	defer agentGRPCServer.GracefulStop()
 
-	secretsManager, err := loadSecretsManager(db, agentDataDir)
+	secretsManager, masterKeyFilePath, err := loadSecretsManager(db, agentDataDir)
 	if err != nil {
 		// Not fatal, the same choice bootstrapAdmin makes above: the
 		// control plane still starts. Every route and reconcile path
@@ -468,7 +468,7 @@ func run(logger *slog.Logger) error {
 		logger.Warn("webhook not configured", slog.String("error", err.Error()))
 	}
 
-	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, emailSender, scheduledTaskRunner)
+	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, emailSender, scheduledTaskRunner)
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
 		Handler:           apiHandler,
@@ -1232,46 +1232,51 @@ func devFixturesFile() string {
 // binary does it itself on first boot instead. Regenerating on every
 // restart instead of persisting would make every previously-wrapped DEK
 // permanently unwrappable, the one thing this must never do.
-func loadSecretsManager(db *store.DB, dataDir string) (*secrets.Manager, error) {
+// loadSecretsManager returns masterKeyFilePath as "" when the key came
+// from APP_MASTER_KEY: api.WithMasterKeyRotation uses that to decide
+// whether a rotation can persist the new key to disk itself, or must
+// warn the operator to update the env var out of band instead (see
+// docs/master-key-rotation.md).
+func loadSecretsManager(db *store.DB, dataDir string) (mgr *secrets.Manager, masterKeyFilePath string, err error) {
 	if serialized := os.Getenv("APP_MASTER_KEY"); serialized != "" {
 		mk, err := secrets.LoadMasterKey(serialized)
 		if err != nil {
-			return nil, fmt.Errorf("load master key from APP_MASTER_KEY: %w", err)
+			return nil, "", fmt.Errorf("load master key from APP_MASTER_KEY: %w", err)
 		}
-		return secrets.NewManager(db, mk), nil
+		return secrets.NewManager(db, mk), "", nil
 	}
 
-	mk, err := loadOrGenerateMasterKey(dataDir)
+	mk, keyPath, err := loadOrGenerateMasterKey(dataDir)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return secrets.NewManager(db, mk), nil
+	return secrets.NewManager(db, mk), keyPath, nil
 }
 
 // loadOrGenerateMasterKey loads a previously persisted master key from
 // dataDir, or generates and persists a fresh one if none exists yet.
-func loadOrGenerateMasterKey(dataDir string) (*secrets.MasterKey, error) {
+func loadOrGenerateMasterKey(dataDir string) (mk *secrets.MasterKey, keyPath string, err error) {
 	if err := os.MkdirAll(dataDir, 0o750); err != nil { //nolint:gosec // operator-controlled startup config, not user input
-		return nil, fmt.Errorf("create data dir for master key: %w", err)
+		return nil, "", fmt.Errorf("create data dir for master key: %w", err)
 	}
-	keyPath := filepath.Join(dataDir, masterKeyFilename)
+	keyPath = filepath.Join(dataDir, masterKeyFilename)
 
 	if serialized, err := os.ReadFile(keyPath); err == nil { //nolint:gosec // operator-controlled data directory path, not user input
 		mk, err := secrets.LoadMasterKey(string(serialized))
 		if err != nil {
-			return nil, fmt.Errorf("load persisted master key: %w", err)
+			return nil, "", fmt.Errorf("load persisted master key: %w", err)
 		}
-		return mk, nil
+		return mk, keyPath, nil
 	}
 
-	mk, err := secrets.GenerateMasterKey()
+	mk, err = secrets.GenerateMasterKey()
 	if err != nil {
-		return nil, fmt.Errorf("generate master key: %w", err)
+		return nil, "", fmt.Errorf("generate master key: %w", err)
 	}
 	if err := os.WriteFile(keyPath, []byte(mk.String()), 0o600); err != nil { //nolint:gosec // operator-controlled data directory path, not user input
-		return nil, fmt.Errorf("persist master key: %w", err)
+		return nil, "", fmt.Errorf("persist master key: %w", err)
 	}
-	return mk, nil
+	return mk, keyPath, nil
 }
 
 // loadBuilder connects to BuildKit and returns a ready
@@ -1627,7 +1632,7 @@ func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent
 // internal/api importing internal/agent.Registry directly (see
 // api.NodeRuntimeResolver's own doc comment for why this stays a
 // closure over resolveNodeTransport instead of a new dependency edge).
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, backupVerifyRunner *backup.VerifyRunner, agentRegistry *agent.Registry, emailSender email.Sender, scheduledTaskRunner *scheduledtask.Runner) (http.Handler, *api.Router) {
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, masterKeyFilePath string, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, backupVerifyRunner *backup.VerifyRunner, agentRegistry *agent.Registry, emailSender email.Sender, scheduledTaskRunner *scheduledtask.Runner) (http.Handler, *api.Router) {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
@@ -1673,6 +1678,8 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	}
 	if secretsManager != nil {
 		opts = append(opts, api.WithSecretSetter(secretsManager))
+		opts = append(opts, api.WithMasterKeyRotation(secretsManager, masterKeyFilePath))
+		opts = append(opts, api.WithDoctorMasterKeyRotationWarnAge(doctorMasterKeyRotationWarnAge(logger)))
 		// Email settings' SMTP password / SES secret access key go
 		// through the same secretsManager as everything else here.
 		opts = append(opts, api.WithEmailSecrets(secretsManager))
@@ -2037,6 +2044,24 @@ func doctorDiskWarningBytes(logger *slog.Logger) int64 {
 		return 0
 	}
 	return n
+}
+
+// doctorMasterKeyRotationWarnAge reads APP_DOCTOR_MASTER_KEY_ROTATION_WARN_DAYS,
+// the same env-var-with-default shape doctorDiskWarningBytes above uses
+// for api.WithDoctorDiskWarningBytes, applied here to
+// api.WithDoctorMasterKeyRotationWarnAge. Returns 0 (api's own signal to
+// fall back to its internal default) when unset or unparseable.
+func doctorMasterKeyRotationWarnAge(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_DOCTOR_MASTER_KEY_ROTATION_WARN_DAYS")
+	if raw == "" {
+		return 0
+	}
+	days, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		logger.Warn("invalid APP_DOCTOR_MASTER_KEY_ROTATION_WARN_DAYS, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return time.Duration(days) * 24 * time.Hour
 }
 
 // apiRateLimitReadRPM/apiRateLimitWriteRPM read

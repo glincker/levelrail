@@ -320,3 +320,90 @@ func TestGetSecretKeyLocked_NotFound(t *testing.T) {
 		t.Errorf("exists=%v locked=%v, want both false", exists, locked)
 	}
 }
+
+func TestRotateServiceDEKs_RewrapsEveryRowAndRecordsTimestamp(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveServiceDEK(ctx, "web", []byte("wrapped-web-v1")); err != nil {
+		t.Fatalf("SaveServiceDEK() error = %v", err)
+	}
+	if err := db.SaveServiceDEK(ctx, "worker", []byte("wrapped-worker-v1")); err != nil {
+		t.Fatalf("SaveServiceDEK() error = %v", err)
+	}
+
+	if _, ok, err := db.GetMasterKeyRotatedAt(ctx); err != nil || ok {
+		t.Fatalf("GetMasterKeyRotatedAt() before any rotation = (ok=%v, err=%v), want ok=false, err=nil", ok, err)
+	}
+
+	seen := map[string]bool{}
+	rewrap := func(serviceName string, wrapped []byte) ([]byte, error) {
+		seen[serviceName] = true
+		return append(wrapped, "-v2"...), nil
+	}
+	if err := db.RotateServiceDEKs(ctx, rewrap); err != nil {
+		t.Fatalf("RotateServiceDEKs() error = %v", err)
+	}
+	if !seen["web"] || !seen["worker"] {
+		t.Errorf("RotateServiceDEKs() rewrap called for %v, want both web and worker", seen)
+	}
+
+	got, err := db.GetServiceDEK(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetServiceDEK() error = %v", err)
+	}
+	if string(got) != "wrapped-web-v1-v2" {
+		t.Errorf("GetServiceDEK() after rotation = %q, want %q", got, "wrapped-web-v1-v2")
+	}
+
+	rotatedAt, ok, err := db.GetMasterKeyRotatedAt(ctx)
+	if err != nil {
+		t.Fatalf("GetMasterKeyRotatedAt() error = %v", err)
+	}
+	if !ok {
+		t.Fatal("GetMasterKeyRotatedAt() ok = false after a successful rotation, want true")
+	}
+	if rotatedAt.IsZero() {
+		t.Error("GetMasterKeyRotatedAt() returned a zero time after a successful rotation")
+	}
+}
+
+func TestRotateServiceDEKs_RollsBackEverythingOnAnyRowFailure(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveServiceDEK(ctx, "a-first", []byte("wrapped-a-v1")); err != nil {
+		t.Fatalf("SaveServiceDEK() error = %v", err)
+	}
+	if err := db.SaveServiceDEK(ctx, "b-second", []byte("wrapped-b-v1")); err != nil {
+		t.Fatalf("SaveServiceDEK() error = %v", err)
+	}
+
+	wantErr := errors.New("simulated unwrap failure")
+	rewrap := func(serviceName string, wrapped []byte) ([]byte, error) {
+		if serviceName == "b-second" {
+			return nil, wantErr
+		}
+		return append(wrapped, "-v2"...), nil
+	}
+	if err := db.RotateServiceDEKs(ctx, rewrap); !errors.Is(err, wantErr) {
+		t.Fatalf("RotateServiceDEKs() error = %v, want to wrap %v", err, wantErr)
+	}
+
+	gotA, err := db.GetServiceDEK(ctx, "a-first")
+	if err != nil {
+		t.Fatalf("GetServiceDEK(a-first) error = %v", err)
+	}
+	if string(gotA) != "wrapped-a-v1" {
+		t.Errorf("GetServiceDEK(a-first) after a failed rotation = %q, want unchanged %q", gotA, "wrapped-a-v1")
+	}
+
+	if _, ok, err := db.GetMasterKeyRotatedAt(ctx); err != nil || ok {
+		t.Errorf("GetMasterKeyRotatedAt() after a failed rotation = (ok=%v, err=%v), want ok=false, err=nil", ok, err)
+	}
+}
+
+func TestGetMasterKeyRotatedAt_NeverRotated(t *testing.T) {
+	db := openTestDB(t)
+	if _, ok, err := db.GetMasterKeyRotatedAt(context.Background()); err != nil || ok {
+		t.Errorf("GetMasterKeyRotatedAt() on a fresh store = (ok=%v, err=%v), want ok=false, err=nil", ok, err)
+	}
+}

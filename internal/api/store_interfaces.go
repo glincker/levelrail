@@ -360,6 +360,20 @@ type SecretSetter interface {
 	SetLocked(ctx context.Context, serviceName, envKey string, locked bool) error
 }
 
+// MasterKeyRotator is the surface POST /api/v1/system/master-key/rotate
+// and the doctor's rotation-age check need from
+// internal/secrets.Manager: rotate every stored DEK to a new master key
+// (given as its serialized string, so this interface never imports
+// internal/secrets' own MasterKey type), and report when that last
+// succeeded. A distinct interface from SecretSetter above since a token
+// scoped to AbilityWrite (SecretSetter's own gate) has no business
+// rotating the one key every other secret in this control plane depends
+// on; this is gated at AbilityRoot instead (see routes.go).
+type MasterKeyRotator interface {
+	RotateMasterKey(ctx context.Context, newMasterKey string) (rotatedAt time.Time, err error)
+	GetMasterKeyRotatedAt(ctx context.Context) (rotatedAt time.Time, ok bool, err error)
+}
+
 // DockerPinger is the surface GET /api/v1/system/status needs to report
 // Docker daemon connectivity: a liveness check, nothing else.
 // *docker.Client satisfies this structurally via the Ping method added
