@@ -40,6 +40,8 @@ const app: AppDetail = {
   port: 3000,
   strategy: 'rolling',
   replicas: 1,
+  suspended: false,
+  env_dirty: false,
 }
 
 function renderCard() {
