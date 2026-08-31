@@ -41,6 +41,15 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// own doc comment establishes for the single-app path.
 	mux.HandleFunc("POST /api/v1/webhooks/github/{name}", rt.handleGitPushWebhook)
 
+	// Recent webhook deliveries (webhook_deliveries.go): real visibility
+	// into what a git provider actually sent, for the exact route above,
+	// plus a manual replay of a stored delivery. AbilityRead for the
+	// list, matching GET .../git-source; AbilityDeploy for replay,
+	// matching POST .../deploys, since a replay can trigger the same
+	// real build/deploy side effect.
+	mux.HandleFunc("GET /api/v1/apps/{name}/webhook-deliveries", rt.requireAbility(AbilityRead, rt.handleListWebhookDeliveries))
+	mux.HandleFunc("POST /api/v1/apps/{name}/webhook-deliveries/{id}/replay", rt.requireAbility(AbilityDeploy, rt.handleReplayWebhookDelivery))
+
 	// Preview environments per pull request (preview_environments.go/
 	// preview_environments_handlers.go): opt-in per app, off by default.
 	// AbilityWriteSensitive for the toggle, matching PUT .../git-source's

@@ -73,6 +73,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsSecrets(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "git-source":
 		return runAppsGitSource(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "webhook-deliveries":
+		return runAppsWebhookDeliveries(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps subcommand %q\n\n", prog, args[0]) //nolint:gosec // same guard as above
 		_, _ = fmt.Fprint(stderr, appsUsage(prog))
@@ -110,6 +112,7 @@ func appsUsage(prog string) string {
   %[1]s apps previews <verb> [flags]   manage preview environments per pull request
   %[1]s apps secrets <verb> [flags]   manage an app's encrypted secret values
   %[1]s apps git-source <verb> [flags]   connect a repo for auto-deploy-on-push
+  %[1]s apps webhook-deliveries <verb> [flags]   inspect and replay recent inbound git webhook requests
 
 Run "%[1]s apps <subcommand> -h" for a subcommand's own flags.
 `, prog)

@@ -537,6 +537,35 @@ func (c *Client) DeleteGitSource(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/git-source", nil, nil)
 }
 
+// ListWebhookDeliveries calls GET /api/v1/apps/{name}/webhook-deliveries:
+// recent inbound git-provider webhook requests for name, newest first.
+func (c *Client) ListWebhookDeliveries(ctx context.Context, name string, opts ListWebhookDeliveriesOptions) ([]WebhookDeliveryResource, error) {
+	path := "/api/v1/apps/" + PathEscape(name) + "/webhook-deliveries"
+	q := url.Values{}
+	if opts.Limit > 0 {
+		q.Set("limit", strconv.Itoa(opts.Limit))
+	}
+	if opts.Before != "" {
+		q.Set("before", opts.Before)
+	}
+	if enc := q.Encode(); enc != "" {
+		path += "?" + enc
+	}
+	var out []WebhookDeliveryResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
+// ReplayWebhookDelivery calls
+// POST /api/v1/apps/{name}/webhook-deliveries/{id}/replay: re-runs a
+// stored delivery's exact payload through the same processing a live
+// webhook takes, which can trigger a real build and deploy.
+func (c *Client) ReplayWebhookDelivery(ctx context.Context, name, id string) (ReplayWebhookDeliveryResult, error) {
+	var out ReplayWebhookDeliveryResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/webhook-deliveries/"+PathEscape(id)+"/replay", nil, &out)
+	return out, err
+}
+
 // ListServiceTemplates calls GET /api/v1/service-templates: the full
 // catalog, without each entry's Compose body (see ServiceTemplateListItem).
 func (c *Client) ListServiceTemplates(ctx context.Context) ([]ServiceTemplateListItem, error) {
