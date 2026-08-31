@@ -654,6 +654,15 @@ func TestNewTools_Surface403(t *testing.T) {
 		{"list_alert_rules", map[string]any{"name": "web"}},
 		{"get_app_metrics", map[string]any{"name": "web", "metric": "cpu_percent"}},
 		{"diagnose_app_failure", map[string]any{"name": "web"}},
+		{"list_feature_flags", map[string]any{"name": "web"}},
+		{"get_feature_flag", map[string]any{"name": "web", "id": "f1"}},
+		{"get_system_doctor", map[string]any{}},
+		{"get_onboarding_status", map[string]any{}},
+		{"list_webhook_deliveries", map[string]any{"name": "web"}},
+		{"list_backup_verifications", map[string]any{"name": "main", "backup_id": "bkp1"}},
+		{"get_latest_backup_verification", map[string]any{"name": "main", "backup_id": "bkp1"}},
+		{"compare_deploys", map[string]any{"name": "web", "from": "dep_1"}},
+		{"list_notification_deliveries", map[string]any{"id": "c1"}},
 	}
 
 	for _, tt := range tests {

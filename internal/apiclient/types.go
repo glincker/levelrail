@@ -404,6 +404,12 @@ type TriggerRestoreRequest struct {
 	BackupID string `json:"backup_id"`
 }
 
+// OnboardingStateResource mirrors internal/api's onboardingStateResource
+// (internal/api/onboarding.go).
+type OnboardingStateResource struct {
+	Completed bool `json:"completed"`
+}
+
 // SessionInfoResource mirrors internal/api's sessionInfoResponse
 // (internal/api/account.go)'s wire shape. GetSession below sends this
 // over a plain bearer-token request, which handleGetSession's own doc
