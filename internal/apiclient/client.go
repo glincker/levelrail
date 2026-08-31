@@ -291,6 +291,17 @@ func (c *Client) GetAppResourceRecommendation(ctx context.Context, name string) 
 	return out, err
 }
 
+// GetDatabaseResourceRecommendation calls GET
+// /api/v1/databases/{name}/resource-recommendation
+// (internal/api/database_resource_recommendation.go's
+// handleDatabaseResourceRecommendation): the database-kind counterpart to
+// GetAppResourceRecommendation, same wire shape.
+func (c *Client) GetDatabaseResourceRecommendation(ctx context.Context, name string) (ResourceRecommendationResource, error) {
+	var out ResourceRecommendationResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/resource-recommendation", nil, &out)
+	return out, err
+}
+
 // GetAppNetwork calls GET /api/v1/apps/{name}/network
 // (internal/api/network.go's handleGetAppNetwork).
 func (c *Client) GetAppNetwork(ctx context.Context, name string) (NetworkResource, error) {

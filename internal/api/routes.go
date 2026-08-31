@@ -296,6 +296,11 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/databases/{name}/logs", rt.requireAbility(AbilityRead, rt.handleQueryDatabaseLogs))
 	mux.HandleFunc("GET /api/v1/databases/{name}/logs/stream", rt.requireAbility(AbilityRead, rt.handleLiveDatabaseLogStream))
 
+	// Resource right-sizing, the database counterpart to
+	// GET /apps/{name}/resource-recommendation above
+	// (database_resource_recommendation.go).
+	mux.HandleFunc("GET /api/v1/databases/{name}/resource-recommendation", rt.requireAbility(AbilityRead, rt.handleDatabaseResourceRecommendation))
+
 	// Placement (TASKS.md 3.3), the database counterpart to
 	// PUT /apps/{name}/node above: same AbilityRoot gating.
 	mux.HandleFunc("PUT /api/v1/databases/{name}/node", rt.requireAbility(AbilityRoot, rt.handleSetDatabaseNode))

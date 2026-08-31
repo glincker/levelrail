@@ -56,6 +56,6 @@ func runAppsResourceRecommendation(prog string, args []string, stdout, stderr io
 		}
 		return exitOK
 	}
-	printResourceRecommendationHuman(stdout, rec)
+	printResourceRecommendationHuman(stdout, "app", rec)
 	return exitOK
 }

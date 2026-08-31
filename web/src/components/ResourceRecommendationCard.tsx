@@ -8,7 +8,10 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { useResourceRecommendation } from '../queries/resourceRecommendation'
+import {
+  useResourceRecommendation,
+  useDatabaseResourceRecommendation,
+} from '../queries/resourceRecommendation'
 import { formatBytes, formatNanoCpus } from '../lib/format'
 import { ApiError } from '../lib/apiError'
 import type {
@@ -34,10 +37,22 @@ const CONFIDENCE_BADGE_VARIANT: Record<
 }
 
 // This card is purely informational: it never writes a resource limit
-// itself, only surfaces a suggestion next to ResourceLimitsEditor so the
-// operator can type the value in there if they agree with it.
-export function ResourceRecommendationCard({ appName }: { appName: string }) {
-  const { data, isLoading, isError, error } = useResourceRecommendation(appName)
+// itself, only surfaces a suggestion next to ResourceLimitsEditor (or
+// DatabaseResourceLimitsEditor) so the operator can type the value in
+// there if they agree with it. Shared between apps and databases since
+// the underlying engine and wire shape are resource-type-agnostic; only
+// one of appName/databaseName should be passed.
+type ResourceRecommendationCardProps =
+  | { appName: string; databaseName?: never }
+  | { appName?: never; databaseName: string }
+
+export function ResourceRecommendationCard(props: ResourceRecommendationCardProps) {
+  const appQuery = useResourceRecommendation(props.appName ?? '', !!props.appName)
+  const databaseQuery = useDatabaseResourceRecommendation(
+    props.databaseName ?? '',
+    !!props.databaseName,
+  )
+  const { data, isLoading, isError, error } = props.appName ? appQuery : databaseQuery
 
   if (isLoading) {
     return null
@@ -76,7 +91,7 @@ export function ResourceRecommendationCard({ appName }: { appName: string }) {
           <Alert variant="destructive">
             <WarningCircleIcon />
             <AlertDescription>
-              This app was OOM-killed on{' '}
+              This {props.appName ? 'app' : 'database'} was OOM-killed on{' '}
               {new Date(data.oom_detected_at).toLocaleString()}.{' '}
               {data.oom_excerpt}
             </AlertDescription>
