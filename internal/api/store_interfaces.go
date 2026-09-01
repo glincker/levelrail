@@ -294,13 +294,15 @@ type TokenStore interface {
 // in this file).
 
 // AuditStore is the store surface requireAbility's audit hook
-// (internal/api/auth.go) and GET /api/v1/audit-log (audit.go) need:
-// insert-only recording plus newest-first, cursor-paginated reading.
-// Always set, the same "core Store interface, not an optional plug-in"
-// shape certs/staticSites/backupTargets already have.
+// (internal/api/auth.go), GET /api/v1/audit-log (audit.go), and the
+// retention sweep/manual purge (audit_retention.go) need: insert-only
+// recording, newest-first cursor-paginated reading, and age-based
+// deletion. Always set, the same "core Store interface, not an optional
+// plug-in" shape certs/staticSites/backupTargets already have.
 type AuditStore interface {
 	SaveAuditEntry(ctx context.Context, e store.AuditEntry) error
 	ListAuditEntries(ctx context.Context, limit int, before *time.Time, filter store.AuditEntryFilter) ([]store.AuditEntry, error)
+	DeleteAuditEntriesOlderThan(ctx context.Context, cutoff time.Time) (int64, error)
 }
 
 // Store is the full surface NewRouter needs. *store.DB satisfies it

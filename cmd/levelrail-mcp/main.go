@@ -73,7 +73,7 @@ func run(prog string, args []string, lookupEnv func(string) (string, bool), logg
 
 	token := resolveToken(tokenFlag, lookupEnv, prog)
 	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog)
-	client := apiclient.NewClient(apiURL, token)
+	client := apiclient.NewClient(apiURL, token, apiclient.WithUserAgent("levelrail-mcp/"+version.Version))
 
 	server := newServer(client)
 

@@ -100,6 +100,7 @@ func (rt *Router) recordAudit(ctx context.Context, r *http.Request, required, ac
 		StatusCode: status,
 		RemoteAddr: clientIP(r),
 		CreatedAt:  store.FormatAuditTime(time.Now()),
+		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")),
 	}
 	if err := rt.auditLog.SaveAuditEntry(ctx, entry); err != nil {
 		rt.logger.Warn("api: save audit entry failed", slog.String("error", err.Error()), slog.String("path", r.URL.Path))
@@ -119,6 +120,7 @@ type auditLogEntryResource struct {
 	StatusCode int    `json:"status_code"`
 	RemoteAddr string `json:"remote_addr"`
 	CreatedAt  string `json:"created_at"`
+	ClientKind string `json:"client_kind"`
 }
 
 func toAuditLogEntryResource(e store.AuditEntry) auditLogEntryResource {
@@ -133,6 +135,7 @@ func toAuditLogEntryResource(e store.AuditEntry) auditLogEntryResource {
 		StatusCode: e.StatusCode,
 		RemoteAddr: e.RemoteAddr,
 		CreatedAt:  e.CreatedAt,
+		ClientKind: e.ClientKind,
 	}
 }
 
@@ -142,7 +145,7 @@ const (
 )
 
 // parseAuditLogQuery reads handleListAuditLog's shared ?limit/?before/
-// ?path/?method params, writing the request's own 400 response and
+// ?path/?method/?client_kind params, writing the request's own 400 response and
 // returning ok=false on the first invalid one so the handler can bail
 // out without duplicating that response shape per format.
 func parseAuditLogQuery(w http.ResponseWriter, r *http.Request) (limit int, before *time.Time, filter store.AuditEntryFilter, ok bool) {
@@ -169,8 +172,9 @@ func parseAuditLogQuery(w http.ResponseWriter, r *http.Request) (limit int, befo
 	}
 
 	filter = store.AuditEntryFilter{
-		Path:   r.URL.Query().Get("path"),
-		Method: r.URL.Query().Get("method"),
+		Path:       r.URL.Query().Get("path"),
+		Method:     r.URL.Query().Get("method"),
+		ClientKind: r.URL.Query().Get("client_kind"),
 	}
 	return limit, before, filter, true
 }
@@ -181,7 +185,8 @@ func parseAuditLogQuery(w http.ResponseWriter, r *http.Request) (limit int, befo
 // pagination. ?limit defaults to defaultAuditLogLimit, capped at
 // maxAuditLogLimit. ?path and ?method narrow to one resource's own
 // trail (e.g. an app's config-change history), both exact match.
-// ?format=csv returns the same rows as a CSV download instead of JSON,
+// ?client_kind narrows to one caller surface (cli/dashboard/mcp/api), also
+// exact match. ?format=csv returns the same rows as a CSV download instead of JSON,
 // for compliance/record-keeping export; the row shape is identical to
 // auditLogEntryResource, so it can never leak a field the JSON view
 // doesn't already expose.
@@ -213,7 +218,7 @@ func (rt *Router) handleListAuditLog(w http.ResponseWriter, r *http.Request) {
 // with auditLogEntryResource's own JSON keys.
 var auditLogCSVHeader = []string{
 	"id", "actor_type", "actor_id", "actor_name", "ability",
-	"method", "path", "status_code", "remote_addr", "created_at",
+	"method", "path", "status_code", "remote_addr", "created_at", "client_kind",
 }
 
 // writeAuditLogCSV writes entries as a CSV file attachment. limit
@@ -232,7 +237,7 @@ func (rt *Router) writeAuditLogCSV(w http.ResponseWriter, entries []store.AuditE
 	for _, e := range entries {
 		_ = cw.Write([]string{
 			e.ID, e.ActorType, e.ActorID, e.ActorName, e.Ability,
-			e.Method, e.Path, strconv.Itoa(e.StatusCode), e.RemoteAddr, e.CreatedAt,
+			e.Method, e.Path, strconv.Itoa(e.StatusCode), e.RemoteAddr, e.CreatedAt, e.ClientKind,
 		})
 	}
 	cw.Flush()

@@ -201,6 +201,14 @@ const (
 	// legitimately fire every minute.
 	defaultPreviewSweepInterval = 1 * time.Hour
 
+	// defaultAuditLogSweepInterval is how often api.Router.RunAuditLogSweeper
+	// checks for audit_log rows past the retention window
+	// (api.defaultAuditLogRetention, 90 days), env-overridable via
+	// APP_AUDIT_LOG_SWEEP_INTERVAL (auditLogSweepInterval below). Same
+	// reasoning as defaultPreviewSweepInterval just above: a days-scale
+	// retention window needs no minute-granularity checks.
+	defaultAuditLogSweepInterval = 1 * time.Hour
+
 	// defaultAPIRateLimitReadRPM/defaultAPIRateLimitWriteRPM are
 	// api.WithAPIRateLimit's per-actor (token, session, or IP) budget
 	// when APP_API_RATE_LIMIT_READ_RPM/APP_API_RATE_LIMIT_WRITE_RPM are
@@ -668,6 +676,18 @@ func run(logger *slog.Logger) error {
 	go func() {
 		if err := apiRouter.RunPreviewSweeper(ctx, previewSweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("preview sweeper stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	// Audit log retention sweep (api.Router.RunAuditLogSweeper,
+	// internal/api/audit_retention.go): deletes audit_log rows past the
+	// operator-configured retention window on its own tick, the CloudTrail-
+	// parity retention mechanism this table never had before. Always runs,
+	// the same "always non-nil, no secretsManager gate" shape as the
+	// preview sweeper just above.
+	go func() {
+		if err := apiRouter.RunAuditLogSweeper(ctx, auditLogSweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("audit log sweeper stopped", slog.String("error", err.Error()))
 		}
 	}()
 
@@ -1690,6 +1710,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		),
 		api.WithResourceRecommendationLookback(resourceRecommendationLookback(logger)),
 		api.WithPreviewTTL(previewTTL(logger)),
+		api.WithAuditLogRetention(auditLogRetention(logger)),
 		api.WithPublicHost(publicHost()),
 		api.WithDeployLogQuerier(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),
@@ -2138,6 +2159,43 @@ func previewSweepInterval(logger *slog.Logger) time.Duration {
 	if err != nil {
 		logger.Warn("invalid APP_PREVIEW_SWEEP_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return defaultPreviewSweepInterval
+	}
+	return d
+}
+
+// auditLogRetention reads APP_AUDIT_LOG_RETENTION_DAYS, the same
+// env-var-with-default shape doctorMasterKeyRotationWarnAge above uses for
+// api.WithDoctorMasterKeyRotationWarnAge, applied here to
+// api.WithAuditLogRetention. Returns 0 (api's own signal to fall back to
+// its internal default, api.defaultAuditLogRetention, 90 days) when unset
+// or unparseable.
+func auditLogRetention(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_AUDIT_LOG_RETENTION_DAYS")
+	if raw == "" {
+		return 0
+	}
+	days, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		logger.Warn("invalid APP_AUDIT_LOG_RETENTION_DAYS, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return time.Duration(days) * 24 * time.Hour
+}
+
+// auditLogSweepInterval reads APP_AUDIT_LOG_SWEEP_INTERVAL as a Go
+// duration string, the same env-var-with-default shape
+// previewSweepInterval above uses: api.Router.RunAuditLogSweeper takes its
+// interval directly with no built-in fallback of its own, so this
+// resolves the real value once, here.
+func auditLogSweepInterval(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_AUDIT_LOG_SWEEP_INTERVAL")
+	if raw == "" {
+		return defaultAuditLogSweepInterval
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_AUDIT_LOG_SWEEP_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return defaultAuditLogSweepInterval
 	}
 	return d
 }

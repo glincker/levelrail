@@ -90,6 +90,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runVersion(prog, args[1:], stdout, stderr, lookupEnv)
 	case "audit-log":
 		return runAuditLog(prog, args[1:], stdout, stderr, lookupEnv)
+	case "audit-purge":
+		return runAuditPurge(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
 		return runDoctor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "users":
@@ -139,6 +141,7 @@ Usage:
   %[1]s status [flags]                                        control plane status, including local Docker daemon reachability
   %[1]s version [flags]                                       running control plane version, and whether a newer release is published
   %[1]s audit-log [flags]                                     who changed what, --format csv to export
+  %[1]s audit-purge [flags]                                   delete audit log entries past the retention window now
   %[1]s doctor [flags]                                        local preflight health check: Docker, disk, ports, database
   %[1]s users list|create|set-abilities|delete|roles [flags]   manage users and their abilities, directly or via a curated role
   %[1]s secrets rotate-master-key --new-key-file PATH [flags]   rotate the envelope-encryption master key

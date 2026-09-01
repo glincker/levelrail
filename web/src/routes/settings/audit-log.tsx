@@ -16,12 +16,27 @@ import {
 import { Badge } from '../../components/ui/badge'
 import { Button, buttonVariants } from '../../components/ui/button'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select'
+import {
   auditLogExportURL,
   auditLogQueryOptions,
   fetchAuditLog,
+  CLIENT_KIND_OPTIONS,
   type AuditLogEntry,
 } from '../../queries/auditLog'
 import { TableSkeleton } from '../../components/ui/table-skeleton'
+import { PurgeAuditLogDialog } from '../../components/PurgeAuditLogDialog'
+
+// ALL_CLIENT_KINDS is the filter dropdown's "no filter" sentinel: Base
+// UI's Select cannot use an empty string as an item value (it reads as
+// "no selection"), the same reasoning DrainNodeDialog's own
+// LOCAL_NODE_VALUE sentinel documents.
+const ALL_CLIENT_KINDS = '__all__'
 
 // AbilityRoot-gated (GET /api/v1/audit-log): who changed what, across
 // every session and API token. Same sensitivity tier as the node and
@@ -54,10 +69,12 @@ function StatusBadge({ status }: { status: number }) {
 // BackupsSection.tsx's DownloadBackupLink already establishes for a raw,
 // non-JSON response: no fetch/blob dance needed since auth rides along
 // on the same httpOnly session cookie every same-origin request uses.
-function ExportAuditLogLink() {
+// clientKind, when set, carries the live filter into the export so the
+// downloaded CSV matches what's on screen.
+function ExportAuditLogLink({ clientKind }: { clientKind?: string }) {
   return (
     <a
-      href={auditLogExportURL()}
+      href={auditLogExportURL({ clientKind })}
       download
       className={buttonVariants({ variant: 'outline', size: 'sm' })}
     >
@@ -67,15 +84,36 @@ function ExportAuditLogLink() {
   )
 }
 
+// Client kind labels mirror internal/api's ClientKindCLI/Dashboard/MCP/API
+// constants for display; CLIENT_KIND_OPTIONS (queries/auditLog.ts) is the
+// source of truth for which values exist.
+const CLIENT_KIND_LABELS: Record<string, string> = {
+  cli: 'CLI',
+  dashboard: 'Dashboard',
+  mcp: 'MCP',
+  api: 'API',
+}
+
+function ClientKindBadge({ clientKind }: { clientKind: string }) {
+  return (
+    <Badge variant="outline">{CLIENT_KIND_LABELS[clientKind] ?? clientKind}</Badge>
+  )
+}
+
 function AuditLogSettingsPage() {
   const { data: initial } = useSuspenseQuery(auditLogQueryOptions())
   const [entries, setEntries] = useState<AuditLogEntry[]>(initial)
   const [loadingMore, setLoadingMore] = useState(false)
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null)
+  const [clientKindFilter, setClientKindFilter] = useState(ALL_CLIENT_KINDS)
+  const [filterLoading, setFilterLoading] = useState(false)
   // A page shorter than the default limit means the store had no more
   // rows to return, the same "short page means done" signal offset-free
   // cursor pagination always relies on.
   const [exhausted, setExhausted] = useState(initial.length < 50)
+
+  const activeClientKind =
+    clientKindFilter === ALL_CLIENT_KINDS ? undefined : clientKindFilter
 
   async function handleLoadMore() {
     const last = entries[entries.length - 1]
@@ -83,7 +121,10 @@ function AuditLogSettingsPage() {
     setLoadingMore(true)
     setLoadMoreError(null)
     try {
-      const next = await fetchAuditLog({ before: last.created_at })
+      const next = await fetchAuditLog({
+        before: last.created_at,
+        clientKind: activeClientKind,
+      })
       setEntries((prev) => [...prev, ...next])
       if (next.length < 50) {
         setExhausted(true)
@@ -94,6 +135,24 @@ function AuditLogSettingsPage() {
       )
     } finally {
       setLoadingMore(false)
+    }
+  }
+
+  async function handleClientKindChange(value: string) {
+    setClientKindFilter(value)
+    setLoadMoreError(null)
+    setFilterLoading(true)
+    try {
+      const kind = value === ALL_CLIENT_KINDS ? undefined : value
+      const next = await fetchAuditLog({ clientKind: kind })
+      setEntries(next)
+      setExhausted(next.length < 50)
+    } catch (err) {
+      setLoadMoreError(
+        err instanceof Error ? err.message : 'failed to filter audit log',
+      )
+    } finally {
+      setFilterLoading(false)
     }
   }
 
@@ -114,10 +173,37 @@ function AuditLogSettingsPage() {
             </p>
           </div>
         </div>
-        {entries.length > 0 ? <ExportAuditLogLink /> : null}
+        <div className="flex items-center gap-2">
+          <Select
+            value={clientKindFilter}
+            onValueChange={(value) => {
+              if (value) {
+                void handleClientKindChange(value)
+              }
+            }}
+          >
+            <SelectTrigger aria-label="Filter by client" className="w-36">
+              <SelectValue placeholder="All clients" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_CLIENT_KINDS}>All clients</SelectItem>
+              {CLIENT_KIND_OPTIONS.map((kind) => (
+                <SelectItem key={kind} value={kind}>
+                  {CLIENT_KIND_LABELS[kind] ?? kind}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <PurgeAuditLogDialog />
+          {entries.length > 0 ? (
+            <ExportAuditLogLink clientKind={activeClientKind} />
+          ) : null}
+        </div>
       </div>
 
-      {entries.length === 0 ? (
+      {filterLoading ? (
+        <TableSkeleton columnCount={7} rowCount={8} />
+      ) : entries.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border px-6 py-12 text-center">
           <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
             <ClockCounterClockwiseIcon className="size-5" />
@@ -133,6 +219,7 @@ function AuditLogSettingsPage() {
               <TableRow>
                 <TableHead>Time</TableHead>
                 <TableHead>Actor</TableHead>
+                <TableHead>Client</TableHead>
                 <TableHead>Ability</TableHead>
                 <TableHead>Method</TableHead>
                 <TableHead>Path</TableHead>
@@ -150,6 +237,9 @@ function AuditLogSettingsPage() {
                     <Badge variant="outline" className="ml-2">
                       {entry.actor_type}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <ClientKindBadge clientKind={entry.client_kind} />
                   </TableCell>
                   <TableCell>{entry.ability}</TableCell>
                   <TableCell className="font-mono text-xs">
@@ -195,7 +285,7 @@ function AuditLogSettingsPending() {
   return (
     <div className="space-y-6">
       <h1 className="text-lg font-semibold text-foreground">Audit log</h1>
-      <TableSkeleton columnCount={6} rowCount={8} />
+      <TableSkeleton columnCount={7} rowCount={8} />
     </div>
   )
 }
