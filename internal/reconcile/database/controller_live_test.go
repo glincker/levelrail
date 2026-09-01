@@ -14,6 +14,15 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
+// skipIfShort skips a real Docker test in short mode; the full run lives
+// in nightly.yml.
+func skipIfShort(t *testing.T) {
+	t.Helper()
+	if testing.Short() {
+		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
+	}
+}
+
 // TestController_Reconcile_Redis_Live is the real end-to-end proof for
 // this controller: a real store, a real Docker daemon, a real named
 // volume, and a real running Redis container, verified by inspecting the
@@ -22,9 +31,7 @@ import (
 // independent-verification rigor internal/docker and
 // internal/reconcile/application's live tests already establish.
 func TestController_Reconcile_Redis_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
+	skipIfShort(t)
 	rt, err := docker.NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)
@@ -141,9 +148,7 @@ func TestController_Reconcile_Redis_Live(t *testing.T) {
 // through the raw Docker Engine API directly, not through this
 // controller's or internal/docker's own return values.
 func TestController_Reconcile_PublicAccess_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
+	skipIfShort(t)
 	rt, err := docker.NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)

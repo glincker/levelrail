@@ -19,6 +19,9 @@ import (
 // growing internal/docker's exported surface for tests alone.
 func liveRuntime(t *testing.T) *docker.Client {
 	t.Helper()
+	if testing.Short() {
+		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
+	}
 	c, err := docker.NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)
@@ -117,9 +120,6 @@ func waitMySQLReady(ctx context.Context, t *testing.T, rt docker.Runtime, contai
 // socket, POSTGRES_DB defaulting to POSTGRES_USER) is correct against a
 // real image, not just correct on paper.
 func TestContainerDumper_Dump_Postgres_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	rt := liveRuntime(t)
 	ctx := context.Background()
 
@@ -193,9 +193,6 @@ func TestContainerDumper_Dump_Postgres_Live(t *testing.T) {
 // real connection, dumped through ContainerDumper, and checked for that
 // row's presence in the output.
 func TestContainerDumper_Dump_MySQL_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	rt := liveRuntime(t)
 	ctx := context.Background()
 
@@ -265,9 +262,6 @@ func TestContainerDumper_Dump_MySQL_Live(t *testing.T) {
 // bytes "REDIS" followed by a four-digit version) and for the seeded
 // key/value pair's presence in the bytes.
 func TestContainerDumper_Dump_Redis_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	rt := liveRuntime(t)
 	ctx := context.Background()
 

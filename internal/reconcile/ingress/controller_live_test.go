@@ -21,6 +21,15 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
+// skipIfShort skips a real Docker test in short mode; the full run lives
+// in nightly.yml.
+func skipIfShort(t *testing.T) {
+	t.Helper()
+	if testing.Short() {
+		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
+	}
+}
+
 // TestController_Reconcile_Live is the real end-to-end proof for this
 // controller, matching the rigor of every other live test in this
 // codebase (see internal/reconcile/application/controller_live_test.go
@@ -52,9 +61,7 @@ import (
 // controller or in SQLiteStorage; folding the SQLite-storage assertion
 // into this single existing live test avoids it entirely.
 func TestController_Reconcile_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
+	skipIfShort(t)
 	rt, err := docker.NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)

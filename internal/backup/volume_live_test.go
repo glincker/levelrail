@@ -54,9 +54,6 @@ func runInVolume(ctx context.Context, t *testing.T, rt docker.Runtime, cmd []str
 // back directly and confirm the original data is there and the
 // corruption is gone.
 func TestContainerVolumeArchiver_Restorer_RoundTrip_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	rt := liveRuntime(t)
 	ctx := context.Background()
 

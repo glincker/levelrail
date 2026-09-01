@@ -28,9 +28,6 @@ import (
 // genuinely gone afterward, not merged with the restored rows, for this
 // test to pass, which a merge-shaped restore would fail.
 func TestContainerRestorer_Restore_Postgres_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	rt := liveRuntime(t)
 	ctx := context.Background()
 
@@ -145,9 +142,6 @@ func TestContainerRestorer_Restore_Postgres_Live(t *testing.T) {
 // behavior is sufficient on its own, not just a claim taken on faith
 // from reading mysqldump's documentation.
 func TestContainerRestorer_Restore_MySQL_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	rt := liveRuntime(t)
 	ctx := context.Background()
 
@@ -252,9 +246,6 @@ func TestContainerRestorer_Restore_MySQL_Live(t *testing.T) {
 // dump.rdb write plus stop/start reload actually took effect, not just that
 // Restore() returned nil.
 func TestContainerRestorer_Restore_Redis_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	rt := liveRuntime(t)
 	ctx := context.Background()
 
@@ -371,9 +362,6 @@ func waitMongoReady(ctx context.Context, t *testing.T, rt docker.Runtime, contai
 // investigation confirmed. This test fails against the old command and
 // passes against mongoRestoreCmd's current one.
 func TestContainerRestorer_Restore_MongoDB_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	rt := liveRuntime(t)
 	ctx := context.Background()
 
@@ -518,9 +506,6 @@ func waitMariaDBReady(ctx context.Context, t *testing.T, rt docker.Runtime, cont
 // MARIADB_* env vars actually work end to end, not just that the command
 // string looks plausible on paper.
 func TestContainerRestorer_Restore_MariaDB_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	rt := liveRuntime(t)
 	ctx := context.Background()
 
@@ -640,9 +625,6 @@ func waitClickHouseReady(ctx context.Context, t *testing.T, rt docker.Runtime, c
 // the non-default user clickhouseRestoreCmd runs as enough privilege to
 // drop and recreate the database.
 func TestContainerRestorer_Restore_ClickHouse_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	rt := liveRuntime(t)
 	ctx := context.Background()
 
@@ -750,9 +732,6 @@ func TestContainerRestorer_Restore_ClickHouse_Live(t *testing.T) {
 // parameterization actually works against the real binary, not just
 // redis-cli under a different name in a fake client's recorded calls.
 func TestContainerRestorer_Restore_KeyDB_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	rt := liveRuntime(t)
 	ctx := context.Background()
 
@@ -852,9 +831,6 @@ func TestContainerRestorer_Restore_KeyDB_Live(t *testing.T) {
 // stdout redirect: without it, SAVE's "OK" reply lands ahead of the RDB
 // bytes and the restored container fails to come back up at all.
 func TestContainerRestorer_Restore_Dragonfly_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	rt := liveRuntime(t)
 	ctx := context.Background()
 

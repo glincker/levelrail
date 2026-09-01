@@ -21,9 +21,7 @@ import (
 // build_duration_seconds sample with the build's real wall-clock
 // duration, not a fabricated or zero value.
 func TestPipeline_Deploy_Live_RecordsBuildDuration(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker/BuildKit test, skipped in short mode; see nightly.yml for the full run")
-	}
+	skipIfShort(t)
 	dockerCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)

@@ -20,9 +20,6 @@ import (
 // purely to get deterministic, distinguishable stdout/stderr output to
 // assert against.
 func TestClient_Logs_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	c := liveClient(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()

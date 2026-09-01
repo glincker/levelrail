@@ -18,6 +18,9 @@ import (
 // failing.
 func liveClient(t *testing.T) *Client {
 	t.Helper()
+	if testing.Short() {
+		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
+	}
 	c, err := NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)
@@ -41,9 +44,6 @@ func liveClient(t *testing.T) *Client {
 // port and all, and inspects it back through both this package's own
 // InspectByName and a raw ContainerInspect call, independently.
 func TestClient_Create_Live_PortsEnvAndNoRestartPolicy(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	c := liveClient(t)
 	ctx := context.Background()
 
@@ -129,9 +129,6 @@ func TestClient_Create_Live_PortsEnvAndNoRestartPolicy(t *testing.T) {
 // Linux dockerd alike) has a default "bridge" network with a gateway,
 // so this should never be skipped once liveClient itself didn't skip.
 func TestClient_BridgeGatewayIP_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	c := liveClient(t)
 	ctx := context.Background()
 
@@ -163,9 +160,6 @@ func TestClient_BridgeGatewayIP_Live(t *testing.T) {
 // HostConfig.DNS, the same byte-identical-to-before-this-field behavior
 // runtime.go's own doc comment on ContainerSpec.DNS promises.
 func TestClient_Create_Live_DNS(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	c := liveClient(t)
 	ctx := context.Background()
 
@@ -237,9 +231,6 @@ func TestClient_Create_Live_DNS(t *testing.T) {
 // Verified against the raw Engine API's own ContainerInspect and
 // VolumeInspect, not this package's own return values.
 func TestClient_EnsureVolume_Live_IdempotentAndMounted(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	c := liveClient(t)
 	ctx := context.Background()
 
@@ -302,9 +293,6 @@ func TestClient_EnsureVolume_Live_IdempotentAndMounted(t *testing.T) {
 // repository rather than just constructing a well-formed, empty-handed
 // request.
 func TestClient_ListImages_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	c := liveClient(t)
 	ctx := context.Background()
 
@@ -338,9 +326,6 @@ func TestClient_ListImages_Live(t *testing.T) {
 // production use since Phase 0's nginxdemo controller, but had never
 // been directly tested at this layer until now.
 func TestClient_Events_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	c := liveClient(t)
 
 	name := "levelrail-test-docker-events"
@@ -462,9 +447,6 @@ func waitForEvent(t *testing.T, eventCh <-chan Event, name string, action EventA
 // exact name, unlike everything nginxdemo needed), and actually being
 // able to stop and remove one.
 func TestClient_ListByPrefix_Stop_Remove_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	c := liveClient(t)
 	ctx := context.Background()
 
@@ -553,9 +535,6 @@ func TestClient_ListByPrefix_Stop_Remove_Live(t *testing.T) {
 //     silently truncated or empty read, so a caller can tell "the
 //     database is empty" apart from "the dump command failed."
 func TestClient_Exec_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	c := liveClient(t)
 	ctx := context.Background()
 
@@ -626,9 +605,6 @@ func removeIfExists(ctx context.Context, t *testing.T, c *Client, name string) {
 // operator with Docker actually running must see DockerConnected: true
 // on GET /api/v1/system/status, not just "Ping doesn't panic."
 func TestClient_Ping_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	c := liveClient(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -668,9 +644,6 @@ func TestClient_Ping_Unreachable(t *testing.T) {
 // ContainerStats fields are checked against the raw JSON's own numbers,
 // not just each other.
 func TestClient_Stats_Live(t *testing.T) {
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
 	c := liveClient(t)
 	ctx := context.Background()
 
