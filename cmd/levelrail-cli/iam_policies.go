@@ -11,6 +11,10 @@ import (
 	"text/tabwriter"
 )
 
+// timestampDisplayFormat is the human-readable timestamp layout every
+// non-JSON iam policies output uses.
+const timestampDisplayFormat = "2006-01-02 15:04:05"
+
 // resolveDocumentFlag reads a policy document flag value: file://path
 // reads and returns that file's contents (AWS CLI's own file:// prefix
 // convention for --policy-document and similar flags), anything else is
@@ -123,7 +127,7 @@ func printPoliciesTable(out io.Writer, policies []policyResource) {
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
 	_, _ = fmt.Fprintln(tw, "ID\tNAME\tDESCRIPTION\tUPDATED")
 	for _, p := range policies {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", p.ID, p.Name, p.Description, p.UpdatedAt.Format("2006-01-02 15:04:05"))
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", p.ID, p.Name, p.Description, p.UpdatedAt.Format(timestampDisplayFormat))
 	}
 	_ = tw.Flush()
 }
@@ -165,7 +169,7 @@ func runIAMPoliciesGet(prog string, args []string, stdout, stderr io.Writer, loo
 	_, _ = fmt.Fprintf(stdout, "name:        %s\n", got.Name)
 	_, _ = fmt.Fprintf(stdout, "description: %s\n", got.Description)
 	_, _ = fmt.Fprintf(stdout, "document:    %s\n", got.Document)
-	_, _ = fmt.Fprintf(stdout, "updated_at:  %s\n", got.UpdatedAt.Format("2006-01-02 15:04:05"))
+	_, _ = fmt.Fprintf(stdout, "updated_at:  %s\n", got.UpdatedAt.Format(timestampDisplayFormat))
 	return exitOK
 }
 
@@ -294,21 +298,17 @@ func runIAMPoliciesDetach(prog string, args []string, stdout, stderr io.Writer, 
 
 func runIAMPoliciesAttachOrDetach(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), attach bool) int {
 	verb := "detach"
+	usage := iamPoliciesDetachUsage
 	if attach {
-		verb = "attach"
+		verb, usage = "attach", iamPoliciesAttachUsage
 	}
 	cmdLabel := "iam policies " + verb
+
 	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, cmdLabel, "print {\"ok\":true} to stdout and nothing else", stderr)
 	var principalType, principalID string
 	fs.StringVar(&principalType, "principal-type", "", `"user" or "token" (required)`)
 	fs.StringVar(&principalID, "principal-id", "", "the user or token's own id (required)")
-	fs.Usage = func() {
-		if attach {
-			_, _ = fmt.Fprint(stderr, iamPoliciesAttachUsage(prog))
-		} else {
-			_, _ = fmt.Fprint(stderr, iamPoliciesDetachUsage(prog))
-		}
-	}
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, usage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
 		if err == flag.ErrHelp {
@@ -322,22 +322,12 @@ func runIAMPoliciesAttachOrDetach(prog string, args []string, stdout, stderr io.
 	if !ok {
 		return exitUsage
 	}
-	if principalType != "user" && principalType != "token" {
-		return reportError(stdout, stderr, jsonOut, newValidationError(`--principal-type must be "user" or "token"`))
-	}
-	if principalID == "" {
-		return reportError(stdout, stderr, jsonOut, newValidationError("--principal-id is required"))
+	if err := validatePrincipalFlags(principalType, principalID); err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
-	ctx := context.Background()
-	var err error
-	if attach {
-		err = client.AttachPolicy(ctx, id, attachPolicyRequest{PrincipalType: principalType, PrincipalID: principalID})
-	} else {
-		err = client.DetachPolicy(ctx, id, principalType, principalID)
-	}
-	if err != nil {
+	if err := attachOrDetachPolicy(client, id, principalType, principalID, attach); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s policy %q: %w", verb, id, err))
 	}
 
@@ -348,8 +338,30 @@ func runIAMPoliciesAttachOrDetach(prog string, args []string, stdout, stderr io.
 		}
 		return exitOK
 	}
-	_, _ = fmt.Fprintf(stdout, "policy %q %sed %s %s %q\n", id, verb, map[bool]string{true: "to", false: "from"}[attach], principalType, principalID)
+	preposition := "from"
+	if attach {
+		preposition = "to"
+	}
+	_, _ = fmt.Fprintf(stdout, "policy %q %sed %s %s %q\n", id, verb, preposition, principalType, principalID)
 	return exitOK
+}
+
+func validatePrincipalFlags(principalType, principalID string) error {
+	if principalType != "user" && principalType != "token" {
+		return newValidationError(`--principal-type must be "user" or "token"`)
+	}
+	if principalID == "" {
+		return newValidationError("--principal-id is required")
+	}
+	return nil
+}
+
+func attachOrDetachPolicy(client *Client, id, principalType, principalID string, attach bool) error {
+	ctx := context.Background()
+	if attach {
+		return client.AttachPolicy(ctx, id, attachPolicyRequest{PrincipalType: principalType, PrincipalID: principalID})
+	}
+	return client.DetachPolicy(ctx, id, principalType, principalID)
 }
 
 func iamPoliciesAttachUsage(prog string) string {
@@ -404,7 +416,7 @@ func runIAMPoliciesAttachments(prog string, args []string, stdout, stderr io.Wri
 	tw := tabwriter.NewWriter(stdout, 0, 2, 2, ' ', 0)
 	_, _ = fmt.Fprintln(tw, "PRINCIPAL_TYPE\tPRINCIPAL_ID\tATTACHED")
 	for _, a := range attachments {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\n", a.PrincipalType, a.PrincipalID, a.CreatedAt.Format("2006-01-02 15:04:05"))
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\n", a.PrincipalType, a.PrincipalID, a.CreatedAt.Format(timestampDisplayFormat))
 	}
 	_ = tw.Flush()
 	return exitOK

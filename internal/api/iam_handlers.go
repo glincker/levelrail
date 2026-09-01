@@ -12,6 +12,13 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
+// errInvalidPolicyRequestBody and errPolicyNotFound are reused across
+// several handlers below rather than repeated inline.
+const (
+	errInvalidPolicyRequestBody = "invalid request body"
+	errPolicyNotFound           = "policy not found"
+)
+
 // PolicyStore is the store surface the IAM policy handlers need,
 // defined here next to the handlers that use it, the same
 // "single-file feature" shape OnboardingStore/AuditStore already use
@@ -81,7 +88,7 @@ type policyRequest struct {
 func (rt *Router) handleCreatePolicy(w http.ResponseWriter, r *http.Request) {
 	var req policyRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(w, http.StatusBadRequest, errInvalidPolicyRequestBody)
 		return
 	}
 	if req.Name == "" {
@@ -95,8 +102,7 @@ func (rt *Router) handleCreatePolicy(w http.ResponseWriter, r *http.Request) {
 
 	id, err := store.NewPolicyID()
 	if err != nil {
-		rt.logger.Error("api: create policy: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create policy: generate id failed", err)
 		return
 	}
 
@@ -114,8 +120,7 @@ func (rt *Router) handleCreatePolicy(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusConflict, "a policy with this name already exists")
 			return
 		}
-		rt.logger.Error("api: create policy: save failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: create policy: save failed", err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, toPolicyResource(rec))
@@ -125,8 +130,7 @@ func (rt *Router) handleCreatePolicy(w http.ResponseWriter, r *http.Request) {
 func (rt *Router) handleListPolicies(w http.ResponseWriter, r *http.Request) {
 	recs, err := rt.policies.ListPolicies(r.Context())
 	if err != nil {
-		rt.logger.Error("api: list policies failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list policies failed", err)
 		return
 	}
 	out := make([]policyResource, 0, len(recs))
@@ -141,12 +145,11 @@ func (rt *Router) handleGetPolicy(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	rec, err := rt.policies.GetPolicy(r.Context(), id)
 	if errors.Is(err, store.ErrPolicyNotFound) {
-		writeError(w, http.StatusNotFound, "policy not found")
+		writeError(w, http.StatusNotFound, errPolicyNotFound)
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: get policy failed", slog.String("error", err.Error()), slog.String("policy_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: get policy failed", err, slog.String("policy_id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, toPolicyResource(*rec))
@@ -157,7 +160,7 @@ func (rt *Router) handleUpdatePolicy(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	var req policyRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(w, http.StatusBadRequest, errInvalidPolicyRequestBody)
 		return
 	}
 	if req.Name == "" {
@@ -171,7 +174,7 @@ func (rt *Router) handleUpdatePolicy(w http.ResponseWriter, r *http.Request) {
 
 	err := rt.policies.UpdatePolicy(r.Context(), id, req.Name, req.Description, string(req.Document))
 	if errors.Is(err, store.ErrPolicyNotFound) {
-		writeError(w, http.StatusNotFound, "policy not found")
+		writeError(w, http.StatusNotFound, errPolicyNotFound)
 		return
 	}
 	if errors.Is(err, store.ErrPolicyNameExists) {
@@ -179,15 +182,13 @@ func (rt *Router) handleUpdatePolicy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: update policy failed", slog.String("error", err.Error()), slog.String("policy_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: update policy failed", err, slog.String("policy_id", id))
 		return
 	}
 
 	rec, err := rt.policies.GetPolicy(r.Context(), id)
 	if err != nil {
-		rt.logger.Error("api: reload policy after update failed", slog.String("error", err.Error()), slog.String("policy_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: reload policy after update failed", err, slog.String("policy_id", id))
 		return
 	}
 	writeJSON(w, http.StatusOK, toPolicyResource(*rec))
@@ -198,8 +199,7 @@ func (rt *Router) handleUpdatePolicy(w http.ResponseWriter, r *http.Request) {
 func (rt *Router) handleDeletePolicy(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if err := rt.policies.DeletePolicy(r.Context(), id); err != nil {
-		rt.logger.Error("api: delete policy failed", slog.String("error", err.Error()), slog.String("policy_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete policy failed", err, slog.String("policy_id", id))
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -216,7 +216,7 @@ func (rt *Router) handleAttachPolicy(w http.ResponseWriter, r *http.Request) {
 	policyID := r.PathValue("id")
 	var req attachPolicyRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		writeError(w, http.StatusBadRequest, errInvalidPolicyRequestBody)
 		return
 	}
 	if !slices.Contains(validPrincipalTypes, req.PrincipalType) {
@@ -228,23 +228,20 @@ func (rt *Router) handleAttachPolicy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if _, err := rt.policies.GetPolicy(r.Context(), policyID); errors.Is(err, store.ErrPolicyNotFound) {
-		writeError(w, http.StatusNotFound, "policy not found")
+		writeError(w, http.StatusNotFound, errPolicyNotFound)
 		return
 	} else if err != nil {
-		rt.logger.Error("api: attach policy: lookup failed", slog.String("error", err.Error()), slog.String("policy_id", policyID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: attach policy: lookup failed", err, slog.String("policy_id", policyID))
 		return
 	}
 
 	id, err := store.NewPolicyAttachmentID()
 	if err != nil {
-		rt.logger.Error("api: attach policy: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: attach policy: generate id failed", err)
 		return
 	}
 	if err := rt.policies.AttachPolicy(r.Context(), id, policyID, req.PrincipalType, req.PrincipalID); err != nil {
-		rt.logger.Error("api: attach policy failed", slog.String("error", err.Error()), slog.String("policy_id", policyID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: attach policy failed", err, slog.String("policy_id", policyID))
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -258,8 +255,7 @@ func (rt *Router) handleDetachPolicy(w http.ResponseWriter, r *http.Request) {
 	principalType := r.PathValue("principal_type")
 	principalID := r.PathValue("principal_id")
 	if err := rt.policies.DetachPolicy(r.Context(), policyID, principalType, principalID); err != nil {
-		rt.logger.Error("api: detach policy failed", slog.String("error", err.Error()), slog.String("policy_id", policyID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: detach policy failed", err, slog.String("policy_id", policyID))
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -272,8 +268,7 @@ func (rt *Router) handleListPolicyAttachments(w http.ResponseWriter, r *http.Req
 	policyID := r.PathValue("id")
 	recs, err := rt.policies.ListAttachmentsForPolicy(r.Context(), policyID)
 	if err != nil {
-		rt.logger.Error("api: list policy attachments failed", slog.String("error", err.Error()), slog.String("policy_id", policyID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: list policy attachments failed", err, slog.String("policy_id", policyID))
 		return
 	}
 	out := make([]policyAttachmentResource, 0, len(recs))

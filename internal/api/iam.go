@@ -67,31 +67,37 @@ func ParseDocument(raw string) (*Document, error) {
 		return nil, errDocumentNoStatements
 	}
 	for i := range doc.Statement {
-		s := doc.Statement[i]
-		if s.Effect != EffectAllow && s.Effect != EffectDeny {
-			return nil, errStatementBadEffect
-		}
-		if len(s.Action) == 0 {
-			return nil, errStatementNoAction
-		}
-		for _, a := range s.Action {
-			if a == "*" {
-				continue
-			}
-			if !isKnownAbility(a) {
-				return nil, &unknownActionError{action: a}
-			}
-		}
-		if len(s.Resource) == 0 {
-			return nil, errStatementNoResource
-		}
-		for _, r := range s.Resource {
-			if strings.TrimSpace(r) == "" {
-				return nil, errStatementNoResource
-			}
+		if err := validateStatement(doc.Statement[i]); err != nil {
+			return nil, err
 		}
 	}
 	return &doc, nil
+}
+
+// validateStatement checks one Statement in isolation: ParseDocument's
+// own per-statement rules, split out to keep ParseDocument itself a
+// flat, low-complexity loop.
+func validateStatement(s Statement) error {
+	if s.Effect != EffectAllow && s.Effect != EffectDeny {
+		return errStatementBadEffect
+	}
+	if len(s.Action) == 0 {
+		return errStatementNoAction
+	}
+	for _, a := range s.Action {
+		if a != "*" && !isKnownAbility(a) {
+			return &unknownActionError{action: a}
+		}
+	}
+	if len(s.Resource) == 0 {
+		return errStatementNoResource
+	}
+	for _, r := range s.Resource {
+		if strings.TrimSpace(r) == "" {
+			return errStatementNoResource
+		}
+	}
+	return nil
 }
 
 func isKnownAbility(a string) bool {
