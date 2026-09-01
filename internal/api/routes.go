@@ -154,9 +154,16 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// not just conventionally discouraged from calling it.
 	mux.HandleFunc("GET /api/v1/apps", rt.requireAbility(AbilityRead, rt.handleListApps))
 	mux.HandleFunc("POST /api/v1/apps", rt.requireAbility(AbilityWrite, rt.handleCreateApp))
-	mux.HandleFunc("GET /api/v1/apps/{name}", rt.requireAbility(AbilityRead, rt.handleGetApp))
-	mux.HandleFunc("PUT /api/v1/apps/{name}", rt.requireAbility(AbilityWrite, rt.handleUpdateApp))
-	mux.HandleFunc("DELETE /api/v1/apps/{name}", rt.requireAbility(AbilityWrite, rt.handleDeleteApp))
+	// Resource-scoped (iam.go): a policy can Deny or narrowly Allow
+	// write/delete on one specific app by name, e.g. a token whose flat
+	// abilities grant write everywhere except an app: prod-web Deny
+	// policy attached to it. Every other apps route stays on plain
+	// requireAbility for now; iam.go's own doc comment on
+	// requireAbilityForResource explains why extending coverage further
+	// is mechanical, not a rewrite.
+	mux.HandleFunc("GET /api/v1/apps/{name}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetApp))
+	mux.HandleFunc("PUT /api/v1/apps/{name}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleUpdateApp))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteApp))
 
 	// Stage 1 of multi-service apps (migrations/0039_apps.sql,
 	// apps_group.go): a service plus its siblings under the same
@@ -313,8 +320,9 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 
 	mux.HandleFunc("GET /api/v1/databases", rt.requireAbility(AbilityRead, rt.handleListDatabases))
 	mux.HandleFunc("POST /api/v1/databases", rt.requireAbility(AbilityWrite, rt.handleCreateDatabase))
-	mux.HandleFunc("GET /api/v1/databases/{name}", rt.requireAbility(AbilityRead, rt.handleGetDatabase))
-	mux.HandleFunc("DELETE /api/v1/databases/{name}", rt.requireAbility(AbilityWrite, rt.handleDeleteDatabase))
+	// Resource-scoped, same reasoning as the apps routes above.
+	mux.HandleFunc("GET /api/v1/databases/{name}", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetDatabase))
+	mux.HandleFunc("DELETE /api/v1/databases/{name}", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleDeleteDatabase))
 	mux.HandleFunc("GET /api/v1/databases/{name}/status", rt.requireAbility(AbilityRead, rt.handleDatabaseStatus))
 
 	// Telemetry query, the database counterpart to

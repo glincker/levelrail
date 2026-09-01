@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -188,4 +189,19 @@ func authorizeResource(baseAbilities []string, policies []store.Policy, ability,
 		return true
 	}
 	return matched && allowed
+}
+
+// appResourceFromPath and databaseResourceFromPath build a
+// requireAbilityForResource resourceFn from a route's own {name} path
+// value, "app:myapp"/"database:main" matching this file's own
+// documented resource-identifier scheme. Both routes this backs
+// (apps.go, databases.go) already read r.PathValue("name") themselves;
+// these two just apply the same value to the resource string a policy
+// document is written against.
+func appResourceFromPath(r *http.Request) string {
+	return "app:" + r.PathValue("name")
+}
+
+func databaseResourceFromPath(r *http.Request) string {
+	return "database:" + r.PathValue("name")
 }

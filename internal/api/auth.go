@@ -308,11 +308,57 @@ func (rt *Router) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// authzDecision is the pluggable half of requireAbilityDecided: given a
+// resolved principal (its kind, its own ID, and its flat Abilities),
+// decide whether the gate passes. requireAbility's own decision is
+// exactly hasAbility(abilities, required), unchanged from before this
+// was factored out; requireAbilityForResource's decision additionally
+// consults IAM policies (iam.go's authorizeResource) scoped to one
+// resource. A non-nil error means the decision itself couldn't be made
+// (e.g. a policy lookup failed) and the caller must fail closed (500,
+// not "allow"), never silently fall back to treating it as a pass.
+type authzDecision func(ctx context.Context, principalType, principalID string, abilities []string) (bool, error)
+
 // requireAbility wraps a handler so it only runs for a request
 // authenticated either by a valid session whose user's own Abilities
 // grant required, or a bearer token whose stored abilities grant
-// required: both branches call the same hasAbility(abilities, required)
-// check store.User.Abilities and store.APIToken.Abilities share.
+// required. See requireAbilityDecided for the shared principal
+// resolution both this and requireAbilityForResource build on.
+func (rt *Router) requireAbility(required string, next http.HandlerFunc) http.HandlerFunc {
+	return rt.requireAbilityDecided(required, func(_ context.Context, _, _ string, abilities []string) (bool, error) {
+		return hasAbility(abilities, required), nil
+	}, next)
+}
+
+// requireAbilityForResource is requireAbility's resource-scoped
+// counterpart: resourceFn extracts the resource identifier (e.g.
+// "app:web") from the request, an explicit Deny policy on that
+// resource always overrides even a caller with the base ability
+// (iam.go's authorizeResource own evaluation order), and a caller
+// without the base ability can still be granted access by an explicit
+// Allow policy scoped to that one resource. A principal with no
+// attached IAM policies behaves exactly like requireAbility, unchanged.
+func (rt *Router) requireAbilityForResource(required string, resourceFn func(*http.Request) string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resource := resourceFn(r)
+		decision := func(ctx context.Context, principalType, principalID string, abilities []string) (bool, error) {
+			policies, err := rt.policies.ListPoliciesForPrincipal(ctx, principalType, principalID)
+			if err != nil {
+				return false, err
+			}
+			return authorizeResource(abilities, policies, required, resource), nil
+		}
+		rt.requireAbilityDecided(required, decision, next)(w, r)
+	}
+}
+
+// requireAbilityDecided is requireAbility/requireAbilityForResource's
+// shared core: resolve the caller (session cookie or bearer token),
+// rate limit, load its stored abilities, then hand off to decide for
+// the actual pass/fail call. Every other concern (rate limiting, token
+// revoked/expired checks, the audit hook) lives here exactly once, so
+// requireAbilityForResource can never accidentally skip one of them by
+// drifting from a hand-copied duplicate.
 //
 // For any required ability above AbilityRead, this is also the single
 // place an audit_log row gets written (audit.go's recordAudit): every
@@ -323,7 +369,7 @@ func (rt *Router) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 // decision above it already ran; it never influences whether a request
 // passes or fails, and it still records a rejection (a 403 from the
 // ability check below) the same as it records any other status.
-func (rt *Router) requireAbility(required string, next http.HandlerFunc) http.HandlerFunc {
+func (rt *Router) requireAbilityDecided(required string, decide authzDecision, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if userID, ok := rt.currentSessionUserID(r); ok {
 			if rt.apiRateLimit != nil {
@@ -343,7 +389,13 @@ func (rt *Router) requireAbility(required string, next http.HandlerFunc) http.Ha
 					writeError(w, http.StatusInternalServerError, "internal error")
 					return
 				}
-				if !hasAbility(user.Abilities, required) {
+				allowed, err := decide(r.Context(), store.PrincipalTypeUser, userID, user.Abilities)
+				if err != nil {
+					rt.logger.Error("api: session ability decision failed", slog.String("error", err.Error()))
+					writeError(w, http.StatusInternalServerError, "internal error")
+					return
+				}
+				if !allowed {
 					writeError(w, http.StatusForbidden, "your account lacks the required ability")
 					return
 				}
@@ -393,7 +445,13 @@ func (rt *Router) requireAbility(required string, next http.HandlerFunc) http.Ha
 			writeError(w, http.StatusUnauthorized, "token expired")
 			return
 		}
-		if !hasAbility(rec.Abilities, required) {
+		allowed, err := decide(r.Context(), store.PrincipalTypeToken, rec.ID, rec.Abilities)
+		if err != nil {
+			rt.logger.Error("api: token ability decision failed", slog.String("error", err.Error()))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+		if !allowed {
 			writeError(w, http.StatusForbidden, "token lacks the required ability")
 			return
 		}
