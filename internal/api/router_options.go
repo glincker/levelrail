@@ -487,6 +487,16 @@ func WithPreviewTTL(d time.Duration) Option {
 	return func(rt *Router) { rt.previewTTL = d }
 }
 
+// WithAuditLogRetention overrides how long an audit_log row survives
+// before PurgeOldAuditEntries removes it. Without one configured (or
+// passed as 0), defaultAuditLogRetention (90 days) applies. Same "no
+// hardcoded thresholds, use env vars" shape as WithPreviewTTL: this
+// package never reads the environment directly, cmd/levelrail/main.go
+// reads APP_AUDIT_LOG_RETENTION_DAYS and passes the parsed duration here.
+func WithAuditLogRetention(d time.Duration) Option {
+	return func(rt *Router) { rt.auditLogRetention = d }
+}
+
 // WithResourceRecommendationLookback overrides how far back GET
 // /api/v1/apps/{name}/resource-recommendation looks for usage history
 // (handleAppResourceRecommendation). Without one configured (or passed as

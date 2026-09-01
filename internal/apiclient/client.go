@@ -28,9 +28,24 @@ import (
 // project's own token scheme (internal/api/abilities.go) is meant to be
 // used by a non-interactive caller.
 type Client struct {
-	baseURL string
-	token   string
-	hc      *http.Client
+	baseURL   string
+	token     string
+	hc        *http.Client
+	userAgent string
+}
+
+// Option configures a Client at construction time. See WithUserAgent.
+type Option func(*Client)
+
+// WithUserAgent sets the User-Agent header on every request this Client
+// sends, so the control plane's audit log (internal/api's
+// clientKindFromUserAgent) can tell which real client made a call rather
+// than lumping every bearer-token caller into one bucket. Each of this
+// project's own callers passes its own value: cmd/levelrail-cli sets
+// "levelrail-cli/<version>", cmd/levelrail-mcp sets
+// "levelrail-mcp/<version>".
+func WithUserAgent(userAgent string) Option {
+	return func(c *Client) { c.userAgent = userAgent }
 }
 
 // NewClient builds a Client. baseURL should not have a trailing slash
@@ -38,12 +53,16 @@ type Client struct {
 // few seconds a typical REST call would use: POST .../builds is
 // synchronous and blocking (internal/api/builds.go's own doc comment),
 // and a real Dockerfile build can legitimately take minutes.
-func NewClient(baseURL, token string) *Client {
-	return &Client{
+func NewClient(baseURL, token string, opts ...Option) *Client {
+	c := &Client{
 		baseURL: strings.TrimRight(baseURL, "/"),
 		token:   token,
 		hc:      &http.Client{Timeout: 15 * time.Minute},
 	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
 }
 
 func (c *Client) do(ctx context.Context, method, path string, body, out any) error {
@@ -65,6 +84,9 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 	}
 	if c.token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+	if c.userAgent != "" {
+		req.Header.Set("User-Agent", c.userAgent)
 	}
 
 	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
@@ -1533,6 +1555,9 @@ func auditLogQuery(opts ListAuditLogOptions) url.Values {
 	if opts.Method != "" {
 		q.Set("method", opts.Method)
 	}
+	if opts.ClientKind != "" {
+		q.Set("client_kind", opts.ClientKind)
+	}
 	return q
 }
 
@@ -1565,6 +1590,9 @@ func (c *Client) DownloadAuditLogCSV(ctx context.Context, opts ListAuditLogOptio
 	if c.token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.token)
 	}
+	if c.userAgent != "" {
+		req.Header.Set("User-Agent", c.userAgent)
+	}
 
 	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
 	if err != nil {
@@ -1580,6 +1608,15 @@ func (c *Client) DownloadAuditLogCSV(ctx context.Context, opts ListAuditLogOptio
 		return nil, &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header)}
 	}
 	return data, nil
+}
+
+// PurgeAuditLog calls POST /api/v1/audit-log/purge: deletes every
+// audit_log row older than the control plane's own configured retention
+// window right now, instead of waiting for its next periodic sweep.
+func (c *Client) PurgeAuditLog(ctx context.Context) (PurgeAuditLogResult, error) {
+	var out PurgeAuditLogResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/audit-log/purge", nil, &out)
+	return out, err
 }
 
 // PathEscape guards against a name containing characters that would

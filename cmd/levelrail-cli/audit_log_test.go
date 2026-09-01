@@ -48,14 +48,14 @@ func TestRun_AuditLog_FiltersForwarded(t *testing.T) {
 	got := run("levelrail-cli-test", []string{
 		"audit-log",
 		"--limit", "2", "--before", "2026-08-15T00:00:00Z",
-		"--path", "/api/v1/apps/web", "--method", "PUT",
+		"--path", "/api/v1/apps/web", "--method", "PUT", "--client-kind", "cli",
 		"--api-url", srv.URL,
 	}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
-	if !strings.Contains(gotQuery, "limit=2") || !strings.Contains(gotQuery, "method=PUT") || !strings.Contains(gotQuery, "before=") {
-		t.Errorf("query = %q, want limit/before/path/method all forwarded", gotQuery)
+	if !strings.Contains(gotQuery, "limit=2") || !strings.Contains(gotQuery, "method=PUT") || !strings.Contains(gotQuery, "before=") || !strings.Contains(gotQuery, "client_kind=cli") {
+		t.Errorf("query = %q, want limit/before/path/method/client_kind all forwarded", gotQuery)
 	}
 }
 

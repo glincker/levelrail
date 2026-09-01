@@ -1,6 +1,9 @@
 package main
 
-import "github.com/GLINCKER/levelrail/internal/apiclient"
+import (
+	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/version"
+)
 
 // Client and every wire-shape type this file used to define now live in
 // internal/apiclient, the one HTTP client implementation shared with
@@ -138,13 +141,18 @@ type (
 
 	auditLogEntryResource = apiclient.AuditLogEntryResource
 	listAuditLogOptions   = apiclient.ListAuditLogOptions
+	purgeAuditLogResult   = apiclient.PurgeAuditLogResult
 
 	rotateMasterKeyResult = apiclient.RotateMasterKeyResult
 )
 
-// NewClient builds a Client. See apiclient.NewClient.
+// NewClient builds a Client, identifying every request as this CLI's own
+// (internal/api's clientKindFromUserAgent) so the control plane's audit
+// log can tell a CLI-driven action apart from a script or the MCP
+// server, rather than lumping every bearer-token caller into one bucket.
+// See apiclient.NewClient.
 func NewClient(baseURL, token string) *Client {
-	return apiclient.NewClient(baseURL, token)
+	return apiclient.NewClient(baseURL, token, apiclient.WithUserAgent("levelrail-cli/"+version.Version))
 }
 
 // pathEscape and extractErrorMessage alias apiclient's exported

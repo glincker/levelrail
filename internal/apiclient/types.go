@@ -1261,17 +1261,25 @@ type AuditLogEntryResource struct {
 	StatusCode int    `json:"status_code"`
 	RemoteAddr string `json:"remote_addr"`
 	CreatedAt  string `json:"created_at"`
+	ClientKind string `json:"client_kind"`
 }
 
 // ListAuditLogOptions is ListAuditLog's and DownloadAuditLogCSV's shared
 // query input, mirroring GET /api/v1/audit-log's own ?limit/?before/
-// ?path/?method params (internal/api/audit.go). Zero values omit the
-// param, the same convention ListBackupsOptions establishes.
+// ?path/?method/?client_kind params (internal/api/audit.go). Zero values
+// omit the param, the same convention ListBackupsOptions establishes.
 type ListAuditLogOptions struct {
-	Limit  int
-	Before string
-	Path   string
-	Method string
+	Limit      int
+	Before     string
+	Path       string
+	Method     string
+	ClientKind string
+}
+
+// PurgeAuditLogResult is POST /api/v1/audit-log/purge's response shape
+// (internal/api/audit_retention.go's purgeAuditLogResponse).
+type PurgeAuditLogResult struct {
+	Deleted int64 `json:"deleted"`
 }
 
 // apiErrorBody is the JSON shape every non-2xx response from the

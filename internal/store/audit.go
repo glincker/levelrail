@@ -27,6 +27,7 @@ type AuditEntry struct {
 	StatusCode int
 	RemoteAddr string
 	CreatedAt  string
+	ClientKind string // "cli", "dashboard", "mcp", or "api" (migrations/0077), derived from User-Agent
 }
 
 // auditTimeLayout formats a CreatedAt value with a fixed 9-digit
@@ -68,9 +69,9 @@ func NewAuditEntryID() (string, error) {
 // key constraint rather than silently overwriting history.
 func (db *DB) SaveAuditEntry(ctx context.Context, e AuditEntry) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO audit_log (id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, e.ID, e.ActorType, e.ActorID, e.ActorName, e.Ability, e.Method, e.Path, e.StatusCode, e.RemoteAddr, e.CreatedAt)
+		INSERT INTO audit_log (id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at, client_kind)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, e.ID, e.ActorType, e.ActorID, e.ActorName, e.Ability, e.Method, e.Path, e.StatusCode, e.RemoteAddr, e.CreatedAt, e.ClientKind)
 	if err != nil {
 		return fmt.Errorf("store: save audit entry %q: %w", e.ID, err)
 	}
@@ -82,8 +83,9 @@ func (db *DB) SaveAuditEntry(ctx context.Context, e AuditEntry) error {
 // app's exact path, Method to "PUT"). A zero-value filter applies no
 // narrowing, the same behavior ListAuditEntries always had.
 type AuditEntryFilter struct {
-	Path   string
-	Method string
+	Path       string
+	Method     string
+	ClientKind string
 }
 
 // ListAuditEntries returns up to limit audit log rows, newest first.
@@ -96,7 +98,7 @@ type AuditEntryFilter struct {
 // exact path and/or method match.
 func (db *DB) ListAuditEntries(ctx context.Context, limit int, before *time.Time, filter AuditEntryFilter) ([]AuditEntry, error) {
 	query := `
-		SELECT id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at
+		SELECT id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at, client_kind
 		FROM audit_log
 	`
 	var (
@@ -115,6 +117,10 @@ func (db *DB) ListAuditEntries(ctx context.Context, limit int, before *time.Time
 		conditions = append(conditions, "method = ?")
 		args = append(args, filter.Method)
 	}
+	if filter.ClientKind != "" {
+		conditions = append(conditions, "client_kind = ?")
+		args = append(args, filter.ClientKind)
+	}
 	if len(conditions) > 0 {
 		query += "WHERE " + strings.Join(conditions, " AND ") + "\n"
 	}
@@ -130,7 +136,7 @@ func (db *DB) ListAuditEntries(ctx context.Context, limit int, before *time.Time
 	var out []AuditEntry
 	for rows.Next() {
 		var e AuditEntry
-		if err := rows.Scan(&e.ID, &e.ActorType, &e.ActorID, &e.ActorName, &e.Ability, &e.Method, &e.Path, &e.StatusCode, &e.RemoteAddr, &e.CreatedAt); err != nil {
+		if err := rows.Scan(&e.ID, &e.ActorType, &e.ActorID, &e.ActorName, &e.Ability, &e.Method, &e.Path, &e.StatusCode, &e.RemoteAddr, &e.CreatedAt, &e.ClientKind); err != nil {
 			return nil, fmt.Errorf("store: scan audit entry row: %w", err)
 		}
 		out = append(out, e)
@@ -139,4 +145,21 @@ func (db *DB) ListAuditEntries(ctx context.Context, limit int, before *time.Time
 		return nil, fmt.Errorf("store: iterate audit entry rows: %w", err)
 	}
 	return out, nil
+}
+
+// DeleteAuditEntriesOlderThan removes every audit_log row created strictly
+// before cutoff, returning the number of rows removed. The retention sweep
+// (internal/api's RunAuditLogSweeper) and the manual purge endpoint both call
+// this with a cutoff derived from the operator-configured retention window,
+// rather than each rolling its own delete query.
+func (db *DB) DeleteAuditEntriesOlderThan(ctx context.Context, cutoff time.Time) (int64, error) {
+	res, err := db.ExecContext(ctx, `DELETE FROM audit_log WHERE created_at < ?`, FormatAuditTime(cutoff))
+	if err != nil {
+		return 0, fmt.Errorf("store: delete audit entries older than %s: %w", cutoff, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("store: count deleted audit entries: %w", err)
+	}
+	return n, nil
 }

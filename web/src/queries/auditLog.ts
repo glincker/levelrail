@@ -3,7 +3,7 @@
 // cursor-paginated by `before` (an RFC3339 timestamp) rather than an
 // offset, so a large table never gets slower to page through.
 
-import { queryOptions, useQuery } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export interface AuditLogEntry {
@@ -17,6 +17,7 @@ export interface AuditLogEntry {
   status_code: number
   remote_addr: string
   created_at: string
+  client_kind: string
 }
 
 export const auditLogKeys = {
@@ -31,6 +32,7 @@ export interface AuditLogQueryOptions {
   before?: string
   path?: string
   method?: string
+  clientKind?: string
 }
 
 // buildAuditLogParams is the one place that turns AuditLogQueryOptions
@@ -43,8 +45,14 @@ function buildAuditLogParams(opts: AuditLogQueryOptions): URLSearchParams {
   if (opts.before) params.set('before', opts.before)
   if (opts.path) params.set('path', opts.path)
   if (opts.method) params.set('method', opts.method)
+  if (opts.clientKind) params.set('client_kind', opts.clientKind)
   return params
 }
+
+// CLIENT_KIND_OPTIONS mirrors internal/api's ClientKindCLI/Dashboard/MCP/API
+// constants: the caller surfaces the audit log's Client column and filter
+// can show, in the same order the CLI's own --client-kind flag documents.
+export const CLIENT_KIND_OPTIONS = ['cli', 'dashboard', 'mcp', 'api'] as const
 
 export async function fetchAuditLog(
   opts: AuditLogQueryOptions = {},
@@ -82,15 +90,15 @@ export function auditLogExportURL(
   return `/api/v1/audit-log?${params.toString()}`
 }
 
-export function auditLogQueryOptions(before?: string) {
+export function auditLogQueryOptions(before?: string, clientKind?: string) {
   return queryOptions({
-    queryKey: auditLogKeys.list(before),
-    queryFn: () => fetchAuditLog({ before }),
+    queryKey: [...auditLogKeys.list(before), clientKind ?? null] as const,
+    queryFn: () => fetchAuditLog({ before, clientKind }),
   })
 }
 
-export function useAuditLog(before?: string) {
-  return useQuery(auditLogQueryOptions(before))
+export function useAuditLog(before?: string, clientKind?: string) {
+  return useQuery(auditLogQueryOptions(before, clientKind))
 }
 
 // Scoped to one resource's own config-change trail (internal/api/
@@ -110,5 +118,35 @@ export function useAppConfigActivity(appName: string, limit = 5) {
   return useQuery({
     ...appConfigActivityQueryOptions(appName, limit),
     retry: false,
+  })
+}
+
+export interface PurgeAuditLogResult {
+  deleted: number
+}
+
+// purgeAuditLog calls POST /api/v1/audit-log/purge (internal/api/
+// audit_retention.go): deletes every entry older than the control
+// plane's own configured retention window right now, for an operator who
+// wants old entries cleared immediately rather than waiting for the next
+// automatic sweep.
+export async function purgeAuditLog(): Promise<PurgeAuditLogResult> {
+  const res = await fetch('/api/v1/audit-log/purge', { method: 'POST' })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `purge audit log failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as PurgeAuditLogResult
+}
+
+export function usePurgeAuditLog() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: purgeAuditLog,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: auditLogKeys.all })
+    },
   })
 }

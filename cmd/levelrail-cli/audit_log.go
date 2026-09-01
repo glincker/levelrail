@@ -17,11 +17,12 @@ import (
 func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "audit-log", "print audit log entries as a JSON array to stdout and nothing else", stderr)
 	var limitFlag int
-	var beforeFlag, pathFlag, methodFlag, formatFlag, outputFlag string
+	var beforeFlag, pathFlag, methodFlag, clientKindFlag, formatFlag, outputFlag string
 	fs.IntVar(&limitFlag, "limit", 0, "max entries to return (default: server default)")
 	fs.StringVar(&beforeFlag, "before", "", "only show entries created before this RFC3339 timestamp (page backward using the TIME column of a prior run)")
 	fs.StringVar(&pathFlag, "path", "", "only show entries for this exact request path")
 	fs.StringVar(&methodFlag, "method", "", "only show entries for this exact HTTP method")
+	fs.StringVar(&clientKindFlag, "client-kind", "", `only show entries from this caller surface: "cli", "dashboard", "mcp", or "api"`)
 	fs.StringVar(&formatFlag, "format", "", `output format: "csv" exports entries as CSV instead of the default table/--json output`)
 	fs.StringVar(&outputFlag, "output", "", "write the csv export to this file instead of stdout (only meaningful with --format csv)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, auditLogUsage(prog)) }
@@ -46,7 +47,7 @@ func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	opts := listAuditLogOptions{Limit: limitFlag, Before: beforeFlag, Path: pathFlag, Method: methodFlag}
+	opts := listAuditLogOptions{Limit: limitFlag, Before: beforeFlag, Path: pathFlag, Method: methodFlag, ClientKind: clientKindFlag}
 
 	if formatFlag == "csv" {
 		return runAuditLogExportCSV(context.Background(), client, opts, outputFlag, stdout, stderr, jsonOut)
@@ -107,9 +108,9 @@ func printAuditLogTable(out io.Writer, entries []auditLogEntryResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tTIME\tACTOR\tABILITY\tMETHOD\tPATH\tSTATUS")
+	_, _ = fmt.Fprintln(tw, "ID\tTIME\tACTOR\tCLIENT\tABILITY\tMETHOD\tPATH\tSTATUS")
 	for _, e := range entries {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s (%s)\t%s\t%s\t%s\t%d\n", e.ID, e.CreatedAt, e.ActorName, e.ActorType, e.Ability, e.Method, e.Path, e.StatusCode)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s (%s)\t%s\t%s\t%s\t%s\t%d\n", e.ID, e.CreatedAt, e.ActorName, e.ActorType, e.ClientKind, e.Ability, e.Method, e.Path, e.StatusCode)
 	}
 	_ = tw.Flush()
 }
@@ -131,6 +132,7 @@ Flags:
   --before string          only show entries created before this RFC3339 timestamp
   --path string             only show entries for this exact request path
   --method string          only show entries for this exact HTTP method
+  --client-kind string    only show entries from this caller surface: "cli", "dashboard", "mcp", or "api"
   --format string          "csv" exports entries as CSV instead of the default table/--json output
   --output string          write the csv export to this file instead of stdout (requires --format csv)
   -h, --help              show this help
