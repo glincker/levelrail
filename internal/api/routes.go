@@ -91,6 +91,22 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// populate a role picker even without AbilityRoot.
 	mux.HandleFunc("GET /api/v1/roles", rt.requireAbility(AbilityRead, rt.handleListRoles))
 
+	// IAM policies (iam.go/iam_handlers.go): resource-scoped Allow/Deny
+	// documents attached to a user or token, additive on top of the flat
+	// Abilities list above. Reading the catalog is AbilityRead like roles
+	// above; every mutation (create/update/delete/attach/detach) is
+	// AbilityRoot, the same tier as handleUpdateUserAbilities, since a
+	// policy can grant or deny access at a resource-scoped level a
+	// non-root caller could not otherwise touch.
+	mux.HandleFunc("POST /api/v1/iam/policies", rt.requireAbility(AbilityRoot, rt.handleCreatePolicy))
+	mux.HandleFunc("GET /api/v1/iam/policies", rt.requireAbility(AbilityRead, rt.handleListPolicies))
+	mux.HandleFunc("GET /api/v1/iam/policies/{id}", rt.requireAbility(AbilityRead, rt.handleGetPolicy))
+	mux.HandleFunc("PUT /api/v1/iam/policies/{id}", rt.requireAbility(AbilityRoot, rt.handleUpdatePolicy))
+	mux.HandleFunc("DELETE /api/v1/iam/policies/{id}", rt.requireAbility(AbilityRoot, rt.handleDeletePolicy))
+	mux.HandleFunc("GET /api/v1/iam/policies/{id}/attachments", rt.requireAbility(AbilityRead, rt.handleListPolicyAttachments))
+	mux.HandleFunc("POST /api/v1/iam/policies/{id}/attachments", rt.requireAbility(AbilityRoot, rt.handleAttachPolicy))
+	mux.HandleFunc("DELETE /api/v1/iam/policies/{id}/attachments/{principal_type}/{principal_id}", rt.requireAbility(AbilityRoot, rt.handleDetachPolicy))
+
 	// OAuth sign-in (Google, GitHub). /providers, /start, /callback are
 	// all necessarily public; /link/start is requireAuth-gated (see its
 	// own doc comment).

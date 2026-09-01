@@ -94,9 +94,21 @@ var cliCommandTree = map[string]*cmdNode{
 	"audit-purge": nil,
 	"doctor":      nil,
 	"users":       {subs: map[string]*cmdNode{"list": nil, "create": nil, "set-abilities": nil, "delete": nil, "roles": nil}},
-	"secrets":     {subs: map[string]*cmdNode{"rotate-master-key": nil}},
-	"migrate":     {subs: map[string]*cmdNode{"coolify": nil, "dokploy": nil, "caprover": nil}},
-	"completion":  {subs: map[string]*cmdNode{"bash": nil, "zsh": nil, "fish": nil}},
+	"iam": {subs: map[string]*cmdNode{
+		"policies": {subs: map[string]*cmdNode{
+			"create":      nil,
+			"list":        nil,
+			"get":         nil,
+			"update":      nil,
+			"delete":      nil,
+			"attach":      nil,
+			"detach":      nil,
+			"attachments": nil,
+		}},
+	}},
+	"secrets":    {subs: map[string]*cmdNode{"rotate-master-key": nil}},
+	"migrate":    {subs: map[string]*cmdNode{"coolify": nil, "dokploy": nil, "caprover": nil}},
+	"completion": {subs: map[string]*cmdNode{"bash": nil, "zsh": nil, "fish": nil}},
 }
 
 // globalFlags lists the flags apiFlagSet registers on nearly every

@@ -42,12 +42,10 @@ const (
 var validAbilities = []string{AbilityRead, AbilityReadSensitive, AbilityWrite, AbilityWriteSensitive, AbilityDeploy, AbilityRoot}
 
 // hasAbility reports whether abilities grants required: either directly,
-// or via AbilityRoot, which implies everything. A session (the single
-// human admin, matching this phase's single-admin-user model of no teams
-// and no RBAC yet) is never checked against this function at all, it is
-// always treated as implicitly root, since there is exactly one identity
-// to be; hasAbility only gates bearer-token callers, where scoping is
-// the entire point.
+// or via AbilityRoot, which implies everything. requireAbility (auth.go)
+// calls this for both a session's user.Abilities and a bearer token's
+// stored abilities, so a non-root user is gated exactly like a scoped
+// token.
 func hasAbility(abilities []string, required string) bool {
 	return slices.Contains(abilities, required) || slices.Contains(abilities, AbilityRoot)
 }
