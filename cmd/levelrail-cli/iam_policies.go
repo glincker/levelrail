@@ -32,7 +32,7 @@ func resolveDocumentFlag(raw string) (string, error) {
 }
 
 func runIAMPoliciesCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "iam policies create", "print the new policy as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "iam policies create", "print the new policy as JSON to stdout and nothing else", stderr)
 	var name, description, document string
 	fs.StringVar(&name, "name", "", "policy name (required)")
 	fs.StringVar(&description, "description", "", "policy description")
@@ -45,7 +45,7 @@ func runIAMPoliciesCreate(prog string, args []string, stdout, stderr io.Writer, 
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
@@ -58,7 +58,7 @@ func runIAMPoliciesCreate(prog string, args []string, stdout, stderr io.Writer, 
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	created, err := client.CreatePolicy(context.Background(), policyRequest{
 		Name:        name,
 		Description: description,
@@ -89,13 +89,14 @@ Flags:
   --document string      policy document JSON, or file://path (required)
   --token string             API token (default: %[2]s env var, then the credentials file)
   --api-url string          control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string          named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                        print the new policy as JSON to stdout, nothing else
   -h, --help                  show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runIAMPoliciesList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "iam policies list", "print policies as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "iam policies list", "print policies as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, iamPoliciesListUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -104,9 +105,9 @@ func runIAMPoliciesList(prog string, args []string, stdout, stderr io.Writer, lo
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	policies, err := client.ListPolicies(context.Background())
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list policies: %w", err))
@@ -139,16 +140,17 @@ func iamPoliciesListUsage(prog string) string {
 Flags:
   --token string       API token (default: %[2]s env var, then the credentials file)
   --api-url string    control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                  print policies as a JSON array to stdout, nothing else
   -h, --help            show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runIAMPoliciesGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "iam policies get", "print the policy as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "iam policies get", "print the policy as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, iamPoliciesGetUsage(prog)) }
 
-	client, id, jsonOut, code, ok := parseSingleArgClient(fs, args, tokenFlagP, apiURLFlagP, jsonOutP, stderr, prog, "iam policies get", lookupEnv)
+	client, id, jsonOut, code, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, prog, "iam policies get", lookupEnv)
 	if !ok {
 		return code
 	}
@@ -180,13 +182,14 @@ func iamPoliciesGetUsage(prog string) string {
 Flags:
   --token string       API token (default: %[2]s env var, then the credentials file)
   --api-url string    control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                  print the policy as JSON to stdout, nothing else
   -h, --help            show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runIAMPoliciesUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "iam policies update", "print the updated policy as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "iam policies update", "print the updated policy as JSON to stdout and nothing else", stderr)
 	var name, description, document string
 	fs.StringVar(&name, "name", "", "policy name (required)")
 	fs.StringVar(&description, "description", "", "policy description")
@@ -199,7 +202,7 @@ func runIAMPoliciesUpdate(prog string, args []string, stdout, stderr io.Writer, 
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	id, ok := requireOneArg(fs, stderr, prog, "iam policies update", "policy id")
 	if !ok {
@@ -216,7 +219,7 @@ func runIAMPoliciesUpdate(prog string, args []string, stdout, stderr io.Writer, 
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	updated, err := client.UpdatePolicy(context.Background(), id, policyRequest{
 		Name:        name,
 		Description: description,
@@ -247,16 +250,17 @@ Flags:
   --document string      new policy document JSON, or file://path (required)
   --token string             API token (default: %[2]s env var, then the credentials file)
   --api-url string          control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string          named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                        print the updated policy as JSON to stdout, nothing else
   -h, --help                  show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runIAMPoliciesDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "iam policies delete", "print {\"deleted\":true} to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "iam policies delete", "print {\"deleted\":true} to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, iamPoliciesDeleteUsage(prog)) }
 
-	client, id, jsonOut, code, ok := parseSingleArgClient(fs, args, tokenFlagP, apiURLFlagP, jsonOutP, stderr, prog, "iam policies delete", lookupEnv)
+	client, id, jsonOut, code, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, prog, "iam policies delete", lookupEnv)
 	if !ok {
 		return code
 	}
@@ -283,6 +287,7 @@ func iamPoliciesDeleteUsage(prog string) string {
 Flags:
   --token string       API token (default: %[2]s env var, then the credentials file)
   --api-url string    control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                  print {"deleted":true} to stdout, nothing else
   -h, --help            show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
@@ -304,7 +309,7 @@ func runIAMPoliciesAttachOrDetach(prog string, args []string, stdout, stderr io.
 	}
 	cmdLabel := "iam policies " + verb
 
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, cmdLabel, "print {\"ok\":true} to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, cmdLabel, "print {\"ok\":true} to stdout and nothing else", stderr)
 	var principalType, principalID string
 	fs.StringVar(&principalType, "principal-type", "", `"user" or "token" (required)`)
 	fs.StringVar(&principalID, "principal-id", "", "the user or token's own id (required)")
@@ -316,7 +321,7 @@ func runIAMPoliciesAttachOrDetach(prog string, args []string, stdout, stderr io.
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	id, ok := requireOneArg(fs, stderr, prog, cmdLabel, "policy id")
 	if !ok {
@@ -326,7 +331,7 @@ func runIAMPoliciesAttachOrDetach(prog string, args []string, stdout, stderr io.
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	if err := attachOrDetachPolicy(client, id, principalType, principalID, attach); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s policy %q: %w", verb, id, err))
 	}
@@ -373,6 +378,7 @@ Flags:
   --principal-id string        the user or token's own id (required)
   --token string                  API token (default: %[2]s env var, then the credentials file)
   --api-url string               control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string               named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                              print {"ok":true} to stdout, nothing else
   -h, --help                       show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
@@ -387,16 +393,17 @@ Flags:
   --principal-id string        the user or token's own id (required)
   --token string                  API token (default: %[2]s env var, then the credentials file)
   --api-url string               control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string               named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                              print {"ok":true} to stdout, nothing else
   -h, --help                       show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runIAMPoliciesAttachments(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "iam policies attachments", "print attachments as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "iam policies attachments", "print attachments as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, iamPoliciesAttachmentsUsage(prog)) }
 
-	client, id, jsonOut, code, ok := parseSingleArgClient(fs, args, tokenFlagP, apiURLFlagP, jsonOutP, stderr, prog, "iam policies attachments", lookupEnv)
+	client, id, jsonOut, code, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, prog, "iam policies attachments", lookupEnv)
 	if !ok {
 		return code
 	}
@@ -429,6 +436,7 @@ func iamPoliciesAttachmentsUsage(prog string) string {
 Flags:
   --token string       API token (default: %[2]s env var, then the credentials file)
   --api-url string    control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                  print attachments as a JSON array to stdout, nothing else
   -h, --help            show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
