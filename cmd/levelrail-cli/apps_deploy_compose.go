@@ -14,16 +14,9 @@ import (
 // raw bytes as the request body. Fans one compose.yaml out into one app
 // plus its member services, all in a single synchronous call.
 func runAppsDeployCompose(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" apps deploy-compose", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, file string
-	var jsonOut bool
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps deploy-compose", "print the full deploy result as JSON to stdout and nothing else", stderr)
+	var file string
 	fs.StringVar(&file, "file", "", "path to a Docker Compose YAML file (required)")
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	var profileFlag string
-	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
-	fs.BoolVar(&jsonOut, "json", false, "print the full deploy result as JSON to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeployComposeUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -32,6 +25,7 @@ func runAppsDeployCompose(prog string, args []string, stdout, stderr io.Writer, 
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest := fs.Args()
 	if len(rest) != 1 {
@@ -50,8 +44,7 @@ func runAppsDeployCompose(prog string, args []string, stdout, stderr io.Writer, 
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("read %s: %w", file, readErr))
 	}
 
-	profile := resolveProfile(profileFlag, lookupEnv)
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	result, err := client.DeployCompose(context.Background(), name, data)
 	if err != nil {

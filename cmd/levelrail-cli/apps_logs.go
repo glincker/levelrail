@@ -97,21 +97,14 @@ func tailEntries(entries []logEntryResource, tail int) []logEntryResource {
 // client-side, after the real query, by trimming to the last N entries
 // of what the server returned.
 func runAppsLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" apps logs", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, since, from, to, query string
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps logs", "print entries as a JSON array to stdout and nothing else", stderr)
+	var since, from, to, query string
 	var tail int
-	var jsonOut bool
 	fs.StringVar(&since, "since", "", "how far back to search, e.g. \"1h\", \"30m\" (default: 1h, the server's own default window; mutually exclusive with --from)")
 	fs.StringVar(&from, "from", "", "RFC3339 start of the search window (overrides --since)")
 	fs.StringVar(&to, "to", "", "RFC3339 end of the search window (default: now)")
 	fs.StringVar(&query, "q", "", "full-text search phrase; omitted means every log line in range")
 	fs.IntVar(&tail, "tail", 0, "only show the last N entries (applied client-side; the server has no line-count param)")
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	var profileFlag string
-	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
-	fs.BoolVar(&jsonOut, "json", false, "print entries as a JSON array to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsLogsUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -120,6 +113,7 @@ func runAppsLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest := fs.Args()
 	if len(rest) != 1 {
@@ -138,8 +132,7 @@ func runAppsLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
-	profile := resolveProfile(profileFlag, lookupEnv)
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	entries, err := client.QueryLogs(context.Background(), name, fromTime, toTime, query)
 	if err != nil {

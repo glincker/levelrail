@@ -19,19 +19,12 @@ import (
 // nothing here for a misclick to destroy, since the worst case is an
 // extra database the operator can delete like any other.
 func runBackupsRestoreAsNew(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" backups restore-as-new", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, backupID, newName, version, projectID string
-	var jsonOut bool
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "backups restore-as-new", "print the started clone-restore attempt as JSON to stdout and nothing else", stderr)
+	var backupID, newName, version, projectID string
 	fs.StringVar(&backupID, "backup", "", "id of a previously succeeded backup to restore from (required)")
 	fs.StringVar(&newName, "new-name", "", "name for the brand-new database this backup is restored into (required)")
 	fs.StringVar(&version, "version", "", "engine version for the new database (default: the source database's own current version)")
 	fs.StringVar(&projectID, "project", "", "project id to assign the new database to")
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	var profileFlag string
-	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
-	fs.BoolVar(&jsonOut, "json", false, "print the started clone-restore attempt as JSON to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsRestoreAsNewUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -40,6 +33,7 @@ func runBackupsRestoreAsNew(prog string, args []string, stdout, stderr io.Writer
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest := fs.Args()
 	if len(rest) != 1 {
@@ -56,8 +50,7 @@ func runBackupsRestoreAsNew(prog string, args []string, stdout, stderr io.Writer
 		return reportError(stdout, stderr, jsonOut, newValidationError("--new-name is required"))
 	}
 
-	profile := resolveProfile(profileFlag, lookupEnv)
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	started, err := client.TriggerCloneRestore(context.Background(), name, triggerCloneRestoreRequest{
 		BackupID:  backupID,

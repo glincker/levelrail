@@ -52,16 +52,9 @@ Run "%[1]s apps webhook-deliveries <subcommand> -h" for a subcommand's own flags
 }
 
 func runAppsWebhookDeliveriesList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" apps webhook-deliveries list", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, beforeFlag string
-	var jsonOut bool
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps webhook-deliveries list", "print deliveries as a JSON array to stdout and nothing else", stderr)
+	var beforeFlag string
 	var limitFlag int
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	var profileFlag string
-	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
-	fs.BoolVar(&jsonOut, "json", false, "print deliveries as a JSON array to stdout and nothing else")
 	fs.IntVar(&limitFlag, "limit", 0, "max deliveries to return (default: server default)")
 	fs.StringVar(&beforeFlag, "before", "", "only show deliveries received before this RFC3339 timestamp (page backward using the RECEIVED column of a prior run)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsWebhookDeliveriesListUsage(prog)) }
@@ -72,6 +65,7 @@ func runAppsWebhookDeliveriesList(prog string, args []string, stdout, stderr io.
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	appName, ok := requireOneArg(fs, stderr, prog, "apps webhook-deliveries list", "app name")
 	if !ok {

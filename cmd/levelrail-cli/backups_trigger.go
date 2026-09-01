@@ -15,16 +15,9 @@ import (
 // server-side), not once the real dump and upload actually finish; use
 // "backups list <database>" to see whether it did.
 func runBackupsTrigger(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" backups trigger", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, targetID string
-	var jsonOut bool
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "backups trigger", "print the started backup attempt as JSON to stdout and nothing else", stderr)
+	var targetID string
 	fs.StringVar(&targetID, "target", "", "backup target id to back up to (required; see the backup target the control plane's own UI or store already has configured)")
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	var profileFlag string
-	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
-	fs.BoolVar(&jsonOut, "json", false, "print the started backup attempt as JSON to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsTriggerUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -33,6 +26,7 @@ func runBackupsTrigger(prog string, args []string, stdout, stderr io.Writer, loo
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest := fs.Args()
 	if len(rest) != 1 {
@@ -46,8 +40,7 @@ func runBackupsTrigger(prog string, args []string, stdout, stderr io.Writer, loo
 		return reportError(stdout, stderr, jsonOut, newValidationError("--target is required"))
 	}
 
-	profile := resolveProfile(profileFlag, lookupEnv)
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	started, err := client.TriggerBackup(context.Background(), name, targetID)
 	if err != nil {

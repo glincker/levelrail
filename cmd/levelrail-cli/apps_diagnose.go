@@ -15,16 +15,9 @@ import (
 // read-and-suggest layer get_app_status/apps_status.go's own conditions
 // view already establishes, just synthesized into a human explanation.
 func runAppsDiagnose(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" apps diagnose", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, deployFlag string
-	var jsonOut bool
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	var profileFlag string
-	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps diagnose", "print the diagnosis as JSON to stdout and nothing else", stderr)
+	var deployFlag string
 	fs.StringVar(&deployFlag, "deploy", "", "diagnose a specific past deploy attempt ID instead of the newest one")
-	fs.BoolVar(&jsonOut, "json", false, "print the diagnosis as JSON to stdout and nothing else")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps diagnose <name> [--deploy ID] [flags]\n\nExplains why an app's most recent deploy attempt failed, or why it's\ncrashlooping, using a deterministic pattern match over already-collected\nsignals (deploy attempt error, reconcile conditions, crashloop state).\nNever calls an external model and never changes anything.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -36,6 +29,7 @@ func runAppsDiagnose(prog string, args []string, stdout, stderr io.Writer, looku
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest := fs.Args()
 	if len(rest) != 1 {
@@ -45,8 +39,7 @@ func runAppsDiagnose(prog string, args []string, stdout, stderr io.Writer, looku
 	}
 	name := rest[0]
 
-	profile := resolveProfile(profileFlag, lookupEnv)
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	diagnosis, err := client.DiagnoseApp(context.Background(), name, deployFlag)
 	if err != nil {

@@ -15,16 +15,9 @@ import (
 // handleListBackupHistory), AbilityRead-gated: passive visibility into
 // attempts already made.
 func runBackupsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" backups list", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, beforeFlag string
-	var jsonOut bool
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "backups list", "print backup history as a JSON array to stdout and nothing else", stderr)
+	var beforeFlag string
 	var limitFlag int
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	var profileFlag string
-	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
-	fs.BoolVar(&jsonOut, "json", false, "print backup history as a JSON array to stdout and nothing else")
 	fs.IntVar(&limitFlag, "limit", 0, "max attempts to return (default: server default)")
 	fs.StringVar(&beforeFlag, "before", "", "only show attempts started before this RFC3339 timestamp (page backward using the STARTED column of a prior run)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsListUsage(prog)) }
@@ -35,6 +28,7 @@ func runBackupsList(prog string, args []string, stdout, stderr io.Writer, lookup
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest := fs.Args()
 	if len(rest) != 1 {
@@ -44,8 +38,7 @@ func runBackupsList(prog string, args []string, stdout, stderr io.Writer, lookup
 	}
 	name := rest[0]
 
-	profile := resolveProfile(profileFlag, lookupEnv)
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	history, err := client.ListBackups(context.Background(), name, apiclient.ListBackupsOptions{
 		Limit:  limitFlag,

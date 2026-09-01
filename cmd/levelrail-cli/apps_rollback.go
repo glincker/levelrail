@@ -37,16 +37,10 @@ import (
 // mirrors apps_deploy.go's own doc comment exactly: same server-side
 // gate, same client-side fallback.
 func runAppsRollback(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
-	fs := flag.NewFlagSet(prog+" apps rollback", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, image string
-	var jsonOut, confirm bool
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps rollback", "print the updated app as JSON to stdout and nothing else", stderr)
+	var image string
+	var confirm bool
 	fs.StringVar(&image, "image", "", "older, already-built image reference to roll back to, e.g. registry.example.com/org/app:tag (required)")
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	var profileFlag string
-	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
-	fs.BoolVar(&jsonOut, "json", false, "print the updated app as JSON to stdout and nothing else")
 	fs.BoolVar(&confirm, "confirm", false, "confirm rolling back into a protected environment; omit to be prompted interactively if needed")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsRollbackUsage(prog)) }
 
@@ -56,6 +50,7 @@ func runAppsRollback(prog string, args []string, stdout, stderr io.Writer, looku
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest := fs.Args()
 	if len(rest) != 1 {
@@ -69,8 +64,7 @@ func runAppsRollback(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, newValidationError("--image is required"))
 	}
 
-	profile := resolveProfile(profileFlag, lookupEnv)
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
 
 	updated, err := confirmProtectedEnvironment(confirm, stdin, stderr, func(confirm bool) (appResource, error) {

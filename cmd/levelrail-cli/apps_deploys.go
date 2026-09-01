@@ -48,17 +48,10 @@ Run "%[1]s apps deploys <subcommand> -h" for a subcommand's own flags.
 // rollback); find them via the dashboard's deploy history page or GET
 // .../deploy-attempts with --json elsewhere.
 func runAppsDeploysCompare(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" apps deploys compare", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, from, to string
-	var jsonOut bool
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps deploys compare", "print the comparison as JSON to stdout and nothing else", stderr)
+	var from, to string
 	fs.StringVar(&from, "from", "", "deploy attempt ID to compare from (required)")
 	fs.StringVar(&to, "to", "", "deploy attempt ID to compare to (default: the app's current live state)")
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	var profileFlag string
-	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
-	fs.BoolVar(&jsonOut, "json", false, "print the comparison as JSON to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeploysCompareUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -67,6 +60,7 @@ func runAppsDeploysCompare(prog string, args []string, stdout, stderr io.Writer,
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest := fs.Args()
 	if len(rest) != 1 {
@@ -80,8 +74,7 @@ func runAppsDeploysCompare(prog string, args []string, stdout, stderr io.Writer,
 		return reportError(stdout, stderr, jsonOut, newValidationError("--from is required"))
 	}
 
-	profile := resolveProfile(profileFlag, lookupEnv)
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	cmp, err := client.CompareDeploys(context.Background(), name, from, to)
 	if err != nil {

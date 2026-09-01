@@ -15,15 +15,7 @@ import (
 // state, not the desired appResource contract "apps get --json" already
 // promises callers.
 func runAppsNetwork(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" apps network", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag string
-	var jsonOut bool
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	var profileFlag string
-	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
-	fs.BoolVar(&jsonOut, "json", false, "print the network status as JSON to stdout and nothing else")
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps network", "print the network status as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps network <name> [flags]\n\nShows how traffic actually reaches this app right now: container port,\nlive Docker-assigned host port, and whether it's running.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -35,6 +27,7 @@ func runAppsNetwork(prog string, args []string, stdout, stderr io.Writer, lookup
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest := fs.Args()
 	if len(rest) != 1 {
@@ -44,8 +37,7 @@ func runAppsNetwork(prog string, args []string, stdout, stderr io.Writer, lookup
 	}
 	name := rest[0]
 
-	profile := resolveProfile(profileFlag, lookupEnv)
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	network, err := client.GetAppNetwork(context.Background(), name)
 	if err != nil {

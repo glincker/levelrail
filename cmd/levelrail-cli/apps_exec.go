@@ -59,17 +59,9 @@ const defaultExecTimeoutSeconds = 30
 // project-wide in this package's run()/main() split rather than
 // needing a second one just for this command.
 func runAppsExec(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" apps exec", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag string
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps exec", "print the full exec result (stdout, stderr, exit_code, truncated) as JSON to stdout and nothing else, instead of writing stdout/stderr directly", stderr)
 	var timeoutSeconds int
-	var jsonOut bool
 	fs.IntVar(&timeoutSeconds, "timeout", defaultExecTimeoutSeconds, "command timeout in seconds (the server enforces a hard ceiling of its own; this can only ask for less, never more)")
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	var profileFlag string
-	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
-	fs.BoolVar(&jsonOut, "json", false, "print the full exec result (stdout, stderr, exit_code, truncated) as JSON to stdout and nothing else, instead of writing stdout/stderr directly")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsExecUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -78,6 +70,7 @@ func runAppsExec(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		}
 		return exitUsage
 	}
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest := fs.Args()
 	if len(rest) < 2 {
@@ -93,8 +86,7 @@ func runAppsExec(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return reportError(stdout, stderr, jsonOut, newValidationError("--timeout must not be negative"))
 	}
 
-	profile := resolveProfile(profileFlag, lookupEnv)
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	result, err := client.ExecApp(context.Background(), name, execRequest{Command: command, Args: cmdArgs, TimeoutSeconds: timeoutSeconds})
 	if err != nil {
