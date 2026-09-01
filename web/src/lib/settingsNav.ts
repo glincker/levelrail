@@ -20,6 +20,7 @@ import {
   ClockCounterClockwiseIcon,
   PackageIcon,
   TerminalWindowIcon,
+  HeartbeatIcon,
 } from '@phosphor-icons/react/dist/ssr'
 
 export interface SettingsNavItem {
@@ -159,6 +160,13 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: GearIcon,
         title: 'General',
         description: 'System status and configuration.',
+      },
+      {
+        to: '/settings/system-status',
+        icon: HeartbeatIcon,
+        title: 'System status',
+        description:
+          'Preflight checks: Docker, disk, ports, database, and firewall.',
       },
       {
         to: '/domains',
