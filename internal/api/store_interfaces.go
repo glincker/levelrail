@@ -353,6 +353,7 @@ type Store interface {
 	FeatureFlagStore
 	OnboardingStore
 	WebhookDeliveryStore
+	PolicyStore
 }
 
 // SecretSetter is the surface the secrets handlers need from

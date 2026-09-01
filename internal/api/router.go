@@ -269,6 +269,7 @@ type Router struct {
 	dbPinger                       DBPinger                         // nil is valid: GET /system/doctor reports its database check as unknown, same shape as dockerPinger above
 	doctorDiskWarningBytes         int64                            // 0 means "use defaultDoctorDiskWarningBytes", set via WithDoctorDiskWarningBytes
 	webhookDeliveries              WebhookDeliveryStore             // always set, same "core Store interface" shape as deployAttempts above
+	policies                       PolicyStore                      // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
@@ -344,6 +345,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		webhookDeliveries:           s,
 		cloneRestoreHistory:         s,
 		volumeCloneRestoreHistory:   s,
+		policies:                    s,
 	}
 	for _, opt := range opts {
 		opt(rt)
