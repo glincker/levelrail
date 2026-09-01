@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"strconv"
@@ -66,13 +65,10 @@ func runAppsPreviewsList(prog string, args []string, stdout, stderr io.Writer, l
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps previews list", "print previews as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPreviewsListUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	appName, ok := requireOneArg(fs, stderr, prog, "apps previews list", "app name")
 	if !ok {
@@ -128,13 +124,10 @@ func runAppsPreviewsTeardown(prog string, args []string, stdout, stderr io.Write
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps previews teardown", "print {} to stdout on success instead of a plain confirmation", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPreviewsTeardownUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	positional := fs.Args()
 	if len(positional) != 2 {
@@ -183,13 +176,10 @@ func runAppsPreviewsSetEnabled(prog string, args []string, stdout, stderr io.Wri
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps previews "+verb, "print the resulting setting as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPreviewsSetEnabledUsage(prog, verb)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	appName, ok := requireOneArg(fs, stderr, prog, "apps previews "+verb, "app name")
 	if !ok {
@@ -227,13 +217,10 @@ func runAppsPreviewsSweep(prog string, args []string, stdout, stderr io.Writer, 
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps previews sweep", "print the swept count as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPreviewsSweepUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	result, err := client.SweepPreviewEnvironments(context.Background())

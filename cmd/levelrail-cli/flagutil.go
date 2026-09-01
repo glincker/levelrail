@@ -105,6 +105,26 @@ type apiFlagPtrs struct {
 	jsonOut                *bool
 }
 
+// parseAPIFlags runs fs.Parse (reordering flags before any positional
+// arguments first, a no-op when a command takes none) and, on success,
+// resolves flags' four pointers into plain values. ok is false once
+// fs.Parse or --help has already written its own message to stderr (or
+// produced exitOK for -h); the caller should return exitCode unchanged
+// in that case. This is the parse-then-deref sequence every apiFlagSet
+// caller needs before its own request logic diverges, shared here
+// rather than repeated inline (this exact block was flagged as
+// duplicated code across dozens of commands before this function
+// existed).
+func parseAPIFlags(fs *flag.FlagSet, args []string, flags apiFlagPtrs) (tokenFlag, apiURLFlag, profileFlag string, jsonOut bool, exitCode int, ok bool) {
+	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
+		if err == flag.ErrHelp {
+			return "", "", "", false, exitOK, false
+		}
+		return "", "", "", false, exitUsage, false
+	}
+	return *flags.token, *flags.apiURL, *flags.profile, *flags.jsonOut, 0, true
+}
+
 // parseSingleArgClient runs the parse-flags-then-require-one-arg-then-
 // build-client sequence every "verb <name> [flags]" subcommand needs
 // before its own request logic diverges (apps git-source get/set/delete,
@@ -113,13 +133,10 @@ type apiFlagPtrs struct {
 // missing-arg check has already written its own message to stderr; the
 // caller should return exitCode unchanged in that case.
 func parseSingleArgClient(fs *flag.FlagSet, args []string, flags apiFlagPtrs, stderr io.Writer, prog, cmdLabel string, lookupEnv func(string) (string, bool)) (client *Client, name string, jsonOut bool, exitCode int, ok bool) {
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return nil, "", false, exitOK, false
-		}
-		return nil, "", false, exitUsage, false
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, flags)
+	if !ok {
+		return nil, "", false, exitCode, false
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *flags.token, *flags.apiURL, *flags.profile, *flags.jsonOut
 
 	name, ok = requireOneArg(fs, stderr, prog, cmdLabel, "app name")
 	if !ok {

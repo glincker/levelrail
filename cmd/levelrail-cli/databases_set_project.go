@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 )
@@ -14,13 +13,10 @@ func runDatabasesSetProject(prog string, args []string, stdout, stderr io.Writer
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "databases set-project", "print the updated database as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, databasesSetProjectUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest, ok := requireArgs(fs, stderr, prog, "databases set-project", "a database name and a project id", 2)
 	if !ok {
@@ -62,13 +58,10 @@ func runDatabasesClearProject(prog string, args []string, stdout, stderr io.Writ
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "databases clear-project", "print the updated database as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, databasesClearProjectUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	name, ok := requireOneArg(fs, stderr, prog, "databases clear-project", "database name")
 	if !ok {

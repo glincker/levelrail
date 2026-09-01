@@ -71,13 +71,10 @@ func runAppsEnvironmentsCreate(prog string, args []string, stdout, stderr io.Wri
 	fs.BoolVar(&protected, "protected", false, "require confirmation before a deploy, rollback, or promote can target an app tagged with this environment")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsCreateUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	projectID, ok := requireOneArg(fs, stderr, prog, "apps environments create", "project id")
 	if !ok {
@@ -165,13 +162,10 @@ func runAppsEnvironmentsList(prog string, args []string, stdout, stderr io.Write
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps environments list", "print environments as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsListUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	projectID, ok := requireOneArg(fs, stderr, prog, "apps environments list", "project id")
 	if !ok {

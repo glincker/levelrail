@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -19,13 +18,10 @@ func runAppsDeployCompose(prog string, args []string, stdout, stderr io.Writer, 
 	fs.StringVar(&file, "file", "", "path to a Docker Compose YAML file (required)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeployComposeUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest := fs.Args()
 	if len(rest) != 1 {

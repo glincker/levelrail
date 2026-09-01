@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -27,13 +26,10 @@ func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	fs.StringVar(&outputFlag, "output", "", "write the csv export to this file instead of stdout (only meaningful with --format csv)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, auditLogUsage(prog)) }
 
-	if err := fs.Parse(args); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	if formatFlag != "" && formatFlag != "csv" {
 		_, _ = fmt.Fprintf(stderr, "%s: unsupported --format %q, only \"csv\" is supported\n\n", prog, formatFlag)

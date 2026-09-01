@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"text/tabwriter"
@@ -59,13 +58,10 @@ func runAppsWebhookDeliveriesList(prog string, args []string, stdout, stderr io.
 	fs.StringVar(&beforeFlag, "before", "", "only show deliveries received before this RFC3339 timestamp (page backward using the RECEIVED column of a prior run)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsWebhookDeliveriesListUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	appName, ok := requireOneArg(fs, stderr, prog, "apps webhook-deliveries list", "app name")
 	if !ok {
@@ -120,13 +116,10 @@ func runAppsWebhookDeliveriesReplay(prog string, args []string, stdout, stderr i
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps webhook-deliveries replay", "print the replay result as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsWebhookDeliveriesReplayUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	positional, ok := requireArgs(fs, stderr, prog, "apps webhook-deliveries replay", "an app name and a delivery id", 2)
 	if !ok {

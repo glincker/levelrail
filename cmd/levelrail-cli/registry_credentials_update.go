@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"time"
@@ -23,13 +22,10 @@ func runRegistryCredentialsUpdate(prog string, args []string, stdout, stderr io.
 	fs.StringVar(&expiresAt, "expires-at", "", "optional RFC3339 expiry the operator already knows; omit to clear it")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, registryCredentialsUpdateUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	id, ok := requireOneArg(fs, stderr, prog, "registry-credentials update", "registry credential id")
 	if !ok {

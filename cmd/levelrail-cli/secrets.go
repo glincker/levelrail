@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -73,13 +72,10 @@ func runSecretsRotateMasterKey(prog string, args []string, stdout, stderr io.Wri
 	fs.StringVar(&newKeyFile, "new-key-file", "", `path to a file holding the new master key (an age identity string, e.g. a fresh "master.key" or the output of generating one); pass "-" to read from stdin instead. Required. Never pass the key itself as a bare argument, it would leak into shell history and process listings.`)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, secretsRotateMasterKeyUsage(prog)) }
 
-	if err := fs.Parse(args); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	if strings.TrimSpace(newKeyFile) == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--new-key-file is required"))

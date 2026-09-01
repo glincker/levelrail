@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 )
@@ -25,13 +24,10 @@ func runAppVolumeBackupsRestoreAsNew(prog string, args []string, stdout, stderr 
 	fs.StringVar(&newVolumeName, "new-volume-name", "", "name for the brand-new, standalone Docker volume (default: a generated name, see the started attempt's own new_volume_name)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appVolumeBackupsRestoreAsNewUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest, ok := requireArgs(fs, stderr, prog, "app-volume-backups restore-as-new", "an app name and a volume name", 2)
 	if !ok {

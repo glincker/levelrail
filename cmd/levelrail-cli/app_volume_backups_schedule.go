@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 )
@@ -54,13 +53,10 @@ func runAppVolumeBackupsScheduleSet(prog string, args []string, stdout, stderr i
 		fs.PrintDefaults()
 	}
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest, ok := requireArgs(fs, stderr, prog, "app-volume-backups schedule set", "an app name and a volume name", 2)
 	if !ok {
@@ -105,13 +101,10 @@ func runAppVolumeBackupsScheduleClear(prog string, args []string, stdout, stderr
 		fs.PrintDefaults()
 	}
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest, ok := requireArgs(fs, stderr, prog, "app-volume-backups schedule clear", "an app name and a volume name", 2)
 	if !ok {

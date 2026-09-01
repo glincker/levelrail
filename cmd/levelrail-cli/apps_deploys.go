@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 )
@@ -54,13 +53,10 @@ func runAppsDeploysCompare(prog string, args []string, stdout, stderr io.Writer,
 	fs.StringVar(&to, "to", "", "deploy attempt ID to compare to (default: the app's current live state)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeploysCompareUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest := fs.Args()
 	if len(rest) != 1 {

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -39,13 +38,10 @@ func runIAMPoliciesCreate(prog string, args []string, stdout, stderr io.Writer, 
 	fs.StringVar(&document, "document", "", "policy document JSON, or file://path (required)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, iamPoliciesCreateUsage(prog)) }
 
-	if err := fs.Parse(args); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
@@ -99,13 +95,10 @@ func runIAMPoliciesList(prog string, args []string, stdout, stderr io.Writer, lo
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "iam policies list", "print policies as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, iamPoliciesListUsage(prog)) }
 
-	if err := fs.Parse(args); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	policies, err := client.ListPolicies(context.Background())
@@ -196,13 +189,10 @@ func runIAMPoliciesUpdate(prog string, args []string, stdout, stderr io.Writer, 
 	fs.StringVar(&document, "document", "", "policy document JSON, or file://path (required)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, iamPoliciesUpdateUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	id, ok := requireOneArg(fs, stderr, prog, "iam policies update", "policy id")
 	if !ok {
@@ -315,13 +305,10 @@ func runIAMPoliciesAttachOrDetach(prog string, args []string, stdout, stderr io.
 	fs.StringVar(&principalID, "principal-id", "", "the user or token's own id (required)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, usage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	id, ok := requireOneArg(fs, stderr, prog, cmdLabel, "policy id")
 	if !ok {

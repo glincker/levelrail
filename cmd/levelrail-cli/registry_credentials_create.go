@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"time"
@@ -21,13 +20,10 @@ func runRegistryCredentialsCreate(prog string, args []string, stdout, stderr io.
 	fs.StringVar(&expiresAt, "expires-at", "", "optional RFC3339 expiry the operator already knows, e.g. from a GitHub PAT")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, registryCredentialsCreateUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"text/tabwriter"
@@ -21,13 +20,10 @@ func runNodesDrain(prog string, args []string, stdout, stderr io.Writer, lookupE
 	fs.StringVar(&target, "target", "", "node id to move placements to (default: the local node)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesDrainUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	id, ok := requireOneArg(fs, stderr, prog, "nodes drain", "node id")
 	if !ok {

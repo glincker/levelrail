@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 )
@@ -23,13 +22,10 @@ func runBackupTargetsCreate(prog string, args []string, stdout, stderr io.Writer
 	fs.StringVar(&secretAccessKey, "secret-access-key", "", "secret access key (required)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupTargetsCreateUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))

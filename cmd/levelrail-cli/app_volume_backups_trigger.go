@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 )
@@ -21,13 +20,10 @@ func runAppVolumeBackupsTrigger(prog string, args []string, stdout, stderr io.Wr
 	fs.StringVar(&targetID, "target", "", "backup target id to back up to (required; see the backup target the control plane's own UI or store already has configured)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appVolumeBackupsTriggerUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest, ok := requireArgs(fs, stderr, prog, "app-volume-backups trigger", "an app name and a volume name", 2)
 	if !ok {

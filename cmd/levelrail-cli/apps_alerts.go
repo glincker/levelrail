@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"text/tabwriter"
@@ -71,13 +70,10 @@ func runAppsAlertsList(prog string, args []string, stdout, stderr io.Writer, loo
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps alerts list", "print rules as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsAlertsListUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	appName, ok := requireOneArg(fs, stderr, prog, "apps alerts list", "app name")
 	if !ok {
@@ -185,13 +181,10 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 	fs.BoolVar(&disabled, "disabled", false, "create the rule disabled (default: enabled)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsAlertsCreateUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	appName, ok := requireOneArg(fs, stderr, prog, "apps alerts create", "app name")
 	if !ok {
@@ -312,13 +305,10 @@ func runAppsAlertsDelete(prog string, args []string, stdout, stderr io.Writer, l
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps alerts delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsAlertsDeleteUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest, argsOK := requireArgs(fs, stderr, prog, "apps alerts delete", "an app name and a rule id", 2)
 	if !argsOK {

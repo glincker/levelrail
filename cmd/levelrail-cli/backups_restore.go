@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"strings"
@@ -70,13 +69,10 @@ func runBackupsRestore(prog string, args []string, stdout, stderr io.Writer, loo
 	fs.StringVar(&confirm, "confirm", "", "must exactly equal the database name to skip the interactive confirmation prompt")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsRestoreUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest := fs.Args()
 	if len(rest) != 1 {

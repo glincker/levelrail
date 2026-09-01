@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 )
@@ -64,13 +63,10 @@ func runAppsExec(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	fs.IntVar(&timeoutSeconds, "timeout", defaultExecTimeoutSeconds, "command timeout in seconds (the server enforces a hard ceiling of its own; this can only ask for less, never more)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsExecUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest := fs.Args()
 	if len(rest) < 2 {

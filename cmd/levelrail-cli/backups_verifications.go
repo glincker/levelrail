@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"text/tabwriter"
@@ -20,13 +19,10 @@ func runBackupsVerifications(prog string, args []string, stdout, stderr io.Write
 	fs.StringVar(&backupID, "backup", "", "id of a backup to show verification history for (required)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsVerificationsUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest := fs.Args()
 	if len(rest) != 1 {
