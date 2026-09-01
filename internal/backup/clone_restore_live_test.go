@@ -80,6 +80,9 @@ func (d *inMemoryDownloader) Download(_ context.Context, _ Destination, _ string
 // write, since that happened after the snapshot), and the source
 // database still has both, completely unaffected by the whole operation.
 func TestCloneRestoreRunner_RunCloneRestore_Postgres_Live(t *testing.T) {
+	if testing.Short() {
+		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
+	}
 	rt := liveRuntime(t)
 	ctx := context.Background()
 

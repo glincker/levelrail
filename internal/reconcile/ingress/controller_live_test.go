@@ -52,6 +52,9 @@ import (
 // controller or in SQLiteStorage; folding the SQLite-storage assertion
 // into this single existing live test avoids it entirely.
 func TestController_Reconcile_Live(t *testing.T) {
+	if testing.Short() {
+		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
+	}
 	rt, err := docker.NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)

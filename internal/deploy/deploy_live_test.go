@@ -24,6 +24,9 @@ import (
 // 1.3) actually converges a real running container from it, exactly the
 // chain a git push will drive once 1.5 (git integration) exists.
 func TestPipeline_Deploy_Live_ThenReconciles(t *testing.T) {
+	if testing.Short() {
+		t.Skip("real Docker/BuildKit test, skipped in short mode; see nightly.yml for the full run")
+	}
 	dockerCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)

@@ -20,6 +20,9 @@ import (
 // when the desired image changes, verified by actually inspecting what's
 // running before and after, not by trusting the returned Result alone.
 func TestController_Reconcile_Live(t *testing.T) {
+	if testing.Short() {
+		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
+	}
 	rt, err := docker.NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)

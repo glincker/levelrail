@@ -49,6 +49,9 @@ func runInNamedVolume(ctx context.Context, t *testing.T, rt docker.Runtime, volu
 // prove the real Docker mechanics (EnsureVolume, Archive, Restore)
 // actually do what those fakes assume.
 func TestVolumeCloneRestore_Live_NewVolumeGetsData_SourceUntouched(t *testing.T) {
+	if testing.Short() {
+		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
+	}
 	rt := liveRuntime(t)
 	ctx := context.Background()
 

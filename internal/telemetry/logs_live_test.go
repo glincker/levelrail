@@ -24,6 +24,9 @@ import (
 // erroring. Skips cleanly (not a failure) if Docker isn't reachable, the
 // same pattern every other live test in this codebase uses.
 func TestLogCollector_Live_RealContainerToRealStore(t *testing.T) {
+	if testing.Short() {
+		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
+	}
 	client, err := docker.NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)
