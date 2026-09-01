@@ -16,12 +16,12 @@ import (
 // <database> --backup ID" to see whether it passed. Never attempts a live
 // restore against a running database.
 func runBackupsVerify(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "backups verify", "print the started verification attempt as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backups verify", "print the started verification attempt as JSON to stdout and nothing else", stderr)
 	var backupID string
 	fs.StringVar(&backupID, "backup", "", "id of a previously succeeded backup to verify (required)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsVerifyUsage(prog)) }
 
-	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "backups verify", "database name"}, lookupEnv)
+	client, name, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "backups verify", "database name"}, lookupEnv)
 	if !ok {
 		return exitCode
 	}
@@ -35,7 +35,7 @@ func runBackupsVerify(prog string, args []string, stdout, stderr io.Writer, look
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("verify backup %q for database %q: %w", backupID, name, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, started, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, started, func() {
 		_, _ = fmt.Fprintf(stdout, "verification %q of backup %q started; check \"%s backups verifications %s --backup %s\" for status\n", started.ID, backupID, prog, name, backupID)
 	})
 }
@@ -56,6 +56,8 @@ Flags:
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the started verification attempt as JSON to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

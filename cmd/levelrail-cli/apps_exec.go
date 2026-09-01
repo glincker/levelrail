@@ -58,12 +58,12 @@ const defaultExecTimeoutSeconds = 30
 // project-wide in this package's run()/main() split rather than
 // needing a second one just for this command.
 func runAppsExec(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps exec", "print the full exec result (stdout, stderr, exit_code, truncated) as JSON to stdout and nothing else, instead of writing stdout/stderr directly", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps exec", "print the full exec result (stdout, stderr, exit_code, truncated) as JSON to stdout and nothing else, instead of writing stdout/stderr directly", stderr)
 	var timeoutSeconds int
 	fs.IntVar(&timeoutSeconds, "timeout", defaultExecTimeoutSeconds, "command timeout in seconds (the server enforces a hard ceiling of its own; this can only ask for less, never more)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsExecUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -89,20 +89,17 @@ func runAppsExec(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("exec in app %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, result); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
+	if err := renderResult(stdout, of.Format, of.Query, result, func() {
+		_, _ = io.WriteString(stdout, result.Stdout)
+		if result.Stderr != "" {
+			_, _ = io.WriteString(stderr, result.Stderr)
 		}
-		return result.ExitCode
-	}
-
-	_, _ = io.WriteString(stdout, result.Stdout)
-	if result.Stderr != "" {
-		_, _ = io.WriteString(stderr, result.Stderr)
-	}
-	if result.Truncated {
-		_, _ = fmt.Fprintf(stderr, "%s: output truncated (exceeded the server's per-response cap)\n", prog)
+		if result.Truncated {
+			_, _ = fmt.Fprintf(stderr, "%s: output truncated (exceeded the server's per-response cap)\n", prog)
+		}
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
 	return result.ExitCode
 }
@@ -129,6 +126,8 @@ Flags:
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the full exec result (stdout, stderr, exit_code, truncated) as JSON to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL, defaultExecTimeoutSeconds)
 }

@@ -14,12 +14,12 @@ import (
 // already made, the CLI counterpart of the backup history badge in the
 // web dashboard's own backup history table.
 func runBackupsVerifications(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "backups verifications", "print verification history as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backups verifications", "print verification history as a JSON array to stdout and nothing else", stderr)
 	var backupID string
 	fs.StringVar(&backupID, "backup", "", "id of a backup to show verification history for (required)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsVerificationsUsage(prog)) }
 
-	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "backups verifications", "database name"}, lookupEnv)
+	client, name, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "backups verifications", "database name"}, lookupEnv)
 	if !ok {
 		return exitCode
 	}
@@ -33,7 +33,7 @@ func runBackupsVerifications(prog string, args []string, stdout, stderr io.Write
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list verifications for backup %q: %w", backupID, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, verifications, func() { printBackupVerificationsTable(stdout, verifications) })
+	return writeScheduledTaskResult(stdout, stderr, of, verifications, func() { printBackupVerificationsTable(stdout, verifications) })
 }
 
 // printBackupVerificationsTable prints a compact, aligned table of
@@ -76,6 +76,8 @@ Flags:
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print verification history as a JSON array to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

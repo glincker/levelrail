@@ -51,13 +51,13 @@ Run "%[1]s apps secrets <subcommand> -h" for a subcommand's own flags.
 }
 
 func runAppsSecretsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps secrets list", "print the secret keys as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps secrets list", "print the secret keys as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps secrets list <name> [flags]\n\nLists an app's secret keys and their locked state. Never a value.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
-	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "apps secrets list", "app name"}, lookupEnv)
+	client, name, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "apps secrets list", "app name"}, lookupEnv)
 	if !ok {
 		return exitCode
 	}
@@ -67,19 +67,15 @@ func runAppsSecretsList(prog string, args []string, stdout, stderr io.Writer, lo
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list secrets for app %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, keys); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, keys, func() { printSecretKeysHuman(stdout, keys) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	printSecretKeysHuman(stdout, keys)
 	return exitOK
 }
 
 func runAppsSecretsSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, _ := apiFlagSet(prog, "apps secrets set", "unused for this subcommand", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, _, _, _ := apiFlagSet(prog, "apps secrets set", "unused for this subcommand", stderr)
 	var overwriteLocked bool
 	fs.BoolVar(&overwriteLocked, "force", false, "overwrite the value even if the key is locked")
 	fs.Usage = func() {
@@ -111,7 +107,7 @@ func runAppsSecretsSet(prog string, args []string, stdout, stderr io.Writer, loo
 }
 
 func runAppsSecretsLock(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, _ := apiFlagSet(prog, "apps secrets lock", "unused for this subcommand", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, _, _, _ := apiFlagSet(prog, "apps secrets lock", "unused for this subcommand", stderr)
 	var locked bool
 	fs.BoolVar(&locked, "locked", true, "true to lock the key against overwrite, false to unlock it")
 	fs.Usage = func() {

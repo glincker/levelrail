@@ -15,7 +15,7 @@ import (
 // aliases so an operator doesn't have to know the API expects them in
 // --notify-url (mirroring the web dashboard's connect dialog fields).
 func runChannelsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "channels create", "print the created channel as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "channels create", "print the created channel as JSON to stdout and nothing else", stderr)
 	var name, kind, notifyURL, pushoverUserKey, pushoverAPIToken, pagerDutyRoutingKey string
 	var disabled bool
 	fs.StringVar(&name, "name", "", "display name for the channel (required)")
@@ -27,7 +27,7 @@ func runChannelsCreate(prog string, args []string, stdout, stderr io.Writer, loo
 	fs.BoolVar(&disabled, "disabled", false, "create the channel disabled (default: enabled)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, channelsCreateUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -60,14 +60,12 @@ func runChannelsCreate(prog string, args []string, stdout, stderr io.Writer, loo
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create notification channel %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, created); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, created, func() {
+		_, _ = fmt.Fprintf(stdout, "channel %q (id %s, kind %s) connected\n", created.Name, created.ID, created.Kind)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	_, _ = fmt.Fprintf(stdout, "channel %q (id %s, kind %s) connected\n", created.Name, created.ID, created.Kind)
 	return exitOK
 }
 
@@ -91,6 +89,8 @@ Flags:
   --api-url string                    control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string                    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                                 print the created channel as JSON to stdout, nothing else
-  -h, --help                           show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

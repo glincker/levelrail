@@ -58,13 +58,13 @@ Run "%[1]s cloudflare-tunnel <subcommand> -h" for a subcommand's own flags.
 }
 
 func runCloudflareTunnelGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "cloudflare-tunnel get", cloudflareTunnelJSONUsage, stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "cloudflare-tunnel get", cloudflareTunnelJSONUsage, stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s cloudflare-tunnel get [flags]\n\nShows the current Cloudflare Tunnel settings and connection status.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -76,19 +76,15 @@ func runCloudflareTunnelGet(prog string, args []string, stdout, stderr io.Writer
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get cloudflare tunnel settings: %w", err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, settings); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, settings, func() { printCloudflareTunnelSettings(stdout, settings) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	printCloudflareTunnelSettings(stdout, settings)
 	return exitOK
 }
 
 func runCloudflareTunnelSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "cloudflare-tunnel set", cloudflareTunnelJSONUsage, stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "cloudflare-tunnel set", cloudflareTunnelJSONUsage, stderr)
 	var cfTunnelTokenFlag string
 	var enabledFlag bool
 	fs.StringVar(&cfTunnelTokenFlag, "cf-tunnel-token", "", "Cloudflare Tunnel token from your Zero Trust dashboard (required the first time the tunnel is enabled; omit to keep the currently stored token; distinct from --token, this CLI's own bearer auth flag)")
@@ -98,7 +94,7 @@ func runCloudflareTunnelSet(prog string, args []string, stdout, stderr io.Writer
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -110,25 +106,21 @@ func runCloudflareTunnelSet(prog string, args []string, stdout, stderr io.Writer
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set cloudflare tunnel settings: %w", err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, settings); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, settings, func() { printCloudflareTunnelSettings(stdout, settings) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	printCloudflareTunnelSettings(stdout, settings)
 	return exitOK
 }
 
 func runCloudflareTunnelDisconnect(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "cloudflare-tunnel disconnect", cloudflareTunnelJSONUsage, stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "cloudflare-tunnel disconnect", cloudflareTunnelJSONUsage, stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s cloudflare-tunnel disconnect [flags]\n\nDisables Cloudflare Tunnel and forgets the stored token.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -140,14 +132,10 @@ func runCloudflareTunnelDisconnect(prog string, args []string, stdout, stderr io
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("disconnect cloudflare tunnel: %w", err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, settings); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, settings, func() { printCloudflareTunnelSettings(stdout, settings) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	printCloudflareTunnelSettings(stdout, settings)
 	return exitOK
 }
 

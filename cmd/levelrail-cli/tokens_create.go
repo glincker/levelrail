@@ -28,7 +28,7 @@ import (
 // again, the same GitHub PAT convention the server's own doc comments
 // describe.
 func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
-	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP := sessionFlagSet(prog, "tokens create", "print the new token resource as JSON to stdout and nothing else", stderr)
+	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "tokens create", "print the new token resource as JSON to stdout and nothing else", stderr)
 	var name, abilitiesFlag string
 	var expiresInDays int
 	fs.StringVar(&name, "name", "", "name for the new token (required)")
@@ -43,6 +43,12 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 		return exitUsage
 	}
 	jsonOut := *jsonOutP
+	format, ferr := resolveOutputFormat(jsonOut, *outputFlagP)
+	if ferr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
+		return exitValidation
+	}
+	of := outputFlags{format, *queryFlagP}
 
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
@@ -66,7 +72,7 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create token %q: %w", name, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, created, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, created, func() {
 		_, _ = fmt.Fprintf(stdout, "token %q (id %s) created\n", created.Name, created.ID)
 		_, _ = fmt.Fprintf(stdout, "token value (shown once, not recoverable again): %s\n", created.Token)
 	})
@@ -90,6 +96,8 @@ Flags:
   --api-url string             control plane base URL (default: %[2]s env var, then %[3]s)
   --profile string             named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                          print the new token resource as JSON to stdout, nothing else
-  -h, --help                    show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIURL, defaultAPIURL)
 }

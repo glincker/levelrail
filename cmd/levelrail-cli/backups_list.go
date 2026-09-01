@@ -14,14 +14,14 @@ import (
 // handleListBackupHistory), AbilityRead-gated: passive visibility into
 // attempts already made.
 func runBackupsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "backups list", "print backup history as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backups list", "print backup history as a JSON array to stdout and nothing else", stderr)
 	var beforeFlag string
 	var limitFlag int
 	fs.IntVar(&limitFlag, "limit", 0, "max attempts to return (default: server default)")
 	fs.StringVar(&beforeFlag, "before", "", "only show attempts started before this RFC3339 timestamp (page backward using the STARTED column of a prior run)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsListUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -44,14 +44,10 @@ func runBackupsList(prog string, args []string, stdout, stderr io.Writer, lookup
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list backups for database %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, history); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, history, func() { printBackupHistoryTable(stdout, history) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	printBackupHistoryTable(stdout, history)
 	return exitOK
 }
 
@@ -84,6 +80,8 @@ Flags:
   --json                    print backup history as a JSON array to stdout, nothing else
   --limit int              max attempts to return (default: server default)
   --before string          only show attempts started before this RFC3339 timestamp
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

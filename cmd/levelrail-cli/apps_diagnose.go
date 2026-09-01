@@ -14,7 +14,7 @@ import (
 // read-and-suggest layer get_app_status/apps_status.go's own conditions
 // view already establishes, just synthesized into a human explanation.
 func runAppsDiagnose(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps diagnose", "print the diagnosis as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps diagnose", "print the diagnosis as JSON to stdout and nothing else", stderr)
 	var deployFlag string
 	fs.StringVar(&deployFlag, "deploy", "", "diagnose a specific past deploy attempt ID instead of the newest one")
 	fs.Usage = func() {
@@ -22,7 +22,7 @@ func runAppsDiagnose(prog string, args []string, stdout, stderr io.Writer, looku
 		fs.PrintDefaults()
 	}
 
-	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "apps diagnose", "app name"}, lookupEnv)
+	client, name, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "apps diagnose", "app name"}, lookupEnv)
 	if !ok {
 		return exitCode
 	}
@@ -32,5 +32,5 @@ func runAppsDiagnose(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("diagnose app %q: %w", name, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, diagnosis, func() { printDiagnosisHuman(stdout, diagnosis) })
+	return writeScheduledTaskResult(stdout, stderr, of, diagnosis, func() { printDiagnosisHuman(stdout, diagnosis) })
 }

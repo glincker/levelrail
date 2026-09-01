@@ -251,7 +251,7 @@ func TestCreateDatabaseFromWizard(t *testing.T) {
 		a := databaseWizardAnswers{name: "mydb", engine: "postgres", version: "16"}
 		client := NewClient(srv.URL, "tok")
 		var stdout, stderr bytes.Buffer
-		got := createDatabaseFromWizard(context.Background(), client, a, &stdout, &stderr, false)
+		got := createDatabaseFromWizard(context.Background(), client, a, &stdout, &stderr, outputFlags{Format: outputTable})
 		if got != exitOK {
 			t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitOK, stderr.String())
 		}
@@ -292,7 +292,7 @@ func TestCreateDatabaseFromWizard(t *testing.T) {
 		}
 		client := NewClient(srv.URL, "tok")
 		var stdout, stderr bytes.Buffer
-		got := createDatabaseFromWizard(context.Background(), client, a, &stdout, &stderr, false)
+		got := createDatabaseFromWizard(context.Background(), client, a, &stdout, &stderr, outputFlags{Format: outputTable})
 		if got != exitOK {
 			t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitOK, stderr.String())
 		}
@@ -317,7 +317,7 @@ func TestCreateDatabaseFromWizard(t *testing.T) {
 		a := databaseWizardAnswers{name: "mydb", version: "16"} // no engine
 		client := NewClient("http://127.0.0.1:0", "tok")
 		var stdout, stderr bytes.Buffer
-		got := createDatabaseFromWizard(context.Background(), client, a, &stdout, &stderr, false)
+		got := createDatabaseFromWizard(context.Background(), client, a, &stdout, &stderr, outputFlags{Format: outputTable})
 		if got != exitValidation {
 			t.Fatalf("exit = %d, want %d", got, exitValidation)
 		}
@@ -334,7 +334,7 @@ func TestCreateDatabaseFromWizard(t *testing.T) {
 		a := databaseWizardAnswers{name: "mydb", engine: "postgres", version: "16", public: true}
 		client := NewClient(srv.URL, "tok")
 		var stdout, stderr bytes.Buffer
-		got := createDatabaseFromWizard(context.Background(), client, a, &stdout, &stderr, false)
+		got := createDatabaseFromWizard(context.Background(), client, a, &stdout, &stderr, outputFlags{Format: outputTable})
 		if got == exitOK {
 			t.Fatalf("exit = %d, want a non-OK exit code", got)
 		}
@@ -360,7 +360,7 @@ func TestRunDatabasesCreateWizard_EndToEnd(t *testing.T) {
 
 	stdin := scriptedStdin("mydb", "postgres", "", "", "", "", "")
 	var stdout, stderr bytes.Buffer
-	got := runDatabasesCreateWizard(stdin, &stdout, &stderr, credentialFlags{Token: "tok", APIURL: srv.URL}, false, envMap(), "levelrail-cli-test")
+	got := runDatabasesCreateWizard(stdin, &stdout, &stderr, credentialFlags{Token: "tok", APIURL: srv.URL}, outputFlags{Format: outputTable}, envMap(), "levelrail-cli-test")
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitOK, stderr.String())
 	}

@@ -31,14 +31,14 @@ func resolveDocumentFlag(raw string) (string, error) {
 }
 
 func runIAMPoliciesCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "iam policies create", "print the new policy as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "iam policies create", "print the new policy as JSON to stdout and nothing else", stderr)
 	var name, description, document string
 	fs.StringVar(&name, "name", "", "policy name (required)")
 	fs.StringVar(&description, "description", "", "policy description")
 	fs.StringVar(&document, "document", "", "policy document JSON, or file://path (required)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, iamPoliciesCreateUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -64,14 +64,12 @@ func runIAMPoliciesCreate(prog string, args []string, stdout, stderr io.Writer, 
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create policy %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, created); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, created, func() {
+		_, _ = fmt.Fprintf(stdout, "policy %q (id %s) created\n", created.Name, created.ID)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	_, _ = fmt.Fprintf(stdout, "policy %q (id %s) created\n", created.Name, created.ID)
 	return exitOK
 }
 
@@ -87,15 +85,17 @@ Flags:
   --api-url string          control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string          named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                        print the new policy as JSON to stdout, nothing else
-  -h, --help                  show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runIAMPoliciesList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "iam policies list", "print policies as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "iam policies list", "print policies as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, iamPoliciesListUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -106,14 +106,10 @@ func runIAMPoliciesList(prog string, args []string, stdout, stderr io.Writer, lo
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list policies: %w", err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, policies); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, policies, func() { printPoliciesTable(stdout, policies) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	printPoliciesTable(stdout, policies)
 	return exitOK
 }
 
@@ -135,15 +131,17 @@ Flags:
   --api-url string    control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                  print policies as a JSON array to stdout, nothing else
-  -h, --help            show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runIAMPoliciesGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "iam policies get", "print the policy as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "iam policies get", "print the policy as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, iamPoliciesGetUsage(prog)) }
 
-	client, id, jsonOut, code, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "iam policies get", "policy id"}, lookupEnv)
+	client, id, jsonOut, of, code, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "iam policies get", "policy id"}, lookupEnv)
 	if !ok {
 		return code
 	}
@@ -153,18 +151,16 @@ func runIAMPoliciesGet(prog string, args []string, stdout, stderr io.Writer, loo
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get policy %q: %w", id, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, got); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, got, func() {
+		_, _ = fmt.Fprintf(stdout, "id:          %s\n", got.ID)
+		_, _ = fmt.Fprintf(stdout, "name:        %s\n", got.Name)
+		_, _ = fmt.Fprintf(stdout, "description: %s\n", got.Description)
+		_, _ = fmt.Fprintf(stdout, "document:    %s\n", got.Document)
+		_, _ = fmt.Fprintf(stdout, "updated_at:  %s\n", got.UpdatedAt.Format(timestampDisplayFormat))
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	_, _ = fmt.Fprintf(stdout, "id:          %s\n", got.ID)
-	_, _ = fmt.Fprintf(stdout, "name:        %s\n", got.Name)
-	_, _ = fmt.Fprintf(stdout, "description: %s\n", got.Description)
-	_, _ = fmt.Fprintf(stdout, "document:    %s\n", got.Document)
-	_, _ = fmt.Fprintf(stdout, "updated_at:  %s\n", got.UpdatedAt.Format(timestampDisplayFormat))
 	return exitOK
 }
 
@@ -177,19 +173,21 @@ Flags:
   --api-url string    control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                  print the policy as JSON to stdout, nothing else
-  -h, --help            show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runIAMPoliciesUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "iam policies update", "print the updated policy as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "iam policies update", "print the updated policy as JSON to stdout and nothing else", stderr)
 	var name, description, document string
 	fs.StringVar(&name, "name", "", "policy name (required)")
 	fs.StringVar(&description, "description", "", "policy description")
 	fs.StringVar(&document, "document", "", "policy document JSON, or file://path (required)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, iamPoliciesUpdateUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -219,14 +217,12 @@ func runIAMPoliciesUpdate(prog string, args []string, stdout, stderr io.Writer, 
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("update policy %q: %w", id, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, updated); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, updated, func() {
+		_, _ = fmt.Fprintf(stdout, "policy %q (id %s) updated\n", updated.Name, updated.ID)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	_, _ = fmt.Fprintf(stdout, "policy %q (id %s) updated\n", updated.Name, updated.ID)
 	return exitOK
 }
 
@@ -242,15 +238,17 @@ Flags:
   --api-url string          control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string          named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                        print the updated policy as JSON to stdout, nothing else
-  -h, --help                  show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runIAMPoliciesDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "iam policies delete", "print {\"deleted\":true} to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "iam policies delete", "print {\"deleted\":true} to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, iamPoliciesDeleteUsage(prog)) }
 
-	client, id, jsonOut, code, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "iam policies delete", "policy id"}, lookupEnv)
+	client, id, jsonOut, of, code, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "iam policies delete", "policy id"}, lookupEnv)
 	if !ok {
 		return code
 	}
@@ -259,14 +257,12 @@ func runIAMPoliciesDelete(prog string, args []string, stdout, stderr io.Writer, 
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete policy %q: %w", id, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, map[string]bool{"deleted": true}); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, map[string]bool{"deleted": true}, func() {
+		_, _ = fmt.Fprintf(stdout, "policy %q deleted\n", id)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	_, _ = fmt.Fprintf(stdout, "policy %q deleted\n", id)
 	return exitOK
 }
 
@@ -279,7 +275,9 @@ Flags:
   --api-url string    control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                  print {"deleted":true} to stdout, nothing else
-  -h, --help            show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
@@ -299,13 +297,13 @@ func runIAMPoliciesAttachOrDetach(prog string, args []string, stdout, stderr io.
 	}
 	cmdLabel := "iam policies " + verb
 
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, cmdLabel, "print {\"ok\":true} to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, cmdLabel, "print {\"ok\":true} to stdout and nothing else", stderr)
 	var principalType, principalID string
 	fs.StringVar(&principalType, "principal-type", "", `"user" or "token" (required)`)
 	fs.StringVar(&principalID, "principal-id", "", "the user or token's own id (required)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, usage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -323,18 +321,16 @@ func runIAMPoliciesAttachOrDetach(prog string, args []string, stdout, stderr io.
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s policy %q: %w", verb, id, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, map[string]bool{"ok": true}); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
+	if err := renderResult(stdout, of.Format, of.Query, map[string]bool{"ok": true}, func() {
+		preposition := "from"
+		if attach {
+			preposition = "to"
 		}
-		return exitOK
+		_, _ = fmt.Fprintf(stdout, "policy %q %sed %s %s %q\n", id, verb, preposition, principalType, principalID)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	preposition := "from"
-	if attach {
-		preposition = "to"
-	}
-	_, _ = fmt.Fprintf(stdout, "policy %q %sed %s %s %q\n", id, verb, preposition, principalType, principalID)
 	return exitOK
 }
 
@@ -367,7 +363,9 @@ Flags:
   --api-url string               control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string               named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                              print {"ok":true} to stdout, nothing else
-  -h, --help                       show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
@@ -382,15 +380,17 @@ Flags:
   --api-url string               control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string               named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                              print {"ok":true} to stdout, nothing else
-  -h, --help                       show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runIAMPoliciesAttachments(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "iam policies attachments", "print attachments as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "iam policies attachments", "print attachments as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, iamPoliciesAttachmentsUsage(prog)) }
 
-	client, id, jsonOut, code, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "iam policies attachments", "policy id"}, lookupEnv)
+	client, id, jsonOut, of, code, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "iam policies attachments", "policy id"}, lookupEnv)
 	if !ok {
 		return code
 	}
@@ -400,19 +400,17 @@ func runIAMPoliciesAttachments(prog string, args []string, stdout, stderr io.Wri
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list attachments for policy %q: %w", id, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, attachments); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
+	if err := renderResult(stdout, of.Format, of.Query, attachments, func() {
+		tw := tabwriter.NewWriter(stdout, 0, 2, 2, ' ', 0)
+		_, _ = fmt.Fprintln(tw, "PRINCIPAL_TYPE\tPRINCIPAL_ID\tATTACHED")
+		for _, a := range attachments {
+			_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\n", a.PrincipalType, a.PrincipalID, a.CreatedAt.Format(timestampDisplayFormat))
 		}
-		return exitOK
+		_ = tw.Flush()
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	tw := tabwriter.NewWriter(stdout, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "PRINCIPAL_TYPE\tPRINCIPAL_ID\tATTACHED")
-	for _, a := range attachments {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\n", a.PrincipalType, a.PrincipalID, a.CreatedAt.Format(timestampDisplayFormat))
-	}
-	_ = tw.Flush()
 	return exitOK
 }
 
@@ -425,6 +423,8 @@ Flags:
   --api-url string    control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                  print attachments as a JSON array to stdout, nothing else
-  -h, --help            show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

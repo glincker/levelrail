@@ -5,8 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sort"
+	"strconv"
+	"strings"
 	"text/tabwriter"
 	"time"
+
+	"github.com/jmespath/go-jmespath"
 )
 
 // Exit codes. Distinct on purpose (per the CLI's own design brief: "real,
@@ -67,6 +72,232 @@ func writeJSONValue(out io.Writer, v any) error {
 // responses can use one code path for both.
 func writeJSONError(out io.Writer, err error) error {
 	return writeJSONValue(out, map[string]string{"error": err.Error()})
+}
+
+// outputFormat is the resolved --output value.
+type outputFormat string
+
+const (
+	outputTable outputFormat = "table"
+	outputJSON  outputFormat = "json"
+	outputText  outputFormat = "text"
+)
+
+// resolveOutputFormat reconciles the old --json boolean with the newer
+// --output flag: --json is shorthand for --output json, kept so scripts
+// written against it before --output existed still work unchanged. An
+// --output that contradicts an explicit --json is a usage error rather
+// than a silent pick between the two.
+func resolveOutputFormat(jsonOut bool, outputFlag string) (outputFormat, error) {
+	switch outputFlag {
+	case "":
+		if jsonOut {
+			return outputJSON, nil
+		}
+		return outputTable, nil
+	case string(outputJSON), string(outputTable), string(outputText):
+		if jsonOut && outputFlag != string(outputJSON) {
+			return "", newValidationError("--json conflicts with --output %s, use one or the other", outputFlag)
+		}
+		return outputFormat(outputFlag), nil
+	default:
+		return "", newValidationError("invalid --output %q, want json, table, or text", outputFlag)
+	}
+}
+
+// toGenericJSON round-trips v through encoding/json so it becomes the
+// map[string]any/[]any/float64/... shape jmespath.Search and the
+// generic text/table renderers below operate on, rather than v's
+// original Go struct type.
+func toGenericJSON(v any) (any, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, fmt.Errorf("encode value: %w", err)
+	}
+	var generic any
+	if err := json.Unmarshal(data, &generic); err != nil {
+		return nil, fmt.Errorf("decode value: %w", err)
+	}
+	return generic, nil
+}
+
+// applyQuery runs a JMESPath expression against v, AWS CLI's --query
+// feature: lets a caller project or filter a response (e.g.
+// "[?status=='running'].name") without piping through jq.
+func applyQuery(query string, v any) (any, error) {
+	generic, err := toGenericJSON(v)
+	if err != nil {
+		return nil, err
+	}
+	result, err := jmespath.Search(query, generic)
+	if err != nil {
+		return nil, newValidationError("--query %q: %s", query, err)
+	}
+	return result, nil
+}
+
+// renderResult prints data according to format/query. renderTable is
+// only called on the plain default path (table format, no --query), so
+// every existing command's hand-written table printer keeps producing
+// exactly its current output when neither new flag is used; --query and
+// --output text/json instead go through the generic renderers below,
+// which is what lets every command gain both flags from this one
+// function instead of each command implementing its own projection.
+func renderResult(stdout io.Writer, format outputFormat, query string, data any, renderTable func()) error {
+	value := data
+	switch {
+	case query != "":
+		projected, err := applyQuery(query, data)
+		if err != nil {
+			return err
+		}
+		value = projected
+	case format == outputText:
+		generic, err := toGenericJSON(data)
+		if err != nil {
+			return err
+		}
+		value = generic
+	}
+
+	switch {
+	case format == outputTable && query == "":
+		renderTable()
+		return nil
+	case format == outputTable:
+		return writeQueriedTable(stdout, value)
+	case format == outputText:
+		return writeTextValue(stdout, value)
+	default:
+		return writeJSONValue(stdout, value)
+	}
+}
+
+// writeTextValue prints v in --output text's shape: one line per row, tab
+// separated fields, no headers or alignment, meant for further piping
+// through awk/cut. This is AWS CLI's own distinction between --output
+// table (boxed, human-oriented) and --output text (raw, script-oriented):
+// a list prints one row per element, anything else prints as a single row.
+func writeTextValue(out io.Writer, v any) error {
+	rows, ok := v.([]any)
+	if !ok {
+		rows = []any{v}
+	}
+	for _, row := range rows {
+		var fields []string
+		flattenText(row, &fields)
+		if _, err := fmt.Fprintln(out, strings.Join(fields, "\t")); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// flattenText appends v's scalar leaves to out in depth-first order:
+// object values by sorted key (for deterministic output), array elements
+// in order, so a nested JSON value becomes one flat tab-separated row.
+func flattenText(v any, out *[]string) {
+	switch t := v.(type) {
+	case map[string]any:
+		keys := make([]string, 0, len(t))
+		for k := range t {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			flattenText(t[k], out)
+		}
+	case []any:
+		for _, item := range t {
+			flattenText(item, out)
+		}
+	case nil:
+		*out = append(*out, "None")
+	default:
+		*out = append(*out, scalarText(t))
+	}
+}
+
+// scalarText renders one JSON scalar (as produced by encoding/json's
+// decode-into-any: string, bool, float64, or nil) the way --output
+// text/table print it: no surrounding quotes, integers without a
+// trailing ".0".
+func scalarText(v any) string {
+	switch t := v.(type) {
+	case nil:
+		return "None"
+	case string:
+		return t
+	case bool:
+		return strconv.FormatBool(t)
+	case float64:
+		if t == float64(int64(t)) {
+			return strconv.FormatInt(int64(t), 10)
+		}
+		return strconv.FormatFloat(t, 'g', -1, 64)
+	case map[string]any, []any:
+		var fields []string
+		flattenText(t, &fields)
+		return strings.Join(fields, ",")
+	default:
+		return fmt.Sprintf("%v", t)
+	}
+}
+
+// writeQueriedTable renders a --query result as a table when it is a
+// uniform, non-empty list of objects (one row per element, columns from
+// the shared keys); any other shape (a scalar, a single object, a
+// ragged list) isn't table-shaped, so it falls back to JSON rather than
+// guessing a layout, matching AWS CLI's own caveat that --output table
+// needs table-shaped data.
+func writeQueriedTable(out io.Writer, v any) error {
+	rows, ok := v.([]any)
+	if !ok || len(rows) == 0 {
+		return writeJSONValue(out, v)
+	}
+	cols, ok := tableColumns(rows)
+	if !ok {
+		return writeJSONValue(out, v)
+	}
+
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	header := make([]string, len(cols))
+	for i, c := range cols {
+		header[i] = strings.ToUpper(c)
+	}
+	_, _ = fmt.Fprintln(tw, strings.Join(header, "\t"))
+	for _, r := range rows {
+		// tableColumns already verified every row is a map[string]any.
+		obj, _ := r.(map[string]any)
+		cells := make([]string, len(cols))
+		for i, c := range cols {
+			cells[i] = scalarText(obj[c])
+		}
+		_, _ = fmt.Fprintln(tw, strings.Join(cells, "\t"))
+	}
+	return tw.Flush()
+}
+
+// tableColumns returns rows' shared, sorted column names, or false if
+// rows isn't a uniform list of objects (any element not a
+// map[string]any, or with a different key count than the first).
+func tableColumns(rows []any) ([]string, bool) {
+	first, ok := rows[0].(map[string]any)
+	if !ok {
+		return nil, false
+	}
+	cols := make([]string, 0, len(first))
+	for k := range first {
+		cols = append(cols, k)
+	}
+	sort.Strings(cols)
+	for _, r := range rows[1:] {
+		obj, ok := r.(map[string]any)
+		if !ok || len(obj) != len(cols) {
+			return nil, false
+		}
+	}
+	return cols, true
 }
 
 // printAppHuman prints one app resource in a human-readable, non-JSON

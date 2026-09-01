@@ -53,6 +53,7 @@ func runProfileList(prog string, args []string, stdout, stderr io.Writer, _ func
 	fs.SetOutput(stderr)
 	var jsonOut bool
 	fs.BoolVar(&jsonOut, "json", false, "print profiles as a JSON array to stdout and nothing else")
+	outputFlagP, queryFlagP := bindOutputQueryFlags(fs)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, profileListUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -61,20 +62,21 @@ func runProfileList(prog string, args []string, stdout, stderr io.Writer, _ func
 		}
 		return exitUsage
 	}
+	format, ferr := resolveOutputFormat(jsonOut, *outputFlagP)
+	if ferr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
+		return exitValidation
+	}
 
 	profiles, err := listProfiles(prog)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list profiles: %w", err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, profiles); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, format, *queryFlagP, profiles, func() { printProfilesTable(stdout, profiles) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	printProfilesTable(stdout, profiles)
 	return exitOK
 }
 
@@ -100,6 +102,8 @@ and API URL, never its token value.
 
 Flags:
   --json                  print profiles as a JSON array to stdout, nothing else
+  --output string         output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string          JMESPath expression to filter the result before printing
   -h, --help              show this help
 `, prog)
 }

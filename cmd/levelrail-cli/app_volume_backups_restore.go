@@ -48,13 +48,13 @@ func resolveVolumeRestoreConfirmation(appName, volumeName, confirmFlag string, s
 // and can refuse, before this ever builds a Client or reaches the
 // network.
 func runAppVolumeBackupsRestore(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "app-volume-backups restore", "print the started restore attempt as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "app-volume-backups restore", "print the started restore attempt as JSON to stdout and nothing else", stderr)
 	var backupID, confirm string
 	fs.StringVar(&backupID, "backup", "", "id of a previously succeeded backup to restore from (required)")
 	fs.StringVar(&confirm, "confirm", "", "must exactly equal \"<app>/<volume>\" to skip the interactive confirmation prompt")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appVolumeBackupsRestoreUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -80,14 +80,12 @@ func runAppVolumeBackupsRestore(prog string, args []string, stdout, stderr io.Wr
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("restore %s/%s: %w", name, volume, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, started); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, started, func() {
+		_, _ = fmt.Fprintf(stdout, "restore %q of %s/%s from backup %q started; check \"%s app-volume-backups list %s %s\" for status\n", started.ID, name, volume, backupID, prog, name, volume)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	_, _ = fmt.Fprintf(stdout, "restore %q of %s/%s from backup %q started; check \"%s app-volume-backups list %s %s\" for status\n", started.ID, name, volume, backupID, prog, name, volume)
 	return exitOK
 }
 
@@ -109,6 +107,8 @@ Flags:
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the started restore attempt as JSON to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

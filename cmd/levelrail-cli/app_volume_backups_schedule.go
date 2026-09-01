@@ -41,7 +41,7 @@ Run "%[1]s app-volume-backups schedule <subcommand> -h" for a subcommand's own f
 }
 
 func runAppVolumeBackupsScheduleSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "app-volume-backups schedule set", "print the saved schedule as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "app-volume-backups schedule set", "print the saved schedule as JSON to stdout and nothing else", stderr)
 	var targetID, cron string
 	var retain, retainDays int
 	fs.StringVar(&targetID, "target", "", "backup target id to back up to (required)")
@@ -53,7 +53,7 @@ func runAppVolumeBackupsScheduleSet(prog string, args []string, stdout, stderr i
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -83,19 +83,19 @@ func runAppVolumeBackupsScheduleSet(prog string, args []string, stdout, stderr i
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set backup schedule for %s/%s: %w", name, volume, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, schedule, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, schedule, func() {
 		_, _ = fmt.Fprintf(stdout, "backup schedule %q set for %s/%s (target %s, retain %d, retain_days %d)\n", schedule.Schedule, name, volume, schedule.TargetID, schedule.Retain, schedule.RetainDays)
 	})
 }
 
 func runAppVolumeBackupsScheduleClear(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "app-volume-backups schedule clear", "print {\"cleared\": true} as JSON to stdout on success and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "app-volume-backups schedule clear", "print {\"cleared\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s app-volume-backups schedule clear <app> <volume> [flags]\n\nRemoves <app>/<volume>'s recurring backup schedule. Past backup history is\nunaffected.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -112,5 +112,5 @@ func runAppVolumeBackupsScheduleClear(prog string, args []string, stdout, stderr
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("clear backup schedule for %s/%s: %w", name, volume, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, map[string]bool{"cleared": true}, func() { _, _ = fmt.Fprintf(stdout, "backup schedule removed for %s/%s\n", name, volume) })
+	return writeScheduledTaskResult(stdout, stderr, of, map[string]bool{"cleared": true}, func() { _, _ = fmt.Fprintf(stdout, "backup schedule removed for %s/%s\n", name, volume) })
 }

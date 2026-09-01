@@ -15,7 +15,7 @@ import (
 // them), --abilities is the raw, hand-picked list "tokens create" itself
 // already uses.
 func runUsersCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "users create", "print the created user as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "users create", "print the created user as JSON to stdout and nothing else", stderr)
 	var email, password, displayName, abilitiesFlag, role string
 	fs.StringVar(&email, "email", "", "email for the new user (required)")
 	fs.StringVar(&password, "password", "", "password for the new user, at least 8 characters (required)")
@@ -24,7 +24,7 @@ func runUsersCreate(prog string, args []string, stdout, stderr io.Writer, lookup
 	fs.StringVar(&abilitiesFlag, "abilities", "", "comma-separated ability list, e.g. \"read,deploy\" (valid: read, read:sensitive, write, write:sensitive, deploy, root); alternative to --role")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, usersCreateUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -55,14 +55,12 @@ func runUsersCreate(prog string, args []string, stdout, stderr io.Writer, lookup
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create user %q: %w", email, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, created); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, created, func() {
+		_, _ = fmt.Fprintf(stdout, "user %q (id %s) created\n", created.Email, created.ID)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	_, _ = fmt.Fprintf(stdout, "user %q (id %s) created\n", created.Email, created.ID)
 	return exitOK
 }
 
@@ -84,6 +82,8 @@ Flags:
   --api-url string          control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string          named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                       print the created user as JSON to stdout, nothing else
-  -h, --help                 show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

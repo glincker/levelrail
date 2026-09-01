@@ -15,12 +15,12 @@ import (
 // finish; use "app-volume-backups list <app> <volume>" to see whether it
 // did.
 func runAppVolumeBackupsTrigger(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "app-volume-backups trigger", "print the started backup attempt as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "app-volume-backups trigger", "print the started backup attempt as JSON to stdout and nothing else", stderr)
 	var targetID string
 	fs.StringVar(&targetID, "target", "", "backup target id to back up to (required; see the backup target the control plane's own UI or store already has configured)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appVolumeBackupsTriggerUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -42,14 +42,12 @@ func runAppVolumeBackupsTrigger(prog string, args []string, stdout, stderr io.Wr
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("trigger backup for %s/%s: %w", name, volume, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, started); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, started, func() {
+		_, _ = fmt.Fprintf(stdout, "backup %q for %s/%s started; check \"%s app-volume-backups list %s %s\" for status\n", started.ID, name, volume, prog, name, volume)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	_, _ = fmt.Fprintf(stdout, "backup %q for %s/%s started; check \"%s app-volume-backups list %s %s\" for status\n", started.ID, name, volume, prog, name, volume)
 	return exitOK
 }
 
@@ -69,6 +67,8 @@ Flags:
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the started backup attempt as JSON to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

@@ -48,7 +48,7 @@ var defaultTokenAbility = []string{"root"}
 // https target (a real deployment's embedded Caddy ingress) for this
 // command to complete.
 func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
-	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP := sessionFlagSet(prog, "auth login", "print the new token resource as JSON to stdout and nothing else", stderr)
+	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "auth login", "print the new token resource as JSON to stdout and nothing else", stderr)
 	var tokenName, abilitiesFlag string
 	var expiresInDays int
 	fs.StringVar(&tokenName, "token-name", "", "name for the newly minted token (default: \"levelrail-cli-<timestamp>\")")
@@ -63,6 +63,12 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return exitUsage
 	}
 	jsonOut := *jsonOutP
+	format, ferr := resolveOutputFormat(jsonOut, *outputFlagP)
+	if ferr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
+		return exitValidation
+	}
+	of := outputFlags{format, *queryFlagP}
 
 	abilities := defaultTokenAbility
 	if abilitiesFlag != "" {
@@ -94,18 +100,15 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("save credentials: %w", err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, created); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, created, func() {
+		dir, _ := configDir(prog)
+		_, _ = fmt.Fprintf(stdout, "logged in as %q\n", loginResp.Username)
+		_, _ = fmt.Fprintf(stdout, "token %q (id %s) created and saved to %s/%s under profile %q\n", created.Name, created.ID, dir, credentialsFileName, profile)
+		_, _ = fmt.Fprintf(stdout, "token value (shown once, not recoverable again): %s\n", created.Token)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-
-	dir, _ := configDir(prog)
-	_, _ = fmt.Fprintf(stdout, "logged in as %q\n", loginResp.Username)
-	_, _ = fmt.Fprintf(stdout, "token %q (id %s) created and saved to %s/%s under profile %q\n", created.Name, created.ID, dir, credentialsFileName, profile)
-	_, _ = fmt.Fprintf(stdout, "token value (shown once, not recoverable again): %s\n", created.Token)
 	return exitOK
 }
 
@@ -146,6 +149,8 @@ Flags:
   --abilities string           comma-separated ability list (default: root)
   --expires-in-days int      token lifetime in days (default: 0, never expires)
   --json                          print the new token resource as JSON to stdout, nothing else
+  --output string                output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string                 JMESPath expression to filter the result before printing
   -h, --help                    show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

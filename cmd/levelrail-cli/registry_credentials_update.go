@@ -13,7 +13,7 @@ import (
 // "registry-credentials create": omitted, the credential keeps its
 // existing stored password; given, it rotates it.
 func runRegistryCredentialsUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "registry-credentials update", "print the updated registry credential as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "registry-credentials update", "print the updated registry credential as JSON to stdout and nothing else", stderr)
 	var name, registryHost, username, password, expiresAt string
 	fs.StringVar(&name, "name", "", "display name for the registry credential (required)")
 	fs.StringVar(&registryHost, "registry-host", "", "registry hostname, e.g. ghcr.io (required)")
@@ -22,7 +22,7 @@ func runRegistryCredentialsUpdate(prog string, args []string, stdout, stderr io.
 	fs.StringVar(&expiresAt, "expires-at", "", "optional RFC3339 expiry the operator already knows; omit to clear it")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, registryCredentialsUpdateUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -59,14 +59,12 @@ func runRegistryCredentialsUpdate(prog string, args []string, stdout, stderr io.
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("update registry credential %q: %w", id, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, updated); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, updated, func() {
+		_, _ = fmt.Fprintf(stdout, "registry credential %q (id %s) updated\n", updated.Name, updated.ID)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	_, _ = fmt.Fprintf(stdout, "registry credential %q (id %s) updated\n", updated.Name, updated.ID)
 	return exitOK
 }
 
@@ -89,6 +87,8 @@ Flags:
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the updated registry credential as JSON to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

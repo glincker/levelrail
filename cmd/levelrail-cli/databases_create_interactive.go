@@ -215,7 +215,8 @@ func runInteractiveDatabaseWizard(p *wizardPrompter, engines []databaseEngineRes
 // never round-trip its own answers back into a real database, so there is
 // no file-output mode here, the same reasoning databasesCreateUsage
 // already gives for the flag-driven path's own lack of --file.
-func runDatabasesCreateWizard(stdin io.Reader, stdout, stderr io.Writer, cf credentialFlags, jsonOut bool, lookupEnv func(string) (string, bool), prog string) int {
+func runDatabasesCreateWizard(stdin io.Reader, stdout, stderr io.Writer, cf credentialFlags, of outputFlags, lookupEnv func(string) (string, bool), prog string) int {
+	jsonOut := of.Format == outputJSON
 	client := apiClientFromCredentialFlags(prog, cf, lookupEnv)
 	ctx := context.Background()
 
@@ -230,14 +231,15 @@ func runDatabasesCreateWizard(stdin io.Reader, stdout, stderr io.Writer, cf cred
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
-	return createDatabaseFromWizard(ctx, client, answers, stdout, stderr, jsonOut)
+	return createDatabaseFromWizard(ctx, client, answers, stdout, stderr, of)
 }
 
 // createDatabaseFromWizard executes answers against client: create, then
 // resources/public-access/backup-schedule as separate follow-up calls,
 // since none of those has a field on databaseResource's own create body
 // (see that type's own doc comment in internal/api/databases.go).
-func createDatabaseFromWizard(ctx context.Context, client *Client, a databaseWizardAnswers, stdout, stderr io.Writer, jsonOut bool) int {
+func createDatabaseFromWizard(ctx context.Context, client *Client, a databaseWizardAnswers, stdout, stderr io.Writer, of outputFlags) int {
+	jsonOut := of.Format == outputJSON
 	plan, err := a.toCreatePlan()
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
@@ -264,15 +266,13 @@ func createDatabaseFromWizard(ctx context.Context, client *Client, a databaseWiz
 		return exitNetwork
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, final); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, final, func() {
+		_, _ = fmt.Fprintf(stderr, "database %q created\n", final.Name)
+		printDatabaseHuman(stdout, final)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	_, _ = fmt.Fprintf(stderr, "database %q created\n", final.Name)
-	printDatabaseHuman(stdout, final)
 	return exitOK
 }
 

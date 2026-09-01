@@ -13,6 +13,7 @@ vendor/
 /levelrail
 /levelrail-agent
 /levelrail-mcp
+/levelrail-cli
 *.log
 
 # Node (web frontend, once scaffolded). Anchored to /web/build/ so this

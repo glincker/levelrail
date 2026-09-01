@@ -18,13 +18,13 @@ import (
 // breaking change to that contract for no reason a new command doesn't
 // solve just as well.
 func runAppsStatus(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps status", "print conditions as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps status", "print conditions as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps status <name> [flags]\n\nShows the application controller's current stored reconcile conditions\nfor one app (current status, not a deploy history log).\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
-	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "apps status", "app name"}, lookupEnv)
+	client, name, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "apps status", "app name"}, lookupEnv)
 	if !ok {
 		return exitCode
 	}
@@ -34,5 +34,5 @@ func runAppsStatus(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get status for app %q: %w", name, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, conditions, func() { printConditionsHuman(stdout, conditions) })
+	return writeScheduledTaskResult(stdout, stderr, of, conditions, func() { printConditionsHuman(stdout, conditions) })
 }
