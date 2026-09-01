@@ -21,6 +21,8 @@ func runAppsDiagnose(prog string, args []string, stdout, stderr io.Writer, looku
 	var jsonOut bool
 	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	var profileFlag string
+	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	fs.StringVar(&deployFlag, "deploy", "", "diagnose a specific past deploy attempt ID instead of the newest one")
 	fs.BoolVar(&jsonOut, "json", false, "print the diagnosis as JSON to stdout and nothing else")
 	fs.Usage = func() {
@@ -43,7 +45,8 @@ func runAppsDiagnose(prog string, args []string, stdout, stderr io.Writer, looku
 	}
 	name := rest[0]
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	profile := resolveProfile(profileFlag, lookupEnv)
+	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
 
 	diagnosis, err := client.DiagnoseApp(context.Background(), name, deployFlag)
 	if err != nil {

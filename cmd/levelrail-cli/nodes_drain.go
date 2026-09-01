@@ -16,7 +16,7 @@ import (
 // "print the result, then classify AllSucceeded" exit-code convention
 // "apps deploy-spec" already uses for its own per-item result.
 func runNodesDrain(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "nodes drain", "print the drain result as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "nodes drain", "print the drain result as JSON to stdout and nothing else", stderr)
 	var target string
 	fs.StringVar(&target, "target", "", "node id to move placements to (default: the local node)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesDrainUsage(prog)) }
@@ -27,14 +27,14 @@ func runNodesDrain(prog string, args []string, stdout, stderr io.Writer, lookupE
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	id, ok := requireOneArg(fs, stderr, prog, "nodes drain", "node id")
 	if !ok {
 		return exitUsage
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	result, err := client.DrainNode(context.Background(), id, target)
 	if err != nil {
@@ -101,6 +101,7 @@ Flags:
   --target string          node id to move placements to (default: the local node)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the drain result as JSON to stdout, nothing else
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

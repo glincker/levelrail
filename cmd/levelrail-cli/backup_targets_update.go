@@ -13,7 +13,7 @@ import (
 // unlike "backup-targets create": omitted, the target keeps its existing
 // stored credentials; given together, they rotate them in place.
 func runBackupTargetsUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "backup-targets update", "print the updated backup target as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "backup-targets update", "print the updated backup target as JSON to stdout and nothing else", stderr)
 	var name, provider, endpoint, region, bucket, accessKeyID, secretAccessKey string
 	fs.StringVar(&name, "name", "", "display name for the backup target (required)")
 	fs.StringVar(&provider, "provider", "", "provider: aws, r2, or custom (required)")
@@ -30,7 +30,7 @@ func runBackupTargetsUpdate(prog string, args []string, stdout, stderr io.Writer
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	id, ok := requireOneArg(fs, stderr, prog, "backup-targets update", "backup target id")
 	if !ok {
@@ -50,7 +50,7 @@ func runBackupTargetsUpdate(prog string, args []string, stdout, stderr io.Writer
 		return reportError(stdout, stderr, jsonOut, newValidationError("--access-key-id and --secret-access-key must be set together to rotate credentials"))
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	updated, err := client.UpdateBackupTarget(context.Background(), id, updateBackupTargetRequest{
 		Name: name, Provider: provider, Endpoint: endpoint, Region: region, Bucket: bucket,
@@ -89,6 +89,7 @@ Flags:
   --secret-access-key string      new secret access key, set together with --access-key-id to rotate
   --token string                 API token (default: %[2]s env var, then the credentials file)
   --api-url string               control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string               named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                            print the updated backup target as JSON to stdout, nothing else
   -h, --help                     show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

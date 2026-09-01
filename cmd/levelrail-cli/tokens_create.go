@@ -33,7 +33,7 @@ import (
 func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs := flag.NewFlagSet(prog+" tokens create", flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	var username, password, apiURLFlag, name, abilitiesFlag string
+	var username, password, apiURLFlag, profileFlag, name, abilitiesFlag string
 	var expiresInDays int
 	var jsonOut bool
 	fs.StringVar(&name, "name", "", "name for the new token (required)")
@@ -42,6 +42,7 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 	fs.StringVar(&username, "username", "", "admin username (prompted if omitted)")
 	fs.StringVar(&password, "password", "", "admin password (prompted without echo if omitted)")
 	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	fs.BoolVar(&jsonOut, "json", false, "print the new token resource as JSON to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tokensCreateUsage(prog)) }
 
@@ -72,7 +73,7 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
-	sessionClient, err := newAuthSessionClient(resolveAPIURL(apiURLFlag, lookupEnv, prog))
+	sessionClient, err := newAuthSessionClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, resolveProfile(profileFlag, lookupEnv)))
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
@@ -115,6 +116,7 @@ Flags:
   --username string          admin username (prompted if omitted)
   --password string          admin password (prompted without echo if omitted)
   --api-url string             control plane base URL (default: %[2]s env var, then %[3]s)
+  --profile string             named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                          print the new token resource as JSON to stdout, nothing else
   -h, --help                    show this help
 `, prog, envAPIURL, defaultAPIURL)

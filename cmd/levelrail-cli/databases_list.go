@@ -15,6 +15,8 @@ func runDatabasesList(prog string, args []string, stdout, stderr io.Writer, look
 	var jsonOut bool
 	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	var profileFlag string
+	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	fs.BoolVar(&jsonOut, "json", false, "print databases as a JSON array to stdout and nothing else")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s databases list [flags]\n\nLists every managed database the caller's token can read.\n\nFlags:\n", prog)
@@ -28,7 +30,8 @@ func runDatabasesList(prog string, args []string, stdout, stderr io.Writer, look
 		return exitUsage
 	}
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	profile := resolveProfile(profileFlag, lookupEnv)
+	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
 
 	dbs, err := client.ListDatabases(context.Background())
 	if err != nil {

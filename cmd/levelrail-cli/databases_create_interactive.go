@@ -215,9 +215,10 @@ func runInteractiveDatabaseWizard(p *wizardPrompter, engines []databaseEngineRes
 // never round-trip its own answers back into a real database, so there is
 // no file-output mode here, the same reasoning databasesCreateUsage
 // already gives for the flag-driven path's own lack of --file.
-func runDatabasesCreateWizard(stdin io.Reader, stdout, stderr io.Writer, tokenFlag, apiURLFlag string, jsonOut bool, lookupEnv func(string) (string, bool), prog string) int {
-	token := resolveToken(tokenFlag, lookupEnv, prog)
-	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog)
+func runDatabasesCreateWizard(stdin io.Reader, stdout, stderr io.Writer, tokenFlag, apiURLFlag, profileFlag string, jsonOut bool, lookupEnv func(string) (string, bool), prog string) int {
+	profile := resolveProfile(profileFlag, lookupEnv)
+	token := resolveToken(tokenFlag, lookupEnv, prog, profile)
+	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog, profile)
 	client := NewClient(apiURL, token)
 	ctx := context.Background()
 

@@ -21,6 +21,8 @@ func runAppsNetwork(prog string, args []string, stdout, stderr io.Writer, lookup
 	var jsonOut bool
 	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	var profileFlag string
+	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	fs.BoolVar(&jsonOut, "json", false, "print the network status as JSON to stdout and nothing else")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps network <name> [flags]\n\nShows how traffic actually reaches this app right now: container port,\nlive Docker-assigned host port, and whether it's running.\n\nFlags:\n", prog)
@@ -42,7 +44,8 @@ func runAppsNetwork(prog string, args []string, stdout, stderr io.Writer, lookup
 	}
 	name := rest[0]
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	profile := resolveProfile(profileFlag, lookupEnv)
+	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
 
 	network, err := client.GetAppNetwork(context.Background(), name)
 	if err != nil {

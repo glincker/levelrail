@@ -72,7 +72,7 @@ func featureFlagFlags(fs *flag.FlagSet, name, description *string, disabled *boo
 }
 
 func runFlagsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "flags create", "print the created flag as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "flags create", "print the created flag as JSON to stdout and nothing else", stderr)
 	var key, name, description string
 	var disabled bool
 	var rollout int
@@ -86,7 +86,7 @@ func runFlagsCreate(prog string, args []string, stdout, stderr io.Writer, lookup
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	appName, ok := requireOneArg(fs, stderr, prog, "flags create", "app name")
 	if !ok {
@@ -99,7 +99,7 @@ func runFlagsCreate(prog string, args []string, stdout, stderr io.Writer, lookup
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	created, err := client.CreateFeatureFlag(context.Background(), appName, featureFlagRequest{
 		Key: key, Name: name, Description: description, Enabled: !disabled, RolloutPercentage: rollout,
 	})
@@ -129,13 +129,14 @@ Flags:
   --rollout int              rollout percentage, 0-100 (default: 100)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the created flag as JSON to stdout, nothing else
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runFlagsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "flags list", "print flags as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "flags list", "print flags as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, flagsListUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -144,14 +145,14 @@ func runFlagsList(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	appName, ok := requireOneArg(fs, stderr, prog, "flags list", "app name")
 	if !ok {
 		return exitUsage
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	flags, err := client.ListFeatureFlags(context.Background(), appName)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list feature flags for app %q: %w", appName, err))
@@ -182,6 +183,7 @@ Lists the feature flags owned by <app>.
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print flags as a JSON array to stdout, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
@@ -207,16 +209,16 @@ func parseAppAndFlagID(fs *flag.FlagSet, args []string, stderr io.Writer, prog, 
 }
 
 func runFlagsGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "flags get", "print the flag as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "flags get", "print the flag as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, flagsGetUsage(prog)) }
 
 	appName, id, code, ok := parseAppAndFlagID(fs, args, stderr, prog, "flags get")
 	if !ok {
 		return code
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	f, err := client.GetFeatureFlag(context.Background(), appName, id)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get feature flag %q: %w", id, err))
@@ -246,13 +248,14 @@ Shows one feature flag's full metadata.
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the flag as JSON to stdout, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runFlagsSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "flags set", "print the updated flag as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "flags set", "print the updated flag as JSON to stdout and nothing else", stderr)
 	var name, description string
 	var disabled bool
 	var rollout int
@@ -263,13 +266,13 @@ func runFlagsSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	if !ok {
 		return code
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	updated, err := client.UpdateFeatureFlag(context.Background(), appName, id, featureFlagRequest{
 		Name: name, Description: description, Enabled: !disabled, RolloutPercentage: rollout,
 	})
@@ -299,22 +302,23 @@ Flags:
   --rollout int              rollout percentage, 0-100 (default: 100)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the updated flag as JSON to stdout, nothing else
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runFlagsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "flags delete", "print {} to stdout on success instead of a plain confirmation", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "flags delete", "print {} to stdout on success instead of a plain confirmation", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, flagsDeleteUsage(prog)) }
 
 	appName, id, code, ok := parseAppAndFlagID(fs, args, stderr, prog, "flags delete")
 	if !ok {
 		return code
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	if err := client.DeleteFeatureFlag(context.Background(), appName, id); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete feature flag %q: %w", id, err))
 	}
@@ -334,6 +338,7 @@ Deletes a feature flag. Any app still calling GET
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print {} to stdout on success instead of a plain confirmation
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

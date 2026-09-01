@@ -54,7 +54,7 @@ Run "%[1]s cloudflare-tunnel <subcommand> -h" for a subcommand's own flags.
 }
 
 func runCloudflareTunnelGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "cloudflare-tunnel get", "print the settings as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "cloudflare-tunnel get", "print the settings as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s cloudflare-tunnel get [flags]\n\nShows the current Cloudflare Tunnel settings and connection status.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -66,9 +66,9 @@ func runCloudflareTunnelGet(prog string, args []string, stdout, stderr io.Writer
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	settings, err := client.GetCloudflareTunnel(context.Background())
 	if err != nil {
@@ -87,7 +87,7 @@ func runCloudflareTunnelGet(prog string, args []string, stdout, stderr io.Writer
 }
 
 func runCloudflareTunnelSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "cloudflare-tunnel set", "print the settings as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "cloudflare-tunnel set", "print the settings as JSON to stdout and nothing else", stderr)
 	var cfTunnelTokenFlag string
 	var enabledFlag bool
 	fs.StringVar(&cfTunnelTokenFlag, "cf-tunnel-token", "", "Cloudflare Tunnel token from your Zero Trust dashboard (required the first time the tunnel is enabled; omit to keep the currently stored token; distinct from --token, this CLI's own bearer auth flag)")
@@ -103,9 +103,9 @@ func runCloudflareTunnelSet(prog string, args []string, stdout, stderr io.Writer
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	settings, err := client.SetCloudflareTunnel(context.Background(), updateCloudflareTunnelRequest{Enabled: enabledFlag, Token: cfTunnelTokenFlag})
 	if err != nil {
@@ -124,7 +124,7 @@ func runCloudflareTunnelSet(prog string, args []string, stdout, stderr io.Writer
 }
 
 func runCloudflareTunnelDisconnect(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "cloudflare-tunnel disconnect", "print the settings as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "cloudflare-tunnel disconnect", "print the settings as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s cloudflare-tunnel disconnect [flags]\n\nDisables Cloudflare Tunnel and forgets the stored token.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -136,9 +136,9 @@ func runCloudflareTunnelDisconnect(prog string, args []string, stdout, stderr io
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	settings, err := client.DisconnectCloudflareTunnel(context.Background())
 	if err != nil {

@@ -14,7 +14,7 @@ import (
 // mirroring runBackupsVerify's exact shape (backups_verify.go) for the
 // volume resource kind. Never attempts a live restore.
 func runAppVolumeBackupsVerify(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "app-volume-backups verify", "print the started verification attempt as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "app-volume-backups verify", "print the started verification attempt as JSON to stdout and nothing else", stderr)
 	var backupID string
 	fs.StringVar(&backupID, "backup", "", "id of a previously succeeded backup to verify (required)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appVolumeBackupsVerifyUsage(prog)) }
@@ -25,7 +25,7 @@ func runAppVolumeBackupsVerify(prog string, args []string, stdout, stderr io.Wri
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest, ok := requireArgs(fs, stderr, prog, "app-volume-backups verify", "an app name and a volume name", 2)
 	if !ok {
@@ -37,7 +37,7 @@ func runAppVolumeBackupsVerify(prog string, args []string, stdout, stderr io.Wri
 		return reportError(stdout, stderr, jsonOut, newValidationError("--backup is required"))
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	started, err := client.VerifyVolumeBackup(context.Background(), name, volume, backupID)
 	if err != nil {
@@ -69,6 +69,7 @@ Flags:
   --backup string          id of a previously succeeded backup to verify (required)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the started verification attempt as JSON to stdout, nothing else
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

@@ -584,13 +584,13 @@ func TestToHostPort(t *testing.T) {
 }
 
 func TestParseCreateFlags_AttachDatabase(t *testing.T) {
-	var token, apiURL string
+	var token, apiURL, profile string
 	f, err := parseCreateFlags("levelrail", []string{
 		"--name", "web", "--image", "img:v1", "--port", "3000",
 		"--attach-database", "main",
 		"--attach-database-env-var", "DB_URL",
 		"--attach-database-field", "host",
-	}, &strings.Builder{}, &token, &apiURL)
+	}, &strings.Builder{}, &token, &apiURL, &profile)
 	if err != nil {
 		t.Fatalf("parseCreateFlags() error = %v", err)
 	}
@@ -606,12 +606,12 @@ func TestParseCreateFlags_AttachDatabase(t *testing.T) {
 }
 
 func TestParseCreateFlags_BuildArg(t *testing.T) {
-	var token, apiURL string
+	var token, apiURL, profile string
 	f, err := parseCreateFlags("levelrail", []string{
 		"--name", "web", "--port", "3000", "--repo", "https://example.com/x.git", "--image-repo", "levelrail/web",
 		"--build-arg", "VERSION=1.2.3",
 		"--build-arg", "FEATURE_FLAG=on",
-	}, &strings.Builder{}, &token, &apiURL)
+	}, &strings.Builder{}, &token, &apiURL, &profile)
 	if err != nil {
 		t.Fatalf("parseCreateFlags() error = %v", err)
 	}
@@ -622,8 +622,8 @@ func TestParseCreateFlags_BuildArg(t *testing.T) {
 }
 
 func TestParseCreateFlags_AttachDatabase_DefaultsEmpty(t *testing.T) {
-	var token, apiURL string
-	f, err := parseCreateFlags("levelrail", []string{"--name", "web", "--image", "img:v1", "--port", "3000"}, &strings.Builder{}, &token, &apiURL)
+	var token, apiURL, profile string
+	f, err := parseCreateFlags("levelrail", []string{"--name", "web", "--image", "img:v1", "--port", "3000"}, &strings.Builder{}, &token, &apiURL, &profile)
 	if err != nil {
 		t.Fatalf("parseCreateFlags() error = %v", err)
 	}

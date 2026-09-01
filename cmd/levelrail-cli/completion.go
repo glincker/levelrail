@@ -63,6 +63,7 @@ var cliCommandTree = map[string]*cmdNode{
 	}},
 	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "delete": nil, "resource-recommendation": nil, "set-project": nil, "clear-project": nil}},
 	"auth":      {subs: map[string]*cmdNode{"login": nil, "whoami": nil}},
+	"profile":   {subs: map[string]*cmdNode{"list": nil}},
 	"tokens":    {subs: map[string]*cmdNode{"create": nil, "list": nil, "revoke": nil}},
 	"domains": {subs: map[string]*cmdNode{
 		"list":           nil,

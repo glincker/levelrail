@@ -41,7 +41,7 @@ Run "%[1]s backups schedule <subcommand> -h" for a subcommand's own flags.
 }
 
 func runBackupsScheduleSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "backups schedule set", "print the saved schedule as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "backups schedule set", "print the saved schedule as JSON to stdout and nothing else", stderr)
 	var targetID, cron string
 	var retain, retainDays int
 	fs.StringVar(&targetID, "target", "", "backup target id to back up to (required)")
@@ -59,7 +59,7 @@ func runBackupsScheduleSet(prog string, args []string, stdout, stderr io.Writer,
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	name, ok := requireOneArg(fs, stderr, prog, "backups schedule set", "database name")
 	if !ok {
@@ -72,7 +72,7 @@ func runBackupsScheduleSet(prog string, args []string, stdout, stderr io.Writer,
 		return reportError(stdout, stderr, jsonOut, newValidationError("--cron is required"))
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	schedule, err := client.SetBackupSchedule(context.Background(), name, setBackupScheduleRequest{
 		TargetID:   targetID,
@@ -96,7 +96,7 @@ func runBackupsScheduleSet(prog string, args []string, stdout, stderr io.Writer,
 }
 
 func runBackupsScheduleClear(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "backups schedule clear", "print {\"cleared\": true} as JSON to stdout on success and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "backups schedule clear", "print {\"cleared\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s backups schedule clear <database> [flags]\n\nRemoves <database>'s recurring backup schedule. Past backup history is\nunaffected.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -108,14 +108,14 @@ func runBackupsScheduleClear(prog string, args []string, stdout, stderr io.Write
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	name, ok := requireOneArg(fs, stderr, prog, "backups schedule clear", "database name")
 	if !ok {
 		return exitUsage
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	if err := client.ClearBackupSchedule(context.Background(), name); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("clear backup schedule for database %q: %w", name, err))

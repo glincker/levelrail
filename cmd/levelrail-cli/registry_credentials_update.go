@@ -14,7 +14,7 @@ import (
 // "registry-credentials create": omitted, the credential keeps its
 // existing stored password; given, it rotates it.
 func runRegistryCredentialsUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "registry-credentials update", "print the updated registry credential as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "registry-credentials update", "print the updated registry credential as JSON to stdout and nothing else", stderr)
 	var name, registryHost, username, password, expiresAt string
 	fs.StringVar(&name, "name", "", "display name for the registry credential (required)")
 	fs.StringVar(&registryHost, "registry-host", "", "registry hostname, e.g. ghcr.io (required)")
@@ -29,7 +29,7 @@ func runRegistryCredentialsUpdate(prog string, args []string, stdout, stderr io.
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	id, ok := requireOneArg(fs, stderr, prog, "registry-credentials update", "registry credential id")
 	if !ok {
@@ -54,7 +54,7 @@ func runRegistryCredentialsUpdate(prog string, args []string, stdout, stderr io.
 		expiresAtPtr = &parsed
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	updated, err := client.UpdateRegistryCredential(context.Background(), id, updateRegistryCredentialRequest{
 		Name: name, RegistryHost: registryHost, Username: username, Password: password, ExpiresAt: expiresAtPtr,
@@ -91,6 +91,7 @@ Flags:
   --expires-at string       optional RFC3339 expiry, omit to clear it
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the updated registry credential as JSON to stdout, nothing else
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

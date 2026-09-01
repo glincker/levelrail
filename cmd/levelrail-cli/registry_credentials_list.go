@@ -11,7 +11,7 @@ import (
 // runRegistryCredentialsList implements "registry-credentials list": GET
 // /api/v1/registry-credentials.
 func runRegistryCredentialsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "registry-credentials list", "print registry credentials as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "registry-credentials list", "print registry credentials as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, registryCredentialsListUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -20,9 +20,9 @@ func runRegistryCredentialsList(prog string, args []string, stdout, stderr io.Wr
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	creds, err := client.ListRegistryCredentials(context.Background())
 	if err != nil {
@@ -62,6 +62,7 @@ Lists every connected registry credential. Passwords are never included.
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print registry credentials as a JSON array to stdout, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

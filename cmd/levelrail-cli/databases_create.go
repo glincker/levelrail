@@ -79,13 +79,14 @@ func planDatabaseCreate(f createDatabaseFlags) (databaseResource, error) {
 func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs := flag.NewFlagSet(prog+" databases create", flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, name, engine, version string
+	var tokenFlag, apiURLFlag, profileFlag, name, engine, version string
 	var jsonOut, interactive bool
 	fs.StringVar(&name, "name", "", "database name (required)")
 	fs.StringVar(&engine, "engine", "", "database engine: "+strings.Join(supportedEngineParams, ", ")+" (required)")
 	fs.StringVar(&version, "version", "", "engine version, e.g. \"16\" (required)")
 	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	fs.BoolVar(&jsonOut, "json", false, "print the created database as JSON to stdout and nothing else")
 	fs.BoolVar(&interactive, "interactive", false, "run a step-by-step wizard instead of specifying flags: prompts for name, engine, version, resource limits, public access, and a backup schedule, then creates the database via the API")
 	fs.BoolVar(&interactive, "i", false, "shorthand for --interactive")
@@ -102,7 +103,7 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 		if name != "" || engine != "" || version != "" {
 			return reportError(stdout, stderr, jsonOut, newValidationError("--interactive runs its own step-by-step prompts and cannot be combined with --name, --engine, or --version"))
 		}
-		return runDatabasesCreateWizard(stdin, stdout, stderr, tokenFlag, apiURLFlag, jsonOut, lookupEnv, prog)
+		return runDatabasesCreateWizard(stdin, stdout, stderr, tokenFlag, apiURLFlag, profileFlag, jsonOut, lookupEnv, prog)
 	}
 
 	plan, err := planDatabaseCreate(createDatabaseFlags{name: name, engine: engine, version: version})
@@ -110,7 +111,8 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	profile := resolveProfile(profileFlag, lookupEnv)
+	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
 
 	created, err := client.CreateDatabase(context.Background(), plan)
 	if err != nil {
@@ -146,6 +148,7 @@ Flags:
   --version string      engine version, e.g. "16" (required)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the created database as JSON to stdout, nothing else
   --interactive, -i    run a step-by-step wizard: prompts for name, engine,
                              version, resource limits, public access, and a

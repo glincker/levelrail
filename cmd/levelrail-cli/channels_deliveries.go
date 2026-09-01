@@ -13,7 +13,7 @@ import (
 // history (deploy outcomes, alert rules, and test-send clicks alike),
 // newest first.
 func runChannelsDeliveries(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "channels deliveries", "print deliveries as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "channels deliveries", "print deliveries as a JSON array to stdout and nothing else", stderr)
 	var limit int
 	fs.IntVar(&limit, "limit", 0, "max rows to return (default: the server's own default)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, channelsDeliveriesUsage(prog)) }
@@ -24,14 +24,14 @@ func runChannelsDeliveries(prog string, args []string, stdout, stderr io.Writer,
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	id, ok := requireOneArg(fs, stderr, prog, "channels deliveries", "channel id")
 	if !ok {
 		return exitUsage
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	deliveries, err := client.ListNotificationDeliveries(context.Background(), id, limit)
 	if err != nil {
@@ -77,6 +77,7 @@ Flags:
   --limit int             max rows to return (default: the server's own default)
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print deliveries as a JSON array to stdout, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

@@ -35,22 +35,25 @@ func (m stringMapFlag) Set(s string) error {
 }
 
 // apiFlagSet builds a FlagSet named prog+" "+cmdLabel with the
-// --token/--api-url/--json flags most subcommands take, so each command
-// only wires up the flags unique to itself.
-func apiFlagSet(prog, cmdLabel, jsonUsage string, stderr io.Writer) (fs *flag.FlagSet, tokenFlag, apiURLFlag *string, jsonOut *bool) {
+// --token/--api-url/--profile/--json flags most subcommands take, so
+// each command only wires up the flags unique to itself.
+func apiFlagSet(prog, cmdLabel, jsonUsage string, stderr io.Writer) (fs *flag.FlagSet, tokenFlag, apiURLFlag, profileFlag *string, jsonOut *bool) {
 	fs = flag.NewFlagSet(prog+" "+cmdLabel, flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	tokenFlag = fs.String("token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	apiURLFlag = fs.String("api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	profileFlag = fs.String("profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	jsonOut = fs.Bool("json", false, jsonUsage)
-	return fs, tokenFlag, apiURLFlag, jsonOut
+	return fs, tokenFlag, apiURLFlag, profileFlag, jsonOut
 }
 
-// apiClientFromFlags builds the API client from resolved --token/--api-url
-// flag values, the NewClient(resolveAPIURL(...), resolveToken(...)) call
-// most subcommands make.
-func apiClientFromFlags(prog, apiURLFlag, tokenFlag string, lookupEnv func(string) (string, bool)) *Client {
-	return NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+// apiClientFromFlags builds the API client from resolved
+// --token/--api-url/--profile flag values, the
+// NewClient(resolveAPIURL(...), resolveToken(...)) call most
+// subcommands make.
+func apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag string, lookupEnv func(string) (string, bool)) *Client {
+	profile := resolveProfile(profileFlag, lookupEnv)
+	return NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
 }
 
 // requireArgs extracts fs's exactly n required positional arguments,
@@ -85,21 +88,21 @@ func requireOneArg(fs *flag.FlagSet, stderr io.Writer, prog, cmdLabel, argLabel 
 // already established). ok is false once fs.Parse, --help, or the
 // missing-arg check has already written its own message to stderr; the
 // caller should return exitCode unchanged in that case.
-func parseSingleArgClient(fs *flag.FlagSet, args []string, tokenFlagP, apiURLFlagP *string, jsonOutP *bool, stderr io.Writer, prog, cmdLabel string, lookupEnv func(string) (string, bool)) (client *Client, name string, jsonOut bool, exitCode int, ok bool) {
+func parseSingleArgClient(fs *flag.FlagSet, args []string, tokenFlagP, apiURLFlagP, profileFlagP *string, jsonOutP *bool, stderr io.Writer, prog, cmdLabel string, lookupEnv func(string) (string, bool)) (client *Client, name string, jsonOut bool, exitCode int, ok bool) {
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
 		if err == flag.ErrHelp {
 			return nil, "", false, exitOK, false
 		}
 		return nil, "", false, exitUsage, false
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	name, ok = requireOneArg(fs, stderr, prog, cmdLabel, "app name")
 	if !ok {
 		return nil, "", false, exitUsage, false
 	}
 
-	return apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv), name, jsonOut, exitOK, true
+	return apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv), name, jsonOut, exitOK, true
 }
 
 // reorderArgsFlagsFirst rewrites args so every flag (and its value, if

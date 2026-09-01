@@ -11,7 +11,7 @@ import (
 // POST /api/v1/registry-credentials/{id}/test, authenticating the stored
 // credential against its registry host without pulling anything.
 func runRegistryCredentialsTest(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "registry-credentials test", "print {\"ok\": true} as JSON to stdout on success and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "registry-credentials test", "print {\"ok\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, registryCredentialsTestUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -20,14 +20,14 @@ func runRegistryCredentialsTest(prog string, args []string, stdout, stderr io.Wr
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	id, ok := requireOneArg(fs, stderr, prog, "registry-credentials test", "registry credential id")
 	if !ok {
 		return exitUsage
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	if err := client.TestRegistryCredential(context.Background(), id); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("test registry credential %q: %w", id, err))
@@ -55,6 +55,7 @@ deploy fails mid-pull.
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print {"ok": true} as JSON to stdout on success, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

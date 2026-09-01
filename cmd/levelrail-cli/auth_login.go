@@ -53,12 +53,13 @@ var defaultTokenAbility = []string{"root"}
 func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs := flag.NewFlagSet(prog+" auth login", flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	var username, password, apiURLFlag, tokenName, abilitiesFlag string
+	var username, password, apiURLFlag, profileFlag, tokenName, abilitiesFlag string
 	var expiresInDays int
 	var jsonOut bool
 	fs.StringVar(&username, "username", "", "admin username (prompted if omitted)")
 	fs.StringVar(&password, "password", "", "admin password (prompted without echo if omitted)")
 	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to save this login under (overrides "+envProfile+", default \""+defaultProfile+"\"); lets one operator manage multiple control planes without overwriting each other's credentials")
 	fs.StringVar(&tokenName, "token-name", "", "name for the newly minted token (default: \"levelrail-cli-<timestamp>\")")
 	fs.StringVar(&abilitiesFlag, "abilities", "", "comma-separated ability list for the new token (default: root, same as the session it's minted from)")
 	fs.IntVar(&expiresInDays, "expires-in-days", 0, "token lifetime in days (default: 0, never expires)")
@@ -92,7 +93,8 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		tokenName = "levelrail-cli-" + time.Now().UTC().Format("20060102-150405")
 	}
 
-	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog)
+	profile := resolveProfile(profileFlag, lookupEnv)
+	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog, profile)
 	sessionClient, err := newAuthSessionClient(apiURL)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
@@ -109,7 +111,7 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("mint API token: %w", err))
 	}
 
-	if err := writeCredentialsFile(prog, credentials{APIURL: apiURL, Token: created.Token}); err != nil {
+	if err := writeCredentialsFile(prog, profile, credentials{APIURL: apiURL, Token: created.Token}); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("save credentials: %w", err))
 	}
 
@@ -123,7 +125,7 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 
 	dir, _ := configDir(prog)
 	_, _ = fmt.Fprintf(stdout, "logged in as %q\n", loginResp.Username)
-	_, _ = fmt.Fprintf(stdout, "token %q (id %s) created and saved to %s/%s\n", created.Name, created.ID, dir, credentialsFileName)
+	_, _ = fmt.Fprintf(stdout, "token %q (id %s) created and saved to %s/%s under profile %q\n", created.Name, created.ID, dir, credentialsFileName, profile)
 	_, _ = fmt.Fprintf(stdout, "token value (shown once, not recoverable again): %s\n", created.Token)
 	return exitOK
 }
@@ -160,6 +162,7 @@ Flags:
   --username string          admin username (prompted if omitted)
   --password string          admin password (prompted without echo if omitted)
   --api-url string             control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string             named credentials profile to save this login under (overrides APP_PROFILE, default "default"); lets one operator manage multiple control planes without overwriting each other's credentials
   --token-name string         name for the new token (default: "levelrail-cli-<timestamp>")
   --abilities string           comma-separated ability list (default: root)
   --expires-in-days int      token lifetime in days (default: 0, never expires)

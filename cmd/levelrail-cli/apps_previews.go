@@ -63,7 +63,7 @@ Run "%[1]s apps previews <subcommand> -h" for a subcommand's own flags.
 }
 
 func runAppsPreviewsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps previews list", "print previews as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps previews list", "print previews as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPreviewsListUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -72,14 +72,14 @@ func runAppsPreviewsList(prog string, args []string, stdout, stderr io.Writer, l
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	appName, ok := requireOneArg(fs, stderr, prog, "apps previews list", "app name")
 	if !ok {
 		return exitUsage
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	previews, err := client.ListPreviewEnvironments(context.Background(), appName)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list previews for app %q: %w", appName, err))
@@ -118,13 +118,14 @@ Lists an app's active pull-request preview environments.
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print previews as a JSON array to stdout, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runAppsPreviewsTeardown(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps previews teardown", "print {} to stdout on success instead of a plain confirmation", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps previews teardown", "print {} to stdout on success instead of a plain confirmation", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPreviewsTeardownUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -133,7 +134,7 @@ func runAppsPreviewsTeardown(prog string, args []string, stdout, stderr io.Write
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	positional := fs.Args()
 	if len(positional) != 2 {
@@ -147,7 +148,7 @@ func runAppsPreviewsTeardown(prog string, args []string, stdout, stderr io.Write
 		return reportError(stdout, stderr, jsonOut, newValidationError("pr number must be an integer"))
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	if err := client.TeardownPreviewEnvironment(context.Background(), appName, prNumber); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("teardown preview for app %q pr #%d: %w", appName, prNumber, err))
 	}
@@ -168,6 +169,7 @@ the automatic pull-request-closed teardown.
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print {} to stdout on success instead of a plain confirmation
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
@@ -178,7 +180,7 @@ func runAppsPreviewsSetEnabled(prog string, args []string, stdout, stderr io.Wri
 	if !enabled {
 		verb = "disable"
 	}
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps previews "+verb, "print the resulting setting as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps previews "+verb, "print the resulting setting as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPreviewsSetEnabledUsage(prog, verb)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -187,14 +189,14 @@ func runAppsPreviewsSetEnabled(prog string, args []string, stdout, stderr io.Wri
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	appName, ok := requireOneArg(fs, stderr, prog, "apps previews "+verb, "app name")
 	if !ok {
 		return exitUsage
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	result, err := client.SetPreviewEnabled(context.Background(), appName, enabled)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s previews for app %q: %w", verb, appName, err))
@@ -215,13 +217,14 @@ yet; use the dashboard's Git source card first).
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the resulting setting as JSON to stdout, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL, verb)
 }
 
 func runAppsPreviewsSweep(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps previews sweep", "print the swept count as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps previews sweep", "print the swept count as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPreviewsSweepUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -230,9 +233,9 @@ func runAppsPreviewsSweep(prog string, args []string, stdout, stderr io.Writer, 
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	result, err := client.SweepPreviewEnvironments(context.Background())
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("sweep preview environments: %w", err))
@@ -256,6 +259,7 @@ pull-request-closed webhook both use.
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the swept count as JSON to stdout, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

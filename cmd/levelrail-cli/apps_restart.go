@@ -24,6 +24,8 @@ func runAppsRestart(prog string, args []string, stdout, stderr io.Writer, lookup
 	var jsonOut bool
 	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	var profileFlag string
+	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	fs.BoolVar(&jsonOut, "json", false, "print the app as JSON to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsRestartUsage(prog)) }
 
@@ -42,7 +44,8 @@ func runAppsRestart(prog string, args []string, stdout, stderr io.Writer, lookup
 	}
 	name := rest[0]
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	profile := resolveProfile(profileFlag, lookupEnv)
+	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
 
 	restarted, err := client.RestartApp(context.Background(), name)
 	if err != nil {
@@ -73,6 +76,7 @@ does, useful when a process needs a fresh start without a new build.
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the app as JSON to stdout, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

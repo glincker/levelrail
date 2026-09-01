@@ -360,7 +360,7 @@ func TestRunDatabasesCreateWizard_EndToEnd(t *testing.T) {
 
 	stdin := scriptedStdin("mydb", "postgres", "", "", "", "", "")
 	var stdout, stderr bytes.Buffer
-	got := runDatabasesCreateWizard(stdin, &stdout, &stderr, "tok", srv.URL, false, envMap(), "levelrail-cli-test")
+	got := runDatabasesCreateWizard(stdin, &stdout, &stderr, "tok", srv.URL, "", false, envMap(), "levelrail-cli-test")
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitOK, stderr.String())
 	}

@@ -59,6 +59,8 @@ func runAppsWebhookDeliveriesList(prog string, args []string, stdout, stderr io.
 	var limitFlag int
 	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	var profileFlag string
+	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	fs.BoolVar(&jsonOut, "json", false, "print deliveries as a JSON array to stdout and nothing else")
 	fs.IntVar(&limitFlag, "limit", 0, "max deliveries to return (default: server default)")
 	fs.StringVar(&beforeFlag, "before", "", "only show deliveries received before this RFC3339 timestamp (page backward using the RECEIVED column of a prior run)")
@@ -76,7 +78,7 @@ func runAppsWebhookDeliveriesList(prog string, args []string, stdout, stderr io.
 		return exitUsage
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	deliveries, err := client.ListWebhookDeliveries(context.Background(), appName, apiclient.ListWebhookDeliveriesOptions{
 		Limit:  limitFlag,
 		Before: beforeFlag,
@@ -112,6 +114,7 @@ first, whether or not they verified or matched a connected git source.
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print deliveries as a JSON array to stdout, nothing else
   --limit int              max deliveries to return (default: server default)
   --before string          only show deliveries received before this RFC3339 timestamp
@@ -120,7 +123,7 @@ Flags:
 }
 
 func runAppsWebhookDeliveriesReplay(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps webhook-deliveries replay", "print the replay result as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps webhook-deliveries replay", "print the replay result as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsWebhookDeliveriesReplayUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -129,7 +132,7 @@ func runAppsWebhookDeliveriesReplay(prog string, args []string, stdout, stderr i
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	positional, ok := requireArgs(fs, stderr, prog, "apps webhook-deliveries replay", "an app name and a delivery id", 2)
 	if !ok {
@@ -137,7 +140,7 @@ func runAppsWebhookDeliveriesReplay(prog string, args []string, stdout, stderr i
 	}
 	appName, deliveryID := positional[0], positional[1]
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	result, err := client.ReplayWebhookDelivery(context.Background(), appName, deliveryID)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("replay webhook delivery %q for app %q: %w", deliveryID, appName, err))
@@ -158,6 +161,7 @@ a live webhook takes, which can trigger a real build and deploy.
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the replay result as JSON to stdout, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

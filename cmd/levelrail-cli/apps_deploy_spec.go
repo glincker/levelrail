@@ -13,7 +13,7 @@ import (
 // runAppsDeploySpec deploys every service in app.yaml under one app, unlike
 // "apps create --file --service" which picks a single service.
 func runAppsDeploySpec(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps deploy-spec", "print the full deploy result as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps deploy-spec", "print the full deploy result as JSON to stdout and nothing else", stderr)
 	var file, repoURL, ref, imageRepoBase string
 	fs.StringVar(&file, "file", "", "path to an app.yaml with a services: map (required)")
 	fs.StringVar(&repoURL, "repo-url", "", "git repository URL to build every service from (required)")
@@ -27,7 +27,7 @@ func runAppsDeploySpec(prog string, args []string, stdout, stderr io.Writer, loo
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	name, ok := requireOneArg(fs, stderr, prog, "apps deploy-spec", "app name")
 	if !ok {
@@ -70,7 +70,7 @@ func runAppsDeploySpec(prog string, args []string, stdout, stderr io.Writer, loo
 		req.Services[key] = converted
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	result, err := client.DeploySpec(context.Background(), name, req)
 	if err != nil {
@@ -134,6 +134,7 @@ Flags:
   --image-repo-base string   image name prefix for every built service (defaults to <name>)
   --token string             API token (default: %[2]s env var, then the credentials file)
   --api-url string           control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string           named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the full deploy result as JSON to stdout, nothing else
   -h, --help                 show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

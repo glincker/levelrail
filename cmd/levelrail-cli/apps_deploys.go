@@ -56,6 +56,8 @@ func runAppsDeploysCompare(prog string, args []string, stdout, stderr io.Writer,
 	fs.StringVar(&to, "to", "", "deploy attempt ID to compare to (default: the app's current live state)")
 	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	var profileFlag string
+	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	fs.BoolVar(&jsonOut, "json", false, "print the comparison as JSON to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeploysCompareUsage(prog)) }
 
@@ -78,7 +80,8 @@ func runAppsDeploysCompare(prog string, args []string, stdout, stderr io.Writer,
 		return reportError(stdout, stderr, jsonOut, newValidationError("--from is required"))
 	}
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	profile := resolveProfile(profileFlag, lookupEnv)
+	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
 
 	cmp, err := client.CompareDeploys(context.Background(), name, from, to)
 	if err != nil {
@@ -149,6 +152,7 @@ Flags:
   --to string              deploy attempt ID to compare to (default: current live state)
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the comparison as JSON to stdout, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

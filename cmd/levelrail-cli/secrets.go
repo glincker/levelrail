@@ -61,13 +61,14 @@ Flags:
   --new-key-file string    path to a file holding the new master key (an age identity string; pass "-" to read from stdin instead). Required.
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the rotation result as JSON to stdout, nothing else
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runSecretsRotateMasterKey(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "secrets rotate-master-key", "print the rotation result as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "secrets rotate-master-key", "print the rotation result as JSON to stdout and nothing else", stderr)
 	var newKeyFile string
 	fs.StringVar(&newKeyFile, "new-key-file", "", `path to a file holding the new master key (an age identity string, e.g. a fresh "master.key" or the output of generating one); pass "-" to read from stdin instead. Required. Never pass the key itself as a bare argument, it would leak into shell history and process listings.`)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, secretsRotateMasterKeyUsage(prog)) }
@@ -78,7 +79,7 @@ func runSecretsRotateMasterKey(prog string, args []string, stdout, stderr io.Wri
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	if strings.TrimSpace(newKeyFile) == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--new-key-file is required"))
@@ -93,7 +94,7 @@ func runSecretsRotateMasterKey(prog string, args []string, stdout, stderr io.Wri
 		return reportError(stdout, stderr, jsonOut, newValidationError("--new-key-file is empty"))
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	result, err := client.RotateMasterKey(context.Background(), newKey)
 	if err != nil {

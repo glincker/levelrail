@@ -12,7 +12,7 @@ import (
 // current environment_id is already visible on "apps get <name>", so
 // unlike apps log-drain there is no separate "get" subcommand here.
 func runAppsSetEnvironment(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps set-environment", "print the updated app as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps set-environment", "print the updated app as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsSetEnvironmentUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -21,7 +21,7 @@ func runAppsSetEnvironment(prog string, args []string, stdout, stderr io.Writer,
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest, ok := requireArgs(fs, stderr, prog, "apps set-environment", "an app name and an environment id", 2)
 	if !ok {
@@ -29,7 +29,7 @@ func runAppsSetEnvironment(prog string, args []string, stdout, stderr io.Writer,
 	}
 	name, environmentID := rest[0], rest[1]
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	updated, err := client.SetAppEnvironment(context.Background(), name, environmentID)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set environment for app %q: %w", name, err))
@@ -50,6 +50,7 @@ environments create").
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the updated app as JSON to stdout, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
@@ -58,7 +59,7 @@ Flags:
 // runAppsClearEnvironment implements "apps clear-environment <name>":
 // PUT /api/v1/apps/{name}/environment with an empty environment_id.
 func runAppsClearEnvironment(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps clear-environment", "print the updated app as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps clear-environment", "print the updated app as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsClearEnvironmentUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -67,14 +68,14 @@ func runAppsClearEnvironment(prog string, args []string, stdout, stderr io.Write
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	name, ok := requireOneArg(fs, stderr, prog, "apps clear-environment", "app name")
 	if !ok {
 		return exitUsage
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	updated, err := client.SetAppEnvironment(context.Background(), name, "")
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("clear environment for app %q: %w", name, err))
@@ -94,6 +95,7 @@ Removes an app's environment tag.
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the updated app as JSON to stdout, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

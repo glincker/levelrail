@@ -442,7 +442,7 @@ func TestRunWizardCreateViaAPI(t *testing.T) {
 
 		a := wizardAnswers{serviceName: "web", sourceKind: wizardSourceImage, image: "registry.example.com/org/app:v1", port: 8080}
 		var stdout, stderr bytes.Buffer
-		got := runWizardCreateViaAPI(a, &stdout, &stderr, "tok", srv.URL, false, envMap(), "levelrail-cli-test")
+		got := runWizardCreateViaAPI(a, &stdout, &stderr, "tok", srv.URL, "", false, envMap(), "levelrail-cli-test")
 		if got != exitOK {
 			t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitOK, stderr.String())
 		}
@@ -476,7 +476,7 @@ func TestRunWizardCreateViaAPI(t *testing.T) {
 			repoURL: "https://example.com/x.git", ref: "main", imageRepo: "registry.example.com/org/web",
 		}
 		var stdout, stderr bytes.Buffer
-		got := runWizardCreateViaAPI(a, &stdout, &stderr, "tok", srv.URL, false, envMap(), "levelrail-cli-test")
+		got := runWizardCreateViaAPI(a, &stdout, &stderr, "tok", srv.URL, "", false, envMap(), "levelrail-cli-test")
 		if got != exitOK {
 			t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitOK, stderr.String())
 		}
@@ -494,7 +494,7 @@ func TestRunWizardCreateViaAPI(t *testing.T) {
 	t.Run("invalid answers never reach the network", func(t *testing.T) {
 		a := wizardAnswers{serviceName: "web", sourceKind: wizardSourceGit, port: 3000, repoURL: "https://example.com/x.git"} // no imageRepo
 		var stdout, stderr bytes.Buffer
-		got := runWizardCreateViaAPI(a, &stdout, &stderr, "tok", "http://127.0.0.1:0", false, envMap(), "levelrail-cli-test")
+		got := runWizardCreateViaAPI(a, &stdout, &stderr, "tok", "http://127.0.0.1:0", "", false, envMap(), "levelrail-cli-test")
 		if got != exitValidation {
 			t.Fatalf("exit = %d, want %d", got, exitValidation)
 		}
@@ -526,8 +526,8 @@ func TestRunAppsCreate_InteractiveEndToEnd_FileMode(t *testing.T) {
 }
 
 func TestParseCreateFlags_Interactive(t *testing.T) {
-	var token, apiURL string
-	f, err := parseCreateFlags("levelrail", []string{"-i"}, &strings.Builder{}, &token, &apiURL)
+	var token, apiURL, profile string
+	f, err := parseCreateFlags("levelrail", []string{"-i"}, &strings.Builder{}, &token, &apiURL, &profile)
 	if err != nil {
 		t.Fatalf("parseCreateFlags() error = %v", err)
 	}

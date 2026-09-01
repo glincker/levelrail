@@ -16,7 +16,7 @@ import (
 // the volume resource kind. Reuses printBackupVerificationsTable
 // (backups_verifications.go) as-is: the table shape is identical.
 func runAppVolumeBackupsVerifications(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "app-volume-backups verifications", "print verification history as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "app-volume-backups verifications", "print verification history as a JSON array to stdout and nothing else", stderr)
 	var backupID string
 	fs.StringVar(&backupID, "backup", "", "id of a backup to show verification history for (required)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appVolumeBackupsVerificationsUsage(prog)) }
@@ -27,7 +27,7 @@ func runAppVolumeBackupsVerifications(prog string, args []string, stdout, stderr
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest, ok := requireArgs(fs, stderr, prog, "app-volume-backups verifications", "an app name and a volume name", 2)
 	if !ok {
@@ -39,7 +39,7 @@ func runAppVolumeBackupsVerifications(prog string, args []string, stdout, stderr
 		return reportError(stdout, stderr, jsonOut, newValidationError("--backup is required"))
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	verifications, err := client.ListVolumeBackupVerifications(context.Background(), name, volume, backupID)
 	if err != nil {
@@ -67,6 +67,7 @@ Flags:
   --backup string          id of a backup to show verification history for (required)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print verification history as a JSON array to stdout, nothing else
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

@@ -103,7 +103,7 @@ func TestRun_AuthLogin_MintsAndPersistsToken(t *testing.T) {
 
 	// And a later command resolves that persisted token automatically,
 	// the entire point of "auth login" existing.
-	got2 := resolveToken("", envMap(), prog)
+	got2 := resolveToken("", envMap(), prog, defaultProfile)
 	if got2 != "plaintext-token-value" {
 		t.Errorf("resolveToken() after login = %q, want the persisted token", got2)
 	}

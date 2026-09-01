@@ -44,6 +44,8 @@ func runAppsRollback(prog string, args []string, stdout, stderr io.Writer, looku
 	fs.StringVar(&image, "image", "", "older, already-built image reference to roll back to, e.g. registry.example.com/org/app:tag (required)")
 	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	var profileFlag string
+	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	fs.BoolVar(&jsonOut, "json", false, "print the updated app as JSON to stdout and nothing else")
 	fs.BoolVar(&confirm, "confirm", false, "confirm rolling back into a protected environment; omit to be prompted interactively if needed")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsRollbackUsage(prog)) }
@@ -67,7 +69,8 @@ func runAppsRollback(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, newValidationError("--image is required"))
 	}
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	profile := resolveProfile(profileFlag, lookupEnv)
+	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
 	ctx := context.Background()
 
 	updated, err := client.DeployApp(ctx, name, image, confirm)
@@ -127,6 +130,7 @@ Flags:
   --confirm                  confirm rolling back into a protected environment, skipping the interactive prompt
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the updated app as JSON to stdout, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

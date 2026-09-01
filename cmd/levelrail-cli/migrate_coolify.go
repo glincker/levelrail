@@ -37,7 +37,7 @@ func runMigrateCoolify(prog string, args []string, stdout, stderr io.Writer, loo
 	fs.SetOutput(stderr)
 
 	var f migrateCoolifyFlags
-	var targetTokenFlag, targetAPIURLFlag string
+	var targetTokenFlag, targetAPIURLFlag, targetProfileFlag string
 	fs.StringVar(&f.coolifyURL, "url", "", "Coolify instance base URL, e.g. https://coolify.example.com (required)")
 	fs.StringVar(&f.coolifyToken, "token", "", "Coolify API bearer token (required)")
 	fs.StringVar(&f.outDir, "out-dir", "./migrated", "directory to write generated app.yaml files and secrets into (file mode only, i.e. when --apply is not given)")
@@ -45,6 +45,7 @@ func runMigrateCoolify(prog string, args []string, stdout, stderr io.Writer, loo
 	fs.BoolVar(&f.includeSecretValues, "include-secret-values", false, "fetch real env var values from Coolify (requires a Coolify token with the read:sensitive ability); never written into a generated app.yaml, only into a companion secrets file or applied via PUT .../secrets/{key}")
 	fs.StringVar(&targetTokenFlag, "target-token", "", "Levelrail API token, --apply only (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(&targetAPIURLFlag, "target-api-url", "", "Levelrail control plane base URL, --apply only (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	fs.StringVar(&targetProfileFlag, "target-profile", "", "named credentials profile to read the target Levelrail instance from, --apply only (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	fs.BoolVar(&f.jsonOut, "json", false, "print the migration report as JSON to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, migrateCoolifyUsage(prog)) }
 
@@ -74,7 +75,7 @@ func runMigrateCoolify(prog string, args []string, stdout, stderr io.Writer, loo
 
 	return runMigrationPipeline(ctx, &report, migratePipelineFlags{
 		apply: f.apply, outDir: f.outDir, jsonOut: f.jsonOut,
-		targetToken: targetTokenFlag, targetAPIURL: targetAPIURLFlag,
+		targetToken: targetTokenFlag, targetAPIURL: targetAPIURLFlag, targetProfile: targetProfileFlag,
 	}, prog, stdout, stderr, lookupEnv)
 }
 

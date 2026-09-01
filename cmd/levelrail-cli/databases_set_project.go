@@ -11,7 +11,7 @@ import (
 // <project-id>": PUT /api/v1/databases/{name}/project, the database
 // counterpart to runAppsSetProject.
 func runDatabasesSetProject(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "databases set-project", "print the updated database as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "databases set-project", "print the updated database as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, databasesSetProjectUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -20,7 +20,7 @@ func runDatabasesSetProject(prog string, args []string, stdout, stderr io.Writer
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	rest, ok := requireArgs(fs, stderr, prog, "databases set-project", "a database name and a project id", 2)
 	if !ok {
@@ -28,7 +28,7 @@ func runDatabasesSetProject(prog string, args []string, stdout, stderr io.Writer
 	}
 	name, projectID := rest[0], rest[1]
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	updated, err := client.SetDatabaseProject(context.Background(), name, projectID)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set project for database %q: %w", name, err))
@@ -50,6 +50,7 @@ database runs.
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the updated database as JSON to stdout, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
@@ -58,7 +59,7 @@ Flags:
 // runDatabasesClearProject implements "databases clear-project <name>":
 // PUT /api/v1/databases/{name}/project with an empty project_id.
 func runDatabasesClearProject(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "databases clear-project", "print the updated database as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "databases clear-project", "print the updated database as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, databasesClearProjectUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -67,14 +68,14 @@ func runDatabasesClearProject(prog string, args []string, stdout, stderr io.Writ
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	name, ok := requireOneArg(fs, stderr, prog, "databases clear-project", "database name")
 	if !ok {
 		return exitUsage
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	updated, err := client.SetDatabaseProject(context.Background(), name, "")
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("clear project for database %q: %w", name, err))
@@ -94,6 +95,7 @@ Removes a database's project assignment.
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the updated database as JSON to stdout, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

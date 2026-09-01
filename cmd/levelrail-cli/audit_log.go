@@ -15,7 +15,7 @@ import (
 // export, written to stdout or, with --output, to a file, for
 // compliance/record-keeping use rather than live dashboard viewing.
 func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "audit-log", "print audit log entries as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "audit-log", "print audit log entries as a JSON array to stdout and nothing else", stderr)
 	var limitFlag int
 	var beforeFlag, pathFlag, methodFlag, formatFlag, outputFlag string
 	fs.IntVar(&limitFlag, "limit", 0, "max entries to return (default: server default)")
@@ -32,7 +32,7 @@ func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	if formatFlag != "" && formatFlag != "csv" {
 		_, _ = fmt.Fprintf(stderr, "%s: unsupported --format %q, only \"csv\" is supported\n\n", prog, formatFlag)
@@ -45,7 +45,7 @@ func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return exitUsage
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	opts := listAuditLogOptions{Limit: limitFlag, Before: beforeFlag, Path: pathFlag, Method: methodFlag}
 
 	if formatFlag == "csv" {
@@ -125,6 +125,7 @@ token, the same as the underlying API route.
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print entries as a JSON array to stdout, nothing else
   --limit int              max entries to return (default: server default)
   --before string          only show entries created before this RFC3339 timestamp

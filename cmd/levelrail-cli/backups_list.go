@@ -22,6 +22,8 @@ func runBackupsList(prog string, args []string, stdout, stderr io.Writer, lookup
 	var limitFlag int
 	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	var profileFlag string
+	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	fs.BoolVar(&jsonOut, "json", false, "print backup history as a JSON array to stdout and nothing else")
 	fs.IntVar(&limitFlag, "limit", 0, "max attempts to return (default: server default)")
 	fs.StringVar(&beforeFlag, "before", "", "only show attempts started before this RFC3339 timestamp (page backward using the STARTED column of a prior run)")
@@ -42,7 +44,8 @@ func runBackupsList(prog string, args []string, stdout, stderr io.Writer, lookup
 	}
 	name := rest[0]
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	profile := resolveProfile(profileFlag, lookupEnv)
+	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
 
 	history, err := client.ListBackups(context.Background(), name, apiclient.ListBackupsOptions{
 		Limit:  limitFlag,
@@ -88,6 +91,7 @@ Lists a database's backup attempt history.
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print backup history as a JSON array to stdout, nothing else
   --limit int              max attempts to return (default: server default)
   --before string          only show attempts started before this RFC3339 timestamp

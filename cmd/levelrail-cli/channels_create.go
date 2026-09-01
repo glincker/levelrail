@@ -16,7 +16,7 @@ import (
 // aliases so an operator doesn't have to know the API expects them in
 // --notify-url (mirroring the web dashboard's connect dialog fields).
 func runChannelsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "channels create", "print the created channel as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "channels create", "print the created channel as JSON to stdout and nothing else", stderr)
 	var name, kind, notifyURL, pushoverUserKey, pushoverAPIToken, pagerDutyRoutingKey string
 	var disabled bool
 	fs.StringVar(&name, "name", "", "display name for the channel (required)")
@@ -34,7 +34,7 @@ func runChannelsCreate(prog string, args []string, stdout, stderr io.Writer, loo
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
 
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
@@ -55,7 +55,7 @@ func runChannelsCreate(prog string, args []string, stdout, stderr io.Writer, loo
 	}
 
 	enabled := !disabled
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	created, err := client.CreateNotificationChannel(context.Background(), createNotificationChannelRequest{
 		Name: name, Kind: kind, NotifyURL: resolvedURL, Enabled: &enabled,
@@ -93,6 +93,7 @@ Flags:
   --disabled                           create the channel disabled (default: enabled)
   --token string                       API token (default: %[2]s env var, then the credentials file)
   --api-url string                    control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string                    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                                 print the created channel as JSON to stdout, nothing else
   -h, --help                           show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

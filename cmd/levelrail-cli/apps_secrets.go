@@ -51,13 +51,13 @@ Run "%[1]s apps secrets <subcommand> -h" for a subcommand's own flags.
 }
 
 func runAppsSecretsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps secrets list", "print the secret keys as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps secrets list", "print the secret keys as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps secrets list <name> [flags]\n\nLists an app's secret keys and their locked state. Never a value.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
-	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, tokenFlagP, apiURLFlagP, jsonOutP, stderr, prog, "apps secrets list", lookupEnv)
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, stderr, prog, "apps secrets list", lookupEnv)
 	if !ok {
 		return exitCode
 	}
@@ -79,7 +79,7 @@ func runAppsSecretsList(prog string, args []string, stdout, stderr io.Writer, lo
 }
 
 func runAppsSecretsSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, _ := apiFlagSet(prog, "apps secrets set", "unused for this subcommand", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, _ := apiFlagSet(prog, "apps secrets set", "unused for this subcommand", stderr)
 	var overwriteLocked bool
 	fs.BoolVar(&overwriteLocked, "force", false, "overwrite the value even if the key is locked")
 	fs.Usage = func() {
@@ -93,7 +93,7 @@ func runAppsSecretsSet(prog string, args []string, stdout, stderr io.Writer, loo
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag := *tokenFlagP, *apiURLFlagP
+	tokenFlag, apiURLFlag, profileFlag := *tokenFlagP, *apiURLFlagP, *profileFlagP
 
 	rest, ok := requireArgs(fs, stderr, prog, "apps secrets set", "an app name, a key, and a value", 3)
 	if !ok {
@@ -101,7 +101,7 @@ func runAppsSecretsSet(prog string, args []string, stdout, stderr io.Writer, loo
 	}
 	name, key, value := rest[0], rest[1], rest[2]
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	if err := client.SetSecret(context.Background(), name, key, value, overwriteLocked); err != nil {
 		return reportError(stdout, stderr, false, fmt.Errorf("set secret %q for app %q: %w", key, name, err))
@@ -111,7 +111,7 @@ func runAppsSecretsSet(prog string, args []string, stdout, stderr io.Writer, loo
 }
 
 func runAppsSecretsLock(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, _ := apiFlagSet(prog, "apps secrets lock", "unused for this subcommand", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, _ := apiFlagSet(prog, "apps secrets lock", "unused for this subcommand", stderr)
 	var locked bool
 	fs.BoolVar(&locked, "locked", true, "true to lock the key against overwrite, false to unlock it")
 	fs.Usage = func() {
@@ -125,7 +125,7 @@ func runAppsSecretsLock(prog string, args []string, stdout, stderr io.Writer, lo
 		}
 		return exitUsage
 	}
-	tokenFlag, apiURLFlag := *tokenFlagP, *apiURLFlagP
+	tokenFlag, apiURLFlag, profileFlag := *tokenFlagP, *apiURLFlagP, *profileFlagP
 
 	rest, ok := requireArgs(fs, stderr, prog, "apps secrets lock", "an app name and a key", 2)
 	if !ok {
@@ -133,7 +133,7 @@ func runAppsSecretsLock(prog string, args []string, stdout, stderr io.Writer, lo
 	}
 	name, key := rest[0], rest[1]
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	if err := client.SetSecretLock(context.Background(), name, key, locked); err != nil {
 		return reportError(stdout, stderr, false, fmt.Errorf("set lock for secret %q on app %q: %w", key, name, err))
