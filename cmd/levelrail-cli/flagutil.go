@@ -56,6 +56,21 @@ func apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag string, lookupE
 	return NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
 }
 
+// credentialFlags bundles the raw, still-unresolved --token/--api-url/
+// --profile flag values a caller passes down together, keeping
+// functions like runAppsCreateWizard and runWizardCreateViaAPI under
+// golangci-lint's parameter-count limit the same way apiFlagPtrs does
+// for their pre-parse pointer counterparts.
+type credentialFlags struct {
+	Token, APIURL, Profile string
+}
+
+// apiClientFromCredentialFlags is apiClientFromFlags taking cf as one
+// value instead of three separate strings.
+func apiClientFromCredentialFlags(prog string, cf credentialFlags, lookupEnv func(string) (string, bool)) *Client {
+	return apiClientFromFlags(prog, cf.APIURL, cf.Token, cf.Profile, lookupEnv)
+}
+
 // requireArgs extracts fs's exactly n required positional arguments,
 // labeled argsLabel in the usage error a subcommand like "apps
 // scheduled-tasks delete <app> <id>" prints when the count doesn't
@@ -81,6 +96,15 @@ func requireOneArg(fs *flag.FlagSet, stderr io.Writer, prog, cmdLabel, argLabel 
 	return rest[0], true
 }
 
+// apiFlagPtrs bundles apiFlagSet's four pointer outputs (still
+// unresolved: read only after fs.Parse succeeds) so functions like
+// parseSingleArgClient and parseEnvironmentIDCommand stay under
+// golangci-lint's parameter-count limit.
+type apiFlagPtrs struct {
+	token, apiURL, profile *string
+	jsonOut                *bool
+}
+
 // parseSingleArgClient runs the parse-flags-then-require-one-arg-then-
 // build-client sequence every "verb <name> [flags]" subcommand needs
 // before its own request logic diverges (apps git-source get/set/delete,
@@ -88,14 +112,14 @@ func requireOneArg(fs *flag.FlagSet, stderr io.Writer, prog, cmdLabel, argLabel 
 // already established). ok is false once fs.Parse, --help, or the
 // missing-arg check has already written its own message to stderr; the
 // caller should return exitCode unchanged in that case.
-func parseSingleArgClient(fs *flag.FlagSet, args []string, tokenFlagP, apiURLFlagP, profileFlagP *string, jsonOutP *bool, stderr io.Writer, prog, cmdLabel string, lookupEnv func(string) (string, bool)) (client *Client, name string, jsonOut bool, exitCode int, ok bool) {
+func parseSingleArgClient(fs *flag.FlagSet, args []string, flags apiFlagPtrs, stderr io.Writer, prog, cmdLabel string, lookupEnv func(string) (string, bool)) (client *Client, name string, jsonOut bool, exitCode int, ok bool) {
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
 		if err == flag.ErrHelp {
 			return nil, "", false, exitOK, false
 		}
 		return nil, "", false, exitUsage, false
 	}
-	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
+	tokenFlag, apiURLFlag, profileFlag, jsonOut := *flags.token, *flags.apiURL, *flags.profile, *flags.jsonOut
 
 	name, ok = requireOneArg(fs, stderr, prog, cmdLabel, "app name")
 	if !ok {

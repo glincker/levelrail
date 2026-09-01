@@ -148,40 +148,61 @@ func parseCredentialsFile(path string) (parsedCredentialsFile, error) {
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
-			section = strings.TrimSpace(line[1 : len(line)-1])
-			if section == "" {
-				section = DefaultProfile
-			}
-			if _, ok := parsed.sections[section]; !ok {
-				parsed.sections[section] = Credentials{}
-				parsed.order = append(parsed.order, section)
-			}
+		if name, ok := sectionHeaderName(line); ok {
+			section = name
+			parsed.ensureSection(section)
 			continue
 		}
-		key, value, ok := strings.Cut(line, "=")
-		if !ok {
-			continue
-		}
-		key = strings.TrimSpace(key)
-		value = strings.TrimSpace(value)
-
-		creds, seen := parsed.sections[section]
-		if !seen {
-			parsed.order = append(parsed.order, section)
-		}
-		switch key {
-		case EnvAPIURL:
-			creds.APIURL = value
-		case EnvAPIToken:
-			creds.Token = value
-		}
-		parsed.sections[section] = creds
+		parsed.setKeyValueLine(section, line)
 	}
 	if err := scanner.Err(); err != nil {
 		return parsedCredentialsFile{}, fmt.Errorf("read credentials file %s: %w", path, err)
 	}
 	return parsed, nil
+}
+
+// sectionHeaderName reports whether line is an INI "[name]" section
+// header, and if so, its name (DefaultProfile for an empty "[]").
+func sectionHeaderName(line string) (string, bool) {
+	if !strings.HasPrefix(line, "[") || !strings.HasSuffix(line, "]") {
+		return "", false
+	}
+	name := strings.TrimSpace(line[1 : len(line)-1])
+	if name == "" {
+		name = DefaultProfile
+	}
+	return name, true
+}
+
+// ensureSection registers section in p's sections/order the first time
+// it's seen, so an empty section (or one with no recognized key) still
+// shows up in ListProfiles.
+func (p *parsedCredentialsFile) ensureSection(section string) {
+	if _, ok := p.sections[section]; !ok {
+		p.sections[section] = Credentials{}
+		p.order = append(p.order, section)
+	}
+}
+
+// setKeyValueLine parses a "KEY=VALUE" line into section's Credentials,
+// ignoring any key it doesn't recognize (forward-compatible with a
+// future key added to the file) and any line with no "=" at all.
+func (p *parsedCredentialsFile) setKeyValueLine(section, line string) {
+	key, value, ok := strings.Cut(line, "=")
+	if !ok {
+		return
+	}
+	key, value = strings.TrimSpace(key), strings.TrimSpace(value)
+
+	p.ensureSection(section)
+	creds := p.sections[section]
+	switch key {
+	case EnvAPIURL:
+		creds.APIURL = value
+	case EnvAPIToken:
+		creds.Token = value
+	}
+	p.sections[section] = creds
 }
 
 // ReadCredentialsFile reads profile's section from prog's credentials

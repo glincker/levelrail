@@ -103,7 +103,7 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 		if name != "" || engine != "" || version != "" {
 			return reportError(stdout, stderr, jsonOut, newValidationError("--interactive runs its own step-by-step prompts and cannot be combined with --name, --engine, or --version"))
 		}
-		return runDatabasesCreateWizard(stdin, stdout, stderr, tokenFlag, apiURLFlag, profileFlag, jsonOut, lookupEnv, prog)
+		return runDatabasesCreateWizard(stdin, stdout, stderr, credentialFlags{Token: tokenFlag, APIURL: apiURLFlag, Profile: profileFlag}, jsonOut, lookupEnv, prog)
 	}
 
 	plan, err := planDatabaseCreate(createDatabaseFlags{name: name, engine: engine, version: version})

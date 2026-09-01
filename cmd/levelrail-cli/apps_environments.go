@@ -215,14 +215,6 @@ Flags:
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
-// apiFlagPtrs bundles apiFlagSet's four pointer outputs so
-// parseEnvironmentIDCommand stays under golangci-lint's parameter-count
-// limit.
-type apiFlagPtrs struct {
-	token, apiURL, profile *string
-	jsonOut                *bool
-}
-
 // parseEnvironmentIDCommand parses the standard flag set plus the single
 // "environment id" positional argument shared by delete/env-get/env-set.
 // exitCode is only meaningful when ok is false.

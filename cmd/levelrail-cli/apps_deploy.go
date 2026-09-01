@@ -72,18 +72,9 @@ func runAppsDeploy(prog string, args []string, stdout, stderr io.Writer, lookupE
 	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
 	ctx := context.Background()
 
-	updated, err := client.DeployApp(ctx, name, image, confirm)
-	if !confirm {
-		if apiErr, ok := protectedEnvironmentError(err); ok {
-			confirmed, cerr := resolveProtectedEnvironmentConfirmation(apiErr.Message, stdin, stderr)
-			if cerr != nil {
-				return reportError(stdout, stderr, jsonOut, cerr)
-			}
-			if confirmed {
-				updated, err = client.DeployApp(ctx, name, image, true)
-			}
-		}
-	}
+	updated, err := confirmProtectedEnvironment(confirm, stdin, stderr, func(confirm bool) (appResource, error) {
+		return client.DeployApp(ctx, name, image, confirm)
+	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("deploy app %q: %w", name, err))
 	}

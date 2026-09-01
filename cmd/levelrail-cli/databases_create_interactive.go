@@ -215,11 +215,8 @@ func runInteractiveDatabaseWizard(p *wizardPrompter, engines []databaseEngineRes
 // never round-trip its own answers back into a real database, so there is
 // no file-output mode here, the same reasoning databasesCreateUsage
 // already gives for the flag-driven path's own lack of --file.
-func runDatabasesCreateWizard(stdin io.Reader, stdout, stderr io.Writer, tokenFlag, apiURLFlag, profileFlag string, jsonOut bool, lookupEnv func(string) (string, bool), prog string) int {
-	profile := resolveProfile(profileFlag, lookupEnv)
-	token := resolveToken(tokenFlag, lookupEnv, prog, profile)
-	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog, profile)
-	client := NewClient(apiURL, token)
+func runDatabasesCreateWizard(stdin io.Reader, stdout, stderr io.Writer, cf credentialFlags, jsonOut bool, lookupEnv func(string) (string, bool), prog string) int {
+	client := apiClientFromCredentialFlags(prog, cf, lookupEnv)
 	ctx := context.Background()
 
 	engines, err := client.ListDatabaseEngines(ctx)
@@ -251,36 +248,14 @@ func createDatabaseFromWizard(ctx context.Context, client *Client, a databaseWiz
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create database %q: %w", a.name, err))
 	}
 
-	resources, err := a.toResources()
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("database %q was created but its resource limits are invalid: %w", created.Name, err))
+	if err := applyDatabaseWizardResources(ctx, client, a, created, stderr, jsonOut); err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
 	}
-	if resources != nil {
-		if !jsonOut {
-			_, _ = fmt.Fprintf(stderr, "applying resource limits to %q...\n", created.Name)
-		}
-		if _, err := client.SetDatabaseResources(ctx, created.Name, resources); err != nil {
-			return reportError(stdout, stderr, jsonOut, fmt.Errorf("database %q was created but setting resource limits failed: %w", created.Name, err))
-		}
+	if err := applyDatabaseWizardPublicAccess(ctx, client, a, created, stderr, jsonOut); err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
 	}
-
-	if a.public {
-		if !jsonOut {
-			_, _ = fmt.Fprintf(stderr, "enabling public access for %q...\n", created.Name)
-		}
-		if _, err := client.SetDatabasePublicAccess(ctx, created.Name, a.publicPort); err != nil {
-			return reportError(stdout, stderr, jsonOut, fmt.Errorf("database %q was created but enabling public access failed: %w", created.Name, err))
-		}
-	}
-
-	if a.backupTargetID != "" {
-		if !jsonOut {
-			_, _ = fmt.Fprintf(stderr, "configuring a backup schedule for %q...\n", created.Name)
-		}
-		req := setBackupScheduleRequest{TargetID: a.backupTargetID, Schedule: a.backupSchedule, Retain: a.backupRetain, RetainDays: a.backupRetainDays}
-		if _, err := client.SetBackupSchedule(ctx, created.Name, req); err != nil {
-			return reportError(stdout, stderr, jsonOut, fmt.Errorf("database %q was created but configuring its backup schedule failed: %w", created.Name, err))
-		}
+	if err := applyDatabaseWizardBackupSchedule(ctx, client, a, created, stderr, jsonOut); err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
 	}
 
 	final, err := client.GetDatabase(ctx, created.Name)
@@ -299,4 +274,55 @@ func createDatabaseFromWizard(ctx context.Context, client *Client, a databaseWiz
 	_, _ = fmt.Fprintf(stderr, "database %q created\n", final.Name)
 	printDatabaseHuman(stdout, final)
 	return exitOK
+}
+
+// applyDatabaseWizardResources sets created's resource limits from a's
+// answers, when any were given. Returns nil, untouched, when a asked
+// for no limits at all.
+func applyDatabaseWizardResources(ctx context.Context, client *Client, a databaseWizardAnswers, created databaseResource, stderr io.Writer, jsonOut bool) error {
+	resources, err := a.toResources()
+	if err != nil {
+		return fmt.Errorf("database %q was created but its resource limits are invalid: %w", created.Name, err)
+	}
+	if resources == nil {
+		return nil
+	}
+	if !jsonOut {
+		_, _ = fmt.Fprintf(stderr, "applying resource limits to %q...\n", created.Name)
+	}
+	if _, err := client.SetDatabaseResources(ctx, created.Name, resources); err != nil {
+		return fmt.Errorf("database %q was created but setting resource limits failed: %w", created.Name, err)
+	}
+	return nil
+}
+
+// applyDatabaseWizardPublicAccess enables created's public access when
+// a.public was answered yes, a no-op otherwise.
+func applyDatabaseWizardPublicAccess(ctx context.Context, client *Client, a databaseWizardAnswers, created databaseResource, stderr io.Writer, jsonOut bool) error {
+	if !a.public {
+		return nil
+	}
+	if !jsonOut {
+		_, _ = fmt.Fprintf(stderr, "enabling public access for %q...\n", created.Name)
+	}
+	if _, err := client.SetDatabasePublicAccess(ctx, created.Name, a.publicPort); err != nil {
+		return fmt.Errorf("database %q was created but enabling public access failed: %w", created.Name, err)
+	}
+	return nil
+}
+
+// applyDatabaseWizardBackupSchedule configures created's backup
+// schedule when a.backupTargetID was answered, a no-op otherwise.
+func applyDatabaseWizardBackupSchedule(ctx context.Context, client *Client, a databaseWizardAnswers, created databaseResource, stderr io.Writer, jsonOut bool) error {
+	if a.backupTargetID == "" {
+		return nil
+	}
+	if !jsonOut {
+		_, _ = fmt.Fprintf(stderr, "configuring a backup schedule for %q...\n", created.Name)
+	}
+	req := setBackupScheduleRequest{TargetID: a.backupTargetID, Schedule: a.backupSchedule, Retain: a.backupRetain, RetainDays: a.backupRetainDays}
+	if _, err := client.SetBackupSchedule(ctx, created.Name, req); err != nil {
+		return fmt.Errorf("database %q was created but configuring its backup schedule failed: %w", created.Name, err)
+	}
+	return nil
 }

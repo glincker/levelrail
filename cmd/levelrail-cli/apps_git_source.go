@@ -53,7 +53,7 @@ func runAppsGitSourceGet(prog string, args []string, stdout, stderr io.Writer, l
 		fs.PrintDefaults()
 	}
 
-	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, stderr, prog, "apps git-source get", lookupEnv)
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, prog, "apps git-source get", lookupEnv)
 	if !ok {
 		return exitCode
 	}
@@ -87,7 +87,7 @@ func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, l
 		fs.PrintDefaults()
 	}
 
-	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, stderr, prog, "apps git-source set", lookupEnv)
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, prog, "apps git-source set", lookupEnv)
 	if !ok {
 		return exitCode
 	}
@@ -126,7 +126,7 @@ func runAppsGitSourceDelete(prog string, args []string, stdout, stderr io.Writer
 		fs.PrintDefaults()
 	}
 
-	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, stderr, prog, "apps git-source delete", lookupEnv)
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, prog, "apps git-source delete", lookupEnv)
 	if !ok {
 		return exitCode
 	}

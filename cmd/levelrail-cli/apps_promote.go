@@ -30,7 +30,7 @@ func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookup
 	fs.BoolVar(&confirm, "confirm", false, "confirm promoting into a protected environment; omit to be prompted interactively if needed")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPromoteUsage(prog)) }
 
-	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, stderr, prog, "apps promote", lookupEnv)
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, prog, "apps promote", lookupEnv)
 	if !ok {
 		return exitCode
 	}
@@ -56,18 +56,9 @@ func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookup
 		return exitOK
 	}
 
-	updated, err := client.PromoteApp(ctx, name, promoteAppRequest{To: to, Target: target, Confirm: confirm})
-	if !confirm {
-		if apiErr, ok := protectedEnvironmentError(err); ok {
-			confirmed, cerr := resolveProtectedEnvironmentConfirmation(apiErr.Message, stdin, stderr)
-			if cerr != nil {
-				return reportError(stdout, stderr, jsonOut, cerr)
-			}
-			if confirmed {
-				updated, err = client.PromoteApp(ctx, name, promoteAppRequest{To: to, Target: target, Confirm: true})
-			}
-		}
-	}
+	updated, err := confirmProtectedEnvironment(confirm, stdin, stderr, func(confirm bool) (appResource, error) {
+		return client.PromoteApp(ctx, name, promoteAppRequest{To: to, Target: target, Confirm: confirm})
+	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("promote app %q: %w", name, err))
 	}

@@ -57,7 +57,7 @@ func runAppsSecretsList(prog string, args []string, stdout, stderr io.Writer, lo
 		fs.PrintDefaults()
 	}
 
-	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, stderr, prog, "apps secrets list", lookupEnv)
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, prog, "apps secrets list", lookupEnv)
 	if !ok {
 		return exitCode
 	}

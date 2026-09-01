@@ -539,7 +539,7 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		if f.name != "" || f.image != "" || f.repo != "" || f.file != "" {
 			return reportError(stdout, stderr, f.jsonOut, newValidationError("--interactive runs its own step-by-step prompts and cannot be combined with --name, --image, --repo, or --file"))
 		}
-		return runAppsCreateWizard(stdin, stdout, stderr, tokenFlag, apiURLFlag, profileFlag, f.jsonOut, lookupEnv, prog)
+		return runAppsCreateWizard(stdin, stdout, stderr, credentialFlags{Token: tokenFlag, APIURL: apiURLFlag, Profile: profileFlag}, f.jsonOut, lookupEnv, prog)
 	}
 
 	var fileSpec *spec.Spec
