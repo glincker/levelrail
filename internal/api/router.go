@@ -270,6 +270,8 @@ type Router struct {
 	doctorDiskWarningBytes         int64                            // 0 means "use defaultDoctorDiskWarningBytes", set via WithDoctorDiskWarningBytes
 	webhookDeliveries              WebhookDeliveryStore             // always set, same "core Store interface" shape as deployAttempts above
 	policies                       PolicyStore                      // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
+	deviceAuth                     DeviceAuthStore                  // always set, same "core Store interface" shape as policies above: device_auth_requests always exists
+	deviceFlow                     *loginLimiter                    // per-IP device-login-start budget, distinct from logins/forgotPasswordByIP above
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
@@ -333,6 +335,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		passwordResetTokens:         s,
 		forgotPasswordByIP:          newLoginLimiter(),
 		forgotPasswordByEmail:       newLoginLimiter(),
+		deviceAuth:                  s,
+		deviceFlow:                  newLoginLimiter(),
 		fetchLatestRelease:          defaultFetchLatestRelease,
 		updatesCache:                newUpdatesCache(),
 		auditLog:                    s,

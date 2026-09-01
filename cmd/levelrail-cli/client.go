@@ -129,6 +129,10 @@ type (
 	policyRequest            = apiclient.PolicyRequest
 	attachPolicyRequest      = apiclient.AttachPolicyRequest
 
+	deviceStartRequest  = apiclient.DeviceStartRequest
+	deviceStartResponse = apiclient.DeviceStartResponse
+	deviceTokenResponse = apiclient.DeviceTokenResponse
+
 	secretKeyResource   = apiclient.SecretKeyResource
 	gitSourceResource   = apiclient.GitSourceResource
 	setGitSourceRequest = apiclient.SetGitSourceRequest
