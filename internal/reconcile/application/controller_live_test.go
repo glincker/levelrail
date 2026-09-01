@@ -11,6 +11,7 @@ import (
 	dockerclient "github.com/docker/docker/client"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockertest"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -20,6 +21,7 @@ import (
 // when the desired image changes, verified by actually inspecting what's
 // running before and after, not by trusting the returned Result alone.
 func TestController_Reconcile_Live(t *testing.T) {
+	dockertest.SkipIfShort(t)
 	rt, err := docker.NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)

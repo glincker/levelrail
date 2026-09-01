@@ -11,6 +11,7 @@ import (
 	"github.com/docker/go-connections/nat"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockertest"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -22,6 +23,7 @@ import (
 // independent-verification rigor internal/docker and
 // internal/reconcile/application's live tests already establish.
 func TestController_Reconcile_Redis_Live(t *testing.T) {
+	dockertest.SkipIfShort(t)
 	rt, err := docker.NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)
@@ -138,6 +140,7 @@ func TestController_Reconcile_Redis_Live(t *testing.T) {
 // through the raw Docker Engine API directly, not through this
 // controller's or internal/docker's own return values.
 func TestController_Reconcile_PublicAccess_Live(t *testing.T) {
+	dockertest.SkipIfShort(t)
 	rt, err := docker.NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)

@@ -16,6 +16,7 @@ import (
 	dockerclient "github.com/docker/docker/client"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockertest"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -52,6 +53,7 @@ import (
 // controller or in SQLiteStorage; folding the SQLite-storage assertion
 // into this single existing live test avoids it entirely.
 func TestController_Reconcile_Live(t *testing.T) {
+	dockertest.SkipIfShort(t)
 	rt, err := docker.NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)

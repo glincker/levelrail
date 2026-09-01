@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockertest"
 )
 
 // TestCollector_Live_RealContainerToRealStore proves the whole pipeline
@@ -16,6 +17,7 @@ import (
 // Skips cleanly (not a failure) if Docker isn't reachable, the same
 // pattern every other live test in this codebase uses.
 func TestCollector_Live_RealContainerToRealStore(t *testing.T) {
+	dockertest.SkipIfShort(t)
 	client, err := docker.NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)

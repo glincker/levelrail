@@ -11,6 +11,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockertest"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -24,6 +25,7 @@ import (
 // 1.3) actually converges a real running container from it, exactly the
 // chain a git push will drive once 1.5 (git integration) exists.
 func TestPipeline_Deploy_Live_ThenReconciles(t *testing.T) {
+	dockertest.SkipIfShort(t)
 	dockerCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)

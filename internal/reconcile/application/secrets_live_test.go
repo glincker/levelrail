@@ -9,6 +9,7 @@ import (
 	dockerclient "github.com/docker/docker/client"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockertest"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -22,6 +23,7 @@ import (
 // and via the store directly that only ciphertext (never the plaintext)
 // ever reached disk.
 func TestController_Reconcile_Live_SecretEnv(t *testing.T) {
+	dockertest.SkipIfShort(t)
 	rt, err := docker.NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)

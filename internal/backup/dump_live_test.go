@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockertest"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -19,6 +20,7 @@ import (
 // growing internal/docker's exported surface for tests alone.
 func liveRuntime(t *testing.T) *docker.Client {
 	t.Helper()
+	dockertest.SkipIfShort(t)
 	c, err := docker.NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)

@@ -10,6 +10,7 @@ import (
 	dockerclient "github.com/docker/docker/client"
 
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/dockertest"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -21,6 +22,7 @@ import (
 // build_duration_seconds sample with the build's real wall-clock
 // duration, not a fabricated or zero value.
 func TestPipeline_Deploy_Live_RecordsBuildDuration(t *testing.T) {
+	dockertest.SkipIfShort(t)
 	dockerCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)
