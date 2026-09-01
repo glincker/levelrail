@@ -7,16 +7,8 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockertest"
 )
-
-// skipIfShort skips a real Docker test in short mode; the full run lives
-// in nightly.yml.
-func skipIfShort(t *testing.T) {
-	t.Helper()
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
-}
 
 // TestCollector_Live_RealContainerToRealStore proves the whole pipeline
 // end to end against a real Docker daemon and a real (temp-file)
@@ -25,7 +17,7 @@ func skipIfShort(t *testing.T) {
 // Skips cleanly (not a failure) if Docker isn't reachable, the same
 // pattern every other live test in this codebase uses.
 func TestCollector_Live_RealContainerToRealStore(t *testing.T) {
-	skipIfShort(t)
+	dockertest.SkipIfShort(t)
 	client, err := docker.NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)

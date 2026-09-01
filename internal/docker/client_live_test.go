@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/container"
+
+	"github.com/GLINCKER/levelrail/internal/dockertest"
 )
 
 // liveClient returns a Client connected to a real daemon, or skips the
@@ -18,9 +20,7 @@ import (
 // failing.
 func liveClient(t *testing.T) *Client {
 	t.Helper()
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
+	dockertest.SkipIfShort(t)
 	c, err := NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)

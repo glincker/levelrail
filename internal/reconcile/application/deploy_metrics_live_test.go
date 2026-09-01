@@ -9,6 +9,7 @@ import (
 	dockerclient "github.com/docker/docker/client"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockertest"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -20,7 +21,7 @@ import (
 // following no-op reconcile, verified against the store directly rather
 // than trusting Reconcile's returned Result.
 func TestController_Reconcile_Live_RecordsDeployMetric(t *testing.T) {
-	skipIfShort(t)
+	dockertest.SkipIfShort(t)
 	rt, err := docker.NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)

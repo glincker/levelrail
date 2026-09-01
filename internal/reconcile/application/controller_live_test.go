@@ -11,17 +11,9 @@ import (
 	dockerclient "github.com/docker/docker/client"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockertest"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
-
-// skipIfShort skips a real Docker test in short mode; the full run lives
-// in nightly.yml.
-func skipIfShort(t *testing.T) {
-	t.Helper()
-	if testing.Short() {
-		t.Skip("real Docker test, skipped in short mode; see nightly.yml for the full run")
-	}
-}
 
 // TestController_Reconcile_Live is the real end-to-end proof for this
 // controller: a real store, a real Docker daemon, a real container, a
@@ -29,7 +21,7 @@ func skipIfShort(t *testing.T) {
 // when the desired image changes, verified by actually inspecting what's
 // running before and after, not by trusting the returned Result alone.
 func TestController_Reconcile_Live(t *testing.T) {
-	skipIfShort(t)
+	dockertest.SkipIfShort(t)
 	rt, err := docker.NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)

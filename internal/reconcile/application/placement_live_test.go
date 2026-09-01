@@ -27,6 +27,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockertest"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -42,7 +43,7 @@ func hashJoinTokenForTest(plaintext string) string {
 }
 
 func TestController_Reconcile_Live_ViaRemoteTransport(t *testing.T) {
-	skipIfShort(t)
+	dockertest.SkipIfShort(t)
 	rt, err := docker.NewClient()
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)

@@ -11,19 +11,11 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockertest"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
-
-// skipIfShort skips a real Docker/BuildKit test in short mode; the full
-// run lives in nightly.yml.
-func skipIfShort(t *testing.T) {
-	t.Helper()
-	if testing.Short() {
-		t.Skip("real Docker/BuildKit test, skipped in short mode; see nightly.yml for the full run")
-	}
-}
 
 // TestPipeline_Deploy_Live_ThenReconciles is the real end-to-end proof
 // for TASKS.md 1.4, and for how it closes the loop with 1.3: real
@@ -33,7 +25,7 @@ func skipIfShort(t *testing.T) {
 // 1.3) actually converges a real running container from it, exactly the
 // chain a git push will drive once 1.5 (git integration) exists.
 func TestPipeline_Deploy_Live_ThenReconciles(t *testing.T) {
-	skipIfShort(t)
+	dockertest.SkipIfShort(t)
 	dockerCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
 	if err != nil {
 		t.Skipf("no docker client available: %v", err)
