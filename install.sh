@@ -7,9 +7,16 @@
 # script is also how you upgrade.
 #
 # Env overrides:
-#   LEVELRAIL_VERSION      release tag to install, e.g. v0.3.0 (default: latest)
-#   LEVELRAIL_INSTALL_DIR  where the binary goes (default: /usr/local/bin)
-#   LEVELRAIL_DATA_DIR     control plane data dir (default: /var/lib/levelrail-data)
+#   LEVELRAIL_VERSION       release tag to install, e.g. v0.3.0 (default: latest)
+#   LEVELRAIL_INSTALL_DIR   where the binary goes (default: /usr/local/bin)
+#   LEVELRAIL_DATA_DIR      control plane data dir (default: /var/lib/levelrail-data)
+#   LEVELRAIL_CONFIGURE_UFW set to 1 to have this script configure ufw
+#                           (allow SSH, then 80/443, then enable it if
+#                           not already active). Off by default: this
+#                           script never touches your firewall unless
+#                           you explicitly ask it to. See the "Firewall"
+#                           section below for exactly what it does and
+#                           in what order.
 
 set -eu
 
@@ -19,6 +26,7 @@ INSTALL_DIR="${LEVELRAIL_INSTALL_DIR:-/usr/local/bin}"
 DATA_DIR="${LEVELRAIL_DATA_DIR:-/var/lib/levelrail-data}"
 UNIT_PATH="/etc/systemd/system/levelrail.service"
 HTTPS_ONLY="=https"
+HEALTH_CHECK_MAX_WAIT=60
 
 log() { printf '%s\n' "$*"; }
 fatal() { printf 'error: %s\n' "$*" >&2; exit 1; }
@@ -109,9 +117,58 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
+# Firewall (opt-in, LEVELRAIL_CONFIGURE_UFW=1 only): allow SSH before
+# touching anything else, and only enable ufw if it wasn't already
+# active. Getting this order wrong (enabling before SSH is allowed) is
+# the classic way an install script locks an operator out of their own
+# server; the ordering here matches Dokku's own DigitalOcean image
+# provisioning script (allow ssh, allow web ports, enable last).
+if [ "${LEVELRAIL_CONFIGURE_UFW:-0}" = "1" ]; then
+	if command -v ufw >/dev/null 2>&1; then
+		log "Configuring ufw (LEVELRAIL_CONFIGURE_UFW=1)..."
+		was_active=0
+		ufw status 2>/dev/null | grep -q "^Status: active" && was_active=1
+		ufw allow OpenSSH >/dev/null 2>&1 || ufw allow 22/tcp >/dev/null 2>&1
+		ufw allow 80/tcp >/dev/null 2>&1
+		ufw allow 443/tcp >/dev/null 2>&1
+		if [ "$was_active" -eq 1 ]; then
+			log "ufw was already active, added rules without re-enabling."
+		else
+			ufw --force enable >/dev/null 2>&1
+			log "ufw enabled: SSH, 80/tcp, and 443/tcp are allowed, everything else denied by default."
+		fi
+	else
+		log "LEVELRAIL_CONFIGURE_UFW=1 set, but ufw is not installed, skipping."
+	fi
+fi
+
 systemctl daemon-reload
 systemctl enable levelrail
 systemctl restart levelrail
+
+# Bounded health check: confirm the control plane actually came up
+# before declaring success, rather than trusting systemctl restart's
+# own immediate (and uninformative) exit code. Never an infinite loop:
+# HEALTH_CHECK_MAX_WAIT caps it, and a timeout is a real, actionable
+# failure (exit 1 with the exact command to inspect why), the same
+# bounded-wait-then-fail-loudly shape Coolify's own install script
+# uses for its own post-install health verification.
+log "Waiting for the control plane to come up..."
+waited=0
+healthy=0
+while [ "$waited" -lt "$HEALTH_CHECK_MAX_WAIT" ]; do
+	if curl -fsS -o /dev/null "http://127.0.0.1:8080/api/v1/brand" 2>/dev/null; then
+		healthy=1
+		break
+	fi
+	sleep 2
+	waited=$((waited + 2))
+done
+
+if [ "$healthy" -ne 1 ]; then
+	fatal "control plane did not become healthy within ${HEALTH_CHECK_MAX_WAIT}s. Check: systemctl status levelrail && journalctl -u levelrail -n 100 --no-pager"
+fi
+log "Control plane is healthy."
 
 ip_addr="$(hostname -I 2>/dev/null | awk '{print $1}')"
 [ -n "$ip_addr" ] || ip_addr="<server-ip>"
@@ -127,4 +184,8 @@ Levelrail ${VERSION} installed and running.
 
 Create the initial admin account:
   sudo APP_DATA_DIR=${DATA_DIR} ${INSTALL_DIR}/${BINARY_NAME} recover-admin --username admin
+
+Re-run this script any time to repair or upgrade: it overwrites the
+binary and unit file, re-checks the firewall (if LEVELRAIL_CONFIGURE_UFW=1),
+and re-verifies the control plane comes back up healthy.
 EOF

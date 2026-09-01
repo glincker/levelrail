@@ -47,8 +47,8 @@ func TestHandleSystemDoctor_NothingConfigured(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if len(got.Checks) != 7 {
-		t.Fatalf("len(Checks) = %d, want 7", len(got.Checks))
+	if len(got.Checks) != 8 {
+		t.Fatalf("len(Checks) = %d, want 8", len(got.Checks))
 	}
 	for _, code := range []string{"docker", "database", "disk_space", "data_dir_writable", "master_key_rotation"} {
 		if c := doctorCheckByCode(t, got.Checks, code); c.Status != doctorStatusUnknown {
