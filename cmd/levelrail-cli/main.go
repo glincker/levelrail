@@ -96,6 +96,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runDoctor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "users":
 		return runUsers(prog, args[1:], stdout, stderr, lookupEnv)
+	case "iam":
+		return runIAM(prog, args[1:], stdout, stderr, lookupEnv)
 	case "secrets":
 		return runSecrets(prog, args[1:], stdout, stderr, lookupEnv)
 	case "migrate":
@@ -144,6 +146,7 @@ Usage:
   %[1]s audit-purge [flags]                                   delete audit log entries past the retention window now
   %[1]s doctor [flags]                                        local preflight health check: Docker, disk, ports, database
   %[1]s users list|create|set-abilities|delete|roles [flags]   manage users and their abilities, directly or via a curated role
+  %[1]s iam policies create|list|get|update|delete|attach|detach|attachments [flags]   resource-scoped Allow/Deny policies, additive on top of --abilities
   %[1]s secrets rotate-master-key --new-key-file PATH [flags]   rotate the envelope-encryption master key
   %[1]s auth login [flags]             authenticate and persist a new API token
   %[1]s auth whoami [flags]           show who the current token authenticates as

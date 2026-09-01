@@ -124,6 +124,11 @@ type (
 	updateUserAbilitiesRequest = apiclient.UpdateUserAbilitiesRequest
 	roleResource               = apiclient.RoleResource
 
+	policyResource           = apiclient.PolicyResource
+	policyAttachmentResource = apiclient.PolicyAttachmentResource
+	policyRequest            = apiclient.PolicyRequest
+	attachPolicyRequest      = apiclient.AttachPolicyRequest
+
 	secretKeyResource   = apiclient.SecretKeyResource
 	gitSourceResource   = apiclient.GitSourceResource
 	setGitSourceRequest = apiclient.SetGitSourceRequest
