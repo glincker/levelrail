@@ -354,6 +354,7 @@ type Store interface {
 	OnboardingStore
 	WebhookDeliveryStore
 	PolicyStore
+	DeviceAuthStore
 }
 
 // SecretSetter is the surface the secrets handlers need from

@@ -107,6 +107,19 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/iam/policies/{id}/attachments", rt.requireAbility(AbilityRoot, rt.handleAttachPolicy))
 	mux.HandleFunc("DELETE /api/v1/iam/policies/{id}/attachments/{principal_type}/{principal_id}", rt.requireAbility(AbilityRoot, rt.handleDetachPolicy))
 
+	// CLI device login (device_auth.go): "levelrail-cli auth login
+	// --device" prints a code, the operator approves it here. start/token
+	// are necessarily public (no credential exists yet); requests/
+	// approve/deny are requireAuth session-only, the same tier
+	// tokens.go's own session-only routes use, since approving a device
+	// only ever mints a token scoped to the approving operator's own
+	// abilities.
+	mux.HandleFunc("POST /api/v1/auth/device/start", rt.handleDeviceAuthStart)
+	mux.HandleFunc("POST /api/v1/auth/device/token", rt.handleDeviceAuthToken)
+	mux.HandleFunc("GET /api/v1/auth/device/requests", rt.requireAuth(rt.handleListDeviceAuthRequests))
+	mux.HandleFunc("POST /api/v1/auth/device/{user_code}/approve", rt.requireAuth(rt.handleApproveDeviceAuthRequest))
+	mux.HandleFunc("POST /api/v1/auth/device/{user_code}/deny", rt.requireAuth(rt.handleDenyDeviceAuthRequest))
+
 	// OAuth sign-in (Google, GitHub). /providers, /start, /callback are
 	// all necessarily public; /link/start is requireAuth-gated (see its
 	// own doc comment).

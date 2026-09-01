@@ -49,11 +49,14 @@ var defaultTokenAbility = []string{"root"}
 // command to complete.
 func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "auth login", "print the new token resource as JSON to stdout and nothing else", stderr)
-	var tokenName, abilitiesFlag string
+	var tokenName, abilitiesFlag, clientNameFlag string
 	var expiresInDays int
+	var deviceFlag bool
 	fs.StringVar(&tokenName, "token-name", "", "name for the newly minted token (default: \"levelrail-cli-<timestamp>\")")
 	fs.StringVar(&abilitiesFlag, "abilities", "", "comma-separated ability list for the new token (default: root, same as the session it's minted from)")
 	fs.IntVar(&expiresInDays, "expires-in-days", 0, "token lifetime in days (default: 0, never expires)")
+	fs.BoolVar(&deviceFlag, "device", false, "log in via the device code flow (print a code, approve it from the web dashboard) instead of username/password; works over plain http")
+	fs.StringVar(&clientNameFlag, "client-name", "", "optional label for the device request shown in the approval UI, --device only (default: local hostname)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, authLoginUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -69,6 +72,10 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return exitValidation
 	}
 	of := outputFlags{format, *queryFlagP}
+
+	if deviceFlag {
+		return runAuthLoginDevice(prog, *apiURLFlagP, *profileFlagP, clientNameFlag, stdout, stderr, lookupEnv, of, jsonOut)
+	}
 
 	abilities := defaultTokenAbility
 	if abilitiesFlag != "" {
@@ -139,6 +146,14 @@ Requires the control plane to be reachable over https for the session
 cookie the login step sets to round-trip to the token-minting step: see
 this command's own doc comment (auth_login.go) for why a plain-http
 target (the common local-dev default) fails at that second step.
+Use --device instead to avoid that entirely.
+
+With --device: prints a short code and a URL, waits for an operator to
+approve it from the web dashboard's CLI Access page, then saves the
+resulting token the same way. Works over plain http; --username/
+--password/--token-name/--abilities/--expires-in-days are ignored in
+this mode (the minted token's abilities always match the approving
+operator's own session, the CLI never gets to choose).
 
 Flags:
   --username string          admin username (prompted if omitted)
@@ -148,6 +163,8 @@ Flags:
   --token-name string         name for the new token (default: "levelrail-cli-<timestamp>")
   --abilities string           comma-separated ability list (default: root)
   --expires-in-days int      token lifetime in days (default: 0, never expires)
+  --device                       log in via the device code flow instead of username/password
+  --client-name string       optional label for the device request shown in the approval UI, --device only (default: local hostname)
   --json                          print the new token resource as JSON to stdout, nothing else
   --output string                output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string                 JMESPath expression to filter the result before printing
