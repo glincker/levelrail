@@ -18,6 +18,7 @@ import {
   ArrowCircleUpIcon,
   ClockCounterClockwiseIcon,
   PackageIcon,
+  TerminalWindowIcon,
 } from '@phosphor-icons/react/dist/ssr'
 
 export interface SettingsNavItem {
@@ -57,6 +58,12 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: KeyIcon,
         title: 'API tokens',
         description: 'Scoped, revocable credentials for the CLI, CI, and MCP.',
+      },
+      {
+        to: '/settings/cli-access',
+        icon: TerminalWindowIcon,
+        title: 'CLI access',
+        description: 'Approve or deny logins started with levelrail-cli auth login.',
       },
     ],
   },
