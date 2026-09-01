@@ -38,13 +38,5 @@ func runAppsGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get app %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, app); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	printAppHuman(stdout, app)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, app, func() { printAppHuman(stdout, app) })
 }

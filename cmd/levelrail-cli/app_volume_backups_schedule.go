@@ -83,15 +83,9 @@ func runAppVolumeBackupsScheduleSet(prog string, args []string, stdout, stderr i
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set backup schedule for %s/%s: %w", name, volume, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, schedule); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	_, _ = fmt.Fprintf(stdout, "backup schedule %q set for %s/%s (target %s, retain %d, retain_days %d)\n", schedule.Schedule, name, volume, schedule.TargetID, schedule.Retain, schedule.RetainDays)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, schedule, func() {
+		_, _ = fmt.Fprintf(stdout, "backup schedule %q set for %s/%s (target %s, retain %d, retain_days %d)\n", schedule.Schedule, name, volume, schedule.TargetID, schedule.Retain, schedule.RetainDays)
+	})
 }
 
 func runAppVolumeBackupsScheduleClear(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -118,13 +112,5 @@ func runAppVolumeBackupsScheduleClear(prog string, args []string, stdout, stderr
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("clear backup schedule for %s/%s: %w", name, volume, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, map[string]bool{"cleared": true}); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	_, _ = fmt.Fprintf(stdout, "backup schedule removed for %s/%s\n", name, volume)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, map[string]bool{"cleared": true}, func() { _, _ = fmt.Fprintf(stdout, "backup schedule removed for %s/%s\n", name, volume) })
 }

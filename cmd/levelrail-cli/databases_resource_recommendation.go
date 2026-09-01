@@ -39,13 +39,5 @@ func runDatabasesResourceRecommendation(prog string, args []string, stdout, stde
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get resource recommendation for database %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, rec); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	printResourceRecommendationHuman(stdout, "database", rec)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, rec, func() { printResourceRecommendationHuman(stdout, "database", rec) })
 }

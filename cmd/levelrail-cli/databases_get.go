@@ -35,13 +35,5 @@ func runDatabasesGet(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get database %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, db); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	printDatabaseHuman(stdout, db)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, db, func() { printDatabaseHuman(stdout, db) })
 }

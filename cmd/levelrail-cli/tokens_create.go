@@ -88,16 +88,10 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create token %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, created); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	_, _ = fmt.Fprintf(stdout, "token %q (id %s) created\n", created.Name, created.ID)
-	_, _ = fmt.Fprintf(stdout, "token value (shown once, not recoverable again): %s\n", created.Token)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, created, func() {
+		_, _ = fmt.Fprintf(stdout, "token %q (id %s) created\n", created.Name, created.ID)
+		_, _ = fmt.Fprintf(stdout, "token value (shown once, not recoverable again): %s\n", created.Token)
+	})
 }
 
 func tokensCreateUsage(prog string) string {

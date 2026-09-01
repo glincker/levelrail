@@ -6,6 +6,11 @@ import (
 	"io"
 )
 
+// domainsCloudflareDNSJSONUsage is every domains cloudflare-dns
+// subcommand's --json flag description: identical across get/set/clear
+// since each returns the same settings shape.
+const domainsCloudflareDNSJSONUsage = "print the settings as JSON to stdout and nothing else"
+
 // runDomainsCloudflareDNS dispatches "domains cloudflare-dns <verb>
 // [flags]" to one of get/set/clear, mirroring runAppsLogDrain's own
 // top-level dispatch shape.
@@ -50,7 +55,7 @@ Run "%[1]s domains cloudflare-dns <subcommand> -h" for a subcommand's own flags.
 }
 
 func runDomainsCloudflareDNSGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "domains cloudflare-dns get", "print the settings as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "domains cloudflare-dns get", domainsCloudflareDNSJSONUsage, stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains cloudflare-dns get [flags]\n\nShows the current Cloudflare DNS-01 settings.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -80,7 +85,7 @@ func runDomainsCloudflareDNSGet(prog string, args []string, stdout, stderr io.Wr
 }
 
 func runDomainsCloudflareDNSSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "domains cloudflare-dns set", "print the settings as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "domains cloudflare-dns set", domainsCloudflareDNSJSONUsage, stderr)
 	var cfAPITokenFlag string
 	fs.StringVar(&cfAPITokenFlag, "cf-api-token", "", "Cloudflare API token, Zone:DNS:Edit scope (required; distinct from --token, this CLI's own bearer auth flag)")
 	fs.Usage = func() {
@@ -118,7 +123,7 @@ func runDomainsCloudflareDNSSet(prog string, args []string, stdout, stderr io.Wr
 }
 
 func runDomainsCloudflareDNSClear(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "domains cloudflare-dns clear", "print the settings as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "domains cloudflare-dns clear", domainsCloudflareDNSJSONUsage, stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains cloudflare-dns clear [flags]\n\nDisables Cloudflare DNS-01 and forgets the stored token.\n\nFlags:\n", prog)
 		fs.PrintDefaults()

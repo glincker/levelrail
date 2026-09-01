@@ -32,13 +32,5 @@ func runAppsGroup(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get app group for %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, group); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	printAppGroupHuman(stdout, group)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, group, func() { printAppGroupHuman(stdout, group) })
 }

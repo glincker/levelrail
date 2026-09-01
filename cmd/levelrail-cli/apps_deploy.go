@@ -6,6 +6,20 @@ import (
 	"io"
 )
 
+// deployOrRollbackConfig holds the wording that differs between "apps
+// deploy" and "apps rollback", which otherwise send the identical
+// request (client.DeployApp) and share every other line of logic; see
+// runAppsDeploy's own doc comment for why there are two commands for
+// one underlying mechanism at all.
+type deployOrRollbackConfig struct {
+	cmdLabel      string
+	imageHelp     string
+	confirmHelp   string
+	usage         func(string) string
+	errContext    string
+	successFormat string
+}
+
 // runAppsDeploy implements "apps deploy <name> --image <ref>": POST
 // /api/v1/apps/{name}/deploys (internal/api/deploys.go's own
 // handleTriggerDeploy). Points the app's desired image at a new tag and
@@ -26,7 +40,8 @@ import (
 // "rollback" and get rollback-framed output, the same distinction the
 // web frontend's DeployAttemptsList.tsx already draws between its
 // deploy form and its "Rollback to this build" button (both call the
-// same mutation).
+// same mutation). runAppsDeployOrRollback below is their shared
+// implementation, parameterized by only the wording that differs.
 //
 // If name is tagged with a protected environment, the server rejects an
 // unconfirmed deploy with a 409; --confirm skips straight past that,
@@ -35,12 +50,26 @@ import (
 // scripted shape backups_restore.go's own resolveRestoreConfirmation
 // uses for a destructive database restore.
 func runAppsDeploy(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps deploy", "print the updated app as JSON to stdout and nothing else", stderr)
+	return runAppsDeployOrRollback(prog, args, stdout, stderr, lookupEnv, stdin, deployOrRollbackConfig{
+		cmdLabel:      "apps deploy",
+		imageHelp:     "image reference to deploy, e.g. registry.example.com/org/app:tag (required)",
+		confirmHelp:   "confirm deploying into a protected environment; omit to be prompted interactively if needed",
+		usage:         appsDeployUsage,
+		errContext:    "deploy",
+		successFormat: "app %q now targets image %q; reconcile is asynchronous, check \"%s apps status %s\"\n",
+	})
+}
+
+// runAppsDeployOrRollback is runAppsDeploy/runAppsRollback's shared
+// implementation: see runAppsDeploy's own doc comment for why there are
+// two commands over one underlying mechanism.
+func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader, cfg deployOrRollbackConfig) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, cfg.cmdLabel, "print the updated app as JSON to stdout and nothing else", stderr)
 	var image string
 	var confirm bool
-	fs.StringVar(&image, "image", "", "image reference to deploy, e.g. registry.example.com/org/app:tag (required)")
-	fs.BoolVar(&confirm, "confirm", false, "confirm deploying into a protected environment; omit to be prompted interactively if needed")
-	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeployUsage(prog)) }
+	fs.StringVar(&image, "image", "", cfg.imageHelp)
+	fs.BoolVar(&confirm, "confirm", false, cfg.confirmHelp)
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, cfg.usage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
 	if !ok {
@@ -49,7 +78,7 @@ func runAppsDeploy(prog string, args []string, stdout, stderr io.Writer, lookupE
 
 	rest := fs.Args()
 	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: apps deploy requires exactly one app name\n\n", prog)
+		_, _ = fmt.Fprintf(stderr, "%s: %s requires exactly one app name\n\n", prog, cfg.cmdLabel)
 		fs.Usage()
 		return exitUsage
 	}
@@ -66,19 +95,13 @@ func runAppsDeploy(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return client.DeployApp(ctx, name, image, confirm)
 	})
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("deploy app %q: %w", name, err))
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s app %q: %w", cfg.errContext, name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, updated); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	_, _ = fmt.Fprintf(stderr, "app %q now targets image %q; reconcile is asynchronous, check \"%s apps status %s\"\n", updated.Name, updated.Image, prog, updated.Name)
-	printAppHuman(stdout, updated)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, updated, func() {
+		_, _ = fmt.Fprintf(stderr, cfg.successFormat, updated.Name, updated.Image, prog, updated.Name)
+		printAppHuman(stdout, updated)
+	})
 }
 
 func appsDeployUsage(prog string) string {

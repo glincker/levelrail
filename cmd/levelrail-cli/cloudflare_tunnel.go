@@ -6,6 +6,11 @@ import (
 	"io"
 )
 
+// cloudflareTunnelJSONUsage is every cloudflare-tunnel subcommand's
+// --json flag description: identical across get/set/disconnect since
+// each returns the same settings shape.
+const cloudflareTunnelJSONUsage = "print the settings as JSON to stdout and nothing else"
+
 // runCloudflareTunnel dispatches "cloudflare-tunnel <verb> [flags]" to
 // one of get/set/disconnect, mirroring runDomainsCloudflareDNS's own
 // get/set/clear dispatch shape for the API's other settings-scoped
@@ -53,7 +58,7 @@ Run "%[1]s cloudflare-tunnel <subcommand> -h" for a subcommand's own flags.
 }
 
 func runCloudflareTunnelGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "cloudflare-tunnel get", "print the settings as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "cloudflare-tunnel get", cloudflareTunnelJSONUsage, stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s cloudflare-tunnel get [flags]\n\nShows the current Cloudflare Tunnel settings and connection status.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -83,7 +88,7 @@ func runCloudflareTunnelGet(prog string, args []string, stdout, stderr io.Writer
 }
 
 func runCloudflareTunnelSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "cloudflare-tunnel set", "print the settings as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "cloudflare-tunnel set", cloudflareTunnelJSONUsage, stderr)
 	var cfTunnelTokenFlag string
 	var enabledFlag bool
 	fs.StringVar(&cfTunnelTokenFlag, "cf-tunnel-token", "", "Cloudflare Tunnel token from your Zero Trust dashboard (required the first time the tunnel is enabled; omit to keep the currently stored token; distinct from --token, this CLI's own bearer auth flag)")
@@ -117,7 +122,7 @@ func runCloudflareTunnelSet(prog string, args []string, stdout, stderr io.Writer
 }
 
 func runCloudflareTunnelDisconnect(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "cloudflare-tunnel disconnect", "print the settings as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "cloudflare-tunnel disconnect", cloudflareTunnelJSONUsage, stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s cloudflare-tunnel disconnect [flags]\n\nDisables Cloudflare Tunnel and forgets the stored token.\n\nFlags:\n", prog)
 		fs.PrintDefaults()

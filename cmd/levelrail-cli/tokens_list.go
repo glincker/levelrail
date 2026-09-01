@@ -59,15 +59,7 @@ func runTokensList(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list tokens: %w", err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, tokens); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	printTokensTable(stdout, tokens)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, tokens, func() { printTokensTable(stdout, tokens) })
 }
 
 // printTokensTable prints a compact, aligned table of tokens, never a

@@ -42,13 +42,5 @@ func runAppsDiagnose(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("diagnose app %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, diagnosis); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	printDiagnosisHuman(stdout, diagnosis)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, diagnosis, func() { printDiagnosisHuman(stdout, diagnosis) })
 }

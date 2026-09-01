@@ -40,15 +40,9 @@ func runAppVolumeBackupsVerify(prog string, args []string, stdout, stderr io.Wri
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("verify backup %q for %s/%s: %w", backupID, name, volume, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, started); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	_, _ = fmt.Fprintf(stdout, "verification %q of backup %q started; check \"%s app-volume-backups verifications %s %s --backup %s\" for status\n", started.ID, backupID, prog, name, volume, backupID)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, started, func() {
+		_, _ = fmt.Fprintf(stdout, "verification %q of backup %q started; check \"%s app-volume-backups verifications %s %s --backup %s\" for status\n", started.ID, backupID, prog, name, volume, backupID)
+	})
 }
 
 func appVolumeBackupsVerifyUsage(prog string) string {

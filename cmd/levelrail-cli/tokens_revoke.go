@@ -68,15 +68,7 @@ func runTokensRevoke(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("revoke token %q: %w", id, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, map[string]string{"id": id, "status": "revoked"}); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	_, _ = fmt.Fprintf(stdout, "token %q revoked\n", id)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, map[string]string{"id": id, "status": "revoked"}, func() { _, _ = fmt.Fprintf(stdout, "token %q revoked\n", id) })
 }
 
 func tokensRevokeUsage(prog string) string {

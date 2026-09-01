@@ -44,13 +44,5 @@ func runAppsStatus(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get status for app %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, conditions); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	printConditionsHuman(stdout, conditions)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, conditions, func() { printConditionsHuman(stdout, conditions) })
 }

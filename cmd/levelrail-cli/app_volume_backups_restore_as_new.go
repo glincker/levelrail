@@ -49,15 +49,9 @@ func runAppVolumeBackupsRestoreAsNew(prog string, args []string, stdout, stderr 
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("restore %s/%s as new volume: %w", name, volume, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, started); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	_, _ = fmt.Fprintf(stdout, "clone-restore %q of %s/%s from backup %q into new volume %q started\n", started.ID, name, volume, backupID, started.NewVolumeName)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, started, func() {
+		_, _ = fmt.Fprintf(stdout, "clone-restore %q of %s/%s from backup %q into new volume %q started\n", started.ID, name, volume, backupID, started.NewVolumeName)
+	})
 }
 
 func appVolumeBackupsRestoreAsNewUsage(prog string) string {

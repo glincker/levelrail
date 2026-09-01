@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"io"
 )
@@ -23,7 +22,8 @@ import (
 // DeployApp with rollback-framed usage text and diagnostics, not a
 // second code path, so there is exactly one place ("apps deploy") that
 // could ever drift from what the server actually does with this
-// request.
+// request. runAppsDeployOrRollback (apps_deploy.go) is the shared
+// implementation both this command and "apps deploy" call.
 //
 // Flag shape matches "apps deploy" exactly (--image, not a second
 // positional argument): a caller who already knows that command's shape
@@ -36,50 +36,14 @@ import (
 // mirrors apps_deploy.go's own doc comment exactly: same server-side
 // gate, same client-side fallback.
 func runAppsRollback(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps rollback", "print the updated app as JSON to stdout and nothing else", stderr)
-	var image string
-	var confirm bool
-	fs.StringVar(&image, "image", "", "older, already-built image reference to roll back to, e.g. registry.example.com/org/app:tag (required)")
-	fs.BoolVar(&confirm, "confirm", false, "confirm rolling back into a protected environment; omit to be prompted interactively if needed")
-	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsRollbackUsage(prog)) }
-
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
-	if !ok {
-		return exitCode
-	}
-
-	rest := fs.Args()
-	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: apps rollback requires exactly one app name\n\n", prog)
-		fs.Usage()
-		return exitUsage
-	}
-	name := rest[0]
-
-	if image == "" {
-		return reportError(stdout, stderr, jsonOut, newValidationError("--image is required"))
-	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	ctx := context.Background()
-
-	updated, err := confirmProtectedEnvironment(confirm, stdin, stderr, func(confirm bool) (appResource, error) {
-		return client.DeployApp(ctx, name, image, confirm)
+	return runAppsDeployOrRollback(prog, args, stdout, stderr, lookupEnv, stdin, deployOrRollbackConfig{
+		cmdLabel:      "apps rollback",
+		imageHelp:     "older, already-built image reference to roll back to, e.g. registry.example.com/org/app:tag (required)",
+		confirmHelp:   "confirm rolling back into a protected environment; omit to be prompted interactively if needed",
+		usage:         appsRollbackUsage,
+		errContext:    "roll back",
+		successFormat: "app %q rolling back to image %q; reconcile is asynchronous, check \"%s apps status %s\"\n",
 	})
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("roll back app %q: %w", name, err))
-	}
-
-	if jsonOut {
-		if err := writeJSONValue(stdout, updated); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	_, _ = fmt.Fprintf(stderr, "app %q rolling back to image %q; reconcile is asynchronous, check \"%s apps status %s\"\n", updated.Name, updated.Image, prog, updated.Name)
-	printAppHuman(stdout, updated)
-	return exitOK
 }
 
 func appsRollbackUsage(prog string) string {

@@ -40,13 +40,5 @@ func runAppsNetwork(prog string, args []string, stdout, stderr io.Writer, lookup
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get network for app %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, network); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	printAppNetworkHuman(stdout, network)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, network, func() { printAppNetworkHuman(stdout, network) })
 }

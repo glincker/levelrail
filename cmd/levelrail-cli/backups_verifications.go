@@ -43,15 +43,7 @@ func runBackupsVerifications(prog string, args []string, stdout, stderr io.Write
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list verifications for backup %q: %w", backupID, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, verifications); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	printBackupVerificationsTable(stdout, verifications)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, verifications, func() { printBackupVerificationsTable(stdout, verifications) })
 }
 
 // printBackupVerificationsTable prints a compact, aligned table of

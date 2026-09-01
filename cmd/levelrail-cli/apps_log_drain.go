@@ -68,15 +68,7 @@ func runAppsLogDrainGet(prog string, args []string, stdout, stderr io.Writer, lo
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get log drain for app %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, drain); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	printLogDrainHuman(stdout, drain)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, drain, func() { printLogDrainHuman(stdout, drain) })
 }
 
 func runAppsLogDrainSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -117,15 +109,7 @@ func runAppsLogDrainSet(prog string, args []string, stdout, stderr io.Writer, lo
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set log drain for app %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, drain); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	printLogDrainHuman(stdout, drain)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, drain, func() { printLogDrainHuman(stdout, drain) })
 }
 
 func runAppsLogDrainClear(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -151,15 +135,7 @@ func runAppsLogDrainClear(prog string, args []string, stdout, stderr io.Writer, 
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("clear log drain for app %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, map[string]bool{"cleared": true}); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	_, _ = fmt.Fprintf(stdout, "log drain removed for app %q\n", name)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, map[string]bool{"cleared": true}, func() { _, _ = fmt.Fprintf(stdout, "log drain removed for app %q\n", name) })
 }
 
 func printLogDrainHuman(out io.Writer, d logDrainResource) {

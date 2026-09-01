@@ -45,15 +45,9 @@ func runBackupsVerify(prog string, args []string, stdout, stderr io.Writer, look
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("verify backup %q for database %q: %w", backupID, name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, started); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	_, _ = fmt.Fprintf(stdout, "verification %q of backup %q started; check \"%s backups verifications %s --backup %s\" for status\n", started.ID, backupID, prog, name, backupID)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, started, func() {
+		_, _ = fmt.Fprintf(stdout, "verification %q of backup %q started; check \"%s backups verifications %s --backup %s\" for status\n", started.ID, backupID, prog, name, backupID)
+	})
 }
 
 func backupsVerifyUsage(prog string) string {

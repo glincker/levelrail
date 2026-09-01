@@ -40,13 +40,5 @@ func runAppsResourceRecommendation(prog string, args []string, stdout, stderr io
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get resource recommendation for app %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, rec); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	printResourceRecommendationHuman(stdout, "app", rec)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, rec, func() { printResourceRecommendationHuman(stdout, "app", rec) })
 }
