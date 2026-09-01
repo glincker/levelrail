@@ -18,20 +18,10 @@ func runAppsGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "apps get", "app name"}, lookupEnv)
 	if !ok {
 		return exitCode
 	}
-
-	rest := fs.Args()
-	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: apps get requires exactly one app name\n\n", prog)
-		fs.Usage()
-		return exitUsage
-	}
-	name := rest[0]
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	app, err := client.GetApp(context.Background(), name)
 	if err != nil {

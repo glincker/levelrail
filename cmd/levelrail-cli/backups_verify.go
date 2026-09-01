@@ -21,24 +21,14 @@ func runBackupsVerify(prog string, args []string, stdout, stderr io.Writer, look
 	fs.StringVar(&backupID, "backup", "", "id of a previously succeeded backup to verify (required)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsVerifyUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "backups verify", "database name"}, lookupEnv)
 	if !ok {
 		return exitCode
 	}
 
-	rest := fs.Args()
-	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: backups verify requires exactly one database name\n\n", prog)
-		fs.Usage()
-		return exitUsage
-	}
-	name := rest[0]
-
 	if backupID == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--backup is required"))
 	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	started, err := client.VerifyBackup(context.Background(), name, backupID)
 	if err != nil {

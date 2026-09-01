@@ -30,7 +30,7 @@ func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookup
 	fs.BoolVar(&confirm, "confirm", false, "confirm promoting into a protected environment; omit to be prompted interactively if needed")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPromoteUsage(prog)) }
 
-	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, prog, "apps promote", lookupEnv)
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "apps promote", "app name"}, lookupEnv)
 	if !ok {
 		return exitCode
 	}

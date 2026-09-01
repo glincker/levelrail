@@ -5,11 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"time"
-
-	"golang.org/x/term"
 )
 
 // defaultTokenAbility is the ability set "auth login" mints its token
@@ -51,19 +48,12 @@ var defaultTokenAbility = []string{"root"}
 // https target (a real deployment's embedded Caddy ingress) for this
 // command to complete.
 func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
-	fs := flag.NewFlagSet(prog+" auth login", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var username, password, apiURLFlag, profileFlag, tokenName, abilitiesFlag string
+	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP := sessionFlagSet(prog, "auth login", "print the new token resource as JSON to stdout and nothing else", stderr)
+	var tokenName, abilitiesFlag string
 	var expiresInDays int
-	var jsonOut bool
-	fs.StringVar(&username, "username", "", "admin username (prompted if omitted)")
-	fs.StringVar(&password, "password", "", "admin password (prompted without echo if omitted)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to save this login under (overrides "+envProfile+", default \""+defaultProfile+"\"); lets one operator manage multiple control planes without overwriting each other's credentials")
 	fs.StringVar(&tokenName, "token-name", "", "name for the newly minted token (default: \"levelrail-cli-<timestamp>\")")
 	fs.StringVar(&abilitiesFlag, "abilities", "", "comma-separated ability list for the new token (default: root, same as the session it's minted from)")
 	fs.IntVar(&expiresInDays, "expires-in-days", 0, "token lifetime in days (default: 0, never expires)")
-	fs.BoolVar(&jsonOut, "json", false, "print the new token resource as JSON to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, authLoginUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -72,15 +62,7 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		}
 		return exitUsage
 	}
-
-	readPassword := func() (string, error) {
-		b, err := term.ReadPassword(int(os.Stdin.Fd()))
-		return string(b), err
-	}
-	resolvedUsername, resolvedPassword, err := resolveLoginCredentials(username, password, stdin, stderr, readPassword)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, err)
-	}
+	jsonOut := *jsonOutP
 
 	abilities := defaultTokenAbility
 	if abilitiesFlag != "" {
@@ -93,18 +75,15 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		tokenName = "levelrail-cli-" + time.Now().UTC().Format("20060102-150405")
 	}
 
-	profile := resolveProfile(profileFlag, lookupEnv)
-	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog, profile)
-	sessionClient, err := newAuthSessionClient(apiURL)
+	ctx := context.Background()
+	sf := sessionFlags{*usernameP, *passwordP, *apiURLFlagP, *profileFlagP}
+	sessionClient, loginResp, err := loggedInSessionClient(ctx, sf, prog, lookupEnv, stdin, stderr)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
-	ctx := context.Background()
-	loginResp, err := sessionClient.Login(ctx, resolvedUsername, resolvedPassword)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("log in as %q: %w", resolvedUsername, err))
-	}
+	profile := resolveProfile(sf.profileFlag, lookupEnv)
+	apiURL := resolveAPIURL(sf.apiURLFlag, lookupEnv, prog, profile)
 
 	created, err := sessionClient.CreateToken(ctx, createTokenRequest{Name: tokenName, Abilities: abilities, ExpiresInDays: expiresInDays})
 	if err != nil {

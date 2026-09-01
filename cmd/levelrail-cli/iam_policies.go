@@ -143,7 +143,7 @@ func runIAMPoliciesGet(prog string, args []string, stdout, stderr io.Writer, loo
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "iam policies get", "print the policy as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, iamPoliciesGetUsage(prog)) }
 
-	client, id, jsonOut, code, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, prog, "iam policies get", lookupEnv)
+	client, id, jsonOut, code, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "iam policies get", "policy id"}, lookupEnv)
 	if !ok {
 		return code
 	}
@@ -250,7 +250,7 @@ func runIAMPoliciesDelete(prog string, args []string, stdout, stderr io.Writer, 
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "iam policies delete", "print {\"deleted\":true} to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, iamPoliciesDeleteUsage(prog)) }
 
-	client, id, jsonOut, code, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, prog, "iam policies delete", lookupEnv)
+	client, id, jsonOut, code, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "iam policies delete", "policy id"}, lookupEnv)
 	if !ok {
 		return code
 	}
@@ -390,7 +390,7 @@ func runIAMPoliciesAttachments(prog string, args []string, stdout, stderr io.Wri
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "iam policies attachments", "print attachments as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, iamPoliciesAttachmentsUsage(prog)) }
 
-	client, id, jsonOut, code, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, prog, "iam policies attachments", lookupEnv)
+	client, id, jsonOut, code, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "iam policies attachments", "policy id"}, lookupEnv)
 	if !ok {
 		return code
 	}

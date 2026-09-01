@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"strings"
+
+	"golang.org/x/term"
 )
 
 // stringMapFlag is a flag.Value for a repeatable "KEY=VALUE" flag (e.g.
@@ -71,6 +75,59 @@ func apiClientFromCredentialFlags(prog string, cf credentialFlags, lookupEnv fun
 	return apiClientFromFlags(prog, cf.APIURL, cf.Token, cf.Profile, lookupEnv)
 }
 
+// sessionFlagSet builds a FlagSet named prog+" "+cmdLabel with the
+// --username/--password/--api-url/--profile/--json flags every
+// session-authenticated command (tokens create/list/revoke, all
+// session-only per tokens.go's own doc comment, never bearer-token
+// based) needs, the session-auth counterpart of apiFlagSet.
+func sessionFlagSet(prog, cmdLabel, jsonUsage string, stderr io.Writer) (fs *flag.FlagSet, username, password, apiURLFlag, profileFlag *string, jsonOut *bool) {
+	fs = flag.NewFlagSet(prog+" "+cmdLabel, flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	username = fs.String("username", "", "admin username (prompted if omitted)")
+	password = fs.String("password", "", "admin password (prompted without echo if omitted)")
+	apiURLFlag = fs.String("api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	profileFlag = fs.String("profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
+	jsonOut = fs.Bool("json", false, jsonUsage)
+	return fs, username, password, apiURLFlag, profileFlag, jsonOut
+}
+
+// sessionFlags bundles sessionFlagSet's resolved --username/--password/
+// --api-url/--profile flag values, keeping loggedInSessionClient under
+// golangci-lint's parameter-count limit.
+type sessionFlags struct {
+	username, password, apiURLFlag, profileFlag string
+}
+
+// loggedInSessionClient resolves username/password (prompting if either
+// was omitted, see resolveLoginCredentials), builds a session client
+// against sf's resolved API URL, and logs in. Every session-
+// authenticated command needs exactly this sequence before its own
+// request logic diverges. Returns the server's own login response
+// (which callers like "auth login" print the username from) alongside
+// the now-authenticated client.
+func loggedInSessionClient(ctx context.Context, sf sessionFlags, prog string, lookupEnv func(string) (string, bool), stdin io.Reader, stderr io.Writer) (*authSessionClient, loginResponse, error) {
+	readPassword := func() (string, error) {
+		b, err := term.ReadPassword(int(os.Stdin.Fd()))
+		return string(b), err
+	}
+	resolvedUsername, resolvedPassword, err := resolveLoginCredentials(sf.username, sf.password, stdin, stderr, readPassword)
+	if err != nil {
+		return nil, loginResponse{}, err
+	}
+
+	profile := resolveProfile(sf.profileFlag, lookupEnv)
+	sessionClient, err := newAuthSessionClient(resolveAPIURL(sf.apiURLFlag, lookupEnv, prog, profile))
+	if err != nil {
+		return nil, loginResponse{}, err
+	}
+
+	loginResp, err := sessionClient.Login(ctx, resolvedUsername, resolvedPassword)
+	if err != nil {
+		return nil, loginResponse{}, fmt.Errorf("log in as %q: %w", resolvedUsername, err)
+	}
+	return sessionClient, loginResp, nil
+}
+
 // requireArgs extracts fs's exactly n required positional arguments,
 // labeled argsLabel in the usage error a subcommand like "apps
 // scheduled-tasks delete <app> <id>" prints when the count doesn't
@@ -125,25 +182,36 @@ func parseAPIFlags(fs *flag.FlagSet, args []string, flags apiFlagPtrs) (tokenFla
 	return *flags.token, *flags.apiURL, *flags.profile, *flags.jsonOut, 0, true
 }
 
+// singleArgCmd bundles a single-positional-argument command's own
+// identity (prog, its cmdLabel, and what that one argument is called in
+// a usage message, e.g. "app name" or "policy id") into one value,
+// keeping parseSingleArgClient under golangci-lint's parameter-count
+// limit.
+type singleArgCmd struct {
+	prog, cmdLabel, argLabel string
+}
+
 // parseSingleArgClient runs the parse-flags-then-require-one-arg-then-
 // build-client sequence every "verb <name> [flags]" subcommand needs
-// before its own request logic diverges (apps git-source get/set/delete,
-// apps secrets list, the identical shape apps_group.go/apps_log_drain.go
-// already established). ok is false once fs.Parse, --help, or the
-// missing-arg check has already written its own message to stderr; the
-// caller should return exitCode unchanged in that case.
-func parseSingleArgClient(fs *flag.FlagSet, args []string, flags apiFlagPtrs, stderr io.Writer, prog, cmdLabel string, lookupEnv func(string) (string, bool)) (client *Client, name string, jsonOut bool, exitCode int, ok bool) {
+// before its own request logic diverges (apps get/status/network/
+// diagnose/resource-recommendation, apps git-source get/set/delete,
+// databases get/resource-recommendation, iam policies get/delete/
+// attachments, the identical shape many other single-argument commands
+// already share). ok is false once fs.Parse, --help, or the missing-arg
+// check has already written its own message to stderr; the caller
+// should return exitCode unchanged in that case.
+func parseSingleArgClient(fs *flag.FlagSet, args []string, flags apiFlagPtrs, stderr io.Writer, cmd singleArgCmd, lookupEnv func(string) (string, bool)) (client *Client, name string, jsonOut bool, exitCode int, ok bool) {
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, flags)
 	if !ok {
 		return nil, "", false, exitCode, false
 	}
 
-	name, ok = requireOneArg(fs, stderr, prog, cmdLabel, "app name")
+	name, ok = requireOneArg(fs, stderr, cmd.prog, cmd.cmdLabel, cmd.argLabel)
 	if !ok {
 		return nil, "", false, exitUsage, false
 	}
 
-	return apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv), name, jsonOut, exitOK, true
+	return apiClientFromFlags(cmd.prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv), name, jsonOut, exitOK, true
 }
 
 // reorderArgsFlagsFirst rewrites args so every flag (and its value, if

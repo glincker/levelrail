@@ -5,9 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"os"
-
-	"golang.org/x/term"
 )
 
 // runTokensRevoke implements "tokens revoke <id>": DELETE
@@ -18,16 +15,7 @@ import (
 // existed, not one already revoked), so this command reports the same
 // success for "revoked just now" and "was already revoked."
 func runTokensRevoke(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
-	fs := flag.NewFlagSet(prog+" tokens revoke", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var username, password, apiURLFlag string
-	var jsonOut bool
-	fs.StringVar(&username, "username", "", "admin username (prompted if omitted)")
-	fs.StringVar(&password, "password", "", "admin password (prompted without echo if omitted)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	var profileFlag string
-	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
-	fs.BoolVar(&jsonOut, "json", false, "print a JSON result object to stdout and nothing else")
+	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP := sessionFlagSet(prog, "tokens revoke", "print a JSON result object to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tokensRevokeUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -36,6 +24,7 @@ func runTokensRevoke(prog string, args []string, stdout, stderr io.Writer, looku
 		}
 		return exitUsage
 	}
+	jsonOut := *jsonOutP
 
 	rest := fs.Args()
 	if len(rest) != 1 {
@@ -45,23 +34,10 @@ func runTokensRevoke(prog string, args []string, stdout, stderr io.Writer, looku
 	}
 	id := rest[0]
 
-	readPassword := func() (string, error) {
-		b, err := term.ReadPassword(int(os.Stdin.Fd()))
-		return string(b), err
-	}
-	resolvedUsername, resolvedPassword, err := resolveLoginCredentials(username, password, stdin, stderr, readPassword)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, err)
-	}
-
-	sessionClient, err := newAuthSessionClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, resolveProfile(profileFlag, lookupEnv)))
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, err)
-	}
-
 	ctx := context.Background()
-	if _, err := sessionClient.Login(ctx, resolvedUsername, resolvedPassword); err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("log in as %q: %w", resolvedUsername, err))
+	sessionClient, _, err := loggedInSessionClient(ctx, sessionFlags{*usernameP, *passwordP, *apiURLFlagP, *profileFlagP}, prog, lookupEnv, stdin, stderr)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
 	}
 
 	if err := sessionClient.RevokeToken(ctx, id); err != nil {

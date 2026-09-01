@@ -19,20 +19,10 @@ func runDatabasesResourceRecommendation(prog string, args []string, stdout, stde
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "databases resource-recommendation", "database name"}, lookupEnv)
 	if !ok {
 		return exitCode
 	}
-
-	rest := fs.Args()
-	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: databases resource-recommendation requires exactly one database name\n\n", prog)
-		fs.Usage()
-		return exitUsage
-	}
-	name := rest[0]
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	rec, err := client.GetDatabaseResourceRecommendation(context.Background(), name)
 	if err != nil {

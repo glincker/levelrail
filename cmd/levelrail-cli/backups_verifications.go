@@ -19,24 +19,14 @@ func runBackupsVerifications(prog string, args []string, stdout, stderr io.Write
 	fs.StringVar(&backupID, "backup", "", "id of a backup to show verification history for (required)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsVerificationsUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "backups verifications", "database name"}, lookupEnv)
 	if !ok {
 		return exitCode
 	}
 
-	rest := fs.Args()
-	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: backups verifications requires exactly one database name\n\n", prog)
-		fs.Usage()
-		return exitUsage
-	}
-	name := rest[0]
-
 	if backupID == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--backup is required"))
 	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	verifications, err := client.ListBackupVerifications(context.Background(), name, backupID)
 	if err != nil {

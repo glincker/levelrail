@@ -15,17 +15,10 @@ func runAppsGroup(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "apps group", "app name"}, lookupEnv)
 	if !ok {
 		return exitCode
 	}
-
-	name, ok := requireOneArg(fs, stderr, prog, "apps group", "app name")
-	if !ok {
-		return exitUsage
-	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	group, err := client.GetAppGroup(context.Background(), name)
 	if err != nil {

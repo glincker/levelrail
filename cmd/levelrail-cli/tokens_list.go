@@ -5,10 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"os"
 	"text/tabwriter"
-
-	"golang.org/x/term"
 )
 
 // runTokensList implements "tokens list": GET /api/v1/auth/tokens,
@@ -16,16 +13,7 @@ import (
 // "tokens create" is (tokens_create.go's own doc comment). Never
 // includes a token secret, matching the server's own contract.
 func runTokensList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
-	fs := flag.NewFlagSet(prog+" tokens list", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var username, password, apiURLFlag string
-	var jsonOut bool
-	fs.StringVar(&username, "username", "", "admin username (prompted if omitted)")
-	fs.StringVar(&password, "password", "", "admin password (prompted without echo if omitted)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	var profileFlag string
-	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
-	fs.BoolVar(&jsonOut, "json", false, "print tokens as a JSON array to stdout and nothing else")
+	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP := sessionFlagSet(prog, "tokens list", "print tokens as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tokensListUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -34,24 +22,12 @@ func runTokensList(prog string, args []string, stdout, stderr io.Writer, lookupE
 		}
 		return exitUsage
 	}
-
-	readPassword := func() (string, error) {
-		b, err := term.ReadPassword(int(os.Stdin.Fd()))
-		return string(b), err
-	}
-	resolvedUsername, resolvedPassword, err := resolveLoginCredentials(username, password, stdin, stderr, readPassword)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, err)
-	}
-
-	sessionClient, err := newAuthSessionClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, resolveProfile(profileFlag, lookupEnv)))
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, err)
-	}
+	jsonOut := *jsonOutP
 
 	ctx := context.Background()
-	if _, err := sessionClient.Login(ctx, resolvedUsername, resolvedPassword); err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("log in as %q: %w", resolvedUsername, err))
+	sessionClient, _, err := loggedInSessionClient(ctx, sessionFlags{*usernameP, *passwordP, *apiURLFlagP, *profileFlagP}, prog, lookupEnv, stdin, stderr)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
 	}
 
 	tokens, err := sessionClient.ListTokens(ctx)
