@@ -15,7 +15,7 @@ import (
 // existed, not one already revoked), so this command reports the same
 // success for "revoked just now" and "was already revoked."
 func runTokensRevoke(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
-	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP := sessionFlagSet(prog, "tokens revoke", "print a JSON result object to stdout and nothing else", stderr)
+	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "tokens revoke", "print a JSON result object to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tokensRevokeUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -25,6 +25,12 @@ func runTokensRevoke(prog string, args []string, stdout, stderr io.Writer, looku
 		return exitUsage
 	}
 	jsonOut := *jsonOutP
+	format, ferr := resolveOutputFormat(jsonOut, *outputFlagP)
+	if ferr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
+		return exitValidation
+	}
+	of := outputFlags{format, *queryFlagP}
 
 	rest := fs.Args()
 	if len(rest) != 1 {
@@ -44,7 +50,7 @@ func runTokensRevoke(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("revoke token %q: %w", id, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, map[string]string{"id": id, "status": "revoked"}, func() { _, _ = fmt.Fprintf(stdout, "token %q revoked\n", id) })
+	return writeScheduledTaskResult(stdout, stderr, of, map[string]string{"id": id, "status": "revoked"}, func() { _, _ = fmt.Fprintf(stdout, "token %q revoked\n", id) })
 }
 
 func tokensRevokeUsage(prog string) string {
@@ -61,6 +67,8 @@ Flags:
   --api-url string             control plane base URL (default: %[2]s env var, then %[3]s)
   --profile string             named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                          print a JSON result object to stdout, nothing else
-  -h, --help                    show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIURL, defaultAPIURL)
 }

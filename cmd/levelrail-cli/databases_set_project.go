@@ -10,10 +10,10 @@ import (
 // <project-id>": PUT /api/v1/databases/{name}/project, the database
 // counterpart to runAppsSetProject.
 func runDatabasesSetProject(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "databases set-project", "print the updated database as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "databases set-project", "print the updated database as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, databasesSetProjectUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -30,7 +30,7 @@ func runDatabasesSetProject(prog string, args []string, stdout, stderr io.Writer
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set project for database %q: %w", name, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, updated, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, updated, func() {
 		_, _ = fmt.Fprintf(stdout, "database %q moved into project %q\n", name, projectID)
 	})
 }
@@ -48,17 +48,19 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the updated database as JSON to stdout, nothing else
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 // runDatabasesClearProject implements "databases clear-project <name>":
 // PUT /api/v1/databases/{name}/project with an empty project_id.
 func runDatabasesClearProject(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "databases clear-project", "print the updated database as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "databases clear-project", "print the updated database as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, databasesClearProjectUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -74,7 +76,7 @@ func runDatabasesClearProject(prog string, args []string, stdout, stderr io.Writ
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("clear project for database %q: %w", name, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, updated, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, updated, func() {
 		_, _ = fmt.Fprintf(stdout, "database %q removed from its project\n", name)
 	})
 }
@@ -90,6 +92,8 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the updated database as JSON to stdout, nothing else
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

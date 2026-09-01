@@ -34,12 +34,14 @@ type createFlags struct {
 	baseDirectory string
 	// buildArgs backs --build-arg (repeatable KEY=VALUE), only meaningful
 	// alongside --build-type dockerfile. See stringMapFlag (flagutil.go).
-	buildArgs map[string]string
-	imageRepo string
-	file      string
-	service   string
-	yes       bool
-	jsonOut   bool
+	buildArgs  map[string]string
+	imageRepo  string
+	file       string
+	service    string
+	yes        bool
+	jsonOut    bool
+	outputFlag string
+	queryFlag  string
 	// interactive backs --interactive: runs a step-by-step wizard
 	// instead of requiring every flag up front. See
 	// apps_create_interactive.go's runAppsCreateWizard.
@@ -534,12 +536,18 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		}
 		return exitUsage
 	}
+	format, ferr := resolveOutputFormat(f.jsonOut, f.outputFlag)
+	if ferr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
+		return exitValidation
+	}
+	of := outputFlags{format, f.queryFlag}
 
 	if f.interactive {
 		if f.name != "" || f.image != "" || f.repo != "" || f.file != "" {
 			return reportError(stdout, stderr, f.jsonOut, newValidationError("--interactive runs its own step-by-step prompts and cannot be combined with --name, --image, --repo, or --file"))
 		}
-		return runAppsCreateWizard(stdin, stdout, stderr, credentialFlags{Token: tokenFlag, APIURL: apiURLFlag, Profile: profileFlag}, f.jsonOut, lookupEnv, prog)
+		return runAppsCreateWizard(stdin, stdout, stderr, credentialFlags{Token: tokenFlag, APIURL: apiURLFlag, Profile: profileFlag}, of, lookupEnv, prog)
 	}
 
 	var fileSpec *spec.Spec
@@ -590,7 +598,7 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		}
 	}
 
-	return fetchAndPrintCreatedApp(ctx, client, created.Name, stdout, stderr, f.jsonOut)
+	return fetchAndPrintCreatedApp(ctx, client, created.Name, stdout, stderr, of)
 }
 
 // triggerCreatePlanBuild triggers plan's build (a no-op returning nil
@@ -610,7 +618,7 @@ func triggerCreatePlanBuild(ctx context.Context, client *Client, created appReso
 // fetchAndPrintCreatedApp re-fetches name's now-final state and prints
 // it, the shared tail of every "apps create" path once the app (and, if
 // applicable, its build) already succeeded.
-func fetchAndPrintCreatedApp(ctx context.Context, client *Client, name string, stdout, stderr io.Writer, jsonOut bool) int {
+func fetchAndPrintCreatedApp(ctx context.Context, client *Client, name string, stdout, stderr io.Writer, of outputFlags) int {
 	final, err := client.GetApp(ctx, name)
 	if err != nil {
 		// The app (and, if applicable, its build) already succeeded by
@@ -623,15 +631,13 @@ func fetchAndPrintCreatedApp(ctx context.Context, client *Client, name string, s
 		return exitNetwork
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, final); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, final, func() {
+		_, _ = fmt.Fprintf(stderr, "app %q created\n", final.Name)
+		printAppHuman(stdout, final)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	_, _ = fmt.Fprintf(stderr, "app %q created\n", final.Name)
-	printAppHuman(stdout, final)
 	return exitOK
 }
 
@@ -673,10 +679,12 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.StringVar(tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
 	fs.StringVar(profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
+	outputFlagP, queryFlagP := bindOutputQueryFlags(fs)
 
 	if err := fs.Parse(args); err != nil {
 		return createFlags{}, err
 	}
+	f.outputFlag, f.queryFlag = *outputFlagP, *queryFlagP
 	return f, nil
 }
 
@@ -759,6 +767,8 @@ Common flags:
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the result as JSON to stdout, nothing else
   --yes, -y                accept defaults without prompting (reserved, currently a no-op)
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

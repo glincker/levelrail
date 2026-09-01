@@ -96,7 +96,7 @@ func tailEntries(entries []logEntryResource, tail int) []logEntryResource {
 // client-side, after the real query, by trimming to the last N entries
 // of what the server returned.
 func runAppsLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps logs", "print entries as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps logs", "print entries as a JSON array to stdout and nothing else", stderr)
 	var since, from, to, query string
 	var tail int
 	fs.StringVar(&since, "since", "", "how far back to search, e.g. \"1h\", \"30m\" (default: 1h, the server's own default window; mutually exclusive with --from)")
@@ -106,7 +106,7 @@ func runAppsLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	fs.IntVar(&tail, "tail", 0, "only show the last N entries (applied client-side; the server has no line-count param)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsLogsUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -136,14 +136,10 @@ func runAppsLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	}
 	entries = tailEntries(entries, tail)
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, entries); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, entries, func() { printLogEntriesHuman(stdout, entries) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	printLogEntriesHuman(stdout, entries)
 	return exitOK
 }
 
@@ -167,6 +163,8 @@ Flags:
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print entries as a JSON array to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

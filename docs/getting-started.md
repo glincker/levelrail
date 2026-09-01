@@ -160,13 +160,43 @@ a real database today, so there is no file-output mode to fall back to.
 `-i` is the short form of `--interactive` here too, and it cannot be
 combined with `--name`/`--engine`/`--version`.
 
+### Output formats and filtering
+
+Every command accepts `--output json|table|text` and `--query EXPR`
+alongside the existing `--token`/`--api-url`/`--profile`/`--json` flags.
+`table` is the default, human-readable form; `text` is a plain
+tab-separated form with no headers or alignment, meant for further
+piping through `awk`/`cut`; `--json` is kept as shorthand for `--output
+json`, so existing scripts built against it keep working unchanged.
+`--query` takes a [JMESPath](https://jmespath.org) expression and
+filters or projects the result before it's printed, in any of the
+three formats, the same feature AWS CLI users know:
+
+```
+# every app's name, whatever node it's running on
+./levelrail-cli apps list --query "[].name"
+
+# just the apps on a specific node
+./levelrail-cli apps list --query "[?node_id=='node-1'].name"
+
+# a single field off a single app, with no JSON wrapper at all
+./levelrail-cli apps get your-app --query image --output text
+```
+
+`apps list`'s own response is a bare JSON array (not wrapped in an
+`"apps"` key), so the expression indexes straight into it rather than
+starting with `apps[...]`. Run `levelrail-cli <command> -h` for a given
+command's own flags: `--output`/`--query` show up there too, since
+they're wired into the same shared flag-parsing helper every command
+already builds its flag set from.
+
 ### Shell completion
 
 `levelrail-cli` can generate a completion script for bash, zsh, or fish,
 covering every command and subcommand (`apps organizations env-set`,
 `channels deliveries`, and so on) plus the global `--token`/`--api-url`/
-`--json`/`--help` flags. It does not complete flag values or positional
-arguments like app names.
+`--json`/`--output`/`--query`/`--help` flags. It does not complete flag
+values or positional arguments like app names.
 
 ```
 # bash

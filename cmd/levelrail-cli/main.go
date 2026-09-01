@@ -17,7 +17,11 @@
 //     at a real terminal (see apps_create_interactive.go).
 //   - --json switches every command's stdout to a single parseable JSON
 //     value (the result, or {"error": "..."} on failure) and nothing
-//     else; diagnostics always go to stderr, in both modes.
+//     else; diagnostics always go to stderr, in both modes. --output
+//     json|table|text is the more general form --json is shorthand for
+//     (--json means --output json); --query takes a JMESPath expression
+//     and filters the result before it's printed, in any of the three
+//     formats, e.g. `apps list --query "[?node_id=='node-1'].name"`.
 //   - Exit codes are real and distinct (see output.go's exitOK/
 //     exitUsage/exitValidation/exitNetwork/exitAPIError), not just 0/1,
 //     so a caller can branch on *why* a call failed.

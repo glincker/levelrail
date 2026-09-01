@@ -72,7 +72,7 @@ func featureFlagFlags(fs *flag.FlagSet, name, description *string, disabled *boo
 }
 
 func runFlagsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "flags create", "print the created flag as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "flags create", "print the created flag as JSON to stdout and nothing else", stderr)
 	var key, name, description string
 	var disabled bool
 	var rollout int
@@ -80,7 +80,7 @@ func runFlagsCreate(prog string, args []string, stdout, stderr io.Writer, lookup
 	featureFlagFlags(fs, &name, &description, &disabled, &rollout)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, flagsCreateUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -104,7 +104,7 @@ func runFlagsCreate(prog string, args []string, stdout, stderr io.Writer, lookup
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create feature flag for app %q: %w", appName, err))
 	}
 
-	return writeFeatureFlagResult(stdout, stderr, jsonOut, created, func() {
+	return writeFeatureFlagResult(stdout, stderr, of, created, func() {
 		_, _ = fmt.Fprintf(stdout, "feature flag %q (%s) created for app %q\n", created.Key, created.ID, appName)
 	})
 }
@@ -128,15 +128,17 @@ Flags:
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the created flag as JSON to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runFlagsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "flags list", "print flags as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "flags list", "print flags as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, flagsListUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -152,7 +154,7 @@ func runFlagsList(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list feature flags for app %q: %w", appName, err))
 	}
 
-	return writeFeatureFlagResult(stdout, stderr, jsonOut, flags, func() { printFeatureFlagsTable(stdout, flags) })
+	return writeFeatureFlagResult(stdout, stderr, of, flags, func() { printFeatureFlagsTable(stdout, flags) })
 }
 
 func printFeatureFlagsTable(out io.Writer, flags []featureFlagResource) {
@@ -179,7 +181,9 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print flags as a JSON array to stdout, nothing else
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
@@ -203,7 +207,7 @@ func parseAppAndFlagID(fs *flag.FlagSet, args []string, stderr io.Writer, prog, 
 }
 
 func runFlagsGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "flags get", "print the flag as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "flags get", "print the flag as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, flagsGetUsage(prog)) }
 
 	appName, id, code, ok := parseAppAndFlagID(fs, args, stderr, prog, "flags get")
@@ -211,6 +215,12 @@ func runFlagsGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return code
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
+	format, ferr := resolveOutputFormat(jsonOut, *outputFlagP)
+	if ferr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
+		return exitValidation
+	}
+	of := outputFlags{format, *queryFlagP}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	f, err := client.GetFeatureFlag(context.Background(), appName, id)
@@ -218,7 +228,7 @@ func runFlagsGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get feature flag %q: %w", id, err))
 	}
 
-	return writeFeatureFlagResult(stdout, stderr, jsonOut, f, func() { printFeatureFlagHuman(stdout, f) })
+	return writeFeatureFlagResult(stdout, stderr, of, f, func() { printFeatureFlagHuman(stdout, f) })
 }
 
 func printFeatureFlagHuman(out io.Writer, f featureFlagResource) {
@@ -244,12 +254,14 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the flag as JSON to stdout, nothing else
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runFlagsSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "flags set", "print the updated flag as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "flags set", "print the updated flag as JSON to stdout and nothing else", stderr)
 	var name, description string
 	var disabled bool
 	var rollout int
@@ -261,6 +273,12 @@ func runFlagsSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return code
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
+	format, ferr := resolveOutputFormat(jsonOut, *outputFlagP)
+	if ferr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
+		return exitValidation
+	}
+	of := outputFlags{format, *queryFlagP}
 
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
@@ -274,7 +292,7 @@ func runFlagsSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set feature flag %q: %w", id, err))
 	}
 
-	return writeFeatureFlagResult(stdout, stderr, jsonOut, updated, func() {
+	return writeFeatureFlagResult(stdout, stderr, of, updated, func() {
 		_, _ = fmt.Fprintf(stdout, "feature flag %q updated (enabled=%t, rollout=%d%%), takes effect immediately\n", updated.Key, updated.Enabled, updated.RolloutPercentage)
 	})
 }
@@ -298,12 +316,14 @@ Flags:
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the updated flag as JSON to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runFlagsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "flags delete", "print {} to stdout on success instead of a plain confirmation", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "flags delete", "print {} to stdout on success instead of a plain confirmation", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, flagsDeleteUsage(prog)) }
 
 	appName, id, code, ok := parseAppAndFlagID(fs, args, stderr, prog, "flags delete")
@@ -311,13 +331,19 @@ func runFlagsDelete(prog string, args []string, stdout, stderr io.Writer, lookup
 		return code
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
+	format, ferr := resolveOutputFormat(jsonOut, *outputFlagP)
+	if ferr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
+		return exitValidation
+	}
+	of := outputFlags{format, *queryFlagP}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	if err := client.DeleteFeatureFlag(context.Background(), appName, id); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete feature flag %q: %w", id, err))
 	}
 
-	return writeFeatureFlagResult(stdout, stderr, jsonOut, map[string]any{}, func() {
+	return writeFeatureFlagResult(stdout, stderr, of, map[string]any{}, func() {
 		_, _ = fmt.Fprintf(stdout, "feature flag %q deleted\n", id)
 	})
 }
@@ -334,21 +360,20 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print {} to stdout on success instead of a plain confirmation
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
-// writeFeatureFlagResult prints value as JSON when jsonOut is set,
-// otherwise runs plainOut, the same success-output shape
-// writeScheduledTaskResult establishes for a sibling command group.
-func writeFeatureFlagResult(stdout, stderr io.Writer, jsonOut bool, value any, plainOut func()) int {
-	if jsonOut {
-		if err := writeJSONValue(stdout, value); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+// writeFeatureFlagResult prints value according to of's resolved
+// format/query, falling back to plainOut for the plain default path,
+// the same success-output shape writeScheduledTaskResult establishes
+// for a sibling command group.
+func writeFeatureFlagResult(stdout, stderr io.Writer, of outputFlags, value any, plainOut func()) int {
+	if err := renderResult(stdout, of.Format, of.Query, value, func() { plainOut() }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	plainOut()
 	return exitOK
 }

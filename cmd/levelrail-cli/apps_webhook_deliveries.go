@@ -51,14 +51,14 @@ Run "%[1]s apps webhook-deliveries <subcommand> -h" for a subcommand's own flags
 }
 
 func runAppsWebhookDeliveriesList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps webhook-deliveries list", "print deliveries as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps webhook-deliveries list", "print deliveries as a JSON array to stdout and nothing else", stderr)
 	var beforeFlag string
 	var limitFlag int
 	fs.IntVar(&limitFlag, "limit", 0, "max deliveries to return (default: server default)")
 	fs.StringVar(&beforeFlag, "before", "", "only show deliveries received before this RFC3339 timestamp (page backward using the RECEIVED column of a prior run)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsWebhookDeliveriesListUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -77,7 +77,7 @@ func runAppsWebhookDeliveriesList(prog string, args []string, stdout, stderr io.
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list webhook deliveries for app %q: %w", appName, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, deliveries, func() { printWebhookDeliveriesTable(stdout, deliveries) })
+	return writeScheduledTaskResult(stdout, stderr, of, deliveries, func() { printWebhookDeliveriesTable(stdout, deliveries) })
 }
 
 func printWebhookDeliveriesTable(out io.Writer, deliveries []webhookDeliveryResource) {
@@ -108,15 +108,17 @@ Flags:
   --json                    print deliveries as a JSON array to stdout, nothing else
   --limit int              max deliveries to return (default: server default)
   --before string          only show deliveries received before this RFC3339 timestamp
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runAppsWebhookDeliveriesReplay(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps webhook-deliveries replay", "print the replay result as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps webhook-deliveries replay", "print the replay result as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsWebhookDeliveriesReplayUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -133,7 +135,7 @@ func runAppsWebhookDeliveriesReplay(prog string, args []string, stdout, stderr i
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("replay webhook delivery %q for app %q: %w", deliveryID, appName, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, result, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, result, func() {
 		_, _ = fmt.Fprintf(stdout, "replayed delivery %q for app %q: status=%d message=%q\n", deliveryID, appName, result.Status, result.Message)
 	})
 }
@@ -150,6 +152,8 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the replay result as JSON to stdout, nothing else
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

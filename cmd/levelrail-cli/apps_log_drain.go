@@ -45,13 +45,13 @@ Run "%[1]s apps log-drain <subcommand> -h" for a subcommand's own flags.
 }
 
 func runAppsLogDrainGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps log-drain get", "print the log drain as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps log-drain get", "print the log drain as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps log-drain get <name> [flags]\n\nShows an app's currently configured log drain.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -68,11 +68,11 @@ func runAppsLogDrainGet(prog string, args []string, stdout, stderr io.Writer, lo
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get log drain for app %q: %w", name, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, drain, func() { printLogDrainHuman(stdout, drain) })
+	return writeScheduledTaskResult(stdout, stderr, of, drain, func() { printLogDrainHuman(stdout, drain) })
 }
 
 func runAppsLogDrainSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps log-drain set", "print the log drain as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps log-drain set", "print the log drain as JSON to stdout and nothing else", stderr)
 	var typeFlag, targetFlag string
 	var disabled bool
 	fs.StringVar(&typeFlag, "type", "", `sink type: "http" or "syslog" (required)`)
@@ -83,7 +83,7 @@ func runAppsLogDrainSet(prog string, args []string, stdout, stderr io.Writer, lo
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -109,17 +109,17 @@ func runAppsLogDrainSet(prog string, args []string, stdout, stderr io.Writer, lo
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set log drain for app %q: %w", name, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, drain, func() { printLogDrainHuman(stdout, drain) })
+	return writeScheduledTaskResult(stdout, stderr, of, drain, func() { printLogDrainHuman(stdout, drain) })
 }
 
 func runAppsLogDrainClear(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps log-drain clear", "print {\"cleared\": true} as JSON to stdout on success and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps log-drain clear", "print {\"cleared\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps log-drain clear <name> [flags]\n\nRemoves an app's log drain.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -135,7 +135,7 @@ func runAppsLogDrainClear(prog string, args []string, stdout, stderr io.Writer, 
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("clear log drain for app %q: %w", name, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, map[string]bool{"cleared": true}, func() { _, _ = fmt.Fprintf(stdout, "log drain removed for app %q\n", name) })
+	return writeScheduledTaskResult(stdout, stderr, of, map[string]bool{"cleared": true}, func() { _, _ = fmt.Fprintf(stdout, "log drain removed for app %q\n", name) })
 }
 
 func printLogDrainHuman(out io.Writer, d logDrainResource) {

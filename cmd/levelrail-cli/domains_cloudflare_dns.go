@@ -55,13 +55,13 @@ Run "%[1]s domains cloudflare-dns <subcommand> -h" for a subcommand's own flags.
 }
 
 func runDomainsCloudflareDNSGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "domains cloudflare-dns get", domainsCloudflareDNSJSONUsage, stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains cloudflare-dns get", domainsCloudflareDNSJSONUsage, stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains cloudflare-dns get [flags]\n\nShows the current Cloudflare DNS-01 settings.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -73,19 +73,15 @@ func runDomainsCloudflareDNSGet(prog string, args []string, stdout, stderr io.Wr
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get cloudflare dns settings: %w", err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, settings); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, settings, func() { printCloudflareDNSSettings(stdout, settings) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	printCloudflareDNSSettings(stdout, settings)
 	return exitOK
 }
 
 func runDomainsCloudflareDNSSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "domains cloudflare-dns set", domainsCloudflareDNSJSONUsage, stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains cloudflare-dns set", domainsCloudflareDNSJSONUsage, stderr)
 	var cfAPITokenFlag string
 	fs.StringVar(&cfAPITokenFlag, "cf-api-token", "", "Cloudflare API token, Zone:DNS:Edit scope (required; distinct from --token, this CLI's own bearer auth flag)")
 	fs.Usage = func() {
@@ -93,7 +89,7 @@ func runDomainsCloudflareDNSSet(prog string, args []string, stdout, stderr io.Wr
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -111,25 +107,21 @@ func runDomainsCloudflareDNSSet(prog string, args []string, stdout, stderr io.Wr
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set cloudflare dns settings: %w", err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, settings); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, settings, func() { printCloudflareDNSSettings(stdout, settings) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	printCloudflareDNSSettings(stdout, settings)
 	return exitOK
 }
 
 func runDomainsCloudflareDNSClear(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "domains cloudflare-dns clear", domainsCloudflareDNSJSONUsage, stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains cloudflare-dns clear", domainsCloudflareDNSJSONUsage, stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains cloudflare-dns clear [flags]\n\nDisables Cloudflare DNS-01 and forgets the stored token.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -141,14 +133,10 @@ func runDomainsCloudflareDNSClear(prog string, args []string, stdout, stderr io.
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("clear cloudflare dns settings: %w", err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, settings); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, settings, func() { printCloudflareDNSSettings(stdout, settings) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	printCloudflareDNSSettings(stdout, settings)
 	return exitOK
 }
 

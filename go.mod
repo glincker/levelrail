@@ -22,6 +22,7 @@ require (
 	github.com/go-git/go-git/v5 v5.19.2
 	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/golang/snappy v1.0.0
+	github.com/jmespath/go-jmespath v0.4.1-0.20220621161143-b0104c826a24
 	github.com/miekg/dns v1.1.73
 	github.com/moby/buildkit v0.32.2
 	github.com/modelcontextprotocol/go-sdk v1.7.0

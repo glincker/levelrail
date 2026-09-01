@@ -13,13 +13,13 @@ import (
 // handleUpdateUserAbilities's own doc comment), surfaced here as
 // whatever error message the API returns, not duplicated client-side.
 func runUsersSetAbilities(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "users set-abilities", "print the updated user as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "users set-abilities", "print the updated user as JSON to stdout and nothing else", stderr)
 	var abilitiesFlag, role string
 	fs.StringVar(&role, "role", "", "curated role preset to apply: admin, operator, or viewer (see \""+prog+" users roles\"); alternative to --abilities")
 	fs.StringVar(&abilitiesFlag, "abilities", "", "comma-separated ability list, e.g. \"read,deploy\"; alternative to --role")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, usersSetAbilitiesUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -45,14 +45,12 @@ func runUsersSetAbilities(prog string, args []string, stdout, stderr io.Writer, 
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set abilities for user %q: %w", id, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, updated); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, updated, func() {
+		_, _ = fmt.Fprintf(stdout, "user %q abilities updated: %v\n", updated.Email, updated.Abilities)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	_, _ = fmt.Fprintf(stdout, "user %q abilities updated: %v\n", updated.Email, updated.Abilities)
 	return exitOK
 }
 
@@ -71,6 +69,8 @@ Flags:
   --api-url string          control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string          named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                       print the updated user as JSON to stdout, nothing else
-  -h, --help                 show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

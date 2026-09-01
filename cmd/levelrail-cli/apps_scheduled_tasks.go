@@ -93,7 +93,7 @@ func parseScheduledTaskArgs(fs *flag.FlagSet, args []string, stderr io.Writer, p
 }
 
 func runAppsScheduledTasksCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps scheduled-tasks create", "print the created task as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps scheduled-tasks create", "print the created task as JSON to stdout and nothing else", stderr)
 	var schedule string
 	var disabled bool
 	scheduledTaskFlags(fs, &schedule, &disabled)
@@ -105,6 +105,12 @@ func runAppsScheduledTasksCreate(prog string, args []string, stdout, stderr io.W
 	}
 	appName := leading[0]
 	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
+	format, ferr := resolveOutputFormat(jsonOut, *outputFlagP)
+	if ferr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
+		return exitValidation
+	}
+	of := outputFlags{format, *queryFlagP}
 
 	if schedule == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--schedule is required"))
@@ -118,7 +124,7 @@ func runAppsScheduledTasksCreate(prog string, args []string, stdout, stderr io.W
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create scheduled task for app %q: %w", appName, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, created, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, created, func() {
 		_, _ = fmt.Fprintf(stdout, "scheduled task %q created for app %q\n", created.ID, appName)
 	})
 }
@@ -137,15 +143,17 @@ Flags:
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the created task as JSON to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runAppsScheduledTasksList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps scheduled-tasks list", "print tasks as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps scheduled-tasks list", "print tasks as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksListUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -161,7 +169,7 @@ func runAppsScheduledTasksList(prog string, args []string, stdout, stderr io.Wri
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list scheduled tasks for app %q: %w", appName, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, tasks, func() { printScheduledTasksTable(stdout, tasks) })
+	return writeScheduledTaskResult(stdout, stderr, of, tasks, func() { printScheduledTasksTable(stdout, tasks) })
 }
 
 func printScheduledTasksTable(out io.Writer, tasks []scheduledTaskResource) {
@@ -188,7 +196,9 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print tasks as a JSON array to stdout, nothing else
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
@@ -214,7 +224,7 @@ func parseAppAndTaskID(fs *flag.FlagSet, args []string, stderr io.Writer, prog, 
 }
 
 func runAppsScheduledTasksGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps scheduled-tasks get", "print the task as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps scheduled-tasks get", "print the task as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksGetUsage(prog)) }
 
 	appName, id, code, ok := parseAppAndTaskID(fs, args, stderr, prog, "apps scheduled-tasks get")
@@ -222,6 +232,12 @@ func runAppsScheduledTasksGet(prog string, args []string, stdout, stderr io.Writ
 		return code
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
+	format, ferr := resolveOutputFormat(jsonOut, *outputFlagP)
+	if ferr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
+		return exitValidation
+	}
+	of := outputFlags{format, *queryFlagP}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	task, err := client.GetScheduledTask(context.Background(), appName, id)
@@ -229,7 +245,7 @@ func runAppsScheduledTasksGet(prog string, args []string, stdout, stderr io.Writ
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get scheduled task %q: %w", id, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, task, func() { printScheduledTaskHuman(stdout, task) })
+	return writeScheduledTaskResult(stdout, stderr, of, task, func() { printScheduledTaskHuman(stdout, task) })
 }
 
 func printScheduledTaskHuman(out io.Writer, t scheduledTaskResource) {
@@ -266,12 +282,14 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the task as JSON to stdout, nothing else
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runAppsScheduledTasksUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps scheduled-tasks update", "print the updated task as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps scheduled-tasks update", "print the updated task as JSON to stdout and nothing else", stderr)
 	var schedule string
 	var disabled bool
 	scheduledTaskFlags(fs, &schedule, &disabled)
@@ -283,6 +301,12 @@ func runAppsScheduledTasksUpdate(prog string, args []string, stdout, stderr io.W
 	}
 	appName, id := leading[0], leading[1]
 	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
+	format, ferr := resolveOutputFormat(jsonOut, *outputFlagP)
+	if ferr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
+		return exitValidation
+	}
+	of := outputFlags{format, *queryFlagP}
 
 	if schedule == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--schedule is required"))
@@ -296,7 +320,7 @@ func runAppsScheduledTasksUpdate(prog string, args []string, stdout, stderr io.W
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("update scheduled task %q: %w", id, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, updated, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, updated, func() {
 		_, _ = fmt.Fprintf(stdout, "scheduled task %q updated\n", updated.ID)
 	})
 }
@@ -316,12 +340,14 @@ Flags:
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the updated task as JSON to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runAppsScheduledTasksDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps scheduled-tasks delete", "print {} to stdout on success instead of a plain confirmation", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps scheduled-tasks delete", "print {} to stdout on success instead of a plain confirmation", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksDeleteUsage(prog)) }
 
 	appName, id, code, ok := parseAppAndTaskID(fs, args, stderr, prog, "apps scheduled-tasks delete")
@@ -329,13 +355,19 @@ func runAppsScheduledTasksDelete(prog string, args []string, stdout, stderr io.W
 		return code
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
+	format, ferr := resolveOutputFormat(jsonOut, *outputFlagP)
+	if ferr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
+		return exitValidation
+	}
+	of := outputFlags{format, *queryFlagP}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	if err := client.DeleteScheduledTask(context.Background(), appName, id); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete scheduled task %q: %w", id, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, map[string]any{}, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, map[string]any{}, func() {
 		_, _ = fmt.Fprintf(stdout, "scheduled task %q deleted\n", id)
 	})
 }
@@ -351,12 +383,14 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print {} to stdout on success instead of a plain confirmation
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runAppsScheduledTasksRun(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps scheduled-tasks run", "print the task as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps scheduled-tasks run", "print the task as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksRunUsage(prog)) }
 
 	appName, id, code, ok := parseAppAndTaskID(fs, args, stderr, prog, "apps scheduled-tasks run")
@@ -364,6 +398,12 @@ func runAppsScheduledTasksRun(prog string, args []string, stdout, stderr io.Writ
 		return code
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *profileFlagP, *jsonOutP
+	format, ferr := resolveOutputFormat(jsonOut, *outputFlagP)
+	if ferr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
+		return exitValidation
+	}
+	of := outputFlags{format, *queryFlagP}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	started, err := client.RunScheduledTask(context.Background(), appName, id)
@@ -371,7 +411,7 @@ func runAppsScheduledTasksRun(prog string, args []string, stdout, stderr io.Writ
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("run scheduled task %q: %w", id, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, started, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, started, func() {
 		_, _ = fmt.Fprintf(stdout, "run started for scheduled task %q (use \"%s apps scheduled-tasks get %s %s\" to see the result)\n", id, prog, appName, id)
 	})
 }
@@ -390,21 +430,20 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the task as JSON to stdout, nothing else
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
-// writeScheduledTaskResult prints value as JSON when jsonOut is set,
-// otherwise runs plainOut, the success-output shape every apps
-// scheduled-tasks subcommand shares.
-func writeScheduledTaskResult(stdout, stderr io.Writer, jsonOut bool, value any, plainOut func()) int {
-	if jsonOut {
-		if err := writeJSONValue(stdout, value); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+// writeScheduledTaskResult prints value according to of's resolved
+// format/query, falling back to plainOut for the plain default path,
+// the success-output shape every apps scheduled-tasks subcommand (and
+// several other resource-scoped subcommands) shares.
+func writeScheduledTaskResult(stdout, stderr io.Writer, of outputFlags, value any, plainOut func()) int {
+	if err := renderResult(stdout, of.Format, of.Query, value, func() { plainOut() }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	plainOut()
 	return exitOK
 }

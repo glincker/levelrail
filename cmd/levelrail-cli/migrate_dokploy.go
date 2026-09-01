@@ -99,7 +99,9 @@ Flags:
   --target-token string        Levelrail API token, --apply only (default: %[2]s env var, then the credentials file)
   --target-api-url string    Levelrail control plane base URL, --apply only (default: %[3]s env var, then %[4]s)
   --json                             print the migration report as JSON to stdout, nothing else
-  -h, --help                       show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 
 Dokploy's docker (prebuilt image) and drop (file upload) source types,
 and its nixpacks/heroku_buildpacks/paketo_buildpacks build types, have no

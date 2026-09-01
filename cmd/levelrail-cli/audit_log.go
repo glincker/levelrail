@@ -14,19 +14,19 @@ import (
 // export, written to stdout or, with --output, to a file, for
 // compliance/record-keeping use rather than live dashboard viewing.
 func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "audit-log", "print audit log entries as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "audit-log", "print audit log entries as a JSON array to stdout and nothing else", stderr)
 	var limitFlag int
-	var beforeFlag, pathFlag, methodFlag, clientKindFlag, formatFlag, outputFlag string
+	var beforeFlag, pathFlag, methodFlag, clientKindFlag, formatFlag, outputFileFlag string
 	fs.IntVar(&limitFlag, "limit", 0, "max entries to return (default: server default)")
 	fs.StringVar(&beforeFlag, "before", "", "only show entries created before this RFC3339 timestamp (page backward using the TIME column of a prior run)")
 	fs.StringVar(&pathFlag, "path", "", "only show entries for this exact request path")
 	fs.StringVar(&methodFlag, "method", "", "only show entries for this exact HTTP method")
 	fs.StringVar(&clientKindFlag, "client-kind", "", `only show entries from this caller surface: "cli", "dashboard", "mcp", or "api"`)
-	fs.StringVar(&formatFlag, "format", "", `output format: "csv" exports entries as CSV instead of the default table/--json output`)
-	fs.StringVar(&outputFlag, "output", "", "write the csv export to this file instead of stdout (only meaningful with --format csv)")
+	fs.StringVar(&formatFlag, "format", "", `output format: "csv" exports entries as CSV instead of the default table/--json/--output output`)
+	fs.StringVar(&outputFileFlag, "output-file", "", "write the csv export to this file instead of stdout (only meaningful with --format csv; not to be confused with --output, which picks json/table/text rendering)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, auditLogUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -36,8 +36,8 @@ func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		fs.Usage()
 		return exitUsage
 	}
-	if outputFlag != "" && formatFlag != "csv" {
-		_, _ = fmt.Fprintf(stderr, "%s: --output requires --format csv\n\n", prog)
+	if outputFileFlag != "" && formatFlag != "csv" {
+		_, _ = fmt.Fprintf(stderr, "%s: --output-file requires --format csv\n\n", prog)
 		fs.Usage()
 		return exitUsage
 	}
@@ -46,7 +46,7 @@ func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	opts := listAuditLogOptions{Limit: limitFlag, Before: beforeFlag, Path: pathFlag, Method: methodFlag, ClientKind: clientKindFlag}
 
 	if formatFlag == "csv" {
-		return runAuditLogExportCSV(context.Background(), client, opts, outputFlag, stdout, stderr, jsonOut)
+		return runAuditLogExportCSV(context.Background(), client, opts, outputFileFlag, stdout, stderr, of)
 	}
 
 	entries, err := client.ListAuditLog(context.Background(), opts)
@@ -54,20 +54,17 @@ func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list audit log: %w", err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, entries); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, entries, func() { printAuditLogTable(stdout, entries) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	printAuditLogTable(stdout, entries)
 	return exitOK
 }
 
 // runAuditLogExportCSV downloads the CSV export and writes it to
 // outputPath, or to stdout when outputPath is empty.
-func runAuditLogExportCSV(ctx context.Context, client *Client, opts listAuditLogOptions, outputPath string, stdout, stderr io.Writer, jsonOut bool) int {
+func runAuditLogExportCSV(ctx context.Context, client *Client, opts listAuditLogOptions, outputPath string, stdout, stderr io.Writer, of outputFlags) int {
+	jsonOut := of.Format == outputJSON
 	data, err := client.DownloadAuditLogCSV(ctx, opts)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("export audit log csv: %w", err))
@@ -84,14 +81,12 @@ func runAuditLogExportCSV(ctx context.Context, client *Client, opts listAuditLog
 	if err := os.WriteFile(outputPath, data, 0o600); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("write %s: %w", outputPath, err))
 	}
-	if jsonOut {
-		if err := writeJSONValue(stdout, map[string]string{"file": outputPath}); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, map[string]string{"file": outputPath}, func() {
+		_, _ = fmt.Fprintf(stdout, "wrote %s\n", outputPath)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	_, _ = fmt.Fprintf(stdout, "wrote %s\n", outputPath)
 	return exitOK
 }
 
@@ -129,8 +124,10 @@ Flags:
   --path string             only show entries for this exact request path
   --method string          only show entries for this exact HTTP method
   --client-kind string    only show entries from this caller surface: "cli", "dashboard", "mcp", or "api"
-  --format string          "csv" exports entries as CSV instead of the default table/--json output
-  --output string          write the csv export to this file instead of stdout (requires --format csv)
+  --format string          "csv" exports entries as CSV instead of the default table/--json/--output output
+  --output-file string     write the csv export to this file instead of stdout (requires --format csv)
+  --output string          output format: json, table, or text (default table)
+  --query string           JMESPath expression to filter the result before printing
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

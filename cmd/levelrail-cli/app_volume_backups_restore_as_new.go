@@ -18,13 +18,13 @@ import (
 // runBackupsRestoreAsNew's own doc comment gives: there is nothing here
 // for a misclick to destroy.
 func runAppVolumeBackupsRestoreAsNew(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "app-volume-backups restore-as-new", "print the started clone-restore attempt as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "app-volume-backups restore-as-new", "print the started clone-restore attempt as JSON to stdout and nothing else", stderr)
 	var backupID, newVolumeName string
 	fs.StringVar(&backupID, "backup", "", "id of a previously succeeded backup to restore from (required)")
 	fs.StringVar(&newVolumeName, "new-volume-name", "", "name for the brand-new, standalone Docker volume (default: a generated name, see the started attempt's own new_volume_name)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appVolumeBackupsRestoreAsNewUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -49,7 +49,7 @@ func runAppVolumeBackupsRestoreAsNew(prog string, args []string, stdout, stderr 
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("restore %s/%s as new volume: %w", name, volume, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, started, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, started, func() {
 		_, _ = fmt.Fprintf(stdout, "clone-restore %q of %s/%s from backup %q into new volume %q started\n", started.ID, name, volume, backupID, started.NewVolumeName)
 	})
 }
@@ -71,6 +71,8 @@ Flags:
   --api-url string            control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string            named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                        print the started clone-restore attempt as JSON to stdout, nothing else
-  -h, --help                  show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

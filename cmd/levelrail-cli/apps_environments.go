@@ -64,14 +64,14 @@ flags.
 }
 
 func runAppsEnvironmentsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps environments create", "print the created environment as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps environments create", "print the created environment as JSON to stdout and nothing else", stderr)
 	var name string
 	var protected bool
 	fs.StringVar(&name, "name", "", "environment name, e.g. staging or production (required)")
 	fs.BoolVar(&protected, "protected", false, "require confirmation before a deploy, rollback, or promote can target an app tagged with this environment")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsCreateUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -90,7 +90,7 @@ func runAppsEnvironmentsCreate(prog string, args []string, stdout, stderr io.Wri
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create environment %q for project %q: %w", name, projectID, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, created, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, created, func() {
 		_, _ = fmt.Fprintf(stdout, "environment %q created (id %s) for project %q\n", created.Name, created.ID, projectID)
 	})
 }
@@ -108,6 +108,8 @@ Flags:
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the created environment as JSON to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
@@ -117,12 +119,12 @@ Flags:
 // (internal/api/environments.go's handleUpdateEnvironment). The only
 // field this ever changes today, matching the API's own scope.
 func runAppsEnvironmentsUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps environments update", "print the updated environment as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps environments update", "print the updated environment as JSON to stdout and nothing else", stderr)
 	var protected bool
 	fs.BoolVar(&protected, "protected", false, "require confirmation before a deploy, rollback, or promote can target an app tagged with this environment (required)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsUpdateUsage(prog)) }
 
-	id, tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments update", apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	id, tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments update", apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP})
 	if !ok {
 		return exitCode
 	}
@@ -133,7 +135,7 @@ func runAppsEnvironmentsUpdate(prog string, args []string, stdout, stderr io.Wri
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("update environment %q: %w", id, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, updated, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, updated, func() {
 		state := "unprotected"
 		if updated.Protected {
 			state = "protected"
@@ -154,15 +156,17 @@ Flags:
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the updated environment as JSON to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runAppsEnvironmentsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps environments list", "print environments as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps environments list", "print environments as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsListUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -178,7 +182,7 @@ func runAppsEnvironmentsList(prog string, args []string, stdout, stderr io.Write
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list environments for project %q: %w", projectID, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, envs, func() { printEnvironmentsTable(stdout, envs) })
+	return writeScheduledTaskResult(stdout, stderr, of, envs, func() { printEnvironmentsTable(stdout, envs) })
 }
 
 func printEnvironmentsTable(out io.Writer, envs []environmentResource) {
@@ -205,34 +209,41 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print environments as a JSON array to stdout, nothing else
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 // parseEnvironmentIDCommand parses the standard flag set plus the single
 // "environment id" positional argument shared by delete/env-get/env-set.
 // exitCode is only meaningful when ok is false.
-func parseEnvironmentIDCommand(fs *flag.FlagSet, args []string, stderr io.Writer, prog, cmdName string, flags apiFlagPtrs) (id, tokenFlag, apiURLFlag, profileFlag string, jsonOut bool, exitCode int, ok bool) {
+func parseEnvironmentIDCommand(fs *flag.FlagSet, args []string, stderr io.Writer, prog, cmdName string, flags apiFlagPtrs) (id, tokenFlag, apiURLFlag, profileFlag string, jsonOut bool, of outputFlags, exitCode int, ok bool) {
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
 		if err == flag.ErrHelp {
-			return "", "", "", "", false, exitOK, false
+			return "", "", "", "", false, outputFlags{}, exitOK, false
 		}
-		return "", "", "", "", false, exitUsage, false
+		return "", "", "", "", false, outputFlags{}, exitUsage, false
+	}
+	format, ferr := resolveOutputFormat(*flags.jsonOut, *flags.output)
+	if ferr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
+		return "", "", "", "", false, outputFlags{}, exitValidation, false
 	}
 
 	id, argOK := requireOneArg(fs, stderr, prog, cmdName, "environment id")
 	if !argOK {
-		return "", "", "", "", false, exitUsage, false
+		return "", "", "", "", false, outputFlags{}, exitUsage, false
 	}
 
-	return id, *flags.token, *flags.apiURL, *flags.profile, *flags.jsonOut, 0, true
+	return id, *flags.token, *flags.apiURL, *flags.profile, *flags.jsonOut, outputFlags{format, *flags.query}, 0, true
 }
 
 func runAppsEnvironmentsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps environments delete", "print {} to stdout on success instead of a plain confirmation", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps environments delete", "print {} to stdout on success instead of a plain confirmation", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsDeleteUsage(prog)) }
 
-	id, tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments delete", apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	id, tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments delete", apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP})
 	if !ok {
 		return exitCode
 	}
@@ -242,7 +253,7 @@ func runAppsEnvironmentsDelete(prog string, args []string, stdout, stderr io.Wri
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete environment %q: %w", id, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, map[string]any{}, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, map[string]any{}, func() {
 		_, _ = fmt.Fprintf(stdout, "environment %q deleted\n", id)
 	})
 }
@@ -259,15 +270,17 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print {} to stdout on success instead of a plain confirmation
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runAppsEnvironmentsEnvGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps environments env-get", "print the env vars as a JSON object to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps environments env-get", "print the env vars as a JSON object to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsEnvGetUsage(prog)) }
 
-	id, tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments env-get", apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	id, tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments env-get", apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP})
 	if !ok {
 		return exitCode
 	}
@@ -278,7 +291,7 @@ func runAppsEnvironmentsEnvGet(prog string, args []string, stdout, stderr io.Wri
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get env vars for environment %q: %w", id, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, vars, func() { printEnvVarsTable(stdout, vars) })
+	return writeScheduledTaskResult(stdout, stderr, of, vars, func() { printEnvVarsTable(stdout, vars) })
 }
 
 func appsEnvironmentsEnvGetUsage(prog string) string {
@@ -293,17 +306,19 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the env vars as a JSON object to stdout, nothing else
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runAppsEnvironmentsEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps environments env-set", "print the resulting env vars as a JSON object to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps environments env-set", "print the resulting env vars as a JSON object to stdout and nothing else", stderr)
 	vars := stringMapFlag{}
 	fs.Var(vars, "var", "shared env var as KEY=VALUE, repeatable; omit entirely to clear every var")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsEnvSetUsage(prog)) }
 
-	id, tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments env-set", apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	id, tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseEnvironmentIDCommand(fs, args, stderr, prog, "apps environments env-set", apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP})
 	if !ok {
 		return exitCode
 	}
@@ -314,7 +329,7 @@ func runAppsEnvironmentsEnvSet(prog string, args []string, stdout, stderr io.Wri
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set env vars for environment %q: %w", id, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, updated, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, updated, func() {
 		_, _ = fmt.Fprintf(stdout, "environment %q env vars replaced (%d set)\n", id, len(updated))
 	})
 }
@@ -334,6 +349,8 @@ Flags:
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the resulting env vars as a JSON object to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

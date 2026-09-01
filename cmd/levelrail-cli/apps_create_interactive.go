@@ -373,7 +373,8 @@ const wizardAppYAMLPath = "app.yaml"
 // runAppsCreateWizard is "apps create --interactive"'s I/O shell: run
 // the question loop, then either write app.yaml or create the app via
 // the API, per the wizard's own last answer.
-func runAppsCreateWizard(stdin io.Reader, stdout, stderr io.Writer, cf credentialFlags, jsonOut bool, lookupEnv func(string) (string, bool), prog string) int {
+func runAppsCreateWizard(stdin io.Reader, stdout, stderr io.Writer, cf credentialFlags, of outputFlags, lookupEnv func(string) (string, bool), prog string) int {
+	jsonOut := of.Format == outputJSON
 	p := newWizardPrompter(stdin, stderr)
 	answers, err := runInteractiveWizard(p, detectLocalGit())
 	if err != nil {
@@ -381,12 +382,13 @@ func runAppsCreateWizard(stdin io.Reader, stdout, stderr io.Writer, cf credentia
 	}
 
 	if answers.outputMode == wizardOutputFile {
-		return runWizardWriteFile(answers, stdout, stderr, jsonOut)
+		return runWizardWriteFile(answers, stdout, stderr, of)
 	}
-	return runWizardCreateViaAPI(answers, stdout, stderr, cf, jsonOut, lookupEnv, prog)
+	return runWizardCreateViaAPI(answers, stdout, stderr, cf, of, lookupEnv, prog)
 }
 
-func runWizardWriteFile(a wizardAnswers, stdout, stderr io.Writer, jsonOut bool) int {
+func runWizardWriteFile(a wizardAnswers, stdout, stderr io.Writer, of outputFlags) int {
+	jsonOut := of.Format == outputJSON
 	if _, statErr := os.Stat(wizardAppYAMLPath); statErr == nil {
 		return reportError(stdout, stderr, jsonOut, newValidationError("%s already exists in the current directory; remove or rename it first", wizardAppYAMLPath))
 	} else if !errors.Is(statErr, fs.ErrNotExist) {
@@ -401,19 +403,18 @@ func runWizardWriteFile(a wizardAnswers, stdout, stderr io.Writer, jsonOut bool)
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("write %s: %w", wizardAppYAMLPath, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, map[string]string{"file": wizardAppYAMLPath}); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, map[string]string{"file": wizardAppYAMLPath}, func() {
+		_, _ = fmt.Fprintf(stderr, "wrote %s\n", wizardAppYAMLPath)
+		_, _ = stdout.Write(data)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	_, _ = fmt.Fprintf(stderr, "wrote %s\n", wizardAppYAMLPath)
-	_, _ = stdout.Write(data)
 	return exitOK
 }
 
-func runWizardCreateViaAPI(a wizardAnswers, stdout, stderr io.Writer, cf credentialFlags, jsonOut bool, lookupEnv func(string) (string, bool), prog string) int {
+func runWizardCreateViaAPI(a wizardAnswers, stdout, stderr io.Writer, cf credentialFlags, of outputFlags, lookupEnv func(string) (string, bool), prog string) int {
+	jsonOut := of.Format == outputJSON
 	plan, err := a.toCreatePlan()
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
@@ -431,5 +432,5 @@ func runWizardCreateViaAPI(a wizardAnswers, stdout, stderr io.Writer, cf credent
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("app %q was created but the build failed: %w", created.Name, buildErr))
 	}
 
-	return fetchAndPrintCreatedApp(ctx, client, created.Name, stdout, stderr, jsonOut)
+	return fetchAndPrintCreatedApp(ctx, client, created.Name, stdout, stderr, of)
 }

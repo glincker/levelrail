@@ -88,6 +88,7 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
 	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	fs.BoolVar(&jsonOut, "json", false, "print the created database as JSON to stdout and nothing else")
+	outputFlagP, queryFlagP := bindOutputQueryFlags(fs)
 	fs.BoolVar(&interactive, "interactive", false, "run a step-by-step wizard instead of specifying flags: prompts for name, engine, version, resource limits, public access, and a backup schedule, then creates the database via the API")
 	fs.BoolVar(&interactive, "i", false, "shorthand for --interactive")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, databasesCreateUsage(prog)) }
@@ -98,12 +99,18 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 		}
 		return exitUsage
 	}
+	format, ferr := resolveOutputFormat(jsonOut, *outputFlagP)
+	if ferr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
+		return exitValidation
+	}
+	of := outputFlags{format, *queryFlagP}
 
 	if interactive {
 		if name != "" || engine != "" || version != "" {
 			return reportError(stdout, stderr, jsonOut, newValidationError("--interactive runs its own step-by-step prompts and cannot be combined with --name, --engine, or --version"))
 		}
-		return runDatabasesCreateWizard(stdin, stdout, stderr, credentialFlags{Token: tokenFlag, APIURL: apiURLFlag, Profile: profileFlag}, jsonOut, lookupEnv, prog)
+		return runDatabasesCreateWizard(stdin, stdout, stderr, credentialFlags{Token: tokenFlag, APIURL: apiURLFlag, Profile: profileFlag}, of, lookupEnv, prog)
 	}
 
 	plan, err := planDatabaseCreate(createDatabaseFlags{name: name, engine: engine, version: version})
@@ -119,15 +126,13 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create database %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, created); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, created, func() {
+		_, _ = fmt.Fprintf(stderr, "database %q created\n", created.Name)
+		printDatabaseHuman(stdout, created)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	_, _ = fmt.Fprintf(stderr, "database %q created\n", created.Name)
-	printDatabaseHuman(stdout, created)
 	return exitOK
 }
 
@@ -155,6 +160,8 @@ Flags:
                              backup schedule, then creates the database via
                              the API. Cannot be combined with --name,
                              --engine, or --version.
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL, strings.Join(supportedEngineParams, ", "))
 }

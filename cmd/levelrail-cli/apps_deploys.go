@@ -47,13 +47,13 @@ Run "%[1]s apps deploys <subcommand> -h" for a subcommand's own flags.
 // rollback); find them via the dashboard's deploy history page or GET
 // .../deploy-attempts with --json elsewhere.
 func runAppsDeploysCompare(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps deploys compare", "print the comparison as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps deploys compare", "print the comparison as JSON to stdout and nothing else", stderr)
 	var from, to string
 	fs.StringVar(&from, "from", "", "deploy attempt ID to compare from (required)")
 	fs.StringVar(&to, "to", "", "deploy attempt ID to compare to (default: the app's current live state)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeploysCompareUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -77,14 +77,10 @@ func runAppsDeploysCompare(prog string, args []string, stdout, stderr io.Writer,
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("compare deploys for app %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, cmp); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, cmp, func() { printDeployCompareHuman(stdout, cmp) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	printDeployCompareHuman(stdout, cmp)
 	return exitOK
 }
 
@@ -143,6 +139,8 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the comparison as JSON to stdout, nothing else
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

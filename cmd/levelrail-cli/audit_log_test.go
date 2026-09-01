@@ -92,7 +92,7 @@ func TestRun_AuditLog_ExportCSV_OutputFile(t *testing.T) {
 
 	outPath := filepath.Join(t.TempDir(), "audit-log.csv")
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"audit-log", "--format", "csv", "--output", outPath, "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	got := run("levelrail-cli-test", []string{"audit-log", "--format", "csv", "--output-file", outPath, "--api-url", srv.URL}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
@@ -116,14 +116,25 @@ func TestRun_AuditLog_UnsupportedFormat(t *testing.T) {
 	}
 }
 
-func TestRun_AuditLog_OutputWithoutCSVFormat(t *testing.T) {
+func TestRun_AuditLog_OutputFileWithoutCSVFormat(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"audit-log", "--output", "out.csv"}, &stdout, &stderr, envMap())
+	got := run("levelrail-cli-test", []string{"audit-log", "--output-file", "out.csv"}, &stdout, &stderr, envMap())
 	if got != exitUsage {
 		t.Fatalf("exit = %d, want %d", got, exitUsage)
 	}
-	if !strings.Contains(stderr.String(), "--output requires --format csv") {
-		t.Errorf("stderr = %q, want an --output-requires-csv error", stderr.String())
+	if !strings.Contains(stderr.String(), "--output-file requires --format csv") {
+		t.Errorf("stderr = %q, want an --output-file-requires-csv error", stderr.String())
+	}
+}
+
+func TestRun_AuditLog_InvalidOutputFormat(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"audit-log", "--output", "xml"}, &stdout, &stderr, envMap())
+	if got != exitValidation {
+		t.Fatalf("exit = %d, want %d", got, exitValidation)
+	}
+	if !strings.Contains(stderr.String(), "invalid --output") {
+		t.Errorf("stderr = %q, want an invalid --output error", stderr.String())
 	}
 }
 

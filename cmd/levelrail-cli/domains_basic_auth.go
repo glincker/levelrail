@@ -53,13 +53,13 @@ Run "%[1]s domains basic-auth <subcommand> -h" for a subcommand's own flags.
 }
 
 func runDomainsBasicAuthGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "domains basic-auth get", domainsBasicAuthJSONUsage, stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains basic-auth get", domainsBasicAuthJSONUsage, stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains basic-auth get <app> <domain> [flags]\n\nShows a domain's currently configured basic auth state.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -77,11 +77,11 @@ func runDomainsBasicAuthGet(prog string, args []string, stdout, stderr io.Writer
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get basic auth for domain %q: %w", domain, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, auth, func() { printDomainBasicAuthHuman(stdout, auth) })
+	return writeScheduledTaskResult(stdout, stderr, of, auth, func() { printDomainBasicAuthHuman(stdout, auth) })
 }
 
 func runDomainsBasicAuthSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "domains basic-auth set", domainsBasicAuthJSONUsage, stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains basic-auth set", domainsBasicAuthJSONUsage, stderr)
 	var usernameFlag, passwordFlag string
 	fs.StringVar(&usernameFlag, "username", "", "basic auth username (required)")
 	fs.StringVar(&passwordFlag, "password", "", "basic auth password (required the first time a domain is protected; omit to keep the currently stored password while changing only the username)")
@@ -90,7 +90,7 @@ func runDomainsBasicAuthSet(prog string, args []string, stdout, stderr io.Writer
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -116,17 +116,17 @@ func runDomainsBasicAuthSet(prog string, args []string, stdout, stderr io.Writer
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set basic auth for domain %q: %w", domain, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, auth, func() { printDomainBasicAuthHuman(stdout, auth) })
+	return writeScheduledTaskResult(stdout, stderr, of, auth, func() { printDomainBasicAuthHuman(stdout, auth) })
 }
 
 func runDomainsBasicAuthClear(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "domains basic-auth clear", domainsBasicAuthJSONUsage, stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains basic-auth clear", domainsBasicAuthJSONUsage, stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains basic-auth clear <app> <domain> [flags]\n\nRemoves basic auth protection from <domain>.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -144,7 +144,7 @@ func runDomainsBasicAuthClear(prog string, args []string, stdout, stderr io.Writ
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("clear basic auth for domain %q: %w", domain, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, auth, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, auth, func() {
 		_, _ = fmt.Fprintf(stdout, "basic auth removed for domain %q\n", domain)
 	})
 }

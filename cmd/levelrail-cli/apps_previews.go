@@ -62,10 +62,10 @@ Run "%[1]s apps previews <subcommand> -h" for a subcommand's own flags.
 }
 
 func runAppsPreviewsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps previews list", "print previews as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps previews list", "print previews as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPreviewsListUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -81,7 +81,7 @@ func runAppsPreviewsList(prog string, args []string, stdout, stderr io.Writer, l
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list previews for app %q: %w", appName, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, previews, func() { printPreviewEnvironmentsTable(stdout, previews) })
+	return writeScheduledTaskResult(stdout, stderr, of, previews, func() { printPreviewEnvironmentsTable(stdout, previews) })
 }
 
 func printPreviewEnvironmentsTable(out io.Writer, previews []previewEnvironmentResource) {
@@ -116,15 +116,17 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print previews as a JSON array to stdout, nothing else
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runAppsPreviewsTeardown(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps previews teardown", "print {} to stdout on success instead of a plain confirmation", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps previews teardown", "print {} to stdout on success instead of a plain confirmation", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPreviewsTeardownUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -146,7 +148,7 @@ func runAppsPreviewsTeardown(prog string, args []string, stdout, stderr io.Write
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("teardown preview for app %q pr #%d: %w", appName, prNumber, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, map[string]any{}, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, map[string]any{}, func() {
 		_, _ = fmt.Fprintf(stdout, "preview for app %q pr #%d torn down\n", appName, prNumber)
 	})
 }
@@ -164,7 +166,9 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print {} to stdout on success instead of a plain confirmation
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
@@ -173,10 +177,10 @@ func runAppsPreviewsSetEnabled(prog string, args []string, stdout, stderr io.Wri
 	if !enabled {
 		verb = "disable"
 	}
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps previews "+verb, "print the resulting setting as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps previews "+verb, "print the resulting setting as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPreviewsSetEnabledUsage(prog, verb)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -192,7 +196,7 @@ func runAppsPreviewsSetEnabled(prog string, args []string, stdout, stderr io.Wri
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s previews for app %q: %w", verb, appName, err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, result, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, result, func() {
 		_, _ = fmt.Fprintf(stdout, "preview environments %sd for app %q\n", verb, appName)
 	})
 }
@@ -209,15 +213,17 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the resulting setting as JSON to stdout, nothing else
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL, verb)
 }
 
 func runAppsPreviewsSweep(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps previews sweep", "print the swept count as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps previews sweep", "print the swept count as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPreviewsSweepUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -228,7 +234,7 @@ func runAppsPreviewsSweep(prog string, args []string, stdout, stderr io.Writer, 
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("sweep preview environments: %w", err))
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, jsonOut, result, func() {
+	return writeScheduledTaskResult(stdout, stderr, of, result, func() {
 		_, _ = fmt.Fprintf(stdout, "swept %d stale preview environment(s)\n", result.Swept)
 	})
 }
@@ -248,6 +254,8 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the swept count as JSON to stdout, nothing else
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

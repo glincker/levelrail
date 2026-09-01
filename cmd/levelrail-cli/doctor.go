@@ -10,10 +10,10 @@ import (
 // preflight bundle a superset of "status" (status.go) bundling several
 // individual local health checks into one report.
 func runDoctor(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "doctor", "print the doctor report as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "doctor", "print the doctor report as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, doctorUsage(prog)) }
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -25,20 +25,15 @@ func runDoctor(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get system doctor report: %w", err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, report); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
+	if err := renderResult(stdout, of.Format, of.Query, report, func() { printSystemDoctorHuman(stdout, report) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
 	}
-	printSystemDoctorHuman(stdout, report)
-
-	if !report.OK {
-		// doctor's own exit contract ("0 all ok, 1 any check failed") is
-		// a report on the checks themselves, not a request-classification
-		// code, so it reuses exitUsage's numeric value (1) as the
-		// generic "not all clean" signal rather than adding a second,
+	if of.Format == outputTable && !report.OK {
+		// doctor's own exit contract ("0 all ok, 1 any check failed") is a
+		// report on the checks themselves, not a request-classification
+		// code, so it reuses exitUsage's numeric value (1) as the generic
+		// "not all clean" signal rather than adding a second,
 		// unused-elsewhere constant for the same number.
 		return exitUsage
 	}
@@ -60,6 +55,8 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the doctor report as JSON to stdout, nothing else
-  -h, --help              show this help
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
