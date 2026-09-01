@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import {
   UserIcon,
   ShieldIcon,
+  ShieldCheckIcon,
   KeyIcon,
   LockKeyIcon,
   UsersIcon,
@@ -64,6 +65,13 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: TerminalWindowIcon,
         title: 'CLI access',
         description: 'Approve or deny logins started with levelrail-cli auth login.',
+      },
+      {
+        to: '/settings/iam-policies',
+        icon: ShieldCheckIcon,
+        title: 'IAM policies',
+        description:
+          'Resource-scoped Allow/Deny access, layered on top of a token’s own abilities.',
       },
     ],
   },
