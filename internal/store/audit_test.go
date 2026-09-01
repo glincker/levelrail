@@ -18,6 +18,7 @@ func testAuditEntry(id, createdAt string) AuditEntry {
 		StatusCode: 201,
 		RemoteAddr: "127.0.0.1",
 		CreatedAt:  createdAt,
+		ClientKind: "api",
 	}
 }
 
@@ -146,5 +147,66 @@ func TestListAuditEntries_FilterByPathAndMethod(t *testing.T) {
 	}
 	if len(got) != 1 || got[0].ID != "aud_put" {
 		t.Fatalf("ListAuditEntries(filter) = %+v, want only aud_put", got)
+	}
+}
+
+func TestListAuditEntries_FilterByClientKind(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	cliEntry := testAuditEntry("aud_cli", "2026-01-01T00:00:00.000000000Z")
+	cliEntry.ClientKind = "cli"
+	dashboardEntry := testAuditEntry("aud_dashboard", "2026-01-01T00:00:01.000000000Z")
+	dashboardEntry.ClientKind = "dashboard"
+
+	for _, e := range []AuditEntry{cliEntry, dashboardEntry} {
+		if err := db.SaveAuditEntry(ctx, e); err != nil {
+			t.Fatalf("SaveAuditEntry(%s) error = %v", e.ID, err)
+		}
+	}
+
+	got, err := db.ListAuditEntries(ctx, 50, nil, AuditEntryFilter{ClientKind: "cli"})
+	if err != nil {
+		t.Fatalf("ListAuditEntries(filter) error = %v", err)
+	}
+	if len(got) != 1 || got[0].ID != "aud_cli" {
+		t.Fatalf("ListAuditEntries(filter) = %+v, want only aud_cli", got)
+	}
+	if got[0].ClientKind != "cli" {
+		t.Errorf("ClientKind = %q, want cli", got[0].ClientKind)
+	}
+}
+
+func TestDeleteAuditEntriesOlderThan(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	old := testAuditEntry("aud_old", "2026-01-01T00:00:00.000000000Z")
+	recent := testAuditEntry("aud_recent", "2026-06-01T00:00:00.000000000Z")
+	for _, e := range []AuditEntry{old, recent} {
+		if err := db.SaveAuditEntry(ctx, e); err != nil {
+			t.Fatalf("SaveAuditEntry(%s) error = %v", e.ID, err)
+		}
+	}
+
+	cutoff, err := time.Parse(time.RFC3339Nano, "2026-03-01T00:00:00.000000000Z")
+	if err != nil {
+		t.Fatalf("parse cutoff: %v", err)
+	}
+
+	n, err := db.DeleteAuditEntriesOlderThan(ctx, cutoff)
+	if err != nil {
+		t.Fatalf("DeleteAuditEntriesOlderThan() error = %v", err)
+	}
+	if n != 1 {
+		t.Fatalf("deleted = %d, want 1", n)
+	}
+
+	got, err := db.ListAuditEntries(ctx, 50, nil, AuditEntryFilter{})
+	if err != nil {
+		t.Fatalf("ListAuditEntries() error = %v", err)
+	}
+	if len(got) != 1 || got[0].ID != "aud_recent" {
+		t.Fatalf("ListAuditEntries() = %+v, want only aud_recent left", got)
 	}
 }

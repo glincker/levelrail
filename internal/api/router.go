@@ -185,6 +185,11 @@ type Router struct {
 	// for a missed pull-request-closed webhook delivery. 0 means "use
 	// the default", set via WithPreviewTTL.
 	previewTTL time.Duration
+	// auditLogRetention overrides defaultAuditLogRetention
+	// (audit_retention.go): how long an audit_log row survives before
+	// PurgeOldAuditEntries removes it. 0 means "use the default", set via
+	// WithAuditLogRetention.
+	auditLogRetention time.Duration
 	// resourceRecommendationLookback overrides
 	// defaultResourceRecommendationLookback for GET
 	// /api/v1/apps/{name}/resource-recommendation's usage-history window.

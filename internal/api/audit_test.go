@@ -334,7 +334,7 @@ func TestAuditLogRoute_CSVExport(t *testing.T) {
 	if len(rows) != 2 {
 		t.Fatalf("len(rows) = %d, want 2 (header + one entry), got %v", len(rows), rows)
 	}
-	wantHeader := []string{"id", "actor_type", "actor_id", "actor_name", "ability", "method", "path", "status_code", "remote_addr", "created_at"}
+	wantHeader := []string{"id", "actor_type", "actor_id", "actor_name", "ability", "method", "path", "status_code", "remote_addr", "created_at", "client_kind"}
 	if !reflect.DeepEqual(rows[0], wantHeader) {
 		t.Errorf("header row = %v, want %v", rows[0], wantHeader)
 	}
@@ -343,6 +343,162 @@ func TestAuditLogRoute_CSVExport(t *testing.T) {
 	}
 	if rows[1][7] != strconv.Itoa(http.StatusCreated) {
 		t.Errorf("status_code column = %q, want %d", rows[1][7], http.StatusCreated)
+	}
+}
+
+// TestAudit_ClientKind_CLI proves a request carrying the CLI's own
+// User-Agent (cmd/levelrail-cli/client.go's apiclient.WithUserAgent) is
+// recorded with client_kind "cli".
+func TestAudit_ClientKind_CLI(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	const plaintext = "cli-actor-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_cli", Name: "cli token", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWrite}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/apps", strings.NewReader(`{"name":"cliapp","image":"levelrail/cliapp:1","port":3000}`))
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	req.Header.Set("User-Agent", "levelrail-cli/v1.4.0")
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create app status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	entries := listAuditLog(t, rt, cookie)
+	var found *auditLogEntryResource
+	for i := range entries {
+		if entries[i].Path == "/api/v1/apps" && entries[i].Method == http.MethodPost && entries[i].ActorID == "tok_cli" {
+			found = &entries[i]
+			break
+		}
+	}
+	if found == nil {
+		t.Fatalf("no audit entry recorded for the cli-attributed request, got %+v", entries)
+	}
+	if found.ClientKind != ClientKindCLI {
+		t.Errorf("ClientKind = %q, want %q", found.ClientKind, ClientKindCLI)
+	}
+}
+
+// TestAudit_ClientKind_Dashboard proves a request carrying a real
+// browser's own User-Agent (what the web dashboard's fetch() calls send,
+// since browsers block JS from overriding it) is recorded with
+// client_kind "dashboard".
+func TestAudit_ClientKind_Dashboard(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	req := authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"dashapp","image":"levelrail/dashapp:1","port":3000}`)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create app status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	entries := listAuditLog(t, rt, cookie)
+	var found *auditLogEntryResource
+	for i := range entries {
+		if entries[i].Path == "/api/v1/apps" && entries[i].Method == http.MethodPost {
+			found = &entries[i]
+			break
+		}
+	}
+	if found == nil {
+		t.Fatalf("no audit entry recorded for the browser-shaped request, got %+v", entries)
+	}
+	if found.ClientKind != ClientKindDashboard {
+		t.Errorf("ClientKind = %q, want %q", found.ClientKind, ClientKindDashboard)
+	}
+}
+
+// TestHandlePurgeAuditLog_RequiresRoot proves POST /api/v1/audit-log/purge
+// shares the read route's own AbilityRoot gate.
+func TestHandlePurgeAuditLog_RequiresRoot(t *testing.T) {
+	rt, db := newTestRouter(t)
+	ctx := context.Background()
+
+	const plaintext = "read-only-token-purge" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_ro_purge", Name: "read only", TokenHash: hashToken(plaintext), Abilities: []string{AbilityRead}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/audit-log/purge", nil)
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want %d: a read-scoped token must not purge the audit log", rec.Code, http.StatusForbidden)
+	}
+}
+
+// TestHandlePurgeAuditLog_DeletesOldEntriesOnly proves the purge endpoint
+// removes only entries older than the configured retention window,
+// leaving recent ones (including the purge request's own audit entry)
+// intact.
+func TestHandlePurgeAuditLog_DeletesOldEntriesOnly(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	rt.auditLogRetention = 24 * time.Hour
+
+	old := store.AuditEntry{
+		ID: "aud_purge_old", ActorType: "session", ActorID: "user_seed", ActorName: "seed",
+		Ability: AbilityWrite, Method: http.MethodPost, Path: "/api/v1/apps", StatusCode: http.StatusCreated,
+		RemoteAddr: "127.0.0.1", CreatedAt: store.FormatAuditTime(time.Now().Add(-30 * 24 * time.Hour)), ClientKind: ClientKindAPI,
+	}
+	if err := db.SaveAuditEntry(ctx, old); err != nil {
+		t.Fatalf("seed old entry: %v", err)
+	}
+
+	recent := store.AuditEntry{
+		ID: "aud_purge_recent", ActorType: "session", ActorID: "user_seed", ActorName: "seed",
+		Ability: AbilityWrite, Method: http.MethodPost, Path: "/api/v1/apps", StatusCode: http.StatusCreated,
+		RemoteAddr: "127.0.0.1", CreatedAt: store.FormatAuditTime(time.Now().Add(-1 * time.Hour)), ClientKind: ClientKindAPI,
+	}
+	if err := db.SaveAuditEntry(ctx, recent); err != nil {
+		t.Fatalf("seed recent entry: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/audit-log/purge", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("purge status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	var got purgeAuditLogResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode purge response: %v", err)
+	}
+	if got.Deleted != 1 {
+		t.Fatalf("Deleted = %d, want 1", got.Deleted)
+	}
+
+	remaining, err := db.ListAuditEntries(ctx, 50, nil, store.AuditEntryFilter{})
+	if err != nil {
+		t.Fatalf("ListAuditEntries: %v", err)
+	}
+	for _, e := range remaining {
+		if e.ID == "aud_purge_old" {
+			t.Errorf("aud_purge_old should have been purged, still present: %+v", e)
+		}
+	}
+	foundRecent := false
+	for _, e := range remaining {
+		if e.ID == "aud_purge_recent" {
+			foundRecent = true
+		}
+	}
+	if !foundRecent {
+		t.Errorf("aud_purge_recent should have survived the purge, remaining = %+v", remaining)
 	}
 }
 

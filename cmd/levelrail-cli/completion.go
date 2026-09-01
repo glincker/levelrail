@@ -87,14 +87,15 @@ var cliCommandTree = map[string]*cmdNode{
 		"cordon": nil, "uncordon": nil, "drain": nil, "workloads": nil,
 		"health": nil, "patch-status": nil,
 	}},
-	"status":     nil,
-	"version":    nil,
-	"audit-log":  nil,
-	"doctor":     nil,
-	"users":      {subs: map[string]*cmdNode{"list": nil, "create": nil, "set-abilities": nil, "delete": nil, "roles": nil}},
-	"secrets":    {subs: map[string]*cmdNode{"rotate-master-key": nil}},
-	"migrate":    {subs: map[string]*cmdNode{"coolify": nil, "dokploy": nil, "caprover": nil}},
-	"completion": {subs: map[string]*cmdNode{"bash": nil, "zsh": nil, "fish": nil}},
+	"status":      nil,
+	"version":     nil,
+	"audit-log":   nil,
+	"audit-purge": nil,
+	"doctor":      nil,
+	"users":       {subs: map[string]*cmdNode{"list": nil, "create": nil, "set-abilities": nil, "delete": nil, "roles": nil}},
+	"secrets":     {subs: map[string]*cmdNode{"rotate-master-key": nil}},
+	"migrate":     {subs: map[string]*cmdNode{"coolify": nil, "dokploy": nil, "caprover": nil}},
+	"completion":  {subs: map[string]*cmdNode{"bash": nil, "zsh": nil, "fish": nil}},
 }
 
 // globalFlags lists the flags apiFlagSet registers on nearly every

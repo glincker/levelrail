@@ -572,6 +572,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// other identity on this control plane, not an ordinary per-app
 	// read.
 	mux.HandleFunc("GET /api/v1/audit-log", rt.requireAbility(AbilityRoot, rt.handleListAuditLog))
+	// Manual retention purge (audit_retention.go): runs the same
+	// operator-configured retention window PurgeOldAuditEntries' own
+	// periodic sweep uses, on demand instead of waiting for its next
+	// tick. AbilityRoot, matching the read route above: clearing audit
+	// history is at least as sensitive as reading it.
+	mux.HandleFunc("POST /api/v1/audit-log/purge", rt.requireAbility(AbilityRoot, rt.handlePurgeAuditLog))
 
 	// Log drain (apps_log_drain.go): forwards an app's container logs to
 	// an external HTTP or syslog sink, additive to the existing
