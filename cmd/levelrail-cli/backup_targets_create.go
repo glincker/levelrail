@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 )
@@ -12,7 +11,7 @@ import (
 // required here, unlike "backup-targets update" where rotating
 // credentials is optional.
 func runBackupTargetsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "backup-targets create", "print the created backup target as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "backup-targets create", "print the created backup target as JSON to stdout and nothing else", stderr)
 	var name, provider, endpoint, region, bucket, accessKeyID, secretAccessKey string
 	fs.StringVar(&name, "name", "", "display name for the backup target (required)")
 	fs.StringVar(&provider, "provider", "", "provider: aws, r2, or custom (required)")
@@ -23,13 +22,10 @@ func runBackupTargetsCreate(prog string, args []string, stdout, stderr io.Writer
 	fs.StringVar(&secretAccessKey, "secret-access-key", "", "secret access key (required)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupTargetsCreateUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
@@ -47,7 +43,7 @@ func runBackupTargetsCreate(prog string, args []string, stdout, stderr io.Writer
 		return reportError(stdout, stderr, jsonOut, newValidationError("--secret-access-key is required"))
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	created, err := client.CreateBackupTarget(context.Background(), createBackupTargetRequest{
 		Name: name, Provider: provider, Endpoint: endpoint, Region: region, Bucket: bucket,
@@ -84,6 +80,7 @@ Flags:
   --secret-access-key string      secret access key (required)
   --token string                 API token (default: %[2]s env var, then the credentials file)
   --api-url string               control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string               named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                            print the created backup target as JSON to stdout, nothing else
   -h, --help                     show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

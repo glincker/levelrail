@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"text/tabwriter"
@@ -15,51 +14,26 @@ import (
 // already made, the CLI counterpart of the backup history badge in the
 // web dashboard's own backup history table.
 func runBackupsVerifications(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" backups verifications", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, backupID string
-	var jsonOut bool
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "backups verifications", "print verification history as a JSON array to stdout and nothing else", stderr)
+	var backupID string
 	fs.StringVar(&backupID, "backup", "", "id of a backup to show verification history for (required)")
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print verification history as a JSON array to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsVerificationsUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "backups verifications", "database name"}, lookupEnv)
+	if !ok {
+		return exitCode
 	}
-
-	rest := fs.Args()
-	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: backups verifications requires exactly one database name\n\n", prog)
-		fs.Usage()
-		return exitUsage
-	}
-	name := rest[0]
 
 	if backupID == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--backup is required"))
 	}
-
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
 
 	verifications, err := client.ListBackupVerifications(context.Background(), name, backupID)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list verifications for backup %q: %w", backupID, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, verifications); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	printBackupVerificationsTable(stdout, verifications)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, verifications, func() { printBackupVerificationsTable(stdout, verifications) })
 }
 
 // printBackupVerificationsTable prints a compact, aligned table of
@@ -100,6 +74,7 @@ Flags:
   --backup string          id of a backup to show verification history for (required)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print verification history as a JSON array to stdout, nothing else
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

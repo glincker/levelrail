@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 )
@@ -16,7 +15,7 @@ import (
 // them), --abilities is the raw, hand-picked list "tokens create" itself
 // already uses.
 func runUsersCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "users create", "print the created user as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "users create", "print the created user as JSON to stdout and nothing else", stderr)
 	var email, password, displayName, abilitiesFlag, role string
 	fs.StringVar(&email, "email", "", "email for the new user (required)")
 	fs.StringVar(&password, "password", "", "password for the new user, at least 8 characters (required)")
@@ -25,13 +24,10 @@ func runUsersCreate(prog string, args []string, stdout, stderr io.Writer, lookup
 	fs.StringVar(&abilitiesFlag, "abilities", "", "comma-separated ability list, e.g. \"read,deploy\" (valid: read, read:sensitive, write, write:sensitive, deploy, root); alternative to --role")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, usersCreateUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
 	if email == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--email is required"))
@@ -46,7 +42,7 @@ func runUsersCreate(prog string, args []string, stdout, stderr io.Writer, lookup
 		return reportError(stdout, stderr, jsonOut, newValidationError("--role and --abilities are mutually exclusive"))
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	created, err := client.CreateUser(context.Background(), createUserRequest{
 		Email:       email,
@@ -86,6 +82,7 @@ Flags:
   --abilities string         comma-separated ability list (valid: read, read:sensitive, write, write:sensitive, deploy, root)
   --token string             API token (default: %[2]s env var, then the credentials file)
   --api-url string          control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string          named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                       print the created user as JSON to stdout, nothing else
   -h, --help                 show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

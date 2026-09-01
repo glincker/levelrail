@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -14,21 +13,14 @@ import (
 // raw bytes as the request body. Fans one compose.yaml out into one app
 // plus its member services, all in a single synchronous call.
 func runAppsDeployCompose(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" apps deploy-compose", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, file string
-	var jsonOut bool
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps deploy-compose", "print the full deploy result as JSON to stdout and nothing else", stderr)
+	var file string
 	fs.StringVar(&file, "file", "", "path to a Docker Compose YAML file (required)")
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print the full deploy result as JSON to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeployComposeUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
 
 	rest := fs.Args()
@@ -48,7 +40,7 @@ func runAppsDeployCompose(prog string, args []string, stdout, stderr io.Writer, 
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("read %s: %w", file, readErr))
 	}
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	result, err := client.DeployCompose(context.Background(), name, data)
 	if err != nil {
@@ -88,6 +80,7 @@ Flags:
   --file string           path to a Docker Compose YAML file (required)
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the full deploy result as JSON to stdout, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 )
@@ -12,23 +11,20 @@ import (
 // comment covers the known gap that this removes desired state only, it
 // does not itself stop the running container).
 func runAppsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeleteUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
 	name, ok := requireOneArg(fs, stderr, prog, "apps delete", "app name")
 	if !ok {
 		return exitUsage
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	if err := client.DeleteApp(context.Background(), name); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete app %q: %w", name, err))
@@ -55,6 +51,7 @@ container; the next reconcile pass tears it down.
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print {"deleted": true} as JSON to stdout on success, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

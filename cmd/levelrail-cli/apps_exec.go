@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 )
@@ -59,22 +58,14 @@ const defaultExecTimeoutSeconds = 30
 // project-wide in this package's run()/main() split rather than
 // needing a second one just for this command.
 func runAppsExec(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" apps exec", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag string
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps exec", "print the full exec result (stdout, stderr, exit_code, truncated) as JSON to stdout and nothing else, instead of writing stdout/stderr directly", stderr)
 	var timeoutSeconds int
-	var jsonOut bool
 	fs.IntVar(&timeoutSeconds, "timeout", defaultExecTimeoutSeconds, "command timeout in seconds (the server enforces a hard ceiling of its own; this can only ask for less, never more)")
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print the full exec result (stdout, stderr, exit_code, truncated) as JSON to stdout and nothing else, instead of writing stdout/stderr directly")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsExecUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
 
 	rest := fs.Args()
@@ -91,7 +82,7 @@ func runAppsExec(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return reportError(stdout, stderr, jsonOut, newValidationError("--timeout must not be negative"))
 	}
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	result, err := client.ExecApp(context.Background(), name, execRequest{Command: command, Args: cmdArgs, TimeoutSeconds: timeoutSeconds})
 	if err != nil {
@@ -136,6 +127,7 @@ Flags:
   --timeout int            command timeout in seconds, default %[5]d (the server enforces its own hard ceiling; this can only ask for less)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the full exec result (stdout, stderr, exit_code, truncated) as JSON to stdout, nothing else
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL, defaultExecTimeoutSeconds)

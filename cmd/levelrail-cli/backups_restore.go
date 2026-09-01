@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"strings"
@@ -64,22 +63,15 @@ func resolveRestoreConfirmation(databaseName, confirmFlag string, stdin io.Reade
 // caller who gets the confirmation wrong never sends a byte to the
 // server.
 func runBackupsRestore(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
-	fs := flag.NewFlagSet(prog+" backups restore", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, backupID, confirm string
-	var jsonOut bool
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "backups restore", "print the started restore attempt as JSON to stdout and nothing else", stderr)
+	var backupID, confirm string
 	fs.StringVar(&backupID, "backup", "", "id of a previously succeeded backup to restore from (required)")
 	fs.StringVar(&confirm, "confirm", "", "must exactly equal the database name to skip the interactive confirmation prompt")
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print the started restore attempt as JSON to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsRestoreUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
 
 	rest := fs.Args()
@@ -98,7 +90,7 @@ func runBackupsRestore(prog string, args []string, stdout, stderr io.Writer, loo
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	started, err := client.TriggerRestore(context.Background(), name, backupID)
 	if err != nil {
@@ -133,6 +125,7 @@ Flags:
   --confirm string        must exactly equal <database> to skip the interactive prompt
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the started restore attempt as JSON to stdout, nothing else
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

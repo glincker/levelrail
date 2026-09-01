@@ -20,7 +20,7 @@ import (
 // (environmentNeedsConfirmation, internal/api/promote.go), same
 // client-side interactive fallback (resolveProtectedEnvironmentConfirmation).
 func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps promote", "print the result as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps promote", "print the result as JSON to stdout and nothing else", stderr)
 	var to, target string
 	var preview, confirm bool
 	fs.StringVar(&to, "to", "", "destination environment ID (required)")
@@ -30,7 +30,7 @@ func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookup
 	fs.BoolVar(&confirm, "confirm", false, "confirm promoting into a protected environment; omit to be prompted interactively if needed")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPromoteUsage(prog)) }
 
-	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, tokenFlagP, apiURLFlagP, jsonOutP, stderr, prog, "apps promote", lookupEnv)
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "apps promote", "app name"}, lookupEnv)
 	if !ok {
 		return exitCode
 	}
@@ -56,18 +56,9 @@ func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookup
 		return exitOK
 	}
 
-	updated, err := client.PromoteApp(ctx, name, promoteAppRequest{To: to, Target: target, Confirm: confirm})
-	if !confirm {
-		if apiErr, ok := protectedEnvironmentError(err); ok {
-			confirmed, cerr := resolveProtectedEnvironmentConfirmation(apiErr.Message, stdin, stderr)
-			if cerr != nil {
-				return reportError(stdout, stderr, jsonOut, cerr)
-			}
-			if confirmed {
-				updated, err = client.PromoteApp(ctx, name, promoteAppRequest{To: to, Target: target, Confirm: true})
-			}
-		}
-	}
+	updated, err := confirmProtectedEnvironment(confirm, stdin, stderr, func(confirm bool) (appResource, error) {
+		return client.PromoteApp(ctx, name, promoteAppRequest{To: to, Target: target, Confirm: confirm})
+	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("promote app %q: %w", name, err))
 	}
@@ -130,6 +121,7 @@ Flags:
   --dry-run                 alias for --preview
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the result as JSON to stdout, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

@@ -5,9 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"os"
-
-	"golang.org/x/term"
 )
 
 // runTokensRevoke implements "tokens revoke <id>": DELETE
@@ -18,14 +15,7 @@ import (
 // existed, not one already revoked), so this command reports the same
 // success for "revoked just now" and "was already revoked."
 func runTokensRevoke(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
-	fs := flag.NewFlagSet(prog+" tokens revoke", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var username, password, apiURLFlag string
-	var jsonOut bool
-	fs.StringVar(&username, "username", "", "admin username (prompted if omitted)")
-	fs.StringVar(&password, "password", "", "admin password (prompted without echo if omitted)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print a JSON result object to stdout and nothing else")
+	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP := sessionFlagSet(prog, "tokens revoke", "print a JSON result object to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tokensRevokeUsage(prog)) }
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
@@ -34,6 +24,7 @@ func runTokensRevoke(prog string, args []string, stdout, stderr io.Writer, looku
 		}
 		return exitUsage
 	}
+	jsonOut := *jsonOutP
 
 	rest := fs.Args()
 	if len(rest) != 1 {
@@ -43,38 +34,17 @@ func runTokensRevoke(prog string, args []string, stdout, stderr io.Writer, looku
 	}
 	id := rest[0]
 
-	readPassword := func() (string, error) {
-		b, err := term.ReadPassword(int(os.Stdin.Fd()))
-		return string(b), err
-	}
-	resolvedUsername, resolvedPassword, err := resolveLoginCredentials(username, password, stdin, stderr, readPassword)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, err)
-	}
-
-	sessionClient, err := newAuthSessionClient(resolveAPIURL(apiURLFlag, lookupEnv, prog))
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, err)
-	}
-
 	ctx := context.Background()
-	if _, err := sessionClient.Login(ctx, resolvedUsername, resolvedPassword); err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("log in as %q: %w", resolvedUsername, err))
+	sessionClient, _, err := loggedInSessionClient(ctx, sessionFlags{*usernameP, *passwordP, *apiURLFlagP, *profileFlagP}, prog, lookupEnv, stdin, stderr)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
 	}
 
 	if err := sessionClient.RevokeToken(ctx, id); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("revoke token %q: %w", id, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, map[string]string{"id": id, "status": "revoked"}); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	_, _ = fmt.Fprintf(stdout, "token %q revoked\n", id)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, map[string]string{"id": id, "status": "revoked"}, func() { _, _ = fmt.Fprintf(stdout, "token %q revoked\n", id) })
 }
 
 func tokensRevokeUsage(prog string) string {
@@ -89,6 +59,7 @@ Flags:
   --username string          admin username (prompted if omitted)
   --password string          admin password (prompted without echo if omitted)
   --api-url string             control plane base URL (default: %[2]s env var, then %[3]s)
+  --profile string             named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                          print a JSON result object to stdout, nothing else
   -h, --help                    show this help
 `, prog, envAPIURL, defaultAPIURL)

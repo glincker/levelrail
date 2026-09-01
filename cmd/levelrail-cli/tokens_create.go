@@ -5,9 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"os"
-
-	"golang.org/x/term"
 )
 
 // runTokensCreate implements "tokens create --name NAME --abilities
@@ -31,18 +28,12 @@ import (
 // again, the same GitHub PAT convention the server's own doc comments
 // describe.
 func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
-	fs := flag.NewFlagSet(prog+" tokens create", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var username, password, apiURLFlag, name, abilitiesFlag string
+	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP := sessionFlagSet(prog, "tokens create", "print the new token resource as JSON to stdout and nothing else", stderr)
+	var name, abilitiesFlag string
 	var expiresInDays int
-	var jsonOut bool
 	fs.StringVar(&name, "name", "", "name for the new token (required)")
 	fs.StringVar(&abilitiesFlag, "abilities", "", "comma-separated ability list, e.g. \"read,deploy\" (required; valid: read, read:sensitive, write, write:sensitive, deploy, root)")
 	fs.IntVar(&expiresInDays, "expires-in-days", 0, "token lifetime in days (default: 0, never expires)")
-	fs.StringVar(&username, "username", "", "admin username (prompted if omitted)")
-	fs.StringVar(&password, "password", "", "admin password (prompted without echo if omitted)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print the new token resource as JSON to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tokensCreateUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -51,6 +42,7 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 		}
 		return exitUsage
 	}
+	jsonOut := *jsonOutP
 
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
@@ -63,23 +55,10 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, newValidationError("--expires-in-days must not be negative"))
 	}
 
-	readPassword := func() (string, error) {
-		b, err := term.ReadPassword(int(os.Stdin.Fd()))
-		return string(b), err
-	}
-	resolvedUsername, resolvedPassword, err := resolveLoginCredentials(username, password, stdin, stderr, readPassword)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, err)
-	}
-
-	sessionClient, err := newAuthSessionClient(resolveAPIURL(apiURLFlag, lookupEnv, prog))
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, err)
-	}
-
 	ctx := context.Background()
-	if _, err := sessionClient.Login(ctx, resolvedUsername, resolvedPassword); err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("log in as %q: %w", resolvedUsername, err))
+	sessionClient, _, err := loggedInSessionClient(ctx, sessionFlags{*usernameP, *passwordP, *apiURLFlagP, *profileFlagP}, prog, lookupEnv, stdin, stderr)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
 	}
 
 	created, err := sessionClient.CreateToken(ctx, createTokenRequest{Name: name, Abilities: abilities, ExpiresInDays: expiresInDays})
@@ -87,16 +66,10 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create token %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, created); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	_, _ = fmt.Fprintf(stdout, "token %q (id %s) created\n", created.Name, created.ID)
-	_, _ = fmt.Fprintf(stdout, "token value (shown once, not recoverable again): %s\n", created.Token)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, created, func() {
+		_, _ = fmt.Fprintf(stdout, "token %q (id %s) created\n", created.Name, created.ID)
+		_, _ = fmt.Fprintf(stdout, "token value (shown once, not recoverable again): %s\n", created.Token)
+	})
 }
 
 func tokensCreateUsage(prog string) string {
@@ -115,6 +88,7 @@ Flags:
   --username string          admin username (prompted if omitted)
   --password string          admin password (prompted without echo if omitted)
   --api-url string             control plane base URL (default: %[2]s env var, then %[3]s)
+  --profile string             named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                          print the new token resource as JSON to stdout, nothing else
   -h, --help                    show this help
 `, prog, envAPIURL, defaultAPIURL)

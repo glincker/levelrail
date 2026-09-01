@@ -66,13 +66,14 @@ func main() {
 }
 
 func run(prog string, args []string, lookupEnv func(string) (string, bool), logger *slog.Logger) error {
-	tokenFlag, apiURLFlag, err := parseFlags(prog, args)
+	tokenFlag, apiURLFlag, profileFlag, err := parseFlags(prog, args)
 	if err != nil {
 		return err
 	}
 
-	token := resolveToken(tokenFlag, lookupEnv, prog)
-	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog)
+	profile := resolveProfile(profileFlag, lookupEnv)
+	token := resolveToken(tokenFlag, lookupEnv, prog, profile)
+	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog, profile)
 	client := apiclient.NewClient(apiURL, token, apiclient.WithUserAgent("levelrail-mcp/"+version.Version))
 
 	server := newServer(client)
@@ -84,18 +85,19 @@ func run(prog string, args []string, lookupEnv func(string) (string, bool), logg
 	return server.Run(ctx, &mcp.StdioTransport{})
 }
 
-func parseFlags(prog string, args []string) (token, apiURL string, err error) {
+func parseFlags(prog string, args []string) (token, apiURL, profile string, err error) {
 	fs := flag.NewFlagSet(prog, flag.ContinueOnError)
 	fs.StringVar(&token, "token", "", "API token (overrides "+apiclient.EnvAPIToken+" and the credentials file)")
 	fs.StringVar(&apiURL, "api-url", "", "control plane API base URL (overrides "+apiclient.EnvAPIURL+" and the credentials file, default "+apiclient.DefaultAPIURL+")")
+	fs.StringVar(&profile, "profile", "", "named credentials profile to read (overrides "+apiclient.EnvProfile+", default \""+apiclient.DefaultProfile+"\")")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(fs.Output(), "%s: an MCP server exposing the control plane's REST API as tools over stdio.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	if parseErr := fs.Parse(args); parseErr != nil {
-		return "", "", parseErr
+		return "", "", "", parseErr
 	}
-	return token, apiURL, nil
+	return token, apiURL, profile, nil
 }
 
 // newServer builds the MCP server and registers every tool against

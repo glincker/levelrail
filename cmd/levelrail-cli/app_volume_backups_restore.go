@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"strings"
@@ -49,19 +48,16 @@ func resolveVolumeRestoreConfirmation(appName, volumeName, confirmFlag string, s
 // and can refuse, before this ever builds a Client or reaches the
 // network.
 func runAppVolumeBackupsRestore(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "app-volume-backups restore", "print the started restore attempt as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "app-volume-backups restore", "print the started restore attempt as JSON to stdout and nothing else", stderr)
 	var backupID, confirm string
 	fs.StringVar(&backupID, "backup", "", "id of a previously succeeded backup to restore from (required)")
 	fs.StringVar(&confirm, "confirm", "", "must exactly equal \"<app>/<volume>\" to skip the interactive confirmation prompt")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appVolumeBackupsRestoreUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
 	rest, ok := requireArgs(fs, stderr, prog, "app-volume-backups restore", "an app name and a volume name", 2)
 	if !ok {
@@ -77,7 +73,7 @@ func runAppVolumeBackupsRestore(prog string, args []string, stdout, stderr io.Wr
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	started, err := client.TriggerVolumeRestore(context.Background(), name, volume, backupID)
 	if err != nil {
@@ -111,6 +107,7 @@ Flags:
   --confirm string        must exactly equal "<app>/<volume>" to skip the interactive prompt
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the started restore attempt as JSON to stdout, nothing else
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

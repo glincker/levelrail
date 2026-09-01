@@ -64,6 +64,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runDatabases(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auth":
 		return runAuth(prog, args[1:], stdout, stderr, lookupEnv)
+	case "profile":
+		return runProfile(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tokens":
 		return runTokens(prog, args[1:], stdout, stderr, lookupEnv)
 	case "domains":
@@ -149,7 +151,9 @@ Usage:
   %[1]s iam policies create|list|get|update|delete|attach|detach|attachments [flags]   resource-scoped Allow/Deny policies, additive on top of --abilities
   %[1]s secrets rotate-master-key --new-key-file PATH [flags]   rotate the envelope-encryption master key
   %[1]s auth login [flags]             authenticate and persist a new API token
+  %[1]s auth login --profile NAME [flags]   authenticate and save it under a named profile instead of overwriting "default"
   %[1]s auth whoami [flags]           show who the current token authenticates as
+  %[1]s profile list [flags]           list configured credentials profiles and their API URLs
   %[1]s tokens create|list|revoke [flags]   manage API tokens (requires a live session, see "%[1]s tokens -h")
   %[1]s migrate coolify --url URL --token TOKEN [flags]   migrate apps from a Coolify instance
   %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"
@@ -157,9 +161,17 @@ Usage:
 Auth and target:
   --token, %[2]s          API token
   --api-url, %[3]s      control plane base URL (default %[4]s)
-  or a credentials file at ~/.config/%[1]s/credentials with
-  %[2]s=... and %[3]s=... lines.
+  --profile, %[5]s        named credentials profile to use (default "%[6]s")
+  or a credentials file at ~/.config/%[1]s/credentials, INI-style, with a
+  [default] section (and any named [profile] sections alongside it), each
+  holding its own %[2]s=... and %[3]s=... lines. An operator managing more
+  than one control plane saves each under its own name via
+  "%[1]s auth login --profile NAME" and switches between them with
+  --profile/%[5]s, without re-authenticating or overwriting anything.
+  An explicit --token/--api-url flag always wins over the resolved
+  profile, the same "flag beats everything" precedence every other
+  command in this CLI already follows.
 
 Run "%[1]s apps -h", "%[1]s databases -h", or "%[1]s <command> <subcommand> -h" for more.
-`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+`, prog, envAPIToken, envAPIURL, defaultAPIURL, envProfile, defaultProfile)
 }

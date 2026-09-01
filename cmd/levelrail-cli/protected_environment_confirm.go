@@ -37,3 +37,29 @@ func resolveProtectedEnvironmentConfirmation(message string, stdin io.Reader, st
 	}
 	return strings.TrimSpace(line) == "yes", nil
 }
+
+// confirmProtectedEnvironment runs attempt(confirm) once. If it fails
+// because the target is tagged with a protected environment and confirm
+// was already false, it prompts interactively and retries once with
+// confirm=true when the operator confirms; otherwise it returns
+// attempt's own result and error unchanged. Shared by "apps
+// deploy"/"apps rollback"/"apps promote", which all hit this same
+// protected-environment gate through a different underlying call.
+func confirmProtectedEnvironment(confirm bool, stdin io.Reader, stderr io.Writer, attempt func(confirm bool) (appResource, error)) (appResource, error) {
+	result, err := attempt(confirm)
+	if confirm || err == nil {
+		return result, err
+	}
+	apiErr, ok := protectedEnvironmentError(err)
+	if !ok {
+		return result, err
+	}
+	confirmed, cerr := resolveProtectedEnvironmentConfirmation(apiErr.Message, stdin, stderr)
+	if cerr != nil {
+		return result, cerr
+	}
+	if !confirmed {
+		return result, err
+	}
+	return attempt(true)
+}

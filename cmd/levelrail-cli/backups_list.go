@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"text/tabwriter"
@@ -15,23 +14,16 @@ import (
 // handleListBackupHistory), AbilityRead-gated: passive visibility into
 // attempts already made.
 func runBackupsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" backups list", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, beforeFlag string
-	var jsonOut bool
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "backups list", "print backup history as a JSON array to stdout and nothing else", stderr)
+	var beforeFlag string
 	var limitFlag int
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print backup history as a JSON array to stdout and nothing else")
 	fs.IntVar(&limitFlag, "limit", 0, "max attempts to return (default: server default)")
 	fs.StringVar(&beforeFlag, "before", "", "only show attempts started before this RFC3339 timestamp (page backward using the STARTED column of a prior run)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsListUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
 
 	rest := fs.Args()
@@ -42,7 +34,7 @@ func runBackupsList(prog string, args []string, stdout, stderr io.Writer, lookup
 	}
 	name := rest[0]
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	history, err := client.ListBackups(context.Background(), name, apiclient.ListBackupsOptions{
 		Limit:  limitFlag,
@@ -88,6 +80,7 @@ Lists a database's backup attempt history.
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print backup history as a JSON array to stdout, nothing else
   --limit int              max attempts to return (default: server default)
   --before string          only show attempts started before this RFC3339 timestamp

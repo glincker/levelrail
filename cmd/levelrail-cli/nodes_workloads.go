@@ -17,19 +17,16 @@ import (
 // "flag omitted" apart from "flag explicitly set to false", a
 // distinction plain BoolVar defaults alone can't make.
 func runNodesWorkloads(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "nodes workloads", "print the updated node as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "nodes workloads", "print the updated node as JSON to stdout and nothing else", stderr)
 	var acceptsApp, acceptsBuild bool
 	fs.BoolVar(&acceptsApp, "accepts-app", false, "whether this node accepts app workloads (required)")
 	fs.BoolVar(&acceptsBuild, "accepts-build", false, "whether this node accepts build workloads (required)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesWorkloadsUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
 	id, ok := requireOneArg(fs, stderr, prog, "nodes workloads", "node id")
 	if !ok {
@@ -52,7 +49,7 @@ func runNodesWorkloads(prog string, args []string, stdout, stderr io.Writer, loo
 		return reportError(stdout, stderr, jsonOut, newValidationError("--accepts-build is required"))
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	updated, err := client.SetNodeWorkloads(context.Background(), id, setNodeWorkloadsRequest{
 		AcceptsAppWorkloads:   acceptsApp,
@@ -86,6 +83,7 @@ Flags:
   --accepts-build bool     whether this node accepts build workloads (required)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the updated node as JSON to stdout, nothing else
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

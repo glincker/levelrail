@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 
@@ -15,20 +14,17 @@ import (
 // mirroring runBackupsList's exact shape (backups_list.go) for the
 // volume resource kind.
 func runAppVolumeBackupsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "app-volume-backups list", "print backup history as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "app-volume-backups list", "print backup history as a JSON array to stdout and nothing else", stderr)
 	var limitFlag int
 	var beforeFlag string
 	fs.IntVar(&limitFlag, "limit", 0, "max attempts to return (default: server default)")
 	fs.StringVar(&beforeFlag, "before", "", "only show attempts started before this RFC3339 timestamp (page backward using the STARTED column of a prior run)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appVolumeBackupsListUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
 	rest, ok := requireArgs(fs, stderr, prog, "app-volume-backups list", "an app name and a volume name", 2)
 	if !ok {
@@ -36,7 +32,7 @@ func runAppVolumeBackupsList(prog string, args []string, stdout, stderr io.Write
 	}
 	name, volume := rest[0], rest[1]
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	history, err := client.ListVolumeBackups(context.Background(), name, volume, apiclient.ListBackupsOptions{
 		Limit:  limitFlag,
@@ -66,6 +62,7 @@ Lists an app's named volume's backup attempt history.
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print backup history as a JSON array to stdout, nothing else
   --limit int              max attempts to return (default: server default)
   --before string          only show attempts started before this RFC3339 timestamp

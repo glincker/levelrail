@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"text/tabwriter"
@@ -68,23 +67,20 @@ Run "%[1]s apps alerts <subcommand> -h" for a subcommand's own flags.
 }
 
 func runAppsAlertsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps alerts list", "print rules as a JSON array to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps alerts list", "print rules as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsAlertsListUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
 	appName, ok := requireOneArg(fs, stderr, prog, "apps alerts list", "app name")
 	if !ok {
 		return exitUsage
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	rules, err := client.ListAlertRules(context.Background(), appName)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list alert rules for app %q: %w", appName, err))
@@ -153,13 +149,14 @@ Lists an app's alert rules, including disabled ones.
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print rules as a JSON array to stdout, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps alerts create", "print the created rule as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps alerts create", "print the created rule as JSON to stdout and nothing else", stderr)
 	var (
 		name, kind, metric, comparator, forDuration string
 		threshold                                   float64
@@ -184,13 +181,10 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 	fs.BoolVar(&disabled, "disabled", false, "create the rule disabled (default: enabled)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsAlertsCreateUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
 	appName, ok := requireOneArg(fs, stderr, prog, "apps alerts create", "app name")
 	if !ok {
@@ -238,7 +232,7 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 		return reportError(stdout, stderr, jsonOut, newValidationError("--kind %q is not valid: must be threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, or domain_health", kind))
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	created, err := client.CreateAlertRule(context.Background(), appName, createAlertRuleRequest{
 		Name: name, Kind: kind, Metric: metric, Comparator: comparator, Threshold: threshold, ForDuration: forDuration,
 		RestartCountThreshold: restartCountThreshold, RestartWindow: restartWindow, ScheduledTaskID: scheduledTaskID,
@@ -301,22 +295,20 @@ Flags:
   --disabled                           create the rule disabled (default: enabled)
   --token string                       API token (default: %[2]s env var, then the credentials file)
   --api-url string                    control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string                    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                                 print the created rule as JSON to stdout, nothing else
   -h, --help                           show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 func runAppsAlertsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps alerts delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps alerts delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsAlertsDeleteUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
-	tokenFlag, apiURLFlag, jsonOut := *tokenFlagP, *apiURLFlagP, *jsonOutP
 
 	rest, argsOK := requireArgs(fs, stderr, prog, "apps alerts delete", "an app name and a rule id", 2)
 	if !argsOK {
@@ -324,7 +316,7 @@ func runAppsAlertsDelete(prog string, args []string, stdout, stderr io.Writer, l
 	}
 	appName, id := rest[0], rest[1]
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, lookupEnv)
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	if err := client.DeleteAlertRule(context.Background(), appName, id); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete alert rule %q for app %q: %w", id, appName, err))
 	}
@@ -349,6 +341,7 @@ Deletes one of <app>'s alert rules.
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print {"deleted": true} as JSON to stdout on success, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

@@ -373,7 +373,7 @@ const wizardAppYAMLPath = "app.yaml"
 // runAppsCreateWizard is "apps create --interactive"'s I/O shell: run
 // the question loop, then either write app.yaml or create the app via
 // the API, per the wizard's own last answer.
-func runAppsCreateWizard(stdin io.Reader, stdout, stderr io.Writer, tokenFlag, apiURLFlag string, jsonOut bool, lookupEnv func(string) (string, bool), prog string) int {
+func runAppsCreateWizard(stdin io.Reader, stdout, stderr io.Writer, cf credentialFlags, jsonOut bool, lookupEnv func(string) (string, bool), prog string) int {
 	p := newWizardPrompter(stdin, stderr)
 	answers, err := runInteractiveWizard(p, detectLocalGit())
 	if err != nil {
@@ -383,7 +383,7 @@ func runAppsCreateWizard(stdin io.Reader, stdout, stderr io.Writer, tokenFlag, a
 	if answers.outputMode == wizardOutputFile {
 		return runWizardWriteFile(answers, stdout, stderr, jsonOut)
 	}
-	return runWizardCreateViaAPI(answers, stdout, stderr, tokenFlag, apiURLFlag, jsonOut, lookupEnv, prog)
+	return runWizardCreateViaAPI(answers, stdout, stderr, cf, jsonOut, lookupEnv, prog)
 }
 
 func runWizardWriteFile(a wizardAnswers, stdout, stderr io.Writer, jsonOut bool) int {
@@ -413,15 +413,13 @@ func runWizardWriteFile(a wizardAnswers, stdout, stderr io.Writer, jsonOut bool)
 	return exitOK
 }
 
-func runWizardCreateViaAPI(a wizardAnswers, stdout, stderr io.Writer, tokenFlag, apiURLFlag string, jsonOut bool, lookupEnv func(string) (string, bool), prog string) int {
+func runWizardCreateViaAPI(a wizardAnswers, stdout, stderr io.Writer, cf credentialFlags, jsonOut bool, lookupEnv func(string) (string, bool), prog string) int {
 	plan, err := a.toCreatePlan()
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
-	token := resolveToken(tokenFlag, lookupEnv, prog)
-	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog)
-	client := NewClient(apiURL, token)
+	client := apiClientFromCredentialFlags(prog, cf, lookupEnv)
 	ctx := context.Background()
 
 	created, err := client.CreateApp(ctx, plan.CreateBody)

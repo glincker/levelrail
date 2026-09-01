@@ -2,10 +2,23 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 )
+
+// deployOrRollbackConfig holds the wording that differs between "apps
+// deploy" and "apps rollback", which otherwise send the identical
+// request (client.DeployApp) and share every other line of logic; see
+// runAppsDeploy's own doc comment for why there are two commands for
+// one underlying mechanism at all.
+type deployOrRollbackConfig struct {
+	cmdLabel      string
+	imageHelp     string
+	confirmHelp   string
+	usage         func(string) string
+	errContext    string
+	successFormat string
+}
 
 // runAppsDeploy implements "apps deploy <name> --image <ref>": POST
 // /api/v1/apps/{name}/deploys (internal/api/deploys.go's own
@@ -27,7 +40,8 @@ import (
 // "rollback" and get rollback-framed output, the same distinction the
 // web frontend's DeployAttemptsList.tsx already draws between its
 // deploy form and its "Rollback to this build" button (both call the
-// same mutation).
+// same mutation). runAppsDeployOrRollback below is their shared
+// implementation, parameterized by only the wording that differs.
 //
 // If name is tagged with a protected environment, the server rejects an
 // unconfirmed deploy with a 409; --confirm skips straight past that,
@@ -36,27 +50,35 @@ import (
 // scripted shape backups_restore.go's own resolveRestoreConfirmation
 // uses for a destructive database restore.
 func runAppsDeploy(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
-	fs := flag.NewFlagSet(prog+" apps deploy", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, image string
-	var jsonOut, confirm bool
-	fs.StringVar(&image, "image", "", "image reference to deploy, e.g. registry.example.com/org/app:tag (required)")
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print the updated app as JSON to stdout and nothing else")
-	fs.BoolVar(&confirm, "confirm", false, "confirm deploying into a protected environment; omit to be prompted interactively if needed")
-	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeployUsage(prog)) }
+	return runAppsDeployOrRollback(prog, args, stdout, stderr, lookupEnv, stdin, deployOrRollbackConfig{
+		cmdLabel:      "apps deploy",
+		imageHelp:     "image reference to deploy, e.g. registry.example.com/org/app:tag (required)",
+		confirmHelp:   "confirm deploying into a protected environment; omit to be prompted interactively if needed",
+		usage:         appsDeployUsage,
+		errContext:    "deploy",
+		successFormat: "app %q now targets image %q; reconcile is asynchronous, check \"%s apps status %s\"\n",
+	})
+}
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+// runAppsDeployOrRollback is runAppsDeploy/runAppsRollback's shared
+// implementation: see runAppsDeploy's own doc comment for why there are
+// two commands over one underlying mechanism.
+func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader, cfg deployOrRollbackConfig) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, cfg.cmdLabel, "print the updated app as JSON to stdout and nothing else", stderr)
+	var image string
+	var confirm bool
+	fs.StringVar(&image, "image", "", cfg.imageHelp)
+	fs.BoolVar(&confirm, "confirm", false, cfg.confirmHelp)
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, cfg.usage(prog)) }
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
 
 	rest := fs.Args()
 	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: apps deploy requires exactly one app name\n\n", prog)
+		_, _ = fmt.Fprintf(stderr, "%s: %s requires exactly one app name\n\n", prog, cfg.cmdLabel)
 		fs.Usage()
 		return exitUsage
 	}
@@ -66,35 +88,20 @@ func runAppsDeploy(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return reportError(stdout, stderr, jsonOut, newValidationError("--image is required"))
 	}
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
 
-	updated, err := client.DeployApp(ctx, name, image, confirm)
-	if !confirm {
-		if apiErr, ok := protectedEnvironmentError(err); ok {
-			confirmed, cerr := resolveProtectedEnvironmentConfirmation(apiErr.Message, stdin, stderr)
-			if cerr != nil {
-				return reportError(stdout, stderr, jsonOut, cerr)
-			}
-			if confirmed {
-				updated, err = client.DeployApp(ctx, name, image, true)
-			}
-		}
-	}
+	updated, err := confirmProtectedEnvironment(confirm, stdin, stderr, func(confirm bool) (appResource, error) {
+		return client.DeployApp(ctx, name, image, confirm)
+	})
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("deploy app %q: %w", name, err))
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s app %q: %w", cfg.errContext, name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, updated); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	_, _ = fmt.Fprintf(stderr, "app %q now targets image %q; reconcile is asynchronous, check \"%s apps status %s\"\n", updated.Name, updated.Image, prog, updated.Name)
-	printAppHuman(stdout, updated)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, updated, func() {
+		_, _ = fmt.Fprintf(stderr, cfg.successFormat, updated.Name, updated.Image, prog, updated.Name)
+		printAppHuman(stdout, updated)
+	})
 }
 
 func appsDeployUsage(prog string) string {
@@ -116,6 +123,7 @@ Flags:
   --confirm                  confirm deploying into a protected environment, skipping the interactive prompt
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the updated app as JSON to stdout, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

@@ -526,8 +526,8 @@ func parseMemoryBytes(s string) (int64, error) {
 // real Client, and print the result. Returns the process exit code.
 // stdin is only ever read from when --interactive is given.
 func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
-	var tokenFlag, apiURLFlag string
-	f, err := parseCreateFlags(prog, args, stderr, &tokenFlag, &apiURLFlag)
+	var tokenFlag, apiURLFlag, profileFlag string
+	f, err := parseCreateFlags(prog, args, stderr, &tokenFlag, &apiURLFlag, &profileFlag)
 	if err != nil {
 		if err == flag.ErrHelp {
 			return exitOK
@@ -539,7 +539,7 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		if f.name != "" || f.image != "" || f.repo != "" || f.file != "" {
 			return reportError(stdout, stderr, f.jsonOut, newValidationError("--interactive runs its own step-by-step prompts and cannot be combined with --name, --image, --repo, or --file"))
 		}
-		return runAppsCreateWizard(stdin, stdout, stderr, tokenFlag, apiURLFlag, f.jsonOut, lookupEnv, prog)
+		return runAppsCreateWizard(stdin, stdout, stderr, credentialFlags{Token: tokenFlag, APIURL: apiURLFlag, Profile: profileFlag}, f.jsonOut, lookupEnv, prog)
 	}
 
 	var fileSpec *spec.Spec
@@ -565,8 +565,9 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return reportError(stdout, stderr, f.jsonOut, err)
 	}
 
-	token := resolveToken(tokenFlag, lookupEnv, prog)
-	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog)
+	profile := resolveProfile(profileFlag, lookupEnv)
+	token := resolveToken(tokenFlag, lookupEnv, prog, profile)
+	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog, profile)
 	client := NewClient(apiURL, token)
 	ctx := context.Background()
 
@@ -641,7 +642,7 @@ func fetchAndPrintCreatedApp(ctx context.Context, client *Client, name string, s
 // library-triggered os.Exit would make every command untestable, so
 // every command function returns an int exit code instead and only
 // main() itself ever calls os.Exit.
-func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, apiURLFlag *string) (createFlags, error) {
+func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, apiURLFlag, profileFlag *string) (createFlags, error) {
 	fs := flag.NewFlagSet(prog+" apps create", flag.ContinueOnError)
 	fs.SetOutput(errOut)
 	fs.Usage = func() { _, _ = fmt.Fprint(errOut, appsCreateUsage(prog)) }
@@ -671,6 +672,7 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.BoolVar(&f.jsonOut, "json", false, "print the created app as JSON to stdout and nothing else")
 	fs.StringVar(tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	fs.StringVar(profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
 
 	if err := fs.Parse(args); err != nil {
 		return createFlags{}, err
@@ -754,6 +756,7 @@ Database attachment (any path above):
 Common flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the result as JSON to stdout, nothing else
   --yes, -y                accept defaults without prompting (reserved, currently a no-op)
   -h, --help              show this help

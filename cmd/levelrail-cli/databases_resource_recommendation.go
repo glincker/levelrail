@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 )
@@ -14,47 +13,21 @@ import (
 // handleDatabaseResourceRecommendation), the database-kind counterpart to
 // runAppsResourceRecommendation (apps_resource_recommendation.go).
 func runDatabasesResourceRecommendation(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" databases resource-recommendation", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag string
-	var jsonOut bool
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print the recommendation as JSON to stdout and nothing else")
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "databases resource-recommendation", "print the recommendation as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s databases resource-recommendation <name> [flags]\n\nSuggests memory and CPU limits for a database based on its own\nhistorical usage (p95/p99 over a lookback window) and current limits,\nusing a deterministic engine, never an external model. Never changes\nanything; the operator decides whether to act on the suggestion.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "databases resource-recommendation", "database name"}, lookupEnv)
+	if !ok {
+		return exitCode
 	}
-
-	rest := fs.Args()
-	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: databases resource-recommendation requires exactly one database name\n\n", prog)
-		fs.Usage()
-		return exitUsage
-	}
-	name := rest[0]
-
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
 
 	rec, err := client.GetDatabaseResourceRecommendation(context.Background(), name)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get resource recommendation for database %q: %w", name, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, rec); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	printResourceRecommendationHuman(stdout, "database", rec)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, rec, func() { printResourceRecommendationHuman(stdout, "database", rec) })
 }

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-	"flag"
 	"fmt"
 	"io"
 )
@@ -24,7 +22,8 @@ import (
 // DeployApp with rollback-framed usage text and diagnostics, not a
 // second code path, so there is exactly one place ("apps deploy") that
 // could ever drift from what the server actually does with this
-// request.
+// request. runAppsDeployOrRollback (apps_deploy.go) is the shared
+// implementation both this command and "apps deploy" call.
 //
 // Flag shape matches "apps deploy" exactly (--image, not a second
 // positional argument): a caller who already knows that command's shape
@@ -37,65 +36,14 @@ import (
 // mirrors apps_deploy.go's own doc comment exactly: same server-side
 // gate, same client-side fallback.
 func runAppsRollback(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
-	fs := flag.NewFlagSet(prog+" apps rollback", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, image string
-	var jsonOut, confirm bool
-	fs.StringVar(&image, "image", "", "older, already-built image reference to roll back to, e.g. registry.example.com/org/app:tag (required)")
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print the updated app as JSON to stdout and nothing else")
-	fs.BoolVar(&confirm, "confirm", false, "confirm rolling back into a protected environment; omit to be prompted interactively if needed")
-	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsRollbackUsage(prog)) }
-
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
-	}
-
-	rest := fs.Args()
-	if len(rest) != 1 {
-		_, _ = fmt.Fprintf(stderr, "%s: apps rollback requires exactly one app name\n\n", prog)
-		fs.Usage()
-		return exitUsage
-	}
-	name := rest[0]
-
-	if image == "" {
-		return reportError(stdout, stderr, jsonOut, newValidationError("--image is required"))
-	}
-
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
-	ctx := context.Background()
-
-	updated, err := client.DeployApp(ctx, name, image, confirm)
-	if !confirm {
-		if apiErr, ok := protectedEnvironmentError(err); ok {
-			confirmed, cerr := resolveProtectedEnvironmentConfirmation(apiErr.Message, stdin, stderr)
-			if cerr != nil {
-				return reportError(stdout, stderr, jsonOut, cerr)
-			}
-			if confirmed {
-				updated, err = client.DeployApp(ctx, name, image, true)
-			}
-		}
-	}
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("roll back app %q: %w", name, err))
-	}
-
-	if jsonOut {
-		if err := writeJSONValue(stdout, updated); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	_, _ = fmt.Fprintf(stderr, "app %q rolling back to image %q; reconcile is asynchronous, check \"%s apps status %s\"\n", updated.Name, updated.Image, prog, updated.Name)
-	printAppHuman(stdout, updated)
-	return exitOK
+	return runAppsDeployOrRollback(prog, args, stdout, stderr, lookupEnv, stdin, deployOrRollbackConfig{
+		cmdLabel:      "apps rollback",
+		imageHelp:     "older, already-built image reference to roll back to, e.g. registry.example.com/org/app:tag (required)",
+		confirmHelp:   "confirm rolling back into a protected environment; omit to be prompted interactively if needed",
+		usage:         appsRollbackUsage,
+		errContext:    "roll back",
+		successFormat: "app %q rolling back to image %q; reconcile is asynchronous, check \"%s apps status %s\"\n",
+	})
 }
 
 func appsRollbackUsage(prog string) string {
@@ -127,6 +75,7 @@ Flags:
   --confirm                  confirm rolling back into a protected environment, skipping the interactive prompt
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the updated app as JSON to stdout, nothing else
   -h, --help              show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)

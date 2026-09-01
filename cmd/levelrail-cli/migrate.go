@@ -58,7 +58,8 @@ func blockingFetchIssue(sourceName, detail string) mappedApp {
 // instance or write files, then print the report as JSON or human text.
 func runMigrationPipeline(ctx context.Context, report *migrationReport, f migratePipelineFlags, prog string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if f.apply {
-		client := NewClient(resolveAPIURL(f.targetAPIURL, lookupEnv, prog), resolveToken(f.targetToken, lookupEnv, prog))
+		profile := resolveProfile(f.targetProfile, lookupEnv)
+		client := NewClient(resolveAPIURL(f.targetAPIURL, lookupEnv, prog, profile), resolveToken(f.targetToken, lookupEnv, prog, profile))
 		applyMigration(ctx, client, report)
 	} else if err := writeMigrationFiles(f.outDir, report); err != nil {
 		return reportError(stdout, stderr, f.jsonOut, err)
@@ -80,9 +81,10 @@ func runMigrationPipeline(ctx context.Context, report *migrationReport, f migrat
 // from either migrateCoolifyFlags or migrateDokployFlags plus their local
 // target-instance flag variables.
 type migratePipelineFlags struct {
-	apply        bool
-	outDir       string
-	jsonOut      bool
-	targetToken  string
-	targetAPIURL string
+	apply         bool
+	outDir        string
+	jsonOut       bool
+	targetToken   string
+	targetAPIURL  string
+	targetProfile string
 }

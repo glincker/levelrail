@@ -47,13 +47,13 @@ Run "%[1]s apps git-source <subcommand> -h" for a subcommand's own flags.
 }
 
 func runAppsGitSourceGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps git-source get", "print the git source as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps git-source get", "print the git source as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps git-source get <name> [flags]\n\nShows an app's connected repo, if any.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
-	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, tokenFlagP, apiURLFlagP, jsonOutP, stderr, prog, "apps git-source get", lookupEnv)
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "apps git-source get", "app name"}, lookupEnv)
 	if !ok {
 		return exitCode
 	}
@@ -75,7 +75,7 @@ func runAppsGitSourceGet(prog string, args []string, stdout, stderr io.Writer, l
 }
 
 func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps git-source set", "print the git source as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps git-source set", "print the git source as JSON to stdout and nothing else", stderr)
 	var repoURL, branch, buildType, buildPath, token string
 	fs.StringVar(&repoURL, "repo-url", "", "repo URL to connect (required)")
 	fs.StringVar(&branch, "branch", "", "branch to deploy on push (default: the server's default branch)")
@@ -87,7 +87,7 @@ func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, l
 		fs.PrintDefaults()
 	}
 
-	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, tokenFlagP, apiURLFlagP, jsonOutP, stderr, prog, "apps git-source set", lookupEnv)
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "apps git-source set", "app name"}, lookupEnv)
 	if !ok {
 		return exitCode
 	}
@@ -120,13 +120,13 @@ func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, l
 }
 
 func runAppsGitSourceDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, jsonOutP := apiFlagSet(prog, "apps git-source delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "apps git-source delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps git-source delete <name> [flags]\n\nDisconnects an app's repo: pushes stop triggering an auto-deploy.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
-	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, tokenFlagP, apiURLFlagP, jsonOutP, stderr, prog, "apps git-source delete", lookupEnv)
+	client, name, jsonOut, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP}, stderr, singleArgCmd{prog, "apps git-source delete", "app name"}, lookupEnv)
 	if !ok {
 		return exitCode
 	}

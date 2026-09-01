@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 )
@@ -19,22 +18,15 @@ import (
 // runBackupsRestoreAsNew's own doc comment gives: there is nothing here
 // for a misclick to destroy.
 func runAppVolumeBackupsRestoreAsNew(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs := flag.NewFlagSet(prog+" app-volume-backups restore-as-new", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, backupID, newVolumeName string
-	var jsonOut bool
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP := apiFlagSet(prog, "app-volume-backups restore-as-new", "print the started clone-restore attempt as JSON to stdout and nothing else", stderr)
+	var backupID, newVolumeName string
 	fs.StringVar(&backupID, "backup", "", "id of a previously succeeded backup to restore from (required)")
 	fs.StringVar(&newVolumeName, "new-volume-name", "", "name for the brand-new, standalone Docker volume (default: a generated name, see the started attempt's own new_volume_name)")
-	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
-	fs.BoolVar(&jsonOut, "json", false, "print the started clone-restore attempt as JSON to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appVolumeBackupsRestoreAsNewUsage(prog)) }
 
-	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP})
+	if !ok {
+		return exitCode
 	}
 
 	rest, ok := requireArgs(fs, stderr, prog, "app-volume-backups restore-as-new", "an app name and a volume name", 2)
@@ -47,7 +39,7 @@ func runAppVolumeBackupsRestoreAsNew(prog string, args []string, stdout, stderr 
 		return reportError(stdout, stderr, jsonOut, newValidationError("--backup is required"))
 	}
 
-	client := NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog), resolveToken(tokenFlag, lookupEnv, prog))
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	started, err := client.TriggerVolumeCloneRestore(context.Background(), name, volume, triggerVolumeCloneRestoreRequest{
 		BackupID:      backupID,
@@ -57,15 +49,9 @@ func runAppVolumeBackupsRestoreAsNew(prog string, args []string, stdout, stderr 
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("restore %s/%s as new volume: %w", name, volume, err))
 	}
 
-	if jsonOut {
-		if err := writeJSONValue(stdout, started); err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return exitNetwork
-		}
-		return exitOK
-	}
-	_, _ = fmt.Fprintf(stdout, "clone-restore %q of %s/%s from backup %q into new volume %q started\n", started.ID, name, volume, backupID, started.NewVolumeName)
-	return exitOK
+	return writeScheduledTaskResult(stdout, stderr, jsonOut, started, func() {
+		_, _ = fmt.Fprintf(stdout, "clone-restore %q of %s/%s from backup %q into new volume %q started\n", started.ID, name, volume, backupID, started.NewVolumeName)
+	})
 }
 
 func appVolumeBackupsRestoreAsNewUsage(prog string) string {
@@ -83,6 +69,7 @@ Flags:
   --new-volume-name string   name for the new Docker volume (default: a generated name)
   --token string               API token (default: %[2]s env var, then the credentials file)
   --api-url string            control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string            named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                        print the started clone-restore attempt as JSON to stdout, nothing else
   -h, --help                  show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
