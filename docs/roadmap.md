@@ -151,6 +151,12 @@ are still open. This page describes what's actually true today.
   master-key-rotation-age check and a firewall/ufw status check, now
   with a dashboard "System status" settings page surfacing the same
   bundle, not just the CLI.
+- `GET /api/v1/system/containers` and `levelrail-cli containers`: a
+  read-only list of every container on the node (not just ones the
+  reconciler manages), name, image, state, and ports. Deliberately no
+  stop/restart from this surface, since a reconciler-managed container
+  would just be recreated out from under an operator who stopped it
+  here.
 - Onboarding: a one-shot `/api/v1/onboarding` completion flag plus a
   frontend wizard shown on first run.
 - `levelrail-cli completion bash|zsh|fish`: shell completion covering
