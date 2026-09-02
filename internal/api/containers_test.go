@@ -32,6 +32,16 @@ func newTestRouterWithContainerLister(t *testing.T, l ContainerLister) (*Router,
 	return NewRouter(nil, testBrand(), db, WithContainerLister(l)), db
 }
 
+// listContainers issues an authenticated GET /api/v1/system/containers,
+// the shared request-and-record sequence every status-code test below
+// needs before its own assertions diverge.
+func listContainers(t *testing.T, rt *Router, cookie *http.Cookie) *httptest.ResponseRecorder {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/system/containers", ""))
+	return rec
+}
+
 func TestHandleListContainers_Configured(t *testing.T) {
 	lister := &fakeContainerLister{
 		containers: []docker.ContainerState{
@@ -42,8 +52,7 @@ func TestHandleListContainers_Configured(t *testing.T) {
 	rt, db := newTestRouterWithContainerLister(t, lister)
 	cookie := loginTestSession(t, rt, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/system/containers", ""))
+	rec := listContainers(t, rt, cookie)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
 	}
@@ -70,8 +79,7 @@ func TestHandleListContainers_NotConfigured(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/system/containers", ""))
+	rec := listContainers(t, rt, cookie)
 	if rec.Code != http.StatusNotImplemented {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusNotImplemented)
 	}
@@ -81,8 +89,7 @@ func TestHandleListContainers_ListerError(t *testing.T) {
 	rt, db := newTestRouterWithContainerLister(t, &fakeContainerLister{err: context.DeadlineExceeded})
 	cookie := loginTestSession(t, rt, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/system/containers", ""))
+	rec := listContainers(t, rt, cookie)
 	if rec.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusInternalServerError)
 	}
@@ -92,8 +99,7 @@ func TestHandleListContainers_Empty(t *testing.T) {
 	rt, db := newTestRouterWithContainerLister(t, &fakeContainerLister{})
 	cookie := loginTestSession(t, rt, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/system/containers", ""))
+	rec := listContainers(t, rt, cookie)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
 	}
