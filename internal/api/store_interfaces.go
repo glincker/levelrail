@@ -415,6 +415,19 @@ type ImageLister interface {
 	ListImages(ctx context.Context, repo string) ([]docker.ImageInfo, error)
 }
 
+// ContainerLister is the surface GET /api/v1/system/containers needs:
+// every container on this node, Levelrail-managed or not, the same
+// "structurally satisfied by *docker.Client, no second divergent
+// surface" reasoning ImageLister above already documents. An empty
+// prefix argument matches every container name (docker.Client's own
+// ListByPrefix implementation), which is exactly this route's point:
+// unlike every other Runtime-backed feature in this codebase, which
+// scopes to one app/database's own containers, this one deliberately
+// wants everything.
+type ContainerLister interface {
+	ListByPrefix(ctx context.Context, prefix string) ([]docker.ContainerState, error)
+}
+
 // DockerDiskUsager is the surface GET /api/v1/system/status needs for
 // Docker's own storage accounting (images/containers/volumes/build
 // cache), a materially different number from DataDirTotalBytes/

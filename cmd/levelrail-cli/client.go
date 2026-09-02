@@ -96,6 +96,8 @@ type (
 	systemStatusResource        = apiclient.SystemStatusResource
 	doctorCheckResource         = apiclient.DoctorCheckResource
 	systemDoctorResource        = apiclient.SystemDoctorResource
+	containerResource           = apiclient.ContainerResource
+	containerPortResource       = apiclient.ContainerPortResource
 	updatesResource             = apiclient.UpdatesResource
 	nodeResource                = apiclient.NodeResource
 	setNodeWorkloadsRequest     = apiclient.SetNodeWorkloadsRequest

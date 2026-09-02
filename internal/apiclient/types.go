@@ -1080,6 +1080,24 @@ type SystemDoctorResource struct {
 	Checks []DoctorCheckResource `json:"checks"`
 }
 
+// ContainerPortResource mirrors internal/api's containerPortResource.
+type ContainerPortResource struct {
+	ContainerPort int    `json:"container_port"`
+	HostPort      int    `json:"host_port"`
+	Protocol      string `json:"protocol"`
+}
+
+// ContainerResource mirrors internal/api's containerResource
+// (internal/api/containers.go): every container on this node,
+// Levelrail-managed or not. Read-only, no id: see that file's own doc
+// comment on why a stop/restart action doesn't belong on this endpoint.
+type ContainerResource struct {
+	Name    string                  `json:"name"`
+	Image   string                  `json:"image"`
+	Running bool                    `json:"running"`
+	Ports   []ContainerPortResource `json:"ports"`
+}
+
 // UpdatesResource mirrors internal/api's updateStatusResource
 // (internal/api/updates.go): the running version compared against
 // GitHub's latest published release. LatestVersion/ReleaseURL/PublishedAt
