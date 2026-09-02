@@ -67,6 +67,7 @@ func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 		doctorCheckPort(443),
 		rt.doctorCheckDatabase(ctx),
 		rt.doctorCheckMasterKeyRotation(ctx),
+		doctorCheckFirewallCtx(ctx),
 	}
 
 	ok := true

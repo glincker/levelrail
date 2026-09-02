@@ -73,7 +73,7 @@ func TestHandleDownloadVolumeBackup_WrongVolume(t *testing.T) {
 }
 
 func TestHandleVerifyVolumeBackup_Success(t *testing.T) {
-	verifier := &fakeBackupVerifier{}
+	verifier := newFakeBackupVerifier()
 	rt, db := newTestRouterWithBackupVerifier(t, verifier)
 	cookie := loginTestSession(t, rt, db)
 	seedServiceWithVolume(t, db)
