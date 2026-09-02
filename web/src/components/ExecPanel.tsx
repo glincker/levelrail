@@ -23,6 +23,24 @@ const execSchema = z.object({
 
 type ExecFormValues = z.infer<typeof execSchema>
 
+// DEFAULT_COMMAND pre-fills the input so a first-time, non-technical
+// operator never faces a blank required field: "Command is required"
+// is a validation message meant for someone who cleared the field on
+// purpose, not the very first thing anyone sees.
+const DEFAULT_COMMAND = 'ls -la /app'
+
+// SUGGESTED_COMMANDS are one-click fillers for the handful of things an
+// operator actually reaches for here (what files are in the app, what
+// environment variables are set, is anything still running), so
+// "type a shell command from scratch" is the fallback, not the only
+// path. All read-only, safe to run against anything.
+const SUGGESTED_COMMANDS: { label: string; command: string }[] = [
+  { label: 'List files', command: 'ls -la /app' },
+  { label: 'Environment variables', command: 'env' },
+  { label: 'Running processes', command: 'ps aux' },
+  { label: 'Disk usage', command: 'df -h' },
+]
+
 // splitCommandLine turns a single typed line into a command plus argv
 // entries by splitting on whitespace: no quoting, no shell operators
 // (pipes, redirects, globs, env expansion), matching the backend's own
@@ -59,10 +77,11 @@ function splitCommandLine(line: string): { command: string; args: string[] } {
 // routes/apps/$name/deploys's own doc comment gives for deploy history.
 export function ExecPanel({ name }: { name: string }) {
   const execApp = useExecApp(name)
-  const { register, handleSubmit, formState } = useForm<ExecFormValues>({
-    resolver: zodResolver(execSchema),
-    defaultValues: { commandLine: '' },
-  })
+  const { register, handleSubmit, formState, setValue, setFocus } =
+    useForm<ExecFormValues>({
+      resolver: zodResolver(execSchema),
+      defaultValues: { commandLine: DEFAULT_COMMAND },
+    })
 
   const onSubmit = handleSubmit((values) => {
     const { command, args } = splitCommandLine(values.commandLine)
@@ -87,6 +106,28 @@ export function ExecPanel({ name }: { name: string }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground">
+            Quick picks:
+          </span>
+          {SUGGESTED_COMMANDS.map((suggestion) => (
+            <Button
+              key={suggestion.command}
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setValue('commandLine', suggestion.command, {
+                  shouldValidate: true,
+                })
+                setFocus('commandLine')
+              }}
+            >
+              {suggestion.label}
+            </Button>
+          ))}
+        </div>
+
         <form
           onSubmit={(e) => {
             void onSubmit(e)
