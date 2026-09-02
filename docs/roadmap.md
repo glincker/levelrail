@@ -1,6 +1,6 @@
 # Roadmap
 
-Status as of 2026-08-30 (refreshed against current `main`), not the
+Status as of 2026-09-01 (refreshed against current `main`), not the
 aspirational plan. See CLAUDE.md in the
 repo for the full phase-by-phase design doc if you want the long version.
 The build has moved further and less linearly than that phase plan
@@ -90,17 +90,32 @@ are still open. This page describes what's actually true today.
   key under the new master key in one transaction; rotation age is
   also checked by the doctor command below.
 - Managed Redis as a first-class, volume-backed resource.
-- MySQL as a third database engine, via a dynamic engine registry.
-- Managed Postgres at full parity with Redis and MySQL, audited
-  feature-by-feature: resource limits, public-access toggle with host
-  port exposure, scheduled/cron backups with retention, backup and
-  restore (`pg_dump`/`psql`, live-verified), log search and live SSE
-  log tail, metrics, generated credentials via envelope encryption,
-  volume persistence across container replacement, node placement, and
-  the dashboard/CLI surfaces for all of the above. Every capability is
-  implemented generically across the engine registry rather than
-  per-engine, so this was never a partial build, only an unverified
-  claim.
+- Eight managed database engines via a dynamic engine registry
+  (`internal/store/database_engines.yaml`): Postgres, Redis, MySQL,
+  MongoDB, MariaDB, KeyDB, Dragonfly, and ClickHouse. Every engine gets
+  resource limits, public-access toggle with host port exposure,
+  scheduled/cron backups with retention, backup and restore, log search
+  and live SSE log tail, metrics, generated credentials via envelope
+  encryption, volume persistence across container replacement, node
+  placement, and the dashboard/CLI surfaces for all of the above,
+  generically across the registry rather than per-engine. Backup and
+  restore is now live-Docker-tested for every engine, including
+  MariaDB, ClickHouse, KeyDB, and Dragonfly's own restore paths and a
+  fix scoping MongoDB restore to drop only non-system databases first.
+- Restore into a brand-new, standalone resource rather than only
+  in-place: `POST /api/v1/databases/{name}/restore-as-new` for managed
+  databases and `POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new`
+  for an app's own named volume, both non-destructive to the original,
+  with CLI (`restore-as-new`) and dashboard wiring.
+- App volume backups: an app service's own named Docker volume gets the
+  same scheduled/cron backup, restore, and verification feature set
+  managed databases already had, via API, CLI
+  (`app-volume-backups list/trigger/restore/restore-as-new/schedule/
+  verify/verifications`), and a web UI section on the app overview page.
+- Backup targets get a "test connection" action
+  (`POST /api/v1/backup-targets/{id}/test`) that probes the target's
+  bucket over its stored credentials without uploading or deleting
+  anything, via CLI (`backup-targets test`) and a dashboard button.
 - HTTP API for app CRUD and deploy trigger/history, with real
   multi-user session auth (see Dashboard and auth, below).
 - Frontend app list and detail views, with a live build-log viewer and
@@ -123,17 +138,37 @@ are still open. This page describes what's actually true today.
 - Explicit Stop/Start actions for apps, distinct from Delete/Restart:
   the reconciler tears down containers on stop and brings them back on
   start without touching desired state.
-- `install.sh` (curl-pipe-sh) and a systemd unit for the control plane
-  itself, safe to re-run as an upgrade path.
+- `install.sh` (curl-pipe-sh): downloads the binary, installs Docker if
+  missing, sets up a systemd unit, and verifies the control plane
+  actually comes up healthy via a bounded retry loop (never an infinite
+  wait) before declaring success. Safe to re-run as an upgrade path.
+  Opt-in `LEVELRAIL_CONFIGURE_UFW=1` configures the host firewall
+  (allow SSH before enabling, Dokku's own proven ordering), off by
+  default.
 - `levelrail-cli doctor`: a local preflight check (Docker daemon
   reachability, disk space, and more). The same checks also run
   server-side as a system doctor API endpoint, including a
-  master-key-rotation-age check; CLI only today, no dedicated
-  dashboard page yet.
+  master-key-rotation-age check and a firewall/ufw status check, now
+  with a dashboard "System status" settings page surfacing the same
+  bundle, not just the CLI.
 - Onboarding: a one-shot `/api/v1/onboarding` completion flag plus a
   frontend wizard shown on first run.
 - `levelrail-cli completion bash|zsh|fish`: shell completion covering
   every command and subcommand plus the global flags.
+- `levelrail-cli version` and a maintained `CHANGELOG.md`.
+- Named CLI credential profiles (`--profile`/`APP_PROFILE`, AWS-CLI
+  style): multiple named sections in the credentials file so one
+  operator can manage several control planes without one login
+  overwriting another's saved token.
+- `--output json|table|text` and `--query` (JMESPath, via
+  `jmespath/go-jmespath`) across the entire CLI, replacing the old
+  boolean `--json` flag, which is kept as a backward-compatible alias
+  for `--output json`.
+- A CLI device-login flow (`levelrail-cli auth login --device`),
+  RFC-8628-shaped: prints a short code and URL, an operator approves it
+  from a "CLI access" dashboard settings page, and the CLI polls until
+  a real API token is minted. Works over plain HTTP, since no password
+  crosses the wire.
 - `levelrail migrate coolify` and `levelrail migrate dokploy` CLI
   commands: pull every app off a live Coolify or Dokploy instance and
   either write app.yaml files or apply them directly to a target
@@ -162,9 +197,10 @@ are still open. This page describes what's actually true today.
   deletes a resource or touches secrets/resource limits.
 - Live end-to-end test suite: whole-chain push-to-HTTPS, rollback in
   both directions, the real git webhook path, database reconciliation,
-  non-default port routing, and node placement. Doesn't yet exercise
-  multi-service fan-out, a full multi-node mesh, or real ACME against
-  a live domain.
+  non-default port routing, node placement, protected-environment
+  confirm-to-deploy gating, Compose healthcheck-derived readiness
+  gating, and master-key rotation. Doesn't yet exercise multi-service
+  fan-out, a full multi-node mesh, or real ACME against a live domain.
 
 **Observability**
 
@@ -178,13 +214,18 @@ are still open. This page describes what's actually true today.
   aggregation.
 - Frontend metrics dashboard with a range selector, historical log
   search, and deploy markers overlaid on metric charts.
-- Alerting over six rule kinds: the original threshold and crashloop
+- Alerting over eight rule kinds: the original threshold and crashloop
   detection, plus certificate-expiry, OS-patch-status,
-  scheduled-task-failure, and node-disk-space, each with its own
-  evaluator. Eight notification channel kinds: webhook, Slack, Discord,
-  email, Telegram, Pushover, PagerDuty, and Microsoft Teams, plus
-  separate deploy-outcome notifications. Delivery history for every
-  notification channel is independently queryable via API/CLI/MCP.
+  scheduled-task-failure, node-disk-space, node-resource-usage
+  (per-node CPU/memory), and domain-health (a periodic DNS check
+  against every domain configured on an app, catching a silently
+  repointed CNAME), each with its own evaluator. Eight notification
+  channel kinds: webhook, Slack, Discord, email, Telegram, Pushover,
+  PagerDuty, and Microsoft Teams, plus separate deploy-outcome
+  notifications. Delivery history for every notification channel is
+  independently queryable via API/CLI/MCP. A dismissible dashboard
+  nudge prompts enabling the platform-wide alert rules (patch-status,
+  node-disk-space, node-resource-usage) when none are configured yet.
 - Prometheus remote-read endpoint.
 - Crashloop detection, with the last 200 lines of the failing
   container's logs surfaced automatically in the UI.
@@ -221,7 +262,11 @@ are still open. This page describes what's actually true today.
 - Dedicated build nodes, with registry-backed remote BuildKit cache and
   per-node capability flags.
 - Distributed certificate storage shared across ingress instances.
-- Node health (heartbeat), cordon, and drain.
+- Node health (heartbeat), cordon, and drain, plus a per-node live alert
+  status (ok/firing/unknown) for the patch-status, node-disk-space, and
+  node-resource-usage rule kinds, evaluated on demand for a single node
+  fetch and surfaced in `nodes get`/`nodes health` and a node detail
+  page card.
 - Frontend node management: add-node flow, node list with health
   status, per-service node assignment, cordon and drain controls.
 
@@ -238,7 +283,11 @@ are still open. This page describes what's actually true today.
   scoped abilities (the same ability model API tokens already had,
   now on human accounts too, so a session is no longer implicitly
   root). A full audit log records every request through the same
-  ability-check hook, queryable from Settings, with CSV export.
+  ability-check hook, queryable from Settings, with CSV export. Each
+  entry is attributed to a client kind (cli/dashboard/mcp/api), derived
+  from the request's User-Agent header. Retention is configurable, with
+  a periodic sweeper purging entries past the window plus a manual
+  purge (`levelrail-cli audit-purge`, a dashboard purge button).
 - Full sidebar shell with dark mode and a settings area split into
   Account, Security, General, and Tokens.
 - Create App and Create Database dialogs, with health-check and
@@ -263,14 +312,14 @@ are still open. This page describes what's actually true today.
 - Custom Docker labels escape hatch.
 - App clone.
 - Database public-accessibility toggle with host port exposure.
-- Scheduled/cron backups to S3-compatible storage, with backup history,
-  restore (Postgres, MySQL, and Redis all live-verified, including
-  Redis's stop-write-start RDB reload path), and browser download of
-  backup files. Backup verification runs automatically right after
-  every scheduled backup (re-download, re-hash, compare checksum/size/
-  format against what was recorded at backup time) and can also be
-  triggered manually; neither does a live restore, so verification
-  itself is non-destructive.
+- Scheduled/cron backups to S3-compatible storage, with backup history
+  and browser download of backup files (see the eight-engine backup/
+  restore bullet under Core deploy path, above, including Redis's
+  stop-write-start RDB reload path). Backup verification runs
+  automatically right after every scheduled backup (re-download,
+  re-hash, compare checksum/size/format against what was recorded at
+  backup time) and can also be triggered manually; neither does a live
+  restore, so verification itself is non-destructive.
 - Accessibility fixes: ARIA labels on row inputs, a dialog focus-restore
   fix on the log viewer's fullscreen toggle, `aria-current` on active
   sidebar navigation, an accessible text summary for the metrics
@@ -306,6 +355,17 @@ are still open. This page describes what's actually true today.
   create/edit dialogs get a role dropdown that falls back to "Custom"
   for a hand-picked set; the CLI's `users create`/`users set-abilities`
   take a `--role` flag as an alternative to `--abilities`.
+- An IAM-style, resource-scoped policy engine
+  (`internal/api/iam.go`, `internal/store/iam_policy.go`): JSON policy
+  documents with AWS-IAM-shaped Allow/Deny statements (`Effect`,
+  `Action` as ability strings or `*`, `Resource` as identifiers like
+  `app:myapp` or `*`), attachable to a user or an API token, additive
+  on top of that principal's existing flat abilities list rather than
+  replacing it. Enforcement is wired into `GET/PUT/DELETE
+  /api/v1/apps/{name}` and `GET/DELETE /api/v1/databases/{name}` via a
+  `requireAbilityForResource` middleware. CLI:
+  `levelrail-cli iam policies create/list/get/update/delete/attach/
+  detach/attachments`. Dashboard: an "IAM policies" settings page.
 - Feature flags: a boolean plus an optional gradual rollout percentage,
   scoped to an app, read live at runtime by the app's own code via
   `GET /api/v1/flags/evaluate/{key}` and a read-scoped API token, no
