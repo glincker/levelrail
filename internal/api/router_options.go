@@ -376,6 +376,13 @@ func WithImageLister(l ImageLister) Option {
 	return func(rt *Router) { rt.images = l }
 }
 
+// WithContainerLister enables GET /api/v1/system/containers. Without
+// one configured (the default), that route returns 501, the same
+// "not configured" shape WithExecRuntime's own absence already has.
+func WithContainerLister(l ContainerLister) Option {
+	return func(rt *Router) { rt.containers = l }
+}
+
 // WithDockerDiskUsager enables the docker_disk_usage field on
 // GET /api/v1/system/status. Without one configured (the default), that
 // field is simply omitted, the same "optional signal, absence is not an

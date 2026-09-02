@@ -1484,6 +1484,14 @@ func (c *Client) GetSystemDoctor(ctx context.Context) (SystemDoctorResource, err
 	return out, err
 }
 
+// ListContainers calls GET /api/v1/system/containers: every container
+// on this node, whether or not Levelrail manages it.
+func (c *Client) ListContainers(ctx context.Context) ([]ContainerResource, error) {
+	var out []ContainerResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/system/containers", nil, &out)
+	return out, err
+}
+
 // GetUpdates calls GET /api/v1/updates: the running control plane
 // version against GitHub's latest published release.
 func (c *Client) GetUpdates(ctx context.Context) (UpdatesResource, error) {

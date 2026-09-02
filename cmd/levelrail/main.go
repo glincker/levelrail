@@ -1618,8 +1618,9 @@ func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent
 // client is always non-nil here: run() returns early on a
 // docker.NewClient error, before rootHandler is ever called, so unlike
 // secretsManager/webhookHandler/builder above, api.WithDockerPinger,
-// api.WithImageLister, api.WithDockerDiskUsager, api.WithDockerPruner,
-// and api.WithExecRuntime are all applied unconditionally, the same way
+// api.WithImageLister, api.WithContainerLister, api.WithDockerDiskUsager,
+// api.WithDockerPruner, and api.WithExecRuntime are all applied
+// unconditionally, the same way
 // api.WithTelemetryQuerier and api.WithAlertRules already are for
 // telemetryDB/alertingDB. agentRegistry, WithExecRuntime's other
 // dependency, is likewise always non-nil: run() constructs it
@@ -1689,6 +1690,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDataDir(dataDir),
 		api.WithDockerPinger(client),
 		api.WithImageLister(client),
+		api.WithContainerLister(client),
 		api.WithDockerDiskUsager(client),
 		api.WithDockerPruner(client),
 		api.WithRegistryAuthTester(client),

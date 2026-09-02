@@ -31,6 +31,10 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// dir writability, ingress port availability, SQLite reachability),
 	// AbilityRead like system/status above.
 	mux.HandleFunc("GET /api/v1/system/doctor", rt.requireAbility(AbilityRead, rt.handleSystemDoctor))
+	// Every container on this node, Levelrail-managed or not (containers.go's
+	// own doc comment on why this is read-only, no stop/restart action
+	// here), AbilityRead like system/status above.
+	mux.HandleFunc("GET /api/v1/system/containers", rt.requireAbility(AbilityRead, rt.handleListContainers))
 	// POST /system/prune deletes real Docker resources (stopped
 	// containers, dangling images, anonymous volumes, unused build
 	// cache) fleet-wide, not scoped to one app: AbilityRoot, the same
