@@ -182,7 +182,16 @@ Levelrail ${VERSION} installed and running.
   Logs:           journalctl -u levelrail -f
   Data directory: ${DATA_DIR}
 
-Create the initial admin account:
+Create the initial admin account by visiting the dashboard above and
+using the "Set up admin account" tab (this only works once, for the very
+first account on the instance). To automate this instead of doing it by
+hand, set APP_ADMIN_USERNAME and APP_ADMIN_PASSWORD in the systemd unit's
+[Service] section before the first start.
+
+Locked out of an existing admin account later? That is what recover-admin
+is for, it resets a password (or creates a fallback account if the
+username you give it does not exist yet), it does not set up the first
+account on a fresh install:
   sudo APP_DATA_DIR=${DATA_DIR} ${INSTALL_DIR}/${BINARY_NAME} recover-admin --username admin
 
 Re-run this script any time to repair or upgrade: it overwrites the

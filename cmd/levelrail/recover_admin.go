@@ -13,6 +13,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -46,8 +47,13 @@ func generateRandomPassword() (string, error) {
 // recoverAdminUser bcrypt-hashes password and writes it directly against
 // the users table, bypassing the HTTP API. username is the login
 // identifier: this resets the password if a matching user already
-// exists, or creates a new, ordinary (not first-user) account if not,
-// so the operator doesn't need to know in advance which case applies.
+// exists (Abilities untouched, whatever that account already had),
+// or creates a new root-scoped, not-first-user account if not, so the
+// operator doesn't need to know in advance which case applies. Root
+// (not some narrower default) because this command's entire purpose is
+// disaster recovery, "I'm locked out of admin access": a recovered
+// account with no abilities at all could log in but do nothing,
+// defeating the point.
 func recoverAdminUser(ctx context.Context, db *store.DB, username, password string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -75,6 +81,7 @@ func recoverAdminUser(ctx context.Context, db *store.DB, username, password stri
 		Email:        username,
 		DisplayName:  username,
 		PasswordHash: &hashStr,
+		Abilities:    []string{api.AbilityRoot},
 		CreatedAt:    time.Now(),
 	}
 	if err := db.CreateUser(ctx, user); err != nil {

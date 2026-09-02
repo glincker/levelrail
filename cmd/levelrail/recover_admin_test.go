@@ -12,6 +12,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -98,6 +99,9 @@ func TestRecoverAdminUser_CreatesUserWhenNoneExists(t *testing.T) {
 	}
 	if got.IsFirstUser {
 		t.Error("IsFirstUser = true, want false: recovery must not claim first-user status")
+	}
+	if len(got.Abilities) != 1 || got.Abilities[0] != api.AbilityRoot {
+		t.Errorf("Abilities = %v, want [%q]: a recovered account with no abilities could log in but do nothing", got.Abilities, api.AbilityRoot)
 	}
 }
 
