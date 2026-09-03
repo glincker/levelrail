@@ -396,13 +396,13 @@ are still open. This page describes what's actually true today.
   `DeploySpec` logic instead of the older, simpler
   `GitSource.AdditionalServices` flat list. A git source with no
   `services:` map still falls back to `AdditionalServices` unchanged,
-  so existing single-service webhook setups are unaffected. The one
-  remaining single-service-only surface is `apps create --interactive`:
-  the wizard always writes exactly one service. Multi-service apps are
-  created by hand-writing multiple `services:` entries in `app.yaml`,
-  or through the deploy-spec API/UI above. Kept here rather than moved
-  to Done because of that wizard gap and because the live end-to-end
-  suite (see Done, above) doesn't yet exercise multi-service fan-out.
+  so existing single-service webhook setups are unaffected.
+  `apps create --interactive` now also supports it: an "add another
+  service?" loop after the first service's answers, writing every
+  service into one `app.yaml` in file mode or fanning out through
+  `deploy-spec` (instead of `CreateApp`) in API mode. Kept here rather
+  than moved to Done because the live end-to-end suite (see Done,
+  above) doesn't yet exercise multi-service fan-out.
 - **Real public ACME.** The Caddy ACME issuer type, a settings toggle,
   and form validation are all built and wired end to end (Settings >
   Domains). Only unit-tested against the config shape so far, not

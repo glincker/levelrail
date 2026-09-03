@@ -115,7 +115,7 @@ func TestRunInteractiveWizard(t *testing.T) {
 	}{
 		{
 			name:  "image source, file output, minimal answers",
-			lines: []string{"My App", "image", "registry.example.com/org/app:v1", "8080", "", "", "", "", "file"},
+			lines: []string{"My App", "image", "registry.example.com/org/app:v1", "8080", "", "", "", "", "", "file"},
 			want: func(t *testing.T, a wizardAnswers) {
 				if a.serviceName != "my-app" {
 					t.Errorf("serviceName = %q, want %q", a.serviceName, "my-app")
@@ -145,7 +145,7 @@ func TestRunInteractiveWizard(t *testing.T) {
 		},
 		{
 			name:     "git source auto-detected repo, health skipped, resources set, api output",
-			lines:    []string{"webapp", "git", "", "3000", "app.example.com", "skip", "512Mi", "0.5", "api", "registry.example.com/org/webapp"},
+			lines:    []string{"webapp", "git", "", "3000", "app.example.com", "skip", "512Mi", "0.5", "", "api", "registry.example.com/org/webapp"},
 			detected: detectedGit{RepoURL: "https://example.com/detected.git", Ref: "feature"},
 			want: func(t *testing.T, a wizardAnswers) {
 				if a.sourceKind != wizardSourceGit {
@@ -176,7 +176,7 @@ func TestRunInteractiveWizard(t *testing.T) {
 		},
 		{
 			name:  "custom health path is used verbatim",
-			lines: []string{"app", "image", "img:1", "80", "", "/healthcheck", "", "", "file"},
+			lines: []string{"app", "image", "img:1", "80", "", "/healthcheck", "", "", "", "file"},
 			want: func(t *testing.T, a wizardAnswers) {
 				if a.healthPath != "/healthcheck" {
 					t.Errorf("healthPath = %q, want %q", a.healthPath, "/healthcheck")
@@ -185,7 +185,7 @@ func TestRunInteractiveWizard(t *testing.T) {
 		},
 		{
 			name:  "invalid source choice retried",
-			lines: []string{"app", "bogus", "image", "img:1", "80", "", "skip", "", "", "file"},
+			lines: []string{"app", "bogus", "image", "img:1", "80", "", "skip", "", "", "", "file"},
 			want: func(t *testing.T, a wizardAnswers) {
 				if a.sourceKind != wizardSourceImage {
 					t.Errorf("sourceKind = %v, want wizardSourceImage after retry", a.sourceKind)
@@ -201,6 +201,73 @@ func TestRunInteractiveWizard(t *testing.T) {
 			name:    "EOF before the wizard finishes",
 			lines:   []string{"app", "image"},
 			wantErr: "read input",
+		},
+		{
+			name: "second service added, file output",
+			lines: []string{
+				"app", "image", "img:1", "8080", "", "", "", "",
+				"y", "worker", "git", "apps/worker", "9090", "", "skip", "", "",
+				"n", "file",
+			},
+			want: func(t *testing.T, a wizardAnswers) {
+				if len(a.extra) != 1 {
+					t.Fatalf("len(extra) = %d, want 1", len(a.extra))
+				}
+				e := a.extra[0]
+				if e.serviceName != "worker" || e.sourceKind != wizardSourceGit || e.baseDirectory != "apps/worker" {
+					t.Errorf("extra[0] = %+v, want worker/git/apps/worker", e)
+				}
+				if e.port != 9090 {
+					t.Errorf("extra[0].port = %d, want 9090", e.port)
+				}
+				if e.healthPath != "" {
+					t.Errorf("extra[0].healthPath = %q, want empty ('skip' was entered)", e.healthPath)
+				}
+				if a.outputMode != wizardOutputFile {
+					t.Errorf("outputMode = %v, want wizardOutputFile", a.outputMode)
+				}
+			},
+		},
+		{
+			name: "multi-service api output, git primary reuses its own repo/ref",
+			lines: []string{
+				"webapp", "git", "https://example.com/x.git", "3000", "", "", "", "",
+				"y", "worker", "image", "registry.example.com/org/worker:v1", "9090", "", "", "", "",
+				"n", "api", "myplatform", "registry.example.com/org",
+			},
+			want: func(t *testing.T, a wizardAnswers) {
+				if a.appName != "myplatform" {
+					t.Errorf("appName = %q, want %q", a.appName, "myplatform")
+				}
+				if a.repoURL != "https://example.com/x.git" || a.ref != "main" {
+					t.Errorf("repoURL/ref = %q/%q, want the primary git service's own repo/ref reused", a.repoURL, a.ref)
+				}
+				if a.imageRepoBase != "registry.example.com/org" {
+					t.Errorf("imageRepoBase = %q", a.imageRepoBase)
+				}
+				if len(a.extra) != 1 || a.extra[0].sourceKind != wizardSourceImage || a.extra[0].image != "registry.example.com/org/worker:v1" {
+					t.Errorf("extra = %+v, want one image-sourced worker service", a.extra)
+				}
+			},
+		},
+		{
+			name: "multi-service api output, image primary prompts for a shared repo/ref",
+			lines: []string{
+				"app", "image", "img:1", "8080", "", "", "", "",
+				"y", "worker", "image", "img:2", "9090", "", "", "", "",
+				"n", "api", "myplatform", "https://example.com/mono.git", "", "",
+			},
+			want: func(t *testing.T, a wizardAnswers) {
+				if a.repoURL != "https://example.com/mono.git" {
+					t.Errorf("repoURL = %q, want the explicitly prompted repo", a.repoURL)
+				}
+				if a.ref != "main" {
+					t.Errorf("ref = %q, want default main", a.ref)
+				}
+				if a.imageRepoBase != "" {
+					t.Errorf("imageRepoBase = %q, want empty (left blank)", a.imageRepoBase)
+				}
+			},
 		},
 	}
 
@@ -277,6 +344,27 @@ func TestWizardAnswers_ToSpec(t *testing.T) {
 			name:    "invalid: no port set",
 			answers: wizardAnswers{serviceName: "web", sourceKind: wizardSourceImage, image: "img:1"},
 			wantErr: "port is required",
+		},
+		{
+			name: "extra services are added alongside the primary one",
+			answers: wizardAnswers{
+				serviceName: "web", sourceKind: wizardSourceImage, image: "img:1", port: 8080,
+				extra: []wizardService{
+					{serviceName: "worker", sourceKind: wizardSourceGit, baseDirectory: "apps/worker", port: 9090},
+				},
+			},
+			want: func(t *testing.T, s *spec.Spec) {
+				if len(s.Services) != 2 {
+					t.Fatalf("len(Services) = %d, want 2", len(s.Services))
+				}
+				worker, ok := s.Services["worker"]
+				if !ok {
+					t.Fatalf("Services = %+v, want a %q key", s.Services, "worker")
+				}
+				if worker.Build.Type != spec.BuildDockerfile || worker.Build.BaseDirectory != "apps/worker" || worker.Port != 9090 {
+					t.Errorf("worker = %+v, want dockerfile build from apps/worker on port 9090", worker)
+				}
+			},
 		},
 	}
 
@@ -385,6 +473,29 @@ func TestWizardAnswers_ToCreatePlan(t *testing.T) {
 			}
 			tt.want(t, p)
 		})
+	}
+}
+
+func TestWizardAnswers_ToDeploySpecRequest(t *testing.T) {
+	a := wizardAnswers{
+		serviceName: "web", sourceKind: wizardSourceGit, port: 3000,
+		repoURL: "https://example.com/mono.git", ref: "main", appName: "myplatform", imageRepoBase: "registry.example.com/org",
+		extra: []wizardService{
+			{serviceName: "worker", sourceKind: wizardSourceGit, baseDirectory: "apps/worker", port: 9090},
+		},
+	}
+	req, err := a.toDeploySpecRequest()
+	if err != nil {
+		t.Fatalf("toDeploySpecRequest() error = %v", err)
+	}
+	if req.RepoURL != "https://example.com/mono.git" || req.Ref != "main" || req.ImageRepoBase != "registry.example.com/org" {
+		t.Errorf("RepoURL/Ref/ImageRepoBase = %q/%q/%q", req.RepoURL, req.Ref, req.ImageRepoBase)
+	}
+	if len(req.Services) != 2 {
+		t.Fatalf("len(Services) = %d, want 2", len(req.Services))
+	}
+	if req.Services["worker"].Build.BaseDirectory != "apps/worker" {
+		t.Errorf("worker build = %+v, want baseDirectory apps/worker", req.Services["worker"].Build)
 	}
 }
 
@@ -499,6 +610,38 @@ func TestRunWizardCreateViaAPI(t *testing.T) {
 			t.Fatalf("exit = %d, want %d", got, exitValidation)
 		}
 	})
+
+	t.Run("multi-service: deploy-spec instead of create", func(t *testing.T) {
+		var paths []string
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			paths = append(paths, r.Method+" "+r.URL.Path)
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(deploySpecResult{
+				AppID: "myplatform",
+				Services: []deploySpecServiceResult{
+					{ServiceKey: "web", ServiceName: "web", Image: "registry.example.com/org/myplatform-web:latest"},
+					{ServiceKey: "worker", ServiceName: "worker", Image: "registry.example.com/org/myplatform-worker:latest"},
+				},
+				AllSucceeded: true,
+			})
+		}))
+		defer srv.Close()
+
+		a := wizardAnswers{
+			serviceName: "web", sourceKind: wizardSourceGit, port: 3000,
+			repoURL: "https://example.com/mono.git", ref: "main", appName: "myplatform",
+			extra: []wizardService{{serviceName: "worker", sourceKind: wizardSourceImage, image: "img:2", port: 9090}},
+		}
+		var stdout, stderr bytes.Buffer
+		got := runWizardCreateViaAPI(a, &stdout, &stderr, credentialFlags{Token: "tok", APIURL: srv.URL}, outputFlags{Format: outputTable}, envMap(), "levelrail-cli-test")
+		if got != exitOK {
+			t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitOK, stderr.String())
+		}
+		want := []string{"POST /api/v1/apps/myplatform/deploy-spec"}
+		if len(paths) != len(want) || paths[0] != want[0] {
+			t.Errorf("requests = %v, want %v", paths, want)
+		}
+	})
 }
 
 func TestRunAppsCreate_InteractiveMutuallyExclusiveWithOtherModeFlags(t *testing.T) {
@@ -514,7 +657,7 @@ func TestRunAppsCreate_InteractiveMutuallyExclusiveWithOtherModeFlags(t *testing
 
 func TestRunAppsCreate_InteractiveEndToEnd_FileMode(t *testing.T) {
 	t.Chdir(t.TempDir())
-	stdin := scriptedStdin("myapp", "image", "registry.example.com/org/app:v1", "8080", "", "", "", "", "file")
+	stdin := scriptedStdin("myapp", "image", "registry.example.com/org/app:v1", "8080", "", "", "", "", "", "file")
 	var stdout, stderr bytes.Buffer
 	got := runAppsCreate("levelrail-cli-test", []string{"--interactive"}, &stdout, &stderr, envMap(), stdin)
 	if got != exitOK {
