@@ -21,7 +21,7 @@
     "@hookform/resolvers": "^5.9.1",
     "@phosphor-icons/react": "^2.1.10",
     "@tailwindcss/vite": "^4.3.3",
-    "@tanstack/react-query": "^5.102.3",
+    "@tanstack/react-query": "^5.102.8",
     "@tanstack/react-router": "^1.170.32",
     "@tanstack/react-virtual": "^3.14.10",
     "@thesvg/react": "^3.3.1",
