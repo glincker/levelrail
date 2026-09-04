@@ -5,8 +5,8 @@ aspirational plan. See CLAUDE.md in the
 repo for the full phase-by-phase design doc if you want the long version.
 The build has moved further and less linearly than that phase plan
 implies: parts of Phase 3 (multi-node, the WireGuard mesh) are shipped
-while some Phase 1 items (real public ACME, full multi-service support)
-are still open. This page describes what's actually true today.
+while some Phase 1 items (real public ACME against a live domain) are
+still open. This page describes what's actually true today.
 
 ## Done
 
@@ -33,6 +33,26 @@ are still open. This page describes what's actually true today.
   surfaced as informational notices rather than enforced, since the
   reconciler always keeps containers running and every service in an
   app already shares one network.
+- Multi-service apps: an `apps` table links N desired services under
+  one app, and `POST /api/v1/apps/{name}/deploy-spec` fans a
+  `services:` map out into independent per-service builds and deploys,
+  each tracked separately, with a real frontend (a services tab plus
+  `DeploySpecForm`) and CLI (`apps deploy-spec`) driving it.
+  Webhook-triggered auto-deploy is unified with the same path: a git
+  source can persist a `services:` map (`GitSource.Services`), and a
+  push fans out through the identical `DeploySpec` logic instead of the
+  older, simpler `GitSource.AdditionalServices` flat list; a git source
+  with no `services:` map still falls back to `AdditionalServices`
+  unchanged, so existing single-service webhook setups are unaffected.
+  `apps create --interactive` supports it too: an "add another
+  service?" loop after the first service's answers, writing every
+  service into one `app.yaml` in file mode or fanning out through
+  `deploy-spec` (instead of `CreateApp`) in API mode. The live
+  end-to-end suite covers the fan-out itself
+  (`test/e2e/multi_service_test.go`): two services built from one
+  shared checkout, each scoped to its own `build.baseDirectory`, linked
+  under one `store.App`, and independently reachable over HTTPS through
+  one ingress pass.
 - A curated ~15-entry service template catalog (ADR 015: reverses the
   original "not chasing Coolify's 280 templates" non-goal, once Compose
   support existed to build it on), served over the API and browsable
@@ -205,8 +225,9 @@ are still open. This page describes what's actually true today.
   both directions, the real git webhook path, database reconciliation,
   non-default port routing, node placement, protected-environment
   confirm-to-deploy gating, Compose healthcheck-derived readiness
-  gating, and master-key rotation. Doesn't yet exercise multi-service
-  fan-out, a full multi-node mesh, or real ACME against a live domain.
+  gating, master-key rotation, and multi-service fan-out (see Multi-service
+  apps, above). Doesn't yet exercise a full multi-node mesh or real ACME
+  against a live domain.
 
 **Observability**
 
@@ -385,24 +406,6 @@ are still open. This page describes what's actually true today.
 - **Database backup-schedule UI.** Shipped (`BackupScheduleForm`,
   see Done); this line is kept only as a pointer in case a gap
   surfaces on real use.
-- **Multi-service apps.** Backend fan-out is real: an `apps` table
-  links N desired services under one app, and
-  `POST /api/v1/apps/{name}/deploy-spec` fans a `services:` map out
-  into independent per-service builds and deploys, each tracked
-  separately, with a real frontend (a services tab plus
-  `DeploySpecForm`) driving it. Webhook-triggered auto-deploy is now
-  unified with that same path: a git source can persist a `services:`
-  map (`GitSource.Services`), and a push fans out through the identical
-  `DeploySpec` logic instead of the older, simpler
-  `GitSource.AdditionalServices` flat list. A git source with no
-  `services:` map still falls back to `AdditionalServices` unchanged,
-  so existing single-service webhook setups are unaffected.
-  `apps create --interactive` now also supports it: an "add another
-  service?" loop after the first service's answers, writing every
-  service into one `app.yaml` in file mode or fanning out through
-  `deploy-spec` (instead of `CreateApp`) in API mode. Kept here rather
-  than moved to Done because the live end-to-end suite (see Done,
-  above) doesn't yet exercise multi-service fan-out.
 - **Real public ACME.** The Caddy ACME issuer type, a settings toggle,
   and form validation are all built and wired end to end (Settings >
   Domains). Only unit-tested against the config shape so far, not
