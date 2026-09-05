@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/image"
-	dockerclient "github.com/docker/docker/client"
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -43,36 +42,8 @@ import (
 // Skips cleanly, does not fail, if Docker or BuildKit aren't reachable,
 // matching TestDeploy_Live_BuildToHTTPS's exact pattern.
 func TestRollback_Live_ImageSwapBothDirections(t *testing.T) {
-	dockerCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
-	if err != nil {
-		t.Skipf("no docker client available: %v", err)
-	}
-	t.Cleanup(func() { _ = dockerCli.Close() })
-
-	pingCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	_, err = dockerCli.Ping(pingCtx)
-	cancel()
-	if err != nil {
-		t.Skipf("docker daemon not reachable: %v", err)
-	}
-
-	connectCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	buildClient, err := build.NewClient(connectCtx, dockerCli)
-	cancel()
-	if err != nil {
-		t.Skipf("could not connect to buildkit: %v", err)
-	}
-	t.Cleanup(func() { _ = buildClient.Close() })
-
-	runtime, err := docker.NewClient()
-	if err != nil {
-		t.Fatalf("docker.NewClient() error = %v", err)
-	}
-	t.Cleanup(func() {
-		if err := runtime.Close(); err != nil {
-			t.Errorf("closing docker.Client: %v", err)
-		}
-	})
+	env := newLiveBuildEnv(t)
+	dockerCli, buildClient, runtime := env.DockerCli, env.BuildClient, env.Runtime
 
 	// A prefix distinct from every other e2e test's service name
 	// (TestDeploy_Live_BuildToHTTPS uses "levelrail-test-e2e-deploy"),

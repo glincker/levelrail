@@ -28,7 +28,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -40,36 +39,8 @@ const (
 )
 
 func TestMasterKeyRotation_Live_SecretStillResolvesAfterRotation(t *testing.T) {
-	dockerCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
-	if err != nil {
-		t.Skipf("no docker client available: %v", err)
-	}
-	t.Cleanup(func() { _ = dockerCli.Close() })
-
-	pingCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	_, err = dockerCli.Ping(pingCtx)
-	cancel()
-	if err != nil {
-		t.Skipf("docker daemon not reachable: %v", err)
-	}
-
-	connectCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	buildClient, err := build.NewClient(connectCtx, dockerCli)
-	cancel()
-	if err != nil {
-		t.Skipf("could not connect to buildkit: %v", err)
-	}
-	t.Cleanup(func() { _ = buildClient.Close() })
-
-	runtime, err := docker.NewClient()
-	if err != nil {
-		t.Fatalf("docker.NewClient() error = %v", err)
-	}
-	t.Cleanup(func() {
-		if err := runtime.Close(); err != nil {
-			t.Errorf("closing docker.Client: %v", err)
-		}
-	})
+	env := newLiveBuildEnv(t)
+	dockerCli, buildClient, runtime := env.DockerCli, env.BuildClient, env.Runtime
 
 	const serviceName = "levelrail-test-e2e-key-rotation"
 	repo := "levelrail/test-e2e-key-rotation"
