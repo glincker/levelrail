@@ -9,4 +9,7 @@ RUN echo "hello from levelrail e2e multi worker" > index.html
 
 EXPOSE 9091
 
+# 9091 needs no root privilege to bind, so this doesn't run as root.
+USER nobody
+
 CMD ["busybox", "httpd", "-f", "-p", "9091", "-h", "/srv"]

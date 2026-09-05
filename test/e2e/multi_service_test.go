@@ -23,15 +23,14 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/image"
-	dockerclient "github.com/docker/docker/client"
 
-	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 const (
@@ -41,36 +40,7 @@ const (
 )
 
 func TestDeploySpec_Live_MultiServiceFanOut(t *testing.T) {
-	dockerCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
-	if err != nil {
-		t.Skipf("no docker client available: %v", err)
-	}
-	t.Cleanup(func() { _ = dockerCli.Close() })
-
-	pingCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	_, err = dockerCli.Ping(pingCtx)
-	cancel()
-	if err != nil {
-		t.Skipf("docker daemon not reachable: %v", err)
-	}
-
-	connectCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	buildClient, err := build.NewClient(connectCtx, dockerCli)
-	cancel()
-	if err != nil {
-		t.Skipf("could not connect to buildkit: %v", err)
-	}
-	t.Cleanup(func() { _ = buildClient.Close() })
-
-	runtime, err := docker.NewClient()
-	if err != nil {
-		t.Fatalf("docker.NewClient() error = %v", err)
-	}
-	t.Cleanup(func() {
-		if err := runtime.Close(); err != nil {
-			t.Errorf("closing docker.Client: %v", err)
-		}
-	})
+	env := newLiveBuildEnv(t)
 
 	const (
 		appName      = "levelrail-test-e2e-multi"
@@ -85,21 +55,21 @@ func TestDeploySpec_Live_MultiServiceFanOut(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		_, _ = dockerCli.ImageRemove(cleanupCtx, webTag, image.RemoveOptions{Force: true})
-		_, _ = dockerCli.ImageRemove(cleanupCtx, workerTag, image.RemoveOptions{Force: true})
+		_, _ = env.DockerCli.ImageRemove(cleanupCtx, webTag, image.RemoveOptions{Force: true})
+		_, _ = env.DockerCli.ImageRemove(cleanupCtx, workerTag, image.RemoveOptions{Force: true})
 	})
 
 	webServiceName := appName + "-web"
 	workerServiceName := appName + "-worker"
-	cleanupContainers(context.Background(), t, runtime, webServiceName)
-	cleanupContainers(context.Background(), t, runtime, workerServiceName)
+	cleanupContainers(context.Background(), t, env.Runtime, webServiceName)
+	cleanupContainers(context.Background(), t, env.Runtime, workerServiceName)
 	t.Cleanup(func() {
-		cleanupContainers(context.Background(), t, runtime, webServiceName)
-		cleanupContainers(context.Background(), t, runtime, workerServiceName)
+		cleanupContainers(context.Background(), t, env.Runtime, webServiceName)
+		cleanupContainers(context.Background(), t, env.Runtime, workerServiceName)
 	})
 
 	svcStore := openLiveStore(t)
-	pipeline := deploy.New(buildClient, svcStore, deploy.WithAppStore(svcStore))
+	pipeline := deploy.New(env.BuildClient, svcStore, deploy.WithAppStore(svcStore))
 
 	deployCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
@@ -108,7 +78,38 @@ func TestDeploySpec_Live_MultiServiceFanOut(t *testing.T) {
 	// checkout, each scoped to its own subdirectory, exactly what
 	// handleDeploySpec (internal/api/apps_multi.go) does for a real
 	// POST .../deploy-spec request.
-	outcomes, err := pipeline.DeploySpec(deployCtx, deploy.MultiRequest{
+	byKey := deployMultiService(deployCtx, t, pipeline, appName, imageRepoBase, sha, webDomain, workerDomain)
+	if byKey["web"].Image != webTag {
+		t.Errorf("web image = %q, want %q", byKey["web"].Image, webTag)
+	}
+	if byKey["worker"].Image != workerTag {
+		t.Errorf("worker image = %q, want %q", byKey["worker"].Image, workerTag)
+	}
+
+	assertSharedApp(deployCtx, t, svcStore, appName, webServiceName, workerServiceName)
+
+	// Step 2: a real application.Controller converges each fanned-out
+	// service into its own real running container.
+	reconcileAndAssertRunning(deployCtx, t, svcStore, env.Runtime, webServiceName, webTag)
+	reconcileAndAssertRunning(deployCtx, t, svcStore, env.Runtime, workerServiceName, workerTag)
+
+	// Step 3: one real ingress.Controller reconcile pass routes both
+	// domains, proving the fan-out's two services are independently
+	// reachable, not just independently running.
+	client := newLiveIngressClient(t, svcStore, env.Runtime, "e2e-multi", "Routed2Services")
+
+	assertBodyContains(t, client, "https://"+webDomain+"/", multiServiceWebBody)
+	assertBodyContains(t, client, "https://"+workerDomain+"/", multiServiceWorkerBody)
+}
+
+// deployMultiService runs pipeline.DeploySpec for a "web"/"worker" pair
+// scoped to sibling subdirectories of test/fixtures/multi-service-e2e,
+// failing the test on any fan-out error, and returns each outcome keyed
+// by its service key for the caller's own assertions.
+func deployMultiService(ctx context.Context, t *testing.T, pipeline *deploy.Pipeline, appName, imageRepoBase, sha, webDomain, workerDomain string) map[string]deploy.ServiceOutcome {
+	t.Helper()
+
+	outcomes, err := pipeline.DeploySpec(ctx, deploy.MultiRequest{
 		AppName: appName,
 		Services: map[string]spec.Service{
 			"web": {
@@ -134,6 +135,7 @@ func TestDeploySpec_Live_MultiServiceFanOut(t *testing.T) {
 	if len(outcomes) != 2 {
 		t.Fatalf("DeploySpec() returned %d outcomes, want 2: %+v", len(outcomes), outcomes)
 	}
+
 	byKey := make(map[string]deploy.ServiceOutcome, len(outcomes))
 	for _, o := range outcomes {
 		if o.Err != nil {
@@ -141,66 +143,66 @@ func TestDeploySpec_Live_MultiServiceFanOut(t *testing.T) {
 		}
 		byKey[o.ServiceKey] = o
 	}
-	if byKey["web"].Image != webTag {
-		t.Errorf("web image = %q, want %q", byKey["web"].Image, webTag)
-	}
-	if byKey["worker"].Image != workerTag {
-		t.Errorf("worker image = %q, want %q", byKey["worker"].Image, workerTag)
-	}
+	return byKey
+}
 
-	// Assertion: both services are linked under the same real store.App.
-	// This is the part a hypothetical implementation that just ran two
-	// unrelated single-service Deploy calls under similarly-prefixed
-	// names would get wrong.
-	app, err := svcStore.GetAppByName(deployCtx, appName)
+// assertSharedApp fails the test unless every named service is linked to
+// the same real store.App: the part a hypothetical implementation that
+// just ran unrelated single-service Deploy calls under similarly-prefixed
+// names would get wrong.
+func assertSharedApp(ctx context.Context, t *testing.T, svcStore *store.DB, appName string, serviceNames ...string) {
+	t.Helper()
+
+	app, err := svcStore.GetAppByName(ctx, appName)
 	if err != nil {
 		t.Fatalf("GetAppByName(%q) error = %v", appName, err)
 	}
-	webDesired, err := svcStore.GetDesiredService(deployCtx, webServiceName)
-	if err != nil {
-		t.Fatalf("GetDesiredService(%q) error = %v", webServiceName, err)
-	}
-	if webDesired.AppID != app.ID {
-		t.Errorf("web service AppID = %q, want %q", webDesired.AppID, app.ID)
-	}
-	workerDesired, err := svcStore.GetDesiredService(deployCtx, workerServiceName)
-	if err != nil {
-		t.Fatalf("GetDesiredService(%q) error = %v", workerServiceName, err)
-	}
-	if workerDesired.AppID != app.ID {
-		t.Errorf("worker service AppID = %q, want the same app ID as web: %q", workerDesired.AppID, app.ID)
-	}
-
-	// Step 2: a real application.Controller converges each fanned-out
-	// service into its own real running container.
-	for _, sn := range []string{webServiceName, workerServiceName} {
-		ctrl := application.New(sn, svcStore, runtime)
-		result, err := ctrl.Reconcile(deployCtx)
+	for _, sn := range serviceNames {
+		desired, err := svcStore.GetDesiredService(ctx, sn)
 		if err != nil {
-			t.Fatalf("application Controller.Reconcile(%q) error = %v, result = %+v", sn, err, result)
+			t.Fatalf("GetDesiredService(%q) error = %v", sn, err)
 		}
-		if len(result.Conditions) == 0 || result.Conditions[0].Status != "True" {
-			t.Fatalf("application Controller.Reconcile(%q) result = %+v, want a True Ready condition", sn, result)
-		}
-	}
-
-	for sn, tag := range map[string]string{webServiceName: webTag, workerServiceName: workerTag} {
-		state, err := runtime.InspectByName(deployCtx, application.ContainerName(sn, tag, ""))
-		if err != nil {
-			t.Fatalf("InspectByName(%q) error = %v", sn, err)
-		}
-		if state == nil || !state.Running {
-			t.Fatalf("InspectByName(%q) = %+v, want a running container", sn, state)
+		if desired.AppID != app.ID {
+			t.Errorf("service %q: AppID = %q, want %q (every fanned-out service must share one app)", sn, desired.AppID, app.ID)
 		}
 	}
+}
 
-	// Step 3: one real ingress.Controller reconcile pass routes both
-	// domains, proving the fan-out's two services are independently
-	// reachable, not just independently running.
+// reconcileAndAssertRunning converges serviceName with a real
+// application.Controller and fails the test unless the result is a True
+// Ready condition backed by an actually-running container built from tag.
+func reconcileAndAssertRunning(ctx context.Context, t *testing.T, svcStore *store.DB, runtime docker.Runtime, serviceName, tag string) {
+	t.Helper()
+
+	ctrl := application.New(serviceName, svcStore, runtime)
+	result, err := ctrl.Reconcile(ctx)
+	if err != nil {
+		t.Fatalf("application Controller.Reconcile(%q) error = %v, result = %+v", serviceName, err, result)
+	}
+	if len(result.Conditions) == 0 || result.Conditions[0].Status != "True" {
+		t.Fatalf("application Controller.Reconcile(%q) result = %+v, want a True Ready condition", serviceName, result)
+	}
+
+	state, err := runtime.InspectByName(ctx, application.ContainerName(serviceName, tag, ""))
+	if err != nil {
+		t.Fatalf("InspectByName(%q) error = %v", serviceName, err)
+	}
+	if state == nil || !state.Running {
+		t.Fatalf("InspectByName(%q) = %+v, want a running container", serviceName, state)
+	}
+}
+
+// newLiveIngressClient reconciles a real ingress.Controller on ephemeral
+// ports, asserts it reports wantReason (e.g. "Routed2Services") on a True
+// Ready condition, and returns an HTTP client dialed straight at Caddy's
+// listener, the same TLS-skipping pattern deploy_test.go's own
+// TestDeploy_Live_BuildToHTTPS already establishes.
+func newLiveIngressClient(t *testing.T, svcStore *store.DB, runtime docker.Runtime, serverName, wantReason string) *http.Client {
+	t.Helper()
+
 	caddyPort := freePort(t)
 	caddyAddr := fmt.Sprintf("127.0.0.1:%d", caddyPort)
-	adminPort := freePort(t)
-	adminAddr := fmt.Sprintf("127.0.0.1:%d", adminPort)
+	adminAddr := fmt.Sprintf("127.0.0.1:%d", freePort(t))
 
 	driver := ingress.New(nil)
 	t.Cleanup(func() {
@@ -210,23 +212,23 @@ func TestDeploySpec_Live_MultiServiceFanOut(t *testing.T) {
 	})
 
 	ingressCtrl := ingressreconcile.New(svcStore, runtime, driver,
-		ingressreconcile.WithServerName("e2e-multi"),
+		ingressreconcile.WithServerName(serverName),
 		ingressreconcile.WithListenAddr(caddyAddr),
 		ingressreconcile.WithAdminListen(adminAddr),
 		ingressreconcile.WithStorageDir(t.TempDir()),
 	)
 
-	ingressCtx, ingressCancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer ingressCancel()
-	ingressResult, err := ingressCtrl.Reconcile(ingressCtx)
+	ingressCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	result, err := ingressCtrl.Reconcile(ingressCtx)
 	if err != nil {
-		t.Fatalf("ingress Controller.Reconcile() error = %v, result = %+v", err, ingressResult)
+		t.Fatalf("ingress Controller.Reconcile() error = %v, result = %+v", err, result)
 	}
-	if len(ingressResult.Conditions) == 0 || ingressResult.Conditions[0].Status != "True" {
-		t.Fatalf("ingress Controller.Reconcile() result = %+v, want a True Ready condition", ingressResult)
+	if len(result.Conditions) == 0 || result.Conditions[0].Status != "True" {
+		t.Fatalf("ingress Controller.Reconcile() result = %+v, want a True Ready condition", result)
 	}
-	if ingressResult.Conditions[0].Reason != "Routed2Services" {
-		t.Fatalf("ingress Controller.Reconcile() reason = %q, want %q (both fanned-out services routed)", ingressResult.Conditions[0].Reason, "Routed2Services")
+	if result.Conditions[0].Reason != wantReason {
+		t.Fatalf("ingress Controller.Reconcile() reason = %q, want %q", result.Conditions[0].Reason, wantReason)
 	}
 
 	client := &http.Client{
@@ -239,13 +241,13 @@ func TestDeploySpec_Live_MultiServiceFanOut(t *testing.T) {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // deliberate, see deploy_test.go's identical comment
 		},
 	}
+	return client
+}
 
-	webBody := getBodyWithRetry(t, client, "https://"+webDomain+"/")
-	if !strings.Contains(webBody, multiServiceWebBody) {
-		t.Fatalf("response for %s = %q, want it to contain %q", webDomain, webBody, multiServiceWebBody)
-	}
-	workerBody := getBodyWithRetry(t, client, "https://"+workerDomain+"/")
-	if !strings.Contains(workerBody, multiServiceWorkerBody) {
-		t.Fatalf("response for %s = %q, want it to contain %q", workerDomain, workerBody, multiServiceWorkerBody)
+func assertBodyContains(t *testing.T, client *http.Client, url, want string) {
+	t.Helper()
+	body := getBodyWithRetry(t, client, url)
+	if !strings.Contains(body, want) {
+		t.Fatalf("response for %s = %q, want it to contain %q", url, body, want)
 	}
 }

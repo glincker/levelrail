@@ -9,4 +9,7 @@ RUN echo "hello from levelrail e2e multi web" > index.html
 
 EXPOSE 8080
 
+# 8080 needs no root privilege to bind, so this doesn't run as root.
+USER nobody
+
 CMD ["busybox", "httpd", "-f", "-p", "8080", "-h", "/srv"]
