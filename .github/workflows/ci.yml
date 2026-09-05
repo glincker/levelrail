@@ -177,6 +177,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # Full history, not just this job's default shallow clone:
+          # the changed-line coverage step below needs a real merge-base
+          # against the PR's base branch, which a shallow fetch can't
+          # resolve. Only this one lightweight job pays for it.
+          fetch-depth: 0
 
       - name: Download coverage profiles
         uses: actions/download-artifact@v4
@@ -196,10 +202,13 @@ jobs:
       - name: Coverage gate (70% for /internal)
         run: scripts/check-coverage.sh coverage.out internal/ 70
 
-      # TODO: changed-file coverage check on PRs (new code can still lower
-      # the bar today, only the overall 70%/internal gate above runs).
-      # Needs a main-branch coverage baseline artifact plus a diff tool
-      # like vladopajic/go-test-coverage; not built yet.
+      # PR-only: the aggregate gate above can pass while a PR's own new
+      # code is barely tested, diluted by the rest of internal/ already
+      # being well covered. This scopes the same 70% bar to only the
+      # statements this PR actually added or changed.
+      - name: Changed-line coverage gate (70% for /internal, PRs only)
+        if: github.event_name == 'pull_request'
+        run: scripts/check-changed-file-coverage.sh coverage.out "origin/${{ github.event.pull_request.base.ref }}" internal/ 70
 
   lint:
     name: Lint
