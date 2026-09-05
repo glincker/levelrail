@@ -55,6 +55,61 @@ type wizardAnswers struct {
 	// for it (spec.Build has no ImageRepo), but a real build trigger
 	// request does, see buildTriggerRequest.
 	imageRepo string
+	// extra holds every service beyond the first one, collected by the
+	// wizard's "add another service?" loop. Empty (the common case)
+	// means a single-service app, keeping every existing single-service
+	// code path (toCreatePlan, the plain CreateApp+build trigger) byte
+	// for byte unchanged.
+	extra []wizardService
+	// appName and imageRepoBase are only collected, and only meaningful,
+	// when extra is non-empty and outputMode is API: a multi-service
+	// deploy goes through POST /api/v1/apps/{name}/deploy-spec instead
+	// of CreateApp, which needs an app-level name distinct from any one
+	// service's name plus its own optional image tag prefix.
+	appName       string
+	imageRepoBase string
+}
+
+// wizardService is one additional service collected by the wizard's
+// "add another service?" loop: the same shape as wizardAnswers' own
+// primary-service fields, minus the ones only meaningful for the
+// single-service CreateApp path (repoURL/ref/imageRepo), plus
+// baseDirectory for a monorepo service built from the shared repo a
+// multi-service deploy-spec request already carries at the top level.
+type wizardService struct {
+	serviceName   string
+	sourceKind    wizardSourceKind
+	image         string
+	baseDirectory string
+	port          int
+	domain        string
+	healthPath    string
+	memory        string
+	cpu           float64
+}
+
+// toSpecService builds the spec.Service s describes, the same
+// construction wizardAnswers.toSpec used to do inline for its own
+// single primary service.
+func (s wizardService) toSpecService() spec.Service {
+	svc := spec.Service{Port: s.port}
+	switch s.sourceKind {
+	case wizardSourceImage:
+		svc.Build = spec.Build{Type: spec.BuildImage, Image: s.image}
+	default:
+		svc.Build = spec.Build{Type: spec.BuildDockerfile, BaseDirectory: s.baseDirectory}
+	}
+	if s.domain != "" {
+		svc.Domains = []string{s.domain}
+	}
+	if s.healthPath != "" {
+		probe := spec.Probe{Path: s.healthPath}
+		svc.Health = &spec.Health{Readiness: &probe, Liveness: &probe}
+	}
+	if s.memory != "" || s.cpu > 0 {
+		svc.Resources = &spec.Resources{Memory: s.memory, CPU: s.cpu}
+	}
+	return svc
 }
 
 // toSpec builds the single-service app spec wizardAnswers describes,
@@ -63,29 +118,45 @@ type wizardAnswers struct {
 // schema validation) before any caller writes it out or sends it
 // anywhere.
 func (a wizardAnswers) toSpec() (*spec.Spec, error) {
-	svc := spec.Service{Port: a.port}
-	switch a.sourceKind {
-	case wizardSourceImage:
-		svc.Build = spec.Build{Type: spec.BuildImage, Image: a.image}
-	default:
-		svc.Build = spec.Build{Type: spec.BuildDockerfile}
+	primary := wizardService{
+		serviceName: a.serviceName, sourceKind: a.sourceKind, image: a.image,
+		port: a.port, domain: a.domain, healthPath: a.healthPath, memory: a.memory, cpu: a.cpu,
 	}
-	if a.domain != "" {
-		svc.Domains = []string{a.domain}
-	}
-	if a.healthPath != "" {
-		probe := spec.Probe{Path: a.healthPath}
-		svc.Health = &spec.Health{Readiness: &probe, Liveness: &probe}
-	}
-	if a.memory != "" || a.cpu > 0 {
-		svc.Resources = &spec.Resources{Memory: a.memory, CPU: a.cpu}
+	services := map[string]spec.Service{a.serviceName: primary.toSpecService()}
+	for _, e := range a.extra {
+		services[e.serviceName] = e.toSpecService()
 	}
 
-	s := &spec.Spec{Version: 1, Services: map[string]spec.Service{a.serviceName: svc}}
+	s := &spec.Spec{Version: 1, Services: services}
 	if err := s.Validate(); err != nil {
 		return nil, fmt.Errorf("wizard produced an invalid app spec: %w", err)
 	}
 	return s, nil
+}
+
+// toDeploySpecRequest builds the POST /api/v1/apps/{name}/deploy-spec
+// body for a multi-service wizard run (len(a.extra) > 0): the same
+// services map toSpec builds, converted service by service with
+// apps_deploy_spec.go's own toDeploySpecService so a wizard-driven
+// multi-service deploy validates (e.g. rejects secret env vars) exactly
+// like "apps deploy-spec --file" does.
+func (a wizardAnswers) toDeploySpecRequest() (deploySpecRequest, error) {
+	s, err := a.toSpec()
+	if err != nil {
+		return deploySpecRequest{}, err
+	}
+	req := deploySpecRequest{
+		RepoURL: a.repoURL, Ref: a.ref, ImageRepoBase: a.imageRepoBase,
+		Services: make(map[string]deploySpecService, len(s.Services)),
+	}
+	for key, svc := range s.Services {
+		converted, convErr := toDeploySpecService(svc)
+		if convErr != nil {
+			return deploySpecRequest{}, fmt.Errorf("service %q: %w", key, convErr)
+		}
+		req.Services[key] = converted
+	}
+	return req, nil
 }
 
 // appYAML renders a.toSpec() as app.yaml bytes, round-tripped through
@@ -243,7 +314,8 @@ func (p *wizardPrompter) readChoice(prompt, def string, options ...string) (stri
 
 // runInteractiveWizard is the wizard's question loop: app name, source
 // (git repo or Docker image), port, domain, health check path, resource
-// limits, then where to send the result. detected is the current
+// limits, an optional "add another service?" loop for a multi-service
+// app, then where to send the result. detected is the current
 // directory's best-effort local git info (same detectLocalGit the
 // flag-driven path already uses), offered as a default so a caller
 // standing inside a checkout doesn't have to retype its own remote URL.
@@ -287,35 +359,122 @@ func runInteractiveWizard(p *wizardPrompter, detected detectedGit) (wizardAnswer
 		a.ref = resolveRef("", detected.Ref)
 	}
 
-	port, err := p.readInt("Container port (the port your app listens on inside the container): ")
+	common, err := readCommonServiceAnswers(p, "Container port (the port your app listens on inside the container): ", "Domain to route to this app (optional, press enter to skip): ")
 	if err != nil {
 		return wizardAnswers{}, err
 	}
-	a.port = port
+	a.port, a.domain, a.healthPath, a.memory, a.cpu = common.port, common.domain, common.healthPath, common.memory, common.cpu
 
-	domain, err := p.readOptional("Domain to route to this app (optional, press enter to skip): ", "")
+	for {
+		more, err := p.readChoice("Add another service to this app? [y/N] (default: N): ", "n", "y", "n")
+		if err != nil {
+			return wizardAnswers{}, err
+		}
+		if more == "n" {
+			break
+		}
+		extraSvc, err := readExtraService(p, len(a.extra)+2)
+		if err != nil {
+			return wizardAnswers{}, err
+		}
+		a.extra = append(a.extra, extraSvc)
+	}
+
+	mode, err := p.readChoice("Write app.yaml to the current directory, or create the app directly via the API? [file/api] (default: file): ", "file", "file", "api")
 	if err != nil {
 		return wizardAnswers{}, err
 	}
-	a.domain = domain
+	if mode != "api" {
+		a.outputMode = wizardOutputFile
+		return a, nil
+	}
+	a.outputMode = wizardOutputAPI
+
+	if len(a.extra) == 0 {
+		if a.sourceKind == wizardSourceGit {
+			imageRepo, err := p.readRequired("Image repository to push the build to, e.g. registry.example.com/org/app: ")
+			if err != nil {
+				return wizardAnswers{}, err
+			}
+			a.imageRepo = imageRepo
+		}
+		return a, nil
+	}
+
+	// A multi-service create goes through POST .../deploy-spec instead
+	// of CreateApp: it needs an app-level name distinct from any one
+	// service's name, and (see handleDeploySpec, internal/api/
+	// apps_multi.go) a repo_url/ref pair unconditionally, even when
+	// every service happens to be build.type: image, which a git-source
+	// primary service already collected above.
+	appName, err := p.readRequired("App name (the app's identifier on the control plane, distinct from any one service's name): ")
+	if err != nil {
+		return wizardAnswers{}, err
+	}
+	a.appName = appName
+	if a.sourceKind != wizardSourceGit {
+		repo, err := p.readRequired("Git repository URL to build every service from (required for a multi-service deploy): ")
+		if err != nil {
+			return wizardAnswers{}, err
+		}
+		a.repoURL = repo
+		ref, err := p.readOptional("Branch, tag, or commit to build (default: main): ", "main")
+		if err != nil {
+			return wizardAnswers{}, err
+		}
+		a.ref = ref
+	}
+	imageRepoBase, err := p.readOptional("Image repository prefix for built services (optional, defaults to the app name): ", "")
+	if err != nil {
+		return wizardAnswers{}, err
+	}
+	a.imageRepoBase = imageRepoBase
+
+	return a, nil
+}
+
+// wizardCommonServiceAnswers is the prompt block every service, primary
+// or extra, shares: port, domain, health check, and resource limits.
+type wizardCommonServiceAnswers struct {
+	port       int
+	domain     string
+	healthPath string
+	memory     string
+	cpu        float64
+}
+
+func readCommonServiceAnswers(p *wizardPrompter, portPrompt, domainPrompt string) (wizardCommonServiceAnswers, error) {
+	var c wizardCommonServiceAnswers
+
+	port, err := p.readInt(portPrompt)
+	if err != nil {
+		return wizardCommonServiceAnswers{}, err
+	}
+	c.port = port
+
+	domain, err := p.readOptional(domainPrompt, "")
+	if err != nil {
+		return wizardCommonServiceAnswers{}, err
+	}
+	c.domain = domain
 
 	health, err := p.readLine("Health check path (default: /healthz, type 'skip' for none): ")
 	if err != nil {
-		return wizardAnswers{}, err
+		return wizardCommonServiceAnswers{}, err
 	}
 	switch strings.ToLower(health) {
 	case "":
-		a.healthPath = "/healthz"
+		c.healthPath = "/healthz"
 	case "skip", "none", "no":
-		a.healthPath = ""
+		c.healthPath = ""
 	default:
-		a.healthPath = health
+		c.healthPath = health
 	}
 
 	for {
 		mem, err := p.readLine("Memory limit, e.g. 512Mi or 1Gi (optional, press enter for no limit): ")
 		if err != nil {
-			return wizardAnswers{}, err
+			return wizardCommonServiceAnswers{}, err
 		}
 		if mem == "" {
 			break
@@ -324,14 +483,14 @@ func runInteractiveWizard(p *wizardPrompter, detected detectedGit) (wizardAnswer
 			_, _ = fmt.Fprintln(p.stderr, parseErr)
 			continue
 		}
-		a.memory = mem
+		c.memory = mem
 		break
 	}
 
 	for {
 		cpuStr, err := p.readLine("CPU limit in cores, e.g. 0.5 or 1 (optional, press enter for no limit): ")
 		if err != nil {
-			return wizardAnswers{}, err
+			return wizardCommonServiceAnswers{}, err
 		}
 		if cpuStr == "" {
 			break
@@ -341,28 +500,59 @@ func runInteractiveWizard(p *wizardPrompter, detected detectedGit) (wizardAnswer
 			_, _ = fmt.Fprintln(p.stderr, "enter a positive number, e.g. 0.5")
 			continue
 		}
-		a.cpu = cpu
+		c.cpu = cpu
 		break
 	}
 
-	mode, err := p.readChoice("Write app.yaml to the current directory, or create the app directly via the API? [file/api] (default: file): ", "file", "file", "api")
+	return c, nil
+}
+
+// readExtraService prompts for one service beyond the first, ordinal
+// being its 1-based position among all services (2, 3, ...) for the
+// prompt text. Unlike the primary service, its git-vs-image choice
+// never asks for a repository: a multi-service deploy always builds
+// every git-sourced service from the one shared repo/ref collected once
+// for the whole app (see the appName/imageRepoBase block above), so this
+// only needs the subdirectory within it.
+func readExtraService(p *wizardPrompter, ordinal int) (wizardService, error) {
+	var s wizardService
+
+	rawName, err := p.readRequired(fmt.Sprintf("Service #%d name: ", ordinal))
 	if err != nil {
-		return wizardAnswers{}, err
+		return wizardService{}, err
 	}
-	if mode == "api" {
-		a.outputMode = wizardOutputAPI
-		if a.sourceKind == wizardSourceGit {
-			imageRepo, err := p.readRequired("Image repository to push the build to, e.g. registry.example.com/org/app: ")
-			if err != nil {
-				return wizardAnswers{}, err
-			}
-			a.imageRepo = imageRepo
-		}
-	} else {
-		a.outputMode = wizardOutputFile
+	s.serviceName = sanitizeServiceName(rawName)
+	if s.serviceName != strings.ToLower(strings.TrimSpace(rawName)) {
+		_, _ = fmt.Fprintf(p.stderr, "using %q (sanitized to lowercase alphanumeric and hyphens, starting with a letter)\n", s.serviceName)
 	}
 
-	return a, nil
+	source, err := p.readChoice("Deploy from the shared git repository or a Docker image? [git/image] (default: git): ", "git", "git", "image")
+	if err != nil {
+		return wizardService{}, err
+	}
+	if source == "image" {
+		s.sourceKind = wizardSourceImage
+		image, err := p.readRequired("Docker image reference (e.g. registry.example.com/org/app:tag): ")
+		if err != nil {
+			return wizardService{}, err
+		}
+		s.image = image
+	} else {
+		s.sourceKind = wizardSourceGit
+		baseDir, err := p.readOptional("Subdirectory this service builds from within the repo, e.g. apps/api (optional, blank for the repo root): ", "")
+		if err != nil {
+			return wizardService{}, err
+		}
+		s.baseDirectory = baseDir
+	}
+
+	common, err := readCommonServiceAnswers(p, "Container port (the port this service listens on inside the container): ", "Domain to route to this service (optional, press enter to skip): ")
+	if err != nil {
+		return wizardService{}, err
+	}
+	s.port, s.domain, s.healthPath, s.memory, s.cpu = common.port, common.domain, common.healthPath, common.memory, common.cpu
+
+	return s, nil
 }
 
 // wizardAppYAMLPath is where the wizard's file output mode writes,
@@ -414,6 +604,10 @@ func runWizardWriteFile(a wizardAnswers, stdout, stderr io.Writer, of outputFlag
 }
 
 func runWizardCreateViaAPI(a wizardAnswers, stdout, stderr io.Writer, cf credentialFlags, of outputFlags, lookupEnv func(string) (string, bool), prog string) int {
+	if len(a.extra) > 0 {
+		return runWizardCreateMultiServiceViaAPI(a, stdout, stderr, cf, of, lookupEnv, prog)
+	}
+
 	jsonOut := of.Format == outputJSON
 	plan, err := a.toCreatePlan()
 	if err != nil {
@@ -433,4 +627,31 @@ func runWizardCreateViaAPI(a wizardAnswers, stdout, stderr io.Writer, cf credent
 	}
 
 	return fetchAndPrintCreatedApp(ctx, client, created.Name, stdout, stderr, of)
+}
+
+// runWizardCreateMultiServiceViaAPI is runWizardCreateViaAPI's path for
+// a multi-service wizard run: POST .../deploy-spec instead of CreateApp,
+// the same call "apps deploy-spec" itself makes, printed the same way
+// (printDeploySpecResultHuman) so the two surfaces read identically.
+func runWizardCreateMultiServiceViaAPI(a wizardAnswers, stdout, stderr io.Writer, cf credentialFlags, of outputFlags, lookupEnv func(string) (string, bool), prog string) int {
+	jsonOut := of.Format == outputJSON
+	req, err := a.toDeploySpecRequest()
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
+	}
+
+	client := apiClientFromCredentialFlags(prog, cf, lookupEnv)
+	result, err := client.DeploySpec(context.Background(), a.appName, req)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("deploy spec to app %q: %w", a.appName, err))
+	}
+
+	if err := renderResult(stdout, of.Format, of.Query, result, func() { printDeploySpecResultHuman(stdout, result) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	if of.Format == outputTable && !result.AllSucceeded {
+		return exitAPIError
+	}
+	return exitOK
 }

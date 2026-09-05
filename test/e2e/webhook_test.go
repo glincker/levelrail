@@ -16,14 +16,11 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/image"
-	dockerclient "github.com/docker/docker/client"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
-	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
-	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -45,34 +42,8 @@ import (
 // internal/deploy directly, this one starts from an actual push event
 // the way GitHub would send one.
 func TestWebhook_Live_PushToRunningContainer(t *testing.T) {
-	rawCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
-	if err != nil {
-		t.Skipf("no docker client available: %v", err)
-	}
-	pingCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	_, err = rawCli.Ping(pingCtx)
-	cancel()
-	if err != nil {
-		t.Skipf("docker daemon not reachable: %v", err)
-	}
-
-	connectCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	buildClient, err := build.NewClient(connectCtx, rawCli)
-	cancel()
-	if err != nil {
-		t.Skipf("could not connect to buildkit: %v", err)
-	}
-	t.Cleanup(func() { _ = buildClient.Close() })
-
-	runtime, err := docker.NewClient()
-	if err != nil {
-		t.Fatalf("docker.NewClient() error = %v", err)
-	}
-	t.Cleanup(func() {
-		if err := runtime.Close(); err != nil {
-			t.Errorf("closing docker.Client: %v", err)
-		}
-	})
+	env := newLiveBuildEnv(t)
+	rawCli, buildClient, runtime := env.DockerCli, env.BuildClient, env.Runtime
 
 	const serviceName = "levelrail-test-webhook-push"
 	const imageRepo = "levelrail/test-webhook-push"

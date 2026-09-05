@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"log/slog"
 	"net/http"
@@ -9,8 +10,61 @@ import (
 	"testing"
 	"time"
 
+	dockerclient "github.com/docker/docker/client"
+
 	"github.com/GLINCKER/levelrail/internal/api"
+	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/docker"
 )
+
+// liveBuildEnv bundles the real Docker client, real BuildKit client, and
+// real docker.Runtime every live test in this package that builds an
+// actual image needs, cleanly skipping the calling test if Docker or
+// BuildKit aren't reachable. Extracted here once deploy_test.go,
+// compose_healthcheck_test.go, and multi_service_test.go had each grown
+// their own copy of the identical skip-if-unavailable setup.
+type liveBuildEnv struct {
+	DockerCli   *dockerclient.Client
+	BuildClient *build.Client
+	Runtime     docker.Runtime
+}
+
+func newLiveBuildEnv(t *testing.T) liveBuildEnv {
+	t.Helper()
+
+	dockerCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
+	if err != nil {
+		t.Skipf("no docker client available: %v", err)
+	}
+	t.Cleanup(func() { _ = dockerCli.Close() })
+
+	pingCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	_, err = dockerCli.Ping(pingCtx)
+	cancel()
+	if err != nil {
+		t.Skipf("docker daemon not reachable: %v", err)
+	}
+
+	connectCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	buildClient, err := build.NewClient(connectCtx, dockerCli)
+	cancel()
+	if err != nil {
+		t.Skipf("could not connect to buildkit: %v", err)
+	}
+	t.Cleanup(func() { _ = buildClient.Close() })
+
+	runtime, err := docker.NewClient()
+	if err != nil {
+		t.Fatalf("docker.NewClient() error = %v", err)
+	}
+	t.Cleanup(func() {
+		if err := runtime.Close(); err != nil {
+			t.Errorf("closing docker.Client: %v", err)
+		}
+	})
+
+	return liveBuildEnv{DockerCli: dockerCli, BuildClient: buildClient, Runtime: runtime}
+}
 
 // discardTestWriter throws away a router's own request logging, the
 // same discard-writer shape test/e2e/metrics_test.go's own

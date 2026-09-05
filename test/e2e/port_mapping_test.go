@@ -31,10 +31,8 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/image"
-	dockerclient "github.com/docker/docker/client"
 
 	"github.com/GLINCKER/levelrail/internal/build"
-	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
@@ -65,36 +63,8 @@ const altPort = 9090
 // does not fail, if Docker or BuildKit aren't reachable, matching
 // deploy_test.go's own skip pattern exactly.
 func TestPortMapping_Live_NonDefaultPortRouting(t *testing.T) {
-	dockerCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
-	if err != nil {
-		t.Skipf("no docker client available: %v", err)
-	}
-	t.Cleanup(func() { _ = dockerCli.Close() })
-
-	pingCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	_, err = dockerCli.Ping(pingCtx)
-	cancel()
-	if err != nil {
-		t.Skipf("docker daemon not reachable: %v", err)
-	}
-
-	connectCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	buildClient, err := build.NewClient(connectCtx, dockerCli)
-	cancel()
-	if err != nil {
-		t.Skipf("could not connect to buildkit: %v", err)
-	}
-	t.Cleanup(func() { _ = buildClient.Close() })
-
-	runtime, err := docker.NewClient()
-	if err != nil {
-		t.Fatalf("docker.NewClient() error = %v", err)
-	}
-	t.Cleanup(func() {
-		if err := runtime.Close(); err != nil {
-			t.Errorf("closing docker.Client: %v", err)
-		}
-	})
+	env := newLiveBuildEnv(t)
+	dockerCli, buildClient, runtime := env.DockerCli, env.BuildClient, env.Runtime
 
 	// Service name and domain are deliberately distinct from
 	// deploy_test.go's (and any other e2e test's), since other agents are

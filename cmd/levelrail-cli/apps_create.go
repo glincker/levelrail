@@ -673,7 +673,7 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.StringVar(&f.attachDatabaseField, "attach-database-field", "", "which field to inject: url, host, port, username, password, or database (default: url); only meaningful with --attach-database")
 	fs.BoolVar(&f.yes, "yes", false, "accept defaults without prompting (reserved: no-op outside --interactive, accepted for forward compatibility and script portability)")
 	fs.BoolVar(&f.yes, "y", false, "shorthand for --yes")
-	fs.BoolVar(&f.interactive, "interactive", false, "run a step-by-step wizard instead of specifying flags: prompts for name, source, port, domain, health check, and resource limits, then writes app.yaml or calls the API")
+	fs.BoolVar(&f.interactive, "interactive", false, "run a step-by-step wizard instead of specifying flags: prompts for name, source, port, domain, health check, resource limits, and optionally more services, then writes app.yaml or calls the API")
 	fs.BoolVar(&f.interactive, "i", false, "shorthand for --interactive")
 	fs.BoolVar(&f.jsonOut, "json", false, "print the created app as JSON to stdout and nothing else")
 	fs.StringVar(tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
@@ -724,9 +724,10 @@ Interactive path:
   --interactive, -i   run a step-by-step wizard: prompts for name,
                        source (git repo or Docker image), port, domain,
                        health check path, and resource limits, then asks
-                       whether to write app.yaml or create the app via
-                       the API. Cannot be combined with --name, --image,
-                       --repo, or --file.
+                       whether to add another service (a multi-service
+                       app), then whether to write app.yaml or create
+                       the app via the API. Cannot be combined with
+                       --name, --image, --repo, or --file.
 
 Existing-image path:
   --name string        app name (required)
