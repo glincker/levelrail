@@ -21,6 +21,7 @@ import {
   PackageIcon,
   TerminalWindowIcon,
   HeartbeatIcon,
+  StackIcon,
 } from '@phosphor-icons/react/dist/ssr'
 
 export interface SettingsNavItem {
@@ -167,6 +168,13 @@ export const settingsNavSections: SettingsNavSection[] = [
         title: 'System status',
         description:
           'Preflight checks: Docker, disk, ports, database, and firewall.',
+      },
+      {
+        to: '/settings/containers',
+        icon: StackIcon,
+        title: 'Containers',
+        description:
+          'Every container on this node, managed by this platform or not.',
       },
       {
         to: '/domains',

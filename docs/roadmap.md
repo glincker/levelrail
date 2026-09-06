@@ -131,7 +131,7 @@ still open. This page describes what's actually true today.
   same scheduled/cron backup, restore, and verification feature set
   managed databases already had, via API, CLI
   (`app-volume-backups list/trigger/restore/restore-as-new/schedule/
-  verify/verifications`), and a web UI section on the app overview page.
+  verify/verifications`), and a web UI section on the app's Volumes tab.
 - Backup targets get a "test connection" action
   (`POST /api/v1/backup-targets/{id}/test`) that probes the target's
   bucket over its stored credentials without uploading or deleting

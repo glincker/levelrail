@@ -7,6 +7,7 @@ import {
   HardDriveIcon,
   LifebuoyIcon,
   GearIcon,
+  KeyIcon,
   ShieldCheckIcon,
   SparkleIcon,
   StackIcon,
@@ -34,6 +35,7 @@ import {
 } from '../../queries/certificates'
 import type { CertificateStatus } from '../../queries/certificates'
 import { CleanUpDockerDialog } from '../../components/CleanUpDockerDialog'
+import { RotateMasterKeyDialog } from '../../components/RotateMasterKeyDialog'
 import { PageSpinner } from '@/components/ui/page-spinner'
 
 // Platform info comes from the already-warm /api/v1/brand cache via
@@ -286,6 +288,36 @@ function CertificatesCard() {
   )
 }
 
+// Only rendered when status.secrets_configured (master key rotation
+// requires one already loaded, same 501-if-not-configured shape
+// useRotateMasterKey's own doc comment establishes): showing the
+// rotate action when there's no master key to rotate would just be a
+// button that always fails, the same reasoning DiskUsageCard's own
+// early return applies to a different missing-precondition case.
+function MasterKeyCard() {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              <KeyIcon className="size-4" />
+            </div>
+            <div>
+              <CardTitle>Master key</CardTitle>
+              <CardDescription>
+                Rotate the envelope-encryption key every stored secret
+                depends on.
+              </CardDescription>
+            </div>
+          </div>
+          <RotateMasterKeyDialog />
+        </div>
+      </CardHeader>
+    </Card>
+  )
+}
+
 function GeneralSettingsPage() {
   const brand = useBrand()
   const { data: status } = useSystemStatus()
@@ -398,6 +430,8 @@ function GeneralSettingsPage() {
       ) : null}
 
       <CertificatesCard />
+
+      {status.secrets_configured ? <MasterKeyCard /> : null}
 
       <Card>
         <CardHeader>
