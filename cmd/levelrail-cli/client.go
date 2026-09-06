@@ -37,6 +37,7 @@ type (
 	sessionInfoResource              = apiclient.SessionInfoResource
 	databaseResource                 = apiclient.DatabaseResource
 	databaseEngineResource           = apiclient.DatabaseEngineResource
+	databaseEngineVariantResource    = apiclient.DatabaseEngineVariantResource
 	setDatabaseResourcesRequest      = apiclient.SetDatabaseResourcesRequest
 	databasePublicAccessResource     = apiclient.DatabasePublicAccessResource
 	setDatabasePublicAccessRequest   = apiclient.SetDatabasePublicAccessRequest

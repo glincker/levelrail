@@ -481,6 +481,9 @@ func printDatabaseHuman(out io.Writer, d databaseResource) {
 	_, _ = fmt.Fprintf(out, "name:     %s\n", d.Name)
 	_, _ = fmt.Fprintf(out, "engine:   %s\n", d.Engine)
 	_, _ = fmt.Fprintf(out, "version:  %s\n", d.Version)
+	if d.Variant != "" {
+		_, _ = fmt.Fprintf(out, "variant:  %s\n", d.Variant)
+	}
 	if d.NodeID != "" {
 		_, _ = fmt.Fprintf(out, "node:     %s\n", d.NodeID)
 	}

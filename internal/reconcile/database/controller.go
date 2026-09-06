@@ -42,6 +42,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -359,7 +360,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 // database's data volume exists, then ensures the right container exists
 // and is running.
 func (c *Controller) reconcileEngine(ctx context.Context, desired *store.DesiredDatabase, env map[string]string, command []string, dataPath string, containerPort int) (reconcile.Result, error) {
-	image := dockerImageFor(desired.Engine) + ":" + versionOrDefault(desired.Version)
+	image, err := imageReferenceFor(desired.Engine, desired.Version, desired.Variant)
+	if err != nil {
+		return notReady("UnknownVariant", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+	}
 	target := containerName(c.dbName)
 	volName := dataVolumeName(c.dbName)
 
@@ -534,6 +538,25 @@ func dockerImageFor(engine string) string {
 		return image
 	}
 	return engine
+}
+
+// imageReferenceFor returns the full "repo:tag" image reference to run
+// for engine/version/variant. An empty variant reproduces dockerImageFor's
+// existing behavior byte for byte; a non-empty one looks up its image and
+// tag_template from database_engines.yaml (store.DatabaseEngineVariant),
+// since each variant image (pgvector/pgvector, postgis/postgis,
+// timescale/timescaledb) tags itself differently from the vanilla image.
+func imageReferenceFor(engine, version, variant string) (string, error) {
+	resolvedVersion := versionOrDefault(version)
+	if variant == "" {
+		return dockerImageFor(engine) + ":" + resolvedVersion, nil
+	}
+	v, err := store.DatabaseEngineVariant(engine, variant)
+	if err != nil {
+		return "", fmt.Errorf("resolve variant image: %w", err)
+	}
+	tag := strings.ReplaceAll(v.TagTemplate, "{version}", resolvedVersion)
+	return v.Image + ":" + tag, nil
 }
 
 func versionOrDefault(v string) string {

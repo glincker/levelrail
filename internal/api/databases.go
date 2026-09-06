@@ -29,6 +29,12 @@ type databaseResource struct {
 	Name    string `json:"name"`
 	Engine  string `json:"engine"`
 	Version string `json:"version"`
+	// Variant selects an alternate image for Engine instead of its
+	// vanilla one (database_engines.yaml's per-engine variants list,
+	// currently only postgres: pgvector, postgis, timescaledb). Empty
+	// means the vanilla image. Ordinary desired state, set at create time
+	// like Engine/Version, not a response-only field.
+	Variant string `json:"variant,omitempty"`
 	NodeID  string `json:"node_id,omitempty"`
 	// ProjectID: see appResource's own ProjectID field doc comment,
 	// identical response-only-except-at-create-time boundary. Set it on
@@ -71,6 +77,7 @@ func toDatabaseResource(d store.DesiredDatabase) databaseResource {
 		Name:               d.Name,
 		Engine:             d.Engine,
 		Version:            d.Version,
+		Variant:            d.Variant,
 		NodeID:             d.NodeID,
 		ProjectID:          d.ProjectID,
 		BackupTargetID:     d.BackupTargetID,
@@ -88,6 +95,7 @@ func (d databaseResource) toDesiredDatabase() store.DesiredDatabase {
 		Name:    d.Name,
 		Engine:  d.Engine,
 		Version: d.Version,
+		Variant: d.Variant,
 	}
 }
 
@@ -124,6 +132,18 @@ func validateDatabaseResource(d databaseResource) error {
 	}
 	if d.Version == "" {
 		return errors.New("version is required")
+	}
+	if d.Variant != "" {
+		if d.Engine != store.EnginePostgres {
+			return errors.New("variant is only supported for the postgres engine")
+		}
+		validVariant, err := store.IsSupportedVariant(d.Engine, d.Variant)
+		if err != nil {
+			return fmt.Errorf("check supported database variants: %w", err)
+		}
+		if !validVariant {
+			return errors.New("unsupported variant")
+		}
 	}
 	return nil
 }

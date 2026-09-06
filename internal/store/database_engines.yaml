@@ -12,6 +12,25 @@ engines:
   - id: postgres
     label: Postgres
     default_version: "16"
+    # Alternate images for common AI/geo/time-series workloads (the gap
+    # docs-local/competitor-clones/coolify/bootstrap/helpers/constants.php's
+    # DATABASE_DOCKER_IMAGES list covers for Postgres). tag_template's
+    # "{version}" is replaced with the requested Postgres version; each
+    # image tags itself differently from vanilla postgres, hence a
+    # template per variant rather than one shared rule.
+    variants:
+      - id: pgvector
+        label: pgvector
+        image: pgvector/pgvector
+        tag_template: "pg{version}"
+      - id: postgis
+        label: PostGIS
+        image: postgis/postgis
+        tag_template: "{version}-3.4"
+      - id: timescaledb
+        label: TimescaleDB
+        image: timescale/timescaledb
+        tag_template: "latest-pg{version}"
   - id: redis
     label: Redis
     default_version: "7"

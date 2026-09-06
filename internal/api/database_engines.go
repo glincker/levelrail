@@ -15,6 +15,19 @@ type databaseEngineResource struct {
 	ID             string `json:"id"`
 	Label          string `json:"label"`
 	DefaultVersion string `json:"default_version"`
+	// Variants: postgres's own alternate images (pgvector, PostGIS,
+	// TimescaleDB), omitted entirely for every engine with none. The
+	// creation wizard's variant picker reads this instead of a hardcoded
+	// list, the same registry-driven reasoning this handler's own doc
+	// comment gives for the engine list itself.
+	Variants []databaseEngineVariantResource `json:"variants,omitempty"`
+}
+
+// databaseEngineVariantResource is the wire shape for one
+// store.DatabaseEngineVariantInfo entry.
+type databaseEngineVariantResource struct {
+	ID    string `json:"id"`
+	Label string `json:"label"`
 }
 
 // handleListDatabaseEngines handles GET /api/v1/database-engines: every
@@ -36,10 +49,15 @@ func (rt *Router) handleListDatabaseEngines(w http.ResponseWriter, _ *http.Reque
 	}
 	out := make([]databaseEngineResource, 0, len(engines))
 	for _, e := range engines {
+		var variants []databaseEngineVariantResource
+		for _, v := range e.Variants {
+			variants = append(variants, databaseEngineVariantResource{ID: v.ID, Label: v.Label})
+		}
 		out = append(out, databaseEngineResource{
 			ID:             e.ID,
 			Label:          e.Label,
 			DefaultVersion: e.DefaultVersion,
+			Variants:       variants,
 		})
 	}
 	writeJSON(w, http.StatusOK, out)

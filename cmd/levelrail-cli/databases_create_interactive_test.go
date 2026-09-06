@@ -18,6 +18,24 @@ func testEngines() []databaseEngineResource {
 	}
 }
 
+// testEnginesWithPostgresVariants is testEngines' own list plus a
+// populated postgres.Variants, for wizard tests exercising the variant
+// prompt itself: testEngines() deliberately leaves Variants nil so every
+// other wizard test above never has to script an answer for a prompt it
+// doesn't care about.
+func testEnginesWithPostgresVariants() []databaseEngineResource {
+	engines := testEngines()
+	for i := range engines {
+		if engines[i].ID == "postgres" {
+			engines[i].Variants = []databaseEngineVariantResource{
+				{ID: "pgvector", Label: "pgvector"},
+				{ID: "postgis", Label: "PostGIS"},
+			}
+		}
+	}
+	return engines
+}
+
 func TestRunInteractiveDatabaseWizard(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -151,6 +169,47 @@ func TestRunInteractiveDatabaseWizard(t *testing.T) {
 				t.Fatalf("err = %v, want nil", err)
 			}
 			tt.want(t, got)
+		})
+	}
+}
+
+// TestRunInteractiveDatabaseWizard_PostgresVariant covers the variant
+// prompt itself, only offered when the chosen engine's registry entry has
+// a non-empty Variants list (testEnginesWithPostgresVariants above);
+// TestRunInteractiveDatabaseWizard's own cases all use testEngines(),
+// which leaves postgres.Variants nil, so they never see this prompt.
+func TestRunInteractiveDatabaseWizard_PostgresVariant(t *testing.T) {
+	tests := []struct {
+		name  string
+		lines []string
+		want  string
+	}{
+		{
+			name:  "choosing a variant",
+			lines: []string{"vectors", "postgres", "", "pgvector", "", "", "", ""},
+			want:  "pgvector",
+		},
+		{
+			name:  "default (none) keeps the vanilla image",
+			lines: []string{"main", "postgres", "", "", "", "", "", ""},
+			want:  "",
+		},
+		{
+			name:  "an engine with no variants list skips the prompt entirely",
+			lines: []string{"cache", "redis", "", "", "", "", ""},
+			want:  "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := newWizardPrompter(scriptedStdin(tt.lines...), &bytes.Buffer{})
+			got, err := runInteractiveDatabaseWizard(p, testEnginesWithPostgresVariants())
+			if err != nil {
+				t.Fatalf("runInteractiveDatabaseWizard() error = %v", err)
+			}
+			if got.variant != tt.want {
+				t.Errorf("variant = %q, want %q", got.variant, tt.want)
+			}
 		})
 	}
 }

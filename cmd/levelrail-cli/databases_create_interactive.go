@@ -20,6 +20,7 @@ type databaseWizardAnswers struct {
 	name    string
 	engine  string
 	version string
+	variant string
 	memory  string
 	cpu     float64
 
@@ -36,7 +37,7 @@ type databaseWizardAnswers struct {
 // flag-driven "databases create" path does, reusing planDatabaseCreate
 // rather than re-deriving that validation here.
 func (a databaseWizardAnswers) toCreatePlan() (databaseResource, error) {
-	return planDatabaseCreate(createDatabaseFlags{name: a.name, engine: a.engine, version: a.version})
+	return planDatabaseCreate(createDatabaseFlags{name: a.name, engine: a.engine, version: a.version, variant: a.variant})
 }
 
 // toResources builds the resource limits request, reusing
@@ -70,6 +71,24 @@ func defaultVersionFor(engines []databaseEngineResource, engineID string) string
 		}
 	}
 	return ""
+}
+
+// variantChoicesFor extracts engineID's registry variant IDs, in
+// registry order, for the wizard's own variant prompt. Empty for every
+// engine with no variants list (database_engines.yaml), which is every
+// engine except postgres today.
+func variantChoicesFor(engines []databaseEngineResource, engineID string) []string {
+	for _, e := range engines {
+		if e.ID != engineID {
+			continue
+		}
+		ids := make([]string, len(e.Variants))
+		for i, v := range e.Variants {
+			ids[i] = v.ID
+		}
+		return ids
+	}
+	return nil
 }
 
 // runInteractiveDatabaseWizard is the wizard's question loop: database
@@ -115,6 +134,20 @@ func runInteractiveDatabaseWizard(p *wizardPrompter, engines []databaseEngineRes
 		return databaseWizardAnswers{}, newValidationError("a version is required: the engine registry has no default version for %q", engine)
 	}
 	a.version = version
+
+	if engine == "postgres" {
+		variantChoices := variantChoicesFor(engines, engine)
+		if len(variantChoices) > 0 {
+			choices := append([]string{"none"}, variantChoices...)
+			variant, err := p.readChoice(fmt.Sprintf("Postgres image variant [%s] (default: none): ", strings.Join(choices, "/")), "none", choices...)
+			if err != nil {
+				return databaseWizardAnswers{}, err
+			}
+			if variant != "none" {
+				a.variant = variant
+			}
+		}
+	}
 
 	for {
 		mem, err := p.readLine("Memory limit, e.g. 512Mi or 1Gi (optional, press enter for no limit): ")

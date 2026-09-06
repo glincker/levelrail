@@ -30,6 +30,12 @@ type DesiredDatabase struct {
 	Name    string
 	Engine  string
 	Version string
+	// Variant selects an alternate image for Engine instead of its
+	// vanilla one (database_engines.yaml's per-engine variants list,
+	// e.g. postgres's pgvector/postgis/timescaledb). Empty means the
+	// vanilla image, byte-identical to every database before this field
+	// existed (migrations/0081_database_variant.sql).
+	Variant string
 	// NodeID: see DesiredService.NodeID's own doc comment, identical
 	// meaning and identical "SaveDesiredDatabase never writes it, only
 	// UpdateDatabaseNode does" exception below.
@@ -91,14 +97,15 @@ func (db *DB) SaveDesiredDatabase(ctx context.Context, d DesiredDatabase) error 
 	}
 
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO desired_databases (name, engine, version, resources, node_id, project_id, updated_at)
-		VALUES (?, ?, ?, ?, '', NULL, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_databases (name, engine, version, variant, resources, node_id, project_id, updated_at)
+		VALUES (?, ?, ?, ?, ?, '', NULL, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			engine = excluded.engine,
 			version = excluded.version,
+			variant = excluded.variant,
 			resources = excluded.resources,
 			updated_at = excluded.updated_at
-	`, d.Name, d.Engine, d.Version, string(resourcesJSON))
+	`, d.Name, d.Engine, d.Version, d.Variant, string(resourcesJSON))
 	if err != nil {
 		return fmt.Errorf("store: save desired database %q: %w", d.Name, err)
 	}
@@ -153,7 +160,7 @@ var ErrDatabaseNotFound = errors.New("store: database not found")
 // ErrDatabaseNotFound if no such database has been saved.
 func (db *DB) GetDesiredDatabase(ctx context.Context, name string) (*DesiredDatabase, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources
+		SELECT name, engine, version, variant, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources
 		FROM desired_databases
 		WHERE name = ?
 	`, name)
@@ -190,7 +197,7 @@ func (db *DB) DeleteDesiredDatabase(ctx context.Context, name string) error {
 // ListDesiredDatabases returns every saved database, ordered by name.
 func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources
+		SELECT name, engine, version, variant, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources
 		FROM desired_databases
 		ORDER BY name
 	`)
@@ -221,7 +228,7 @@ func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, erro
 // callers.
 func (db *DB) ListDesiredDatabasesByNode(ctx context.Context, nodeID string) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources
+		SELECT name, engine, version, variant, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources
 		FROM desired_databases
 		WHERE node_id = ?
 		ORDER BY name
@@ -413,7 +420,7 @@ func claimPublicPort(ctx context.Context, tx *sql.Tx, name string, requestedPort
 // all.
 func (db *DB) ListScheduledDatabases(ctx context.Context) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources
+		SELECT name, engine, version, variant, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources
 		FROM desired_databases
 		WHERE backup_schedule != '' AND backup_target_id IS NOT NULL
 		ORDER BY name
@@ -453,7 +460,7 @@ func scanDesiredDatabase(scan func(dest ...any) error) (*DesiredDatabase, error)
 		publicPort                sql.NullInt64
 		resourcesJSON             string
 	)
-	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &resourcesJSON); err != nil {
+	if err := scan(&d.Name, &d.Engine, &d.Version, &d.Variant, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &resourcesJSON); err != nil {
 		return nil, err
 	}
 	d.ProjectID = projectID.String

@@ -544,6 +544,11 @@ type DatabaseResource struct {
 	Name    string `json:"name"`
 	Engine  string `json:"engine"`
 	Version string `json:"version"`
+	// Variant mirrors internal/api's databaseResource.Variant: an
+	// alternate image for Engine instead of its vanilla one (currently
+	// only postgres: pgvector, postgis, timescaledb). Empty means the
+	// vanilla image.
+	Variant string `json:"variant,omitempty"`
 	NodeID  string `json:"node_id,omitempty"`
 	// ProjectID mirrors internal/api's databaseResource.ProjectID:
 	// response-only, set via PUT /api/v1/databases/{name}/project.
@@ -567,9 +572,17 @@ type DatabaseResource struct {
 // GET /api/v1/database-engines, the dynamic registry backing the
 // creation wizard's engine picker.
 type DatabaseEngineResource struct {
-	ID             string `json:"id"`
-	Label          string `json:"label"`
-	DefaultVersion string `json:"default_version"`
+	ID             string                          `json:"id"`
+	Label          string                          `json:"label"`
+	DefaultVersion string                          `json:"default_version"`
+	Variants       []DatabaseEngineVariantResource `json:"variants,omitempty"`
+}
+
+// DatabaseEngineVariantResource mirrors internal/api's
+// databaseEngineVariantResource (internal/api/database_engines.go).
+type DatabaseEngineVariantResource struct {
+	ID    string `json:"id"`
+	Label string `json:"label"`
 }
 
 // SetDatabaseResourcesRequest mirrors internal/api's

@@ -158,6 +158,7 @@ func (rt *Router) handleCloneRestore(w http.ResponseWriter, r *http.Request) {
 		Name:      req.NewName,
 		Engine:    sourceDB.Engine,
 		Version:   version,
+		Variant:   sourceDB.Variant,
 		ProjectID: req.ProjectID,
 	}
 	if !rt.createDesiredDatabase(w, r, newDB) {

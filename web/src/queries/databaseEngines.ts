@@ -21,6 +21,18 @@ export interface DatabaseEngineInfo {
   id: string
   label: string
   default_version: string
+  // variants: postgres's own alternate images (pgvector, PostGIS,
+  // TimescaleDB), absent for every engine with none. CreateDatabaseFields
+  // reads this to render the variant picker only when the selected
+  // engine actually has one.
+  variants?: DatabaseEngineVariantInfo[]
+}
+
+// DatabaseEngineVariantInfo mirrors internal/api's
+// databaseEngineVariantResource (internal/api/database_engines.go).
+export interface DatabaseEngineVariantInfo {
+  id: string
+  label: string
 }
 
 export async function fetchDatabaseEngines(): Promise<DatabaseEngineInfo[]> {

@@ -122,6 +122,14 @@ still open. This page describes what's actually true today.
   restore is now live-Docker-tested for every engine, including
   MariaDB, ClickHouse, KeyDB, and Dragonfly's own restore paths and a
   fix scoping MongoDB restore to drop only non-system databases first.
+- Postgres image variants: pgvector, PostGIS, and TimescaleDB as
+  alternate images for a managed Postgres database, picked at create
+  time alongside version, same registry-driven pattern as the engine
+  list itself (`database_engines.yaml`'s postgres.variants). Empty
+  variant is the unchanged vanilla postgres image. Wired through the
+  API (`variant` field on the database resource), CLI (`--variant`
+  flag and the interactive wizard's variant prompt), and the dashboard's
+  database creation form.
 - Restore into a brand-new, standalone resource rather than only
   in-place: `POST /api/v1/databases/{name}/restore-as-new` for managed
   databases and `POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new`

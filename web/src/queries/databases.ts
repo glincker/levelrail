@@ -145,6 +145,10 @@ export interface CreateDatabaseRequest {
   name: string
   engine: string
   version: string
+  // variant: an alternate postgres image (pgvector, postgis,
+  // timescaledb; see queries/databaseEngines.ts's own DatabaseEngineInfo
+  // .variants), omitted for the vanilla image and for every other engine.
+  variant?: string
   project_id?: string
 }
 

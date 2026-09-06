@@ -25,6 +25,49 @@ func TestSaveAndGetDesiredDatabase(t *testing.T) {
 	}
 }
 
+// TestSaveAndGetDesiredDatabase_PostgresVariant confirms Variant
+// round-trips through SaveDesiredDatabase/GetDesiredDatabase exactly like
+// Engine/Version already do (migrations/0081_database_variant.sql).
+func TestSaveAndGetDesiredDatabase_PostgresVariant(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := DesiredDatabase{Name: "vectors", Engine: EnginePostgres, Version: "16", Variant: "pgvector"}
+	if err := db.SaveDesiredDatabase(ctx, want); err != nil {
+		t.Fatalf("SaveDesiredDatabase() error = %v", err)
+	}
+
+	got, err := db.GetDesiredDatabase(ctx, "vectors")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if *got != want {
+		t.Errorf("got %+v, want %+v", got, want)
+	}
+}
+
+// TestSaveAndGetDesiredDatabase_EmptyVariantIsVanilla confirms an unset
+// Variant round-trips as the empty string, the same byte-for-byte
+// "unchanged from before this field existed" guarantee every other
+// engine's database gets.
+func TestSaveAndGetDesiredDatabase_EmptyVariantIsVanilla(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "16"}
+	if err := db.SaveDesiredDatabase(ctx, want); err != nil {
+		t.Fatalf("SaveDesiredDatabase() error = %v", err)
+	}
+
+	got, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if got.Variant != "" {
+		t.Errorf("Variant = %q, want empty", got.Variant)
+	}
+}
+
 // TestSaveAndGetDesiredDatabase_MySQL reproduces the real bug migration
 // 0016 fixes: desired_databases.engine originally carried a hardcoded
 // CHECK (engine IN ('postgres', 'redis')) (0003_desired_databases.sql),

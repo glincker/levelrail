@@ -485,6 +485,70 @@ func TestController_Reconcile_Postgres_WithCredentials_Reconciles(t *testing.T) 
 	}
 }
 
+// TestController_Reconcile_Postgres_Variants covers imageReferenceFor's
+// real reason for existing: each variant image (pgvector/pgvector,
+// postgis/postgis, timescale/timescaledb) tags itself differently from
+// vanilla postgres, so getting any one of these wrong means that
+// variant's database fails to start with an image-not-found error, the
+// same class of bug TestController_Reconcile_MongoDB_UsesOfficialMongoImage
+// guards for the engine-name mapping.
+func TestController_Reconcile_Postgres_Variants(t *testing.T) {
+	tests := []struct {
+		name      string
+		version   string
+		variant   string
+		wantImage string
+	}{
+		{name: "vanilla, no variant", version: "16", variant: "", wantImage: "postgres:16"},
+		{name: "pgvector", version: "16", variant: "pgvector", wantImage: "pgvector/pgvector:pg16"},
+		{name: "postgis", version: "16", variant: "postgis", wantImage: "postgis/postgis:16-3.4"},
+		{name: "timescaledb", version: "16", variant: "timescaledb", wantImage: "timescale/timescaledb:latest-pg16"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := newFakeRuntime()
+			desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: tt.version, Variant: tt.variant}
+			c := New("main", &fakeStore{db: desired}, rt, WithPostgresCredentials(&PostgresCredentials{
+				Username: "levelrail",
+				Password: "s3cret",
+			}))
+
+			if _, err := c.Reconcile(context.Background()); err != nil {
+				t.Fatalf("Reconcile() error = %v", err)
+			}
+			if rt.lastCreateSpec.Image != tt.wantImage {
+				t.Errorf("created image = %q, want %q", rt.lastCreateSpec.Image, tt.wantImage)
+			}
+		})
+	}
+}
+
+// TestController_Reconcile_Postgres_UnknownVariant_ReportsCondition covers
+// desired state saved with a variant the registry no longer (or never
+// did) recognize: this must never fall back to guessing an image, and
+// must never touch Docker at all, the same "surface it loudly, don't
+// start something wrong" posture credentials-blocked already establishes.
+func TestController_Reconcile_Postgres_UnknownVariant_ReportsCondition(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16", Variant: "no-such-variant"}
+	c := New("main", &fakeStore{db: desired}, rt, WithPostgresCredentials(&PostgresCredentials{
+		Username: "levelrail",
+		Password: "s3cret",
+	}))
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want the unknown variant to surface")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "UnknownVariant" {
+		t.Errorf("condition = %+v, want Status=False Reason=UnknownVariant", cond)
+	}
+	if rt.createCalls != 0 || rt.ensureVolumeCalls != 0 {
+		t.Errorf("createCalls = %d, ensureVolumeCalls = %d, want 0/0: must not touch Docker with an unresolvable image", rt.createCalls, rt.ensureVolumeCalls)
+	}
+}
+
 func TestController_Reconcile_MySQL_AlwaysCredentialsBlocked(t *testing.T) {
 	rt := newFakeRuntime()
 	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineMySQL, Version: "8"}
@@ -1059,6 +1123,46 @@ func TestVersionOrDefault(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := versionOrDefault(tt.in); got != tt.want {
 				t.Errorf("versionOrDefault(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestImageReferenceFor is imageReferenceFor's own table-driven unit
+// test, pure-function coverage of the vanilla-vs-variant image/tag
+// resolution independent of the fuller Reconcile-level assertions above.
+func TestImageReferenceFor(t *testing.T) {
+	tests := []struct {
+		name    string
+		engine  string
+		version string
+		variant string
+		want    string
+		wantErr bool
+	}{
+		{name: "postgres vanilla, explicit version", engine: store.EnginePostgres, version: "16", want: "postgres:16"},
+		{name: "postgres vanilla, empty version defaults to latest", engine: store.EnginePostgres, version: "", want: "postgres:latest"},
+		{name: "postgres pgvector", engine: store.EnginePostgres, version: "16", variant: "pgvector", want: "pgvector/pgvector:pg16"},
+		{name: "postgres postgis", engine: store.EnginePostgres, version: "16", variant: "postgis", want: "postgis/postgis:16-3.4"},
+		{name: "postgres timescaledb", engine: store.EnginePostgres, version: "17", variant: "timescaledb", want: "timescale/timescaledb:latest-pg17"},
+		{name: "mongodb still maps to the official image, unaffected by variant logic", engine: store.EngineMongoDB, version: "7", want: "mongo:7"},
+		{name: "unknown variant errors", engine: store.EnginePostgres, version: "16", variant: "no-such-variant", wantErr: true},
+		{name: "variant on an engine with no variants list errors", engine: store.EngineRedis, version: "7", variant: "pgvector", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := imageReferenceFor(tt.engine, tt.version, tt.variant)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("imageReferenceFor(%q, %q, %q) error = nil, want an error", tt.engine, tt.version, tt.variant)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("imageReferenceFor(%q, %q, %q) error = %v", tt.engine, tt.version, tt.variant, err)
+			}
+			if got != tt.want {
+				t.Errorf("imageReferenceFor(%q, %q, %q) = %q, want %q", tt.engine, tt.version, tt.variant, got, tt.want)
 			}
 		})
 	}

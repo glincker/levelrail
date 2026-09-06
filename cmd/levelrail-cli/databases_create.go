@@ -33,6 +33,21 @@ var supportedEngineParams = []string{
 	engineParamMariaDB, engineParamKeyDB, engineParamDragonfly, engineParamClickHouse,
 }
 
+// postgresVariantParam* mirror database_engines.yaml's postgres.variants
+// list (internal/store/database_engines.yaml), the same redeclared-not-
+// imported boundary engineParam* above already establishes.
+const (
+	postgresVariantParamPgvector    = "pgvector"
+	postgresVariantParamPostGIS     = "postgis"
+	postgresVariantParamTimescaleDB = "timescaledb"
+)
+
+// supportedPostgresVariantParams is every postgresVariantParam* above, in
+// the order they should be listed in an error or usage message.
+var supportedPostgresVariantParams = []string{
+	postgresVariantParamPgvector, postgresVariantParamPostGIS, postgresVariantParamTimescaleDB,
+}
+
 // createDatabaseFlags is runDatabasesCreate's raw, unvalidated input;
 // planDatabaseCreate's plain-data counterpart to apps_create.go's own
 // createFlags/planFromFlags split, kept separate so validation is a pure
@@ -41,6 +56,7 @@ type createDatabaseFlags struct {
 	name    string
 	engine  string
 	version string
+	variant string
 }
 
 // planDatabaseCreate validates f and builds the exact databaseResource
@@ -64,7 +80,15 @@ func planDatabaseCreate(f createDatabaseFlags) (databaseResource, error) {
 	if !slices.Contains(supportedEngineParams, f.engine) {
 		return databaseResource{}, newValidationError("--engine must be one of %s", strings.Join(supportedEngineParams, ", "))
 	}
-	return databaseResource{Name: f.name, Engine: f.engine, Version: f.version}, nil
+	if f.variant != "" {
+		if f.engine != engineParamPostgres {
+			return databaseResource{}, newValidationError("--variant is only supported with --engine postgres")
+		}
+		if !slices.Contains(supportedPostgresVariantParams, f.variant) {
+			return databaseResource{}, newValidationError("--variant must be one of %s", strings.Join(supportedPostgresVariantParams, ", "))
+		}
+	}
+	return databaseResource{Name: f.name, Engine: f.engine, Version: f.version, Variant: f.variant}, nil
 }
 
 // runDatabasesCreate implements "databases create": POST
@@ -79,11 +103,12 @@ func planDatabaseCreate(f createDatabaseFlags) (databaseResource, error) {
 func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs := flag.NewFlagSet(prog+" databases create", flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, profileFlag, name, engine, version string
+	var tokenFlag, apiURLFlag, profileFlag, name, engine, version, variant string
 	var jsonOut, interactive bool
 	fs.StringVar(&name, "name", "", "database name (required)")
 	fs.StringVar(&engine, "engine", "", "database engine: "+strings.Join(supportedEngineParams, ", ")+" (required)")
 	fs.StringVar(&version, "version", "", "engine version, e.g. \"16\" (required)")
+	fs.StringVar(&variant, "variant", "", "alternate postgres image: "+strings.Join(supportedPostgresVariantParams, ", ")+" (optional, postgres only)")
 	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
 	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
@@ -113,7 +138,7 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 		return runDatabasesCreateWizard(stdin, stdout, stderr, credentialFlags{Token: tokenFlag, APIURL: apiURLFlag, Profile: profileFlag}, of, lookupEnv, prog)
 	}
 
-	plan, err := planDatabaseCreate(createDatabaseFlags{name: name, engine: engine, version: version})
+	plan, err := planDatabaseCreate(createDatabaseFlags{name: name, engine: engine, version: version, variant: variant})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
@@ -151,6 +176,7 @@ Flags:
   --name string           database name (required)
   --engine string        database engine: %[5]s (required)
   --version string      engine version, e.g. "16" (required)
+  --variant string      alternate postgres image: %[6]s (optional, postgres only)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
@@ -163,5 +189,5 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, envAPIURL, defaultAPIURL, strings.Join(supportedEngineParams, ", "))
+`, prog, envAPIToken, envAPIURL, defaultAPIURL, strings.Join(supportedEngineParams, ", "), strings.Join(supportedPostgresVariantParams, ", "))
 }

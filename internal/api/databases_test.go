@@ -30,6 +30,11 @@ func TestValidateDatabaseResource(t *testing.T) {
 		{name: "missing engine", db: databaseResource{Name: "main", Version: "16"}, wantErr: true},
 		{name: "unknown engine", db: databaseResource{Name: "main", Engine: "cassandra", Version: "7"}, wantErr: true},
 		{name: "missing version", db: databaseResource{Name: "main", Engine: store.EnginePostgres}, wantErr: true},
+		{name: "valid postgres pgvector variant", db: databaseResource{Name: "vectors", Engine: store.EnginePostgres, Version: "16", Variant: "pgvector"}, wantErr: false},
+		{name: "valid postgres postgis variant", db: databaseResource{Name: "geo", Engine: store.EnginePostgres, Version: "16", Variant: "postgis"}, wantErr: false},
+		{name: "valid postgres timescaledb variant", db: databaseResource{Name: "series", Engine: store.EnginePostgres, Version: "16", Variant: "timescaledb"}, wantErr: false},
+		{name: "unknown variant", db: databaseResource{Name: "main", Engine: store.EnginePostgres, Version: "16", Variant: "no-such-variant"}, wantErr: true},
+		{name: "variant on a non-postgres engine", db: databaseResource{Name: "cache", Engine: store.EngineRedis, Version: "7", Variant: "pgvector"}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -160,6 +165,54 @@ func TestHandleListDatabases_Status(t *testing.T) {
 	}
 	if s := byName["pending-db"].Status; s.Label != "No status yet" || s.Variant != "muted" {
 		t.Errorf("pending-db status = %+v, want No status yet/muted", s)
+	}
+}
+
+// TestHandleCreateDatabase_PostgresVariant is the API-level proof this
+// task's brief asked for: a database created with a variant persists it
+// (toDatabaseResource/toDesiredDatabase round-trip, databases.go), which
+// internal/reconcile/database's own TestController_Reconcile_Postgres_Variants
+// separately proves reconciles to the right image.
+func TestHandleCreateDatabase_PostgresVariant(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"vectors","engine":"postgres","version":"16","variant":"pgvector"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create status = %d, want %d, body=%s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	var created databaseResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &created); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if created.Variant != "pgvector" {
+		t.Errorf("created.Variant = %q, want %q", created.Variant, "pgvector")
+	}
+
+	got, err := db.GetDesiredDatabase(context.Background(), "vectors")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if got.Variant != "pgvector" {
+		t.Errorf("stored Variant = %q, want %q", got.Variant, "pgvector")
+	}
+}
+
+// TestHandleCreateDatabase_UnknownVariant_Rejected proves the 400 path:
+// an unrecognized variant must never be accepted at create time, the same
+// "reject before ever reaching the reconciler" posture unknown engines
+// already get.
+func TestHandleCreateDatabase_UnknownVariant_Rejected(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"main","engine":"postgres","version":"16","variant":"no-such-variant"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases", body))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body=%s", rec.Code, http.StatusBadRequest, rec.Body.String())
 	}
 }
 

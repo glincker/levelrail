@@ -78,6 +78,31 @@ func TestPlanDatabaseCreate(t *testing.T) {
 			flags: createDatabaseFlags{name: "analytics", engine: "clickhouse", version: "24.8"},
 			want:  databaseResource{Name: "analytics", Engine: "clickhouse", Version: "24.8"},
 		},
+		{
+			name:  "valid postgres pgvector variant",
+			flags: createDatabaseFlags{name: "vectors", engine: "postgres", version: "16", variant: "pgvector"},
+			want:  databaseResource{Name: "vectors", Engine: "postgres", Version: "16", Variant: "pgvector"},
+		},
+		{
+			name:  "valid postgres postgis variant",
+			flags: createDatabaseFlags{name: "geo", engine: "postgres", version: "16", variant: "postgis"},
+			want:  databaseResource{Name: "geo", Engine: "postgres", Version: "16", Variant: "postgis"},
+		},
+		{
+			name:  "valid postgres timescaledb variant",
+			flags: createDatabaseFlags{name: "series", engine: "postgres", version: "16", variant: "timescaledb"},
+			want:  databaseResource{Name: "series", Engine: "postgres", Version: "16", Variant: "timescaledb"},
+		},
+		{
+			name:    "unsupported variant",
+			flags:   createDatabaseFlags{name: "main", engine: "postgres", version: "16", variant: "cassandra-flavor"},
+			wantErr: "--variant must be one of",
+		},
+		{
+			name:    "variant on a non-postgres engine",
+			flags:   createDatabaseFlags{name: "cache", engine: "redis", version: "7", variant: "pgvector"},
+			wantErr: "--variant is only supported with --engine postgres",
+		},
 	}
 
 	for _, tt := range tests {

@@ -20,6 +20,11 @@ export interface DatabaseResource {
   name: string
   engine: string
   version: string
+  // variant: an alternate image for engine instead of its vanilla one
+  // (currently only postgres: pgvector, postgis, timescaledb). Ordinary
+  // desired state, set at create time like engine/version, not
+  // response-only. Absent (undefined) means the vanilla image.
+  variant?: string
   node_id?: string
   // project_id: response-only on PUT, the same shape appDetail.ts
   // documents for AppDetail's own project_id, set via

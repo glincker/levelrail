@@ -61,6 +61,16 @@ function OverviewSection() {
                 {database.version}
               </dd>
             </div>
+            {database.variant ? (
+              <div>
+                <dt className="text-xs text-muted-foreground uppercase">
+                  Variant
+                </dt>
+                <dd className="mt-1 font-mono text-sm text-foreground">
+                  {database.variant}
+                </dd>
+              </div>
+            ) : null}
             <div>
               <dt className="text-xs text-muted-foreground uppercase">Node</dt>
               <dd className="mt-1 flex items-center gap-2 font-mono text-sm text-foreground">

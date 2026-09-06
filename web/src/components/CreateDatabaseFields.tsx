@@ -49,6 +49,12 @@ import {
 // importing them, the same "plain non-empty string, not a literal
 // union" reasoning createDatabaseSchema's own comment gives for why
 // this file doesn't hardcode a second typed copy of the engine registry.
+// Sentinel Select value for "no variant, the vanilla image", since
+// Radix's Select (base-ui here) treats an empty string value as
+// "no selection" rather than a real option, the same reason
+// LOCAL_NODE_VALUE/NO_PROJECT_VALUE (PlacementFields.tsx) exist.
+const NO_VARIANT_VALUE = '__none__'
+
 const CREDENTIALED_ENGINES = new Set([
   'postgres',
   'mysql',
@@ -87,6 +93,12 @@ const createDatabaseSchema = z.object({
   name: z.string().trim().min(1, 'Name is required'),
   engine: z.string().trim().min(1, 'Engine is required'),
   version: z.string().trim().min(1, 'Version is required'),
+  // Optional alternate postgres image (pgvector/postgis/timescaledb, see
+  // queries/databaseEngines.ts's own DatabaseEngineInfo.variants), same
+  // "plain string, not a literal union" reasoning engine's own comment
+  // gives: the real set lives in the registry, this is client-side fast
+  // feedback only.
+  variant: z.string().optional(),
   // Optional target node id, empty string means the local node. Only
   // ever populated from the Select below, which only ever offers real
   // node ids or the local sentinel, so no further validation is needed
@@ -176,6 +188,7 @@ export function CreateDatabaseFields({
     name: '',
     engine: engine ?? engines[0]?.id ?? '',
     version: '',
+    variant: '',
     node: LOCAL_NODE_VALUE,
     project: NO_PROJECT_VALUE,
   }
@@ -185,6 +198,9 @@ export function CreateDatabaseFields({
       defaultValues,
     })
   const watchedEngine = watch('engine')
+  const effectiveEngine = engine ?? watchedEngine
+  const variantChoices =
+    engines.find((e) => e.id === effectiveEngine)?.variants ?? []
 
   useEffect(() => {
     if (!open) {
@@ -195,6 +211,20 @@ export function CreateDatabaseFields({
     // createDatabase/defaultValues identity churn on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
+
+  // Clears a stale variant pick once the operator switches away from an
+  // engine that offers one (or away from postgres entirely), so a form
+  // left on "pgvector" after switching to redis can never silently send
+  // variant on an engine that rejects it (validateDatabaseResource,
+  // internal/api/databases.go).
+  useEffect(() => {
+    if (variantChoices.length === 0 && getValues('variant')) {
+      setValue('variant', '')
+    }
+    // Only reacting to the engine changing (and thus variantChoices
+    // changing), not to getValues/setValue identity churn.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveEngine, variantChoices.length])
 
   // Elevates the version field's placeholder (the engine's own
   // documented default, from GET /api/v1/database-engines) into a real
@@ -233,6 +263,7 @@ export function CreateDatabaseFields({
         name: values.name.trim(),
         engine: values.engine,
         version: values.version.trim(),
+        variant: values.variant || undefined,
         // Sent directly, same "safe at create time" reasoning
         // CreateAppFields' own onSubmit comment gives.
         project_id:
@@ -367,6 +398,43 @@ export function CreateDatabaseFields({
           ) : null}
           <FieldError errors={[formState.errors.version]} />
         </Field>
+
+        {variantChoices.length > 0 ? (
+          <Field>
+            <FieldLabel htmlFor="database-variant">Image variant</FieldLabel>
+            <Controller
+              control={control}
+              name="variant"
+              render={({ field }) => (
+                <Select
+                  value={field.value || NO_VARIANT_VALUE}
+                  onValueChange={(value) => {
+                    field.onChange(value === NO_VARIANT_VALUE ? '' : value)
+                  }}
+                >
+                  <SelectTrigger id="database-variant" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_VARIANT_VALUE}>
+                      Default (vanilla postgres)
+                    </SelectItem>
+                    {variantChoices.map((v) => (
+                      <SelectItem key={v.id} value={v.id}>
+                        {v.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <FieldHint>
+              Swaps the vanilla postgres image for one that bundles an
+              extension: pgvector for embeddings, PostGIS for geo,
+              TimescaleDB for time-series.
+            </FieldHint>
+          </Field>
+        ) : null}
       </div>
 
       {nodes.length > 0 || projects.length > 0 ? (
