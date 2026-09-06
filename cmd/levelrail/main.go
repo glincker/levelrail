@@ -36,12 +36,14 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/firewall"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/reconcile/cloudflaretunnel"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	firewallreconcile "github.com/GLINCKER/levelrail/internal/reconcile/firewall"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	meshreconcile "github.com/GLINCKER/levelrail/internal/reconcile/mesh"
 	"github.com/GLINCKER/levelrail/internal/reconcile/nodehealth"
@@ -1694,6 +1696,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDockerDiskUsager(client),
 		api.WithDockerPruner(client),
 		api.WithRegistryAuthTester(client),
+		api.WithFirewallManager(firewall.New()),
 		api.WithDBPinger(db),
 		api.WithDoctorDiskWarningBytes(doctorDiskWarningBytes(logger)),
 		api.WithExecRuntime(func(nodeID string) (docker.Runtime, error) {
@@ -2366,6 +2369,13 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithDomainBasicAuthSecrets(deps.secretsManager))
 		}
 		controllers = append(controllers, ingressreconcile.New(deps.db, deps.runtime, deps.driver, ingressOpts...))
+
+		// Firewall: also local-node-unconditional, same v1 scope note as
+		// internal/reconcile/firewall's own package doc comment (no
+		// per-node dispatch until a generic agent exec RPC exists). A
+		// platform-wide singleton, built fresh each pass since
+		// firewall.Manager holds no state beyond two function pointers.
+		controllers = append(controllers, firewallreconcile.New(deps.db, firewall.New(), firewallreconcile.WithLogger(deps.logger)))
 
 		// Local runtime unconditionally, same reasoning as the ingress
 		// controller above: per-app networks are single-node scope until

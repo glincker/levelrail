@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/firewall"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -439,6 +440,16 @@ type ContainerLister interface {
 // that concrete type (internal/docker/prune.go).
 type DockerDiskUsager interface {
 	DiskUsage(ctx context.Context) (docker.DiskUsage, error)
+}
+
+// FirewallManager is the surface GET/POST /api/v1/system/firewall need
+// from internal/firewall.Manager. *firewall.Manager satisfies this.
+// Report never mutates (the GET handler); Sync applies whatever change
+// is needed (the POST handler), the same read-vs-write split every
+// other pair of routes over one resource in this package already has.
+type FirewallManager interface {
+	Report(ctx context.Context, want []firewall.Rule) (firewall.Result, error)
+	Sync(ctx context.Context, want []firewall.Rule) (firewall.Result, error)
 }
 
 // DBPinger is the surface GET /api/v1/system/doctor needs to report

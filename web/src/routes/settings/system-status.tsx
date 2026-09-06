@@ -15,12 +15,20 @@ import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import { EmptyState } from '@/components/ui/empty-state'
 import { ListSkeleton } from '@/components/ui/list-skeleton'
+import { toast } from '@/components/ui/toast'
 import {
   systemDoctorQueryOptions,
   useSystemDoctor,
 } from '../../queries/systemDoctor'
 import type { DoctorCheck, DoctorCheckStatus } from '../../queries/systemDoctor'
+import {
+  firewallStatusQueryOptions,
+  useFirewallStatus,
+  useTriggerFirewallSync,
+} from '../../queries/firewall'
+import type { FirewallRule, FirewallStatus } from '../../queries/firewall'
 
 // Web half of "levelrail-cli doctor": that command already runs
 // /api/v1/system/doctor's full preflight bundle (Docker reachability,
@@ -30,7 +38,10 @@ import type { DoctorCheck, DoctorCheckStatus } from '../../queries/systemDoctor'
 // is that page here.
 export const Route = createFileRoute('/settings/system-status')({
   loader: ({ context: { queryClient } }) =>
-    queryClient.ensureQueryData(systemDoctorQueryOptions()),
+    Promise.all([
+      queryClient.ensureQueryData(systemDoctorQueryOptions()),
+      queryClient.ensureQueryData(firewallStatusQueryOptions()),
+    ]),
   component: SystemStatusPage,
   pendingComponent: SystemStatusPending,
 })
@@ -150,6 +161,169 @@ function SummaryBanner({ ok, checks }: { ok: boolean; checks: DoctorCheck[] }) {
   )
 }
 
+type FirewallState = 'not-installed' | 'inactive' | 'active'
+
+function firewallState(status: FirewallStatus): FirewallState {
+  if (!status.installed) return 'not-installed'
+  if (!status.active) return 'inactive'
+  return 'active'
+}
+
+const FIREWALL_STATE_META: Record<
+  FirewallState,
+  { label: string; variant: VariantProps<typeof badgeVariants>['variant']; icon: Icon; message: string }
+> = {
+  'not-installed': {
+    label: 'Not installed',
+    variant: 'muted',
+    icon: MinusCircleIcon,
+    message:
+      'ufw is not installed on this host; if you rely on a different firewall (cloud security groups, firewalld), this is expected and nothing below is enforced.',
+  },
+  inactive: {
+    label: 'Inactive',
+    variant: 'warning',
+    icon: WarningCircleIcon,
+    message: 'ufw is installed but inactive, so the ports below are not yet enforced.',
+  },
+  active: {
+    label: 'Active',
+    variant: 'success',
+    icon: CheckCircleIcon,
+    message: 'ufw is active and enforcing the managed ports below.',
+  },
+}
+
+function parseFirewallOwner(owner: string): { kind: string; label: string } {
+  const [prefix, ...rest] = owner.split(':')
+  const label = rest.length > 0 ? rest.join(':') : owner
+  if (prefix === 'app') return { kind: 'App', label }
+  if (prefix === 'db') return { kind: 'Database', label }
+  return { kind: 'Other', label: owner }
+}
+
+function FirewallRuleRow({ rule }: { rule: FirewallRule }) {
+  const { kind, label } = parseFirewallOwner(rule.owner)
+  return (
+    <div className="flex items-center justify-between gap-3 py-2.5 text-sm">
+      <div className="min-w-0">
+        <p className="font-medium text-foreground">
+          {rule.port}/{rule.proto}
+        </p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {kind}: {label}
+        </p>
+      </div>
+      <Badge variant={rule.open ? 'success' : 'muted'} className="shrink-0">
+        {rule.open ? <CheckCircleIcon /> : <MinusCircleIcon />}
+        {rule.open ? 'Open' : 'Closed'}
+      </Badge>
+    </div>
+  )
+}
+
+function FirewallCard() {
+  const { data } = useFirewallStatus()
+  const syncFirewall = useTriggerFirewallSync()
+  const state = firewallState(data)
+  const meta = FIREWALL_STATE_META[state]
+  const StateIcon = meta.icon
+
+  function handleSync() {
+    syncFirewall.mutate(undefined, {
+      onSuccess: (result) => {
+        if (result.errors && result.errors.length > 0) {
+          toast.add({
+            title: `Sync finished with ${result.errors.length} issue(s). Opened ${result.applied}, removed ${result.removed}.`,
+            type: 'error',
+          })
+          return
+        }
+        toast.add({
+          title:
+            result.applied > 0 || result.removed > 0
+              ? `Firewall synced. Opened ${result.applied}, removed ${result.removed}.`
+              : 'Firewall synced. Nothing to change.',
+          type: 'success',
+        })
+      },
+      onError: (error) => {
+        toast.add({
+          title: error instanceof Error ? error.message : 'Firewall sync failed.',
+          type: 'error',
+        })
+      },
+    })
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              <ShieldCheckIcon className="size-4" />
+            </div>
+            <div>
+              <CardTitle>Managed firewall rules</CardTitle>
+              <CardDescription>
+                Per-port ufw rules kept in sync with every exposed app and database.
+              </CardDescription>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSync}
+            disabled={syncFirewall.isPending}
+          >
+            <ArrowsClockwiseIcon className={syncFirewall.isPending ? 'animate-spin' : ''} />
+            Sync now
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-start justify-between gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+          <p className="text-xs text-muted-foreground">{meta.message}</p>
+          <Badge variant={meta.variant} className="shrink-0">
+            <StateIcon />
+            {meta.label}
+          </Badge>
+        </div>
+
+        {data.rules.length === 0 ? (
+          <EmptyState
+            icon={<ShieldCheckIcon className="size-5" />}
+            title="No ports to manage"
+            description="No app or database on this node currently exposes a host port, so there's nothing for the firewall to open."
+          />
+        ) : (
+          <div className="divide-y divide-border">
+            {data.rules.map((rule) => (
+              <FirewallRuleRow key={`${rule.proto}-${rule.port}-${rule.owner}`} rule={rule} />
+            ))}
+          </div>
+        )}
+
+        {data.extra && data.extra.length > 0 ? (
+          <Alert>
+            <WarningCircleIcon />
+            <AlertTitle>Stale rules pending cleanup</AlertTitle>
+            <AlertDescription>
+              Still open but no longer wanted by any app or database, removed automatically on
+              the next sync:{' '}
+              {data.extra
+                .map((rule) => `${rule.port}/${rule.proto} (${parseFirewallOwner(rule.owner).label})`)
+                .join(', ')}
+              .
+            </AlertDescription>
+          </Alert>
+        ) : null}
+      </CardContent>
+    </Card>
+  )
+}
+
 function SystemStatusPage() {
   const { data, isFetching, refetch } = useSystemDoctor()
   const { infrastructure, security, other } = groupChecks(data.checks)
@@ -197,6 +371,7 @@ function SystemStatusPage() {
         icon={ShieldCheckIcon}
         checks={security}
       />
+      <FirewallCard />
       <CheckGroupCard
         title="Other checks"
         description="Additional checks reported by this control plane."

@@ -45,6 +45,13 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// the same fleet-wide-blast-radius tier as prune above, not
 	// AbilityWrite (SecretSetter's own gate for a single app's values).
 	mux.HandleFunc("POST /api/v1/system/master-key/rotate", rt.requireAbility(AbilityRoot, rt.handleRotateMasterKey))
+	// Firewall: GET reports every managed port's open/closed state,
+	// AbilityRead like system/status above (read-only, never mutates).
+	// POST applies a sync right now: AbilityRoot, the same tier as
+	// prune/master-key rotation above, since it changes the actual host
+	// firewall fleet-wide, not one app's own resources.
+	mux.HandleFunc("GET /api/v1/system/firewall", rt.requireAbility(AbilityRead, rt.handleGetFirewallStatus))
+	mux.HandleFunc("POST /api/v1/system/firewall/sync", rt.requireAbility(AbilityRoot, rt.handleSyncFirewall))
 
 	// First-run onboarding state: AbilityRead to check it, AbilityWrite to
 	// dismiss/complete it, same tier as any other low-blast-radius

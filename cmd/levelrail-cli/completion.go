@@ -94,6 +94,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"audit-purge": nil,
 	"doctor":      nil,
 	"containers":  nil,
+	"firewall":    {subs: map[string]*cmdNode{"status": nil, "sync": nil}},
 	"users":       {subs: map[string]*cmdNode{"list": nil, "create": nil, "set-abilities": nil, "delete": nil, "roles": nil}},
 	"iam": {subs: map[string]*cmdNode{
 		"policies": {subs: map[string]*cmdNode{

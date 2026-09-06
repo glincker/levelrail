@@ -1492,6 +1492,53 @@ func (c *Client) ListContainers(ctx context.Context) ([]ContainerResource, error
 	return out, err
 }
 
+// FirewallRuleResource mirrors internal/api's firewallRuleResource: one
+// managed port's owner (e.g. "app:web", "db:mydb") and whether ufw
+// currently allows it.
+type FirewallRuleResource struct {
+	Port  int    `json:"port"`
+	Proto string `json:"proto"`
+	Owner string `json:"owner"`
+	Open  bool   `json:"open"`
+}
+
+// FirewallStatusResource mirrors internal/api's firewallStatusResponse:
+// GET /api/v1/system/firewall's response body.
+type FirewallStatusResource struct {
+	Installed bool                   `json:"installed"`
+	Active    bool                   `json:"active"`
+	Rules     []FirewallRuleResource `json:"rules"`
+	Extra     []FirewallRuleResource `json:"extra,omitempty"`
+}
+
+// FirewallSyncResource mirrors internal/api's firewallSyncResponse:
+// POST /api/v1/system/firewall/sync's response body.
+type FirewallSyncResource struct {
+	FirewallStatusResource
+	Applied int      `json:"applied"`
+	Removed int      `json:"removed"`
+	Errors  []string `json:"errors,omitempty"`
+}
+
+// GetFirewallStatus calls GET /api/v1/system/firewall: a read-only
+// report of every port this platform manages (an app's HostPort, a
+// database's public access port) and whether ufw currently allows it.
+func (c *Client) GetFirewallStatus(ctx context.Context) (FirewallStatusResource, error) {
+	var out FirewallStatusResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/system/firewall", nil, &out)
+	return out, err
+}
+
+// SyncFirewall calls POST /api/v1/system/firewall/sync: applies right
+// now the same convergence the background reconciler already performs
+// on its own schedule, for an operator who wants immediate confirmation
+// a just-exposed port took effect.
+func (c *Client) SyncFirewall(ctx context.Context) (FirewallSyncResource, error) {
+	var out FirewallSyncResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/system/firewall/sync", nil, &out)
+	return out, err
+}
+
 // GetUpdates calls GET /api/v1/updates: the running control plane
 // version against GitHub's latest published release.
 func (c *Client) GetUpdates(ctx context.Context) (UpdatesResource, error) {

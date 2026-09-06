@@ -155,6 +155,10 @@ type (
 	purgeAuditLogResult   = apiclient.PurgeAuditLogResult
 
 	rotateMasterKeyResult = apiclient.RotateMasterKeyResult
+
+	firewallRuleResource   = apiclient.FirewallRuleResource
+	firewallStatusResource = apiclient.FirewallStatusResource
+	firewallSyncResource   = apiclient.FirewallSyncResource
 )
 
 // NewClient builds a Client, identifying every request as this CLI's own

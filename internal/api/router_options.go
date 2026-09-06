@@ -391,6 +391,13 @@ func WithDockerDiskUsager(u DockerDiskUsager) Option {
 	return func(rt *Router) { rt.dockerDiskUsage = u }
 }
 
+// WithFirewallManager enables GET/POST /api/v1/system/firewall. Without
+// one configured (the default), both routes return 501, the same
+// "not configured" shape WithDockerPruner's own absence already has.
+func WithFirewallManager(m FirewallManager) Option {
+	return func(rt *Router) { rt.firewallManager = m }
+}
+
 // WithDBPinger enables the database check on GET /api/v1/system/doctor.
 // Without one configured (the default), that check reports unknown, the
 // same "optional signal, absence is not an error" shape WithDockerPinger's

@@ -32,9 +32,11 @@ func runRealFirewallCommand(ctx context.Context, name string, args ...string) ([
 // doctorCheckFirewall is a read-only report of the local host's UFW
 // (Uncomplicated Firewall) status: whether it's installed, active, and
 // its default incoming policy. This check never mutates firewall
-// state; the only place this codebase ever writes a firewall rule is
-// install.sh's own opt-in LEVELRAIL_CONFIGURE_UFW step, never the
-// running control plane. ufw not installed (common on many
+// state. install.sh's own opt-in LEVELRAIL_CONFIGURE_UFW step is one
+// place this codebase writes a firewall rule; internal/firewall (GET/
+// POST /api/v1/system/firewall) is the other, managing per-port rules
+// for exposed apps/databases specifically, tagged so it never touches
+// a rule either of those wrote. ufw not installed (common on many
 // distributions, and outside this platform's own Linux-only scope on
 // anything else) is reported as informational, never a failure: this
 // platform has no way to know whether an operator is relying on a
