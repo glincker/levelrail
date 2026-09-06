@@ -10,6 +10,7 @@ import (
 	"github.com/docker/docker/api/types/build"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/volume"
 )
@@ -131,47 +132,78 @@ func (c *Client) DiskUsage(ctx context.Context) (DiskUsage, error) {
 
 // aggregateDiskUsage is DiskUsage's pure aggregation step, split out so
 // it can be unit tested against a hand-built dockertypes.DiskUsage
-// without a real daemon.
+// without a real daemon. The four categories are independent (each
+// sums a different du field into different DiskUsage fields), so each
+// gets its own small helper below rather than one function summing all
+// four in turn.
 func aggregateDiskUsage(du dockertypes.DiskUsage) DiskUsage {
-	var out DiskUsage
-	for _, img := range du.Images {
+	imagesTotal, imagesReclaimable := aggregateImagesUsage(du.Images)
+	containersTotal, containersReclaimable := aggregateContainersUsage(du.Containers)
+	volumesTotal, volumesReclaimable := aggregateVolumesUsage(du.Volumes)
+	buildCacheTotal, buildCacheReclaimable := aggregateBuildCacheUsage(du.BuildCache)
+	return DiskUsage{
+		ImagesTotalBytes:           imagesTotal,
+		ImagesReclaimableBytes:     imagesReclaimable,
+		ContainersTotalBytes:       containersTotal,
+		ContainersReclaimableBytes: containersReclaimable,
+		VolumesTotalBytes:          volumesTotal,
+		VolumesReclaimableBytes:    volumesReclaimable,
+		BuildCacheTotalBytes:       buildCacheTotal,
+		BuildCacheReclaimableBytes: buildCacheReclaimable,
+	}
+}
+
+func aggregateImagesUsage(images []*image.Summary) (total, reclaimable int64) {
+	for _, img := range images {
 		if img == nil {
 			continue
 		}
-		out.ImagesTotalBytes += img.Size
+		total += img.Size
 		if img.Containers == 0 {
-			out.ImagesReclaimableBytes += img.Size
+			reclaimable += img.Size
 		}
 	}
-	for _, ctr := range du.Containers {
+	return total, reclaimable
+}
+
+func aggregateContainersUsage(containers []*container.Summary) (total, reclaimable int64) {
+	for _, ctr := range containers {
 		if ctr == nil {
 			continue
 		}
-		out.ContainersTotalBytes += ctr.SizeRw
+		total += ctr.SizeRw
 		if ctr.State != "running" {
-			out.ContainersReclaimableBytes += ctr.SizeRw
+			reclaimable += ctr.SizeRw
 		}
 	}
-	for _, vol := range du.Volumes {
+	return total, reclaimable
+}
+
+func aggregateVolumesUsage(volumes []*volume.Volume) (total, reclaimable int64) {
+	for _, vol := range volumes {
 		size := volumeSize(vol)
 		if size < 0 {
 			continue // "not available" for this volume driver, not zero
 		}
-		out.VolumesTotalBytes += size
+		total += size
 		if vol.UsageData != nil && vol.UsageData.RefCount == 0 {
-			out.VolumesReclaimableBytes += size
+			reclaimable += size
 		}
 	}
-	for _, bc := range du.BuildCache {
+	return total, reclaimable
+}
+
+func aggregateBuildCacheUsage(records []*build.CacheRecord) (total, reclaimable int64) {
+	for _, bc := range records {
 		if bc == nil {
 			continue
 		}
-		out.BuildCacheTotalBytes += bc.Size
+		total += bc.Size
 		if !bc.InUse {
-			out.BuildCacheReclaimableBytes += bc.Size
+			reclaimable += bc.Size
 		}
 	}
-	return out
+	return total, reclaimable
 }
 
 // volumeSize returns v's on-disk size, or -1 if unknown/unavailable
