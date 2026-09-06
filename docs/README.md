@@ -54,6 +54,7 @@ proposals):
 | Doc | Covers |
 | --- | --- |
 | [app-spec-reference.md](app-spec-reference.md) | Every `app.yaml` field, validated against `internal/spec`'s JSON Schema |
+| [feature-catalog.md](feature-catalog.md) | Every dashboard page, API resource group, and CLI command group, plus known UI gaps |
 
 ### Explanation
 
