@@ -87,7 +87,7 @@ func SignAppJWT(appID int64, privateKeyPEM []byte, now time.Time) (string, error
 	// required algorithm, not the encryption padding scheme of the
 	// same family with known padding-oracle weaknesses
 	// (EncryptPKCS1v15/DecryptPKCS1v15, which this never calls).
-	signature, err := rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA256, digest[:])
+	signature, err := rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA256, digest[:]) // NOSONAR: signature scheme (RS256), not the vulnerable encrypt/decrypt padding, see comment above
 	if err != nil {
 		return "", fmt.Errorf("githubapp: sign jwt: %w", err)
 	}
