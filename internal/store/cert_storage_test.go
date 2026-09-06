@@ -292,16 +292,24 @@ func TestCertStorage_TouchLock_KeepsItFresh(t *testing.T) {
 		t.Fatalf("AcquireCertStorageLock(untouched) error = %v", err)
 	}
 
-	time.Sleep(50 * time.Millisecond)
+	// 500ms, not a tighter gap: this test previously used a 50ms age
+	// against a 20ms staleness threshold, which flaked under CI runner
+	// load (a GC pause or scheduling delay between TouchCertStorageLock
+	// returning and the very next AcquireCertStorageLock call below can
+	// easily exceed 20ms on a contended runner, wrongly making the
+	// just-touched lock look stale too). A 300ms threshold against a
+	// 500ms age keeps the same intent with real margin against that
+	// jitter.
+	time.Sleep(500 * time.Millisecond)
 	if err := db.TouchCertStorageLock(ctx, "touched"); err != nil {
 		t.Fatalf("TouchCertStorageLock() error = %v", err)
 	}
 
-	// A 20ms staleness threshold: the untouched lock is now ~50ms old
-	// and must be stealable, while the touched lock was just refreshed
-	// and must not be, proving TouchCertStorageLock actually moved
-	// updated_at forward rather than being a no-op.
-	const staleAfter = 20 * time.Millisecond
+	// The untouched lock is now ~500ms old and must be stealable, while
+	// the touched lock was just refreshed and must not be, proving
+	// TouchCertStorageLock actually moved updated_at forward rather
+	// than being a no-op.
+	const staleAfter = 300 * time.Millisecond
 
 	gotTouched, err := db.AcquireCertStorageLock(ctx, "touched", staleAfter)
 	if err != nil {
