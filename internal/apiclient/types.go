@@ -498,6 +498,26 @@ type TriggerCloneRestoreRequest struct {
 	Resources *ServiceResources `json:"resources,omitempty"`
 }
 
+// CloneNowResource mirrors internal/api's cloneNowResource
+// (internal/api/database_clone_now.go): POST /api/v1/databases/{name}/clone's
+// 202 response, enough to follow progress through GetBackupHistory/
+// ListCloneRestores rather than a third, parallel history endpoint.
+type CloneNowResource struct {
+	SourceDatabaseName string `json:"source_database_name"`
+	NewDatabaseName    string `json:"new_database_name"`
+	TargetID           string `json:"target_id"`
+	BackupHistoryID    string `json:"backup_history_id"`
+	CloneRestoreID     string `json:"clone_restore_id"`
+}
+
+// CloneNowRequest mirrors internal/api's cloneNowRequest. TargetID is
+// optional: empty defaults server-side to the source database's own
+// configured backup target.
+type CloneNowRequest struct {
+	NewName  string `json:"new_name"`
+	TargetID string `json:"target_id,omitempty"`
+}
+
 // VolumeCloneRestoreResource mirrors internal/api's
 // volumeCloneRestoreResource (internal/api/app_volume_clone_restore.go):
 // one "restore as new volume" attempt.

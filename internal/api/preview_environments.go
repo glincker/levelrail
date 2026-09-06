@@ -131,18 +131,20 @@ func (rt *Router) deployPreviewEnvironment(ctx context.Context, appName string, 
 	var (
 		usedDomain     string
 		domainConflict bool
+		clonedDatabase string
 		deployErr      error
 	)
 	if len(gs.Services) > 0 {
 		usedDomain, domainConflict, deployErr = rt.deployPreviewMulti(ctx, previewName, gs, sourceDir, ev.HeadSHA, wantDomain)
 	} else {
-		usedDomain, domainConflict, deployErr = rt.deployPreviewSingle(ctx, appName, previewName, gs, sourceDir, ev.HeadSHA, wantDomain)
+		usedDomain, domainConflict, clonedDatabase, deployErr = rt.deployPreviewSingle(ctx, appName, previewName, gs, sourceDir, ev.HeadSHA, wantDomain)
 	}
 	if deployErr != nil {
 		rt.logger.Error("api: pull request webhook: deploy failed", slog.String("error", deployErr.Error()), slog.String("app_name", appName), slog.Int("pr_number", ev.Number))
 		rt.finishPreviewFailed(ctx, *preview, deployErr.Error())
 		return http.StatusInternalServerError, "deploy failed\n"
 	}
+	preview.ClonedDatabaseName = clonedDatabase
 
 	if _, environmentID, envErr := rt.ensurePreviewEnvironmentTier(ctx, appName); envErr != nil {
 		rt.logger.Error("api: pull request webhook: ensure preview environment tier failed", slog.String("error", envErr.Error()), slog.String("app_name", appName))
@@ -199,10 +201,10 @@ func domainSlice(domain string) []string {
 // host:port is strictly more useful than no preview, and returns
 // domainConflict=true so the caller can record why the preview has no
 // domain instead of silently swallowing it.
-func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName string, gs store.GitSource, sourceDir, headSHA, wantDomain string) (usedDomain string, domainConflict bool, err error) {
+func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName string, gs store.GitSource, sourceDir, headSHA, wantDomain string) (usedDomain string, domainConflict bool, clonedDatabase string, err error) {
 	prod, err := rt.apps.GetDesiredService(ctx, appName)
 	if err != nil {
-		return "", false, fmt.Errorf("load production service %q: %w", appName, err)
+		return "", false, "", fmt.Errorf("load production service %q: %w", appName, err)
 	}
 
 	svcSpec := specServiceFromDesired(*prod, spec.Build{Type: gs.BuildType, Path: gs.BuildPath})
@@ -215,18 +217,82 @@ func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName 
 	if deployErr != nil && wantDomain != "" && errors.As(deployErr, &domainTaken) {
 		req.Service.Domains = nil
 		if _, retryErr := rt.builder.Deploy(ctx, req, build.SlogProgress(rt.logger)); retryErr != nil {
-			return "", false, fmt.Errorf("deploy without domain after domain conflict: %w", retryErr)
+			return "", false, "", fmt.Errorf("deploy without domain after domain conflict: %w", retryErr)
 		}
 		usedDomain, domainConflict, deployErr = "", true, nil
 	}
 	if deployErr != nil {
-		return "", false, deployErr
+		return "", false, "", deployErr
 	}
 
 	if _, linkErr := rt.ensureAppLinked(ctx, previewName, previewName); linkErr != nil {
-		return "", false, fmt.Errorf("link preview to app: %w", linkErr)
+		return "", false, "", fmt.Errorf("link preview to app: %w", linkErr)
 	}
-	return usedDomain, domainConflict, nil
+
+	clonedDatabase = rt.attachClonedPreviewDatabase(ctx, appName, previewName, prod.DatabaseAttachment)
+	return usedDomain, domainConflict, clonedDatabase, nil
+}
+
+// attachClonedPreviewDatabase gives previewName its own isolated copy of
+// att, prod's own DatabaseAttachment, instead of the two outcomes this
+// platform had before this existed: either silently dropping the
+// attachment (specServiceFromDesired above never carries it, since
+// DatabaseAttachment lives on the DesiredService row, not spec.Service),
+// or, for an app.yaml `from:` reference resolved into a literal env
+// value instead, that literal being copied straight into the preview
+// (a separate, pre-existing gap this change does not address, see
+// docs/roadmap.md). Returns "" whenever a clone can't happen right now:
+// no attachment to begin with, backups not configured on this control
+// plane, or the attached database has no backup target set. A preview
+// with no database is this platform's existing, safe behavior; staying
+// on it is strictly better than pointing an untrusted PR's build at
+// production's own live data.
+func (rt *Router) attachClonedPreviewDatabase(ctx context.Context, appName, previewName string, att *store.DatabaseAttachment) (clonedDatabase string) {
+	if att == nil {
+		return ""
+	}
+	if rt.backupRunner == nil || rt.cloneRestoreRunner == nil {
+		rt.logger.Warn("api: preview deploy: cannot clone attached database, backups are not configured on this control plane",
+			slog.String("app_name", appName), slog.String("database", att.DatabaseName))
+		return ""
+	}
+	source, err := rt.databases.GetDesiredDatabase(ctx, att.DatabaseName)
+	if err != nil {
+		rt.logger.Warn("api: preview deploy: cannot clone attached database, load source database failed",
+			slog.String("app_name", appName), slog.String("database", att.DatabaseName), slog.String("error", err.Error()))
+		return ""
+	}
+	if source.BackupTargetID == "" {
+		rt.logger.Warn("api: preview deploy: cannot clone attached database, it has no backup target configured",
+			slog.String("app_name", appName), slog.String("database", att.DatabaseName))
+		return ""
+	}
+
+	clonedName := att.DatabaseName + "-" + previewName
+	if err := rt.runCloneNow(ctx, att.DatabaseName, source.BackupTargetID, clonedName); err != nil {
+		rt.logger.Warn("api: preview deploy: clone attached database failed, preview will have no database",
+			slog.String("app_name", appName), slog.String("database", att.DatabaseName), slog.String("error", err.Error()))
+		return ""
+	}
+
+	previewAtt := &store.DatabaseAttachment{DatabaseName: clonedName, EnvVar: att.EnvVar, Field: att.Field}
+	if err := rt.apps.UpdateServiceDatabaseAttachment(ctx, previewName, previewAtt); err != nil {
+		rt.logger.Warn("api: preview deploy: attach cloned database failed",
+			slog.String("app_name", appName), slog.String("database", clonedName), slog.String("error", err.Error()))
+		return clonedName
+	}
+	// The container Deploy already created above came up before this
+	// attachment existed, so it never got the env var: a restart makes
+	// the application controller recreate it, the same "restart
+	// required" consequence an ordinary env change already has
+	// elsewhere in this codebase. Best-effort: even if this fails, the
+	// clone and the attachment are both real, and the next
+	// reconcile/redeploy for any other reason picks it up.
+	if err := rt.apps.RestartService(ctx, previewName); err != nil {
+		rt.logger.Warn("api: preview deploy: restart to pick up cloned database attachment failed",
+			slog.String("app_name", appName), slog.String("error", err.Error()))
+	}
+	return clonedName
 }
 
 // deployPreviewMulti fans out gs.Services (an app.yaml-style map) under
@@ -413,6 +479,20 @@ func (rt *Router) teardownPullRequestPreview(ctx context.Context, appName string
 // (the row, or the still-linked app) for the next attempt to find and
 // retry rather than an orphan with no record at all.
 func (rt *Router) teardownPreviewRecord(ctx context.Context, preview store.PreviewEnvironment) (int, string) {
+	if preview.ClonedDatabaseName != "" {
+		// Best-effort, same as teardownPreviewApp's own doc comment for
+		// the preview app itself: this removes desired state, it does
+		// not itself stop the running container, and a failure here
+		// does not block tearing down the preview app or its record,
+		// since an orphaned clone left behind is a disk-space nuisance,
+		// not a live-traffic or security concern the way an orphaned
+		// preview app pointed at production would be.
+		if err := rt.databases.DeleteDesiredDatabase(ctx, preview.ClonedDatabaseName); err != nil {
+			rt.logger.Warn("api: preview teardown: delete cloned database failed",
+				slog.String("database", preview.ClonedDatabaseName), slog.String("error", err.Error()))
+		}
+	}
+
 	if failed := rt.teardownPreviewApp(ctx, preview.PreviewAppID); len(failed) > 0 {
 		preview.Status = store.PreviewStatusFailed
 		preview.StatusReason = fmt.Sprintf("teardown left %d service(s) undeleted: %s", len(failed), strings.Join(failed, ", "))

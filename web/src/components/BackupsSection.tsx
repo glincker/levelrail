@@ -39,6 +39,7 @@ import { RestoreBackupDialog } from './RestoreBackupDialog'
 import { RestoreHistoryTable } from './RestoreHistoryTable'
 import { CloneRestoreDialog } from './CloneRestoreDialog'
 import { CloneRestoreHistoryTable } from './CloneRestoreHistoryTable'
+import { CloneNowDialog } from './CloneNowDialog'
 import { BackupScheduleForm } from './BackupScheduleForm'
 import { BackupVerificationBadge } from './BackupVerificationBadge'
 import { StatusBadge } from './backupAttemptStatus'
@@ -382,8 +383,9 @@ export function BackupsSection({ database }: { database: DatabaseResource }) {
   const databaseName = database.name
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
         <CardTitle>Backups</CardTitle>
+        <CloneNowDialog databaseName={databaseName} />
       </CardHeader>
       <CardContent className="space-y-4">
         <BackupScheduleForm database={database} />

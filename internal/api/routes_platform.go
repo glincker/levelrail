@@ -535,6 +535,10 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// same boundary the in-place restore history route above draws.
 	mux.HandleFunc("POST /api/v1/databases/{name}/restore-as-new", rt.requireAbility(AbilityWriteSensitive, rt.handleCloneRestore))
 	mux.HandleFunc("GET /api/v1/databases/{name}/clone-restores", rt.requireAbility(AbilityRead, rt.handleListCloneRestores))
+	// Clone now (database_clone_now.go): restore-as-new without
+	// requiring an already-succeeded backup first, AbilityWriteSensitive
+	// like restore-as-new above for the identical reason.
+	mux.HandleFunc("POST /api/v1/databases/{name}/clone", rt.requireAbility(AbilityWriteSensitive, rt.handleCloneDatabaseNow))
 
 	// Object-storage attachment, per app (apps_storage.go): which
 	// connected backup_targets bucket (the same S3-compatible connection

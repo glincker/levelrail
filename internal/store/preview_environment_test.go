@@ -54,6 +54,7 @@ func TestUpdatePreviewEnvironment(t *testing.T) {
 	updated.Status = PreviewStatusActive
 	updated.StatusReason = "domain conflict, deployed without a domain"
 	updated.EnvironmentID = "preview-env-web"
+	updated.ClonedDatabaseName = "mydb-pr-42"
 	updated.UpdatedAt = "2026-08-21T00:00:00Z"
 
 	if err := db.UpdatePreviewEnvironment(ctx, updated); err != nil {

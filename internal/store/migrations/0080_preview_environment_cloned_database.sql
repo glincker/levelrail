@@ -1,0 +1,11 @@
+-- A preview environment for an app with a dashboard-configured
+-- DatabaseAttachment (internal/store/service.go) gets its own isolated
+-- clone of the attached database (internal/api's clonePreviewDatabase),
+-- not a pointer at the production database's live data. This column
+-- records that clone's name so teardown (teardownPreviewRecord) can
+-- delete it alongside the preview app itself; NULL means either the
+-- preview's app had no DatabaseAttachment, or cloning it failed (a
+-- preview still deploys without a database in that case, the same
+-- "fails closed, don't touch production" default as before this
+-- feature existed).
+ALTER TABLE preview_environments ADD COLUMN cloned_database_name TEXT;

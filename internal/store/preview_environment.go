@@ -66,8 +66,14 @@ type PreviewEnvironment struct {
 	// build failure's own error message when Status is Failed. Empty for
 	// the ordinary success case.
 	StatusReason string
-	CreatedAt    string
-	UpdatedAt    string
+	// ClonedDatabaseName is the isolated per-preview clone of the
+	// production app's own DatabaseAttachment, when one was made
+	// (internal/api's clonePreviewDatabase). Empty means the app had no
+	// DatabaseAttachment, or cloning it failed and the preview deployed
+	// without a database instead of pointing at production's live data.
+	ClonedDatabaseName string
+	CreatedAt          string
+	UpdatedAt          string
 }
 
 // SavePreviewEnvironment inserts a new preview environment row.
@@ -76,14 +82,15 @@ type PreviewEnvironment struct {
 func (db *DB) SavePreviewEnvironment(ctx context.Context, p PreviewEnvironment) error {
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO preview_environments
-			(id, app_name, pr_number, preview_app_id, environment_id, branch, head_sha, domain, status, status_reason, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			(id, app_name, pr_number, preview_app_id, environment_id, branch, head_sha, domain, status, status_reason, cloned_database_name, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, p.ID, p.AppName, p.PRNumber, p.PreviewAppID,
 		sql.NullString{String: p.EnvironmentID, Valid: p.EnvironmentID != ""},
 		p.Branch, p.HeadSHA,
 		sql.NullString{String: p.Domain, Valid: p.Domain != ""},
 		p.Status,
 		sql.NullString{String: p.StatusReason, Valid: p.StatusReason != ""},
+		sql.NullString{String: p.ClonedDatabaseName, Valid: p.ClonedDatabaseName != ""},
 		p.CreatedAt, p.UpdatedAt)
 	if err != nil {
 		return fmt.Errorf("store: save preview environment %q: %w", p.ID, err)
@@ -100,13 +107,14 @@ func (db *DB) SavePreviewEnvironment(ctx context.Context, p PreviewEnvironment) 
 func (db *DB) UpdatePreviewEnvironment(ctx context.Context, p PreviewEnvironment) error {
 	res, err := db.ExecContext(ctx, `
 		UPDATE preview_environments SET
-			branch = ?, head_sha = ?, environment_id = ?, domain = ?, status = ?, status_reason = ?, updated_at = ?
+			branch = ?, head_sha = ?, environment_id = ?, domain = ?, status = ?, status_reason = ?, cloned_database_name = ?, updated_at = ?
 		WHERE id = ?
 	`, p.Branch, p.HeadSHA,
 		sql.NullString{String: p.EnvironmentID, Valid: p.EnvironmentID != ""},
 		sql.NullString{String: p.Domain, Valid: p.Domain != ""},
 		p.Status,
 		sql.NullString{String: p.StatusReason, Valid: p.StatusReason != ""},
+		sql.NullString{String: p.ClonedDatabaseName, Valid: p.ClonedDatabaseName != ""},
 		p.UpdatedAt, p.ID)
 	if err != nil {
 		return fmt.Errorf("store: update preview environment %q: %w", p.ID, err)
@@ -221,19 +229,21 @@ func (db *DB) ListStalePreviewEnvironments(ctx context.Context, cutoff time.Time
 	return out, nil
 }
 
-const previewEnvironmentColumns = "id, app_name, pr_number, preview_app_id, environment_id, branch, head_sha, domain, status, status_reason, created_at, updated_at"
+const previewEnvironmentColumns = "id, app_name, pr_number, preview_app_id, environment_id, branch, head_sha, domain, status, status_reason, cloned_database_name, created_at, updated_at"
 
 func scanPreviewEnvironment(scan func(dest ...any) error) (*PreviewEnvironment, error) {
 	var (
 		p                     PreviewEnvironment
 		environmentID, domain sql.NullString
 		statusReason          sql.NullString
+		clonedDatabaseName    sql.NullString
 	)
-	if err := scan(&p.ID, &p.AppName, &p.PRNumber, &p.PreviewAppID, &environmentID, &p.Branch, &p.HeadSHA, &domain, &p.Status, &statusReason, &p.CreatedAt, &p.UpdatedAt); err != nil {
+	if err := scan(&p.ID, &p.AppName, &p.PRNumber, &p.PreviewAppID, &environmentID, &p.Branch, &p.HeadSHA, &domain, &p.Status, &statusReason, &clonedDatabaseName, &p.CreatedAt, &p.UpdatedAt); err != nil {
 		return nil, err
 	}
 	p.EnvironmentID = environmentID.String
 	p.Domain = domain.String
 	p.StatusReason = statusReason.String
+	p.ClonedDatabaseName = clonedDatabaseName.String
 	return &p, nil
 }

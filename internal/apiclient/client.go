@@ -687,6 +687,16 @@ func (c *Client) TriggerCloneRestore(ctx context.Context, name string, req Trigg
 	return out, err
 }
 
+// CloneDatabaseNow calls POST /api/v1/databases/{name}/clone: like
+// TriggerCloneRestore above, but takes a fresh backup as part of the
+// same call instead of requiring one to already exist and be named by
+// ID, the "just give me a copy of this database" one-click path.
+func (c *Client) CloneDatabaseNow(ctx context.Context, name string, req CloneNowRequest) (CloneNowResource, error) {
+	var out CloneNowResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/clone", req, &out)
+	return out, err
+}
+
 // TriggerVolumeCloneRestore calls
 // POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new: the app
 // service volume counterpart of TriggerCloneRestore. Creates a brand-new,
