@@ -18,7 +18,7 @@ import { parseEnvBlock } from '../lib/envParse'
 
 function formatEnvText(env: Record<string, string>): string {
   return Object.keys(env)
-    .sort()
+    .sort((a, b) => a.localeCompare(b))
     .map((key) => `${key}=${env[key]}`)
     .join('\n')
 }
