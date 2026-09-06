@@ -93,7 +93,9 @@ describe('EnvActivityPanel', () => {
       vi.fn(() => Promise.resolve(fakeJsonResponse([]))),
     )
     renderPanel()
-    await screen.findByText('No recorded configuration changes yet.')
+    expect(
+      await screen.findByText('No recorded configuration changes yet.'),
+    ).toBeInTheDocument()
   })
 
   it('fails quietly (renders nothing) when the audit log is unreachable, e.g. a non-root actor', async () => {
