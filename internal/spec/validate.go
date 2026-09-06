@@ -55,6 +55,34 @@ func (s *Spec) Validate() error {
 }
 
 func (svc *Service) validate(name string) error {
+	if err := svc.validateBuild(name); err != nil {
+		return err
+	}
+	if err := svc.validatePorts(name); err != nil {
+		return err
+	}
+	if svc.Strategy != "" && svc.Strategy != StrategyRolling && svc.Strategy != StrategyRecreate && svc.Strategy != StrategyBlueGreen {
+		// Unreachable while the JSON Schema's enum stays in sync with the
+		// constants above, kept as a direct check anyway since Validate
+		// is documented as safe to call on a hand-built Spec that never
+		// went through schema validation.
+		return fmt.Errorf("spec: service %q: strategy %q is not one of rolling, recreate, blue-green", name, svc.Strategy)
+	}
+	if svc.Resources != nil && svc.Resources.SwapMemory != "" && svc.Resources.Memory == "" {
+		return fmt.Errorf("spec: service %q: resources.swapMemory requires resources.memory to also be set", name)
+	}
+	if err := ValidateLabels(svc.Labels); err != nil {
+		return fmt.Errorf("spec: service %q: %w", name, err)
+	}
+	return svc.validateVolumes(name)
+}
+
+// validateBuild checks the build.type/path/image/args/baseDirectory
+// interactions svc.validate delegates to it, split out from the port
+// checks below purely to keep each method's own cognitive complexity
+// low; the two are independent concerns that happen to both key off
+// svc.Build.Type.
+func (svc *Service) validateBuild(name string) error {
 	if svc.Build.Type == BuildCompose && svc.Build.Path == "" {
 		return fmt.Errorf("spec: service %q: build.path is required for build.type: compose", name)
 	}
@@ -67,23 +95,28 @@ func (svc *Service) validate(name string) error {
 	if svc.Build.Type == BuildImage && svc.Build.Path != "" {
 		return fmt.Errorf("spec: service %q: build.path is not meaningful for build.type: image, there is nothing to build", name)
 	}
-
 	if len(svc.Build.Args) > 0 && svc.Build.Type != BuildDockerfile {
 		return fmt.Errorf("spec: service %q: build.args is not meaningful for build.type %q", name, svc.Build.Type)
 	}
-
-	if svc.Build.BaseDirectory != "" {
-		if svc.Build.Type == BuildImage {
-			return fmt.Errorf("spec: service %q: build.baseDirectory is not meaningful for build.type: image, there is nothing to build", name)
-		}
-		if svc.Build.Type == BuildCompose {
-			return fmt.Errorf("spec: service %q: build.baseDirectory is not meaningful for build.type: compose, use the compose file's own context: field instead", name)
-		}
-		if err := validateBaseDirectory(svc.Build.BaseDirectory); err != nil {
-			return fmt.Errorf("spec: service %q: %w", name, err)
-		}
+	if svc.Build.BaseDirectory == "" {
+		return nil
 	}
+	if svc.Build.Type == BuildImage {
+		return fmt.Errorf("spec: service %q: build.baseDirectory is not meaningful for build.type: image, there is nothing to build", name)
+	}
+	if svc.Build.Type == BuildCompose {
+		return fmt.Errorf("spec: service %q: build.baseDirectory is not meaningful for build.type: compose, use the compose file's own context: field instead", name)
+	}
+	if err := validateBaseDirectory(svc.Build.BaseDirectory); err != nil {
+		return fmt.Errorf("spec: service %q: %w", name, err)
+	}
+	return nil
+}
 
+// validatePorts checks svc.Port and svc.HostPort against svc.Build.Type,
+// split out from validateBuild above for the same reason that doc
+// comment gives.
+func (svc *Service) validatePorts(name string) error {
 	// compose joins static here: a compose-typed service is a wrapper
 	// that expands into N real services at deploy time
 	// (internal/deploy.Pipeline.DeploySpec's own expandComposeServices),
@@ -98,32 +131,22 @@ func (svc *Service) validate(name string) error {
 	if svc.Build.Type == BuildCompose && svc.Port != 0 {
 		return fmt.Errorf("spec: service %q: port must not be set when build.type is %q, each of the compose file's own services has its own port instead", name, BuildCompose)
 	}
-
-	if svc.HostPort != 0 {
-		if svc.HostPort < 1 || svc.HostPort > 65535 {
-			return fmt.Errorf("spec: service %q: host_port must be between 1 and 65535", name)
-		}
-		if svc.Build.Type == BuildStatic {
-			return fmt.Errorf("spec: service %q: host_port must not be set when build.type is %q, static sites have no running container to publish a port for", name, BuildStatic)
-		}
+	if svc.HostPort == 0 {
+		return nil
 	}
-
-	if svc.Strategy != "" && svc.Strategy != StrategyRolling && svc.Strategy != StrategyRecreate && svc.Strategy != StrategyBlueGreen {
-		// Unreachable while the JSON Schema's enum stays in sync with the
-		// constants above, kept as a direct check anyway since Validate
-		// is documented as safe to call on a hand-built Spec that never
-		// went through schema validation.
-		return fmt.Errorf("spec: service %q: strategy %q is not one of rolling, recreate, blue-green", name, svc.Strategy)
+	if svc.HostPort < 1 || svc.HostPort > 65535 {
+		return fmt.Errorf("spec: service %q: host_port must be between 1 and 65535", name)
 	}
-
-	if svc.Resources != nil && svc.Resources.SwapMemory != "" && svc.Resources.Memory == "" {
-		return fmt.Errorf("spec: service %q: resources.swapMemory requires resources.memory to also be set", name)
+	if svc.Build.Type == BuildStatic {
+		return fmt.Errorf("spec: service %q: host_port must not be set when build.type is %q, static sites have no running container to publish a port for", name, BuildStatic)
 	}
+	return nil
+}
 
-	if err := ValidateLabels(svc.Labels); err != nil {
-		return fmt.Errorf("spec: service %q: %w", name, err)
-	}
-
+// validateVolumes checks svc.Volumes for a bad name and for two volumes
+// colliding on name or mount path, split out from svc.validate for the
+// same reason validateBuild's own doc comment gives.
+func (svc *Service) validateVolumes(name string) error {
 	seenVolumeNames := make(map[string]bool, len(svc.Volumes))
 	seenVolumePaths := make(map[string]bool, len(svc.Volumes))
 	for _, v := range svc.Volumes {
@@ -139,7 +162,6 @@ func (svc *Service) validate(name string) error {
 		}
 		seenVolumePaths[v.Path] = true
 	}
-
 	return nil
 }
 

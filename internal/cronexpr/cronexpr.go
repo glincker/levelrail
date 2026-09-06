@@ -127,38 +127,9 @@ func parseField(field string, fieldMin, fieldMax int, dowAlias7 bool) (fieldSet,
 			step = s
 		}
 
-		lo, hi := fieldMin, fieldMax
-		switch {
-		case base == "*":
-			// lo, hi already cover the field's full range.
-		case strings.Contains(base, "-"):
-			bounds := strings.SplitN(base, "-", 2)
-			var err error
-			lo, err = strconv.Atoi(bounds[0])
-			if err != nil {
-				return 0, fmt.Errorf("invalid range start in %q", term)
-			}
-			hi, err = strconv.Atoi(bounds[1])
-			if err != nil {
-				return 0, fmt.Errorf("invalid range end in %q", term)
-			}
-		default:
-			v, err := strconv.Atoi(base)
-			if err != nil {
-				return 0, fmt.Errorf("invalid value %q", base)
-			}
-			if dowAlias7 && v == 7 {
-				v = 0
-			}
-			lo, hi = v, v
-			// A bare "N/step" (no explicit range) means "N, N+step,
-			// ... up to the field's max", the same convention every
-			// standard cron implementation applies: the step turns a
-			// single value into an open-ended range, it doesn't stay a
-			// single value.
-			if step != 1 {
-				hi = fieldMax
-			}
+		lo, hi, err := parseFieldTerm(term, base, fieldMin, fieldMax, step, dowAlias7)
+		if err != nil {
+			return 0, err
 		}
 
 		if lo < fieldMin || hi > fieldMax || lo > hi {
@@ -169,6 +140,47 @@ func parseField(field string, fieldMin, fieldMax int, dowAlias7 bool) (fieldSet,
 		}
 	}
 	return fs, nil
+}
+
+// parseFieldTerm resolves one term's base value (the part before an
+// optional "/step") into an inclusive [lo, hi] range, split out of
+// parseField's own loop purely to keep each function's cognitive
+// complexity low: this is the "*" / "a-b" / "N" three-way switch, the
+// step-open-ended-range and dowAlias7 rules stay here since both only
+// apply once base has resolved to a single value.
+func parseFieldTerm(term, base string, fieldMin, fieldMax, step int, dowAlias7 bool) (int, int, error) {
+	switch {
+	case base == "*":
+		return fieldMin, fieldMax, nil
+	case strings.Contains(base, "-"):
+		bounds := strings.SplitN(base, "-", 2)
+		lo, err := strconv.Atoi(bounds[0])
+		if err != nil {
+			return 0, 0, fmt.Errorf("invalid range start in %q", term)
+		}
+		hi, err := strconv.Atoi(bounds[1])
+		if err != nil {
+			return 0, 0, fmt.Errorf("invalid range end in %q", term)
+		}
+		return lo, hi, nil
+	default:
+		v, err := strconv.Atoi(base)
+		if err != nil {
+			return 0, 0, fmt.Errorf("invalid value %q", base)
+		}
+		if dowAlias7 && v == 7 {
+			v = 0
+		}
+		hi := v
+		// A bare "N/step" (no explicit range) means "N, N+step, ... up
+		// to the field's max", the same convention every standard cron
+		// implementation applies: the step turns a single value into
+		// an open-ended range, it doesn't stay a single value.
+		if step != 1 {
+			hi = fieldMax
+		}
+		return v, hi, nil
+	}
 }
 
 // searchHorizon bounds how far into the future Next searches before
