@@ -493,6 +493,11 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/databases/{name}/public-access", rt.requireAbility(AbilityWriteSensitive, rt.handleSetDatabasePublicAccess))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}/public-access", rt.requireAbility(AbilityWriteSensitive, rt.handleClearDatabasePublicAccess))
 
+	// Restart, per database (database_restart.go). AbilityWriteSensitive:
+	// briefly takes the database offline, the same tier public-access and
+	// backups above already use for actions with real operational impact.
+	mux.HandleFunc("POST /api/v1/databases/{name}/restart", rt.requireAbility(AbilityWriteSensitive, rt.handleRestartDatabase))
+
 	// Restore, per database (restore.go). AbilityRoot, not
 	// AbilityWriteSensitive: see handleTriggerRestore's own doc comment
 	// for why this, alone among every backup-related route, needs the

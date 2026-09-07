@@ -35,6 +35,14 @@ type fakeExecAppRuntime struct {
 	updateResourcesCalls     int
 	updateResourcesID        string
 	updateResourcesResources docker.Resources
+
+	stopErr   error
+	stopCalls int
+	stopID    string
+
+	startErr   error
+	startCalls int
+	startID    string
 }
 
 func (f *fakeExecAppRuntime) InspectByName(_ context.Context, _ string) (*docker.ContainerState, error) {
@@ -54,7 +62,11 @@ func (f *fakeExecAppRuntime) ExecWithInput(context.Context, string, []string, io
 func (f *fakeExecAppRuntime) Create(context.Context, docker.ContainerSpec) (string, error) {
 	return "", nil
 }
-func (f *fakeExecAppRuntime) Start(context.Context, string) error { return nil }
+func (f *fakeExecAppRuntime) Start(_ context.Context, id string) error {
+	f.startCalls++
+	f.startID = id
+	return f.startErr
+}
 func (f *fakeExecAppRuntime) Events(context.Context) (<-chan docker.Event, <-chan error) {
 	return nil, nil
 }
@@ -64,7 +76,11 @@ func (f *fakeExecAppRuntime) ListImages(context.Context, string) ([]docker.Image
 func (f *fakeExecAppRuntime) ListByPrefix(context.Context, string) ([]docker.ContainerState, error) {
 	return nil, nil
 }
-func (f *fakeExecAppRuntime) Stop(context.Context, string, time.Duration) error { return nil }
+func (f *fakeExecAppRuntime) Stop(_ context.Context, id string, _ time.Duration) error {
+	f.stopCalls++
+	f.stopID = id
+	return f.stopErr
+}
 func (f *fakeExecAppRuntime) Remove(context.Context, string, bool) error        { return nil }
 func (f *fakeExecAppRuntime) UpdateResources(_ context.Context, id string, resources docker.Resources) error {
 	f.updateResourcesCalls++

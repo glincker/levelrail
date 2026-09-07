@@ -8,6 +8,7 @@ import {
 import { summarizeDatabaseStatus } from '../../lib/databaseStatus'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { DeleteDatabaseDialog } from '../../components/DeleteDatabaseDialog'
+import { RestartDatabaseButton } from '../../components/RestartDatabaseButton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { PageSpinner } from '@/components/ui/page-spinner'
@@ -58,7 +59,10 @@ function DatabaseDetailLayout() {
           </h1>
           <Badge variant={status.variant}>{status.label}</Badge>
         </div>
-        <DeleteDatabaseDialog name={database.name} />
+        <div className="flex items-center gap-2">
+          <RestartDatabaseButton name={database.name} />
+          <DeleteDatabaseDialog name={database.name} />
+        </div>
       </div>
 
       <Outlet />

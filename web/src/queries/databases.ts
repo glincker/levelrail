@@ -214,6 +214,36 @@ export function useDeleteDatabase() {
   })
 }
 
+// POST /api/v1/databases/{name}/restart (internal/api/database_restart.go's
+// handleRestartDatabase): stops then starts the database's current
+// container in place. Synchronous, unlike apps.ts's restartApp: a
+// database container is never recreated under a new name, so the
+// response already reflects the restart having happened, not just been
+// requested. No request body.
+export async function restartDatabase(name: string): Promise<DatabaseResource> {
+  const res = await fetch(
+    `/api/v1/databases/${encodeURIComponent(name)}/restart`,
+    { method: 'POST' },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `restart database failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as DatabaseResource
+}
+
+export function useRestartDatabase() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: restartDatabase,
+    onSuccess: (updated) => {
+      queryClient.setQueryData(databaseKeys.detail(updated.name), updated)
+    },
+  })
+}
+
 // PUT /api/v1/databases/{name}/node (internal/api/databases.go's
 // handleSetDatabaseNode), the database counterpart to queries/apps.ts's
 // setAppNode/useSetAppNode: same AbilityRoot gating, same empty-string-

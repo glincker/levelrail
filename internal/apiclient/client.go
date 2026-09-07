@@ -371,6 +371,17 @@ func (c *Client) ListDatabases(ctx context.Context) ([]DatabaseResource, error) 
 	return out, err
 }
 
+// RestartDatabase calls POST /api/v1/databases/{name}/restart: stops
+// then starts the database's current container in place
+// (internal/api/database_restart.go's own handleRestartDatabase). No
+// request body; the response is the database's current desired state,
+// unchanged.
+func (c *Client) RestartDatabase(ctx context.Context, name string) (DatabaseResource, error) {
+	var out DatabaseResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/restart", nil, &out)
+	return out, err
+}
+
 // DeleteDatabase calls DELETE /api/v1/databases/{name}.
 func (c *Client) DeleteDatabase(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name), nil, nil)
