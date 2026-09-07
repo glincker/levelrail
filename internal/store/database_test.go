@@ -27,7 +27,7 @@ func TestSaveAndGetDesiredDatabase(t *testing.T) {
 
 // TestSaveAndGetDesiredDatabase_PostgresVariant confirms Variant
 // round-trips through SaveDesiredDatabase/GetDesiredDatabase exactly like
-// Engine/Version already do (migrations/0081_database_variant.sql).
+// Engine/Version already do (migrations/0084_database_variant.sql).
 func TestSaveAndGetDesiredDatabase_PostgresVariant(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

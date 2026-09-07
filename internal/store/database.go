@@ -34,7 +34,7 @@ type DesiredDatabase struct {
 	// vanilla one (database_engines.yaml's per-engine variants list,
 	// e.g. postgres's pgvector/postgis/timescaledb). Empty means the
 	// vanilla image, byte-identical to every database before this field
-	// existed (migrations/0081_database_variant.sql).
+	// existed (migrations/0084_database_variant.sql).
 	Variant string
 	// NodeID: see DesiredService.NodeID's own doc comment, identical
 	// meaning and identical "SaveDesiredDatabase never writes it, only
