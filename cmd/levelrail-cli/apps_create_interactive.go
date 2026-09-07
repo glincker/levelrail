@@ -68,6 +68,18 @@ type wizardAnswers struct {
 	// service's name plus its own optional image tag prefix.
 	appName       string
 	imageRepoBase string
+	// databaseEngine, databaseVersion, databaseEnvVar are only
+	// collected, and only meaningful, for a single-service (extra
+	// empty) API-mode create: attaching a database only makes sense
+	// once the app it attaches to is a real, created resource, which
+	// file mode never produces (app.yaml has no consumer for a
+	// services-level database reference, see
+	// databases_create_interactive.go's own doc comment on
+	// spec.Spec.Databases). databaseEngine empty means "don't attach
+	// one," the wizard's own default.
+	databaseEngine  string
+	databaseVersion string
+	databaseEnvVar  string
 }
 
 // wizardService is one additional service collected by the wizard's
@@ -398,6 +410,27 @@ func runInteractiveWizard(p *wizardPrompter, detected detectedGit) (wizardAnswer
 			}
 			a.imageRepo = imageRepo
 		}
+
+		engine, err := p.readChoice(
+			"Attach a new database? ["+strings.Join(supportedEngineParams, "/")+"/none] (default: none): ",
+			"none", append([]string{"none"}, supportedEngineParams...)...,
+		)
+		if err != nil {
+			return wizardAnswers{}, err
+		}
+		if engine != "none" {
+			a.databaseEngine = engine
+			version, err := p.readOptional(fmt.Sprintf("%s version (blank for the engine's own default): ", engine), "")
+			if err != nil {
+				return wizardAnswers{}, err
+			}
+			a.databaseVersion = version
+			envVar, err := p.readOptional("Environment variable to inject the connection string as (default: DATABASE_URL): ", "DATABASE_URL")
+			if err != nil {
+				return wizardAnswers{}, err
+			}
+			a.databaseEnvVar = envVar
+		}
 		return a, nil
 	}
 
@@ -626,7 +659,31 @@ func runWizardCreateViaAPI(a wizardAnswers, stdout, stderr io.Writer, cf credent
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("app %q was created but the build failed: %w", created.Name, buildErr))
 	}
 
+	if a.databaseEngine != "" {
+		attachWizardDatabase(ctx, client, created.Name, a, stderr)
+	}
+
 	return fetchAndPrintCreatedApp(ctx, client, created.Name, stdout, stderr, of)
+}
+
+// attachWizardDatabase creates a new database named "<app>-db" and
+// attaches it to appName, the same "trailing, best-effort, never fails
+// or rolls back the already-created app" step the dashboard's own
+// CreateAppFields.tsx takes for the identical feature. A failure here
+// is printed as a warning to stderr, never returned as this command's
+// own error: the app itself is real and already created by the time
+// this runs.
+func attachWizardDatabase(ctx context.Context, client *Client, appName string, a wizardAnswers, stderr io.Writer) {
+	dbName := appName + "-db"
+	if _, err := client.CreateDatabase(ctx, databaseResource{Name: dbName, Engine: a.databaseEngine, Version: a.databaseVersion}); err != nil {
+		_, _ = fmt.Fprintf(stderr, "warning: app %q was created but database %q could not be created: %v\n", appName, dbName, err)
+		return
+	}
+	if _, err := client.SetAppDatabaseAttachment(ctx, appName, setAppDatabaseRequest{DatabaseName: dbName, EnvVar: a.databaseEnvVar}); err != nil {
+		_, _ = fmt.Fprintf(stderr, "warning: database %q was created but could not be attached to app %q: %v\n", dbName, appName, err)
+		return
+	}
+	_, _ = fmt.Fprintf(stderr, "created and attached database %q to app %q (env var %s)\n", dbName, appName, a.databaseEnvVar)
 }
 
 // runWizardCreateMultiServiceViaAPI is runWizardCreateViaAPI's path for

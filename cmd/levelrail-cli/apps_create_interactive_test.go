@@ -145,7 +145,7 @@ func TestRunInteractiveWizard(t *testing.T) {
 		},
 		{
 			name:     "git source auto-detected repo, health skipped, resources set, api output",
-			lines:    []string{"webapp", "git", "", "3000", "app.example.com", "skip", "512Mi", "0.5", "", "api", "registry.example.com/org/webapp"},
+			lines:    []string{"webapp", "git", "", "3000", "app.example.com", "skip", "512Mi", "0.5", "", "api", "registry.example.com/org/webapp", ""},
 			detected: detectedGit{RepoURL: "https://example.com/detected.git", Ref: "feature"},
 			want: func(t *testing.T, a wizardAnswers) {
 				if a.sourceKind != wizardSourceGit {
@@ -171,6 +171,38 @@ func TestRunInteractiveWizard(t *testing.T) {
 				}
 				if a.imageRepo != "registry.example.com/org/webapp" {
 					t.Errorf("imageRepo = %q", a.imageRepo)
+				}
+			},
+		},
+		{
+			name:     "database engine picked, populates database answers",
+			lines:    []string{"webapp", "git", "", "3000", "app.example.com", "skip", "512Mi", "0.5", "", "api", "registry.example.com/org/webapp", "postgres", "15", "PG_URL"},
+			detected: detectedGit{RepoURL: "https://example.com/detected.git", Ref: "feature"},
+			want: func(t *testing.T, a wizardAnswers) {
+				if a.databaseEngine != "postgres" {
+					t.Errorf("databaseEngine = %q, want postgres", a.databaseEngine)
+				}
+				if a.databaseVersion != "15" {
+					t.Errorf("databaseVersion = %q, want 15", a.databaseVersion)
+				}
+				if a.databaseEnvVar != "PG_URL" {
+					t.Errorf("databaseEnvVar = %q, want PG_URL", a.databaseEnvVar)
+				}
+			},
+		},
+		{
+			name:     "database engine left at none leaves database answers empty",
+			lines:    []string{"webapp", "git", "", "3000", "app.example.com", "skip", "512Mi", "0.5", "", "api", "registry.example.com/org/webapp", "none"},
+			detected: detectedGit{RepoURL: "https://example.com/detected.git", Ref: "feature"},
+			want: func(t *testing.T, a wizardAnswers) {
+				if a.databaseEngine != "" {
+					t.Errorf("databaseEngine = %q, want empty when none chosen", a.databaseEngine)
+				}
+				if a.databaseVersion != "" {
+					t.Errorf("databaseVersion = %q, want empty when none chosen", a.databaseVersion)
+				}
+				if a.databaseEnvVar != "" {
+					t.Errorf("databaseEnvVar = %q, want empty when none chosen", a.databaseEnvVar)
 				}
 			},
 		},
@@ -640,6 +672,93 @@ func TestRunWizardCreateViaAPI(t *testing.T) {
 		want := []string{"POST /api/v1/apps/myplatform/deploy-spec"}
 		if len(paths) != len(want) || paths[0] != want[0] {
 			t.Errorf("requests = %v, want %v", paths, want)
+		}
+	})
+
+	t.Run("database engine picked: creates and attaches a database named <app>-db", func(t *testing.T) {
+		var paths []string
+		var gotDatabaseBody databaseResource
+		var gotAttachBody setAppDatabaseRequest
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			paths = append(paths, r.Method+" "+r.URL.Path)
+			w.Header().Set("Content-Type", "application/json")
+			switch {
+			case r.Method == http.MethodPost && r.URL.Path == "/api/v1/databases":
+				_ = json.NewDecoder(r.Body).Decode(&gotDatabaseBody)
+				_ = json.NewEncoder(w).Encode(databaseResource{Name: gotDatabaseBody.Name, Engine: gotDatabaseBody.Engine})
+			case r.Method == http.MethodPut && r.URL.Path == "/api/v1/apps/web/database":
+				_ = json.NewDecoder(r.Body).Decode(&gotAttachBody)
+				_ = json.NewEncoder(w).Encode(appDatabaseResource{AppName: "web", DatabaseName: gotAttachBody.DatabaseName, EnvVar: gotAttachBody.EnvVar})
+			default:
+				_ = json.NewEncoder(w).Encode(appResource{Name: "web", Image: "registry.example.com/org/app:v1", Port: 8080})
+			}
+		}))
+		defer srv.Close()
+
+		a := wizardAnswers{
+			serviceName: "web", sourceKind: wizardSourceImage, image: "registry.example.com/org/app:v1", port: 8080,
+			databaseEngine: "postgres", databaseVersion: "16", databaseEnvVar: "DATABASE_URL",
+		}
+		var stdout, stderr bytes.Buffer
+		got := runWizardCreateViaAPI(a, &stdout, &stderr, credentialFlags{Token: "tok", APIURL: srv.URL}, outputFlags{Format: outputTable}, envMap(), "levelrail-cli-test")
+		if got != exitOK {
+			t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitOK, stderr.String())
+		}
+		if gotDatabaseBody.Name != "web-db" || gotDatabaseBody.Engine != "postgres" {
+			t.Errorf("database create body = %+v, want name=web-db engine=postgres", gotDatabaseBody)
+		}
+		if gotAttachBody.DatabaseName != "web-db" || gotAttachBody.EnvVar != "DATABASE_URL" {
+			t.Errorf("attach body = %+v, want database_name=web-db env_var=DATABASE_URL", gotAttachBody)
+		}
+		if !strings.Contains(stderr.String(), "web-db") {
+			t.Errorf("stderr = %q, want a confirmation mentioning the created database", stderr.String())
+		}
+	})
+
+	t.Run("database creation failure warns but does not fail the command", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodPost && r.URL.Path == "/api/v1/databases" {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(appResource{Name: "web", Image: "registry.example.com/org/app:v1", Port: 8080})
+		}))
+		defer srv.Close()
+
+		a := wizardAnswers{
+			serviceName: "web", sourceKind: wizardSourceImage, image: "registry.example.com/org/app:v1", port: 8080,
+			databaseEngine: "postgres", databaseEnvVar: "DATABASE_URL",
+		}
+		var stdout, stderr bytes.Buffer
+		got := runWizardCreateViaAPI(a, &stdout, &stderr, credentialFlags{Token: "tok", APIURL: srv.URL}, outputFlags{Format: outputTable}, envMap(), "levelrail-cli-test")
+		if got != exitOK {
+			t.Fatalf("exit = %d, want %d: a database creation failure must not fail the whole command (stderr=%q)", got, exitOK, stderr.String())
+		}
+		if !strings.Contains(stderr.String(), "warning") {
+			t.Errorf("stderr = %q, want a warning about the failed database creation", stderr.String())
+		}
+	})
+
+	t.Run("no database engine picked: never calls the databases API", func(t *testing.T) {
+		var paths []string
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			paths = append(paths, r.Method+" "+r.URL.Path)
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(appResource{Name: "web", Image: "registry.example.com/org/app:v1", Port: 8080})
+		}))
+		defer srv.Close()
+
+		a := wizardAnswers{serviceName: "web", sourceKind: wizardSourceImage, image: "registry.example.com/org/app:v1", port: 8080}
+		var stdout, stderr bytes.Buffer
+		got := runWizardCreateViaAPI(a, &stdout, &stderr, credentialFlags{Token: "tok", APIURL: srv.URL}, outputFlags{Format: outputTable}, envMap(), "levelrail-cli-test")
+		if got != exitOK {
+			t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitOK, stderr.String())
+		}
+		for _, p := range paths {
+			if strings.Contains(p, "database") {
+				t.Errorf("requests = %v, want no database-related call when no engine was picked", paths)
+			}
 		}
 	})
 }

@@ -24,7 +24,9 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
-import { useCreateApp, useSetAppNode } from '../queries/apps'
+import { useCreateApp, useSetAppDatabase, useSetAppNode } from '../queries/apps'
+import { useCreateDatabase } from '../queries/databases'
+import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
 import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
 import { useFormDraft } from '../hooks/useFormDraft'
@@ -64,6 +66,11 @@ import {
 // through to store.DefaultDeployStrategy").
 const STRATEGY_DEFAULT_VALUE = '__default__'
 
+// Sentinel for "don't attach a database", the same reasoning
+// LOCAL_NODE_VALUE/NO_PROJECT_VALUE document: base-ui's Select can't use
+// an empty string as a real item value.
+const NO_DATABASE_VALUE = '__none__'
+
 const createAppSchema = z.object({
   name: z.string().trim().min(1, 'Name is required'),
   image: z.string().trim().min(1, 'Image is required'),
@@ -99,6 +106,10 @@ const createAppSchema = z.object({
     ),
   healthCheckEnabled: z.boolean(),
   healthCheckPath: z.string().trim(),
+  // databaseEngine is NO_DATABASE_VALUE by default: attaching a database
+  // is opt-in, this form's own create request never depends on it.
+  databaseEngine: z.string(),
+  databaseEnvVar: z.string().trim(),
 }).superRefine((values, ctx) => {
   if (!values.healthCheckEnabled) return
   if (!values.healthCheckPath) {
@@ -112,6 +123,13 @@ const createAppSchema = z.object({
       code: 'custom',
       message: 'Path must start with /',
       path: ['healthCheckPath'],
+    })
+  }
+  if (values.databaseEngine !== NO_DATABASE_VALUE && !values.databaseEnvVar) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Environment variable name is required',
+      path: ['databaseEnvVar'],
     })
   }
 })
@@ -133,6 +151,8 @@ const DEFAULT_VALUES: CreateAppFormInput = {
   // to turn off for the ones that don't implement it.
   healthCheckEnabled: true,
   healthCheckPath: HEALTH_CHECK_DEFAULT_PATH,
+  databaseEngine: NO_DATABASE_VALUE,
+  databaseEnvVar: 'DATABASE_URL',
 }
 
 // The name/image/port(/node/health) field set and its submit logic,
@@ -167,6 +187,13 @@ export function CreateAppFields({
   const navigate = useNavigate()
   const createApp = useCreateApp()
   const setAppNode = useSetAppNode()
+  const createDatabase = useCreateDatabase()
+  const setAppDatabase = useSetAppDatabase()
+  // Optional convenience, see useDatabaseEnginesOptional's own doc
+  // comment: a slow/failed fetch just means the database section below
+  // shows no engine options yet, never a blocked app creation.
+  const engineList = useDatabaseEnginesOptional()
+  const engines = engineList.data ?? []
   // Optional convenience only, see useNodeListOptional's own doc
   // comment: a failure or empty list here must never block app
   // creation, so the node field below is simply not rendered rather
@@ -261,6 +288,56 @@ export function CreateAppFields({
           if (nodeId !== LOCAL_NODE_VALUE) {
             setAppNode.mutate({ name: created.name, nodeId })
           }
+          // Database attachment is the same "trailing, best-effort,
+          // never blocks or rolls back the already-created app" shape as
+          // placement above. Only fired when an engine was actually
+          // picked; the new database's own name is derived from the
+          // app's, not asked for separately, the same "one less field"
+          // minimalism this whole opt-in section exists for.
+          if (values.databaseEngine !== NO_DATABASE_VALUE) {
+            const engine = engines.find((e) => e.id === values.databaseEngine)
+            const databaseName = `${created.name}-db`
+            createDatabase.mutate(
+              {
+                name: databaseName,
+                engine: values.databaseEngine,
+                version: engine?.default_version ?? '',
+              },
+              {
+                onSuccess: () => {
+                  setAppDatabase.mutate(
+                    {
+                      name: created.name,
+                      databaseName,
+                      envVar: values.databaseEnvVar,
+                    },
+                    {
+                      onSuccess: () => {
+                        toast.add({
+                          title: `Database "${databaseName}" created and attached.`,
+                          type: 'success',
+                        })
+                      },
+                      onError: (error) => {
+                        toast.add({
+                          title: `Database "${databaseName}" was created but could not be attached.`,
+                          description: error.message,
+                          type: 'error',
+                        })
+                      },
+                    },
+                  )
+                },
+                onError: (error) => {
+                  toast.add({
+                    title: 'App created, but the database could not be created.',
+                    description: error.message,
+                    type: 'error',
+                  })
+                },
+              },
+            )
+          }
         },
       },
     )
@@ -327,6 +404,58 @@ export function CreateAppFields({
           <FieldError errors={[formState.errors.port]} />
         </Field>
       </div>
+
+      {engines.length > 0 ? (
+        <div className="space-y-4">
+          <FieldSectionLabel>Database</FieldSectionLabel>
+          <Field>
+            <FieldLabel htmlFor="app-database-engine">
+              Attach a database
+            </FieldLabel>
+            <Controller
+              control={control}
+              name="databaseEngine"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger id="app-database-engine" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_DATABASE_VALUE}>None</SelectItem>
+                    {engines.map((engine) => (
+                      <SelectItem key={engine.id} value={engine.id}>
+                        {engine.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <FieldHint>
+              Creates a new managed database named &ldquo;{watch('name') || 'your-app'}-db&rdquo;
+              and connects it automatically, no manual configuration needed.
+            </FieldHint>
+          </Field>
+          {watch('databaseEngine') !== NO_DATABASE_VALUE ? (
+            <Field>
+              <FieldLabel htmlFor="app-database-env-var">
+                Environment variable
+              </FieldLabel>
+              <Input
+                id="app-database-env-var"
+                className="font-mono"
+                placeholder="DATABASE_URL"
+                {...register('databaseEnvVar')}
+              />
+              <FieldHint>
+                The connection string is injected under this name when your
+                app's container starts.
+              </FieldHint>
+              <FieldError errors={[formState.errors.databaseEnvVar]} />
+            </Field>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="space-y-4">
         <FieldSectionLabel>Health check</FieldSectionLabel>
