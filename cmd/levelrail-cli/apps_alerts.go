@@ -153,6 +153,53 @@ Flags:
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
+// validateAppsAlertsCreateKind checks the kind-specific flag
+// requirements runAppsAlertsCreate's own usage text documents, split
+// out purely to keep that function's own cognitive complexity low: a
+// flag.FlagSet's worth of registration plus this switch in one function
+// was the actual source of the overage, not any single case's own
+// logic.
+func validateAppsAlertsCreateKind(kind, metric, comparator string, restartCountThreshold int, restartWindow, scheduledTaskID string) error {
+	switch kind {
+	case "threshold":
+		if metric == "" {
+			return newValidationError("--metric is required for --kind threshold")
+		}
+		if comparator == "" {
+			return newValidationError("--comparator is required for --kind threshold")
+		}
+	case "crashloop":
+		if restartCountThreshold <= 0 {
+			return newValidationError("--restart-count-threshold must be a positive integer for --kind crashloop")
+		}
+		if restartWindow == "" {
+			return newValidationError("--restart-window is required for --kind crashloop")
+		}
+	case "cert_expiry", "patch_status", "node_disk_space", "node_resource_usage":
+		// No kind-specific flags: a cert_expiry rule watches every
+		// certificate on the control plane, a patch_status rule watches
+		// every node's pending OS security patches, a node_disk_space rule
+		// watches every node's disk usage, and a node_resource_usage rule
+		// watches every node's summed CPU and memory usage, none tied to
+		// this app's own metrics.
+	case "scheduled_task_failure":
+		if scheduledTaskID == "" {
+			return newValidationError("--scheduled-task-id is required for --kind scheduled_task_failure")
+		}
+		if restartCountThreshold <= 0 {
+			return newValidationError("--restart-count-threshold must be a positive integer for --kind scheduled_task_failure")
+		}
+	case "domain_health":
+		// No required flags: watches every domain already configured on
+		// this app. --for-duration is accepted but optional.
+	case "":
+		return newValidationError("--kind is required (threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, or domain_health)")
+	default:
+		return newValidationError("--kind %q is not valid: must be threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, or domain_health", kind)
+	}
+	return nil
+}
+
 func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps alerts create", "print the created rule as JSON to stdout and nothing else", stderr)
 	var (
@@ -192,42 +239,8 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
 	}
-	switch kind {
-	case "threshold":
-		if metric == "" {
-			return reportError(stdout, stderr, jsonOut, newValidationError("--metric is required for --kind threshold"))
-		}
-		if comparator == "" {
-			return reportError(stdout, stderr, jsonOut, newValidationError("--comparator is required for --kind threshold"))
-		}
-	case "crashloop":
-		if restartCountThreshold <= 0 {
-			return reportError(stdout, stderr, jsonOut, newValidationError("--restart-count-threshold must be a positive integer for --kind crashloop"))
-		}
-		if restartWindow == "" {
-			return reportError(stdout, stderr, jsonOut, newValidationError("--restart-window is required for --kind crashloop"))
-		}
-	case "cert_expiry", "patch_status", "node_disk_space", "node_resource_usage":
-		// No kind-specific flags: a cert_expiry rule watches every
-		// certificate on the control plane, a patch_status rule watches
-		// every node's pending OS security patches, a node_disk_space rule
-		// watches every node's disk usage, and a node_resource_usage rule
-		// watches every node's summed CPU and memory usage, none tied to
-		// this app's own metrics.
-	case "scheduled_task_failure":
-		if scheduledTaskID == "" {
-			return reportError(stdout, stderr, jsonOut, newValidationError("--scheduled-task-id is required for --kind scheduled_task_failure"))
-		}
-		if restartCountThreshold <= 0 {
-			return reportError(stdout, stderr, jsonOut, newValidationError("--restart-count-threshold must be a positive integer for --kind scheduled_task_failure"))
-		}
-	case "domain_health":
-		// No required flags: watches every domain already configured on
-		// this app. --for-duration is accepted but optional.
-	case "":
-		return reportError(stdout, stderr, jsonOut, newValidationError("--kind is required (threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, or domain_health)"))
-	default:
-		return reportError(stdout, stderr, jsonOut, newValidationError("--kind %q is not valid: must be threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, or domain_health", kind))
+	if err := validateAppsAlertsCreateKind(kind, metric, comparator, restartCountThreshold, restartWindow, scheduledTaskID); err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)

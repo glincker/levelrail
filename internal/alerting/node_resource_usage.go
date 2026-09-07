@@ -94,12 +94,7 @@ func EvaluateNodeResourceUsage(ctx context.Context, nodes NodeSource, services N
 	if logger == nil {
 		logger = slog.Default()
 	}
-	if cpuThresholdPercent <= 0 {
-		cpuThresholdPercent = DefaultNodeCPUThresholdPercent
-	}
-	if memoryThresholdBytes <= 0 {
-		memoryThresholdBytes = DefaultNodeMemoryThresholdBytes
-	}
+	cpuThresholdPercent, memoryThresholdBytes = resolveNodeResourceThresholds(cpuThresholdPercent, memoryThresholdBytes)
 
 	all, err := nodes.ListNodes(ctx)
 	if err != nil {
@@ -148,6 +143,20 @@ func EvaluateNodeResourceUsage(ctx context.Context, nodes NodeSource, services N
 	}
 
 	return advanceState(next, r, anyUnhealthy, 0, now), notices, nil
+}
+
+// resolveNodeResourceThresholds substitutes the package default for
+// either threshold left at its zero value, split out of
+// EvaluateNodeResourceUsage purely to keep that function's own
+// cognitive complexity low.
+func resolveNodeResourceThresholds(cpuThresholdPercent, memoryThresholdBytes float64) (float64, float64) {
+	if cpuThresholdPercent <= 0 {
+		cpuThresholdPercent = DefaultNodeCPUThresholdPercent
+	}
+	if memoryThresholdBytes <= 0 {
+		memoryThresholdBytes = DefaultNodeMemoryThresholdBytes
+	}
+	return cpuThresholdPercent, memoryThresholdBytes
 }
 
 // sumLatestServiceMetric sums, across every service in placed, each
