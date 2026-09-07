@@ -336,6 +336,7 @@ type Store interface {
 	IngressSettingsStore
 	DomainStore
 	DomainBasicAuthStore
+	DomainMaintenanceStore
 	GitSourceStore
 	PreviewEnvironmentStore
 	GitHubAppStore

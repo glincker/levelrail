@@ -31,6 +31,7 @@ type (
 	updateCloudflareTunnelRequest    = apiclient.UpdateCloudflareTunnelRequest
 	domainBasicAuthResource          = apiclient.DomainBasicAuthResource
 	setDomainBasicAuthRequest        = apiclient.SetDomainBasicAuthRequest
+	domainMaintenanceResource        = apiclient.DomainMaintenanceResource
 	backupHistoryResource            = apiclient.BackupHistoryResource
 	backupVerificationResource       = apiclient.BackupVerificationResource
 	restoreHistoryResource           = apiclient.RestoreHistoryResource

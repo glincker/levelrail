@@ -10,6 +10,7 @@ import { useCertificates } from '../queries/certificates'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { DomainDnsCheck } from './DomainDnsCheck'
 import { DomainBasicAuthControl } from './DomainBasicAuthControl'
+import { DomainMaintenanceControl } from './DomainMaintenanceControl'
 import { certStatusMeta } from '../lib/certStatus'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -184,6 +185,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                               )}
                             </div>
                             <DomainBasicAuthControl appName={app.name} domain={domain} />
+                            <DomainMaintenanceControl appName={app.name} domain={domain} />
                           </>
                         ) : null}
                       </div>

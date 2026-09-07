@@ -205,6 +205,54 @@ func NewBasicAuthHandler(username, bcryptHash string) BasicAuthHandler {
 	}
 }
 
+// StaticResponseHandler is Caddy's "static_response" handler
+// (http.handlers.static_response): a fixed response with no upstream,
+// no container dial, and no filesystem read. This is the handler
+// maintenance-mode routes use (routes.go's MaintenanceRoute): every
+// request to a domain in maintenance mode gets this same fixed
+// response instead of ever reaching a ReverseProxyHandler, so it works
+// identically whether or not the service behind it currently has any
+// running container at all.
+type StaticResponseHandler struct {
+	Handler string `json:"handler"`
+	// StatusCode is an int, not caddyhttp.WeakString's own
+	// string-or-number wire shape: Caddy accepts a plain JSON number
+	// here for a fixed, non-placeholder status code, which is all this
+	// package ever needs.
+	StatusCode int                 `json:"status_code,omitempty"`
+	Body       string              `json:"body,omitempty"`
+	Headers    map[string][]string `json:"headers,omitempty"`
+}
+
+// maintenanceResponseBody is the fixed page served for a domain in
+// maintenance mode: minimal, self-contained (no external assets, so it
+// renders even if a visitor's connection to anything else is bad), and
+// distinctive enough that a live test can assert on it, the same
+// reasoning test/fixtures/hello-e2e's own body comment gives.
+const maintenanceResponseBody = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Maintenance</title></head>
+<body style="font-family:sans-serif;text-align:center;padding:4rem 1rem">
+<h1>Down for maintenance</h1>
+<p>This site is temporarily unavailable. Please check back soon.</p>
+</body>
+</html>
+`
+
+// NewMaintenanceResponseHandler builds the fixed maintenance-mode
+// response: 503 Service Unavailable, the correct status for "this
+// exists but is deliberately not accepting requests right now, try
+// later" (as opposed to 404, which would say the route doesn't exist
+// at all).
+func NewMaintenanceResponseHandler() StaticResponseHandler {
+	return StaticResponseHandler{
+		Handler:    "static_response",
+		StatusCode: 503,
+		Body:       maintenanceResponseBody,
+		Headers:    map[string][]string{"Content-Type": {"text/html; charset=utf-8"}},
+	}
+}
+
 // TLSApp is Caddy's "tls" app: certificate automation policy.
 type TLSApp struct {
 	Automation *Automation `json:"automation,omitempty"`
