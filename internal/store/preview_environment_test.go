@@ -225,3 +225,56 @@ func TestSetGitSourcePreviewEnabled_NotFound(t *testing.T) {
 		t.Fatalf("SetGitSourcePreviewEnabled() error = %v, want ErrGitSourceNotFound", err)
 	}
 }
+
+func TestSetGitSourcePostPRComments(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveGitSource(ctx, GitSource{ServiceName: "web", RepoURL: "https://example.com/web.git", Branch: "main", BuildType: "dockerfile"}); err != nil {
+		t.Fatalf("SaveGitSource() error = %v", err)
+	}
+
+	got, err := db.GetGitSource(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetGitSource() error = %v", err)
+	}
+	if got.PostPRComments {
+		t.Fatalf("GetGitSource().PostPRComments = true, want false by default")
+	}
+
+	if err := db.SetGitSourcePostPRComments(ctx, "web", true); err != nil {
+		t.Fatalf("SetGitSourcePostPRComments() error = %v", err)
+	}
+
+	got, err = db.GetGitSource(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetGitSource() error = %v", err)
+	}
+	if !got.PostPRComments {
+		t.Errorf("GetGitSource().PostPRComments = false, want true after SetGitSourcePostPRComments")
+	}
+	// SetGitSourcePostPRComments must never move PreviewEnabled, and vice
+	// versa: the two toggles are independent (GitSource.PostPRComments's
+	// own doc comment).
+	if got.PreviewEnabled {
+		t.Errorf("GetGitSource().PreviewEnabled = true, want it untouched by SetGitSourcePostPRComments")
+	}
+
+	if err := db.SetGitSourcePreviewEnabled(ctx, "web", true); err != nil {
+		t.Fatalf("SetGitSourcePreviewEnabled() error = %v", err)
+	}
+	got, err = db.GetGitSource(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetGitSource() error = %v", err)
+	}
+	if !got.PostPRComments {
+		t.Errorf("GetGitSource().PostPRComments = false after SetGitSourcePreviewEnabled, want it untouched")
+	}
+}
+
+func TestSetGitSourcePostPRComments_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.SetGitSourcePostPRComments(context.Background(), "missing", true)
+	if !errors.Is(err, ErrGitSourceNotFound) {
+		t.Fatalf("SetGitSourcePostPRComments() error = %v, want ErrGitSourceNotFound", err)
+	}
+}

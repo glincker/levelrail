@@ -108,14 +108,30 @@ func (rt *Router) handleTeardownPreviewEnvironment(w http.ResponseWriter, r *htt
 	}
 }
 
-// setPreviewEnabledRequest is PUT /api/v1/apps/{name}/preview-settings's
-// body: a single boolean toggle, deliberately its own tiny endpoint
-// rather than one more field on PUT .../git-source's already-large
+// setPreviewSettingsRequest is PUT /api/v1/apps/{name}/preview-settings's
+// body: two independent opt-in toggles, deliberately their own tiny
+// endpoint rather than fields on PUT .../git-source's already-large
 // connect/edit form (GitSourceCard.tsx already sits well past this
-// codebase's own per-file line budget), so enabling previews needs no
-// round-trip through every other git-source field.
-type setPreviewEnabledRequest struct {
-	Enabled bool `json:"enabled"`
+// codebase's own per-file line budget), so enabling either needs no
+// round-trip through every other git-source field. Both fields are
+// optional pointers, not plain bools: nil means "leave the currently
+// stored value unchanged," the same "omitted means unchanged" shape
+// setGitSourceRequest.Token already establishes for one field in this
+// same package, so toggling one setting can never silently reset the
+// other back to false.
+type setPreviewSettingsRequest struct {
+	Enabled        *bool `json:"enabled,omitempty"`
+	PostPRComments *bool `json:"post_pr_comments,omitempty"`
+}
+
+// previewSettingsResource is PUT /api/v1/apps/{name}/preview-settings's
+// response: the git source's resulting preview settings after applying
+// whichever of setPreviewSettingsRequest's fields were sent, reloaded
+// from the store rather than echoed back, so a request that only touches
+// one field still reports the other's real current value.
+type previewSettingsResource struct {
+	Enabled        bool `json:"enabled"`
+	PostPRComments bool `json:"post_pr_comments"`
 }
 
 // handleSetPreviewEnabled handles PUT
@@ -123,22 +139,46 @@ type setPreviewEnabledRequest struct {
 // already be connected: a preview has nothing to build from otherwise.
 func (rt *Router) handleSetPreviewEnabled(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	ctx := r.Context()
 
-	var req setPreviewEnabledRequest
+	var req setPreviewSettingsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-
-	if err := rt.gitSources.SetGitSourcePreviewEnabled(r.Context(), name, req.Enabled); errors.Is(err, store.ErrGitSourceNotFound) {
-		writeError(w, http.StatusNotFound, "no git source connected for this app")
+	if req.Enabled == nil && req.PostPRComments == nil {
+		writeError(w, http.StatusBadRequest, "enabled or post_pr_comments is required")
 		return
-	} else if err != nil {
-		rt.logger.Error("api: set preview enabled failed", slog.String("error", err.Error()), slog.String("name", name))
+	}
+
+	if req.Enabled != nil {
+		if err := rt.gitSources.SetGitSourcePreviewEnabled(ctx, name, *req.Enabled); errors.Is(err, store.ErrGitSourceNotFound) {
+			writeError(w, http.StatusNotFound, "no git source connected for this app")
+			return
+		} else if err != nil {
+			rt.logger.Error("api: set preview enabled failed", slog.String("error", err.Error()), slog.String("name", name))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+	}
+	if req.PostPRComments != nil {
+		if err := rt.gitSources.SetGitSourcePostPRComments(ctx, name, *req.PostPRComments); errors.Is(err, store.ErrGitSourceNotFound) {
+			writeError(w, http.StatusNotFound, "no git source connected for this app")
+			return
+		} else if err != nil {
+			rt.logger.Error("api: set preview pr comments failed", slog.String("error", err.Error()), slog.String("name", name))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+	}
+
+	gs, err := rt.gitSources.GetGitSource(ctx, name)
+	if err != nil {
+		rt.logger.Error("api: set preview settings: reload git source failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
-	rt.logger.Info("api: preview environments toggled", slog.String("name", name), slog.Bool("enabled", req.Enabled))
-	writeJSON(w, http.StatusOK, setPreviewEnabledRequest{Enabled: req.Enabled})
+	rt.logger.Info("api: preview settings updated", slog.String("name", name), slog.Bool("enabled", gs.PreviewEnabled), slog.Bool("post_pr_comments", gs.PostPRComments))
+	writeJSON(w, http.StatusOK, previewSettingsResource{Enabled: gs.PreviewEnabled, PostPRComments: gs.PostPRComments})
 }

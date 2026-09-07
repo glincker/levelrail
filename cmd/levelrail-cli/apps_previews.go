@@ -30,6 +30,8 @@ func runAppsPreviews(prog string, args []string, stdout, stderr io.Writer, looku
 		return runAppsPreviewsSetEnabled(prog, args[1:], stdout, stderr, lookupEnv, true)
 	case "disable":
 		return runAppsPreviewsSetEnabled(prog, args[1:], stdout, stderr, lookupEnv, false)
+	case "pr-status":
+		return runAppsPreviewsPRStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	case "sweep":
 		return runAppsPreviewsSweep(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -45,6 +47,8 @@ func appsPreviewsUsage(prog string) string {
   %[1]s apps previews teardown <app-name> <pr-number> [flags]   tear down one PR's preview right now
   %[1]s apps previews enable <app-name> [flags]              opt an app into preview environments
   %[1]s apps previews disable <app-name> [flags]             opt an app back out
+  %[1]s apps previews pr-status enable <app-name> [flags]    opt into a GitHub PR comment/commit status per preview deploy
+  %[1]s apps previews pr-status disable <app-name> [flags]   opt back out
   %[1]s apps previews sweep [flags]                          tear down every stale preview now, across all apps
 
 A preview environment deploys automatically when a pull request opens
@@ -56,6 +60,10 @@ the TTL fallback that runs automatically in the background: any preview
 whose pull-request-closed webhook never arrived (a failed delivery, see
 "apps webhook-deliveries") is torn down once it goes stale, "list"'s own
 STALE column shows which ones a sweep would catch right now.
+"pr-status" is independent of "enable"/"disable": once on, every preview
+deploy/update posts a commit status (pending/success/failure) on the
+pull request's head commit, and a successful deploy or a teardown also
+posts a PR comment, using the connected GitHub App installation.
 
 Run "%[1]s apps previews <subcommand> -h" for a subcommand's own flags.
 `, prog)
@@ -217,6 +225,71 @@ Flags:
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL, verb)
+}
+
+func appsPreviewsPRStatusUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s apps previews pr-status enable <app-name> [flags]
+  %[1]s apps previews pr-status disable <app-name> [flags]
+
+Toggles whether a preview deploy/update posts a GitHub commit status
+(pending while building, success with the preview URL once live, failure
+if the deploy failed) and, on success or teardown, a PR comment. Uses
+the connected GitHub App installation; independent of "enable"/
+"disable", which toggle preview environments themselves.
+
+Run "%[1]s apps previews pr-status <enable|disable> -h" for a verb's own flags.
+`, prog)
+}
+
+func runAppsPreviewsPRStatus(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) == 0 {
+		_, _ = fmt.Fprint(stderr, appsPreviewsPRStatusUsage(prog))
+		return exitUsage
+	}
+
+	switch args[0] {
+	case "-h", "--help", "help":
+		_, _ = fmt.Fprint(stdout, appsPreviewsPRStatusUsage(prog))
+		return exitOK
+	case "enable":
+		return runAppsPreviewsSetPRStatus(prog, args[1:], stdout, stderr, lookupEnv, true)
+	case "disable":
+		return runAppsPreviewsSetPRStatus(prog, args[1:], stdout, stderr, lookupEnv, false)
+	default:
+		_, _ = fmt.Fprintf(stderr, "%s: unknown apps previews pr-status subcommand %q\n\n", prog, args[0])
+		_, _ = fmt.Fprint(stderr, appsPreviewsPRStatusUsage(prog))
+		return exitUsage
+	}
+}
+
+func runAppsPreviewsSetPRStatus(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), enabled bool) int {
+	verb := "enable"
+	if !enabled {
+		verb = "disable"
+	}
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps previews pr-status "+verb, "print the resulting setting as JSON to stdout and nothing else", stderr)
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPreviewsPRStatusUsage(prog)) }
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+
+	appName, ok := requireOneArg(fs, stderr, prog, "apps previews pr-status "+verb, "app name")
+	if !ok {
+		return exitUsage
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	result, err := client.SetPreviewPostPRComments(context.Background(), appName, enabled)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s preview pr-status for app %q: %w", verb, appName, err))
+	}
+
+	return writeScheduledTaskResult(stdout, stderr, of, result, func() {
+		_, _ = fmt.Fprintf(stdout, "preview pr-status %sd for app %q\n", verb, appName)
+	})
 }
 
 func runAppsPreviewsSweep(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

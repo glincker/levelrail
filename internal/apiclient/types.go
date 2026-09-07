@@ -661,6 +661,11 @@ type GitSourceResource struct {
 	WebhookURL     string `json:"webhook_url"`
 	WebhookSecret  string `json:"webhook_secret,omitempty"`
 	PreviewEnabled bool   `json:"preview_enabled"`
+	// PostPRComments mirrors store.GitSource.PostPRComments: the opt-in
+	// toggle for a preview deploy's GitHub PR comment/commit status, set
+	// via SetPreviewPostPRComments (preview-settings, same route as
+	// PreviewEnabled).
+	PostPRComments bool   `json:"post_pr_comments"`
 	CreatedAt      string `json:"created_at"`
 	UpdatedAt      string `json:"updated_at"`
 }
@@ -980,10 +985,23 @@ type PreviewEnvironmentResource struct {
 	Stale        bool   `json:"stale"`
 }
 
-// SetPreviewEnabledRequest mirrors internal/api's
-// setPreviewEnabledRequest.
-type SetPreviewEnabledRequest struct {
-	Enabled bool `json:"enabled"`
+// SetPreviewSettingsRequest mirrors internal/api's
+// setPreviewSettingsRequest (preview_environments_handlers.go). Both
+// fields are optional pointers: nil means "leave the currently stored
+// value unchanged," so SetPreviewEnabled and SetPreviewPostPRComments
+// (client.go) can each touch just their own toggle without resetting the
+// other back to false.
+type SetPreviewSettingsRequest struct {
+	Enabled        *bool `json:"enabled,omitempty"`
+	PostPRComments *bool `json:"post_pr_comments,omitempty"`
+}
+
+// PreviewSettingsResource mirrors internal/api's previewSettingsResource:
+// the resulting state of both preview-settings toggles after a
+// SetPreviewSettingsRequest is applied.
+type PreviewSettingsResource struct {
+	Enabled        bool `json:"enabled"`
+	PostPRComments bool `json:"post_pr_comments"`
 }
 
 // SweepPreviewEnvironmentsResult mirrors internal/api's

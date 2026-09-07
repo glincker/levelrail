@@ -60,6 +60,10 @@ export interface GitSourceResource {
   // (queries/previewEnvironments.ts's setPreviewEnabled), not this
   // resource's own PUT.
   preview_enabled: boolean
+  // post_pr_comments mirrors store.GitSource.PostPRComments: same
+  // read-only-here, set-via-preview-settings shape as preview_enabled
+  // above (queries/previewEnvironments.ts's setPreviewPostPRComments).
+  post_pr_comments: boolean
   created_at: string
   updated_at: string
 }

@@ -98,7 +98,14 @@ still open. This page describes what's actually true today.
   A scheduled TTL sweep also tears down any preview untouched for 7
   days by default (`APP_PREVIEW_TTL`), independent of whether a
   PR-closed webhook ever arrives, and the same sweep is callable
-  on demand as an MCP tool.
+  on demand as an MCP tool. A second, independent opt-in
+  (`GitSource.PostPRComments`, also off by default) posts a GitHub
+  commit status on the pull request's head commit (pending while
+  deploying, success with the preview URL once live, failure if the
+  deploy failed) and a PR comment on success or teardown, using the
+  connected GitHub App installation. GitHub only, matching preview
+  environments' own current scope. Wired into the same dashboard card
+  and the CLI (`apps previews pr-status enable/disable`).
 - Embedded Caddy ingress with automatic TLS and domain routing. TLS
   today defaults to an internal, self-signed issuer; a public ACME
   issuer exists and is toggleable but is still unverified against a

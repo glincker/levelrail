@@ -368,3 +368,95 @@ func TestCreateRepoWebhook_ErrorResponse(t *testing.T) {
 		t.Error("errors.Is(err, ErrPermissionDenied) = true, want false for a 502")
 	}
 }
+
+func TestCreateIssueComment_SendsBody(t *testing.T) {
+	var gotPath, gotMethod, gotAuth string
+	var gotBody createIssueCommentRequest
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		gotAuth = r.Header.Get("Authorization")
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		w.WriteHeader(http.StatusCreated)
+	})
+
+	err := c.CreateIssueComment(context.Background(), "", "install-token", "acme", "widgets", 42, "preview deployed")
+	if err != nil {
+		t.Fatalf("CreateIssueComment() error = %v", err)
+	}
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %q, want POST", gotMethod)
+	}
+	if gotPath != "/repos/acme/widgets/issues/42/comments" {
+		t.Errorf("path = %q, want /repos/acme/widgets/issues/42/comments", gotPath)
+	}
+	if gotAuth != "Bearer install-token" {
+		t.Errorf("Authorization = %q, want Bearer install-token", gotAuth)
+	}
+	if gotBody.Body != "preview deployed" {
+		t.Errorf("body.body = %q, want %q", gotBody.Body, "preview deployed")
+	}
+}
+
+func TestCreateIssueComment_ErrorResponse(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	})
+
+	err := c.CreateIssueComment(context.Background(), "", "install-token", "acme", "widgets", 42, "preview deployed")
+	if err == nil {
+		t.Fatal("CreateIssueComment() error = nil, want an error")
+	}
+}
+
+func TestCreateCommitStatus_SendsStateAndTarget(t *testing.T) {
+	var gotPath, gotMethod, gotAuth string
+	var gotBody createCommitStatusRequest
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		gotAuth = r.Header.Get("Authorization")
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		w.WriteHeader(http.StatusCreated)
+	})
+
+	err := c.CreateCommitStatus(context.Background(), "", "install-token", "acme", "widgets", "sha1",
+		CommitStatusSuccess, "https://pr-1.web.example.com", "Preview deployed", "levelrail/preview")
+	if err != nil {
+		t.Fatalf("CreateCommitStatus() error = %v", err)
+	}
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %q, want POST", gotMethod)
+	}
+	if gotPath != "/repos/acme/widgets/statuses/sha1" {
+		t.Errorf("path = %q, want /repos/acme/widgets/statuses/sha1", gotPath)
+	}
+	if gotAuth != "Bearer install-token" {
+		t.Errorf("Authorization = %q, want Bearer install-token", gotAuth)
+	}
+	if gotBody.State != "success" {
+		t.Errorf("state = %q, want success", gotBody.State)
+	}
+	if gotBody.TargetURL != "https://pr-1.web.example.com" {
+		t.Errorf("target_url = %q, unexpected", gotBody.TargetURL)
+	}
+	if gotBody.Context != "levelrail/preview" {
+		t.Errorf("context = %q, want levelrail/preview", gotBody.Context)
+	}
+}
+
+func TestCreateCommitStatus_ErrorResponse(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+	})
+
+	err := c.CreateCommitStatus(context.Background(), "", "install-token", "acme", "widgets", "sha1",
+		CommitStatusPending, "", "Deploying", "levelrail/preview")
+	if err == nil {
+		t.Fatal("CreateCommitStatus() error = nil, want an error")
+	}
+}

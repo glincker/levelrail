@@ -147,4 +147,5 @@ func printGitSourceHuman(out io.Writer, gs gitSourceResource) {
 	_, _ = fmt.Fprintf(out, "has_token:      %t\n", gs.HasToken)
 	_, _ = fmt.Fprintf(out, "webhook_url:    %s\n", gs.WebhookURL)
 	_, _ = fmt.Fprintf(out, "preview_enabled: %t\n", gs.PreviewEnabled)
+	_, _ = fmt.Fprintf(out, "post_pr_comments: %t\n", gs.PostPRComments)
 }
