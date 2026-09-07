@@ -489,6 +489,26 @@ type CloneRestoreResource struct {
 	FinishedAt         string `json:"finished_at,omitempty"`
 }
 
+// DatabaseInitScriptResource mirrors internal/api's
+// databaseInitScriptResource: one named SQL/shell file attached to a
+// managed database, mounted into its container's
+// /docker-entrypoint-initdb.d.
+type DatabaseInitScriptResource struct {
+	ID           string `json:"id"`
+	DatabaseName string `json:"database_name"`
+	Filename     string `json:"filename"`
+	Content      string `json:"content"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
+}
+
+// SetDatabaseInitScriptRequest mirrors internal/api's
+// setDatabaseInitScriptRequest, the create and update body alike.
+type SetDatabaseInitScriptRequest struct {
+	Filename string `json:"filename"`
+	Content  string `json:"content"`
+}
+
 // TriggerCloneRestoreRequest mirrors internal/api's cloneRestoreRequest.
 type TriggerCloneRestoreRequest struct {
 	BackupID  string            `json:"backup_id"`

@@ -52,6 +52,8 @@ type (
 	setVolumeBackupScheduleRequest   = apiclient.SetVolumeBackupScheduleRequest
 	cloneRestoreResource             = apiclient.CloneRestoreResource
 	triggerCloneRestoreRequest       = apiclient.TriggerCloneRestoreRequest
+	databaseInitScriptResource       = apiclient.DatabaseInitScriptResource
+	setDatabaseInitScriptRequest     = apiclient.SetDatabaseInitScriptRequest
 	volumeCloneRestoreResource       = apiclient.VolumeCloneRestoreResource
 	triggerVolumeCloneRestoreRequest = apiclient.TriggerVolumeCloneRestoreRequest
 	setAppDatabaseRequest            = apiclient.SetAppDatabaseRequest

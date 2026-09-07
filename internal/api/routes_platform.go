@@ -477,6 +477,17 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// fields, see that handler's own file), so there is no separate GET
 	// route here.
 	mux.HandleFunc("PUT /api/v1/databases/{name}/backup-schedule", rt.requireAbility(AbilityWriteSensitive, rt.handleSetBackupSchedule))
+	// Init scripts (database_init_scripts.go): named SQL/shell files
+	// mounted into the container's /docker-entrypoint-initdb.d.
+	// AbilityWriteSensitive for every mutation, same tier as
+	// backup-schedule above: this is code that executes automatically
+	// and unattended inside the database's own container, not an
+	// ordinary config field. AbilityRead for listing, same as every
+	// other passive database sub-resource view.
+	mux.HandleFunc("GET /api/v1/databases/{name}/init-scripts", rt.requireAbility(AbilityRead, rt.handleListDatabaseInitScripts))
+	mux.HandleFunc("POST /api/v1/databases/{name}/init-scripts", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateDatabaseInitScript))
+	mux.HandleFunc("PUT /api/v1/databases/{name}/init-scripts/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateDatabaseInitScript))
+	mux.HandleFunc("DELETE /api/v1/databases/{name}/init-scripts/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteDatabaseInitScript))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}/backup-schedule", rt.requireAbility(AbilityWriteSensitive, rt.handleClearBackupSchedule))
 
 	// Public/host-exposed access, per database

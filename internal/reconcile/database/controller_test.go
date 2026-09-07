@@ -22,6 +22,9 @@ import (
 type fakeStore struct {
 	db  *store.DesiredDatabase
 	err error
+
+	initScripts    []store.DatabaseInitScript
+	initScriptsErr error
 }
 
 func (f *fakeStore) GetDesiredDatabase(_ context.Context, _ string) (*store.DesiredDatabase, error) {
@@ -29,6 +32,13 @@ func (f *fakeStore) GetDesiredDatabase(_ context.Context, _ string) (*store.Desi
 		return nil, f.err
 	}
 	return f.db, nil
+}
+
+func (f *fakeStore) ListDatabaseInitScripts(_ context.Context, _ string) ([]store.DatabaseInitScript, error) {
+	if f.initScriptsErr != nil {
+		return nil, f.initScriptsErr
+	}
+	return f.initScripts, nil
 }
 
 // fakeRuntime is a stateful fake, not just a call counter: it tracks an

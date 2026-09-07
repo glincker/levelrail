@@ -265,7 +265,7 @@ func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.Ho
 		// Explicitly "no": the reconciler, not Docker, decides whether a
 		// dead container comes back. See ContainerSpec's doc comment.
 		RestartPolicy: container.RestartPolicy{Name: container.RestartPolicyDisabled},
-		Mounts:        toDockerMounts(spec.Volumes),
+		Mounts:        toDockerMounts(spec.Volumes, spec.BindMounts),
 	}
 	if spec.Resources != nil {
 		hostConfig.Resources = container.Resources{
@@ -342,17 +342,25 @@ func toDockerPorts(ports []PortBinding) (nat.PortSet, nat.PortMap, error) {
 	return exposed, bindings, nil
 }
 
-func toDockerMounts(volumes []VolumeMount) []mount.Mount {
-	if len(volumes) == 0 {
+func toDockerMounts(volumes []VolumeMount, binds []BindMount) []mount.Mount {
+	if len(volumes) == 0 && len(binds) == 0 {
 		return nil
 	}
-	out := make([]mount.Mount, 0, len(volumes))
+	out := make([]mount.Mount, 0, len(volumes)+len(binds))
 	for _, v := range volumes {
 		out = append(out, mount.Mount{
 			Type:     mount.TypeVolume,
 			Source:   v.Name,
 			Target:   v.ContainerPath,
 			ReadOnly: v.ReadOnly,
+		})
+	}
+	for _, b := range binds {
+		out = append(out, mount.Mount{
+			Type:     mount.TypeBind,
+			Source:   b.HostPath,
+			Target:   b.ContainerPath,
+			ReadOnly: b.ReadOnly,
 		})
 	}
 	return out

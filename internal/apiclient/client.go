@@ -677,6 +677,38 @@ func (c *Client) TriggerVolumeRestore(ctx context.Context, name, volume, backupI
 	return out, err
 }
 
+// ListDatabaseInitScripts calls GET /api/v1/databases/{name}/init-scripts:
+// every init script attached to name, ordered by filename.
+func (c *Client) ListDatabaseInitScripts(ctx context.Context, name string) ([]DatabaseInitScriptResource, error) {
+	var out []DatabaseInitScriptResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/init-scripts", nil, &out)
+	return out, err
+}
+
+// CreateDatabaseInitScript calls POST /api/v1/databases/{name}/init-scripts:
+// attaches a new named SQL/shell file, mounted into the database's
+// container at /docker-entrypoint-initdb.d the next time it's created
+// against an empty data volume.
+func (c *Client) CreateDatabaseInitScript(ctx context.Context, name string, req SetDatabaseInitScriptRequest) (DatabaseInitScriptResource, error) {
+	var out DatabaseInitScriptResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/init-scripts", req, &out)
+	return out, err
+}
+
+// UpdateDatabaseInitScript calls
+// PUT /api/v1/databases/{name}/init-scripts/{id}.
+func (c *Client) UpdateDatabaseInitScript(ctx context.Context, name, id string, req SetDatabaseInitScriptRequest) (DatabaseInitScriptResource, error) {
+	var out DatabaseInitScriptResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/databases/"+PathEscape(name)+"/init-scripts/"+PathEscape(id), req, &out)
+	return out, err
+}
+
+// DeleteDatabaseInitScript calls
+// DELETE /api/v1/databases/{name}/init-scripts/{id}.
+func (c *Client) DeleteDatabaseInitScript(ctx context.Context, name, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name)+"/init-scripts/"+PathEscape(id), nil, nil)
+}
+
 // TriggerCloneRestore calls POST /api/v1/databases/{name}/restore-as-new:
 // the non-destructive counterpart to TriggerRestore above. Creates a
 // brand-new database and restores a previously succeeded backup of name

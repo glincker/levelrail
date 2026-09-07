@@ -62,9 +62,9 @@ type ContainerState struct {
 
 // VolumeMount attaches one named Docker volume to a path inside a
 // container, e.g. Postgres's /var/lib/postgresql/data or Redis's /data
-// (TASKS.md 1.8). Name is a Docker volume name, not a host path: bind
-// mounts aren't exposed here, keeping this package's surface to what a
-// single-node managed database actually needs today.
+// (TASKS.md 1.8). Name is a Docker volume name, not a host path; see
+// BindMount below for the one case this package does expose a real
+// host path.
 type VolumeMount struct {
 	Name          string
 	ContainerPath string
@@ -73,6 +73,22 @@ type VolumeMount struct {
 	// archiver started setting it explicitly true, so this is
 	// byte-identical to every mount created before this field existed.
 	ReadOnly bool
+}
+
+// BindMount mounts a real path on the local filesystem into a
+// container, unlike VolumeMount's Docker-managed volume. Deliberately
+// narrow: HostPath only ever makes sense on the same host the
+// container itself runs on, so a caller must never use this for a
+// database placed on a remote node (internal/reconcile/database's own
+// v1 scope note on init scripts explains why). Used sparingly, only
+// where a caller genuinely needs to hand a container a file this
+// control plane wrote to its own local disk (database init scripts
+// today), never as a general persistence mechanism, that's what
+// VolumeMount is for.
+type BindMount struct {
+	HostPath      string
+	ContainerPath string
+	ReadOnly      bool
 }
 
 // ContainerSpec is desired state for a container a controller wants to
@@ -106,6 +122,11 @@ type ContainerSpec struct {
 	// database controller (TASKS.md 1.8) is the first caller; ordinary
 	// application containers leave this nil.
 	Volumes []VolumeMount
+	// BindMounts are real host filesystem paths to mount at create
+	// time. Nil for every caller except the database controller's own
+	// init-script support; see BindMount's own doc comment for why this
+	// is a narrow, deliberately underused escape hatch.
+	BindMounts []BindMount
 	// DNS lists nameserver IPs Docker writes into the container's
 	// /etc/resolv.conf, ahead of whatever the daemon would otherwise
 	// configure. Empty/nil is byte-identical to today: only a caller

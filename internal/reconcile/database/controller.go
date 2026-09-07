@@ -41,6 +41,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"time"
 
@@ -80,6 +82,12 @@ const defaultStopTimeout = 10 * time.Second
 // satisfies this.
 type Store interface {
 	GetDesiredDatabase(ctx context.Context, name string) (*store.DesiredDatabase, error)
+	// ListDatabaseInitScripts backs init-script support (WithInitScriptsDir):
+	// reconcileEngine calls this every pass to decide whether the local
+	// node's disk needs (re)writing before this database's container is
+	// created. Returning an empty slice (never an error, for a database
+	// with none) is the common case and costs one indexed query.
+	ListDatabaseInitScripts(ctx context.Context, databaseName string) ([]store.DatabaseInitScript, error)
 }
 
 // PostgresCredentials is what Postgres reconciliation needs once
@@ -158,6 +166,7 @@ type Controller struct {
 	mariadbCreds    *MariaDBCredentials
 	clickhouseCreds *ClickHouseCredentials
 	meshDNSAddr     string // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	initScriptsDir  string // empty is valid: init scripts are opt-in, see WithInitScriptsDir
 }
 
 // Option configures optional Controller behavior.
@@ -219,6 +228,27 @@ func WithClickHouseCredentials(creds *ClickHouseCredentials) Option {
 // not validate it.
 func WithMeshDNSAddr(addr string) Option {
 	return func(c *Controller) { c.meshDNSAddr = addr }
+}
+
+// WithInitScriptsDir enables init-script support (store.DatabaseInitScript):
+// a local directory this controller writes a database's own attached
+// scripts into before create, then bind-mounts read-only into the
+// container's /docker-entrypoint-initdb.d. Without this option (the
+// default), init scripts are never materialized or mounted, even if
+// some exist in the store: a control plane that never opts in behaves
+// byte-identically to one built before this feature existed.
+//
+// Only postgres/mysql/mariadb/mongodb honor that directory (see
+// initScriptSupportedEngines); every other engine ignores this option
+// entirely. Only meaningful for a database on this controller's own
+// local node (desired.NodeID == ""): dir is a path on the control
+// plane's own disk, which only the local Docker daemon can bind-mount.
+// A database placed on a remote node skips init scripts and logs why,
+// the same "known v1 scope, not silently dropped" shape
+// internal/reconcile/firewall's own package doc comment establishes for
+// an identical local-node limitation.
+func WithInitScriptsDir(dir string) Option {
+	return func(c *Controller) { c.initScriptsDir = dir }
 }
 
 // New builds a Controller for dbName.
@@ -400,6 +430,15 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 			CPUSetCPUs:      desired.Resources.CPUSetCPUs,
 		}
 	}
+	if initScriptSupportedEngines[desired.Engine] && desired.NodeID == localNodeID {
+		dir, err := c.materializeInitScripts(ctx)
+		if err != nil {
+			return notReady("InitScriptsFailed", err), fmt.Errorf("database/%s: materialize init scripts: %w", c.dbName, err)
+		}
+		if dir != "" {
+			spec.BindMounts = []docker.BindMount{{HostPath: dir, ContainerPath: initScriptsContainerPath, ReadOnly: true}}
+		}
+	}
 
 	justDeployed := false
 	switch {
@@ -541,6 +580,74 @@ func versionOrDefault(v string) string {
 		return "latest"
 	}
 	return v
+}
+
+// localNodeID is the sentinel meaning "the control plane's own node",
+// the same convention store.DesiredService.NodeID/store.DesiredDatabase.NodeID
+// already document and internal/reconcile/firewall's own identical
+// constant already establishes for the same reasoning.
+const localNodeID = ""
+
+// initScriptsContainerPath is the directory the four engines named in
+// initScriptSupportedEngines already auto-execute from on first boot
+// against an empty data directory (Docker Official Images' own
+// documented entrypoint behavior), verbatim across all of them.
+const initScriptsContainerPath = "/docker-entrypoint-initdb.d"
+
+// initScriptSupportedEngines is which engines' official images honor
+// initScriptsContainerPath: postgres/mysql/mariadb run *.sh/*.sql (and
+// postgres also *.sql.gz/*.sql.xz) from it in filename order; mongo's
+// own entrypoint runs *.sh/*.js from the identical path, no native SQL
+// dialect to run *.sql against. redis/keydb/dragonfly/clickhouse have no
+// such convention in their own official images, so they're absent here
+// on purpose, not an oversight.
+var initScriptSupportedEngines = map[string]bool{
+	store.EnginePostgres: true,
+	store.EngineMySQL:    true,
+	store.EngineMariaDB:  true,
+	store.EngineMongoDB:  true,
+}
+
+// materializeInitScripts writes c.dbName's own init scripts (if any) to
+// a real directory under c.initScriptsDir, so the local Docker daemon
+// has something to bind-mount: Store persists script content in
+// SQLite, not on disk, and Docker can only bind-mount a real path.
+// Returns "" (no error) when there's nothing to mount, either because
+// no init scripts are attached or c.initScriptsDir was never configured
+// (WithInitScriptsDir), so the caller skips the mount entirely rather
+// than bind-mounting an empty directory.
+//
+// Re-derives the directory's contents from the store on every call
+// (overwriting whatever was there), the same "never cache, re-derive
+// from current state" principle every other reconcile input in this
+// codebase already follows. This has no effect on a database whose
+// container has already initialized once: Docker's own convention is
+// that these scripts only ever execute against an empty data directory,
+// so editing a script after that point only takes effect on a database
+// that gets recreated from scratch.
+func (c *Controller) materializeInitScripts(ctx context.Context) (string, error) {
+	if c.initScriptsDir == "" {
+		return "", nil
+	}
+	scripts, err := c.store.ListDatabaseInitScripts(ctx, c.dbName)
+	if err != nil {
+		return "", fmt.Errorf("list init scripts: %w", err)
+	}
+	if len(scripts) == 0 {
+		return "", nil
+	}
+
+	dir := filepath.Join(c.initScriptsDir, c.dbName)
+	if err := os.MkdirAll(dir, 0o755); err != nil { //nolint:gosec // init scripts are meant to be readable by whatever else runs on this host, the same posture app.yaml files on disk already have
+		return "", fmt.Errorf("create init scripts dir %q: %w", dir, err)
+	}
+	for _, s := range scripts {
+		path := filepath.Join(dir, s.Filename)
+		if err := os.WriteFile(path, []byte(s.Content), 0o644); err != nil { //nolint:gosec // same posture as the directory above
+			return "", fmt.Errorf("write init script %q: %w", s.Filename, err)
+		}
+	}
+	return dir, nil
 }
 
 // containerName derives this database's container name from the

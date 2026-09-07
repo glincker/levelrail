@@ -142,9 +142,10 @@ func TestToDockerMounts(t *testing.T) {
 	tests := []struct {
 		name    string
 		volumes []VolumeMount
+		binds   []BindMount
 		want    []mount.Mount
 	}{
-		{name: "empty", volumes: nil, want: nil},
+		{name: "empty", volumes: nil, binds: nil, want: nil},
 		{
 			name:    "single volume",
 			volumes: []VolumeMount{{Name: "db-main-data", ContainerPath: "/var/lib/postgresql/data"}},
@@ -163,11 +164,27 @@ func TestToDockerMounts(t *testing.T) {
 				{Type: mount.TypeVolume, Source: "b", Target: "/b"},
 			},
 		},
+		{
+			name:  "single bind mount",
+			binds: []BindMount{{HostPath: "/data/init-scripts/mydb", ContainerPath: "/docker-entrypoint-initdb.d", ReadOnly: true}},
+			want: []mount.Mount{
+				{Type: mount.TypeBind, Source: "/data/init-scripts/mydb", Target: "/docker-entrypoint-initdb.d", ReadOnly: true},
+			},
+		},
+		{
+			name:    "volumes and binds together, volumes first",
+			volumes: []VolumeMount{{Name: "db-main-data", ContainerPath: "/var/lib/postgresql/data"}},
+			binds:   []BindMount{{HostPath: "/data/init-scripts/main", ContainerPath: "/docker-entrypoint-initdb.d", ReadOnly: true}},
+			want: []mount.Mount{
+				{Type: mount.TypeVolume, Source: "db-main-data", Target: "/var/lib/postgresql/data"},
+				{Type: mount.TypeBind, Source: "/data/init-scripts/main", Target: "/docker-entrypoint-initdb.d", ReadOnly: true},
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := toDockerMounts(tt.volumes)
+			got := toDockerMounts(tt.volumes, tt.binds)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("toDockerMounts() = %+v, want %+v", got, tt.want)
 			}

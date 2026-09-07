@@ -535,6 +535,7 @@ func run(logger *slog.Logger) error {
 		meshDNSAddr:      meshDNSAddr,
 		dashboardDial:    dashboardDialAddr(httpAddr()),
 		networkPrefix:    b.ShortName,
+		dataDir:          agentDataDir,
 	}))
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
@@ -2327,6 +2328,7 @@ type dynamicSourceDeps struct {
 	meshDNSAddr      string
 	dashboardDial    string
 	networkPrefix    string
+	dataDir          string
 }
 
 func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
@@ -2452,6 +2454,14 @@ func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databas
 		dbOpts := databaseCredentialOpts(ctx, deps, desired)
 		if deps.meshDNSAddr != "" {
 			dbOpts = append(dbOpts, database.WithMeshDNSAddr(deps.meshDNSAddr))
+		}
+		if deps.dataDir != "" {
+			// WithInitScriptsDir itself only actually mounts anything for
+			// a database on this control plane's own local node (NodeID
+			// == ""), see its own doc comment; passing it unconditionally
+			// here is harmless for a remote-node database, which never
+			// reads initScriptsDir at all.
+			dbOpts = append(dbOpts, database.WithInitScriptsDir(filepath.Join(deps.dataDir, "init-scripts")))
 		}
 		controllers = append(controllers, database.New(desired.Name, deps.db, dbRuntime, dbOpts...))
 	}

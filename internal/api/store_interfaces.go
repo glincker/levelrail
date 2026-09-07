@@ -355,6 +355,7 @@ type Store interface {
 	WebhookDeliveryStore
 	PolicyStore
 	DeviceAuthStore
+	DatabaseInitScriptStore
 }
 
 // SecretSetter is the surface the secrets handlers need from

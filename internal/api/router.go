@@ -94,6 +94,7 @@ type Router struct {
 	appCompose             AppComposeStore
 	deploys                DeployStore
 	databases              DatabaseStore
+	databaseInitScripts    DatabaseInitScriptStore
 	auth                   AuthStore
 	tokens                 TokenStore
 	nodes                  NodeStore
@@ -289,6 +290,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		deploys:                     s,
 		deployAttempts:              s,
 		databases:                   s,
+		databaseInitScripts:         s,
 		auth:                        s,
 		tokens:                      s,
 		nodes:                       s,

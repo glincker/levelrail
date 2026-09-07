@@ -34,6 +34,8 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesSetProject(prog, args[1:], stdout, stderr, lookupEnv)
 	case "clear-project":
 		return runDatabasesClearProject(prog, args[1:], stdout, stderr, lookupEnv)
+	case "init-scripts":
+		return runDatabasesInitScripts(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown databases subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, databasesUsage(prog))
@@ -51,6 +53,7 @@ func databasesUsage(prog string) string {
   %[1]s databases resource-recommendation <name> [flags]  suggest memory/CPU limits from historical usage
   %[1]s databases set-project <name> <project-id> [flags]  move a database into a project
   %[1]s databases clear-project <name> [flags]  remove a database's project assignment
+  %[1]s databases init-scripts list/create/update/delete <name> [flags]  named SQL/shell files run once on first container start (postgres/mysql/mariadb/mongodb only)
 
 Run "%[1]s databases <subcommand> -h" for a subcommand's own flags.
 `, prog)
