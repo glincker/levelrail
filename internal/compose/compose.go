@@ -117,6 +117,19 @@ func (f *File) validate(allowBuild bool) error {
 		return fmt.Errorf("compose: no services declared")
 	}
 
+	errs := validateComposeServices(f, allowBuild)
+	errs = append(errs, validateComposeDomainRefs(f)...)
+
+	if len(errs) == 0 {
+		return nil
+	}
+	return joinErrors(errs)
+}
+
+// validateComposeServices checks each service's own build:/image:
+// declaration and volume names, split out of validate purely to keep
+// that function's own cognitive complexity low.
+func validateComposeServices(f *File, allowBuild bool) []error {
 	var errs []error
 	for _, name := range sortedServiceNames(f) {
 		svc := f.Services[name]
@@ -132,16 +145,20 @@ func (f *File) validate(allowBuild bool) error {
 			}
 		}
 	}
+	return errs
+}
+
+// validateComposeDomainRefs checks that every x-levelrail-domains key
+// names a real service in this file, split out of validate for the
+// same reason validateComposeServices's own doc comment gives.
+func validateComposeDomainRefs(f *File) []error {
+	var errs []error
 	for svcKey := range f.Domains {
 		if _, ok := f.Services[svcKey]; !ok {
 			errs = append(errs, fmt.Errorf("x-levelrail-domains: %q is not a service in this file", svcKey))
 		}
 	}
-
-	if len(errs) == 0 {
-		return nil
-	}
-	return joinErrors(errs)
+	return errs
 }
 
 func sortedServiceNames(f *File) []string {
