@@ -4,9 +4,11 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // setUpPreviewAppWithGitHubNotifications mirrors setUpPreviewApp
@@ -147,5 +149,109 @@ func TestHandlePullRequestWebhook_PostPRComments_Teardown_PostsComment(t *testin
 	}
 	if fakeClient.commentCalls[0].number != 42 {
 		t.Errorf("teardown comment PR number = %d, want 42", fakeClient.commentCalls[0].number)
+	}
+}
+
+// TestTruncateForGitHubStatus proves the cap at
+// githubStatusDescriptionMax, GitHub's own hard limit for a commit
+// status description: a string within the limit is returned unchanged,
+// one over it is cut down to exactly the limit with a trailing "...".
+func TestTruncateForGitHubStatus(t *testing.T) {
+	tests := []struct {
+		name   string
+		reason string
+	}{
+		{name: "empty", reason: ""},
+		{name: "well under the limit", reason: "build failed: exit code 1"},
+		{name: "exactly at the limit", reason: strings.Repeat("x", githubStatusDescriptionMax)},
+		{name: "one over the limit", reason: strings.Repeat("x", githubStatusDescriptionMax+1)},
+		{name: "far over the limit", reason: strings.Repeat("build failed, ", 50)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := truncateForGitHubStatus(tt.reason)
+			if len(tt.reason) <= githubStatusDescriptionMax {
+				if got != tt.reason {
+					t.Errorf("truncateForGitHubStatus(%d chars) = %q, want unchanged", len(tt.reason), got)
+				}
+				return
+			}
+			if len(got) != githubStatusDescriptionMax {
+				t.Errorf("truncateForGitHubStatus(%d chars) len = %d, want %d", len(tt.reason), len(got), githubStatusDescriptionMax)
+			}
+			if !strings.HasSuffix(got, "...") {
+				t.Errorf("truncateForGitHubStatus(%d chars) = %q, want a \"...\" suffix", len(tt.reason), got)
+			}
+		})
+	}
+}
+
+// TestGithubOwnerRepoFromURL covers githubOwnerRepoFromURL's own
+// contract: only an https URL on the connected instance's host, shaped
+// exactly like ".../<owner>/<repo>[.git]", ever resolves. A
+// GitLab/Bitbucket repo_url, a malformed one, or one on a different host
+// than the connected GitHub App instance must all fail closed rather
+// than being mistaken for a match.
+func TestGithubOwnerRepoFromURL(t *testing.T) {
+	const instanceURL = "https://github.com"
+
+	tests := []struct {
+		name      string
+		repoURL   string
+		wantOwner string
+		wantRepo  string
+		wantOK    bool
+	}{
+		{name: "valid with .git suffix", repoURL: "https://github.com/org/web.git", wantOwner: "org", wantRepo: "web", wantOK: true},
+		{name: "valid without .git suffix", repoURL: "https://github.com/org/web", wantOwner: "org", wantRepo: "web", wantOK: true},
+		{name: "wrong host", repoURL: "https://gitlab.com/org/web.git", wantOK: false},
+		{name: "not https", repoURL: "http://github.com/org/web.git", wantOK: false},
+		{name: "missing repo segment", repoURL: "https://github.com/org", wantOK: false},
+		{name: "extra path segment", repoURL: "https://github.com/org/web/extra", wantOK: false},
+		{name: "malformed url", repoURL: "://not a url", wantOK: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			owner, repo, ok := githubOwnerRepoFromURL(tt.repoURL, instanceURL)
+			if ok != tt.wantOK {
+				t.Fatalf("githubOwnerRepoFromURL(%q) ok = %v, want %v", tt.repoURL, ok, tt.wantOK)
+			}
+			if !tt.wantOK {
+				return
+			}
+			if owner != tt.wantOwner || repo != tt.wantRepo {
+				t.Errorf("githubOwnerRepoFromURL(%q) = (%q, %q), want (%q, %q)", tt.repoURL, owner, repo, tt.wantOwner, tt.wantRepo)
+			}
+		})
+	}
+}
+
+// TestNotifyPreviewSuccess_NoPrimaryDomain proves notifyPreviewSuccess's
+// own documented fallback: with previewURL == "" (no control-plane
+// primary domain configured), the commit status and PR comment still
+// post, just without a link to follow, instead of skipping the
+// notification entirely.
+func TestNotifyPreviewSuccess_NoPrimaryDomain(t *testing.T) {
+	rt, secret, _, fakeClient := setUpPreviewAppWithGitHubNotifications(t, true)
+	_ = secret
+
+	rt.notifyPreviewSuccess(context.Background(), "web", store.GitSource{
+		PostPRComments: true, RepoURL: "https://github.com/org/web.git",
+	}, 42, "sha1", "")
+
+	if len(fakeClient.statusCalls) != 1 {
+		t.Fatalf("CreateCommitStatus called %d times, want 1", len(fakeClient.statusCalls))
+	}
+	if fakeClient.statusCalls[0].targetURL != "" {
+		t.Errorf("status targetURL = %q, want empty when no preview URL is available", fakeClient.statusCalls[0].targetURL)
+	}
+	if fakeClient.statusCalls[0].description != "Preview deployed" {
+		t.Errorf("status description = %q, want the no-link default", fakeClient.statusCalls[0].description)
+	}
+	if len(fakeClient.commentCalls) != 1 {
+		t.Fatalf("CreateIssueComment called %d times, want 1", len(fakeClient.commentCalls))
+	}
+	if strings.Contains(fakeClient.commentCalls[0].body, "https://") {
+		t.Errorf("comment body = %q, want no link when no preview URL is available", fakeClient.commentCalls[0].body)
 	}
 }

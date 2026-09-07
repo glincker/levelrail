@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 )
@@ -276,5 +277,29 @@ func TestSetGitSourcePostPRComments_NotFound(t *testing.T) {
 	err := db.SetGitSourcePostPRComments(context.Background(), "missing", true)
 	if !errors.Is(err, ErrGitSourceNotFound) {
 		t.Fatalf("SetGitSourcePostPRComments() error = %v, want ErrGitSourceNotFound", err)
+	}
+}
+
+// TestSetGitSourcePreviewEnabled_DBError proves setGitSourceBoolColumn
+// (SetGitSourcePreviewEnabled/SetGitSourcePostPRComments's shared
+// implementation) wraps a real database error with the column and
+// service name rather than swallowing it, by closing the underlying
+// *sql.DB out from under the call so ExecContext itself fails.
+func TestSetGitSourcePreviewEnabled_DBError(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveGitSource(ctx, GitSource{ServiceName: "web", RepoURL: "https://example.com/web.git", Branch: "main", BuildType: "dockerfile"}); err != nil {
+		t.Fatalf("SaveGitSource() error = %v", err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("close db: %v", err)
+	}
+
+	err := db.SetGitSourcePreviewEnabled(ctx, "web", true)
+	if err == nil {
+		t.Fatal("SetGitSourcePreviewEnabled() error = nil, want an error once the DB is closed")
+	}
+	if !strings.Contains(err.Error(), "preview_enabled") {
+		t.Errorf("SetGitSourcePreviewEnabled() error = %q, want it to name the column", err)
 	}
 }

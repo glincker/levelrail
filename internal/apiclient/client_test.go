@@ -951,3 +951,71 @@ func TestClient_DisconnectCloudflareTunnel(t *testing.T) {
 		t.Errorf("DisconnectCloudflareTunnel() = %+v, want Enabled=false HasToken=false", got)
 	}
 }
+
+// TestClient_SetPreviewEnabled proves SetPreviewEnabled sends only the
+// enabled toggle: post_pr_comments must stay absent from the request
+// body so the API's own "nil means leave it unchanged" contract
+// (SetPreviewSettingsRequest's doc comment) actually holds from the
+// client side too.
+func TestClient_SetPreviewEnabled(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(PreviewSettingsResource{Enabled: true, PostPRComments: false})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.SetPreviewEnabled(context.Background(), "web", true)
+	if err != nil {
+		t.Fatalf("SetPreviewEnabled() error = %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/apps/web/preview-settings" {
+		t.Errorf("method/path = %s %s, want PUT /api/v1/apps/web/preview-settings", gotMethod, gotPath)
+	}
+	if _, ok := gotBody["enabled"]; !ok {
+		t.Errorf("request body = %+v, want an \"enabled\" field", gotBody)
+	}
+	if _, ok := gotBody["post_pr_comments"]; ok {
+		t.Errorf("request body = %+v, want post_pr_comments omitted", gotBody)
+	}
+	if !got.Enabled {
+		t.Errorf("SetPreviewEnabled() = %+v, want Enabled=true", got)
+	}
+}
+
+// TestClient_SetPreviewPostPRComments is SetPreviewEnabled's mirror:
+// only post_pr_comments must be sent, enabled left out of the request
+// body entirely.
+func TestClient_SetPreviewPostPRComments(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(PreviewSettingsResource{Enabled: false, PostPRComments: true})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.SetPreviewPostPRComments(context.Background(), "web", true)
+	if err != nil {
+		t.Fatalf("SetPreviewPostPRComments() error = %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/apps/web/preview-settings" {
+		t.Errorf("method/path = %s %s, want PUT /api/v1/apps/web/preview-settings", gotMethod, gotPath)
+	}
+	if _, ok := gotBody["post_pr_comments"]; !ok {
+		t.Errorf("request body = %+v, want a \"post_pr_comments\" field", gotBody)
+	}
+	if _, ok := gotBody["enabled"]; ok {
+		t.Errorf("request body = %+v, want enabled omitted", gotBody)
+	}
+	if !got.PostPRComments {
+		t.Errorf("SetPreviewPostPRComments() = %+v, want PostPRComments=true", got)
+	}
+}
