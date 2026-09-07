@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
 import { PortEditor } from '../../../components/PortEditor'
 import { DeployStrategyEditor } from '../../../components/DeployStrategyEditor'
+import { HooksEditor } from '../../../components/HooksEditor'
 
 // Former Overview-page cards, split out here since both control how a
 // deploy actually rolls out: the port a new container listens on, and
@@ -18,6 +19,7 @@ function DeploySettingsSection() {
     <div className="space-y-6">
       <PortEditor app={app} />
       <DeployStrategyEditor app={app} />
+      <HooksEditor app={app} />
     </div>
   )
 }

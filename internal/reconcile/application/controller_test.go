@@ -86,7 +86,47 @@ type fakeRuntime struct {
 	removeNetworkErr   error
 	removedNetworks    []string
 	callOrder          []string
+
+	// execErr, when set, makes Exec itself fail (a transport-level
+	// failure, e.g. the exec session never started), distinct from
+	// execExitCode below which simulates the command running to
+	// completion and exiting nonzero.
+	execErr      error
+	execExitCode int
+	execOutput   string
+	execStderr   string
+	execCalls    []execCallRecord
 }
+
+// execCallRecord is one Exec call fakeRuntime observed, for assertions
+// that need to know exactly what command ran and against which
+// container, the same "stateful fake, not just a call counter" reasoning
+// this type's own doc comment already gives for containers.
+type execCallRecord struct {
+	containerID string
+	cmd         []string
+}
+
+// execExitReader simulates docker.Runtime.Exec's real contract: cmd's
+// output is delivered by ordinary Reads, and (if err is non-nil) a
+// trailing error, typically a *docker.ExecExitError, is returned once
+// that output is exhausted rather than up front, exactly as
+// streamExecOutput's own doc comment (internal/docker/client.go)
+// documents for the real implementation.
+type execExitReader struct {
+	r   *strings.Reader
+	err error
+}
+
+func (e *execExitReader) Read(p []byte) (int, error) {
+	n, err := e.r.Read(p)
+	if err == io.EOF && e.err != nil {
+		return n, e.err
+	}
+	return n, err
+}
+
+func (e *execExitReader) Close() error { return nil }
 
 func newFakeRuntime(hostPort int) *fakeRuntime {
 	return &fakeRuntime{containers: map[string]*docker.ContainerState{}, networks: map[string]string{}, hostPort: hostPort}
@@ -265,12 +305,25 @@ func (f *fakeRuntime) Events(_ context.Context) (<-chan docker.Event, <-chan err
 	return nil, nil
 }
 
-// Exec is a no-op here for the same reason EnsureVolume above is: this
-// controller never runs a command inside a container, only manages
-// container lifecycle. internal/backup's Dumper is the real caller,
-// covered by that package's own tests.
-func (f *fakeRuntime) Exec(_ context.Context, _ string, _ []string) (io.ReadCloser, error) {
-	return nil, errors.New("fakeRuntime: Exec not implemented")
+// Exec simulates this controller's own pre/post-deploy hook execution
+// (runHook): execErr fails the exec session itself (a transport-level
+// failure); otherwise execExitCode 0 means the command succeeded
+// (execOutput is its stdout), and a nonzero execExitCode simulates the
+// command running to completion and exiting nonzero, surfaced as a
+// trailing *docker.ExecExitError the same way the real implementation
+// does (execExitReader's own doc comment).
+func (f *fakeRuntime) Exec(_ context.Context, containerID string, cmd []string) (io.ReadCloser, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.execCalls = append(f.execCalls, execCallRecord{containerID: containerID, cmd: cmd})
+	if f.execErr != nil {
+		return nil, f.execErr
+	}
+	var trailing error
+	if f.execExitCode != 0 {
+		trailing = &docker.ExecExitError{ExitCode: f.execExitCode, Stderr: f.execStderr}
+	}
+	return &execExitReader{r: strings.NewReader(f.execOutput), err: trailing}, nil
 }
 
 // ExecWithInput is the same no-op stub as Exec above, for the same

@@ -31,6 +31,7 @@ func TestSaveAndGetDesiredService(t *testing.T) {
 		Volumes: []ServiceVolume{
 			{Name: "app-web-data", ContainerPath: "/var/lib/data"},
 		},
+		Hooks: &ServiceHooks{PreDeploy: "rails db:migrate", PostDeploy: "curl -f https://hooks.example.com/deployed"},
 	}
 
 	if err := db.SaveDesiredService(ctx, want); err != nil {
@@ -62,6 +63,32 @@ func TestSaveAndGetDesiredService(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got.Volumes, want.Volumes) {
 		t.Errorf("Volumes = %+v, want %+v", got.Volumes, want.Volumes)
+	}
+	if got.Hooks == nil || *got.Hooks != *want.Hooks {
+		t.Errorf("Hooks = %+v, want %+v", got.Hooks, want.Hooks)
+	}
+}
+
+// TestSaveDesiredService_Hooks_NilByDefault is Hooks' counterpart to
+// HostPort's own "nil by default" regression test: a service saved
+// without a hooks: block (every service before this field existed, and
+// every service that never declares one) must read back Hooks == nil,
+// not a zero-value *ServiceHooks a caller might mistake for "hooks
+// configured but empty."
+func TestSaveDesiredService_Hooks_NilByDefault(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Hooks != nil {
+		t.Errorf("Hooks = %+v, want nil", got.Hooks)
 	}
 }
 

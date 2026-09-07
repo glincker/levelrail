@@ -407,6 +407,21 @@ still open. This page describes what's actually true today.
   container. Full CRUD under `/api/v1/apps/{name}/flags`, a dashboard
   tab with live toggle and rollout controls, and a `flags` CLI command
   group. See `docs/feature-flags.md`.
+- Pre/post-deploy hook commands (`app.yaml`'s `hooks.preDeploy`/
+  `hooks.postDeploy`): a shell command the reconciler runs inside the
+  newly created container via the Docker Engine API's real exec
+  facility (no CLI shelling), once per deploy regardless of replica
+  count. A failing pre-deploy hook blocks cutover: the new container is
+  rolled back and the old one keeps serving. A failing post-deploy hook
+  never undoes an already-successful cutover, it only surfaces loudly
+  (`PostDeployHookFailed` reconcile condition, a real reconcile error in
+  logs), matching this project's bias toward failing visibly rather than
+  swallowing a problem. The most recent outcome of each hook (exit code,
+  output) is persisted and readable via `GET
+  /api/v1/apps/{name}/hook-runs`, the `apps hook-runs` CLI command, and
+  a `HooksEditor` panel on the app's Deploy settings page. See
+  `internal/reconcile/application/controller.go`'s own doc comments for
+  the full timing and failure-handling contract.
 
 ## In progress
 

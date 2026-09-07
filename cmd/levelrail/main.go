@@ -2405,6 +2405,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 	// rather than starting half-configured.
 	appOpts := []application.Option{
 		application.WithDeployRecorder(deps.telemetryDB),
+		application.WithHookRunRecorder(deps.db),
 		application.WithStorageTargets(deps.db),
 		application.WithDatabaseAttachments(deps.db),
 		application.WithRegistryCredentials(deps.db),

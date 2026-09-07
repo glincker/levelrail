@@ -206,6 +206,31 @@ func TestToDesiredService_FullySpecified(t *testing.T) {
 	}
 }
 
+func TestToDesiredService_HooksPassThrough(t *testing.T) {
+	svc := spec.Service{
+		Port:  3000,
+		Hooks: &spec.Hooks{PreDeploy: "rails db:migrate", PostDeploy: "notify-slack"},
+	}
+
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.Hooks == nil || got.Hooks.PreDeploy != "rails db:migrate" || got.Hooks.PostDeploy != "notify-slack" {
+		t.Errorf("Hooks = %+v, want PreDeploy=%q PostDeploy=%q", got.Hooks, "rails db:migrate", "notify-slack")
+	}
+}
+
+func TestToDesiredService_NoHooks_LeavesNil(t *testing.T) {
+	got, err := toDesiredService("web", "img:sha", spec.Service{Port: 3000})
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.Hooks != nil {
+		t.Errorf("Hooks = %+v, want nil", got.Hooks)
+	}
+}
+
 func TestToDesiredService_HostPort_PassesThroughAsPointer(t *testing.T) {
 	svc := spec.Service{Port: 8080, HostPort: 30001}
 	got, err := toDesiredService("web", "img:sha", svc)

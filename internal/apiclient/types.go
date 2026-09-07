@@ -35,6 +35,13 @@ type ServiceHealth struct {
 	Liveness  *ServiceProbe `json:"liveness,omitempty"`
 }
 
+// ServiceHooks mirrors internal/api's appResource.Hooks field
+// (store.ServiceHooks' JSON encoding).
+type ServiceHooks struct {
+	PreDeploy  string `json:"pre_deploy,omitempty"`
+	PostDeploy string `json:"post_deploy,omitempty"`
+}
+
 // AppResource mirrors internal/api's appResource (apps.go). Field order
 // and JSON tags match exactly, so a response decodes cleanly and a
 // request encodes into exactly what the server expects.
@@ -50,7 +57,10 @@ type AppResource struct {
 	Env       map[string]string `json:"env,omitempty"`
 	Resources *ServiceResources `json:"resources,omitempty"`
 	Health    *ServiceHealth    `json:"health,omitempty"`
-	NodeID    string            `json:"node_id,omitempty"`
+	// Hooks mirrors internal/api's appResource.Hooks: settable on create
+	// and update, like Resources/Health above.
+	Hooks  *ServiceHooks `json:"hooks,omitempty"`
+	NodeID string        `json:"node_id,omitempty"`
 	// ProjectID mirrors internal/api's appResource.ProjectID:
 	// response-only, set via PUT /api/v1/apps/{name}/project.
 	ProjectID string `json:"project_id,omitempty"`

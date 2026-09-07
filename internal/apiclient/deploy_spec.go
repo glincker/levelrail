@@ -3,6 +3,7 @@ package apiclient
 import (
 	"context"
 	"net/http"
+	"time"
 )
 
 // AppStatusSummary mirrors internal/api's appStatusSummary
@@ -65,6 +66,12 @@ type DeploySpecServiceResources struct {
 	CPU    float64 `json:"cpu,omitempty"`
 }
 
+// DeploySpecServiceHooks mirrors internal/spec.Hooks.
+type DeploySpecServiceHooks struct {
+	PreDeploy  string `json:"preDeploy,omitempty"`
+	PostDeploy string `json:"postDeploy,omitempty"`
+}
+
 // DeploySpecService mirrors one entry in app.yaml's services: map
 // (internal/spec.Service) as POST /api/v1/apps/{name}/deploy-spec
 // expects to receive it directly, field for field.
@@ -77,6 +84,7 @@ type DeploySpecService struct {
 	Env       map[string]DeploySpecServiceEnv `json:"env,omitempty"`
 	Replicas  int                             `json:"replicas,omitempty"`
 	Strategy  string                          `json:"strategy,omitempty"`
+	Hooks     *DeploySpecServiceHooks         `json:"hooks,omitempty"`
 }
 
 // DeploySpecRequest mirrors internal/api's deploySpecRequest
@@ -107,6 +115,33 @@ type DeploySpecResult struct {
 	AppID        string                    `json:"app_id"`
 	Services     []DeploySpecServiceResult `json:"services"`
 	AllSucceeded bool                      `json:"all_succeeded"`
+}
+
+// HookRunResource mirrors internal/api's hookRunResource
+// (apps_hooks.go): one pre/post-deploy hook's most recent outcome.
+type HookRunResource struct {
+	HookType string    `json:"hook_type"`
+	Command  string    `json:"command"`
+	ExitCode int       `json:"exit_code"`
+	Success  bool      `json:"success"`
+	Output   string    `json:"output"`
+	RanAt    time.Time `json:"ran_at"`
+}
+
+// AppHookRunsResource mirrors internal/api's appHookRunsResource: nil
+// fields mean that hook has never run, not an empty HookRunResource.
+type AppHookRunsResource struct {
+	PreDeploy  *HookRunResource `json:"pre_deploy,omitempty"`
+	PostDeploy *HookRunResource `json:"post_deploy,omitempty"`
+}
+
+// GetAppHookRuns calls GET /api/v1/apps/{name}/hook-runs
+// (internal/api/apps_hooks.go's handleGetAppHookRuns): the most recent
+// outcome of each of name's pre/post-deploy hooks.
+func (c *Client) GetAppHookRuns(ctx context.Context, name string) (AppHookRunsResource, error) {
+	var out AppHookRunsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/hook-runs", nil, &out)
+	return out, err
 }
 
 // GetAppGroup calls GET /api/v1/apps/{name}/group

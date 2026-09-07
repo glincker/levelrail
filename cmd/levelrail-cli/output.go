@@ -318,6 +318,14 @@ func printAppHuman(out io.Writer, a appResource) {
 	if a.EnvDirty {
 		_, _ = fmt.Fprintln(out, "env:      pending restart (env vars saved since the running container was last recreated)")
 	}
+	if a.Hooks != nil {
+		if a.Hooks.PreDeploy != "" {
+			_, _ = fmt.Fprintf(out, "pre-deploy hook:  %s\n", a.Hooks.PreDeploy)
+		}
+		if a.Hooks.PostDeploy != "" {
+			_, _ = fmt.Fprintf(out, "post-deploy hook: %s\n", a.Hooks.PostDeploy)
+		}
+	}
 }
 
 // printAppsTable prints a compact, aligned table of apps: list output's
@@ -442,6 +450,39 @@ func printLogEntriesHuman(out io.Writer, entries []logEntryResource) {
 	for _, e := range entries {
 		_, _ = fmt.Fprintf(out, "%s %s %s\n", e.Timestamp.Format(time.RFC3339), e.Stream, e.Message)
 	}
+}
+
+// printAppHookRunsHuman prints "apps hook-runs" output: each configured
+// hook's most recent outcome, including its output, or a plain "never
+// run" line when a hook type has no recorded run yet.
+func printAppHookRunsHuman(out io.Writer, r appHookRunsResource) {
+	printOneHookRun := func(label string, run *hookRunResource) {
+		if run == nil {
+			_, _ = fmt.Fprintf(out, "%s: never run\n", label)
+			return
+		}
+		status := "success"
+		if !run.Success {
+			status = "failed"
+		}
+		_, _ = fmt.Fprintf(out, "%s: %s (exit %d, %s)\n", label, status, run.ExitCode, run.RanAt.Format(time.RFC3339))
+		_, _ = fmt.Fprintf(out, "  command: %s\n", run.Command)
+		if run.Output != "" {
+			_, _ = fmt.Fprintf(out, "  output:\n%s\n", indentLines(run.Output, "    "))
+		}
+	}
+	printOneHookRun("pre-deploy", r.PreDeploy)
+	printOneHookRun("post-deploy", r.PostDeploy)
+}
+
+// indentLines prefixes every line of s with prefix, for
+// printAppHookRunsHuman's own multi-line hook output block.
+func indentLines(s, prefix string) string {
+	lines := strings.Split(strings.TrimRight(s, "\n"), "\n")
+	for i, line := range lines {
+		lines[i] = prefix + line
+	}
+	return strings.Join(lines, "\n")
 }
 
 // printAppGroupHuman prints "apps group" output: name's sibling services

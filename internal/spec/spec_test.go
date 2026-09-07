@@ -68,6 +68,9 @@ func TestParse_ValidFull(t *testing.T) {
 	if len(web.Volumes) != 1 || web.Volumes[0].Name != "data" || web.Volumes[0].Path != "/var/lib/data" {
 		t.Errorf("Volumes = %+v, want [{data /var/lib/data}]", web.Volumes)
 	}
+	if web.Hooks == nil || web.Hooks.PreDeploy != "rails db:migrate" || web.Hooks.PostDeploy != "curl -f https://hooks.example.com/deployed" {
+		t.Errorf("Hooks = %+v, want PreDeploy=%q PostDeploy=%q", web.Hooks, "rails db:migrate", "curl -f https://hooks.example.com/deployed")
+	}
 
 	dbURL, ok := web.Env["DATABASE_URL"]
 	if !ok || dbURL.From != "postgres.main.url" || dbURL.Value != "" || dbURL.Secret {
@@ -670,6 +673,32 @@ services:
   web: { build: { type: dockerfile }, port: 8080 }
 databases:
   main: { engine: cassandra }
+`,
+		},
+		{
+			name: "hooks on a static build",
+			yaml: `
+version: 1
+services:
+  docs: { build: { type: static }, hooks: { preDeploy: "echo hi" } }
+`,
+			wantErrSubstr: "hooks is not meaningful for build.type \"static\"",
+		},
+		{
+			name: "hooks on a compose build",
+			yaml: `
+version: 1
+services:
+  stack: { build: { type: compose, path: docker-compose.yml }, hooks: { postDeploy: "echo hi" } }
+`,
+			wantErrSubstr: "hooks is not meaningful for build.type \"compose\"",
+		},
+		{
+			name: "empty hooks block",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, hooks: {} }
 `,
 		},
 	}

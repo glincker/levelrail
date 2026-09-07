@@ -54,6 +54,25 @@ type Service struct {
 	// actual, platform-prefixed name); two services can each declare a
 	// volume named "data" without colliding.
 	Volumes []Volume `yaml:"volumes,omitempty"`
+
+	// Hooks are shell commands the reconciler runs inside this service's
+	// own container at defined points in a deploy (internal/reconcile/
+	// application's controller). Nil means neither is configured, the
+	// same "declarative, resolved before storing" shape Health/Resources
+	// already follow.
+	Hooks *Hooks `yaml:"hooks,omitempty"`
+}
+
+// Hooks are the two deploy-lifecycle commands a service can declare.
+// Both run via "sh -c" inside the newly created container (see
+// internal/reconcile/application.Controller's own doc comment for the
+// full timing and failure-handling contract): PreDeploy before the
+// container's readiness probe and before any old container is retired,
+// PostDeploy after the whole replica set has cut over. Either field may
+// be set alone.
+type Hooks struct {
+	PreDeploy  string `yaml:"preDeploy,omitempty"`
+	PostDeploy string `yaml:"postDeploy,omitempty"`
 }
 
 // Volume is one entry under a service's volumes:.

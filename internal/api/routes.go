@@ -175,6 +175,11 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// read-only; GET /api/v1/apps/{name} above is unchanged.
 	mux.HandleFunc("GET /api/v1/apps/{name}/group", rt.requireAbility(AbilityRead, rt.handleGetAppGroup))
 
+	// Latest pre/post-deploy hook outcome (apps_hooks.go,
+	// internal/reconcile/application's own HookRunRecorder). Read-only,
+	// same ability tier as the group route just above.
+	mux.HandleFunc("GET /api/v1/apps/{name}/hook-runs", rt.requireAbility(AbilityRead, rt.handleGetAppHookRuns))
+
 	// Compose ingestion (apps_compose.go): fans a compose.yaml's
 	// services: out into one store.App plus its member services.
 	// AbilityDeploy, the same tier POST .../deploys uses: this creates
