@@ -60,7 +60,7 @@ type GitSource struct {
 	// PostPRComments opts an app's preview environments into posting a
 	// GitHub PR comment (the live preview URL, or a teardown notice) and
 	// a commit status (pending/success/failure) on the pull request's
-	// head commit (migrations/0080_git_source_pr_status.sql). Off by
+	// head commit (migrations/0081_git_source_pr_status.sql). Off by
 	// default; only meaningful once PreviewEnabled is also on, but kept
 	// as its own field rather than folded into PreviewEnabled: an
 	// operator may want previews without the GitHub-visible noise, or
