@@ -371,6 +371,25 @@ func (c *Client) ListDatabases(ctx context.Context) ([]DatabaseResource, error) 
 	return out, err
 }
 
+// StopDatabase calls POST /api/v1/databases/{name}/stop: marks the
+// database suspended, so the reconciler removes its container on the
+// next pass without touching desired state or its data volume
+// otherwise.
+func (c *Client) StopDatabase(ctx context.Context, name string) (DatabaseResource, error) {
+	var out DatabaseResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/stop", nil, &out)
+	return out, err
+}
+
+// StartDatabase calls POST /api/v1/databases/{name}/start: clears the
+// suspended flag StopDatabase set, letting the reconciler bring the
+// container back against the same data volume.
+func (c *Client) StartDatabase(ctx context.Context, name string) (DatabaseResource, error) {
+	var out DatabaseResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/start", nil, &out)
+	return out, err
+}
+
 // DeleteDatabase calls DELETE /api/v1/databases/{name}.
 func (c *Client) DeleteDatabase(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name), nil, nil)

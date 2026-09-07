@@ -197,6 +197,11 @@ type DatabaseStore interface {
 	// applied to whether this database's container port is bound to a
 	// host port. Returns the port actually assigned (0 when disabling).
 	SetDatabasePublicAccess(ctx context.Context, name string, enabled bool, requestedPort int) (int, error)
+	// UpdateDatabaseSuspended backs POST /api/v1/databases/{name}/stop
+	// and .../start (database_stop_start.go), AppStore.
+	// UpdateServiceSuspended's counterpart: see
+	// store.DB.UpdateDatabaseSuspended's own doc comment.
+	UpdateDatabaseSuspended(ctx context.Context, name string, suspended bool) error
 }
 
 // ProjectStore is the store surface the projects handlers need

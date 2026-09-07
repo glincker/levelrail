@@ -56,6 +56,11 @@ export interface DatabaseResource {
   backup_schedule?: string
   backup_retain?: number
   backup_retain_days?: number
+  // suspended: response-only, the identical boundary node_id/
+  // project_id already establish. Set or cleared via POST
+  // /api/v1/databases/{name}/stop and .../start (useStopDatabase/
+  // useStartDatabase, queries/databases.ts).
+  suspended?: boolean
 }
 
 // GET /api/v1/databases' own wire shape (internal/api/databases.go's

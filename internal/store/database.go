@@ -78,6 +78,12 @@ type DesiredDatabase struct {
 	// same "whole record, not a special exception" treatment
 	// DesiredService.Resources gets from SaveDesiredService.
 	Resources *ServiceResources
+
+	// Suspended: see DesiredService.Suspended's own doc comment, identical
+	// meaning and identical "SaveDesiredDatabase never writes it, only
+	// UpdateDatabaseSuspended does" exception NodeID/ProjectID already
+	// establish above (migrations/0081_database_suspended.sql).
+	Suspended bool
 }
 
 // SaveDesiredDatabase creates or fully replaces the desired state for a
@@ -145,6 +151,29 @@ func (db *DB) UpdateDatabaseProject(ctx context.Context, name, projectID string)
 	return nil
 }
 
+// UpdateDatabaseSuspended is DesiredDatabase.Suspended's only writer,
+// the database counterpart to UpdateServiceSuspended. Unlike that
+// method, resuming does not need to clear anything else: a database has
+// no EnvDirty-equivalent latch, since nothing about its desired state
+// can change while suspended (there is no env editor for a database the
+// way there is for an app).
+func (db *DB) UpdateDatabaseSuspended(ctx context.Context, name string, suspended bool) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE desired_databases SET suspended = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, suspended, name)
+	if err != nil {
+		return fmt.Errorf("store: update suspended for database %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: update suspended for database %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrDatabaseNotFound
+	}
+	return nil
+}
+
 // ErrDatabaseNotFound is returned by GetDesiredDatabase when no database
 // has that name.
 var ErrDatabaseNotFound = errors.New("store: database not found")
@@ -153,7 +182,7 @@ var ErrDatabaseNotFound = errors.New("store: database not found")
 // ErrDatabaseNotFound if no such database has been saved.
 func (db *DB) GetDesiredDatabase(ctx context.Context, name string) (*DesiredDatabase, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources
+		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources, suspended
 		FROM desired_databases
 		WHERE name = ?
 	`, name)
@@ -190,7 +219,7 @@ func (db *DB) DeleteDesiredDatabase(ctx context.Context, name string) error {
 // ListDesiredDatabases returns every saved database, ordered by name.
 func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources
+		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources, suspended
 		FROM desired_databases
 		ORDER BY name
 	`)
@@ -221,7 +250,7 @@ func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, erro
 // callers.
 func (db *DB) ListDesiredDatabasesByNode(ctx context.Context, nodeID string) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources
+		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources, suspended
 		FROM desired_databases
 		WHERE node_id = ?
 		ORDER BY name
@@ -413,7 +442,7 @@ func claimPublicPort(ctx context.Context, tx *sql.Tx, name string, requestedPort
 // all.
 func (db *DB) ListScheduledDatabases(ctx context.Context) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources
+		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources, suspended
 		FROM desired_databases
 		WHERE backup_schedule != '' AND backup_target_id IS NOT NULL
 		ORDER BY name
@@ -452,10 +481,12 @@ func scanDesiredDatabase(scan func(dest ...any) error) (*DesiredDatabase, error)
 		publiclyAccessible        bool
 		publicPort                sql.NullInt64
 		resourcesJSON             string
+		suspended                 bool
 	)
-	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &resourcesJSON); err != nil {
+	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &resourcesJSON, &suspended); err != nil {
 		return nil, err
 	}
+	d.Suspended = suspended
 	d.ProjectID = projectID.String
 	d.BackupTargetID = backupTargetID.String
 	d.PubliclyAccessible = publiclyAccessible
