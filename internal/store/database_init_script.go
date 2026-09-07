@@ -15,7 +15,7 @@ var ErrDatabaseInitScriptNotFound = errors.New("store: database init script not 
 
 // DatabaseInitScript is one named SQL/shell file attached to a managed
 // database, mounted into its container's /docker-entrypoint-initdb.d.
-// See migrations/0080_database_init_scripts.sql for the full
+// See migrations/0082_database_init_scripts.sql for the full
 // field-by-field reasoning.
 type DatabaseInitScript struct {
 	ID           string
