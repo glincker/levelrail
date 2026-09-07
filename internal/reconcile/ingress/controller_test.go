@@ -30,6 +30,8 @@ type fakeStore struct {
 	dnsSettingsErr error
 	basicAuth      []store.DomainBasicAuth
 	basicAuthErr   error
+	maintenance    []string
+	maintenanceErr error
 }
 
 func (f *fakeStore) ListDesiredServices(_ context.Context) ([]store.DesiredService, error) {
@@ -78,6 +80,17 @@ func (f *fakeStore) ListDomainBasicAuth(_ context.Context) ([]store.DomainBasicA
 		return nil, f.basicAuthErr
 	}
 	return f.basicAuth, nil
+}
+
+// ListDomainMaintenance mirrors ListDomainBasicAuth's own "empty unless
+// a test opts in" convention: no domains in maintenance mode unless
+// f.maintenance is set, so tests written before this method existed are
+// unaffected.
+func (f *fakeStore) ListDomainMaintenance(_ context.Context) ([]string, error) {
+	if f.maintenanceErr != nil {
+		return nil, f.maintenanceErr
+	}
+	return f.maintenance, nil
 }
 
 // fakeRuntime implements docker.Runtime with an in-memory container set,

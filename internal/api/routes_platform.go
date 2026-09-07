@@ -303,6 +303,15 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/auth", rt.requireAbility(AbilityRoot, rt.handleSetDomainBasicAuth))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/auth", rt.requireAbility(AbilityRoot, rt.handleClearDomainBasicAuth))
 
+	// Maintenance mode: GET is AbilityRead, matching the auth routes'
+	// own passive-visibility tier. PUT/DELETE are AbilityDeploy, not
+	// AbilityRoot: this changes an app's runtime routing behavior, the
+	// same "app lifecycle" tier POST .../stop and .../start already
+	// use, not a credential-bearing change like basic auth.
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/maintenance", rt.requireAbility(AbilityRead, rt.handleGetDomainMaintenance))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/maintenance", rt.requireAbility(AbilityDeploy, rt.handleSetDomainMaintenance))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/maintenance", rt.requireAbility(AbilityDeploy, rt.handleClearDomainMaintenance))
+
 	// Email settings: same precedent as ingress settings just above.
 	// GET is AbilityRead; PUT is AbilityRoot, real infrastructure config.
 	mux.HandleFunc("GET /api/v1/settings/email", rt.requireAbility(AbilityRead, rt.handleGetEmailSettings))

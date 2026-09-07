@@ -108,6 +108,13 @@ type ServiceStore interface {
 	// DELETE /api/v1/apps/{name}/domains/{domain}/auth (internal/api)
 	// must take effect on this controller's very next pass.
 	ListDomainBasicAuth(ctx context.Context) ([]store.DomainBasicAuth, error)
+	// ListDomainMaintenance returns every domain currently in
+	// maintenance mode (migrations/0080), read fresh every Reconcile
+	// for the same reason ListDomainBasicAuth is: an operator setting
+	// or clearing maintenance mode through PUT/DELETE
+	// /api/v1/apps/{name}/domains/{domain}/maintenance (internal/api)
+	// must take effect on this controller's very next pass.
+	ListDomainMaintenance(ctx context.Context) ([]string, error)
 }
 
 // Applier is the narrow surface this controller needs from
@@ -364,8 +371,13 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain basic auth: %w", err)
 	}
+	maintenanceByDomain, err := c.domainMaintenanceSet(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list domain maintenance: %w", err)
+	}
 
 	var routes []ingress.ProxyRoute
+	var maintenanceRoutes []ingress.MaintenanceRoute
 	claimedHosts := make(map[string]string, len(services)+len(staticSites)) // host -> owning service/static site, this pass only
 	for _, svc := range services {
 		if len(svc.Domains) == 0 {
@@ -388,14 +400,32 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			)
 			continue
 		}
+
+		// A domain in maintenance mode is routed unconditionally, with
+		// no dependency on dialForService: "intentionally unavailable
+		// right now" must hold even for a service with zero running
+		// containers, unlike every other route kind here, which needs a
+		// real backend to dial. Only the remaining, non-maintenance
+		// hosts still go through the ordinary dial-required path below.
+		maintenanceHosts, activeHosts := splitMaintenanceHosts(svc.Domains, maintenanceByDomain)
+		if len(maintenanceHosts) > 0 {
+			for _, host := range maintenanceHosts {
+				claimedHosts[host] = svc.Name
+			}
+			maintenanceRoutes = append(maintenanceRoutes, ingress.MaintenanceRoute{Hosts: maintenanceHosts})
+		}
+		if len(activeHosts) == 0 {
+			continue
+		}
+
 		dial, ok := c.dialForService(ctx, svc)
 		if !ok {
 			continue
 		}
-		for _, host := range svc.Domains {
+		for _, host := range activeHosts {
 			claimedHosts[host] = svc.Name
 		}
-		routes = append(routes, c.routesForService(ctx, svc, dial, authByDomain)...)
+		routes = append(routes, c.routesForService(ctx, activeHosts, dial, authByDomain)...)
 	}
 
 	var staticRoutes []ingress.StaticRoute
@@ -452,6 +482,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		ListenAddr:            c.listenAddr,
 		Routes:                routes,
 		StaticRoutes:          staticRoutes,
+		MaintenanceRoutes:     maintenanceRoutes,
 		TLS:                   true,
 		AdminListen:           c.adminListen,
 		StorageDir:            c.storageDir,
@@ -469,13 +500,13 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		return notReady("ApplyFailed", err), fmt.Errorf("ingress: apply config: %w", err)
 	}
 
-	total := len(routes) + len(staticRoutes)
+	total := len(routes) + len(staticRoutes) + len(maintenanceRoutes)
 	reason := fmt.Sprintf("Routed%dServices", total)
 	return reconcile.Result{Conditions: []reconcile.Condition{{
 		Type:    "Ready",
 		Status:  reconcile.ConditionTrue,
 		Reason:  reason,
-		Message: fmt.Sprintf("%d service(s)/static site(s) with domains are routed (%d with a running backend, %d served directly)", total, len(routes), len(staticRoutes)),
+		Message: fmt.Sprintf("%d service(s)/static site(s) with domains are routed (%d with a running backend, %d served directly, %d in maintenance mode)", total, len(routes), len(staticRoutes), len(maintenanceRoutes)),
 	}}}, nil
 }
 
@@ -596,16 +627,49 @@ func (c *Controller) domainBasicAuthByDomain(ctx context.Context) (map[string]st
 	return byDomain, nil
 }
 
-// routesForService builds one ProxyRoute per svc.Domains entry that has
+// domainMaintenanceSet returns the set of domains currently in
+// maintenance mode, for the services loop to check per host in O(1),
+// mirroring domainBasicAuthByDomain's identical shape for a different
+// per-domain toggle.
+func (c *Controller) domainMaintenanceSet(ctx context.Context) (map[string]bool, error) {
+	domains, err := c.store.ListDomainMaintenance(ctx)
+	if err != nil {
+		return nil, err
+	}
+	set := make(map[string]bool, len(domains))
+	for _, d := range domains {
+		set[d] = true
+	}
+	return set, nil
+}
+
+// splitMaintenanceHosts partitions domains into the ones currently in
+// maintenance mode and the ones that still need a real backend routed
+// to them.
+func splitMaintenanceHosts(domains []string, maintenanceByDomain map[string]bool) (maintenance, active []string) {
+	for _, host := range domains {
+		if maintenanceByDomain[host] {
+			maintenance = append(maintenance, host)
+		} else {
+			active = append(active, host)
+		}
+	}
+	return maintenance, active
+}
+
+// routesForService builds one ProxyRoute per entry in hosts that has
 // basic auth configured (each needs its own Handle chain, since Caddy
 // has no notion of "this host within a shared route is exempt"), plus
-// one shared ProxyRoute carrying every domain that doesn't. A service
+// one shared ProxyRoute carrying every host that doesn't. A service
 // with no protected domains reproduces this controller's behavior
 // before this feature existed exactly: a single route with every host.
-func (c *Controller) routesForService(ctx context.Context, svc store.DesiredService, dial string, authByDomain map[string]store.DomainBasicAuth) []ingress.ProxyRoute {
+// hosts is the caller's already-filtered subset of the service's own
+// domains (Reconcile excludes any domain in maintenance mode before
+// calling this), not necessarily svc.Domains verbatim.
+func (c *Controller) routesForService(ctx context.Context, hosts []string, dial string, authByDomain map[string]store.DomainBasicAuth) []ingress.ProxyRoute {
 	var open []string
 	var routes []ingress.ProxyRoute
-	for _, host := range svc.Domains {
+	for _, host := range hosts {
 		auth, protected := authByDomain[host]
 		if !protected {
 			open = append(open, host)

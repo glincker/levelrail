@@ -268,6 +268,14 @@ type SetDomainBasicAuthRequest struct {
 	Password string `json:"password,omitempty"`
 }
 
+// DomainMaintenanceResource mirrors internal/api's
+// domainMaintenanceResource: GET/PUT/DELETE
+// /api/v1/apps/{name}/domains/{domain}/maintenance's wire shape.
+type DomainMaintenanceResource struct {
+	Domain  string `json:"domain"`
+	Enabled bool   `json:"enabled"`
+}
+
 // BackupHistoryResource mirrors internal/api's backupHistoryResource
 // (internal/api/backups.go). ServiceName/VolumeName are set instead of
 // DatabaseName for an app service volume backup, never alongside it.

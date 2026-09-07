@@ -87,6 +87,22 @@ func TestBuildRoutesConfig_Validation(t *testing.T) {
 			},
 			wantErr: "",
 		},
+		{
+			name: "maintenance route with no hosts",
+			opts: RoutesOptions{
+				ServerName: "ingress", ListenAddr: ":8443",
+				MaintenanceRoutes: []MaintenanceRoute{{}},
+			},
+			wantErr: "maintenance route 0 has no hosts",
+		},
+		{
+			name: "one valid maintenance route, no proxy or static routes at all",
+			opts: RoutesOptions{
+				ServerName: "ingress", ListenAddr: ":8443",
+				MaintenanceRoutes: []MaintenanceRoute{{Hosts: []string{"down.example.internal"}}},
+			},
+			wantErr: "",
+		},
 	}
 
 	for _, tt := range tests {
@@ -328,6 +344,53 @@ func TestBuildRoutesConfig_JSONShape(t *testing.T) {
 		apps := decoded["apps"].(map[string]any)
 		if _, hasTLS := apps["tls"]; !hasTLS {
 			t.Errorf("apps.tls missing for a static-only route set with TLS: true, want automation built from the static route's hosts")
+		}
+	})
+
+	t.Run("maintenance route: static_response handler, 503, no backend dial", func(t *testing.T) {
+		cfg, err := BuildRoutesConfig(RoutesOptions{
+			ServerName: "ingress",
+			ListenAddr: ":443",
+			TLS:        true,
+			MaintenanceRoutes: []MaintenanceRoute{
+				{Hosts: []string{"down.example.internal"}},
+			},
+		})
+		if err != nil {
+			t.Fatalf("BuildRoutesConfig() error: %v", err)
+		}
+
+		raw, err := json.Marshal(cfg)
+		if err != nil {
+			t.Fatalf("json.Marshal() error: %v", err)
+		}
+		var decoded map[string]any
+		if err := json.Unmarshal(raw, &decoded); err != nil {
+			t.Fatalf("json.Unmarshal() error: %v", err)
+		}
+
+		apps := decoded["apps"].(map[string]any)
+		if _, hasTLS := apps["tls"]; !hasTLS {
+			t.Errorf("apps.tls missing for a maintenance-only route set with TLS: true, want automation built from its hosts too: a domain in maintenance mode still needs a valid certificate")
+		}
+		http := apps["http"].(map[string]any)
+		servers := http["servers"].(map[string]any)
+		ingressSrv := servers["ingress"].(map[string]any)
+		routes := ingressSrv["routes"].([]any)
+		if len(routes) != 1 {
+			t.Fatalf("routes = %d, want 1", len(routes))
+		}
+		route := routes[0].(map[string]any)
+		handle := route["handle"].([]any)
+		if len(handle) != 1 {
+			t.Fatalf("handle = %d entries, want 1 (no reverse_proxy, no dial)", len(handle))
+		}
+		h := handle[0].(map[string]any)
+		if h["handler"] != "static_response" {
+			t.Errorf("handler = %v, want static_response", h["handler"])
+		}
+		if h["status_code"] != float64(503) {
+			t.Errorf("status_code = %v, want 503", h["status_code"])
 		}
 	})
 

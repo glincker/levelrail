@@ -501,6 +501,41 @@ func (c *Client) ClearDomainBasicAuth(ctx context.Context, name, domain string) 
 	return out, err
 }
 
+// domainMaintenancePath builds
+// /api/v1/apps/{name}/domains/{domain}/maintenance, shared by all three
+// domain maintenance methods below, mirroring domainAuthPath's identical
+// shape for a different per-domain toggle.
+func domainMaintenancePath(name, domain string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/domains/" + PathEscape(domain) + "/maintenance"
+}
+
+// GetDomainMaintenance calls GET
+// /api/v1/apps/{name}/domains/{domain}/maintenance: domain's current
+// maintenance-mode state.
+func (c *Client) GetDomainMaintenance(ctx context.Context, name, domain string) (DomainMaintenanceResource, error) {
+	var out DomainMaintenanceResource
+	err := c.do(ctx, http.MethodGet, domainMaintenancePath(name, domain), nil, &out)
+	return out, err
+}
+
+// SetDomainMaintenance calls PUT
+// /api/v1/apps/{name}/domains/{domain}/maintenance: enables maintenance
+// mode on domain, enforced by Caddy on the next ingress reconcile pass.
+func (c *Client) SetDomainMaintenance(ctx context.Context, name, domain string) (DomainMaintenanceResource, error) {
+	var out DomainMaintenanceResource
+	err := c.do(ctx, http.MethodPut, domainMaintenancePath(name, domain), nil, &out)
+	return out, err
+}
+
+// ClearDomainMaintenance calls DELETE
+// /api/v1/apps/{name}/domains/{domain}/maintenance: disables
+// maintenance mode on domain.
+func (c *Client) ClearDomainMaintenance(ctx context.Context, name, domain string) (DomainMaintenanceResource, error) {
+	var out DomainMaintenanceResource
+	err := c.do(ctx, http.MethodDelete, domainMaintenancePath(name, domain), nil, &out)
+	return out, err
+}
+
 // TriggerBackup calls POST /api/v1/databases/{name}/backups: starts a
 // real backup of name to targetID and returns as soon as the attempt is
 // recorded and under way, not once the dump and upload actually finish.

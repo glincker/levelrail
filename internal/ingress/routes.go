@@ -73,6 +73,23 @@ type StaticRoute struct {
 	RootDir string
 }
 
+// MaintenanceRoute is one domain currently in maintenance mode: every
+// request gets NewMaintenanceResponseHandler's fixed response instead
+// of ever reaching a backend, container or otherwise. Unlike
+// ProxyRoute and StaticRoute, a MaintenanceRoute needs no backend
+// address or root directory to have ever existed: "this domain is
+// intentionally unavailable right now" is true independent of whether
+// the service behind it has a running container this pass.
+type MaintenanceRoute struct {
+	// Hosts are the Host header values that get the fixed maintenance
+	// response. Also contributes to the Subjects list used for TLS
+	// automation when RoutesOptions.TLS is true, the same as Hosts on
+	// ProxyRoute/StaticRoute: a domain in maintenance mode still needs
+	// a valid certificate, an operator flips this on and off far more
+	// often than they'd want to also manage TLS for.
+	Hosts []string
+}
+
 // RoutesOptions is the input to BuildRoutesConfig: everything needed to
 // stand up one Caddy server carrying many independently host-routed
 // backends on a single shared listener. This is the shape a real ingress
@@ -101,6 +118,14 @@ type RoutesOptions struct {
 	// same way two ProxyRoutes already are. Empty (the default) is valid
 	// for exactly the same reason an empty Routes is.
 	StaticRoutes []StaticRoute
+	// MaintenanceRoutes is every domain currently in maintenance mode,
+	// sharing this same listener the same way StaticRoutes does. A
+	// caller must never put the same host in both Routes/StaticRoutes
+	// and MaintenanceRoutes in one call: BuildRoutesConfig builds
+	// whatever it's given, it does not itself resolve that conflict
+	// (the ingress reconciler's job, splitting a service's hosts before
+	// ever calling this function).
+	MaintenanceRoutes []MaintenanceRoute
 	// TLS, if true, adds a tls app automation policy scoped to every
 	// route's Hosts, both Routes and StaticRoutes (skipped if both are
 	// empty, since automatic HTTPS needs at least one subject to issue a
@@ -171,16 +196,17 @@ type RoutesOptions struct {
 }
 
 // BuildRoutesConfig builds a Config with one server carrying one route
-// per entry in opts.Routes (reverse_proxy) and one per entry in
-// opts.StaticRoutes (file_server), each matched by its own Hosts. Both
-// kinds share the same listener and the same TLS automation policy;
-// nothing about a static route requires a different Server or a second
-// Caddy config document. opts.Routes and opts.StaticRoutes both being
-// empty is valid and produces a Config with a listener but no routes and
-// no TLS app: this is the normal shape for a reconcile pass over zero
-// currently-routable resources (every known service or static site
-// either declares no domains or, for a container service, has no
-// running container yet), not an error.
+// per entry in opts.Routes (reverse_proxy), opts.StaticRoutes
+// (file_server), and opts.MaintenanceRoutes (static_response), each
+// matched by its own Hosts. All three kinds share the same listener and
+// the same TLS automation policy; nothing about a static or maintenance
+// route requires a different Server or a second Caddy config document.
+// All three being empty is valid and produces a Config with a listener
+// but no routes and no TLS app: this is the normal shape for a
+// reconcile pass over zero currently-routable resources (every known
+// service or static site either declares no domains or, for a
+// container service, has no running container yet, and no domain is in
+// maintenance mode), not an error.
 func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 	if opts.ServerName == "" {
 		return nil, fmt.Errorf("ingress: build routes config: server name is required")
@@ -221,6 +247,16 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		routes = append(routes, Route{
 			Match:  []Matcher{{Host: r.Hosts}},
 			Handle: []any{NewFileServerHandler(r.RootDir)},
+		})
+		allHosts = append(allHosts, r.Hosts...)
+	}
+	for i, r := range opts.MaintenanceRoutes {
+		if len(r.Hosts) == 0 {
+			return nil, fmt.Errorf("ingress: build routes config: maintenance route %d has no hosts", i)
+		}
+		routes = append(routes, Route{
+			Match:  []Matcher{{Host: r.Hosts}},
+			Handle: []any{NewMaintenanceResponseHandler()},
 		})
 		allHosts = append(allHosts, r.Hosts...)
 	}

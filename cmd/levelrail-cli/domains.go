@@ -29,6 +29,8 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsCloudflareDNS(prog, args[1:], stdout, stderr, lookupEnv)
 	case "basic-auth":
 		return runDomainsBasicAuth(prog, args[1:], stdout, stderr, lookupEnv)
+	case "maintenance":
+		return runDomainsMaintenance(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown domains subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, domainsUsage(prog))
@@ -41,6 +43,7 @@ func domainsUsage(prog string) string {
   %[1]s domains list [flags]                    list every app's domains in one call
   %[1]s domains cloudflare-dns <verb> [flags]   configure wildcard-domain ACME DNS-01 via Cloudflare
   %[1]s domains basic-auth <verb> [flags]       protect an app's domain with HTTP Basic Auth
+  %[1]s domains maintenance <verb> [flags]      take one of an app's domains in or out of maintenance mode
 
 Run "%[1]s domains <subcommand> -h" for a subcommand's own flags.
 `, prog)
