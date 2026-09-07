@@ -513,3 +513,56 @@ func (c *Client) CreateRepoWebhook(ctx context.Context, instanceURL, token, owne
 	path := fmt.Sprintf("/repos/%s/%s/hooks", url.PathEscape(owner), url.PathEscape(repo))
 	return c.doWithBody(ctx, c.APIBaseURL(instanceURL), http.MethodPost, path, bearerPrefix+token, body)
 }
+
+type createIssueCommentRequest struct {
+	Body string `json:"body"`
+}
+
+// CreateIssueComment posts a new comment on issue/pull request number of
+// owner/repo, authenticated with an installation access token the same
+// way CreateRepoWebhook is. GitHub's REST API has no distinct "pull
+// request comment" endpoint: a PR is also an issue, and this is the same
+// endpoint used for both.
+func (c *Client) CreateIssueComment(ctx context.Context, instanceURL, token, owner, repo string, number int, body string) error {
+	payload, err := json.Marshal(createIssueCommentRequest{Body: body})
+	if err != nil {
+		return fmt.Errorf("githubapp: marshal issue comment request: %w", err)
+	}
+	path := fmt.Sprintf("/repos/%s/%s/issues/%d/comments", url.PathEscape(owner), url.PathEscape(repo), number)
+	return c.doWithBody(ctx, c.APIBaseURL(instanceURL), http.MethodPost, path, bearerPrefix+token, payload)
+}
+
+// CommitStatusState is GitHub's own documented "state" enum for POST
+// .../statuses/{sha}.
+type CommitStatusState string
+
+const (
+	// CommitStatusPending marks a commit status as still in progress.
+	CommitStatusPending CommitStatusState = "pending"
+	// CommitStatusSuccess marks a commit status as succeeded.
+	CommitStatusSuccess CommitStatusState = "success"
+	// CommitStatusFailure marks a commit status as failed.
+	CommitStatusFailure CommitStatusState = "failure"
+)
+
+type createCommitStatusRequest struct {
+	State       string `json:"state"`
+	TargetURL   string `json:"target_url,omitempty"`
+	Description string `json:"description,omitempty"`
+	Context     string `json:"context,omitempty"`
+}
+
+// CreateCommitStatus sets a commit status on sha of owner/repo,
+// authenticated with an installation access token the same way
+// CreateRepoWebhook is. targetURL and description are both optional,
+// matching GitHub's own documented shape for this endpoint.
+func (c *Client) CreateCommitStatus(ctx context.Context, instanceURL, token, owner, repo, sha string, state CommitStatusState, targetURL, description, statusContext string) error {
+	payload, err := json.Marshal(createCommitStatusRequest{
+		State: string(state), TargetURL: targetURL, Description: description, Context: statusContext,
+	})
+	if err != nil {
+		return fmt.Errorf("githubapp: marshal commit status request: %w", err)
+	}
+	path := fmt.Sprintf("/repos/%s/%s/statuses/%s", url.PathEscape(owner), url.PathEscape(repo), url.PathEscape(sha))
+	return c.doWithBody(ctx, c.APIBaseURL(instanceURL), http.MethodPost, path, bearerPrefix+token, payload)
+}

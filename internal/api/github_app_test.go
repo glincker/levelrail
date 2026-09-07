@@ -105,6 +105,33 @@ type fakeGitHubAppClient struct {
 	createHookURL  string
 	createHookSec  string
 	createHookCall bool
+
+	commentErr   error
+	commentCalls []fakeIssueComment
+
+	statusErr   error
+	statusCalls []fakeCommitStatus
+}
+
+// fakeIssueComment records one fakeGitHubAppClient.CreateIssueComment
+// call: preview_environments_github_test.go asserts against these
+// instead of a hand-rolled httptest.Server, the same "narrow fake,
+// caller inspects recorded calls" shape createHookURL/createHookSec
+// already establish for CreateRepoWebhook above.
+type fakeIssueComment struct {
+	owner, repo string
+	number      int
+	body        string
+}
+
+// fakeCommitStatus records one fakeGitHubAppClient.CreateCommitStatus
+// call.
+type fakeCommitStatus struct {
+	owner, repo, sha string
+	state            githubapp.CommitStatusState
+	targetURL        string
+	description      string
+	context          string
 }
 
 func (f *fakeGitHubAppClient) CheckInstanceReachable(_ context.Context, instanceURL string) error {
@@ -152,6 +179,18 @@ func (f *fakeGitHubAppClient) CreateRepoWebhook(_ context.Context, _, _, _, _, h
 	f.createHookURL = hookURL
 	f.createHookSec = secret
 	return f.createHookErr
+}
+
+func (f *fakeGitHubAppClient) CreateIssueComment(_ context.Context, _, _, owner, repo string, number int, body string) error {
+	f.commentCalls = append(f.commentCalls, fakeIssueComment{owner: owner, repo: repo, number: number, body: body})
+	return f.commentErr
+}
+
+func (f *fakeGitHubAppClient) CreateCommitStatus(_ context.Context, _, _, owner, repo, sha string, state githubapp.CommitStatusState, targetURL, description, statusContext string) error {
+	f.statusCalls = append(f.statusCalls, fakeCommitStatus{
+		owner: owner, repo: repo, sha: sha, state: state, targetURL: targetURL, description: description, context: statusContext,
+	})
+	return f.statusErr
 }
 
 func TestHandleGetGitHubAppStatus_NotConnected(t *testing.T) {

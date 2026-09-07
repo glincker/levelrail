@@ -1,8 +1,9 @@
 // Query-key factory and fetchers for preview environments per pull
 // request (internal/api/preview_environments_handlers.go): GET
 // .../previews (list), POST .../previews/{number}/teardown (manual
-// teardown), PUT .../preview-settings (the opt-in toggle, stored on the
-// app's own git source, GitSource.PreviewEnabled).
+// teardown), PUT .../preview-settings (two independent opt-in toggles
+// stored on the app's own git source: GitSource.PreviewEnabled and
+// GitSource.PostPRComments).
 
 import {
   queryOptions,
@@ -75,11 +76,24 @@ export function useTeardownPreviewEnvironment(appName: string) {
   })
 }
 
-export async function setPreviewEnabled(appName: string, enabled: boolean): Promise<{ enabled: boolean }> {
+// PreviewSettings is PUT /api/v1/apps/{name}/preview-settings's response
+// shape: internal/api's previewSettingsResource. Always both fields,
+// even when a request only touched one: the server reloads and returns
+// the resulting state of both toggles (previewSettingsResource's own
+// doc comment).
+export interface PreviewSettings {
+  enabled: boolean
+  post_pr_comments: boolean
+}
+
+async function putPreviewSettings(
+  appName: string,
+  body: { enabled?: boolean; post_pr_comments?: boolean },
+): Promise<PreviewSettings> {
   const res = await fetch(`/api/v1/apps/${encodeURIComponent(appName)}/preview-settings`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ enabled }),
+    body: JSON.stringify(body),
   })
   if (res.status === 404) {
     throw new ApiError(404, 'Connect a git source before enabling preview environments.')
@@ -87,15 +101,22 @@ export async function setPreviewEnabled(appName: string, enabled: boolean): Prom
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `set preview enabled failed: ${res.status}`),
+      await readErrorMessage(res, `set preview settings failed: ${res.status}`),
     )
   }
-  return (await res.json()) as { enabled: boolean }
+  return (await res.json()) as PreviewSettings
+}
+
+// setPreviewEnabled touches only the enabled toggle: post_pr_comments,
+// if previously set, is left unchanged (internal/api's
+// setPreviewSettingsRequest's own doc comment).
+export async function setPreviewEnabled(appName: string, enabled: boolean): Promise<PreviewSettings> {
+  return putPreviewSettings(appName, { enabled })
 }
 
 export function useSetPreviewEnabled(appName: string) {
   const queryClient = useQueryClient()
-  return useMutation<{ enabled: boolean }, ApiError, boolean>({
+  return useMutation<PreviewSettings, ApiError, boolean>({
     mutationFn: (enabled) => setPreviewEnabled(appName, enabled),
     onSuccess: (result) => {
       queryClient.setQueryData<GitSourceResource | undefined>(
@@ -105,6 +126,25 @@ export function useSetPreviewEnabled(appName: string) {
       if (result.enabled) {
         void queryClient.invalidateQueries({ queryKey: previewEnvironmentKeys.list(appName) })
       }
+    },
+  })
+}
+
+// setPreviewPostPRComments touches only the post_pr_comments toggle:
+// enabled, if previously set, is left unchanged.
+export async function setPreviewPostPRComments(appName: string, enabled: boolean): Promise<PreviewSettings> {
+  return putPreviewSettings(appName, { post_pr_comments: enabled })
+}
+
+export function useSetPreviewPostPRComments(appName: string) {
+  const queryClient = useQueryClient()
+  return useMutation<PreviewSettings, ApiError, boolean>({
+    mutationFn: (enabled) => setPreviewPostPRComments(appName, enabled),
+    onSuccess: (result) => {
+      queryClient.setQueryData<GitSourceResource | undefined>(
+        gitSourceKeys.detail(appName),
+        (current) => (current ? { ...current, post_pr_comments: result.post_pr_comments } : current),
+      )
     },
   })
 }

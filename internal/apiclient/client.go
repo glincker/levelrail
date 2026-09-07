@@ -1348,11 +1348,21 @@ func (c *Client) TeardownPreviewEnvironment(ctx context.Context, appName string,
 	return c.do(ctx, http.MethodPost, path, nil, nil)
 }
 
-// SetPreviewEnabled calls PUT /api/v1/apps/{name}/preview-settings: the
-// opt-in toggle for preview environments per pull request.
-func (c *Client) SetPreviewEnabled(ctx context.Context, appName string, enabled bool) (SetPreviewEnabledRequest, error) {
-	var out SetPreviewEnabledRequest
-	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/preview-settings", SetPreviewEnabledRequest{Enabled: enabled}, &out)
+// SetPreviewEnabled calls PUT /api/v1/apps/{name}/preview-settings,
+// touching only the enabled toggle: post_pr_comments, if previously set,
+// is left unchanged (SetPreviewSettingsRequest's own doc comment).
+func (c *Client) SetPreviewEnabled(ctx context.Context, appName string, enabled bool) (PreviewSettingsResource, error) {
+	var out PreviewSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/preview-settings", SetPreviewSettingsRequest{Enabled: &enabled}, &out)
+	return out, err
+}
+
+// SetPreviewPostPRComments calls PUT /api/v1/apps/{name}/preview-settings,
+// touching only the post_pr_comments toggle: enabled, if previously set,
+// is left unchanged.
+func (c *Client) SetPreviewPostPRComments(ctx context.Context, appName string, enabled bool) (PreviewSettingsResource, error) {
+	var out PreviewSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/preview-settings", SetPreviewSettingsRequest{PostPRComments: &enabled}, &out)
 	return out, err
 }
 

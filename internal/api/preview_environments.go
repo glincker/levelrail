@@ -111,17 +111,19 @@ func (rt *Router) deployPreviewEnvironment(ctx context.Context, appName string, 
 		}
 	}
 
+	rt.notifyPreviewPending(ctx, appName, gs, ev.HeadSHA)
+
 	token, err := rt.resolveGitSourceDeployToken(ctx, appName)
 	if err != nil {
 		rt.logger.Error("api: pull request webhook: resolve deploy token failed", slog.String("error", err.Error()), slog.String("app_name", appName))
-		rt.finishPreviewFailed(ctx, *preview, "resolve deploy token: "+err.Error())
+		rt.finishPreviewFailed(ctx, gs, *preview, "resolve deploy token: "+err.Error())
 		return http.StatusInternalServerError, "deploy failed\n"
 	}
 
 	sourceDir, cleanup, err := rt.gitSourceFetch(ctx, gs.RepoURL, ev.HeadSHA, token)
 	if err != nil {
 		rt.logger.Error("api: pull request webhook: fetch source failed", slog.String("error", err.Error()), slog.String("app_name", appName), slog.Int("pr_number", ev.Number))
-		rt.finishPreviewFailed(ctx, *preview, "fetch source: "+err.Error())
+		rt.finishPreviewFailed(ctx, gs, *preview, "fetch source: "+err.Error())
 		return http.StatusInternalServerError, "deploy failed\n"
 	}
 	defer cleanup()
@@ -140,7 +142,7 @@ func (rt *Router) deployPreviewEnvironment(ctx context.Context, appName string, 
 	}
 	if deployErr != nil {
 		rt.logger.Error("api: pull request webhook: deploy failed", slog.String("error", deployErr.Error()), slog.String("app_name", appName), slog.Int("pr_number", ev.Number))
-		rt.finishPreviewFailed(ctx, *preview, deployErr.Error())
+		rt.finishPreviewFailed(ctx, gs, *preview, deployErr.Error())
 		return http.StatusInternalServerError, "deploy failed\n"
 	}
 
@@ -164,19 +166,24 @@ func (rt *Router) deployPreviewEnvironment(ctx context.Context, appName string, 
 		return http.StatusInternalServerError, "internal error\n"
 	}
 
+	rt.notifyPreviewSuccess(ctx, appName, gs, ev.Number, ev.HeadSHA, usedDomain)
+
 	rt.logger.Info("api: pull request webhook: preview deployed", slog.String("app_name", appName), slog.Int("pr_number", ev.Number), slog.String("preview_app", previewName))
 	return statusCode, fmt.Sprintf("preview deployed: %s\n", previewName)
 }
 
 // finishPreviewFailed marks preview Failed with reason, logged but not
 // itself returned as an error: called only from paths that are already
-// about to report a failure to the webhook caller.
-func (rt *Router) finishPreviewFailed(ctx context.Context, preview store.PreviewEnvironment, reason string) {
+// about to report a failure to the webhook caller. Also posts a failure
+// commit status (notifyPreviewFailure), gs being the same connected git
+// source every caller already has in scope.
+func (rt *Router) finishPreviewFailed(ctx context.Context, gs store.GitSource, preview store.PreviewEnvironment, reason string) {
 	preview.Status, preview.StatusReason = store.PreviewStatusFailed, reason
 	preview.UpdatedAt = time.Now().UTC().Format(time.RFC3339Nano)
 	if err := rt.previewEnvironments.UpdatePreviewEnvironment(ctx, preview); err != nil {
 		rt.logger.Error("api: pull request webhook: mark preview failed failed", slog.String("error", err.Error()), slog.String("preview_id", preview.ID))
 	}
+	rt.notifyPreviewFailure(ctx, preview.AppName, gs, preview.HeadSHA, reason)
 }
 
 // domainSlice returns nil for an empty domain, rather than a
@@ -428,6 +435,8 @@ func (rt *Router) teardownPreviewRecord(ctx context.Context, preview store.Previ
 		rt.logger.Error("api: preview teardown: delete record failed", slog.String("error", err.Error()), slog.String("preview_id", preview.ID))
 		return http.StatusInternalServerError, "internal error\n"
 	}
+
+	rt.notifyPreviewTornDown(ctx, preview)
 
 	rt.logger.Info("api: preview torn down", slog.String("app_name", preview.AppName), slog.Int("pr_number", preview.PRNumber))
 	return http.StatusOK, fmt.Sprintf("preview %q torn down\n", preview.PreviewAppID)

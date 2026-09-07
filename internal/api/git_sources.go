@@ -27,6 +27,10 @@ type GitSourceStore interface {
 	// /api/v1/apps/{name}/preview-settings (preview_environments_handlers.go):
 	// the opt-in toggle for preview environments per pull request.
 	SetGitSourcePreviewEnabled(ctx context.Context, serviceName string, enabled bool) error
+	// SetGitSourcePostPRComments backs the same PUT
+	// /api/v1/apps/{name}/preview-settings route: the opt-in toggle for
+	// posting a GitHub PR comment/commit status about a preview deploy.
+	SetGitSourcePostPRComments(ctx context.Context, serviceName string, enabled bool) error
 }
 
 // GitSourceSecrets is the surface a git source's connect flow and the
@@ -87,7 +91,11 @@ type gitSourceResource struct {
 	// PreviewEnabled mirrors store.GitSource.PreviewEnabled: read-only
 	// here, set via PUT /api/v1/apps/{name}/preview-settings
 	// (preview_environments_handlers.go), not this resource's own PUT.
-	PreviewEnabled bool      `json:"preview_enabled"`
+	PreviewEnabled bool `json:"preview_enabled"`
+	// PostPRComments mirrors store.GitSource.PostPRComments: same
+	// read-only-here, set-via-preview-settings shape as PreviewEnabled
+	// above.
+	PostPRComments bool      `json:"post_pr_comments"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
 }
@@ -117,6 +125,7 @@ func toGitSourceResource(g store.GitSource, hasToken bool) gitSourceResource {
 		HasToken:           hasToken,
 		WebhookURL:         gitSourceWebhookPath(g.ServiceName),
 		PreviewEnabled:     g.PreviewEnabled,
+		PostPRComments:     g.PostPRComments,
 		CreatedAt:          g.CreatedAt,
 		UpdatedAt:          g.UpdatedAt,
 	}

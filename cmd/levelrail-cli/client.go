@@ -119,7 +119,8 @@ type (
 	updateEnvironmentRequest       = apiclient.UpdateEnvironmentRequest
 	setAppEnvironmentRequest       = apiclient.SetAppEnvironmentRequest
 	previewEnvironmentResource     = apiclient.PreviewEnvironmentResource
-	setPreviewEnabledRequest       = apiclient.SetPreviewEnabledRequest
+	setPreviewSettingsRequest      = apiclient.SetPreviewSettingsRequest
+	previewSettingsResource        = apiclient.PreviewSettingsResource
 	sweepPreviewEnvironmentsResult = apiclient.SweepPreviewEnvironmentsResult
 
 	userResource               = apiclient.UserResource

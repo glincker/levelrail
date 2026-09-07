@@ -18,6 +18,7 @@ import { toast } from '@/components/ui/toast'
 import { useGitSource } from '../queries/gitSources'
 import {
   useSetPreviewEnabled,
+  useSetPreviewPostPRComments,
   useSweepStalePreviewEnvironments,
   useTeardownPreviewEnvironment,
   usePreviewEnvironments,
@@ -73,12 +74,14 @@ function PreviewStatusBadge({ status }: { status: PreviewEnvironmentStatus }) {
 export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
   const gitSource = useGitSource(app.name)
   const setPreviewEnabled = useSetPreviewEnabled(app.name)
+  const setPostPRComments = useSetPreviewPostPRComments(app.name)
   const teardown = useTeardownPreviewEnvironment(app.name)
   const sweep = useSweepStalePreviewEnvironments()
   const previews = usePreviewEnvironments(app.name)
 
   const connected = !!gitSource.data
   const enabled = gitSource.data?.preview_enabled ?? false
+  const postPRComments = gitSource.data?.post_pr_comments ?? false
   const hasStale = previews.data?.some((p) => p.stale) ?? false
 
   function toggle(next: boolean) {
@@ -91,6 +94,20 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
       },
       onError: (error) => {
         toast.add({ title: 'Could not update preview environments.', description: error.message, type: 'error' })
+      },
+    })
+  }
+
+  function togglePostPRComments(next: boolean) {
+    setPostPRComments.mutate(next, {
+      onSuccess: () => {
+        toast.add({
+          title: next ? 'PR comments and status checks enabled.' : 'PR comments and status checks disabled.',
+          type: 'success',
+        })
+      },
+      onError: (error) => {
+        toast.add({ title: 'Could not update PR comments and status checks.', description: error.message, type: 'error' })
       },
     })
   }
@@ -157,6 +174,24 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
             aria-label="Preview environments enabled"
           />
         </div>
+
+        {enabled ? (
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-foreground">PR comments and status checks</p>
+              <p className="text-sm text-muted-foreground">
+                Post a comment with the preview URL (or a teardown notice) and a commit status
+                (pending/success/failure) on the pull request, using the connected GitHub App.
+              </p>
+            </div>
+            <Switch
+              checked={postPRComments}
+              onCheckedChange={togglePostPRComments}
+              disabled={setPostPRComments.isPending || gitSource.isLoading}
+              aria-label="Preview environment PR comments and status checks enabled"
+            />
+          </div>
+        ) : null}
 
         {enabled ? (
           previews.isLoading ? (

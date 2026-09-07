@@ -84,7 +84,7 @@ func TestTeardownPreviewApp_PartialFailure(t *testing.T) {
 		"branch":"main",
 		"services": {"web": {"build": {"type": "dockerfile"}, "port": 3000}, "worker": {"build": {"type": "dockerfile"}}}
 	}`)
-	setPreviewEnabled(t, rt, cookie, "web", true)
+	setPreviewEnabled(t, rt, cookie)
 
 	builder := &sequencedBuilder{db: db, tag: "levelrail/web-pr-42:sha1"}
 	rt.builder = builder
@@ -204,6 +204,63 @@ func TestHandleSetPreviewEnabled_NoGitSource(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/preview-settings", `{"enabled":true}`))
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+// TestHandleSetPreviewEnabled_MissingBothFields guards
+// setPreviewSettingsRequest's own "at least one of enabled/
+// post_pr_comments" requirement: an empty body would otherwise be a
+// silent no-op that still returns 200.
+func TestHandleSetPreviewEnabled_MissingBothFields(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main"}`)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/preview-settings", `{}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+// TestHandleSetPreviewEnabled_PostPRCommentsIndependentOfEnabled proves
+// the two toggles never clobber each other: enabling post_pr_comments
+// alone must leave enabled at whatever it already was, and vice versa
+// (setPreviewSettingsRequest's own doc comment).
+func TestHandleSetPreviewEnabled_PostPRCommentsIndependentOfEnabled(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main"}`)
+
+	setPreviewEnabled(t, rt, cookie)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/preview-settings", `{"post_pr_comments":true}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("set post_pr_comments: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	var got previewSettingsResource
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if !got.Enabled {
+		t.Error("Enabled = false, want true (untouched by a post_pr_comments-only request)")
+	}
+	if !got.PostPRComments {
+		t.Errorf("PostPRComments = false, want true")
+	}
+
+	gs, err := db.GetGitSource(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetGitSource() error = %v", err)
+	}
+	if !gs.PreviewEnabled || !gs.PostPRComments {
+		t.Errorf("GetGitSource() = %+v, want both PreviewEnabled and PostPRComments true", gs)
 	}
 }
 
