@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"time"
 )
 
 // deployOrRollbackConfig holds the wording that differs between "apps
@@ -67,8 +69,12 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, cfg.cmdLabel, "print the updated app as JSON to stdout and nothing else", stderr)
 	var image string
 	var confirm bool
+	var wait bool
+	var waitTimeout time.Duration
 	fs.StringVar(&image, "image", "", cfg.imageHelp)
 	fs.BoolVar(&confirm, "confirm", false, cfg.confirmHelp)
+	fs.BoolVar(&wait, "wait", false, "wait for the reconciler to converge before exiting, polling status every 2s; exits non-zero if the deploy fails or --wait-timeout elapses first")
+	fs.DurationVar(&waitTimeout, "wait-timeout", defaultDeployWaitTimeout, "how long --wait polls before giving up (e.g. 30s, 5m); ignored without --wait")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, cfg.usage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -91,6 +97,15 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
 
+	// Snapshotted before the trigger call so waitForDeployToConverge can
+	// tell a fresh reconcile pass apart from an already-passing stale
+	// one; see deployReadySince's own doc comment. Skipped when --wait is
+	// not set, since it costs a real API round trip nothing else needs.
+	var since time.Time
+	if wait {
+		since = deployReadySince(ctx, client, name, stderr)
+	}
+
 	updated, err := confirmProtectedEnvironment(confirm, stdin, stderr, func(confirm bool) (appResource, error) {
 		return client.DeployApp(ctx, name, image, confirm)
 	})
@@ -98,8 +113,28 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s app %q: %w", cfg.errContext, name, err))
 	}
 
+	if !wait {
+		return writeScheduledTaskResult(stdout, stderr, of, updated, func() {
+			_, _ = fmt.Fprintf(stderr, cfg.successFormat, updated.Name, updated.Image, prog, updated.Name)
+			printAppHuman(stdout, updated)
+		})
+	}
+
+	_, _ = fmt.Fprintf(stderr, "app %q now targets image %q; waiting up to %s for the reconciler to converge", updated.Name, updated.Image, waitTimeout)
+	outcome, waitErr := waitForDeployToConverge(ctx, client, name, since, waitTimeout, realDeploySleep, stderr)
+	_, _ = fmt.Fprintln(stderr)
+	if waitErr != nil {
+		if errors.Is(waitErr, errDeployWaitTimeout) {
+			return reportDeployWaitFailure(stdout, stderr, jsonOut, fmt.Errorf("%s app %q: %w", cfg.errContext, name, waitErr))
+		}
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s app %q: %w", cfg.errContext, name, waitErr))
+	}
+	if !outcome.Succeeded {
+		return reportDeployWaitFailure(stdout, stderr, jsonOut, fmt.Errorf("%s app %q did not converge: %s: %s", cfg.errContext, name, outcome.Reason, outcome.Message))
+	}
+
 	return writeScheduledTaskResult(stdout, stderr, of, updated, func() {
-		_, _ = fmt.Fprintf(stderr, cfg.successFormat, updated.Name, updated.Image, prog, updated.Name)
+		_, _ = fmt.Fprintf(stderr, "app %q converged on image %q (%s)\n", updated.Name, updated.Image, outcome.Reason)
 		printAppHuman(stdout, updated)
 	})
 }
@@ -118,9 +153,17 @@ use.
 If the app is tagged with a protected environment, this fails unless
 --confirm is set or you type "yes" at the interactive prompt.
 
+With --wait, this blocks until the reconciler reports the deploy as
+converged (exit 0) or failed (non-zero), or until --wait-timeout elapses
+(also non-zero), instead of returning as soon as the trigger is
+accepted. Progress is printed to stderr, so stdout stays clean for
+--json/--output.
+
 Flags:
   --image string          image reference to deploy, e.g. registry.example.com/org/app:tag (required)
   --confirm                  confirm deploying into a protected environment, skipping the interactive prompt
+  --wait                     wait for the deploy to converge before exiting; exit code reflects success or failure, not just that the trigger was accepted
+  --wait-timeout duration   how long --wait polls before giving up (default 10m); ignored without --wait
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestRun_AppsDeploy(t *testing.T) {
@@ -149,6 +151,101 @@ func TestRun_AppsDeploy_ProtectedEnvironment_DeclinedNeverRetries(t *testing.T) 
 	}
 	if !strings.Contains(stderr.String(), "protected") {
 		t.Errorf("stderr = %q, want the protected-environment error surfaced", stderr.String())
+	}
+}
+
+// deployTriggerAndStatusServer fakes a control plane that serves both
+// the trigger endpoint (POST .../deploys) and the status endpoint (GET
+// .../deploys) --wait itself polls: pollResponses[0] answers the
+// baseline read deployReadySince makes before the trigger fires,
+// pollResponses[1:] answer each poll waitForDeployToConverge makes after
+// it, clamped to the last entry once calls run past the slice.
+func deployTriggerAndStatusServer(t *testing.T, pollResponses [][]conditionResource) *httptest.Server {
+	t.Helper()
+	var getCalls int32
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Method {
+		case http.MethodPost:
+			var body deployTriggerRequest
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			w.WriteHeader(http.StatusAccepted)
+			_ = json.NewEncoder(w).Encode(appResource{Name: "web", Image: body.Image, Port: 3000})
+		case http.MethodGet:
+			n := atomic.AddInt32(&getCalls, 1) - 1
+			idx := int(n)
+			if idx >= len(pollResponses) {
+				idx = len(pollResponses) - 1
+			}
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(pollResponses[idx])
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	}))
+}
+
+// TestRun_AppsDeploy_Wait_Succeeds covers the scripting use case --wait
+// exists for: the trigger's own 202 is not exit 0 by itself anymore, the
+// polled convergence is.
+func TestRun_AppsDeploy_Wait_Succeeds(t *testing.T) {
+	fresh := time.Now()
+	srv := deployTriggerAndStatusServer(t, [][]conditionResource{
+		{}, // baseline: nothing recorded yet
+		{{Type: "Ready", Status: "True", Reason: "Deployed", LastTransitionTime: fresh}},
+	})
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "deploy", "web", "--image", "levelrail/web:2", "--wait", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "converged") {
+		t.Errorf("stderr = %q, want a converged confirmation", stderr.String())
+	}
+}
+
+// TestRun_AppsDeploy_Wait_FailsWhenReconcileFails covers a deploy that
+// is accepted by the trigger but never actually converges: --wait must
+// turn that into a non-zero exit instead of the pre-existing "trigger
+// accepted" success.
+func TestRun_AppsDeploy_Wait_FailsWhenReconcileFails(t *testing.T) {
+	fresh := time.Now()
+	srv := deployTriggerAndStatusServer(t, [][]conditionResource{
+		{},
+		{{Type: "Ready", Status: "False", Reason: "InspectFailed", Message: "container exited immediately", LastTransitionTime: fresh}},
+	})
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "deploy", "web", "--image", "levelrail/web:2", "--wait", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got != exitAPIError {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitAPIError, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "container exited immediately") {
+		t.Errorf("stderr = %q, want the reconciler's own failure message surfaced", stderr.String())
+	}
+}
+
+// TestRun_AppsDeploy_Wait_TimesOut covers a deploy that never reaches a
+// terminal state before --wait-timeout elapses: also a non-zero exit, a
+// distinct case from an observed failure above.
+func TestRun_AppsDeploy_Wait_TimesOut(t *testing.T) {
+	fresh := time.Now()
+	srv := deployTriggerAndStatusServer(t, [][]conditionResource{
+		{},
+		{{Type: "Ready", Status: "Unknown", Reason: "NoDesiredState", LastTransitionTime: fresh}},
+	})
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "deploy", "web", "--image", "levelrail/web:2", "--wait", "--wait-timeout", "1ns", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got != exitAPIError {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitAPIError, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "timed out") {
+		t.Errorf("stderr = %q, want a timeout message", stderr.String())
 	}
 }
 

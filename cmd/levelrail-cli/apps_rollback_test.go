@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 // TestRun_AppsRollback exercises "apps rollback <name> --image <ref>" end to
@@ -136,6 +137,46 @@ func TestRun_AppsRollback_ProtectedEnvironment_ConfirmFlagSkipsPrompt(t *testing
 	}
 	if *calls != 1 {
 		t.Errorf("calls = %d, want 1 (no retry needed)", *calls)
+	}
+}
+
+// TestRun_AppsRollback_Wait_Succeeds mirrors
+// TestRun_AppsDeploy_Wait_Succeeds: rollback shares its entire --wait
+// implementation with deploy (runAppsDeployOrRollback), so this is
+// mainly a wiring check that the flag reaches this command too.
+func TestRun_AppsRollback_Wait_Succeeds(t *testing.T) {
+	fresh := time.Now()
+	srv := deployTriggerAndStatusServer(t, [][]conditionResource{
+		{},
+		{{Type: "Ready", Status: "True", Reason: "Deployed", LastTransitionTime: fresh}},
+	})
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "rollback", "web", "--image", "levelrail/web:old", "--wait", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "converged") {
+		t.Errorf("stderr = %q, want a converged confirmation", stderr.String())
+	}
+}
+
+func TestRun_AppsRollback_Wait_FailsWhenReconcileFails(t *testing.T) {
+	fresh := time.Now()
+	srv := deployTriggerAndStatusServer(t, [][]conditionResource{
+		{},
+		{{Type: "Ready", Status: "False", Reason: "InspectFailed", Message: "image not found", LastTransitionTime: fresh}},
+	})
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "rollback", "web", "--image", "levelrail/web:old", "--wait", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got != exitAPIError {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitAPIError, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "image not found") {
+		t.Errorf("stderr = %q, want the reconciler's own failure message surfaced", stderr.String())
 	}
 }
 

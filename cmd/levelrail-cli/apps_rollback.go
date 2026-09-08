@@ -61,18 +61,26 @@ history lookup here: pass the exact older tag you want to roll back to
 find it).
 
 This command does not validate that IMAGE exists or ever ran
-successfully before returning: exit 0 only means the server accepted
-the request, not that the rollback converged. A typo'd or never-built
-tag, or the app's already-current image, both report the same success
-here; check "%[1]s apps status <name>" to confirm the rollback
-actually landed before treating this as done.
+successfully before returning: without --wait, exit 0 only means the
+server accepted the request, not that the rollback converged. A typo'd
+or never-built tag, or the app's already-current image, both report the
+same success here; check "%[1]s apps status <name>" to confirm the
+rollback actually landed before treating this as done.
 
 If the app is tagged with a protected environment, this fails unless
 --confirm is set or you type "yes" at the interactive prompt.
 
+With --wait, this blocks until the reconciler reports the rollback as
+converged (exit 0) or failed (non-zero), or until --wait-timeout elapses
+(also non-zero), instead of returning as soon as the trigger is
+accepted. Progress is printed to stderr, so stdout stays clean for
+--json/--output.
+
 Flags:
   --image string          older, already-built image reference to roll back to (required)
   --confirm                  confirm rolling back into a protected environment, skipping the interactive prompt
+  --wait                     wait for the rollback to converge before exiting; exit code reflects success or failure, not just that the trigger was accepted
+  --wait-timeout duration   how long --wait polls before giving up (default 10m); ignored without --wait
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
