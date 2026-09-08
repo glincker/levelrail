@@ -413,6 +413,16 @@ func (c *Client) ExecApp(ctx context.Context, name string, req ExecRequest) (Exe
 	return out, err
 }
 
+// ExecDatabase calls POST /api/v1/databases/{name}/exec: ExecApp's
+// database counterpart (internal/api/database_exec.go's own
+// handleExecDatabase), same AbilityRoot gating and same reasoning, only
+// more so: a database's own root credentials are plain container env.
+func (c *Client) ExecDatabase(ctx context.Context, name string, req ExecRequest) (ExecResponse, error) {
+	var out ExecResponse
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/exec", req, &out)
+	return out, err
+}
+
 // ListDomains calls GET /api/v1/domains: every service_domains row
 // across every app, aggregated in one call.
 func (c *Client) ListDomains(ctx context.Context) ([]DomainResource, error) {

@@ -502,6 +502,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/databases/{name}/public-access", rt.requireAbility(AbilityWriteSensitive, rt.handleSetDatabasePublicAccess))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}/public-access", rt.requireAbility(AbilityWriteSensitive, rt.handleClearDatabasePublicAccess))
 
+	// Exec, per database (database_exec.go). AbilityRoot, the same tier
+	// and reasoning POST /api/v1/apps/{name}/exec uses in routes.go: it
+	// can read whatever the container's own env holds, which for a
+	// database includes its root credentials.
+	mux.HandleFunc("POST /api/v1/databases/{name}/exec", rt.requireAbility(AbilityRoot, rt.handleExecDatabase))
+
 	// Restore, per database (restore.go). AbilityRoot, not
 	// AbilityWriteSensitive: see handleTriggerRestore's own doc comment
 	// for why this, alone among every backup-related route, needs the

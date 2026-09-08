@@ -5,6 +5,7 @@ import {
   CpuIcon,
   PulseIcon,
   ScrollIcon,
+  TerminalIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   SidebarGroup,
@@ -22,14 +23,14 @@ import { summarizeDatabaseStatus } from '../lib/databaseStatus'
 // direct structural sibling of AppScopedSidebar.tsx: rendered in place of
 // the global nav whenever the current route is under /databases/$name/*.
 //
-// Four nav items now, not two: Overview and Resources (unchanged) plus
-// Metrics and Logs (internal/api/database_metrics.go,
-// internal/api/database_logs.go), closing the observability gap this
-// sidebar used to document as missing. Still no domains/environment/
-// health/alerts equivalent, and still no frontend connection-string/
-// credentials display (cmd/levelrail's database_credentials.go remains a
-// CLI-only subcommand): those stay genuinely absent, not just
-// undocumented.
+// Five nav items now: Overview and Resources, Metrics and Logs
+// (internal/api/database_metrics.go, internal/api/database_logs.go),
+// and Exec (internal/api/database_exec.go), closing the observability
+// and one-off-command gaps this sidebar used to document as missing.
+// Still no domains/environment/health/alerts equivalent, and still no
+// frontend connection-string/credentials display (cmd/levelrail's
+// database_credentials.go remains a CLI-only subcommand): those stay
+// genuinely absent, not just undocumented.
 //
 // Reads database name/status from the same query cache
 // routes/databases/$name.tsx's layout route loader already primed
@@ -115,6 +116,16 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
               >
                 <ScrollIcon />
                 <span>Logs</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={<Link to="/databases/$name/exec" params={{ name }} />}
+                isActive={pathname.endsWith('/exec')}
+                tooltip="Exec"
+              >
+                <TerminalIcon />
+                <span>Exec</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

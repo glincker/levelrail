@@ -57,3 +57,43 @@ export function useExecApp(name: string) {
     mutationFn: (input: ExecAppInput) => execInApp(name, input),
   })
 }
+
+// POST /api/v1/databases/{name}/exec (internal/api/database_exec.go's
+// handleExecDatabase): ExecAppInput/execInApp/useExecApp's database
+// counterpart, identical shape and identical "no cache, no key"
+// reasoning above.
+export type ExecDatabaseInput = ExecAppInput
+export type ExecDatabaseResult = ExecAppResult
+
+export async function execInDatabase(
+  name: string,
+  input: ExecDatabaseInput,
+): Promise<ExecDatabaseResult> {
+  const res = await fetch(
+    `/api/v1/databases/${encodeURIComponent(name)}/exec`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        command: input.command,
+        ...(input.args && input.args.length > 0 ? { args: input.args } : {}),
+        ...(input.timeoutSeconds
+          ? { timeout_seconds: input.timeoutSeconds }
+          : {}),
+      }),
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `exec failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as ExecDatabaseResult
+}
+
+export function useExecDatabase(name: string) {
+  return useMutation({
+    mutationFn: (input: ExecDatabaseInput) => execInDatabase(name, input),
+  })
+}
