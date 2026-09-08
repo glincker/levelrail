@@ -27,6 +27,9 @@ services:
     volumes:
       - name: data
         path: /var/lib/data
+    hooks:
+      preDeploy: rails db:migrate
+      postDeploy: curl -f https://hooks.example.com/deployed
 databases:
   main:
     engine: postgres

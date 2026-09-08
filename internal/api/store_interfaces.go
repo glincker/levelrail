@@ -305,6 +305,16 @@ type AuditStore interface {
 	DeleteAuditEntriesOlderThan(ctx context.Context, cutoff time.Time) (int64, error)
 }
 
+// HookRunStore is the store surface GET /api/v1/apps/{name}/hook-runs
+// (apps_hooks.go) needs: the most recent outcome of each of a service's
+// pre/post-deploy hooks (internal/reconcile/application's own
+// HookRunRecorder, migrations/0083_service_hook_runs.sql). Always set,
+// the same "core Store interface, not an optional plug-in" shape
+// domainMaintenance above establishes.
+type HookRunStore interface {
+	GetHookRuns(ctx context.Context, serviceName string) ([]store.HookRun, error)
+}
+
 // Store is the full surface NewRouter needs. *store.DB satisfies it
 // structurally, same pattern internal/reconcile/application.ServiceStore
 // already established for this codebase.
@@ -356,6 +366,7 @@ type Store interface {
 	WebhookDeliveryStore
 	PolicyStore
 	DeviceAuthStore
+	HookRunStore
 }
 
 // SecretSetter is the surface the secrets handlers need from

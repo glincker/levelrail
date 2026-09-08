@@ -39,6 +39,13 @@ type appResource struct {
 	Env       map[string]string       `json:"env,omitempty"`
 	Resources *store.ServiceResources `json:"resources,omitempty"`
 	Health    *store.ServiceHealth    `json:"health,omitempty"`
+	// Hooks are this service's pre/post-deploy commands
+	// (store.DesiredService.Hooks), settable on create and update like
+	// Resources/Health above. See internal/reconcile/application.Controller's
+	// own doc comment for when each one runs and what a failure does; see
+	// GET /api/v1/apps/{name}/hook-runs (apps_hooks.go) for the most
+	// recent outcome of each.
+	Hooks *store.ServiceHooks `json:"hooks,omitempty"`
 	// Strategy and Replicas deliberately have no `omitempty`: a real
 	// store.DesiredService read back from the store is documented to
 	// always carry the *resolved* value (never "" / 0, see that
@@ -170,6 +177,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		Env:                svc.Env,
 		Resources:          svc.Resources,
 		Health:             svc.Health,
+		Hooks:              svc.Hooks,
 		Strategy:           svc.Strategy,
 		Replicas:           svc.Replicas,
 		Labels:             svc.Labels,
@@ -197,6 +205,7 @@ func (a appResource) toDesiredService() store.DesiredService {
 		Env:       a.Env,
 		Resources: a.Resources,
 		Health:    a.Health,
+		Hooks:     a.Hooks,
 		Strategy:  a.Strategy,
 		Replicas:  a.Replicas,
 		Labels:    a.Labels,
@@ -240,6 +249,14 @@ func validateAppResource(a appResource) error {
 	}
 	if err := spec.ValidateLabels(a.Labels); err != nil {
 		return err
+	}
+	// Mirrors the app.yaml schema's own minProperties: 1 on hooks: (this
+	// endpoint's store.ServiceHooks bypasses that schema entirely, so the
+	// same "no pointless empty block" rule needs its own check here): a
+	// non-nil Hooks with both commands empty can only be a caller mistake,
+	// never a meaningful desired state.
+	if a.Hooks != nil && a.Hooks.PreDeploy == "" && a.Hooks.PostDeploy == "" {
+		return errors.New("hooks must set at least one of pre_deploy or post_deploy")
 	}
 	for _, domain := range a.Domains {
 		if err := ingress.ValidateWildcardDomain(domain); err != nil {

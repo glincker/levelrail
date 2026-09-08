@@ -274,6 +274,7 @@ type Router struct {
 	policies                       PolicyStore                      // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
 	deviceAuth                     DeviceAuthStore                  // always set, same "core Store interface" shape as policies above: device_auth_requests always exists
 	deviceFlow                     *loginLimiter                    // per-IP device-login-start budget, distinct from logins/forgotPasswordByIP above
+	hookRuns                       HookRunStore                     // always set, same "core Store interface" shape as policies above: service_hook_runs always exists, empty is a valid, non-error result
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
@@ -302,6 +303,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		domains:                     s,
 		domainBasicAuth:             s,
 		domainMaintenance:           s,
+		hookRuns:                    s,
 		lookupHost:                  defaultLookupHost,
 		domainChecks:                newDomainCheckCache(),
 		backupTargets:               s,

@@ -46,7 +46,17 @@
         "volumes": {
           "type": "array",
           "items": { "$ref": "#/$defs/volume" }
-        }
+        },
+        "hooks": { "$ref": "#/$defs/hooks" }
+      }
+    },
+    "hooks": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "preDeploy": { "type": "string", "minLength": 1 },
+        "postDeploy": { "type": "string", "minLength": 1 }
       }
     },
     "volume": {

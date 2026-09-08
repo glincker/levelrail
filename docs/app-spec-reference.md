@@ -37,6 +37,9 @@ services:
     labels:
       team: platform
       tier: frontend
+    hooks:
+      preDeploy: rails db:migrate
+      postDeploy: curl -f https://hooks.example.com/deployed
 databases:
   main:
     engine: postgres          # postgres | redis | mysql | mongodb | mariadb | keydb | clickhouse | dragonfly
@@ -77,6 +80,7 @@ as `LOG_LEVEL`).
 | `replicas` | integer | no | `1` | Minimum 1 if set. `Service.EffectiveReplicas()` returns this value or the default. |
 | `strategy` | string | no | `blue-green` | One of `rolling`, `recreate`, `blue-green`. `Service.EffectiveStrategy()` returns this value or the default, chosen because blue-green is easier to get right than rolling with a single replica. |
 | `labels` | map of string to string | no | none | Arbitrary operator-supplied Docker labels applied to the container at create time. See Validation below for the limits enforced on these. |
+| `hooks` | `Hooks` | no | none | Pre/post-deploy commands run inside the container. Not meaningful when `build.type` is `static` or `compose`. |
 
 ### `Build`
 
@@ -110,6 +114,26 @@ as `LOG_LEVEL`).
 | `cpu` | number | no | none | Must be greater than 0 if set. |
 | `swapMemory` | string | no | none | Same pattern as `memory`. Docker's `MemorySwap`: the combined memory+swap ceiling, not swap on top of memory, so it must be at least `memory` and requires `memory` to also be set. |
 | `cpuSet` | string | no | none | Docker's `cpuset-cpus` format, for example `0-3` or `0,2`. Pins the container to specific host CPUs. |
+
+### `Hooks`
+
+Shell commands the reconciler runs inside the service's own container via
+the Docker Engine API's exec facility ("sh", "-c", the command), not by
+shelling out. See `internal/reconcile/application/controller.go`'s own doc
+comments for the full timing and failure-handling contract; summary below.
+
+| Field | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `preDeploy` | string | no | none | Runs once per deploy, before the new container's readiness probe and before any old container is removed. A nonzero exit blocks the deploy: the new container is rolled back and whatever was previously running keeps serving. |
+| `postDeploy` | string | no | none | Runs once per deploy, after the full replica set has cut over and any stale container has been removed. A nonzero exit is reported (a `PostDeployHookFailed` reconcile condition, a real error in logs) but never rolls back an already-successful cutover. |
+
+At least one of `preDeploy`/`postDeploy` must be set; an empty `hooks: {}`
+block is rejected. With more than one replica, each hook still runs exactly
+once per deploy (against the first replica), not once per replica: running
+a database migration N times per deploy would be wrong even though every
+replica gets a freshly built container from the same image. The most
+recent outcome of each hook (exit code, captured output) is queryable via
+`GET /api/v1/apps/{name}/hook-runs`.
 
 ### `EnvVar` (an entry under `env`)
 
@@ -181,6 +205,11 @@ before a caller ever sees a `Spec`:
      here, since it needs both values converted to bytes first) must be at
      least `resources.memory`: Docker's `MemorySwap` is the combined
      memory+swap ceiling, not swap on top of memory.
+   - `hooks` is rejected when `build.type` is `static` (no container to run
+     a command in) or `compose` (a wrapper that expands into N real
+     services, none of which one `hooks` block could unambiguously target).
+     An empty `hooks: {}` block (the schema's own `minProperties: 1`) is
+     rejected at the schema layer.
 
 `spec.Parse` also runs `yamlUnmarshalStrict`, a YAML decode with
 `KnownFields(true)`, as an independent second guard against the struct

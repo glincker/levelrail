@@ -31,6 +31,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsDeploySpec(prog, args[1:], stdout, stderr, lookupEnv)
 	case "group":
 		return runAppsGroup(prog, args[1:], stdout, stderr, lookupEnv)
+	case "hook-runs":
+		return runAppsHookRuns(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rollback":
 		return runAppsRollback(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "deploys":
@@ -101,6 +103,7 @@ func appsUsage(prog string) string {
   %[1]s apps deploy-compose <name> --file compose.yaml [flags]   deploy a Docker Compose file as an app
   %[1]s apps deploy-spec <name> --file app.yaml --repo-url <url> --ref <ref> [flags]   fan an app.yaml's services: map out into N independent builds under one app
   %[1]s apps group <name> [flags]   show name's sibling services under the same multi-service app
+  %[1]s apps hook-runs <name> [flags]   show the most recent outcome of name's pre/post-deploy hooks
   %[1]s apps rollback <name> [flags]   redeploy an older image (same endpoint as deploy)
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
   %[1]s apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--preview] [flags]   promote name's image onto a sibling app in another environment

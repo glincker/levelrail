@@ -25,6 +25,16 @@ export interface ServiceHealth {
   liveness?: ServiceProbe | null
 }
 
+// Matches internal/api/apps.go's appResource.Hooks exactly
+// (store.ServiceHooks' JSON encoding): commands the reconciler runs
+// inside the service's own container at defined points in a deploy. See
+// internal/reconcile/application.Controller's own doc comment for the
+// full timing and failure-handling contract.
+export interface ServiceHooks {
+  pre_deploy?: string
+  post_deploy?: string
+}
+
 // The three deploy strategy values internal/spec.Service.Strategy
 // accepts (internal/spec/spec.go's StrategyRolling/StrategyRecreate/
 // StrategyBlueGreen), all three reconciler-backed.
@@ -75,6 +85,10 @@ export interface AppDetail {
   // rather than waiting for the next deploy or restart.
   resources_applied_live?: boolean
   health?: ServiceHealth | null
+  // hooks carries `omitempty` on the Go side: undefined means neither a
+  // pre-deploy nor a post-deploy command is configured. Settable on
+  // create and update, like health/resources above.
+  hooks?: ServiceHooks | null
   strategy: DeployStrategy
   replicas: number
   // Custom Docker labels applied to the container at create time

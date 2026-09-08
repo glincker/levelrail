@@ -74,7 +74,26 @@ func (svc *Service) validate(name string) error {
 	if err := ValidateLabels(svc.Labels); err != nil {
 		return fmt.Errorf("spec: service %q: %w", name, err)
 	}
+	if err := svc.validateHooks(name); err != nil {
+		return err
+	}
 	return svc.validateVolumes(name)
+}
+
+// validateHooks rejects a hooks: block on a build.type with no single
+// container for the reconciler to exec a command inside: static (no
+// container at all) and compose (a wrapper that expands into N real
+// services at deploy time, per validatePorts' own comment on the same
+// build.type, none of which this one hooks: block could unambiguously
+// target).
+func (svc *Service) validateHooks(name string) error {
+	if svc.Hooks == nil {
+		return nil
+	}
+	if svc.Build.Type == BuildStatic || svc.Build.Type == BuildCompose {
+		return fmt.Errorf("spec: service %q: hooks is not meaningful for build.type %q, there is no single container to run a command in", name, svc.Build.Type)
+	}
+	return nil
 }
 
 // validateBuild checks the build.type/path/image/args/baseDirectory

@@ -68,6 +68,10 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		}
 	}
 
+	if svc.Hooks != nil {
+		d.Hooks = &store.ServiceHooks{PreDeploy: svc.Hooks.PreDeploy, PostDeploy: svc.Hooks.PostDeploy}
+	}
+
 	return d, nil
 }
 

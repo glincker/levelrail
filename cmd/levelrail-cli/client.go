@@ -16,6 +16,7 @@ type (
 	serviceResources                 = apiclient.ServiceResources
 	serviceProbe                     = apiclient.ServiceProbe
 	serviceHealth                    = apiclient.ServiceHealth
+	serviceHooks                     = apiclient.ServiceHooks
 	buildTriggerRequest              = apiclient.BuildTriggerRequest
 	buildTriggerRequestBuild         = apiclient.BuildTriggerRequestBuild
 	buildTriggerResponse             = apiclient.BuildTriggerResponse
@@ -59,9 +60,12 @@ type (
 	appDatabaseResource              = apiclient.AppDatabaseResource
 	appStatusSummary                 = apiclient.AppStatusSummary
 	appGroupResource                 = apiclient.AppGroupResource
+	hookRunResource                  = apiclient.HookRunResource
+	appHookRunsResource              = apiclient.AppHookRunsResource
 	deploySpecServiceBuild           = apiclient.DeploySpecServiceBuild
 	deploySpecServiceEnv             = apiclient.DeploySpecServiceEnv
 	deploySpecService                = apiclient.DeploySpecService
+	deploySpecServiceHooks           = apiclient.DeploySpecServiceHooks
 	deploySpecRequest                = apiclient.DeploySpecRequest
 	deploySpecServiceResult          = apiclient.DeploySpecServiceResult
 	deploySpecResult                 = apiclient.DeploySpecResult

@@ -42,6 +42,15 @@ type ServiceHealth struct {
 	Liveness  *ServiceProbe `json:"liveness,omitempty"`
 }
 
+// ServiceHooks holds a service's pre/post-deploy hook commands
+// (internal/spec.Hooks' storage home, migrations/0082_service_hooks.sql).
+// See internal/reconcile/application.Controller's own doc comment for
+// when each one runs and what a failure does.
+type ServiceHooks struct {
+	PreDeploy  string `json:"pre_deploy,omitempty"`
+	PostDeploy string `json:"post_deploy,omitempty"`
+}
+
 // DatabaseEnvRef is one env var's parsed { from: "<database>.<field>" }
 // reference (internal/spec.EnvVar.From), stored on DesiredService.
 // DatabaseEnv. Database is a desired_databases.name; Field is one of
@@ -134,6 +143,12 @@ type DesiredService struct {
 
 	Resources *ServiceResources
 	Health    *ServiceHealth
+	// Hooks are this service's pre/post-deploy commands
+	// (internal/spec.Service.Hooks), nil meaning neither is configured.
+	// A normal deploy-time field, resolved and stored as a whole on every
+	// SaveDesiredService call, the same shape Resources/Health already
+	// follow.
+	Hooks *ServiceHooks
 
 	// Volumes are named Docker volumes this service's container mounts
 	// (migrations/0041_service_volumes.sql), previously a
@@ -347,6 +362,10 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	if err != nil {
 		return fmt.Errorf("store: marshal health for service %q: %w", svc.Name, err)
 	}
+	hooksJSON, err := json.Marshal(svc.Hooks)
+	if err != nil {
+		return fmt.Errorf("store: marshal hooks for service %q: %w", svc.Name, err)
+	}
 	labelsJSON, err := json.Marshal(nonNilMap(svc.Labels))
 	if err != nil {
 		return fmt.Errorf("store: marshal labels for service %q: %w", svc.Name, err)
@@ -378,8 +397,8 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	}()
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, host_port, domains, env, secret_env, env_dirty, database_env, resources, health, node_id, strategy, replicas, labels, volumes, registry_credential_id, project_id, environment_id, app_id, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, NULL, NULL, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, host_port, domains, env, secret_env, env_dirty, database_env, resources, health, hooks, node_id, strategy, replicas, labels, volumes, registry_credential_id, project_id, environment_id, app_id, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, NULL, NULL, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
@@ -391,13 +410,14 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 			database_env = excluded.database_env,
 			resources = excluded.resources,
 			health = excluded.health,
+			hooks = excluded.hooks,
 			strategy = excluded.strategy,
 			replicas = excluded.replicas,
 			labels = excluded.labels,
 			volumes = excluded.volumes,
 			registry_credential_id = excluded.registry_credential_id,
 			updated_at = excluded.updated_at
-	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), string(domainsJSON), string(envJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(resourcesJSON), string(healthJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""})
+	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), string(domainsJSON), string(envJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""})
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
@@ -815,20 +835,20 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, host_port, domains, env, secret_env, env_dirty, database_env, resources, health, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id"
+const desiredServiceColumns = "name, image, port, host_port, domains, env, secret_env, env_dirty, database_env, resources, health, hooks, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
 // signature), so the decode-JSON-columns logic exists exactly once.
 func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	var (
-		svc                                                                                          DesiredService
-		domainsJSON, envJSON, secretEnvJSON, databaseEnvJSON, resourcesJSON, health, labels, volumes string
-		projectID, storageTargetID, appID, logDrainJSON, environmentID                               sql.NullString
-		hostPort                                                                                     sql.NullInt64
-		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                      string
+		svc                                                                                                 DesiredService
+		domainsJSON, envJSON, secretEnvJSON, databaseEnvJSON, resourcesJSON, health, hooks, labels, volumes string
+		projectID, storageTargetID, appID, logDrainJSON, environmentID                                      sql.NullString
+		hostPort                                                                                            sql.NullInt64
+		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                             string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &resourcesJSON, &health, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &resourcesJSON, &health, &hooks, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String
@@ -863,6 +883,11 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	if health != "null" {
 		if err := json.Unmarshal([]byte(health), &svc.Health); err != nil {
 			return nil, fmt.Errorf("unmarshal health: %w", err)
+		}
+	}
+	if hooks != "null" {
+		if err := json.Unmarshal([]byte(hooks), &svc.Hooks); err != nil {
+			return nil, fmt.Errorf("unmarshal hooks: %w", err)
 		}
 	}
 	if err := json.Unmarshal([]byte(labels), &svc.Labels); err != nil {

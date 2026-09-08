@@ -24,7 +24,7 @@ stub, the substance lives in the imported component.
 | --- | --- |
 | Overview | Hero, conditions, `DiagnosisPanel` |
 | Deploys | History, live/replay log stream, `deploys/compare` |
-| Deploy settings | Strategy config |
+| Deploy settings | Strategy config, `HooksEditor` (pre/post-deploy commands + last run outcome) |
 | Domains | `DomainEditor` |
 | Environment | Env var editor |
 | Exec | `ExecPanel` (one-off container exec) |
@@ -61,13 +61,13 @@ containers, updates.
 
 ## API resource groups (`internal/api/routes.go`, `routes_platform.go`)
 
-259 registered routes total, grouped by resource:
+263 registered routes total, grouped by resource:
 
 | Resource | Routes | Representative paths |
 | --- | --- | --- |
 | System (status/doctor/containers/prune/master-key/firewall/onboarding/updates) | 12 | `GET /system/status`, `POST /system/prune`, `POST /system/master-key/rotate` |
 | Auth/2FA/users/roles/IAM/device-auth/OAuth | 33 | `/auth/login`, `/auth/2fa/*`, `/iam/policies*`, `/auth/device/*` |
-| Apps CRUD/lifecycle/deploy | 30 | `/apps`, `/apps/{name}/deploys`, `/restart`, `/exec`, `/deploy-spec` |
+| Apps CRUD/lifecycle/deploy | 31 | `/apps`, `/apps/{name}/deploys`, `/restart`, `/exec`, `/deploy-spec`, `/hook-runs` |
 | Secrets / git-source / webhooks / previews | 12 | `/apps/{name}/secrets*`, `/webhooks/github/{name}`, `/previews*` |
 | Telemetry (metrics/logs) | 10 | `/apps/{name}/metrics`, `/logs/stream`, `/logs/download` |
 | Alerts / scheduled tasks / feature flags / notify channels | 22 | `/apps/{name}/alerts`, `/flags/evaluate/{key}`, `/notification-channels*` |
@@ -93,8 +93,8 @@ containers, updates.
 Key subcommand groups:
 
 - **apps**: create, list, get, deploy, deploy-compose, deploy-spec,
-  group, rollback, deploys, promote, restart, stop, start, delete,
-  status, diagnose, resource-recommendation, network, logs, exec,
+  group, hook-runs, rollback, deploys, promote, restart, stop, start,
+  delete, status, diagnose, resource-recommendation, network, logs, exec,
   log-drain, scheduled-tasks, alerts, organizations, projects,
   environments, previews, secrets, git-source, webhook-deliveries
 - **databases**: create, list, get, delete, resource-recommendation
