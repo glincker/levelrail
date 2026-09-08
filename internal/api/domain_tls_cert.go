@@ -67,17 +67,12 @@ type setDomainTLSCertRequest struct {
 }
 
 // validateCertKeyPair parses certPEM/keyPEM as a matched pair using
-// crypto/tls.X509KeyPair, the same validation Caddy's own load_pem
-// certificate loader performs (modules/caddytls/pemloader.go's
-// PEMLoader.LoadCertificates): any pair X509KeyPair rejects would also
-// fail at Caddy's own load step, so this handler fails fast with a
-// clearer error instead of only discovering the problem on the next
-// ingress reconcile. An already-expired certificate is rejected outright
-// rather than accepted with a warning: an operator uploading dead cert
-// material is almost certainly a mistake, and this codebase already
-// treats a TLS/cert problem as worth failing loudly on (see
-// internal/reconcile/ingress's own "fail closed on a security control"
-// precedent for basic auth).
+// crypto/tls.X509KeyPair, the exact check Caddy's own load_pem loader
+// performs (modules/caddytls/pemloader.go), so a rejected pair here
+// would also fail at Caddy's own load step. An already-expired
+// certificate is rejected rather than accepted with a warning: uploading
+// dead cert material is almost certainly a mistake worth failing loudly
+// on, not silently accepting.
 func validateCertKeyPair(certPEM, keyPEM string) (*x509.Certificate, error) {
 	pair, err := tls.X509KeyPair([]byte(certPEM), []byte(keyPEM))
 	if err != nil {
