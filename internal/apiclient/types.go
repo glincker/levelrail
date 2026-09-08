@@ -259,6 +259,93 @@ type UpdateCloudflareTunnelRequest struct {
 	Token   string `json:"token,omitempty"`
 }
 
+// EmailSettingsResource mirrors internal/api's emailSettingsResource
+// (internal/api/email_settings.go): GET/PUT /api/v1/settings/email's
+// wire shape. Neither credential field is ever populated in a response,
+// only the two *Set booleans; on a PUT, leaving a credential field empty
+// keeps whatever is already stored.
+type EmailSettingsResource struct {
+	Backend               string `json:"backend"`
+	SMTPHost              string `json:"smtp_host,omitempty"`
+	SMTPPort              int    `json:"smtp_port,omitempty"`
+	SMTPUsername          string `json:"smtp_username,omitempty"`
+	SMTPFrom              string `json:"smtp_from,omitempty"`
+	SMTPPasswordSet       bool   `json:"smtp_password_set,omitempty"`
+	SESRegion             string `json:"ses_region,omitempty"`
+	SESAccessKeyID        string `json:"ses_access_key_id,omitempty"`
+	SESFrom               string `json:"ses_from,omitempty"`
+	SESSecretAccessKeySet bool   `json:"ses_secret_access_key_set,omitempty"`
+}
+
+// UpdateEmailSettingsRequest mirrors internal/api's emailSettingsResource
+// as decoded on PUT: SMTPPassword/SESSecretAccessKey empty means "leave
+// whatever is stored alone".
+type UpdateEmailSettingsRequest struct {
+	Backend            string `json:"backend"`
+	SMTPHost           string `json:"smtp_host,omitempty"`
+	SMTPPort           int    `json:"smtp_port,omitempty"`
+	SMTPUsername       string `json:"smtp_username,omitempty"`
+	SMTPFrom           string `json:"smtp_from,omitempty"`
+	SMTPPassword       string `json:"smtp_password,omitempty"`
+	SESRegion          string `json:"ses_region,omitempty"`
+	SESAccessKeyID     string `json:"ses_access_key_id,omitempty"`
+	SESFrom            string `json:"ses_from,omitempty"`
+	SESSecretAccessKey string `json:"ses_secret_access_key,omitempty"`
+}
+
+// OAuthProviderSettingsResource mirrors internal/api's
+// oauthProviderSettingsResource (internal/api/oauth_settings.go):
+// GET /api/v1/settings/oauth's per-provider wire shape. ClientSecret is
+// never included in a response; HasClientSecret only reports whether one
+// is stored.
+type OAuthProviderSettingsResource struct {
+	Provider           string `json:"provider"`
+	Enabled            bool   `json:"enabled"`
+	ClientID           string `json:"client_id,omitempty"`
+	AllowedEmailDomain string `json:"allowed_email_domain,omitempty"`
+	IssuerURL          string `json:"issuer_url,omitempty"`
+	DisplayName        string `json:"display_name,omitempty"`
+	HasClientSecret    bool   `json:"has_client_secret"`
+}
+
+// UpdateOAuthProviderSettingsRequest mirrors internal/api's
+// updateOAuthProviderSettingsRequest. ClientSecret empty on an update
+// means "leave the currently stored secret unchanged".
+type UpdateOAuthProviderSettingsRequest struct {
+	Enabled            bool   `json:"enabled"`
+	ClientID           string `json:"client_id"`
+	ClientSecret       string `json:"client_secret,omitempty"`
+	AllowedEmailDomain string `json:"allowed_email_domain"`
+	IssuerURL          string `json:"issuer_url"`
+	DisplayName        string `json:"display_name"`
+}
+
+// IngressSettingsResource mirrors internal/api's ingressSettingsResource
+// (internal/api/ingress_settings.go): GET/PUT
+// /api/v1/settings/ingress's wire shape.
+type IngressSettingsResource struct {
+	PrimaryDomain    string `json:"primary_domain,omitempty"`
+	ACMEEnabled      bool   `json:"acme_enabled"`
+	ACMEEmail        string `json:"acme_email,omitempty"`
+	ACMEDirectoryURL string `json:"acme_directory_url,omitempty"`
+}
+
+// IngressDomainCheckResource mirrors internal/api's
+// ingressDomainCheckResponse (internal/api/ingress_settings.go): GET
+// /api/v1/settings/ingress/check's wire shape. Configured is false, with
+// every other field left zero, when no primary domain is set yet.
+type IngressDomainCheckResource struct {
+	Configured    bool     `json:"configured"`
+	Domain        string   `json:"domain,omitempty"`
+	ExpectedHost  string   `json:"expected_host,omitempty"`
+	HostInferred  bool     `json:"host_inferred,omitempty"`
+	Resolved      bool     `json:"resolved"`
+	ResolvedHosts []string `json:"resolved_hosts,omitempty"`
+	Status        string   `json:"status,omitempty"`
+	ExpectedIPv4  []string `json:"expected_ipv4,omitempty"`
+	ExpectedIPv6  []string `json:"expected_ipv6,omitempty"`
+}
+
 // DomainBasicAuthResource mirrors internal/api's domainBasicAuthResource
 // (internal/api/domain_basic_auth.go): GET/PUT/DELETE
 // /api/v1/apps/{name}/domains/{domain}/auth's wire shape. The password

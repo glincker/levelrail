@@ -80,6 +80,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAppVolumeBackups(prog, args[1:], stdout, stderr, lookupEnv)
 	case "cloudflare-tunnel":
 		return runCloudflareTunnel(prog, args[1:], stdout, stderr, lookupEnv)
+	case "settings":
+		return runSettings(prog, args[1:], stdout, stderr, lookupEnv)
 	case "channels":
 		return runChannels(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backup-targets":
@@ -141,6 +143,9 @@ Usage:
   %[1]s backups list|trigger|restore <database> [flags]   database backup history, manual trigger, and restore
   %[1]s app-volume-backups list|trigger|restore <app> <volume> [flags]   app volume backup history, manual trigger, and restore
   %[1]s cloudflare-tunnel get|set|disconnect [flags]   expose the control plane through a Cloudflare Tunnel
+  %[1]s settings email get|set [flags]                 outbound email (SMTP or SES) for password resets and invites
+  %[1]s settings oauth list|set [flags]                OAuth sign-in providers (google, github, oidc)
+  %[1]s settings ingress get|set|check [flags]          embedded Caddy ingress: primary domain and ACME
   %[1]s channels list|create|delete|test [flags]           manage notification channels (Slack, Discord, Telegram, email, Pushover, webhook)
   %[1]s backup-targets list|get|create|update|delete [flags]   manage connected S3-compatible backup destinations
   %[1]s registry-credentials list|get|create|update|delete [flags]   manage private container registry pull credentials

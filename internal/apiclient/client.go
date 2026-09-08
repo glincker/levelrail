@@ -469,6 +469,62 @@ func (c *Client) DisconnectCloudflareTunnel(ctx context.Context) (CloudflareTunn
 	return out, err
 }
 
+// GetEmailSettings calls GET /api/v1/settings/email: outbound email
+// backend configuration (SMTP or SES), never including a stored
+// credential's plaintext value.
+func (c *Client) GetEmailSettings(ctx context.Context) (EmailSettingsResource, error) {
+	var out EmailSettingsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/email", nil, &out)
+	return out, err
+}
+
+// SetEmailSettings calls PUT /api/v1/settings/email.
+func (c *Client) SetEmailSettings(ctx context.Context, req UpdateEmailSettingsRequest) (EmailSettingsResource, error) {
+	var out EmailSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/email", req, &out)
+	return out, err
+}
+
+// ListOAuthSettings calls GET /api/v1/settings/oauth: every OAuth
+// provider's configuration (google, github, oidc), never including a
+// stored client secret's plaintext value.
+func (c *Client) ListOAuthSettings(ctx context.Context) ([]OAuthProviderSettingsResource, error) {
+	var out []OAuthProviderSettingsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/oauth", nil, &out)
+	return out, err
+}
+
+// SetOAuthProviderSettings calls PUT /api/v1/settings/oauth/{provider}.
+func (c *Client) SetOAuthProviderSettings(ctx context.Context, provider string, req UpdateOAuthProviderSettingsRequest) (OAuthProviderSettingsResource, error) {
+	var out OAuthProviderSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/oauth/"+PathEscape(provider), req, &out)
+	return out, err
+}
+
+// GetIngressSettings calls GET /api/v1/settings/ingress: the embedded
+// Caddy ingress's primary domain and ACME configuration.
+func (c *Client) GetIngressSettings(ctx context.Context) (IngressSettingsResource, error) {
+	var out IngressSettingsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/ingress", nil, &out)
+	return out, err
+}
+
+// SetIngressSettings calls PUT /api/v1/settings/ingress.
+func (c *Client) SetIngressSettings(ctx context.Context, req IngressSettingsResource) (IngressSettingsResource, error) {
+	var out IngressSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/ingress", req, &out)
+	return out, err
+}
+
+// CheckIngressDomain calls GET /api/v1/settings/ingress/check: whether
+// the configured primary domain's DNS actually points at this control
+// plane.
+func (c *Client) CheckIngressDomain(ctx context.Context) (IngressDomainCheckResource, error) {
+	var out IngressDomainCheckResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/ingress/check", nil, &out)
+	return out, err
+}
+
 // domainAuthPath builds /api/v1/apps/{name}/domains/{domain}/auth,
 // shared by all three domain basic auth methods below.
 func domainAuthPath(name, domain string) string {

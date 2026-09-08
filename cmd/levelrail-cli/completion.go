@@ -84,7 +84,12 @@ var cliCommandTree = map[string]*cmdNode{
 		"list": nil, "trigger": nil, "restore": nil, "restore-as-new": nil, "verify": nil, "verifications": nil,
 		"schedule": {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 	}},
-	"cloudflare-tunnel":    {subs: map[string]*cmdNode{"get": nil, "set": nil, "disconnect": nil}},
+	"cloudflare-tunnel": {subs: map[string]*cmdNode{"get": nil, "set": nil, "disconnect": nil}},
+	"settings": {subs: map[string]*cmdNode{
+		"email":   {subs: map[string]*cmdNode{"get": nil, "set": nil}},
+		"oauth":   {subs: map[string]*cmdNode{"list": nil, "set": nil}},
+		"ingress": {subs: map[string]*cmdNode{"get": nil, "set": nil, "check": nil}},
+	}},
 	"channels":             {subs: map[string]*cmdNode{"list": nil, "create": nil, "delete": nil, "test": nil, "deliveries": nil}},
 	"backup-targets":       {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},
 	"registry-credentials": {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},

@@ -163,6 +163,13 @@ type (
 	purgeAuditLogResult   = apiclient.PurgeAuditLogResult
 
 	rotateMasterKeyResult = apiclient.RotateMasterKeyResult
+
+	emailSettingsResource              = apiclient.EmailSettingsResource
+	updateEmailSettingsRequest         = apiclient.UpdateEmailSettingsRequest
+	oauthProviderSettingsResource      = apiclient.OAuthProviderSettingsResource
+	updateOAuthProviderSettingsRequest = apiclient.UpdateOAuthProviderSettingsRequest
+	ingressSettingsResource            = apiclient.IngressSettingsResource
+	ingressDomainCheckResource         = apiclient.IngressDomainCheckResource
 )
 
 // NewClient builds a Client, identifying every request as this CLI's own
