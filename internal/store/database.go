@@ -82,7 +82,7 @@ type DesiredDatabase struct {
 	// Suspended: see DesiredService.Suspended's own doc comment, identical
 	// meaning and identical "SaveDesiredDatabase never writes it, only
 	// UpdateDatabaseSuspended does" exception NodeID/ProjectID already
-	// establish above (migrations/0081_database_suspended.sql).
+	// establish above (migrations/0085_database_suspended.sql).
 	Suspended bool
 }
 
