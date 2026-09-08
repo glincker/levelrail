@@ -109,7 +109,17 @@ still open. This page describes what's actually true today.
 - Embedded Caddy ingress with automatic TLS and domain routing. TLS
   today defaults to an internal, self-signed issuer; a public ACME
   issuer exists and is toggleable but is still unverified against a
-  live domain (see In progress).
+  live domain (see In progress). A per-domain BYO (bring your own)
+  certificate upload (`PUT/GET/DELETE
+  /api/v1/apps/{name}/domains/{domain}/tls-cert`, `levelrail-cli domains
+  tls-cert get/set/clear`, a `DomainEditor` control) lets an operator
+  supply their own certificate/key pair for a domain ACME can't reach
+  (internal-only hosts, externally issued wildcards, a cert already
+  provisioned before DNS cuts over): Caddy loads it via
+  `tls.certificates.load_pem` and skips automatic issuance for that host
+  on its own. The private key and certificate both go through
+  `internal/secrets` envelope encryption, the same split
+  `domain_basic_auth` uses for its own password.
 - Envelope encryption for secrets, with env injection at
   container-create time. Master-key rotation
   (`POST /api/v1/system/master-key/rotate`, `levelrail-cli secrets

@@ -183,6 +183,18 @@ type RoutesOptions struct {
 	// OS-specific default. See FileStorage's doc comment. Ignored when
 	// CertStorage is set.
 	StorageDir string
+	// TLSCertificates is every domain currently configured with a BYO TLS
+	// certificate (internal/store.DomainTLSCert), sourced fresh from the
+	// store and internal/secrets every reconcile pass by the caller (no
+	// caching here, matching every other RoutesOptions field). Each
+	// entry's Host must already be present in Routes/StaticRoutes/
+	// MaintenanceRoutes' combined host list for Caddy to ever select the
+	// loaded certificate for a real connection; a host with no route at
+	// all still loads harmlessly, it's just never selected. Empty (the
+	// default) reproduces this package's prior behavior exactly: every
+	// host gets Caddy's automatic ACME/internal issuance as before this
+	// field existed.
+	TLSCertificates []TLSCertificateOverride
 	// CertStorage, if non-nil, overrides StorageDir with an arbitrary
 	// Caddy storage module reference (e.g. NewSQLiteStorageRef()),
 	// letting the caller point Caddy's certificate/ACME-account storage
@@ -310,6 +322,14 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		default:
 			cfg.Apps.TLS = internalIssuerTLSApp(allHosts)
 			cfg.Apps.PKI = newInternalPKIApp()
+		}
+
+		if len(opts.TLSCertificates) > 0 {
+			pairs := make([]CertKeyPEMPair, 0, len(opts.TLSCertificates))
+			for _, c := range opts.TLSCertificates {
+				pairs = append(pairs, CertKeyPEMPair{CertificatePEM: c.CertPEM, KeyPEM: c.KeyPEM, Tags: []string{c.Host}})
+			}
+			cfg.Apps.TLS.Certificates = CertificatesConfig{"load_pem": pairs}
 		}
 	}
 

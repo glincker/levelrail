@@ -468,4 +468,85 @@ func TestBuildRoutesConfig_JSONShape(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("domain with a BYO TLS certificate gets a load_pem entry alongside automation", func(t *testing.T) {
+		cfg, err := BuildRoutesConfig(RoutesOptions{
+			ServerName: "ingress",
+			ListenAddr: ":443",
+			TLS:        true,
+			Routes: []ProxyRoute{
+				{Hosts: []string{"byo.example.internal"}, BackendDial: "127.0.0.1:9001"},
+				{Hosts: []string{"acme.example.internal"}, BackendDial: "127.0.0.1:9002"},
+			},
+			TLSCertificates: []TLSCertificateOverride{
+				{Host: "byo.example.internal", CertPEM: "cert-pem-bytes", KeyPEM: "key-pem-bytes"},
+			},
+		})
+		if err != nil {
+			t.Fatalf("BuildRoutesConfig() error: %v", err)
+		}
+
+		raw, err := json.Marshal(cfg)
+		if err != nil {
+			t.Fatalf("json.Marshal() error: %v", err)
+		}
+		var decoded map[string]any
+		if err := json.Unmarshal(raw, &decoded); err != nil {
+			t.Fatalf("json.Unmarshal() error: %v", err)
+		}
+
+		tlsApp := decoded["apps"].(map[string]any)["tls"].(map[string]any)
+
+		// The internal-issuer automation policy still covers both hosts:
+		// BuildRoutesConfig never special-cases a BYO host out of
+		// Subjects. Caddy itself is what skips issuance for a host with a
+		// matching loaded certificate (caddyhttp's
+		// AutoHTTPSConfig.IgnoreLoadedCerts check), not this builder.
+		policies := tlsApp["automation"].(map[string]any)["policies"].([]any)
+		subjects := policies[0].(map[string]any)["subjects"].([]any)
+		if len(subjects) != 2 {
+			t.Errorf("subjects = %v, want both hosts, BYO and ACME/internal alike", subjects)
+		}
+
+		certificates, ok := tlsApp["certificates"].(map[string]any)
+		if !ok {
+			t.Fatalf("tls.certificates missing, want a load_pem entry")
+		}
+		loadPEM, ok := certificates["load_pem"].([]any)
+		if !ok || len(loadPEM) != 1 {
+			t.Fatalf("tls.certificates.load_pem = %v, want exactly one pair", certificates["load_pem"])
+		}
+		pair := loadPEM[0].(map[string]any)
+		if pair["certificate"] != "cert-pem-bytes" || pair["key"] != "key-pem-bytes" {
+			t.Errorf("load_pem pair = %v, want the given cert/key PEM verbatim", pair)
+		}
+		tags := pair["tags"].([]any)
+		if len(tags) != 1 || tags[0] != "byo.example.internal" {
+			t.Errorf("load_pem pair tags = %v, want [byo.example.internal]", tags)
+		}
+	})
+
+	t.Run("no BYO certificates: tls.certificates stays omitted", func(t *testing.T) {
+		cfg, err := BuildRoutesConfig(RoutesOptions{
+			ServerName: "ingress",
+			ListenAddr: ":443",
+			TLS:        true,
+			Routes:     []ProxyRoute{{Hosts: []string{"app.example.internal"}, BackendDial: "127.0.0.1:9001"}},
+		})
+		if err != nil {
+			t.Fatalf("BuildRoutesConfig() error: %v", err)
+		}
+		raw, err := json.Marshal(cfg)
+		if err != nil {
+			t.Fatalf("json.Marshal() error: %v", err)
+		}
+		var decoded map[string]any
+		if err := json.Unmarshal(raw, &decoded); err != nil {
+			t.Fatalf("json.Unmarshal() error: %v", err)
+		}
+		tlsApp := decoded["apps"].(map[string]any)["tls"].(map[string]any)
+		if _, has := tlsApp["certificates"]; has {
+			t.Errorf("tls.certificates present with no TLSCertificates configured, want it omitted")
+		}
+	})
 }
