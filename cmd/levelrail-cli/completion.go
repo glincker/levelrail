@@ -76,6 +76,10 @@ var cliCommandTree = map[string]*cmdNode{
 		"maintenance":    {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"tls-cert":       {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 	}},
+	"certificates":      {subs: map[string]*cmdNode{"list": nil}},
+	"static-sites":      {subs: map[string]*cmdNode{"list": nil}},
+	"service-templates": {subs: map[string]*cmdNode{"list": nil, "get": nil}},
+	"storage-env-keys":  {subs: map[string]*cmdNode{"list": nil}},
 	"backups": {subs: map[string]*cmdNode{
 		"list": nil, "trigger": nil, "restore": nil, "restore-as-new": nil, "verify": nil, "verifications": nil,
 		"schedule": {subs: map[string]*cmdNode{"set": nil, "clear": nil}},

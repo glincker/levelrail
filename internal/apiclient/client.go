@@ -1707,6 +1707,32 @@ func (c *Client) PurgeAuditLog(ctx context.Context) (PurgeAuditLogResult, error)
 	return out, err
 }
 
+// ListCertificates calls GET /api/v1/certificates: every TLS
+// certificate the control plane's embedded ingress currently manages.
+func (c *Client) ListCertificates(ctx context.Context) ([]CertificateResource, error) {
+	var out []CertificateResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/certificates", nil, &out)
+	return out, err
+}
+
+// ListStaticSites calls GET /api/v1/static-sites: every static site
+// (build.type: static) this control plane serves directly through
+// embedded Caddy, with no container involved.
+func (c *Client) ListStaticSites(ctx context.Context) ([]StaticSiteResource, error) {
+	var out []StaticSiteResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/static-sites", nil, &out)
+	return out, err
+}
+
+// ListStorageEnvKeys calls GET /api/v1/storage-env-keys: every env var
+// name a storage-target-backed attachment can inject into an app's
+// container (application.StorageEnvKeys).
+func (c *Client) ListStorageEnvKeys(ctx context.Context) ([]string, error) {
+	var out []string
+	err := c.do(ctx, http.MethodGet, "/api/v1/storage-env-keys", nil, &out)
+	return out, err
+}
+
 // PathEscape guards against a name containing characters that would
 // otherwise change the request's URL shape (a "/" turning one path
 // segment into two, for instance). Server-side validation is the real

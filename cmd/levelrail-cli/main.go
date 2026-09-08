@@ -74,6 +74,14 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runTokens(prog, args[1:], stdout, stderr, lookupEnv)
 	case "domains":
 		return runDomains(prog, args[1:], stdout, stderr, lookupEnv)
+	case "certificates":
+		return runCertificates(prog, args[1:], stdout, stderr, lookupEnv)
+	case "static-sites":
+		return runStaticSites(prog, args[1:], stdout, stderr, lookupEnv)
+	case "service-templates":
+		return runServiceTemplates(prog, args[1:], stdout, stderr, lookupEnv)
+	case "storage-env-keys":
+		return runStorageEnvKeys(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backups":
 		return runBackups(prog, args[1:], stdout, stderr, lookupEnv)
 	case "app-volume-backups":
@@ -138,6 +146,10 @@ Usage:
   %[1]s databases list [flags]         list databases
   %[1]s databases get <name> [flags]   show one database
   %[1]s domains list [flags]           list every app's domains in one call
+  %[1]s certificates list [flags]      list every TLS certificate the embedded ingress manages
+  %[1]s static-sites list [flags]      list every static site served directly by embedded Caddy
+  %[1]s service-templates list|get [flags]   browse the curated one-click template catalog
+  %[1]s storage-env-keys list [flags]  list the env var names a storage attachment can inject into a container
   %[1]s backups list|trigger|restore <database> [flags]   database backup history, manual trigger, and restore
   %[1]s app-volume-backups list|trigger|restore <app> <volume> [flags]   app volume backup history, manual trigger, and restore
   %[1]s cloudflare-tunnel get|set|disconnect [flags]   expose the control plane through a Cloudflare Tunnel

@@ -1386,3 +1386,21 @@ func (e *APIError) Error() string {
 	}
 	return fmt.Sprintf("server returned %d: %s", e.StatusCode, e.Message)
 }
+
+// CertificateResource mirrors internal/api's certificateStatus
+// (internal/api/certificates.go).
+type CertificateResource struct {
+	Domain    string    `json:"domain"`
+	SANs      []string  `json:"sans,omitempty"`
+	Issuer    string    `json:"issuer,omitempty"`
+	NotBefore time.Time `json:"not_before"`
+	NotAfter  time.Time `json:"not_after"`
+	Status    string    `json:"status"`
+}
+
+// StaticSiteResource mirrors internal/api's staticSiteResource
+// (internal/api/static_sites.go).
+type StaticSiteResource struct {
+	Name    string   `json:"name"`
+	Domains []string `json:"domains"`
+}

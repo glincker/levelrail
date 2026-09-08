@@ -163,6 +163,11 @@ type (
 	purgeAuditLogResult   = apiclient.PurgeAuditLogResult
 
 	rotateMasterKeyResult = apiclient.RotateMasterKeyResult
+
+	certificateResource     = apiclient.CertificateResource
+	staticSiteResource      = apiclient.StaticSiteResource
+	serviceTemplateListItem = apiclient.ServiceTemplateListItem
+	serviceTemplateDetail   = apiclient.ServiceTemplateDetail
 )
 
 // NewClient builds a Client, identifying every request as this CLI's own
