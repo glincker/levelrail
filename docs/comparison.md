@@ -37,6 +37,54 @@ Dokku actually gets the deploy ordering right: new container up, health checks p
 
 Kamal is the deliberate outlier in this set: no daemon, no agent, no database, just a one-shot SSH CLI plus a standalone Go reverse-proxy container (`kamal-proxy`) that performs an in-memory atomic target swap once its own HTTP health probe passes. It is the lightest-weight design here and its two-stage health gate (container state, then an HTTP probe) is a pattern worth keeping, not simplifying away. But it is not a control plane: there is no persistent agent, no event-driven observed state, and no queryable metrics store (`kamal-proxy` exposes a bare Prometheus port to scrape yourself, nothing federated). Its single most-commented issue in the whole tracker (76 comments) is the SSH transport itself disconnecting mid-command, a failure category that doesn't exist without a reachable SSH session driving every deploy. Levelrail keeps Kamal's health-gate discipline but replaces the SSH transport with a persistent, reverse-dialed gRPC agent and adds the federated, node-local observability Kamal has no path to.
 
+## Beyond the reconciler: operational surface
+
+The sections above are about how each project talks to a node and cuts
+over a deploy. That's the architectural core, but an operator running
+this in production day to day also needs access control, alerting, and
+managed data stores that don't fall over. This section is deliberately
+scoped to describing what Levelrail itself has shipped, not a
+line-by-line claim about what each competitor above does or doesn't
+have in this area: that would need the same level of sourced research
+the architecture table above got, and this project hasn't done that
+research yet.
+
+- **Access control.** An IAM-style policy engine
+  (`internal/api/iam.go`) with AWS-IAM-shaped Allow/Deny statements,
+  attachable to a user or an API token and scoped to a specific
+  resource (`app:myapp`, `database:mydb`, or `*`), additive on top of a
+  flat abilities list rather than replacing it. Three curated role
+  presets (admin, operator, viewer) apply a full ability set in one
+  action instead of hand-picking abilities. Every request, from the
+  CLI, dashboard, MCP server, or raw API, runs through the same
+  ability-check hook and lands in a queryable audit log with CSV
+  export and configurable retention.
+- **Feature flags.** A boolean plus an optional gradual rollout
+  percentage, scoped to an app, read live at runtime via
+  `GET /api/v1/flags/evaluate/{key}` and a read-scoped API token. No
+  redeploy or restart, since the value is never baked into a
+  container image.
+- **Alerting.** Eight rule kinds (threshold, crashloop, certificate
+  expiry, OS patch status, scheduled-task failure, node disk space,
+  node resource usage, and domain health) and eight notification
+  channel kinds (webhook, Slack, Discord, email, Telegram, Pushover,
+  PagerDuty, Microsoft Teams), each independently queryable for
+  delivery history.
+- **Managed databases.** Eight engines (Postgres, Redis, MySQL,
+  MongoDB, MariaDB, KeyDB, Dragonfly, ClickHouse) through one dynamic
+  engine registry, not eight separate implementations: scheduled
+  backups with retention, restore, restore-into-a-new-resource, and
+  automatic post-backup verification (re-download, re-hash, compare
+  against what was recorded at backup time) apply generically across
+  all eight.
+
+None of this changes the answer to "why build a new one instead of
+using an existing platform" above, that answer is still the
+architecture. It's here because a reconciler that never SSHes into a
+box is not, by itself, a reason to trust a tool with production
+secrets and access control, and this is the evidence for the second
+half of that trust.
+
 ## What Levelrail doesn't do (yet)
 
 Grounded in this project's own current feature and build status, not the original phase plan, since the actual build is further along in places than that plan suggests (multi-node and the WireGuard mesh are shipped, not "not started"). See `docs/roadmap.md` for the full current status; the real gaps as of today:

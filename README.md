@@ -5,17 +5,39 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/glincker/levelrail)](https://goreportcard.com/report/github.com/glincker/levelrail)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/glincker/levelrail)](go.mod)
 
-Levelrail is a self-hosted deployment platform. Point it at one or more
-Linux boxes and it turns them into a private cloud: push to a git repo,
-get a running app with TLS, logs, metrics, and rollback.
+Levelrail is a self-hosted deployment platform whose agent talks to
+Docker's own Engine API directly instead of SSHing into your servers
+and shelling out `docker` commands, with metrics and log storage built
+into the core instead of a separately-installed extra. Point it at one
+or more Linux boxes and it turns them into a private cloud: push to a
+git repo, get a running app with TLS, logs, metrics, and rollback.
+
+## Quickstart
+
+```
+curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh
+```
+
+Installs the binary, installs Docker if it's missing, sets up a
+systemd unit, and waits for the control plane to report healthy before
+declaring success. Safe to re-run later as an upgrade. See
+[docs/getting-started.md](docs/getting-started.md) to build from source
+instead, and [docs/comparison.md](docs/comparison.md) for how this
+differs from Coolify, Dokploy, CapRover, Dokku, and Kamal, including
+what Levelrail doesn't do yet.
 
 ## Status
 
 Early, active development. Single-node and multi-node both run today:
 agent enrollment, the WireGuard mesh, internal DNS, and node
-placement/cordon/drain are built. There is no stable release yet and the
-project is not ready for production workloads. APIs, the app spec format,
-and the on-disk data layout can all still change without notice.
+placement/cordon/drain are built. Beyond the core deploy path, an
+IAM-style policy engine, audit logging, feature flags, alerting across
+eight rule kinds and eight notification channels, and eight managed
+database engines with backup/restore/verification are also shipped
+(see [docs/roadmap.md](docs/roadmap.md) for the full, current list).
+There is no stable release yet and the project is not ready for
+production workloads. APIs, the app spec format, and the on-disk data
+layout can all still change without notice.
 
 From the team behind [thesvg](https://github.com/glincker/thesvg) (6,400+ brand SVG icons) and [theauth-go](https://github.com/glincker/theauth-go) (OAuth 2.1 auth library for Go).
 
