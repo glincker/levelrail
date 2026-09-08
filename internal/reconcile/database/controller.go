@@ -249,6 +249,18 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		return notReady("StoreError", err), fmt.Errorf("database/%s: get desired database: %w", c.dbName, err)
 	}
 
+	// Suspended is an operator-requested stop (DesiredDatabase.Suspended's
+	// own doc comment): converge to zero containers and return early, the
+	// same containers-only teardown application.Controller's own Suspended
+	// branch performs. The data volume is untouched, so resuming later
+	// recreates a fresh container against the same data.
+	if desired.Suspended {
+		if err := c.removeContainer(ctx); err != nil {
+			return notReady("SuspendFailed", err), fmt.Errorf("database/%s: suspend: remove container: %w", c.dbName, err)
+		}
+		return unknownResult("Suspended"), nil
+	}
+
 	switch desired.Engine {
 	case store.EngineRedis:
 		return c.reconcileEngine(ctx, desired, nil, nil, redisDataPath, redisContainerPort)
@@ -483,6 +495,28 @@ func (c *Controller) replaceContainer(ctx context.Context, old *docker.Container
 		return fmt.Errorf("remove %q before replace: %w", old.Name, err)
 	}
 	return c.createAndStart(ctx, spec)
+}
+
+// removeContainer stops and removes this database's container if one
+// exists, the suspend path's own teardown: unlike replaceContainer, there
+// is no replacement to create afterward, and a missing container is not
+// an error, since a database can be suspended before it was ever
+// deployed at all.
+func (c *Controller) removeContainer(ctx context.Context) error {
+	target := containerName(c.dbName)
+	state, err := c.runtime.InspectByName(ctx, target)
+	if err != nil {
+		return fmt.Errorf("inspect %q: %w", target, err)
+	}
+	if state == nil {
+		return nil
+	}
+	if state.Running {
+		if err := c.runtime.Stop(ctx, state.ID, defaultStopTimeout); err != nil {
+			return fmt.Errorf("stop %q: %w", target, err)
+		}
+	}
+	return c.runtime.Remove(ctx, state.ID, true)
 }
 
 // portsMatch reports whether observed (a running container's actual

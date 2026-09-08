@@ -78,6 +78,12 @@ type DesiredDatabase struct {
 	// same "whole record, not a special exception" treatment
 	// DesiredService.Resources gets from SaveDesiredService.
 	Resources *ServiceResources
+	// Suspended is DesiredService.Suspended's database-kind counterpart
+	// (migrations/0090_desired_databases_suspended.sql mirrors 0037's
+	// reasoning): an operator-requested stop, distinct from delete.
+	// SaveDesiredDatabase never writes it, only UpdateDatabaseSuspended
+	// does, the same NodeID/ProjectID exception above.
+	Suspended bool
 }
 
 // SaveDesiredDatabase creates or fully replaces the desired state for a
@@ -153,7 +159,7 @@ var ErrDatabaseNotFound = errors.New("store: database not found")
 // ErrDatabaseNotFound if no such database has been saved.
 func (db *DB) GetDesiredDatabase(ctx context.Context, name string) (*DesiredDatabase, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources
+		SELECT `+desiredDatabaseColumns+`
 		FROM desired_databases
 		WHERE name = ?
 	`, name)
@@ -190,7 +196,7 @@ func (db *DB) DeleteDesiredDatabase(ctx context.Context, name string) error {
 // ListDesiredDatabases returns every saved database, ordered by name.
 func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources
+		SELECT `+desiredDatabaseColumns+`
 		FROM desired_databases
 		ORDER BY name
 	`)
@@ -221,7 +227,7 @@ func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, erro
 // callers.
 func (db *DB) ListDesiredDatabasesByNode(ctx context.Context, nodeID string) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources
+		SELECT `+desiredDatabaseColumns+`
 		FROM desired_databases
 		WHERE node_id = ?
 		ORDER BY name
@@ -245,6 +251,63 @@ func (db *DB) ListDesiredDatabasesByNode(ctx context.Context, nodeID string) ([]
 		return nil, fmt.Errorf("store: iterate desired database rows: %w", err)
 	}
 	return out, nil
+}
+
+// ListDesiredDatabasesByProject returns every saved database filed under
+// projectID, ordered by name, the project-kind counterpart to
+// ListDesiredDatabasesByNode. Used by handleStopProject/handleStartProject
+// (internal/api/project_stop_start.go) to find every database in a
+// project without listing every database.
+func (db *DB) ListDesiredDatabasesByProject(ctx context.Context, projectID string) ([]DesiredDatabase, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT `+desiredDatabaseColumns+`
+		FROM desired_databases
+		WHERE project_id = ?
+		ORDER BY name
+	`, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("store: list desired databases for project %q: %w", projectID, err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var out []DesiredDatabase
+	for rows.Next() {
+		d, err := scanDesiredDatabase(rows.Scan)
+		if err != nil {
+			return nil, fmt.Errorf("store: scan desired database row: %w", err)
+		}
+		out = append(out, *d)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate desired database rows: %w", err)
+	}
+	return out, nil
+}
+
+// UpdateDatabaseSuspended is DesiredDatabase's counterpart to
+// UpdateServiceSuspended: the only way Suspended ever changes, the same
+// "own single-purpose setter, excluded from SaveDesiredDatabase"
+// reasoning UpdateDatabaseNode/UpdateDatabaseProject already establish.
+// Setting it true does not by itself stop any container:
+// internal/reconcile/database's controller is what converges to zero
+// containers once it observes Suspended on its next reconcile.
+func (db *DB) UpdateDatabaseSuspended(ctx context.Context, name string, suspended bool) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE desired_databases SET suspended = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, suspended, name)
+	if err != nil {
+		return fmt.Errorf("store: update suspended for database %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: update suspended for database %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrDatabaseNotFound
+	}
+	return nil
 }
 
 // SetDatabaseBackupSchedule is DesiredDatabase's counterpart to
@@ -413,7 +476,7 @@ func claimPublicPort(ctx context.Context, tx *sql.Tx, name string, requestedPort
 // all.
 func (db *DB) ListScheduledDatabases(ctx context.Context) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources
+		SELECT `+desiredDatabaseColumns+`
 		FROM desired_databases
 		WHERE backup_schedule != '' AND backup_target_id IS NOT NULL
 		ORDER BY name
@@ -439,12 +502,18 @@ func (db *DB) ListScheduledDatabases(ctx context.Context) ([]DesiredDatabase, er
 	return out, nil
 }
 
-// scanDesiredDatabase reads the column shape every desired_databases
-// read method queries (GetDesiredDatabase, ListDesiredDatabases,
-// ListDesiredDatabasesByNode, ListScheduledDatabases), via either
-// row.Scan or rows.Scan (same signature), so the nullable-column
-// handling exists exactly once. Mirrors scanDesiredService's shape in
-// service.go, this package's own precedent for the identical problem.
+// desiredDatabaseColumns is the column list every desired_databases
+// SELECT uses (GetDesiredDatabase, ListDesiredDatabases,
+// ListDesiredDatabasesByNode, ListDesiredDatabasesByProject,
+// ListScheduledDatabases), the database-kind counterpart to
+// desiredServiceColumns in service.go.
+const desiredDatabaseColumns = "name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources, suspended"
+
+// scanDesiredDatabase reads the column shape desiredDatabaseColumns
+// selects, via either row.Scan or rows.Scan (same signature), so the
+// nullable-column handling exists exactly once. Mirrors
+// scanDesiredService's shape in service.go, this package's own
+// precedent for the identical problem.
 func scanDesiredDatabase(scan func(dest ...any) error) (*DesiredDatabase, error) {
 	var (
 		d                         DesiredDatabase
@@ -453,7 +522,7 @@ func scanDesiredDatabase(scan func(dest ...any) error) (*DesiredDatabase, error)
 		publicPort                sql.NullInt64
 		resourcesJSON             string
 	)
-	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &resourcesJSON); err != nil {
+	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &resourcesJSON, &d.Suspended); err != nil {
 		return nil, err
 	}
 	d.ProjectID = projectID.String

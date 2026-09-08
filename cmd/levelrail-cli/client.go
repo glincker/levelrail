@@ -117,6 +117,7 @@ type (
 	createOrganizationRequest      = apiclient.CreateOrganizationRequest
 	projectResource                = apiclient.ProjectResource
 	createProjectRequest           = apiclient.CreateProjectRequest
+	projectLifecycleResult         = apiclient.ProjectLifecycleResult
 	setProjectOrganizationRequest  = apiclient.SetProjectOrganizationRequest
 	setAppProjectRequest           = apiclient.SetAppProjectRequest
 	setDatabaseProjectRequest      = apiclient.SetDatabaseProjectRequest

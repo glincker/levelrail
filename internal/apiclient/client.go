@@ -1303,6 +1303,24 @@ func (c *Client) SetProjectEnv(ctx context.Context, id string, vars map[string]s
 	return out, err
 }
 
+// StopProject calls POST /api/v1/projects/{id}/stop: suspends every app
+// and database filed under the project, mirroring StopApp's own single-
+// resource shape at the project scope.
+func (c *Client) StopProject(ctx context.Context, id string) (ProjectLifecycleResult, error) {
+	var out ProjectLifecycleResult
+	err := c.do(ctx, http.MethodPost, projectPath(id)+"/stop", nil, &out)
+	return out, err
+}
+
+// StartProject calls POST /api/v1/projects/{id}/start: clears the
+// suspended flag StopProject set on every app and database in the
+// project.
+func (c *Client) StartProject(ctx context.Context, id string) (ProjectLifecycleResult, error) {
+	var out ProjectLifecycleResult
+	err := c.do(ctx, http.MethodPost, projectPath(id)+"/start", nil, &out)
+	return out, err
+}
+
 // SetProjectOrganization calls PUT /api/v1/projects/{id}/organization.
 // An empty orgID clears the assignment. Returns the updated project.
 func (c *Client) SetProjectOrganization(ctx context.Context, projectID, orgID string) (ProjectResource, error) {

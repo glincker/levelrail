@@ -27,6 +27,11 @@ type AppStore interface {
 	// delete-guard primitive (handleDrainNode, handleDeleteNode): find
 	// what's placed on a node without listing every service.
 	ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]store.DesiredService, error)
+	// ListDesiredServicesByProject is ListDesiredServicesByNode's
+	// project-kind counterpart: handleStopProject/handleStartProject
+	// (project_stop_start.go) use it to find every app in a project
+	// without listing every service.
+	ListDesiredServicesByProject(ctx context.Context, projectID string) ([]store.DesiredService, error)
 	// RestartService is the only way to force a running container to be
 	// recreated without an image change: a redeploy of the same image
 	// tag is otherwise a genuine reconciler no-op (see
@@ -181,6 +186,15 @@ type DatabaseStore interface {
 	// ListDesiredDatabasesByNode is the database-kind counterpart to
 	// AppStore.ListDesiredServicesByNode.
 	ListDesiredDatabasesByNode(ctx context.Context, nodeID string) ([]store.DesiredDatabase, error)
+	// ListDesiredDatabasesByProject is the database-kind counterpart to
+	// AppStore.ListDesiredServicesByProject.
+	ListDesiredDatabasesByProject(ctx context.Context, projectID string) ([]store.DesiredDatabase, error)
+	// UpdateDatabaseSuspended is AppStore.UpdateServiceSuspended's
+	// counterpart, backing POST /api/v1/projects/{id}/stop and .../start
+	// (project_stop_start.go): same separation-from-ordinary-update
+	// reasoning as UpdateDatabaseNode/UpdateDatabaseProject, see
+	// store.DB.UpdateDatabaseSuspended's own doc comment.
+	UpdateDatabaseSuspended(ctx context.Context, name string, suspended bool) error
 	// UpdateDatabaseProject is AppStore.UpdateServiceProject's
 	// counterpart (projects.go).
 	UpdateDatabaseProject(ctx context.Context, name, projectID string) error

@@ -42,6 +42,18 @@ func TestClient_AppLifecycleActions(t *testing.T) {
 			wantMethod: http.MethodDelete,
 			wantPath:   "/api/v1/databases/main",
 		},
+		{
+			name:       "StopProject",
+			call:       func(c *Client) error { _, err := c.StopProject(context.Background(), "proj_1"); return err },
+			wantMethod: http.MethodPost,
+			wantPath:   "/api/v1/projects/proj_1/stop",
+		},
+		{
+			name:       "StartProject",
+			call:       func(c *Client) error { _, err := c.StartProject(context.Background(), "proj_1"); return err },
+			wantMethod: http.MethodPost,
+			wantPath:   "/api/v1/projects/proj_1/start",
+		},
 	}
 
 	for _, tt := range tests {

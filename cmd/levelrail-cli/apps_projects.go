@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"text/tabwriter"
 )
 
@@ -32,6 +33,10 @@ func runAppsProjects(prog string, args []string, stdout, stderr io.Writer, looku
 		return runAppsProjectsGet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
 		return runAppsProjectsDelete(prog, args[1:], stdout, stderr, lookupEnv)
+	case "stop":
+		return runAppsProjectsStop(prog, args[1:], stdout, stderr, lookupEnv)
+	case "start":
+		return runAppsProjectsStart(prog, args[1:], stdout, stderr, lookupEnv)
 	case "env-get":
 		return runAppsProjectsEnvGet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "env-set":
@@ -49,6 +54,8 @@ func appsProjectsUsage(prog string) string {
   %[1]s apps projects list [flags]                         list projects
   %[1]s apps projects get <id> [flags]                     show one project
   %[1]s apps projects delete <id> [flags]                  delete a project
+  %[1]s apps projects stop <id> [flags]                    stop every app and database in a project
+  %[1]s apps projects start <id> [flags]                   start every app and database in a project
   %[1]s apps projects env-get <id> [flags]                 show a project's shared env vars
   %[1]s apps projects env-set <id> --var KEY=VALUE [flags]   replace a project's shared env vars
 
@@ -237,6 +244,104 @@ Flags:
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}
+
+func runAppsProjectsStop(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps projects stop", "print the result as JSON to stdout and nothing else", stderr)
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsProjectsStopUsage(prog)) }
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+
+	id, ok := requireOneArg(fs, stderr, prog, "apps projects stop", "project id")
+	if !ok {
+		return exitUsage
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	result, err := client.StopProject(context.Background(), id)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("stop project %q: %w", id, err))
+	}
+
+	return writeScheduledTaskResult(stdout, stderr, of, result, func() { printProjectLifecycleResult(stdout, id, "stopped", result) })
+}
+
+func appsProjectsStopUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s apps projects stop <id> [flags]
+
+Stops every app and database filed under the project: sets each one's
+suspended flag, the same effect "%[1]s apps stop"/"%[1]s databases stop"
+have individually, applied to the whole project at once. Never aborts on
+one failure; the result reports which resources succeeded and which
+failed.
+
+Flags:
+  --token string          API token (default: %[2]s env var, then the credentials file)
+  --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
+  --json                    print the result as JSON to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
+`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}
+
+func runAppsProjectsStart(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps projects start", "print the result as JSON to stdout and nothing else", stderr)
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsProjectsStartUsage(prog)) }
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+
+	id, ok := requireOneArg(fs, stderr, prog, "apps projects start", "project id")
+	if !ok {
+		return exitUsage
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	result, err := client.StartProject(context.Background(), id)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("start project %q: %w", id, err))
+	}
+
+	return writeScheduledTaskResult(stdout, stderr, of, result, func() { printProjectLifecycleResult(stdout, id, "started", result) })
+}
+
+func appsProjectsStartUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s apps projects start <id> [flags]
+
+Starts every app and database filed under the project: clears each one's
+suspended flag, the same effect "%[1]s apps start"/"%[1]s databases start"
+have individually, applied to the whole project at once. Never aborts on
+one failure; the result reports which resources succeeded and which
+failed.
+
+Flags:
+  --token string          API token (default: %[2]s env var, then the credentials file)
+  --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
+  --json                    print the result as JSON to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
+`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}
+
+func printProjectLifecycleResult(out io.Writer, id, verb string, result projectLifecycleResult) {
+	_, _ = fmt.Fprintf(out, "project %q: %d app(s) and %d database(s) %s\n", id, len(result.SucceededApps), len(result.SucceededDatabases), verb)
+	if len(result.FailedApps) > 0 {
+		_, _ = fmt.Fprintf(out, "failed apps: %s\n", strings.Join(result.FailedApps, ", "))
+	}
+	if len(result.FailedDatabases) > 0 {
+		_, _ = fmt.Fprintf(out, "failed databases: %s\n", strings.Join(result.FailedDatabases, ", "))
+	}
 }
 
 func runAppsProjectsEnvGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

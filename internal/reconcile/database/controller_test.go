@@ -280,6 +280,63 @@ func TestController_Reconcile_StoreError(t *testing.T) {
 	}
 }
 
+func TestController_Reconcile_Suspended_RemovesRunningContainer(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7", Suspended: true}
+	rt.seed(containerName("main"), "redis:7", true)
+
+	c := New("main", &fakeStore{db: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionUnknown || cond.Reason != "Suspended" {
+		t.Errorf("condition = %+v, want Status=Unknown Reason=Suspended", cond)
+	}
+	if n := rt.count(); n != 0 {
+		t.Errorf("containers after suspend = %d, want 0", n)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0 (suspend must never create a container)", rt.createCalls)
+	}
+}
+
+func TestController_Reconcile_Suspended_RemoveFails_ReportsNotReady(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7", Suspended: true}
+	rt.seed(containerName("main"), "redis:7", true)
+	rt.removeErr = errors.New("permission denied")
+
+	c := New("main", &fakeStore{db: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want the removal failure to surface")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "SuspendFailed" {
+		t.Errorf("condition = %+v, want Status=False Reason=SuspendFailed", cond)
+	}
+}
+
+func TestController_Reconcile_Suspended_NoContainer_NoOp(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7", Suspended: true}
+
+	c := New("main", &fakeStore{db: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionUnknown || cond.Reason != "Suspended" {
+		t.Errorf("condition = %+v, want Status=Unknown Reason=Suspended", cond)
+	}
+	if n := rt.count(); n != 0 {
+		t.Errorf("containers after suspend = %d, want 0", n)
+	}
+}
+
 func TestController_Reconcile_Redis_FreshDeploy(t *testing.T) {
 	rt := newFakeRuntime()
 	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}

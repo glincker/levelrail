@@ -947,6 +947,60 @@ func TestListDesiredServicesByNode(t *testing.T) {
 	}
 }
 
+func TestListDesiredServicesByProject(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	for _, p := range []Project{{ID: "proj-1", Name: "one"}, {ID: "proj-2", Name: "two"}} {
+		if err := db.SaveProject(ctx, p); err != nil {
+			t.Fatalf("SaveProject(%s) error = %v", p.ID, err)
+		}
+	}
+	for _, svc := range []DesiredService{
+		{Name: "web", Image: "img:v1", Port: 8080},
+		{Name: "worker", Image: "img:v1", Port: 8081},
+		{Name: "api", Image: "img:v1", Port: 8082},
+	} {
+		if err := db.SaveDesiredService(ctx, svc); err != nil {
+			t.Fatalf("SaveDesiredService(%s) error = %v", svc.Name, err)
+		}
+	}
+	if err := db.UpdateServiceProject(ctx, "web", "proj-1"); err != nil {
+		t.Fatalf("UpdateServiceProject(web) error = %v", err)
+	}
+	if err := db.UpdateServiceProject(ctx, "worker", "proj-1"); err != nil {
+		t.Fatalf("UpdateServiceProject(worker) error = %v", err)
+	}
+	if err := db.UpdateServiceProject(ctx, "api", "proj-2"); err != nil {
+		t.Fatalf("UpdateServiceProject(api) error = %v", err)
+	}
+
+	tests := []struct {
+		name      string
+		projectID string
+		want      []string
+	}{
+		{name: "project with two services", projectID: "proj-1", want: []string{"web", "worker"}},
+		{name: "project with one service", projectID: "proj-2", want: []string{"api"}},
+		{name: "unknown project", projectID: "proj-none", want: nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := db.ListDesiredServicesByProject(ctx, tt.projectID)
+			if err != nil {
+				t.Fatalf("ListDesiredServicesByProject(%q) error = %v", tt.projectID, err)
+			}
+			var names []string
+			for _, svc := range got {
+				names = append(names, svc.Name)
+			}
+			if !reflect.DeepEqual(names, tt.want) {
+				t.Errorf("ListDesiredServicesByProject(%q) = %v, want %v", tt.projectID, names, tt.want)
+			}
+		})
+	}
+}
+
 func TestSaveDesiredService_StrategyAndReplicas_RoundTrip(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

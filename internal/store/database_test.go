@@ -519,6 +519,100 @@ func TestListDesiredDatabasesByNode(t *testing.T) {
 	}
 }
 
+func TestListDesiredDatabasesByProject(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	for _, p := range []Project{{ID: "proj-1", Name: "one"}, {ID: "proj-2", Name: "two"}} {
+		if err := db.SaveProject(ctx, p); err != nil {
+			t.Fatalf("SaveProject(%s) error = %v", p.ID, err)
+		}
+	}
+	for _, d := range []DesiredDatabase{
+		{Name: "main", Engine: EngineRedis, Version: "7"},
+		{Name: "cache", Engine: EngineRedis, Version: "7"},
+		{Name: "other", Engine: EngineRedis, Version: "7"},
+	} {
+		if err := db.SaveDesiredDatabase(ctx, d); err != nil {
+			t.Fatalf("SaveDesiredDatabase(%s) error = %v", d.Name, err)
+		}
+	}
+	if err := db.UpdateDatabaseProject(ctx, "main", "proj-1"); err != nil {
+		t.Fatalf("UpdateDatabaseProject(main) error = %v", err)
+	}
+	if err := db.UpdateDatabaseProject(ctx, "cache", "proj-1"); err != nil {
+		t.Fatalf("UpdateDatabaseProject(cache) error = %v", err)
+	}
+	if err := db.UpdateDatabaseProject(ctx, "other", "proj-2"); err != nil {
+		t.Fatalf("UpdateDatabaseProject(other) error = %v", err)
+	}
+
+	tests := []struct {
+		name      string
+		projectID string
+		want      []string
+	}{
+		{name: "project with two databases", projectID: "proj-1", want: []string{"cache", "main"}},
+		{name: "project with one database", projectID: "proj-2", want: []string{"other"}},
+		{name: "unknown project", projectID: "proj-none", want: nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := db.ListDesiredDatabasesByProject(ctx, tt.projectID)
+			if err != nil {
+				t.Fatalf("ListDesiredDatabasesByProject(%q) error = %v", tt.projectID, err)
+			}
+			if len(got) != len(tt.want) {
+				t.Fatalf("ListDesiredDatabasesByProject(%q) = %+v, want %v", tt.projectID, got, tt.want)
+			}
+			for i, name := range tt.want {
+				if got[i].Name != name {
+					t.Errorf("ListDesiredDatabasesByProject(%q)[%d].Name = %q, want %q", tt.projectID, i, got[i].Name, name)
+				}
+			}
+		})
+	}
+}
+
+func TestUpdateDatabaseSuspended(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("SaveDesiredDatabase() error = %v", err)
+	}
+
+	if err := db.UpdateDatabaseSuspended(ctx, "main", true); err != nil {
+		t.Fatalf("UpdateDatabaseSuspended(true) error = %v", err)
+	}
+	got, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if !got.Suspended {
+		t.Error("Suspended = false, want true")
+	}
+
+	if err := db.UpdateDatabaseSuspended(ctx, "main", false); err != nil {
+		t.Fatalf("UpdateDatabaseSuspended(false) error = %v", err)
+	}
+	got, err = db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if got.Suspended {
+		t.Error("Suspended = true, want false")
+	}
+}
+
+func TestUpdateDatabaseSuspended_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.UpdateDatabaseSuspended(context.Background(), "nonexistent", true)
+	if !errors.Is(err, ErrDatabaseNotFound) {
+		t.Errorf("UpdateDatabaseSuspended() error = %v, want ErrDatabaseNotFound", err)
+	}
+}
+
 func TestSetDatabasePublicAccess_AutoAssignsFromRange(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
