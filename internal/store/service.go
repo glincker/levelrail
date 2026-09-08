@@ -804,6 +804,38 @@ func (db *DB) ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]D
 	return out, nil
 }
 
+// ListDesiredServicesByProject returns every saved service filed under
+// projectID, ordered by name, the project-scoped counterpart of
+// ListDesiredServicesByNode above: internal/api's bulk-restart endpoint
+// uses this to find every app to restart without listing every service.
+func (db *DB) ListDesiredServicesByProject(ctx context.Context, projectID string) ([]DesiredService, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT `+desiredServiceColumns+`
+		FROM desired_services
+		WHERE project_id = ?
+		ORDER BY name
+	`, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("store: list desired services for project %q: %w", projectID, err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var out []DesiredService
+	for rows.Next() {
+		svc, err := scanDesiredService(rows.Scan)
+		if err != nil {
+			return nil, fmt.Errorf("store: scan desired service row: %w", err)
+		}
+		out = append(out, *svc)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate desired service rows: %w", err)
+	}
+	return out, nil
+}
+
 // DeleteDesiredService removes a service's desired state, e.g. because
 // the app was deleted through the HTTP API (TASKS.md 1.9). It returns
 // ErrServiceNotFound if no such service exists, the same sentinel

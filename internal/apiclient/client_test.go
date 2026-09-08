@@ -583,6 +583,38 @@ func TestClient_DeleteProject(t *testing.T) {
 	}
 }
 
+func TestClient_RestartProject(t *testing.T) {
+	var gotMethod, gotPath, gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(ProjectRestartResponse{RestartedCount: 2, Apps: []string{"web", "worker"}})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.RestartProject(context.Background(), "proj_1")
+	if err != nil {
+		t.Fatalf("RestartProject() error = %v", err)
+	}
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %q, want POST", gotMethod)
+	}
+	if gotPath != "/api/v1/projects/proj_1/restart" {
+		t.Errorf("path = %q, want /api/v1/projects/proj_1/restart", gotPath)
+	}
+	if gotBody != "" {
+		t.Errorf("body = %q, want empty (no request body)", gotBody)
+	}
+	if got.RestartedCount != 2 || len(got.Apps) != 2 {
+		t.Errorf("response = %+v, want RestartedCount 2, 2 apps", got)
+	}
+}
+
 func TestClient_GetProjectEnv(t *testing.T) {
 	var gotMethod, gotPath string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

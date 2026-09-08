@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"text/tabwriter"
 )
 
@@ -32,6 +33,8 @@ func runAppsProjects(prog string, args []string, stdout, stderr io.Writer, looku
 		return runAppsProjectsGet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
 		return runAppsProjectsDelete(prog, args[1:], stdout, stderr, lookupEnv)
+	case "restart":
+		return runAppsProjectsRestart(prog, args[1:], stdout, stderr, lookupEnv)
 	case "env-get":
 		return runAppsProjectsEnvGet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "env-set":
@@ -49,6 +52,7 @@ func appsProjectsUsage(prog string) string {
   %[1]s apps projects list [flags]                         list projects
   %[1]s apps projects get <id> [flags]                     show one project
   %[1]s apps projects delete <id> [flags]                  delete a project
+  %[1]s apps projects restart <id> [flags]                 restart every app in a project
   %[1]s apps projects env-get <id> [flags]                 show a project's shared env vars
   %[1]s apps projects env-set <id> --var KEY=VALUE [flags]   replace a project's shared env vars
 
@@ -233,6 +237,62 @@ Flags:
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print {} to stdout on success instead of a plain confirmation
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
+`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}
+
+// runAppsProjectsRestart implements "apps projects restart <id>": POST
+// /api/v1/projects/{id}/restart (internal/api/project_restart.go's own
+// handleRestartProject), AbilityDeploy-gated, no request body. Forces
+// every app filed under the project to have its running container
+// recreated with no image change, the project-scoped counterpart of
+// "apps restart <name>"; one app failing doesn't stop the rest, see the
+// response's own Failed field.
+func runAppsProjectsRestart(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps projects restart", "print the restart result as JSON to stdout and nothing else", stderr)
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsProjectsRestartUsage(prog)) }
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+
+	id, ok := requireOneArg(fs, stderr, prog, "apps projects restart", "project id")
+	if !ok {
+		return exitUsage
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	result, err := client.RestartProject(context.Background(), id)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("restart project %q: %w", id, err))
+	}
+
+	return writeScheduledTaskResult(stdout, stderr, of, result, func() {
+		_, _ = fmt.Fprintf(stdout, "project %q: %d app(s) restart requested\n", id, result.RestartedCount)
+		if len(result.Failed) > 0 {
+			_, _ = fmt.Fprintf(stdout, "failed to restart: %s\n", strings.Join(result.Failed, ", "))
+		}
+	})
+}
+
+func appsProjectsRestartUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s apps projects restart <id> [flags]
+
+Forces every app filed under this project to have its running container
+recreated with no image change, the same "restart requested,
+reconcile is asynchronous" semantics "apps restart <name>" has for a
+single app. One app's restart failing does not stop the rest; the
+result lists which apps succeeded and which failed.
+
+Flags:
+  --token string          API token (default: %[2]s env var, then the credentials file)
+  --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
+  --json                    print the restart result as JSON to stdout, nothing else
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help

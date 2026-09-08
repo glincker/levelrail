@@ -613,6 +613,9 @@ func (f *fakeDrainAppStore) UpdateServiceNode(_ context.Context, name, _ string)
 func (f *fakeDrainAppStore) ListDesiredServicesByNode(context.Context, string) ([]store.DesiredService, error) {
 	return f.services, nil
 }
+func (f *fakeDrainAppStore) ListDesiredServicesByProject(context.Context, string) ([]store.DesiredService, error) {
+	return nil, nil
+}
 func (f *fakeDrainAppStore) RestartService(context.Context, string) error { return nil }
 func (f *fakeDrainAppStore) UpdateServiceProject(context.Context, string, string) error {
 	return nil
