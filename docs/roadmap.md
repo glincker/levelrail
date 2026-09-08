@@ -139,6 +139,28 @@ still open. This page describes what's actually true today.
   restore is now live-Docker-tested for every engine, including
   MariaDB, ClickHouse, KeyDB, and Dragonfly's own restore paths and a
   fix scoping MongoDB restore to drop only non-system databases first.
+- TLS for managed database connections, on by default for newly created
+  Postgres and Redis databases, no operator action required: the
+  reconciler generates a self-signed certificate at container-creation
+  time (`internal/reconcile/database`'s `WithTLS`), stores it through
+  the same envelope-encrypted secrets path credentials already use, and
+  mounts it into the container via a short-lived helper container (the
+  same create-helper-then-exec pattern app volume backups already use
+  to write into a named volume with no tool of its own). Postgres
+  negotiates TLS on its existing port with `ssl=on` and the connection
+  string gets `?sslmode=require`; Redis disables its plaintext port
+  entirely (`--port 0`) and the connection string switches to
+  `rediss://` on the TLS-only port. Scoped to these two engines only:
+  both have a "encrypt without verifying the certificate" mode expressible
+  entirely in the connection URI that mainstream client libraries already
+  honor with zero app-side changes, which the other six managed engines
+  don't yet have verified. An already-running database (created before
+  this feature, or before a master key was configured) is never
+  retroactively switched to TLS: the reconciler only ever diffs a
+  container's image and published ports, never its env/command, so an
+  existing container simply keeps running as it always has. Surfaced as
+  a "TLS enabled" / "Plaintext" badge on a database's Overview page and
+  a `tls` column/field in `databases list`/`databases get`.
 - Restore into a brand-new, standalone resource rather than only
   in-place: `POST /api/v1/databases/{name}/restore-as-new` for managed
   databases and `POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new`

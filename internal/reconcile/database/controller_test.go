@@ -1,6 +1,8 @@
 package database
 
 import (
+	"archive/tar"
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -65,6 +67,17 @@ type fakeRuntime struct {
 	// call, for assertions (like the mesh DNS wiring tests) that need
 	// more than just Env.
 	lastCreateSpec docker.ContainerSpec
+
+	// execWithInputCalls/lastExecCmd/lastExecInput record provisionCerts'
+	// own calls (tls_mount.go): unlike Exec, which this package's
+	// controller never calls, ExecWithInput is the real mechanism TLS
+	// cert provisioning uses to write into a helper container's stdin, so
+	// the fake actually drains and records it rather than just erroring.
+	execWithInputCalls  int
+	execWithInputErr    error
+	lastExecContainerID string
+	lastExecCmd         []string
+	lastExecInput       []byte
 }
 
 func newFakeRuntime() *fakeRuntime {
@@ -225,11 +238,26 @@ func (f *fakeRuntime) Exec(_ context.Context, _ string, _ []string) (io.ReadClos
 	return nil, errors.New("fakeRuntime: Exec not implemented")
 }
 
-// ExecWithInput is unused for the same reason Exec above is:
-// internal/backup's Restorer is the real caller, exercised by that
-// package's own tests. Stubbed to satisfy docker.Runtime.
-func (f *fakeRuntime) ExecWithInput(_ context.Context, _ string, _ []string, _ io.Reader) (io.ReadCloser, error) {
-	return nil, errors.New("fakeRuntime: ExecWithInput not implemented")
+// ExecWithInput backs provisionCerts' own use of it (tls_mount.go): it
+// drains and records stdin (the tar archive) rather than erroring, so a
+// TLS-enabled reconcile test can assert exactly what was written, the
+// same real-mechanism testing this package already applies to Create/
+// Start/Stop above.
+func (f *fakeRuntime) ExecWithInput(_ context.Context, containerID string, cmd []string, stdin io.Reader) (io.ReadCloser, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.execWithInputCalls++
+	f.lastExecContainerID = containerID
+	f.lastExecCmd = cmd
+	if f.execWithInputErr != nil {
+		return nil, f.execWithInputErr
+	}
+	input, err := io.ReadAll(stdin)
+	if err != nil {
+		return nil, err
+	}
+	f.lastExecInput = input
+	return io.NopCloser(strings.NewReader("")), nil
 }
 
 func (f *fakeRuntime) count() int {
@@ -482,6 +510,200 @@ func TestController_Reconcile_Postgres_WithCredentials_Reconciles(t *testing.T) 
 	}
 	if rt.createCalls != 1 {
 		t.Errorf("createCalls = %d, want 1", rt.createCalls)
+	}
+}
+
+// tarFileNames decodes a tls_mount.go-produced tar archive and returns
+// each entry's header, keyed by name, for a test to assert mode/owner/
+// content against without hand-parsing the tar format itself.
+func tarFileHeaders(t *testing.T, data []byte) map[string]*tar.Header {
+	t.Helper()
+	headers := map[string]*tar.Header{}
+	tr := tar.NewReader(bytes.NewReader(data))
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("read tar entry: %v", err)
+		}
+		hdrCopy := *hdr
+		headers[hdr.Name] = &hdrCopy
+	}
+	return headers
+}
+
+func TestController_Reconcile_Postgres_TLS_MountsCertsAndConfiguresSSL(t *testing.T) {
+	rt := newFakeRuntime()
+	certPEM, keyPEM, err := GenerateSelfSignedCert("db-main")
+	if err != nil {
+		t.Fatalf("GenerateSelfSignedCert() error = %v", err)
+	}
+	material := &TLSMaterial{CertPEM: certPEM, KeyPEM: keyPEM}
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}
+	c := New("main", &fakeStore{db: desired}, rt,
+		WithPostgresCredentials(&PostgresCredentials{Username: "main", Password: "s3cret"}),
+		WithTLS(material),
+	)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Fatalf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+
+	// Exactly one real database container survives: the certs helper
+	// container is created, used, and removed within the same reconcile
+	// pass (createCalls counts both; count() only counts what's still
+	// there afterward).
+	if rt.createCalls != 2 {
+		t.Errorf("createCalls = %d, want 2 (certs helper + real database container)", rt.createCalls)
+	}
+	if got := rt.count(); got != 1 {
+		t.Errorf("surviving container count = %d, want 1 (helper must be removed)", got)
+	}
+
+	wantCommand := postgresTLSCommand()
+	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {
+		t.Errorf("database container Command = %v, want %v", rt.lastCreateSpec.Command, wantCommand)
+	}
+
+	certsVol := certsVolumeName("main")
+	foundMount := false
+	for _, m := range rt.lastCreateSpec.Volumes {
+		if m.Name == certsVol {
+			foundMount = true
+			if m.ContainerPath != certsMountPath {
+				t.Errorf("certs mount path = %q, want %q", m.ContainerPath, certsMountPath)
+			}
+			if !m.ReadOnly {
+				t.Error("certs volume must be mounted read-only")
+			}
+		}
+	}
+	if !foundMount {
+		t.Errorf("database container Volumes = %+v, want a mount for %q", rt.lastCreateSpec.Volumes, certsVol)
+	}
+	if !rt.hasVolume(certsVol) {
+		t.Errorf("expected certs volume %q to have been ensured", certsVol)
+	}
+
+	if rt.execWithInputCalls != 1 {
+		t.Fatalf("execWithInputCalls = %d, want 1", rt.execWithInputCalls)
+	}
+	wantExecCmd := []string{"tar", "-xf", "-", "-C", certsHelperMountPath}
+	if !reflect.DeepEqual(rt.lastExecCmd, wantExecCmd) {
+		t.Errorf("exec command = %v, want %v", rt.lastExecCmd, wantExecCmd)
+	}
+
+	headers := tarFileHeaders(t, rt.lastExecInput)
+	certHdr, ok := headers[tlsCertFile]
+	if !ok {
+		t.Fatalf("tar archive missing %q, got %+v", tlsCertFile, headers)
+	}
+	if certHdr.Mode != 0o644 || certHdr.Uid != dbTLSUID || certHdr.Gid != dbTLSGID {
+		t.Errorf("%s header = mode %o uid %d gid %d, want mode 0644 uid/gid %d", tlsCertFile, certHdr.Mode, certHdr.Uid, certHdr.Gid, dbTLSUID)
+	}
+	keyHdr, ok := headers[tlsKeyFile]
+	if !ok {
+		t.Fatalf("tar archive missing %q, got %+v", tlsKeyFile, headers)
+	}
+	if keyHdr.Mode != 0o600 || keyHdr.Uid != dbTLSUID || keyHdr.Gid != dbTLSGID {
+		t.Errorf("%s header = mode %o uid %d gid %d, want mode 0600 uid/gid %d", tlsKeyFile, keyHdr.Mode, keyHdr.Uid, keyHdr.Gid, dbTLSUID)
+	}
+}
+
+// TestController_Reconcile_Postgres_TLS_NoCredentials_StillBlocked proves
+// WithTLS alone doesn't bypass the credentials gate: Postgres still
+// refuses to start unauthenticated even with a certificate configured,
+// since TLS encrypts the connection but was never meant to be a
+// substitute for authentication.
+func TestController_Reconcile_Postgres_TLS_NoCredentials_StillBlocked(t *testing.T) {
+	rt := newFakeRuntime()
+	certPEM, keyPEM, err := GenerateSelfSignedCert("db-main")
+	if err != nil {
+		t.Fatalf("GenerateSelfSignedCert() error = %v", err)
+	}
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}
+	c := New("main", &fakeStore{db: desired}, rt, WithTLS(&TLSMaterial{CertPEM: certPEM, KeyPEM: keyPEM}))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionFalse || cond.Reason != "CredentialsNotConfigured" {
+		t.Errorf("condition = %+v, want Status=False Reason=CredentialsNotConfigured", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0", rt.createCalls)
+	}
+}
+
+func TestController_Reconcile_Redis_TLS_DisablesPlaintextPort(t *testing.T) {
+	rt := newFakeRuntime()
+	certPEM, keyPEM, err := GenerateSelfSignedCert("db-cache")
+	if err != nil {
+		t.Fatalf("GenerateSelfSignedCert() error = %v", err)
+	}
+	material := &TLSMaterial{CertPEM: certPEM, KeyPEM: keyPEM}
+	desired := &store.DesiredDatabase{Name: "cache", Engine: store.EngineRedis, Version: "7"}
+	c := New("cache", &fakeStore{db: desired}, rt, WithTLS(material))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Fatalf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+
+	wantCommand, wantPort := redisCommandAndPort(material)
+	if wantPort != redisTLSContainerPort {
+		t.Fatalf("test setup: redisCommandAndPort port = %d, want %d", wantPort, redisTLSContainerPort)
+	}
+	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {
+		t.Errorf("database container Command = %v, want %v", rt.lastCreateSpec.Command, wantCommand)
+	}
+	if rt.execWithInputCalls != 1 {
+		t.Errorf("execWithInputCalls = %d, want 1", rt.execWithInputCalls)
+	}
+}
+
+// TestController_Reconcile_TLS_AlreadyRunning_NeverReprovisions proves
+// the "generate/write at creation time, not every reconcile pass"
+// invariant WithTLS's own doc comment establishes: reconciling an
+// already-running TLS database a second time must not call
+// ExecWithInput again, since the certs volume already holds the same
+// stable material from the first create.
+func TestController_Reconcile_TLS_AlreadyRunning_NeverReprovisions(t *testing.T) {
+	rt := newFakeRuntime()
+	certPEM, keyPEM, err := GenerateSelfSignedCert("db-cache")
+	if err != nil {
+		t.Fatalf("GenerateSelfSignedCert() error = %v", err)
+	}
+	material := &TLSMaterial{CertPEM: certPEM, KeyPEM: keyPEM}
+	desired := &store.DesiredDatabase{Name: "cache", Engine: store.EngineRedis, Version: "7"}
+	c := New("cache", &fakeStore{db: desired}, rt, WithTLS(material))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("first Reconcile() error = %v", err)
+	}
+	if rt.execWithInputCalls != 1 {
+		t.Fatalf("execWithInputCalls after first reconcile = %d, want 1", rt.execWithInputCalls)
+	}
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("second Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue || cond.Reason != "AlreadyRunning" {
+		t.Errorf("second condition = %+v, want Status=True Reason=AlreadyRunning", cond)
+	}
+	if rt.execWithInputCalls != 1 {
+		t.Errorf("execWithInputCalls after second reconcile = %d, want still 1 (no reprovisioning)", rt.execWithInputCalls)
 	}
 }
 

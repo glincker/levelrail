@@ -237,6 +237,108 @@ func TestController_Reconcile_DatabaseEnv_NoSecretResolverConfigured_FailsLoudly
 	}
 }
 
+// TestController_Reconcile_DatabaseEnv_Postgres_TLS_URL_HasSSLMode proves
+// resolveDatabaseURL appends "?sslmode=require" once this database's TLS
+// certificate exists (database.TLSCertEnvKey, cmd/levelrail's
+// tlsMaterialFor), the same "encrypt without verifying" contract Postgres
+// client libraries already honor with zero app-side code changes.
+func TestController_Reconcile_DatabaseEnv_Postgres_TLS_URL_HasSSLMode(t *testing.T) {
+	rt := newFakeRuntime(0)
+	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
+		"main": {Name: "main", Engine: store.EnginePostgres},
+	}}
+	secretResolver := newFakeSecretResolver(map[string]string{
+		"main/" + database.PostgresPasswordEnvKey: "s3cr3t",
+		"main/" + database.TLSCertEnvKey:          "-----BEGIN CERTIFICATE-----\n...",
+	})
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		DatabaseEnv: map[string]store.DatabaseEnvRef{
+			"DATABASE_URL": {Database: "main", Field: "url"},
+			"DB_PORT":      {Database: "main", Field: "port"},
+		},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithDatabaseAttachments(dbStore), WithSecretResolver(secretResolver))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	want := "postgres://main:s3cr3t@db-main:5432/main?sslmode=require" //nolint:gosec // fake fixture, not a real credential
+	if got := rt.lastCreateEnv["DATABASE_URL"]; got != want {
+		t.Errorf("container env DATABASE_URL = %q, want %q", got, want)
+	}
+	// Postgres negotiates TLS on its one existing port: unlike Redis,
+	// TLS must never change the port field.
+	if got := rt.lastCreateEnv["DB_PORT"]; got != "5432" {
+		t.Errorf("container env DB_PORT = %q, want unchanged \"5432\"", got)
+	}
+}
+
+// TestController_Reconcile_DatabaseEnv_Redis_TLS_URL_UsesRedissSchemeAndTLSPort
+// proves Redis's TLS-enabled connection info flips both the scheme
+// ("rediss://") and the port (WithTLS disables Redis's plaintext port
+// entirely server-side, internal/reconcile/database's own
+// redisCommandAndPort doc comment), not just the scheme: a client
+// dialing the old plaintext port after this would get nothing.
+func TestController_Reconcile_DatabaseEnv_Redis_TLS_URL_UsesRedissSchemeAndTLSPort(t *testing.T) {
+	rt := newFakeRuntime(0)
+	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
+		"cache": {Name: "cache", Engine: store.EngineRedis},
+	}}
+	secretResolver := newFakeSecretResolver(map[string]string{
+		"cache/" + database.TLSCertEnvKey: "-----BEGIN CERTIFICATE-----\n...",
+	})
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		DatabaseEnv: map[string]store.DatabaseEnvRef{
+			"CACHE_URL":  {Database: "cache", Field: "url"},
+			"CACHE_PORT": {Database: "cache", Field: "port"},
+		},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithDatabaseAttachments(dbStore), WithSecretResolver(secretResolver))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if got, want := rt.lastCreateEnv["CACHE_URL"], "rediss://db-cache:6380"; got != want {
+		t.Errorf("container env CACHE_URL = %q, want %q", got, want)
+	}
+	if got, want := rt.lastCreateEnv["CACHE_PORT"], "6380"; got != want {
+		t.Errorf("container env CACHE_PORT = %q, want %q", got, want)
+	}
+}
+
+// TestController_Reconcile_DatabaseEnv_TLSNotYetGenerated_StaysPlaintext
+// proves a database whose engine SupportsTLS but has no TLS certificate
+// generated yet (no secrets master key configured, or not reconciled
+// since this feature landed) resolves exactly as it did before this
+// feature existed: no query param, the plaintext port, "redis://" not
+// "rediss://". This is what keeps an existing, already-running database
+// on its original connection string until it's genuinely recreated (see
+// internal/reconcile/database's WithTLS doc comment).
+func TestController_Reconcile_DatabaseEnv_TLSNotYetGenerated_StaysPlaintext(t *testing.T) {
+	rt := newFakeRuntime(0)
+	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
+		"cache": {Name: "cache", Engine: store.EngineRedis},
+	}}
+	// No TLSCertEnvKey entry: TLS material was never generated for this
+	// database.
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		DatabaseEnv: map[string]store.DatabaseEnvRef{
+			"CACHE_URL": {Database: "cache", Field: "url"},
+		},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithDatabaseAttachments(dbStore), WithSecretResolver(newFakeSecretResolver(nil)))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if got, want := rt.lastCreateEnv["CACHE_URL"], "redis://db-cache:6379"; got != want {
+		t.Errorf("container env CACHE_URL = %q, want %q", got, want)
+	}
+}
+
 func TestController_Reconcile_DatabaseAttachment_Injected(t *testing.T) {
 	rt := newFakeRuntime(0)
 	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{

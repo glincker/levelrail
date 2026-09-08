@@ -33,6 +33,19 @@ type fakeSecretSetter struct {
 	setLockedErr       error
 	lastLockedKey      string
 	lastLockedTo       bool
+	// existsValues/existsErr back Exists: keyed by serviceName+"/"+envKey,
+	// so a test can make one specific (service, key) pair "exist" without
+	// affecting any other lookup the router makes during the same
+	// request (e.g. databases_test.go's TLSEnabled coverage).
+	existsValues map[string]bool
+	existsErr    error
+}
+
+func (f *fakeSecretSetter) Exists(_ context.Context, serviceName, envKey string) (bool, error) {
+	if f.existsErr != nil {
+		return false, f.existsErr
+	}
+	return f.existsValues[serviceName+"/"+envKey], nil
 }
 
 func (f *fakeSecretSetter) SetValueGuarded(_ context.Context, serviceName, envKey, plaintext string, overwriteLocked bool) error {

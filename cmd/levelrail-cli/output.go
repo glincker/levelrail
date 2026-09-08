@@ -525,6 +525,11 @@ func printDatabaseHuman(out io.Writer, d databaseResource) {
 	if d.NodeID != "" {
 		_, _ = fmt.Fprintf(out, "node:     %s\n", d.NodeID)
 	}
+	tls := "no"
+	if d.TLSEnabled {
+		tls = "yes"
+	}
+	_, _ = fmt.Fprintf(out, "tls:      %s\n", tls)
 	if d.Resources != nil {
 		if d.Resources.MemoryBytes > 0 {
 			_, _ = fmt.Fprintf(out, "memory:   %d bytes\n", d.Resources.MemoryBytes)
@@ -549,13 +554,17 @@ func printDatabasesTable(out io.Writer, dbs []databaseResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "NAME\tENGINE\tVERSION\tNODE")
+	_, _ = fmt.Fprintln(tw, "NAME\tENGINE\tVERSION\tNODE\tTLS")
 	for _, d := range dbs {
 		node := d.NodeID
 		if node == "" {
 			node = "(local)"
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", d.Name, d.Engine, d.Version, node)
+		tls := "no"
+		if d.TLSEnabled {
+			tls = "yes"
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", d.Name, d.Engine, d.Version, node, tls)
 	}
 	_ = tw.Flush()
 }

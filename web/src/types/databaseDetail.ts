@@ -56,6 +56,13 @@ export interface DatabaseResource {
   backup_schedule?: string
   backup_retain?: number
   backup_retain_days?: number
+  // tls_enabled: response-only, computed fresh on every GET
+  // (internal/api's databaseTLSEnabled), true when this database's
+  // connection string (handed to consuming app containers as
+  // DATABASE_URL/REDIS_URL) is TLS-encrypted. Never settable: TLS
+  // activates automatically at database-creation time, not through an
+  // operator toggle.
+  tls_enabled?: boolean
 }
 
 // GET /api/v1/databases' own wire shape (internal/api/databases.go's

@@ -1015,6 +1015,16 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, dbName, field str
 	host := database.ContainerName(dbName)
 	port, _ := database.ContainerPort(desiredDB.Engine) // ok already confirmed by SupportsField above
 
+	tlsEnabled, err := c.databaseTLSEnabled(ctx, dbName, desiredDB.Engine)
+	if err != nil {
+		return "", err
+	}
+	if tlsEnabled {
+		if tlsPort, ok := database.TLSContainerPort(desiredDB.Engine); ok {
+			port = tlsPort
+		}
+	}
+
 	switch field {
 	case "host":
 		return host, nil
@@ -1027,10 +1037,28 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, dbName, field str
 	case "password":
 		return c.resolveDatabasePassword(ctx, dbName, desiredDB.Engine)
 	case "url":
-		return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, port)
+		return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, port, tlsEnabled)
 	default:
 		return "", fmt.Errorf("unsupported database field %q", field)
 	}
+}
+
+// databaseTLSEnabled reports whether dbName's managed database is
+// currently reconciled with TLS (internal/reconcile/database's WithTLS):
+// true exactly when database.SupportsTLS(engine) and the same TLS
+// certificate cmd/levelrail's tlsMaterialFor persists has actually been
+// generated, checked the same way resolveDatabasePassword already checks
+// for a generated password, via SecretResolver against the shared
+// per-database secrets keying database.TLSCertEnvKey establishes.
+func (c *Controller) databaseTLSEnabled(ctx context.Context, dbName, engine string) (bool, error) {
+	if !database.SupportsTLS(engine) || c.secretResolver == nil {
+		return false, nil
+	}
+	exists, err := c.secretResolver.Exists(ctx, dbName, database.TLSCertEnvKey)
+	if err != nil {
+		return false, fmt.Errorf("check tls material for database %q: %w", dbName, err)
+	}
+	return exists, nil
 }
 
 func (c *Controller) resolveDatabasePassword(ctx context.Context, dbName, engine string) (string, error) {
@@ -1057,9 +1085,24 @@ func (c *Controller) resolveDatabasePassword(ctx context.Context, dbName, engine
 // identical to store's engine identifier (store.EnginePostgres is
 // "postgres", store.EngineMongoDB is "mongodb", and so on), so no
 // separate scheme mapping is needed there.
-func (c *Controller) resolveDatabaseURL(ctx context.Context, dbName, engine, host string, port int) (string, error) {
+//
+// tlsEnabled flips Redis's scheme to "rediss" (its own client-library
+// convention for "dial with TLS") and appends Postgres' own
+// "?sslmode=require" query param: both mean "encrypt, don't verify the
+// certificate's issuer" to mainstream client libraries with zero
+// additional app-side configuration, matching the self-signed,
+// no-shared-CA certificate database.WithTLS actually configures the
+// server with (see internal/reconcile/database's TLSMaterial doc
+// comment). databaseTLSEnabled only ever passes true for an engine
+// database.SupportsTLS agrees on, so no other engine reaches either
+// branch below with tlsEnabled set.
+func (c *Controller) resolveDatabaseURL(ctx context.Context, dbName, engine, host string, port int, tlsEnabled bool) (string, error) {
 	if engine == store.EngineRedis || engine == store.EngineKeyDB || engine == store.EngineDragonfly {
-		return fmt.Sprintf("redis://%s:%d", host, port), nil
+		scheme := "redis"
+		if tlsEnabled {
+			scheme = "rediss"
+		}
+		return fmt.Sprintf("%s://%s:%d", scheme, host, port), nil
 	}
 	password, err := c.resolveDatabasePassword(ctx, dbName, engine)
 	if err != nil {
@@ -1070,6 +1113,11 @@ func (c *Controller) resolveDatabaseURL(ctx context.Context, dbName, engine, hos
 		User:   url.UserPassword(dbName, password),
 		Host:   fmt.Sprintf("%s:%d", host, port),
 		Path:   "/" + dbName,
+	}
+	if tlsEnabled {
+		q := url.Values{}
+		q.Set("sslmode", "require")
+		u.RawQuery = q.Encode()
 	}
 	return u.String(), nil
 }
