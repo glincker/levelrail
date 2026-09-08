@@ -46,6 +46,7 @@ proposals):
 
 | Doc | Covers |
 | --- | --- |
+| [observability.md](observability.md) | Query metrics and logs, set up alert rules, integrate with Prometheus |
 | [feature-flags.md](feature-flags.md) | Toggle app behavior at runtime without a redeploy |
 | [master-key-rotation.md](master-key-rotation.md) | Rotate the envelope-encryption master key without losing access to stored secrets |
 | [migrating-from-coolify-and-dokploy.md](migrating-from-coolify-and-dokploy.md) | Move apps off a live Coolify or Dokploy instance with `levelrail-cli migrate` |
