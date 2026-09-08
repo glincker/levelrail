@@ -5,6 +5,7 @@ import { MoveToNodeDialog } from '../../../components/MoveToNodeDialog'
 import { MoveToProjectDialog } from '../../../components/MoveToProjectDialog'
 import { BackupsSection } from '../../../components/BackupsSection'
 import { DatabasePublicAccessCard } from '../../../components/DatabasePublicAccessCard'
+import { DatabaseCredentialsCard } from '../../../components/DatabaseCredentialsCard'
 import { useProjectListOptional } from '../../../queries/projects'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -100,6 +101,8 @@ function OverviewSection() {
       </Card>
 
       <ConditionsPanel conditions={conditions} />
+
+      <DatabaseCredentialsCard name={database.name} />
 
       <DatabasePublicAccessCard database={database} />
 

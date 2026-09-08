@@ -58,6 +58,18 @@ export interface DatabaseResource {
   backup_retain_days?: number
 }
 
+// GET /api/v1/databases/{name}/credentials' own wire shape
+// (internal/api/database_credentials.go's databaseCredentialsResource):
+// everything needed to plug this database into an external client.
+export interface DatabaseCredentials {
+  host: string
+  port: number
+  database?: string
+  username?: string
+  password?: string
+  url: string
+}
+
 // GET /api/v1/databases' own wire shape (internal/api/databases.go's
 // databaseListResource): DatabaseResource plus a batched status summary
 // computed from one query across every listed database's conditions,

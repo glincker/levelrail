@@ -11,6 +11,7 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import type {
+  DatabaseCredentials,
   DatabaseListEntry,
   DatabaseResource,
   ServiceResources,
@@ -90,6 +91,34 @@ export function databaseDetailQueryOptions(name: string) {
 // useApp(name)'s shape.
 export function useDatabase(name: string) {
   return useSuspenseQuery(databaseDetailQueryOptions(name))
+}
+
+// GET /api/v1/databases/{name}/credentials (internal/api/
+// database_credentials.go's handleGetDatabaseCredentials): discloses a
+// real secret's plaintext, so this is a useMutation the credentials
+// panel triggers on an explicit "Reveal" click, the same "no cache, no
+// key, every call is a deliberate one-off" shape queries/exec.ts's
+// useExecApp/useExecDatabase already establish for equally sensitive,
+// deliberately-triggered reads.
+export async function fetchDatabaseCredentials(
+  name: string,
+): Promise<DatabaseCredentials> {
+  const res = await fetch(
+    `/api/v1/databases/${encodeURIComponent(name)}/credentials`,
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `fetch database credentials failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as DatabaseCredentials
+}
+
+export function useDatabaseCredentials() {
+  return useMutation({
+    mutationFn: fetchDatabaseCredentials,
+  })
 }
 
 // GET /api/v1/databases/{name}/status (internal/api/databases.go's

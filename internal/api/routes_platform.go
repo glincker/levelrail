@@ -502,6 +502,11 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/databases/{name}/public-access", rt.requireAbility(AbilityWriteSensitive, rt.handleSetDatabasePublicAccess))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}/public-access", rt.requireAbility(AbilityWriteSensitive, rt.handleClearDatabasePublicAccess))
 
+	// Connection credentials, per database (database_credentials.go).
+	// AbilityReadSensitive, the same tier backup download uses: this
+	// discloses a real secret's plaintext.
+	mux.HandleFunc("GET /api/v1/databases/{name}/credentials", rt.requireAbility(AbilityReadSensitive, rt.handleGetDatabaseCredentials))
+
 	// Restore, per database (restore.go). AbilityRoot, not
 	// AbilityWriteSensitive: see handleTriggerRestore's own doc comment
 	// for why this, alone among every backup-related route, needs the

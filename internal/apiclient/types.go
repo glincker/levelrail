@@ -570,6 +570,18 @@ type DatabaseResource struct {
 	BackupRetainDays   int               `json:"backup_retain_days,omitempty"`
 }
 
+// DatabaseCredentialsResource mirrors internal/api's
+// databaseCredentialsResource (internal/api/database_credentials.go):
+// everything needed to plug a managed database into an external client.
+type DatabaseCredentialsResource struct {
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	Database string `json:"database,omitempty"`
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+	URL      string `json:"url"`
+}
+
 // DatabaseEngineResource mirrors internal/api's databaseEngineResource
 // (internal/api/database_engines.go): one entry from
 // GET /api/v1/database-engines, the dynamic registry backing the

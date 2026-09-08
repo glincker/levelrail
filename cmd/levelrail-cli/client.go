@@ -37,6 +37,7 @@ type (
 	restoreHistoryResource           = apiclient.RestoreHistoryResource
 	sessionInfoResource              = apiclient.SessionInfoResource
 	databaseResource                 = apiclient.DatabaseResource
+	databaseCredentialsResource      = apiclient.DatabaseCredentialsResource
 	databaseEngineResource           = apiclient.DatabaseEngineResource
 	setDatabaseResourcesRequest      = apiclient.SetDatabaseResourcesRequest
 	databasePublicAccessResource     = apiclient.DatabasePublicAccessResource

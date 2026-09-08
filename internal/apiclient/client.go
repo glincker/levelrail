@@ -364,6 +364,17 @@ func (c *Client) GetDatabase(ctx context.Context, name string) (DatabaseResource
 	return out, err
 }
 
+// GetDatabaseCredentials calls GET /api/v1/databases/{name}/credentials:
+// everything needed to plug this database into an external client
+// (internal/api/database_credentials.go's own handleGetDatabaseCredentials).
+// AbilityReadSensitive-gated server-side: this discloses a real secret's
+// plaintext.
+func (c *Client) GetDatabaseCredentials(ctx context.Context, name string) (DatabaseCredentialsResource, error) {
+	var out DatabaseCredentialsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/credentials", nil, &out)
+	return out, err
+}
+
 // ListDatabases calls GET /api/v1/databases.
 func (c *Client) ListDatabases(ctx context.Context) ([]DatabaseResource, error) {
 	var out []DatabaseResource
