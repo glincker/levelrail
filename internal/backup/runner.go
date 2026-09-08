@@ -47,6 +47,10 @@ type Runner struct {
 	// calls RunVolumeBackup, the same "optional capability" shape this
 	// codebase already uses for Scheduler.Deleter/Verifier.
 	VolumeArchiver VolumeArchiver
+	// Deleter backs DeleteBackupObject. nil is valid: a manual delete then
+	// removes only the store row, the same optional-capability shape
+	// Scheduler.Deleter already establishes for retention pruning.
+	Deleter Deleter
 	// Now returns the current time. A field, not time.Now called
 	// directly, so tests get deterministic timestamps without a real
 	// clock dependency; production code leaves it nil and RunBackup
@@ -232,6 +236,22 @@ func (r *Runner) ResolveDestination(ctx context.Context, targetID string) (Desti
 		AccessKeyID:     accessKeyID,
 		SecretAccessKey: secretAccessKey,
 	}, nil
+}
+
+// DeleteBackupObject best-effort removes objectKey from targetID's
+// bucket, the manual-delete counterpart of Scheduler.deletePrunedObjects'
+// own resolve-then-delete step. A nil Deleter is a no-op, not an error,
+// mirroring Scheduler.Deleter's own nil-disables-object-deletion
+// convention.
+func (r *Runner) DeleteBackupObject(ctx context.Context, targetID, objectKey string) error {
+	if r.Deleter == nil {
+		return nil
+	}
+	dest, err := r.ResolveDestination(ctx, targetID)
+	if err != nil {
+		return fmt.Errorf("delete backup object %q: resolve destination: %w", objectKey, err)
+	}
+	return r.Deleter.Delete(ctx, dest, objectKey)
 }
 
 // countingReader wraps a Dumper's stream so RunBackup can report

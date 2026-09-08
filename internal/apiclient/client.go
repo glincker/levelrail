@@ -617,6 +617,14 @@ func (c *Client) ListBackups(ctx context.Context, name string, opts ListBackupsO
 	return out, err
 }
 
+// DeleteBackupHistory calls
+// DELETE /api/v1/databases/{name}/backups/{historyId}: removes one
+// backup attempt from history on request, any status, independent of
+// the retention policy SetBackupSchedule configures.
+func (c *Client) DeleteBackupHistory(ctx context.Context, name, historyID string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name)+"/backups/"+PathEscape(historyID), nil, nil)
+}
+
 // VerifyBackup calls POST /api/v1/databases/{name}/backups/{historyId}/verify:
 // re-downloads a previously succeeded backup and checks it for corruption,
 // returning as soon as the attempt is recorded and under way, not once the

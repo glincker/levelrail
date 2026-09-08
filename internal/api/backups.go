@@ -71,6 +71,7 @@ func (rt *Router) loadBackupTarget(w http.ResponseWriter, r *http.Request, targe
 type BackupHistoryStore interface {
 	ListBackupHistory(ctx context.Context, databaseName string, limit int, before *time.Time) ([]store.BackupHistory, error)
 	GetBackupHistory(ctx context.Context, id string) (store.BackupHistory, error)
+	DeleteBackupHistory(ctx context.Context, id string) error
 }
 
 // BackupRunner is the surface the backup trigger handler needs from
@@ -82,6 +83,13 @@ type BackupHistoryStore interface {
 // narrow interface, wired in by cmd/levelrail at startup.
 type BackupRunner interface {
 	RunBackup(ctx context.Context, historyID, databaseName, engine, containerName, targetID string) error
+	// DeleteBackupObject best-effort removes one already-uploaded backup's
+	// bucket object, the manual-delete counterpart of the resolve-then-delete
+	// work internal/backup.Scheduler already does for retention pruning.
+	// handleDeleteBackupHistory calls this before removing the store row;
+	// see that handler's own doc comment for why a failure here never
+	// blocks the row deletion.
+	DeleteBackupObject(ctx context.Context, targetID, objectKey string) error
 }
 
 // backupHistoryResource is the wire shape for one backup attempt.
@@ -248,6 +256,67 @@ func (rt *Router) handleListBackupHistory(w http.ResponseWriter, r *http.Request
 		out = append(out, toBackupHistoryResource(h))
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// handleDeleteBackupHistory handles
+// DELETE /api/v1/databases/{name}/backups/{historyId}: removes one
+// backup attempt from history on request, for a bad, accidental, or no
+// longer needed backup, regardless of its status. This is separate from
+// the existing retention policy (BackupRetain/BackupRetainDays), which
+// only ever prunes succeeded attempts on its own schedule.
+//
+// AbilityWriteSensitive, the same tier the manual trigger route uses.
+//
+// The remote bucket object, if any, is deleted best-effort through
+// rt.backupRunner: a failure there is logged and never blocks the store
+// row from being removed, since a stuck history row an operator
+// explicitly asked to remove is worse than an orphaned bucket object.
+// rt.backupRunner being nil (no master key configured) just skips that
+// step; deleting the row itself needs no live credential.
+func (rt *Router) handleDeleteBackupHistory(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	historyID := r.PathValue("historyId")
+
+	if _, err := rt.databases.GetDesiredDatabase(r.Context(), name); errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: delete backup history: load database failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	h, err := rt.backupHistory.GetBackupHistory(r.Context(), historyID)
+	if errors.Is(err, store.ErrBackupHistoryNotFound) {
+		writeError(w, http.StatusNotFound, "backup not found")
+		return
+	}
+	if err != nil {
+		rt.logger.Error("api: delete backup history: load backup history failed", slog.String("error", err.Error()), slog.String("backup_id", historyID))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	if h.DatabaseName != name {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("backup %q was taken from database %q, not %q", historyID, h.DatabaseName, name))
+		return
+	}
+
+	if rt.backupRunner != nil && h.ObjectKey != "" {
+		if err := rt.backupRunner.DeleteBackupObject(r.Context(), h.TargetID, h.ObjectKey); err != nil {
+			rt.logger.Warn("api: delete backup history: remote object delete failed", slog.String("error", err.Error()), slog.String("backup_id", historyID), slog.String("object_key", h.ObjectKey))
+		}
+	}
+
+	if err := rt.backupHistory.DeleteBackupHistory(r.Context(), historyID); errors.Is(err, store.ErrBackupHistoryNotFound) {
+		writeError(w, http.StatusNotFound, "backup not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: delete backup history failed", slog.String("error", err.Error()), slog.String("backup_id", historyID))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // backupScheduleResource is the wire shape for a database's scheduled

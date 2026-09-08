@@ -167,3 +167,42 @@ export function useTriggerBackup(databaseName: string) {
     },
   })
 }
+
+// DELETE /api/v1/databases/{name}/backups/{historyId}
+// (handleDeleteBackupHistory). 204 on success, no body to parse. 400 if
+// historyId was taken from a different database, 404 if it doesn't
+// exist at all.
+export async function deleteBackupHistory(
+  databaseName: string,
+  historyId: string,
+): Promise<void> {
+  const res = await fetch(
+    `/api/v1/databases/${encodeURIComponent(databaseName)}/backups/${encodeURIComponent(historyId)}`,
+    { method: 'DELETE' },
+  )
+  if (res.status === 204) {
+    return
+  }
+  throw new ApiError(
+    res.status,
+    await readErrorMessage(res, `delete backup failed: ${res.status}`),
+  )
+}
+
+export function useDeleteBackupHistory(databaseName: string) {
+  const queryClient = useQueryClient()
+  return useMutation<void, ApiError, string>({
+    mutationFn: (historyId: string) =>
+      deleteBackupHistory(databaseName, historyId),
+    onSuccess: (_data, historyId) => {
+      queryClient.setQueryData(
+        backupHistoryKeys.list(databaseName),
+        (existing: BackupHistoryRecord[] | undefined) =>
+          existing?.filter((record) => record.id !== historyId) ?? existing,
+      )
+      void queryClient.invalidateQueries({
+        queryKey: backupHistoryKeys.list(databaseName),
+      })
+    },
+  })
+}

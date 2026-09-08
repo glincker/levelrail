@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -22,6 +23,13 @@ import (
 type fakeBackupRunner struct {
 	err   error
 	calls chan backupRunCall
+
+	deleteObjectErr   error
+	deleteObjectCalls []deleteObjectCall
+}
+
+type deleteObjectCall struct {
+	targetID, objectKey string
 }
 
 type backupRunCall struct {
@@ -35,6 +43,11 @@ func newFakeBackupRunner() *fakeBackupRunner {
 func (f *fakeBackupRunner) RunBackup(_ context.Context, historyID, databaseName, engine, containerName, targetID string) error {
 	f.calls <- backupRunCall{historyID, databaseName, engine, containerName, targetID}
 	return f.err
+}
+
+func (f *fakeBackupRunner) DeleteBackupObject(_ context.Context, targetID, objectKey string) error {
+	f.deleteObjectCalls = append(f.deleteObjectCalls, deleteObjectCall{targetID, objectKey})
+	return f.deleteObjectErr
 }
 
 // awaitCall waits up to a short deadline for RunBackup to have been
@@ -477,6 +490,170 @@ func TestHandleListBackupHistory_InvalidLimit(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/backups?limit=not-a-number", ""))
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusBadRequest)
+	}
+}
+
+func TestHandleDeleteBackupHistory_DatabaseNotFound(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/databases/missing/backups/bkh_1", ""))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleDeleteBackupHistory_BackupNotFound(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/databases/main/backups/bkh_missing", ""))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNotFound, rec.Body.String())
+	}
+}
+
+func TestHandleDeleteBackupHistory_WrongDatabase(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "other", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	target := seedBackupTargetForAPI(t, db)
+	if err := db.StartBackupHistory(ctx, store.BackupHistory{
+		ID: "bkh_1", DatabaseName: "other", TargetID: target.ID,
+		ObjectKey: "other/other-1.dump", StartedAt: "2026-08-14T00:00:00Z",
+	}); err != nil {
+		t.Fatalf("seed history: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/databases/main/backups/bkh_1", ""))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+
+	if _, err := db.GetBackupHistory(ctx, "bkh_1"); err != nil {
+		t.Errorf("GetBackupHistory() after mismatched delete error = %v, want the row untouched", err)
+	}
+}
+
+func TestHandleDeleteBackupHistory_Success_NoRunnerConfigured(t *testing.T) {
+	rt, db := newTestRouter(t) // no WithBackupRunner
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	target := seedBackupTargetForAPI(t, db)
+	if err := db.StartBackupHistory(ctx, store.BackupHistory{
+		ID: "bkh_1", DatabaseName: "main", TargetID: target.ID,
+		ObjectKey: "main/main-1.dump", StartedAt: "2026-08-14T00:00:00Z",
+	}); err != nil {
+		t.Fatalf("seed history: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/databases/main/backups/bkh_1", ""))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNoContent, rec.Body.String())
+	}
+
+	if _, err := db.GetBackupHistory(ctx, "bkh_1"); !errors.Is(err, store.ErrBackupHistoryNotFound) {
+		t.Errorf("GetBackupHistory() after delete error = %v, want ErrBackupHistoryNotFound", err)
+	}
+}
+
+// TestHandleDeleteBackupHistory_BestEffortRemoteDelete proves the row is
+// removed even when the configured runner fails to delete the remote
+// object, and that the runner is still called with the row's own
+// target/object key when it succeeds.
+func TestHandleDeleteBackupHistory_BestEffortRemoteDelete(t *testing.T) {
+	tests := []struct {
+		name          string
+		deleteObjErr  error
+		wantRowGone   bool
+		wantDeleteHit bool
+	}{
+		{name: "remote delete succeeds", wantRowGone: true, wantDeleteHit: true},
+		{name: "remote delete fails but row is still removed", deleteObjErr: errors.New("bucket unreachable"), wantRowGone: true, wantDeleteHit: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			runner := newFakeBackupRunner()
+			runner.deleteObjectErr = tt.deleteObjErr
+			rt, db := newTestRouterWithBackupRunner(t, runner)
+			cookie := loginTestSession(t, rt, db)
+			ctx := context.Background()
+			if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+				t.Fatalf("seed: %v", err)
+			}
+			target := seedBackupTargetForAPI(t, db)
+			if err := db.StartBackupHistory(ctx, store.BackupHistory{
+				ID: "bkh_1", DatabaseName: "main", TargetID: target.ID,
+				ObjectKey: "main/main-1.dump", StartedAt: "2026-08-14T00:00:00Z",
+			}); err != nil {
+				t.Fatalf("seed history: %v", err)
+			}
+
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/databases/main/backups/bkh_1", ""))
+			if rec.Code != http.StatusNoContent {
+				t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNoContent, rec.Body.String())
+			}
+
+			_, err := db.GetBackupHistory(ctx, "bkh_1")
+			if tt.wantRowGone && !errors.Is(err, store.ErrBackupHistoryNotFound) {
+				t.Errorf("GetBackupHistory() after delete error = %v, want ErrBackupHistoryNotFound", err)
+			}
+			if tt.wantDeleteHit && (len(runner.deleteObjectCalls) != 1 || runner.deleteObjectCalls[0].targetID != target.ID || runner.deleteObjectCalls[0].objectKey != "main/main-1.dump") {
+				t.Errorf("DeleteBackupObject calls = %+v, want exactly one call for target=%q key=%q", runner.deleteObjectCalls, target.ID, "main/main-1.dump")
+			}
+		})
+	}
+}
+
+func TestBackupDeleteRoute_PlainWriteTokenForbidden(t *testing.T) {
+	rt, db := newTestRouter(t)
+	ctx := context.Background()
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	const plaintext = "write-only-token-backups" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_write_bku", Name: "writer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWrite},
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/databases/main/backups/bkh_1", nil)
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want 403 (AbilityWrite must not reach an AbilityWriteSensitive route)", rec.Code)
+	}
+}
+
+func TestBackupDeleteRoute_RequireAuth(t *testing.T) {
+	rt, _ := newTestRouter(t)
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/databases/main/backups/bkh_1", nil)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
 }
 

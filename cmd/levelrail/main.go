@@ -435,6 +435,7 @@ func run(logger *slog.Logger) error {
 			// pipeline.
 			VolumeArchiver: &backup.ContainerVolumeArchiver{Runtime: client},
 			Uploader:       backup.S3Uploader{},
+			Deleter:        backup.S3Deleter{},
 		}
 		backupVerifyRunner = &backup.VerifyRunner{
 			Store:      db,

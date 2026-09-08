@@ -265,3 +265,63 @@ type dumperFunc func(ctx context.Context, engine, containerName string) (io.Read
 func (f dumperFunc) Dump(ctx context.Context, engine, containerName string) (io.ReadCloser, error) {
 	return f(ctx, engine, containerName)
 }
+
+func TestRunner_DeleteBackupObject(t *testing.T) {
+	tests := []struct {
+		name        string
+		deleter     *fakeDeleter
+		targets     map[string]store.BackupTarget
+		wantErr     bool
+		wantNoCalls bool
+	}{
+		{
+			name:        "nil deleter is a no-op",
+			deleter:     nil,
+			targets:     map[string]store.BackupTarget{"bkt_test": newTestTarget()},
+			wantNoCalls: true,
+		},
+		{
+			name:    "deletes the resolved object",
+			deleter: &fakeDeleter{},
+			targets: map[string]store.BackupTarget{"bkt_test": newTestTarget()},
+		},
+		{
+			name:    "target not found surfaces as an error",
+			deleter: &fakeDeleter{},
+			targets: map[string]store.BackupTarget{},
+			wantErr: true,
+		},
+		{
+			name:    "deleter failure surfaces as an error",
+			deleter: &fakeDeleter{err: errors.New("bucket unreachable")},
+			targets: map[string]store.BackupTarget{"bkt_test": newTestTarget()},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Runner{
+				Store:   &fakeHistoryStore{targets: tt.targets},
+				Secrets: newTestSecrets(),
+			}
+			if tt.deleter != nil {
+				r.Deleter = tt.deleter
+			}
+
+			err := r.DeleteBackupObject(context.Background(), "bkt_test", "mydb/mydb-1.dump")
+			if tt.wantErr && err == nil {
+				t.Fatal("DeleteBackupObject() error = nil, want an error")
+			}
+			if !tt.wantErr && err != nil {
+				t.Fatalf("DeleteBackupObject() error = %v, want nil", err)
+			}
+			if tt.wantNoCalls {
+				return
+			}
+			if !tt.wantErr && (len(tt.deleter.calls) != 1 || tt.deleter.calls[0].key != "mydb/mydb-1.dump") {
+				t.Errorf("Delete calls = %+v, want exactly one call for the given key", tt.deleter.calls)
+			}
+		})
+	}
+}

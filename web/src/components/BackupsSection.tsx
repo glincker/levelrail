@@ -38,6 +38,7 @@ import {
 import { RestoreBackupDialog } from './RestoreBackupDialog'
 import { RestoreHistoryTable } from './RestoreHistoryTable'
 import { CloneRestoreDialog } from './CloneRestoreDialog'
+import { DeleteBackupHistoryDialog } from './DeleteBackupHistoryDialog'
 import { CloneRestoreHistoryTable } from './CloneRestoreHistoryTable'
 import { BackupScheduleForm } from './BackupScheduleForm'
 import { BackupVerificationBadge } from './BackupVerificationBadge'
@@ -334,22 +335,28 @@ function BackupHistoryTable({ databaseName }: { databaseName: string }) {
                   )}
                 </TableCell>
                 <TableCell>
-                  {record.status === 'succeeded' ? (
-                    <div className="flex items-center gap-2">
-                      <DownloadBackupLink
-                        databaseName={databaseName}
-                        backup={record}
-                      />
-                      <RestoreBackupDialog
-                        databaseName={databaseName}
-                        backup={record}
-                      />
-                      <CloneRestoreDialog
-                        databaseName={databaseName}
-                        backup={record}
-                      />
-                    </div>
-                  ) : null}
+                  <div className="flex items-center gap-2">
+                    {record.status === 'succeeded' ? (
+                      <>
+                        <DownloadBackupLink
+                          databaseName={databaseName}
+                          backup={record}
+                        />
+                        <RestoreBackupDialog
+                          databaseName={databaseName}
+                          backup={record}
+                        />
+                        <CloneRestoreDialog
+                          databaseName={databaseName}
+                          backup={record}
+                        />
+                      </>
+                    ) : null}
+                    <DeleteBackupHistoryDialog
+                      databaseName={databaseName}
+                      backup={record}
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

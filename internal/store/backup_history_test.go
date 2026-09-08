@@ -428,6 +428,87 @@ func TestListBackupHistory_Pagination(t *testing.T) {
 	}
 }
 
+// TestDeleteBackupHistory is table-driven over status: an operator can
+// delete an attempt in any state, not just a succeeded one, unlike
+// PruneBackupHistory's retention-only scope.
+func TestDeleteBackupHistory(t *testing.T) {
+	tests := []struct {
+		name   string
+		status string
+	}{
+		{name: "running", status: BackupStatusRunning},
+		{name: "succeeded", status: BackupStatusSucceeded},
+		{name: "failed", status: BackupStatusFailed},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := openTestDB(t)
+			ctx := context.Background()
+			target := seedBackupTarget(t, db)
+
+			if err := db.StartBackupHistory(ctx, BackupHistory{
+				ID: "bkh_1", DatabaseName: "mydb", TargetID: target.ID,
+				ObjectKey: "mydb/mydb-1.dump", StartedAt: "2026-08-14T00:00:00Z",
+			}); err != nil {
+				t.Fatalf("StartBackupHistory() error = %v", err)
+			}
+			if tt.status != BackupStatusRunning {
+				if err := db.FinishBackupHistory(ctx, "bkh_1", tt.status, 1, "", "", "2026-08-14T00:01:00Z"); err != nil {
+					t.Fatalf("FinishBackupHistory() error = %v", err)
+				}
+			}
+
+			if err := db.DeleteBackupHistory(ctx, "bkh_1"); err != nil {
+				t.Fatalf("DeleteBackupHistory() error = %v", err)
+			}
+
+			if _, err := db.GetBackupHistory(ctx, "bkh_1"); !errors.Is(err, ErrBackupHistoryNotFound) {
+				t.Fatalf("GetBackupHistory() after delete error = %v, want ErrBackupHistoryNotFound", err)
+			}
+		})
+	}
+}
+
+func TestDeleteBackupHistory_NotFound(t *testing.T) {
+	db := openTestDB(t)
+
+	err := db.DeleteBackupHistory(context.Background(), "bkh_missing")
+	if !errors.Is(err, ErrBackupHistoryNotFound) {
+		t.Fatalf("DeleteBackupHistory() error = %v, want ErrBackupHistoryNotFound", err)
+	}
+}
+
+// TestDeleteBackupHistory_OnlyRemovesTargetRow proves delete is scoped to
+// exactly the named id, leaving sibling rows (including for the same
+// database) untouched.
+func TestDeleteBackupHistory_OnlyRemovesTargetRow(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	target := seedBackupTarget(t, db)
+
+	for _, id := range []string{"bkh_1", "bkh_2"} {
+		if err := db.StartBackupHistory(ctx, BackupHistory{
+			ID: id, DatabaseName: "mydb", TargetID: target.ID,
+			ObjectKey: id, StartedAt: "2026-08-14T00:00:00Z",
+		}); err != nil {
+			t.Fatalf("StartBackupHistory(%s) error = %v", id, err)
+		}
+	}
+
+	if err := db.DeleteBackupHistory(ctx, "bkh_1"); err != nil {
+		t.Fatalf("DeleteBackupHistory() error = %v", err)
+	}
+
+	got, err := db.ListBackupHistory(ctx, "mydb", 50, nil)
+	if err != nil {
+		t.Fatalf("ListBackupHistory() error = %v", err)
+	}
+	if len(got) != 1 || got[0].ID != "bkh_2" {
+		t.Fatalf("remaining rows = %+v, want exactly [bkh_2]", got)
+	}
+}
+
 func mustListOne(t *testing.T, db *DB, databaseName string) BackupHistory {
 	t.Helper()
 	got, err := db.ListBackupHistory(context.Background(), databaseName, 50, nil)

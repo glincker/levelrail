@@ -459,6 +459,11 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/databases/{name}/backups", rt.requireAbility(AbilityWriteSensitive, rt.handleTriggerBackup))
 	mux.HandleFunc("GET /api/v1/databases/{name}/backups", rt.requireAbility(AbilityRead, rt.handleListBackupHistory))
 
+	// Delete a single backup history entry on request, any status,
+	// independent of the retention policy above. AbilityWriteSensitive,
+	// the same tier the manual trigger route uses.
+	mux.HandleFunc("DELETE /api/v1/databases/{name}/backups/{historyId}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteBackupHistory))
+
 	// Download one succeeded backup's own object, streamed straight to
 	// the browser. AbilityReadSensitive, not AbilityRead: this returns
 	// the actual dump bytes, a full database's worth of content, not

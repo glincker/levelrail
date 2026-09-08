@@ -1019,3 +1019,35 @@ func TestClient_SetPreviewPostPRComments(t *testing.T) {
 		t.Errorf("SetPreviewPostPRComments() = %+v, want PostPRComments=true", got)
 	}
 }
+
+func TestClient_DeleteBackupHistory(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	if err := client.DeleteBackupHistory(context.Background(), "main", "bkh_1"); err != nil {
+		t.Fatalf("DeleteBackupHistory() error = %v", err)
+	}
+	if gotMethod != http.MethodDelete || gotPath != "/api/v1/databases/main/backups/bkh_1" {
+		t.Errorf("method/path = %s %s, want DELETE /api/v1/databases/main/backups/bkh_1", gotMethod, gotPath)
+	}
+}
+
+func TestClient_DeleteBackupHistory_APIError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "backup \"bkh_1\" was taken from database \"other\", not \"main\""})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	err := client.DeleteBackupHistory(context.Background(), "main", "bkh_1")
+	if err == nil {
+		t.Fatal("DeleteBackupHistory() error = nil, want the server's error surfaced")
+	}
+}
