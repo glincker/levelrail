@@ -213,6 +213,7 @@ type Router struct {
 	backupTargetTester             BackupTargetTester               // nil is valid: POST /api/v1/backup-targets/{id}/test returns 501, same shape as registryAuthTester above
 	restoreHistory                 RestoreHistoryStore              // always set, same "core Store interface" shape as backupHistory above
 	restoreRunner                  RestoreRunner                    // nil is valid: POST /api/v1/databases/{name}/restore returns 501, same shape as backupRunner above
+	restoreUploadMaxBytes          int64                            // 0 means defaultMaxRestoreUploadBytes (database_restore_upload.go); overridden by WithMaxRestoreUploadBytes
 	cloneRestoreHistory            CloneRestoreHistoryStore         // always set, same "core Store interface" shape as restoreHistory above
 	cloneRestoreRunner             CloneRestoreRunner               // nil is valid: POST /api/v1/databases/{name}/restore-as-new returns 501, same shape as restoreRunner above
 	serviceVolumeBackupHistory     ServiceVolumeBackupHistoryStore  // always set, same "core Store interface" shape as backupHistory above

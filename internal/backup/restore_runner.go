@@ -3,6 +3,7 @@ package backup
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -99,6 +100,43 @@ func (r *RestoreRunner) RunRestore(ctx context.Context, historyID, databaseName,
 	}
 
 	runErr := r.runDownloadAndRestore(ctx, databaseName, backupHistoryID, engine, containerName)
+
+	status := store.BackupStatusSucceeded
+	errMsg := ""
+	if runErr != nil {
+		status = store.BackupStatusFailed
+		errMsg = runErr.Error()
+	}
+	finishedAt := r.now().UTC().Format(time.RFC3339)
+	if err := r.Store.FinishRestoreHistory(ctx, historyID, status, errMsg, finishedAt); err != nil {
+		return fmt.Errorf("backup: finish restore history %q: %w", historyID, err)
+	}
+	return runErr
+}
+
+// RunRestoreFromReader restores databaseName from dump directly, the
+// operator-uploaded-file counterpart of RunRestore: same
+// store.RestoreHistory bookkeeping (a running row before any work
+// starts, then succeeded or failed once it's done), but calls
+// r.Restorer.Restore against dump straight away instead of resolving a
+// backup_history row through a Downloader first. historyID is minted by
+// the caller (internal/api), same convention RunRestore's own doc
+// comment describes.
+func (r *RestoreRunner) RunRestoreFromReader(ctx context.Context, historyID, databaseName, engine, containerName string, dump io.Reader) error {
+	startedAt := r.now()
+
+	if err := r.Store.StartRestoreHistory(ctx, store.RestoreHistory{
+		ID:           historyID,
+		DatabaseName: databaseName,
+		StartedAt:    startedAt.UTC().Format(time.RFC3339),
+	}); err != nil {
+		return fmt.Errorf("backup: start restore history %q: %w", historyID, err)
+	}
+
+	runErr := r.Restorer.Restore(ctx, engine, containerName, dump)
+	if runErr != nil {
+		runErr = fmt.Errorf("restore database %q from uploaded file: %w", databaseName, runErr)
+	}
 
 	status := store.BackupStatusSucceeded
 	errMsg := ""

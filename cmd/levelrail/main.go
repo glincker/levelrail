@@ -1711,6 +1711,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			nodeCPUThreshold(logger), nodeMemoryThreshold(logger),
 		),
 		api.WithResourceRecommendationLookback(resourceRecommendationLookback(logger)),
+		api.WithMaxRestoreUploadBytes(restoreUploadMaxBytes(logger)),
 		api.WithPreviewTTL(previewTTL(logger)),
 		api.WithAuditLogRetention(auditLogRetention(logger)),
 		api.WithPublicHost(publicHost()),
@@ -1984,6 +1985,25 @@ func sessionTTL(logger *slog.Logger) time.Duration {
 // alerting.DefaultCertExpiryWarningWindow) when unset or unparseable,
 // logging a warning in the latter case so a typo'd env var is visible
 // rather than silently ignored.
+// restoreUploadMaxBytes reads APP_RESTORE_UPLOAD_MAX_BYTES, the size cap
+// POST /api/v1/databases/{name}/restore-upload applies to the raw dump
+// file it streams into a running container (internal/api/
+// database_restore_upload.go). Returns 0 (api.WithMaxRestoreUploadBytes's
+// own signal to fall back to its package default) when unset or
+// unparseable, logging a warning in the latter case.
+func restoreUploadMaxBytes(logger *slog.Logger) int64 {
+	raw := os.Getenv("APP_RESTORE_UPLOAD_MAX_BYTES")
+	if raw == "" {
+		return 0
+	}
+	n, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || n <= 0 {
+		logger.Warn("invalid APP_RESTORE_UPLOAD_MAX_BYTES, using the default", slog.String("value", raw))
+		return 0
+	}
+	return n
+}
+
 func certExpiryWarningWindow(logger *slog.Logger) time.Duration {
 	raw := os.Getenv("APP_CERT_EXPIRY_WARNING_WINDOW")
 	if raw == "" {

@@ -58,3 +58,39 @@ func TestStartRestoreHistory_Volume(t *testing.T) {
 		t.Errorf("ListRestoreHistory(%q) = %+v, want 0 rows", "web", dbRows)
 	}
 }
+
+// TestStartRestoreHistory_NoBackup proves a restore attempt with no
+// backup_history_id (an operator-uploaded file, not a stored backup) can
+// be recorded at all: migrations/0089 dropped the column's NOT NULL for
+// exactly this case, and it must round-trip back out as an empty string,
+// not a literal "NULL" or an error.
+func TestStartRestoreHistory_NoBackup(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.StartRestoreHistory(ctx, RestoreHistory{
+		ID: "rsh_upload", DatabaseName: "main", StartedAt: "2026-08-14T00:00:00Z",
+	}); err != nil {
+		t.Fatalf("StartRestoreHistory() error = %v", err)
+	}
+
+	got, err := db.ListRestoreHistory(ctx, "main")
+	if err != nil {
+		t.Fatalf("ListRestoreHistory() error = %v", err)
+	}
+	if len(got) != 1 || got[0].BackupHistoryID != "" {
+		t.Fatalf("ListRestoreHistory() = %+v, want exactly 1 row with empty BackupHistoryID", got)
+	}
+
+	if err := db.FinishRestoreHistory(ctx, "rsh_upload", BackupStatusSucceeded, "", "2026-08-14T00:01:00Z"); err != nil {
+		t.Fatalf("FinishRestoreHistory() error = %v", err)
+	}
+
+	got, err = db.ListRestoreHistory(ctx, "main")
+	if err != nil {
+		t.Fatalf("ListRestoreHistory() after finish error = %v", err)
+	}
+	if got[0].Status != BackupStatusSucceeded || got[0].BackupHistoryID != "" {
+		t.Errorf("row = %+v, want status=succeeded, empty BackupHistoryID", got[0])
+	}
+}

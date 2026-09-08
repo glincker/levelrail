@@ -36,6 +36,7 @@ import {
   useTriggerBackup,
 } from '../queries/backupHistory'
 import { RestoreBackupDialog } from './RestoreBackupDialog'
+import { RestoreFromFileDialog } from './RestoreFromFileDialog'
 import { RestoreHistoryTable } from './RestoreHistoryTable'
 import { CloneRestoreDialog } from './CloneRestoreDialog'
 import { CloneRestoreHistoryTable } from './CloneRestoreHistoryTable'
@@ -76,6 +77,13 @@ import type { DatabaseResource } from '../types/databaseDetail'
 // next to the in-place restore controls above: the non-destructive
 // alternative, restoring a backup into a brand-new database instead of
 // overwriting this one's own live data.
+//
+// RestoreFromFileDialog (POST .../restore-upload,
+// internal/api/database_restore_upload.go) is the second way to reach
+// the same in-place restore, from a dump file the operator already has
+// rather than a backup this platform took: a standalone control next to
+// TriggerBackupRow, not a per-row action, since it has no backup row to
+// hang off of.
 
 // Empty state shown in place of the picker/button when no backup target
 // is connected yet: a target picker with nothing to pick from would just
@@ -388,6 +396,9 @@ export function BackupsSection({ database }: { database: DatabaseResource }) {
       <CardContent className="space-y-4">
         <BackupScheduleForm database={database} />
         <TriggerBackupRow databaseName={databaseName} />
+        <div>
+          <RestoreFromFileDialog databaseName={databaseName} />
+        </div>
         <BackupHistoryTable databaseName={databaseName} />
         <RestoreHistoryTable databaseName={databaseName} />
         <CloneRestoreHistoryTable databaseName={databaseName} />

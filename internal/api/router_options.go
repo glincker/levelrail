@@ -188,6 +188,18 @@ func WithRestoreRunner(r RestoreRunner) Option {
 	return func(rt *Router) { rt.restoreRunner = r }
 }
 
+// WithMaxRestoreUploadBytes caps how large a request body
+// POST /api/v1/databases/{name}/restore-upload accepts. Without one
+// configured (the default, n <= 0 is ignored), that route falls back to
+// defaultMaxRestoreUploadBytes (database_restore_upload.go).
+func WithMaxRestoreUploadBytes(n int64) Option {
+	return func(rt *Router) {
+		if n > 0 {
+			rt.restoreUploadMaxBytes = n
+		}
+	}
+}
+
 // WithServiceVolumeBackupRunner enables
 // POST /api/v1/apps/{name}/volumes/{volume}/backups. Without one
 // configured (the default), that route returns 501, the same

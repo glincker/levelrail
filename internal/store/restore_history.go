@@ -12,17 +12,25 @@ import (
 var ErrRestoreHistoryNotFound = errors.New("store: restore history record not found")
 
 // RestoreHistory is one attempted restore of one database, or one app
-// service's named volume, from one backup_history row. ResourceKind/
-// ServiceName/VolumeName mirror BackupHistory's own identity fields
-// exactly (backup_history.go), the same mutually-exclusive shape.
-// Status reuses BackupStatusRunning/Succeeded/Failed (backup_history.go)
-// rather than a second, identically-valued set of constants: a restore
-// attempt moves through the exact same
-// running-then-succeeded-or-failed lifecycle a backup attempt does, and
-// migrations/0019_restore_history.sql's own CHECK constraint accepts the
-// identical three strings, so two names for the same three values would
-// only invite them drifting apart. Error is empty unless Status is
-// BackupStatusFailed.
+// service's named volume, from either one backup_history row or an
+// operator-uploaded dump file. ResourceKind/ServiceName/VolumeName mirror
+// BackupHistory's own identity fields exactly (backup_history.go), the
+// same mutually-exclusive shape. Status reuses
+// BackupStatusRunning/Succeeded/Failed (backup_history.go) rather than a
+// second, identically-valued set of constants: a restore attempt moves
+// through the exact same running-then-succeeded-or-failed lifecycle a
+// backup attempt does, and migrations/0019_restore_history.sql's own
+// CHECK constraint accepts the identical three strings, so two names for
+// the same three values would only invite them drifting apart. Error is
+// empty unless Status is BackupStatusFailed.
+//
+// BackupHistoryID is "" when this attempt restored from an
+// operator-uploaded file instead of a stored backup (SQL NULL,
+// migrations/0089_restore_history_uploaded.sql), mirroring
+// DesiredDatabase.BackupTargetID's own empty-string-means-NULL
+// convention (internal/store/database.go): a real, non-empty value is a
+// genuine foreign key into backup_history, so it cannot use "" as a
+// sentinel the way BackupSchedule does.
 type RestoreHistory struct {
 	ID              string
 	DatabaseName    string
@@ -50,7 +58,7 @@ func (db *DB) StartRestoreHistory(ctx context.Context, h RestoreHistory) error {
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO restore_history (id, database_name, resource_kind, service_name, volume_name, backup_history_id, status, error, started_at, finished_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, '')
-	`, h.ID, h.DatabaseName, kind, h.ServiceName, h.VolumeName, h.BackupHistoryID, BackupStatusRunning, h.StartedAt)
+	`, h.ID, h.DatabaseName, kind, h.ServiceName, h.VolumeName, sql.NullString{String: h.BackupHistoryID, Valid: h.BackupHistoryID != ""}, BackupStatusRunning, h.StartedAt)
 	if err != nil {
 		return fmt.Errorf("store: start restore history %q: %w", h.ID, err)
 	}
@@ -113,9 +121,11 @@ func scanRestoreHistoryRows(rows *sql.Rows) ([]RestoreHistory, error) {
 	var out []RestoreHistory
 	for rows.Next() {
 		var h RestoreHistory
-		if err := rows.Scan(&h.ID, &h.DatabaseName, &h.ResourceKind, &h.ServiceName, &h.VolumeName, &h.BackupHistoryID, &h.Status, &h.Error, &h.StartedAt, &h.FinishedAt); err != nil {
+		var backupHistoryID sql.NullString
+		if err := rows.Scan(&h.ID, &h.DatabaseName, &h.ResourceKind, &h.ServiceName, &h.VolumeName, &backupHistoryID, &h.Status, &h.Error, &h.StartedAt, &h.FinishedAt); err != nil {
 			return nil, fmt.Errorf("scan restore history row: %w", err)
 		}
+		h.BackupHistoryID = backupHistoryID.String
 		out = append(out, h)
 	}
 	if err := rows.Err(); err != nil {

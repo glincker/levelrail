@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 
@@ -19,14 +20,18 @@ type RestoreHistoryStore interface {
 	ListRestoreHistory(ctx context.Context, databaseName string) ([]store.RestoreHistory, error)
 }
 
-// RestoreRunner is the surface the restore trigger handler needs from
+// RestoreRunner is the surface the restore trigger handlers need from
 // internal/backup.RestoreRunner: run one restore attempt end to end, from
 // an already-minted history ID through to a finished
-// store.RestoreHistory row. *backup.RestoreRunner satisfies this
-// structurally; internal/api never imports internal/backup directly, the
-// same boundary BackupRunner's own doc comment describes.
+// store.RestoreHistory row, either from a previously stored backup
+// (RunRestore) or straight from an operator-uploaded file
+// (RunRestoreFromReader, database_restore_upload.go's own handler).
+// *backup.RestoreRunner satisfies this structurally; internal/api never
+// imports internal/backup directly, the same boundary BackupRunner's own
+// doc comment describes.
 type RestoreRunner interface {
 	RunRestore(ctx context.Context, historyID, databaseName, backupHistoryID, engine, containerName string) error
+	RunRestoreFromReader(ctx context.Context, historyID, databaseName, engine, containerName string, dump io.Reader) error
 }
 
 // restoreHistoryResource is the wire shape for one restore attempt.

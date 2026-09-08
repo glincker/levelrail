@@ -263,6 +263,71 @@ func TestRestoreRunner_RunRestore_RestoreFails_RecordsFailure(t *testing.T) {
 	}
 }
 
+func TestRestoreRunner_RunRestoreFromReader_Success(t *testing.T) {
+	hs := &fakeRestoreHistoryStore{}
+	restorer := &fakeRestorer{}
+	fixed := time.Date(2026, 8, 14, 4, 0, 0, 0, time.UTC)
+	rr := &RestoreRunner{
+		Store:    hs,
+		Restorer: restorer,
+		Now:      func() time.Time { return fixed },
+	}
+
+	err := rr.RunRestoreFromReader(context.Background(), "rsh_1", "mydb", "postgres", "db-mydb", strings.NewReader("uploaded-dump-bytes"))
+	if err != nil {
+		t.Fatalf("RunRestoreFromReader() error = %v", err)
+	}
+
+	if len(hs.started) != 1 || hs.started[0].ID != "rsh_1" || hs.started[0].DatabaseName != "mydb" || hs.started[0].BackupHistoryID != "" {
+		t.Fatalf("StartRestoreHistory call = %+v, want one call for rsh_1/mydb with empty BackupHistoryID", hs.started)
+	}
+	if len(hs.finished) != 1 || hs.finished[0].status != store.BackupStatusSucceeded {
+		t.Fatalf("finish calls = %+v, want exactly one succeeded", hs.finished)
+	}
+	if restorer.gotEngine != "postgres" || restorer.gotContainer != "db-mydb" {
+		t.Errorf("restore called with engine=%q container=%q, want postgres/db-mydb", restorer.gotEngine, restorer.gotContainer)
+	}
+	if restorer.gotBody != "uploaded-dump-bytes" {
+		t.Errorf("restored body = %q, want %q", restorer.gotBody, "uploaded-dump-bytes")
+	}
+}
+
+func TestRestoreRunner_RunRestoreFromReader_RestoreFails_RecordsFailure(t *testing.T) {
+	hs := &fakeRestoreHistoryStore{}
+	rr := &RestoreRunner{
+		Store:    hs,
+		Restorer: &fakeRestorer{err: errors.New("psql: syntax error")},
+	}
+
+	err := rr.RunRestoreFromReader(context.Background(), "rsh_1", "mydb", "postgres", "db-mydb", strings.NewReader("bytes"))
+	if err == nil {
+		t.Fatal("RunRestoreFromReader() error = nil, want the restore failure surfaced")
+	}
+	if len(hs.finished) != 1 || hs.finished[0].status != store.BackupStatusFailed {
+		t.Fatalf("finish calls = %+v, want exactly one BackupStatusFailed", hs.finished)
+	}
+	if hs.finished[0].errMsg == "" {
+		t.Error("finish errMsg is empty, want the restore failure recorded")
+	}
+}
+
+func TestRestoreRunner_RunRestoreFromReader_StartFails_NeverRestores(t *testing.T) {
+	hs := &fakeRestoreHistoryStore{startErr: errors.New("store: db closed")}
+	restorer := &fakeRestorer{}
+	rr := &RestoreRunner{
+		Store:    hs,
+		Restorer: restorer,
+	}
+
+	err := rr.RunRestoreFromReader(context.Background(), "rsh_1", "mydb", "postgres", "db-mydb", strings.NewReader("bytes"))
+	if err == nil {
+		t.Fatal("RunRestoreFromReader() error = nil, want the start failure surfaced")
+	}
+	if restorer.gotBody != "" {
+		t.Error("Restorer was called despite StartRestoreHistory failing, want it never invoked")
+	}
+}
+
 func TestRestoreRunner_RunRestore_SecretResolveFails_NeverDownloads(t *testing.T) {
 	hs := &fakeRestoreHistoryStore{
 		backups: map[string]store.BackupHistory{"bkh_1": newTestBackup()},

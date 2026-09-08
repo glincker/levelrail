@@ -612,6 +612,40 @@ func (c *Client) TriggerRestore(ctx context.Context, name, backupID string) (Res
 	return out, err
 }
 
+// RestoreDatabaseFromReader calls
+// POST /api/v1/databases/{name}/restore-upload: overwrites name's live
+// data in place from dump, a raw dump file the caller supplies directly
+// (an operator's own file, not a backup this platform took). Unlike
+// TriggerRestore this blocks until the restore actually finishes: the
+// server streams and applies the upload synchronously
+// (internal/api/database_restore_upload.go's own doc comment explains
+// why), so there is no placeholder "running" response to poll past. Same
+// destructive-action caveat as TriggerRestore.
+func (c *Client) RestoreDatabaseFromReader(ctx context.Context, name string, dump io.Reader) (RestoreHistoryResource, error) {
+	var out RestoreHistoryResource
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/v1/databases/"+PathEscape(name)+"/restore-upload", dump) //nolint:gosec // c.baseURL is the operator-supplied API target, same as do()
+	if err != nil {
+		return out, fmt.Errorf("build request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/octet-stream")
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+	if c.userAgent != "" {
+		req.Header.Set("User-Agent", c.userAgent)
+	}
+
+	resp, err := c.hc.Do(req) //nolint:gosec // same target as do()
+	if err != nil {
+		return out, fmt.Errorf("request %s %s: %w", http.MethodPost, req.URL.String(), err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	err = decodeResponse(resp, &out)
+	return out, err
+}
+
 // volumeBackupsPath builds /api/v1/apps/{name}/volumes/{volume}/backups,
 // shared by every app service volume backup method below, the same
 // path-building-helper shape domainAuthPath already establishes for its

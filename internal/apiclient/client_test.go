@@ -1,6 +1,7 @@
 package apiclient
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -323,6 +324,74 @@ func TestClient_DeployCompose_APIError(t *testing.T) {
 	}
 	if apiErr.Message != "invalid compose file" {
 		t.Errorf("Message = %q, want %q", apiErr.Message, "invalid compose file")
+	}
+}
+
+func TestClient_RestoreDatabaseFromReader(t *testing.T) {
+	dump := []byte("-- fixture dump\nCREATE TABLE t (id int);\n")
+	var gotAuth, gotMethod, gotPath, gotContentType string
+	var gotBody []byte
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		gotContentType = r.Header.Get("Content-Type")
+		b, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatalf("read request body: %v", err)
+		}
+		gotBody = b
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(RestoreHistoryResource{ID: "rsh_1", DatabaseName: "mydb", Status: "succeeded"})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.RestoreDatabaseFromReader(context.Background(), "mydb", bytes.NewReader(dump))
+	if err != nil {
+		t.Fatalf("RestoreDatabaseFromReader() error = %v", err)
+	}
+	if gotAuth != "Bearer test-token" {
+		t.Errorf("Authorization header = %q, want %q", gotAuth, "Bearer test-token")
+	}
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %q, want POST", gotMethod)
+	}
+	if gotPath != "/api/v1/databases/mydb/restore-upload" {
+		t.Errorf("path = %q, want /api/v1/databases/mydb/restore-upload", gotPath)
+	}
+	if gotContentType != "application/octet-stream" {
+		t.Errorf("Content-Type = %q, want application/octet-stream", gotContentType)
+	}
+	if !reflect.DeepEqual(gotBody, dump) {
+		t.Errorf("body = %q, want the raw dump %q, not JSON-encoded", gotBody, dump)
+	}
+	want := RestoreHistoryResource{ID: "rsh_1", DatabaseName: "mydb", Status: "succeeded"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("RestoreDatabaseFromReader() = %+v, want %+v", got, want)
+	}
+}
+
+func TestClient_RestoreDatabaseFromReader_APIError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error":"restore failed: psql: syntax error"}`))
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	_, err := client.RestoreDatabaseFromReader(context.Background(), "mydb", strings.NewReader("bad-dump"))
+	if err == nil {
+		t.Fatalf("RestoreDatabaseFromReader() error = nil, want an error for a 500 response")
+	}
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("error type = %T, want *APIError", err)
+	}
+	if apiErr.StatusCode != http.StatusInternalServerError {
+		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusInternalServerError)
 	}
 }
 

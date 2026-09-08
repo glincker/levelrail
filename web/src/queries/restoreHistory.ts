@@ -145,3 +145,65 @@ export function useTriggerRestore(databaseName: string) {
     },
   })
 }
+
+// POST /api/v1/databases/{name}/restore-upload
+// (handleTriggerRestoreUpload): restores from a raw dump file the
+// caller supplies directly, not from a backup_history row, so there is
+// no backup_id to pass, only the file itself as the request body. Unlike
+// triggerRestore above this resolves only once the restore has actually
+// finished (internal/api/database_restore_upload.go's own doc comment
+// explains why that endpoint is synchronous), so the mutation's pending
+// state covers the whole upload-and-restore, not just a "started"
+// acknowledgement.
+export async function restoreDatabaseFromFile(
+  databaseName: string,
+  file: File,
+): Promise<RestoreHistoryRecord> {
+  const res = await fetch(
+    `/api/v1/databases/${encodeURIComponent(databaseName)}/restore-upload`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: file,
+    },
+  )
+  if (res.status === 501) {
+    throw new ApiError(
+      501,
+      'Restores require a master key to be configured on this control plane.',
+    )
+  }
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `restore from file failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as RestoreHistoryRecord
+}
+
+// On success, the finished record is written straight into the restore
+// history list's cache and both restore and backup history are
+// invalidated, the same reasoning useTriggerRestore's own doc comment
+// gives for its identical cache updates.
+export function useRestoreDatabaseFromFile(databaseName: string) {
+  const queryClient = useQueryClient()
+  return useMutation<RestoreHistoryRecord, ApiError, File>({
+    mutationFn: (file: File) => restoreDatabaseFromFile(databaseName, file),
+    onSuccess: (record) => {
+      queryClient.setQueryData(
+        restoreHistoryKeys.list(databaseName),
+        (existing: RestoreHistoryRecord[] | undefined) => [
+          record,
+          ...(existing ?? []),
+        ],
+      )
+      void queryClient.invalidateQueries({
+        queryKey: restoreHistoryKeys.list(databaseName),
+      })
+    },
+  })
+}

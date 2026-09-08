@@ -510,6 +510,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// above already draws.
 	mux.HandleFunc("POST /api/v1/databases/{name}/restore", rt.requireAbility(AbilityRoot, rt.handleTriggerRestore))
 	mux.HandleFunc("GET /api/v1/databases/{name}/restores", rt.requireAbility(AbilityRead, rt.handleListRestoreHistory))
+	// Restore from an operator-uploaded dump file rather than a stored
+	// backup (database_restore_upload.go): same AbilityRoot tier as the
+	// route above, see that handler's own doc comment for why this one is
+	// synchronous instead of the 202-and-poll shape every other restore
+	// route uses.
+	mux.HandleFunc("POST /api/v1/databases/{name}/restore-upload", rt.requireAbility(AbilityRoot, rt.handleTriggerRestoreUpload))
 
 	// App service volume backups (app_volume_backups.go/
 	// app_volume_backup_download.go/app_volume_backup_verify.go): the
