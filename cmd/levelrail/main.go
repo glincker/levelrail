@@ -45,6 +45,7 @@ import (
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	meshreconcile "github.com/GLINCKER/levelrail/internal/reconcile/mesh"
 	"github.com/GLINCKER/levelrail/internal/reconcile/nodehealth"
+	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -1367,7 +1368,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 	}
 
 	connectCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	buildClient, err := build.NewClient(connectCtx, rawDockerCli, buildCacheOptions()...)
+	buildClient, err := build.NewClient(connectCtx, rawDockerCli, buildCacheOptions(ctx, db, logger)...)
 	cancel()
 	if err != nil {
 		_ = rawDockerCli.Close()
@@ -1505,7 +1506,31 @@ func loadWebhookHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, recor
 // all, matching every other optional env-var-gated feature in this
 // file (secrets, webhook): a control plane with no cache backend
 // configured still builds correctly, just without cache reuse.
-func buildCacheOptions() []build.Option {
+//
+// If APP_BUILD_CACHE_REGISTRY is unset, this also checks whether the
+// built-in registry (store.RegistrySettings) is enabled with a Host, and
+// if so wires build.WithCacheRegistry/WithCacheRegistryInsecure at it
+// automatically: an operator who enables the built-in registry gets a
+// working multi-node build cache with no separate cache configuration
+// step, while APP_BUILD_CACHE_REGISTRY set to anything (an operator's
+// own external registry) always wins, unchanged. RegistryInsecure is
+// always set for the built-in path since its TLS route uses Caddy's
+// self-signed internal issuer, never a publicly-trusted CA (see
+// internal/reconcile/ingress's WithRegistryDial). Read once at process
+// startup, the same "static at boot" limitation this env-var-driven
+// config already had before the built-in registry existed: enabling the
+// registry after the control plane is already running needs a restart
+// to be picked up here, exactly like changing APP_BUILD_CACHE_REGISTRY
+// itself always has. BuildKit's own registry-cache auth still comes from
+// this node's Docker daemon credential store (this function's own
+// pre-existing behavior for an external registry, unchanged): an
+// operator wiring the built-in registry into a remote build node still
+// needs to `docker login` that node against it once, using the
+// credentials PUT /api/v1/settings/registry generates. Automating that
+// login across every build node would mean distributing a credential to
+// every node's Docker config, a materially different (and riskier)
+// mechanism this function deliberately does not add.
+func buildCacheOptions(ctx context.Context, db *store.DB, logger *slog.Logger) []build.Option {
 	var opts []build.Option
 	if dir := os.Getenv("APP_BUILD_CACHE_DIR"); dir != "" {
 		opts = append(opts, build.WithCacheDir(dir))
@@ -1515,8 +1540,29 @@ func buildCacheOptions() []build.Option {
 		if os.Getenv("APP_BUILD_CACHE_REGISTRY_INSECURE") == "true" {
 			opts = append(opts, build.WithCacheRegistryInsecure())
 		}
+		return opts
+	}
+
+	settings, err := db.GetRegistrySettings(ctx)
+	if err != nil {
+		logger.Warn("build cache: get registry settings failed, continuing without a cache backend", slog.String("error", err.Error()))
+		return opts
+	}
+	if settings.Enabled && settings.Host != "" {
+		opts = append(opts, build.WithCacheRegistry(settings.Host+"/buildcache"), build.WithCacheRegistryInsecure())
 	}
 	return opts
+}
+
+// registryDialAddr is the built-in registry container's loopback dial
+// address for ingressreconcile.WithRegistryDial, mirroring how
+// application.Controller's own dialForService reaches a container's
+// published port (127.0.0.1, never a bridge-network IP: see
+// docker.PortBinding's own doc comment). Fixed, not derived from a live
+// container inspect, because registryreconcile.HostPort is itself fixed
+// (that package's own doc comment): there is no dynamic value to read.
+func registryDialAddr() string {
+	return fmt.Sprintf("127.0.0.1:%d", registryreconcile.HostPort)
 }
 
 // checkLocalBuildNode is TASKS.md 3.5's build-node routing gate: it
@@ -1736,6 +1782,9 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// Tunnel connector token above) goes through the same
 		// secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithCloudflareDNSSecrets(secretsManager))
+		// The built-in registry's generated password goes through the
+		// same secretsManager, same nil-interface hazard.
+		opts = append(opts, api.WithRegistrySecrets(secretsManager))
 		// Per-domain HTTP Basic Auth passwords go through the same
 		// secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithDomainBasicAuthSecrets(secretsManager))
@@ -2372,6 +2421,12 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			// issuance" fallback when absent.
 			ingressOpts = append(ingressOpts, ingressreconcile.WithDomainTLSCertSecrets(deps.secretsManager))
 		}
+		// Built-in registry route: unconditional, like WithDashboardDial
+		// above, since the dial target is a fixed loopback address, not a
+		// secret. Whether it actually gets routed still depends on the
+		// registry being enabled with a Host set (WithRegistryDial's own
+		// doc comment).
+		ingressOpts = append(ingressOpts, ingressreconcile.WithRegistryDial(registryDialAddr()))
 		controllers = append(controllers, ingressreconcile.New(deps.db, deps.runtime, deps.driver, ingressOpts...))
 
 		// Local runtime unconditionally, same reasoning as the ingress
@@ -2392,6 +2447,20 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			tunnelTokens = deps.secretsManager
 		}
 		controllers = append(controllers, cloudflaretunnel.New(deps.db, tunnelTokens, deps.runtime, cloudflaretunnel.WithContainerPrefix(deps.networkPrefix)))
+
+		// Built-in container registry: same platform-wide-singleton,
+		// local-runtime-unconditional shape as Cloudflare Tunnel above.
+		// deps.secretsManager may be nil; registryreconcile.New's own doc
+		// comment covers that case identically to cloudflaretunnel's.
+		// Unlike a database's password, this credential is never
+		// generated here: PUT /api/v1/settings/registry (internal/api)
+		// generates it the first time an operator enables the registry,
+		// so this controller only ever resolves one that already exists.
+		var registryCreds registryreconcile.CredentialResolver
+		if deps.secretsManager != nil {
+			registryCreds = deps.secretsManager
+		}
+		controllers = append(controllers, registryreconcile.New(deps.db, registryCreds, deps.runtime, registryreconcile.WithContainerPrefix(deps.networkPrefix)))
 
 		if deps.meshCfg != nil {
 			controllers = append(controllers, meshreconcile.New(deps.meshCfg.localNodeID, deps.db, deps.meshCfg.coordinator, deps.meshCfg.resolver, meshreconcile.WithLogger(deps.logger)))

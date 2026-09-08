@@ -144,6 +144,13 @@ type ContainerSpec struct {
 	// an explicit "tunnel run" argument rather than relying on the
 	// image's bare entrypoint.
 	Command []string
+	// Entrypoint overrides the image's own default ENTRYPOINT. Nil means
+	// the image's own default, unchanged from every container this
+	// codebase created before this field existed. First caller:
+	// internal/reconcile/registry, which needs to write an htpasswd file
+	// from injected env before handing off to the registry image's real
+	// entrypoint.
+	Entrypoint []string
 }
 
 // RegistryAuth is a plaintext username/password pair for pulling a

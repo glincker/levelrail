@@ -61,6 +61,13 @@ func WithCloudflareDNSSecrets(s CloudflareDNSSecrets) Option {
 	return func(rt *Router) { rt.cloudflareDNSSecrets = s }
 }
 
+// WithRegistrySecrets enables PUT/DELETE /api/v1/settings/registry.
+// Without one configured (the default), both return 501; GET works
+// regardless, the same shape WithCloudflareTunnelSecrets establishes.
+func WithRegistrySecrets(s RegistrySecrets) Option {
+	return func(rt *Router) { rt.registrySecrets = s }
+}
+
 // WithDomainBasicAuthSecrets enables PUT/DELETE
 // /api/v1/apps/{name}/domains/{domain}/auth. Without one configured
 // (the default), both return 501; GET works regardless, the same shape

@@ -55,13 +55,13 @@ cross-app domains, projects, environments, organizations.
 Account, security (2FA/TOTP), general (system status, Docker cleanup,
 certificates, master key rotation), tokens, CLI access, users,
 IAM policies, audit log (+ purge), backup targets, registry credentials,
-notification channels, organizations, OAuth sign-in, GitHub/GitLab/
-Bitbucket apps, Cloudflare Tunnel, email, system status (doctor bundle),
-containers, updates.
+container registry (built-in), notification channels, organizations,
+OAuth sign-in, GitHub/GitLab/Bitbucket apps, Cloudflare Tunnel, email,
+system status (doctor bundle), containers, updates.
 
 ## API resource groups (`internal/api/routes.go`, `routes_platform.go`)
 
-266 registered routes total, grouped by resource:
+269 registered routes total, grouped by resource:
 
 | Resource | Routes | Representative paths |
 | --- | --- | --- |
@@ -76,6 +76,7 @@ containers, updates.
 | Nodes | 11 | `/nodes`, `/{id}/cordon`, `/drain`, `/workloads` |
 | Ingress / certs / domains / email / Cloudflare | 19 | `/certificates`, `/settings/ingress*`, `/settings/cloudflare-tunnel*`, `/domains/{domain}/tls-cert` |
 | Static sites / backup targets / registry credentials | 15 | `/static-sites`, `/backup-targets*`, `/registry-credentials*` |
+| Built-in container registry | 3 | `/settings/registry` |
 | Git provider apps (GitHub/GitLab/Bitbucket) | 27 | `/github-app*`, `/gitlab-app*`, `/bitbucket-app*` |
 | DB backups/restore/clone-restore | 16 | `/databases/{name}/backups*`, `/restore-as-new`, `/backup-schedule` |
 | App volume backups/restore | 11 | `/apps/{name}/volumes/{volume}/backups*` |
@@ -86,8 +87,8 @@ containers, updates.
 
 `apps`, `databases`, `auth`, `profile`, `tokens`, `domains`, `backups`,
 `app-volume-backups`, `cloudflare-tunnel`, `channels`,
-`backup-targets`, `registry-credentials`, `flags`, `nodes`, `status`,
-`version`, `audit-log`, `audit-purge`, `doctor`, `containers`,
+`backup-targets`, `registry-credentials`, `registry`, `flags`, `nodes`,
+`status`, `version`, `audit-log`, `audit-purge`, `doctor`, `containers`,
 `firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`.
 
 Key subcommand groups:

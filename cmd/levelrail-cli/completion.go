@@ -88,6 +88,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"channels":             {subs: map[string]*cmdNode{"list": nil, "create": nil, "delete": nil, "test": nil, "deliveries": nil}},
 	"backup-targets":       {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},
 	"registry-credentials": {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},
+	"registry":             {subs: map[string]*cmdNode{"status": nil, "enable": nil, "disable": nil}},
 	"flags":                {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "set": nil, "delete": nil}},
 	"nodes": {subs: map[string]*cmdNode{
 		"list": nil, "get": nil, "delete": nil, "join-token": nil,

@@ -259,6 +259,29 @@ type UpdateCloudflareTunnelRequest struct {
 	Token   string `json:"token,omitempty"`
 }
 
+// RegistrySettingsResource mirrors internal/api's registrySettingsResource
+// (internal/api/registry_settings.go): GET/PUT/DELETE
+// /api/v1/settings/registry's wire shape. Password is write-once: it is
+// only ever populated in the response to a PUT call that generates a
+// fresh credential (the registry's first enable), empty every other
+// time.
+type RegistrySettingsResource struct {
+	Enabled        bool   `json:"enabled"`
+	Host           string `json:"host,omitempty"`
+	Username       string `json:"username,omitempty"`
+	HasCredentials bool   `json:"has_credentials"`
+	Status         string `json:"status"`
+	Message        string `json:"message,omitempty"`
+	Password       string `json:"password,omitempty"`
+}
+
+// UpdateRegistrySettingsRequest mirrors internal/api's
+// updateRegistrySettingsRequest.
+type UpdateRegistrySettingsRequest struct {
+	Enabled bool   `json:"enabled"`
+	Host    string `json:"host,omitempty"`
+}
+
 // DomainBasicAuthResource mirrors internal/api's domainBasicAuthResource
 // (internal/api/domain_basic_auth.go): GET/PUT/DELETE
 // /api/v1/apps/{name}/domains/{domain}/auth's wire shape. The password

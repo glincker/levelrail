@@ -30,6 +30,8 @@ type (
 	updateCloudflareDNSRequest       = apiclient.UpdateCloudflareDNSRequest
 	cloudflareTunnelResource         = apiclient.CloudflareTunnelResource
 	updateCloudflareTunnelRequest    = apiclient.UpdateCloudflareTunnelRequest
+	registrySettingsResource         = apiclient.RegistrySettingsResource
+	updateRegistrySettingsRequest    = apiclient.UpdateRegistrySettingsRequest
 	domainBasicAuthResource          = apiclient.DomainBasicAuthResource
 	setDomainBasicAuthRequest        = apiclient.SetDomainBasicAuthRequest
 	domainMaintenanceResource        = apiclient.DomainMaintenanceResource

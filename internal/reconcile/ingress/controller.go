@@ -122,6 +122,13 @@ type ServiceStore interface {
 	// /api/v1/apps/{name}/domains/{domain}/tls-cert (internal/api) must
 	// take effect on this controller's very next pass.
 	ListDomainTLSCerts(ctx context.Context) ([]store.DomainTLSCert, error)
+	// GetRegistrySettings returns the built-in registry's single
+	// platform-wide row (store.RegistrySettings), read fresh every
+	// Reconcile like GetIngressSettings: an operator enabling the
+	// registry or changing its Host through PUT /api/v1/settings/registry
+	// (internal/api) must take effect on this controller's very next
+	// pass.
+	GetRegistrySettings(ctx context.Context) (store.RegistrySettings, error)
 }
 
 // Applier is the narrow surface this controller needs from
@@ -180,6 +187,10 @@ const (
 	// service or static site name and never looked up against either
 	// table.
 	dashboardRouteOwner = "platform dashboard"
+
+	// registryRouteOwner is dashboardRouteOwner's exact counterpart for
+	// the built-in registry's route.
+	registryRouteOwner = "builtin registry"
 )
 
 // Controller converges Caddy's config to match every service in
@@ -203,6 +214,13 @@ type Controller struct {
 	// dashboard route", the default, matching how every currently
 	// existing deployment has no such route today.
 	dashboardDial string
+
+	// registryDial is the built-in registry container's loopback dial
+	// address (see WithRegistryDial), reverse-proxied to whenever
+	// store.RegistrySettings.Enabled and .Host are both set. Empty means
+	// "no registry route", the default, the same shape dashboardDial's
+	// own absence already has.
+	registryDial string
 
 	// certStore, if set via WithCertStore, is built into a
 	// *ingress.SQLiteStorage and registered with ingress.SetActiveCertStorage
@@ -297,6 +315,23 @@ func WithCertStore(certStore ingress.CertStore) Option {
 // erroring when its prerequisite wiring is absent.
 func WithDashboardDial(dial string) Option {
 	return func(c *Controller) { c.dashboardDial = dial }
+}
+
+// WithRegistryDial enables routing the built-in container registry
+// (internal/reconcile/registry) through this controller's shared Caddy
+// server whenever an operator enables it with a Host set (PUT
+// /api/v1/settings/registry). dial is the registry container's own
+// loopback dial address (127.0.0.1 plus registry.HostPort), the same
+// "published port, dialed via loopback" shape WithDashboardDial's own
+// doc comment establishes. No basic_auth handler is added here: the
+// registry container enforces its own htpasswd auth
+// (internal/reconcile/registry's own doc comment), so this route is a
+// plain TLS-terminating reverse proxy, the same shape the dashboard
+// route already has. Without this option (the default), an enabled
+// registry with a Host set is silently not routed, matching
+// WithDashboardDial's own "fails closed" absence behavior.
+func WithRegistryDial(dial string) Option {
+	return func(c *Controller) { c.registryDial = dial }
 }
 
 // WithCloudflareDNSTokens enables Cloudflare DNS-01 for wildcard domains
@@ -417,6 +452,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain tls certs: %w", err)
 	}
+	registrySettings, err := c.store.GetRegistrySettings(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: get registry settings: %w", err)
+	}
 
 	var routes []ingress.ProxyRoute
 	var maintenanceRoutes []ingress.MaintenanceRoute
@@ -515,6 +554,28 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			routes = append(routes, ingress.ProxyRoute{
 				Hosts:       []string{settings.PrimaryDomain},
 				BackendDial: c.dashboardDial,
+			})
+		}
+	}
+
+	// Built-in registry (store.RegistrySettings): one more reverse-proxy
+	// route, the exact same shape the dashboard route above has (plain
+	// TLS termination, no basic_auth handler, since the registry
+	// container enforces its own htpasswd auth). Requires both a
+	// configured Host and WithRegistryDial having been set; either
+	// missing means no registry route this pass, the same "fails closed"
+	// shape the dashboard route already establishes.
+	if registrySettings.Enabled && registrySettings.Host != "" && c.registryDial != "" {
+		if owner, host, dup := firstDuplicateHost(registryRouteOwner, []string{registrySettings.Host}, claimedHosts); dup {
+			c.logger.WarnContext(ctx, "ingress: built-in registry host is already routed to a service or static site, skipping the registry route",
+				slog.String("domain", host),
+				slog.String("already_routed_to", owner),
+			)
+		} else {
+			claimedHosts[registrySettings.Host] = registryRouteOwner
+			routes = append(routes, ingress.ProxyRoute{
+				Hosts:       []string{registrySettings.Host},
+				BackendDial: c.registryDial,
 			})
 		}
 	}
