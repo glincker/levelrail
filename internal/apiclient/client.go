@@ -173,6 +173,41 @@ func (c *Client) GetApp(ctx context.Context, name string) (AppResource, error) {
 	return out, err
 }
 
+// ExportAppSpec calls GET /api/v1/apps/{name}/spec: name's desired state
+// reconstructed as an app.yaml document. Built as its own request rather
+// than through do(), the same reason DownloadAuditLogCSV is: the
+// response body is a YAML document to pass through unmodified, not a
+// JSON value to decode.
+func (c *Client) ExportAppSpec(ctx context.Context, name string) ([]byte, error) {
+	path := "/api/v1/apps/" + PathEscape(name) + "/spec"
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
+	if err != nil {
+		return nil, fmt.Errorf("build request: %w", err)
+	}
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+	if c.userAgent != "" {
+		req.Header.Set("User-Agent", c.userAgent)
+	}
+
+	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
+	if err != nil {
+		return nil, fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read response body: %w", err)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header)}
+	}
+	return data, nil
+}
+
 // ListApps calls GET /api/v1/apps.
 func (c *Client) ListApps(ctx context.Context) ([]AppResource, error) {
 	var out []AppResource

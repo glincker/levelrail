@@ -326,6 +326,60 @@ func TestClient_DeployCompose_APIError(t *testing.T) {
 	}
 }
 
+func TestClient_ExportAppSpec(t *testing.T) {
+	yamlBody := []byte("version: 1\nservices:\n  web:\n    port: 3000\n")
+	var gotAuth, gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		w.Header().Set("Content-Type", "text/yaml")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(yamlBody)
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.ExportAppSpec(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("ExportAppSpec() error = %v", err)
+	}
+	if gotAuth != "Bearer test-token" {
+		t.Errorf("Authorization header = %q, want %q", gotAuth, "Bearer test-token")
+	}
+	if gotMethod != http.MethodGet {
+		t.Errorf("method = %q, want GET", gotMethod)
+	}
+	if gotPath != "/api/v1/apps/web/spec" {
+		t.Errorf("path = %q, want /api/v1/apps/web/spec", gotPath)
+	}
+	if !reflect.DeepEqual(got, yamlBody) {
+		t.Errorf("body = %q, want raw YAML %q, not JSON-decoded", got, yamlBody)
+	}
+}
+
+func TestClient_ExportAppSpec_APIError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"app not found"}`))
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	_, err := client.ExportAppSpec(context.Background(), "missing")
+	if err == nil {
+		t.Fatalf("ExportAppSpec() error = nil, want an error for a 404 response")
+	}
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("error type = %T, want *APIError", err)
+	}
+	if apiErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusNotFound)
+	}
+}
+
 func TestClient_TriggerBuild(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/apps/web/builds" {

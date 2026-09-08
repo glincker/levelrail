@@ -64,3 +64,21 @@ func (e *EnvVar) UnmarshalYAML(node *yaml.Node) error {
 	}
 	return nil
 }
+
+// MarshalYAML is UnmarshalYAML's inverse, needed by anything that
+// reconstructs a spec.Service and marshals it back to YAML (the app
+// spec export endpoint, internal/api/app_spec_export.go): without it,
+// yaml.v3's default struct marshaling emits every field (Value, From,
+// Secret, Required) as a mapping, which UnmarshalYAML's own mapping
+// branch doesn't recognize a "value" key in, silently dropping literal
+// values on the next parse.
+func (e EnvVar) MarshalYAML() (any, error) {
+	if e.From == "" && !e.Secret {
+		return e.Value, nil
+	}
+	return struct {
+		From     string `yaml:"from,omitempty"`
+		Secret   bool   `yaml:"secret,omitempty"`
+		Required bool   `yaml:"required,omitempty"`
+	}{From: e.From, Secret: e.Secret, Required: e.Required}, nil
+}

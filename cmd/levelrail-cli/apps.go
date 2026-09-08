@@ -31,6 +31,10 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsDeploySpec(prog, args[1:], stdout, stderr, lookupEnv)
 	case "group":
 		return runAppsGroup(prog, args[1:], stdout, stderr, lookupEnv)
+	case "export":
+		return runAppsExport(prog, args[1:], stdout, stderr, lookupEnv)
+	case "diff":
+		return runAppsDiff(prog, args[1:], stdout, stderr, lookupEnv)
 	case "hook-runs":
 		return runAppsHookRuns(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rollback":
@@ -46,9 +50,9 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	case "start":
 		return runAppsStart(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
-		return runAppsDelete(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsDelete(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "status":
-		return runAppsStatus(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsStatus(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "diagnose":
 		return runAppsDiagnose(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "resource-recommendation":
@@ -103,6 +107,8 @@ func appsUsage(prog string) string {
   %[1]s apps deploy-compose <name> --file compose.yaml [flags]   deploy a Docker Compose file as an app
   %[1]s apps deploy-spec <name> --file app.yaml --repo-url <url> --ref <ref> [flags]   fan an app.yaml's services: map out into N independent builds under one app
   %[1]s apps group <name> [flags]   show name's sibling services under the same multi-service app
+  %[1]s apps export <name> [file] [flags]   dump name's desired state back into an app.yaml file (default "<name>.yaml")
+  %[1]s apps diff <name> <file> [flags]   compare a local app.yaml against name's deployed state, exit nonzero on drift
   %[1]s apps hook-runs <name> [flags]   show the most recent outcome of name's pre/post-deploy hooks
   %[1]s apps rollback <name> [flags]   redeploy an older image (same endpoint as deploy)
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state

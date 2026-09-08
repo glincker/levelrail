@@ -24,6 +24,7 @@ const (
 	exitValidation = 2 // well-formed flags/file, but the request they describe is invalid
 	exitNetwork    = 3 // could not reach the API at all (connection refused, DNS, timeout)
 	exitAPIError   = 4 // the API was reached and returned a non-2xx response
+	exitDiffFound  = 5 // the check itself succeeded ("apps diff"), but found a real difference
 )
 
 // exitCodeForError classifies err into one of the exit codes above.
