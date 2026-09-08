@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
+import { toast } from '@/components/ui/toast'
 import {
   useClearDomainTLSCert,
   useDomainTLSCert,
@@ -64,6 +65,17 @@ export function DomainTLSCertControl({
         onSuccess: () => {
           setCertPEM('')
           setKeyPEM('')
+          toast.add({ title: `Certificate uploaded for ${domain}.`, type: 'success' })
+        },
+        onError: (error) => {
+          // error.message is the backend's own validation reason
+          // (internal/api/domain_tls_cert.go's writeError body, read via
+          // readErrorMessage): "certificate and key do not form a valid
+          // pair", "certificate is already expired (expired at ...)",
+          // and so on. Surfaced verbatim rather than a generic message,
+          // since that's the actionable part an operator needs to fix a
+          // rejected upload.
+          toast.add({ title: 'Certificate upload failed.', description: error.message, type: 'error' })
         },
       },
     )
@@ -164,7 +176,14 @@ export function DomainTLSCertControl({
                 variant="outline"
                 disabled={pending}
                 onClick={() => {
-                  clearCert.mutate()
+                  clearCert.mutate(undefined, {
+                    onSuccess: () => {
+                      toast.add({ title: `Reverted ${domain} to automatic TLS.`, type: 'success' })
+                    },
+                    onError: (error) => {
+                      toast.add({ title: 'Could not revert to automatic TLS.', description: error.message, type: 'error' })
+                    },
+                  })
                 }}
               >
                 {clearCert.isPending ? 'Reverting...' : 'Revert to automatic TLS'}
