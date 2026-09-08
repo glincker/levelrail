@@ -21,6 +21,8 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 		return exitOK
 	case "compare":
 		return runAppsDeploysCompare(prog, args[1:], stdout, stderr, lookupEnv)
+	case "cancel":
+		return runAppsDeploysCancel(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps deploys subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsDeploysUsage(prog))
@@ -31,9 +33,69 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 func appsDeploysUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
+  %[1]s apps deploys cancel <name> <attempt-id> [flags]             cancel an in-progress manual build/deploy
 
 Run "%[1]s apps deploys <subcommand> -h" for a subcommand's own flags.
 `, prog)
+}
+
+// runAppsDeploysCancel implements "apps deploys cancel <name>
+// <attempt-id>": POST /api/v1/apps/{name}/deploys/{attemptId}/cancel
+// (internal/api/deploy_cancel.go's handleCancelDeploy). Only stops a
+// manual, git-source build/deploy started via TriggerBuild (POST
+// .../builds, internal/api/builds.go's handleTriggerBuild; apps_create.go
+// invokes this same client call when "apps create" is given git build
+// flags). A webhook-triggered or plain image-tag deploy attempt returns a
+// non-2xx error naming why, since neither of those register a cancel func
+// at all.
+func runAppsDeploysCancel(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps deploys cancel", "print {\"canceled\": true} as JSON to stdout on success and nothing else", stderr)
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeploysCancelUsage(prog)) }
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+
+	positional, ok := requireArgs(fs, stderr, prog, "apps deploys cancel", "an app name and a deploy attempt id", 2)
+	if !ok {
+		return exitUsage
+	}
+	name, attemptID := positional[0], positional[1]
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+
+	if err := client.CancelDeploy(context.Background(), name, attemptID); err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("cancel deploy attempt %q for app %q: %w", attemptID, name, err))
+	}
+
+	if err := renderResult(stdout, of.Format, of.Query, map[string]bool{"canceled": true}, func() {
+		_, _ = fmt.Fprintf(stdout, "deploy attempt %q for app %q: cancel requested\n", attemptID, name)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
+}
+
+func appsDeploysCancelUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s apps deploys cancel <name> <attempt-id> [flags]
+
+Cancels an in-progress manual, git-source build/deploy (started via
+"%[1]s apps create --repo ..." or POST .../builds directly). A
+webhook-triggered or plain image-tag deploy attempt cannot be canceled
+this way and returns an error naming why.
+
+Flags:
+  --token string          API token (default: %[2]s env var, then the credentials file)
+  --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
+  --json                    print {"canceled": true} as JSON to stdout on success, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
+`, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 // runAppsDeploysCompare implements "apps deploys compare <name> --from ID

@@ -254,6 +254,16 @@ func (c *Client) RestartApp(ctx context.Context, name string) (AppResource, erro
 	return out, err
 }
 
+// CancelDeploy calls POST /api/v1/apps/{name}/deploys/{attemptId}/cancel:
+// stops an in-progress manual build/deploy started via TriggerBuild
+// (internal/api/builds.go's own handleTriggerBuild). A webhook-triggered
+// or plain image-tag deploy attempt is not cancelable through this call;
+// the server returns a non-2xx *APIError naming why (already finished, or
+// not a cancelable trigger source).
+func (c *Client) CancelDeploy(ctx context.Context, name, attemptID string) error {
+	return c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/deploys/"+PathEscape(attemptID)+"/cancel", nil, nil)
+}
+
 // StopApp calls POST /api/v1/apps/{name}/stop: marks the service
 // suspended, so the reconciler stops (and leaves stopped) its container
 // on the next pass, without touching desired state otherwise.

@@ -3,6 +3,7 @@ import { RocketIcon } from '@phosphor-icons/react/dist/ssr'
 import type { DeployAttempt } from '../types/deployAttempt'
 import type { ReconcileCondition } from '../types/deploy'
 import { computeDeployStages } from '../lib/deployStages'
+import { CancelDeployDialog } from './CancelDeployDialog'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -39,18 +40,23 @@ export function DeployInProgressBanner({
             </p>
           </div>
         </div>
-        <Button
-          size="sm"
-          nativeButton={false}
-          render={
-            <Link
-              to="/apps/$name/deploys/$deployId/logs"
-              params={{ name: appName, deployId: attempt.id }}
-            />
-          }
-        >
-          Watch live
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          {attempt.source === 'manual' ? (
+            <CancelDeployDialog appName={appName} attemptId={attempt.id} />
+          ) : null}
+          <Button
+            size="sm"
+            nativeButton={false}
+            render={
+              <Link
+                to="/apps/$name/deploys/$deployId/logs"
+                params={{ name: appName, deployId: attempt.id }}
+              />
+            }
+          >
+            Watch live
+          </Button>
+        </div>
       </CardContent>
     </Card>
   )

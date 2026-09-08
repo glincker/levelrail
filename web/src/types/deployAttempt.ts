@@ -5,7 +5,7 @@
 // not history, see that file's own doc comment for why the two are
 // deliberately kept separate rather than one endpoint's shape changing
 // underneath its existing consumer).
-export type DeployAttemptStatus = 'running' | 'succeeded' | 'failed'
+export type DeployAttemptStatus = 'running' | 'succeeded' | 'failed' | 'cancelled'
 
 // Mirrors internal/store.DeployAttemptSource* on the wire: 'webhook' for
 // an unattended git-push build, 'manual' for a dashboard-triggered

@@ -275,6 +275,7 @@ type Router struct {
 	deviceAuth                     DeviceAuthStore                  // always set, same "core Store interface" shape as policies above: device_auth_requests always exists
 	deviceFlow                     *loginLimiter                    // per-IP device-login-start budget, distinct from logins/forgotPasswordByIP above
 	hookRuns                       HookRunStore                     // always set, same "core Store interface" shape as policies above: service_hook_runs always exists, empty is a valid, non-error result
+	buildCancels                   *buildCancelRegistry             // always set (NewRouter constructs one unconditionally); in-memory only, see deploy_cancel.go
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
@@ -355,6 +356,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		cloneRestoreHistory:         s,
 		volumeCloneRestoreHistory:   s,
 		policies:                    s,
+		buildCancels:                newBuildCancelRegistry(),
 	}
 	for _, opt := range opts {
 		opt(rt)

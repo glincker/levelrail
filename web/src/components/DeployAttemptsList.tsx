@@ -21,6 +21,7 @@ import {
   DEPLOY_ATTEMPT_STATUS_LABEL,
 } from '../lib/deployAttemptPresentation'
 import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
+import { CancelDeployDialog } from './CancelDeployDialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -277,6 +278,9 @@ function DeployAttemptRow({
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
+        {attempt.status === 'running' && attempt.source === 'manual' ? (
+          <CancelDeployDialog appName={appName} attemptId={attempt.id} />
+        ) : null}
         <Button
           variant="outline"
           size="sm"

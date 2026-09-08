@@ -131,6 +131,82 @@ func TestRun_AppsDeploys_Help(t *testing.T) {
 	}
 }
 
+func TestRun_AppsDeploysCancel(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.RequestURI()
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "deploys", "cancel", "web", "dep_1", "--api-url", srv.URL})
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %q, want POST", gotMethod)
+	}
+	if gotPath != "/api/v1/apps/web/deploys/dep_1/cancel" {
+		t.Errorf("path = %q, want /api/v1/apps/web/deploys/dep_1/cancel", gotPath)
+	}
+	if !strings.Contains(stdout, "cancel requested") {
+		t.Errorf("stdout = %q, want a cancel-requested confirmation", stdout)
+	}
+}
+
+func TestRun_AppsDeploysCancel_JSON(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "deploys", "cancel", "web", "dep_1", "--api-url", srv.URL, "--json"}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), `"canceled": true`) {
+		t.Errorf("stdout = %q, want a canceled:true JSON body", stdout.String())
+	}
+}
+
+func TestRun_AppsDeploysCancel_MissingArgs(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "deploys", "cancel", "web"}, &stdout, &stderr, envMap())
+	if got != exitUsage {
+		t.Fatalf("exit = %d, want %d", got, exitUsage)
+	}
+	if !strings.Contains(stderr.String(), "an app name and a deploy attempt id") {
+		t.Errorf("stderr = %q, want a missing-argument usage error", stderr.String())
+	}
+}
+
+func TestRun_AppsDeploysCancel_APIError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"error":"deploy attempt \"dep_1\" already finished with status \"succeeded\""}`))
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "deploys", "cancel", "web", "dep_1", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got != exitAPIError {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitAPIError, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "already finished") {
+		t.Errorf("stderr = %q, want the server's error message", stderr.String())
+	}
+}
+
+func TestRun_AppsDeploysCancel_Help(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "deploys", "cancel", "-h"}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d", got, exitOK)
+	}
+	if !strings.Contains(stderr.String(), "apps deploys cancel") {
+		t.Errorf("stderr = %q, want usage text", stderr.String())
+	}
+}
+
 func TestRun_AppsDeploys_UnknownSubcommand(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"apps", "deploys", "bogus"}, &stdout, &stderr, envMap())

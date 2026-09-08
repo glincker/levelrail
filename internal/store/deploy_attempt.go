@@ -63,6 +63,10 @@ const (
 	DeployAttemptStatusRunning   = "running"
 	DeployAttemptStatusSucceeded = "succeeded"
 	DeployAttemptStatusFailed    = "failed"
+	// DeployAttemptStatusCancelled marks an attempt stopped by a caller
+	// (POST .../deploys/{id}/cancel, internal/api/deploy_cancel.go) rather
+	// than one that ran to completion and failed on its own.
+	DeployAttemptStatusCancelled = "cancelled"
 )
 
 // Deploy attempt trigger sources, one per real call site: the

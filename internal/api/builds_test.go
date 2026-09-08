@@ -40,6 +40,12 @@ type fakeBuilder struct {
 	// attempt is still "running" before letting it finish.
 	release chan struct{}
 
+	// blockOnCtx, when true, makes Deploy block on ctx itself rather than
+	// on release above, returning ctx.Err() once ctx is cancelled: models
+	// a real build that actually stops when its context is cancelled, for
+	// deploy_cancel_test.go's own cancellation tests.
+	blockOnCtx bool
+
 	// multiCalls, lastMultiReq, multiOutcomes, and multiErr back
 	// DeploySpec, apps_multi_test.go's own fake surface: multiOutcomes
 	// (set explicitly) takes priority when non-nil, otherwise DeploySpec
@@ -83,7 +89,7 @@ func newFakeBuilder(tag string, err error) *fakeBuilder {
 	return &fakeBuilder{tag: tag, err: err, notify: make(chan deploy.Request, 4)}
 }
 
-func (f *fakeBuilder) Deploy(_ context.Context, req deploy.Request, progress func(build.ProgressEvent)) (string, error) {
+func (f *fakeBuilder) Deploy(ctx context.Context, req deploy.Request, progress func(build.ProgressEvent)) (string, error) {
 	if progress != nil {
 		progress(build.ProgressEvent{Step: "fake", Completed: true})
 		// A real output-carrying event too (Step-lifecycle events like
@@ -99,6 +105,10 @@ func (f *fakeBuilder) Deploy(_ context.Context, req deploy.Request, progress fun
 	f.mu.Unlock()
 	if f.notify != nil {
 		f.notify <- req
+	}
+	if f.blockOnCtx {
+		<-ctx.Done()
+		return "", ctx.Err()
 	}
 	if f.release != nil {
 		<-f.release

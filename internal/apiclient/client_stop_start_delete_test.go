@@ -37,6 +37,12 @@ func TestClient_AppLifecycleActions(t *testing.T) {
 			wantPath:   "/api/v1/apps/web",
 		},
 		{
+			name:       "CancelDeploy",
+			call:       func(c *Client) error { return c.CancelDeploy(context.Background(), "web", "dep_1") },
+			wantMethod: http.MethodPost,
+			wantPath:   "/api/v1/apps/web/deploys/dep_1/cancel",
+		},
+		{
 			name:       "DeleteDatabase",
 			call:       func(c *Client) error { return c.DeleteDatabase(context.Background(), "main") },
 			wantMethod: http.MethodDelete,

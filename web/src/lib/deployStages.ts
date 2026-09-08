@@ -63,7 +63,12 @@ function computeBuildStage(attempt: DeployAttempt): DeployStage {
         : attempt.status === 'succeeded'
           ? 'done'
           : 'failed',
-    detail: attempt.status === 'failed' ? attempt.error : undefined,
+    detail:
+      attempt.status === 'failed'
+        ? attempt.error
+        : attempt.status === 'cancelled'
+          ? 'Cancelled by request.'
+          : undefined,
     startedAt: attempt.started_at,
     finishedAt: attempt.finished_at,
   }
@@ -85,6 +90,9 @@ function computeRolloutStage(
 
   if (attempt.status === 'failed') {
     return { key, label, status: 'skipped', detail: 'The build failed before a roll out could start.' }
+  }
+  if (attempt.status === 'cancelled') {
+    return { key, label, status: 'skipped', detail: 'Cancelled before a roll out could start.' }
   }
   if (attempt.status === 'running') {
     return { key, label, status: 'pending' }

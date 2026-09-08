@@ -78,7 +78,17 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 		}
 		status := store.DeployAttemptStatusSucceeded
 		errMsg := ""
-		if deployErr != nil {
+		switch {
+		case deployErr == nil:
+			// status/errMsg already set for the success case above.
+		case errors.Is(deployErr, context.Canceled):
+			// Only handleTriggerBuild's own buildCtx (builds.go) is ever
+			// wired to a real cancel func, so this can only mean a caller
+			// hit POST .../deploys/{id}/cancel (deploy_cancel.go), not an
+			// ordinary build failure.
+			status = store.DeployAttemptStatusCancelled
+			errMsg = "canceled by request"
+		default:
 			status = store.DeployAttemptStatusFailed
 			errMsg = deployErr.Error()
 		}

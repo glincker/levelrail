@@ -353,8 +353,26 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 	allowPrivateRepoAuth := rt.callerHasAbility(r, AbilityReadSensitive)
 
 	repoURL, ref := req.RepoURL, req.Ref
+
+	// buildCtx wraps context.Background() (see the goroutine's own
+	// comment for why), not r.Context(), with a cancel func registered
+	// under id so POST .../deploys/{id}/cancel (deploy_cancel.go) can stop
+	// this specific fetch/build mid-flight. Skipped when id is empty:
+	// beginBuildDeployAttempt already failed to mint or save the row in
+	// that case, so there is nothing a cancel call could ever look up.
+	buildCtx, cancelBuild := context.WithCancel(context.Background())
+	if id != "" {
+		rt.buildCancels.register(id, cancelBuild)
+	}
+
 	go func() { //nolint:gosec // deliberately not r.Context(): it is cancelled the moment this handler returns, which would abort the fetch and build within microseconds of starting them; see this handler's own doc comment
-		ctx := context.Background()
+		ctx := buildCtx
+		defer func() {
+			cancelBuild() // release resources even when the build finished on its own rather than via a cancel call
+			if id != "" {
+				rt.buildCancels.remove(id)
+			}
+		}()
 		if buildType != spec.BuildImage {
 			var token string
 			if allowPrivateRepoAuth {

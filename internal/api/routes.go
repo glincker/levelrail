@@ -288,6 +288,12 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// trigger above: this also ultimately writes desired state.
 	mux.HandleFunc("POST /api/v1/apps/{name}/builds", rt.requireAbility(AbilityDeploy, rt.handleTriggerBuild))
 
+	// Cancels an in-progress manual build/deploy started by the trigger
+	// above (handleCancelDeploy's own doc comment for the scope boundary:
+	// a webhook or plain image-tag deploy attempt returns 409 here, not a
+	// real cancellation). Same AbilityDeploy tier as the trigger itself.
+	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{attemptId}/cancel", rt.requireAbility(AbilityDeploy, rt.handleCancelDeploy))
+
 	// Multi-service fan-out (handleDeploySpec's own doc comment,
 	// apps_multi.go): one app.yaml's services: map, built and deployed as
 	// N independent services under one store.App named {name}. Same

@@ -111,3 +111,43 @@ export function useTriggerBuild(appName: string) {
     },
   })
 }
+
+// cancelDeploy calls POST /api/v1/apps/{name}/deploys/{attemptId}/cancel
+// (internal/api/deploy_cancel.go's handleCancelDeploy): stops an
+// in-progress build/deploy started by triggerBuild above. Only that
+// trigger path is cancelable; a webhook-triggered or plain image-tag
+// deploy attempt's cancel call rejects with a non-2xx ApiError naming
+// why, which callers should surface as-is rather than retry.
+export async function cancelDeploy(
+  appName: string,
+  attemptId: string,
+): Promise<void> {
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(appName)}/deploys/${encodeURIComponent(attemptId)}/cancel`,
+    { method: 'POST' },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `cancel deploy failed: ${res.status}`),
+    )
+  }
+}
+
+// On success, invalidates the same two queries triggerBuild's own mutation
+// does: the attempt's terminal status (cancelled) and reconcile state both
+// land asynchronously on the server, same as a build finishing on its own.
+export function useCancelDeploy(appName: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (attemptId: string) => cancelDeploy(appName, attemptId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: deployKeys.status(appName),
+      })
+      void queryClient.invalidateQueries({
+        queryKey: deployAttemptKeys.list(appName),
+      })
+    },
+  })
+}
