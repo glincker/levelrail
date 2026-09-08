@@ -253,6 +253,14 @@ func WithSessionTTL(d time.Duration) Option {
 	return func(rt *Router) { rt.sessionTTL = d }
 }
 
+// WithWatchPollInterval overrides how often GET .../watch (app_watch.go)
+// re-reads stored reconcile conditions looking for a change. Without one
+// configured, defaultWatchPollInterval (2s) applies; tests use this to
+// shrink the interval instead of waiting on the real value.
+func WithWatchPollInterval(d time.Duration) Option {
+	return func(rt *Router) { rt.watchPollInterval = d }
+}
+
 // WithTelemetryQuerier enables GET /api/v1/apps/{name}/metrics and
 // GET /api/v1/apps/{name}/logs (TASKS.md 2.3). Without one configured,
 // both routes return 501, the same "not configured" shape

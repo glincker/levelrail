@@ -111,6 +111,7 @@ type Router struct {
 	mfaPending             *mfaPendingStore       // always set, same "always present, not an Option" shape sessions itself has
 	mfaVerify              *loginLimiter          // separate budget from logins above: brute-forcing a 6-digit code after a correct password is a distinct attack this must independently rate limit
 	sessionTTL             time.Duration          // 0 means "use defaultSessionTTL", set via WithSessionTTL
+	watchPollInterval      time.Duration          // 0 means "use defaultWatchPollInterval", set via WithWatchPollInterval
 	dataDir                string                 // "" means "don't report disk usage", set via WithDataDir
 	dockerPinger           DockerPinger           // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
 	images                 ImageLister            // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above

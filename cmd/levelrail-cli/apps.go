@@ -49,6 +49,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
 		return runAppsStatus(prog, args[1:], stdout, stderr, lookupEnv)
+	case "watch":
+		return runAppsWatch(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "diagnose":
 		return runAppsDiagnose(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "resource-recommendation":
@@ -112,6 +114,7 @@ func appsUsage(prog string) string {
   %[1]s apps start <name> [flags]       start an app previously stopped
   %[1]s apps delete <name> [flags]      remove an app's desired state
   %[1]s apps status <name> [flags]   show an app's current reconcile conditions
+  %[1]s apps watch <name> [flags]     stream an app's reconcile conditions live, until Ctrl-C
   %[1]s apps diagnose <name> [--deploy ID] [flags]   explain a failed deploy or crashloop
   %[1]s apps resource-recommendation <name> [flags]   suggest memory/CPU limits from historical usage
   %[1]s apps network <name> [flags]   show the live traffic path: container port, host port, running

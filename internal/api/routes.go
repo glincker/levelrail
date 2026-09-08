@@ -210,6 +210,13 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityDeploy, rt.handleTriggerDeploy))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityRead, rt.handleDeployHistory))
 
+	// Live status stream (app_watch.go): SSE, polling the same stored
+	// reconcile conditions GET .../deploys above returns on demand, so an
+	// operator sees a Ready flip or a new crashloop condition without
+	// re-polling by hand. AbilityRead: same passive-visibility tier as
+	// the on-demand read it's built on.
+	mux.HandleFunc("GET /api/v1/apps/{name}/watch", rt.requireAbility(AbilityRead, rt.handleAppWatch))
+
 	// Restart (handleRestartApp's own doc comment): AbilityDeploy, the
 	// same boundary as the deploy trigger above, since forcing a
 	// container recreation is the same class of action as triggering a
@@ -333,6 +340,9 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/databases/{name}", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetDatabase))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleDeleteDatabase))
 	mux.HandleFunc("GET /api/v1/databases/{name}/status", rt.requireAbility(AbilityRead, rt.handleDatabaseStatus))
+	// Live status stream, the database counterpart to
+	// GET /apps/{name}/watch above.
+	mux.HandleFunc("GET /api/v1/databases/{name}/watch", rt.requireAbility(AbilityRead, rt.handleDatabaseWatch))
 
 	// Telemetry query, the database counterpart to
 	// GET /apps/{name}/metrics, /logs, /logs/stream above: same

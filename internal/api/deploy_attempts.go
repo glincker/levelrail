@@ -330,11 +330,12 @@ func startSSE(w http.ResponseWriter) (flusher http.Flusher, ok bool) {
 
 // writeSSEEvent writes ev as one default-typed SSE message (no `event:`
 // field, matching web/src/hooks/useDeployLogStream.ts's own doc comment
-// that named events are never used). A JSON marshal failure here can
-// only mean a caller bug (sseLogEvent has no field that can fail to
-// marshal), so it's logged and skipped rather than propagated: one
-// unmarshalable line must not tear down an otherwise-healthy stream.
-func writeSSEEvent(w http.ResponseWriter, ev sseLogEvent) {
+// that named events are never used). ev is any rather than sseLogEvent
+// so app_watch.go's own event shape can reuse this same framing. A JSON
+// marshal failure here can only mean a caller bug, so it's logged and
+// skipped rather than propagated: one unmarshalable event must not tear
+// down an otherwise-healthy stream.
+func writeSSEEvent(w http.ResponseWriter, ev any) {
 	data, err := json.Marshal(ev)
 	if err != nil {
 		slog.Default().Error("api: marshal deploy log event failed", slog.String("error", err.Error()))
