@@ -536,6 +536,41 @@ func (c *Client) ClearDomainMaintenance(ctx context.Context, name, domain string
 	return out, err
 }
 
+// domainTLSCertPath builds
+// /api/v1/apps/{name}/domains/{domain}/tls-cert, shared by all three
+// domain BYO TLS certificate methods below, mirroring domainAuthPath's
+// identical shape for a different per-domain toggle.
+func domainTLSCertPath(name, domain string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/domains/" + PathEscape(domain) + "/tls-cert"
+}
+
+// GetDomainTLSCert calls GET /api/v1/apps/{name}/domains/{domain}/tls-cert:
+// domain's current BYO certificate state.
+func (c *Client) GetDomainTLSCert(ctx context.Context, name, domain string) (DomainTLSCertResource, error) {
+	var out DomainTLSCertResource
+	err := c.do(ctx, http.MethodGet, domainTLSCertPath(name, domain), nil, &out)
+	return out, err
+}
+
+// SetDomainTLSCert calls PUT
+// /api/v1/apps/{name}/domains/{domain}/tls-cert: uploads a BYO
+// certificate for domain, used by Caddy in place of automatic ACME/
+// internal issuance on the next ingress reconcile pass.
+func (c *Client) SetDomainTLSCert(ctx context.Context, name, domain string, req SetDomainTLSCertRequest) (DomainTLSCertResource, error) {
+	var out DomainTLSCertResource
+	err := c.do(ctx, http.MethodPut, domainTLSCertPath(name, domain), req, &out)
+	return out, err
+}
+
+// ClearDomainTLSCert calls DELETE
+// /api/v1/apps/{name}/domains/{domain}/tls-cert: removes domain's BYO
+// certificate, reverting it to automatic ACME/internal issuance.
+func (c *Client) ClearDomainTLSCert(ctx context.Context, name, domain string) (DomainTLSCertResource, error) {
+	var out DomainTLSCertResource
+	err := c.do(ctx, http.MethodDelete, domainTLSCertPath(name, domain), nil, &out)
+	return out, err
+}
+
 // TriggerBackup calls POST /api/v1/databases/{name}/backups: starts a
 // real backup of name to targetID and returns as soon as the attempt is
 // recorded and under way, not once the dump and upload actually finish.

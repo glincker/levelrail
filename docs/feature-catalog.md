@@ -61,7 +61,7 @@ containers, updates.
 
 ## API resource groups (`internal/api/routes.go`, `routes_platform.go`)
 
-263 registered routes total, grouped by resource:
+266 registered routes total, grouped by resource:
 
 | Resource | Routes | Representative paths |
 | --- | --- | --- |
@@ -74,7 +74,7 @@ containers, updates.
 | Databases CRUD + engines + resources | 10 | `/database-engines`, `/databases/{name}/resource-recommendation` |
 | Projects / orgs / environments (+ shared env layers) | 20 | `/projects*`, `/organizations/{id}/env` |
 | Nodes | 11 | `/nodes`, `/{id}/cordon`, `/drain`, `/workloads` |
-| Ingress / certs / domains / email / Cloudflare | 16 | `/certificates`, `/settings/ingress*`, `/settings/cloudflare-tunnel*` |
+| Ingress / certs / domains / email / Cloudflare | 19 | `/certificates`, `/settings/ingress*`, `/settings/cloudflare-tunnel*`, `/domains/{domain}/tls-cert` |
 | Static sites / backup targets / registry credentials | 15 | `/static-sites`, `/backup-targets*`, `/registry-credentials*` |
 | Git provider apps (GitHub/GitLab/Bitbucket) | 27 | `/github-app*`, `/gitlab-app*`, `/bitbucket-app*` |
 | DB backups/restore/clone-restore | 16 | `/databases/{name}/backups*`, `/restore-as-new`, `/backup-schedule` |

@@ -312,6 +312,18 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/maintenance", rt.requireAbility(AbilityDeploy, rt.handleSetDomainMaintenance))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/maintenance", rt.requireAbility(AbilityDeploy, rt.handleClearDomainMaintenance))
 
+	// BYO TLS certificate upload (domain_tls_cert.go): an operator-
+	// supplied certificate/key pair used in place of Caddy's automatic
+	// ACME/internal issuance for one app-owned domain, enforced on the
+	// next ingress reconcile pass. GET is AbilityRead, matching the auth
+	// routes' own passive-visibility tier. PUT/DELETE are AbilityRoot,
+	// the same "real infrastructure, high blast radius" tier PUT/DELETE
+	// .../domains/{domain}/auth already reserves for a credential-bearing
+	// change.
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/tls-cert", rt.requireAbility(AbilityRead, rt.handleGetDomainTLSCert))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/tls-cert", rt.requireAbility(AbilityRoot, rt.handleSetDomainTLSCert))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/tls-cert", rt.requireAbility(AbilityRoot, rt.handleClearDomainTLSCert))
+
 	// Email settings: same precedent as ingress settings just above.
 	// GET is AbilityRead; PUT is AbilityRoot, real infrastructure config.
 	mux.HandleFunc("GET /api/v1/settings/email", rt.requireAbility(AbilityRead, rt.handleGetEmailSettings))

@@ -1739,6 +1739,9 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// Per-domain HTTP Basic Auth passwords go through the same
 		// secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithDomainBasicAuthSecrets(secretsManager))
+		// BYO TLS certificate uploads go through the same secretsManager,
+		// same nil-interface hazard.
+		opts = append(opts, api.WithDomainTLSCertSecrets(secretsManager))
 		// Git sources (TASKS.md 1.7's own deferred follow-up,
 		// internal/api/git_sources.go, git_webhook.go): a connected
 		// source's deploy token and webhook secret go through the same
@@ -2364,6 +2367,10 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			// hazard as Cloudflare DNS-01 above, same "no domain gets a
 			// basic_auth handler" fallback when absent.
 			ingressOpts = append(ingressOpts, ingressreconcile.WithDomainBasicAuthSecrets(deps.secretsManager))
+			// BYO TLS certificate uploads: same nil-secretsManager hazard
+			// as basic auth above, same "domain falls back to automatic
+			// issuance" fallback when absent.
+			ingressOpts = append(ingressOpts, ingressreconcile.WithDomainTLSCertSecrets(deps.secretsManager))
 		}
 		controllers = append(controllers, ingressreconcile.New(deps.db, deps.runtime, deps.driver, ingressOpts...))
 

@@ -33,6 +33,8 @@ type (
 	domainBasicAuthResource          = apiclient.DomainBasicAuthResource
 	setDomainBasicAuthRequest        = apiclient.SetDomainBasicAuthRequest
 	domainMaintenanceResource        = apiclient.DomainMaintenanceResource
+	domainTLSCertResource            = apiclient.DomainTLSCertResource
+	setDomainTLSCertRequest          = apiclient.SetDomainTLSCertRequest
 	backupHistoryResource            = apiclient.BackupHistoryResource
 	backupVerificationResource       = apiclient.BackupVerificationResource
 	restoreHistoryResource           = apiclient.RestoreHistoryResource

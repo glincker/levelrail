@@ -69,6 +69,14 @@ func WithDomainBasicAuthSecrets(s DomainBasicAuthSecrets) Option {
 	return func(rt *Router) { rt.domainBasicAuthSecrets = s }
 }
 
+// WithDomainTLSCertSecrets enables PUT/DELETE
+// /api/v1/apps/{name}/domains/{domain}/tls-cert. Without one configured
+// (the default), both return 501; GET works regardless, the same shape
+// WithDomainBasicAuthSecrets establishes.
+func WithDomainTLSCertSecrets(s DomainTLSCertSecrets) Option {
+	return func(rt *Router) { rt.domainTLSCertSecrets = s }
+}
+
 // WithComposeSecrets enables POST /api/v1/apps/{name}/compose to
 // resolve a compose file's generatable SERVICE_ magic vars. Without one
 // configured (the default), that endpoint still works for compose files

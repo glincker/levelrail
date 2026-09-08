@@ -286,6 +286,25 @@ type DomainMaintenanceResource struct {
 	Enabled bool   `json:"enabled"`
 }
 
+// DomainTLSCertResource mirrors internal/api's domainTLSCertResource
+// (internal/api/domain_tls_cert.go): GET/PUT/DELETE
+// /api/v1/apps/{name}/domains/{domain}/tls-cert's wire shape. Neither
+// the certificate nor the private key ever appears here.
+type DomainTLSCertResource struct {
+	Domain     string `json:"domain"`
+	Enabled    bool   `json:"enabled"`
+	UploadedAt string `json:"uploaded_at,omitempty"`
+	ExpiresAt  string `json:"expires_at,omitempty"`
+}
+
+// SetDomainTLSCertRequest mirrors internal/api's
+// setDomainTLSCertRequest: both fields are required every call, there is
+// no "leave the current certificate unchanged" partial-update case.
+type SetDomainTLSCertRequest struct {
+	Cert string `json:"cert"`
+	Key  string `json:"key"`
+}
+
 // BackupHistoryResource mirrors internal/api's backupHistoryResource
 // (internal/api/backups.go). ServiceName/VolumeName are set instead of
 // DatabaseName for an app service volume backup, never alongside it.

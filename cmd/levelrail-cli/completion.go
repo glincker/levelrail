@@ -74,6 +74,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"cloudflare-dns": {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"basic-auth":     {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"maintenance":    {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
+		"tls-cert":       {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 	}},
 	"backups": {subs: map[string]*cmdNode{
 		"list": nil, "trigger": nil, "restore": nil, "restore-as-new": nil, "verify": nil, "verifications": nil,

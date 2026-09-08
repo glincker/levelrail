@@ -115,6 +115,13 @@ type ServiceStore interface {
 	// /api/v1/apps/{name}/domains/{domain}/maintenance (internal/api)
 	// must take effect on this controller's very next pass.
 	ListDomainMaintenance(ctx context.Context) ([]string, error)
+	// ListDomainTLSCerts returns every domain currently configured with a
+	// BYO TLS certificate (migrations/0082), read fresh every Reconcile
+	// for the same reason ListDomainBasicAuth is: an operator setting or
+	// clearing a domain's certificate through PUT/DELETE
+	// /api/v1/apps/{name}/domains/{domain}/tls-cert (internal/api) must
+	// take effect on this controller's very next pass.
+	ListDomainTLSCerts(ctx context.Context) ([]store.DomainTLSCert, error)
 }
 
 // Applier is the narrow surface this controller needs from
@@ -138,6 +145,15 @@ type CloudflareDNSTokenResolver interface {
 // named separately since the two resolve unrelated credentials under
 // different serviceName namespaces.
 type DomainBasicAuthPasswordResolver interface {
+	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+}
+
+// DomainTLSCertPEMResolver is the narrow surface this controller needs
+// from internal/secrets.Manager to resolve a domain's BYO certificate
+// and private key PEM text, structurally identical to
+// DomainBasicAuthPasswordResolver but named separately since the two
+// resolve unrelated material under different serviceName namespaces.
+type DomainTLSCertPEMResolver interface {
 	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
 }
 
@@ -210,6 +226,13 @@ type Controller struct {
 	// domain ever gets a basic_auth handler, unchanged from this
 	// controller's behavior before this feature existed.
 	basicAuthSecrets DomainBasicAuthPasswordResolver
+
+	// tlsCertSecrets, if set via WithDomainTLSCertSecrets, is resolved
+	// fresh every Reconcile pass for every domain returned by
+	// ServiceStore.ListDomainTLSCerts. Nil (the default) means no domain
+	// ever gets a BYO certificate loaded, unchanged from this
+	// controller's behavior before this feature existed.
+	tlsCertSecrets DomainTLSCertPEMResolver
 }
 
 // Option configures optional Controller behavior.
@@ -296,6 +319,21 @@ func WithDomainBasicAuthSecrets(resolver DomainBasicAuthPasswordResolver) Option
 	return func(c *Controller) { c.basicAuthSecrets = resolver }
 }
 
+// WithDomainTLSCertSecrets enables loading a BYO certificate for any
+// domain present in store.DomainTLSCert by resolving its certificate and
+// private key PEM through internal/secrets.Manager under
+// store.DomainTLSCertSecretsKey(domain). Without this option (the
+// default), domain_tls_cert rows exist in the store but are never
+// loaded, the same "fails closed" shape WithDomainBasicAuthSecrets's own
+// absence already has; unlike that case, failing to resolve a BYO
+// certificate falls back to Caddy's normal automatic ACME/internal
+// issuance for that host rather than leaving it unrouted, since an
+// unloadable certificate is an availability problem, not a security
+// control to fail closed on the way an unresolvable password is.
+func WithDomainTLSCertSecrets(resolver DomainTLSCertPEMResolver) Option {
+	return func(c *Controller) { c.tlsCertSecrets = resolver }
+}
+
 // WithLogger overrides the logger used for per-service skip decisions.
 // Defaults to slog.Default().
 func WithLogger(logger *slog.Logger) Option {
@@ -374,6 +412,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	maintenanceByDomain, err := c.domainMaintenanceSet(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain maintenance: %w", err)
+	}
+	tlsCertOverrides, err := c.domainTLSCertOverrides(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list domain tls certs: %w", err)
 	}
 
 	var routes []ingress.ProxyRoute
@@ -491,6 +533,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		ACMEEmail:             settings.ACMEEmail,
 		ACMEDirectoryURL:      settings.ACMEDirectoryURL,
 		CloudflareDNSAPIToken: c.resolveCloudflareDNSAPIToken(ctx),
+		TLSCertificates:       tlsCertOverrides,
 	})
 	if err != nil {
 		return notReady("BuildConfigFailed", err), fmt.Errorf("ingress: build config: %w", err)
@@ -718,6 +761,44 @@ func (c *Controller) resolveBasicAuthAccount(ctx context.Context, domain string,
 		return nil, false
 	}
 	return &ingress.BasicAuthAccount{Username: auth.Username, Password: string(hash)}, true
+}
+
+// domainTLSCertOverrides resolves every store.DomainTLSCert row into an
+// ingress.TLSCertificateOverride, fresh every call: this controller
+// never persists decrypted certificate material across reconcile
+// passes, the same "never cache, re-derive from current state" principle
+// resolveBasicAuthAccount already follows. A domain whose certificate or
+// key this pass cannot resolve (no resolver wired, or the secret itself
+// failed to resolve) is simply omitted, not an error: see
+// WithDomainTLSCertSecrets's doc comment for why that's a fail-open
+// choice here, unlike basic auth's fail-closed one.
+func (c *Controller) domainTLSCertOverrides(ctx context.Context) ([]ingress.TLSCertificateOverride, error) {
+	rows, err := c.store.ListDomainTLSCerts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if c.tlsCertSecrets == nil || len(rows) == 0 {
+		return nil, nil
+	}
+
+	overrides := make([]ingress.TLSCertificateOverride, 0, len(rows))
+	for _, row := range rows {
+		key := store.DomainTLSCertSecretsKey(row.Domain)
+		certPEM, err := c.tlsCertSecrets.Resolve(ctx, key, store.DomainTLSCertCertificateEnvKey)
+		if err != nil {
+			c.logger.WarnContext(ctx, "ingress: resolve domain tls certificate failed, domain falls back to automatic issuance this pass",
+				slog.String("domain", row.Domain), slog.String("error", err.Error()))
+			continue
+		}
+		keyPEM, err := c.tlsCertSecrets.Resolve(ctx, key, store.DomainTLSCertPrivateKeyEnvKey)
+		if err != nil {
+			c.logger.WarnContext(ctx, "ingress: resolve domain tls private key failed, domain falls back to automatic issuance this pass",
+				slog.String("domain", row.Domain), slog.String("error", err.Error()))
+			continue
+		}
+		overrides = append(overrides, ingress.TLSCertificateOverride{Host: row.Domain, CertPEM: certPEM, KeyPEM: keyPEM})
+	}
+	return overrides, nil
 }
 
 func notReady(reason string, err error) reconcile.Result {

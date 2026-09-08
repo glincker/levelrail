@@ -253,9 +253,44 @@ func NewMaintenanceResponseHandler() StaticResponseHandler {
 	}
 }
 
-// TLSApp is Caddy's "tls" app: certificate automation policy.
+// TLSApp is Caddy's "tls" app: certificate automation policy plus any
+// manually loaded certificates.
 type TLSApp struct {
 	Automation *Automation `json:"automation,omitempty"`
+	// Certificates mirrors Caddy's tls.certificates field (a
+	// caddy.ModuleMap keyed by loader module name within the
+	// tls.certificates namespace). This package only ever sets the
+	// "load_pem" key (see CertKeyPEMPair), for BYO TLS certificates.
+	Certificates CertificatesConfig `json:"certificates,omitempty"`
+}
+
+// CertificatesConfig is the wire shape for TLSApp.Certificates: each key
+// names a tls.certificates.* loader module, value is that module's own
+// JSON shape (typed any like Route.Handle, for the same reason: Caddy's
+// module system is inherently polymorphic).
+type CertificatesConfig map[string]any
+
+// CertKeyPEMPair mirrors Caddy's caddytls.CertKeyPEMPair
+// (tls.certificates.load_pem's wire shape, verified against
+// modules/caddytls/pemloader.go in the vendored caddyserver/caddy/v2
+// source): a certificate and its private key as inline PEM text, no file
+// on disk for either. Loading a certificate this way is also what makes
+// Caddy skip automatic ACME/internal issuance for a matching hostname on
+// its own (caddyhttp.AutoHTTPSConfig.IgnoreLoadedCerts defaults to
+// false): no separate "skip" list is needed in Server.AutomaticHTTPS.
+type CertKeyPEMPair struct {
+	CertificatePEM string   `json:"certificate"`
+	KeyPEM         string   `json:"key"`
+	Tags           []string `json:"tags,omitempty"`
+}
+
+// TLSCertificateOverride is one domain with an operator-supplied
+// certificate and key (internal/store.DomainTLSCert, BYO TLS), used in
+// place of Caddy's automatic ACME/internal issuance for that host.
+type TLSCertificateOverride struct {
+	Host    string
+	CertPEM string
+	KeyPEM  string
 }
 
 // Automation holds the ordered list of automation policies. The first
