@@ -46,6 +46,7 @@ proposals):
 
 | Doc | Covers |
 | --- | --- |
+| [databases-and-backups.md](databases-and-backups.md) | Create managed databases, enable public access, back up and restore |
 | [feature-flags.md](feature-flags.md) | Toggle app behavior at runtime without a redeploy |
 | [master-key-rotation.md](master-key-rotation.md) | Rotate the envelope-encryption master key without losing access to stored secrets |
 | [migrating-from-coolify-and-dokploy.md](migrating-from-coolify-and-dokploy.md) | Move apps off a live Coolify or Dokploy instance with `levelrail-cli migrate` |
