@@ -138,7 +138,7 @@ commit conventions, and how to run tests and the linter locally.
 
 ## Docs and community
 
-- [docs/](docs/README.md) -- getting started, architecture, app spec reference, roadmap, full index
+- [docs/](docs/README.md) -- getting started, architecture, app spec reference, CLI reference, roadmap, full index
 - [GitHub Discussions](https://github.com/glincker/levelrail/discussions) -- questions, ideas, show and tell
 
 ## License
