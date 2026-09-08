@@ -340,6 +340,15 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRoot, rt.handleUpdateCloudflareDNSSettings))
 	mux.HandleFunc("DELETE /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRoot, rt.handleDisconnectCloudflareDNS))
 
+	// Built-in container registry (instance-level, one registry per
+	// control plane): GET is AbilityRead; PUT/DELETE are AbilityRoot,
+	// matching PUT /api/v1/settings/cloudflare-tunnel's own tier for
+	// infrastructure config that runs a system container and generates
+	// credentials.
+	mux.HandleFunc("GET /api/v1/settings/registry", rt.requireAbility(AbilityRead, rt.handleGetRegistrySettings))
+	mux.HandleFunc("PUT /api/v1/settings/registry", rt.requireAbility(AbilityRoot, rt.handleUpdateRegistrySettings))
+	mux.HandleFunc("DELETE /api/v1/settings/registry", rt.requireAbility(AbilityRoot, rt.handleDisableRegistry))
+
 	// Domains (centralized cross-app list, web/src/routes/domains):
 	// every service_domains row, AbilityRead like GET /api/v1/apps,
 	// no new ability tier: this is the same data DomainEditor already

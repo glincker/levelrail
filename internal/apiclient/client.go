@@ -469,6 +469,29 @@ func (c *Client) DisconnectCloudflareTunnel(ctx context.Context) (CloudflareTunn
 	return out, err
 }
 
+// GetRegistrySettings calls GET /api/v1/settings/registry: the built-in
+// registry container's configured/observed state.
+func (c *Client) GetRegistrySettings(ctx context.Context) (RegistrySettingsResource, error) {
+	var out RegistrySettingsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/registry", nil, &out)
+	return out, err
+}
+
+// UpdateRegistrySettings calls PUT /api/v1/settings/registry.
+func (c *Client) UpdateRegistrySettings(ctx context.Context, req UpdateRegistrySettingsRequest) (RegistrySettingsResource, error) {
+	var out RegistrySettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/registry", req, &out)
+	return out, err
+}
+
+// DisableRegistry calls DELETE /api/v1/settings/registry: disables the
+// registry and clears its generated credentials in one step.
+func (c *Client) DisableRegistry(ctx context.Context) (RegistrySettingsResource, error) {
+	var out RegistrySettingsResource
+	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/registry", nil, &out)
+	return out, err
+}
+
 // domainAuthPath builds /api/v1/apps/{name}/domains/{domain}/auth,
 // shared by all three domain basic auth methods below.
 func domainAuthPath(name, domain string) string {

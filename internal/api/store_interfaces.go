@@ -269,6 +269,14 @@ type CloudflareDNSStore interface {
 	UpdateCloudflareDNSSettings(ctx context.Context, s store.CloudflareDNSSettings) error
 }
 
+// RegistryStore is the store surface GET/PUT/DELETE
+// /api/v1/settings/registry need: the single platform-wide row, always
+// present, the same shape CloudflareTunnelStore has for its own row.
+type RegistryStore interface {
+	GetRegistrySettings(ctx context.Context) (store.RegistrySettings, error)
+	UpdateRegistrySettings(ctx context.Context, s store.RegistrySettings) error
+}
+
 // PasswordResetTokenStore is the store surface the forgot-password flow
 // needs: always set, part of the core Store interface.
 type PasswordResetTokenStore interface {
@@ -357,6 +365,7 @@ type Store interface {
 	OAuthIdentityStore
 	EmailSettingsStore
 	CloudflareTunnelStore
+	RegistryStore
 	CloudflareDNSStore
 	PasswordResetTokenStore
 	RecoveryCodeStore

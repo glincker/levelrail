@@ -34,6 +34,8 @@ type fakeStore struct {
 	maintenanceErr error
 	tlsCerts       []store.DomainTLSCert
 	tlsCertsErr    error
+	registry       store.RegistrySettings
+	registryErr    error
 }
 
 func (f *fakeStore) ListDesiredServices(_ context.Context) ([]store.DesiredService, error) {
@@ -103,6 +105,17 @@ func (f *fakeStore) ListDomainTLSCerts(_ context.Context) ([]store.DomainTLSCert
 		return nil, f.tlsCertsErr
 	}
 	return f.tlsCerts, nil
+}
+
+// GetRegistrySettings mirrors GetIngressSettings' own "zero value unless
+// a test opts in" convention: disabled, no host, matching a fresh
+// migration's seeded row, so tests written before this method existed
+// are unaffected.
+func (f *fakeStore) GetRegistrySettings(_ context.Context) (store.RegistrySettings, error) {
+	if f.registryErr != nil {
+		return store.RegistrySettings{}, f.registryErr
+	}
+	return f.registry, nil
 }
 
 // fakeRuntime implements docker.Runtime with an in-memory container set,

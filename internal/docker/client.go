@@ -177,6 +177,7 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 			Env:          toDockerEnv(spec.Env),
 			Labels:       spec.Labels,
 			Cmd:          spec.Command,
+			Entrypoint:   spec.Entrypoint,
 		},
 		hostConfig,
 		toNetworkingConfig(spec.Network), nil,

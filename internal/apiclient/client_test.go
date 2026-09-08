@@ -952,6 +952,77 @@ func TestClient_DisconnectCloudflareTunnel(t *testing.T) {
 	}
 }
 
+func TestClient_GetRegistrySettings(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(RegistrySettingsResource{Enabled: true, Host: "registry.example", HasCredentials: true, Status: "running"}) //nolint:gosec // fake fixture, not a real credential
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.GetRegistrySettings(context.Background())
+	if err != nil {
+		t.Fatalf("GetRegistrySettings() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/settings/registry" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/settings/registry", gotMethod, gotPath)
+	}
+	if !got.Enabled || got.Status != "running" {
+		t.Errorf("GetRegistrySettings() = %+v, want Enabled=true Status=running", got)
+	}
+}
+
+func TestClient_UpdateRegistrySettings(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody UpdateRegistrySettingsRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(RegistrySettingsResource{Enabled: gotBody.Enabled, Host: gotBody.Host, Password: "generated-pw"}) //nolint:gosec // fake fixture, not a real credential
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.UpdateRegistrySettings(context.Background(), UpdateRegistrySettingsRequest{Enabled: true, Host: "registry.example"})
+	if err != nil {
+		t.Fatalf("UpdateRegistrySettings() error = %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/settings/registry" {
+		t.Errorf("method/path = %s %s, want PUT /api/v1/settings/registry", gotMethod, gotPath)
+	}
+	if gotBody.Host != "registry.example" || !gotBody.Enabled {
+		t.Errorf("request body = %+v, want Enabled=true Host=registry.example", gotBody)
+	}
+	if got.Password != "generated-pw" {
+		t.Errorf("UpdateRegistrySettings() = %+v, want Password=generated-pw", got)
+	}
+}
+
+func TestClient_DisableRegistry(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(RegistrySettingsResource{Enabled: false, Status: "stopped"}) //nolint:gosec // fake fixture, not a real credential
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.DisableRegistry(context.Background())
+	if err != nil {
+		t.Fatalf("DisableRegistry() error = %v", err)
+	}
+	if gotMethod != http.MethodDelete || gotPath != "/api/v1/settings/registry" {
+		t.Errorf("method/path = %s %s, want DELETE /api/v1/settings/registry", gotMethod, gotPath)
+	}
+	if got.Enabled {
+		t.Errorf("DisableRegistry() = %+v, want Enabled=false", got)
+	}
+}
+
 // TestClient_SetPreviewEnabled proves SetPreviewEnabled sends only the
 // enabled toggle: post_pr_comments must stay absent from the request
 // body so the API's own "nil means leave it unchanged" contract

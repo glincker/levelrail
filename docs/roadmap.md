@@ -304,7 +304,15 @@ still open. This page describes what's actually true today.
 - WireGuard mesh with internal DNS resolving service names across
   nodes.
 - Dedicated build nodes, with registry-backed remote BuildKit cache and
-  per-node capability flags.
+  per-node capability flags. The registry backend no longer requires an
+  external service: a built-in registry (`registry:2`, generated
+  htpasswd-style credentials via the same envelope encryption as managed
+  database passwords, TLS-fronted through the embedded Caddy ingress) can
+  be enabled from Settings > Container registry, the CLI's `registry`
+  command group, or `PUT /api/v1/settings/registry`, and the build cache
+  wires to it automatically once enabled with no separate cache
+  configuration step. An operator's own external registry, set via
+  `APP_BUILD_CACHE_REGISTRY`, still always takes precedence.
 - Distributed certificate storage shared across ingress instances.
 - Node health (heartbeat), cordon, and drain, plus a per-node live alert
   status (ok/firing/unknown) for the patch-status, node-disk-space, and
