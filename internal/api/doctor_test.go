@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -150,31 +151,89 @@ func TestHandleSystemDoctor_DiskWarningThreshold(t *testing.T) {
 	}
 }
 
-func TestDoctorCheckPort_AddrInUse(t *testing.T) {
-	ln, err := net.Listen("tcp", ":0") //nolint:gosec // must match doctorCheckPort's own all-interfaces bind, or macOS lets both coexist and the test can't force EADDRINUSE
-	if err != nil {
-		t.Fatalf("listen: %v", err)
-	}
-	defer func() { _ = ln.Close() }()
-	port := ln.Addr().(*net.TCPAddr).Port
-
-	c := doctorCheckPort(port)
-	if c.Status != doctorStatusFail {
-		t.Errorf("status = %q, want %q (port already bound)", c.Status, doctorStatusFail)
-	}
+// fakeIngressPortOwner is a hand-written fake of IngressPortOwner, the
+// same pattern fakeDockerPinger (status_test.go) already uses for a
+// single-method optional Router dependency.
+type fakeIngressPortOwner struct {
+	owned map[int]bool
 }
 
-func TestDoctorCheckPort_Available(t *testing.T) {
-	ln, err := net.Listen("tcp", ":0") //nolint:gosec // ephemeral port probe only, immediately released below
-	if err != nil {
-		t.Fatalf("listen: %v", err)
-	}
-	port := ln.Addr().(*net.TCPAddr).Port
-	_ = ln.Close()
+func (f *fakeIngressPortOwner) OwnsPort(port int) bool {
+	return f.owned[port]
+}
 
-	c := doctorCheckPort(port)
-	if c.Status != doctorStatusOK {
-		t.Errorf("status = %q, want %q (freshly released port)", c.Status, doctorStatusOK)
+func TestDoctorCheckPort(t *testing.T) {
+	// listenOnPort starts a listener on an ephemeral port and returns it
+	// still bound, for a test case that needs the port genuinely in use.
+	listenOnPort := func(t *testing.T) (int, func()) {
+		t.Helper()
+		ln, err := net.Listen("tcp", ":0") //nolint:gosec // must match doctorCheckPort's own all-interfaces bind, or macOS lets both coexist and the test can't force EADDRINUSE
+		if err != nil {
+			t.Fatalf("listen: %v", err)
+		}
+		return ln.Addr().(*net.TCPAddr).Port, func() { _ = ln.Close() }
+	}
+	// freePort returns a port number that was bound and released
+	// immediately, so it's very likely free for the check itself.
+	freePort := func(t *testing.T) int {
+		t.Helper()
+		ln, err := net.Listen("tcp", ":0") //nolint:gosec // ephemeral port probe only, immediately released below
+		if err != nil {
+			t.Fatalf("listen: %v", err)
+		}
+		port := ln.Addr().(*net.TCPAddr).Port
+		_ = ln.Close()
+		return port
+	}
+
+	tests := []struct {
+		name         string
+		usePort      func(t *testing.T) (int, func())
+		ownsIt       bool // whether the fake ingress port owner claims the port under test
+		noOwner      bool // no IngressPortOwner wired at all
+		wantStatus   string
+		wantContains string
+	}{
+		{
+			name:       "genuinely free",
+			usePort:    func(t *testing.T) (int, func()) { return freePort(t), func() {} },
+			noOwner:    true,
+			wantStatus: doctorStatusOK,
+		},
+		{
+			name:         "held by this control plane's own ingress",
+			usePort:      listenOnPort,
+			ownsIt:       true,
+			wantStatus:   doctorStatusOK,
+			wantContains: "this control plane's own ingress",
+		},
+		{
+			name:         "held by something else, ingress not using it",
+			usePort:      listenOnPort,
+			ownsIt:       false,
+			wantStatus:   doctorStatusFail,
+			wantContains: "another process",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			port, release := tt.usePort(t)
+			defer release()
+
+			rt, _ := newTestRouter(t)
+			if !tt.noOwner {
+				rt.ingressPortOwner = &fakeIngressPortOwner{owned: map[int]bool{port: tt.ownsIt}}
+			}
+
+			c := rt.doctorCheckPort(port)
+			if c.Status != tt.wantStatus {
+				t.Errorf("status = %q, want %q", c.Status, tt.wantStatus)
+			}
+			if tt.wantContains != "" && !strings.Contains(c.Message, tt.wantContains) {
+				t.Errorf("message = %q, want it to contain %q", c.Message, tt.wantContains)
+			}
+		})
 	}
 }
 

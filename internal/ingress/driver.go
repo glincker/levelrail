@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net"
+	"strconv"
+	"sync"
 
 	"github.com/caddyserver/caddy/v2"
 
@@ -38,6 +41,9 @@ import (
 // process, not in something else's.
 type Driver struct {
 	logger *slog.Logger
+
+	mu          sync.Mutex
+	listenPorts map[int]bool
 }
 
 // New builds a Driver. A nil logger falls back to slog.Default(), matching
@@ -71,6 +77,10 @@ func (d *Driver) Apply(ctx context.Context, cfg *Config) error {
 		return fmt.Errorf("ingress: apply: load config: %w", err)
 	}
 
+	d.mu.Lock()
+	d.listenPorts = listenPortsOf(cfg)
+	d.mu.Unlock()
+
 	d.logger.InfoContext(ctx, "ingress config applied",
 		slog.Int("config_bytes", len(payload)),
 	)
@@ -83,6 +93,52 @@ func (d *Driver) Stop(ctx context.Context) error {
 	if err := caddy.Stop(); err != nil {
 		return fmt.Errorf("ingress: stop: %w", err)
 	}
+	d.mu.Lock()
+	d.listenPorts = nil
+	d.mu.Unlock()
 	d.logger.InfoContext(ctx, "ingress stopped")
 	return nil
+}
+
+// OwnsPort reports whether the most recently applied config bound an HTTP
+// server to port. Used by GET /api/v1/system/doctor (internal/api) to tell
+// this control plane's own ingress apart from an unrelated process holding
+// the same port.
+func (d *Driver) OwnsPort(port int) bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.listenPorts[port]
+}
+
+// listenPortsOf collects every port cfg's HTTP servers are configured to
+// listen on. Non-numeric or unparseable Listen entries are skipped rather
+// than erroring: this is a best-effort signal for a doctor check, not a
+// config validator.
+func listenPortsOf(cfg *Config) map[int]bool {
+	ports := make(map[int]bool)
+	if cfg.Apps.HTTP == nil {
+		return ports
+	}
+	for _, server := range cfg.Apps.HTTP.Servers {
+		for _, addr := range server.Listen {
+			if port, ok := listenAddrPort(addr); ok {
+				ports[port] = true
+			}
+		}
+	}
+	return ports
+}
+
+// listenAddrPort extracts the numeric port from a Caddy listen address
+// (e.g. ":443", "0.0.0.0:8080").
+func listenAddrPort(addr string) (int, bool) {
+	_, portStr, err := net.SplitHostPort(addr)
+	if err != nil {
+		return 0, false
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return 0, false
+	}
+	return port, true
 }

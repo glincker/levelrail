@@ -407,6 +407,16 @@ func WithDBPinger(p DBPinger) Option {
 	return func(rt *Router) { rt.dbPinger = p }
 }
 
+// WithIngressPortOwner lets GET /api/v1/system/doctor's port_80/port_443
+// checks recognize a bind failure caused by this control plane's own
+// embedded ingress (internal/ingress.Driver) as expected rather than a
+// real problem. Without one configured (the default), a bound port
+// always reports fail, the same behavior this check had before ingress
+// ownership was distinguishable.
+func WithIngressPortOwner(o IngressPortOwner) Option {
+	return func(rt *Router) { rt.ingressPortOwner = o }
+}
+
 // WithDoctorDiskWarningBytes overrides the free-space floor GET
 // /api/v1/system/doctor's disk_space check warns below. Without one
 // configured (or passed as 0), defaultDoctorDiskWarningBytes (1GiB)

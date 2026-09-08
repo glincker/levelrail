@@ -183,6 +183,115 @@ func TestDriver_ReverseProxy_InternalTLS(t *testing.T) {
 	}
 }
 
+func TestListenAddrPort(t *testing.T) {
+	tests := []struct {
+		name   string
+		addr   string
+		want   int
+		wantOK bool
+	}{
+		{name: "bare port", addr: ":443", want: 443, wantOK: true},
+		{name: "host and port", addr: "0.0.0.0:8080", want: 8080, wantOK: true},
+		{name: "no port", addr: "localhost", want: 0, wantOK: false},
+		{name: "non numeric port", addr: "example.com:https", want: 0, wantOK: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := listenAddrPort(tt.addr)
+			if ok != tt.wantOK || got != tt.want {
+				t.Errorf("listenAddrPort(%q) = (%d, %v), want (%d, %v)", tt.addr, got, ok, tt.want, tt.wantOK)
+			}
+		})
+	}
+}
+
+func TestListenPortsOf(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  *Config
+		want map[int]bool
+	}{
+		{
+			name: "no http app",
+			cfg:  &Config{},
+			want: map[int]bool{},
+		},
+		{
+			name: "single server, single port",
+			cfg: &Config{Apps: Apps{HTTP: &HTTPApp{Servers: map[string]*Server{
+				"main": {Listen: []string{":443"}},
+			}}}},
+			want: map[int]bool{443: true},
+		},
+		{
+			name: "multiple servers, multiple listen addrs",
+			cfg: &Config{Apps: Apps{HTTP: &HTTPApp{Servers: map[string]*Server{
+				"a": {Listen: []string{":443", "127.0.0.1:8443"}},
+				"b": {Listen: []string{":80"}},
+			}}}},
+			want: map[int]bool{443: true, 8443: true, 80: true},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := listenPortsOf(tt.cfg)
+			if len(got) != len(tt.want) {
+				t.Fatalf("listenPortsOf() = %v, want %v", got, tt.want)
+			}
+			for port := range tt.want {
+				if !got[port] {
+					t.Errorf("listenPortsOf() missing port %d in %v", port, got)
+				}
+			}
+		})
+	}
+}
+
+// TestDriver_OwnsPort proves OwnsPort reflects the real, currently applied
+// Caddy config: false before any Apply, true for a port Apply actually
+// bound, false again once Stop releases it.
+func TestDriver_OwnsPort(t *testing.T) {
+	skipUnderLoad(t)
+	d := New(testLogger(t))
+	if d.OwnsPort(443) {
+		t.Error("OwnsPort(443) = true before any Apply, want false")
+	}
+
+	backend := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
+	defer backend.Close()
+
+	caddyPort := freePort(t)
+	cfg, err := BuildProxyConfig(ProxyOptions{
+		ServerName:  "owns-port-test",
+		ListenAddr:  fmt.Sprintf("127.0.0.1:%d", caddyPort),
+		BackendDial: backend.Listener.Addr().String(),
+		StorageDir:  t.TempDir(),
+	})
+	if err != nil {
+		t.Fatalf("BuildProxyConfig() error: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := d.Apply(ctx, cfg); err != nil {
+		t.Fatalf("Driver.Apply() error: %v", err)
+	}
+
+	if !d.OwnsPort(caddyPort) {
+		t.Errorf("OwnsPort(%d) = false after Apply, want true", caddyPort)
+	}
+	if d.OwnsPort(caddyPort + 1) {
+		t.Errorf("OwnsPort(%d) = true, want false (never applied)", caddyPort+1)
+	}
+
+	if err := d.Stop(ctx); err != nil {
+		t.Fatalf("Driver.Stop() error: %v", err)
+	}
+	if d.OwnsPort(caddyPort) {
+		t.Errorf("OwnsPort(%d) = true after Stop, want false", caddyPort)
+	}
+}
+
 // getBodyWithRetry issues GET requests against url until one succeeds or
 // the deadline passes. Caddy's listeners come up asynchronously inside
 // caddy.Load (Apply returns once the config is accepted, not once every

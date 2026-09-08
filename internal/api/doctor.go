@@ -63,8 +63,8 @@ func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 		rt.doctorCheckDocker(ctx),
 		rt.doctorCheckDiskSpace(),
 		rt.doctorCheckDataDirWritable(),
-		doctorCheckPort(80),
-		doctorCheckPort(443),
+		rt.doctorCheckPort(80),
+		rt.doctorCheckPort(443),
 		rt.doctorCheckDatabase(ctx),
 		rt.doctorCheckMasterKeyRotation(ctx),
 		doctorCheckFirewallCtx(ctx),
@@ -132,11 +132,24 @@ func (rt *Router) doctorCheckDataDirWritable() doctorCheckResource {
 	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "writable"}
 }
 
+// IngressPortOwner reports whether this control plane's own embedded
+// ingress (internal/ingress.Driver) currently has a listener bound to
+// port. *ingress.Driver satisfies this.
+type IngressPortOwner interface {
+	OwnsPort(port int) bool
+}
+
 // doctorCheckPort is a best-effort local bind check for the embedded
-// Caddy ingress's two listen ports. A permission error (binding <1024
-// without CAP_NET_BIND_SERVICE) can't distinguish "in use" from "not
-// allowed to check", so it degrades to unknown rather than fail.
-func doctorCheckPort(port int) doctorCheckResource {
+// Caddy ingress's listen ports. A bind failure here is not automatically
+// a problem: this handler runs inside the same process as this control
+// plane's own ingress, which is normally already bound to these ports by
+// the time an operator runs doctor against a live instance.
+// rt.ingressPortOwner (nil until wired via WithIngressPortOwner) tells
+// that expected case apart from a port genuinely held by something else,
+// which still reports fail. A permission error (binding <1024 without
+// CAP_NET_BIND_SERVICE) can't distinguish "in use" from "not allowed to
+// check", so it degrades to unknown rather than fail.
+func (rt *Router) doctorCheckPort(port int) doctorCheckResource {
 	code := fmt.Sprintf("port_%d", port)
 	name := fmt.Sprintf("Port %d available", port)
 
@@ -146,7 +159,10 @@ func doctorCheckPort(port int) doctorCheckResource {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "available"}
 	}
 	if errors.Is(err, syscall.EADDRINUSE) {
-		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusFail, Message: "already in use"}
+		if rt.ingressPortOwner != nil && rt.ingressPortOwner.OwnsPort(port) {
+			return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "in use by this control plane's own ingress, as expected"}
+		}
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusFail, Message: "in use by another process"}
 	}
 	if errors.Is(err, os.ErrPermission) {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "cannot check without elevated privileges"}
