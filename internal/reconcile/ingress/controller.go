@@ -116,7 +116,7 @@ type ServiceStore interface {
 	// must take effect on this controller's very next pass.
 	ListDomainMaintenance(ctx context.Context) ([]string, error)
 	// ListDomainTLSCerts returns every domain currently configured with a
-	// BYO TLS certificate (migrations/0082), read fresh every Reconcile
+	// BYO TLS certificate (migrations/0084), read fresh every Reconcile
 	// for the same reason ListDomainBasicAuth is: an operator setting or
 	// clearing a domain's certificate through PUT/DELETE
 	// /api/v1/apps/{name}/domains/{domain}/tls-cert (internal/api) must

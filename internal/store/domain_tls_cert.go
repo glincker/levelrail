@@ -27,7 +27,7 @@ const (
 )
 
 // DomainTLSCert is one row of the domain_tls_cert table
-// (migrations/0082_domain_tls_cert.sql): a domain already present in
+// (migrations/0084_domain_tls_cert.sql): a domain already present in
 // service_domains has an operator-supplied certificate uploaded. Neither
 // the certificate nor its private key lives here: both go through
 // internal/secrets under DomainTLSCertSecretsKey(domain), the same split
