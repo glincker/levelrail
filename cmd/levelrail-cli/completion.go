@@ -205,6 +205,13 @@ func runCompletion(prog string, args []string, stdout, stderr io.Writer, _ func(
 		return exitUsage
 	}
 
+	for _, a := range args[1:] {
+		if a == "-h" || a == "--help" {
+			_, _ = fmt.Fprint(stdout, completionUsage(prog))
+			return exitOK
+		}
+	}
+
 	switch args[0] {
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, completionUsage(prog))

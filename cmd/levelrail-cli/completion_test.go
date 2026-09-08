@@ -26,6 +26,8 @@ func TestRunCompletion_Dispatch(t *testing.T) {
 		{name: "zsh", args: []string{"zsh"}, wantExit: exitOK, wantStdout: "#compdef"},
 		{name: "fish", args: []string{"fish"}, wantExit: exitOK, wantStdout: "complete -c"},
 		{name: "unknown shell", args: []string{"powershell"}, wantExit: exitUsage, wantStderr: "unknown completion shell"},
+		{name: "bash with -h prints usage, not the script", args: []string{"bash", "-h"}, wantExit: exitOK, wantStdout: "Usage:"},
+		{name: "zsh with --help prints usage, not the script", args: []string{"zsh", "--help"}, wantExit: exitOK, wantStdout: "Usage:"},
 	}
 
 	for _, tt := range tests {

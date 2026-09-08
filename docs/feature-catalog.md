@@ -88,7 +88,7 @@ containers, updates.
 `app-volume-backups`, `cloudflare-tunnel`, `channels`,
 `backup-targets`, `registry-credentials`, `flags`, `nodes`, `status`,
 `version`, `audit-log`, `audit-purge`, `doctor`, `containers`,
-`firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`.
+`users`, `iam`, `secrets`, `migrate`, `completion`.
 
 Key subcommand groups:
 
