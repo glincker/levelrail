@@ -4,6 +4,10 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/glincker/levelrail)](https://goreportcard.com/report/github.com/glincker/levelrail)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/glincker/levelrail)](go.mod)
+[![GitHub stars](https://img.shields.io/github/stars/glincker/levelrail?style=flat)](https://github.com/glincker/levelrail/stargazers)
+[![Last commit](https://img.shields.io/github/last-commit/glincker/levelrail)](https://github.com/glincker/levelrail/commits/main)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Discussions](https://img.shields.io/github/discussions/glincker/levelrail)](https://github.com/glincker/levelrail/discussions)
 
 Levelrail is a self-hosted deployment platform whose agent talks to
 Docker's own Engine API directly instead of SSHing into your servers
@@ -11,6 +15,13 @@ and shelling out `docker` commands, with metrics and log storage built
 into the core instead of a separately-installed extra. Point it at one
 or more Linux boxes and it turns them into a private cloud: push to a
 git repo, get a running app with TLS, logs, metrics, and rollback.
+
+<p align="center">
+  <img src="docs/assets/screenshots/app-overview.png" alt="Levelrail app overview: live metrics and deploy history in one view" width="900">
+</p>
+
+If this solves a problem you have, a star helps other people building
+the same thing find it.
 
 ## Quickstart
 
@@ -25,6 +36,33 @@ declaring success. Safe to re-run later as an upgrade. See
 instead, and [docs/comparison.md](docs/comparison.md) for how this
 differs from Coolify, Dokploy, CapRover, Dokku, and Kamal, including
 what Levelrail doesn't do yet.
+
+## Features
+
+- **Zero-downtime deploys.** Rolling, recreate, or blue-green strategy,
+  gated on real readiness/liveness probes, with rollback to pinned
+  prior images always available, not something to reconstruct by hand.
+- **Observability built in.** Node-local metrics at 15s resolution and
+  full-text log search, no separate Grafana/Loki install. Deploy
+  markers are overlaid directly on metric charts, so "which deploy
+  caused this" is a visual answer, not an investigation.
+- **Eight managed database engines.** Postgres, Redis, MySQL, MongoDB,
+  MariaDB, KeyDB, Dragonfly, and ClickHouse, all through one engine
+  registry: scheduled backups, restore, and automatic post-backup
+  verification apply generically across every engine.
+- **Multi-node from day one.** WireGuard mesh, internal DNS across
+  nodes, cordon/drain, and no inbound ports required on any managed
+  server.
+- **Git-native deploys.** GitHub, GitLab, and Bitbucket webhooks, plus
+  preview environments per pull request with automatic teardown.
+- **IAM and audit.** AWS-IAM-shaped Allow/Deny policies scoped to a
+  specific resource, with a full audit log and CSV export.
+- **Alerting across eight channels.** Threshold, crashloop, certificate
+  expiry, and five other rule kinds, delivered to Slack, Discord,
+  email, Telegram, Pushover, PagerDuty, Microsoft Teams, or a webhook.
+- **AI-ready API.** The same HTTP API the dashboard runs on backs an
+  MCP server, so AI tools can list apps, read logs, and diagnose a
+  crashloop directly.
 
 ## Status
 
@@ -49,9 +87,8 @@ output. That's a common source of flakiness and it forces polling loops
 to detect state changes. Levelrail takes a different approach:
 
 - **Agent-based control plane.** A small agent runs on each node, talks
-  to the local Docker Engine API directly (no shelling out to the
-  `docker` CLI), and streams container events up to the control plane.
-  The control plane never polls.
+  to the local Docker Engine API directly, and streams container events
+  up to the control plane, which never polls.
 - **Observability built in, not bolted on.** Metrics and log storage are
   first-class parts of the core, not something you're told to install
   separately.
@@ -92,6 +129,47 @@ frontend embedded) and `levelrail-agent` (node agent). In single-node
 mode the agent's transport runs in-process instead of over the network,
 so the code path is the same whether you're running one node or ten.
 
+## How it compares
+
+Positioning, not a ranking. All of these are worth using; the differences
+below are the ones that matter for choosing between them.
+
+| Project | Node control | Orchestration | Observability | Ingress |
+| --- | --- | --- | --- | --- |
+| **Levelrail** | Reverse-dialed gRPC agent, no CLI shelling | Custom Go reconciler over Docker Engine API, level-triggered | Node-local metrics and logs, federated query, all shipped | Embedded Caddy, in-process |
+| Coolify (v4) | SSH plus CLI-shelled `docker`/`docker compose` | Docker Compose per app, Traefik label discovery | Optional bolt-on agent, opt-in | Traefik, separate container |
+| Dokploy | SSH-tunneled Docker Engine API plus CLI-shelled lifecycle ops | Docker Swarm services | Separate Go binary, polling | Traefik, Swarm service |
+| CapRover | Docker Swarm API, even single-node | Docker Swarm services | Optional sibling containers, not built in | nginx, sibling Swarm service |
+| Dokku | Local `dokku` bash entrypoint, no daemon | Custom Bash scheduler over plain `docker` | Not stated in research | nginx by default, pluggable |
+| Kamal | One-shot SSH CLI, no daemon or agent | None: deploy script, not a control plane | None built in | `kamal-proxy`, standalone container |
+
+Full writeup with per-project detail: [docs/comparison.md](docs/comparison.md).
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/assets/screenshots/apps-list.png" alt="Levelrail apps list showing all services across nodes at a glance" width="420"><br>
+      <sub>Apps list</sub>
+    </td>
+    <td width="50%">
+      <img src="docs/assets/screenshots/deploy-history.png" alt="Levelrail deploy history view with one-click rollback" width="420"><br>
+      <sub>Deploy history and rollback</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/assets/screenshots/logs.png" alt="Levelrail live log viewer with full-text search" width="420"><br>
+      <sub>Live log viewer</sub>
+    </td>
+    <td width="50%">
+      <img src="docs/assets/screenshots/nodes.png" alt="Levelrail nodes list showing node health and placement" width="420"><br>
+      <sub>Nodes</sub>
+    </td>
+  </tr>
+</table>
+
 ## Building and running locally
 
 Requires Go 1.26+ and Docker.
@@ -115,22 +193,6 @@ npm run build      # production build, embedded into the control plane binary
 
 See `web/README.md` for frontend-specific commands and conventions.
 
-## How it compares
-
-Positioning, not a ranking. All of these are worth using; the differences
-below are the ones that matter for choosing between them.
-
-| Project | Node control | Orchestration | Observability | Ingress |
-| --- | --- | --- | --- | --- |
-| **Levelrail** | Reverse-dialed gRPC agent, no CLI shelling | Custom Go reconciler over Docker Engine API, level-triggered | Node-local metrics and logs, federated query, all shipped | Embedded Caddy, in-process |
-| Coolify (v4) | SSH plus CLI-shelled `docker`/`docker compose` | Docker Compose per app, Traefik label discovery | Optional bolt-on agent, opt-in | Traefik, separate container |
-| Dokploy | SSH-tunneled Docker Engine API plus CLI-shelled lifecycle ops | Docker Swarm services | Separate Go binary, polling | Traefik, Swarm service |
-| CapRover | Docker Swarm API, even single-node | Docker Swarm services | Optional sibling containers, not built in | nginx, sibling Swarm service |
-| Dokku | Local `dokku` bash entrypoint, no daemon | Custom Bash scheduler over plain `docker` | Not stated in research | nginx by default, pluggable |
-| Kamal | One-shot SSH CLI, no daemon or agent | None: deploy script, not a control plane | None built in | `kamal-proxy`, standalone container |
-
-Full writeup with per-project detail: [docs/comparison.md](docs/comparison.md).
-
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to propose changes,
@@ -140,6 +202,10 @@ commit conventions, and how to run tests and the linter locally.
 
 - [docs/](docs/README.md) -- getting started, architecture, app spec reference, roadmap, full index
 - [GitHub Discussions](https://github.com/glincker/levelrail/discussions) -- questions, ideas, show and tell
+
+## Star history
+
+[![Star History Chart](https://api.star-history.com/svg?repos=glincker/levelrail&type=Date)](https://star-history.com/#glincker/levelrail&Date)
 
 ## License
 
