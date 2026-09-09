@@ -186,7 +186,7 @@ matrix.
   taking it: Coolify checks only that the dump file is non-empty,
   Dokploy and CapRover do no check at all, and Dokku and Kamal have no
   built-in backup feature in the first place.
-- **AI-agent surface.** 56 MCP tools (`cmd/levelrail-mcp`), against
+- **AI-agent surface.** 59 MCP tools (`cmd/levelrail-mcp`), against
   Coolify's roughly 45, the only other project in this set with one at
   all.
 - **Notification channels.** 17 kinds against Dokploy's 12, the next
@@ -195,7 +195,7 @@ matrix.
   `database:name`, or `*`) ship in the free, Apache 2.0 core. Dokploy's
   comparable granularity sits behind a paid enterprise license.
 
-One real gap, stated plainly: the template catalog is 101 curated
+One real gap, stated plainly: the template catalog is 123 curated
 entries against Coolify's 371 (an intentional curation-over-count bet,
 see [ADR 015](adr/015-service-template-catalog-reversal.md)), the one
 row in that matrix this project doesn't lead.

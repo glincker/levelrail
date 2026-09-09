@@ -396,6 +396,16 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteRegistryCredential))
 	mux.HandleFunc("POST /api/v1/registry-credentials/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestRegistryCredential))
 
+	// Registry credential browsing (registry_catalog.go): repository/tag
+	// lookup for a stored external credential, the same generic catalog
+	// client GET /api/v1/registry/repositories and /api/v1/registry/tags
+	// use above for the built-in registry. AbilityReadSensitive, the same
+	// tier GET /api/v1/git-providers and the github-app/gitlab-app/
+	// bitbucket-app repo-browsing routes below use: read-only, but only
+	// works because a stored credential's secret is resolved server-side.
+	mux.HandleFunc("GET /api/v1/registry-credentials/{id}/repositories", rt.requireAbility(AbilityReadSensitive, rt.handleListRegistryCredentialRepositories))
+	mux.HandleFunc("GET /api/v1/registry-credentials/{id}/tags", rt.requireAbility(AbilityReadSensitive, rt.handleListRegistryCredentialTags))
+
 	// Aggregated git provider capability summary (git_providers.go): one
 	// AbilityReadSensitive call the git-source picker uses instead of the
 	// three AbilityRoot status endpoints below, so a non-root deploy-scoped

@@ -1064,6 +1064,50 @@ func TestSaveDesiredService_NilCommand_RoundTripsToEmptyNonNilSlice(t *testing.T
 	}
 }
 
+func TestSaveDesiredService_Entrypoint_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := DesiredService{
+		Name: "postgres", Image: "postgres:16", Port: 5432,
+		Entrypoint: []string{"docker-entrypoint.sh", "-c", "config_file=/etc/postgresql.conf"},
+	}
+	if err := db.SaveDesiredService(ctx, want); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "postgres")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !reflect.DeepEqual(got.Entrypoint, want.Entrypoint) {
+		t.Errorf("Entrypoint = %+v, want %+v", got.Entrypoint, want.Entrypoint)
+	}
+}
+
+// TestSaveDesiredService_NilEntrypoint_RoundTripsToEmptyNonNilSlice
+// mirrors TestSaveDesiredService_NilCommand_RoundTripsToEmptyNonNilSlice
+// above for the entrypoint column.
+func TestSaveDesiredService_NilEntrypoint_RoundTripsToEmptyNonNilSlice(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Entrypoint == nil {
+		t.Fatal("Entrypoint = nil, want a non-nil empty slice")
+	}
+	if len(got.Entrypoint) != 0 {
+		t.Errorf("Entrypoint = %+v, want empty", got.Entrypoint)
+	}
+}
+
 func TestSaveDesiredService_EmptyStrategyAndZeroReplicas_DefaultsPersisted(t *testing.T) {
 	// A caller that never sets these two fields (every caller before
 	// this migration existed, and internal/api's direct-image-registration

@@ -11,21 +11,21 @@
 // startup ordering, out of scope here). restart: and networks: parse
 // and are surfaced as non-blocking Notices instead of being silently
 // dropped or translated: see Notices for why neither has a real
-// translation onto how Levelrail runs a service. command: parses and
-// translates into store.DesiredService.Command; entrypoint: does not
-// parse at all. volumes: additionally accepts an absolute host path on
-// the left side as a bind mount (ValidateForBuild rejects one; see that
-// method's own doc comment for why), gated at the HTTP layer to
-// AbilityRoot and, even then, against forbiddenBindMountPaths (see
+// translation onto how Levelrail runs a service. command: and
+// entrypoint: both parse and translate into store.DesiredService's own
+// Command and Entrypoint fields. volumes: additionally accepts an
+// absolute host path on the left side as a bind mount (ValidateForBuild
+// rejects one; see that method's own doc comment for why), gated at the
+// HTTP layer to AbilityRoot and, even then, against
+// internal/bindmount's own forbidden-path list (see
 // validateBindMountHostPath).
 package compose
 
 import (
 	"fmt"
-	"path/filepath"
 	"sort"
-	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/bindmount"
 	"gopkg.in/yaml.v3"
 )
 
@@ -61,9 +61,12 @@ type Service struct {
 	// (store.DesiredService.Command), parsed from command:'s own
 	// string-or-list union (Command's own UnmarshalYAML in yaml.go): a
 	// plain string is shell-wrapped as ["/bin/sh", "-c", "<string>"],
-	// matching Compose's own documented behavior for that form. Only
-	// command: translates; entrypoint: is not parsed.
+	// matching Compose's own documented behavior for that form.
 	Command Command
+	// Entrypoint overrides the image's own default ENTRYPOINT
+	// (store.DesiredService.Entrypoint), parsed with the same
+	// string-or-list union as Command.
+	Entrypoint Command
 }
 
 // Volume is one short-form "name:/container/path" entry, either a named
@@ -154,44 +157,11 @@ func (f *File) validate(allowBuild, allowBindMounts bool) error {
 	return joinErrors(errs)
 }
 
-// forbiddenBindMountPaths are host paths a bind mount may never target,
-// enforced even for an AbilityRoot caller (internal/api's ability gate,
-// not this list, is the primary boundary; this is defense in depth): an
-// exact match or a match of clean+"/" as a prefix. Each one grants
-// something categorically worse than ordinary bind-mount access, host
-// root compromise for most of these. /var/run/docker.sock (and
-// /var/run generally, since a socket can be bind-mounted from anywhere
-// under it) is deliberately excluded from this feature by design, not
-// an oversight: Docker-socket access is a full container-escape-to-
-// host-root vector via the Docker API, a categorically different and
-// unreviewed capability that needs its own explicit design decision
-// later, not bundled into general bind-mount support here.
-var forbiddenBindMountPaths = []string{
-	"/",
-	"/etc",
-	"/root",
-	"/boot",
-	"/sys",
-	"/proc",
-	"/var/lib/docker",
-	"/var/run/docker.sock",
-	"/var/run",
-}
-
-// validateBindMountHostPath rejects a relative path and every path
-// forbiddenBindMountPaths covers; anything else is a real, operator-
-// owned host directory this feature exists to allow.
+// validateBindMountHostPath delegates to internal/bindmount, shared with
+// internal/spec (see that package's own bindmount.go for why neither
+// compose nor spec can hold this directly without an import cycle).
 func validateBindMountHostPath(hostPath string) error {
-	if !strings.HasPrefix(hostPath, "/") {
-		return fmt.Errorf("bind-mount host path %q must be an absolute path", hostPath)
-	}
-	clean := filepath.Clean(hostPath)
-	for _, forbidden := range forbiddenBindMountPaths {
-		if clean == forbidden || strings.HasPrefix(clean, forbidden+"/") {
-			return fmt.Errorf("bind-mount host path %q is not allowed: %q is a protected system path", hostPath, forbidden)
-		}
-	}
-	return nil
+	return bindmount.ValidateHostPath(hostPath)
 }
 
 // validateComposeServices checks each service's own build:/image:

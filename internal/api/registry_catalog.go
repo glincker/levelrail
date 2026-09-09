@@ -13,16 +13,14 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// RegistryCatalogClient is the surface GET /api/v1/registry/repositories
-// and GET /api/v1/registry/tags need: query a Docker Registry HTTP API
-// v2 server's catalog (_catalog, <name>/tags/list) over Basic Auth.
-// Scoped to Levelrail's own built-in registry only (registryCatalogBaseURL
-// below is fixed to its loopback address, never an operator-supplied
-// host): querying an arbitrary external registry's catalog is a larger,
-// separately-scoped feature, since many registries block or rate-limit
-// catalog listing and a stored RegistryCredential row carries no
-// guarantee its scope even permits it. *registrycatalog.Client satisfies
-// this structurally.
+// RegistryCatalogClient is the surface GET /api/v1/registry/repositories,
+// GET /api/v1/registry/tags, and the registry-credential browse routes
+// below need: query a Docker Registry HTTP API v2 server's catalog
+// (_catalog, <name>/tags/list) over Basic Auth. The same client serves
+// both Levelrail's own built-in registry (baseURL fixed to its loopback
+// address) and an operator's stored external credential (baseURL taken
+// from that credential's RegistryHost), since the protocol is identical
+// either way. *registrycatalog.Client satisfies this structurally.
 type RegistryCatalogClient interface {
 	ListRepositories(ctx context.Context, baseURL, username, password string) ([]string, error)
 	ListTags(ctx context.Context, baseURL, username, password, repository string) ([]string, error)
@@ -165,4 +163,91 @@ func (rt *Router) registryCatalogUsable(w http.ResponseWriter, r *http.Request) 
 		return store.RegistrySettings{}, false
 	}
 	return settings, true
+}
+
+// handleListRegistryCredentialRepositories handles GET
+// /api/v1/registry-credentials/{id}/repositories: browses a stored
+// external registry credential's own catalog, reusing the same
+// RegistryCatalogClient the built-in registry's own browse handlers
+// above use, just pointed at the credential's RegistryHost instead of
+// registryCatalogBaseURL. AbilityReadSensitive, the same tier
+// handleListGitHubAppRepos uses for the same shape of action: a
+// read-only browse of an external system that only works because a
+// stored credential's secret is resolved server-side to authenticate it.
+func (rt *Router) handleListRegistryCredentialRepositories(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	cred, password, ok := rt.loadRegistryCredentialForBrowse(w, r, id)
+	if !ok {
+		return
+	}
+
+	repos, err := rt.registryCatalog.ListRepositories(r.Context(), cred.RegistryHost, cred.Username, password)
+	if err != nil {
+		rt.logger.Error("api: list registry credential repositories failed", slog.String("error", err.Error()), slog.String("id", id))
+		writeError(w, http.StatusBadGateway, "could not reach the registry")
+		return
+	}
+	writeJSON(w, http.StatusOK, registryRepositoriesResponse{Repositories: repos})
+}
+
+// handleListRegistryCredentialTags handles GET
+// /api/v1/registry-credentials/{id}/tags?repository=<name>: the same
+// query-parameter shape handleListRegistryTags uses above, for the same
+// reason (a repository name can itself contain "/").
+func (rt *Router) handleListRegistryCredentialTags(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	repository := r.URL.Query().Get("repository")
+	if repository == "" {
+		writeError(w, http.StatusBadRequest, "repository query parameter is required")
+		return
+	}
+
+	cred, password, ok := rt.loadRegistryCredentialForBrowse(w, r, id)
+	if !ok {
+		return
+	}
+
+	tags, err := rt.registryCatalog.ListTags(r.Context(), cred.RegistryHost, cred.Username, password, repository)
+	if errors.Is(err, registrycatalog.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "repository not found in this registry")
+		return
+	}
+	if err != nil {
+		rt.logger.Error("api: list registry credential tags failed", slog.String("error", err.Error()), slog.String("id", id), slog.String("repository", repository))
+		writeError(w, http.StatusBadGateway, "could not reach the registry")
+		return
+	}
+	writeJSON(w, http.StatusOK, registryTagsResponse{Repository: repository, Tags: tags})
+}
+
+// loadRegistryCredentialForBrowse is the shared gate both credential
+// browse handlers open with: 501 when this control plane wasn't wired
+// with a catalog client or credential secrets access, 404 when the
+// credential id doesn't exist, resolving the stored password the same
+// way handleTestRegistryCredential does.
+func (rt *Router) loadRegistryCredentialForBrowse(w http.ResponseWriter, r *http.Request, id string) (store.RegistryCredential, string, bool) {
+	if rt.registryCatalog == nil || rt.registryCredentialSecrets == nil {
+		writeError(w, http.StatusNotImplemented, "registry credential browsing is not configured on this control plane (no master key set)")
+		return store.RegistryCredential{}, "", false
+	}
+
+	cred, err := rt.registryCredentials.GetRegistryCredential(r.Context(), id)
+	if errors.Is(err, store.ErrRegistryCredentialNotFound) {
+		writeError(w, http.StatusNotFound, "registry credential not found")
+		return store.RegistryCredential{}, "", false
+	}
+	if err != nil {
+		rt.logger.Error("api: load registry credential for browse failed", slog.String("error", err.Error()), slog.String("id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return store.RegistryCredential{}, "", false
+	}
+
+	password, err := rt.registryCredentialSecrets.Resolve(r.Context(), store.RegistryCredentialSecretsKey(id), "password")
+	if err != nil {
+		rt.logger.Error("api: resolve registry credential password for browse failed", slog.String("error", err.Error()), slog.String("id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return store.RegistryCredential{}, "", false
+	}
+
+	return cred, password, true
 }

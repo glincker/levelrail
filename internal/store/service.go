@@ -131,6 +131,11 @@ type DesiredService struct {
 	// (internal/compose.Service.Command); app.yaml has no equivalent
 	// field yet.
 	Command []string
+	// Entrypoint overrides the image's own default ENTRYPOINT
+	// (internal/docker.ContainerSpec.Entrypoint), same nil/empty and
+	// compose-only sourcing as Command above, from
+	// internal/compose.Service.Entrypoint.
+	Entrypoint []string
 	// EnvDirty is true when Env was saved through the update endpoint
 	// since the container was last recreated (migrations/0066): env is
 	// baked in at create time, so the change isn't live yet. Written by
@@ -377,6 +382,10 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	if err != nil {
 		return fmt.Errorf("store: marshal command for service %q: %w", svc.Name, err)
 	}
+	entrypointJSON, err := json.Marshal(nonNilSlice(svc.Entrypoint))
+	if err != nil {
+		return fmt.Errorf("store: marshal entrypoint for service %q: %w", svc.Name, err)
+	}
 	secretEnvJSON, err := json.Marshal(nonNilSlice(svc.SecretEnv))
 	if err != nil {
 		return fmt.Errorf("store: marshal secret_env for service %q: %w", svc.Name, err)
@@ -440,8 +449,8 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	}()
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, host_port, domains, env, command, secret_env, env_dirty, database_env, resources, health, hooks, node_id, strategy, replicas, labels, volumes, bind_mounts, registry_credential_id, project_id, environment_id, app_id, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, NULL, NULL, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, host_port, domains, env, command, entrypoint, secret_env, env_dirty, database_env, resources, health, hooks, node_id, strategy, replicas, labels, volumes, bind_mounts, registry_credential_id, project_id, environment_id, app_id, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, NULL, NULL, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
@@ -449,6 +458,7 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 			domains = excluded.domains,
 			env = excluded.env,
 			command = excluded.command,
+			entrypoint = excluded.entrypoint,
 			secret_env = excluded.secret_env,
 			env_dirty = excluded.env_dirty,
 			database_env = excluded.database_env,
@@ -462,7 +472,7 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 			bind_mounts = excluded.bind_mounts,
 			registry_credential_id = excluded.registry_credential_id,
 			updated_at = excluded.updated_at
-	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), string(domainsJSON), string(envJSON), string(commandJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), string(bindMountsJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""})
+	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), string(domainsJSON), string(envJSON), string(commandJSON), string(entrypointJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), string(bindMountsJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""})
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
@@ -880,20 +890,20 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, host_port, domains, env, secret_env, env_dirty, database_env, resources, health, hooks, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts"
+const desiredServiceColumns = "name, image, port, host_port, domains, env, secret_env, env_dirty, database_env, resources, health, hooks, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
 // signature), so the decode-JSON-columns logic exists exactly once.
 func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	var (
-		svc                                                                                                                      DesiredService
-		domainsJSON, envJSON, secretEnvJSON, databaseEnvJSON, resourcesJSON, health, hooks, labels, volumes, command, bindMounts string
-		projectID, storageTargetID, appID, logDrainJSON, environmentID                                                           sql.NullString
-		hostPort                                                                                                                 sql.NullInt64
-		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                                                  string
+		svc                                                                                                                                  DesiredService
+		domainsJSON, envJSON, secretEnvJSON, databaseEnvJSON, resourcesJSON, health, hooks, labels, volumes, command, bindMounts, entrypoint string
+		projectID, storageTargetID, appID, logDrainJSON, environmentID                                                                       sql.NullString
+		hostPort                                                                                                                             sql.NullInt64
+		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                                                              string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &resourcesJSON, &health, &hooks, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &resourcesJSON, &health, &hooks, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String
@@ -946,6 +956,9 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	}
 	if err := json.Unmarshal([]byte(bindMounts), &svc.BindMounts); err != nil {
 		return nil, fmt.Errorf("unmarshal bind_mounts: %w", err)
+	}
+	if err := json.Unmarshal([]byte(entrypoint), &svc.Entrypoint); err != nil {
+		return nil, fmt.Errorf("unmarshal entrypoint: %w", err)
 	}
 	if logDrainJSON.Valid {
 		if err := json.Unmarshal([]byte(logDrainJSON.String), &svc.LogDrain); err != nil {

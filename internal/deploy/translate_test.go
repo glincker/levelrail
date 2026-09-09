@@ -285,6 +285,48 @@ func TestToDesiredService_VolumesGetPlatformPrefixedNames(t *testing.T) {
 	}
 }
 
+func TestToDesiredService_CommandPassesThrough(t *testing.T) {
+	svc := spec.Service{Port: 8080, Command: []string{"node", "server.js", "--port", "8080"}}
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	want := []string{"node", "server.js", "--port", "8080"}
+	if !reflect.DeepEqual(got.Command, want) {
+		t.Errorf("Command = %v, want %v", got.Command, want)
+	}
+}
+
+func TestToDesiredService_NoCommand_LeavesNil(t *testing.T) {
+	svc := spec.Service{Port: 8080}
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.Command != nil {
+		t.Errorf("Command = %v, want nil (no command: declared)", got.Command)
+	}
+}
+
+func TestToDesiredService_BindMountsTranslate(t *testing.T) {
+	svc := spec.Service{Port: 8080, Volumes: []spec.Volume{
+		{Name: "data", Path: "/var/lib/data"},
+		{HostPath: "/srv/web/uploads", Path: "/uploads", ReadOnly: true},
+	}}
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	wantVolumes := []store.ServiceVolume{{Name: "app-web-data", ContainerPath: "/var/lib/data"}}
+	if !reflect.DeepEqual(got.Volumes, wantVolumes) {
+		t.Errorf("Volumes = %+v, want %+v: a bind mount must never land in the named-volume list", got.Volumes, wantVolumes)
+	}
+	wantBindMounts := []store.ServiceBindMount{{HostPath: "/srv/web/uploads", ContainerPath: "/uploads", ReadOnly: true}}
+	if !reflect.DeepEqual(got.BindMounts, wantBindMounts) {
+		t.Errorf("BindMounts = %+v, want %+v", got.BindMounts, wantBindMounts)
+	}
+}
+
 func TestToDesiredService_MinimalNoResourcesOrHealth(t *testing.T) {
 	got, err := toDesiredService("web", "img:sha", spec.Service{Port: 8080})
 	if err != nil {

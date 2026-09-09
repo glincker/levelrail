@@ -1068,6 +1068,28 @@ func (c *Client) TestRegistryCredential(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodPost, registryCredentialPath(id)+"/test", nil, nil)
 }
 
+// ListRegistryCredentialRepositories calls GET
+// /api/v1/registry-credentials/{id}/repositories: every repository in
+// the external registry this credential authenticates against, the same
+// wire shape ListRegistryRepositories uses for the built-in registry.
+func (c *Client) ListRegistryCredentialRepositories(ctx context.Context, id string) (RegistryRepositoriesResource, error) {
+	var out RegistryRepositoriesResource
+	err := c.do(ctx, http.MethodGet, registryCredentialPath(id)+"/repositories", nil, &out)
+	return out, err
+}
+
+// ListRegistryCredentialTags calls GET
+// /api/v1/registry-credentials/{id}/tags?repository=<name>: every tag
+// pushed for one repository in the external registry this credential
+// authenticates against.
+func (c *Client) ListRegistryCredentialTags(ctx context.Context, id, repository string) (RegistryTagsResource, error) {
+	q := url.Values{}
+	q.Set("repository", repository)
+	var out RegistryTagsResource
+	err := c.do(ctx, http.MethodGet, registryCredentialPath(id)+"/tags?"+q.Encode(), nil, &out)
+	return out, err
+}
+
 // CreateNotificationChannel calls POST /api/v1/notification-channels.
 func (c *Client) CreateNotificationChannel(ctx context.Context, req CreateNotificationChannelRequest) (NotificationChannelResource, error) {
 	var out NotificationChannelResource

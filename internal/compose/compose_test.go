@@ -340,3 +340,49 @@ func TestParse_Command(t *testing.T) {
 		})
 	}
 }
+
+func TestParse_Entrypoint(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+		want []string
+	}{
+		{
+			name: "string form wraps as sh -c",
+			yaml: "entrypoint: docker-entrypoint.sh",
+			want: []string{"/bin/sh", "-c", "docker-entrypoint.sh"},
+		},
+		{
+			name: "list form passes through",
+			yaml: `entrypoint: ["docker-entrypoint.sh", "-c", "postgresql.conf"]`,
+			want: []string{"docker-entrypoint.sh", "-c", "postgresql.conf"},
+		},
+		{
+			name: "absent stays nil",
+			yaml: "",
+			want: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			doc := "services:\n  web:\n    image: nginx:1.27\n"
+			if tt.yaml != "" {
+				doc += "    " + tt.yaml + "\n"
+			}
+			f, err := Parse([]byte(doc))
+			if err != nil {
+				t.Fatalf("Parse() error = %v", err)
+			}
+			got := []string(f.Services["web"].Entrypoint)
+			if len(got) != len(tt.want) {
+				t.Fatalf("Entrypoint = %v, want %v", got, tt.want)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Errorf("Entrypoint[%d] = %q, want %q", i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}

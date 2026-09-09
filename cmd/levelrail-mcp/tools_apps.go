@@ -37,7 +37,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "get_app",
-		Description: "Get one app's current desired state: image, port, domains, env, resources, health checks.",
+		Description: "Get one app's current desired state: image, port, domains, env, resources, health checks, command override, volumes, bind mounts.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.AppResource, error) {
 		app, err := client.GetApp(ctx, in.Name)
 		if err != nil {
