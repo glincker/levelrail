@@ -216,3 +216,49 @@ services:
 		t.Errorf("env[BARE_KEY] = %q, ok=%v, want empty string, ok=true", v, ok)
 	}
 }
+
+func TestParse_Command(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+		want []string
+	}{
+		{
+			name: "string form wraps as sh -c",
+			yaml: "command: server /data",
+			want: []string{"/bin/sh", "-c", "server /data"},
+		},
+		{
+			name: "list form passes through",
+			yaml: `command: ["server", "/data", "--console-address", ":9001"]`,
+			want: []string{"server", "/data", "--console-address", ":9001"},
+		},
+		{
+			name: "absent stays nil",
+			yaml: "",
+			want: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			doc := "services:\n  web:\n    image: nginx:1.27\n"
+			if tt.yaml != "" {
+				doc += "    " + tt.yaml + "\n"
+			}
+			f, err := Parse([]byte(doc))
+			if err != nil {
+				t.Fatalf("Parse() error = %v", err)
+			}
+			got := []string(f.Services["web"].Command)
+			if len(got) != len(tt.want) {
+				t.Fatalf("Command = %v, want %v", got, tt.want)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Errorf("Command[%d] = %q, want %q", i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}

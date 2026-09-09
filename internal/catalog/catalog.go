@@ -62,9 +62,7 @@ var Templates = []Template{
 		Category:         "Storage",
 		DocumentationURL: "https://min.io/docs/minio/linux/index.html",
 		// Real MinIO images require a "server /data" style command to
-		// actually serve; the compose subset here doesn't parse
-		// command:, so it's included for a human reader but has no
-		// effect on the desired-state translation yet.
+		// actually serve.
 		Compose: `services:
   minio:
     image: minio/minio:RELEASE.2024-10-13T13-34-11Z
@@ -734,10 +732,8 @@ var Templates = []Template{
 		Category:         "Communication",
 		DocumentationURL: "https://docs.ntfy.sh",
 		// Tag not verified against a live registry in this environment;
-		// the image repository is correct. The upstream image's default
-		// command is "serve", but this compose subset doesn't parse
-		// command:, the same limitation already noted on the MinIO
-		// template above.
+		// the image repository is correct. No command: override needed:
+		// the upstream image's own default CMD is already "serve".
 		Compose: `services:
   ntfy:
     image: binwiederhier/ntfy:v2.11.0
@@ -1889,10 +1885,12 @@ var Templates = []Template{
 		DocumentationURL: "https://docs.weblate.org",
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
-		// this environment. Weblate's redis normally needs
-		// --requirepass via command: to actually enforce REDIS_PASSWORD;
-		// command: has no effect in this platform's compose subset yet,
-		// so the password below passes through unenforced for now.
+		// this environment. Weblate's redis normally needs --requirepass
+		// via command: to actually enforce REDIS_PASSWORD; not added
+		// here because ResolveMagicVars only substitutes SERVICE_ tokens
+		// inside environment:, not command:, so $SERVICE_PASSWORD_REDIS
+		// would reach the container as a literal, unresolved string. The
+		// password below still passes through unenforced for now.
 		Compose: `services:
   weblate:
     image: weblate/weblate:5.9.2

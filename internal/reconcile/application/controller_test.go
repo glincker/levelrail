@@ -460,6 +460,44 @@ func TestController_Reconcile_Resources_ReachesContainerSpec(t *testing.T) {
 	}
 }
 
+// TestController_Reconcile_Command_ReachesContainerSpec confirms
+// desired.Command (a compose service's own command:, internal/compose's
+// ToDesiredServices) reaches ContainerSpec.Command, and that an unset
+// Command leaves ContainerSpec.Command nil rather than an empty slice
+// (docker.ContainerSpec.Command's own doc comment: nil means the
+// image's own default).
+func TestController_Reconcile_Command_ReachesContainerSpec(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{
+		Name: "minio", Image: "minio/minio:latest",
+		Command: []string{"server", "/data", "--console-address", ":9001"},
+	}
+	c := New("minio", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	want := []string{"server", "/data", "--console-address", ":9001"}
+	if got := rt.lastCreateSpec.Command; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Command = %v, want %v", got, want)
+	}
+}
+
+func TestController_Reconcile_NoCommand_ContainerSpecCommandStaysNil(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1"}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	if got := rt.lastCreateSpec.Command; got != nil {
+		t.Errorf("created ContainerSpec.Command = %v, want nil", got)
+	}
+}
+
 func TestController_Reconcile_FreshDeploy_ReadinessSucceeds(t *testing.T) {
 	srv := alwaysHealthy()
 	defer srv.Close()
