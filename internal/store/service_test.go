@@ -1012,6 +1012,51 @@ func TestSaveDesiredService_NilLabels_RoundTripsToEmptyNonNilMap(t *testing.T) {
 	}
 }
 
+func TestSaveDesiredService_Command_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := DesiredService{
+		Name: "minio", Image: "minio/minio:latest", Port: 9000,
+		Command: []string{"server", "/data", "--console-address", ":9001"},
+	}
+	if err := db.SaveDesiredService(ctx, want); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "minio")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !reflect.DeepEqual(got.Command, want.Command) {
+		t.Errorf("Command = %+v, want %+v", got.Command, want.Command)
+	}
+}
+
+// TestSaveDesiredService_NilCommand_RoundTripsToEmptyNonNilSlice mirrors
+// nonNilSlice's Domains guarantee: a service saved with no command:
+// override reads back a non-nil (if empty) slice, one less nil-check for
+// every caller.
+func TestSaveDesiredService_NilCommand_RoundTripsToEmptyNonNilSlice(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Command == nil {
+		t.Fatal("Command = nil, want a non-nil empty slice")
+	}
+	if len(got.Command) != 0 {
+		t.Errorf("Command = %+v, want empty", got.Command)
+	}
+}
+
 func TestSaveDesiredService_EmptyStrategyAndZeroReplicas_DefaultsPersisted(t *testing.T) {
 	// A caller that never sets these two fields (every caller before
 	// this migration existed, and internal/api's direct-image-registration

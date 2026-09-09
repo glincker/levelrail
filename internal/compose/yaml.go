@@ -29,6 +29,7 @@ type rawService struct {
 	Networks    Networks          `yaml:"networks"`
 	Restart     string            `yaml:"restart"`
 	Healthcheck *Healthcheck      `yaml:"healthcheck"`
+	Command     Command           `yaml:"command"`
 }
 
 // Healthcheck is one service's healthcheck: block, Docker Compose's own
@@ -193,6 +194,30 @@ func (v *Volume) UnmarshalYAML(node *yaml.Node) error {
 	v.Name = name
 	v.ContainerPath = path
 	return nil
+}
+
+// Command is command:'s string-or-list union: a list passes through as
+// exec-form args, a bare string is Compose's own shorthand for shell
+// form, wrapped here as ["/bin/sh", "-c", "<string>"] to match Docker's
+// own documented interpretation of a string CMD.
+type Command []string
+
+// UnmarshalYAML implements the string-or-list union described above.
+func (c *Command) UnmarshalYAML(node *yaml.Node) error {
+	switch node.Kind {
+	case yaml.ScalarNode:
+		*c = []string{"/bin/sh", "-c", node.Value}
+		return nil
+	case yaml.SequenceNode:
+		var items []string
+		if err := node.Decode(&items); err != nil {
+			return fmt.Errorf("command: %w", err)
+		}
+		*c = items
+		return nil
+	default:
+		return fmt.Errorf("command: must be a string or a list")
+	}
 }
 
 // UnmarshalYAML supports build:'s string-or-object union, just enough

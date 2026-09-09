@@ -60,6 +60,37 @@ services:
 	}
 }
 
+func TestToDesiredServices_CommandPropagates(t *testing.T) {
+	f, err := Parse([]byte(`
+services:
+  minio:
+    image: minio/minio:latest
+    command: ["server", "/data", "--console-address", ":9001"]
+  redis:
+    image: redis:7
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	got, _, err := ToDesiredServices("myapp", f)
+	if err != nil {
+		t.Fatalf("ToDesiredServices() error = %v", err)
+	}
+	sort.Slice(got, func(i, j int) bool { return got[i].Name < got[j].Name })
+
+	minio := got[0]
+	wantCommand := []string{"server", "/data", "--console-address", ":9001"}
+	if !reflect.DeepEqual(minio.Command, wantCommand) {
+		t.Errorf("minio.Command = %v, want %v", minio.Command, wantCommand)
+	}
+
+	redis := got[1]
+	if redis.Command != nil {
+		t.Errorf("redis.Command = %v, want nil (no command: declared)", redis.Command)
+	}
+}
+
 func TestToDesiredServices_DomainsPropagate(t *testing.T) {
 	f, err := Parse([]byte(`
 x-levelrail-domains:

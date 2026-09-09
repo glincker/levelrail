@@ -11,7 +11,9 @@
 // startup ordering, out of scope here). restart: and networks: parse
 // and are surfaced as non-blocking Notices instead of being silently
 // dropped or translated: see Notices for why neither has a real
-// translation onto how Levelrail runs a service.
+// translation onto how Levelrail runs a service. command: parses and
+// translates into store.DesiredService.Command; entrypoint: does not
+// parse at all.
 package compose
 
 import (
@@ -49,6 +51,13 @@ type Service struct {
 	Networks    Networks
 	Restart     string
 	Healthcheck *Healthcheck
+	// Command overrides the image's own default CMD
+	// (store.DesiredService.Command), parsed from command:'s own
+	// string-or-list union (Command's own UnmarshalYAML in yaml.go): a
+	// plain string is shell-wrapped as ["/bin/sh", "-c", "<string>"],
+	// matching Compose's own documented behavior for that form. Only
+	// command: translates; entrypoint: is not parsed.
+	Command Command
 }
 
 // Volume is one short-form "name:/container/path" entry.
