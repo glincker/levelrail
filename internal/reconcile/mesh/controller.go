@@ -1,4 +1,4 @@
-// Package mesh implements TASKS.md 3.4's mesh controller: the
+// Package mesh implements the mesh controller: the
 // reconcile.Controller that keeps the WireGuard mesh and the internal DNS
 // zone converged on whatever the store currently says the fleet and its
 // placements look like.

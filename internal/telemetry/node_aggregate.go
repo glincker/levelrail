@@ -37,7 +37,7 @@ import (
 //
 //   - The exact-Timestamp grouping this function relies on holds only
 //     because everything collected today runs through one process's own
-//     Collector.CollectOnce, sharing one clock. TASKS.md's Phase 3 plan
+//     Collector.CollectOnce, sharing one clock. The Phase 3 plan
 //     (per-node agents, each with an independent local collector) breaks
 //     this assumption: two agents' clocks are never perfectly
 //     synchronized, so their samples for "the same tick" won't share an

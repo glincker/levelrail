@@ -1,5 +1,6 @@
 // Package prompb implements the small subset of Prometheus's remote-read
-// wire protocol TASKS.md 2.6 needs (ReadRequest/ReadResponse and their
+// wire protocol needed for a Prometheus remote read endpoint
+// (ReadRequest/ReadResponse and their
 // nested messages), by hand, using google.golang.org/protobuf's
 // low-level protowire primitives (already a transitive dependency, no
 // new module).

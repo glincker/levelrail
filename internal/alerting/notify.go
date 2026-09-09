@@ -26,9 +26,8 @@ type Event struct {
 	// failure mode a useful alerting feature has to avoid.
 	Resolved bool
 	// LogLines is populated only for a firing (not resolved) crashloop
-	// event: the last up-to-200 lines of the failing container's logs,
-	// per TASKS.md 2.7's literal requirement. Nil for threshold rules
-	// and for resolved events.
+	// event: the last up-to-200 lines of the failing container's logs.
+	// Nil for threshold rules and for resolved events.
 	LogLines []string
 	// CertNotices is populated only for a firing (not resolved)
 	// cert_expiry event: one line per non-healthy certificate, from

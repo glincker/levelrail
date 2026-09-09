@@ -22,7 +22,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// This file: TASKS.md's Railpack integration, scoped to node, golang,
+// This file: the Railpack integration, scoped to node, golang,
 // and java (see supportedRailpackProviders). Railpack
 // (github.com/railwayapp/railpack) is a real, embeddable Go library, not
 // a CLI wrapped by exec.Command: core.GenerateBuildPlan inspects a source

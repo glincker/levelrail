@@ -1,4 +1,4 @@
-// Package nodehealth implements TASKS.md 3.7's node health check: the
+// Package nodehealth implements the node health check: the
 // reconcile.Controller that converges a node's observed heartbeat
 // (internal/store's last_seen_at, kept fresh by internal/agent.Server's
 // periodic touch loop while a node's gRPC session stays open) against
