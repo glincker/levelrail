@@ -12,7 +12,7 @@
 // cuts traffic to it or removes the container it's replacing. Liveness
 // (continuously monitoring an already-running container and triggering a
 // restart after repeated failures) is a related but genuinely separate
-// capability, deliberately not built here, see TASKS.md 1.3's notes.
+// capability, deliberately not built here.
 package probe
 
 import (

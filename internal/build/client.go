@@ -38,8 +38,8 @@ type Option func(*Client)
 // import/export entirely, not an empty-but-present cache.
 //
 // This was the build design's "remote cache" goal scoped honestly for
-// Phase 1's single-node target, before TASKS.md 3.5 added
-// WithCacheRegistry: a cache genuinely shared across dedicated build
+// Phase 1's single-node target, before WithCacheRegistry was added: a
+// cache genuinely shared across dedicated build
 // nodes needs a registry
 // or object-store backend and dedicated build nodes to share it with.
 // WithCacheDir is still useful on its own (fast incremental rebuilds on
@@ -51,8 +51,8 @@ func WithCacheDir(dir string) Option {
 }
 
 // WithCacheRegistry enables BuildKit's registry cache backend
-// (CacheConfig.RegistryRef): this is the actual remote cache TASKS.md
-// 3.5 asks for, shared by every build node with network access to ref's
+// (CacheConfig.RegistryRef): this is the actual remote cache the
+// build design asks for, shared by every build node with network access to ref's
 // registry, unlike WithCacheDir's per-machine directory. Empty ref
 // disables the registry backend, the same "empty disables this backend"
 // convention WithCacheDir already establishes.

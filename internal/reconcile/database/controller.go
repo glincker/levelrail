@@ -1,4 +1,4 @@
-// Package database implements TASKS.md 1.8's managed database controller:
+// Package database implements the managed database controller:
 // the reconcile.Controller that converges a store-backed
 // store.DesiredDatabase to a running, volume-backed container, the same
 // architectural pattern internal/reconcile/application already
@@ -21,7 +21,7 @@
 //
 // Postgres cannot run safely without credentials: database auth needs
 // the same envelope-encrypted secret storage the secrets design specifies
-// (TASKS.md 1.7, internal/secrets.Manager), which exists but is only
+// (internal/secrets.Manager), which exists but is only
 // wired into this controller when the control plane itself has a
 // master key configured (cmd/levelrail's dynamicSource calls
 // postgresCredentialsFor and passes the result via
@@ -83,7 +83,7 @@ type Store interface {
 }
 
 // PostgresCredentials is what Postgres reconciliation needs once
-// TASKS.md 1.7 (envelope-encrypted secrets) lands: a username and
+// envelope-encrypted secrets land: a username and
 // password to inject as POSTGRES_USER/POSTGRES_PASSWORD. Deliberately a
 // plain struct, not wired to any secret store: Controller takes an
 // optional, currently-always-nil *PostgresCredentials so real Postgres
@@ -164,8 +164,8 @@ type Controller struct {
 type Option func(*Controller)
 
 // WithPostgresCredentials supplies the credentials Postgres reconciliation
-// needs. Until TASKS.md 1.7 exists nothing calls this, so every Postgres
-// database reports the credentials-blocked condition instead of starting
+// needs. Until envelope-encrypted secrets exist nothing calls this, so
+// every Postgres database reports the credentials-blocked condition instead of starting
 // an unauthenticated container.
 func WithPostgresCredentials(creds *PostgresCredentials) Option {
 	return func(c *Controller) { c.postgresCreds = creds }
@@ -256,8 +256,8 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	case store.EnginePostgres:
 		if c.postgresCreds == nil {
 			// Deliberately not an error: this is a known, permanent,
-			// documented block until TASKS.md 1.7 lands, not a transient
-			// failure that should retry-and-log-error forever. The
+			// documented block until envelope-encrypted secrets land, not
+			// a transient failure that should retry-and-log-error forever. The
 			// condition itself is the loud explanation.
 			return credentialsBlockedResult(), nil
 		}

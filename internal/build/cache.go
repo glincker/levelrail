@@ -1,6 +1,6 @@
 package build
 
-// This file: TASKS.md 3.5's remote-cache backend. WithCacheDir's own doc
+// This file: the remote-cache backend. WithCacheDir's own doc
 // comment (client.go) already named this as the missing piece, not
 // invented fresh here: "a cache genuinely shared across dedicated build
 // nodes needs a registry or object-store backend... neither of which
@@ -32,7 +32,7 @@ type CacheConfig struct {
 	// that cache blobs are pushed to and pulled from using the same
 	// registry credentials Docker itself already has configured. This
 	// is the actual "remote cache... shared across dedicated build
-	// nodes" the build design and TASKS.md 3.5 both call for: any build
+	// nodes" the build design calls for: any build
 	// node with network access to the registry gets the same cache,
 	// unlike Dir.
 	RegistryRef string

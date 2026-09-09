@@ -32,7 +32,7 @@ type Config struct {
 	// system is inherently polymorphic (any value marshaling to
 	// {"module": "<id>", ...} is valid here). *FileStorage (the local
 	// filesystem, via NewFileStorage) and SQLiteStorageRef
-	// (internal/store's SQLite, via NewSQLiteStorageRef, TASKS.md 3.6)
+	// (internal/store's SQLite, via NewSQLiteStorageRef)
 	// are this package's two concrete options as of this writing; a nil
 	// Storage leaves Caddy's own OS-specific default in place.
 	Storage any  `json:"storage,omitempty"`

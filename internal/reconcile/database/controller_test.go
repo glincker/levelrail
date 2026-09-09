@@ -463,7 +463,7 @@ func TestController_Reconcile_Postgres_CredentialsBlocked_EvenIfAlreadyRunning(t
 
 func TestController_Reconcile_Postgres_WithCredentials_Reconciles(t *testing.T) {
 	// Proves the activation path: once credentials are supplied (as they
-	// will be once TASKS.md 1.7 lands), Postgres reconciles for real
+	// will be once envelope-encrypted secrets land), Postgres reconciles for real
 	// through the same shared logic Redis uses, no rewrite needed.
 	rt := newFakeRuntime()
 	desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}

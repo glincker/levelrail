@@ -1,7 +1,6 @@
-// Package alerting implements TASKS.md 2.5/2.7: threshold rules over
-// internal/telemetry's metrics and logs, and crashloop detection as a
-// built-in rule kind sharing the same evaluate/notify path rather than
-// a separate mechanism (see TASKS.md 2.5's own note on why).
+// Package alerting implements threshold rules over internal/telemetry's
+// metrics and logs, and crashloop detection as a built-in rule kind
+// sharing the same evaluate/notify path rather than a separate mechanism.
 package alerting
 
 import (

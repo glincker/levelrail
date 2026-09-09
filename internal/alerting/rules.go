@@ -256,7 +256,7 @@ func (db *DB) ListEnabledRules(ctx context.Context) ([]Rule, error) {
 
 // ListRulesForResource returns every rule scoped to resourceID, ordered
 // by name, regardless of enabled state. internal/api's alert-rule
-// handlers (TASKS.md 2.5) use this to list only one app's own rules
+// handlers use this to list only one app's own rules
 // rather than every rule in the database; alert_rules already carries
 // idx_alert_rules_resource (migrations/0001_alert_rules.sql) for
 // exactly this lookup.
