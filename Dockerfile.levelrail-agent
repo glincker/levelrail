@@ -11,7 +11,7 @@ RUN CGO_ENABLED=0 go build \
     -ldflags "-X github.com/GLINCKER/levelrail/internal/version.Version=${VERSION}" \
     -o /levelrail-agent ./cmd/levelrail-agent
 
-FROM gcr.io/distroless/static-debian12
+FROM gcr.io/distroless/static-debian12@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2
 # Root, not :nonroot: same /var/run/docker.sock access reasoning as
 # Dockerfile.levelrail.
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt

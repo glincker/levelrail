@@ -19,7 +19,7 @@ RUN CGO_ENABLED=0 go build -tags embedweb \
     -ldflags "-X github.com/GLINCKER/levelrail/internal/version.Version=${VERSION}" \
     -o /levelrail ./cmd/levelrail
 
-FROM gcr.io/distroless/static-debian12
+FROM gcr.io/distroless/static-debian12@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2
 # Root, not the :nonroot variant: this control plane needs to read/write
 # /var/run/docker.sock, whose host-side group ownership varies per
 # install and can't be matched to a fixed non-root uid at build time.
