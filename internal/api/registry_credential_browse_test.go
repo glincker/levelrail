@@ -27,13 +27,21 @@ func newTestRouterWithRegistryCredentialBrowse(t *testing.T, catalog *fakeRegist
 	return rt, db
 }
 
-func TestHandleListRegistryCredentialRepositories_NotConfigured(t *testing.T) {
-	setter := &fakeRegistryCredentialSecretsSetter{}
-	rt, db := newTestRouterWithRegistryCredentialBrowse(t, &fakeRegistryCatalogClient{}, setter)
-	rt.registryCatalog = nil // simulates a control plane wiring gap, distinct from "no master key"
+// newRegistryCredentialBrowseFixture wires a router with the given fake
+// catalog client/secrets setter, logs in, and creates the one credential
+// every browse test below exercises, cutting the repeated setup block
+// SonarCloud flagged as duplication across these table-shaped tests.
+func newRegistryCredentialBrowseFixture(t *testing.T, client *fakeRegistryCatalogClient, setter *fakeRegistryCredentialSecretsSetter) (*Router, *http.Cookie, registryCredentialResource) {
+	t.Helper()
+	rt, db := newTestRouterWithRegistryCredentialBrowse(t, client, setter)
 	cookie := loginTestSession(t, rt, db)
-
 	created := createTestRegistryCredential(t, rt, cookie, `{"name":"ghcr-bot","registry_host":"ghcr.io","username":"bot","password":"tok"}`)
+	return rt, cookie, created
+}
+
+func TestHandleListRegistryCredentialRepositories_NotConfigured(t *testing.T) {
+	rt, cookie, created := newRegistryCredentialBrowseFixture(t, &fakeRegistryCatalogClient{}, &fakeRegistryCredentialSecretsSetter{})
+	rt.registryCatalog = nil // simulates a control plane wiring gap, distinct from "no master key"
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/registry-credentials/"+created.ID+"/repositories", ""))
@@ -43,8 +51,7 @@ func TestHandleListRegistryCredentialRepositories_NotConfigured(t *testing.T) {
 }
 
 func TestHandleListRegistryCredentialRepositories_CredentialNotFound(t *testing.T) {
-	rt, db := newTestRouterWithRegistryCredentialBrowse(t, &fakeRegistryCatalogClient{}, &fakeRegistryCredentialSecretsSetter{})
-	cookie := loginTestSession(t, rt, db)
+	rt, cookie, _ := newRegistryCredentialBrowseFixture(t, &fakeRegistryCatalogClient{}, &fakeRegistryCredentialSecretsSetter{})
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/registry-credentials/regcred_missing/repositories", ""))
@@ -55,11 +62,7 @@ func TestHandleListRegistryCredentialRepositories_CredentialNotFound(t *testing.
 
 func TestHandleListRegistryCredentialRepositories_Success(t *testing.T) {
 	client := &fakeRegistryCatalogClient{repos: []string{"alpha", "beta"}}
-	setter := &fakeRegistryCredentialSecretsSetter{resolveValue: "hunter2"}
-	rt, db := newTestRouterWithRegistryCredentialBrowse(t, client, setter)
-	cookie := loginTestSession(t, rt, db)
-
-	created := createTestRegistryCredential(t, rt, cookie, `{"name":"ghcr-bot","registry_host":"ghcr.io","username":"bot","password":"tok"}`)
+	rt, cookie, created := newRegistryCredentialBrowseFixture(t, client, &fakeRegistryCredentialSecretsSetter{resolveValue: "hunter2"})
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/registry-credentials/"+created.ID+"/repositories", ""))
@@ -81,11 +84,7 @@ func TestHandleListRegistryCredentialRepositories_Success(t *testing.T) {
 
 func TestHandleListRegistryCredentialRepositories_UpstreamError(t *testing.T) {
 	client := &fakeRegistryCatalogClient{repoErr: errors.New("connection refused")}
-	setter := &fakeRegistryCredentialSecretsSetter{resolveValue: "tok"}
-	rt, db := newTestRouterWithRegistryCredentialBrowse(t, client, setter)
-	cookie := loginTestSession(t, rt, db)
-
-	created := createTestRegistryCredential(t, rt, cookie, `{"name":"ghcr-bot","registry_host":"ghcr.io","username":"bot","password":"tok"}`)
+	rt, cookie, created := newRegistryCredentialBrowseFixture(t, client, &fakeRegistryCredentialSecretsSetter{resolveValue: "tok"})
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/registry-credentials/"+created.ID+"/repositories", ""))
@@ -95,10 +94,7 @@ func TestHandleListRegistryCredentialRepositories_UpstreamError(t *testing.T) {
 }
 
 func TestHandleListRegistryCredentialTags_MissingRepositoryParam(t *testing.T) {
-	rt, db := newTestRouterWithRegistryCredentialBrowse(t, &fakeRegistryCatalogClient{}, &fakeRegistryCredentialSecretsSetter{})
-	cookie := loginTestSession(t, rt, db)
-
-	created := createTestRegistryCredential(t, rt, cookie, `{"name":"ghcr-bot","registry_host":"ghcr.io","username":"bot","password":"tok"}`)
+	rt, cookie, created := newRegistryCredentialBrowseFixture(t, &fakeRegistryCatalogClient{}, &fakeRegistryCredentialSecretsSetter{})
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/registry-credentials/"+created.ID+"/tags", ""))
@@ -108,8 +104,7 @@ func TestHandleListRegistryCredentialTags_MissingRepositoryParam(t *testing.T) {
 }
 
 func TestHandleListRegistryCredentialTags_CredentialNotFound(t *testing.T) {
-	rt, db := newTestRouterWithRegistryCredentialBrowse(t, &fakeRegistryCatalogClient{}, &fakeRegistryCredentialSecretsSetter{})
-	cookie := loginTestSession(t, rt, db)
+	rt, cookie, _ := newRegistryCredentialBrowseFixture(t, &fakeRegistryCatalogClient{}, &fakeRegistryCredentialSecretsSetter{})
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/registry-credentials/regcred_missing/tags?repository=myapp", ""))
@@ -120,11 +115,7 @@ func TestHandleListRegistryCredentialTags_CredentialNotFound(t *testing.T) {
 
 func TestHandleListRegistryCredentialTags_Success(t *testing.T) {
 	client := &fakeRegistryCatalogClient{tags: map[string][]string{"myapp": {"v1", "latest"}}}
-	setter := &fakeRegistryCredentialSecretsSetter{resolveValue: "tok"}
-	rt, db := newTestRouterWithRegistryCredentialBrowse(t, client, setter)
-	cookie := loginTestSession(t, rt, db)
-
-	created := createTestRegistryCredential(t, rt, cookie, `{"name":"ghcr-bot","registry_host":"ghcr.io","username":"bot","password":"tok"}`)
+	rt, cookie, created := newRegistryCredentialBrowseFixture(t, client, &fakeRegistryCredentialSecretsSetter{resolveValue: "tok"})
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/registry-credentials/"+created.ID+"/tags?repository=myapp", ""))
@@ -146,11 +137,7 @@ func TestHandleListRegistryCredentialTags_Success(t *testing.T) {
 
 func TestHandleListRegistryCredentialTags_RepositoryNotFound(t *testing.T) {
 	client := &fakeRegistryCatalogClient{tagsErr: registrycatalog.ErrNotFound}
-	setter := &fakeRegistryCredentialSecretsSetter{resolveValue: "tok"}
-	rt, db := newTestRouterWithRegistryCredentialBrowse(t, client, setter)
-	cookie := loginTestSession(t, rt, db)
-
-	created := createTestRegistryCredential(t, rt, cookie, `{"name":"ghcr-bot","registry_host":"ghcr.io","username":"bot","password":"tok"}`)
+	rt, cookie, created := newRegistryCredentialBrowseFixture(t, client, &fakeRegistryCredentialSecretsSetter{resolveValue: "tok"})
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/registry-credentials/"+created.ID+"/tags?repository=ghost", ""))
@@ -161,11 +148,7 @@ func TestHandleListRegistryCredentialTags_RepositoryNotFound(t *testing.T) {
 
 func TestHandleListRegistryCredentialTags_UpstreamError(t *testing.T) {
 	client := &fakeRegistryCatalogClient{tagsErr: errors.New("connection refused")}
-	setter := &fakeRegistryCredentialSecretsSetter{resolveValue: "tok"}
-	rt, db := newTestRouterWithRegistryCredentialBrowse(t, client, setter)
-	cookie := loginTestSession(t, rt, db)
-
-	created := createTestRegistryCredential(t, rt, cookie, `{"name":"ghcr-bot","registry_host":"ghcr.io","username":"bot","password":"tok"}`)
+	rt, cookie, created := newRegistryCredentialBrowseFixture(t, client, &fakeRegistryCredentialSecretsSetter{resolveValue: "tok"})
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/registry-credentials/"+created.ID+"/tags?repository=myapp", ""))

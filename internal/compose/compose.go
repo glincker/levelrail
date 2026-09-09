@@ -17,15 +17,15 @@
 // absolute host path on the left side as a bind mount (ValidateForBuild
 // rejects one; see that method's own doc comment for why), gated at the
 // HTTP layer to AbilityRoot and, even then, against
-// forbiddenBindMountPaths (see validateBindMountHostPath).
+// internal/bindmount's own forbidden-path list (see
+// validateBindMountHostPath).
 package compose
 
 import (
 	"fmt"
-	"path/filepath"
 	"sort"
-	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/bindmount"
 	"gopkg.in/yaml.v3"
 )
 
@@ -157,44 +157,11 @@ func (f *File) validate(allowBuild, allowBindMounts bool) error {
 	return joinErrors(errs)
 }
 
-// forbiddenBindMountPaths are host paths a bind mount may never target,
-// enforced even for an AbilityRoot caller (internal/api's ability gate,
-// not this list, is the primary boundary; this is defense in depth): an
-// exact match or a match of clean+"/" as a prefix. Each one grants
-// something categorically worse than ordinary bind-mount access, host
-// root compromise for most of these. /var/run/docker.sock (and
-// /var/run generally, since a socket can be bind-mounted from anywhere
-// under it) is deliberately excluded from this feature by design, not
-// an oversight: Docker-socket access is a full container-escape-to-
-// host-root vector via the Docker API, a categorically different and
-// unreviewed capability that needs its own explicit design decision
-// later, not bundled into general bind-mount support here.
-var forbiddenBindMountPaths = []string{
-	"/",
-	"/etc",
-	"/root",
-	"/boot",
-	"/sys",
-	"/proc",
-	"/var/lib/docker",
-	"/var/run/docker.sock",
-	"/var/run",
-}
-
-// validateBindMountHostPath rejects a relative path and every path
-// forbiddenBindMountPaths covers; anything else is a real, operator-
-// owned host directory this feature exists to allow.
+// validateBindMountHostPath delegates to internal/bindmount, shared with
+// internal/spec (see that package's own bindmount.go for why neither
+// compose nor spec can hold this directly without an import cycle).
 func validateBindMountHostPath(hostPath string) error {
-	if !strings.HasPrefix(hostPath, "/") {
-		return fmt.Errorf("bind-mount host path %q must be an absolute path", hostPath)
-	}
-	clean := filepath.Clean(hostPath)
-	for _, forbidden := range forbiddenBindMountPaths {
-		if clean == forbidden || strings.HasPrefix(clean, forbidden+"/") {
-			return fmt.Errorf("bind-mount host path %q is not allowed: %q is a protected system path", hostPath, forbidden)
-		}
-	}
-	return nil
+	return bindmount.ValidateHostPath(hostPath)
 }
 
 // validateComposeServices checks each service's own build:/image:
