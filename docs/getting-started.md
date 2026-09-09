@@ -103,7 +103,7 @@ Once it's deployed, the dashboard shows live metrics and deploy history
 for the app in one view:
 
 <p align="center">
-  <img src="assets/screenshots/app-overview.png" alt="Levelrail app overview: live metrics and deploy history in one view" width="800">
+  <img src="/assets/screenshots/app-overview.png" alt="Levelrail app overview: live metrics and deploy history in one view" width="800">
 </p>
 
 If you already have a built image and don't need Levelrail to build
