@@ -35,10 +35,10 @@ produced a full source-read of theauth-go (not a README summary), covering
 `config.go`, `storage.go`, `handlers.go`, `wiring.go`,
 `storage/storage.go`, `storage/memory/*.go`, `docs/STABILITY.md`,
 `docs/ROADMAP.md`, both bundled examples, and theauth-go's own June 2026
-security/architecture/performance/reliability audit trail. TASKS.md's
-"Dashboard & auth" section records the settled conclusion inline ("Don't
-adopt theauth-go now... Revisit theauth-go at Phase 4") but that section is
-a task queue, not the ADR the project's process requires for an architectural
+security/architecture/performance/reliability audit trail. The
+"Dashboard & auth" work already recorded the settled conclusion inline ("Don't
+adopt theauth-go now... Revisit theauth-go at Phase 4") but that was a task
+queue entry, not the ADR the project's process requires for an architectural
 decision with rejected alternatives on the record. This ADR is that
 record, written after the fact for a decision that was already made and
 implemented.

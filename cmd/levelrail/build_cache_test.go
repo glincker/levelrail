@@ -9,8 +9,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// TestBuildCacheOptions exercises TASKS.md 3.5's env-var-to-build.Option
-// mapping as pure logic: no docker daemon, no BuildKit connection, just
+// TestBuildCacheOptions exercises the env-var-to-build.Option mapping
+// as pure logic: no docker daemon, no BuildKit connection, just
 // which options get returned for a given set of env vars. The actual
 // options' effect is internal/build's own responsibility, already
 // covered there (cache_test.go, solve_test.go); this only checks

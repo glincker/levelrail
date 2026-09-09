@@ -16,7 +16,7 @@ import (
 )
 
 // TestEnv_Live_PlainAndSecretResolveInContainer is this repo's first
-// test/e2e coverage of internal/secrets.Manager (TASKS.md 1.7): every
+// test/e2e coverage of internal/secrets.Manager: every
 // other live test under this package (deploy_test.go) deploys a service
 // with plain, literal env only. This test proves the secret-backed half
 // of the same env-injection path composes correctly end to end: a real

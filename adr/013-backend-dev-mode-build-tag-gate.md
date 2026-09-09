@@ -6,7 +6,7 @@ Date: 2026-08-13
 
 ## Context
 
-The "Dashboard & auth" work pass (TASKS.md, started 2026-08-12) surfaced a
+The "Dashboard & auth" work pass (started 2026-08-12) surfaced a
 local-iteration problem distinct from the auth features themselves: once
 first-run registration, rate limiting, and the login screen existed, every
 `npm run dev` reload or Vite HMR full refresh, and every restart of the Go
@@ -25,8 +25,8 @@ true`), dev-server-only, never read by `vite build`.
 
 The design work for the auth bypass itself was sketched internally before
 implementation, not fully specced. The shipped implementation is simpler
-than that sketch in one respect worth recording here, not just in
-TASKS.md.
+than that sketch in one respect worth recording here formally, not just
+informally.
 
 ## Decision
 

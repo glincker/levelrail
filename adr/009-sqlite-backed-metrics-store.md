@@ -10,7 +10,7 @@ ADR 008 decides the architecture (node-local storage, federated pull
 query) but explicitly leaves the storage engine open: the plan
 says to "evaluate embedded VictoriaMetrics vs a purpose-built ring buffer,"
 a real evaluation, not a rhetorical one. This ADR makes that call for
-TASKS.md 2.1.
+the node-local metrics store.
 
 Two options on the table, per that framing:
 
@@ -18,8 +18,8 @@ Two options on the table, per that framing:
    (`VictoriaMetrics/lib/storage`). Real upside: it's a proper
    time-series database, with compression and a wire-compatible
    Prometheus remote read/write implementation already built in, which
-   would make TASKS.md 2.6 (Prometheus remote read endpoint) nearly
-   free instead of a translation layer to write from scratch.
+   would make the Prometheus remote read endpoint nearly free instead
+   of a translation layer to write from scratch.
 2. **A purpose-built store**, custom schema and query logic sized to
    this project's actual access pattern (one service's container
    metrics, 15s resolution, 15-day default retention, single-node
@@ -112,7 +112,7 @@ costs nothing new instead of adding one.
   downsampling scheme; simple, and sized correctly for this project's
   actual data volume (Rejected alternatives above), not for
   VictoriaMetrics-scale ingestion rates.
-- TASKS.md 2.6 (Prometheus remote read) is real work, not close to
+- The Prometheus remote read endpoint is real work, not close to
   free: a translation layer from this SQLite schema's query results
   into the Prometheus remote read wire format, same conclusion ADR 008
   already reached independently ("has to be built as a real

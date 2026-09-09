@@ -1,5 +1,5 @@
-// Command levelrail is the control plane binary. It starts the TASKS.md
-// 1.9 HTTP API and a reconcile engine whose controller set is derived
+// Command levelrail is the control plane binary. It starts the HTTP
+// API and a reconcile engine whose controller set is derived
 // dynamically from desired state in the store every pass (see
 // dynamicSource): one application.Controller per desired service, one
 // database.Controller per desired database, plus a single ingress
@@ -77,10 +77,10 @@ const (
 	// fixture tokens file (internal/api/devfixtures.go). Only ever read
 	// when APP_DEV_MODE=1, see MaybeSeedDevFixturesFromFile's own gate.
 	defaultDevFixturesFile = "./dev-fixtures.yml"
-	// defaultHTTPAddr is where the TASKS.md 1.9 HTTP API listens.
+	// defaultHTTPAddr is where the HTTP API listens.
 	defaultHTTPAddr = ":8080"
 
-	// defaultAgentAddr is where TASKS.md 3.2's agent gRPC service
+	// defaultAgentAddr is where the agent gRPC service
 	// (Enroll, Session) listens: a distinct port from defaultHTTPAddr,
 	// not multiplexed onto it, since the two have entirely different
 	// transport security models (plain HTTP with its own session/token
@@ -115,7 +115,7 @@ const (
 	metricsRetentionSweepInterval = 1 * time.Hour
 
 	// logTargetsResyncInterval is how often the log collector re-derives
-	// which containers it should be streaming from (TASKS.md 2.2), kept
+	// which containers it should be streaming from, kept
 	// as its own constant rather than reusing resyncInterval: it governs
 	// a different concern (log stream subscriptions, not reconcile
 	// passes) even though the two currently share the same value.
@@ -130,7 +130,7 @@ const (
 	logsRetentionSweepInterval = 1 * time.Hour
 
 	// alertEvaluationInterval is how often internal/alerting's Engine
-	// evaluates every enabled rule (TASKS.md 2.5/2.7). Deliberately
+	// evaluates every enabled rule. Deliberately
 	// coarser than metricsCollectionInterval's 15s: a threshold rule's
 	// own ForDuration is the real debounce against a noisy single
 	// sample, so evaluating every tick metrics are collected buys
@@ -149,7 +149,7 @@ const (
 	restartTrackerResyncInterval = 30 * time.Second
 
 	// defaultNodeHeartbeatInterval matches internal/agent's own
-	// defaultHeartbeatInterval (TASKS.md 3.7): how often a connected
+	// defaultHeartbeatInterval: how often a connected
 	// node's last_seen_at is touched while its session stream stays
 	// open. Duplicated as a constant here (not imported) purely so this
 	// file's own env-var-with-default convention stays self-contained,
@@ -347,16 +347,15 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
-	// TASKS.md 3.2: the agent gRPC service. agentRegistry starts empty
-	// and stays that way in this pass, wired to nothing else yet: 3.3
-	// (placement) is what will have dynamicSource actually look nodes
-	// up in it. Building and running the real Enroll/Session server now
-	// anyway (not deferred to 3.3) is deliberate, matching the same
-	// "build the primitive, prove it live, wire consumers later" shape
-	// 3.1's own internal/agent package already used: a control plane
-	// that can't yet route reconciles to a second node can still
-	// legitimately accept an agent's enrollment and hold its connection
-	// open.
+	// The agent gRPC service. agentRegistry starts empty and stays
+	// that way in this pass, wired to nothing else yet: node placement
+	// is what will have dynamicSource actually look nodes up in it.
+	// Building and running the real Enroll/Session server now anyway
+	// (not deferred to that later work) is deliberate, matching the
+	// same "build the primitive, prove it live, wire consumers later"
+	// shape internal/agent already used: a control plane that can't
+	// yet route reconciles to a second node can still legitimately
+	// accept an agent's enrollment and hold its connection open.
 	agentDataDir := os.Getenv("APP_DATA_DIR")
 	if agentDataDir == "" {
 		agentDataDir = defaultDataDir
@@ -589,7 +588,7 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
-	// Alerting (TASKS.md 2.5/2.7): RestartTracker watches the same
+	// Alerting: RestartTracker watches the same
 	// Docker client's event stream, independently of the reconcile
 	// engine's own subscription below, to count restarts per service for
 	// crashloop rules; Engine evaluates every enabled rule
@@ -741,7 +740,7 @@ func openStore(ctx context.Context) (*store.DB, error) {
 	return store.Open(ctx, filepath.Join(dataDir, "levelrail.db"))
 }
 
-// openTelemetryStore opens the TASKS.md 2.1 metrics store on its own
+// openTelemetryStore opens the metrics store on its own
 // SQLite file (telemetry.db, alongside levelrail.db in the same data
 // directory), per ADR 009: a separate file so its collection-tick write
 // pattern never contends with levelrail.db's own WAL.
@@ -756,7 +755,7 @@ func openTelemetryStore(ctx context.Context) (*telemetry.DB, error) {
 	return telemetry.Open(ctx, filepath.Join(dataDir, "telemetry.db"))
 }
 
-// openAlertingStore opens the TASKS.md 2.5/2.7 alert-rules store on its
+// openAlertingStore opens the alert-rules store on its
 // own SQLite file (alerting.db, alongside levelrail.db and
 // telemetry.db in the same data directory), the same per-concern
 // write-isolation reasoning (ADR 009) telemetry.db's own separation
@@ -857,7 +856,7 @@ func resolveEmailSecret(ctx context.Context, secretsManager *secrets.Manager, en
 	return value, nil
 }
 
-// agentCACertFilename/agentCAKeyFilename are TASKS.md 3.2's private CA
+// agentCACertFilename/agentCAKeyFilename are the private CA
 // (internal/agent.CA), persisted alongside levelrail.db/telemetry.db/
 // alerting.db in the same data directory, the same per-concern
 // separation ADR 009 already applies to this control plane's other
@@ -920,7 +919,7 @@ func agentAddr() string {
 // be a name/address the gRPC server's own TLS certificate is issued
 // for, or every agent's TLS verification against it fails. Defaults to
 // "127.0.0.1", correct only for local/single-machine testing; a real
-// multi-node deployment (TASKS.md 3.3 onward) needs this set to the
+// multi-node deployment needs this set to the
 // control plane's actual reachable address.
 func agentAdvertiseHost() string {
 	host := os.Getenv("APP_AGENT_ADVERTISE_HOST")
@@ -1190,8 +1189,8 @@ func metricsRetention() time.Duration {
 	return d
 }
 
-// nodeHeartbeatInterval reads APP_NODE_HEARTBEAT_INTERVAL (TASKS.md
-// 3.7), the same env-var-with-default shape as metricsRetention/
+// nodeHeartbeatInterval reads APP_NODE_HEARTBEAT_INTERVAL,
+// the same env-var-with-default shape as metricsRetention/
 // logsRetention above, applied to how often a connected agent's
 // last_seen_at is touched (internal/agent.WithHeartbeatInterval).
 func nodeHeartbeatInterval() time.Duration {
@@ -1206,7 +1205,7 @@ func nodeHeartbeatInterval() time.Duration {
 	return d
 }
 
-// nodeHeartbeatTimeout reads APP_NODE_HEARTBEAT_TIMEOUT (TASKS.md 3.7),
+// nodeHeartbeatTimeout reads APP_NODE_HEARTBEAT_TIMEOUT,
 // how long since last_seen_at internal/reconcile/nodehealth treats as
 // stale.
 func nodeHeartbeatTimeout() time.Duration {
@@ -1346,11 +1345,11 @@ func loadOrGenerateMasterKey(dataDir string) (mk *secrets.MasterKey, keyPath str
 // wrapper, the same second-client pattern every BuildKit live test in
 // this codebase already uses.
 //
-// agentRegistry is TASKS.md 3.5's build-node routing wiring: db's
+// agentRegistry is the build-node routing wiring: db's
 // current nodes are checked for AcceptsBuildWorkloads
 // (migrations/0010_node_workloads.sql), and build.SelectBuildNode picks
-// among the ones currently reachable through agentRegistry (TASKS.md
-// 3.1's transport). See checkLocalBuildNode's own doc comment for why a
+// among the ones currently reachable through agentRegistry's transport.
+// See checkLocalBuildNode's own doc comment for why a
 // selected non-local node makes this function fail loudly rather than
 // silently building locally: actually dispatching a build to a remote
 // node isn't wired yet (internal/build/node.go's package doc comment
@@ -1413,10 +1412,10 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 	return deploy.New(buildClient, db, deployOpts...), closer, nil
 }
 
-// loadWebhookHandler builds the TASKS.md 1.5 git webhook receiver, wired
+// loadWebhookHandler builds the git webhook receiver, wired
 // to pipeline (loadBuilder's result): the one piece of the deploy chain
-// no earlier pass connected to cmd/levelrail, per TASKS.md 1.7's own
-// "known gap, honestly out of scope" note.
+// no earlier pass connected to cmd/levelrail, a known gap that was
+// honestly out of scope until now.
 //
 // Every input is required (APP_GIT_REPO_URL, APP_WEBHOOK_SECRET,
 // APP_IMAGE_REPO, a discoverable app spec, and a non-nil pipeline), so
@@ -1494,7 +1493,7 @@ func loadWebhookHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, recor
 	return webhook.New(cfg, pipeline, db, recorder, notifier, logger), nil
 }
 
-// buildCacheOptions reads TASKS.md 3.5's cache-backend env vars and
+// buildCacheOptions reads the cache-backend env vars and
 // turns whichever are set into build.Options for build.NewClient.
 // APP_BUILD_CACHE_DIR wires build.WithCacheDir (Phase 1's local
 // backend, still useful for a single build node with no registry
@@ -1565,7 +1564,7 @@ func registryDialAddr() string {
 	return fmt.Sprintf("127.0.0.1:%d", registryreconcile.HostPort)
 }
 
-// checkLocalBuildNode is TASKS.md 3.5's build-node routing gate: it
+// checkLocalBuildNode is the build-node routing gate: it
 // looks at every node's AcceptsBuildWorkloads flag
 // (migrations/0010_node_workloads.sql) and, via
 // internal/build.SelectBuildNode, decides which node a build should
@@ -1581,12 +1580,12 @@ func registryDialAddr() string {
 // rather than silently building locally instead or pretending to
 // dispatch somewhere it can't reach: actually running a build on a
 // remote node needs a way to open a BuildKit connection against that
-// node's Docker daemon, and today's agent.Transport (TASKS.md 3.1/3.2)
+// node's Docker daemon, and today's agent.Transport
 // only carries docker.Runtime's container-operation surface, not a raw
 // Docker Engine API connection. Extending that wire protocol is
-// explicitly out of scope for this task (TASKS.md's Phase 3 sequencing
-// note: "extends internal/build, doesn't touch the reconciler or
-// transport"); see internal/build/node.go's package doc comment for the
+// explicitly out of scope here (this only extends internal/build,
+// it doesn't touch the reconciler or transport); see
+// internal/build/node.go's package doc comment for the
 // full reasoning. An operator who marks a node build-capable today gets
 // a clear, specific error here (surfaced as run's usual "webhook not
 // configured" warning, non-fatal to control-plane startup) instead of
@@ -1621,10 +1620,10 @@ func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent
 
 	logger.Warn("build node selected but remote build dispatch is not implemented yet, refusing to start the webhook handler",
 		slog.String("node_id", selected))
-	return fmt.Errorf("node %q is marked build-capable, but dispatching a build to a remote node isn't implemented yet (TASKS.md 3.5); unmark it via PUT /api/v1/nodes/%s/workloads or wait for remote build dispatch to land", selected, selected)
+	return fmt.Errorf("node %q is marked build-capable, but dispatching a build to a remote node isn't implemented yet; unmark it via PUT /api/v1/nodes/%s/workloads or wait for remote build dispatch to land", selected, selected)
 }
 
-// rootHandler combines the TASKS.md 1.9 HTTP API with the TASKS.md 1.10
+// rootHandler combines the HTTP API with the embedded
 // frontend into one *http.Server handler: "/api/" (a subtree pattern,
 // so the full original path reaches api's own mux unchanged, matching
 // its routes' own "/api/v1/..." patterns) goes to the API, everything
@@ -1640,7 +1639,7 @@ func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent
 // openAlertingStore have no optional gating, unlike secrets/webhook
 // below), so api.WithTelemetryQuerier and api.WithAlertRules are both
 // applied unconditionally. telemetryDB is wrapped in a fresh
-// telemetry.NewLocalFederator per TASKS.md 2.3's federated-shape design
+// telemetry.NewLocalFederator per the federated-shape design
 // (today: exactly one source, this node's own local store); alertingDB
 // itself already satisfies api.AlertRules structurally, no wrapper
 // needed.
@@ -1796,7 +1795,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// BYO TLS certificate uploads go through the same secretsManager,
 		// same nil-interface hazard.
 		opts = append(opts, api.WithDomainTLSCertSecrets(secretsManager))
-		// Git sources (TASKS.md 1.7's own deferred follow-up,
+		// Git sources (a deferred follow-up,
 		// internal/api/git_sources.go, git_webhook.go): a connected
 		// source's deploy token and webhook secret go through the same
 		// secretsManager as everything else in this block, same nil-
@@ -2385,7 +2384,7 @@ func publicHost() string {
 // through per-node placement: it stays on the local runtime
 // unconditionally, since Caddy runs embedded in this one process and a
 // remote node's container isn't reachable at 127.0.0.1:hostPort from
-// here (closing this needs the WireGuard mesh, TASKS.md 3.4).
+// here (closing this needs the WireGuard mesh).
 //
 // dynamicSourceDeps bundles dynamicSource's wiring dependencies: every
 // field here is fixed for the process lifetime, only the store contents
@@ -2455,7 +2454,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 
 		// Local runtime unconditionally, same reasoning as the ingress
 		// controller above: per-app networks are single-node scope until
-		// the WireGuard mesh (TASKS.md 3.4) exists.
+		// the WireGuard mesh exists.
 		controllers = append(controllers, application.NewNetworkCleanupController(deps.db, deps.runtime, deps.networkPrefix))
 
 		// Cloudflare Tunnel: also local-runtime-unconditional, the same
@@ -2610,8 +2609,8 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 
 // resolveNodeTransport picks the docker.Runtime a controller for
 // nodeID should use: the control plane's own local runtime for the
-// empty string (TASKS.md 3.3's "" == local node convention), or a
-// connected remote agent's Transport (TASKS.md 3.2), looked up fresh
+// empty string (the "" == local node convention), or a
+// connected remote agent's Transport, looked up fresh
 // from registry, for anything else. A node that isn't currently
 // connected returns agent.ErrNodeNotRegistered wrapped; the caller logs
 // and skips that resource for this pass rather than failing the whole
