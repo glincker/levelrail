@@ -2416,4 +2416,415 @@ var Templates = []Template{
       - pihole_data:/etc/pihole
 `,
 	},
+	{
+		ID:               "gitlab-ce",
+		Name:             "GitLab CE",
+		Slogan:           "A complete DevOps platform for source control, code review, issues, and CI/CD in one place.",
+		Category:         "Developer Tools",
+		DocumentationURL: "https://docs.gitlab.com/install/docker/installation/",
+		// GitLab's omnibus image also serves SSH git access on 22 and
+		// HTTPS on 443; this platform tracks a single container port per
+		// service, so only the web UI on 80 is reachable here.
+		Compose: `services:
+  gitlab:
+    image: gitlab/gitlab-ce:19.3.1-ce.0
+    ports: ["80:80"]
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url '${SERVICE_FQDN_GITLAB:-http://localhost}'
+    volumes:
+      - gitlab_config:/etc/gitlab
+      - gitlab_logs:/var/log/gitlab
+      - gitlab_data:/var/opt/gitlab
+`,
+	},
+	{
+		ID:               "beszel",
+		Name:             "Beszel",
+		Slogan:           "A lightweight server monitoring hub with historical stats for CPU, memory, disk, and network.",
+		Category:         "Monitoring",
+		DocumentationURL: "https://beszel.dev/guide/getting-started",
+		Compose: `services:
+  beszel:
+    image: henrygd/beszel:0.19.0
+    ports: ["8090:8090"]
+    environment:
+      APP_URL: ${SERVICE_FQDN_BESZEL:-http://localhost:8090}
+    volumes:
+      - beszel_data:/beszel_data
+`,
+	},
+	{ //nolint:gosec // MATOMO_DATABASE_PASSWORD below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
+		ID:               "matomo",
+		Name:             "Matomo",
+		Slogan:           "A privacy-friendly, self-hosted alternative to Google Analytics with full data ownership.",
+		Category:         "Analytics",
+		DocumentationURL: "https://matomo.org/faq/how-to-install/install-matomo-with-docker/",
+		Compose: `services:
+  matomo:
+    image: matomo:5.13.0-apache
+    ports: ["8080:80"]
+    environment:
+      MATOMO_DATABASE_HOST: db
+      MATOMO_DATABASE_USERNAME: matomo
+      MATOMO_DATABASE_PASSWORD: $SERVICE_PASSWORD_DB
+      MATOMO_DATABASE_DBNAME: matomo
+    volumes:
+      - matomo_data:/var/www/html
+  db:
+    image: mariadb:10.11
+    environment:
+      MYSQL_DATABASE: matomo
+      MYSQL_USER: matomo
+      MYSQL_PASSWORD: $SERVICE_PASSWORD_DB
+      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MARIADBROOT
+    volumes:
+      - matomo_db_data:/var/lib/mysql
+`,
+	},
+	{
+		ID:               "photoprism",
+		Name:             "PhotoPrism",
+		Slogan:           "An AI-powered photo management app that indexes and organizes your library as you own it.",
+		Category:         "Media",
+		DocumentationURL: "https://docs.photoprism.app/getting-started/docker-compose/",
+		// PhotoPrism's official releases use a date-based tag scheme
+		// (YYMMDD) rather than semver.
+		Compose: `services:
+  photoprism:
+    image: photoprism/photoprism:260728
+    ports: ["2342:2342"]
+    environment:
+      PHOTOPRISM_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
+      PHOTOPRISM_SITE_URL: ${SERVICE_FQDN_PHOTOPRISM:-http://localhost:2342}
+      PHOTOPRISM_DISABLE_TLS: "true"
+    volumes:
+      - photoprism_originals:/photoprism/originals
+      - photoprism_storage:/photoprism/storage
+`,
+	},
+	{ //nolint:gosec // DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
+		ID:               "planka",
+		Name:             "Planka",
+		Slogan:           "A Trello-style kanban board for visualizing and tracking work across a team.",
+		Category:         "Productivity",
+		DocumentationURL: "https://docs.planka.cloud/docs/installation/docker/",
+		Compose: `services:
+  planka:
+    image: ghcr.io/plankanban/planka:2.2.1
+    ports: ["3000:1337"]
+    environment:
+      BASE_URL: ${SERVICE_FQDN_PLANKA:-http://localhost:3000}
+      SECRET_KEY: $SERVICE_HEX_64_SECRETKEY
+      DATABASE_URL: postgresql://postgres:$SERVICE_PASSWORD_DB@db/planka
+    volumes:
+      - planka_data:/app/data
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: planka
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - planka_db_data:/var/lib/postgresql/data
+`,
+	},
+	{
+		ID:               "baserow",
+		Name:             "Baserow",
+		Slogan:           "A no-code database and spreadsheet hybrid you can build internal tools and apps on top of.",
+		Category:         "Database Tools",
+		DocumentationURL: "https://baserow.io/docs/installation%2Finstall-with-docker",
+		Compose: `services:
+  baserow:
+    image: baserow/baserow:2.3.3
+    ports: ["80:80"]
+    environment:
+      BASEROW_PUBLIC_URL: ${SERVICE_FQDN_BASEROW:-http://localhost}
+    volumes:
+      - baserow_data:/baserow/data
+`,
+	},
+	{
+		ID:               "clickhouse",
+		Name:             "ClickHouse",
+		Slogan:           "A columnar database built for fast analytical queries over large datasets.",
+		Category:         "Database Tools",
+		DocumentationURL: "https://hub.docker.com/r/clickhouse/clickhouse-server",
+		Compose: `services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.3-alpine
+    ports: ["8123:8123"]
+    environment:
+      CLICKHOUSE_PASSWORD: $SERVICE_PASSWORD_ADMIN
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+`,
+	},
+	{
+		ID:               "kavita",
+		Name:             "Kavita",
+		Slogan:           "A fast, feature-rich reader server for manga, comics, and ebooks.",
+		Category:         "Media",
+		DocumentationURL: "https://wiki.kavitareader.com/installation/docker/",
+		Compose: `services:
+  kavita:
+    image: jvmilazz0/kavita:0.9.1
+    ports: ["5000:5000"]
+    volumes:
+      - kavita_config:/kavita/config
+      - kavita_data:/manga
+`,
+	},
+	{
+		ID:               "komga",
+		Name:             "Komga",
+		Slogan:           "A media server for comics, manga, and digital books with a clean reading interface.",
+		Category:         "Media",
+		DocumentationURL: "https://komga.org/docs/installation/docker",
+		Compose: `services:
+  komga:
+    image: gotson/komga:1.26.3
+    ports: ["25600:25600"]
+    volumes:
+      - komga_config:/config
+      - komga_data:/data
+`,
+	},
+	{
+		ID:               "adminer",
+		Name:             "Adminer",
+		Slogan:           "A single-file database admin tool for MySQL, PostgreSQL, SQLite, and more.",
+		Category:         "Database Tools",
+		DocumentationURL: "https://www.adminer.org",
+		Compose: `services:
+  adminer:
+    image: adminer:5
+    ports: ["8080:8080"]
+`,
+	},
+	{
+		ID:               "typesense",
+		Name:             "Typesense",
+		Slogan:           "A fast, typo-tolerant search engine API built as a lighter alternative to Elasticsearch.",
+		Category:         "Developer Tools",
+		DocumentationURL: "https://typesense.org/docs/guide/install-typesense.html",
+		Compose: `services:
+  typesense:
+    image: typesense/typesense:30.2
+    ports: ["8108:8108"]
+    environment:
+      TYPESENSE_API_KEY: $SERVICE_HEX_32_APIKEY
+      TYPESENSE_DATA_DIR: /data
+    volumes:
+      - typesense_data:/data
+`,
+	},
+	{
+		ID:               "kanboard",
+		Name:             "Kanboard",
+		Slogan:           "A minimalist, keyboard-friendly kanban board for personal and team task tracking.",
+		Category:         "Productivity",
+		DocumentationURL: "https://docs.kanboard.org",
+		Compose: `services:
+  kanboard:
+    image: kanboard/kanboard:v1.2.54
+    ports: ["80:80"]
+    volumes:
+      - kanboard_data:/var/www/app/data
+      - kanboard_plugins:/var/www/app/plugins
+`,
+	},
+	{
+		ID:               "wallabag",
+		Name:             "Wallabag",
+		Slogan:           "A read-it-later app that saves web articles in a clean, distraction-free format.",
+		Category:         "Productivity",
+		DocumentationURL: "https://doc.wallabag.org",
+		Compose: `services:
+  wallabag:
+    image: wallabag/wallabag:2.6.14
+    ports: ["80:80"]
+    environment:
+      SYMFONY__ENV__DOMAIN_NAME: ${SERVICE_FQDN_WALLABAG:-http://localhost}
+      SYMFONY__ENV__SECRET: $SERVICE_HEX_32_SECRET
+    volumes:
+      - wallabag_data:/var/www/wallabag/data
+      - wallabag_images:/var/www/wallabag/web/assets/images
+`,
+	},
+	{
+		ID:               "libretranslate",
+		Name:             "LibreTranslate",
+		Slogan:           "A free and open machine translation API that runs entirely on your own hardware.",
+		Category:         "Developer Tools",
+		DocumentationURL: "https://github.com/LibreTranslate/LibreTranslate",
+		Compose: `services:
+  libretranslate:
+    image: libretranslate/libretranslate:v1.9.6
+    ports: ["5000:5000"]
+    volumes:
+      - libretranslate_data:/home/libretranslate/.local
+`,
+	},
+	{
+		ID:               "node-red",
+		Name:             "Node-RED",
+		Slogan:           "A flow-based visual editor for wiring together hardware, APIs, and online services.",
+		Category:         "Automation",
+		DocumentationURL: "https://nodered.org/docs/getting-started/docker",
+		Compose: `services:
+  nodered:
+    image: nodered/node-red:4.1.15-22
+    ports: ["1880:1880"]
+    volumes:
+      - nodered_data:/data
+`,
+	},
+	{
+		ID:               "tandoor-recipes",
+		Name:             "Tandoor Recipes",
+		Slogan:           "A recipe manager and meal planner with shopping lists and shared cookbooks.",
+		Category:         "Productivity",
+		DocumentationURL: "https://docs.tandoor.dev/install/docker/",
+		Compose: `services:
+  tandoor:
+    image: vabene1111/recipes:2.6.15
+    ports: ["8080:80"]
+    environment:
+      SECRET_KEY: $SERVICE_HEX_64_SECRETKEY
+      ALLOWED_HOSTS: "*"
+      DB_ENGINE: django.db.backends.postgresql
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: tandoor
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: tandoor
+    volumes:
+      - tandoor_data:/opt/recipes/mediafiles
+      - tandoor_static:/opt/recipes/staticfiles
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tandoor
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: tandoor
+    volumes:
+      - tandoor_db_data:/var/lib/postgresql/data
+`,
+	},
+	{
+		ID:               "homebox",
+		Name:             "Homebox",
+		Slogan:           "A home inventory and organization system for tracking what you own and where it is.",
+		Category:         "Productivity",
+		DocumentationURL: "https://homebox.software/en/quick-start/install/",
+		Compose: `services:
+  homebox:
+    image: ghcr.io/sysadminsmedia/homebox:0.11.1
+    ports: ["7745:7745"]
+    environment:
+      HBOX_OPTIONS_ALLOW_REGISTRATION: "true"
+    volumes:
+      - homebox_data:/data
+`,
+	},
+	{
+		ID:               "bytebase",
+		Name:             "Bytebase",
+		Slogan:           "A database schema change and migration tool with review workflows built in.",
+		Category:         "Database Tools",
+		DocumentationURL: "https://docs.bytebase.com/get-started/step-by-step/deploy-with-docker",
+		Compose: `services:
+  bytebase:
+    image: bytebase/bytebase:3.9.2
+    command: ["--data", "/var/opt/bytebase", "--port", "8080"]
+    ports: ["8080:8080"]
+    volumes:
+      - bytebase_data:/var/opt/bytebase
+`,
+	},
+	{
+		ID:               "open-webui",
+		Name:             "Open WebUI",
+		Slogan:           "A self-hosted chat interface for running local large language models through Ollama.",
+		Category:         "AI",
+		DocumentationURL: "https://docs.openwebui.com",
+		Compose: `services:
+  ollama:
+    image: ollama/ollama:0.33.3
+    volumes:
+      - ollama_data:/root/.ollama
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:0.11.3
+    ports: ["8080:8080"]
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      WEBUI_SECRET_KEY: $SERVICE_HEX_32_SECRETKEY
+    volumes:
+      - openwebui_data:/app/backend/data
+`,
+	},
+	{ //nolint:gosec // DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
+		ID:               "linkwarden",
+		Name:             "Linkwarden",
+		Slogan:           "A bookmark manager that archives full page snapshots, not just links, so pages stay readable.",
+		Category:         "Productivity",
+		DocumentationURL: "https://docs.linkwarden.app/self-hosting/setup",
+		Compose: `services:
+  linkwarden:
+    image: ghcr.io/linkwarden/linkwarden:v2.9.3
+    ports: ["3000:3000"]
+    environment:
+      NEXTAUTH_URL: ${SERVICE_FQDN_LINKWARDEN:-http://localhost:3000}/api/v1/auth
+      NEXTAUTH_SECRET: $SERVICE_HEX_32_NEXTAUTHSECRET
+      DATABASE_URL: postgresql://postgres:$SERVICE_PASSWORD_DB@db:5432/linkwarden
+      MEILI_MASTER_KEY: $SERVICE_HEX_32_MEILIKEY
+      MEILI_HOST: http://meilisearch:7700
+    volumes:
+      - linkwarden_data:/data/data
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: linkwarden
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - linkwarden_db_data:/var/lib/postgresql/data
+  meilisearch:
+    image: getmeili/meilisearch:v1.11.1
+    environment:
+      MEILI_MASTER_KEY: $SERVICE_HEX_32_MEILIKEY
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - linkwarden_meili_data:/meili_data
+`,
+	},
+	{
+		ID:               "actual-budget",
+		Name:             "Actual Budget",
+		Slogan:           "A local-first, envelope-style budgeting app with optional multi-device sync.",
+		Category:         "Finance",
+		DocumentationURL: "https://actualbudget.org/docs/install/docker/",
+		Compose: `services:
+  actual:
+    image: actualbudget/actual-server:26.9.0
+    ports: ["5006:5006"]
+    volumes:
+      - actual_data:/data
+`,
+	},
+	{
+		ID:               "redlib",
+		Name:             "Redlib",
+		Slogan:           "A private, lightweight front-end for browsing Reddit without tracking or ads.",
+		Category:         "Applications",
+		DocumentationURL: "https://github.com/redlib-org/redlib",
+		// Upstream only publishes a rolling "latest" tag plus per-commit
+		// "sha-*" builds, no semver releases; pinned to a specific
+		// commit-built image instead.
+		Compose: `services:
+  redlib:
+    image: quay.io/redlib/redlib:sha-a4d36e9
+    ports: ["8080:8080"]
+`,
+	},
 }
