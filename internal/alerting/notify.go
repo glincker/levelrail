@@ -122,6 +122,14 @@ func NewNotifier(client *http.Client, sender email.Sender, r Rule) Notifier {
 		build = notifyMattermost
 	case NotifyLark:
 		build = notifyLark
+	case NotifyRocketChat:
+		build = notifyRocketChat
+	case NotifyOpsgenie:
+		build = notifyOpsgenie
+	case NotifyWebex:
+		build = notifyWebex
+	case NotifyGoogleChat:
+		build = notifyGoogleChat
 	}
 	return httpNotifier{client: client, url: r.NotifyURL, build: build}
 }
@@ -335,6 +343,98 @@ type larkPayload struct {
 
 func notifyLark(ctx context.Context, client *http.Client, url string, ev Event) error {
 	return postJSON(ctx, client, url, larkPayload{MsgType: "text", Content: larkContent{Text: summaryText(ev)}})
+}
+
+// rocketChatPayload is Rocket.Chat's incoming-webhook body
+// (https://docs.rocket.chat/docs/integrations#incoming-webhook-script), a
+// superset of Slack's own shape rather than a byte-identical copy of it
+// (unlike Mattermost's, which Mattermost itself documents as
+// Slack-compatible): alias/emoji override the bot's posted name and
+// avatar per message, fields this package uses to mark a firing event
+// distinctly from a resolved one without needing a second payload shape.
+type rocketChatPayload struct {
+	Text  string `json:"text"`
+	Alias string `json:"alias,omitempty"`
+	Emoji string `json:"emoji,omitempty"`
+}
+
+func notifyRocketChat(ctx context.Context, client *http.Client, url string, ev Event) error {
+	emoji := ":rotating_light:"
+	if ev.Resolved {
+		emoji = ":white_check_mark:"
+	}
+	return postJSON(ctx, client, url, rocketChatPayload{Text: summaryText(ev), Alias: "Levelrail", Emoji: emoji})
+}
+
+// webexPayload is a Cisco Webex Teams incoming webhook's message body
+// (https://developer.webex.com/messaging/docs/api/guides/webhooks):
+// markdown renders as Markdown in the space, letting summaryText's own
+// code-fenced log lines and bullet lists actually format instead of
+// showing up as literal backticks.
+type webexPayload struct {
+	Markdown string `json:"markdown"`
+}
+
+func notifyWebex(ctx context.Context, client *http.Client, url string, ev Event) error {
+	return postJSON(ctx, client, url, webexPayload{Markdown: summaryText(ev)})
+}
+
+// googleChatPayload is a Google Chat incoming webhook's message body
+// (https://developers.google.com/workspace/chat/quickstart/webhooks): a
+// single required "text" field, the same plain shape as Slack/Discord.
+type googleChatPayload struct {
+	Text string `json:"text"`
+}
+
+func notifyGoogleChat(ctx context.Context, client *http.Client, url string, ev Event) error {
+	return postJSON(ctx, client, url, googleChatPayload{Text: summaryText(ev)})
+}
+
+// opsgenieAPIURL is Opsgenie's fixed Alerts API endpoint. A var, not a
+// const, so tests can point it at an httptest server, the same pattern
+// pagerDutyEventsURL and resendAPIURL already use.
+var opsgenieAPIURL = "https://api.opsgenie.com/v2/alerts"
+
+// opsgeniePayload is the Alerts API's create-alert request body
+// (https://docs.opsgenie.com/docs/alert-api#create-alert-request).
+type opsgeniePayload struct {
+	Message     string `json:"message"`
+	Description string `json:"description,omitempty"`
+	Priority    string `json:"priority,omitempty"`
+}
+
+// notifyOpsgenie always posts to opsgenieAPIURL, not rawURL: rawURL here
+// packs the channel's API key as a query parameter against that fixed
+// endpoint, the same "NotifyURL packs credentials, not a destination"
+// convention notifyResend already establishes; see parseOpsgenieCreds.
+// The key travels in Opsgenie's own "GenieKey <key>" Authorization
+// scheme, not Bearer.
+func notifyOpsgenie(ctx context.Context, client *http.Client, rawURL string, ev Event) error {
+	key, err := parseOpsgenieCreds(rawURL)
+	if err != nil {
+		return fmt.Errorf("alerting: notify: %w", err)
+	}
+	priority := "P1"
+	if ev.Resolved {
+		priority = "P5"
+	}
+	payload := opsgeniePayload{Message: ev.Rule.Name, Description: summaryText(ev), Priority: priority}
+	return postJSONWithAuth(ctx, client, opsgenieAPIURL, payload, "GenieKey "+key)
+}
+
+// parseOpsgenieCreds extracts the key query parameter an Opsgenie
+// notify_url must carry (see notifyOpsgenie's own doc comment for why it
+// travels this way).
+func parseOpsgenieCreds(rawURL string) (key string, err error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid opsgenie notify_url: %w", err)
+	}
+	key = u.Query().Get("key")
+	if key == "" {
+		return "", fmt.Errorf("opsgenie notify_url must include a key query parameter")
+	}
+	return key, nil
 }
 
 // gotifyPayload is Gotify's message API body

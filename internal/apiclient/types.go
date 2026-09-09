@@ -282,6 +282,20 @@ type UpdateRegistrySettingsRequest struct {
 	Host    string `json:"host,omitempty"`
 }
 
+// RegistryRepositoriesResource mirrors internal/api's
+// registryRepositoriesResponse (internal/api/registry_catalog.go): GET
+// /api/v1/registry/repositories's wire shape.
+type RegistryRepositoriesResource struct {
+	Repositories []string `json:"repositories"`
+}
+
+// RegistryTagsResource mirrors internal/api's registryTagsResponse: GET
+// /api/v1/registry/tags's wire shape.
+type RegistryTagsResource struct {
+	Repository string   `json:"repository"`
+	Tags       []string `json:"tags"`
+}
+
 // DomainBasicAuthResource mirrors internal/api's domainBasicAuthResource
 // (internal/api/domain_basic_auth.go): GET/PUT/DELETE
 // /api/v1/apps/{name}/domains/{domain}/auth's wire shape. The password
@@ -1376,6 +1390,34 @@ type ListAuditLogOptions struct {
 // (internal/api/audit_retention.go's purgeAuditLogResponse).
 type PurgeAuditLogResult struct {
 	Deleted int64 `json:"deleted"`
+}
+
+// DeployAttemptResource mirrors internal/api's deployAttemptResource
+// (internal/api/deploy_attempts.go): one row of GET
+// /api/v1/apps/{name}/deploy-attempts, additive to the reconcile
+// conditions GetDeployStatus already returns, not a replacement for it.
+type DeployAttemptResource struct {
+	ID          string     `json:"id"`
+	ServiceName string     `json:"service_name"`
+	Image       string     `json:"image"`
+	CommitSHA   string     `json:"commit_sha,omitempty"`
+	Source      string     `json:"source,omitempty"`
+	Status      string     `json:"status"`
+	StartedAt   time.Time  `json:"started_at"`
+	FinishedAt  *time.Time `json:"finished_at,omitempty"`
+	Error       string     `json:"error,omitempty"`
+}
+
+// CertificateResource mirrors internal/api's certificateStatus
+// (internal/api/certificates.go): one entry of GET /api/v1/certificates.
+// Status is "healthy", "expiring_soon", or "expired".
+type CertificateResource struct {
+	Domain    string    `json:"domain"`
+	SANs      []string  `json:"sans,omitempty"`
+	Issuer    string    `json:"issuer,omitempty"`
+	NotBefore time.Time `json:"not_before"`
+	NotAfter  time.Time `json:"not_after"`
+	Status    string    `json:"status"`
 }
 
 // apiErrorBody is the JSON shape every non-2xx response from the

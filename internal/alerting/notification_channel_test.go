@@ -272,6 +272,83 @@ func TestSendTestNotification_Resend_Success(t *testing.T) {
 	}
 }
 
+func TestSendTestNotification_RocketChat_Success(t *testing.T) {
+	var got rocketChatPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	if err := sendTestNotification(context.Background(), nil, nil, NotifyRocketChat, srv.URL); err != nil {
+		t.Fatalf("sendTestNotification() error = %v", err)
+	}
+	if !strings.Contains(got.Text, "test notification") {
+		t.Errorf("Rocket.Chat payload.Text = %q, want it to mention the test", got.Text)
+	}
+	if got.Alias != "Levelrail" {
+		t.Errorf("Rocket.Chat payload.Alias = %q, want Levelrail", got.Alias)
+	}
+}
+
+func TestSendTestNotification_Webex_Success(t *testing.T) {
+	var got webexPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	if err := sendTestNotification(context.Background(), nil, nil, NotifyWebex, srv.URL); err != nil {
+		t.Fatalf("sendTestNotification() error = %v", err)
+	}
+	if !strings.Contains(got.Markdown, "test notification") {
+		t.Errorf("Webex payload.Markdown = %q, want it to mention the test", got.Markdown)
+	}
+}
+
+func TestSendTestNotification_GoogleChat_Success(t *testing.T) {
+	var got map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	if err := sendTestNotification(context.Background(), nil, nil, NotifyGoogleChat, srv.URL); err != nil {
+		t.Fatalf("sendTestNotification() error = %v", err)
+	}
+	text, _ := got["text"].(string)
+	if !strings.Contains(text, "test notification") {
+		t.Errorf("Google Chat payload = %+v, want a text field mentioning the test", got)
+	}
+}
+
+func TestSendTestNotification_Opsgenie_Success(t *testing.T) {
+	var got opsgeniePayload
+	var gotAuth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+	original := opsgenieAPIURL
+	opsgenieAPIURL = srv.URL
+	t.Cleanup(func() { opsgenieAPIURL = original })
+
+	notifyURL := "https://api.opsgenie.com/v2/alerts?key=og_secret"
+	if err := sendTestNotification(context.Background(), nil, nil, NotifyOpsgenie, notifyURL); err != nil {
+		t.Fatalf("sendTestNotification() error = %v", err)
+	}
+	if gotAuth != "GenieKey og_secret" {
+		t.Errorf("Authorization header = %q, want GenieKey og_secret", gotAuth)
+	}
+	if !strings.Contains(got.Description, "test notification") {
+		t.Errorf("payload.Description = %q, want it to mention the test", got.Description)
+	}
+}
+
 // 127.0.0.1:1 is this codebase's existing "deliberately unreachable"
 // convention (internal/alerting/notify_test.go).
 func TestSendTestNotification_UnreachableURL_Errors(t *testing.T) {

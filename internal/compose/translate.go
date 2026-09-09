@@ -17,6 +17,11 @@ import (
 // non-HTTP check (see resolveHealthcheck): the caller is expected to
 // surface these to the operator (log line, response field, ...) since
 // that service's health is deliberately left unset rather than guessed.
+//
+// A bind-mount volumes: entry (compose.go's own doc comment) becomes a
+// store.ServiceBindMount, not a store.ServiceVolume: the caller must
+// require AbilityRoot before persisting a result carrying any
+// BindMounts, this package has no notion of a caller's abilities.
 func ToDesiredServices(appName string, f *File) (services []store.DesiredService, warnings []string, err error) {
 	if err := f.Validate(); err != nil {
 		return nil, nil, err
@@ -31,11 +36,12 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 		}
 
 		d := store.DesiredService{
-			Name:   appName + "-" + key,
-			AppID:  appName,
-			Image:  svc.Image,
-			Env:    map[string]string(svc.Environment),
-			Labels: svc.Labels,
+			Name:    appName + "-" + key,
+			AppID:   appName,
+			Image:   svc.Image,
+			Env:     map[string]string(svc.Environment),
+			Labels:  svc.Labels,
+			Command: svc.Command,
 		}
 		for _, p := range svc.Ports {
 			d.Port = p.ContainerPort
@@ -45,6 +51,14 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 			d.Domains = []string{domain}
 		}
 		for _, v := range svc.Volumes {
+			if v.HostPath != "" {
+				d.BindMounts = append(d.BindMounts, store.ServiceBindMount{
+					HostPath:      v.HostPath,
+					ContainerPath: v.ContainerPath,
+					ReadOnly:      v.ReadOnly,
+				})
+				continue
+			}
 			d.Volumes = append(d.Volumes, store.ServiceVolume{
 				Name:          volumeName(appName, key, v.Name),
 				ContainerPath: v.ContainerPath,

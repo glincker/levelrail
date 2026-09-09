@@ -15,6 +15,10 @@ export type NotificationChannelKind =
   | 'gotify'
   | 'mattermost'
   | 'lark'
+  | 'rocketchat'
+  | 'opsgenie'
+  | 'webex'
+  | 'googlechat'
 
 export interface NotificationChannel {
   id: string

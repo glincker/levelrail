@@ -21,6 +21,17 @@ func registerSystemTools(server *mcp.Server, client *apiclient.Client) {
 	})
 
 	mcp.AddTool(server, &mcp.Tool{
+		Name:        "get_system_status",
+		Description: "Get the control plane's own configured/not-configured signals: whether secrets, telemetry, and alerts are set up, local Docker daemon reachability, and data directory disk usage. A smaller, faster read than get_system_doctor's full preflight bundle. Read-only.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.SystemStatusResource, error) {
+		status, err := client.GetSystemStatus(ctx)
+		if err != nil {
+			return nil, apiclient.SystemStatusResource{}, fmt.Errorf("get system status: %w", err)
+		}
+		return nil, status, nil
+	})
+
+	mcp.AddTool(server, &mcp.Tool{
 		Name:        "get_onboarding_status",
 		Description: "Get whether the control plane's first-run onboarding flow has been completed. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.OnboardingStateResource, error) {

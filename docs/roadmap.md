@@ -53,7 +53,7 @@ still open. This page describes what's actually true today.
   shared checkout, each scoped to its own `build.baseDirectory`, linked
   under one `store.App`, and independently reachable over HTTPS through
   one ingress pass.
-- A curated 81-entry service template catalog (ADR 015: reverses the
+- A curated 101-entry service template catalog (ADR 015: reverses the
   original "not chasing Coolify's 280 templates" non-goal, once Compose
   support existed to build it on), served over the API and browsable
   from the creation wizard, with a category-specific icon per card.
@@ -90,10 +90,15 @@ still open. This page describes what's actually true today.
   the app's own build config; closing or merging the PR tears it down
   automatically. A configured control-plane primary domain gets a
   `pr-<number>.<app>.<domain>` subdomain; without one, the preview is
-  reachable by host:port like any domain-less app. GitHub only for now
-  (`pull_request` events); GitLab (Merge Request Hook) and Bitbucket
-  (`pullrequest:*`) webhook payloads are parsed too, but end-to-end
-  testing has only covered GitHub. Wired into the dashboard (a card
+  reachable by host:port like any domain-less app. All three providers'
+  webhook payloads are parsed and trigger it: GitHub's `pull_request`
+  events, GitLab's Merge Request Hook, and Bitbucket's `pullrequest:*`
+  events. GitLab's and Bitbucket's own full lifecycle (open, redeploy on
+  update, teardown on close) is now proven end-to-end against a real
+  deploy (`test/e2e/preview_environments_gitlab_bitbucket_test.go`);
+  GitHub's own webhook parsing and preview logic is covered at the unit
+  level (`internal/api/preview_environments_github_test.go`) but doesn't
+  yet have a live e2e test of its own. Wired into the dashboard (a card
   alongside git source settings: toggle, active-preview list, manual
   teardown) and the CLI (`apps previews list/teardown/enable/disable`).
   A scheduled TTL sweep also tears down any preview untouched for 7
@@ -162,14 +167,16 @@ still open. This page describes what's actually true today.
   build-log persistence. CLI `rollback` and `restart` subcommands.
 - Deploy comparison: `GET /api/v1/apps/{name}/deploys/compare` diffs two
   deploy attempts' image tag, commit, trigger source, env var keys,
-  ports, domains, and resource limits, with a frontend view. Env values
+  ports, domains, resource limits, health check config, replica count,
+  deploy strategy, volumes, and labels, with a frontend view. Env values
   are snapshotted per attempt for ordinary vars only: a secret- or
   database-backed key reports only its key and whether it was added or
   removed, never a value, since this control plane has no way to detect
   a value change for either without decrypting a secret or re-resolving
-  a live database reference. Health checks, replica count, deploy
-  strategy, volumes, and labels still aren't snapshotted per attempt, so
-  those aren't part of the diff yet.
+  a live database reference. Every other DesiredService field is now
+  captured per attempt; the CLI and MCP wire types
+  (`internal/apiclient`, `cmd/levelrail-cli`, `cmd/levelrail-mcp`) still
+  only surface the pre-snapshot field set and are a known follow-up.
 - Build-failure diagnosis: a deterministic pattern matcher over a
   failed build or container's actual log text (Docker daemon down,
   image pull/auth failure, missing Dockerfile, npm/pnpm errors, port
@@ -230,24 +237,28 @@ still open. This page describes what's actually true today.
 - An MCP server (`cmd/levelrail-mcp`), wrapping the same versioned REST
   API and bearer-token model the CLI already uses, so a token scoped to
   fewer abilities than a tool needs gets the same 403 the REST API
-  itself would return. Forty-five tools today, across apps (list,
+  itself would return. Fifty-six tools today, across apps (list,
   get, deploy, deploy-compose, rollback, restart, status,
-  deploy-history, logs, metrics, git source, pre/post-deploy hook run
-  outcomes, BYO TLS certificate status per domain), databases (list/get),
-  nodes (list/get/health), service templates (list/get), feature flags
-  (list/get), resource recommendations (app and database), preview
-  environments (list, plus a sweep tool), alert rules (list), IAM
-  policies (list/get), notification channels and their delivery
-  history (list), organizations and projects (list), registry
-  credentials (list), backup targets (list, plus a connection test),
-  app service volume backup history (list), the audit log (list),
-  deploy comparison, build-failure diagnosis, and delivery history for
-  webhooks and backup verifications (list). Thirty-nine of the
-  forty-five are read-and-suggest; the other six perform a real
-  action: deploy, deploy-compose, rollback, and restart for apps (as
-  documented before), the preview sweep, which tears down stale
-  preview environments on demand, the same action the scheduled TTL
-  sweep above (see Preview environments) performs automatically, and a
+  deploy-history, real deploy-attempt history, logs, metrics, network,
+  git source, pre/post-deploy hook run outcomes, BYO TLS certificate
+  status per domain, scheduled tasks list/get), databases (list/get,
+  engine registry), nodes (list/get/health), service templates
+  (list/get), feature flags (list/get), resource recommendations (app
+  and database), preview environments (list, plus a sweep tool), alert
+  rules (list), IAM policies (list/get), notification channels and
+  their delivery history (list), organizations, projects, and
+  environments (list), registry credentials (list), backup targets
+  (list, plus a connection test), app service volume backup history
+  (list), the audit log (list), deploy comparison, build-failure
+  diagnosis, delivery history for webhooks and backup verifications
+  (list), domains (list, plus per-domain maintenance-mode status),
+  certificates (list, expiry status), Cloudflare Tunnel status, and
+  control-plane system status. Fifty of the fifty-six are
+  read-and-suggest; the other six perform a real action: deploy,
+  deploy-compose, rollback, and restart for apps (as documented
+  before), the preview sweep, which tears down stale preview
+  environments on demand, the same action the scheduled TTL sweep
+  above (see Preview environments) performs automatically, and a
   backup-target connection test, which probes a bucket's stored
   credentials against the target on demand without uploading,
   downloading, or deleting anything. Nothing here reaches into the
@@ -278,10 +289,12 @@ still open. This page describes what's actually true today.
   scheduled-task-failure, node-disk-space, node-resource-usage
   (per-node CPU/memory), and domain-health (a periodic DNS check
   against every domain configured on an app, catching a silently
-  repointed CNAME), each with its own evaluator. Eight notification
+  repointed CNAME), each with its own evaluator. Seventeen notification
   channel kinds: webhook, Slack, Discord, email, Telegram, Pushover,
-  PagerDuty, and Microsoft Teams, plus separate deploy-outcome
-  notifications. Delivery history for every notification channel is
+  PagerDuty, Microsoft Teams, Resend, Gotify, Ntfy, Mattermost, Lark,
+  Rocket.Chat, Opsgenie, Webex, and Google Chat, plus separate
+  deploy-outcome notifications. Delivery history for every notification
+  channel is
   independently queryable via API/CLI/MCP. A dismissible dashboard
   nudge prompts enabling the platform-wide alert rules (patch-status,
   node-disk-space, node-resource-usage) when none are configured yet.

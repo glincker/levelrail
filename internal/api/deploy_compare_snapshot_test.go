@@ -108,6 +108,43 @@ func TestHandleCompareDeploys_ConfigSnapshotDiff(t *testing.T) {
 			to:             store.DeployAttemptSnapshot{Resources: &store.ServiceResources{MemoryBytes: 256 << 20, NanoCPUs: 1e9, SwapMemoryBytes: 512 << 20, CPUSetCPUs: "0-1"}},
 			wantChangeKeys: []string{"resources.memory_bytes", "resources.nano_cpus", "resources.swap_memory_bytes", "resources.cpuset_cpus"},
 		},
+		{
+			name:           "replicas changed",
+			from:           store.DeployAttemptSnapshot{Replicas: 1},
+			to:             store.DeployAttemptSnapshot{Replicas: 3},
+			wantChangeKeys: []string{"replicas"},
+		},
+		{
+			name:           "strategy changed",
+			from:           store.DeployAttemptSnapshot{Strategy: "blue-green"},
+			to:             store.DeployAttemptSnapshot{Strategy: "rolling"},
+			wantChangeKeys: []string{"strategy"},
+		},
+		{
+			name: "volumes changed",
+			from: store.DeployAttemptSnapshot{Volumes: []store.ServiceVolume{{Name: "app-web-data", ContainerPath: "/data"}}},
+			to: store.DeployAttemptSnapshot{Volumes: []store.ServiceVolume{
+				{Name: "app-web-data", ContainerPath: "/data"},
+				{Name: "app-web-cache", ContainerPath: "/cache"},
+			}},
+			wantChangeKeys: []string{"volumes"},
+		},
+		{
+			name:           "labels changed",
+			from:           store.DeployAttemptSnapshot{Labels: map[string]string{"team": "platform"}},
+			to:             store.DeployAttemptSnapshot{Labels: map[string]string{"team": "core"}},
+			wantChangeKeys: []string{"labels"},
+		},
+		{
+			name: "health check changed",
+			from: store.DeployAttemptSnapshot{Health: &store.ServiceHealth{
+				Readiness: &store.ServiceProbe{Path: "/healthz", Interval: 5 * time.Second, Timeout: 2 * time.Second, Failures: 3},
+			}},
+			to: store.DeployAttemptSnapshot{Health: &store.ServiceHealth{
+				Readiness: &store.ServiceProbe{Path: "/ready", Interval: 10 * time.Second, Timeout: 5 * time.Second, Failures: 5},
+			}},
+			wantChangeKeys: []string{"health.readiness.path", "health.readiness.interval", "health.readiness.timeout", "health.readiness.failures"},
+		},
 	}
 
 	for _, tt := range tests {

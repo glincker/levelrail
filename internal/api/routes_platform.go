@@ -349,6 +349,14 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/settings/registry", rt.requireAbility(AbilityRoot, rt.handleUpdateRegistrySettings))
 	mux.HandleFunc("DELETE /api/v1/settings/registry", rt.requireAbility(AbilityRoot, rt.handleDisableRegistry))
 
+	// Built-in registry catalog (registry_catalog.go): read-only browsing
+	// for the app-creation "existing image" step's repository/tag picker.
+	// AbilityRead, same tier as the settings GET just above: no secret is
+	// ever returned, the resolved password is only used server-side to
+	// authenticate the upstream catalog query.
+	mux.HandleFunc("GET /api/v1/registry/repositories", rt.requireAbility(AbilityRead, rt.handleListRegistryRepositories))
+	mux.HandleFunc("GET /api/v1/registry/tags", rt.requireAbility(AbilityRead, rt.handleListRegistryTags))
+
 	// Domains (centralized cross-app list, web/src/routes/domains):
 	// every service_domains row, AbilityRead like GET /api/v1/apps,
 	// no new ability tier: this is the same data DomainEditor already

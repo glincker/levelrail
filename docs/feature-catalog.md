@@ -61,7 +61,7 @@ system status (doctor bundle), containers, updates.
 
 ## API resource groups (`internal/api/routes.go`, `routes_platform.go`)
 
-269 registered routes total, grouped by resource:
+271 registered routes total, grouped by resource:
 
 | Resource | Routes | Representative paths |
 | --- | --- | --- |
@@ -76,7 +76,7 @@ system status (doctor bundle), containers, updates.
 | Nodes | 11 | `/nodes`, `/{id}/cordon`, `/drain`, `/workloads` |
 | Ingress / certs / domains / email / Cloudflare | 19 | `/certificates`, `/settings/ingress*`, `/settings/cloudflare-tunnel*`, `/domains/{domain}/tls-cert` |
 | Static sites / backup targets / registry credentials | 15 | `/static-sites`, `/backup-targets*`, `/registry-credentials*` |
-| Built-in container registry | 3 | `/settings/registry` |
+| Built-in container registry | 5 | `/settings/registry`, `/registry/repositories`, `/registry/tags` |
 | Git provider apps (GitHub/GitLab/Bitbucket) | 27 | `/github-app*`, `/gitlab-app*`, `/bitbucket-app*` |
 | DB backups/restore/clone-restore | 16 | `/databases/{name}/backups*`, `/restore-as-new`, `/backup-schedule` |
 | App volume backups/restore | 11 | `/apps/{name}/volumes/{volume}/backups*` |

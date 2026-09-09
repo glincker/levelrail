@@ -62,10 +62,10 @@ and `docker-compose.yml` example.
   preview environments per pull request with automatic teardown.
 - **IAM and audit.** AWS-IAM-shaped Allow/Deny policies scoped to a
   specific resource, with a full audit log and CSV export.
-- **Alerting across thirteen channels.** Threshold, crashloop, certificate
+- **Alerting across seventeen channels.** Threshold, crashloop, certificate
   expiry, and five other rule kinds, delivered to Slack, Discord, email,
   Telegram, Pushover, PagerDuty, Microsoft Teams, Resend, Gotify, Ntfy,
-  Mattermost, Lark, or a webhook.
+  Mattermost, Lark, Rocket.Chat, Opsgenie, Webex, Google Chat, or a webhook.
 - **AI-ready API.** The same HTTP API the dashboard runs on backs an
   MCP server, so AI tools can list apps, read logs, and diagnose a
   crashloop directly.
@@ -76,7 +76,7 @@ Early, active development. Single-node and multi-node both run today:
 agent enrollment, the WireGuard mesh, internal DNS, and node
 placement/cordon/drain are built. Beyond the core deploy path, an
 IAM-style policy engine, audit logging, feature flags, alerting across
-eight rule kinds and thirteen notification channels, an admin-created
+eight rule kinds and seventeen notification channels, a self-service
 team invite flow, and eight managed database engines with
 backup/restore/verification are also shipped
 (see [docs/roadmap.md](docs/roadmap.md) for the full, current list).

@@ -278,6 +278,27 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 		return postJSON(ctx, client, t.NotifyURL, mattermostPayload{Text: summaryDeployText(ev)})
 	case NotifyLark:
 		return postJSON(ctx, client, t.NotifyURL, larkPayload{MsgType: "text", Content: larkContent{Text: summaryDeployText(ev)}})
+	case NotifyRocketChat:
+		emoji := ":rotating_light:"
+		if ev.Succeeded {
+			emoji = ":white_check_mark:"
+		}
+		return postJSON(ctx, client, t.NotifyURL, rocketChatPayload{Text: summaryDeployText(ev), Alias: "Levelrail", Emoji: emoji})
+	case NotifyWebex:
+		return postJSON(ctx, client, t.NotifyURL, webexPayload{Markdown: summaryDeployText(ev)})
+	case NotifyGoogleChat:
+		return postJSON(ctx, client, t.NotifyURL, googleChatPayload{Text: summaryDeployText(ev)})
+	case NotifyOpsgenie:
+		key, err := parseOpsgenieCreds(t.NotifyURL)
+		if err != nil {
+			return fmt.Errorf("alerting: notify deploy outcome: %w", err)
+		}
+		priority := "P1"
+		if ev.Succeeded {
+			priority = "P5"
+		}
+		payload := opsgeniePayload{Message: fmt.Sprintf("deploy: %s", ev.AppName), Description: summaryDeployText(ev), Priority: priority}
+		return postJSONWithAuth(ctx, client, opsgenieAPIURL, payload, "GenieKey "+key)
 	case NotifyGotify:
 		priority := 5
 		if ev.Succeeded {

@@ -42,6 +42,14 @@ type composeNoticeResult struct {
 // since every compose service here already carries a resolved image.
 // Each saved service also gets its own deploy_attempts row, so a
 // compose/template deploy shows up in that service's own deploy history.
+//
+// This route's own gate (routes.go) is AbilityDeploy, but a compose file
+// bind-mounting a host directory (internal/compose's own doc comment on
+// volumes:) additionally requires AbilityRoot, checked here rather than
+// at the route: only some compose files carry a bind mount, so the
+// gate has to be conditional on the parsed body, the same "gate
+// something tighter than the route itself" shape callerHasAbility's own
+// doc comment (auth.go) describes.
 func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	if name == "" {
@@ -78,6 +86,10 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 	services, healthWarnings, err := compose.ToDesiredServices(name, file)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if hasBindMount(services) && !rt.callerHasAbility(r, AbilityRoot) {
+		writeError(w, http.StatusForbidden, "this compose file bind-mounts a host directory, which requires the root ability")
 		return
 	}
 	for _, warning := range healthWarnings {
@@ -161,4 +173,16 @@ func (rt *Router) persistComposeSecret(ctx context.Context, appName string) func
 
 func composeSecretStorageKey(kind, key string) string {
 	return "compose_" + strings.ToLower(kind) + "_" + strings.ToLower(key)
+}
+
+// hasBindMount reports whether any of services carries a bind mount, the
+// signal handleDeployCompose uses to decide whether this request needs
+// AbilityRoot on top of the route's own AbilityDeploy gate.
+func hasBindMount(services []store.DesiredService) bool {
+	for _, svc := range services {
+		if len(svc.BindMounts) > 0 {
+			return true
+		}
+	}
+	return false
 }

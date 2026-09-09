@@ -231,6 +231,96 @@ func TestSendDeployOutcome_Lark_PostsMsgTypeAndContent(t *testing.T) {
 	}
 }
 
+func TestSendDeployOutcome_RocketChat_PostsTextAliasAndEmoji(t *testing.T) {
+	var got rocketChatPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	target := DeployTarget{NotifyURL: srv.URL, NotifyKind: NotifyRocketChat, Enabled: true}
+	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
+	if err != nil {
+		t.Fatalf("sendDeployOutcome() error = %v", err)
+	}
+	if !strings.Contains(got.Text, "web") || !strings.Contains(got.Text, "SUCCEEDED") {
+		t.Errorf("Rocket.Chat payload.Text = %q, want it to mention the app and SUCCEEDED", got.Text)
+	}
+	if got.Emoji != ":white_check_mark:" {
+		t.Errorf("Rocket.Chat payload.Emoji = %q, want :white_check_mark: for a succeeded deploy", got.Emoji)
+	}
+}
+
+func TestSendDeployOutcome_Webex_PostsMarkdownField(t *testing.T) {
+	var got webexPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	target := DeployTarget{NotifyURL: srv.URL, NotifyKind: NotifyWebex, Enabled: true}
+	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: false, Error: "boom"})
+	if err != nil {
+		t.Fatalf("sendDeployOutcome() error = %v", err)
+	}
+	if !strings.Contains(got.Markdown, "boom") {
+		t.Errorf("Webex payload.Markdown = %q, want it to mention the error", got.Markdown)
+	}
+}
+
+func TestSendDeployOutcome_GoogleChat_PostsTextField(t *testing.T) {
+	var got map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	target := DeployTarget{NotifyURL: srv.URL, NotifyKind: NotifyGoogleChat, Enabled: true}
+	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
+	if err != nil {
+		t.Fatalf("sendDeployOutcome() error = %v", err)
+	}
+	text, _ := got["text"].(string)
+	if !strings.Contains(text, "web") {
+		t.Errorf("Google Chat payload = %+v, want a text field mentioning the app", got)
+	}
+}
+
+func TestSendDeployOutcome_Opsgenie_PostsAuthHeaderAndPayload(t *testing.T) {
+	var got opsgeniePayload
+	var gotAuth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+	original := opsgenieAPIURL
+	opsgenieAPIURL = srv.URL
+	t.Cleanup(func() { opsgenieAPIURL = original })
+
+	target := DeployTarget{
+		NotifyURL:  "https://api.opsgenie.com/v2/alerts?key=og_secret",
+		NotifyKind: NotifyOpsgenie, Enabled: true,
+	}
+	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
+	if err != nil {
+		t.Fatalf("sendDeployOutcome() error = %v", err)
+	}
+	if gotAuth != "GenieKey og_secret" {
+		t.Errorf("Authorization header = %q, want GenieKey og_secret", gotAuth)
+	}
+	if !strings.Contains(got.Message, "web") {
+		t.Errorf("payload.Message = %q, want it to mention the app", got.Message)
+	}
+	if got.Priority != "P5" {
+		t.Errorf("payload.Priority = %q, want P5 for a succeeded deploy", got.Priority)
+	}
+}
+
 func TestSendDeployOutcome_Gotify_PostsTitleAndMessage(t *testing.T) {
 	var got gotifyPayload
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

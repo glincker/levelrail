@@ -460,6 +460,44 @@ func TestController_Reconcile_Resources_ReachesContainerSpec(t *testing.T) {
 	}
 }
 
+// TestController_Reconcile_Command_ReachesContainerSpec confirms
+// desired.Command (a compose service's own command:, internal/compose's
+// ToDesiredServices) reaches ContainerSpec.Command, and that an unset
+// Command leaves ContainerSpec.Command nil rather than an empty slice
+// (docker.ContainerSpec.Command's own doc comment: nil means the
+// image's own default).
+func TestController_Reconcile_Command_ReachesContainerSpec(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{
+		Name: "minio", Image: "minio/minio:latest",
+		Command: []string{"server", "/data", "--console-address", ":9001"},
+	}
+	c := New("minio", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	want := []string{"server", "/data", "--console-address", ":9001"}
+	if got := rt.lastCreateSpec.Command; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Command = %v, want %v", got, want)
+	}
+}
+
+func TestController_Reconcile_NoCommand_ContainerSpecCommandStaysNil(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1"}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	if got := rt.lastCreateSpec.Command; got != nil {
+		t.Errorf("created ContainerSpec.Command = %v, want nil", got)
+	}
+}
+
 func TestController_Reconcile_FreshDeploy_ReadinessSucceeds(t *testing.T) {
 	srv := alwaysHealthy()
 	defer srv.Close()
@@ -2715,6 +2753,39 @@ func TestController_Reconcile_Volumes_EnsureFails_CreateNeverCalled(t *testing.T
 	}
 }
 
+// TestController_Reconcile_BindMounts_MountedOnCreate is
+// TestController_Reconcile_Volumes_EnsuredAndMountedOnCreate's bind-mount
+// counterpart: unlike a named volume, a bind mount is a real host path
+// that already exists, so there's no ensure step, only the direct
+// ContainerSpec.BindMounts translation.
+func TestController_Reconcile_BindMounts_MountedOnCreate(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		BindMounts: []store.ServiceBindMount{
+			{HostPath: "/srv/web/uploads", ContainerPath: "/uploads"},
+			{HostPath: "/srv/web/config", ContainerPath: "/config", ReadOnly: true},
+		},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue {
+		t.Fatalf("condition = %+v, want Status=True", cond)
+	}
+
+	wantMounts := []docker.BindMount{
+		{HostPath: "/srv/web/uploads", ContainerPath: "/uploads"},
+		{HostPath: "/srv/web/config", ContainerPath: "/config", ReadOnly: true},
+	}
+	if got := rt.lastCreateSpec.BindMounts; !reflect.DeepEqual(got, wantMounts) {
+		t.Errorf("created ContainerSpec.BindMounts = %+v, want %+v", got, wantMounts)
+	}
+}
+
 // TestController_Reconcile_NoVolumes_LeavesContainerSpecVolumesNil is the
 // regression-safety counterpart, same reasoning
 // TestController_Reconcile_NoLabels_LeavesContainerSpecLabelsNil gives
@@ -2733,6 +2804,9 @@ func TestController_Reconcile_NoVolumes_LeavesContainerSpecVolumesNil(t *testing
 	}
 	if rt.ensureVolumeCalls != nil {
 		t.Errorf("EnsureVolume calls = %v, want none", rt.ensureVolumeCalls)
+	}
+	if got := rt.lastCreateSpec.BindMounts; got != nil {
+		t.Errorf("created ContainerSpec.BindMounts = %+v, want nil", got)
 	}
 }
 

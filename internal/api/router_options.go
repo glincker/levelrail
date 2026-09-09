@@ -68,6 +68,13 @@ func WithRegistrySecrets(s RegistrySecrets) Option {
 	return func(rt *Router) { rt.registrySecrets = s }
 }
 
+// WithRegistryCatalogSecrets enables GET /api/v1/registry/repositories
+// and GET /api/v1/registry/tags. Without one configured (the default),
+// both return 501, the same shape WithRegistrySecrets establishes.
+func WithRegistryCatalogSecrets(s RegistryCatalogSecrets) Option {
+	return func(rt *Router) { rt.registryCatalogSecrets = s }
+}
+
 // WithDomainBasicAuthSecrets enables PUT/DELETE
 // /api/v1/apps/{name}/domains/{domain}/auth. Without one configured
 // (the default), both return 501; GET works regardless, the same shape

@@ -148,6 +148,11 @@ type appResource struct {
 	// endpoint. See app_volume_backups.go/app_volume_restore.go for the
 	// backup/restore/schedule endpoints each one supports.
 	Volumes []appVolumeResource `json:"volumes,omitempty"`
+	// BindMounts are this app's bind-mounted host directories
+	// (store.DesiredService.BindMounts), response-only for the same
+	// reason Volumes above is: see appBindMountResource's own doc
+	// comment for where these actually get set.
+	BindMounts []appBindMountResource `json:"bind_mounts,omitempty"`
 }
 
 func toAppResource(svc store.DesiredService) appResource {
@@ -192,6 +197,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		LogDrain:           svc.LogDrain,
 		EnvDirty:           svc.EnvDirty,
 		Volumes:            toAppVolumeResources(svc),
+		BindMounts:         toAppBindMountResources(svc),
 	}
 }
 

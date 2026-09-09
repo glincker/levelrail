@@ -133,6 +133,17 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		}
 		return nil, tailLogEntries(entries, in.Tail), nil
 	})
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "list_deploy_attempts",
+		Description: "List an app's real deploy-attempt history: one row per actual trigger call (manual deploy, build, or webhook), newest first, with status, image, commit SHA, and timestamps. Additive to get_app_status/list_deploys' current reconcile conditions, not a replacement: this is a real log of what was tried, not just the latest state.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.DeployAttemptResource, error) {
+		attempts, err := client.ListDeployAttempts(ctx, in.Name)
+		if err != nil {
+			return nil, nil, fmt.Errorf("list deploy attempts for app %q: %w", in.Name, err)
+		}
+		return nil, attempts, nil
+	})
 }
 
 // tailLogEntries applies get_app_logs' client-side "last N entries"

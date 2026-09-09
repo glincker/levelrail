@@ -35,6 +35,7 @@ import {
   useCreateNotificationChannel,
   useTestNotificationChannel,
 } from '../queries/notificationChannels'
+import { buildOpsgenieNotifyUrl } from '../lib/opsgenieNotifyUrl'
 import { buildPushoverNotifyUrl } from '../lib/pushoverNotifyUrl'
 import { buildResendNotifyUrl } from '../lib/resendNotifyUrl'
 import type { NotificationChannelKind } from '../types/notificationChannel'
@@ -46,10 +47,14 @@ const KIND_ORDER: NotificationChannelKind[] = [
   'teams',
   'mattermost',
   'lark',
+  'rocketchat',
+  'webex',
+  'googlechat',
   'generic',
   'email',
   'pushover',
   'pagerduty',
+  'opsgenie',
   'resend',
   'ntfy',
   'gotify',
@@ -104,6 +109,19 @@ const KIND_META: Record<
     placeholder: 'https://gotify.example.com/message?token=...',
     href: 'https://gotify.net/docs/pushmsg',
   },
+  rocketchat: {
+    placeholder: 'https://rocketchat.example.com/hooks/...',
+    href: 'https://docs.rocket.chat/docs/integrations#incoming-webhook-script',
+  },
+  opsgenie: { placeholder: '' },
+  webex: {
+    placeholder: 'https://webexapis.com/v1/webhooks/incoming/...',
+    href: 'https://developer.webex.com/messaging/docs/api/guides/webhooks',
+  },
+  googlechat: {
+    placeholder: 'https://chat.googleapis.com/v1/spaces/.../messages?key=...',
+    href: 'https://developers.google.com/workspace/chat/quickstart/webhooks',
+  },
 }
 
 const createChannelSchema = z
@@ -123,6 +141,10 @@ const createChannelSchema = z
       'gotify',
       'mattermost',
       'lark',
+      'rocketchat',
+      'opsgenie',
+      'webex',
+      'googlechat',
     ]),
     notifyUrl: z.string().trim(),
     pushoverUserKey: z.string().trim(),
@@ -131,6 +153,7 @@ const createChannelSchema = z
     resendApiKey: z.string().trim(),
     resendTo: z.string().trim(),
     resendFrom: z.string().trim(),
+    opsgenieApiKey: z.string().trim(),
   })
   .superRefine((data, ctx) => {
     if (data.kind === 'pushover') {
@@ -190,6 +213,16 @@ const createChannelSchema = z
       }
       return
     }
+    if (data.kind === 'opsgenie') {
+      if (!data.opsgenieApiKey) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'API Key is required',
+          path: ['opsgenieApiKey'],
+        })
+      }
+      return
+    }
     if (!data.notifyUrl) {
       ctx.addIssue({
         code: 'custom',
@@ -226,6 +259,7 @@ const DEFAULT_VALUES: CreateChannelForm = {
   resendApiKey: '',
   resendTo: '',
   resendFrom: '',
+  opsgenieApiKey: '',
 }
 
 // The single notify_url string the API expects, per kind: Pushover's and
@@ -250,6 +284,9 @@ function resolveNotifyUrl(values: CreateChannelForm): string {
       values.resendFrom.trim() || undefined,
     )
   }
+  if (values.kind === 'opsgenie') {
+    return buildOpsgenieNotifyUrl(values.opsgenieApiKey.trim())
+  }
   return values.notifyUrl.trim()
 }
 
@@ -272,6 +309,7 @@ export function CreateNotificationChannelDialog() {
   const pagerdutyRoutingKey = watch('pagerdutyRoutingKey')
   const resendApiKey = watch('resendApiKey')
   const resendTo = watch('resendTo')
+  const opsgenieApiKey = watch('opsgenieApiKey')
   const hasDestination =
     kind === 'pushover'
       ? Boolean(pushoverUserKey.trim() && pushoverApiToken.trim())
@@ -279,7 +317,9 @@ export function CreateNotificationChannelDialog() {
         ? Boolean(pagerdutyRoutingKey.trim())
         : kind === 'resend'
           ? Boolean(resendApiKey.trim() && resendTo.trim())
-          : Boolean(notifyUrl.trim())
+          : kind === 'opsgenie'
+            ? Boolean(opsgenieApiKey.trim())
+            : Boolean(notifyUrl.trim())
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -524,6 +564,26 @@ export function CreateNotificationChannelDialog() {
                 </FieldHint>
               </Field>
             </>
+          ) : kind === 'opsgenie' ? (
+            <Field>
+              <FieldLabel htmlFor="channel-opsgenie-api-key">
+                Opsgenie API Key
+              </FieldLabel>
+              <Input
+                id="channel-opsgenie-api-key"
+                placeholder="00000000-0000-0000-0000-000000000000"
+                {...register('opsgenieApiKey', {
+                  onChange: () => {
+                    setVerified(false)
+                  },
+                })}
+              />
+              <FieldError errors={[formState.errors.opsgenieApiKey]} />
+              <FieldHint href="https://support.atlassian.com/opsgenie/docs/api-integration/">
+                What gets sent: app name, image/tag, success or failure, and the
+                error message on failure. Nothing else about your app.
+              </FieldHint>
+            </Field>
           ) : (
             <Field>
               <FieldLabel htmlFor="channel-notify-url">

@@ -69,10 +69,12 @@ export function useInvites() {
   return useSuspenseQuery(inviteListQueryOptions())
 }
 
-// POST /api/v1/invites: AbilityRoot-gated (internal/api's
-// handleCreateInvite doc comment), same tier as createUser: the caller
-// picks the invited abilities, so only a root caller may hand out any
-// subset of them.
+// POST /api/v1/invites: AbilityWrite-gated (internal/api's
+// handleCreateInvite doc comment), not AbilityRoot like createUser: the
+// caller picks the invited abilities, but the server caps them at the
+// caller's own resolved abilities, so a write-level caller can invite a
+// peer or a viewer, never someone with more access than they hold
+// themselves.
 export async function createInvite(
   req: CreateInviteRequest,
 ): Promise<CreateInviteResponse> {
@@ -100,6 +102,10 @@ export function useCreateInvite() {
   })
 }
 
+// DELETE /api/v1/invites/{id}: AbilityWrite-gated, plus a server-side
+// check that the caller is either root or the invite's own creator
+// (handleRevokeInvite's own doc comment); InvitesTable only renders the
+// trigger for a row when that check would pass.
 export async function revokeInvite(id: string): Promise<void> {
   const res = await fetch(`/api/v1/invites/${encodeURIComponent(id)}`, {
     method: 'DELETE',

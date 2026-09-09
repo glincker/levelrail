@@ -78,6 +78,7 @@ var validNotifyKinds = []alerting.NotifyKind{
 	alerting.NotifyGeneric, alerting.NotifySlack, alerting.NotifyDiscord, alerting.NotifyTelegram,
 	alerting.NotifyEmail, alerting.NotifyPushover, alerting.NotifyPagerDuty, alerting.NotifyTeams,
 	alerting.NotifyResend, alerting.NotifyNtfy, alerting.NotifyGotify, alerting.NotifyMattermost, alerting.NotifyLark,
+	alerting.NotifyRocketChat, alerting.NotifyOpsgenie, alerting.NotifyWebex, alerting.NotifyGoogleChat,
 }
 
 // validateNotifyKind is shared by channel creation and the test-send

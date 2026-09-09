@@ -337,7 +337,30 @@ func TestNewDeployAttemptSnapshot(t *testing.T) {
 			},
 		},
 		{
-			name: "no env, ports, domains, or resources configured",
+			name: "health, replicas, strategy, volumes, and labels carry through",
+			svc: DesiredService{
+				Health: &ServiceHealth{
+					Readiness: &ServiceProbe{Path: "/healthz", Interval: 5 * time.Second, Timeout: 2 * time.Second, Failures: 3},
+					Liveness:  &ServiceProbe{Path: "/livez", Interval: 30 * time.Second, Timeout: 3 * time.Second, Failures: 5},
+				},
+				Replicas: 3,
+				Strategy: "rolling",
+				Volumes:  []ServiceVolume{{Name: "app-web-data", ContainerPath: "/data"}},
+				Labels:   map[string]string{"team": "platform"},
+			},
+			want: DeployAttemptSnapshot{
+				Health: &ServiceHealth{
+					Readiness: &ServiceProbe{Path: "/healthz", Interval: 5 * time.Second, Timeout: 2 * time.Second, Failures: 3},
+					Liveness:  &ServiceProbe{Path: "/livez", Interval: 30 * time.Second, Timeout: 3 * time.Second, Failures: 5},
+				},
+				Replicas: 3,
+				Strategy: "rolling",
+				Volumes:  []ServiceVolume{{Name: "app-web-data", ContainerPath: "/data"}},
+				Labels:   map[string]string{"team": "platform"},
+			},
+		},
+		{
+			name: "no env, ports, domains, resources, health, volumes, or labels configured",
 			svc:  DesiredService{Port: 8080},
 			want: DeployAttemptSnapshot{Port: 8080},
 		},
@@ -361,6 +384,40 @@ func TestNewDeployAttemptSnapshot(t *testing.T) {
 				t.Errorf("HostPort = %v, want %v", got.HostPort, tt.want.HostPort)
 			} else if got.HostPort != nil && *got.HostPort != *tt.want.HostPort {
 				t.Errorf("HostPort = %d, want %d", *got.HostPort, *tt.want.HostPort)
+			}
+			if got.Replicas != tt.want.Replicas {
+				t.Errorf("Replicas = %d, want %d", got.Replicas, tt.want.Replicas)
+			}
+			if got.Strategy != tt.want.Strategy {
+				t.Errorf("Strategy = %q, want %q", got.Strategy, tt.want.Strategy)
+			}
+			if (got.Health == nil) != (tt.want.Health == nil) {
+				t.Errorf("Health = %v, want %v", got.Health, tt.want.Health)
+			} else if got.Health != nil {
+				if *got.Health.Readiness != *tt.want.Health.Readiness {
+					t.Errorf("Health.Readiness = %+v, want %+v", got.Health.Readiness, tt.want.Health.Readiness)
+				}
+				if *got.Health.Liveness != *tt.want.Health.Liveness {
+					t.Errorf("Health.Liveness = %+v, want %+v", got.Health.Liveness, tt.want.Health.Liveness)
+				}
+			}
+			if len(got.Volumes) != len(tt.want.Volumes) {
+				t.Errorf("Volumes = %+v, want %+v", got.Volumes, tt.want.Volumes)
+			} else {
+				for i, w := range tt.want.Volumes {
+					if got.Volumes[i] != w {
+						t.Errorf("Volumes[%d] = %+v, want %+v", i, got.Volumes[i], w)
+					}
+				}
+			}
+			if len(got.Labels) != len(tt.want.Labels) {
+				t.Errorf("Labels = %v, want %v", got.Labels, tt.want.Labels)
+			} else {
+				for k, w := range tt.want.Labels {
+					if got.Labels[k] != w {
+						t.Errorf("Labels[%q] = %q, want %q", k, got.Labels[k], w)
+					}
+				}
 			}
 		})
 	}
@@ -399,6 +456,14 @@ func TestSaveAndGetDeployAttempt_Snapshot(t *testing.T) {
 		Port: 3000, HostPort: &hostPort,
 		Domains:   []string{"app.example.com"},
 		Resources: &ServiceResources{MemoryBytes: 512 << 20, NanoCPUs: 5e8, SwapMemoryBytes: 1 << 30, CPUSetCPUs: "0-1"},
+		Health: &ServiceHealth{
+			Readiness: &ServiceProbe{Path: "/healthz", Interval: 5 * time.Second, Timeout: 2 * time.Second, Failures: 3},
+			Liveness:  &ServiceProbe{Path: "/livez", Interval: 30 * time.Second, Timeout: 3 * time.Second, Failures: 5},
+		},
+		Replicas: 3,
+		Strategy: "rolling",
+		Volumes:  []ServiceVolume{{Name: "app-web-data", ContainerPath: "/data"}},
+		Labels:   map[string]string{"team": "platform"},
 	}
 
 	if err := db.SaveDeployAttempt(ctx, DeployAttempt{
@@ -434,6 +499,21 @@ func TestSaveAndGetDeployAttempt_Snapshot(t *testing.T) {
 	if got.Snapshot.Resources == nil || *got.Snapshot.Resources != *want.Resources {
 		t.Errorf("Snapshot.Resources = %+v, want %+v", got.Snapshot.Resources, want.Resources)
 	}
+	if got.Snapshot.Replicas != want.Replicas {
+		t.Errorf("Snapshot.Replicas = %d, want %d", got.Snapshot.Replicas, want.Replicas)
+	}
+	if got.Snapshot.Strategy != want.Strategy {
+		t.Errorf("Snapshot.Strategy = %q, want %q", got.Snapshot.Strategy, want.Strategy)
+	}
+	if got.Snapshot.Health == nil || *got.Snapshot.Health.Readiness != *want.Health.Readiness || *got.Snapshot.Health.Liveness != *want.Health.Liveness {
+		t.Errorf("Snapshot.Health = %+v, want %+v", got.Snapshot.Health, want.Health)
+	}
+	if len(got.Snapshot.Volumes) != 1 || got.Snapshot.Volumes[0] != want.Volumes[0] {
+		t.Errorf("Snapshot.Volumes = %+v, want %+v", got.Snapshot.Volumes, want.Volumes)
+	}
+	if len(got.Snapshot.Labels) != 1 || got.Snapshot.Labels["team"] != "platform" {
+		t.Errorf("Snapshot.Labels = %v, want %v", got.Snapshot.Labels, want.Labels)
+	}
 }
 
 func TestGetDeployAttempt_PreMigrationRowHasZeroValueSnapshot(t *testing.T) {
@@ -456,7 +536,9 @@ func TestGetDeployAttempt_PreMigrationRowHasZeroValueSnapshot(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetDeployAttempt() error = %v", err)
 	}
-	if len(got.Snapshot.Env) != 0 || got.Snapshot.Port != 0 || got.Snapshot.Resources != nil {
+	if len(got.Snapshot.Env) != 0 || got.Snapshot.Port != 0 || got.Snapshot.Resources != nil ||
+		got.Snapshot.Health != nil || got.Snapshot.Replicas != 0 || got.Snapshot.Strategy != "" ||
+		len(got.Snapshot.Volumes) != 0 || len(got.Snapshot.Labels) != 0 {
 		t.Errorf("Snapshot = %+v, want the zero value for a pre-migration row", got.Snapshot)
 	}
 }
