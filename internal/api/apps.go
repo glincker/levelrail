@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -712,11 +713,34 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rt.teardownServiceContainers(name, existing.NodeID)
+
 	if appID != "" {
 		rt.deleteAppIfOrphaned(r.Context(), appID)
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// teardownServiceContainers stops name's running containers in the
+// background after its desired state is already deleted: stopping a
+// container can take several seconds, so this must not make the
+// caller's own response wait, the same reasoning sendInviteEmail's own
+// background dispatch already applies.
+func (rt *Router) teardownServiceContainers(name, nodeID string) {
+	if rt.execRuntime == nil {
+		return
+	}
+	runtime, err := rt.execRuntime(nodeID)
+	if err != nil {
+		rt.logger.Error("api: teardown containers: resolve node runtime failed", slog.String("error", err.Error()), slog.String("name", name))
+		return
+	}
+	go func() { //nolint:gosec // deliberately outlives the request, same as sendInviteEmail's own background send
+		if err := application.New(name, rt.apps, runtime).Teardown(context.Background()); err != nil {
+			rt.logger.Error("api: teardown containers failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}()
 }
 
 // deleteAppIfOrphaned deletes the store.App row identified by appID once

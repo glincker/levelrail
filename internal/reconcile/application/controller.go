@@ -422,6 +422,14 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 }
 
+// Teardown stops and removes every container this controller owns.
+// Callers must call it themselves right after deleting desired state:
+// Reconcile treats ErrServiceNotFound as "not deployed yet," not "stop
+// everything," so a deleted service is never reconciled again otherwise.
+func (c *Controller) Teardown(ctx context.Context) error {
+	return c.removeStale(ctx, nil)
+}
+
 // reconcileBlueGreen is today's original single-replica shape (this
 // package's own doc comment: create new alongside old, wait for
 // readiness, then remove every other container), generalized to

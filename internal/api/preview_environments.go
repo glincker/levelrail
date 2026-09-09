@@ -449,11 +449,6 @@ func (rt *Router) teardownPreviewRecord(ctx context.Context, preview store.Previ
 // nil means teardown fully succeeded. A previewAppID with no matching
 // store.App (already deleted, e.g. a retried teardown) is treated as
 // already torn down, not a failure.
-//
-// Like every other delete in this codebase (store.DeleteDesiredService's
-// own doc comment), this removes desired state; it does not itself stop
-// the running container, a known, pre-existing reconciler gap this
-// feature inherits rather than introduces.
 func (rt *Router) teardownPreviewApp(ctx context.Context, previewAppID string) []string {
 	app, err := rt.appGroups.GetAppByName(ctx, previewAppID)
 	if errors.Is(err, store.ErrAppNotFound) {
@@ -475,7 +470,9 @@ func (rt *Router) teardownPreviewApp(ctx context.Context, previewAppID string) [
 		if err := rt.apps.DeleteDesiredService(ctx, svc.Name); err != nil && !errors.Is(err, store.ErrServiceNotFound) {
 			rt.logger.Error("api: teardown preview app: delete service failed", slog.String("error", err.Error()), slog.String("service", svc.Name))
 			failed = append(failed, svc.Name)
+			continue
 		}
+		rt.teardownServiceContainers(svc.Name, svc.NodeID)
 	}
 	if len(failed) > 0 {
 		return failed
