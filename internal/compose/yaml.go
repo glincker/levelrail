@@ -175,9 +175,14 @@ func parsePort(s string) (int, error) {
 }
 
 // UnmarshalYAML supports volumes:'s short form only: "name:/path",
-// optionally with a trailing ":ro"/":rw" this parses but doesn't use.
-// A path-like "name" (bind mount) decodes with an empty Name so
-// Validate reports it, rather than failing the whole parse here.
+// optionally with a trailing ":ro"/":rw". The left side is a bind mount
+// (HostPath set, Name left empty) when it starts with "/", a real
+// Docker Compose absolute host path; one starting with "." is rejected
+// outright, since there's no defined working directory here to resolve
+// a relative path against (real Compose resolves it against the
+// compose file's own directory, which this package's direct-import
+// path, unlike the git-sourced expand path, doesn't have). Anything
+// else is a named volume, unchanged from before bind mounts existed.
 func (v *Volume) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.ScalarNode {
 		return fmt.Errorf("volumes: long-form entries are not supported, use \"name:/path\"")
@@ -186,12 +191,19 @@ func (v *Volume) UnmarshalYAML(node *yaml.Node) error {
 	if len(parts) < 2 {
 		return fmt.Errorf("volumes: %q must be \"name:/path\"", node.Value)
 	}
-	name, path := parts[0], parts[1]
-	if strings.HasPrefix(name, ".") || strings.HasPrefix(name, "/") {
-		name = ""
+	left, path := parts[0], parts[1]
+	if strings.HasPrefix(left, ".") {
+		return fmt.Errorf("volumes: %q: relative bind-mount paths are not supported, use an absolute path", node.Value)
 	}
-	v.Name = name
+	if strings.HasPrefix(left, "/") {
+		v.HostPath = left
+	} else {
+		v.Name = left
+	}
 	v.ContainerPath = path
+	if len(parts) == 3 {
+		v.ReadOnly = parts[2] == "ro"
+	}
 	return nil
 }
 

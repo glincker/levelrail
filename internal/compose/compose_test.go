@@ -143,13 +143,23 @@ services:
 `,
 		},
 		{
-			name: "bind mount is rejected",
+			name: "deny-listed bind mount host path is rejected",
 			yaml: `
 services:
   web:
     image: nginx:1.27
     volumes:
-      - ./local:/data
+      - /etc:/data
+`,
+		},
+		{
+			name: "docker socket bind mount is rejected",
+			yaml: `
+services:
+  web:
+    image: nginx:1.27
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 `,
 		},
 	}
@@ -193,6 +203,74 @@ services:
 `))
 	if err == nil {
 		t.Fatal("Parse() error = nil, want an error for a long-form volumes: entry")
+	}
+}
+
+func TestParse_RelativeBindMountPath_Rejected(t *testing.T) {
+	_, err := Parse([]byte(`
+services:
+  web:
+    image: nginx:1.27
+    volumes:
+      - ./local:/data
+`))
+	if err == nil {
+		t.Fatal("Parse() error = nil, want an error for a relative bind-mount path")
+	}
+}
+
+func TestParse_AbsoluteBindMountVolume(t *testing.T) {
+	f, err := Parse([]byte(`
+services:
+  web:
+    image: nginx:1.27
+    volumes:
+      - /srv/myapp/data:/data
+      - /srv/myapp/config:/config:ro
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	web := f.Services["web"]
+	if len(web.Volumes) != 2 {
+		t.Fatalf("web.Volumes = %+v, want 2 entries", web.Volumes)
+	}
+	rw := web.Volumes[0]
+	if rw.Name != "" || rw.HostPath != "/srv/myapp/data" || rw.ContainerPath != "/data" || rw.ReadOnly {
+		t.Errorf("web.Volumes[0] = %+v, want HostPath=/srv/myapp/data ContainerPath=/data ReadOnly=false", rw)
+	}
+	ro := web.Volumes[1]
+	if ro.Name != "" || ro.HostPath != "/srv/myapp/config" || ro.ContainerPath != "/config" || !ro.ReadOnly {
+		t.Errorf("web.Volumes[1] = %+v, want HostPath=/srv/myapp/config ContainerPath=/config ReadOnly=true", ro)
+	}
+
+	if err := f.Validate(); err != nil {
+		t.Fatalf("Validate() error = %v, want an absolute bind-mount path to be accepted", err)
+	}
+}
+
+func TestValidate_ForbiddenBindMountPaths(t *testing.T) {
+	tests := []string{
+		"/", "/etc", "/root", "/boot", "/sys", "/proc",
+		"/var/lib/docker", "/var/run/docker.sock", "/var/run", "/var/run/subdir",
+	}
+	for _, hostPath := range tests {
+		t.Run(hostPath, func(t *testing.T) {
+			f, err := Parse([]byte(`
+services:
+  web:
+    image: nginx:1.27
+    volumes:
+      - "` + hostPath + `:/data"
+`))
+			if err != nil {
+				t.Fatalf("Parse() error = %v", err)
+			}
+			if err := f.Validate(); err == nil {
+				t.Fatalf("Validate() error = nil, want %q to be rejected even for a root caller", hostPath)
+			}
+		})
 	}
 }
 

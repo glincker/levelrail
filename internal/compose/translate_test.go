@@ -60,6 +60,43 @@ services:
 	}
 }
 
+func TestToDesiredServices_BindMountsPropagate(t *testing.T) {
+	f, err := Parse([]byte(`
+services:
+  web:
+    image: nginx:1.27
+    volumes:
+      - web-data:/usr/share/nginx/html
+      - /srv/myapp/uploads:/uploads
+      - /srv/myapp/config:/config:ro
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	got, _, err := ToDesiredServices("myapp", f)
+	if err != nil {
+		t.Fatalf("ToDesiredServices() error = %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("got %d services, want 1", len(got))
+	}
+	web := got[0]
+
+	wantVolumes := []store.ServiceVolume{{Name: "app-myapp-web-web-data", ContainerPath: "/usr/share/nginx/html"}}
+	if !reflect.DeepEqual(web.Volumes, wantVolumes) {
+		t.Errorf("web.Volumes = %+v, want %+v: a bind mount must never land in the named-volume list", web.Volumes, wantVolumes)
+	}
+
+	wantBindMounts := []store.ServiceBindMount{
+		{HostPath: "/srv/myapp/uploads", ContainerPath: "/uploads"},
+		{HostPath: "/srv/myapp/config", ContainerPath: "/config", ReadOnly: true},
+	}
+	if !reflect.DeepEqual(web.BindMounts, wantBindMounts) {
+		t.Errorf("web.BindMounts = %+v, want %+v", web.BindMounts, wantBindMounts)
+	}
+}
+
 func TestToDesiredServices_DomainsPropagate(t *testing.T) {
 	f, err := Parse([]byte(`
 x-levelrail-domains:

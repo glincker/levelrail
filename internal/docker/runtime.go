@@ -75,6 +75,22 @@ type VolumeMount struct {
 	ReadOnly bool
 }
 
+// BindMount attaches a real host directory to a path inside a
+// container, HostPath a real filesystem path on whichever node the
+// container runs on, not a Docker volume name (VolumeMount's own doc
+// comment above). internal/reconcile/application is the only caller
+// today, translating store.ServiceBindMount into this at container-
+// create time; internal/api gates persisting a non-empty BindMounts to
+// AbilityRoot callers and rejects the deny-listed host paths
+// internal/compose's own validateBindMountHostPath defines, both
+// upstream of this package, which trusts HostPath the same way it
+// already trusts VolumeMount.Name.
+type BindMount struct {
+	HostPath      string
+	ContainerPath string
+	ReadOnly      bool
+}
+
 // ContainerSpec is desired state for a container a controller wants to
 // exist.
 //
@@ -106,6 +122,10 @@ type ContainerSpec struct {
 	// database controller (TASKS.md 1.8) is the first caller; ordinary
 	// application containers leave this nil.
 	Volumes []VolumeMount
+	// BindMounts are real host directories to mount at create time
+	// (BindMount's own doc comment). Nil for every service before this
+	// field existed and for the ordinary stateless service today.
+	BindMounts []BindMount
 	// DNS lists nameserver IPs Docker writes into the container's
 	// /etc/resolv.conf, ahead of whatever the daemon would otherwise
 	// configure. Empty/nil is byte-identical to today: only a caller

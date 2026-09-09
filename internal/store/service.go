@@ -87,6 +87,23 @@ type ServiceVolume struct {
 	ContainerPath string `json:"container_path"`
 }
 
+// ServiceBindMount is one host directory an application service's
+// container mounts directly, distinct from ServiceVolume (a Docker-
+// managed named volume): HostPath is a real path on whichever node the
+// service runs on, not a Docker volume name. internal/compose is the
+// only producer today (compose.go's own doc comment on volumes:'s
+// bind-mount short form); internal/api gates persisting any non-empty
+// BindMounts to AbilityRoot callers, the same tier POST /apps/{name}/exec
+// sits behind, since a bind mount is a real host-filesystem access
+// capability. Kept as its own type rather than an optional HostPath
+// field on ServiceVolume so a bind mount and a named volume are never
+// ambiguous in code or storage.
+type ServiceBindMount struct {
+	HostPath      string `json:"host_path"`
+	ContainerPath string `json:"container_path"`
+	ReadOnly      bool   `json:"read_only,omitempty"`
+}
+
 // DesiredService is what the application controller reconciles running
 // containers against: an already-resolved image plus what it needs to
 // run. See the migration comment in migrations/0002_desired_services.sql
@@ -156,6 +173,14 @@ type DesiredService struct {
 	// (a stateless app), same "declarative, resolved before storing"
 	// shape as Resources/Health above.
 	Volumes []ServiceVolume
+
+	// BindMounts are real host directories this service's container
+	// mounts directly (migrations/0088_service_bind_mounts.sql), see
+	// ServiceBindMount's own doc comment for how this differs from
+	// Volumes and how it's gated. Empty for the ordinary case, same
+	// "declarative, resolved before storing" shape Volumes itself
+	// follows.
+	BindMounts []ServiceBindMount
 
 	// Labels are arbitrary operator-supplied Docker labels applied to the
 	// service's container at create time (internal/spec.Service.Labels'
@@ -378,6 +403,14 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	if err != nil {
 		return fmt.Errorf("store: marshal volumes for service %q: %w", svc.Name, err)
 	}
+	bindMounts := svc.BindMounts
+	if bindMounts == nil {
+		bindMounts = []ServiceBindMount{}
+	}
+	bindMountsJSON, err := json.Marshal(bindMounts)
+	if err != nil {
+		return fmt.Errorf("store: marshal bind_mounts for service %q: %w", svc.Name, err)
+	}
 
 	strategy := svc.Strategy
 	if strategy == "" {
@@ -397,8 +430,8 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	}()
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, host_port, domains, env, secret_env, env_dirty, database_env, resources, health, hooks, node_id, strategy, replicas, labels, volumes, registry_credential_id, project_id, environment_id, app_id, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, NULL, NULL, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, host_port, domains, env, secret_env, env_dirty, database_env, resources, health, hooks, node_id, strategy, replicas, labels, volumes, bind_mounts, registry_credential_id, project_id, environment_id, app_id, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, NULL, NULL, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
@@ -415,9 +448,10 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 			replicas = excluded.replicas,
 			labels = excluded.labels,
 			volumes = excluded.volumes,
+			bind_mounts = excluded.bind_mounts,
 			registry_credential_id = excluded.registry_credential_id,
 			updated_at = excluded.updated_at
-	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), string(domainsJSON), string(envJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""})
+	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), string(domainsJSON), string(envJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), string(bindMountsJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""})
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
@@ -835,20 +869,20 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, host_port, domains, env, secret_env, env_dirty, database_env, resources, health, hooks, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id"
+const desiredServiceColumns = "name, image, port, host_port, domains, env, secret_env, env_dirty, database_env, resources, health, hooks, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, bind_mounts"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
 // signature), so the decode-JSON-columns logic exists exactly once.
 func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	var (
-		svc                                                                                                 DesiredService
-		domainsJSON, envJSON, secretEnvJSON, databaseEnvJSON, resourcesJSON, health, hooks, labels, volumes string
-		projectID, storageTargetID, appID, logDrainJSON, environmentID                                      sql.NullString
-		hostPort                                                                                            sql.NullInt64
-		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                             string
+		svc                                                                                                             DesiredService
+		domainsJSON, envJSON, secretEnvJSON, databaseEnvJSON, resourcesJSON, health, hooks, labels, volumes, bindMounts string
+		projectID, storageTargetID, appID, logDrainJSON, environmentID                                                  sql.NullString
+		hostPort                                                                                                        sql.NullInt64
+		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                                         string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &resourcesJSON, &health, &hooks, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &resourcesJSON, &health, &hooks, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &bindMounts); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String
@@ -895,6 +929,9 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	}
 	if err := json.Unmarshal([]byte(volumes), &svc.Volumes); err != nil {
 		return nil, fmt.Errorf("unmarshal volumes: %w", err)
+	}
+	if err := json.Unmarshal([]byte(bindMounts), &svc.BindMounts); err != nil {
+		return nil, fmt.Errorf("unmarshal bind_mounts: %w", err)
 	}
 	if logDrainJSON.Valid {
 		if err := json.Unmarshal([]byte(logDrainJSON.String), &svc.LogDrain); err != nil {

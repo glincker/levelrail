@@ -31,6 +31,10 @@ func TestSaveAndGetDesiredService(t *testing.T) {
 		Volumes: []ServiceVolume{
 			{Name: "app-web-data", ContainerPath: "/var/lib/data"},
 		},
+		BindMounts: []ServiceBindMount{
+			{HostPath: "/srv/web/uploads", ContainerPath: "/uploads"},
+			{HostPath: "/srv/web/config", ContainerPath: "/config", ReadOnly: true},
+		},
 		Hooks: &ServiceHooks{PreDeploy: "rails db:migrate", PostDeploy: "curl -f https://hooks.example.com/deployed"},
 	}
 
@@ -63,6 +67,9 @@ func TestSaveAndGetDesiredService(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got.Volumes, want.Volumes) {
 		t.Errorf("Volumes = %+v, want %+v", got.Volumes, want.Volumes)
+	}
+	if !reflect.DeepEqual(got.BindMounts, want.BindMounts) {
+		t.Errorf("BindMounts = %+v, want %+v", got.BindMounts, want.BindMounts)
 	}
 	if got.Hooks == nil || *got.Hooks != *want.Hooks {
 		t.Errorf("Hooks = %+v, want %+v", got.Hooks, want.Hooks)
