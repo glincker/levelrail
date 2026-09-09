@@ -35,6 +35,10 @@ func runRegistry(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runRegistryEnable(prog, args[1:], stdout, stderr, lookupEnv)
 	case "disable":
 		return runRegistryDisable(prog, args[1:], stdout, stderr, lookupEnv)
+	case "repositories":
+		return runRegistryRepositories(prog, args[1:], stdout, stderr, lookupEnv)
+	case "tags":
+		return runRegistryTags(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown registry subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, registryUsage(prog))
@@ -44,9 +48,11 @@ func runRegistry(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 
 func registryUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s registry status [flags]              show the current settings and container status
-  %[1]s registry enable --host HOST [flags]  provision and enable the built-in container registry
-  %[1]s registry disable [flags]             disable the registry and forget its generated credentials
+  %[1]s registry status [flags]                    show the current settings and container status
+  %[1]s registry enable --host HOST [flags]        provision and enable the built-in container registry
+  %[1]s registry disable [flags]                   disable the registry and forget its generated credentials
+  %[1]s registry repositories [flags]              list every repository pushed to the built-in registry
+  %[1]s registry tags --repository NAME [flags]    list every tag pushed for one repository
 
 Runs Levelrail's own built-in image registry (registry:2), so a
 multi-node deployment gets a build cache/distribution backend without
@@ -58,6 +64,85 @@ an external registry an operator already runs elsewhere.
 
 Run "%[1]s registry <subcommand> -h" for a subcommand's own flags.
 `, prog)
+}
+
+func runRegistryRepositories(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "registry repositories", "print repositories as a JSON array to stdout and nothing else", stderr)
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s registry repositories [flags]\n\nLists every repository pushed to the built-in registry.\n\nFlags:\n", prog)
+		fs.PrintDefaults()
+	}
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+
+	repos, err := client.ListRegistryRepositories(context.Background())
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list registry repositories: %w", err))
+	}
+
+	if err := renderResult(stdout, of.Format, of.Query, repos, func() { printRegistryRepositories(stdout, repos) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
+}
+
+func printRegistryRepositories(out io.Writer, repos registryRepositoriesResource) {
+	if len(repos.Repositories) == 0 {
+		_, _ = fmt.Fprintln(out, "no repositories")
+		return
+	}
+	for _, name := range repos.Repositories {
+		_, _ = fmt.Fprintln(out, name)
+	}
+}
+
+func runRegistryTags(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "registry tags", "print tags as a JSON array to stdout and nothing else", stderr)
+	var repositoryFlag string
+	fs.StringVar(&repositoryFlag, "repository", "", "repository name to list tags for (required)")
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s registry tags --repository NAME [flags]\n\nLists every tag pushed for one repository in the built-in registry.\n\nFlags:\n", prog)
+		fs.PrintDefaults()
+	}
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	if repositoryFlag == "" {
+		_, _ = fmt.Fprintf(stderr, "%s: --repository is required\n\n", prog)
+		fs.Usage()
+		return exitUsage
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+
+	tags, err := client.ListRegistryTags(context.Background(), repositoryFlag)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list registry tags: %w", err))
+	}
+
+	if err := renderResult(stdout, of.Format, of.Query, tags, func() { printRegistryTags(stdout, tags) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
+}
+
+func printRegistryTags(out io.Writer, tags registryTagsResource) {
+	if len(tags.Tags) == 0 {
+		_, _ = fmt.Fprintln(out, "no tags")
+		return
+	}
+	for _, tag := range tags.Tags {
+		_, _ = fmt.Fprintln(out, tag)
+	}
 }
 
 func runRegistryStatus(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

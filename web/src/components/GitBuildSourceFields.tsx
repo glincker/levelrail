@@ -36,6 +36,7 @@ import { cn } from '@/lib/utils'
 import { useGitBranches } from '../queries/gitBranches'
 import { BrandIcon, type BrandIconName } from './BrandIcon'
 import type { FormInput, FormOutput } from './CreateAppFromGitFields'
+import { RegistryImagePicker } from './RegistryImagePicker'
 
 // Purely a URL-string match, not framework/build detection: which git
 // host a pasted repo URL looks like, so the field can show that host's
@@ -284,23 +285,31 @@ export function GitBuildSourceFields({
       </Field>
 
       {buildType === 'image' ? (
-        <Field>
-          <FieldLabel htmlFor="git-app-image">Image reference</FieldLabel>
-          <Input
-            id="git-app-image"
-            className="font-mono"
-            placeholder="registry.example.com/org/app:v1.2.3"
-            autoComplete="off"
-            spellCheck={false}
+        <>
+          <RegistryImagePicker
             disabled={disabled}
-            {...register('image')}
+            onSelect={(imageRef) => {
+              setValue('image', imageRef, { shouldValidate: true, shouldDirty: true })
+            }}
           />
-          <FieldDescription>
-            A full registry reference, already built and pushed elsewhere.
-            Deployed as-is.
-          </FieldDescription>
-          <FieldError errors={[formState.errors.image]} />
-        </Field>
+          <Field>
+            <FieldLabel htmlFor="git-app-image">Image reference</FieldLabel>
+            <Input
+              id="git-app-image"
+              className="font-mono"
+              placeholder="registry.example.com/org/app:v1.2.3"
+              autoComplete="off"
+              spellCheck={false}
+              disabled={disabled}
+              {...register('image')}
+            />
+            <FieldDescription>
+              A full registry reference, already built and pushed elsewhere.
+              Deployed as-is.
+            </FieldDescription>
+            <FieldError errors={[formState.errors.image]} />
+          </Field>
+        </>
       ) : null}
 
       {buildType !== 'image' ? (

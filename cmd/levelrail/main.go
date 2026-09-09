@@ -1786,6 +1786,10 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// The built-in registry's generated password goes through the
 		// same secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithRegistrySecrets(secretsManager))
+		// The built-in registry catalog picker resolves the same
+		// generated password server-side to authenticate its own upstream
+		// query, same nil-interface hazard.
+		opts = append(opts, api.WithRegistryCatalogSecrets(secretsManager))
 		// Per-domain HTTP Basic Auth passwords go through the same
 		// secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithDomainBasicAuthSecrets(secretsManager))
