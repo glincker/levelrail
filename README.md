@@ -141,16 +141,42 @@ so the code path is the same whether you're running one node or ten.
 Positioning, not a ranking. All of these are worth using; the differences
 below are the ones that matter for choosing between them.
 
-| Project | Node control | Orchestration | Observability | Ingress |
-| --- | --- | --- | --- | --- |
-| **Levelrail** | Reverse-dialed gRPC agent, no CLI shelling | Custom Go reconciler over Docker Engine API, level-triggered | Node-local metrics and logs, federated query, all shipped | Embedded Caddy, in-process |
-| Coolify (v4) | SSH plus CLI-shelled `docker`/`docker compose` | Docker Compose per app, Traefik label discovery | Optional bolt-on agent, opt-in | Traefik, separate container |
-| Dokploy | SSH-tunneled Docker Engine API plus CLI-shelled lifecycle ops | Docker Swarm services | Separate Go binary, polling | Traefik, Swarm service |
-| CapRover | Docker Swarm API, even single-node | Docker Swarm services | Optional sibling containers, not built in | nginx, sibling Swarm service |
-| Dokku | Local `dokku` bash entrypoint, no daemon | Custom Bash scheduler over plain `docker` | Not stated in research | nginx by default, pluggable |
-| Kamal | One-shot SSH CLI, no daemon or agent | None: deploy script, not a control plane | None built in | `kamal-proxy`, standalone container |
+| Project | Node control | Orchestration | Observability | Ingress | Rollback |
+| --- | --- | --- | --- | --- | --- |
+| **Levelrail** | Reverse-dialed gRPC agent, no CLI shelling | Custom Go reconciler over Docker Engine API, level-triggered | Node-local metrics and logs, federated query, all shipped | Embedded Caddy, in-process | Prior images pinned so garbage collection can't orphan a rollback target, cutover gated on a real readiness probe |
+| Coolify (v4) | SSH plus CLI-shelled `docker`/`docker compose` | Docker Compose per app, Traefik label discovery | Optional bolt-on agent, opt-in | Traefik, separate container | Health check off by default, a broken deploy can be marked successful |
+| Dokploy | SSH-tunneled Docker Engine API plus CLI-shelled lifecycle ops | Docker Swarm services | Separate Go binary, polling | Traefik, Swarm service | Swarm's own RollbackConfig, marked done before health is verified |
+| CapRover | Docker Swarm API, even single-node | Docker Swarm services | Optional sibling containers, not built in | nginx, sibling Swarm service | None: manual re-tag and re-deploy by hand |
+| Dokku | Local `dokku` bash entrypoint, no daemon | Custom Bash scheduler over plain `docker` | Not stated in research | nginx by default, pluggable | None on the default scheduler, only on the newer, opt-in Kubernetes-backed one |
+| Kamal | One-shot SSH CLI, no daemon or agent | None: deploy script, not a control plane | None built in | `kamal-proxy`, standalone container | `kamal-proxy`'s own two-stage health gate, but no image pinning or rollback command |
 
-Full writeup with per-project detail: [docs/comparison.md](docs/comparison.md).
+### Where the feature depth shows
+
+A handful of concrete points, sourced from actually reading each
+competitor's own code, not cherry-picked framing. Full detail with
+per-line citations: [docs/comparison.md](docs/comparison.md)'s feature
+matrix.
+
+- **Backup verification.** Levelrail re-downloads, re-hashes, and
+  compares every backup against what was recorded at backup time,
+  across all 8 managed database engines. None of the other five
+  projects researched here run any automated check on a backup after
+  taking it: Coolify checks only that the dump file is non-empty,
+  Dokploy and CapRover do no check at all, and Dokku and Kamal have no
+  built-in backup feature in the first place.
+- **AI-agent surface.** 56 MCP tools (`cmd/levelrail-mcp`), against
+  Coolify's roughly 45, the only other project in this set with one at
+  all.
+- **Notification channels.** 17 kinds against Dokploy's 12, the next
+  closest.
+- **Fine-grained RBAC.** Resource-scoped IAM policies (`app:name`,
+  `database:name`, or `*`) ship in the free, Apache 2.0 core. Dokploy's
+  comparable granularity sits behind a paid enterprise license.
+
+One real gap, stated plainly: the template catalog is 101 curated
+entries against Coolify's 371 (an intentional curation-over-count bet,
+see [ADR 015](adr/015-service-template-catalog-reversal.md)), the one
+row in that matrix this project doesn't lead.
 
 ## Screenshots
 
