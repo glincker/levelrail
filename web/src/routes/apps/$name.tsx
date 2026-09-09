@@ -93,7 +93,7 @@ function AppDetailLayout() {
   // aside entirely rather than wrapping it. There is no in-app link to
   // this route yet: the backend has no deploy-history/attempt-listing
   // endpoint to source a deployId from, so this only fixes the route for
-  // direct navigation, see TASKS-v2.md.
+  // direct navigation.
   const isViewingDeployLogs = useRouterState({
     select: (s) => s.location.pathname.includes('/deploys/'),
   })

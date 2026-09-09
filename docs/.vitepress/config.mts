@@ -9,7 +9,7 @@ export default defineConfig({
   description,
 
   // TODO: replace with the real subdomain once chosen, then again with
-  // glinr.com/levelrail once that move happens (see CLAUDE.md section 1).
+  // glinr.com/levelrail once that move happens.
   sitemap: {
     hostname: 'https://levelrail.example.com',
   },
