@@ -1926,4 +1926,477 @@ var Templates = []Template{
       - weblate_redis_data:/data
 `,
 	},
+	{ //nolint:gosec // DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
+		ID:               "rallly",
+		Name:             "Rallly",
+		Slogan:           "Find a time that works for everyone with polls for scheduling meetings and events.",
+		Category:         "Productivity",
+		DocumentationURL: "https://support.rallly.co/self-hosting/introduction",
+		// Only published under a rolling :latest tag upstream; this
+		// pinned version couldn't be verified against a live registry in
+		// this environment.
+		Compose: `services:
+  rallly:
+    image: lukevella/rallly:3.20.0
+    ports: ["3000:3000"]
+    environment:
+      DATABASE_URL: postgres://$SERVICE_USER_DB:$SERVICE_PASSWORD_DB@db:5432/rallly
+      SECRET_PASSWORD: $SERVICE_HEX_64_SECRET
+      NEXT_PUBLIC_BASE_URL: ${SERVICE_FQDN_RALLLY:-http://localhost:3000}
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: $SERVICE_USER_DB
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: rallly
+    volumes:
+      - rallly_db_data:/var/lib/postgresql/data
+`,
+	},
+	{
+		ID:               "grist",
+		Name:             "Grist",
+		Slogan:           "A modern relational spreadsheet that combines spreadsheet flexibility with database structure.",
+		Category:         "Productivity",
+		DocumentationURL: "https://support.getgrist.com",
+		// Only published under a rolling :latest tag upstream; this
+		// pinned version couldn't be verified against a live registry in
+		// this environment.
+		Compose: `services:
+  grist:
+    image: gristlabs/grist:1.3.3
+    ports: ["8484:8484"]
+    environment:
+      TYPEORM_TYPE: postgres
+      TYPEORM_HOST: db
+      TYPEORM_DATABASE: grist
+      TYPEORM_USERNAME: $SERVICE_USER_DB
+      TYPEORM_PASSWORD: $SERVICE_PASSWORD_DB
+      REDIS_URL: redis://redis:6379
+      GRIST_SESSION_SECRET: $SERVICE_REALBASE64_64_SESSIONSECRET
+    volumes:
+      - grist_data:/persist
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: $SERVICE_USER_DB
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: grist
+    volumes:
+      - grist_db_data:/var/lib/postgresql/data
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - grist_redis_data:/data
+`,
+	},
+	{
+		ID:               "readeck",
+		Name:             "Readeck",
+		Slogan:           "Save the readable content of web pages you want to keep, free of ads and clutter.",
+		Category:         "Productivity",
+		DocumentationURL: "https://readeck.org/en/docs/",
+		// Only published under a rolling :latest tag upstream; this
+		// pinned version couldn't be verified against a live registry in
+		// this environment.
+		Compose: `services:
+  readeck:
+    image: codeberg.org/readeck/readeck:0.19.1
+    ports: ["8000:8000"]
+    volumes:
+      - readeck_data:/readeck
+`,
+	},
+	{
+		ID:               "linkding",
+		Name:             "Linkding",
+		Slogan:           "A minimal, fast bookmark manager built for keeping a personal link archive.",
+		Category:         "Productivity",
+		DocumentationURL: "https://linkding.link",
+		// Only published under a rolling :latest tag upstream; this
+		// pinned version couldn't be verified against a live registry in
+		// this environment.
+		Compose: `services:
+  linkding:
+    image: sissbruecker/linkding:1.31.0
+    ports: ["9090:9090"]
+    environment:
+      LD_SUPERUSER_NAME: $SERVICE_USER_ADMIN
+      LD_SUPERUSER_PASSWORD: $SERVICE_PASSWORD_ADMIN
+    volumes:
+      - linkding_data:/etc/linkding/data
+`,
+	},
+	{ //nolint:gosec // CMD_DB_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
+		ID:               "hedgedoc",
+		Name:             "HedgeDoc",
+		Slogan:           "Real-time collaborative markdown notes you can host yourself.",
+		Category:         "Productivity",
+		DocumentationURL: "https://docs.hedgedoc.org",
+		// Only published under a rolling :latest tag upstream; this
+		// pinned version couldn't be verified against a live registry in
+		// this environment.
+		Compose: `services:
+  hedgedoc:
+    image: quay.io/hedgedoc/hedgedoc:1.9.9
+    ports: ["3000:3000"]
+    environment:
+      CMD_DOMAIN: ${SERVICE_FQDN_HEDGEDOC:-localhost}
+      CMD_URL_ADDPORT: "false"
+      CMD_DB_URL: postgres://$SERVICE_USER_DB:$SERVICE_PASSWORD_DB@db:5432/hedgedoc
+      CMD_SESSION_SECRET: $SERVICE_HEX_64_SESSIONSECRET
+    volumes:
+      - hedgedoc_uploads:/hedgedoc/public/uploads
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: $SERVICE_USER_DB
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: hedgedoc
+    volumes:
+      - hedgedoc_db_data:/var/lib/postgresql/data
+`,
+	},
+	{
+		ID:               "databasus",
+		Name:             "Databasus",
+		Slogan:           "A free, self-hosted backup tool for Postgres, MySQL, and MongoDB databases.",
+		Category:         "Developer Tools",
+		DocumentationURL: "https://databasus.com/installation",
+		Compose: `services:
+  databasus:
+    image: databasus/databasus:v3.16.2
+    ports: ["4005:4005"]
+    volumes:
+      - databasus_data:/databasus-data
+`,
+	},
+	{
+		ID:               "wakapi",
+		Name:             "Wakapi",
+		Slogan:           "A self-hosted, WakaTime-compatible backend for tracking coding time and stats.",
+		Category:         "Developer Tools",
+		DocumentationURL: "https://wakapi.dev",
+		// Only published under a rolling :latest tag upstream; this
+		// pinned version couldn't be verified against a live registry in
+		// this environment.
+		Compose: `services:
+  wakapi:
+    image: ghcr.io/muety/wakapi:2.13.0
+    ports: ["3000:3000"]
+    environment:
+      WAKAPI_DB_TYPE: postgres
+      WAKAPI_DB_HOST: db
+      WAKAPI_DB_NAME: wakapi
+      WAKAPI_DB_USER: $SERVICE_USER_DB
+      WAKAPI_DB_PASSWORD: $SERVICE_PASSWORD_DB
+      WAKAPI_SECURITY_PASSWORD_SALT: $SERVICE_BASE64_64_PASSWORDSALT
+    volumes:
+      - wakapi_data:/data
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: $SERVICE_USER_DB
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: wakapi
+    volumes:
+      - wakapi_db_data:/var/lib/postgresql/data
+`,
+	},
+	{
+		ID:               "transmission",
+		Name:             "Transmission",
+		Slogan:           "A fast, lightweight BitTorrent client with a simple web interface.",
+		Category:         "Media",
+		DocumentationURL: "https://docs.linuxserver.io/images/docker-transmission/",
+		// Only published under a rolling :latest tag upstream; this
+		// pinned version couldn't be verified against a live registry in
+		// this environment.
+		Compose: `services:
+  transmission:
+    image: lscr.io/linuxserver/transmission:4.0.6
+    ports: ["9091:9091"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      USER: $SERVICE_USER_ADMIN
+      PASS: $SERVICE_PASSWORD_ADMIN
+    volumes:
+      - transmission_config:/config
+      - transmission_downloads:/downloads
+      - transmission_watch:/watch
+`,
+	},
+	{
+		ID:               "grimmory",
+		Name:             "Grimmory",
+		Slogan:           "Organize, read, annotate, and sync your entire book collection from one place.",
+		Category:         "Media",
+		DocumentationURL: "https://github.com/grimmory-tools/grimmory",
+		Compose: `services:
+  grimmory:
+    image: grimmory/grimmory:nightly-20260403-3a371f7
+    ports: ["80:80"]
+    environment:
+      DATABASE_URL: jdbc:mariadb://db:3306/grimmory
+      DATABASE_USERNAME: $SERVICE_USER_DB
+      DATABASE_PASSWORD: $SERVICE_PASSWORD_DB
+    volumes:
+      - grimmory_data:/app/data
+      - grimmory_books:/books
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_USER: $SERVICE_USER_DB
+      MARIADB_PASSWORD: $SERVICE_PASSWORD_DB
+      MARIADB_ROOT_PASSWORD: $SERVICE_PASSWORD_DBROOT
+      MARIADB_DATABASE: grimmory
+    volumes:
+      - grimmory_db_data:/var/lib/mysql
+`,
+	},
+	{
+		ID:               "chatwoot",
+		Name:             "Chatwoot",
+		Slogan:           "An open-source customer support platform for live chat, email, and social messaging.",
+		Category:         "Communication",
+		DocumentationURL: "https://www.chatwoot.com/docs/self-hosted/",
+		// Only published under a rolling :latest tag upstream; this
+		// pinned version couldn't be verified against a live registry in
+		// this environment. The real stack also runs a sidekiq worker for
+		// background jobs (email delivery, scheduled reports); this
+		// platform's compose subset has no command: effect to run a
+		// second process off the same image, so it's left out here and
+		// those background jobs won't run.
+		Compose: `services:
+  chatwoot:
+    image: chatwoot/chatwoot:v4.6.0
+    ports: ["3000:3000"]
+    environment:
+      SECRET_KEY_BASE: $SERVICE_HEX_64_SECRETKEYBASE
+      FRONTEND_URL: ${SERVICE_FQDN_CHATWOOT:-http://localhost:3000}
+      RAILS_ENV: production
+      POSTGRES_HOST: db
+      POSTGRES_DATABASE: chatwoot
+      POSTGRES_USERNAME: $SERVICE_USER_DB
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - chatwoot_data:/app/storage
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: $SERVICE_USER_DB
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: chatwoot
+    volumes:
+      - chatwoot_db_data:/var/lib/postgresql/data
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - chatwoot_redis_data:/data
+`,
+	},
+	{
+		ID:               "keycloak",
+		Name:             "Keycloak",
+		Slogan:           "An open-source identity and access management server with SSO, OAuth2, and SAML support.",
+		Category:         "Security",
+		DocumentationURL: "https://www.keycloak.org/documentation",
+		// The real image needs a "start" or "start-dev" command argument
+		// to actually serve; the compose subset here doesn't parse
+		// command:, so it's included for a human reader but has no
+		// effect on the desired-state translation yet.
+		Compose: `services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1
+    command: ["start"]
+    ports: ["8080:8080"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: $SERVICE_USER_ADMIN
+      KC_BOOTSTRAP_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+`,
+	},
+	{
+		ID:               "pocket-id",
+		Name:             "Pocket ID",
+		Slogan:           "A simple, secure OIDC provider that authenticates with passkeys instead of passwords.",
+		Category:         "Security",
+		DocumentationURL: "https://pocket-id.org/docs/setup/installation",
+		Compose: `services:
+  pocket-id:
+    image: ghcr.io/pocket-id/pocket-id:v1.13
+    ports: ["1411:1411"]
+    environment:
+      APP_URL: ${SERVICE_FQDN_POCKETID:-http://localhost:1411}
+      TRUST_PROXY: "true"
+    volumes:
+      - pocket_id_data:/app/data
+`,
+	},
+	{
+		ID:               "privatebin",
+		Name:             "PrivateBin",
+		Slogan:           "A minimalist, encrypted pastebin where the server has zero knowledge of what you paste.",
+		Category:         "Security",
+		DocumentationURL: "https://github.com/PrivateBin/PrivateBin/blob/master/doc/README.md",
+		// Only published under a rolling :latest tag upstream; this
+		// pinned version couldn't be verified against a live registry in
+		// this environment.
+		Compose: `services:
+  privatebin:
+    image: privatebin/nginx-fpm-alpine:1.7.4
+    ports: ["8080:8080"]
+    volumes:
+      - privatebin_data:/srv/data
+`,
+	},
+	{
+		ID:               "qdrant",
+		Name:             "Qdrant",
+		Slogan:           "A vector similarity search engine for storing, searching, and managing embeddings.",
+		Category:         "Database Tools",
+		DocumentationURL: "https://qdrant.tech/documentation/",
+		// Only published under a rolling :latest tag upstream; this
+		// pinned version couldn't be verified against a live registry in
+		// this environment.
+		Compose: `services:
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    ports: ["6333:6333"]
+    environment:
+      QDRANT__SERVICE__API_KEY: $SERVICE_HEX_64_APIKEY
+    volumes:
+      - qdrant_data:/qdrant/storage
+`,
+	},
+	{
+		ID:               "influxdb",
+		Name:             "InfluxDB",
+		Slogan:           "An open-source time-series database for metrics, events, and IoT analytics.",
+		Category:         "Database Tools",
+		DocumentationURL: "https://docs.influxdata.com/influxdb/",
+		Compose: `services:
+  influxdb:
+    image: influxdb:2.7-alpine
+    ports: ["8086:8086"]
+    environment:
+      INFLUXDB_INIT_MODE: setup
+      INFLUXDB_INIT_USERNAME: $SERVICE_USER_ADMIN
+      INFLUXDB_INIT_PASSWORD: $SERVICE_PASSWORD_ADMIN
+      INFLUXDB_INIT_ORG: main
+      INFLUXDB_INIT_BUCKET: main
+      INFLUXDB_INIT_ADMIN_TOKEN: $SERVICE_HEX_64_ADMINTOKEN
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+      - influxdb_config:/etc/influxdb2
+`,
+	},
+	{
+		ID:               "rabbitmq",
+		Name:             "RabbitMQ",
+		Slogan:           "A widely used open-source message broker supporting AMQP, MQTT, and STOMP.",
+		Category:         "Infrastructure",
+		DocumentationURL: "https://www.rabbitmq.com/documentation.html",
+		// Upstream only publishes a floating "3-management" major tag for
+		// this variant; this pinned version couldn't be verified against
+		// a live registry in this environment.
+		Compose: `services:
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports: ["15672:15672"]
+    environment:
+      RABBITMQ_DEFAULT_USER: $SERVICE_USER_ADMIN
+      RABBITMQ_DEFAULT_PASS: $SERVICE_PASSWORD_ADMIN
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+`,
+	},
+	{
+		ID:               "glances",
+		Name:             "Glances",
+		Slogan:           "A cross-platform system monitor showing CPU, memory, disk, and network at a glance.",
+		Category:         "Monitoring",
+		DocumentationURL: "https://nicolargo.github.io/glances/",
+		// Real Glances setups bind-mount the host Docker socket to also
+		// show per-container stats; this platform's compose subset only
+		// supports named volumes (no bind mounts), so only host-level
+		// CPU/memory/disk/network is wired up here. Only published under
+		// a rolling :latest tag upstream; this pinned version couldn't be
+		// verified against a live registry in this environment.
+		Compose: `services:
+  glances:
+    image: nicolargo/glances:3.4.0-full
+    ports: ["61208:61208"]
+    environment:
+      GLANCES_OPT: "-w"
+`,
+	},
+	{
+		ID:               "statusnook",
+		Name:             "Statusnook",
+		Slogan:           "Deploy a status page and start monitoring endpoints in minutes.",
+		Category:         "Monitoring",
+		DocumentationURL: "https://statusnook.com",
+		// Only published under a rolling :latest tag upstream; this
+		// pinned version couldn't be verified against a live registry in
+		// this environment.
+		Compose: `services:
+  statusnook:
+    image: goksan/statusnook:1.4.0
+    ports: ["8000:8000"]
+    volumes:
+      - statusnook_data:/app/statusnook-data
+`,
+	},
+	{
+		ID:               "searxng",
+		Name:             "SearXNG",
+		Slogan:           "A privacy-respecting metasearch engine that aggregates results from dozens of search services.",
+		Category:         "Applications",
+		DocumentationURL: "https://docs.searxng.org",
+		// Real SearXNG setups mount a custom settings.yml; this platform's
+		// compose subset has no bind-mount support, so it boots on the
+		// image's own default settings instead. Only published under a
+		// rolling :latest tag upstream; this pinned version couldn't be
+		// verified against a live registry in this environment.
+		Compose: `services:
+  searxng:
+    image: searxng/searxng:2024.10.20
+    ports: ["8080:8080"]
+    environment:
+      SEARXNG_SECRET: $SERVICE_HEX_64_SECRET
+      SEARXNG_REDIS_URL: redis://redis:6379/0
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - searxng_redis_data:/data
+`,
+	},
+	{
+		ID:               "pi-hole",
+		Name:             "Pi-hole",
+		Slogan:           "Network-wide ad blocking that works as a DNS sinkhole for your whole network.",
+		Category:         "Infrastructure",
+		DocumentationURL: "https://docs.pi-hole.net",
+		// Real Pi-hole setups also expose DNS on 53/tcp+udp; this
+		// platform tracks a single container port per service, so only
+		// the web admin UI is reachable here, not DNS resolution. Only
+		// published under a rolling :latest tag upstream; this pinned
+		// version couldn't be verified against a live registry in this
+		// environment.
+		Compose: `services:
+  pihole:
+    image: pihole/pihole:2024.07.0
+    ports: ["80:80"]
+    environment:
+      FTLCONF_webserver_api_password: $SERVICE_PASSWORD_ADMIN
+    volumes:
+      - pihole_data:/etc/pihole
+`,
+	},
 }
