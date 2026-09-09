@@ -48,12 +48,24 @@ function CopyLinkButton({ link }: { link: string }) {
 // the same "shown once" constraint CreateTokenDialog's own plaintext
 // token has. That row's action cell explains this instead of pretending
 // a link is available.
+//
+// isRoot/ownUserID decide whether the Revoke button renders per row,
+// mirroring handleRevokeInvite's own server-side rule (invites.go): root
+// can revoke any invite, anyone else only the ones they created
+// themselves. The list itself is already scoped that way by
+// GET /api/v1/invites for a non-root caller, so in practice every row a
+// non-root session sees is already its own, but the per-row check stays
+// explicit rather than assumed.
 export function InvitesTable({
   invites,
   links,
+  isRoot,
+  ownUserID,
 }: {
   invites: InviteResource[]
   links: Record<string, string>
+  isRoot: boolean
+  ownUserID?: string
 }) {
   if (invites.length === 0) {
     return (
@@ -127,7 +139,9 @@ export function InvitesTable({
                         Copy link
                       </Button>
                     )}
-                    <RevokeInviteDialog invite={invite} />
+                    {isRoot || invite.created_by === ownUserID ? (
+                      <RevokeInviteDialog invite={invite} />
+                    ) : null}
                   </div>
                 </TableCell>
               </TableRow>

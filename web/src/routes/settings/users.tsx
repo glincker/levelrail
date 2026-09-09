@@ -11,6 +11,7 @@ import { InviteMemberDialog } from '../../components/InviteMemberDialog'
 import { InvitesTable } from '../../components/InvitesTable'
 import { useAuthUsername } from '../../hooks/useAuthUsername'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
+import { hasAbility } from '../../types/token'
 import type { CreateInviteResponse } from '../../queries/invites'
 
 // AbilityRead-gated (GET /api/v1/users): who has access to this control
@@ -43,12 +44,18 @@ function UsersSettingsPage() {
   // page, so the trigger only renders once we can see, from this same
   // already-loaded list, that the signed-in account is root. Same
   // client-side heuristic UserTable's own "is this my row" check uses,
-  // backed by the same server-side enforcement either way. POST
-  // /api/v1/invites shares that exact gate (handleCreateInvite's own doc
-  // comment), so the invite trigger follows the same isRoot check.
-  const isRoot = users.some(
-    (u) => u.email === ownEmail && u.abilities.includes('root'),
-  )
+  // backed by the same server-side enforcement either way.
+  const ownUser = users.find((u) => u.email === ownEmail)
+  const ownAbilities = ownUser?.abilities ?? []
+  const isRoot = ownAbilities.includes('root')
+  // POST /api/v1/invites is AbilityWrite-gated, not AbilityRoot
+  // (handleCreateInvite's own privilege cap does the real enforcement,
+  // routes.go), so the invite trigger and pending-invites panel follow
+  // 'write' here, not the stricter isRoot above. InviteMemberDialog's own
+  // role picker further caps itself to roles ownAbilities can actually
+  // grant (handleCreateInvite's server-side cap is still the real
+  // boundary either way).
+  const canInvite = hasAbility(ownAbilities, 'write')
 
   function handleInviteCreated(invite: CreateInviteResponse) {
     setInviteLinks((prev) => ({ ...prev, [invite.id]: invite.link }))
@@ -69,16 +76,21 @@ function UsersSettingsPage() {
             </p>
           </div>
         </div>
-        {isRoot ? (
+        {canInvite ? (
           <div className="flex items-center gap-2">
-            <InviteMemberDialog onCreated={handleInviteCreated} />
-            <CreateUserDialog />
+            {canInvite ? (
+              <InviteMemberDialog
+                callerAbilities={ownAbilities}
+                onCreated={handleInviteCreated}
+              />
+            ) : null}
+            {isRoot ? <CreateUserDialog /> : null}
           </div>
         ) : null}
       </div>
       <UserTable users={users} />
 
-      {isRoot ? (
+      {canInvite ? (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <EnvelopeIcon className="size-4 text-muted-foreground" />
@@ -86,7 +98,12 @@ function UsersSettingsPage() {
               Pending invites
             </h2>
           </div>
-          <InvitesTable invites={invites} links={inviteLinks} />
+          <InvitesTable
+            invites={invites}
+            links={inviteLinks}
+            isRoot={isRoot}
+            ownUserID={ownUser?.id}
+          />
         </div>
       ) : null}
     </div>
