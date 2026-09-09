@@ -102,6 +102,14 @@ type DeployAttemptSnapshot struct {
 	HostPort  *int                  `json:"host_port,omitempty"`
 	Domains   []string              `json:"domains,omitempty"`
 	Resources *ServiceResources     `json:"resources,omitempty"`
+	// Health, Replicas, Strategy, Volumes, and Labels mirror
+	// DesiredService's own fields of the same name, closing the
+	// remaining gap this migration's own comment named.
+	Health   *ServiceHealth    `json:"health,omitempty"`
+	Replicas int               `json:"replicas,omitempty"`
+	Strategy string            `json:"strategy,omitempty"`
+	Volumes  []ServiceVolume   `json:"volumes,omitempty"`
+	Labels   map[string]string `json:"labels,omitempty"`
 }
 
 // NewDeployAttemptSnapshot builds svc's config snapshot at the moment a
@@ -153,6 +161,11 @@ func NewDeployAttemptSnapshot(svc DesiredService) DeployAttemptSnapshot {
 		HostPort:  hostPort,
 		Domains:   svc.Domains,
 		Resources: svc.Resources,
+		Health:    svc.Health,
+		Replicas:  svc.Replicas,
+		Strategy:  svc.Strategy,
+		Volumes:   svc.Volumes,
+		Labels:    svc.Labels,
 	}
 }
 

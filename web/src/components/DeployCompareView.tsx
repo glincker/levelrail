@@ -40,12 +40,36 @@ const CHANGE_FIELD_LABEL: Record<string, string> = {
   'resources.nano_cpus': 'CPU limit',
   'resources.swap_memory_bytes': 'Swap limit',
   'resources.cpuset_cpus': 'CPU set',
+  strategy: 'Deploy strategy',
+  replicas: 'Replicas',
+  volumes: 'Volumes',
+  labels: 'Labels',
+  'health.readiness.path': 'Readiness path',
+  'health.readiness.interval': 'Readiness interval',
+  'health.readiness.timeout': 'Readiness timeout',
+  'health.readiness.failures': 'Readiness failure threshold',
+  'health.liveness.path': 'Liveness path',
+  'health.liveness.interval': 'Liveness interval',
+  'health.liveness.timeout': 'Liveness timeout',
+  'health.liveness.failures': 'Liveness failure threshold',
+}
+
+// Human labels for deployCompareField.From/To when field is "strategy":
+// the same three values DeployStrategyEditor.tsx's own STRATEGY_LABELS
+// already maps, kept as a separate copy here since that map isn't
+// exported and this view has no other reason to import that editor.
+const STRATEGY_VALUE_LABEL: Record<string, string> = {
+  recreate: 'Recreate',
+  'blue-green': 'Blue-green',
+  rolling: 'Rolling',
 }
 
 // Resource fields arrive as raw byte/nano-CPU counts stringified onto the
 // wire (deployCompareField.From/To are both plain strings, the same shape
 // image/commit_sha already use): reuse the app-editor's own formatters
-// rather than showing an operator a raw byte count.
+// rather than showing an operator a raw byte count. Health interval/
+// timeout fields arrive pre-formatted as Go duration strings (e.g. "5s"),
+// already human-readable, so no further conversion is needed for those.
 function formatChangeValue(field: string, value: string): string {
   if (!value) {
     return '(none)'
@@ -55,6 +79,9 @@ function formatChangeValue(field: string, value: string): string {
   }
   if (field === 'resources.nano_cpus') {
     return formatNanoCpus(Number(value))
+  }
+  if (field === 'strategy') {
+    return STRATEGY_VALUE_LABEL[value] ?? value
   }
   return value
 }
@@ -161,9 +188,11 @@ export function DeployCompareView({
         <InfoIcon className="size-4" />
         <AlertDescription>
           <p>{compare.note}</p>
-          <p className="mt-1.5 font-mono text-xs opacity-80">
-            Not tracked: {compare.unsnapshotted_fields.join(', ')}
-          </p>
+          {compare.unsnapshotted_fields.length > 0 ? (
+            <p className="mt-1.5 font-mono text-xs opacity-80">
+              Not tracked: {compare.unsnapshotted_fields.join(', ')}
+            </p>
+          ) : null}
         </AlertDescription>
       </Alert>
     </div>
