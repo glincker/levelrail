@@ -107,7 +107,6 @@ jobs:
   build-image-levelrail:
     name: Build and push levelrail image
     runs-on: ubuntu-latest
-    needs: build-web
     timeout-minutes: 20
     permissions:
       contents: read
@@ -115,12 +114,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-
-      - name: Download frontend dist
-        uses: actions/download-artifact@v4
-        with:
-          name: web-dist
-          path: web/dist
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
