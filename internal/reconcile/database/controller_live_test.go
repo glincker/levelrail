@@ -27,25 +27,7 @@ import (
 // internal/reconcile/application's live tests already establish.
 func TestController_Reconcile_Redis_Live(t *testing.T) {
 	dockertest.SkipIfShort(t)
-	rt, err := docker.NewClient()
-	if err != nil {
-		t.Skipf("no docker client available: %v", err)
-	}
-	rawCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
-	if err != nil {
-		t.Skipf("no docker client available: %v", err)
-	}
-	pingCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	if _, err := rawCli.Ping(pingCtx); err != nil {
-		cancel()
-		t.Skipf("docker daemon not reachable: %v", err)
-	}
-	cancel()
-	t.Cleanup(func() {
-		if err := rt.Close(); err != nil {
-			t.Errorf("closing docker client: %v", err)
-		}
-	})
+	rt, rawCli := setupLiveDockerTest(t)
 
 	const dbName = "levelrail-test-redis-db"
 	ctx := context.Background()
@@ -144,25 +126,7 @@ func TestController_Reconcile_Redis_Live(t *testing.T) {
 // controller's or internal/docker's own return values.
 func TestController_Reconcile_PublicAccess_Live(t *testing.T) {
 	dockertest.SkipIfShort(t)
-	rt, err := docker.NewClient()
-	if err != nil {
-		t.Skipf("no docker client available: %v", err)
-	}
-	rawCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
-	if err != nil {
-		t.Skipf("no docker client available: %v", err)
-	}
-	pingCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	if _, err := rawCli.Ping(pingCtx); err != nil {
-		cancel()
-		t.Skipf("docker daemon not reachable: %v", err)
-	}
-	cancel()
-	t.Cleanup(func() {
-		if err := rt.Close(); err != nil {
-			t.Errorf("closing docker client: %v", err)
-		}
-	})
+	rt, rawCli := setupLiveDockerTest(t)
 
 	const dbName = "levelrail-test-redis-public-db"
 	const hostPort = 26379
@@ -252,25 +216,7 @@ func TestController_Reconcile_PublicAccess_Live(t *testing.T) {
 // own return values.
 func TestController_Reconcile_Redis_TLS_Live(t *testing.T) {
 	dockertest.SkipIfShort(t)
-	rt, err := docker.NewClient()
-	if err != nil {
-		t.Skipf("no docker client available: %v", err)
-	}
-	rawCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
-	if err != nil {
-		t.Skipf("no docker client available: %v", err)
-	}
-	pingCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	if _, err := rawCli.Ping(pingCtx); err != nil {
-		cancel()
-		t.Skipf("docker daemon not reachable: %v", err)
-	}
-	cancel()
-	t.Cleanup(func() {
-		if err := rt.Close(); err != nil {
-			t.Errorf("closing docker client: %v", err)
-		}
-	})
+	rt, rawCli := setupLiveDockerTest(t)
 
 	const dbName = "levelrail-test-redis-tls-db"
 	const hostPort = 26380
@@ -363,6 +309,30 @@ func TestController_Reconcile_Redis_TLS_Live(t *testing.T) {
 	if string(buf[:n]) == "+PONG\r\n" {
 		t.Error("plaintext PING got a real Redis reply on the TLS-only port; --port 0 should have disabled it")
 	}
+}
+
+func setupLiveDockerTest(t *testing.T) (*docker.Client, *dockerclient.Client) {
+	t.Helper()
+	rt, err := docker.NewClient()
+	if err != nil {
+		t.Skipf("no docker client available: %v", err)
+	}
+	rawCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
+	if err != nil {
+		t.Skipf("no docker client available: %v", err)
+	}
+	pingCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	if _, err := rawCli.Ping(pingCtx); err != nil {
+		cancel()
+		t.Skipf("docker daemon not reachable: %v", err)
+	}
+	cancel()
+	t.Cleanup(func() {
+		if err := rt.Close(); err != nil {
+			t.Errorf("closing docker client: %v", err)
+		}
+	})
+	return rt, rawCli
 }
 
 func openLiveStore(t *testing.T) *store.DB {

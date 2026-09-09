@@ -26,14 +26,60 @@ func (f *fakeDatabaseStore) GetDesiredDatabase(_ context.Context, name string) (
 	return &db, nil
 }
 
-func TestController_Reconcile_NoDatabaseEnv_Unaffected(t *testing.T) {
+// newDatabaseEnvController builds a Controller for the given desired
+// service against dbStore, optionally wiring a fake secret resolver from
+// secrets (nil means no resolver configured at all, the "no secrets
+// manager" case some tests deliberately exercise).
+func newDatabaseEnvController(desired *store.DesiredService, dbStore *fakeDatabaseStore, secrets map[string]string) (*Controller, *fakeRuntime) {
 	rt := newFakeRuntime(0)
+	var opts []Option
+	if dbStore != nil {
+		opts = append(opts, WithDatabaseAttachments(dbStore))
+	}
+	if secrets != nil {
+		opts = append(opts, WithSecretResolver(newFakeSecretResolver(secrets)))
+	}
+	return New("web", &fakeStore{svc: desired}, rt, opts...), rt
+}
+
+// reconcileAndAssertEnv reconciles c and checks each wanted key/value pair
+// against the container env the fake runtime actually received.
+func reconcileAndAssertEnv(t *testing.T, c *Controller, rt *fakeRuntime, want map[string]string) {
+	t.Helper()
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	for k, wantV := range want {
+		if got := rt.lastCreateEnv[k]; got != wantV {
+			t.Errorf("container env %s = %q, want %q", k, got, wantV)
+		}
+	}
+}
+
+// assertDatabaseEnvReconcileFailsLoudly reconciles c and requires it to
+// fail with a False condition and zero container creates: the shared shape
+// every "misconfigured database env" test in this file must prove.
+func assertDatabaseEnvReconcileFailsLoudly(t *testing.T, c *Controller, rt *fakeRuntime, wantErrMsg string) {
+	t.Helper()
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatalf("Reconcile() error = nil, want %s", wantErrMsg)
+	}
+	if conditionOf(t, result).Status != reconcile.ConditionFalse {
+		t.Errorf("condition status = %v, want False", conditionOf(t, result).Status)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0", rt.createCalls)
+	}
+}
+
+func TestController_Reconcile_NoDatabaseEnv_Unaffected(t *testing.T) {
 	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{}}
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
 		Env: map[string]string{"NODE_ENV": "production"},
 	}
-	c := New("web", &fakeStore{svc: desired}, rt, WithDatabaseAttachments(dbStore))
+	c, rt := newDatabaseEnvController(desired, dbStore, nil)
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -51,20 +97,18 @@ func TestController_Reconcile_NoDatabaseEnv_Unaffected(t *testing.T) {
 }
 
 func TestController_Reconcile_DatabaseEnv_Postgres_URL_Injected(t *testing.T) {
-	rt := newFakeRuntime(0)
 	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
 		"main": {Name: "main", Engine: store.EnginePostgres},
 	}}
-	secretResolver := newFakeSecretResolver(map[string]string{
-		"main/" + database.PostgresPasswordEnvKey: "s3cr3t",
-	})
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
 		DatabaseEnv: map[string]store.DatabaseEnvRef{
 			"DATABASE_URL": {Database: "main", Field: "url"},
 		},
 	}
-	c := New("web", &fakeStore{svc: desired}, rt, WithDatabaseAttachments(dbStore), WithSecretResolver(secretResolver))
+	c, rt := newDatabaseEnvController(desired, dbStore, map[string]string{
+		"main/" + database.PostgresPasswordEnvKey: "s3cr3t",
+	})
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -80,13 +124,9 @@ func TestController_Reconcile_DatabaseEnv_Postgres_URL_Injected(t *testing.T) {
 }
 
 func TestController_Reconcile_DatabaseEnv_PerFieldVariants(t *testing.T) {
-	rt := newFakeRuntime(0)
 	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
 		"main": {Name: "main", Engine: store.EngineMySQL},
 	}}
-	secretResolver := newFakeSecretResolver(map[string]string{
-		"main/" + database.MySQLPasswordEnvKey: "hunter2",
-	})
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
 		DatabaseEnv: map[string]store.DatabaseEnvRef{
@@ -97,24 +137,17 @@ func TestController_Reconcile_DatabaseEnv_PerFieldVariants(t *testing.T) {
 			"DB_NAME":     {Database: "main", Field: "database"},
 		},
 	}
-	c := New("web", &fakeStore{svc: desired}, rt, WithDatabaseAttachments(dbStore), WithSecretResolver(secretResolver))
+	c, rt := newDatabaseEnvController(desired, dbStore, map[string]string{
+		"main/" + database.MySQLPasswordEnvKey: "hunter2",
+	})
 
-	if _, err := c.Reconcile(context.Background()); err != nil {
-		t.Fatalf("Reconcile() error = %v", err)
-	}
-
-	want := map[string]string{
+	reconcileAndAssertEnv(t, c, rt, map[string]string{
 		"DB_HOST":     "db-main",
 		"DB_PORT":     "3306",
 		"DB_USER":     "main",
 		"DB_PASSWORD": "hunter2",
 		"DB_NAME":     "main",
-	}
-	for k, wantV := range want {
-		if gotV := rt.lastCreateEnv[k]; gotV != wantV {
-			t.Errorf("container env %s = %q, want %q", k, gotV, wantV)
-		}
-	}
+	})
 }
 
 // TestController_Reconcile_DatabaseEnv_RedisProtocolFamily_URL_UsesRedisScheme
@@ -136,7 +169,6 @@ func TestController_Reconcile_DatabaseEnv_RedisProtocolFamily_URL_UsesRedisSchem
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rt := newFakeRuntime(0)
 			dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
 				"cache": {Name: "cache", Engine: tt.engine},
 			}}
@@ -146,17 +178,10 @@ func TestController_Reconcile_DatabaseEnv_RedisProtocolFamily_URL_UsesRedisSchem
 					"CACHE_URL": {Database: "cache", Field: "url"},
 				},
 			}
-			// No WithSecretResolver: neither engine needs one, so this
-			// must still succeed.
-			c := New("web", &fakeStore{svc: desired}, rt, WithDatabaseAttachments(dbStore))
+			// No secrets: neither engine needs one, so this must still succeed.
+			c, rt := newDatabaseEnvController(desired, dbStore, nil)
 
-			if _, err := c.Reconcile(context.Background()); err != nil {
-				t.Fatalf("Reconcile() error = %v", err)
-			}
-			want := "redis://db-cache:6379"
-			if got := rt.lastCreateEnv["CACHE_URL"]; got != want {
-				t.Errorf("container env CACHE_URL = %q, want %q", got, want)
-			}
+			reconcileAndAssertEnv(t, c, rt, map[string]string{"CACHE_URL": "redis://db-cache:6379"})
 		})
 	}
 }
@@ -166,7 +191,6 @@ func TestController_Reconcile_DatabaseEnv_RedisProtocolFamily_URL_UsesRedisSchem
 // no longer) exist must fail Reconcile clearly, not silently start a
 // container with the variable missing or empty.
 func TestController_Reconcile_DatabaseEnv_UnknownDatabase_FailsLoudly(t *testing.T) {
-	rt := newFakeRuntime(0)
 	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{}} // empty: "main" doesn't exist
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
@@ -174,45 +198,25 @@ func TestController_Reconcile_DatabaseEnv_UnknownDatabase_FailsLoudly(t *testing
 			"DATABASE_URL": {Database: "main", Field: "url"},
 		},
 	}
-	c := New("web", &fakeStore{svc: desired}, rt, WithDatabaseAttachments(dbStore))
+	c, rt := newDatabaseEnvController(desired, dbStore, nil)
 
-	result, err := c.Reconcile(context.Background())
-	if err == nil {
-		t.Fatal("Reconcile() error = nil, want a reference to a nonexistent database to fail loudly")
-	}
-	if conditionOf(t, result).Status != reconcile.ConditionFalse {
-		t.Errorf("condition status = %v, want False", conditionOf(t, result).Status)
-	}
-	if rt.createCalls != 0 {
-		t.Errorf("createCalls = %d, want 0: a container must never be created missing a database env var it declared", rt.createCalls)
-	}
+	assertDatabaseEnvReconcileFailsLoudly(t, c, rt, "a reference to a nonexistent database to fail loudly")
 }
 
 func TestController_Reconcile_DatabaseEnv_NoDatabaseStoreConfigured_FailsLoudly(t *testing.T) {
-	rt := newFakeRuntime(0)
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
 		DatabaseEnv: map[string]store.DatabaseEnvRef{
 			"DATABASE_URL": {Database: "main", Field: "url"},
 		},
 	}
-	// No WithDatabaseAttachments.
-	c := New("web", &fakeStore{svc: desired}, rt)
+	// No dbStore: WithDatabaseAttachments is deliberately left unconfigured.
+	c, rt := newDatabaseEnvController(desired, nil, nil)
 
-	result, err := c.Reconcile(context.Background())
-	if err == nil {
-		t.Fatal("Reconcile() error = nil, want a database-backed env var with no store configured to fail loudly")
-	}
-	if conditionOf(t, result).Status != reconcile.ConditionFalse {
-		t.Errorf("condition status = %v, want False", conditionOf(t, result).Status)
-	}
-	if rt.createCalls != 0 {
-		t.Errorf("createCalls = %d, want 0", rt.createCalls)
-	}
+	assertDatabaseEnvReconcileFailsLoudly(t, c, rt, "a database-backed env var with no store configured to fail loudly")
 }
 
 func TestController_Reconcile_DatabaseEnv_NoSecretResolverConfigured_FailsLoudly(t *testing.T) {
-	rt := newFakeRuntime(0)
 	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
 		"main": {Name: "main", Engine: store.EnginePostgres},
 	}}
@@ -222,19 +226,10 @@ func TestController_Reconcile_DatabaseEnv_NoSecretResolverConfigured_FailsLoudly
 			"DATABASE_URL": {Database: "main", Field: "url"},
 		},
 	}
-	// No WithSecretResolver: postgres needs one to resolve its password.
-	c := New("web", &fakeStore{svc: desired}, rt, WithDatabaseAttachments(dbStore))
+	// No secrets: postgres needs a resolver to resolve its password.
+	c, rt := newDatabaseEnvController(desired, dbStore, nil)
 
-	result, err := c.Reconcile(context.Background())
-	if err == nil {
-		t.Fatal("Reconcile() error = nil, want a postgres url reference with no secret resolver to fail loudly")
-	}
-	if conditionOf(t, result).Status != reconcile.ConditionFalse {
-		t.Errorf("condition status = %v, want False", conditionOf(t, result).Status)
-	}
-	if rt.createCalls != 0 {
-		t.Errorf("createCalls = %d, want 0", rt.createCalls)
-	}
+	assertDatabaseEnvReconcileFailsLoudly(t, c, rt, "a postgres url reference with no secret resolver to fail loudly")
 }
 
 // TestController_Reconcile_DatabaseEnv_Postgres_TLS_URL_HasSSLMode proves
@@ -243,14 +238,9 @@ func TestController_Reconcile_DatabaseEnv_NoSecretResolverConfigured_FailsLoudly
 // tlsMaterialFor), the same "encrypt without verifying" contract Postgres
 // client libraries already honor with zero app-side code changes.
 func TestController_Reconcile_DatabaseEnv_Postgres_TLS_URL_HasSSLMode(t *testing.T) {
-	rt := newFakeRuntime(0)
 	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
 		"main": {Name: "main", Engine: store.EnginePostgres},
 	}}
-	secretResolver := newFakeSecretResolver(map[string]string{
-		"main/" + database.PostgresPasswordEnvKey: "s3cr3t",
-		"main/" + database.TLSCertEnvKey:          "-----BEGIN CERTIFICATE-----\n...",
-	})
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
 		DatabaseEnv: map[string]store.DatabaseEnvRef{
@@ -258,20 +248,17 @@ func TestController_Reconcile_DatabaseEnv_Postgres_TLS_URL_HasSSLMode(t *testing
 			"DB_PORT":      {Database: "main", Field: "port"},
 		},
 	}
-	c := New("web", &fakeStore{svc: desired}, rt, WithDatabaseAttachments(dbStore), WithSecretResolver(secretResolver))
+	c, rt := newDatabaseEnvController(desired, dbStore, map[string]string{
+		"main/" + database.PostgresPasswordEnvKey: "s3cr3t",
+		"main/" + database.TLSCertEnvKey:          "-----BEGIN CERTIFICATE-----\n...",
+	})
 
-	if _, err := c.Reconcile(context.Background()); err != nil {
-		t.Fatalf("Reconcile() error = %v", err)
-	}
-	want := "postgres://main:s3cr3t@db-main:5432/main?sslmode=require" //nolint:gosec // fake fixture, not a real credential
-	if got := rt.lastCreateEnv["DATABASE_URL"]; got != want {
-		t.Errorf("container env DATABASE_URL = %q, want %q", got, want)
-	}
 	// Postgres negotiates TLS on its one existing port: unlike Redis,
 	// TLS must never change the port field.
-	if got := rt.lastCreateEnv["DB_PORT"]; got != "5432" {
-		t.Errorf("container env DB_PORT = %q, want unchanged \"5432\"", got)
-	}
+	reconcileAndAssertEnv(t, c, rt, map[string]string{ //nolint:gosec // fake fixture, not a real credential
+		"DATABASE_URL": "postgres://main:s3cr3t@db-main:5432/main?sslmode=require",
+		"DB_PORT":      "5432",
+	})
 }
 
 // TestController_Reconcile_DatabaseEnv_Redis_TLS_URL_UsesRedissSchemeAndTLSPort
@@ -281,13 +268,9 @@ func TestController_Reconcile_DatabaseEnv_Postgres_TLS_URL_HasSSLMode(t *testing
 // redisCommandAndPort doc comment), not just the scheme: a client
 // dialing the old plaintext port after this would get nothing.
 func TestController_Reconcile_DatabaseEnv_Redis_TLS_URL_UsesRedissSchemeAndTLSPort(t *testing.T) {
-	rt := newFakeRuntime(0)
 	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
 		"cache": {Name: "cache", Engine: store.EngineRedis},
 	}}
-	secretResolver := newFakeSecretResolver(map[string]string{
-		"cache/" + database.TLSCertEnvKey: "-----BEGIN CERTIFICATE-----\n...",
-	})
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
 		DatabaseEnv: map[string]store.DatabaseEnvRef{
@@ -295,17 +278,14 @@ func TestController_Reconcile_DatabaseEnv_Redis_TLS_URL_UsesRedissSchemeAndTLSPo
 			"CACHE_PORT": {Database: "cache", Field: "port"},
 		},
 	}
-	c := New("web", &fakeStore{svc: desired}, rt, WithDatabaseAttachments(dbStore), WithSecretResolver(secretResolver))
+	c, rt := newDatabaseEnvController(desired, dbStore, map[string]string{
+		"cache/" + database.TLSCertEnvKey: "-----BEGIN CERTIFICATE-----\n...",
+	})
 
-	if _, err := c.Reconcile(context.Background()); err != nil {
-		t.Fatalf("Reconcile() error = %v", err)
-	}
-	if got, want := rt.lastCreateEnv["CACHE_URL"], "rediss://db-cache:6380"; got != want {
-		t.Errorf("container env CACHE_URL = %q, want %q", got, want)
-	}
-	if got, want := rt.lastCreateEnv["CACHE_PORT"], "6380"; got != want {
-		t.Errorf("container env CACHE_PORT = %q, want %q", got, want)
-	}
+	reconcileAndAssertEnv(t, c, rt, map[string]string{
+		"CACHE_URL":  "rediss://db-cache:6380",
+		"CACHE_PORT": "6380",
+	})
 }
 
 // TestController_Reconcile_DatabaseEnv_TLSNotYetGenerated_StaysPlaintext
@@ -317,47 +297,34 @@ func TestController_Reconcile_DatabaseEnv_Redis_TLS_URL_UsesRedissSchemeAndTLSPo
 // on its original connection string until it's genuinely recreated (see
 // internal/reconcile/database's WithTLS doc comment).
 func TestController_Reconcile_DatabaseEnv_TLSNotYetGenerated_StaysPlaintext(t *testing.T) {
-	rt := newFakeRuntime(0)
 	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
 		"cache": {Name: "cache", Engine: store.EngineRedis},
 	}}
-	// No TLSCertEnvKey entry: TLS material was never generated for this
-	// database.
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
 		DatabaseEnv: map[string]store.DatabaseEnvRef{
 			"CACHE_URL": {Database: "cache", Field: "url"},
 		},
 	}
-	c := New("web", &fakeStore{svc: desired}, rt, WithDatabaseAttachments(dbStore), WithSecretResolver(newFakeSecretResolver(nil)))
+	// Non-nil, empty secrets: a resolver is configured but has no
+	// TLSCertEnvKey entry, since TLS material was never generated.
+	c, rt := newDatabaseEnvController(desired, dbStore, map[string]string{})
 
-	if _, err := c.Reconcile(context.Background()); err != nil {
-		t.Fatalf("Reconcile() error = %v", err)
-	}
-	if got, want := rt.lastCreateEnv["CACHE_URL"], "redis://db-cache:6379"; got != want {
-		t.Errorf("container env CACHE_URL = %q, want %q", got, want)
-	}
+	reconcileAndAssertEnv(t, c, rt, map[string]string{"CACHE_URL": "redis://db-cache:6379"})
 }
 
 func TestController_Reconcile_DatabaseAttachment_Injected(t *testing.T) {
-	rt := newFakeRuntime(0)
 	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
 		"main": {Name: "main", Engine: store.EnginePostgres},
 	}}
-	secretResolver := newFakeSecretResolver(map[string]string{
-		"main/" + database.PostgresPasswordEnvKey: "s3cr3t",
-	})
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
 		DatabaseAttachment: &store.DatabaseAttachment{DatabaseName: "main", EnvVar: "DATABASE_URL", Field: "url"},
 	}
-	c := New("web", &fakeStore{svc: desired}, rt, WithDatabaseAttachments(dbStore), WithSecretResolver(secretResolver))
+	c, rt := newDatabaseEnvController(desired, dbStore, map[string]string{
+		"main/" + database.PostgresPasswordEnvKey: "s3cr3t",
+	})
 
-	if _, err := c.Reconcile(context.Background()); err != nil {
-		t.Fatalf("Reconcile() error = %v", err)
-	}
 	want := "postgres://main:s3cr3t@db-main:5432/main" //nolint:gosec // fake fixture, not a real credential
-	if got := rt.lastCreateEnv["DATABASE_URL"]; got != want {
-		t.Errorf("container env DATABASE_URL = %q, want %q", got, want)
-	}
+	reconcileAndAssertEnv(t, c, rt, map[string]string{"DATABASE_URL": want})
 }

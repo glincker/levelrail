@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -79,10 +78,7 @@ func authedRequest(t *testing.T, cookie *http.Cookie, method, target, body strin
 func TestAppsRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	routes := []struct {
-		method string
-		target string
-	}{
+	assertRoutesRequireAuth(t, rt, []routeCase{
 		{http.MethodGet, "/api/v1/apps"},
 		{http.MethodPost, "/api/v1/apps"},
 		{http.MethodGet, "/api/v1/apps/web"},
@@ -90,17 +86,7 @@ func TestAppsRoutes_RequireAuth(t *testing.T) {
 		{http.MethodDelete, "/api/v1/apps/web"},
 		{http.MethodPost, "/api/v1/apps/web/deploys"},
 		{http.MethodGet, "/api/v1/apps/web/deploys"},
-	}
-	for _, r := range routes {
-		t.Run(r.method+" "+r.target, func(t *testing.T) {
-			req := httptest.NewRequest(r.method, r.target, nil)
-			rec := httptest.NewRecorder()
-			rt.Handler().ServeHTTP(rec, req)
-			if rec.Code != http.StatusUnauthorized {
-				t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
-			}
-		})
-	}
+	})
 }
 
 func TestHandleListApps(t *testing.T) {
@@ -154,16 +140,7 @@ func TestHandleListApps_Status(t *testing.T) {
 			t.Fatalf("seed %s: %v", name, err)
 		}
 	}
-	if err := db.UpsertConditions(ctx, "application/healthy-app", []reconcile.Condition{
-		{Type: "Ready", Status: reconcile.ConditionTrue, Reason: "Running"},
-	}); err != nil {
-		t.Fatalf("upsert healthy-app conditions: %v", err)
-	}
-	if err := db.UpsertConditions(ctx, "application/broken-app", []reconcile.Condition{
-		{Type: "Ready", Status: reconcile.ConditionFalse, Reason: "CrashLoop"},
-	}); err != nil {
-		t.Fatalf("upsert broken-app conditions: %v", err)
-	}
+	seedTriStateConditions(t, db, "application", "healthy-app", "broken-app")
 	// pending-app deliberately gets no UpsertConditions call at all.
 
 	rec := httptest.NewRecorder()

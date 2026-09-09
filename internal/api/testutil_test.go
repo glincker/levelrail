@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/brand"
+	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -66,6 +67,51 @@ func (discardWriter) Write(p []byte) (int, error) { return len(p), nil }
 // directly by the test.
 func discardLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(discardWriter{}, nil))
+}
+
+// routeCase is one method+target pair for assertRoutesRequireAuth.
+type routeCase struct {
+	method string
+	target string
+}
+
+// assertRoutesRequireAuth proves every route in routes rejects an
+// unauthenticated request with 401, the shared shape nearly every
+// "*Routes_RequireAuth" test in this package already establishes
+// individually.
+func assertRoutesRequireAuth(t *testing.T, rt *Router, routes []routeCase) {
+	t.Helper()
+	for _, r := range routes {
+		t.Run(r.method+" "+r.target, func(t *testing.T) {
+			req := httptest.NewRequest(r.method, r.target, nil)
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, req)
+			if rec.Code != http.StatusUnauthorized {
+				t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
+			}
+		})
+	}
+}
+
+// seedTriStateConditions upserts a True/"Running" condition for healthy and
+// a False/"CrashLoop" condition for broken, leaving any third, "pending"
+// resource in resourceType untouched: the one-healthy/one-broken/
+// one-pending shape TestHandleListApps_Status and
+// TestHandleListDatabases_Status both need to prove their list endpoint's
+// batched status field categorizes each row independently.
+func seedTriStateConditions(t *testing.T, db *store.DB, resourceType, healthy, broken string) {
+	t.Helper()
+	ctx := context.Background()
+	if err := db.UpsertConditions(ctx, resourceType+"/"+healthy, []reconcile.Condition{
+		{Type: "Ready", Status: reconcile.ConditionTrue, Reason: "Running"},
+	}); err != nil {
+		t.Fatalf("upsert %s conditions: %v", healthy, err)
+	}
+	if err := db.UpsertConditions(ctx, resourceType+"/"+broken, []reconcile.Condition{
+		{Type: "Ready", Status: reconcile.ConditionFalse, Reason: "CrashLoop"},
+	}); err != nil {
+		t.Fatalf("upsert %s conditions: %v", broken, err)
+	}
 }
 
 func bootstrapTestAdmin(t *testing.T, db *store.DB) {

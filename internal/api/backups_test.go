@@ -74,23 +74,10 @@ func seedBackupTargetForAPI(t *testing.T, db *store.DB) store.BackupTarget {
 func TestBackupRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	routes := []struct {
-		method string
-		target string
-	}{
+	assertRoutesRequireAuth(t, rt, []routeCase{
 		{http.MethodPost, "/api/v1/databases/main/backups"},
 		{http.MethodGet, "/api/v1/databases/main/backups"},
-	}
-	for _, r := range routes {
-		t.Run(r.method+" "+r.target, func(t *testing.T) {
-			req := httptest.NewRequest(r.method, r.target, nil)
-			rec := httptest.NewRecorder()
-			rt.Handler().ServeHTTP(rec, req)
-			if rec.Code != http.StatusUnauthorized {
-				t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
-			}
-		})
-	}
+	})
 }
 
 func TestHandleTriggerBackup_NoRunnerConfigured(t *testing.T) {
@@ -200,23 +187,10 @@ func TestHandleTriggerBackup_Success(t *testing.T) {
 func TestBackupScheduleRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	routes := []struct {
-		method string
-		target string
-	}{
+	assertRoutesRequireAuth(t, rt, []routeCase{
 		{http.MethodPut, "/api/v1/databases/main/backup-schedule"},
 		{http.MethodDelete, "/api/v1/databases/main/backup-schedule"},
-	}
-	for _, r := range routes {
-		t.Run(r.method+" "+r.target, func(t *testing.T) {
-			req := httptest.NewRequest(r.method, r.target, nil)
-			rec := httptest.NewRecorder()
-			rt.Handler().ServeHTTP(rec, req)
-			if rec.Code != http.StatusUnauthorized {
-				t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
-			}
-		})
-	}
+	})
 }
 
 func TestHandleSetBackupSchedule_DatabaseNotFound(t *testing.T) {
