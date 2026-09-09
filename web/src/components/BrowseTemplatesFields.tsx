@@ -4,13 +4,24 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { Link } from '@tanstack/react-router'
 import {
+  AppWindowIcon,
   ArrowLeftIcon,
   ArrowSquareOutIcon,
+  ChartBarIcon,
+  ChartLineIcon,
   CheckCircleIcon,
+  CheckSquareIcon,
+  CodeIcon,
+  HardDrivesIcon,
+  LightningIcon,
   MagnifyingGlassIcon,
   PackageIcon,
+  ShieldCheckIcon,
+  SquaresFourIcon,
+  StackIcon,
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import type { Icon } from '@phosphor-icons/react'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -47,6 +58,21 @@ type FormOutput = z.output<typeof deployTemplateSchema>
 
 const DEFAULT_VALUES: FormInput = { name: '', compose: '' }
 
+// internal/catalog/catalog.go's current Category values. Unlisted or
+// future categories fall back to PackageIcon.
+const CATEGORY_ICONS: Record<string, Icon> = {
+  Analytics: ChartBarIcon,
+  Applications: AppWindowIcon,
+  Automation: LightningIcon,
+  Dashboard: SquaresFourIcon,
+  'Developer Tools': CodeIcon,
+  Infrastructure: StackIcon,
+  Monitoring: ChartLineIcon,
+  Productivity: CheckSquareIcon,
+  Security: ShieldCheckIcon,
+  Storage: HardDrivesIcon,
+}
+
 function matchesSearch(
   template: ServiceTemplateListItem,
   query: string,
@@ -69,6 +95,7 @@ function TemplateCard({
   template: ServiceTemplateListItem
   onSelect: (id: string) => void
 }) {
+  const CategoryIcon = CATEGORY_ICONS[template.category] ?? PackageIcon
   return (
     <button
       type="button"
@@ -78,7 +105,7 @@ function TemplateCard({
       className="flex flex-col items-start gap-2 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
     >
       <div className="flex w-full items-center justify-between gap-2">
-        <PackageIcon className="size-6 text-muted-foreground" />
+        <CategoryIcon className="size-6 text-muted-foreground" />
         <Badge variant="outline">{template.category}</Badge>
       </div>
       <span className="text-sm font-medium text-foreground">
