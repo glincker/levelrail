@@ -15,8 +15,8 @@ import {
   useDisableRegistry,
   useUpdateRegistrySettings,
 } from '../queries/registry'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge, type badgeVariants } from '@/components/ui/badge'
+import type { badgeVariants } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -27,8 +27,8 @@ import {
 } from '@/components/ui/card'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
+import { SettingsEnabledRow, SettingsFormActions, SettingsFormAlerts } from './SettingsCard'
 
 const STATUS_VARIANT: Record<
   RegistrySettings['status'],
@@ -49,16 +49,6 @@ const STATUS_ICON: Record<RegistrySettings['status'], Icon> = {
   running: CheckCircleIcon,
   error: WarningCircleIcon,
   stopped: MinusCircleIcon,
-}
-
-function StatusBadge({ status }: { status: RegistrySettings['status'] }) {
-  const StatusIcon = STATUS_ICON[status]
-  return (
-    <Badge variant={STATUS_VARIANT[status]} className="shrink-0">
-      <StatusIcon className="size-3" />
-      {STATUS_LABEL[status]}
-    </Badge>
-  )
 }
 
 // Instance-level built-in container registry: GET/PUT/DELETE
@@ -130,7 +120,11 @@ export function RegistrySettingsCard({
         <CardTitle className="flex items-center gap-2">
           <HardDrivesIcon className="size-4" />
           Container registry
-          <StatusBadge status={settings.status} />
+          <StatusBadge
+            variant={STATUS_VARIANT[settings.status]}
+            label={STATUS_LABEL[settings.status]}
+            icon={STATUS_ICON[settings.status]}
+          />
         </CardTitle>
         <CardDescription>
           Levelrail&apos;s own built-in image registry: a build cache and
@@ -147,21 +141,13 @@ export function RegistrySettingsCard({
           }}
           className="space-y-5"
         >
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-foreground">Enabled</p>
-              <p className="text-sm text-muted-foreground">
-                Runs the registry container and routes it through the
-                configured host.
-              </p>
-            </div>
-            <Switch
-              checked={enabled}
-              onCheckedChange={setEnabled}
-              disabled={pending}
-              aria-label="Container registry enabled"
-            />
-          </div>
+          <SettingsEnabledRow
+            description="Runs the registry container and routes it through the configured host."
+            checked={enabled}
+            onCheckedChange={setEnabled}
+            disabled={pending}
+            ariaLabel="Container registry enabled"
+          />
 
           <Field>
             <FieldLabel htmlFor="registry-host">Host</FieldLabel>
@@ -217,43 +203,28 @@ export function RegistrySettingsCard({
             </div>
           ) : null}
 
-          {settings.status === 'error' && settings.message ? (
-            <Alert variant="destructive">
-              <AlertDescription>{settings.message}</AlertDescription>
-            </Alert>
-          ) : null}
-          {formError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{formError}</AlertDescription>
-            </Alert>
-          ) : null}
-          {updateSettings.isError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{updateSettings.error.message}</AlertDescription>
-            </Alert>
-          ) : null}
-          {disable.isError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{disable.error.message}</AlertDescription>
-            </Alert>
-          ) : null}
+          <SettingsFormAlerts
+            alerts={[
+              settings.status === 'error' && settings.message
+                ? { key: 'status', message: settings.message }
+                : null,
+              formError ? { key: 'form', message: formError } : null,
+              updateSettings.isError
+                ? { key: 'update', message: updateSettings.error.message }
+                : null,
+              disable.isError ? { key: 'disable', message: disable.error.message } : null,
+            ]}
+          />
 
-          <div className="flex items-center gap-2">
-            <Button type="submit" size="sm" disabled={pending}>
-              {updateSettings.isPending ? 'Saving...' : 'Save'}
-            </Button>
-            {(settings.enabled || settings.has_credentials) && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={pending}
-                onClick={handleDisable}
-              >
-                {disable.isPending ? 'Disabling...' : 'Disable'}
-              </Button>
-            )}
-          </div>
+          <SettingsFormActions
+            pending={pending}
+            savePending={updateSettings.isPending}
+            showSecondary={settings.enabled || settings.has_credentials}
+            secondaryPending={disable.isPending}
+            secondaryLabel="Disable"
+            secondaryPendingLabel="Disabling..."
+            onSecondaryClick={handleDisable}
+          />
         </form>
       </CardContent>
     </Card>

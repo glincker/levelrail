@@ -1,37 +1,24 @@
 import { useState } from 'react'
-import {
-  CheckCircleIcon,
-  GitBranchIcon,
-  WarningIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { GitBranchIcon } from '@phosphor-icons/react/dist/ssr'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { toast } from '@/components/ui/toast'
+import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   useConnectBitbucketApp,
   useDisconnectBitbucketApp,
   useBitbucketAppStatus,
 } from '../queries/bitbucketApp'
 import { SetPrimaryDomainPrompt } from './SetPrimaryDomainPrompt'
+import {
+  ConfiguredStatusHeading,
+  ConnectionCardHeader,
+  DisconnectConnectionDialog,
+  FormDialogFooter,
+  mutationToastCallbacks,
+  ResettableDialog,
+} from './ConnectionCard'
 
 // Status card for the Bitbucket App connection: not connected /
 // configured but not yet authorized / connected. Cloud only, no
@@ -52,39 +39,18 @@ export function BitbucketAppConnectionCard() {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <GitBranchIcon className="size-4" />
-          </div>
-          <div>
-            <CardTitle>Bitbucket App</CardTitle>
-            <CardDescription>
-              Connect a Bitbucket Cloud OAuth consumer for repository
-              browsing and webhook-driven deploys.
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
+      <ConnectionCardHeader
+        icon={GitBranchIcon}
+        title="Bitbucket App"
+        description="Connect a Bitbucket Cloud OAuth consumer for repository browsing and webhook-driven deploys."
+      />
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
           <div className="space-y-1">
-            {status.connected ? (
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <CheckCircleIcon className="size-4 text-green-600 dark:text-green-400" />
-                Configured
-                {status.authorized ? (
-                  <Badge variant="success">authorized</Badge>
-                ) : (
-                  <Badge variant="warning">not authorized yet</Badge>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <XCircleIcon className="size-4" />
-                Not connected
-              </div>
-            )}
+            <ConfiguredStatusHeading
+              connected={status.connected}
+              authorized={status.authorized}
+            />
             {status.connected && !status.authorized && status.base_url ? (
               <p className="text-sm text-muted-foreground">
                 The OAuth consumer is configured but hasn&apos;t been
@@ -110,56 +76,30 @@ export function BitbucketAppConnectionCard() {
                   Connect
                 </Button>
               ) : null}
-              <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-                <DialogTrigger render={<Button variant="destructive" size="sm" />}>
-                  Disconnect
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-sm">
-                  <DialogHeader>
-                    <DialogTitle className="flex items-center gap-1.5 text-destructive">
-                      <WarningIcon className="size-4" aria-hidden="true" />
-                      Disconnect Bitbucket App?
-                    </DialogTitle>
-                    <DialogDescription>
-                      This stops this control plane from using the connection to
-                      list repositories or register webhooks. It does not revoke
-                      the authorization or delete the consumer on Bitbucket
-                      itself.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setConfirmOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      disabled={disconnect.isPending}
-                      onClick={() => {
-                        disconnect.mutate(undefined, {
-                          onSuccess: () => {
-                            setConfirmOpen(false)
-                            toast.add({ title: 'Bitbucket App disconnected.', type: 'success' })
-                          },
-                          onError: (error) => {
-                            toast.add({
-                              title: 'Could not disconnect the Bitbucket App.',
-                              description: error.message,
-                              type: 'error',
-                            })
-                          },
-                        })
-                      }}
-                    >
-                      {disconnect.isPending ? 'Disconnecting...' : 'Disconnect'}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <DisconnectConnectionDialog
+                open={confirmOpen}
+                onOpenChange={setConfirmOpen}
+                title="Disconnect Bitbucket App?"
+                description={
+                  <>
+                    This stops this control plane from using the connection to
+                    list repositories or register webhooks. It does not revoke
+                    the authorization or delete the consumer on Bitbucket
+                    itself.
+                  </>
+                }
+                pending={disconnect.isPending}
+                onConfirm={() => {
+                  disconnect.mutate(
+                    undefined,
+                    mutationToastCallbacks(
+                      'Bitbucket App disconnected.',
+                      'Could not disconnect the Bitbucket App.',
+                      () => setConfirmOpen(false),
+                    ),
+                  )
+                }}
+              />
             </div>
           ) : (
             <Button type="button" size="sm" onClick={() => setConfigureOpen(true)}>
@@ -214,33 +154,19 @@ function ConfigureDialog({
         key: key.trim(),
         secret,
       },
-      {
-        onSuccess: () => {
-          toast.add({ title: 'Bitbucket App configured.', type: 'success' })
+      mutationToastCallbacks(
+        'Bitbucket App configured.',
+        'Could not configure the Bitbucket App.',
+        () => {
           resetForm()
           onOpenChange(false)
         },
-        onError: (error) => {
-          toast.add({
-            title: 'Could not configure the Bitbucket App.',
-            description: error.message,
-            type: 'error',
-          })
-        },
-      },
+      ),
     )
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) {
-          resetForm()
-        }
-        onOpenChange(next)
-      }}
-    >
+    <ResettableDialog open={open} onOpenChange={onOpenChange} onReset={resetForm}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Configure a Bitbucket OAuth consumer</DialogTitle>
@@ -289,26 +215,18 @@ function ConfigureDialog({
             </FieldDescription>
           </Field>
         </div>
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              resetForm()
-              onOpenChange(false)
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            disabled={!canSubmit || connect.isPending}
-            onClick={handleSubmit}
-          >
-            {connect.isPending ? 'Saving...' : 'Save'}
-          </Button>
-        </DialogFooter>
+        <FormDialogFooter
+          onCancel={() => {
+            resetForm()
+            onOpenChange(false)
+          }}
+          submitDisabled={!canSubmit || connect.isPending}
+          pending={connect.isPending}
+          onSubmit={handleSubmit}
+          submitLabel="Save"
+          pendingLabel="Saving..."
+        />
       </DialogContent>
-    </Dialog>
+    </ResettableDialog>
   )
 }
