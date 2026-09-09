@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
   build-web:
@@ -96,13 +97,24 @@ jobs:
         working-directory: dist
         run: sha256sum -- * > checksums.txt
 
-      - name: Create release
+      - name: Create or update release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "${{ github.ref_name }}" dist/* \
-            --repo "${{ github.repository }}" \
-            --generate-notes
+          # release-please already creates the GitHub Release itself (with
+          # changelog notes) when it tags a version, before this workflow
+          # ever runs. Attach the built binaries to that existing release
+          # instead of trying to create a second one for the same tag; fall
+          # back to a fresh create for a tag pushed some other way.
+          if gh release view "${{ github.ref_name }}" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release upload "${{ github.ref_name }}" dist/* \
+              --repo "${{ github.repository }}" \
+              --clobber
+          else
+            gh release create "${{ github.ref_name }}" dist/* \
+              --repo "${{ github.repository }}" \
+              --generate-notes
+          fi
 
   build-image-levelrail:
     name: Build and push levelrail image
