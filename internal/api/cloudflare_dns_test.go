@@ -257,22 +257,9 @@ func TestHandleUpdateCloudflareDNSSettings_RealSecretsManager_RoundTripsThroughE
 func TestCloudflareDNSRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	routes := []struct {
-		method string
-		target string
-	}{
+	assertRoutesRequireAuth(t, rt, []routeCase{
 		{http.MethodGet, "/api/v1/settings/cloudflare-dns"},
 		{http.MethodPut, "/api/v1/settings/cloudflare-dns"},
 		{http.MethodDelete, "/api/v1/settings/cloudflare-dns"},
-	}
-	for _, r := range routes {
-		t.Run(r.method+" "+r.target, func(t *testing.T) {
-			req := httptest.NewRequest(r.method, r.target, nil)
-			rec := httptest.NewRecorder()
-			rt.Handler().ServeHTTP(rec, req)
-			if rec.Code != http.StatusUnauthorized {
-				t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
-			}
-		})
-	}
+	})
 }

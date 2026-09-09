@@ -11,17 +11,22 @@ import { formatDate } from '../lib/format'
 import { StatusBadge } from './backupAttemptStatus'
 import type { RestoreHistoryRecord } from '../types/restoreHistory'
 
-// RestoreHistoryTable is BackupsSection's BackupHistoryTable's
-// restore-direction counterpart: same shape (a status-first table, newest
-// attempt on top, polling handled entirely by useRestoreHistory the same
-// way useBackupHistory drives BackupHistoryTable), rendered only once at
-// least one restore has ever been triggered, so a database nobody has
-// ever restored shows nothing extra here rather than an empty table with
-// nothing in it.
-export function RestoreHistoryTable({ databaseName }: { databaseName: string }) {
-  const { data, isLoading, error } = useRestoreHistory(databaseName)
-  const history = data ?? []
-
+// Shared presentational table between RestoreHistoryTable (a database's
+// restore attempts) and AppVolumeBackupsSection's own volume restore
+// table: same shape (a status-first table, newest attempt on top),
+// rendered only once at least one restore has ever been triggered, so a
+// resource nobody has ever restored shows nothing extra here rather than
+// an empty table with nothing in it. Each caller supplies its own query
+// hook's result; only the data source differs between resource kinds.
+export function RestoreHistoryTableView({
+  history,
+  isLoading,
+  error,
+}: {
+  history: RestoreHistoryRecord[]
+  isLoading: boolean
+  error: Error | null
+}) {
   if (isLoading || history.length === 0) {
     return null
   }
@@ -73,5 +78,16 @@ export function RestoreHistoryTable({ databaseName }: { databaseName: string }) 
         </Table>
       </div>
     </div>
+  )
+}
+
+export function RestoreHistoryTable({ databaseName }: { databaseName: string }) {
+  const { data, isLoading, error } = useRestoreHistory(databaseName)
+  return (
+    <RestoreHistoryTableView
+      history={data ?? []}
+      isLoading={isLoading}
+      error={error}
+    />
   )
 }

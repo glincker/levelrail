@@ -71,23 +71,10 @@ func seedSucceededBackupForCloneRestore(t *testing.T, db *store.DB, databaseName
 func TestCloneRestoreRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	routes := []struct {
-		method string
-		target string
-	}{
+	assertRoutesRequireAuth(t, rt, []routeCase{
 		{http.MethodPost, "/api/v1/databases/main/restore-as-new"},
 		{http.MethodGet, "/api/v1/databases/main/clone-restores"},
-	}
-	for _, r := range routes {
-		t.Run(r.method+" "+r.target, func(t *testing.T) {
-			req := httptest.NewRequest(r.method, r.target, nil)
-			rec := httptest.NewRecorder()
-			rt.Handler().ServeHTTP(rec, req)
-			if rec.Code != http.StatusUnauthorized {
-				t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
-			}
-		})
-	}
+	})
 }
 
 func TestHandleCloneRestore_NoRunnerConfigured(t *testing.T) {

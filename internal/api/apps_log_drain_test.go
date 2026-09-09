@@ -13,24 +13,11 @@ import (
 func TestAppLogDrainRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	routes := []struct {
-		method string
-		target string
-	}{
+	assertRoutesRequireAuth(t, rt, []routeCase{
 		{http.MethodGet, "/api/v1/apps/web/log-drain"},
 		{http.MethodPut, "/api/v1/apps/web/log-drain"},
 		{http.MethodDelete, "/api/v1/apps/web/log-drain"},
-	}
-	for _, r := range routes {
-		t.Run(r.method+" "+r.target, func(t *testing.T) {
-			req := httptest.NewRequest(r.method, r.target, nil)
-			rec := httptest.NewRecorder()
-			rt.Handler().ServeHTTP(rec, req)
-			if rec.Code != http.StatusUnauthorized {
-				t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
-			}
-		})
-	}
+	})
 }
 
 func TestHandleSetAppLogDrain(t *testing.T) {
@@ -83,9 +70,7 @@ func TestHandleSetAppLogDrain(t *testing.T) {
 			rt, db := newTestRouter(t)
 			cookie := loginTestSession(t, rt, db)
 			if tt.seedApp {
-				if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
-					t.Fatalf("seed: %v", err)
-				}
+				seedWebAppForTest(t, db)
 			}
 
 			rec := httptest.NewRecorder()
@@ -100,9 +85,7 @@ func TestHandleSetAppLogDrain(t *testing.T) {
 func TestHandleSetAppLogDrain_PersistsAndRoundTrips(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedWebAppForTest(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/log-drain", `{"type":"http","target":"https://collector.example.com/ingest","enabled":true}`))
@@ -156,9 +139,7 @@ func TestHandleSetAppLogDrain_PersistsAndRoundTrips(t *testing.T) {
 func TestHandleGetAppLogDrain_NoneConfigured(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedWebAppForTest(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/log-drain", ""))
@@ -181,9 +162,7 @@ func TestHandleGetAppLogDrain_AppNotFound(t *testing.T) {
 func TestHandleClearAppLogDrain(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedWebAppForTest(t, db)
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/log-drain", `{"type":"http","target":"https://collector.example.com","enabled":true}`))
 	if rec.Code != http.StatusOK {

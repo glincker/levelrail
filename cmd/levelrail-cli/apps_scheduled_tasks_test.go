@@ -198,27 +198,15 @@ func TestRun_AppsScheduledTasksUpdate(t *testing.T) {
 }
 
 func TestRun_AppsScheduledTasksDelete(t *testing.T) {
-	var gotMethod, gotPath string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotMethod = r.Method
-		gotPath = r.URL.Path
-		w.WriteHeader(http.StatusNoContent)
-	}))
+	srv, gotPath, gotMethod := newNoContentEchoServer(t)
 	defer srv.Close()
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "scheduled-tasks", "delete", "web", "sct_1", "--api-url", srv.URL}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "scheduled-tasks", "delete", "web", "sct_1", "--api-url", srv.URL})
+	if *gotMethod != http.MethodDelete || *gotPath != "/api/v1/apps/web/scheduled-tasks/sct_1" {
+		t.Errorf("request = %s %s, want DELETE /api/v1/apps/web/scheduled-tasks/sct_1", *gotMethod, *gotPath)
 	}
-	if gotMethod != http.MethodDelete {
-		t.Errorf("method = %q, want DELETE", gotMethod)
-	}
-	if gotPath != "/api/v1/apps/web/scheduled-tasks/sct_1" {
-		t.Errorf("path = %q, want /api/v1/apps/web/scheduled-tasks/sct_1", gotPath)
-	}
-	if !strings.Contains(stdout.String(), `scheduled task "sct_1" deleted`) {
-		t.Errorf("stdout = %q, want a deletion confirmation", stdout.String())
+	if !strings.Contains(stdout, `scheduled task "sct_1" deleted`) {
+		t.Errorf("stdout = %q, want a deletion confirmation", stdout)
 	}
 }
 

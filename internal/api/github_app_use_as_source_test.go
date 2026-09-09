@@ -106,19 +106,7 @@ func TestHandleUseGitHubRepoAsSource_Success(t *testing.T) {
 		t.Errorf("saved git source repo_url = %q, want the github repo's clone url", saved.RepoURL)
 	}
 
-	if !fakeClient.createHookCall {
-		t.Fatal("CreateRepoWebhook was not called")
-	}
-	if !strings.HasSuffix(fakeClient.createHookURL, "/api/v1/webhooks/github/web") {
-		t.Errorf("createHookURL = %q, want it to end with the generic git-push webhook path", fakeClient.createHookURL)
-	}
-	storedSecret, err := gitSourceSecrets.Resolve(context.Background(), store.GitSourceSecretsKey("web"), gitSourceSecretKey)
-	if err != nil {
-		t.Fatalf("resolve stored git source webhook secret: %v", err)
-	}
-	if fakeClient.createHookSec != storedSecret {
-		t.Errorf("createHookSec = %q, want it to match the stored git-source webhook secret %q", fakeClient.createHookSec, storedSecret)
-	}
+	assertGitSourceWebhookRegistered(t, gitSourceSecrets, "web", fakeClient.createHookCall, fakeClient.createHookURL, fakeClient.createHookSec)
 }
 
 // TestHandleUseGitHubRepoAsSource_PermissionDenied is the test proving
@@ -150,9 +138,7 @@ func TestHandleUseGitHubRepoAsSource_PermissionDenied(t *testing.T) {
 	// denied: the whole point of degrading here instead of failing is
 	// that the operator ends up with a working (if not yet auto-deploying)
 	// connection, not stuck unable to connect GitHub at all.
-	if _, err := db.GetGitSource(context.Background(), "web"); err != nil {
-		t.Errorf("GetGitSource() error = %v, want the git source to remain connected despite the permission error", err)
-	}
+	assertGitSourceSurvivesWebhookFailure(t, db)
 }
 
 // TestHandleUseGitHubRepoAsSource_OtherWebhookFailure proves a
@@ -169,28 +155,14 @@ func TestHandleUseGitHubRepoAsSource_OtherWebhookFailure(t *testing.T) {
 		t.Fatalf("status = %d, want 502, body = %s", rec.Code, rec.Body.String())
 	}
 
-	if _, err := db.GetGitSource(context.Background(), "web"); err != nil {
-		t.Errorf("GetGitSource() error = %v, want the git source to remain connected despite the webhook failure", err)
-	}
+	assertGitSourceSurvivesWebhookFailure(t, db)
 }
 
 func TestGitHubAppUseAsSourceRoute_PlainWriteTokenForbidden(t *testing.T) {
 	rt, db := newTestRouterWithGitHubApp(t, newFakeGitHubAppSecrets(), &fakeGitHubAppClient{})
-	ctx := context.Background()
 
 	const plaintext = "write-only-token-github" //nolint:gosec // fake fixture, not a real credential
-	if err := db.SaveAPIToken(ctx, store.APIToken{
-		ID: "tok_write_gh", Name: "writer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWrite},
-	}); err != nil {
-		t.Fatalf("seed token: %v", err)
-	}
-
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/github-app/repos/acme/web/use-as-source", strings.NewReader(`{"app_name":"web"}`))
-	req.Header.Set("Authorization", "Bearer "+plaintext)
-	req.Header.Set("Content-Type", "application/json")
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want 403 (AbilityWrite must not reach an AbilityWriteSensitive route)", rec.Code)
-	}
+	assertProviderRoutesForbiddenForAbilities(t, rt, db, "tok_write_gh", plaintext, []string{AbilityWrite}, []providerRouteCase{
+		{method: http.MethodPost, path: "/api/v1/github-app/repos/acme/web/use-as-source", body: `{"app_name":"web"}`},
+	})
 }

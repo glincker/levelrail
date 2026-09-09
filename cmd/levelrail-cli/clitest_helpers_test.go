@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -70,6 +71,107 @@ func newJSONErrorServer(t *testing.T, status int, body string) *httptest.Server 
 	}))
 	t.Cleanup(srv.Close)
 	return srv
+}
+
+// newEchoServer starts a test server that records the request method and
+// path (when non-nil) and responds 200 OK with body JSON-encoded. It's the
+// method-aware sibling of newListEchoServer, for mutation verbs (clear,
+// disable, ...) whose test also needs to assert the HTTP method.
+func newEchoServer[T any](t *testing.T, gotMethod, gotPath *string, body T) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if gotMethod != nil {
+			*gotMethod = r.Method
+		}
+		if gotPath != nil {
+			*gotPath = r.URL.Path
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(body)
+	}))
+}
+
+// testEnvGet runs "<cliArgs...> env-get <id>" against a server that reports
+// one env var set, and asserts the request path and that the var is shown.
+func testEnvGet(t *testing.T, cliArgs []string, id, apiPath string) {
+	t.Helper()
+	var gotPath string
+	srv := newListEchoServer(t, &gotPath, map[string]string{"LOG_LEVEL": "info"})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, append(append([]string{}, cliArgs...), "env-get", id, "--api-url", srv.URL))
+	wantPath := apiPath + "/env"
+	if gotPath != wantPath {
+		t.Errorf("path = %q, want %s", gotPath, wantPath)
+	}
+	if !strings.Contains(stdout, "LOG_LEVEL") || !strings.Contains(stdout, "info") {
+		t.Errorf("stdout = %q, want the env var listed", stdout)
+	}
+}
+
+// testEnvGetNoneSet runs "<cliArgs...> env-get <id>" against a server that
+// reports no env vars, and asserts the empty-set message.
+func testEnvGetNoneSet(t *testing.T, cliArgs []string, id string) {
+	t.Helper()
+	srv := newListEchoServer(t, nil, map[string]string{})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, append(append([]string{}, cliArgs...), "env-get", id, "--api-url", srv.URL))
+	if !strings.Contains(stdout, "no env vars set") {
+		t.Errorf("stdout = %q, want the empty-set message", stdout)
+	}
+}
+
+// testEnvSet runs "<cliArgs...> env-set <id> --var LOG_LEVEL=info" and
+// asserts the request method, path, body, and replace confirmation. noun is
+// the resource name used in the confirmation message (e.g. "project").
+func testEnvSet(t *testing.T, cliArgs []string, id, apiPath, noun string) {
+	t.Helper()
+	var gotMethod, gotPath string
+	var gotBody map[string]string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(gotBody)
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, append(append([]string{}, cliArgs...), "env-set", id, "--var", "LOG_LEVEL=info", "--api-url", srv.URL))
+	wantPath := apiPath + "/env"
+	if gotMethod != http.MethodPut || gotPath != wantPath {
+		t.Errorf("request = %s %s, want PUT %s", gotMethod, gotPath, wantPath)
+	}
+	if gotBody["LOG_LEVEL"] != "info" {
+		t.Errorf("request body = %+v, want LOG_LEVEL=info", gotBody)
+	}
+	wantMsg := fmt.Sprintf("%s %q env vars replaced (1 set)", noun, id)
+	if !strings.Contains(stdout, wantMsg) {
+		t.Errorf("stdout = %q, want a replace confirmation", stdout)
+	}
+}
+
+// testEnvSetClearsAll runs "<cliArgs...> env-set <id>" with no --var flags
+// and asserts the request body is empty and the replace confirmation shows
+// zero vars set.
+func testEnvSetClearsAll(t *testing.T, cliArgs []string, id, noun string) {
+	t.Helper()
+	var gotBody map[string]string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(gotBody)
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, append(append([]string{}, cliArgs...), "env-set", id, "--api-url", srv.URL))
+	if len(gotBody) != 0 {
+		t.Errorf("request body = %+v, want empty", gotBody)
+	}
+	wantMsg := fmt.Sprintf("%s %q env vars replaced (0 set)", noun, id)
+	if !strings.Contains(stdout, wantMsg) {
+		t.Errorf("stdout = %q, want a replace confirmation", stdout)
+	}
 }
 
 // assertUsageErrorMissingName runs "apps <subcommand> <verb>" for each verb

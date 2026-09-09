@@ -41,22 +41,11 @@ func TestHandleListGitProviders_NoneConnected(t *testing.T) {
 // endpoint exists to unblock for a non-root deploy-scoped user.
 func TestHandleListGitProviders_PlainReadTokenForbidden(t *testing.T) {
 	rt, db := newTestRouter(t)
-	ctx := context.Background()
 
 	const plaintext = "read-only-token-providers" //nolint:gosec // fake fixture, not a real credential
-	if err := db.SaveAPIToken(ctx, store.APIToken{
-		ID: "tok_read_providers", Name: "reader", TokenHash: hashToken(plaintext), Abilities: []string{AbilityRead},
-	}); err != nil {
-		t.Fatalf("seed token: %v", err)
-	}
-
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/git-providers", nil)
-	req.Header.Set("Authorization", "Bearer "+plaintext)
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want 403 (AbilityRead must not reach an AbilityReadSensitive route)", rec.Code)
-	}
+	assertProviderRoutesForbiddenForAbilities(t, rt, db, "tok_read_providers", plaintext, []string{AbilityRead}, []providerRouteCase{
+		{method: http.MethodGet, path: "/api/v1/git-providers"},
+	})
 }
 
 func TestHandleListGitProviders_ReadSensitiveTokenAllowed(t *testing.T) {

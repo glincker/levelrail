@@ -483,21 +483,11 @@ func TestHandleDeleteGitSource_NotFound(t *testing.T) {
 func TestGitSourceRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
 
-	routes := []struct{ method, target string }{
+	assertRoutesRequireAuth(t, rt, []routeCase{
 		{http.MethodGet, "/api/v1/apps/web/git-source"},
 		{http.MethodPut, "/api/v1/apps/web/git-source"},
 		{http.MethodDelete, "/api/v1/apps/web/git-source"},
-	}
-	for _, r := range routes {
-		t.Run(r.method+" "+r.target, func(t *testing.T) {
-			req := httptest.NewRequest(r.method, r.target, nil)
-			rec := httptest.NewRecorder()
-			rt.Handler().ServeHTTP(rec, req)
-			if rec.Code != http.StatusUnauthorized {
-				t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
-			}
-		})
-	}
+	})
 }
 
 func TestNormalizeGitSourceBuildType(t *testing.T) {
