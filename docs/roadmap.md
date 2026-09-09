@@ -53,7 +53,7 @@ still open. This page describes what's actually true today.
   shared checkout, each scoped to its own `build.baseDirectory`, linked
   under one `store.App`, and independently reachable over HTTPS through
   one ingress pass.
-- A curated 101-entry service template catalog (ADR 015: reverses the
+- A curated 123-entry service template catalog (ADR 015: reverses the
   original "not chasing Coolify's 280 templates" non-goal, once Compose
   support existed to build it on), served over the API and browsable
   from the creation wizard, with a category-specific icon per card.
@@ -482,6 +482,29 @@ still open. This page describes what's actually true today.
   list (with copy-link and revoke) on the Users settings page, plus a
   public `/accept-invite` page. CLI: `levelrail-cli invites
   create/list/revoke`.
+
+- Deleting an app or a preview environment now stops and removes its
+  running container, not just its desired-state row: previously a
+  delete left the container orphaned since the reconciler treats a
+  missing desired service as "not deployed yet," never "tear down."
+  `Controller.Teardown` (`internal/reconcile/application`) is called
+  from both delete paths in a background goroutine, since stopping a
+  container can outlast an HTTP request's own timeout budget.
+- Docker Compose `entrypoint:` support, alongside the existing
+  `command:` support, translated straight through to the container's
+  own entrypoint at create time.
+- app.yaml gains command-override and bind-mount support, the same two
+  capabilities Compose import already had, so a directly-authored
+  service spec is no longer a strict subset of what a compose file can
+  express. Both are wired into the CLI (`apps get`) and the `get_app`
+  MCP tool, and bind mounts on this path carry the same `root`-ability
+  gate the compose-import path already enforces.
+- Browsing repositories and tags for a stored *external* registry
+  credential (`GET /api/v1/registry-credentials/{id}/repositories`,
+  `.../tags`), reusing the same generic registry-catalog client this
+  platform already used for its own built-in registry. Wired into the
+  UI (a browse dialog on the registry-credentials settings page), the
+  CLI (`registry-credentials repositories`/`tags`), and two MCP tools.
 
 ## In progress
 
