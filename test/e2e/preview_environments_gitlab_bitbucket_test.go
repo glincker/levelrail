@@ -109,7 +109,7 @@ func newLivePreviewFixture(t *testing.T, appName string, prNumber int, adminUser
 		t.Fatalf("SaveDesiredService(%q) error = %v", appName, err)
 	}
 
-	ts := newPreviewE2ERouter(t, svcStore, buildClient)
+	ts := newPreviewE2ERouter(t, svcStore, buildClient, runtime)
 	if err := api.BootstrapAdmin(ctx, svcStore, adminUsername, adminPassword); err != nil {
 		t.Fatalf("BootstrapAdmin() error = %v", err)
 	}
@@ -182,6 +182,30 @@ func assertPreviewTornDown(t *testing.T, f *livePreviewFixture, appName string, 
 	if _, err := f.svcStore.GetDesiredService(f.ctx, f.previewName); !errors.Is(err, store.ErrServiceNotFound) {
 		t.Fatalf("GetDesiredService(%q) after teardown error = %v, want ErrServiceNotFound", f.previewName, err)
 	}
+	waitForContainerAbsent(f.ctx, t, f.runtime, application.ContainerName(f.previewName, f.tagB, ""), "preview after teardown")
+}
+
+// waitForContainerAbsent polls up to 10 seconds for containerName to be
+// gone: teardownServiceContainers (internal/api/apps.go) stops it in a
+// background goroutine so the webhook response isn't held up, so unlike
+// assertContainerAbsent's own single-check callers, this one can't
+// assume the removal has already happened by the time it runs.
+func waitForContainerAbsent(ctx context.Context, t *testing.T, runtime docker.Runtime, containerName, label string) {
+	t.Helper()
+	deadline := time.Now().Add(20 * time.Second)
+	for {
+		state, err := runtime.InspectByName(ctx, containerName)
+		if err != nil {
+			t.Fatalf("InspectByName(%q) error = %v", containerName, err)
+		}
+		if state == nil {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("container %s (%s) still exists after teardown: %+v", label, containerName, state)
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
 }
 
 func TestPreviewEnvironmentGitLab_Live_OpenSynchronizeAndCloseLifecycle(t *testing.T) {
@@ -218,12 +242,8 @@ func TestPreviewEnvironmentGitLab_Live_OpenSynchronizeAndCloseLifecycle(t *testi
 	assertContainerAbsent(f.ctx, t, f.runtime, application.ContainerName(f.previewName, f.tagA, ""), "gitlab preview commitA")
 	getPreviewAndAssertHeadSHA(t, f, appName, prNumber, "update", f.commitB)
 
-	// Step 3: closing the MR tears the preview down: its desired state
-	// and preview_environments row are both deleted. Stopping the
-	// now-orphaned container itself is a documented pre-existing gap
-	// (see teardownPreviewApp's own doc comment in
-	// internal/api/preview_environments.go), so this deliberately does
-	// not assert the container is gone.
+	// Step 3: closing the MR tears the preview down: desired state,
+	// preview_environments row, and the running container are all gone.
 	fireLifecycleStep(t, f, appName, previewLifecycleStep{
 		name:           "gitlab close",
 		payload:        gitlabPreviewWebhookPayload("close", prNumber, "feature-preview", "main", f.commitB),
@@ -268,9 +288,7 @@ func TestPreviewEnvironmentBitbucket_Live_CreateUpdateAndTeardownLifecycle(t *te
 	getPreviewAndAssertHeadSHA(t, f, appName, prNumber, "update", f.commitB)
 
 	// Step 3: pullrequest:fulfilled (merged) tears the preview down, the
-	// same desired-state/preview-record deletion GitLab's close covers
-	// above; see that test's own comment for why the container itself is
-	// deliberately not asserted absent here.
+	// same full teardown GitLab's close step above proves.
 	fulfilledPayload := bitbucketPreviewWebhookPayload(prNumber, "feature-preview", f.commitB, "main")
 	fireLifecycleStep(t, f, appName, previewLifecycleStep{
 		name:           "bitbucket fulfilled",
@@ -289,7 +307,7 @@ func TestPreviewEnvironmentBitbucket_Live_CreateUpdateAndTeardownLifecycle(t *te
 // establish separately for their own narrower needs, combined here since
 // a preview deploy needs both at once, and starts a real HTTP server for
 // it.
-func newPreviewE2ERouter(t *testing.T, svcStore *store.DB, buildClient *build.Client) *httptest.Server {
+func newPreviewE2ERouter(t *testing.T, svcStore *store.DB, buildClient *build.Client, runtime docker.Runtime) *httptest.Server {
 	t.Helper()
 	masterKey, err := secrets.GenerateMasterKey()
 	if err != nil {
@@ -300,7 +318,8 @@ func newPreviewE2ERouter(t *testing.T, svcStore *store.DB, buildClient *build.Cl
 
 	logger := discardTestLogger()
 	b := &brand.Brand{Name: "E2E Test Platform", BinaryName: "e2e-test-platform"}
-	router := api.NewRouter(logger, b, svcStore, api.WithGitSourceSecrets(secretsManager), api.WithBuilder(pipeline))
+	router := api.NewRouter(logger, b, svcStore, api.WithGitSourceSecrets(secretsManager), api.WithBuilder(pipeline),
+		api.WithExecRuntime(func(string) (docker.Runtime, error) { return runtime, nil }))
 	return newE2ETestServer(t, router)
 }
 
