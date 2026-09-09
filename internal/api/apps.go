@@ -153,6 +153,11 @@ type appResource struct {
 	// reason Volumes above is: see appBindMountResource's own doc
 	// comment for where these actually get set.
 	BindMounts []appBindMountResource `json:"bind_mounts,omitempty"`
+	// Command overrides the image's own default CMD
+	// (store.DesiredService.Command), response-only for the same reason
+	// Volumes above is: set through app.yaml's command: field or a
+	// compose import, never through this endpoint.
+	Command []string `json:"command,omitempty"`
 }
 
 func toAppResource(svc store.DesiredService) appResource {
@@ -198,6 +203,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		EnvDirty:           svc.EnvDirty,
 		Volumes:            toAppVolumeResources(svc),
 		BindMounts:         toAppBindMountResources(svc),
+		Command:            svc.Command,
 	}
 }
 

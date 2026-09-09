@@ -326,6 +326,19 @@ func printAppHuman(out io.Writer, a appResource) {
 			_, _ = fmt.Fprintf(out, "post-deploy hook: %s\n", a.Hooks.PostDeploy)
 		}
 	}
+	if len(a.Command) > 0 {
+		_, _ = fmt.Fprintf(out, "command:  %v\n", a.Command)
+	}
+	for _, v := range a.Volumes {
+		_, _ = fmt.Fprintf(out, "volume:   %s -> %s\n", v.Name, v.ContainerPath)
+	}
+	for _, m := range a.BindMounts {
+		ro := ""
+		if m.ReadOnly {
+			ro = " (read-only)"
+		}
+		_, _ = fmt.Fprintf(out, "bind mount: %s -> %s%s\n", m.HostPath, m.ContainerPath, ro)
+	}
 }
 
 // printAppsTable prints a compact, aligned table of apps: list output's

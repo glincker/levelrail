@@ -47,7 +47,12 @@
           "type": "array",
           "items": { "$ref": "#/$defs/volume" }
         },
-        "hooks": { "$ref": "#/$defs/hooks" }
+        "hooks": { "$ref": "#/$defs/hooks" },
+        "command": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        }
       }
     },
     "hooks": {
@@ -61,12 +66,18 @@
     },
     "volume": {
       "type": "object",
-      "required": ["name", "path"],
+      "required": ["path"],
       "additionalProperties": false,
       "properties": {
         "name": { "type": "string", "minLength": 1 },
-        "path": { "type": "string", "minLength": 1 }
-      }
+        "hostPath": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "readOnly": { "type": "boolean" }
+      },
+      "oneOf": [
+        { "required": ["name"] },
+        { "required": ["hostPath"] }
+      ]
     },
     "build": {
       "type": "object",
