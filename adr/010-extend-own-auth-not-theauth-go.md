@@ -30,8 +30,8 @@ front-load Phase 4 machinery into a phase that doesn't need it.
 
 Four parallel research streams ran on 2026-08-12 to settle this and adjacent
 frontend/UX questions before implementation started; the auth-specific one
-produced `docs-local/research/theauth-go-fit-assessment.md`, a full
-source-read of theauth-go (not README summary), covering `theauth.go`,
+produced a full source-read of theauth-go (not a README summary), covering
+`theauth.go`,
 `config.go`, `storage.go`, `handlers.go`, `wiring.go`,
 `storage/storage.go`, `storage/memory/*.go`, `docs/STABILITY.md`,
 `docs/ROADMAP.md`, both bundled examples, and theauth-go's own June 2026

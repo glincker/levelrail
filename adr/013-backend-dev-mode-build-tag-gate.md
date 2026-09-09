@@ -23,11 +23,10 @@ matters once that proxy exists, so the same task added a standard Vite
 `server.proxy` entry (`/api` to `http://localhost:8080`, `changeOrigin:
 true`), dev-server-only, never read by `vite build`.
 
-The design work for the auth bypass itself is recorded in
-`docs-local/research/dashboard-gap-audit-and-devmode.md`, Part 2 ("Dev-mode
-design sketch, not implemented"). That doc is a sketch, not a spec, and the
-shipped implementation is simpler than it in one respect worth recording
-here, not just in TASKS.md.
+The design work for the auth bypass itself was sketched internally before
+implementation, not fully specced. The shipped implementation is simpler
+than that sketch in one respect worth recording here, not just in
+TASKS.md.
 
 ## Decision
 

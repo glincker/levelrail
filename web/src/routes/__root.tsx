@@ -69,8 +69,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 })
 
 // Thin shell: brand-aware header/nav, <Outlet />. No data fetching of its
-// own beyond the loader above, per frontend-plan.md section 3's
-// "cross-cutting" rule that layout routes reuse cached data rather than
+// own beyond the loader above: layout routes reuse cached data rather than
 // fetching in the component body. Brand hydration and auth-awareness were
 // both flagged as deferred work on this file; both land in this pass
 // (docs-local/research/dashboard-gap-audit-and-devmode.md gaps #4 and #6).

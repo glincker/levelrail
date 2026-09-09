@@ -28,11 +28,10 @@ Phase 1, ahead of that deferred integration point, so the reuse question
 had to be answered early rather than assumed away.
 
 Four research streams ran in parallel on 2026-08-12 to settle this and
-related dashboard/auth questions; `docs-local/research/frontend-component-
-reuse.md` is the one that covers thesvg's component system and theauth's
-SDK. It was read in full before this decision. Its recommendation was
-adopted and implemented before this ADR was written, which is the gap
-this ADR closes: the project's process requires "one ADR per architectural
+related dashboard/auth questions; one of them assessed thesvg's component
+system and theauth's SDK in full before this decision was made. Its
+recommendation was adopted and implemented before this ADR was written,
+which is the gap this ADR closes: the project's process requires "one ADR per architectural
 decision... with the rejected alternatives written down," and this
 decision (a new component library, a new primitive dependency, a new
 `web/package.json` diff, and an explicit choice to not integrate an

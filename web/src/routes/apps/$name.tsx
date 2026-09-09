@@ -60,9 +60,8 @@ const APP_SECTION_LABELS: Record<string, string> = {
 // deploy-trigger form, then renders <Outlet /> for whichever section
 // route is active.
 //
-// Both queries are primed here, matching frontend-plan.md section 3's
-// "cross-cutting" rule that a route's data comes from typed loaders, not
-// fetches in the component body: the app resource itself (GET
+// Both queries are primed here so the route's data comes from typed
+// loaders, not fetches in the component body: the app resource itself (GET
 // /api/v1/apps/{name}) and its current reconcile status (GET
 // /api/v1/apps/{name}/deploys). Every child section route reads the same
 // cache via useApp/useDeployStatus (keyed identically, see queries/apps.ts
