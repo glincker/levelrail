@@ -379,6 +379,161 @@ services:
 	}
 }
 
+func TestResolveMagicVars_Command(t *testing.T) {
+	tests := []struct {
+		name           string
+		yaml           string
+		wantCommand    []string
+		wantUnresolved []UnresolvedVar
+	}{
+		{
+			name: "FQDN resolves in place",
+			yaml: `
+x-levelrail-domains:
+  app: app.example.com
+services:
+  app:
+    image: app:latest
+    command: ["sh", "-c", "echo ${SERVICE_FQDN_APP}"]
+`,
+			wantCommand: []string{"sh", "-c", "echo https://app.example.com"},
+		},
+		{
+			name: "bash default substitutes literal",
+			yaml: `
+services:
+  app:
+    image: app:latest
+    command: ["sh", "-c", "echo ${SERVICE_DB_NAME:-mydb}"]
+`,
+			wantCommand: []string{"sh", "-c", "echo mydb"},
+		},
+		{
+			name: "generatable kind becomes unresolved",
+			yaml: `
+services:
+  app:
+    image: app:latest
+    command: ["sh", "-c", "echo $SERVICE_PASSWORD_DB"]
+`,
+			wantUnresolved: []UnresolvedVar{{Service: "app", EnvKey: "command[2]", Token: "$SERVICE_PASSWORD_DB"}},
+		},
+		{
+			name: "mixed entry resolves the resolvable token and reports the rest",
+			yaml: `
+x-levelrail-domains:
+  app: app.example.com
+services:
+  app:
+    image: app:latest
+    command: ["sh", "-c", "curl ${SERVICE_FQDN_APP}/health -H x-key:$SERVICE_PASSWORD_API"]
+`,
+			wantCommand:    []string{"sh", "-c", "curl https://app.example.com/health -H x-key:$SERVICE_PASSWORD_API"},
+			wantUnresolved: []UnresolvedVar{{Service: "app", EnvKey: "command[2]", Token: "$SERVICE_PASSWORD_API"}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f, err := Parse([]byte(tt.yaml))
+			if err != nil {
+				t.Fatalf("Parse() error = %v", err)
+			}
+
+			_, unresolved, err := ResolveMagicVars(f, failGenerate(t), failPersist(t))
+			if err != nil {
+				t.Fatalf("ResolveMagicVars() error = %v", err)
+			}
+
+			if len(unresolved) != len(tt.wantUnresolved) {
+				t.Fatalf("unresolved = %+v, want %+v", unresolved, tt.wantUnresolved)
+			}
+			for i, want := range tt.wantUnresolved {
+				if unresolved[i] != want {
+					t.Errorf("unresolved[%d] = %+v, want %+v", i, unresolved[i], want)
+				}
+			}
+
+			if tt.wantCommand != nil {
+				got := []string(f.Services["app"].Command)
+				if len(got) != len(tt.wantCommand) {
+					t.Fatalf("Command = %v, want %v", got, tt.wantCommand)
+				}
+				for i, want := range tt.wantCommand {
+					if got[i] != want {
+						t.Errorf("Command[%d] = %q, want %q", i, got[i], want)
+					}
+				}
+			}
+		})
+	}
+}
+
+// TestResolveMagicVars_CommandDoesNotAffectEnvironment guards against a
+// regression where scanning Command alongside Environment (both live in
+// the same per-service loop iteration) changes Environment's own
+// resolution: generated/secret-backed and default-substituted env vars
+// must resolve exactly as they do with no command: present at all.
+func TestResolveMagicVars_CommandDoesNotAffectEnvironment(t *testing.T) {
+	f, err := Parse([]byte(`
+services:
+  app:
+    image: app:latest
+    environment:
+      DB_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: ${SERVICE_DB_NAME:-ente_db}
+    command: ["sh", "-c", "echo ${SERVICE_DB_NAME:-mydb}"]
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	generateCalls := 0
+	generate := func(_, _ string, _ int) (string, error) {
+		generateCalls++
+		return "generated-value", nil
+	}
+	var persisted []string
+	persist := func(svcKey, envKey, value string) error {
+		persisted = append(persisted, fmt.Sprintf("%s/%s=%s", svcKey, envKey, value))
+		return nil
+	}
+
+	secretEnv, unresolved, err := ResolveMagicVars(f, generate, persist)
+	if err != nil {
+		t.Fatalf("ResolveMagicVars() error = %v", err)
+	}
+	if len(unresolved) != 0 {
+		t.Errorf("unresolved = %+v, want none", unresolved)
+	}
+	if generateCalls != 1 {
+		t.Errorf("generate called %d times, want 1", generateCalls)
+	}
+	if len(persisted) != 1 || persisted[0] != "app/DB_PASSWORD=generated-value" {
+		t.Errorf("persisted = %v, want [app/DB_PASSWORD=generated-value]", persisted)
+	}
+	if got := secretEnv["app"]; len(got) != 1 || got[0] != "DB_PASSWORD" {
+		t.Errorf("secretEnv[app] = %v, want [DB_PASSWORD]", got)
+	}
+	if _, ok := f.Services["app"].Environment["DB_PASSWORD"]; ok {
+		t.Error("DB_PASSWORD is still in Environment after resolving to a secret, want it removed")
+	}
+	if got := f.Services["app"].Environment["POSTGRES_DB"]; got != "ente_db" {
+		t.Errorf("POSTGRES_DB = %q, want ente_db", got)
+	}
+
+	wantCommand := []string{"sh", "-c", "echo mydb"}
+	gotCommand := []string(f.Services["app"].Command)
+	if len(gotCommand) != len(wantCommand) {
+		t.Fatalf("Command = %v, want %v", gotCommand, wantCommand)
+	}
+	for i, want := range wantCommand {
+		if gotCommand[i] != want {
+			t.Errorf("Command[%d] = %q, want %q", i, gotCommand[i], want)
+		}
+	}
+}
+
 func failGenerate(t *testing.T) func(string, string, int) (string, error) {
 	t.Helper()
 	return func(kind, key string, _ int) (string, error) {
