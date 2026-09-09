@@ -349,7 +349,7 @@ func TestReconcile_ImageChanged_Replaces(t *testing.T) {
 }
 
 // TestReconcile_CreateFailsHalfway covers the "operation half-succeeded"
-// case CLAUDE.md's reconciler testing rule requires: a Create failure
+// case reconciler tests must cover: a Create failure
 // must be reported loudly, not silently swallowed, and must not corrupt
 // state.
 func TestReconcile_CreateFailsHalfway(t *testing.T) {

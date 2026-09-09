@@ -1,4 +1,4 @@
--- Phase 3 (TASKS.md 3.6): closes the domain-uniqueness gap
+-- Phase 3: closes the domain-uniqueness gap
 -- internal/reconcile/ingress/controller.go's own package doc comment has
 -- flagged as open since Phase 1 (internal/spec's Validate() only ever
 -- sees one app.yaml at a time, so nothing stopped two separate deploys

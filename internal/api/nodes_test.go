@@ -584,7 +584,7 @@ func TestHandleDrainNode_UnknownNode_NotFound(t *testing.T) {
 // this file exercises handleDrainNode through the real store, but a
 // real *store.DB has no way to make UpdateServiceNode fail for
 // specifically the second of three services on demand, which is exactly
-// the case TASKS.md 3.7 calls out testing ("moving service 2 of 3 off a
+// the case worth testing ("moving service 2 of 3 off a
 // node fails partway through"). A fake store, controlled per-call, is
 // the direct way to force that.
 type fakeDrainAppStore struct {
@@ -682,8 +682,8 @@ func (f *fakeDrainNodeStore) UpdateNodeWorkloads(context.Context, string, bool, 
 	return nil
 }
 
-// TestHandleDrainNode_PartialFailure is the exact scenario TASKS.md 3.7
-// calls out: moving service 2 of 3 off a node fails partway through.
+// TestHandleDrainNode_PartialFailure is the exact scenario worth
+// covering: moving service 2 of 3 off a node fails partway through.
 // Reconcile must (a) surface the failure rather than silently reporting
 // full success, (b) keep going and still attempt every remaining
 // service rather than stopping at the first error, and (c) leave every

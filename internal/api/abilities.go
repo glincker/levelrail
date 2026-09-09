@@ -20,13 +20,12 @@ func (e *unknownAbilityError) Error() string {
 	return fmt.Sprintf("unknown ability %q", e.ability)
 }
 
-// Ability strings an api_tokens row can be scoped to (TASKS.md
-// "Backend auth foundation"), adopted from Coolify's own model per
-// docs-local/research/competitor-onboarding-auth-ux.md finding 9: a
-// small, legible permission surface an MCP-issued token can be provably
-// scoped to at the token layer itself, not just by convention in what a
-// caller chooses to call. AbilityRoot is exclusive of the rest (checked
-// at mint time, see validateAbilities), not additive with them.
+// Ability strings an api_tokens row can be scoped to, adopted from
+// Coolify's own model: a small, legible permission surface an
+// MCP-issued token can be provably scoped to at the token layer itself,
+// not just by convention in what a caller chooses to call. AbilityRoot
+// is exclusive of the rest (checked at mint time, see
+// validateAbilities), not additive with them.
 const (
 	AbilityRead           = "read"
 	AbilityReadSensitive  = "read:sensitive"

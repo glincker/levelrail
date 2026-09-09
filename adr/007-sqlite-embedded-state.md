@@ -47,8 +47,8 @@ the target scale (3 to 50 services, the project's stated target scale).
 - **Postgres or MySQL as the default state store**: rejected not because
   a relational server can't do the job, but because of what standing one
   up costs operationally, and that cost is exactly what 4.1's single-binary
-  story exists to avoid. `prior-art-coolify.md` is the concrete
-  illustration: Coolify's stated stack is "Laravel 12 (Laravel 10 file
+  story exists to avoid. Coolify's own stack is the concrete
+  illustration: it's stated as "Laravel 12 (Laravel 10 file
   structure) + Livewire 3 + Alpine.js, MySQL/Postgres, Redis, Horizon queue
   workers, Soketi websockets, Traefik proxy, optional 'Sentinel' metrics
   agent." State and queueing alone pull in three separate always-on

@@ -1,5 +1,5 @@
--- Phase 1 gap close: TASKS.md 1.4/1.6's own "build.type: static needs
--- ingress integration first" note, now closed. Static sites are the
+-- Phase 1 gap close: "build.type: static needs
+-- ingress integration first", now closed. Static sites are the
 -- architecture's one deliberate exception to the desired_services shape
 -- (migrations/0002): "static sites get served by the embedded Caddy
 -- directly with no container" (the static-site build path's own

@@ -1,4 +1,4 @@
-// Package ingress implements TASKS.md 1.6's ingress controller: the
+// Package ingress implements the ingress controller: the
 // reconcile.Controller that keeps Caddy's config (internal/ingress, ADR
 // 005) in sync with every service that declares domains.
 //
@@ -38,7 +38,7 @@
 // and the same TLS automation policy as every app/static-site route.
 //
 // Two further gaps this package's own doc comment used to flag as open
-// here are also closed, both TASKS.md 3.6:
+// here are also closed:
 //
 //   - Certificate storage no longer has to stay on Caddy's default
 //     file-system storage module (internal/ingress.FileStorage).
@@ -278,7 +278,7 @@ func WithAdminListen(addr string) Option {
 
 // WithStorageDir overrides Caddy's certificate/ACME-account storage root
 // (internal/ingress.FileStorage). Empty (the default) keeps Caddy's own
-// OS-specific default location. Production wiring (TASKS.md 1.9/1.10, not
+// OS-specific default location. Production wiring (not
 // yet built) should point this at a path under the control plane's data
 // directory once that constant exists; this package does not invent one,
 // keeping with the repo's brand/path indirection rule (no hardcoded
@@ -288,7 +288,7 @@ func WithStorageDir(dir string) Option {
 }
 
 // WithCertStore points Caddy's certificate/ACME-account storage at
-// internal/store's SQLite (TASKS.md 3.6) instead of the local
+// internal/store's SQLite instead of the local
 // filesystem, so multi-node deployments share cert state instead of each
 // node maintaining its own certificate storage. Takes precedence over
 // WithStorageDir if both are set. certStore is typically
@@ -465,7 +465,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			continue
 		}
 		if owner, host, dup := firstDuplicateHost(svc.Name, svc.Domains, claimedHosts); dup {
-			// store.SaveDesiredService (TASKS.md 3.6) now rejects a save
+			// store.SaveDesiredService now rejects a save
 			// that would create this situation for any service written
 			// after that change landed, so reaching this branch means
 			// either data written before the constraint existed, or a
@@ -474,7 +474,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			// host: skip the loser and say so loudly, rather than
 			// silently letting Caddy's own last-match-wins matcher
 			// evaluation decide.
-			c.logger.WarnContext(ctx, "ingress: service claims a domain another service already routed this pass, skipping; internal/store's service_domains uniqueness constraint should prevent this for any service saved since TASKS.md 3.6, this is a defense-in-depth guard for pre-existing data",
+			c.logger.WarnContext(ctx, "ingress: service claims a domain another service already routed this pass, skipping; internal/store's service_domains uniqueness constraint should prevent this for any service saved since that constraint landed, this is a defense-in-depth guard for pre-existing data",
 				slog.String("service", svc.Name),
 				slog.String("domain", host),
 				slog.String("already_routed_to", owner),

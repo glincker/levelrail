@@ -1,7 +1,7 @@
 // Package rightsizing is a deterministic, pure-Go engine that turns an
 // app's historical CPU/memory usage into a resource-limit suggestion.
-// It is the "read-and-suggest layer on top of the platform API" section
-// 4.11 of the project's CLAUDE.md describes: it never calls an external
+// It is a read-and-suggest layer on top of the platform API, per this
+// project's AI design rule: it never calls an external
 // model, never writes to any resource, and its output is never applied
 // automatically. Every recommendation is backed by literal samples or a
 // literal OOM signal it was given; when there isn't enough history yet,

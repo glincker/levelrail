@@ -1,10 +1,10 @@
 // Package diagnose is a deterministic, pure-Go pattern matcher over
 // diagnostic signals the platform already collects: deploy attempt
 // status/error, reconcile condition reason strings, crashloop alert
-// state, and recent log lines. It is the "read-and-suggest layer on top
-// of the platform API" section 4.11 of the project's CLAUDE.md
-// describes: it never calls an external model, never writes to any
-// resource, and never influences the reconciler. Every explanation this
+// state, and recent log lines. It is a read-and-suggest layer on top
+// of the platform API, per this project's AI design rule: it never
+// calls an external model, never writes to any resource, and never
+// influences the reconciler. Every explanation this
 // package returns is backed by a literal signal it read; when nothing
 // matches, Diagnose returns the fallback response rather than a guess.
 package diagnose

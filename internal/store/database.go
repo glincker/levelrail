@@ -23,7 +23,7 @@ const (
 	EngineClickHouse = "clickhouse"
 )
 
-// DesiredDatabase is what a future database controller (TASKS.md 1.8)
+// DesiredDatabase is what a future database controller
 // reconciles a managed database container against. No credentials field:
 // see the comment in migrations/0003_desired_databases.sql for why.
 type DesiredDatabase struct {
@@ -217,7 +217,7 @@ func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, erro
 
 // ListDesiredDatabasesByNode returns every saved database currently
 // placed on nodeID, ordered by name. The database-kind counterpart to
-// ListDesiredServicesByNode, same TASKS.md 3.7 drain/delete-guard
+// ListDesiredServicesByNode, same drain/delete-guard
 // callers.
 func (db *DB) ListDesiredDatabasesByNode(ctx context.Context, nodeID string) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `

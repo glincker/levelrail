@@ -13,8 +13,7 @@
 // point (module namespaces), which makes them awkward to construct
 // directly from Go; a small hand-rolled struct set that marshals to the
 // same wire shape is both easier to build from app.yaml data later and
-// easier to table-test in isolation, without starting Caddy at all. See
-// docs-local/research/caddy-spike.md for what this traded off.
+// easier to table-test in isolation, without starting Caddy at all.
 package ingress
 
 import "fmt"
@@ -32,7 +31,7 @@ type Config struct {
 	// system is inherently polymorphic (any value marshaling to
 	// {"module": "<id>", ...} is valid here). *FileStorage (the local
 	// filesystem, via NewFileStorage) and SQLiteStorageRef
-	// (internal/store's SQLite, via NewSQLiteStorageRef, TASKS.md 3.6)
+	// (internal/store's SQLite, via NewSQLiteStorageRef)
 	// are this package's two concrete options as of this writing; a nil
 	// Storage leaves Caddy's own OS-specific default in place.
 	Storage any  `json:"storage,omitempty"`
@@ -52,8 +51,7 @@ type AdminConfig struct {
 	// actually comes up, since a production driver would want it
 	// reachable for introspection even though this package itself talks
 	// to Caddy via Go function calls (caddy.Load), not HTTP requests to
-	// that listener. See docs-local/research/caddy-spike.md for what
-	// happened when this collided with an already-bound port.
+	// that listener.
 	Disabled bool `json:"disabled,omitempty"`
 	// Config holds admin-level config-management settings, notably
 	// Persist. See AdminConfigSettings.
@@ -73,8 +71,7 @@ type AdminConfigSettings struct {
 	// against embedding Caddy specifically to avoid. This spike's
 	// builder pins it to false: the platform's own reconcile loop and
 	// database are the single source of truth for desired ingress
-	// state, not a file Caddy manages on its own. See
-	// docs-local/research/caddy-spike.md.
+	// state, not a file Caddy manages on its own.
 	Persist *bool `json:"persist,omitempty"`
 }
 
@@ -309,9 +306,8 @@ type AutomationPolicy struct {
 // InternalIssuer is Caddy's "internal" TLS issuer (tls.issuance.internal):
 // a locally-generated, self-signed CA, meant for exactly the case this
 // spike is in, no public domain and no inbound port 80/443 reachable from
-// the internet for real ACME. It works fully offline. See
-// docs-local/research/caddy-spike.md for why this stands in for real ACME
-// in this spike and what still needs verifying against a real domain.
+// the internet for real ACME. It works fully offline, standing in for
+// real ACME here; verifying this against a real domain is still needed.
 type InternalIssuer struct {
 	Module string `json:"module"`
 }
@@ -436,8 +432,7 @@ func NewACMEIssuer(email, directoryURL string) ACMEIssuer {
 // own machine, and the wrong thing for an embedded control plane: it
 // scatters state outside the platform's own data directory and, worse, is
 // shared and reused across every unrelated process on the machine that
-// also happens to embed Caddy with default settings. See
-// docs-local/research/caddy-spike.md.
+// also happens to embed Caddy with default settings.
 type FileStorage struct {
 	Module string `json:"module"`
 	Root   string `json:"root,omitempty"`
@@ -448,8 +443,8 @@ type FileStorage struct {
 // "caddy.storage.file_system": the "storage" field resolves modules
 // within the caddy.storage namespace already (see StorageRaw's caddy
 // struct tag in caddy's own Config type), so the namespace prefix here
-// would be doubled up, a real surprise this spike hit and is recording,
-// see docs-local/research/caddy-spike.md.
+// would be doubled up if included, a subtle enough detail to call out
+// explicitly.
 func NewFileStorage(dir string) *FileStorage {
 	return &FileStorage{Module: "file_system", Root: dir}
 }
@@ -472,7 +467,7 @@ type CA struct {
 	// which has no desktop trust store to install into and should
 	// never attempt an interactive sudo prompt at startup. This spike's
 	// TLS builder pins it to false explicitly rather than relying on
-	// Caddy's default. See docs-local/research/caddy-spike.md.
+	// Caddy's default.
 	InstallTrust *bool `json:"install_trust,omitempty"`
 }
 

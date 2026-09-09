@@ -41,8 +41,7 @@ export interface RouterContext {
 const PUBLIC_ROUTE_PATHS = ['/login', '/reset-password', '/accept-invite']
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-  // Auth guard for the whole route tree (docs-local/research/dashboard-
-  // gap-audit-and-devmode.md gaps #1/#2/#4): anything other than
+  // Auth guard for the whole route tree: anything other than
   // PUBLIC_ROUTE_PATHS requires a recorded session. This is a
   // client-side heuristic, not the real enforcement, lib/authStore.ts's
   // own doc comment explains why: the real 401 (session actually expired
@@ -69,11 +68,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 })
 
 // Thin shell: brand-aware header/nav, <Outlet />. No data fetching of its
-// own beyond the loader above, per frontend-plan.md section 3's
-// "cross-cutting" rule that layout routes reuse cached data rather than
+// own beyond the loader above: layout routes reuse cached data rather than
 // fetching in the component body. Brand hydration and auth-awareness were
-// both flagged as deferred work on this file; both land in this pass
-// (docs-local/research/dashboard-gap-audit-and-devmode.md gaps #4 and #6).
+// both flagged as deferred work on this file; both land in this pass.
 function RootLayout() {
   return (
     <ThemeProvider>
@@ -90,9 +87,8 @@ function RootLayout() {
 // yet, and the login screen's own centered-card layout, LoginForm.tsx,
 // already owns its full viewport). Every other route gets the real
 // shadcn sidebar-07/dashboard-01 shape (SidebarProvider > AppSidebar +
-// SidebarInset), per docs-local/research/dashboard-redesign: this
-// replaces the previous flat top-nav bar entirely, not an incremental
-// change to it.
+// SidebarInset): this replaces the previous flat top-nav bar entirely,
+// not an incremental change to it.
 function AppShell() {
   const username = useAuthUsername()
   const [commandPaletteOpen, setCommandPaletteOpen] = React.useState(false)

@@ -1,5 +1,5 @@
 // Query-key factory and fetcher for GET /api/v1/apps/{name}/metrics
-// (internal/api/metrics.go, TASKS.md 2.3). Kept in its own module
+// (internal/api/metrics.go). Kept in its own module
 // rather than folded into queries/apps.ts, same reasoning queries/
 // deploys.ts's header comment already gives: a genuinely different
 // resource shape (a metric series, not an AppDetail), even though it

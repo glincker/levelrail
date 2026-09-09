@@ -1,5 +1,5 @@
 // Package application implements the declarative app spec's service
-// contract and TASKS.md 1.3's application controller: the
+// contract and the application controller: the
 // reconcile.Controller that converges a
 // real, store-backed desired service to a running container, replacing
 // nginxdemo's hardcoded desired state with the real thing.
@@ -14,7 +14,7 @@
 // switching itself (updating Caddy to point at the new container) is
 // deliberately not this controller's job: this codebase's reconciler
 // pattern is a reconcile loop per resource type, and ingress is its own
-// resource type (TASKS.md 1.6, not yet wired in). This controller's
+// resource type (not yet wired in). This controller's
 // contract with that future ingress controller is simple: whichever
 // container currently exists and is running for a service is the one
 // meant to receive traffic.
@@ -48,7 +48,7 @@ type ServiceStore interface {
 }
 
 // SecretResolver is the narrow surface this controller needs from
-// internal/secrets.Manager (TASKS.md 1.7), so tests can fake it without
+// internal/secrets.Manager, so tests can fake it without
 // a real master key or database. *secrets.Manager satisfies this
 // structurally. Resolve's plaintext return value is used exactly once,
 // merged into a container's env map immediately before
@@ -118,7 +118,7 @@ type EnvironmentEnvLister interface {
 }
 
 // DeployRecorder is the narrow surface this controller needs to record
-// TASKS.md 2.1's deploy-frequency metric. *telemetry.DB satisfies this
+// the deploy-frequency metric. *telemetry.DB satisfies this
 // structurally; not imported directly, same reasoning ServiceStore/
 // SecretResolver above already establish. RecordDeploy is only ever
 // called on a real deploy cutover (justDeployed below, the "Deployed"
@@ -222,7 +222,7 @@ func WithSecretResolver(r SecretResolver) Option {
 	return func(ctrl *Controller) { ctrl.secretResolver = r }
 }
 
-// WithDeployRecorder enables recording TASKS.md 2.1's deploy_count
+// WithDeployRecorder enables recording the deploy_count
 // metric every time Reconcile actually performs a deploy cutover.
 // Without one configured (the default), Reconcile behaves exactly as
 // before, deploys just aren't measured.
@@ -481,7 +481,7 @@ func (c *Controller) reconcileBlueGreen(ctx context.Context, targets []string, d
 // naive "always stop everything, then start everything" implementation
 // would tear down and restart a perfectly healthy, already-converged
 // replica set on every single resync tick (every reconcile.Engine pass,
-// TASKS.md 1.3's own resyncInterval), which is a permanent recreate-loop
+// its own resyncInterval), which is a permanent recreate-loop
 // bug, not a strategy. Reconcile must be idempotent (this codebase's own
 // reconciler contract), so this only ever stops anything when the
 // desired target set genuinely differs from what is currently running.
@@ -1206,7 +1206,7 @@ func (c *Controller) runPreDeployHook(ctx context.Context, containerID string, d
 // (finishReconcile's own PostDeployHookFailed branch), not Status,
 // matching this codebase's existing "the important fact, a healthy set
 // is serving, is still true" tolerance (RunningStaleCleanupFailed/
-// DeployedMetricRecordFailed above). Per CLAUDE.md section 10's own bias
+// DeployedMetricRecordFailed above). In keeping with this project's bias
 // toward surfacing a boring problem loudly rather than swallowing it,
 // this failure still surfaces: the returned error propagates through
 // reconcile.Engine's own logging, and the outcome is persisted via
@@ -1444,7 +1444,7 @@ const hashLen = 8
 // image produce the same name (a genuine no-op redeploy correctly finds
 // nothing to do); two different images always produce different names
 // (so both can exist side by side during a cutover). Exported so the
-// ingress controller (internal/reconcile/ingress, TASKS.md 1.6) can
+// ingress controller (internal/reconcile/ingress) can
 // derive the exact same name to find a service's currently active
 // container, without reimplementing this hash logic a second time and
 // risking the two drifting apart.

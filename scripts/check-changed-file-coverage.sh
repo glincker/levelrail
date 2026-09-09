@@ -12,8 +12,8 @@
 # positive scripts/check-coverage.sh's own aggregate gate was already
 # correctly avoiding, and it would make this gate noisy enough to get
 # ignored or disabled, worse than not having it. Real per-line diff
-# coverage is what CLAUDE.md's own "new code cannot lower the bar"
-# framing actually asks for, so that's what this computes: only the
+# coverage is what "new code cannot lower the bar" actually requires,
+# so that's what this computes: only the
 # `go tool cover` statement blocks that overlap a line the diff added
 # or changed count toward the percentage.
 #

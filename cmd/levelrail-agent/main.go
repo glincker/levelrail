@@ -1,4 +1,4 @@
-// Command levelrail-agent is TASKS.md 3.2's node agent binary (the
+// Command levelrail-agent is the node agent binary (the
 // repo layout names it, this is the first pass to actually build it).
 // Dials out to the control plane (ADR 003, never
 // accepts an inbound connection), enrolls once using a one-time join

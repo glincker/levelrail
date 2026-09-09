@@ -13,9 +13,8 @@ import (
 )
 
 // DeployAttempt is one row-per-attempt entry in the deploy_attempts
-// table: real deploy history, the gap
-// docs-local/research/deploy-attempt-id-and-log-persistence.md documents
-// against reconcile_status/UpsertConditions only ever keeping the latest
+// table: real deploy history, closing the gap left by
+// reconcile_status/UpsertConditions only ever keeping the latest
 // condition per (controller, type) pair. Minted by all three real
 // trigger paths (the plain image-tag deploy, the manual git-source
 // build, and the unattended git-push webhook), one row per call.
@@ -207,9 +206,8 @@ const deployAttemptIDPrefix = "dep_"
 // NewDeployAttemptID generates an opaque, URL-safe deploy-attempt
 // identifier, minted the same way internal/api/tokens.go's
 // randomTokenID mints an API token ID (fixed-length crypto/rand bytes,
-// base64 URL encoding, a short prefix), per the design note this
-// implements (docs-local/research/deploy-attempt-id-and-log-persistence.md
-// section 1, option A). Exported and placed in this package, unlike
+// base64 URL encoding, a short prefix). Exported and placed in this
+// package, unlike
 // randomTokenID which stays private to internal/api: more than one
 // package needs to mint one of these. The plain image-tag and manual
 // build triggers both live in internal/api, but the git webhook

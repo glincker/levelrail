@@ -1,6 +1,6 @@
 package ingress
 
-// This file: the "many routes on one shared server" API (TASKS.md 1.6's
+// This file: the "many routes on one shared server" API (the
 // real ingress controller, internal/reconcile/ingress) plus its
 // build.type: static (served by the embedded Caddy directly, no
 // container) extension. config.go stays scoped
@@ -93,7 +93,7 @@ type MaintenanceRoute struct {
 // RoutesOptions is the input to BuildRoutesConfig: everything needed to
 // stand up one Caddy server carrying many independently host-routed
 // backends on a single shared listener. This is the shape a real ingress
-// controller needs (TASKS.md 1.6): ADR 005's Verified section found that
+// controller needs: ADR 005's Verified section found that
 // caddy.Load replaces Caddy's entire process-wide config on every call,
 // so a controller tracking many services builds one complete Config from
 // every currently routable service and applies it whole on every
@@ -198,7 +198,7 @@ type RoutesOptions struct {
 	// CertStorage, if non-nil, overrides StorageDir with an arbitrary
 	// Caddy storage module reference (e.g. NewSQLiteStorageRef()),
 	// letting the caller point Caddy's certificate/ACME-account storage
-	// at internal/store's SQLite (TASKS.md 3.6) instead of the local
+	// at internal/store's SQLite instead of the local
 	// filesystem, so certificate storage lives in the database and
 	// multi-node deployments can share cert state. Takes precedence over
 	// StorageDir when both are set, rather than being an error, so a

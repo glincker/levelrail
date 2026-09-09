@@ -261,7 +261,7 @@ func WithSessionTTL(d time.Duration) Option {
 }
 
 // WithTelemetryQuerier enables GET /api/v1/apps/{name}/metrics and
-// GET /api/v1/apps/{name}/logs (TASKS.md 2.3). Without one configured,
+// GET /api/v1/apps/{name}/logs. Without one configured,
 // both routes return 501, the same "not configured" shape
 // WithSecretSetter's absence produces, rather than the routes not
 // existing at all or panicking on a nil dereference.
@@ -270,7 +270,7 @@ func WithTelemetryQuerier(q TelemetryQuerier) Option {
 }
 
 // WithAlertRules enables POST/GET /api/v1/apps/{name}/alerts and DELETE
-// /api/v1/apps/{name}/alerts/{id} (TASKS.md 2.5/2.7). Without one
+// /api/v1/apps/{name}/alerts/{id}. Without one
 // configured (the default), all three routes return 501, the same
 // "not configured" shape WithSecretSetter and WithTelemetryQuerier's
 // absence already produce: this control plane still starts and serves
@@ -294,7 +294,7 @@ type DeployNotifier interface {
 // WithDeployNotifyTargets enables POST/GET
 // /api/v1/apps/{name}/deploy-notify-targets and DELETE
 // .../deploy-notify-targets/{id}: CRUD for deploy-outcome notification
-// destinations, the sibling surface to WithAlertRules for TASKS.md
+// destinations, the sibling surface to WithAlertRules for
 // wave-2 deploy-outcome notifications. Without one configured (the
 // default), all three routes return 501, the same "not configured"
 // shape WithAlertRules' own absence produces.

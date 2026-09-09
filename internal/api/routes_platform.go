@@ -7,7 +7,7 @@ import "net/http"
 // integrations, and audit. See routes.go's own doc comment for why the
 // split.
 func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
-	// Secrets (TASKS.md 1.7). Set-only: there is deliberately no GET,
+	// Secrets. Set-only: there is deliberately no GET,
 	// returning a value (even to its own owner over an authenticated
 	// session) is exactly the kind of exposure envelope encryption
 	// exists to avoid.
@@ -20,7 +20,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/secrets", rt.requireAbility(AbilityRead, rt.handleListSecrets))
 	mux.HandleFunc("POST /api/v1/apps/{name}/secrets/{key}/lock", rt.requireAbility(AbilityWriteSensitive, rt.handleSetSecretLock))
 
-	// Git source (TASKS.md 1.7's own deferred follow-up, git_sources.go):
+	// Git source (a deferred follow-up, git_sources.go):
 	// persist a repo/branch/build config per app so a git push can
 	// auto-deploy it, the multi-app evolution of internal/webhook's own
 	// single-app, env-var-configured Config. AbilityWriteSensitive for
@@ -69,7 +69,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// AbilityDeploy tier.
 	mux.HandleFunc("POST /api/v1/previews/sweep", rt.requireAbility(AbilityDeploy, rt.handleSweepPreviewEnvironments))
 
-	// Telemetry query (TASKS.md 2.3): metrics and logs for one app,
+	// Telemetry query: metrics and logs for one app,
 	// fanned out through a Federator (today, exactly one local source).
 	mux.HandleFunc("GET /api/v1/apps/{name}/metrics", rt.requireAbility(AbilityRead, rt.handleQueryMetrics))
 	mux.HandleFunc("GET /api/v1/apps/{name}/logs", rt.requireAbility(AbilityRead, rt.handleQueryLogs))
@@ -85,7 +85,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// telemetry.QueryLogs call, nothing more sensitive than either.
 	mux.HandleFunc("GET /api/v1/apps/{name}/logs/download", rt.requireAbility(AbilityRead, rt.handleDownloadLogs))
 
-	// Alerting (TASKS.md 2.5/2.7): threshold and crashloop rules scoped
+	// Alerting: threshold and crashloop rules scoped
 	// to one app, fanned through a *alerting.DB when configured (see
 	// WithAlertRules).
 	mux.HandleFunc("POST /api/v1/apps/{name}/alerts", rt.requireAbility(AbilityWrite, rt.handleCreateAlertRule))
@@ -143,7 +143,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/notification-channels/{id}/test", rt.requireAbility(AbilityWrite, rt.handleTestExistingNotificationChannel))
 	mux.HandleFunc("GET /api/v1/notification-channels/{id}/deliveries", rt.requireAbility(AbilityRead, rt.handleListNotificationDeliveries))
 
-	// Prometheus remote read (TASKS.md 2.6). Gated by requireAbility the
+	// Prometheus remote read. Gated by requireAbility the
 	// same as every other read route, not left open: leaving a metrics
 	// endpoint unauthenticated would let any caller pull every service's
 	// resource usage. Prometheus's own remote_read config supports
@@ -157,7 +157,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// grouping, explicitly not the deferred Phase 4 teams/RBAC work (see
 	// that file's own package doc comment). AbilityRead/AbilityWrite,
 	// the same ordinary boundary apps/databases CRUD already uses, not
-	// AbilityRoot: unlike a node (real infrastructure, TASKS.md 3.1),
+	// AbilityRoot: unlike a node (real infrastructure),
 	// creating or deleting a project has no fleet-level consequence.
 	mux.HandleFunc("GET /api/v1/projects", rt.requireAbility(AbilityRead, rt.handleListProjects))
 	mux.HandleFunc("POST /api/v1/projects", rt.requireAbility(AbilityWrite, rt.handleCreateProject))
@@ -220,7 +220,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// fleet-level placement.
 	mux.HandleFunc("PUT /api/v1/databases/{name}/resources", rt.requireAbility(AbilityWrite, rt.handleSetDatabaseResources))
 
-	// Nodes (TASKS.md 3.1): fleet-level infrastructure, not scoped to any
+	// Nodes: fleet-level infrastructure, not scoped to any
 	// one app, so every route here requires AbilityRoot specifically
 	// rather than AbilityRead/AbilityWrite: minting a join token or
 	// removing a node is a materially more sensitive operation than
@@ -232,7 +232,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/nodes/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteNode))
 	mux.HandleFunc("PUT /api/v1/nodes/{id}/workloads", rt.requireAbility(AbilityRoot, rt.handleSetNodeWorkloads))
 	mux.HandleFunc("POST /api/v1/nodes/join-tokens", rt.requireAbility(AbilityRoot, rt.handleCreateNodeJoinToken))
-	// Health, cordon, drain (TASKS.md 3.7), same AbilityRoot boundary as
+	// Health, cordon, drain, same AbilityRoot boundary as
 	// every other node route above.
 	mux.HandleFunc("GET /api/v1/nodes/{id}/health", rt.requireAbility(AbilityRoot, rt.handleGetNodeHealth))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/cordon", rt.requireAbility(AbilityRoot, rt.handleCordonNode))

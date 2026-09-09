@@ -14,10 +14,9 @@
 //
 // It shares deploy_test.go's helpers (freePort, getBodyWithRetry,
 // openLiveStore, cleanupContainers) since both files are package e2e, and
-// mirrors its Docker/BuildKit reachability skip pattern exactly. See
-// TASKS.md's Phase 1 section for what this suite as a whole proves and
-// deliberately does not: no rollback, no webhook/git-push path, a single
-// service only, no multi-node.
+// mirrors its Docker/BuildKit reachability skip pattern exactly. What
+// this suite as a whole proves and deliberately does not: no rollback,
+// no webhook/git-push path, a single service only, no multi-node.
 package e2e
 
 import (

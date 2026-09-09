@@ -1,8 +1,8 @@
 package application
 
-// TestController_Reconcile_Live_ViaRemoteTransport is TASKS.md 3.3's
-// real end-to-end proof, composing 3.1's own claim with 3.2's own live
-// test rather than re-trusting it: this Controller, completely
+// TestController_Reconcile_Live_ViaRemoteTransport is the
+// real end-to-end proof, composing the transport's own claim with its own
+// live test rather than re-trusting it: this Controller, completely
 // unmodified, given a real internal/agent.GRPCTransport (a "remote"
 // node reached over real mTLS/gRPC, using this same machine's own
 // Docker daemon underneath since there's only one available here)

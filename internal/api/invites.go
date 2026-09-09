@@ -91,9 +91,9 @@ type createInviteResponse struct {
 // grant an ability the caller doesn't themselves hold. That cap is the
 // actual security boundary, not the route's own ability gate. The
 // response always carries Link itself, regardless of whether email
-// delivery is configured or succeeds: CLAUDE.md's "email is best-effort,
-// not required" rule means a control plane with no SMTP configured must
-// stay fully usable via copy/paste, not degrade into a dead end.
+// delivery is configured or succeeds: email is best-effort, not
+// required, so a control plane with no SMTP configured must stay
+// fully usable via copy/paste, not degrade into a dead end.
 func (rt *Router) handleCreateInvite(w http.ResponseWriter, r *http.Request) {
 	var req createInviteRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

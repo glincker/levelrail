@@ -1,6 +1,6 @@
 package agent
 
-// This file: the control plane's side of TASKS.md 3.2's request/
+// This file: the control plane's side of the request/
 // response multiplexer over one Session stream. agent.proto's own
 // header comment already explains why a single physical stream carries
 // many logical request/response pairs; mux is what actually does that

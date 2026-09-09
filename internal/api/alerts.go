@@ -14,7 +14,7 @@ import (
 )
 
 // AlertRules is the surface the alert-rule handlers need from
-// internal/alerting.DB (TASKS.md 2.5/2.7). *alerting.DB satisfies this
+// internal/alerting.DB. *alerting.DB satisfies this
 // structurally, the same "narrow consumer-defined interface" convention
 // TelemetryQuerier and SecretSetter already establish in this package.
 type AlertRules interface {
@@ -195,8 +195,8 @@ func parseOptionalDuration(raw string) (time.Duration, error) {
 	return d, nil
 }
 
-// handleCreateAlertRule handles POST /api/v1/apps/{name}/alerts
-// (TASKS.md 2.5). resource_id is always resourceIDForApp(name),
+// handleCreateAlertRule handles POST /api/v1/apps/{name}/alerts.
+// resource_id is always resourceIDForApp(name),
 // regardless of what the request body carries: an app's own URL is the
 // only thing that gets to say which resource a rule it creates through
 // that URL is scoped to.
@@ -289,8 +289,8 @@ func (rt *Router) handleCreateAlertRule(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusCreated, toRuleResource(*saved))
 }
 
-// handleListAlertRules handles GET /api/v1/apps/{name}/alerts
-// (TASKS.md 2.5): every rule scoped to this app's resource, including
+// handleListAlertRules handles GET /api/v1/apps/{name}/alerts:
+// every rule scoped to this app's resource, including
 // disabled ones, so the UI can show and let an operator re-enable a
 // paused rule.
 func (rt *Router) handleListAlertRules(w http.ResponseWriter, r *http.Request) {
@@ -324,8 +324,8 @@ func (rt *Router) handleListAlertRules(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
-// handleDeleteAlertRule handles DELETE /api/v1/apps/{name}/alerts/{id}
-// (TASKS.md 2.5). A rule ID is globally unique and never itself encodes
+// handleDeleteAlertRule handles DELETE /api/v1/apps/{name}/alerts/{id}.
+// A rule ID is globally unique and never itself encodes
 // which app it belongs to, but the URL implies app-scoping, so this
 // verifies the rule's own ResourceID actually matches
 // resourceIDForApp(name) before deleting it: without that check, a

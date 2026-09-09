@@ -14,8 +14,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
-// TestController_Reconcile_Live_RecordsDeployMetric is TASKS.md 2.1's
-// remaining-gap proof: a real telemetry.DB, wired via WithDeployRecorder,
+// TestController_Reconcile_Live_RecordsDeployMetric is the remaining-gap
+// proof: a real telemetry.DB, wired via WithDeployRecorder,
 // actually gains a queryable deploy_count sample after a real Reconcile
 // performs a real deploy cutover, and gains no second sample on the
 // following no-op reconcile, verified against the store directly rather

@@ -105,8 +105,8 @@ type CreateDatabaseFormOutput = z.output<typeof createDatabaseSchema>
 // dialog and CreateResourceWizard's step 2 Postgres/Redis paths.
 //
 // Honesty note carried over from the original component's own doc
-// comment, updated now that secrets management (TASKS.md 1.7) exists:
-// creating a postgres or mysql database always succeeds here, but the
+// comment, updated now that secrets management exists: creating a
+// postgres or mysql database always succeeds here, but the
 // reconciler still refuses to start either one until the control plane
 // has a secrets master key configured (internal/reconcile/database/
 // controller.go's credentialsBlockedResult). Neither engine is hidden or

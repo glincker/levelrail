@@ -37,8 +37,8 @@ import (
 // no resize events, no WebSocket, no shell kept alive between calls.
 // That needs a genuinely different transport (a bidirectional stream,
 // a new agentpb op, PTY allocation inside the container), which is
-// agent transport protocol work, explicitly reserved (repo-plan.md
-// section 8's "do not parallelize: the agent transport protocol").
+// agent transport protocol work, deliberately kept as a single
+// focused change rather than built incrementally here.
 // Building that is a real follow-up, not something this endpoint
 // pretends to already be.
 //

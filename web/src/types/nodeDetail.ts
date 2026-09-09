@@ -7,7 +7,7 @@
 // 'cordoned' is kept here purely because it's a real value NodeStatus's
 // Go type (internal/store/nodes.go's NodeStatus) can hold, not because
 // anything currently produces it: that file's own doc comment on
-// NodeStatusCordoned says it is unused as of TASKS.md 3.7, and the only
+// NodeStatusCordoned says it is currently unused, and the only
 // two real callers of UpdateNodeStatus (internal/reconcile/nodehealth's
 // controller and internal/agent/server.go's heartbeat handling) only
 // ever write NodeStatusOnline or NodeStatusOffline. Cordon's real,

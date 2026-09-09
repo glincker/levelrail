@@ -9,8 +9,8 @@ import (
 // runAppsHookRuns implements "apps hook-runs <name>": the most recent
 // outcome of each of name's pre/post-deploy hooks (GET
 // /api/v1/apps/{name}/hook-runs, internal/api/apps_hooks.go), the
-// deploy-history-adjacent view this feature's own CLAUDE.md completeness
-// rule asks for: a pre-deploy hook failure already shows up in "apps
+// deploy-history-adjacent view a complete feature needs: a pre-deploy
+// hook failure already shows up in "apps
 // status" as a PreDeployHookFailed condition, this command is where an
 // operator goes to see exactly what the hook printed.
 func runAppsHookRuns(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

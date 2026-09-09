@@ -58,8 +58,8 @@ export interface LogDrain {
 // possibly undefined, not assume an empty array/object.
 //
 // node_id carries `omitempty` on the Go side and is response-only:
-// appResource's own doc comment is explicit it is TASKS.md 3.3's
-// placement field, set via PUT /api/v1/apps/{name}/node
+// appResource's own doc comment is explicit it is a placement field,
+// set via PUT /api/v1/apps/{name}/node
 // (handleSetAppNode) rather than through this type, the same
 // response-only convention databaseDetail.ts's DatabaseResource
 // documents for the equivalent field.

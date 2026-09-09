@@ -48,7 +48,7 @@ const (
 // embedded SQLite, replacing Caddy's default FileStorage module for
 // certificates and ACME account state. This is the concrete shape
 // internal/reconcile/ingress/controller.go's own package doc comment
-// already names as the real requirement (TASKS.md 3.6): certificate
+// already names as the real requirement: certificate
 // storage lives in the database so multi-node deployments share cert
 // state, and every ingress-driving process pointed at the same
 // database file sees the same certificates and issuance locks through

@@ -200,8 +200,8 @@ func TestHandleExecApp_PlainWriteToken_Forbidden(t *testing.T) {
 // that same token can already trigger a deploy or a restart. Exec sits
 // one tier above those because it is the one route that can read a
 // secret's plaintext back out of the container's own environment
-// (secrets are injected as plaintext env vars at create time, CLAUDE.md
-// 4.10, and this package otherwise never decrypts one into a response
+// (secrets are injected as plaintext env vars at create time, and
+// this package otherwise never decrypts one into a response
 // body, see the secrets route's own doc comment above its registration
 // in router.go). A plain deploy token running `env` inside the
 // container would otherwise exfiltrate every secret the app holds.

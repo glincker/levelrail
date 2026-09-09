@@ -1,7 +1,6 @@
 -- One row per deploy-attempt build/log output line. A deliberate sibling
--- of log_entries (0002), not a reuse of it: see
--- docs-local/research/deploy-attempt-id-and-log-persistence.md section 2
--- for why. log_entries is an open-ended, restart-scoped stream for a
+-- of log_entries (0002), not a reuse of it, for the reasons below.
+-- log_entries is an open-ended, restart-scoped stream for a
 -- running container, with its own 15-day rolling retention default and
 -- an FTS5 index for interactive search across a live stream. A deploy
 -- attempt's log is the opposite shape: one bounded, terminal event

@@ -215,7 +215,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// and doesn't carry over.
 	mux.HandleFunc("POST /api/v1/apps/{name}/clone", rt.requireAbility(AbilityWrite, rt.handleCloneApp))
 
-	// Placement (TASKS.md 3.3): AbilityRoot, not AbilityWrite, matching
+	// Placement: AbilityRoot, not AbilityWrite, matching
 	// the sensitivity of the standalone node routes above: moving a
 	// service between physical machines is infrastructure placement,
 	// not ordinary app config, even though it's reached through this
@@ -240,7 +240,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 
 	// One-off exec (handleExecApp's own doc comment): AbilityRoot, not
 	// AbilityDeploy. Secrets are injected as plaintext env vars into a
-	// container at create time (CLAUDE.md 4.10) and this package
+	// container at create time and this package
 	// deliberately never decrypts one back into a response body anywhere
 	// else, see the secrets route above: "never decrypts a value for a
 	// response body." Exec is the one route that can read them anyway,
@@ -367,7 +367,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// (database_resource_recommendation.go).
 	mux.HandleFunc("GET /api/v1/databases/{name}/resource-recommendation", rt.requireAbility(AbilityRead, rt.handleDatabaseResourceRecommendation))
 
-	// Placement (TASKS.md 3.3), the database counterpart to
+	// Placement, the database counterpart to
 	// PUT /apps/{name}/node above: same AbilityRoot gating.
 	mux.HandleFunc("PUT /api/v1/databases/{name}/node", rt.requireAbility(AbilityRoot, rt.handleSetDatabaseNode))
 }

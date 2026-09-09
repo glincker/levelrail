@@ -1,11 +1,11 @@
-// Package webhook is TASKS.md 1.5's git integration: a GitHub push-webhook
+// Package webhook is the git integration: a GitHub push-webhook
 // receiver that verifies the request signature, extracts the pushed
 // commit SHA, fetches the repository at that SHA to a local checkout, and
-// hands the result to internal/deploy's Pipeline (TASKS.md 1.4), the same
-// pipeline a manual deploy trigger will use once the HTTP API (1.9)
+// hands the result to internal/deploy's Pipeline, the same
+// pipeline a manual deploy trigger will use once the HTTP API
 // exists.
 //
-// Handler is an http.Handler, not a standalone server: TASKS.md 1.9's
+// Handler is an http.Handler, not a standalone server: the
 // HTTP API package mounts it at whatever path it chooses, so this package
 // must never call http.ListenAndServe itself.
 //
@@ -70,7 +70,7 @@ const maxPayloadBytes = 25 << 20
 
 // MaxPayloadBytes is maxPayloadBytes, exported so a per-app git source
 // webhook receiver outside this package (internal/api's multi-app
-// route, TASKS.md 1.7's follow-up: see that package's own git_webhook.go
+// route, a later follow-up: see that package's own git_webhook.go
 // doc comment for why the multi-app handler lives there instead of here)
 // applies GitHub's own protocol size limit identically, rather than
 // picking its own number.
@@ -95,10 +95,9 @@ type Deployer interface {
 }
 
 // AttemptStore is the narrow store surface Handler needs to record one
-// deploy_attempts row per triggering push: this package is the third
-// (and, per docs-local/research/deploy-attempt-id-and-log-persistence.md's
-// own framing, the most important) of the three real deploy-trigger
-// paths this history exists for. An unattended push-to-deploy that fails
+// deploy_attempts row per triggering push: this package is the third,
+// and most important, of the three real deploy-trigger paths this
+// history exists for. An unattended push-to-deploy that fails
 // with no replayable record defeats the point of having a log viewer at
 // all. *store.DB satisfies this structurally.
 type AttemptStore interface {
@@ -362,7 +361,7 @@ func ParsePushEvent(body []byte) (PushEvent, error) {
 // with a non-leaky message if the deploy itself fails. Deploy progress is
 // logged via slog, not streamed in the response: GitHub expects a fast
 // response and does not wait for one, actual progress streaming to a UI
-// is TASKS.md 1.9's job.
+// is the HTTP API's job.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Every success/ignored-branch response below is a plain status line
 	// that can embed a webhook-payload field a pusher controls (ev.Ref):

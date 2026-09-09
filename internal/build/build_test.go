@@ -191,8 +191,8 @@ func TestClient_Build_Live_CacheAccelerates(t *testing.T) {
 	}
 }
 
-// TestClient_Build_Live_CacheRegistryUnreachable exercises TASKS.md
-// 3.5's other documented failure mode: a registry cache backend
+// TestClient_Build_Live_CacheRegistryUnreachable exercises a documented
+// failure mode: a registry cache backend
 // (WithCacheRegistry) pointed at a host that will never resolve. This
 // must surface as a real Build() error, not a silent "cache just didn't
 // help this time": an operator who configured a dedicated build node's

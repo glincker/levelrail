@@ -9,7 +9,7 @@ import (
 
 // newSyslogSink is a stub on platforms log/syslog itself doesn't
 // support (see drain_syslog.go's own build tag and doc comment): this
-// platform is Linux-only in production (CLAUDE.md §2), so a syslog
+// platform is Linux-only in production, so a syslog
 // drain is simply unavailable when this package happens to be built for
 // one of these targets, e.g. a contributor's own dev machine.
 func newSyslogSink(_, _ string) (*SyslogSink, error) {

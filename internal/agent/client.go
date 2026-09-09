@@ -1,6 +1,6 @@
 package agent
 
-// This file: the agent-side connection logic (TASKS.md 3.2): DialEnroll
+// This file: the agent-side connection logic: DialEnroll
 // (once, ADR 003's join-token exchange) and RunSession (thereafter, the
 // one persistent connection), executing incoming requests against a
 // real docker.Runtime via Execute (execute.go) and relaying its own
@@ -46,7 +46,7 @@ type Identity struct {
 // oversight. An attacker able to both intercept this one connection and
 // obtain a valid, unexpired, not-yet-used join token could complete a
 // fraudulent enrollment; the join token being a genuine secret (minted
-// server-side, shown once, single-use, TASKS.md 3.1) is what actually
+// server-side, shown once, single-use) is what actually
 // carries the security weight here, not this connection's transport.
 // Every connection after this one (RunSession below, and any future
 // re-enrollment once an Identity already exists) verifies the server
@@ -92,9 +92,9 @@ type agentClientStream interface {
 // incoming AgentRequest against rt until ctx is cancelled or the
 // connection fails. Returns the error that ended the session (nil only
 // if ctx itself was the cause); never retries or reconnects on its own,
-// that's cmd/levelrail-agent's own reconnect loop's job (TASKS.md 3.2's
-// remaining wiring, and ADR 003's Consequences section's own "real,
-// tested" reconnection/backpressure/version-negotiation requirement),
+// that's cmd/levelrail-agent's own reconnect loop's job (ADR 003's
+// Consequences section's own "real, tested"
+// reconnection/backpressure/version-negotiation requirement),
 // kept out of this function so it stays a single, directly testable
 // connection attempt rather than a policy about how many times or how
 // fast to retry.

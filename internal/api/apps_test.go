@@ -1187,7 +1187,7 @@ func TestHandleSetAppNode_UnknownApp_NotFound(t *testing.T) {
 	}
 }
 
-// TestHandleSetAppNode_CordonedNode_Rejected is TASKS.md 3.7's cordon
+// TestHandleSetAppNode_CordonedNode_Rejected is the cordon
 // enforcement point: a cordoned node must refuse new placements while
 // leaving whatever's already running there untouched (store.Node.
 // Schedulable's own doc comment).

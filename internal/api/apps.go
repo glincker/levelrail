@@ -18,11 +18,11 @@ import (
 
 // appResource is the wire shape for an app: store.DesiredService plus
 // its name, marshaled and unmarshaled directly rather than through a
-// parallel domain type, since TASKS.md 1.9 doesn't ask this endpoint to
+// parallel domain type, since this endpoint doesn't need to
 // represent anything store.DesiredService can't already hold. Strategy
 // and Replicas got a home in store.DesiredService (migration
 // 0017_deploy_strategy.sql), so this resource now carries them too;
-// domains closed once TASKS.md 1.6 added the column, the same way.
+// domains closed once that column was added, the same way.
 type appResource struct {
 	Name  string `json:"name"`
 	Image string `json:"image"`
@@ -67,7 +67,7 @@ type appResource struct {
 	// internal/spec.ValidateLabels against it, the same reserved-prefix
 	// and sanity-limit rules app.yaml-sourced labels get.
 	Labels map[string]string `json:"labels,omitempty"`
-	// NodeID is TASKS.md 3.3's placement (empty means this control
+	// NodeID is the placement field (empty means this control
 	// plane's own local node). Response-only: toDesiredService below
 	// never reads it, the same "shown but not settable through this
 	// endpoint" boundary ruleResource's own evaluation-state fields
@@ -511,7 +511,7 @@ type setAppNodeRequest struct {
 	NodeID string `json:"node_id"`
 }
 
-// handleSetAppNode handles PUT /api/v1/apps/{name}/node (TASKS.md 3.3):
+// handleSetAppNode handles PUT /api/v1/apps/{name}/node:
 // the only way an app's placement actually changes, see appResource's
 // own NodeID field doc comment. A non-empty node_id is checked against
 // the real node registry first, so a typo'd or already-removed node ID
@@ -546,7 +546,7 @@ func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, store.ErrNodeNotFound):
 			writeError(w, http.StatusBadRequest, "unknown node_id")
 		case errors.Is(err, errNodeCordoned):
-			// TASKS.md 3.7: cordon means "unschedulable for new
+			// Cordon means "unschedulable for new
 			// placements", and this is a new placement even when the
 			// service already exists, since it's actively choosing to
 			// move it here.

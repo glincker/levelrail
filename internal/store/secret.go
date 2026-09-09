@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// This file is pure byte storage for TASKS.md 1.7's envelope encryption:
+// This file is pure byte storage for envelope encryption:
 // it never sees a plaintext secret value or a raw DEK,
 // only a wrapped DEK and ciphertext, both opaque []byte as far as this
 // package is concerned. internal/secrets.Manager is what actually

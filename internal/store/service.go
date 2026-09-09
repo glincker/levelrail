@@ -15,7 +15,7 @@ import (
 // ServiceResources caps a service's memory and CPU, in the same units
 // internal/docker.Resources already uses (bytes, nano-CPUs), not
 // app.yaml's human-friendly "512Mi"/0.5-cores strings. Translating those
-// is the deploy pipeline's job (TASKS.md 1.4/1.5), not this package's;
+// is the deploy pipeline's job, not this package's;
 // by the time a DesiredService exists, its units are already resolved.
 type ServiceResources struct {
 	MemoryBytes int64 `json:"memory_bytes,omitempty"`
@@ -149,7 +149,7 @@ type DesiredService struct {
 	// app.yaml build.type: image block.
 	RegistryCredentialID string
 	// SecretEnv names env vars whose values live in secret storage
-	// (internal/secrets, TASKS.md 1.7), resolved and decrypted by the
+	// (internal/secrets), resolved and decrypted by the
 	// application controller immediately before container creation.
 	// Never holds a value itself, only the key name, the same shape
 	// app.yaml's { secret: true } already has: a name is not a secret,
@@ -200,9 +200,9 @@ type DesiredService struct {
 	// Resources/Health already follow.
 	Labels map[string]string
 
-	// NodeID is which node (internal/store's own nodes table, TASKS.md
-	// 3.1) this service should run on. Empty string is the explicit
-	// "this control plane's own local node" value (TASKS.md 3.3's own
+	// NodeID is which node (internal/store's own nodes table)
+	// this service should run on. Empty string is the explicit
+	// "this control plane's own local node" value (the placement
 	// migration comment explains why that's not NULL or a foreign key),
 	// the only value that existed before this field did, so an existing
 	// single-node deployment's services keep running exactly where they
@@ -327,7 +327,7 @@ const (
 // at a time and so cannot see a domain already claimed by an earlier,
 // separate deploy), because internal/reconcile/ingress's controller
 // builds one Caddy route per domain from every desired service in a
-// single reconcile pass (TASKS.md 3.6): two services claiming the same
+// single reconcile pass: two services claiming the same
 // host would silently produce two routes matching the same Host header,
 // with whichever sorted last winning inside Caddy's own matcher
 // evaluation and silently shadowing the other. See that controller's
@@ -522,7 +522,7 @@ func claimServiceDomains(ctx context.Context, tx *sql.Tx, serviceName string, do
 }
 
 // UpdateServiceNode reassigns svc to run on nodeID ("" for this control
-// plane's own local node, TASKS.md 3.3's own migration comment), the
+// plane's own local node, per the placement migration's comment), the
 // only way node_id ever changes: SaveDesiredService's own doc comment
 // explains why it's deliberately excluded from that method's
 // full-record-replace semantics.
@@ -814,7 +814,7 @@ func (db *DB) ListDesiredServices(ctx context.Context) ([]DesiredService, error)
 }
 
 // ListDesiredServicesByNode returns every saved service currently
-// placed on nodeID, ordered by name. TASKS.md 3.7's drain
+// placed on nodeID, ordered by name. Node drain
 // (internal/api's handleDrainNode) uses this to find what to move off a
 // node before it's removed, and handleDeleteNode uses it as the guard
 // that makes node deletion refuse to run while placements remain.
@@ -850,7 +850,7 @@ func (db *DB) ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]D
 }
 
 // DeleteDesiredService removes a service's desired state, e.g. because
-// the app was deleted through the HTTP API (TASKS.md 1.9). It returns
+// the app was deleted through the HTTP API. It returns
 // ErrServiceNotFound if no such service exists, the same sentinel
 // GetDesiredService uses, so callers handle "not found" one way
 // regardless of which method produced it.
