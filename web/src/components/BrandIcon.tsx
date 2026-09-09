@@ -10,13 +10,16 @@ import GoLogo from '@thesvg/react/go'
 import JavaLogo from '@thesvg/react/java'
 import KeydbLogo from '@thesvg/react/keydb'
 import MariadbLogo from '@thesvg/react/mariadb'
+import MattermostLogo from '@thesvg/react/mattermost'
 import MicrosoftTeamsLogo from '@thesvg/react/microsoft-teams'
 import MongodbLogo from '@thesvg/react/mongodb'
 import MysqlLogo from '@thesvg/react/mysql'
 import NodedotjsLogo from '@thesvg/react/nodedotjs'
+import NtfyLogo from '@thesvg/react/ntfy'
 import PagerdutyLogo from '@thesvg/react/pagerduty'
 import PostgresqlLogo from '@thesvg/react/postgresql'
 import RedisLogo from '@thesvg/react/redis'
+import ResendLogo from '@thesvg/react/resend'
 import SlackLogo from '@thesvg/react/slack'
 import TelegramLogo from '@thesvg/react/telegram'
 
@@ -44,6 +47,9 @@ export type BrandIconName =
   | 'github'
   | 'gitlab'
   | 'bitbucket'
+  | 'mattermost'
+  | 'ntfy'
+  | 'resend'
 
 const BRAND_ICONS: Record<
   BrandIconName,
@@ -69,6 +75,9 @@ const BRAND_ICONS: Record<
   github: GitHubLogo,
   gitlab: GitLabLogo,
   bitbucket: BitbucketLogo,
+  mattermost: MattermostLogo,
+  ntfy: NtfyLogo,
+  resend: ResendLogo,
 }
 
 // All names in BRAND_ICONS, for callers that need to enumerate the
@@ -96,6 +105,9 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'github',
   'gitlab',
   'bitbucket',
+  'mattermost',
+  'ntfy',
+  'resend',
 ]
 
 export interface BrandIconProps extends SVGProps<SVGSVGElement> {

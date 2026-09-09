@@ -66,10 +66,10 @@ research yet.
   container image.
 - **Alerting.** Eight rule kinds (threshold, crashloop, certificate
   expiry, OS patch status, scheduled-task failure, node disk space,
-  node resource usage, and domain health) and eight notification
+  node resource usage, and domain health) and thirteen notification
   channel kinds (webhook, Slack, Discord, email, Telegram, Pushover,
-  PagerDuty, Microsoft Teams), each independently queryable for
-  delivery history.
+  PagerDuty, Microsoft Teams, Resend, ntfy, Gotify, Mattermost, Lark),
+  each independently queryable for delivery history.
 - **Managed databases.** Eight engines (Postgres, Redis, MySQL,
   MongoDB, MariaDB, KeyDB, Dragonfly, ClickHouse) through one dynamic
   engine registry, not eight separate implementations: scheduled

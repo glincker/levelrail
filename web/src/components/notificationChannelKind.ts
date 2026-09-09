@@ -14,11 +14,17 @@ export const CHANNEL_KIND_LABEL: Record<NotificationChannelKind, string> = {
   pushover: 'Pushover',
   pagerduty: 'PagerDuty',
   teams: 'Microsoft Teams',
+  resend: 'Resend',
+  ntfy: 'ntfy',
+  gotify: 'Gotify',
+  mattermost: 'Mattermost',
+  lark: 'Lark',
 }
 
-// Only the brand-mark kinds map to a BrandIconName; generic/email/pushover
-// render through a Phosphor icon instead (BrandIcon.tsx's own documented
-// brand-vs-chrome boundary), chosen by the caller.
+// Only the brand-mark kinds map to a BrandIconName; generic/email/pushover/
+// gotify/lark render through a Phosphor icon instead (BrandIcon.tsx's own
+// documented brand-vs-chrome boundary), chosen by the caller: gotify and
+// lark have no brand mark available in @thesvg/react yet.
 export const CHANNEL_KIND_BRAND_ICON: Partial<
   Record<NotificationChannelKind, BrandIconName>
 > = {
@@ -27,4 +33,7 @@ export const CHANNEL_KIND_BRAND_ICON: Partial<
   telegram: 'telegram',
   pagerduty: 'pagerduty',
   teams: 'microsoft-teams',
+  mattermost: 'mattermost',
+  ntfy: 'ntfy',
+  resend: 'resend',
 }

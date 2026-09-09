@@ -177,6 +177,101 @@ func TestSendTestNotification_Slack_Success(t *testing.T) {
 	}
 }
 
+func TestSendTestNotification_Mattermost_Success(t *testing.T) {
+	var got map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	if err := sendTestNotification(context.Background(), nil, nil, NotifyMattermost, srv.URL); err != nil {
+		t.Fatalf("sendTestNotification() error = %v", err)
+	}
+	text, _ := got["text"].(string)
+	if !strings.Contains(text, "test notification") {
+		t.Errorf("Mattermost payload = %+v, want a text field mentioning the test", got)
+	}
+}
+
+func TestSendTestNotification_Lark_Success(t *testing.T) {
+	var got larkPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	if err := sendTestNotification(context.Background(), nil, nil, NotifyLark, srv.URL); err != nil {
+		t.Fatalf("sendTestNotification() error = %v", err)
+	}
+	if got.MsgType != "text" || !strings.Contains(got.Content.Text, "test notification") {
+		t.Errorf("Lark payload = %+v, want msg_type text mentioning the test", got)
+	}
+}
+
+func TestSendTestNotification_Gotify_Success(t *testing.T) {
+	var got gotifyPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	if err := sendTestNotification(context.Background(), nil, nil, NotifyGotify, srv.URL+"/message?token=t"); err != nil {
+		t.Fatalf("sendTestNotification() error = %v", err)
+	}
+	if !strings.Contains(got.Message, "test notification") {
+		t.Errorf("Gotify payload = %+v, want a message field mentioning the test", got)
+	}
+}
+
+func TestSendTestNotification_Ntfy_Success(t *testing.T) {
+	var got ntfyPayload
+	var gotAuth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	if err := sendTestNotification(context.Background(), nil, nil, NotifyNtfy, srv.URL+"/topic?auth=tk"); err != nil {
+		t.Fatalf("sendTestNotification() error = %v", err)
+	}
+	if gotAuth != "Bearer tk" {
+		t.Errorf("Authorization header = %q, want Bearer tk", gotAuth)
+	}
+	if !strings.Contains(got.Message, "test notification") {
+		t.Errorf("ntfy payload = %+v, want a message field mentioning the test", got)
+	}
+}
+
+func TestSendTestNotification_Resend_Success(t *testing.T) {
+	var got resendPayload
+	var gotAuth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+	original := resendAPIURL
+	resendAPIURL = srv.URL
+	t.Cleanup(func() { resendAPIURL = original })
+
+	notifyURL := "https://api.resend.com/emails?key=re_secret&to=ops%40example.com"
+	if err := sendTestNotification(context.Background(), nil, nil, NotifyResend, notifyURL); err != nil {
+		t.Fatalf("sendTestNotification() error = %v", err)
+	}
+	if gotAuth != "Bearer re_secret" {
+		t.Errorf("Authorization header = %q, want Bearer re_secret", gotAuth)
+	}
+	if len(got.To) != 1 || got.To[0] != "ops@example.com" {
+		t.Errorf("payload.To = %v, want [ops@example.com]", got.To)
+	}
+}
+
 // 127.0.0.1:1 is this codebase's existing "deliberately unreachable"
 // convention (internal/alerting/notify_test.go).
 func TestSendTestNotification_UnreachableURL_Errors(t *testing.T) {
