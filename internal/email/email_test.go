@@ -69,6 +69,20 @@ func TestSMTPSender_UnreachableServer_ErrorPropagates(t *testing.T) {
 	}
 }
 
+func TestSMTPSender_Send_RejectsCRLFInTo(t *testing.T) {
+	s, err := NewSender(Config{Backend: BackendSMTP, SMTP: &SMTPConfig{Addr: "127.0.0.1:1", Host: "127.0.0.1", From: "a@example.com"}})
+	if err != nil {
+		t.Fatalf("NewSender() error = %v", err)
+	}
+	err = s.Send(context.Background(), "victim@example.com\r\nBcc: attacker@evil.com", "subject", "body")
+	if err == nil {
+		t.Fatal("Send() error = nil, want a rejection: this must be caught before net/smtp.SendMail ever runs, not surfaced as a connection failure")
+	}
+	if strings.Contains(err.Error(), "send email") {
+		t.Errorf("error = %q, want the header-injection rejection, not a wrapped connection error (meaning SendMail was reached with tainted input)", err.Error())
+	}
+}
+
 func TestDynamicSender_LoaderError_Propagates(t *testing.T) {
 	wantErr := errors.New("boom")
 	d := NewDynamicSender(func(context.Context) (Config, error) { return Config{}, wantErr })
