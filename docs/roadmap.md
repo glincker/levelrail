@@ -446,6 +446,20 @@ still open. This page describes what's actually true today.
   a `HooksEditor` panel on the app's Deploy settings page. See
   `internal/reconcile/application/controller.go`'s own doc comments for
   the full timing and failure-handling contract.
+- Team invites (`internal/api/invites.go`, `internal/store/invite.go`):
+  an email/role invite layered on top of `POST /api/v1/auth/users`
+  rather than open self-registration. Only a root caller can create one;
+  the platform mints a random token, persists only its SHA-256 hash
+  (same convention as API tokens and password-reset tokens), and
+  best-effort emails an accept link, always returning the link in the
+  response too so a control plane with no SMTP configured stays fully
+  usable by copy/paste. Accepting is public, gated purely by possession
+  of the token, and creates exactly the one user the invite named
+  through the same insertion path direct user creation uses, nothing
+  open-ended. Dashboard: an "Invite member" dialog and pending-invites
+  list (with copy-link and revoke) on the Users settings page, plus a
+  public `/accept-invite` page. CLI: `levelrail-cli invites
+  create/list/revoke`.
 
 ## In progress
 

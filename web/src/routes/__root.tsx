@@ -32,19 +32,30 @@ export interface RouterContext {
   queryClient: QueryClient
 }
 
+// Routes reachable with no recorded session: /login itself, plus every
+// route a visitor reaches by clicking a link in an email while logged
+// out, where redirecting to /login would strand them before they ever
+// see the page the link pointed at. /reset-password predates this array
+// (it was previously compared to on its own); /accept-invite
+// (routes/accept-invite.tsx) joins it for the same reason.
+const PUBLIC_ROUTE_PATHS = ['/login', '/reset-password', '/accept-invite']
+
 export const Route = createRootRouteWithContext<RouterContext>()({
   // Auth guard for the whole route tree (docs-local/research/dashboard-
-  // gap-audit-and-devmode.md gaps #1/#2/#4): anything other than /login
-  // requires a recorded session. This is a client-side heuristic, not the
-  // real enforcement, lib/authStore.ts's own doc comment explains why:
-  // the real 401 (session actually expired or the server restarted and
-  // wiped its in-memory session store) is caught by the QueryCache/
-  // MutationCache handler in main.tsx, which also redirects here. Between
-  // the two, every unauthenticated path lands on /login: before a single
-  // authenticated fetch ever fires (this check), and after one comes back
-  // 401 (the global handler).
+  // gap-audit-and-devmode.md gaps #1/#2/#4): anything other than
+  // PUBLIC_ROUTE_PATHS requires a recorded session. This is a
+  // client-side heuristic, not the real enforcement, lib/authStore.ts's
+  // own doc comment explains why: the real 401 (session actually expired
+  // or the server restarted and wiped its in-memory session store) is
+  // caught by the QueryCache/MutationCache handler in main.tsx, which
+  // also redirects here. Between the two, every unauthenticated path
+  // lands on /login: before a single authenticated fetch ever fires
+  // (this check), and after one comes back 401 (the global handler).
   beforeLoad: ({ location }) => {
-    if (getStoredUsername() === null && location.pathname !== '/login') {
+    if (
+      getStoredUsername() === null &&
+      !PUBLIC_ROUTE_PATHS.includes(location.pathname)
+    ) {
       redirect({ to: '/login', throw: true })
     }
   },

@@ -279,6 +279,8 @@ type Router struct {
 	deviceAuth                     DeviceAuthStore                  // always set, same "core Store interface" shape as policies above: device_auth_requests always exists
 	deviceFlow                     *loginLimiter                    // per-IP device-login-start budget, distinct from logins/forgotPasswordByIP above
 	hookRuns                       HookRunStore                     // always set, same "core Store interface" shape as policies above: service_hook_runs always exists, empty is a valid, non-error result
+	invites                        InviteStore                      // always set, same "core Store interface" shape as passwordResetTokens above
+	inviteTTL                      time.Duration                    // 0 means "use defaultInviteTTL", set via WithInviteTTL
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
@@ -361,6 +363,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		cloneRestoreHistory:         s,
 		volumeCloneRestoreHistory:   s,
 		policies:                    s,
+		invites:                     s,
 	}
 	for _, opt := range opts {
 		opt(rt)

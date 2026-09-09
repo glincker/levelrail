@@ -102,6 +102,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"doctor":      nil,
 	"containers":  nil,
 	"users":       {subs: map[string]*cmdNode{"list": nil, "create": nil, "set-abilities": nil, "delete": nil, "roles": nil}},
+	"invites":     {subs: map[string]*cmdNode{"create": nil, "list": nil, "revoke": nil}},
 	"iam": {subs: map[string]*cmdNode{
 		"policies": {subs: map[string]*cmdNode{
 			"create":      nil,
