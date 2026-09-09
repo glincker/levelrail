@@ -146,28 +146,18 @@ func TestRun_DomainsTLSCertGet_NotConfigured(t *testing.T) {
 
 func TestRun_DomainsTLSCertClear(t *testing.T) {
 	var gotMethod, gotPath string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotMethod = r.Method
-		gotPath = r.URL.Path
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(domainTLSCertResource{Domain: "app.example.com"})
-	}))
+	srv := newEchoServer(t, &gotMethod, &gotPath, domainTLSCertResource{Domain: "app.example.com"})
 	defer srv.Close()
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"domains", "tls-cert", "clear", "web", "app.example.com", "--api-url", srv.URL}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
+	stdout, _ := runCLIExpectOK(t, []string{"domains", "tls-cert", "clear", "web", "app.example.com", "--api-url", srv.URL})
 	if gotMethod != http.MethodDelete {
 		t.Errorf("method = %q, want DELETE", gotMethod)
 	}
 	if gotPath != "/api/v1/apps/web/domains/app.example.com/tls-cert" {
 		t.Errorf("path = %q, want /api/v1/apps/web/domains/app.example.com/tls-cert", gotPath)
 	}
-	if !strings.Contains(stdout.String(), `tls certificate removed for domain "app.example.com"`) {
-		t.Errorf("stdout = %q, want a removal confirmation", stdout.String())
+	if !strings.Contains(stdout, `tls certificate removed for domain "app.example.com"`) {
+		t.Errorf("stdout = %q, want a removal confirmation", stdout)
 	}
 }
 
