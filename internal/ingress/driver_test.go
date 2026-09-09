@@ -106,9 +106,8 @@ func TestDriver_ReverseProxy_PlainHTTP(t *testing.T) {
 // certificate for a configured hostname with no operator step, and the
 // resulting HTTPS listener serves real proxied traffic over it. Real
 // public ACME needs a public domain and inbound 80/443 reachable from the
-// internet, neither of which exists in this sandbox; see
-// docs-local/research/caddy-spike.md for what still needs verifying
-// against a real domain later.
+// internet, neither of which exists in this sandbox; verifying this
+// against a real domain is still needed later.
 func TestDriver_ReverseProxy_InternalTLS(t *testing.T) {
 	skipUnderLoad(t)
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

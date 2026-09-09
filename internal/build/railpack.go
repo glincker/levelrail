@@ -23,8 +23,7 @@ import (
 )
 
 // This file: TASKS.md's Railpack integration, scoped to node, golang,
-// and java (see supportedRailpackProviders), per
-// docs-local/research/railpack-integration-decision.md. Railpack
+// and java (see supportedRailpackProviders). Railpack
 // (github.com/railwayapp/railpack) is a real, embeddable Go library, not
 // a CLI wrapped by exec.Command: core.GenerateBuildPlan inspects a source
 // directory and returns Railpack's own build IR (a graph of named steps,
@@ -35,9 +34,8 @@ import (
 // path, built here, that hands BuildKit a marshaled llb.Definition
 // instead of a Dockerfile frontend, and carries the image config Railpack
 // computed as an exporter attribute since there's no Dockerfile FROM/CMD
-// for BuildKit to read it from otherwise. See the decision note for the
-// full evidence trail (a real third-party integration, unbindapp/
-// unbind-api, doing exactly this).
+// for BuildKit to read it from otherwise. A real third-party
+// integration, unbindapp/unbind-api, does exactly this.
 //
 // Everything below reuses the existing hijacked-/grpc BuildKit connection
 // (client.go's Client.bk) and the same relayProgress/loadImage helpers
@@ -83,9 +81,8 @@ func (r RailpackRequest) Validate() error {
 }
 
 // supportedRailpackProviders is this slice's entire scope: Node.js, Go,
-// and Java, per docs-local/research/railpack-integration-decision.md's
-// original node/golang recommendation plus Java added to unblock a
-// Spring Boot guided-picker option in the frontend. Verified against
+// and Java: node/golang was the original recommendation, with Java added
+// to unblock a Spring Boot guided-picker option in the frontend. Verified against
 // testdata/railpack-java-spring-boot, a real Spring Boot Maven project:
 // Railpack's own detection and GenerateBuildPlan/ConvertPlanToLLB both
 // confirmed correct for it (TestGenerateRailpackPlan/

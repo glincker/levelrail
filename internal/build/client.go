@@ -21,9 +21,8 @@ import (
 // up below, using the same *dockerclient.Client already used to talk to
 // the Engine API elsewhere in this codebase (see internal/docker).
 //
-// See docs-local/research/buildkit-spike.md for the connection methods
-// that were tried and why this one is the one that actually works in this
-// environment.
+// This hijacking approach is the one that actually works in this
+// environment; a standalone buildkitd endpoint is not an option here.
 type Client struct {
 	bk     *bkclient.Client
 	docker *dockerclient.Client

@@ -29,11 +29,10 @@ import (
 )
 
 // Driver drives an in-process Caddy instance through the same code path as
-// its HTTP admin API (caddy.Load calls the identical config-apply logic
-// the admin API's POST /load handler calls, see
-// docs-local/research/caddy-spike.md), without this package ever shelling
-// out to a `caddy` binary or running one as a subprocess or sibling
-// container. The embedded-ingress design requires this shape
+// its HTTP admin API: caddy.Load calls the identical config-apply logic
+// the admin API's POST /load handler calls, without this package ever
+// shelling out to a `caddy` binary or running one as a subprocess or
+// sibling container. The embedded-ingress design requires this shape
 // specifically: ingress state lives in the control plane's own
 // process, not in something else's.
 type Driver struct {
@@ -56,7 +55,7 @@ func New(logger *slog.Logger) *Driver {
 // replaces the entire process-wide config, which is a real constraint
 // Phase 1 needs to design around once ingress config is built
 // incrementally from many apps rather than handed over as one document
-// per call (see docs-local/research/caddy-spike.md).
+// per call.
 func (d *Driver) Apply(ctx context.Context, cfg *Config) error {
 	if cfg == nil {
 		return fmt.Errorf("ingress: apply: config is nil")

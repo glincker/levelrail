@@ -607,7 +607,7 @@ func TestController_Reconcile_RestartAfterCrash_EnsuresNetworkFirst(t *testing.T
 }
 
 // TestController_Reconcile_RestartAfterCrash_EnsureNetworkFails_StartNeverCalled
-// is the half-succeeded case CLAUDE.md's testing standard requires for
+// is the half-succeeded case reconciler tests must cover for
 // this path: if the network can't be re-ensured, Start must never run
 // against a container whose network isn't there, and the container must
 // stay stopped rather than being reported as recovered.
@@ -670,7 +670,7 @@ func TestController_Reconcile_RestartAfterCrash_StartFails_RecreatesAndRecovers(
 }
 
 // TestController_Reconcile_RestartAfterCrash_StartFails_RemoveAlsoFails is
-// the half-succeeded case CLAUDE.md's testing standard requires: if the
+// the half-succeeded case reconciler tests must cover: if the
 // broken container can't even be removed, the controller must report
 // both failures clearly rather than silently losing the original Start
 // error or claiming success.
@@ -2519,7 +2519,7 @@ func TestController_Reconcile_Rolling_FirstReplicaReadinessFails_NoOldReplicaRem
 }
 
 // TestController_Reconcile_Rolling_PerStepRetirementFails_FinalSweepReportsIt
-// is the half-succeeded case CLAUDE.md's testing standard requires for
+// is the half-succeeded case reconciler tests must cover for
 // reconcileRolling's own new logic: its per-step retirement error is
 // deliberately discarded (the container just stays stale for the final
 // removeStale sweep to retry). With removeErr set for the whole pass,

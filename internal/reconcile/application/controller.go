@@ -1206,7 +1206,7 @@ func (c *Controller) runPreDeployHook(ctx context.Context, containerID string, d
 // (finishReconcile's own PostDeployHookFailed branch), not Status,
 // matching this codebase's existing "the important fact, a healthy set
 // is serving, is still true" tolerance (RunningStaleCleanupFailed/
-// DeployedMetricRecordFailed above). Per CLAUDE.md section 10's own bias
+// DeployedMetricRecordFailed above). In keeping with this project's bias
 // toward surfacing a boring problem loudly rather than swallowing it,
 // this failure still surfaces: the returned error propagates through
 // reconcile.Engine's own logging, and the outcome is persisted via
