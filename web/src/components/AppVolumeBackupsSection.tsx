@@ -42,9 +42,9 @@ import { VolumeCloneRestoreDialog } from './VolumeCloneRestoreDialog'
 import { VolumeCloneRestoreHistoryTable } from './VolumeCloneRestoreHistoryTable'
 import { VolumeBackupScheduleForm } from './VolumeBackupScheduleForm'
 import { VolumeBackupVerificationBadge } from './VolumeBackupVerificationBadge'
+import { RestoreHistoryTableView } from './RestoreHistoryTable'
 import { StatusBadge } from './backupAttemptStatus'
 import type { BackupHistoryRecord } from '../types/backupHistory'
-import type { RestoreHistoryRecord } from '../types/restoreHistory'
 import type { AppVolume } from '../types/appDetail'
 
 // Trigger-and-history section for one app's named Docker volumes, the
@@ -368,9 +368,8 @@ function VolumeBackupHistoryTable({
   )
 }
 
-// VolumeRestoreHistoryTable mirrors RestoreHistoryTable's exact shape:
-// rendered only once at least one restore has ever been triggered for
-// this volume.
+// VolumeRestoreHistoryTable mirrors RestoreHistoryTable's exact shape via
+// the shared RestoreHistoryTableView, only the data source differs.
 function VolumeRestoreHistoryTable({
   appName,
   volumeName,
@@ -382,59 +381,12 @@ function VolumeRestoreHistoryTable({
     appName,
     volumeName,
   )
-  const history = data ?? []
-
-  if (isLoading || history.length === 0) {
-    return null
-  }
-  if (error) {
-    return <p className="text-sm text-destructive">{error.message}</p>
-  }
-
   return (
-    <div className="flex flex-col gap-2">
-      <h3 className="text-sm font-medium text-foreground">Restores</h3>
-      <div className="rounded-lg border border-border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Status</TableHead>
-              <TableHead>From backup</TableHead>
-              <TableHead>Started</TableHead>
-              <TableHead>Finished</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {history.map((record: RestoreHistoryRecord) => (
-              <TableRow key={record.id}>
-                <TableCell>
-                  <div className="flex flex-col gap-1">
-                    <StatusBadge status={record.status} />
-                    {record.status === 'failed' && record.error ? (
-                      <span
-                        className="max-w-[20rem] truncate text-xs text-destructive"
-                        title={record.error}
-                      >
-                        {record.error}
-                      </span>
-                    ) : null}
-                  </div>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {record.backup_history_id}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatDate(record.started_at, '-')}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatDate(record.finished_at, '-')}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </div>
+    <RestoreHistoryTableView
+      history={data ?? []}
+      isLoading={isLoading}
+      error={error}
+    />
   )
 }
 
