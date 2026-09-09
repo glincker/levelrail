@@ -1,4 +1,4 @@
--- Dashboard & auth: API tokens (TASKS.md, "Backend auth foundation").
+-- Dashboard & auth: API tokens, the backend auth foundation.
 -- The concrete near-term answer to "how does a CLI or MCP server call
 -- the API non-interactively," scoped to what Phase 1 actually needs per
 -- docs-local/research/theauth-go-fit-assessment.md's recommendation:

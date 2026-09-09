@@ -905,7 +905,7 @@ func TestSaveDesiredService_RedeployDoesNotResetAppID(t *testing.T) {
 	}
 }
 
-// TestListDesiredServicesByNode is TASKS.md 3.7's drain and
+// TestListDesiredServicesByNode is the drain and
 // delete-guard primitive: find what's placed on a node without
 // listing every service and filtering client-side.
 func TestListDesiredServicesByNode(t *testing.T) {
