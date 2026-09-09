@@ -85,9 +85,11 @@ type createInviteResponse struct {
 
 // handleCreateInvite handles POST /api/v1/invites: mints an invite token
 // for one specific, named email and best-effort emails a link to it.
-// AbilityRoot-gated (routes.go): an invite is a deferred version of
-// POST /api/v1/auth/users's own "hand out access" action, so it needs
-// the same authority, for the same reason that route documents. The
+// AbilityWrite-gated (routes.go), not AbilityRoot: the caller picks the
+// invited abilities (directly, or via a role resolved through
+// resolveAbilities), so this enforces a privilege cap below, refusing to
+// grant an ability the caller doesn't themselves hold. That cap is the
+// actual security boundary, not the route's own ability gate. The
 // response always carries Link itself, regardless of whether email
 // delivery is configured or succeeds: CLAUDE.md's "email is best-effort,
 // not required" rule means a control plane with no SMTP configured must
@@ -106,6 +108,19 @@ func (rt *Router) handleCreateInvite(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
+	}
+
+	callerAbilities, err := rt.callerAbilities(r)
+	if err != nil {
+		rt.logger.Error("api: create invite: resolve caller abilities failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	for _, a := range abilities {
+		if !hasAbility(callerAbilities, a) {
+			writeError(w, http.StatusForbidden, fmt.Sprintf("cannot invite a user with abilities you don't hold yourself: %s", a))
+			return
+		}
 	}
 
 	plaintext, err := randomToken()
@@ -186,7 +201,11 @@ func (rt *Router) inviteURL(ctx context.Context, token string) string {
 // accepted or revoked, for the Users settings page's pending-invites
 // list. AbilityRead, the same tier GET /api/v1/users uses: this is who
 // has been invited, not a credential (the plaintext token itself is
-// never returned here, only ever in the create response above).
+// never returned here, only ever in the create response above). A root
+// caller sees every pending invite; anyone else sees only the ones they
+// created themselves, consistent with handleRevokeInvite's own
+// creator-or-root rule below: a non-root caller seeing an invite they
+// can't act on is confusing, not useful.
 func (rt *Router) handleListInvites(w http.ResponseWriter, r *http.Request) {
 	invites, err := rt.invites.ListPendingInvites(r.Context())
 	if err != nil {
@@ -194,21 +213,59 @@ func (rt *Router) handleListInvites(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	callerAbilities, err := rt.callerAbilities(r)
+	if err != nil {
+		rt.logger.Error("api: list invites: resolve caller abilities failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	callerID, _ := rt.currentSessionUserID(r)
+	isRoot := hasAbility(callerAbilities, AbilityRoot)
+
 	out := make([]inviteResource, 0, len(invites))
 	for _, inv := range invites {
+		if !isRoot && inv.CreatedBy != callerID {
+			continue
+		}
 		out = append(out, toInviteResource(inv))
 	}
 	writeJSON(w, http.StatusOK, out)
 }
 
-// handleRevokeInvite handles DELETE /api/v1/invites/{id}: AbilityRoot,
-// same tier as handleCreateInvite. Revoking an already-accepted invite is
-// a 400, not a 404: the caller almost certainly meant "stop this from
-// being usable," and an already-accepted invite already can't be, so the
-// clearest response is saying why, not pretending the row never existed.
+// handleRevokeInvite handles DELETE /api/v1/invites/{id}: AbilityWrite,
+// same tier as handleCreateInvite, plus a caller-scoped check here: only
+// a root caller or the invite's own creator may revoke it. Revoking an
+// already-accepted invite is a 400, not a 404: the caller almost
+// certainly meant "stop this from being usable," and an already-accepted
+// invite already can't be, so the clearest response is saying why, not
+// pretending the row never existed.
 func (rt *Router) handleRevokeInvite(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	err := rt.invites.RevokeInvite(r.Context(), id)
+
+	inv, err := rt.invites.GetInviteByID(r.Context(), id)
+	if errors.Is(err, store.ErrInviteNotFound) {
+		writeError(w, http.StatusNotFound, "invite not found")
+		return
+	}
+	if err != nil {
+		rt.logger.Error("api: revoke invite: load invite failed", slog.String("invite_id", id), slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	callerAbilities, err := rt.callerAbilities(r)
+	if err != nil {
+		rt.logger.Error("api: revoke invite: resolve caller abilities failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	callerID, _ := rt.currentSessionUserID(r)
+	if !hasAbility(callerAbilities, AbilityRoot) && inv.CreatedBy != callerID {
+		writeError(w, http.StatusForbidden, "you can only revoke invites you created")
+		return
+	}
+
+	err = rt.invites.RevokeInvite(r.Context(), id)
 	switch {
 	case err == nil:
 		w.WriteHeader(http.StatusNoContent)
