@@ -25,22 +25,44 @@ the same thing find it.
 
 ## Quickstart
 
+Pick whichever fits how you run things. Full details, env var
+overrides, verifying the install, upgrading, and uninstalling are all
+in [docs/installing.md](docs/installing.md).
+
+**Linux server, recommended:**
+
 ```
 curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh
 ```
 
 Installs the binary, installs Docker if it's missing, sets up a
 systemd unit, and waits for the control plane to report healthy before
-declaring success. Safe to re-run later as an upgrade. See
-[docs/getting-started.md](docs/getting-started.md) to build from source
-instead, and [docs/comparison.md](docs/comparison.md) for how this
-differs from Coolify, Dokploy, CapRover, Dokku, and Kamal, including
-what Levelrail doesn't do yet.
+declaring success. Safe to re-run later as an upgrade.
 
-Already running everything else as containers? `ghcr.io/glincker/levelrail`
-and `ghcr.io/glincker/levelrail-agent` images are published on every
-tagged release; see [docs/docker.md](docs/docker.md) for a `docker run`
-and `docker-compose.yml` example.
+**Already running everything as containers:**
+
+```
+docker run -d -p 8080:8080 -v /var/run/docker.sock:/var/run/docker.sock \
+  -v levelrail-data:/var/lib/levelrail-data ghcr.io/glincker/levelrail:latest
+```
+
+`ghcr.io/glincker/levelrail` and `ghcr.io/glincker/levelrail-agent` are
+published for `linux/amd64` and `linux/arm64` on every tagged release;
+see [docs/docker.md](docs/docker.md) for a full `docker run` and
+`docker-compose.yml` example (including the node agent).
+
+**Building from source:**
+
+```
+go build ./cmd/levelrail
+```
+
+See [docs/getting-started.md](docs/getting-started.md) for
+requirements and running it locally.
+
+See [docs/comparison.md](docs/comparison.md) for how this differs from
+Coolify, Dokploy, CapRover, Dokku, and Kamal, including what Levelrail
+doesn't do yet.
 
 ## Features
 

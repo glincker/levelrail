@@ -46,6 +46,7 @@ proposals):
 
 | Doc | Covers |
 | --- | --- |
+| [installing.md](installing.md) | Every install path (`install.sh`, Docker, source), verifying, upgrading, and uninstalling |
 | [docker.md](docker.md) | Run the control plane and node agent as containers instead of `install.sh` |
 | [feature-flags.md](feature-flags.md) | Toggle app behavior at runtime without a redeploy |
 | [screenshots.md](screenshots.md) | Regenerate the dashboard screenshots used in the README |
