@@ -4,6 +4,10 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/glincker/levelrail)](https://goreportcard.com/report/github.com/glincker/levelrail)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/glincker/levelrail)](go.mod)
+[![GitHub stars](https://img.shields.io/github/stars/glincker/levelrail?style=flat)](https://github.com/glincker/levelrail/stargazers)
+[![Last commit](https://img.shields.io/github/last-commit/glincker/levelrail)](https://github.com/glincker/levelrail/commits/main)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Discussions](https://img.shields.io/github/discussions/glincker/levelrail)](https://github.com/glincker/levelrail/discussions)
 
 Levelrail is a self-hosted deployment platform whose agent talks to
 Docker's own Engine API directly instead of SSHing into your servers
@@ -15,6 +19,9 @@ git repo, get a running app with TLS, logs, metrics, and rollback.
 <p align="center">
   <img src="docs/assets/screenshots/app-overview.png" alt="Levelrail app overview: live metrics and deploy history in one view" width="900">
 </p>
+
+If this solves a problem you have, a star helps other people building
+the same thing find it.
 
 ## Quickstart
 
@@ -29,6 +36,33 @@ declaring success. Safe to re-run later as an upgrade. See
 instead, and [docs/comparison.md](docs/comparison.md) for how this
 differs from Coolify, Dokploy, CapRover, Dokku, and Kamal, including
 what Levelrail doesn't do yet.
+
+## Features
+
+- **Zero-downtime deploys.** Rolling, recreate, or blue-green strategy,
+  gated on real readiness/liveness probes, with rollback to pinned
+  prior images always available, not something to reconstruct by hand.
+- **Observability built in.** Node-local metrics at 15s resolution and
+  full-text log search, no separate Grafana/Loki install. Deploy
+  markers are overlaid directly on metric charts, so "which deploy
+  caused this" is a visual answer, not an investigation.
+- **Eight managed database engines.** Postgres, Redis, MySQL, MongoDB,
+  MariaDB, KeyDB, Dragonfly, and ClickHouse, all through one engine
+  registry: scheduled backups, restore, and automatic post-backup
+  verification apply generically across every engine.
+- **Multi-node from day one.** WireGuard mesh, internal DNS across
+  nodes, cordon/drain, and no inbound ports required on any managed
+  server.
+- **Git-native deploys.** GitHub, GitLab, and Bitbucket webhooks, plus
+  preview environments per pull request with automatic teardown.
+- **IAM and audit.** AWS-IAM-shaped Allow/Deny policies scoped to a
+  specific resource, with a full audit log and CSV export.
+- **Alerting across eight channels.** Threshold, crashloop, certificate
+  expiry, and five other rule kinds, delivered to Slack, Discord,
+  email, Telegram, Pushover, PagerDuty, Microsoft Teams, or a webhook.
+- **AI-ready API.** The same HTTP API the dashboard runs on backs an
+  MCP server, so AI tools can list apps, read logs, and diagnose a
+  crashloop directly.
 
 ## Status
 
@@ -168,6 +202,10 @@ commit conventions, and how to run tests and the linter locally.
 
 - [docs/](docs/README.md) -- getting started, architecture, app spec reference, roadmap, full index
 - [GitHub Discussions](https://github.com/glincker/levelrail/discussions) -- questions, ideas, show and tell
+
+## Star history
+
+[![Star History Chart](https://api.star-history.com/svg?repos=glincker/levelrail&type=Date)](https://star-history.com/#glincker/levelrail&Date)
 
 ## License
 
