@@ -498,6 +498,41 @@ func TestController_Reconcile_NoCommand_ContainerSpecCommandStaysNil(t *testing.
 	}
 }
 
+// TestController_Reconcile_Entrypoint_ReachesContainerSpec mirrors
+// TestController_Reconcile_Command_ReachesContainerSpec above for
+// desired.Entrypoint.
+func TestController_Reconcile_Entrypoint_ReachesContainerSpec(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{
+		Name: "postgres", Image: "postgres:16",
+		Entrypoint: []string{"docker-entrypoint.sh", "-c", "config_file=/etc/postgresql.conf"},
+	}
+	c := New("postgres", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	want := []string{"docker-entrypoint.sh", "-c", "config_file=/etc/postgresql.conf"}
+	if got := rt.lastCreateSpec.Entrypoint; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Entrypoint = %v, want %v", got, want)
+	}
+}
+
+func TestController_Reconcile_NoEntrypoint_ContainerSpecEntrypointStaysNil(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1"}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	if got := rt.lastCreateSpec.Entrypoint; got != nil {
+		t.Errorf("created ContainerSpec.Entrypoint = %v, want nil", got)
+	}
+}
+
 func TestController_Reconcile_FreshDeploy_ReadinessSucceeds(t *testing.T) {
 	srv := alwaysHealthy()
 	defer srv.Close()

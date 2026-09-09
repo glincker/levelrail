@@ -11,13 +11,13 @@
 // startup ordering, out of scope here). restart: and networks: parse
 // and are surfaced as non-blocking Notices instead of being silently
 // dropped or translated: see Notices for why neither has a real
-// translation onto how Levelrail runs a service. command: parses and
-// translates into store.DesiredService.Command; entrypoint: does not
-// parse at all. volumes: additionally accepts an absolute host path on
-// the left side as a bind mount (ValidateForBuild rejects one; see that
-// method's own doc comment for why), gated at the HTTP layer to
-// AbilityRoot and, even then, against forbiddenBindMountPaths (see
-// validateBindMountHostPath).
+// translation onto how Levelrail runs a service. command: and
+// entrypoint: both parse and translate into store.DesiredService's own
+// Command and Entrypoint fields. volumes: additionally accepts an
+// absolute host path on the left side as a bind mount (ValidateForBuild
+// rejects one; see that method's own doc comment for why), gated at the
+// HTTP layer to AbilityRoot and, even then, against
+// forbiddenBindMountPaths (see validateBindMountHostPath).
 package compose
 
 import (
@@ -61,9 +61,12 @@ type Service struct {
 	// (store.DesiredService.Command), parsed from command:'s own
 	// string-or-list union (Command's own UnmarshalYAML in yaml.go): a
 	// plain string is shell-wrapped as ["/bin/sh", "-c", "<string>"],
-	// matching Compose's own documented behavior for that form. Only
-	// command: translates; entrypoint: is not parsed.
+	// matching Compose's own documented behavior for that form.
 	Command Command
+	// Entrypoint overrides the image's own default ENTRYPOINT
+	// (store.DesiredService.Entrypoint), parsed with the same
+	// string-or-list union as Command.
+	Entrypoint Command
 }
 
 // Volume is one short-form "name:/container/path" entry, either a named

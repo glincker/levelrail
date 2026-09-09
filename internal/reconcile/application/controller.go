@@ -1572,6 +1572,9 @@ func toContainerSpec(name string, desired *store.DesiredService) docker.Containe
 	if len(desired.Command) > 0 {
 		spec.Command = desired.Command
 	}
+	if len(desired.Entrypoint) > 0 {
+		spec.Entrypoint = desired.Entrypoint
+	}
 	if desired.Port != 0 {
 		binding := docker.PortBinding{ContainerPort: desired.Port}
 		if desired.HostPort != nil {

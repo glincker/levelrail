@@ -30,6 +30,7 @@ type rawService struct {
 	Restart     string            `yaml:"restart"`
 	Healthcheck *Healthcheck      `yaml:"healthcheck"`
 	Command     Command           `yaml:"command"`
+	Entrypoint  Command           `yaml:"entrypoint"`
 }
 
 // Healthcheck is one service's healthcheck: block, Docker Compose's own
@@ -208,10 +209,11 @@ func (v *Volume) UnmarshalYAML(node *yaml.Node) error {
 	return nil
 }
 
-// Command is command:'s string-or-list union: a list passes through as
-// exec-form args, a bare string is Compose's own shorthand for shell
-// form, wrapped here as ["/bin/sh", "-c", "<string>"] to match Docker's
-// own documented interpretation of a string CMD.
+// Command is command:'s and entrypoint:'s shared string-or-list union: a
+// list passes through as exec-form args, a bare string is Compose's own
+// shorthand for shell form, wrapped here as ["/bin/sh", "-c", "<string>"]
+// to match Docker's own documented interpretation of a string CMD or
+// ENTRYPOINT.
 type Command []string
 
 // UnmarshalYAML implements the string-or-list union described above.
