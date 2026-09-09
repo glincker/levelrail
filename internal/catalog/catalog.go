@@ -857,4 +857,477 @@ var Templates = []Template{
       - paperless_redis_data:/data
 `,
 	},
+	{
+		ID:               "immich",
+		Name:             "Immich",
+		Slogan:           "Self-hosted photo and video backup with mobile apps, facial recognition, and timeline search.",
+		Category:         "Media",
+		DocumentationURL: "https://immich.app/docs",
+		// Tag not verified against a live registry in this environment;
+		// the image repository and major line are correct. Pins to a
+		// specific release rather than upstream's own floating
+		// "release" default, since this compose subset has no way to
+		// override an env default per deploy yet.
+		Compose: `services:
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:v1.126.1
+    ports: ["2283:2283"]
+    environment:
+      DB_HOSTNAME: db
+      DB_USERNAME: immich
+      DB_PASSWORD: $SERVICE_PASSWORD_DB
+      DB_DATABASE_NAME: immich
+      REDIS_HOSTNAME: redis
+    volumes:
+      - immich_upload_data:/usr/src/app/upload
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:v1.126.1
+    volumes:
+      - immich_ml_cache:/cache
+  redis:
+    image: redis:7.4-alpine
+  db:
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.3.0-pgvectors0.2.0
+    environment:
+      POSTGRES_USER: immich
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: immich
+    volumes:
+      - immich_db_data:/var/lib/postgresql/data
+`,
+	},
+	{
+		ID:               "freshrss",
+		Name:             "FreshRSS",
+		Slogan:           "A lightweight, self-hosted RSS aggregator with multi-user support and a mobile-friendly API.",
+		Category:         "Productivity",
+		DocumentationURL: "https://freshrss.github.io/FreshRSS/",
+		// Tag not verified against a live registry in this environment;
+		// the image repository is correct.
+		Compose: `services:
+  freshrss:
+    image: freshrss/freshrss:1.25.0
+    ports: ["8080:80"]
+    environment:
+      DB_TYPE: mysql
+      DB_HOST: db
+      DB_USER: freshrss
+      DB_PASSWORD: $SERVICE_PASSWORD_DB
+      DB_BASE: freshrss
+    volumes:
+      - freshrss_data:/var/www/FreshRSS/data
+  db:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: freshrss
+      MYSQL_USER: freshrss
+      MYSQL_PASSWORD: $SERVICE_PASSWORD_DB
+      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MARIADBROOT
+    volumes:
+      - freshrss_db_data:/var/lib/mysql
+`,
+	},
+	{
+		ID:               "joplin-server",
+		Name:             "Joplin Server",
+		Slogan:           "A self-hosted sync target for the Joplin note-taking app, replacing Dropbox or OneDrive sync.",
+		Category:         "Productivity",
+		DocumentationURL: "https://joplinapp.org/help/api/server_config/",
+		// Tag not verified against a live registry in this environment;
+		// the image repository is correct.
+		Compose: `services:
+  joplin:
+    image: joplin/server:3.3.4
+    ports: ["22300:22300"]
+    environment:
+      APP_BASE_URL: ${SERVICE_FQDN_JOPLIN:-http://localhost:22300}
+      DB_CLIENT: pg
+      POSTGRES_HOST: db
+      POSTGRES_DATABASE: joplin
+      POSTGRES_USER: joplin
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: joplin
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: joplin
+    volumes:
+      - joplin_db_data:/var/lib/postgresql/data
+`,
+	},
+	{
+		ID:               "gotenberg",
+		Name:             "Gotenberg",
+		Slogan:           "A stateless API for converting HTML, Markdown, Office, and PDF documents in the background.",
+		Category:         "Developer Tools",
+		DocumentationURL: "https://gotenberg.dev/docs/getting-started/introduction",
+		// Tag not verified against a live registry in this environment;
+		// the image repository is correct.
+		Compose: `services:
+  gotenberg:
+    image: gotenberg/gotenberg:8.15
+    ports: ["3000:3000"]
+`,
+	},
+	{ //nolint:gosec // MM_SQLSETTINGS_DATASOURCE below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
+		ID:               "mattermost",
+		Name:             "Mattermost",
+		Slogan:           "An open-source, self-hosted alternative to Slack for team messaging and collaboration.",
+		Category:         "Communication",
+		DocumentationURL: "https://docs.mattermost.com",
+		Compose: `services:
+  mattermost:
+    image: mattermost/mattermost-team-edition:release-10
+    ports: ["8065:8065"]
+    environment:
+      MM_SQLSETTINGS_DRIVERNAME: postgres
+      MM_SQLSETTINGS_DATASOURCE: postgres://mattermost:$SERVICE_PASSWORD_DB@db:5432/mattermost?sslmode=disable
+      MM_SERVICESETTINGS_SITEURL: ${SERVICE_FQDN_MATTERMOST:-http://localhost:8065}
+    volumes:
+      - mattermost_data:/mattermost/data
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: mattermost
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: mattermost
+    volumes:
+      - mattermost_db_data:/var/lib/postgresql/data
+`,
+	},
+	{
+		ID:               "grocy",
+		Name:             "Grocy",
+		Slogan:           "A self-hosted ERP for your household: groceries, chores, and a shopping list that stays in sync.",
+		Category:         "Productivity",
+		DocumentationURL: "https://grocy.info/en/docs",
+		Compose: `services:
+  grocy:
+    image: lscr.io/linuxserver/grocy:4.6.0
+    ports: ["8080:80"]
+    volumes:
+      - grocy_data:/config
+`,
+	},
+	{ //nolint:gosec // DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
+		ID:               "kimai",
+		Name:             "Kimai",
+		Slogan:           "A self-hosted time tracking tool for freelancers and teams, with invoicing and reporting.",
+		Category:         "Productivity",
+		DocumentationURL: "https://www.kimai.org/documentation/",
+		Compose: `services:
+  kimai:
+    image: kimai/kimai2:apache
+    ports: ["8001:8001"]
+    environment:
+      DATABASE_URL: mysql://kimai:$SERVICE_PASSWORD_DB@db/kimai?serverVersion=8.0
+      ADMINMAIL: admin@example.com
+      ADMINPASS: $SERVICE_PASSWORD_ADMIN
+    volumes:
+      - kimai_data:/opt/kimai/var
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: kimai
+      MYSQL_USER: kimai
+      MYSQL_PASSWORD: $SERVICE_PASSWORD_DB
+      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MYSQLROOT
+    volumes:
+      - kimai_db_data:/var/lib/mysql
+`,
+	},
+	{
+		ID:               "activepieces",
+		Name:             "Activepieces",
+		Slogan:           "An open-source, no-code automation tool for connecting apps and building AI-powered workflows.",
+		Category:         "Automation",
+		DocumentationURL: "https://www.activepieces.com/docs",
+		Compose: `services:
+  activepieces:
+    image: ghcr.io/activepieces/activepieces:0.75.0
+    ports: ["8080:80"]
+    environment:
+      AP_ENCRYPTION_KEY: $SERVICE_HEX_32_ENCRYPTIONKEY
+      AP_JWT_SECRET: $SERVICE_HEX_32_JWTSECRET
+      AP_FRONTEND_URL: ${SERVICE_FQDN_ACTIVEPIECES:-http://localhost:8080}
+      AP_POSTGRES_HOST: db
+      AP_POSTGRES_DATABASE: activepieces
+      AP_POSTGRES_USERNAME: activepieces
+      AP_POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      AP_REDIS_HOST: redis
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: activepieces
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: activepieces
+    volumes:
+      - activepieces_db_data:/var/lib/postgresql/data
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - activepieces_redis_data:/data
+`,
+	},
+	{
+		ID:               "appsmith",
+		Name:             "Appsmith",
+		Slogan:           "A low-code platform for building internal tools and admin panels on top of your own data.",
+		Category:         "Developer Tools",
+		DocumentationURL: "https://docs.appsmith.com",
+		// Tag not verified against a live registry in this environment;
+		// the image repository is correct.
+		Compose: `services:
+  appsmith:
+    image: appsmith/appsmith-ce:1.72
+    ports: ["8080:80"]
+    volumes:
+      - appsmith_data:/appsmith-stacks
+`,
+	},
+	{
+		ID:               "invoice-ninja",
+		Name:             "Invoice Ninja",
+		Slogan:           "Self-hosted invoicing, quotes, and payments for freelancers and small businesses.",
+		Category:         "Finance",
+		DocumentationURL: "https://invoiceninja.github.io",
+		Compose: `services:
+  invoiceninja:
+    image: invoiceninja/invoiceninja:5
+    ports: ["8080:80"]
+    environment:
+      APP_URL: ${SERVICE_FQDN_INVOICENINJA:-http://localhost:8080}
+      APP_KEY: $SERVICE_BASE64_32_APPKEY
+      DB_HOST: db
+      DB_DATABASE: invoiceninja
+      DB_USERNAME: invoiceninja
+      DB_PASSWORD: $SERVICE_PASSWORD_DB
+      REDIS_HOST: redis
+    volumes:
+      - invoiceninja_data:/var/www/app/storage
+  db:
+    image: mariadb:11
+    environment:
+      MYSQL_DATABASE: invoiceninja
+      MYSQL_USER: invoiceninja
+      MYSQL_PASSWORD: $SERVICE_PASSWORD_DB
+      MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MARIADBROOT
+    volumes:
+      - invoiceninja_db_data:/var/lib/mysql
+  redis:
+    image: redis:7.4-alpine
+    volumes:
+      - invoiceninja_redis_data:/data
+`,
+	},
+	{
+		ID:               "excalidraw",
+		Name:             "Excalidraw",
+		Slogan:           "A self-hosted virtual whiteboard for sketching diagrams that feel hand-drawn.",
+		Category:         "Productivity",
+		DocumentationURL: "https://github.com/excalidraw/excalidraw#docker",
+		// Tag not verified against a live registry in this environment;
+		// the image repository is correct.
+		Compose: `services:
+  excalidraw:
+    image: excalidraw/excalidraw:0.17.6
+    ports: ["8080:80"]
+`,
+	},
+	{
+		ID:               "wikijs",
+		Name:             "Wiki.js",
+		Slogan:           "A modern, extensible wiki engine with Markdown, visual editing, and fine-grained page permissions.",
+		Category:         "Productivity",
+		DocumentationURL: "https://docs.requarks.io",
+		Compose: `services:
+  wiki:
+    image: ghcr.io/requarks/wiki:2
+    ports: ["3000:3000"]
+    environment:
+      DB_TYPE: postgres
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: wikijs
+      DB_PASS: $SERVICE_PASSWORD_DB
+      DB_NAME: wikijs
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wikijs
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: wikijs
+    volumes:
+      - wikijs_db_data:/var/lib/postgresql/data
+`,
+	},
+	{ //nolint:gosec // CORE_DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
+		ID:               "zipline",
+		Name:             "Zipline",
+		Slogan:           "A self-hosted file and screenshot host with a share-first upload flow and its own URL shortener.",
+		Category:         "Storage",
+		DocumentationURL: "https://zipline.diced.sh/docs",
+		// Tag not verified against a live registry in this environment;
+		// the image repository is correct.
+		Compose: `services:
+  zipline:
+    image: ghcr.io/diced/zipline:3.7.9
+    ports: ["3000:3000"]
+    environment:
+      CORE_RETURN_HTTPS: "false"
+      CORE_DATABASE_URL: postgres://zipline:$SERVICE_PASSWORD_DB@db:5432/zipline
+      CORE_SECRET: $SERVICE_HEX_64_SECRET
+    volumes:
+      - zipline_uploads:/zipline/uploads
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: zipline
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: zipline
+    volumes:
+      - zipline_db_data:/var/lib/postgresql/data
+`,
+	},
+	{
+		ID:               "memos",
+		Name:             "Memos",
+		Slogan:           "A lightweight, privacy-first note-taking service for jotting down quick thoughts.",
+		Category:         "Productivity",
+		DocumentationURL: "https://www.usememos.com/docs",
+		Compose: `services:
+  memos:
+    image: neosmemo/memos:stable
+    ports: ["5230:5230"]
+    volumes:
+      - memos_data:/var/opt/memos
+`,
+	},
+	{
+		ID:               "dashy",
+		Name:             "Dashy",
+		Slogan:           "A feature-rich, self-hosted start page with widgets, status checks, and full visual customization.",
+		Category:         "Dashboard",
+		DocumentationURL: "https://dashy.to/docs",
+		// Tag not verified against a live registry in this environment;
+		// the image repository is correct.
+		Compose: `services:
+  dashy:
+    image: lissy93/dashy:3.1.1
+    ports: ["8080:8080"]
+    volumes:
+      - dashy_config:/app/user-data
+`,
+	},
+	{
+		ID:               "glance",
+		Name:             "Glance",
+		Slogan:           "A fast, self-hosted dashboard that pulls RSS, weather, and other widgets onto one page.",
+		Category:         "Dashboard",
+		DocumentationURL: "https://github.com/glanceapp/glance/blob/main/docs/configuration.md",
+		// Tag not verified against a live registry in this environment;
+		// the image repository is correct.
+		Compose: `services:
+  glance:
+    image: glanceapp/glance:v0.8.6
+    ports: ["8080:8080"]
+    volumes:
+      - glance_config:/app/config
+`,
+	},
+	{
+		ID:               "it-tools",
+		Name:             "IT Tools",
+		Slogan:           "A collection of handy online tools for developers: converters, generators, formatters, and more.",
+		Category:         "Developer Tools",
+		DocumentationURL: "https://it-tools.tech",
+		// Tag not verified against a live registry in this environment;
+		// the image repository is correct.
+		Compose: `services:
+  it-tools:
+    image: corentinth/it-tools:2024.10.22-7ca5933
+    ports: ["8080:80"]
+`,
+	},
+	{
+		ID:               "meilisearch",
+		Name:             "Meilisearch",
+		Slogan:           "A fast, typo-tolerant search engine API you can drop into any app's search bar.",
+		Category:         "Developer Tools",
+		DocumentationURL: "https://www.meilisearch.com/docs",
+		Compose: `services:
+  meilisearch:
+    image: getmeili/meilisearch:v1.11.1
+    ports: ["7700:7700"]
+    environment:
+      MEILI_MASTER_KEY: $SERVICE_HEX_32_MASTERKEY
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - meilisearch_data:/meili_data
+`,
+	},
+	{ //nolint:gosec // DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
+		ID:               "docmost",
+		Name:             "Docmost",
+		Slogan:           "An open-source, Notion-style collaborative wiki and documentation workspace.",
+		Category:         "Productivity",
+		DocumentationURL: "https://docmost.com/docs",
+		// Tag not verified against a live registry in this environment;
+		// the image repository is correct.
+		Compose: `services:
+  docmost:
+    image: docmost/docmost:0.13.2
+    ports: ["3000:3000"]
+    environment:
+      APP_URL: ${SERVICE_FQDN_DOCMOST:-http://localhost:3000}
+      APP_SECRET: $SERVICE_HEX_64_APPSECRET
+      DATABASE_URL: postgresql://docmost:$SERVICE_PASSWORD_DB@db:5432/docmost
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - docmost_data:/app/data/storage
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: docmost
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: docmost
+    volumes:
+      - docmost_db_data:/var/lib/postgresql/data
+  redis:
+    image: redis:7.2-alpine
+    volumes:
+      - docmost_redis_data:/data
+`,
+	},
+	{ //nolint:gosec // DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
+		ID:               "glitchtip",
+		Name:             "GlitchTip",
+		Slogan:           "A lightweight, self-hosted error tracking service compatible with the Sentry SDK.",
+		Category:         "Monitoring",
+		DocumentationURL: "https://glitchtip.com/documentation",
+		Compose: `services:
+  glitchtip:
+    image: glitchtip/glitchtip:6.0
+    ports: ["8080:8080"]
+    environment:
+      SECRET_KEY: $SERVICE_HEX_64_SECRETKEY
+      DATABASE_URL: postgres://glitchtip:$SERVICE_PASSWORD_DB@db:5432/glitchtip
+      REDIS_URL: redis://redis:6379
+      GLITCHTIP_DOMAIN: ${SERVICE_FQDN_GLITCHTIP:-http://localhost:8080}
+      DEFAULT_FROM_EMAIL: admin@example.com
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: glitchtip
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: glitchtip
+    volumes:
+      - glitchtip_db_data:/var/lib/postgresql/data
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - glitchtip_redis_data:/data
+`,
+	},
 }
