@@ -39,9 +39,8 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
 // GitRepoSourcePicker.test.tsx. Mocked here to a trio of test-only
 // buttons so these tests can drive CreateAppFromGitFields' own submit
 // sequencing (create app -> connect git source -> trigger build, the
-// fix for both bugs docs-local/research/git-provider-connect-ux-
-// unification-proposal.md documents) without needing to open a real
-// Select popup in jsdom.
+// fix for the missing-git-source-row and missing-first-build bugs)
+// without needing to open a real Select popup in jsdom.
 vi.mock('./GitRepoSourcePicker', () => ({
   GitRepoSourcePicker: ({
     onSelect,
@@ -341,8 +340,7 @@ describe('CreateAppFromGitFields', () => {
     expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(1)
   })
 
-  // Bug 1 (docs-local/research/git-provider-connect-ux-unification-
-  // proposal.md): the GitHub wizard path used to create the app and
+  // Bug 1: the GitHub wizard path used to create the app and
   // trigger a build without ever creating a git_source row, so no
   // webhook could ever match a future push. Bug 2: the GitLab/Bitbucket
   // settings-page paths wire the git source and webhook correctly but

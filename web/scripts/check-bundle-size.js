@@ -41,7 +41,7 @@ for (const name of jsFiles) {
 
 if (failed) {
   console.error(
-    '[check-bundle-size] one or more chunks exceed the size budget. See CLAUDE.md section 7 (route-level code splitting) and web/vite.config.ts.',
+    '[check-bundle-size] one or more chunks exceed the size budget. Split large routes with dynamic import() and see web/vite.config.ts.',
   )
   process.exit(1)
 }

@@ -61,12 +61,11 @@ import type {
 // instant a repo is first connected.
 //
 // Repo/branch selection is GitRepoSourcePicker (also used by
-// CreateAppFromGitFields.tsx's app-creation wizard, see docs-local/
-// research/git-provider-connect-ux-unification-proposal.md section 4):
-// this card no longer hand-rolls its own URL/branch inputs, so picking a
-// connected GitHub/GitLab/Bitbucket repo here registers a push webhook
-// automatically the same way the wizard does, instead of only ever
-// producing a manual, paste-the-webhook-by-hand connection.
+// CreateAppFromGitFields.tsx's app-creation wizard): this card no longer
+// hand-rolls its own URL/branch inputs, so picking a connected
+// GitHub/GitLab/Bitbucket repo here registers a push webhook automatically
+// the same way the wizard does, instead of only ever producing a manual,
+// paste-the-webhook-by-hand connection.
 const BUILD_PACKS: { value: GitSourceBuildType; label: string }[] = [
   { value: 'railpack', label: 'Auto-detect (Railpack)' },
   { value: 'dockerfile', label: 'Dockerfile' },

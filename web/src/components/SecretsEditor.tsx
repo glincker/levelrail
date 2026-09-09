@@ -54,8 +54,7 @@ type SecretFormValues = z.infer<typeof secretSchema>
 // AppDetail.env map: this is a separate write path to a separate
 // backend endpoint with no corresponding GET, so there is nothing to
 // list or pre-populate here, only a "set a value" form that clears
-// itself on success. See docs-local/research/dashboard-gap-audit-and-
-// devmode.md gap #5 for the full gap this closes.
+// itself on success.
 //
 // The value field defaults to a masked (type="password") input with a
 // reveal toggle rather than plain text, since a secret is being typed
