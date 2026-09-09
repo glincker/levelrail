@@ -37,6 +37,11 @@ instead, and [docs/comparison.md](docs/comparison.md) for how this
 differs from Coolify, Dokploy, CapRover, Dokku, and Kamal, including
 what Levelrail doesn't do yet.
 
+Already running everything else as containers? `ghcr.io/glincker/levelrail`
+and `ghcr.io/glincker/levelrail-agent` images are published on every
+tagged release; see [docs/docker.md](docs/docker.md) for a `docker run`
+and `docker-compose.yml` example.
+
 ## Features
 
 - **Zero-downtime deploys.** Rolling, recreate, or blue-green strategy,
