@@ -17,15 +17,15 @@ export interface MetricSeries {
   points: MetricPoint[]
 }
 
-// The 7 metrics internal/telemetry's collector (TASKS.md 2.1) actually
-// writes samples for, matching internal/api/metrics.go's `metric` query
-// param one-to-one.
+// The 7 metrics internal/telemetry's collector actually writes samples
+// for, matching internal/api/metrics.go's `metric` query param
+// one-to-one.
 //
 // Request rate, response time percentiles, error rate, container
 // restart count, build duration, and deploy frequency are also required
 // per-app metrics that must exist without configuration. None of those
-// six exist here: TASKS.md 2.1 explicitly deferred restart count/build
-// duration/deploy frequency as their own follow-up, and request
+// six exist here: restart count/build duration/deploy frequency were
+// explicitly deferred as their own follow-up, and request
 // rate/response time/error rate need ingress-layer instrumentation that
 // doesn't exist yet either (the embedded Caddy driver has no
 // request-metrics hook wired up). Do not add a MetricName for any of

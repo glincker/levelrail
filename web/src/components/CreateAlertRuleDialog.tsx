@@ -246,8 +246,8 @@ const DEFAULT_VALUES: CreateAlertRuleFormInput = {
   enabled: true,
 }
 
-// Create-via-dialog flow for a new alert rule (TASKS.md 2.5/2.7),
-// following CreateTokenDialog's shape: a trigger button, a form inside
+// Create-via-dialog flow for a new alert rule, following
+// CreateTokenDialog's shape: a trigger button, a form inside
 // DialogContent, mutate on submit, close on success. Unlike
 // CreateTokenDialog there is no one-time-secret reveal step here, POST
 // /api/v1/apps/{name}/alerts's response has nothing sensitive in it, so

@@ -49,8 +49,8 @@ const secretSchema = z.object({
 type SecretFormValues = z.infer<typeof secretSchema>
 
 // Sets (or rotates) one env var's encrypted value via PUT
-// /api/v1/apps/{name}/secrets/{key} (internal/api/secrets.go,
-// TASKS.md 1.7). Deliberately not built on EnvEditor or its
+// /api/v1/apps/{name}/secrets/{key} (internal/api/secrets.go).
+// Deliberately not built on EnvEditor or its
 // AppDetail.env map: this is a separate write path to a separate
 // backend endpoint with no corresponding GET, so there is nothing to
 // list or pre-populate here, only a "set a value" form that clears

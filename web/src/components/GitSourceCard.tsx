@@ -49,7 +49,7 @@ import type {
 
 // Git source connect/manage card, PUT/GET/DELETE
 // /api/v1/apps/{name}/git-source (internal/api/git_sources.go): the
-// missing UI half of TASKS.md 1.7's own deferred follow-up. Rendered
+// missing UI half of that endpoint's own deferred follow-up. Rendered
 // from routes/apps/$name/overview.tsx, the same section route
 // DeployStrategyEditor already lives on, mirroring
 // DatabasePublicAccessCard.tsx's Card shape (a toggle-style connect/
