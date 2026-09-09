@@ -131,7 +131,7 @@ jobs:
   build-image-levelrail:
     name: Build and push levelrail image
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     permissions:
       contents: read
       packages: write
@@ -165,11 +165,13 @@ jobs:
           tags: |
             ghcr.io/glincker/levelrail:${{ env.RELEASE_TAG }}
             ghcr.io/glincker/levelrail:latest
+          cache-from: type=gha,scope=levelrail
+          cache-to: type=gha,mode=max,scope=levelrail
 
   build-image-levelrail-agent:
     name: Build and push levelrail-agent image
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     permissions:
       contents: read
       packages: write
@@ -203,3 +205,5 @@ jobs:
           tags: |
             ghcr.io/glincker/levelrail-agent:${{ env.RELEASE_TAG }}
             ghcr.io/glincker/levelrail-agent:latest
+          cache-from: type=gha,scope=levelrail-agent
+          cache-to: type=gha,mode=max,scope=levelrail-agent
