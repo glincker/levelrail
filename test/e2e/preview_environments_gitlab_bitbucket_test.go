@@ -128,75 +128,54 @@ func newLivePreviewFixture(t *testing.T, appName string, prNumber int, adminUser
 	}
 }
 
-func TestPreviewEnvironmentGitLab_Live_OpenSynchronizeAndCloseLifecycle(t *testing.T) {
-	const appName = "levelrail-test-e2e-preview-gitlab"
-	const prNumber = 501
-	f := newLivePreviewFixture(t, appName, prNumber, e2ePreviewGitLabAdminUsername, e2ePreviewGitLabAdminPassword, "preview gitlab open", "preview gitlab updated")
+// previewLifecycleStep is one webhook delivery in a preview's open (or
+// create), update, and close (or fulfilled) lifecycle: only its payload,
+// headers, and how it's described in a failure message differ between
+// GitLab and Bitbucket.
+type previewLifecycleStep struct {
+	name           string
+	payload        []byte
+	headers        map[string]string
+	wantBodyPhrase string
+}
 
-	// Step 1: opening the MR deploys a fresh preview from commitA.
-	status, body := postWebhookPayload(t, f.ts.URL, appName,
-		gitlabPreviewWebhookPayload("open", prNumber, "feature-preview", "main", f.commitA),
-		map[string]string{"X-Gitlab-Event": "Merge Request Hook", "X-Gitlab-Token": f.webhookSecret})
+// fireLifecycleStep delivers step's webhook and asserts the response
+// shape both provider lifecycle tests below require: a 200 and,
+// optionally, a substring in the response body.
+func fireLifecycleStep(t *testing.T, f *livePreviewFixture, appName string, step previewLifecycleStep) string {
+	t.Helper()
+	status, body := postWebhookPayload(t, f.ts.URL, appName, step.payload, step.headers)
 	if status != http.StatusOK {
-		t.Fatalf("gitlab open webhook: status = %d, want %d, body = %s", status, http.StatusOK, body)
+		t.Fatalf("%s webhook: status = %d, want %d, body = %s", step.name, status, http.StatusOK, body)
 	}
-	if !strings.Contains(body, "preview deployed") {
-		t.Errorf("gitlab open webhook body = %q, want it to mention a deployed preview", body)
+	if step.wantBodyPhrase != "" && !strings.Contains(body, step.wantBodyPhrase) {
+		t.Errorf("%s webhook body = %q, want it to mention %q", step.name, body, step.wantBodyPhrase)
 	}
+	return body
+}
 
-	reconcileAndAssertPreviewContent(f.ctx, t, f.runtime, f.previewCtrl, f.previewName, f.tagA, "preview gitlab open")
-
+// getPreviewAndAssertHeadSHA loads appName's preview_environments row
+// for prNumber and asserts its HeadSHA, the check both tests repeat
+// after their open/create and update steps.
+func getPreviewAndAssertHeadSHA(t *testing.T, f *livePreviewFixture, appName string, prNumber int, when, wantSHA string) *store.PreviewEnvironment {
+	t.Helper()
 	preview, err := f.svcStore.GetPreviewEnvironmentByAppAndPR(f.ctx, appName, prNumber)
 	if err != nil {
-		t.Fatalf("GetPreviewEnvironmentByAppAndPR() after open error = %v", err)
+		t.Fatalf("GetPreviewEnvironmentByAppAndPR() after %s error = %v", when, err)
 	}
-	if preview.Status != store.PreviewStatusActive {
-		t.Errorf("preview Status = %q, want %q", preview.Status, store.PreviewStatusActive)
+	if preview.HeadSHA != wantSHA {
+		t.Errorf("preview HeadSHA after %s = %q, want %q", when, preview.HeadSHA, wantSHA)
 	}
-	if preview.HeadSHA != f.commitA {
-		t.Errorf("preview HeadSHA = %q, want %q", preview.HeadSHA, f.commitA)
-	}
-	if preview.PreviewAppID != f.previewName {
-		t.Errorf("preview PreviewAppID = %q, want %q", preview.PreviewAppID, f.previewName)
-	}
+	return preview
+}
 
-	// Step 2: a new commit on the MR (GitLab's "update" action, this
-	// package's synchronize equivalent) redeploys the same preview app
-	// in place, replacing commitA's container with commitB's.
-	status, body = postWebhookPayload(t, f.ts.URL, appName,
-		gitlabPreviewWebhookPayload("update", prNumber, "feature-preview", "main", f.commitB),
-		map[string]string{"X-Gitlab-Event": "Merge Request Hook", "X-Gitlab-Token": f.webhookSecret})
-	if status != http.StatusOK {
-		t.Fatalf("gitlab update webhook: status = %d, want %d, body = %s", status, http.StatusOK, body)
-	}
-
-	reconcileAndAssertPreviewContent(f.ctx, t, f.runtime, f.previewCtrl, f.previewName, f.tagB, "preview gitlab updated")
-	assertContainerAbsent(f.ctx, t, f.runtime, application.ContainerName(f.previewName, f.tagA, ""), "gitlab preview commitA")
-
-	preview, err = f.svcStore.GetPreviewEnvironmentByAppAndPR(f.ctx, appName, prNumber)
-	if err != nil {
-		t.Fatalf("GetPreviewEnvironmentByAppAndPR() after update error = %v", err)
-	}
-	if preview.HeadSHA != f.commitB {
-		t.Errorf("preview HeadSHA after update = %q, want %q", preview.HeadSHA, f.commitB)
-	}
-
-	// Step 3: closing the MR tears the preview down: its desired state
-	// and preview_environments row are both deleted. Stopping the
-	// now-orphaned container itself is a documented pre-existing gap
-	// (see teardownPreviewApp's own doc comment in
-	// internal/api/preview_environments.go), so this deliberately does
-	// not assert the container is gone.
-	status, body = postWebhookPayload(t, f.ts.URL, appName,
-		gitlabPreviewWebhookPayload("close", prNumber, "feature-preview", "main", f.commitB),
-		map[string]string{"X-Gitlab-Event": "Merge Request Hook", "X-Gitlab-Token": f.webhookSecret})
-	if status != http.StatusOK {
-		t.Fatalf("gitlab close webhook: status = %d, want %d, body = %s", status, http.StatusOK, body)
-	}
-	if !strings.Contains(body, "torn down") {
-		t.Errorf("gitlab close webhook body = %q, want it to mention the preview was torn down", body)
-	}
-
+// assertPreviewTornDown asserts the close/fulfilled step's own
+// contract: the preview_environments row and the preview app's desired
+// state are both gone. Neither test asserts the running container is
+// stopped too; see the doc comment at each test's own close/fulfilled
+// step for why.
+func assertPreviewTornDown(t *testing.T, f *livePreviewFixture, appName string, prNumber int) {
+	t.Helper()
 	if _, err := f.svcStore.GetPreviewEnvironmentByAppAndPR(f.ctx, appName, prNumber); !errors.Is(err, store.ErrPreviewEnvironmentNotFound) {
 		t.Fatalf("GetPreviewEnvironmentByAppAndPR() after teardown error = %v, want ErrPreviewEnvironmentNotFound", err)
 	}
@@ -205,81 +184,101 @@ func TestPreviewEnvironmentGitLab_Live_OpenSynchronizeAndCloseLifecycle(t *testi
 	}
 }
 
+func TestPreviewEnvironmentGitLab_Live_OpenSynchronizeAndCloseLifecycle(t *testing.T) {
+	const appName = "levelrail-test-e2e-preview-gitlab"
+	const prNumber = 501
+	f := newLivePreviewFixture(t, appName, prNumber, e2ePreviewGitLabAdminUsername, e2ePreviewGitLabAdminPassword, "preview gitlab open", "preview gitlab updated")
+	gitlabHeaders := map[string]string{"X-Gitlab-Event": "Merge Request Hook", "X-Gitlab-Token": f.webhookSecret}
+
+	// Step 1: opening the MR deploys a fresh preview from commitA.
+	fireLifecycleStep(t, f, appName, previewLifecycleStep{
+		name:           "gitlab open",
+		payload:        gitlabPreviewWebhookPayload("open", prNumber, "feature-preview", "main", f.commitA),
+		headers:        gitlabHeaders,
+		wantBodyPhrase: "preview deployed",
+	})
+	reconcileAndAssertPreviewContent(f.ctx, t, f.runtime, f.previewCtrl, f.previewName, f.tagA, "preview gitlab open")
+	preview := getPreviewAndAssertHeadSHA(t, f, appName, prNumber, "open", f.commitA)
+	if preview.Status != store.PreviewStatusActive {
+		t.Errorf("preview Status = %q, want %q", preview.Status, store.PreviewStatusActive)
+	}
+	if preview.PreviewAppID != f.previewName {
+		t.Errorf("preview PreviewAppID = %q, want %q", preview.PreviewAppID, f.previewName)
+	}
+
+	// Step 2: a new commit on the MR (GitLab's "update" action, this
+	// package's synchronize equivalent) redeploys the same preview app
+	// in place, replacing commitA's container with commitB's.
+	fireLifecycleStep(t, f, appName, previewLifecycleStep{
+		name:    "gitlab update",
+		payload: gitlabPreviewWebhookPayload("update", prNumber, "feature-preview", "main", f.commitB),
+		headers: gitlabHeaders,
+	})
+	reconcileAndAssertPreviewContent(f.ctx, t, f.runtime, f.previewCtrl, f.previewName, f.tagB, "preview gitlab updated")
+	assertContainerAbsent(f.ctx, t, f.runtime, application.ContainerName(f.previewName, f.tagA, ""), "gitlab preview commitA")
+	getPreviewAndAssertHeadSHA(t, f, appName, prNumber, "update", f.commitB)
+
+	// Step 3: closing the MR tears the preview down: its desired state
+	// and preview_environments row are both deleted. Stopping the
+	// now-orphaned container itself is a documented pre-existing gap
+	// (see teardownPreviewApp's own doc comment in
+	// internal/api/preview_environments.go), so this deliberately does
+	// not assert the container is gone.
+	fireLifecycleStep(t, f, appName, previewLifecycleStep{
+		name:           "gitlab close",
+		payload:        gitlabPreviewWebhookPayload("close", prNumber, "feature-preview", "main", f.commitB),
+		headers:        gitlabHeaders,
+		wantBodyPhrase: "torn down",
+	})
+	assertPreviewTornDown(t, f, appName, prNumber)
+}
+
 func TestPreviewEnvironmentBitbucket_Live_CreateUpdateAndTeardownLifecycle(t *testing.T) {
 	const appName = "levelrail-test-e2e-preview-bitbucket"
 	const prNumber = 777
 	f := newLivePreviewFixture(t, appName, prNumber, e2ePreviewBitbucketAdminUsername, e2ePreviewBitbucketAdminPassword, "preview bitbucket created", "preview bitbucket updated")
+	bitbucketHeaders := func(eventKey string, payload []byte) map[string]string {
+		return map[string]string{"X-Event-Key": eventKey, "X-Hub-Signature": "sha256=" + signHMAC(f.webhookSecret, payload)}
+	}
 
 	// Step 1: pullrequest:created deploys a fresh preview from commitA.
-	payload := bitbucketPreviewWebhookPayload(prNumber, "feature-preview", f.commitA, "main")
-	status, body := postWebhookPayload(t, f.ts.URL, appName, payload, map[string]string{
-		"X-Event-Key":     "pullrequest:created",
-		"X-Hub-Signature": "sha256=" + signHMAC(f.webhookSecret, payload),
+	createdPayload := bitbucketPreviewWebhookPayload(prNumber, "feature-preview", f.commitA, "main")
+	fireLifecycleStep(t, f, appName, previewLifecycleStep{
+		name:           "bitbucket created",
+		payload:        createdPayload,
+		headers:        bitbucketHeaders("pullrequest:created", createdPayload),
+		wantBodyPhrase: "preview deployed",
 	})
-	if status != http.StatusOK {
-		t.Fatalf("bitbucket created webhook: status = %d, want %d, body = %s", status, http.StatusOK, body)
-	}
-	if !strings.Contains(body, "preview deployed") {
-		t.Errorf("bitbucket created webhook body = %q, want it to mention a deployed preview", body)
-	}
-
 	reconcileAndAssertPreviewContent(f.ctx, t, f.runtime, f.previewCtrl, f.previewName, f.tagA, "preview bitbucket created")
-
-	preview, err := f.svcStore.GetPreviewEnvironmentByAppAndPR(f.ctx, appName, prNumber)
-	if err != nil {
-		t.Fatalf("GetPreviewEnvironmentByAppAndPR() after create error = %v", err)
-	}
+	preview := getPreviewAndAssertHeadSHA(t, f, appName, prNumber, "create", f.commitA)
 	if preview.Status != store.PreviewStatusActive {
 		t.Errorf("preview Status = %q, want %q", preview.Status, store.PreviewStatusActive)
-	}
-	if preview.HeadSHA != f.commitA {
-		t.Errorf("preview HeadSHA = %q, want %q", preview.HeadSHA, f.commitA)
 	}
 
 	// Step 2: pullrequest:updated (fired on new commits, this package's
 	// synchronize equivalent) redeploys the same preview app from commitB.
-	payload = bitbucketPreviewWebhookPayload(prNumber, "feature-preview", f.commitB, "main")
-	status, body = postWebhookPayload(t, f.ts.URL, appName, payload, map[string]string{
-		"X-Event-Key":     "pullrequest:updated",
-		"X-Hub-Signature": "sha256=" + signHMAC(f.webhookSecret, payload),
+	updatedPayload := bitbucketPreviewWebhookPayload(prNumber, "feature-preview", f.commitB, "main")
+	fireLifecycleStep(t, f, appName, previewLifecycleStep{
+		name:    "bitbucket updated",
+		payload: updatedPayload,
+		headers: bitbucketHeaders("pullrequest:updated", updatedPayload),
 	})
-	if status != http.StatusOK {
-		t.Fatalf("bitbucket updated webhook: status = %d, want %d, body = %s", status, http.StatusOK, body)
-	}
-
 	reconcileAndAssertPreviewContent(f.ctx, t, f.runtime, f.previewCtrl, f.previewName, f.tagB, "preview bitbucket updated")
 	assertContainerAbsent(f.ctx, t, f.runtime, application.ContainerName(f.previewName, f.tagA, ""), "bitbucket preview commitA")
-
-	preview, err = f.svcStore.GetPreviewEnvironmentByAppAndPR(f.ctx, appName, prNumber)
-	if err != nil {
-		t.Fatalf("GetPreviewEnvironmentByAppAndPR() after update error = %v", err)
-	}
-	if preview.HeadSHA != f.commitB {
-		t.Errorf("preview HeadSHA after update = %q, want %q", preview.HeadSHA, f.commitB)
-	}
+	getPreviewAndAssertHeadSHA(t, f, appName, prNumber, "update", f.commitB)
 
 	// Step 3: pullrequest:fulfilled (merged) tears the preview down, the
 	// same desired-state/preview-record deletion GitLab's close covers
 	// above; see that test's own comment for why the container itself is
 	// deliberately not asserted absent here.
-	payload = bitbucketPreviewWebhookPayload(prNumber, "feature-preview", f.commitB, "main")
-	status, body = postWebhookPayload(t, f.ts.URL, appName, payload, map[string]string{
-		"X-Event-Key":     "pullrequest:fulfilled",
-		"X-Hub-Signature": "sha256=" + signHMAC(f.webhookSecret, payload),
+	fulfilledPayload := bitbucketPreviewWebhookPayload(prNumber, "feature-preview", f.commitB, "main")
+	fireLifecycleStep(t, f, appName, previewLifecycleStep{
+		name:           "bitbucket fulfilled",
+		payload:        fulfilledPayload,
+		headers:        bitbucketHeaders("pullrequest:fulfilled", fulfilledPayload),
+		wantBodyPhrase: "torn down",
 	})
-	if status != http.StatusOK {
-		t.Fatalf("bitbucket fulfilled webhook: status = %d, want %d, body = %s", status, http.StatusOK, body)
-	}
-	if !strings.Contains(body, "torn down") {
-		t.Errorf("bitbucket fulfilled webhook body = %q, want it to mention the preview was torn down", body)
-	}
-
-	if _, err := f.svcStore.GetPreviewEnvironmentByAppAndPR(f.ctx, appName, prNumber); !errors.Is(err, store.ErrPreviewEnvironmentNotFound) {
-		t.Fatalf("GetPreviewEnvironmentByAppAndPR() after teardown error = %v, want ErrPreviewEnvironmentNotFound", err)
-	}
-	if _, err := f.svcStore.GetDesiredService(f.ctx, f.previewName); !errors.Is(err, store.ErrServiceNotFound) {
-		t.Fatalf("GetDesiredService(%q) after teardown error = %v, want ErrServiceNotFound", f.previewName, err)
-	}
+	assertPreviewTornDown(t, f, appName, prNumber)
 }
 
 // newPreviewE2ERouter builds a real *api.Router wired with a real
