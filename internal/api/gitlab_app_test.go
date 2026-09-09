@@ -239,7 +239,7 @@ func TestHandleDisconnectGitLabApp_ClearsSecrets(t *testing.T) {
 func TestGitLabAppRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	assertRoutesRequireAuth(t, rt, []routeCase{
+	assertProviderRoutesRequireAuth(t, rt, []providerRouteCase{
 		{method: http.MethodGet, path: "/api/v1/gitlab-app"},
 		{method: http.MethodPut, path: "/api/v1/gitlab-app"},
 		{method: http.MethodDelete, path: "/api/v1/gitlab-app"},
@@ -252,7 +252,7 @@ func TestGitLabAppRoutes_PlainWriteSensitiveTokenForbidden(t *testing.T) {
 	rt, db := newTestRouter(t)
 
 	const plaintext = "write-sensitive-token" //nolint:gosec // fake fixture, not a real credential
-	assertRoutesForbiddenForAbilities(t, rt, db, "tok_ws2", plaintext, []string{AbilityWriteSensitive}, []routeCase{
+	assertProviderRoutesForbiddenForAbilities(t, rt, db, "tok_ws2", plaintext, []string{AbilityWriteSensitive}, []providerRouteCase{
 		{method: http.MethodGet, path: "/api/v1/gitlab-app"},
 		{method: http.MethodPut, path: "/api/v1/gitlab-app"},
 		{method: http.MethodDelete, path: "/api/v1/gitlab-app"},

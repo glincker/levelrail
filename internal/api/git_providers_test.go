@@ -43,7 +43,7 @@ func TestHandleListGitProviders_PlainReadTokenForbidden(t *testing.T) {
 	rt, db := newTestRouter(t)
 
 	const plaintext = "read-only-token-providers" //nolint:gosec // fake fixture, not a real credential
-	assertRoutesForbiddenForAbilities(t, rt, db, "tok_read_providers", plaintext, []string{AbilityRead}, []routeCase{
+	assertProviderRoutesForbiddenForAbilities(t, rt, db, "tok_read_providers", plaintext, []string{AbilityRead}, []providerRouteCase{
 		{method: http.MethodGet, path: "/api/v1/git-providers"},
 	})
 }

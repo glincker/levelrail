@@ -162,7 +162,7 @@ func TestGitHubAppUseAsSourceRoute_PlainWriteTokenForbidden(t *testing.T) {
 	rt, db := newTestRouterWithGitHubApp(t, newFakeGitHubAppSecrets(), &fakeGitHubAppClient{})
 
 	const plaintext = "write-only-token-github" //nolint:gosec // fake fixture, not a real credential
-	assertRoutesForbiddenForAbilities(t, rt, db, "tok_write_gh", plaintext, []string{AbilityWrite}, []routeCase{
+	assertProviderRoutesForbiddenForAbilities(t, rt, db, "tok_write_gh", plaintext, []string{AbilityWrite}, []providerRouteCase{
 		{method: http.MethodPost, path: "/api/v1/github-app/repos/acme/web/use-as-source", body: `{"app_name":"web"}`},
 	})
 }

@@ -423,7 +423,7 @@ func TestGitHubAppRoutes_PlainTokenForbidden(t *testing.T) {
 	rt, db := newTestRouter(t)
 
 	const plaintext = "write-sensitive-token" //nolint:gosec // fake fixture, not a real credential
-	assertRoutesForbiddenForAbilities(t, rt, db, "tok_ws", plaintext, []string{AbilityWriteSensitive}, []routeCase{
+	assertProviderRoutesForbiddenForAbilities(t, rt, db, "tok_ws", plaintext, []string{AbilityWriteSensitive}, []providerRouteCase{
 		{method: http.MethodGet, path: "/api/v1/github-app"},
 		{method: http.MethodDelete, path: "/api/v1/github-app"},
 		{method: http.MethodGet, path: "/api/v1/github-app/register/start"},
@@ -439,7 +439,7 @@ func TestGitHubAppRepoRoutes_PlainReadTokenForbidden(t *testing.T) {
 	rt, db := newTestRouter(t)
 
 	const plaintext = "read-only-token" //nolint:gosec // fake fixture, not a real credential
-	assertRoutesForbiddenForAbilities(t, rt, db, "tok_read", plaintext, []string{AbilityRead}, []routeCase{
+	assertProviderRoutesForbiddenForAbilities(t, rt, db, "tok_read", plaintext, []string{AbilityRead}, []providerRouteCase{
 		{method: http.MethodGet, path: "/api/v1/github-app/repos"},
 		{method: http.MethodGet, path: "/api/v1/github-app/repos/acme/widgets/branches"},
 	})
@@ -448,7 +448,7 @@ func TestGitHubAppRepoRoutes_PlainReadTokenForbidden(t *testing.T) {
 func TestGitHubAppRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	assertRoutesRequireAuth(t, rt, []routeCase{
+	assertProviderRoutesRequireAuth(t, rt, []providerRouteCase{
 		{method: http.MethodGet, path: "/api/v1/github-app"},
 		{method: http.MethodDelete, path: "/api/v1/github-app"},
 		{method: http.MethodGet, path: "/api/v1/github-app/register/start"},

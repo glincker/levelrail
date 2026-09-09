@@ -135,7 +135,7 @@ func TestGitLabAppProjectRoutes_PlainReadTokenForbidden(t *testing.T) {
 	rt, db := newTestRouterWithGitLabApp(t, newFakeGitLabAppSecrets(), &fakeGitLabAppClient{})
 
 	const plaintext = "read-only-token-gitlab" //nolint:gosec // fake fixture, not a real credential
-	assertRoutesForbiddenForAbilities(t, rt, db, "tok_read_gl", plaintext, []string{AbilityRead}, []routeCase{
+	assertProviderRoutesForbiddenForAbilities(t, rt, db, "tok_read_gl", plaintext, []string{AbilityRead}, []providerRouteCase{
 		{method: http.MethodGet, path: "/api/v1/gitlab-app/projects"},
 	})
 }

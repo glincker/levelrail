@@ -222,7 +222,7 @@ func sessionCookieForTest(t *testing.T, rt *Router, userID string) *http.Cookie 
 // GitHub's, GitLab's, and Bitbucket's own app-connection and
 // use-as-source route tests. body is optional: when non-empty the
 // request carries it with Content-Type: application/json.
-type routeCase struct {
+type providerRouteCase struct {
 	method string
 	path   string
 	body   string
@@ -231,7 +231,7 @@ type routeCase struct {
 // assertRoutesRequireAuth proves every route in routes rejects a
 // completely unauthenticated request, the shared shape each git
 // provider's own RequireAuth test establishes.
-func assertRoutesRequireAuth(t *testing.T, rt *Router, routes []routeCase) {
+func assertProviderRoutesRequireAuth(t *testing.T, rt *Router, routes []providerRouteCase) {
 	t.Helper()
 	for _, r := range routes {
 		var body io.Reader
@@ -252,7 +252,7 @@ func assertRoutesRequireAuth(t *testing.T, rt *Router, routes []routeCase) {
 // "declared ability doesn't reach this route" shape used across GitHub's,
 // GitLab's, and Bitbucket's own app-connection and use-as-source
 // endpoints.
-func assertRoutesForbiddenForAbilities(t *testing.T, rt *Router, db *store.DB, tokenID, plaintext string, abilities []string, routes []routeCase) {
+func assertProviderRoutesForbiddenForAbilities(t *testing.T, rt *Router, db *store.DB, tokenID, plaintext string, abilities []string, routes []providerRouteCase) {
 	t.Helper()
 	if err := db.SaveAPIToken(context.Background(), store.APIToken{
 		ID: tokenID, Name: "test-token", TokenHash: hashToken(plaintext), Abilities: abilities,

@@ -92,7 +92,7 @@ func TestBitbucketAppRepoRoutes_PlainReadTokenForbidden(t *testing.T) {
 	rt, db := newTestRouterWithBitbucketApp(t, newFakeBitbucketAppSecrets(), &fakeBitbucketAppClient{})
 
 	const plaintext = "read-only-token-bitbucket" //nolint:gosec // fake fixture, not a real credential
-	assertRoutesForbiddenForAbilities(t, rt, db, "tok_read_bb", plaintext, []string{AbilityRead}, []routeCase{
+	assertProviderRoutesForbiddenForAbilities(t, rt, db, "tok_read_bb", plaintext, []string{AbilityRead}, []providerRouteCase{
 		{method: http.MethodGet, path: "/api/v1/bitbucket-app/repos"},
 	})
 }

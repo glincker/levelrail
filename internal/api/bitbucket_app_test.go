@@ -234,7 +234,7 @@ func TestHandleDisconnectBitbucketApp_ClearsSecrets(t *testing.T) {
 func TestBitbucketAppRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	assertRoutesRequireAuth(t, rt, []routeCase{
+	assertProviderRoutesRequireAuth(t, rt, []providerRouteCase{
 		{method: http.MethodGet, path: "/api/v1/bitbucket-app"},
 		{method: http.MethodPut, path: "/api/v1/bitbucket-app"},
 		{method: http.MethodDelete, path: "/api/v1/bitbucket-app"},
@@ -247,7 +247,7 @@ func TestBitbucketAppRoutes_PlainWriteSensitiveTokenForbidden(t *testing.T) {
 	rt, db := newTestRouter(t)
 
 	const plaintext = "bb-write-sensitive-token" //nolint:gosec // fake fixture, not a real credential
-	assertRoutesForbiddenForAbilities(t, rt, db, "tok_bbws", plaintext, []string{AbilityWriteSensitive}, []routeCase{
+	assertProviderRoutesForbiddenForAbilities(t, rt, db, "tok_bbws", plaintext, []string{AbilityWriteSensitive}, []providerRouteCase{
 		{method: http.MethodGet, path: "/api/v1/bitbucket-app"},
 		{method: http.MethodPut, path: "/api/v1/bitbucket-app"},
 		{method: http.MethodDelete, path: "/api/v1/bitbucket-app"},
