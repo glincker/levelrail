@@ -29,6 +29,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/version"
 )
 
 const (
@@ -57,6 +58,8 @@ func main() {
 func run(logger *slog.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	logger.Info("starting", slog.String("version", version.Version))
 
 	addr := os.Getenv("APP_CONTROL_PLANE_ADDR")
 	if addr == "" {
