@@ -5,8 +5,10 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"time"
 )
 
@@ -51,6 +53,107 @@ type DeployAttempt struct {
 	// GetConditions' Message field already crosses for reconcile
 	// failures.
 	Error string
+
+	// Snapshot is this attempt's service configuration at trigger time
+	// (migrations/0086), built by NewDeployAttemptSnapshot from the
+	// DesiredService the trigger handler already has in hand. Zero value
+	// for every attempt recorded before that migration.
+	Snapshot DeployAttemptSnapshot
+}
+
+// DeployAttemptEnvKind classifies one env var key captured in a
+// DeployAttemptSnapshot: whether its value is safe to snapshot at all.
+type DeployAttemptEnvKind string
+
+const (
+	// DeployAttemptEnvKindLiteral is an ordinary env var
+	// (DesiredService.Env): its Value is snapshotted and diffable.
+	DeployAttemptEnvKindLiteral DeployAttemptEnvKind = "literal"
+	// DeployAttemptEnvKindSecret is a { secret: true } env var
+	// (DesiredService.SecretEnv): only its key is ever snapshotted, never
+	// a value or anything derived from one.
+	DeployAttemptEnvKindSecret DeployAttemptEnvKind = "secret"
+	// DeployAttemptEnvKindDatabase is a { from: ... } env var
+	// (DesiredService.DatabaseEnv): resolved from a managed database's
+	// live connection details at container-create time, so there is no
+	// stable value to snapshot even though it isn't secret-backed.
+	DeployAttemptEnvKindDatabase DeployAttemptEnvKind = "database"
+)
+
+// DeployAttemptEnvKey is one env var key captured in a
+// DeployAttemptSnapshot. Value is only ever populated for Kind
+// DeployAttemptEnvKindLiteral: a secret- or database-backed key never
+// carries a value here, matching how DesiredService.SecretEnv itself
+// holds names only (see that field's own doc comment).
+type DeployAttemptEnvKey struct {
+	Key   string               `json:"key"`
+	Kind  DeployAttemptEnvKind `json:"kind"`
+	Value string               `json:"value,omitempty"`
+}
+
+// DeployAttemptSnapshot is the subset of DesiredService captured per
+// deploy attempt (migrations/0086), closing the gap
+// docs/roadmap.md's deploy-comparison entry describes: before this,
+// only Image/CommitSHA/Source/Status/timestamps were ever recorded per
+// attempt.
+type DeployAttemptSnapshot struct {
+	Env       []DeployAttemptEnvKey `json:"env,omitempty"`
+	Port      int                   `json:"port,omitempty"`
+	HostPort  *int                  `json:"host_port,omitempty"`
+	Domains   []string              `json:"domains,omitempty"`
+	Resources *ServiceResources     `json:"resources,omitempty"`
+}
+
+// NewDeployAttemptSnapshot builds svc's config snapshot at the moment a
+// deploy attempt is triggered. Env keys are sorted for a stable JSON
+// encoding, so two snapshots of an unchanged config marshal identically.
+func NewDeployAttemptSnapshot(svc DesiredService) DeployAttemptSnapshot {
+	envKeys := make([]string, 0, len(svc.Env)+len(svc.SecretEnv)+len(svc.DatabaseEnv))
+	for k := range svc.Env {
+		envKeys = append(envKeys, k)
+	}
+	for k := range svc.DatabaseEnv {
+		envKeys = append(envKeys, k)
+	}
+	envKeys = append(envKeys, svc.SecretEnv...)
+	sort.Strings(envKeys)
+
+	secretSet := make(map[string]bool, len(svc.SecretEnv))
+	for _, k := range svc.SecretEnv {
+		secretSet[k] = true
+	}
+
+	var env []DeployAttemptEnvKey
+	seen := make(map[string]bool, len(envKeys))
+	for _, k := range envKeys {
+		if seen[k] {
+			continue
+		}
+		seen[k] = true
+		_, fromDatabase := svc.DatabaseEnv[k]
+		switch {
+		case secretSet[k]:
+			env = append(env, DeployAttemptEnvKey{Key: k, Kind: DeployAttemptEnvKindSecret})
+		case fromDatabase:
+			env = append(env, DeployAttemptEnvKey{Key: k, Kind: DeployAttemptEnvKindDatabase})
+		default:
+			env = append(env, DeployAttemptEnvKey{Key: k, Kind: DeployAttemptEnvKindLiteral, Value: svc.Env[k]})
+		}
+	}
+
+	var hostPort *int
+	if svc.HostPort != nil {
+		p := *svc.HostPort
+		hostPort = &p
+	}
+
+	return DeployAttemptSnapshot{
+		Env:       env,
+		Port:      svc.Port,
+		HostPort:  hostPort,
+		Domains:   svc.Domains,
+		Resources: svc.Resources,
+	}
 }
 
 // Deploy attempt lifecycle. There is no "pending" state distinct from
@@ -115,10 +218,14 @@ func NewDeployAttemptID() (string, error) {
 // caller bug, not a legitimate retry, and is left to fail on the
 // primary key constraint rather than silently overwriting history.
 func (db *DB) SaveDeployAttempt(ctx context.Context, a DeployAttempt) error {
-	_, err := db.ExecContext(ctx, `
-		INSERT INTO deploy_attempts (id, service_name, image, commit_sha, source, status, started_at, finished_at, error)
-		VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL)
-	`, a.ID, a.ServiceName, a.Image, a.CommitSHA, a.Source, a.Status, a.StartedAt.UTC().Format(time.RFC3339Nano))
+	snapshotJSON, err := json.Marshal(a.Snapshot)
+	if err != nil {
+		return fmt.Errorf("store: save deploy attempt %q: marshal snapshot: %w", a.ID, err)
+	}
+	_, err = db.ExecContext(ctx, `
+		INSERT INTO deploy_attempts (id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot)
+		VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?)
+	`, a.ID, a.ServiceName, a.Image, a.CommitSHA, a.Source, a.Status, a.StartedAt.UTC().Format(time.RFC3339Nano), string(snapshotJSON))
 	if err != nil {
 		return fmt.Errorf("store: save deploy attempt %q: %w", a.ID, err)
 	}
@@ -188,7 +295,7 @@ func (db *DB) FailOrphanedDeployAttempts(ctx context.Context, finishedAt time.Ti
 // (serve a full persisted replay), see that handler's own doc comment.
 func (db *DB) GetDeployAttempt(ctx context.Context, id string) (*DeployAttempt, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT id, service_name, image, commit_sha, source, status, started_at, finished_at, error
+		SELECT id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot
 		FROM deploy_attempts WHERE id = ?
 	`, id)
 	a, err := scanDeployAttempt(row.Scan)
@@ -211,7 +318,7 @@ func (db *DB) GetDeployAttempt(ctx context.Context, id string) (*DeployAttempt, 
 // here.
 func (db *DB) ListDeployAttempts(ctx context.Context, serviceName string) ([]DeployAttempt, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, service_name, image, commit_sha, source, status, started_at, finished_at, error
+		SELECT id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot
 		FROM deploy_attempts
 		WHERE service_name = ?
 		ORDER BY started_at DESC
@@ -240,9 +347,15 @@ func scanDeployAttempt(scan func(dest ...any) error) (*DeployAttempt, error) {
 		a                     DeployAttempt
 		startedAt             string
 		finishedAt, errString sql.NullString
+		snapshotJSON          string
 	)
-	if err := scan(&a.ID, &a.ServiceName, &a.Image, &a.CommitSHA, &a.Source, &a.Status, &startedAt, &finishedAt, &errString); err != nil {
+	if err := scan(&a.ID, &a.ServiceName, &a.Image, &a.CommitSHA, &a.Source, &a.Status, &startedAt, &finishedAt, &errString, &snapshotJSON); err != nil {
 		return nil, err
+	}
+	if snapshotJSON != "" {
+		if err := json.Unmarshal([]byte(snapshotJSON), &a.Snapshot); err != nil {
+			return nil, fmt.Errorf("unmarshal config_snapshot: %w", err)
+		}
 	}
 
 	started, err := time.Parse(time.RFC3339Nano, startedAt)

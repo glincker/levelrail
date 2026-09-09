@@ -387,7 +387,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// pendingImageTag): its own POST .../builds call records the real
 	// history entry once a build actually succeeds.
 	if !strings.HasSuffix(req.Image, ":pending") {
-		rt.recordPlainDeployAttempt(r.Context(), req.Name, req.Image)
+		rt.recordPlainDeployAttempt(r.Context(), req.toDesiredService(), req.Image)
 	}
 
 	// A new app is never dirty regardless of what the client sent:
@@ -472,7 +472,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	// that happens to change Image must not be a blind spot in deploy
 	// history just because it went through this endpoint instead.
 	if imageChanged {
-		rt.recordPlainDeployAttempt(r.Context(), name, req.Image)
+		rt.recordPlainDeployAttempt(r.Context(), desired, req.Image)
 	}
 	// SaveDesiredService never touches node_id or project_id (their own
 	// doc comments explain why), so the response reflects existing's
