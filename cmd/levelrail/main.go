@@ -1758,6 +1758,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		),
 		api.WithResourceRecommendationLookback(resourceRecommendationLookback(logger)),
 		api.WithPreviewTTL(previewTTL(logger)),
+		api.WithInviteTTL(inviteTTL(logger)),
 		api.WithAuditLogRetention(auditLogRetention(logger)),
 		api.WithPublicHost(publicHost()),
 		api.WithDeployLogQuerier(telemetryDB),
@@ -2194,6 +2195,25 @@ func previewTTL(logger *slog.Logger) time.Duration {
 	d, err := time.ParseDuration(raw)
 	if err != nil {
 		logger.Warn("invalid APP_PREVIEW_TTL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return d
+}
+
+// inviteTTL reads APP_INVITE_TTL as a Go duration string, the same
+// env-var-with-default shape previewTTL above already uses for
+// api.WithInviteTTL. Returns 0 (api's own signal to fall back to its
+// internal default, api.defaultInviteTTL, 7 days) when unset or
+// unparseable, logging a warning in the latter case so a typo'd env var
+// is visible rather than silently ignored.
+func inviteTTL(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_INVITE_TTL")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_INVITE_TTL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return 0
 	}
 	return d

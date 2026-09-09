@@ -136,6 +136,10 @@ type (
 	updateUserAbilitiesRequest = apiclient.UpdateUserAbilitiesRequest
 	roleResource               = apiclient.RoleResource
 
+	inviteResource       = apiclient.InviteResource
+	createInviteRequest  = apiclient.CreateInviteRequest
+	createInviteResponse = apiclient.CreateInviteResponse
+
 	policyResource           = apiclient.PolicyResource
 	policyAttachmentResource = apiclient.PolicyAttachmentResource
 	policyRequest            = apiclient.PolicyRequest

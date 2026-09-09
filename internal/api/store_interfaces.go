@@ -285,6 +285,18 @@ type PasswordResetTokenStore interface {
 	ClaimPasswordResetToken(ctx context.Context, id string) error
 }
 
+// InviteStore is the store surface the team-invite flow needs: always
+// set, part of the core Store interface, same shape as
+// PasswordResetTokenStore above.
+type InviteStore interface {
+	SaveInvite(ctx context.Context, inv store.Invite) error
+	GetInviteByHash(ctx context.Context, hash string) (*store.Invite, error)
+	GetInviteByID(ctx context.Context, id string) (*store.Invite, error)
+	ListPendingInvites(ctx context.Context) ([]store.Invite, error)
+	RevokeInvite(ctx context.Context, id string) error
+	ClaimInvite(ctx context.Context, id string) error
+}
+
 // TokenStore is the store surface the API-token handlers and the
 // ability-aware auth middleware need (TASKS.md "Backend auth
 // foundation").
@@ -368,6 +380,7 @@ type Store interface {
 	RegistryStore
 	CloudflareDNSStore
 	PasswordResetTokenStore
+	InviteStore
 	RecoveryCodeStore
 	AuditStore
 	ScheduledTaskStore
