@@ -9,7 +9,7 @@ import { UserTable } from '../../components/UserTable'
 import { CreateUserDialog } from '../../components/CreateUserDialog'
 import { InviteMemberDialog } from '../../components/InviteMemberDialog'
 import { InvitesTable } from '../../components/InvitesTable'
-import { useAuthUsername } from '../../hooks/useAuthUsername'
+import { useIsRoot } from '../../hooks/useIsRoot'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import type { CreateInviteResponse } from '../../queries/invites'
 
@@ -33,22 +33,18 @@ export const Route = createFileRoute('/settings/users')({
 function UsersSettingsPage() {
   const { data: users } = useSuspenseQuery(userListQueryOptions())
   const { data: invites } = useSuspenseQuery(inviteListQueryOptions())
-  const ownEmail = useAuthUsername()
   // Known accept links for invites created during this page session
   // (InvitesTable's own doc comment explains why this can't just be
   // reloaded from the server: only a token's hash is ever persisted).
   const [inviteLinks, setInviteLinks] = useState<Record<string, string>>({})
   // POST /api/v1/auth/users is AbilityRoot-gated (handleCreateUser's own
   // doc comment): a non-root viewer can still reach this AbilityRead
-  // page, so the trigger only renders once we can see, from this same
-  // already-loaded list, that the signed-in account is root. Same
-  // client-side heuristic UserTable's own "is this my row" check uses,
-  // backed by the same server-side enforcement either way. POST
-  // /api/v1/invites shares that exact gate (handleCreateInvite's own doc
-  // comment), so the invite trigger follows the same isRoot check.
-  const isRoot = users.some(
-    (u) => u.email === ownEmail && u.abilities.includes('root'),
-  )
+  // page, so the trigger only renders once useIsRoot (hooks/useIsRoot.ts)
+  // can see, from this same already-loaded list, that the signed-in
+  // account is root. Backed by the same server-side enforcement either
+  // way. POST /api/v1/invites shares that exact gate (handleCreateInvite's
+  // own doc comment), so the invite trigger follows the same check.
+  const isRoot = useIsRoot()
 
   function handleInviteCreated(invite: CreateInviteResponse) {
     setInviteLinks((prev) => ({ ...prev, [invite.id]: invite.link }))

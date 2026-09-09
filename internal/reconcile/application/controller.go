@@ -1590,6 +1590,9 @@ func toContainerSpec(name string, desired *store.DesiredService) docker.Containe
 	for _, v := range desired.Volumes {
 		spec.Volumes = append(spec.Volumes, docker.VolumeMount{Name: v.Name, ContainerPath: v.ContainerPath})
 	}
+	for _, m := range desired.BindMounts {
+		spec.BindMounts = append(spec.BindMounts, docker.BindMount{HostPath: m.HostPath, ContainerPath: m.ContainerPath, ReadOnly: m.ReadOnly})
+	}
 	return spec
 }
 

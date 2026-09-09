@@ -127,9 +127,15 @@ var Templates = []Template{
 		Slogan:           "A web UI for managing containers, images, volumes, and networks.",
 		Category:         "Infrastructure",
 		DocumentationURL: "https://docs.portainer.io",
-		// Portainer's usual setup bind-mounts the host Docker socket;
-		// this platform's compose subset only supports named volumes
-		// (no bind mounts), so socket access isn't wired up here yet.
+		// Portainer's usual setup bind-mounts the host Docker socket to
+		// manage other containers; bind mounts of ordinary host
+		// directories are now supported in general (internal/compose's
+		// own doc comment on volumes:), but Docker-socket access
+		// specifically stays unsupported by design, since it's a full
+		// container-escape-to-host-root vector via the Docker API, a
+		// categorically different and unreviewed capability that needs
+		// its own explicit design decision later, not bundled into
+		// general bind-mount support.
 		Compose: `services:
   portainer:
     image: portainer/portainer-ce:2.21.0
@@ -510,10 +516,12 @@ var Templates = []Template{
 		Category:         "Media",
 		DocumentationURL: "https://jellyfin.org/docs/",
 		// Jellyfin normally plays back files from a bind-mounted media
-		// library; this platform's compose subset only supports named
-		// volumes, so this template is useful for server setup and
-		// configuration, not an actual populated library, until a
-		// volume can be filled some other way.
+		// library; this template still starts with an empty named
+		// volume, since a template can't know an operator's real host
+		// paths ahead of time, but a real media directory can now be
+		// bind-mounted onto jellyfin_media by redeploying via compose
+		// with an absolute host path in volumes: (root ability
+		// required, internal/compose's own doc comment on volumes:).
 		Compose: `services:
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:10.11.8
@@ -696,9 +704,13 @@ var Templates = []Template{
 		DocumentationURL: "https://filebrowser.org",
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct. Filebrowser normally serves
-		// a bind-mounted host directory; this compose subset only
-		// supports named volumes, so it starts pointed at an empty
-		// volume rather than an existing folder of files.
+		// a bind-mounted host directory; this template still starts
+		// pointed at an empty named volume, since a template can't know
+		// an operator's real host paths ahead of time, but a real
+		// directory can now be bind-mounted onto filebrowser_data by
+		// redeploying via compose with an absolute host path in
+		// volumes: (root ability required, internal/compose's own doc
+		// comment on volumes:).
 		Compose: `services:
   filebrowser:
     image: filebrowser/filebrowser:v2.31.2
@@ -715,7 +727,14 @@ var Templates = []Template{
 		Category:         "Storage",
 		DocumentationURL: "https://docs.syncthing.net",
 		// Tag not verified against a live registry in this environment;
-		// the image repository is correct.
+		// the image repository is correct. Syncthing normally syncs a
+		// bind-mounted host directory; this template still starts
+		// pointed at an empty named volume, since a template can't know
+		// an operator's real host paths ahead of time, but a real
+		// directory can now be bind-mounted onto syncthing_data by
+		// redeploying via compose with an absolute host path in
+		// volumes: (root ability required, internal/compose's own doc
+		// comment on volumes:).
 		Compose: `services:
   syncthing:
     image: lscr.io/linuxserver/syncthing:1.29.4

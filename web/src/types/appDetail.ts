@@ -164,6 +164,12 @@ export interface AppDetail {
   // and AppVolumeBackupsSection for the backup/restore/schedule
   // endpoints each one supports.
   volumes?: AppVolume[]
+  // bind_mounts is volumes' bind-mount counterpart
+  // (internal/api/app_volumes.go's appBindMountResource), response-only
+  // for the identical reason: only ever set via the compose-import path
+  // (POST /apps/{name}/compose, root-ability-gated when the file
+  // carries one), undefined meaning none declared.
+  bind_mounts?: AppBindMount[]
 }
 
 // Matches internal/api/apps.go's appVolumeResource exactly: one of an
@@ -173,6 +179,15 @@ export interface AppDetail {
 export interface AppVolume {
   name: string
   container_path: string
+}
+
+// Matches internal/api/app_volumes.go's appBindMountResource exactly:
+// one of an app's bind-mounted host directories. host_path is a real
+// path on whichever node the service runs on, not a Docker volume name.
+export interface AppBindMount {
+  host_path: string
+  container_path: string
+  read_only?: boolean
 }
 
 // GET /api/v1/apps' own wire shape (internal/api/apps.go's

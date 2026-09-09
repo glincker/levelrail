@@ -13,12 +13,18 @@
 // dropped or translated: see Notices for why neither has a real
 // translation onto how Levelrail runs a service. command: parses and
 // translates into store.DesiredService.Command; entrypoint: does not
-// parse at all.
+// parse at all. volumes: additionally accepts an absolute host path on
+// the left side as a bind mount (ValidateForBuild rejects one; see that
+// method's own doc comment for why), gated at the HTTP layer to
+// AbilityRoot and, even then, against forbiddenBindMountPaths (see
+// validateBindMountHostPath).
 package compose
 
 import (
 	"fmt"
+	"path/filepath"
 	"sort"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -60,10 +66,18 @@ type Service struct {
 	Command Command
 }
 
-// Volume is one short-form "name:/container/path" entry.
+// Volume is one short-form "name:/container/path" entry, either a named
+// Docker volume (Name set, HostPath empty) or a bind mount of a real
+// host directory (HostPath set, Name empty): exactly one of the two is
+// ever set, see Volume.UnmarshalYAML (yaml.go) for how the left side of
+// the entry decides which.
 type Volume struct {
 	Name          string
+	HostPath      string
 	ContainerPath string
+	// ReadOnly mounts read-only inside the container, from an optional
+	// trailing ":ro" on the short-form entry.
+	ReadOnly bool
 }
 
 // Port is one short-form ports: entry. ContainerPort is what
@@ -109,24 +123,29 @@ func Parse(data []byte) (*File, error) {
 // a build: block from, so it rejects one outright. See ValidateForBuild
 // for the git-sourced deploy-spec path, which does have one.
 func (f *File) Validate() error {
-	return f.validate(false)
+	return f.validate(false, true)
 }
 
 // ValidateForBuild is Validate, except a service's build: block is
 // allowed rather than rejected: used only by the git-sourced
 // expand-a-compose-file-into-services path (ExpandBuildService), which
 // has a real checkout to resolve a build context against, unlike the
-// direct-import path Validate itself still guards.
+// direct-import path Validate itself still guards. Bind mounts stay
+// rejected on this path even though Validate now allows them: the
+// expanded result is a spec.Service (toSpecService, expand.go), and
+// spec.Volume has no host-path concept to carry one into, so allowing
+// one through here would either drop it silently or produce a
+// nonsensical empty-named volume downstream.
 func (f *File) ValidateForBuild() error {
-	return f.validate(true)
+	return f.validate(true, false)
 }
 
-func (f *File) validate(allowBuild bool) error {
+func (f *File) validate(allowBuild, allowBindMounts bool) error {
 	if len(f.Services) == 0 {
 		return fmt.Errorf("compose: no services declared")
 	}
 
-	errs := validateComposeServices(f, allowBuild)
+	errs := validateComposeServices(f, allowBuild, allowBindMounts)
 	errs = append(errs, validateComposeDomainRefs(f)...)
 
 	if len(errs) == 0 {
@@ -135,10 +154,50 @@ func (f *File) validate(allowBuild bool) error {
 	return joinErrors(errs)
 }
 
+// forbiddenBindMountPaths are host paths a bind mount may never target,
+// enforced even for an AbilityRoot caller (internal/api's ability gate,
+// not this list, is the primary boundary; this is defense in depth): an
+// exact match or a match of clean+"/" as a prefix. Each one grants
+// something categorically worse than ordinary bind-mount access, host
+// root compromise for most of these. /var/run/docker.sock (and
+// /var/run generally, since a socket can be bind-mounted from anywhere
+// under it) is deliberately excluded from this feature by design, not
+// an oversight: Docker-socket access is a full container-escape-to-
+// host-root vector via the Docker API, a categorically different and
+// unreviewed capability that needs its own explicit design decision
+// later, not bundled into general bind-mount support here.
+var forbiddenBindMountPaths = []string{
+	"/",
+	"/etc",
+	"/root",
+	"/boot",
+	"/sys",
+	"/proc",
+	"/var/lib/docker",
+	"/var/run/docker.sock",
+	"/var/run",
+}
+
+// validateBindMountHostPath rejects a relative path and every path
+// forbiddenBindMountPaths covers; anything else is a real, operator-
+// owned host directory this feature exists to allow.
+func validateBindMountHostPath(hostPath string) error {
+	if !strings.HasPrefix(hostPath, "/") {
+		return fmt.Errorf("bind-mount host path %q must be an absolute path", hostPath)
+	}
+	clean := filepath.Clean(hostPath)
+	for _, forbidden := range forbiddenBindMountPaths {
+		if clean == forbidden || strings.HasPrefix(clean, forbidden+"/") {
+			return fmt.Errorf("bind-mount host path %q is not allowed: %q is a protected system path", hostPath, forbidden)
+		}
+	}
+	return nil
+}
+
 // validateComposeServices checks each service's own build:/image:
 // declaration and volume names, split out of validate purely to keep
 // that function's own cognitive complexity low.
-func validateComposeServices(f *File, allowBuild bool) []error {
+func validateComposeServices(f *File, allowBuild, allowBindMounts bool) []error {
 	var errs []error
 	for _, name := range sortedServiceNames(f) {
 		svc := f.Services[name]
@@ -149,8 +208,18 @@ func validateComposeServices(f *File, allowBuild bool) []error {
 			errs = append(errs, fmt.Errorf("service %q: image is required", name))
 		}
 		for _, v := range svc.Volumes {
+			if v.HostPath != "" {
+				if !allowBindMounts {
+					errs = append(errs, fmt.Errorf("service %q: bind-mount volume %q is not supported here, use a named volume instead", name, v.ContainerPath))
+					continue
+				}
+				if err := validateBindMountHostPath(v.HostPath); err != nil {
+					errs = append(errs, fmt.Errorf("service %q: %w", name, err))
+				}
+				continue
+			}
 			if v.Name == "" {
-				errs = append(errs, fmt.Errorf("service %q: volume mounted at %q must be a named volume (\"name:/path\"), not a bind mount", name, v.ContainerPath))
+				errs = append(errs, fmt.Errorf("service %q: volume mounted at %q must be a named volume (\"name:/path\") or an absolute bind-mount path", name, v.ContainerPath))
 			}
 		}
 	}
