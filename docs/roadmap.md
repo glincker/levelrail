@@ -53,11 +53,12 @@ still open. This page describes what's actually true today.
   shared checkout, each scoped to its own `build.baseDirectory`, linked
   under one `store.App`, and independently reachable over HTTPS through
   one ingress pass.
-- A curated ~15-entry service template catalog (ADR 015: reverses the
+- A curated 81-entry service template catalog (ADR 015: reverses the
   original "not chasing Coolify's 280 templates" non-goal, once Compose
   support existed to build it on), served over the API and browsable
-  from the creation wizard. Every template's Compose body is written
-  fresh for this platform, not copied from another project's dataset.
+  from the creation wizard, with a category-specific icon per card.
+  Every template's Compose body is written fresh for this platform, not
+  copied from another project's dataset.
 - Git webhook receiver with HMAC-SHA256 signature verification, branch
   gating, and SHA-pinned fetch (no `git` CLI shelling).
 - Persisted per-app git source and multi-app GitHub webhook support,

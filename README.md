@@ -57,9 +57,10 @@ what Levelrail doesn't do yet.
   preview environments per pull request with automatic teardown.
 - **IAM and audit.** AWS-IAM-shaped Allow/Deny policies scoped to a
   specific resource, with a full audit log and CSV export.
-- **Alerting across eight channels.** Threshold, crashloop, certificate
-  expiry, and five other rule kinds, delivered to Slack, Discord,
-  email, Telegram, Pushover, PagerDuty, Microsoft Teams, or a webhook.
+- **Alerting across thirteen channels.** Threshold, crashloop, certificate
+  expiry, and five other rule kinds, delivered to Slack, Discord, email,
+  Telegram, Pushover, PagerDuty, Microsoft Teams, Resend, Gotify, Ntfy,
+  Mattermost, Lark, or a webhook.
 - **AI-ready API.** The same HTTP API the dashboard runs on backs an
   MCP server, so AI tools can list apps, read logs, and diagnose a
   crashloop directly.
@@ -70,8 +71,9 @@ Early, active development. Single-node and multi-node both run today:
 agent enrollment, the WireGuard mesh, internal DNS, and node
 placement/cordon/drain are built. Beyond the core deploy path, an
 IAM-style policy engine, audit logging, feature flags, alerting across
-eight rule kinds and eight notification channels, and eight managed
-database engines with backup/restore/verification are also shipped
+eight rule kinds and thirteen notification channels, an admin-created
+team invite flow, and eight managed database engines with
+backup/restore/verification are also shipped
 (see [docs/roadmap.md](docs/roadmap.md) for the full, current list).
 There is no stable release yet and the project is not ready for
 production workloads. APIs, the app spec format, and the on-disk data
