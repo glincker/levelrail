@@ -36,12 +36,13 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 		}
 
 		d := store.DesiredService{
-			Name:    appName + "-" + key,
-			AppID:   appName,
-			Image:   svc.Image,
-			Env:     map[string]string(svc.Environment),
-			Labels:  svc.Labels,
-			Command: svc.Command,
+			Name:       appName + "-" + key,
+			AppID:      appName,
+			Image:      svc.Image,
+			Env:        map[string]string(svc.Environment),
+			Labels:     svc.Labels,
+			Command:    svc.Command,
+			Entrypoint: svc.Entrypoint,
 		}
 		for _, p := range svc.Ports {
 			d.Port = p.ContainerPort

@@ -91,6 +91,37 @@ services:
 	}
 }
 
+func TestToDesiredServices_EntrypointPropagates(t *testing.T) {
+	f, err := Parse([]byte(`
+services:
+  postgres:
+    image: postgres:16
+    entrypoint: ["docker-entrypoint.sh", "-c", "config_file=/etc/postgresql.conf"]
+  redis:
+    image: redis:7
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	got, _, err := ToDesiredServices("myapp", f)
+	if err != nil {
+		t.Fatalf("ToDesiredServices() error = %v", err)
+	}
+	sort.Slice(got, func(i, j int) bool { return got[i].Name < got[j].Name })
+
+	postgres := got[0]
+	wantEntrypoint := []string{"docker-entrypoint.sh", "-c", "config_file=/etc/postgresql.conf"}
+	if !reflect.DeepEqual(postgres.Entrypoint, wantEntrypoint) {
+		t.Errorf("postgres.Entrypoint = %v, want %v", postgres.Entrypoint, wantEntrypoint)
+	}
+
+	redis := got[1]
+	if redis.Entrypoint != nil {
+		t.Errorf("redis.Entrypoint = %v, want nil (no entrypoint: declared)", redis.Entrypoint)
+	}
+}
+
 func TestToDesiredServices_BindMountsPropagate(t *testing.T) {
 	f, err := Parse([]byte(`
 services:
