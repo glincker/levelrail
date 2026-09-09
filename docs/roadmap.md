@@ -229,21 +229,29 @@ still open. This page describes what's actually true today.
 - An MCP server (`cmd/levelrail-mcp`), wrapping the same versioned REST
   API and bearer-token model the CLI already uses, so a token scoped to
   fewer abilities than a tool needs gets the same 403 the REST API
-  itself would return. Thirty-three tools today, across apps (list,
+  itself would return. Forty-five tools today, across apps (list,
   get, deploy, deploy-compose, rollback, restart, status,
-  deploy-history, logs, metrics), databases (list/get), nodes
-  (list/get/health), service templates (list/get), feature flags
+  deploy-history, logs, metrics, git source, pre/post-deploy hook run
+  outcomes, BYO TLS certificate status per domain), databases (list/get),
+  nodes (list/get/health), service templates (list/get), feature flags
   (list/get), resource recommendations (app and database), preview
-  environments (list, plus a sweep tool), alert rules (list), the audit
-  log (list), deploy comparison, build-failure diagnosis, and delivery
-  history for notifications, webhooks, and backup verifications (list).
-  Twenty-eight of the thirty-three are read-and-suggest; the other five
-  mutate something: deploy, deploy-compose, rollback, and restart for
-  apps (as documented before), plus the preview sweep, which tears down
-  stale preview environments on demand, the same action the scheduled
-  TTL sweep above (see Preview environments) performs automatically.
-  Nothing here reaches into the reconciler directly, and no tool
-  deletes a resource or touches secrets/resource limits.
+  environments (list, plus a sweep tool), alert rules (list), IAM
+  policies (list/get), notification channels and their delivery
+  history (list), organizations and projects (list), registry
+  credentials (list), backup targets (list, plus a connection test),
+  app service volume backup history (list), the audit log (list),
+  deploy comparison, build-failure diagnosis, and delivery history for
+  webhooks and backup verifications (list). Thirty-nine of the
+  forty-five are read-and-suggest; the other six perform a real
+  action: deploy, deploy-compose, rollback, and restart for apps (as
+  documented before), the preview sweep, which tears down stale
+  preview environments on demand, the same action the scheduled TTL
+  sweep above (see Preview environments) performs automatically, and a
+  backup-target connection test, which probes a bucket's stored
+  credentials against the target on demand without uploading,
+  downloading, or deleting anything. Nothing here reaches into the
+  reconciler directly, and no tool deletes a resource or touches
+  secrets/resource limits.
 - Live end-to-end test suite: whole-chain push-to-HTTPS, rollback in
   both directions, the real git webhook path, database reconciliation,
   non-default port routing, node placement, protected-environment
