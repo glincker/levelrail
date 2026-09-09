@@ -12,7 +12,7 @@ import (
 // SyslogSink writes each entry to a syslog daemon via the standard
 // library's log/syslog package, which this build tag mirrors exactly:
 // that package itself only builds on the platforms listed above.
-// CLAUDE.md §2 already scopes this platform to Linux-only nodes, so the
+// This platform targets Linux-only nodes in production, so the
 // unsupported set (Windows, Plan 9, WASM) is not a real gap for a
 // managed node, only for compiling this package on an unsupported dev
 // machine, which the sibling stub file (drain_syslog_stub.go) covers.

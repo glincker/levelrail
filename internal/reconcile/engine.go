@@ -46,8 +46,7 @@ type Store interface {
 // Engine runs a fixed set of controllers, triggered by Docker events with
 // a periodic resync as a safety net for any event the stream missed. This
 // push-primary/pull-as-safety-net shape is deliberate: Coolify's own v5
-// rearchitecture (see docs-local/research/prior-art-coolify.md) converged
-// on the same pattern independently.
+// rearchitecture converged on the same pattern independently.
 type Engine struct {
 	controllers []Controller
 	source      Source

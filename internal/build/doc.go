@@ -9,7 +9,5 @@
 // to end against the BuildKit instance embedded in a local Docker Engine,
 // and loads the result into the local image store. Remote build cache,
 // SSE log streaming to the frontend, and app-spec-driven config are
-// Phase 1 work and are not implemented here. See
-// docs-local/research/buildkit-spike.md for what was learned building
-// this and what Phase 1 needs to add.
+// Phase 1 work and are not implemented here.
 package build
