@@ -39,6 +39,7 @@ import {
   NodeSelectField,
   ProjectSelectField,
 } from './PlacementFields'
+import { RegistryImagePicker } from './RegistryImagePicker'
 
 // Mirrors validateAppResource (internal/api/apps.go) client-side for
 // fast feedback: name and image non-empty, port a positive integer.
@@ -184,7 +185,7 @@ export function CreateAppFields({
   // entirely when the dialog closes (see CreateResourceWizard.tsx), so a
   // fresh open already gets a fresh useState(false) here.
   const [showAdvanced, setShowAdvanced] = useState(false)
-  const { control, register, handleSubmit, formState, reset, watch } = useForm<
+  const { control, register, handleSubmit, formState, reset, watch, setValue } = useForm<
     CreateAppFormInput,
     unknown,
     CreateAppFormOutput
@@ -291,6 +292,12 @@ export function CreateAppFields({
           />
           <FieldError errors={[formState.errors.name]} />
         </Field>
+
+        <RegistryImagePicker
+          onSelect={(imageRef) => {
+            setValue('image', imageRef, { shouldValidate: true, shouldDirty: true })
+          }}
+        />
 
         <Field>
           <FieldLabel htmlFor="app-image">Image</FieldLabel>

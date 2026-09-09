@@ -82,6 +82,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
+	"github.com/GLINCKER/levelrail/internal/registrycatalog"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
@@ -259,6 +260,8 @@ type Router struct {
 	cloudflareDNSSecrets           CloudflareDNSSecrets             // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-dns return 501, same shape as cloudflareTunnelSecrets above
 	registry                       RegistryStore                    // always set, same shape as cloudflareTunnel above
 	registrySecrets                RegistrySecrets                  // nil is valid: PUT/DELETE /api/v1/settings/registry return 501, same shape as cloudflareTunnelSecrets above
+	registryCatalog                RegistryCatalogClient            // always set (NewRouter defaults it to a real *registrycatalog.Client, which needs no configuration to construct), overridable in this package's own tests the same way githubAppClient is
+	registryCatalogSecrets         RegistryCatalogSecrets           // nil is valid: GET /api/v1/registry/repositories and /api/v1/registry/tags return 501, same shape as registrySecrets above
 	emailSender                    email.Sender                     // nil is valid: forgot-password still returns its generic success response
 	passwordResetTokens            PasswordResetTokenStore          // always set, same shape as backupTargets above
 	forgotPasswordByIP             *loginLimiter                    // per-IP forgot-password budget, distinct from logins above
@@ -345,6 +348,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		cloudflareTunnel:            s,
 		cloudflareDNS:               s,
 		registry:                    s,
+		registryCatalog:             registrycatalog.NewClient(),
 		passwordResetTokens:         s,
 		forgotPasswordByIP:          newLoginLimiter(),
 		forgotPasswordByEmail:       newLoginLimiter(),

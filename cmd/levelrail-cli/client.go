@@ -32,6 +32,8 @@ type (
 	updateCloudflareTunnelRequest    = apiclient.UpdateCloudflareTunnelRequest
 	registrySettingsResource         = apiclient.RegistrySettingsResource
 	updateRegistrySettingsRequest    = apiclient.UpdateRegistrySettingsRequest
+	registryRepositoriesResource     = apiclient.RegistryRepositoriesResource
+	registryTagsResource             = apiclient.RegistryTagsResource
 	domainBasicAuthResource          = apiclient.DomainBasicAuthResource
 	setDomainBasicAuthRequest        = apiclient.SetDomainBasicAuthRequest
 	domainMaintenanceResource        = apiclient.DomainMaintenanceResource

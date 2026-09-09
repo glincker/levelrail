@@ -492,6 +492,24 @@ func (c *Client) DisableRegistry(ctx context.Context) (RegistrySettingsResource,
 	return out, err
 }
 
+// ListRegistryRepositories calls GET /api/v1/registry/repositories: every
+// repository name pushed to the built-in registry.
+func (c *Client) ListRegistryRepositories(ctx context.Context) (RegistryRepositoriesResource, error) {
+	var out RegistryRepositoriesResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/registry/repositories", nil, &out)
+	return out, err
+}
+
+// ListRegistryTags calls GET /api/v1/registry/tags?repository=<name>:
+// every tag pushed for one repository in the built-in registry.
+func (c *Client) ListRegistryTags(ctx context.Context, repository string) (RegistryTagsResource, error) {
+	q := url.Values{}
+	q.Set("repository", repository)
+	var out RegistryTagsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/registry/tags?"+q.Encode(), nil, &out)
+	return out, err
+}
+
 // domainAuthPath builds /api/v1/apps/{name}/domains/{domain}/auth,
 // shared by all three domain basic auth methods below.
 func domainAuthPath(name, domain string) string {

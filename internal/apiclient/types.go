@@ -282,6 +282,20 @@ type UpdateRegistrySettingsRequest struct {
 	Host    string `json:"host,omitempty"`
 }
 
+// RegistryRepositoriesResource mirrors internal/api's
+// registryRepositoriesResponse (internal/api/registry_catalog.go): GET
+// /api/v1/registry/repositories's wire shape.
+type RegistryRepositoriesResource struct {
+	Repositories []string `json:"repositories"`
+}
+
+// RegistryTagsResource mirrors internal/api's registryTagsResponse: GET
+// /api/v1/registry/tags's wire shape.
+type RegistryTagsResource struct {
+	Repository string   `json:"repository"`
+	Tags       []string `json:"tags"`
+}
+
 // DomainBasicAuthResource mirrors internal/api's domainBasicAuthResource
 // (internal/api/domain_basic_auth.go): GET/PUT/DELETE
 // /api/v1/apps/{name}/domains/{domain}/auth's wire shape. The password
