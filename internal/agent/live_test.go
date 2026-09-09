@@ -1,6 +1,6 @@
 package agent
 
-// TestLive_EnrollAndSession is TASKS.md 3.2's real end-to-end proof:
+// TestLive_EnrollAndSession is the real end-to-end proof:
 // not mux/GRPCTransport/Execute/Server tested in isolation against
 // fakes (every other test file in this package), but a real join token
 // minted through a real store, a real self-signed CA, a real TLS

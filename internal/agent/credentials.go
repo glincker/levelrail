@@ -1,7 +1,7 @@
 package agent
 
 // This file: building grpc TransportCredentials for the control plane's
-// own gRPC listener (TASKS.md 3.2). Factored out of cmd/levelrail/
+// own gRPC listener. Factored out of cmd/levelrail/
 // main.go so it's directly testable and reusable wherever a second
 // listener needs the identical shape (this package's own live test, in
 // particular).
@@ -17,7 +17,7 @@ import (
 
 // NewServerCredentials issues a fresh server certificate from ca
 // (covering hosts) and returns grpc TransportCredentials configured for
-// TASKS.md 3.2's mTLS model: a client certificate is verified when
+// this package's mTLS model: a client certificate is verified when
 // presented but not required (VerifyClientCertIfGiven), because Enroll
 // (ADR 003's join-token exchange) is called with no client certificate
 // at all, by design (DialEnroll's own doc comment explains why), while
