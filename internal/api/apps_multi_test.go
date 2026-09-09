@@ -6,9 +6,12 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 func multiDeployBody() string {
@@ -289,5 +292,60 @@ func TestHandleDeploySpec_SingleServiceDeployStillWorks(t *testing.T) {
 	}
 	if len(svc.Domains) != 0 {
 		t.Errorf("Domains = %v, want empty (no fan-out fields leaked into a single-service create)", svc.Domains)
+	}
+}
+
+const bindMountDeploySpecBody = `{
+	"repo_url": "https://example.com/org/app.git",
+	"ref": "main",
+	"services": {
+		"web": {"build": {"type": "dockerfile", "path": "./Dockerfile"}, "port": 3000, "volumes": [{"hostPath": "/srv/myapp/data", "path": "/data"}]}
+	}
+}`
+
+// TestHandleDeploySpec_BindMount_PlainDeployToken_Forbidden mirrors
+// TestHandleDeployCompose_BindMount_PlainDeployToken_Forbidden
+// (apps_compose_test.go): an app.yaml service declaring a bind mount
+// needs AbilityRoot on top of this route's own AbilityDeploy gate, same
+// as the compose-import path already requires.
+func TestHandleDeploySpec_BindMount_PlainDeployToken_Forbidden(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch("/tmp/checkout", nil))
+	ctx := context.Background()
+
+	const plaintext = "deploy-scoped-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_deploy", Name: "deployer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityDeploy}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/apps/myapp/deploy-spec", strings.NewReader(bindMountDeploySpecBody))
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d: a plain deploy token must not be able to bind-mount a host directory", rec.Code, http.StatusForbidden)
+	}
+	if builder.multiCalls != 0 {
+		t.Errorf("builder.multiCalls = %d, want 0 (rejected before ever reaching the builder)", builder.multiCalls)
+	}
+}
+
+// TestHandleDeploySpec_BindMount_RootCaller_Succeeds is the positive
+// counterpart: a root-ability caller can deploy the exact same
+// bind-mounting app.yaml service.
+func TestHandleDeploySpec_BindMount_RootCaller_Succeeds(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch("/tmp/checkout", nil))
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", bindMountDeploySpecBody))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	if builder.multiCalls != 1 {
+		t.Fatalf("builder.multiCalls = %d, want 1", builder.multiCalls)
 	}
 }
