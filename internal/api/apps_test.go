@@ -1026,19 +1026,26 @@ func TestHandleStopApp_DoesNotClearEnvDirty(t *testing.T) {
 	assertAppEnvDirty(t, db, true)
 }
 
-func TestHandleDeleteApp(t *testing.T) {
-	rt, db := newTestRouter(t)
-	cookie := loginTestSession(t, rt, db)
-
+// seedAndDeleteApp seeds a "web" desired service, deletes it through the
+// HTTP handler, and asserts the delete itself returned 204. Shared by
+// every handleDeleteApp test so each can focus its own assertions on
+// what's distinctive about that case.
+func seedAndDeleteApp(t *testing.T, rt *Router, db *store.DB, cookie *http.Cookie) {
+	t.Helper()
 	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
-
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/web", ""))
 	if rec.Code != http.StatusNoContent {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNoContent)
 	}
+}
+
+func TestHandleDeleteApp(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedAndDeleteApp(t, rt, db, cookie)
 
 	if _, err := db.GetDesiredService(context.Background(), "web"); err == nil {
 		t.Error("expected app to be gone from the store after delete")
@@ -1059,16 +1066,7 @@ func TestHandleDeleteApp_TeardownDispatchesContainerRemoval(t *testing.T) {
 	fake := &fakeExecAppRuntime{listByPrefixCalls: make(chan struct{}, 4)}
 	rt, db := newTestRouterWithExecRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
-
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
-
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/web", ""))
-	if rec.Code != http.StatusNoContent {
-		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNoContent)
-	}
+	seedAndDeleteApp(t, rt, db, cookie)
 
 	select {
 	case <-fake.listByPrefixCalls:
@@ -1087,16 +1085,8 @@ func TestHandleDeleteApp_TeardownResolveFailure_StillDeletes(t *testing.T) {
 	resolver := func(string) (docker.Runtime, error) { return nil, resolveErr }
 	rt := NewRouter(discardLogger(), testBrand(), db, WithExecRuntime(resolver))
 	cookie := loginTestSession(t, rt, db)
+	seedAndDeleteApp(t, rt, db, cookie)
 
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
-
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/web", ""))
-	if rec.Code != http.StatusNoContent {
-		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNoContent)
-	}
 	if _, err := db.GetDesiredService(context.Background(), "web"); err == nil {
 		t.Error("expected app to be gone from the store even when its node runtime can't be resolved")
 	}
