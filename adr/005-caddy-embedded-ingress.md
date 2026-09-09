@@ -42,8 +42,8 @@ each node independently negotiating and holding its own copy.
   two competitors that made this exact choice.
 
 - **CapRover's approach: nginx as a fully separate process, config
-  regenerated and reloaded as a distinct step**: `prior-art-caprover.md`
-  traces the actual mechanism: `LoadBalancerManager.rePopulateNginxConfigFile()`
+  regenerated and reloaded as a distinct step**: CapRover's own source
+  shows the actual mechanism: `LoadBalancerManager.rePopulateNginxConfigFile()`
   writes a new config to a `.fut` file, renames the old `.conf` to `.bak`,
   renames `.fut` to `.conf`, runs `nginx -t` inside the nginx container to
   validate syntax, and only then sends `SIGHUP` to reload
@@ -62,7 +62,7 @@ each node independently negotiating and holding its own copy.
 
 - **Proxy state living outside the main control loop, generally**: Coolify's
   own issue tracker shows what this costs even for a proxy that
-  isn't hand-rolled. `prior-art-coolify.md` documents issue
+  isn't hand-rolled: issue
   [#7193](https://github.com/coollabsio/coolify/issues/7193), "Coolify
   Traefik Proxy No Longer Working After Recent Update" (51 comments,
   closed): the proxy silently stops routing ("no available server") after
@@ -91,8 +91,8 @@ each node independently negotiating and holding its own copy.
 - The sharper differentiation point is against where this category is
   actually heading, not where it's been. Coolify's own in-progress v5
   rewrite is independently moving from Traefik to Caddy
-  (`app/Actions/V5/Proxy/GenerateCaddyIngressConfiguration.php`, per
-  `prior-art-coolify.md`), which validates Caddy as the right proxy choice
+  (`app/Actions/V5/Proxy/GenerateCaddyIngressConfiguration.php`, Coolify's
+  own source), which validates Caddy as the right proxy choice
   in this category. But V5's Caddy is still a separately-orchestrated
   Docker Compose service the control plane generates a Caddyfile and
   compose YAML for (`GenerateCaddyIngressConfiguration::handle()`), not a

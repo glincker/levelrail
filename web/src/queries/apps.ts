@@ -1,8 +1,7 @@
-// Query-key factory and fetchers for the /apps resource, per
-// frontend-plan.md section 2 and 4: no ad hoc key arrays inline in
-// components, so invalidation after a deploy/rollback action can target
-// the right keys precisely. Every route that needs app data imports these
-// instead of writing its own fetch call or query key.
+// Query-key factory and fetchers for the /apps resource: no ad hoc key
+// arrays inline in components, so invalidation after a deploy/rollback
+// action can target the right keys precisely. Every route that needs app
+// data imports these instead of writing its own fetch call or query key.
 
 import {
   queryOptions,

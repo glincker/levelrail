@@ -54,9 +54,9 @@ depends on it.
   Swarm itself is rejected as the orchestration substrate (ADR 002):
   it's in maintenance mode, and adopting it here would
   reintroduce exactly the coupling ADR 002 already ruled out, just at the
-  networking layer instead of the orchestration layer. `prior-art-dokploy.md`
-  documents concretely what that coupling costs a real competitor built on
-  Swarm:
+  networking layer instead of the orchestration layer. Dokploy's own
+  source and issue tracker document concretely what that coupling costs a
+  real competitor built on Swarm:
   - Dokploy creates `dokploy-network` as `docker network create --driver
     overlay --attachable` at install time (`server-setup.ts:460`), and
     compose "stack" deployments create their own overlay networks
@@ -68,8 +68,8 @@ depends on it.
   - Dokploy's published ports rely on `EndpointSpec.Ports` with
     `PublishMode: "ingress" | "host"` (`utils/docker/utils.ts:641-652`),
     which depends on Swarm's routing mesh to forward a request arriving at
-    any node to whichever node currently runs the task. `prior-art-dokploy.md`'s
-    issue-tracker findings tie this directly to a real, high-signal
+    any node to whichever node currently runs the task. Dokploy's own
+    issue tracker ties this directly to a real, high-signal
     failure: [#592](https://github.com/Dokploy/dokploy/issues/592),
     "Gateway Timeout on Docker Swarm worker replicas" (36 comments,
     closed), where the routing mesh doesn't correctly reach a task running
@@ -77,7 +77,7 @@ depends on it.
   - Swarm also bundles cluster bootstrap and node join
     (`docker swarm init` / `docker swarm join`, `server-setup.ts:449`,
     `cluster.ts:110/143`) into the same subsystem as its networking and
-    scheduler. `prior-art-dokploy.md` is explicit that Levelrail's approach
+    scheduler. To be explicit, Levelrail's approach
     is not a drop-in replacement for that bundle: Swarm gives node
     membership, overlay networking, and a distributed scheduler as one
     package, whereas Levelrail deliberately keeps these separate:
@@ -87,10 +87,9 @@ depends on it.
     conscious trade of Swarm's one bundled subsystem for two independently
     designed, individually simpler layers, not a claim of equivalent
     functionality with less code.
-  - `prior-art-dokploy.md`'s own synthesis calls the networking/ingress
-    issue cluster (#1802, #592, #3201, #821) "the single biggest pain
-    cluster" in Dokploy's tracker, and names it direct validation for
-    Levelrail's WireGuard-mesh decision specifically because multiple
+  - The networking/ingress issue cluster (#1802, #592, #3201, #821) is the
+    single biggest pain cluster in Dokploy's own tracker, and it's direct
+    validation for Levelrail's WireGuard-mesh decision specifically because multiple
     independent issue threads show the failure surfacing at the cross-node
     boundary, exactly where a Swarm-routing-mesh dependency would bite.
 

@@ -12,10 +12,10 @@ whatever `docker build` or `docker compose build` gives them for free. Phase
 competitors does one expose build-cache controls as a first-class,
 programmatically-driven feature.
 Coolify's rolling update starts from `start_by_compose_file()` running
-`docker compose ... up --build -d` (`prior-art-coolify.md` Q1,
+`docker compose ... up --build -d` (Coolify's own
 `ApplicationDeploymentJob.php:1971`), and Dokploy's build pipeline is
-described as "a single large shell string executed remotely and piped to a
-log file" (`prior-art-dokploy.md` section 5). Neither treats the build
+a single large shell string executed remotely and piped to a
+log file. Neither treats the build
 system as something worth its own architecture; it's whatever the Docker
 CLI happens to do.
 

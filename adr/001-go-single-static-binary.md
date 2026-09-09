@@ -37,7 +37,7 @@ decisions are the same architectural bet made three times.
 - **Multi-process architecture, the pattern every competitor studied uses.**
   - **Coolify v4**: Laravel + Livewire frontend, MySQL/Postgres, Redis,
     Horizon queue workers, Soketi websockets, and a separately orchestrated
-    Traefik container (`prior-art-coolify.md`, stack line). Idle cost isn't
+    Traefik container, per Coolify's own docker-compose stack definition. Idle cost isn't
     theoretical: with zero apps deployed, `ServerManagerJob` runs every
     minute against every registered server (`app/Console/Kernel.php:38-99`),
     plus an hourly `DockerCleanupJob` per server, plus a dedicated hourly
@@ -45,8 +45,7 @@ decisions are the same architectural bet made three times.
     collect SSH connection-multiplexing sockets left over from the
     architecture's own transport choice.
   - **Coolify's in-progress v5 rewrite doesn't collapse this, it changes the
-    shape of it.** Per `prior-art-coolify.md` "Implications for Levelrail"
-    point 2: V5 is still Laravel + Postgres/Redis/Horizon/Soketi, plus a
+    shape of it.** V5 is still Laravel + Postgres/Redis/Horizon/Soketi, plus a
     separately-orchestrated Caddy container the control plane generates
     Compose YAML and a Caddyfile for (`GenerateCaddyIngressConfiguration::handle()`),
     plus a Rust agent (`coold`) and a Rust hub (`Flux`) talking gRPC. That is
@@ -56,7 +55,7 @@ decisions are the same architectural bet made three times.
   - **Dokploy**: a TypeScript/Node monorepo, `apps/dokploy` (Next.js + tRPC)
     driving `packages/server` (the actual orchestration logic), plus
     `apps/monitoring`, a wholly separate Go binary just for metrics polling
-    (`prior-art-dokploy.md` section 1 and Q5). Node is the primary server
+    per Dokploy's own monorepo layout. Node is the primary server
     runtime for the control plane itself, and the metrics function had to be
     pulled into its own binary because the Node process wasn't the right
     place for it. Levelrail folds observability into the same binary from
@@ -65,7 +64,7 @@ decisions are the same architectural bet made three times.
     `captain-nginx` Swarm service, plus a persistent "sleeping" certbot
     container it `docker exec`s into for cert operations, plus Docker
     Swarm's own Raft-backed control-plane overhead running even on a
-    single node (`prior-art-caprover.md` section 5, `DockerApi.initSwarm()`
+    single node (`DockerApi.initSwarm()`
     called unconditionally at `src/docker/DockerApi.ts:157`). CapRover's own
     research doc concludes the bigger cost of this shape isn't raw idle
     RAM, it's the complexity of keeping N independently-versioned processes

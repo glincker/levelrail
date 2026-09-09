@@ -27,9 +27,9 @@ client, so tests can fake it without a daemon).
 
 ## Rejected alternatives
 
-- **Docker Swarm**: in maintenance mode, and Dokploy's own research
-  (`prior-art-dokploy.md`) shows the coupling to Swarm-specific update
-  semantics becomes a liability, not a convenience.
+- **Docker Swarm**: in maintenance mode, and Dokploy's own source shows the
+  coupling to Swarm-specific update semantics becomes a liability, not a
+  convenience.
 - **Nomad**: BSL license.
 - **K3s / Kubernetes**: defeats the point, brings back the whole surface
   area this project exists to avoid.
@@ -61,7 +61,7 @@ client, so tests can fake it without a daemon).
 - The event-stream-primary, ticker-as-safety-net shape (`Engine.Run` in
   `internal/reconcile/engine.go`) is not a novel design: it's independently
   what Coolify's own in-progress v5 rewrite converges on
-  (`app/Jobs/V5ReconcileServerStateJob.php`, per `prior-art-coolify.md`),
+  (`app/Jobs/V5ReconcileServerStateJob.php`, Coolify's own reconcile job),
   which is reassuring rather than concerning: two independent efforts
   arriving at the same shape from different starting points is a decent
   signal it's the right shape, not just a Levelrail idiosyncrasy.
