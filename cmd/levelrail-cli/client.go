@@ -56,6 +56,7 @@ type (
 	setBackupScheduleRequest         = apiclient.SetBackupScheduleRequest
 	triggerRestoreRequest            = apiclient.TriggerRestoreRequest
 	appVolumeResource                = apiclient.AppVolumeResource
+	appBindMountResource             = apiclient.AppBindMountResource
 	volumeBackupScheduleResource     = apiclient.VolumeBackupScheduleResource
 	setVolumeBackupScheduleRequest   = apiclient.SetVolumeBackupScheduleRequest
 	cloneRestoreResource             = apiclient.CloneRestoreResource

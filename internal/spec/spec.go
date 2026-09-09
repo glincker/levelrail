@@ -47,12 +47,14 @@ type Service struct {
 	// platform's own bookkeeping labels.
 	Labels map[string]string `yaml:"labels,omitempty"`
 
-	// Volumes are named Docker volumes this service's container mounts,
-	// previously a database-only capability. Name is a logical name
-	// scoped to this service, not a global Docker volume name (see
-	// internal/deploy's translation into store.ServiceVolume for the
-	// actual, platform-prefixed name); two services can each declare a
-	// volume named "data" without colliding.
+	// Volumes are named Docker volumes or host-directory bind mounts this
+	// service's container mounts (see Volume's own doc comment for how
+	// the two are distinguished): named volumes were previously a
+	// database-only capability, bind mounts a compose-import-only one. A
+	// named volume's Name is a logical name scoped to this service, not a
+	// global Docker volume name (see internal/deploy's translation into
+	// store.ServiceVolume for the actual, platform-prefixed name); two
+	// services can each declare a volume named "data" without colliding.
 	Volumes []Volume `yaml:"volumes,omitempty"`
 
 	// Hooks are shell commands the reconciler runs inside this service's
@@ -61,6 +63,13 @@ type Service struct {
 	// same "declarative, resolved before storing" shape Health/Resources
 	// already follow.
 	Hooks *Hooks `yaml:"hooks,omitempty"`
+
+	// Command overrides the image's own default CMD
+	// (store.DesiredService.Command), nil meaning the image's own
+	// default: the app.yaml equivalent of
+	// internal/compose.Service.Command, which this mirrors. A plain argv
+	// list, never shell-interpreted.
+	Command []string `yaml:"command,omitempty"`
 }
 
 // Hooks are the two deploy-lifecycle commands a service can declare.
@@ -75,10 +84,16 @@ type Hooks struct {
 	PostDeploy string `yaml:"postDeploy,omitempty"`
 }
 
-// Volume is one entry under a service's volumes:.
+// Volume is one entry under a service's volumes:. Exactly one of Name (a
+// named Docker volume) or HostPath (a bind mount of a real host
+// directory, gated the same as internal/compose's own bind-mount support:
+// see validateBindMountHostPath) is set; see Validate. ReadOnly is only
+// meaningful alongside HostPath, matching store.ServiceBindMount.
 type Volume struct {
-	Name string `yaml:"name"`
-	Path string `yaml:"path"`
+	Name     string `yaml:"name,omitempty"`
+	HostPath string `yaml:"hostPath,omitempty"`
+	Path     string `yaml:"path"`
+	ReadOnly bool   `yaml:"readOnly,omitempty"`
 }
 
 // Build input types: the app spec's build.type values, matching the

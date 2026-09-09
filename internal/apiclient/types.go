@@ -75,6 +75,15 @@ type AppResource struct {
 	// declared named Docker volumes, response-only (declared through
 	// app.yaml, not settable here).
 	Volumes []AppVolumeResource `json:"volumes,omitempty"`
+	// BindMounts mirrors internal/api's appResource.BindMounts: this
+	// app's declared host-directory bind mounts, response-only
+	// (declared through app.yaml or a compose import, not settable
+	// here).
+	BindMounts []AppBindMountResource `json:"bind_mounts,omitempty"`
+	// Command mirrors internal/api's appResource.Command: overrides the
+	// image's own default CMD, response-only (declared through app.yaml's
+	// command: or a compose import, not settable here).
+	Command []string `json:"command,omitempty"`
 }
 
 // AppVolumeResource mirrors internal/api's appVolumeResource
@@ -84,6 +93,14 @@ type AppResource struct {
 type AppVolumeResource struct {
 	Name          string `json:"name"`
 	ContainerPath string `json:"container_path"`
+}
+
+// AppBindMountResource mirrors internal/api's appBindMountResource
+// (app_volumes.go): one of an app's bind-mounted host directories.
+type AppBindMountResource struct {
+	HostPath      string `json:"host_path"`
+	ContainerPath string `json:"container_path"`
+	ReadOnly      bool   `json:"read_only,omitempty"`
 }
 
 // LogDrainResource mirrors internal/api's logDrainResource

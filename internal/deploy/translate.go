@@ -48,6 +48,7 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		Strategy: svc.EffectiveStrategy(),
 		Replicas: svc.EffectiveReplicas(),
 		Labels:   svc.Labels,
+		Command:  svc.Command,
 	}
 
 	if svc.HostPort != 0 {
@@ -71,11 +72,12 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		d.Health = &health
 	}
 
-	if len(svc.Volumes) > 0 {
-		d.Volumes = make([]store.ServiceVolume, len(svc.Volumes))
-		for i, v := range svc.Volumes {
-			d.Volumes[i] = store.ServiceVolume{Name: volumeName(name, v.Name), ContainerPath: v.Path}
+	for _, v := range svc.Volumes {
+		if v.HostPath != "" {
+			d.BindMounts = append(d.BindMounts, store.ServiceBindMount{HostPath: v.HostPath, ContainerPath: v.Path, ReadOnly: v.ReadOnly})
+			continue
 		}
+		d.Volumes = append(d.Volumes, store.ServiceVolume{Name: volumeName(name, v.Name), ContainerPath: v.Path})
 	}
 
 	if svc.Hooks != nil {

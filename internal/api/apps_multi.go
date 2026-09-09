@@ -132,6 +132,10 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if deploySpecHasBindMount(req.Services) && !rt.callerHasAbility(r, AbilityRoot) {
+		writeError(w, http.StatusForbidden, "one or more services declare a bind mount, which requires the root ability")
+		return
+	}
 
 	imageRepoBase := req.ImageRepoBase
 	if imageRepoBase == "" {
@@ -222,4 +226,18 @@ func validateDeploySpecServiceTypes(services map[string]spec.Service) error {
 		}
 	}
 	return nil
+}
+
+// deploySpecHasBindMount reports whether any service declares a bind
+// mount, the same signal hasBindMount (apps_compose.go) uses to require
+// AbilityRoot on top of this route's own AbilityDeploy gate.
+func deploySpecHasBindMount(services map[string]spec.Service) bool {
+	for _, svc := range services {
+		for _, v := range svc.Volumes {
+			if v.HostPath != "" {
+				return true
+			}
+		}
+	}
+	return false
 }

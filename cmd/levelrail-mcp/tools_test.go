@@ -100,7 +100,11 @@ func TestGetApp(t *testing.T) {
 			t.Errorf("path = %q, want /api/v1/apps/web", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(apiclient.AppResource{Name: "web", Image: "nginx:1", Port: 80})
+		_ = json.NewEncoder(w).Encode(apiclient.AppResource{
+			Name: "web", Image: "nginx:1", Port: 80,
+			Command:    []string{"nginx", "-g", "daemon off;"},
+			BindMounts: []apiclient.AppBindMountResource{{HostPath: "/srv/web/uploads", ContainerPath: "/uploads", ReadOnly: true}},
+		})
 	})
 
 	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "get_app", Arguments: map[string]any{"name": "web"}})
@@ -111,6 +115,12 @@ func TestGetApp(t *testing.T) {
 	decodeStructured(t, result, &app)
 	if app.Name != "web" {
 		t.Errorf("app.Name = %q, want %q", app.Name, "web")
+	}
+	if len(app.Command) != 3 || app.Command[0] != "nginx" {
+		t.Errorf("app.Command = %v, want [nginx -g daemon off;]", app.Command)
+	}
+	if len(app.BindMounts) != 1 || app.BindMounts[0].HostPath != "/srv/web/uploads" || !app.BindMounts[0].ReadOnly {
+		t.Errorf("app.BindMounts = %+v, want one read-only bind mount at /srv/web/uploads", app.BindMounts)
 	}
 }
 
