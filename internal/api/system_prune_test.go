@@ -52,12 +52,9 @@ func TestHandleSystemPrune_NotConfigured(t *testing.T) {
 func TestSystemPruneRoute_RequiresAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/system/prune", nil)
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusUnauthorized {
-		t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
-	}
+	assertRoutesRequireAuth(t, rt, []routeCase{
+		{http.MethodPost, "/api/v1/system/prune"},
+	})
 }
 
 // TestHandleSystemPrune_PlainWriteToken_Forbidden proves POST

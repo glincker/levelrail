@@ -10,9 +10,33 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+// mustCreateDatabase POSTs body to /api/v1/databases and requires a 201.
+func mustCreateDatabase(t *testing.T, rt *Router, cookie *http.Cookie, body string) {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create status = %d, want %d, body=%s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+}
+
+// getDatabaseResource GETs /api/v1/databases/{name} and decodes the body.
+func getDatabaseResource(t *testing.T, rt *Router, cookie *http.Cookie, name string) databaseResource {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/"+name, ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	var got databaseResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	return got
+}
 
 func TestValidateDatabaseResource(t *testing.T) {
 	tests := []struct {
@@ -44,10 +68,7 @@ func TestValidateDatabaseResource(t *testing.T) {
 func TestDatabaseRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	routes := []struct {
-		method string
-		target string
-	}{
+	assertRoutesRequireAuth(t, rt, []routeCase{
 		{http.MethodGet, "/api/v1/databases"},
 		{http.MethodPost, "/api/v1/databases"},
 		{http.MethodGet, "/api/v1/databases/main"},
@@ -58,17 +79,7 @@ func TestDatabaseRoutes_RequireAuth(t *testing.T) {
 		{http.MethodGet, "/api/v1/databases/main/metrics"},
 		{http.MethodGet, "/api/v1/databases/main/logs"},
 		{http.MethodGet, "/api/v1/databases/main/logs/stream"},
-	}
-	for _, r := range routes {
-		t.Run(r.method+" "+r.target, func(t *testing.T) {
-			req := httptest.NewRequest(r.method, r.target, nil)
-			rec := httptest.NewRecorder()
-			rt.Handler().ServeHTTP(rec, req)
-			if rec.Code != http.StatusUnauthorized {
-				t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
-			}
-		})
-	}
+	})
 }
 
 func TestHandleListDatabases(t *testing.T) {
@@ -88,12 +99,7 @@ func TestHandleListDatabases(t *testing.T) {
 		t.Fatalf("expected empty list, got %d", len(empty))
 	}
 
-	body := `{"name":"main","engine":"redis","version":"7"}`
-	rec = httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases", body))
-	if rec.Code != http.StatusCreated {
-		t.Fatalf("create status = %d, want %d, body=%s", rec.Code, http.StatusCreated, rec.Body.String())
-	}
+	mustCreateDatabase(t, rt, cookie, `{"name":"main","engine":"redis","version":"7"}`)
 
 	rec = httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases", ""))
@@ -121,16 +127,7 @@ func TestHandleListDatabases_Status(t *testing.T) {
 			t.Fatalf("seed %s: %v", name, err)
 		}
 	}
-	if err := db.UpsertConditions(ctx, "database/healthy-db", []reconcile.Condition{
-		{Type: "Ready", Status: reconcile.ConditionTrue, Reason: "Running"},
-	}); err != nil {
-		t.Fatalf("upsert healthy-db conditions: %v", err)
-	}
-	if err := db.UpsertConditions(ctx, "database/broken-db", []reconcile.Condition{
-		{Type: "Ready", Status: reconcile.ConditionFalse, Reason: "CrashLoop"},
-	}); err != nil {
-		t.Fatalf("upsert broken-db conditions: %v", err)
-	}
+	seedTriStateConditions(t, db, "database", "healthy-db", "broken-db")
 	// pending-db deliberately gets no UpsertConditions call at all.
 
 	rec := httptest.NewRecorder()
@@ -168,13 +165,9 @@ func TestHandleCreateDatabase_DuplicateName(t *testing.T) {
 	cookie := loginTestSession(t, rt, db)
 
 	body := `{"name":"main","engine":"redis","version":"7"}`
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases", body))
-	if rec.Code != http.StatusCreated {
-		t.Fatalf("first create status = %d, want %d", rec.Code, http.StatusCreated)
-	}
+	mustCreateDatabase(t, rt, cookie, body)
 
-	rec = httptest.NewRecorder()
+	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases", body))
 	if rec.Code != http.StatusConflict {
 		t.Fatalf("duplicate create status = %d, want %d", rec.Code, http.StatusConflict)
@@ -207,22 +200,9 @@ func TestHandleGetDatabase_Success(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
-	body := `{"name":"main","engine":"postgres","version":"16"}`
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases", body))
-	if rec.Code != http.StatusCreated {
-		t.Fatalf("create status = %d, want %d", rec.Code, http.StatusCreated)
-	}
+	mustCreateDatabase(t, rt, cookie, `{"name":"main","engine":"postgres","version":"16"}`)
 
-	rec = httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main", ""))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
-	}
-	var got databaseResource
-	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
+	got := getDatabaseResource(t, rt, cookie, "main")
 	if got.Name != "main" || got.Engine != store.EnginePostgres || got.Version != "16" {
 		t.Errorf("got = %+v, want main/postgres/16", got)
 	}
@@ -232,14 +212,9 @@ func TestHandleDeleteDatabase(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
-	body := `{"name":"main","engine":"redis","version":"7"}`
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases", body))
-	if rec.Code != http.StatusCreated {
-		t.Fatalf("create status = %d, want %d", rec.Code, http.StatusCreated)
-	}
+	mustCreateDatabase(t, rt, cookie, `{"name":"main","engine":"redis","version":"7"}`)
 
-	rec = httptest.NewRecorder()
+	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/databases/main", ""))
 	if rec.Code != http.StatusNoContent {
 		t.Fatalf("delete status = %d, want %d", rec.Code, http.StatusNoContent)
@@ -517,14 +492,9 @@ func TestHandleDatabaseStatus_NoConditionsYetIsEmptyList(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
-	body := `{"name":"main","engine":"redis","version":"7"}`
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases", body))
-	if rec.Code != http.StatusCreated {
-		t.Fatalf("create status = %d, want %d", rec.Code, http.StatusCreated)
-	}
+	mustCreateDatabase(t, rt, cookie, `{"name":"main","engine":"redis","version":"7"}`)
 
-	rec = httptest.NewRecorder()
+	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/status", ""))
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d, body=%s", rec.Code, http.StatusOK, rec.Body.String())
