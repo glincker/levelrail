@@ -1,7 +1,4 @@
-import {
-  PackageIcon,
-  PlugsConnectedIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { PackageIcon, PlugsConnectedIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Table,
   TableBody,
@@ -14,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from '@/components/ui/toast'
+import { BrowseRegistryCredentialDialog } from './BrowseRegistryCredentialDialog'
 import { DeleteRegistryCredentialDialog } from './DeleteRegistryCredentialDialog'
 import { useTestRegistryCredential } from '../queries/registryCredentials'
 import type {
@@ -141,6 +139,7 @@ export function RegistryCredentialTable({
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
+                  <BrowseRegistryCredentialDialog credential={cred} />
                   <TestButton credential={cred} />
                   <DeleteRegistryCredentialDialog credential={cred} />
                 </div>

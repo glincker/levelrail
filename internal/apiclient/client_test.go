@@ -1067,6 +1067,50 @@ func TestClient_ListRegistryTags(t *testing.T) {
 	}
 }
 
+func TestClient_ListRegistryCredentialRepositories(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(RegistryRepositoriesResource{Repositories: []string{"alpha", "beta"}})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.ListRegistryCredentialRepositories(context.Background(), "regcred_abc")
+	if err != nil {
+		t.Fatalf("ListRegistryCredentialRepositories() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/registry-credentials/regcred_abc/repositories" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/registry-credentials/regcred_abc/repositories", gotMethod, gotPath)
+	}
+	if len(got.Repositories) != 2 {
+		t.Errorf("ListRegistryCredentialRepositories() = %+v, want 2 repositories", got)
+	}
+}
+
+func TestClient_ListRegistryCredentialTags(t *testing.T) {
+	var gotMethod, gotPath, gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath, gotQuery = r.Method, r.URL.Path, r.URL.Query().Get("repository")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(RegistryTagsResource{Repository: "myapp", Tags: []string{"latest", "v1"}})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.ListRegistryCredentialTags(context.Background(), "regcred_abc", "myapp")
+	if err != nil {
+		t.Fatalf("ListRegistryCredentialTags() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/registry-credentials/regcred_abc/tags" || gotQuery != "myapp" {
+		t.Errorf("method/path/query = %s %s %q, want GET /api/v1/registry-credentials/regcred_abc/tags myapp", gotMethod, gotPath, gotQuery)
+	}
+	if got.Repository != "myapp" || len(got.Tags) != 2 {
+		t.Errorf("ListRegistryCredentialTags() = %+v, want repository myapp with 2 tags", got)
+	}
+}
+
 // TestClient_SetPreviewEnabled proves SetPreviewEnabled sends only the
 // enabled toggle: post_pr_comments must stay absent from the request
 // body so the API's own "nil means leave it unchanged" contract

@@ -32,6 +32,10 @@ func runRegistryCredentials(prog string, args []string, stdout, stderr io.Writer
 		return runRegistryCredentialsDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	case "test":
 		return runRegistryCredentialsTest(prog, args[1:], stdout, stderr, lookupEnv)
+	case "repositories":
+		return runRegistryCredentialsRepositories(prog, args[1:], stdout, stderr, lookupEnv)
+	case "tags":
+		return runRegistryCredentialsTags(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown registry-credentials subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, registryCredentialsUsage(prog))
@@ -47,6 +51,8 @@ func registryCredentialsUsage(prog string) string {
   %[1]s registry-credentials update <id> --name NAME --registry-host HOST --username USER [flags]              update a registry credential, optionally rotating its password
   %[1]s registry-credentials delete <id> [flags]                                                               disconnect a registry credential
   %[1]s registry-credentials test <id> [flags]                                                                 authenticate a credential against its registry, without pulling anything
+  %[1]s registry-credentials repositories <id> [flags]                                                         list every repository in the credential's external registry
+  %[1]s registry-credentials tags <id> <repository> [flags]                                                    list every tag pushed for one repository in that registry
 
 Run "%[1]s registry-credentials <subcommand> -h" for a subcommand's own flags.
 `, prog)
