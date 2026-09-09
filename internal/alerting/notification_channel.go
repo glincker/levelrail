@@ -171,6 +171,29 @@ func sendTestNotification(ctx context.Context, client *http.Client, sender email
 		return postJSON(ctx, client, notifyURL, teamsPayload{
 			Type: "MessageCard", Context: "http://schema.org/extensions", Summary: testText, Text: testText,
 		})
+	case NotifyMattermost:
+		return postJSON(ctx, client, notifyURL, mattermostPayload{Text: testText})
+	case NotifyLark:
+		return postJSON(ctx, client, notifyURL, larkPayload{MsgType: "text", Content: larkContent{Text: testText}})
+	case NotifyGotify:
+		return postJSON(ctx, client, notifyURL, gotifyPayload{Title: "Levelrail", Message: testText, Priority: 5})
+	case NotifyNtfy:
+		token, cleanURL, err := extractNtfyToken(notifyURL)
+		if err != nil {
+			return fmt.Errorf("alerting: test notification: %w", err)
+		}
+		payload := ntfyPayload{Title: "Levelrail", Message: testText, Priority: 4}
+		if token == "" {
+			return postJSON(ctx, client, cleanURL, payload)
+		}
+		return postJSONWithAuth(ctx, client, cleanURL, payload, "Bearer "+token)
+	case NotifyResend:
+		key, to, from, err := parseResendCreds(notifyURL)
+		if err != nil {
+			return fmt.Errorf("alerting: test notification: %w", err)
+		}
+		payload := resendPayload{From: from, To: []string{to}, Subject: "[Levelrail] test notification", Text: testText}
+		return postJSONWithAuth(ctx, client, resendAPIURL, payload, "Bearer "+key)
 	case NotifyEmail:
 		if sender == nil {
 			return fmt.Errorf("alerting: test notification: email is not configured on this control plane")

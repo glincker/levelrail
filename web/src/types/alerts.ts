@@ -40,6 +40,11 @@ export type NotifyKind =
   | 'pushover'
   | 'pagerduty'
   | 'teams'
+  | 'resend'
+  | 'ntfy'
+  | 'gotify'
+  | 'mattermost'
+  | 'lark'
 
 // GET/POST /api/v1/apps/{name}/alerts response shape. `id` and
 // `resource_id` are always server-assigned (ruleResource's doc comment

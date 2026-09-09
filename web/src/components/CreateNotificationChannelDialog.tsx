@@ -36,6 +36,7 @@ import {
   useTestNotificationChannel,
 } from '../queries/notificationChannels'
 import { buildPushoverNotifyUrl } from '../lib/pushoverNotifyUrl'
+import { buildResendNotifyUrl } from '../lib/resendNotifyUrl'
 import type { NotificationChannelKind } from '../types/notificationChannel'
 
 const KIND_ORDER: NotificationChannelKind[] = [
@@ -43,10 +44,15 @@ const KIND_ORDER: NotificationChannelKind[] = [
   'discord',
   'telegram',
   'teams',
+  'mattermost',
+  'lark',
   'generic',
   'email',
   'pushover',
   'pagerduty',
+  'resend',
+  'ntfy',
+  'gotify',
 ]
 
 // Destination placeholder and setup-guide link per kind: each URL is the
@@ -81,6 +87,23 @@ const KIND_META: Record<
     placeholder: 'https://example.webhook.office.com/webhookb2/...',
     href: 'https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook',
   },
+  mattermost: {
+    placeholder: 'https://mattermost.example.com/hooks/...',
+    href: 'https://developers.mattermost.com/integrate/webhooks/incoming/',
+  },
+  lark: {
+    placeholder: 'https://open.larksuite.com/open-apis/bot/v2/hook/...',
+    href: 'https://open.larksuite.com/document/client-docs/bot-v3/add-custom-bot',
+  },
+  resend: { placeholder: '' },
+  ntfy: {
+    placeholder: 'https://ntfy.sh/my-topic',
+    href: 'https://docs.ntfy.sh/publish/',
+  },
+  gotify: {
+    placeholder: 'https://gotify.example.com/message?token=...',
+    href: 'https://gotify.net/docs/pushmsg',
+  },
 }
 
 const createChannelSchema = z
@@ -95,11 +118,19 @@ const createChannelSchema = z
       'pushover',
       'pagerduty',
       'teams',
+      'resend',
+      'ntfy',
+      'gotify',
+      'mattermost',
+      'lark',
     ]),
     notifyUrl: z.string().trim(),
     pushoverUserKey: z.string().trim(),
     pushoverApiToken: z.string().trim(),
     pagerdutyRoutingKey: z.string().trim(),
+    resendApiKey: z.string().trim(),
+    resendTo: z.string().trim(),
+    resendFrom: z.string().trim(),
   })
   .superRefine((data, ctx) => {
     if (data.kind === 'pushover') {
@@ -125,6 +156,36 @@ const createChannelSchema = z
           code: 'custom',
           message: 'Integration/Routing Key is required',
           path: ['pagerdutyRoutingKey'],
+        })
+      }
+      return
+    }
+    if (data.kind === 'resend') {
+      if (!data.resendApiKey) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'API Key is required',
+          path: ['resendApiKey'],
+        })
+      }
+      if (!data.resendTo) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Destination address is required',
+          path: ['resendTo'],
+        })
+      } else if (!z.email().safeParse(data.resendTo).success) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must be a valid email address',
+          path: ['resendTo'],
+        })
+      }
+      if (data.resendFrom && !z.email().safeParse(data.resendFrom).success) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must be a valid email address',
+          path: ['resendFrom'],
         })
       }
       return
@@ -162,13 +223,16 @@ const DEFAULT_VALUES: CreateChannelForm = {
   pushoverUserKey: '',
   pushoverApiToken: '',
   pagerdutyRoutingKey: '',
+  resendApiKey: '',
+  resendTo: '',
+  resendFrom: '',
 }
 
-// The single notify_url string the API expects, per kind: Pushover's
-// two credentials get packed into it client-side (buildPushoverNotifyUrl),
-// PagerDuty's routing key is sent through as-is (it's the whole
-// notify_url for that kind, not a URL), every other kind sends the
-// destination field as-is.
+// The single notify_url string the API expects, per kind: Pushover's and
+// Resend's credentials get packed into it client-side
+// (buildPushoverNotifyUrl/buildResendNotifyUrl), PagerDuty's routing key
+// is sent through as-is (it's the whole notify_url for that kind, not a
+// URL), every other kind sends the destination field as-is.
 function resolveNotifyUrl(values: CreateChannelForm): string {
   if (values.kind === 'pushover') {
     return buildPushoverNotifyUrl(
@@ -178,6 +242,13 @@ function resolveNotifyUrl(values: CreateChannelForm): string {
   }
   if (values.kind === 'pagerduty') {
     return values.pagerdutyRoutingKey.trim()
+  }
+  if (values.kind === 'resend') {
+    return buildResendNotifyUrl(
+      values.resendApiKey.trim(),
+      values.resendTo.trim(),
+      values.resendFrom.trim() || undefined,
+    )
   }
   return values.notifyUrl.trim()
 }
@@ -199,12 +270,16 @@ export function CreateNotificationChannelDialog() {
   const pushoverUserKey = watch('pushoverUserKey')
   const pushoverApiToken = watch('pushoverApiToken')
   const pagerdutyRoutingKey = watch('pagerdutyRoutingKey')
+  const resendApiKey = watch('resendApiKey')
+  const resendTo = watch('resendTo')
   const hasDestination =
     kind === 'pushover'
       ? Boolean(pushoverUserKey.trim() && pushoverApiToken.trim())
       : kind === 'pagerduty'
         ? Boolean(pagerdutyRoutingKey.trim())
-        : Boolean(notifyUrl.trim())
+        : kind === 'resend'
+          ? Boolean(resendApiKey.trim() && resendTo.trim())
+          : Boolean(notifyUrl.trim())
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -393,14 +468,72 @@ export function CreateNotificationChannelDialog() {
               />
               <FieldError errors={[formState.errors.pagerdutyRoutingKey]} />
               <FieldHint href={KIND_META.pagerduty.href}>
-                What gets sent: app name, image/tag, success or failure, and
-                the error message on failure. Nothing else about your app.
+                What gets sent: app name, image/tag, success or failure, and the
+                error message on failure. Nothing else about your app.
               </FieldHint>
             </Field>
+          ) : kind === 'resend' ? (
+            <>
+              <Field>
+                <FieldLabel htmlFor="channel-resend-api-key">
+                  Resend API Key
+                </FieldLabel>
+                <Input
+                  id="channel-resend-api-key"
+                  placeholder="re_123456789"
+                  {...register('resendApiKey', {
+                    onChange: () => {
+                      setVerified(false)
+                    },
+                  })}
+                />
+                <FieldError errors={[formState.errors.resendApiKey]} />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="channel-resend-to">
+                  Destination email address
+                </FieldLabel>
+                <Input
+                  id="channel-resend-to"
+                  placeholder="ops@example.com"
+                  {...register('resendTo', {
+                    onChange: () => {
+                      setVerified(false)
+                    },
+                  })}
+                />
+                <FieldError errors={[formState.errors.resendTo]} />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="channel-resend-from">
+                  From address (optional)
+                </FieldLabel>
+                <Input
+                  id="channel-resend-from"
+                  placeholder="alerts@yourdomain.com"
+                  {...register('resendFrom', {
+                    onChange: () => {
+                      setVerified(false)
+                    },
+                  })}
+                />
+                <FieldError errors={[formState.errors.resendFrom]} />
+                <FieldHint href="https://resend.com/docs/dashboard/domains/introduction">
+                  Left blank, sends from Resend&apos;s own onboarding@resend.dev
+                  sender, which works without verifying a domain.
+                </FieldHint>
+              </Field>
+            </>
           ) : (
             <Field>
               <FieldLabel htmlFor="channel-notify-url">
-                {kind === 'email' ? 'Notify email address' : 'Webhook URL'}
+                {kind === 'email'
+                  ? 'Notify email address'
+                  : kind === 'ntfy'
+                    ? 'Topic URL'
+                    : kind === 'gotify'
+                      ? 'Message endpoint URL'
+                      : 'Webhook URL'}
               </FieldLabel>
               <Input
                 id="channel-notify-url"
@@ -413,8 +546,8 @@ export function CreateNotificationChannelDialog() {
               />
               <FieldError errors={[formState.errors.notifyUrl]} />
               <FieldHint href={KIND_META[kind].href}>
-                What gets sent: app name, image/tag, success or failure, and
-                the error message on failure. Nothing else about your app.
+                What gets sent: app name, image/tag, success or failure, and the
+                error message on failure. Nothing else about your app.
               </FieldHint>
             </Field>
           )}

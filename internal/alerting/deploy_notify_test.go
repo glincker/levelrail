@@ -194,6 +194,111 @@ func TestSendDeployOutcome_Telegram_MissingChatID_Errors(t *testing.T) {
 	}
 }
 
+func TestSendDeployOutcome_Mattermost_PostsTextField(t *testing.T) {
+	var got map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	target := DeployTarget{NotifyURL: srv.URL, NotifyKind: NotifyMattermost, Enabled: true}
+	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
+	if err != nil {
+		t.Fatalf("sendDeployOutcome() error = %v", err)
+	}
+	text, ok := got["text"].(string)
+	if !ok || !strings.Contains(text, "web") || !strings.Contains(text, "SUCCEEDED") {
+		t.Errorf("Mattermost payload = %+v, want a text field mentioning the app and SUCCEEDED", got)
+	}
+}
+
+func TestSendDeployOutcome_Lark_PostsMsgTypeAndContent(t *testing.T) {
+	var got larkPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	target := DeployTarget{NotifyURL: srv.URL, NotifyKind: NotifyLark, Enabled: true}
+	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: false, Error: "boom"})
+	if err != nil {
+		t.Fatalf("sendDeployOutcome() error = %v", err)
+	}
+	if got.MsgType != "text" || !strings.Contains(got.Content.Text, "boom") {
+		t.Errorf("Lark payload = %+v, want msg_type text mentioning the error", got)
+	}
+}
+
+func TestSendDeployOutcome_Gotify_PostsTitleAndMessage(t *testing.T) {
+	var got gotifyPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	target := DeployTarget{NotifyURL: srv.URL + "/message?token=t", NotifyKind: NotifyGotify, Enabled: true}
+	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
+	if err != nil {
+		t.Fatalf("sendDeployOutcome() error = %v", err)
+	}
+	if got.Title != "web" {
+		t.Errorf("Title = %q, want web", got.Title)
+	}
+	if got.Priority != 2 {
+		t.Errorf("Priority = %d, want 2 for a succeeded deploy", got.Priority)
+	}
+}
+
+func TestSendDeployOutcome_Ntfy_AuthTokenMovedToHeader(t *testing.T) {
+	var gotAuth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	target := DeployTarget{NotifyURL: srv.URL + "/topic?auth=tk", NotifyKind: NotifyNtfy, Enabled: true}
+	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: false})
+	if err != nil {
+		t.Fatalf("sendDeployOutcome() error = %v", err)
+	}
+	if gotAuth != "Bearer tk" {
+		t.Errorf("Authorization header = %q, want Bearer tk", gotAuth)
+	}
+}
+
+func TestSendDeployOutcome_Resend_PostsAuthHeaderAndPayload(t *testing.T) {
+	var got resendPayload
+	var gotAuth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+	original := resendAPIURL
+	resendAPIURL = srv.URL
+	t.Cleanup(func() { resendAPIURL = original })
+
+	target := DeployTarget{
+		NotifyURL:  "https://api.resend.com/emails?key=re_secret&to=ops%40example.com",
+		NotifyKind: NotifyResend, Enabled: true,
+	}
+	err := sendDeployOutcome(context.Background(), nil, nil, target, DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
+	if err != nil {
+		t.Fatalf("sendDeployOutcome() error = %v", err)
+	}
+	if gotAuth != "Bearer re_secret" {
+		t.Errorf("Authorization header = %q, want Bearer re_secret", gotAuth)
+	}
+	if len(got.To) != 1 || got.To[0] != "ops@example.com" {
+		t.Errorf("payload.To = %v, want [ops@example.com]", got.To)
+	}
+}
+
 func TestSendDeployOutcome_Generic_PostsStructuredPayload(t *testing.T) {
 	var got deployGenericPayload
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

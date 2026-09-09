@@ -100,7 +100,7 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 			rt.internalError(w, "api: deploy compose: save service failed", err, slog.String("service", svc.Name))
 			return
 		}
-		rt.recordInstantDeployAttempt(r.Context(), svc.Name, svc.Image, store.DeployAttemptSourceCompose)
+		rt.recordInstantDeployAttempt(r.Context(), svc, svc.Image, store.DeployAttemptSourceCompose)
 		out = append(out, toAppResource(svc))
 	}
 

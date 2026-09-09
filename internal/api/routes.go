@@ -95,6 +95,19 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// populate a role picker even without AbilityRoot.
 	mux.HandleFunc("GET /api/v1/roles", rt.requireAbility(AbilityRead, rt.handleListRoles))
 
+	// Team invites (invites.go): a deferred version of POST
+	// /api/v1/auth/users above, same AbilityRoot gate on create/revoke for
+	// the same reason that route's own comment gives (the caller picks
+	// the invited abilities, so only a root caller may hand out any
+	// subset of them). Listing stays AbilityRead, same tier as the user
+	// list. Accept is necessarily public, gated by possession of the
+	// emailed token instead of a session or ability, the same shape as
+	// reset-password below.
+	mux.HandleFunc("POST /api/v1/invites", rt.requireAbility(AbilityRoot, rt.handleCreateInvite))
+	mux.HandleFunc("GET /api/v1/invites", rt.requireAbility(AbilityRead, rt.handleListInvites))
+	mux.HandleFunc("DELETE /api/v1/invites/{id}", rt.requireAbility(AbilityRoot, rt.handleRevokeInvite))
+	mux.HandleFunc("POST /api/v1/invites/accept", rt.handleAcceptInvite)
+
 	// IAM policies (iam.go/iam_handlers.go): resource-scoped Allow/Deny
 	// documents attached to a user or token, additive on top of the flat
 	// Abilities list above. Reading the catalog is AbilityRead like roles

@@ -509,6 +509,16 @@ func WithPreviewTTL(d time.Duration) Option {
 	return func(rt *Router) { rt.previewTTL = d }
 }
 
+// WithInviteTTL overrides how long a team invite stays acceptable before
+// GetInviteByHash's expiry check rejects it. Without one configured (or
+// passed as 0), defaultInviteTTL (7 days) applies. Same "no hardcoded
+// thresholds, use env vars" shape as WithPreviewTTL: this package never
+// reads the environment directly, cmd/levelrail/main.go reads
+// APP_INVITE_TTL and passes the parsed duration here.
+func WithInviteTTL(d time.Duration) Option {
+	return func(rt *Router) { rt.inviteTTL = d }
+}
+
 // WithAuditLogRetention overrides how long an audit_log row survives
 // before PurgeOldAuditEntries removes it. Without one configured (or
 // passed as 0), defaultAuditLogRetention (90 days) applies. Same "no

@@ -53,11 +53,12 @@ still open. This page describes what's actually true today.
   shared checkout, each scoped to its own `build.baseDirectory`, linked
   under one `store.App`, and independently reachable over HTTPS through
   one ingress pass.
-- A curated ~15-entry service template catalog (ADR 015: reverses the
+- A curated 81-entry service template catalog (ADR 015: reverses the
   original "not chasing Coolify's 280 templates" non-goal, once Compose
   support existed to build it on), served over the API and browsable
-  from the creation wizard. Every template's Compose body is written
-  fresh for this platform, not copied from another project's dataset.
+  from the creation wizard, with a category-specific icon per card.
+  Every template's Compose body is written fresh for this platform, not
+  copied from another project's dataset.
 - Git webhook receiver with HMAC-SHA256 signature verification, branch
   gating, and SHA-pinned fetch (no `git` CLI shelling).
 - Persisted per-app git source and multi-app GitHub webhook support,
@@ -159,10 +160,16 @@ still open. This page describes what's actually true today.
   route-level code splitting.
 - Rollback: previous images are retained, with deploy history and full
   build-log persistence. CLI `rollback` and `restart` subcommands.
-- Deploy comparison: `GET /api/v1/apps/{name}/deploys/compare` diffs
-  two deploy attempts' image tag and other snapshotted fields, with a
-  frontend view. Env vars, ports, domains, and resource limits aren't
-  snapshotted per attempt, so those aren't part of the diff yet.
+- Deploy comparison: `GET /api/v1/apps/{name}/deploys/compare` diffs two
+  deploy attempts' image tag, commit, trigger source, env var keys,
+  ports, domains, and resource limits, with a frontend view. Env values
+  are snapshotted per attempt for ordinary vars only: a secret- or
+  database-backed key reports only its key and whether it was added or
+  removed, never a value, since this control plane has no way to detect
+  a value change for either without decrypting a secret or re-resolving
+  a live database reference. Health checks, replica count, deploy
+  strategy, volumes, and labels still aren't snapshotted per attempt, so
+  those aren't part of the diff yet.
 - Build-failure diagnosis: a deterministic pattern matcher over a
   failed build or container's actual log text (Docker daemon down,
   image pull/auth failure, missing Dockerfile, npm/pnpm errors, port
@@ -223,21 +230,29 @@ still open. This page describes what's actually true today.
 - An MCP server (`cmd/levelrail-mcp`), wrapping the same versioned REST
   API and bearer-token model the CLI already uses, so a token scoped to
   fewer abilities than a tool needs gets the same 403 the REST API
-  itself would return. Thirty-three tools today, across apps (list,
+  itself would return. Forty-five tools today, across apps (list,
   get, deploy, deploy-compose, rollback, restart, status,
-  deploy-history, logs, metrics), databases (list/get), nodes
-  (list/get/health), service templates (list/get), feature flags
+  deploy-history, logs, metrics, git source, pre/post-deploy hook run
+  outcomes, BYO TLS certificate status per domain), databases (list/get),
+  nodes (list/get/health), service templates (list/get), feature flags
   (list/get), resource recommendations (app and database), preview
-  environments (list, plus a sweep tool), alert rules (list), the audit
-  log (list), deploy comparison, build-failure diagnosis, and delivery
-  history for notifications, webhooks, and backup verifications (list).
-  Twenty-eight of the thirty-three are read-and-suggest; the other five
-  mutate something: deploy, deploy-compose, rollback, and restart for
-  apps (as documented before), plus the preview sweep, which tears down
-  stale preview environments on demand, the same action the scheduled
-  TTL sweep above (see Preview environments) performs automatically.
-  Nothing here reaches into the reconciler directly, and no tool
-  deletes a resource or touches secrets/resource limits.
+  environments (list, plus a sweep tool), alert rules (list), IAM
+  policies (list/get), notification channels and their delivery
+  history (list), organizations and projects (list), registry
+  credentials (list), backup targets (list, plus a connection test),
+  app service volume backup history (list), the audit log (list),
+  deploy comparison, build-failure diagnosis, and delivery history for
+  webhooks and backup verifications (list). Thirty-nine of the
+  forty-five are read-and-suggest; the other six perform a real
+  action: deploy, deploy-compose, rollback, and restart for apps (as
+  documented before), the preview sweep, which tears down stale
+  preview environments on demand, the same action the scheduled TTL
+  sweep above (see Preview environments) performs automatically, and a
+  backup-target connection test, which probes a bucket's stored
+  credentials against the target on demand without uploading,
+  downloading, or deleting anything. Nothing here reaches into the
+  reconciler directly, and no tool deletes a resource or touches
+  secrets/resource limits.
 - Live end-to-end test suite: whole-chain push-to-HTTPS, rollback in
   both directions, the real git webhook path, database reconciliation,
   non-default port routing, node placement, protected-environment
@@ -440,6 +455,20 @@ still open. This page describes what's actually true today.
   a `HooksEditor` panel on the app's Deploy settings page. See
   `internal/reconcile/application/controller.go`'s own doc comments for
   the full timing and failure-handling contract.
+- Team invites (`internal/api/invites.go`, `internal/store/invite.go`):
+  an email/role invite layered on top of `POST /api/v1/auth/users`
+  rather than open self-registration. Only a root caller can create one;
+  the platform mints a random token, persists only its SHA-256 hash
+  (same convention as API tokens and password-reset tokens), and
+  best-effort emails an accept link, always returning the link in the
+  response too so a control plane with no SMTP configured stays fully
+  usable by copy/paste. Accepting is public, gated purely by possession
+  of the token, and creates exactly the one user the invite named
+  through the same insertion path direct user creation uses, nothing
+  open-ended. Dashboard: an "Invite member" dialog and pending-invites
+  list (with copy-link and revoke) on the Users settings page, plus a
+  public `/accept-invite` page. CLI: `levelrail-cli invites
+  create/list/revoke`.
 
 ## In progress
 

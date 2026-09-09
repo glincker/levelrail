@@ -17,3 +17,21 @@ func buildPushoverNotifyURL(userKey, apiToken string) string {
 	q.Set("user", userKey)
 	return pushoverEndpoint + "?" + q.Encode()
 }
+
+// resendEndpoint is Resend's fixed transactional-email endpoint. A
+// resend notify_url is this URL plus key/to/from query params, matching
+// internal/alerting/notify.go's own parseResendCreds convention.
+const resendEndpoint = "https://api.resend.com/emails"
+
+// buildResendNotifyURL packs a Resend API key and destination address
+// (plus an optional from address) into the notify_url shape the control
+// plane expects, the same convention buildPushoverNotifyURL uses above.
+func buildResendNotifyURL(apiKey, to, from string) string {
+	q := url.Values{}
+	q.Set("key", apiKey)
+	q.Set("to", to)
+	if from != "" {
+		q.Set("from", from)
+	}
+	return resendEndpoint + "?" + q.Encode()
+}
