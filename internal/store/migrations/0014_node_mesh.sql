@@ -1,4 +1,4 @@
--- Phase 3 (TASKS.md 3.4): the two facts about a node that the WireGuard
+-- Phase 3: the two facts about a node that the WireGuard
 -- mesh needs and 0008 had no reason to carry.
 --
 -- Both default to the empty string, which internal/network reads as
