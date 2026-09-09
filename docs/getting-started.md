@@ -232,6 +232,9 @@ itself.
   node agent, and the reconciler fit together.
 - [docs/app-spec-reference.md](app-spec-reference.md): the full
   `app.yaml` schema.
+- [docs/domains-and-ingress.md](domains-and-ingress.md): why there's no
+  reverse proxy to set up, and how to get your first domain live over
+  HTTPS.
 - [docs/comparison.md](comparison.md): how Levelrail's approach
   differs from Coolify, Dokploy, CapRover, Dokku, and Kamal.
 - [docs/roadmap.md](roadmap.md): what's shipped, what's in progress,
