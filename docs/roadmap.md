@@ -1,8 +1,8 @@
 # Roadmap
 
 Status as of 2026-09-01 (refreshed against current `main`), not the
-aspirational plan. See CLAUDE.md in the
-repo for the full phase-by-phase design doc if you want the long version.
+aspirational plan. See `/adr` for the phase-by-phase architectural
+decisions behind this build order.
 The build has moved further and less linearly than that phase plan
 implies: parts of Phase 3 (multi-node, the WireGuard mesh) are shipped
 while some Phase 1 items (real public ACME against a live domain) are

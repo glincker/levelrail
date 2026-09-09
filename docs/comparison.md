@@ -99,14 +99,13 @@ competitors. This table closes that gap, using the same method as the
 architecture table at the top of this page: every competitor claim comes
 from reading the cloned source directly, a Laravel/Livewire app for
 Coolify, a TypeScript monorepo for Dokploy, a Node.js/TypeScript app for
-CapRover, a Bash plugin tree for Dokku, and a Ruby gem for Kamal, at
-`docs-local/competitor-clones/`, not from general knowledge of these
-products. Where a clone didn't contain enough evidence to answer
-confidently, the cell says "not stated in research" rather than
-guessing. Levelrail's own column is sourced from `docs/roadmap.md`
-(current as of 2026-09-01), cross-checked against the file paths cited
-on `main`. Full per-competitor citation detail beyond what fits here
-lives in `docs-local/research/prior-art-feature-matrix.md`.
+CapRover, a Bash plugin tree for Dokku, and a Ruby gem for Kamal, from
+this project's own private competitor research, not from general
+knowledge of these products. Where a clone didn't contain enough
+evidence to answer confidently, the cell says "not stated in research"
+rather than guessing. Levelrail's own column is sourced from
+`docs/roadmap.md` (current as of 2026-09-01), cross-checked against the
+file paths cited on `main`.
 
 | Feature | Levelrail | Coolify | Dokploy | CapRover | Dokku | Kamal |
 | --- | --- | --- | --- | --- | --- | --- |

@@ -190,8 +190,8 @@ The object form must set at least one of the three fields.
 
 ### Planned, not yet implemented
 
-None found. Every field in this project's own planning example
-(`CLAUDE.md` section 4.9) is parsed and validated by `internal/spec` today.
+None found. Every field in this project's original app-spec design is
+parsed and validated by `internal/spec` today.
 
 ## Validation
 

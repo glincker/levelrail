@@ -4,8 +4,8 @@ This directory is the source of truth for Levelrail's user-facing and
 contributor-facing documentation. Two things are true about it on purpose:
 
 - **It ships with the repo, not the binary.** Nothing under `/docs` is
-  `embed.FS`'d into the control plane binary or the Docker image (unlike
-  `web/`'s built frontend assets, see `CLAUDE.md` section 4.1). It's
+  `embed.FS`'d into the control plane binary or the Docker image, unlike
+  `web/`'s built frontend assets. It's
   read on GitHub today; if it ever moves to a hosted docs site
   (`glinr.com` or elsewhere), that's a publishing step on top of these
   files, not a rewrite of them.
