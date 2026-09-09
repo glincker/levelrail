@@ -233,7 +233,7 @@ export function GitBuildSourceFields({
               {/* Only these four tabs: the four build.type cases
                   internal/deploy.Pipeline.Deploy actually has a case for
                   (internal/api/builds.go's handleTriggerBuild). No Nixpacks
-                  (this project uses Railpack instead, see CLAUDE.md 4.4)
+                  (this project uses Railpack instead of Nixpacks)
                   and no Compose (internal/deploy's own compose case still
                   returns "not yet supported"). Same order and tab layout
                   GitSourceCard.tsx already uses for this exact choice,

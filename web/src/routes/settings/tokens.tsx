@@ -48,8 +48,7 @@ function TokensPage() {
               mint or revoke another token on its own behalf.
             </p>
             {/* Dokploy's API-keys screen links straight to /swagger from
-                this same header (docs-local/research/competitor-onboarding-
-                auth-ux.md finding 12): the moment someone has a credential
+                this same header: the moment someone has a credential
                 is the moment they most want to know what to do with it.
                 brand.DocsURL is a real field on the /api/v1/brand response
                 (part of the rebrandability contract), not an invented

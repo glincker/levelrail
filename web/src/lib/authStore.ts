@@ -7,11 +7,11 @@
 // The real session lives in an httpOnly cookie the frontend can never
 // read (internal/api/auth.go's session_token), so this is only ever a
 // heuristic: "did the last login/register call succeed, and has nothing
-// cleared that since." It answers docs-local/research/dashboard-gap-audit-
-// and-devmode.md gap #4's "no prior successful login recorded" case
-// (routes/__root.tsx's beforeLoad guard) without a network round trip on
-// every navigation. The actual enforcement is still server-side: any
-// route that gets a real 401 back (session expired, server restarted and
+// cleared that since." It answers the "no prior successful login
+// recorded" case (routes/__root.tsx's beforeLoad guard) without a
+// network round trip on every navigation. The actual enforcement is
+// still server-side: any route that gets a real 401 back (session
+// expired, server restarted and
 // wiped its in-memory session store) clears this and redirects too, via
 // the QueryCache/MutationCache handler in main.tsx.
 //
