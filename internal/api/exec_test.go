@@ -35,6 +35,10 @@ type fakeExecAppRuntime struct {
 	updateResourcesCalls     int
 	updateResourcesID        string
 	updateResourcesResources docker.Resources
+
+	listByPrefixResult []docker.ContainerState
+	listByPrefixErr    error
+	listByPrefixCalls  chan struct{}
 }
 
 func (f *fakeExecAppRuntime) InspectByName(_ context.Context, _ string) (*docker.ContainerState, error) {
@@ -62,7 +66,10 @@ func (f *fakeExecAppRuntime) ListImages(context.Context, string) ([]docker.Image
 	return nil, nil
 }
 func (f *fakeExecAppRuntime) ListByPrefix(context.Context, string) ([]docker.ContainerState, error) {
-	return nil, nil
+	if f.listByPrefixCalls != nil {
+		f.listByPrefixCalls <- struct{}{}
+	}
+	return f.listByPrefixResult, f.listByPrefixErr
 }
 func (f *fakeExecAppRuntime) Stop(context.Context, string, time.Duration) error { return nil }
 func (f *fakeExecAppRuntime) Remove(context.Context, string, bool) error        { return nil }

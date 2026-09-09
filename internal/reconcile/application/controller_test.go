@@ -812,6 +812,40 @@ func TestController_Reconcile_Suspended_NoContainers_NoOp(t *testing.T) {
 	}
 }
 
+func TestController_Teardown_RemovesRunningContainers(t *testing.T) {
+	rt := newFakeRuntime(0)
+	target := ContainerName("web", "img:v1", "")
+	rt.seed(target, true)
+
+	c := New("web", &fakeStore{}, rt)
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("Teardown() error = %v", err)
+	}
+	if names := rt.names(); len(names) != 0 {
+		t.Errorf("containers after teardown = %v, want none", names)
+	}
+}
+
+func TestController_Teardown_RemoveFails_ReturnsError(t *testing.T) {
+	rt := newFakeRuntime(0)
+	target := ContainerName("web", "img:v1", "")
+	rt.seed(target, true)
+	rt.removeErr = errors.New("permission denied")
+
+	c := New("web", &fakeStore{}, rt)
+	if err := c.Teardown(context.Background()); err == nil {
+		t.Fatal("Teardown() error = nil, want the removal failure to surface")
+	}
+}
+
+func TestController_Teardown_NoContainers_NoOp(t *testing.T) {
+	rt := newFakeRuntime(0)
+	c := New("web", &fakeStore{}, rt)
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("Teardown() error = %v", err)
+	}
+}
+
 func TestController_Reconcile_CleanupFailure_StillReportsReadyButErrors(t *testing.T) {
 	rt := newFakeRuntime(0)
 	oldTarget := ContainerName("web", "img:v1", "")
