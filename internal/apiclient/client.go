@@ -1730,6 +1730,25 @@ func (c *Client) PurgeAuditLog(ctx context.Context) (PurgeAuditLogResult, error)
 	return out, err
 }
 
+// ListDeployAttempts calls GET /api/v1/apps/{name}/deploy-attempts: the
+// real, row-per-trigger-call deploy history for name, newest first.
+// Additive to GetDeployStatus's reconcile conditions, not a replacement.
+func (c *Client) ListDeployAttempts(ctx context.Context, name string) ([]DeployAttemptResource, error) {
+	var out []DeployAttemptResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/deploy-attempts", nil, &out)
+	return out, err
+}
+
+// ListCertificates calls GET /api/v1/certificates: every certificate
+// currently in this control plane's certmagic storage, healthy or not.
+// An empty slice means no certificate has ever been issued, not an
+// error.
+func (c *Client) ListCertificates(ctx context.Context) ([]CertificateResource, error) {
+	var out []CertificateResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/certificates", nil, &out)
+	return out, err
+}
+
 // PathEscape guards against a name containing characters that would
 // otherwise change the request's URL shape (a "/" turning one path
 // segment into two, for instance). Server-side validation is the real
