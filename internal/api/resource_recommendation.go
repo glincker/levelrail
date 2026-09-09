@@ -73,10 +73,9 @@ func toResourceRecommendationResource(res rightsizing.Result) resourceRecommenda
 // /api/v1/apps/{name}/resource-recommendation: a read-only, deterministic
 // suggestion (internal/rightsizing) for this app's memory and CPU limits,
 // derived from its own historical usage samples and, when found, a real
-// OOM-kill log signal. Per CLAUDE.md section 4.11, this is a
-// read-and-suggest layer only: it never writes to any resource, never
-// calls an external model, and the suggestion is never applied
-// automatically.
+// OOM-kill log signal. This is a read-and-suggest layer only: it
+// never writes to any resource, never calls an external model, and
+// the suggestion is never applied automatically.
 func (rt *Router) handleAppResourceRecommendation(w http.ResponseWriter, r *http.Request) {
 	if rt.telemetry == nil {
 		writeError(w, http.StatusNotImplemented, "telemetry is not configured on this control plane")

@@ -638,10 +638,8 @@ func TestConfig_Branch_Configured(t *testing.T) {
 // TestServeHTTP_TargetBranch_RecordsDeployAttempt_Succeeded is the third
 // of this task's three real trigger paths: an unattended git push must
 // mint and save a deploy_attempts row just like the two HTTP-triggered
-// paths in internal/api, closing exactly the gap
-// docs-local/research/deploy-attempt-id-and-log-persistence.md frames as
-// the reason persistence matters most ("this product's core loop is
-// unattended webhook deploys").
+// paths in internal/api, closing exactly the gap that matters most
+// here: this product's core loop is unattended webhook deploys.
 func TestServeHTTP_TargetBranch_RecordsDeployAttempt_Succeeded(t *testing.T) {
 	cfg := testConfig()
 	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}

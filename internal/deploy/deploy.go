@@ -243,16 +243,14 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 
 // deployRailpack mirrors deployDockerfile's shape exactly, substituting
 // Railpack's own provider detection for a user-authored Dockerfile: no
-// build.Path to resolve, since there is no Dockerfile to point at. See
-// docs-local/research/railpack-integration-decision.md for why this
-// needs internal/build's separate BuildRailpack method (a different,
+// build.Path to resolve, since there is no Dockerfile to point at.
+// This needs internal/build's separate BuildRailpack method (a different,
 // Definition-based BuildKit solve path) rather than a variant
 // build.Request fed through deployDockerfile's existing p.builder.Build
 // call.
 //
-// This slice supports exactly two Railpack providers, node and golang
-// (docs-local/research/railpack-integration-decision.md's recommendation
-// section): any other provider Railpack itself detects fails loudly here
+// This slice supports exactly two Railpack providers, node and golang:
+// any other provider Railpack itself detects fails loudly here
 // with the service name and the detected provider named explicitly, the
 // same "fail loudly, not silently" pattern validateEnv already
 // establishes for unsupported env resolution, rather than a generic

@@ -54,9 +54,9 @@ func toDiagnosisResource(res diagnose.Result, attemptID string) diagnosisResourc
 // read-only, deterministic explanation (internal/diagnose) of why this
 // app's most recent deploy attempt (or a specific past one, via
 // ?deploy_id=) failed, or why it's crashlooping, synthesized from
-// signals the platform already collects. Per CLAUDE.md section 4.11,
-// this is a read-and-suggest layer only: it never writes to any
-// resource and never calls an external model.
+// signals the platform already collects. AI-driven diagnosis is a
+// read-and-suggest layer only: it never writes to any resource and
+// never calls an external model.
 func (rt *Router) handleDiagnoseApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	ctx := r.Context()

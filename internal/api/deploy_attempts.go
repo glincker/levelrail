@@ -15,9 +15,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// This file is the real deploy-attempt history and log surface,
-// implementing docs-local/research/deploy-attempt-id-and-log-persistence.md's
-// recommendation: a row per real trigger call (deploys.go's
+// This file is the real deploy-attempt history and log surface: a
+// row per real trigger call (deploys.go's
 // handleTriggerDeploy, builds.go's handleTriggerBuild, and
 // internal/webhook's own attempt tracking) in store.DeployAttempt, plus
 // a full build/log stream over SSE that serves either a live tail (the
