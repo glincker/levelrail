@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -87,6 +88,40 @@ func TestHandleCreateNotificationChannel_PushoverKindAccepted(t *testing.T) {
 	}
 	if got.Kind != "pushover" {
 		t.Errorf("Kind = %q, want pushover", got.Kind)
+	}
+}
+
+func TestHandleCreateNotificationChannel_NewKindsAccepted(t *testing.T) {
+	tests := []struct {
+		kind      string
+		notifyURL string
+	}{
+		{"resend", "https://api.resend.com/emails?key=re_secret&to=ops%40example.com"},
+		{"ntfy", "https://ntfy.sh/my-topic"},
+		{"gotify", "https://gotify.example.com/message?token=app-token"},
+		{"mattermost", "https://mattermost.example.com/hooks/xyz"},
+		{"lark", "https://open.larksuite.com/open-apis/bot/v2/hook/xyz"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.kind, func(t *testing.T) {
+			rt, db, _ := newTestRouterWithNotificationChannels(t)
+			cookie := loginTestSession(t, rt, db)
+
+			body := fmt.Sprintf(`{"name":"My Channel","kind":%q,"notify_url":%q}`, tt.kind, tt.notifyURL)
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/notification-channels", body))
+			if rec.Code != http.StatusCreated {
+				t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+			}
+
+			var got notificationChannelResource
+			if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+				t.Fatalf("decode: %v", err)
+			}
+			if got.Kind != tt.kind {
+				t.Errorf("Kind = %q, want %q", got.Kind, tt.kind)
+			}
+		})
 	}
 }
 

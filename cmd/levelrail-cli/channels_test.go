@@ -134,6 +134,87 @@ func TestRun_ChannelsCreate_TeamsWebhookURL(t *testing.T) {
 		"teams", "https://example.webhook.office.com/x")
 }
 
+func TestRun_ChannelsCreate_MattermostWebhookURL(t *testing.T) {
+	assertChannelsCreate(t, "chn_6",
+		[]string{"--name", "Ops Mattermost", "--kind", "mattermost", "--notify-url", "https://mattermost.example.com/hooks/x"},
+		"mattermost", "https://mattermost.example.com/hooks/x")
+}
+
+func TestRun_ChannelsCreate_LarkWebhookURL(t *testing.T) {
+	assertChannelsCreate(t, "chn_7",
+		[]string{"--name", "Ops Lark", "--kind", "lark", "--notify-url", "https://open.larksuite.com/open-apis/bot/v2/hook/x"},
+		"lark", "https://open.larksuite.com/open-apis/bot/v2/hook/x")
+}
+
+func TestRun_ChannelsCreate_GotifyWebhookURL(t *testing.T) {
+	assertChannelsCreate(t, "chn_8",
+		[]string{"--name", "Ops Gotify", "--kind", "gotify", "--notify-url", "https://gotify.example.com/message?token=t"},
+		"gotify", "https://gotify.example.com/message?token=t")
+}
+
+func TestRun_ChannelsCreate_NtfyWebhookURL(t *testing.T) {
+	assertChannelsCreate(t, "chn_9",
+		[]string{"--name", "Ops ntfy", "--kind", "ntfy", "--notify-url", "https://ntfy.sh/my-topic"},
+		"ntfy", "https://ntfy.sh/my-topic")
+}
+
+// TestRun_ChannelsCreate_ResendFlags proves --resend-api-key/--resend-to
+// pack into notify_url the same way --pushover-user-key/
+// --pushover-api-token do, and that an omitted --resend-from leaves the
+// "from" query parameter unset (the backend defaults it).
+func TestRun_ChannelsCreate_ResendFlags(t *testing.T) {
+	var gotBody createNotificationChannelRequest
+	srv := newChannelCreateEchoServer(t, "chn_10", &gotBody, nil)
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{
+		"channels", "create", "--name", "Ops Email", "--kind", "resend",
+		"--resend-api-key", "re_secret123", "--resend-to", "ops@example.com",
+		"--api-url", srv.URL,
+	}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+
+	parsed, err := url.Parse(gotBody.NotifyURL)
+	if err != nil {
+		t.Fatalf("parse built notify_url %q: %v", gotBody.NotifyURL, err)
+	}
+	if parsed.Scheme+"://"+parsed.Host+parsed.Path != resendEndpoint {
+		t.Errorf("notify_url endpoint = %q, want %q", parsed.Scheme+"://"+parsed.Host+parsed.Path, resendEndpoint)
+	}
+	if parsed.Query().Get("key") != "re_secret123" {
+		t.Errorf("notify_url key param = %q, want re_secret123", parsed.Query().Get("key"))
+	}
+	if parsed.Query().Get("to") != "ops@example.com" {
+		t.Errorf("notify_url to param = %q, want ops@example.com", parsed.Query().Get("to"))
+	}
+	if parsed.Query().Has("from") {
+		t.Errorf("notify_url from param = %q, want unset when --resend-from is omitted", parsed.Query().Get("from"))
+	}
+}
+
+func TestRun_ChannelsCreate_ResendFromFlag(t *testing.T) {
+	var gotBody createNotificationChannelRequest
+	srv := newChannelCreateEchoServer(t, "chn_11", &gotBody, nil)
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{
+		"channels", "create", "--name", "Ops Email", "--kind", "resend",
+		"--resend-api-key", "re_secret123", "--resend-to", "ops@example.com",
+		"--resend-from", "alerts@example.com", "--api-url", srv.URL,
+	})
+
+	parsed, err := url.Parse(gotBody.NotifyURL)
+	if err != nil {
+		t.Fatalf("parse built notify_url %q: %v", gotBody.NotifyURL, err)
+	}
+	if parsed.Query().Get("from") != "alerts@example.com" {
+		t.Errorf("notify_url from param = %q, want alerts@example.com", parsed.Query().Get("from"))
+	}
+}
+
 func TestRun_ChannelsCreate_MissingDestination(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"channels", "create", "--name", "x", "--kind", "pushover"}, &stdout, &stderr, envMap())
