@@ -39,6 +39,16 @@ func (s smtpSender) Send(_ context.Context, to, subject, body string) error {
 	// character.
 	to = crlfReplacer.Replace(to)
 	subject = crlfReplacer.Replace(subject)
+	// The line below is CodeQL's go/email-injection sink. to and subject
+	// were just run through crlfReplacer, which strips every CR and LF
+	// byte from each, closing the actual header-injection vector this
+	// rule exists to catch (verified by TestCRLFReplacer_StripsInjectedHeader
+	// and TestSMTPSender_Send_RejectsCRLFInTo). The alert still fires
+	// regardless: go/email-injection's own upstream query
+	// (EmailInjectionCustomizations.qll in github/codeql) declares only a
+	// Source and a Sink, no Sanitizer at all, so no transformation of the
+	// tainted value, however real, can ever satisfy its dataflow analysis.
+	// codeql[go/email-injection]
 	msg := fmt.Sprintf("To: %s\r\nFrom: %s\r\nSubject: %s\r\n\r\n%s\r\n", to, s.cfg.From, subject, body)
 
 	var auth smtp.Auth
