@@ -1,6 +1,6 @@
 package network
 
-// This file: TASKS.md 3.4's peer key distribution, control-plane side.
+// This file: peer key distribution, control-plane side.
 //
 // The exchange, and why it is an exchange rather than a push:
 //
@@ -429,8 +429,8 @@ func (s *LocalSink) PublicKey() Key { return s.publicKey }
 const staleAfter = 3 * time.Minute
 
 // UnhealthyPeers returns the peers in st that have not handshaken
-// recently enough, for a caller building a node-health view (TASKS.md
-// 3.7) or logging why a cross-node call is failing.
+// recently enough, for a caller building a node-health view
+// or logging why a cross-node call is failing.
 func UnhealthyPeers(st Status, now time.Time) []PeerStatus {
 	var out []PeerStatus
 	for _, p := range st.Peers {

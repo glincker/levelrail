@@ -4,7 +4,7 @@ package agent
 // (no gRPC, no streams): given one AgentRequest and a real
 // docker.Runtime, produce the matching AgentResponse. What runs this
 // against a real Session stream is a thin loop
-// (cmd/levelrail-agent, TASKS.md 3.2's remaining wiring), kept
+// (cmd/levelrail-agent, its remaining wiring), kept
 // separate specifically so this dispatch logic is testable with a
 // hand-written fake docker.Runtime, no real network or real Docker
 // daemon required.
@@ -165,7 +165,7 @@ func relayEvents(ctx context.Context, rt docker.Runtime, watchID string, emitEve
 			// attach itself to: Execute already returned WatchEvents'
 			// one acknowledgment before this goroutine started. A
 			// dedicated error frame for this case is a real,
-			// documented gap (TASKS.md 3.2's own write-up), not solved
+			// documented gap, not solved
 			// in this pass; the watch simply ends, matching
 			// docker.Runtime.Events' own "error channel receives at
 			// most one error, then the event channel closes" contract.

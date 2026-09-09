@@ -1,6 +1,6 @@
 // Package network is ADR 006's WireGuard mesh: the abstraction that ADR
 // 006 says "has to be designed in Phase 1 as an interface, not a concrete
-// WireGuard dependency" and that, until TASKS.md 3.4, did not exist at
+// WireGuard dependency" and that, until now, did not exist at
 // all (the directory the project's repo layout reserves for it was empty).
 //
 // The split this package draws, and why:

@@ -1,8 +1,8 @@
 package agent
 
 // This file: the control plane's own implementation of
-// agentpb.AgentServiceServer (TASKS.md 3.2). Enroll validates a
-// TASKS.md 3.1 join token and issues a client certificate (pki.go);
+// agentpb.AgentServiceServer. Enroll validates a
+// join token and issues a client certificate (pki.go);
 // Session accepts an already-mTLS-authenticated agent's persistent
 // stream, confirms its certificate actually matches the node it claims
 // to be, and wires up a GRPCTransport into Registry (transport.go) for
@@ -29,7 +29,7 @@ import (
 )
 
 // EnrollStore is the narrow store surface Server needs: validate and
-// consume a join token (TASKS.md 3.1), persist the newly enrolled node,
+// consume a join token, persist the newly enrolled node,
 // and track its connection state. *store.DB satisfies this
 // structurally.
 type EnrollStore interface {
@@ -52,7 +52,7 @@ type EnrollStore interface {
 const clientCertValidity = 90 * 24 * time.Hour
 
 // defaultHeartbeatInterval is how often Session touches last_seen_at
-// for a connected node while its stream stays open (TASKS.md 3.7),
+// for a connected node while its stream stays open,
 // matching the observability design's own metrics-collection cadence
 // (15s): reusing that same number isn't required by anything, but two
 // independent "how fresh does this need to be" judgment calls landing
@@ -156,7 +156,7 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 		ID: nodeID, Name: req.GetNodeName(), Status: store.NodeStatusPending,
 		CertFingerprint: fingerprint, CreatedAt: now, UpdatedAt: now,
 		// AcceptsAppWorkloads defaults to true for every newly enrolled
-		// node (TASKS.md 3.5, migrations/0010_node_workloads.sql's own
+		// node (migrations/0010_node_workloads.sql's own
 		// doc comment): set explicitly here rather than relying on the
 		// column's own DEFAULT so the intent is visible at this call
 		// site, not just in a migration file. AcceptsBuildWorkloads is
@@ -220,8 +220,8 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 	s.registry.Register(nodeID, newGRPCTransport(m))
 	s.logger.Info("agent: node connected", slog.String("node_id", nodeID))
 
-	// heartbeatDone stops the periodic TouchNodeLastSeen loop below
-	// (TASKS.md 3.7): a single touch at connect time (above) can't
+	// heartbeatDone stops the periodic TouchNodeLastSeen loop below:
+	// a single touch at connect time (above) can't
 	// distinguish "still connected" from "connected an hour ago, then
 	// the process hung", which is exactly what
 	// internal/reconcile/nodehealth needs LastSeenAt to reflect.

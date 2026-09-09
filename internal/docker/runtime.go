@@ -61,8 +61,8 @@ type ContainerState struct {
 }
 
 // VolumeMount attaches one named Docker volume to a path inside a
-// container, e.g. Postgres's /var/lib/postgresql/data or Redis's /data
-// (TASKS.md 1.8). Name is a Docker volume name, not a host path: bind
+// container, e.g. Postgres's /var/lib/postgresql/data or Redis's /data.
+// Name is a Docker volume name, not a host path: bind
 // mounts aren't exposed here, keeping this package's surface to what a
 // single-node managed database actually needs today.
 type VolumeMount struct {
@@ -110,7 +110,7 @@ type BindMount struct {
 // Consequences section already commits to over Coolify's confirmed
 // weaker alternative (health check disabled by default, gated entirely
 // on Docker's own HEALTHCHECK). The prober itself belongs in the
-// application controller (Phase 1, TASKS.md 1.3), not here; this package
+// application controller (Phase 1), not here; this package
 // only needs to make a container reachable, via Ports above.
 type ContainerSpec struct {
 	Name      string
@@ -119,7 +119,7 @@ type ContainerSpec struct {
 	Env       map[string]string
 	Resources *Resources
 	// Volumes are named Docker volumes to mount at create time. A
-	// database controller (TASKS.md 1.8) is the first caller; ordinary
+	// database controller is the first caller; ordinary
 	// application containers leave this nil.
 	Volumes []VolumeMount
 	// BindMounts are real host directories to mount at create time

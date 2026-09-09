@@ -150,7 +150,7 @@ func WithShortName(s string) DeviceOption {
 // "wireguard" link kind) and configuring it over the wireguard generic
 // netlink family, which is a second, Linux-only implementation of
 // everything in this file plus its own dependency. Detection is built
-// now, per ADR 006 and TASKS.md 3.4, because the decision point and its
+// now, per ADR 006, because the decision point and its
 // reasoning are what a later change needs in place; the second backend
 // itself is worth landing on its own, against a real Linux node, rather
 // than written blind here. Status reports the backend actually in use,

@@ -1,7 +1,7 @@
 package agent
 
-// This file: GRPCTransport, the control-plane side of TASKS.md 3.2's
-// reverse-dialed connection. An agent.Transport (TASKS.md 3.1)
+// This file: GRPCTransport, the control-plane side of the
+// reverse-dialed connection. An agent.Transport
 // implemented by dispatching every docker.Runtime-shaped call over a
 // real agent's Session stream via mux (mux.go), instead of Local's
 // direct in-process call.
@@ -22,7 +22,7 @@ import (
 // depends on is already handled underneath it. Unexported constructor
 // (newGRPCTransport): callers get one of these from the control plane's
 // Session handler once an agent's stream is accepted and authenticated
-// (server.go, TASKS.md 3.2's remaining wiring), never constructed
+// (server.go's remaining wiring), never constructed
 // directly.
 type GRPCTransport struct {
 	mux *mux

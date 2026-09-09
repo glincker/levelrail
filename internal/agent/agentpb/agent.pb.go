@@ -1,8 +1,8 @@
-// TASKS.md 3.2: the wire contract for ADR 003's reverse-dialed gRPC
+// The wire contract for ADR 003's reverse-dialed gRPC
 // agent. Message shapes mirror internal/docker's Go types (ContainerSpec,
 // ContainerState, Event, ImageInfo, VolumeMount, PortBinding, Resources)
 // field for field, deliberately: this is the exact narrow surface
-// internal/agent.Transport already committed to in TASKS.md 3.1
+// internal/agent.Transport already committed to
 // (docker.Runtime's own 9 methods, no more), not a redesign.
 //
 // AgentService is defined from the control plane's perspective (it is
@@ -318,8 +318,8 @@ func (x *ControlMessage) GetRequest() *AgentRequest {
 
 // AgentRequest is one control-plane-issued operation, tagged with
 // request_id so out-of-order AgentResponse frames on the same stream
-// still resolve to the right caller (internal/agent's multiplexer,
-// TASKS.md 3.2, owns matching these).
+// still resolve to the right caller (internal/agent's multiplexer
+// owns matching these).
 type AgentRequest struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	RequestId string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`

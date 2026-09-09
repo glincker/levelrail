@@ -37,7 +37,7 @@ type fakeEnrollStore struct {
 	// touchMu guards lastTouchedID and touchCount: unlike every other
 	// field here, TouchNodeLastSeen is called both synchronously
 	// (Session's own initial touch) and repeatedly from
-	// Server.heartbeatLoop's own background goroutine (TASKS.md 3.7)
+	// Server.heartbeatLoop's own background goroutine
 	// for as long as a test's fake session stays open, so concurrent
 	// access is real here, not theoretical.
 	touchMu       sync.Mutex
@@ -349,7 +349,7 @@ func TestServer_Session_Success(t *testing.T) {
 	}
 }
 
-// TestServer_Session_PeriodicHeartbeat is TASKS.md 3.7's real point:
+// TestServer_Session_PeriodicHeartbeat is the real point:
 // TouchNodeLastSeen must keep being called on an interval for as long as
 // the session's stream stays open, not just once at connect. Without
 // this, internal/reconcile/nodehealth would see LastSeenAt go stale on
