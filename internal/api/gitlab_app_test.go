@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -136,17 +135,7 @@ func newTestRouterWithGitLabApp(t *testing.T, secrets GitLabAppSecrets, client G
 }
 
 func TestHandleGetGitLabAppStatus_NotConnected(t *testing.T) {
-	rt, db := newTestRouter(t)
-	cookie := loginTestSession(t, rt, db)
-
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/gitlab-app", ""))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
-	}
-	if !strings.Contains(rec.Body.String(), `"connected":false`) {
-		t.Errorf("body = %s, want connected:false", rec.Body.String())
-	}
+	assertProviderStatusNotConnected(t, "/api/v1/gitlab-app")
 }
 
 func TestHandleConnectGitLabApp_NotConfigured(t *testing.T) {
@@ -202,17 +191,8 @@ func TestHandleConnectGitLabApp_Success(t *testing.T) {
 
 	statusRec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(statusRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/gitlab-app", ""))
-	body := statusRec.Body.String()
-	if !strings.Contains(body, `"connected":true`) {
-		t.Errorf("status body = %s, want connected:true", body)
-	}
-	// Trailing slash from the request is stripped, not stored verbatim.
-	if !strings.Contains(body, `"instance_url":"https://gitlab.example.com"`) {
-		t.Errorf("status body = %s, want instance_url with no trailing slash", body)
-	}
-	if !strings.Contains(body, `"authorized":false`) {
-		t.Errorf("status body = %s, want authorized:false (no oauth flow completed yet)", body)
-	}
+	// instance_url: trailing slash from the request is stripped, not stored verbatim.
+	assertBodyContainsAll(t, statusRec.Body.String(), `"connected":true`, `"instance_url":"https://gitlab.example.com"`, `"authorized":false`)
 
 	got, err := secrets.Resolve(context.Background(), store.GitLabAppSecretsKey(), gitLabAppClientSecretKey)
 	if err != nil || got != "csecret" {
@@ -259,47 +239,23 @@ func TestHandleDisconnectGitLabApp_ClearsSecrets(t *testing.T) {
 func TestGitLabAppRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	routes := []struct{ method, path string }{
-		{http.MethodGet, "/api/v1/gitlab-app"},
-		{http.MethodPut, "/api/v1/gitlab-app"},
-		{http.MethodDelete, "/api/v1/gitlab-app"},
-		{http.MethodGet, "/api/v1/gitlab-app/connect"},
-		{http.MethodGet, "/api/v1/gitlab-app/projects"},
-	}
-	for _, r := range routes {
-		req := httptest.NewRequest(r.method, r.path, nil)
-		rec := httptest.NewRecorder()
-		rt.Handler().ServeHTTP(rec, req)
-		if rec.Code != http.StatusUnauthorized {
-			t.Errorf("%s %s: status = %d, want 401 for an unauthenticated request", r.method, r.path, rec.Code)
-		}
-	}
+	assertRoutesRequireAuth(t, rt, []routeCase{
+		{method: http.MethodGet, path: "/api/v1/gitlab-app"},
+		{method: http.MethodPut, path: "/api/v1/gitlab-app"},
+		{method: http.MethodDelete, path: "/api/v1/gitlab-app"},
+		{method: http.MethodGet, path: "/api/v1/gitlab-app/connect"},
+		{method: http.MethodGet, path: "/api/v1/gitlab-app/projects"},
+	})
 }
 
 func TestGitLabAppRoutes_PlainWriteSensitiveTokenForbidden(t *testing.T) {
 	rt, db := newTestRouter(t)
-	ctx := context.Background()
 
 	const plaintext = "write-sensitive-token" //nolint:gosec // fake fixture, not a real credential
-	if err := db.SaveAPIToken(ctx, store.APIToken{
-		ID: "tok_ws2", Name: "writer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWriteSensitive}, CreatedAt: time.Now(),
-	}); err != nil {
-		t.Fatalf("seed token: %v", err)
-	}
-
-	routes := []struct{ method, path string }{
-		{http.MethodGet, "/api/v1/gitlab-app"},
-		{http.MethodPut, "/api/v1/gitlab-app"},
-		{http.MethodDelete, "/api/v1/gitlab-app"},
-		{http.MethodGet, "/api/v1/gitlab-app/connect"},
-	}
-	for _, r := range routes {
-		req := httptest.NewRequest(r.method, r.path, nil)
-		req.Header.Set("Authorization", "Bearer "+plaintext)
-		rec := httptest.NewRecorder()
-		rt.Handler().ServeHTTP(rec, req)
-		if rec.Code != http.StatusForbidden {
-			t.Errorf("%s %s: status = %d, want 403 (AbilityWriteSensitive must not reach an AbilityRoot route)", r.method, r.path, rec.Code)
-		}
-	}
+	assertRoutesForbiddenForAbilities(t, rt, db, "tok_ws2", plaintext, []string{AbilityWriteSensitive}, []routeCase{
+		{method: http.MethodGet, path: "/api/v1/gitlab-app"},
+		{method: http.MethodPut, path: "/api/v1/gitlab-app"},
+		{method: http.MethodDelete, path: "/api/v1/gitlab-app"},
+		{method: http.MethodGet, path: "/api/v1/gitlab-app/connect"},
+	})
 }

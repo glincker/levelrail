@@ -90,22 +90,11 @@ func TestHandleListBitbucketAppBranches_Success(t *testing.T) {
 
 func TestBitbucketAppRepoRoutes_PlainReadTokenForbidden(t *testing.T) {
 	rt, db := newTestRouterWithBitbucketApp(t, newFakeBitbucketAppSecrets(), &fakeBitbucketAppClient{})
-	ctx := context.Background()
 
 	const plaintext = "read-only-token-bitbucket" //nolint:gosec // fake fixture, not a real credential
-	if err := db.SaveAPIToken(ctx, store.APIToken{
-		ID: "tok_read_bb", Name: "reader", TokenHash: hashToken(plaintext), Abilities: []string{AbilityRead},
-	}); err != nil {
-		t.Fatalf("seed token: %v", err)
-	}
-
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/bitbucket-app/repos", nil)
-	req.Header.Set("Authorization", "Bearer "+plaintext)
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want 403 (AbilityRead must not reach an AbilityReadSensitive route)", rec.Code)
-	}
+	assertRoutesForbiddenForAbilities(t, rt, db, "tok_read_bb", plaintext, []string{AbilityRead}, []routeCase{
+		{method: http.MethodGet, path: "/api/v1/bitbucket-app/repos"},
+	})
 }
 
 func TestHandleUseBitbucketRepoAsSource_AppNotFound(t *testing.T) {
@@ -166,19 +155,7 @@ func TestHandleUseBitbucketRepoAsSource_Success(t *testing.T) {
 		t.Errorf("saved git source repo_url = %q, want the bitbucket repo's clone url", saved.RepoURL)
 	}
 
-	if !fakeClient.createHookCall {
-		t.Fatal("CreateRepoWebhook was not called")
-	}
-	if !strings.HasSuffix(fakeClient.createHookURL, "/api/v1/webhooks/github/web") {
-		t.Errorf("createHookURL = %q, want it to end with the generic git-push webhook path", fakeClient.createHookURL)
-	}
-	storedSecret, err := gitSourceSecrets.Resolve(context.Background(), store.GitSourceSecretsKey("web"), gitSourceSecretKey)
-	if err != nil {
-		t.Fatalf("resolve stored git source webhook secret: %v", err)
-	}
-	if fakeClient.createHookTok != storedSecret {
-		t.Errorf("createHookTok = %q, want it to match the stored git-source webhook secret %q", fakeClient.createHookTok, storedSecret)
-	}
+	assertGitSourceWebhookRegistered(t, gitSourceSecrets, "web", fakeClient.createHookCall, fakeClient.createHookURL, fakeClient.createHookTok)
 }
 
 func TestHandleUseBitbucketRepoAsSource_WebhookRegistrationFails(t *testing.T) {
@@ -199,11 +176,5 @@ func TestHandleUseBitbucketRepoAsSource_WebhookRegistrationFails(t *testing.T) {
 		t.Fatalf("status = %d, want 502, body = %s", rec.Code, rec.Body.String())
 	}
 
-	// The git source is still connected even though the webhook
-	// registration failed: this handler doesn't roll back a partial
-	// success, the same "connect first, webhook second" shape
-	// handleUseGitLabProjectAsSource's own equivalent test documents.
-	if _, err := db.GetGitSource(context.Background(), "web"); err != nil {
-		t.Errorf("GetGitSource() error = %v, want the git source to remain connected despite the webhook failure", err)
-	}
+	assertGitSourceSurvivesWebhookFailure(t, db)
 }
