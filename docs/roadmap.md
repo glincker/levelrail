@@ -53,7 +53,7 @@ still open. This page describes what's actually true today.
   shared checkout, each scoped to its own `build.baseDirectory`, linked
   under one `store.App`, and independently reachable over HTTPS through
   one ingress pass.
-- A curated 81-entry service template catalog (ADR 015: reverses the
+- A curated 101-entry service template catalog (ADR 015: reverses the
   original "not chasing Coolify's 280 templates" non-goal, once Compose
   support existed to build it on), served over the API and browsable
   from the creation wizard, with a category-specific icon per card.
