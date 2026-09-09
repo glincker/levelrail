@@ -98,18 +98,8 @@ func (rt *Router) handleVerifyBackup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h, err := rt.backupHistory.GetBackupHistory(r.Context(), historyID)
-	if errors.Is(err, store.ErrBackupHistoryNotFound) {
-		writeError(w, http.StatusNotFound, "backup not found")
-		return
-	}
-	if err != nil {
-		rt.logger.Error("api: verify backup: load backup history failed", slog.String("error", err.Error()), slog.String("backup_id", historyID))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	if h.DatabaseName != name {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("backup %q was taken from database %q, not %q", historyID, h.DatabaseName, name))
+	h, ok := rt.loadDatabaseBackupHistory(w, r, name, historyID, "api: verify backup: load backup history failed")
+	if !ok {
 		return
 	}
 	if h.Status != store.BackupStatusSucceeded {
@@ -148,24 +138,43 @@ func (rt *Router) handleListBackupVerifications(w http.ResponseWriter, r *http.R
 	name := r.PathValue("name")
 	historyID := r.PathValue("historyId")
 
-	h, err := rt.backupHistory.GetBackupHistory(r.Context(), historyID)
-	if errors.Is(err, store.ErrBackupHistoryNotFound) {
-		writeError(w, http.StatusNotFound, "backup not found")
-		return
-	}
-	if err != nil {
-		rt.logger.Error("api: list backup verifications: load backup history failed", slog.String("error", err.Error()), slog.String("backup_id", historyID))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	if h.DatabaseName != name {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("backup %q was taken from database %q, not %q", historyID, h.DatabaseName, name))
+	if _, ok := rt.loadDatabaseBackupHistory(w, r, name, historyID, "api: list backup verifications: load backup history failed"); !ok {
 		return
 	}
 
+	rt.writeBackupVerificationsList(w, r, historyID, "api: list backup verifications failed")
+}
+
+// loadDatabaseBackupHistory resolves historyID via rt.backupHistory and
+// confirms it was taken from the named database, writing the appropriate
+// error response itself on failure. Shared by handleVerifyBackup and
+// handleListBackupVerifications.
+func (rt *Router) loadDatabaseBackupHistory(w http.ResponseWriter, r *http.Request, databaseName, historyID, logContext string) (store.BackupHistory, bool) {
+	h, err := rt.backupHistory.GetBackupHistory(r.Context(), historyID)
+	if errors.Is(err, store.ErrBackupHistoryNotFound) {
+		writeError(w, http.StatusNotFound, "backup not found")
+		return store.BackupHistory{}, false
+	}
+	if err != nil {
+		rt.logger.Error(logContext, slog.String("error", err.Error()), slog.String("backup_id", historyID))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return store.BackupHistory{}, false
+	}
+	if h.DatabaseName != databaseName {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("backup %q was taken from database %q, not %q", historyID, h.DatabaseName, databaseName))
+		return store.BackupHistory{}, false
+	}
+	return h, true
+}
+
+// writeBackupVerificationsList lists past verification attempts for
+// historyID and writes them as JSON: the shared tail
+// handleListBackupVerifications and handleListVolumeBackupVerifications
+// both need once the named backup's ownership has already been checked.
+func (rt *Router) writeBackupVerificationsList(w http.ResponseWriter, r *http.Request, historyID, logContext string) {
 	verifications, err := rt.backupVerifications.ListBackupVerifications(r.Context(), historyID, defaultBackupHistoryLimit)
 	if err != nil {
-		rt.logger.Error("api: list backup verifications failed", slog.String("error", err.Error()), slog.String("backup_id", historyID))
+		rt.logger.Error(logContext, slog.String("error", err.Error()), slog.String("backup_id", historyID))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}

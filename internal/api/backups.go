@@ -63,6 +63,82 @@ func (rt *Router) loadBackupTarget(w http.ResponseWriter, r *http.Request, targe
 	return true
 }
 
+// prepareBackupTrigger validates targetID, confirms the backup target
+// exists, and mints a new backup history ID: the shared steps
+// handleTriggerBackup and handleTriggerVolumeBackup both need before
+// starting their respective runners.
+func (rt *Router) prepareBackupTrigger(w http.ResponseWriter, r *http.Request, targetID, logContext string) (string, bool) {
+	if targetID == "" {
+		writeError(w, http.StatusBadRequest, "target_id is required")
+		return "", false
+	}
+	if !rt.loadBackupTarget(w, r, targetID, logContext+": load backup target failed") {
+		return "", false
+	}
+	historyID, err := randomBackupHistoryID()
+	if err != nil {
+		rt.logger.Error(logContext+": generate id failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return "", false
+	}
+	return historyID, true
+}
+
+// validateBackupScheduleRequest checks the target_id/schedule/retain
+// fields shared by both the database and volume backup-schedule
+// endpoints, writing the appropriate 400 itself on failure.
+func validateBackupScheduleRequest(w http.ResponseWriter, targetID, schedule string, retain, retainDays int) bool {
+	if targetID == "" {
+		writeError(w, http.StatusBadRequest, "target_id is required")
+		return false
+	}
+	if schedule == "" {
+		writeError(w, http.StatusBadRequest, "schedule is required")
+		return false
+	}
+	if _, err := cronexpr.Parse(schedule); err != nil {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid schedule: %s", err.Error()))
+		return false
+	}
+	if retain < 0 {
+		writeError(w, http.StatusBadRequest, "retain must not be negative")
+		return false
+	}
+	if retainDays < 0 {
+		writeError(w, http.StatusBadRequest, "retain_days must not be negative")
+		return false
+	}
+	return true
+}
+
+// parseBackupHistoryListParams reads and validates the ?limit/?before
+// query parameters shared by every backup-history and verification list
+// endpoint, writing the appropriate 400 itself on failure.
+func parseBackupHistoryListParams(w http.ResponseWriter, r *http.Request) (limit int, before *time.Time, ok bool) {
+	limit = defaultBackupHistoryLimit
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil || n <= 0 {
+			writeError(w, http.StatusBadRequest, "limit must be a positive integer")
+			return 0, nil, false
+		}
+		limit = n
+	}
+	if limit > maxBackupHistoryLimit {
+		limit = maxBackupHistoryLimit
+	}
+
+	if raw := r.URL.Query().Get("before"); raw != "" {
+		t, err := time.Parse(time.RFC3339, raw)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "before must be an RFC3339 timestamp")
+			return 0, nil, false
+		}
+		before = &t
+	}
+	return limit, before, true
+}
+
 // BackupHistoryStore is the store surface the backup history handler
 // needs. GetBackupHistory was added for handleTriggerRestore
 // (restore.go): resolving the one backup attempt a restore names, not
@@ -163,19 +239,9 @@ func (rt *Router) handleTriggerBackup(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.TargetID == "" {
-		writeError(w, http.StatusBadRequest, "target_id is required")
-		return
-	}
 
-	if !rt.loadBackupTarget(w, r, req.TargetID, "api: trigger backup: load backup target failed") {
-		return
-	}
-
-	historyID, err := randomBackupHistoryID()
-	if err != nil {
-		rt.logger.Error("api: trigger backup: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+	historyID, ok := rt.prepareBackupTrigger(w, r, req.TargetID, "api: trigger backup")
+	if !ok {
 		return
 	}
 
@@ -214,27 +280,9 @@ func (rt *Router) handleListBackupHistory(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	limit := defaultBackupHistoryLimit
-	if raw := r.URL.Query().Get("limit"); raw != "" {
-		n, err := strconv.Atoi(raw)
-		if err != nil || n <= 0 {
-			writeError(w, http.StatusBadRequest, "limit must be a positive integer")
-			return
-		}
-		limit = n
-	}
-	if limit > maxBackupHistoryLimit {
-		limit = maxBackupHistoryLimit
-	}
-
-	var before *time.Time
-	if raw := r.URL.Query().Get("before"); raw != "" {
-		t, err := time.Parse(time.RFC3339, raw)
-		if err != nil {
-			writeError(w, http.StatusBadRequest, "before must be an RFC3339 timestamp")
-			return
-		}
-		before = &t
+	limit, before, ok := parseBackupHistoryListParams(w, r)
+	if !ok {
+		return
 	}
 
 	history, err := rt.backupHistory.ListBackupHistory(r.Context(), name, limit, before)
@@ -310,24 +358,7 @@ func (rt *Router) handleSetBackupSchedule(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.TargetID == "" {
-		writeError(w, http.StatusBadRequest, "target_id is required")
-		return
-	}
-	if req.Schedule == "" {
-		writeError(w, http.StatusBadRequest, "schedule is required")
-		return
-	}
-	if _, err := cronexpr.Parse(req.Schedule); err != nil {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid schedule: %s", err.Error()))
-		return
-	}
-	if req.Retain < 0 {
-		writeError(w, http.StatusBadRequest, "retain must not be negative")
-		return
-	}
-	if req.RetainDays < 0 {
-		writeError(w, http.StatusBadRequest, "retain_days must not be negative")
+	if !validateBackupScheduleRequest(w, req.TargetID, req.Schedule, req.Retain, req.RetainDays) {
 		return
 	}
 
