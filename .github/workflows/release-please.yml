@@ -25,8 +25,16 @@ jobs:
       # triggering further workflow runs, to prevent recursive loops).
       # An explicit workflow_dispatch call is exempt from that block, so
       # this is the documented way to chain the two workflows together.
+      # Dispatched against main (not the new tag) because workflow_dispatch
+      # is only available for a ref whose copy of the workflow file already
+      # declares that trigger; the tag input tells release.yml which
+      # version to actually check out and build.
       - name: Trigger release build
         if: ${{ steps.release.outputs.release_created == 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run release.yml --repo "${{ github.repository }}" --ref "${{ steps.release.outputs.tag_name }}"
+        run: |
+          gh workflow run release.yml \
+            --repo "${{ github.repository }}" \
+            --ref main \
+            -f tag="${{ steps.release.outputs.tag_name }}"
