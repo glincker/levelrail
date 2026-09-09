@@ -27,8 +27,7 @@ import (
 // per-service container to a Docker network when AppID is set, and
 // skipping that for the common single-service case would mean
 // networking only ever works after an app is upgraded to multi-service,
-// which apps_group.go's own doc comment (and CLAUDE.md's dispatch for
-// this feature) both call out as the wrong shape.
+// which apps_group.go's own doc comment calls out as the wrong shape.
 func (rt *Router) ensureAppLinked(ctx context.Context, appName, serviceName string) (string, error) {
 	app, err := rt.appGroups.GetAppByName(ctx, appName)
 	if errors.Is(err, store.ErrAppNotFound) {

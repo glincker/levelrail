@@ -103,10 +103,9 @@ type gitSourceResource struct {
 // gitSourceWebhookPath is the relative API path GitHub's own webhook
 // config points at for name: POST /api/v1/webhooks/github/{name}
 // (router.go). Relative, not absolute: this server has no reliable way
-// to know its own externally-reachable hostname (see CLAUDE.md section
-// 3's brand indirection: even the product's own name isn't hardcoded
-// here), so the frontend prepends window.location.origin for display,
-// the same "server stays dumb about its own external address" choice
+// to know its own externally-reachable hostname, so the frontend
+// prepends window.location.origin for display, the same "server
+// stays dumb about its own external address" choice
 // DatabasePublicAccessCard.tsx's connectionString makes with
 // window.location.hostname.
 func gitSourceWebhookPath(name string) string {

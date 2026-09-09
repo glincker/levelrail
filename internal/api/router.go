@@ -67,9 +67,8 @@
 // read, read:sensitive, write, deploy, root) checked fresh on every
 // call by requireAbility, never a cached decision. Token management
 // itself is session-only via requireAuth: a token can never mint or
-// revoke another token on its own behalf. See docs-local/research/
-// theauth-go-fit-assessment.md and competitor-onboarding-auth-ux.md for
-// why this shape (not theauth-go, not an all-or-nothing key) was chosen.
+// revoke another token on its own behalf. This shape (not theauth-go,
+// not an all-or-nothing key) was a deliberate choice.
 package api
 
 import (

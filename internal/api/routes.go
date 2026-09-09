@@ -240,7 +240,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 
 	// One-off exec (handleExecApp's own doc comment): AbilityRoot, not
 	// AbilityDeploy. Secrets are injected as plaintext env vars into a
-	// container at create time (CLAUDE.md 4.10) and this package
+	// container at create time and this package
 	// deliberately never decrypts one back into a response body anywhere
 	// else, see the secrets route above: "never decrypts a value for a
 	// response body." Exec is the one route that can read them anyway,

@@ -43,9 +43,8 @@ type createTokenRequest struct {
 	Name      string   `json:"name"`
 	Abilities []string `json:"abilities"`
 	// ExpiresInDays is optional; omitted or 0 means the token never
-	// expires (Dokploy's own "never" option, per
-	// docs-local/research/competitor-onboarding-auth-ux.md finding 10,
-	// which Coolify's forced-expiry-only picker doesn't offer).
+	// expires (Dokploy's own "never" option, which Coolify's
+	// forced-expiry-only picker doesn't offer).
 	ExpiresInDays int `json:"expires_in_days,omitempty"`
 }
 

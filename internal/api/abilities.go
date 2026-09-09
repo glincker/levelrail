@@ -21,8 +21,7 @@ func (e *unknownAbilityError) Error() string {
 }
 
 // Ability strings an api_tokens row can be scoped to (TASKS.md
-// "Backend auth foundation"), adopted from Coolify's own model per
-// docs-local/research/competitor-onboarding-auth-ux.md finding 9: a
+// "Backend auth foundation"), adopted from Coolify's own model: a
 // small, legible permission surface an MCP-issued token can be provably
 // scoped to at the token layer itself, not just by convention in what a
 // caller chooses to call. AbilityRoot is exclusive of the rest (checked

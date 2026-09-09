@@ -1432,10 +1432,8 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 // (webhook.AttemptStore and *deploylog.Recorder respectively): db is
 // always the real store (never nil here, unlike pipeline), so the
 // webhook handler this function builds always records real deploy
-// history for a triggering push, per
-// docs-local/research/deploy-attempt-id-and-log-persistence.md's own
-// framing that an unattended webhook deploy is exactly the case
-// persistence matters most for.
+// history for a triggering push, since an unattended webhook deploy
+// is exactly the case persistence matters most for.
 func loadWebhookHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, recorder *deploylog.Recorder, notifier *alerting.DeployDispatcher, pipeline *deploy.Pipeline) (http.Handler, error) {
 	if pipeline == nil {
 		return nil, fmt.Errorf("no builder available (see the earlier \"builder not configured\" warning)")

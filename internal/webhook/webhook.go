@@ -95,10 +95,9 @@ type Deployer interface {
 }
 
 // AttemptStore is the narrow store surface Handler needs to record one
-// deploy_attempts row per triggering push: this package is the third
-// (and, per docs-local/research/deploy-attempt-id-and-log-persistence.md's
-// own framing, the most important) of the three real deploy-trigger
-// paths this history exists for. An unattended push-to-deploy that fails
+// deploy_attempts row per triggering push: this package is the third,
+// and most important, of the three real deploy-trigger paths this
+// history exists for. An unattended push-to-deploy that fails
 // with no replayable record defeats the point of having a log viewer at
 // all. *store.DB satisfies this structurally.
 type AttemptStore interface {
