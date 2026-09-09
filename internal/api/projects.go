@@ -14,8 +14,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// Package note (projects.go): a project is TASKS.md/repo-plan section
-// 6's Phase 4 note made explicit: "Teams, projects, environments, RBAC
+// Package note (projects.go): a project is the repo plan's Phase 4 note
+// made explicit: "Teams, projects, environments, RBAC
 // with a small role set. Resist the urge to build a permission matrix."
 // This file is deliberately *not* that. There is no owner, no member
 // list, no per-project ability of any kind: a project is purely an

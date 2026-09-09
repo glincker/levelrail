@@ -258,7 +258,7 @@ func (rt *Router) establishSession(ctx context.Context, w http.ResponseWriter, u
 	// doing TLS termination in any real deployment, and a
 	// session cookie is exactly the kind of value that must never be
 	// sent back over a plain connection. Local development against this
-	// listener directly (no Caddy in front yet, TASKS.md 1.6) needs to go
+	// listener directly (no Caddy in front yet) needs to go
 	// through something that terminates TLS, e.g. a local reverse proxy,
 	// for the cookie to round-trip; that's a known dev-workflow gap, not
 	// a reason to weaken the cookie.

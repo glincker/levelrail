@@ -171,7 +171,7 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 //
 // Creating a postgres database here always succeeds at the store layer:
 // the reconciler (internal/reconcile/database) will refuse to actually
-// start it until credentials exist (TASKS.md 1.7, envelope-encrypted
+// start it until credentials exist (envelope-encrypted
 // secrets, not built yet), and reports that refusal as a real condition
 // rather than this endpoint pretending postgres isn't an option. Read it
 // back via GET /api/v1/databases/{name}/status.
@@ -299,7 +299,7 @@ type setDatabaseNodeRequest struct {
 // database counterpart to handleSetAppNode: same unknown-node-id 400,
 // same empty-string-means-local-node convention, same AbilityRoot
 // gating at the router. UpdateDatabaseNode has existed in the store
-// since TASKS.md 3.3 landed; this was the missing route over it.
+// since the placement work landed; this was the missing route over it.
 func (rt *Router) handleSetDatabaseNode(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 

@@ -18,12 +18,12 @@ type AppStore interface {
 	GetDesiredService(ctx context.Context, name string) (*store.DesiredService, error)
 	ListDesiredServices(ctx context.Context) ([]store.DesiredService, error)
 	DeleteDesiredService(ctx context.Context, name string) error
-	// UpdateServiceNode is TASKS.md 3.3's placement mutation, separate
+	// UpdateServiceNode is the placement mutation, separate
 	// from SaveDesiredService on purpose: see store.DB.SaveDesiredService's
 	// own doc comment for why an ordinary app update must never be able
 	// to silently move a service between nodes.
 	UpdateServiceNode(ctx context.Context, name, nodeID string) error
-	// ListDesiredServicesByNode is TASKS.md 3.7's drain and
+	// ListDesiredServicesByNode is the drain and
 	// delete-guard primitive (handleDrainNode, handleDeleteNode): find
 	// what's placed on a node without listing every service.
 	ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]store.DesiredService, error)
@@ -298,8 +298,7 @@ type InviteStore interface {
 }
 
 // TokenStore is the store surface the API-token handlers and the
-// ability-aware auth middleware need (TASKS.md "Backend auth
-// foundation").
+// ability-aware auth middleware need.
 type TokenStore interface {
 	SaveAPIToken(ctx context.Context, t store.APIToken) error
 	GetAPITokenByHash(ctx context.Context, hash string) (*store.APIToken, error)
