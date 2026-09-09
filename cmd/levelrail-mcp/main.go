@@ -129,6 +129,11 @@ func newServer(client *apiclient.Client) *mcp.Server {
 	registerAppConfigTools(server, client)
 	registerBackupTargetTools(server, client)
 	registerVolumeBackupTools(server, client)
+	registerScheduledTaskTools(server, client)
+	registerEnvironmentTools(server, client)
+	registerDomainTools(server, client)
+	registerCloudflareTools(server, client)
+	registerCertificateTools(server, client)
 
 	return server
 }
