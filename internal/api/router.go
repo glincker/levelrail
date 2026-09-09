@@ -1,6 +1,6 @@
-// Package api implements TASKS.md 1.9: the HTTP API the web frontend
+// Package api implements the HTTP API the web frontend
 // (1.10) and, later, the MCP layer both build on. Scope
-// for this pass, per TASKS.md 1.9 literally: GET /api/v1/brand, apps
+// for this pass: GET /api/v1/brand, apps
 // CRUD, deploy trigger and deploy history, single-admin-user session
 // auth. No teams, no RBAC: explicitly out of scope until Phase 4.
 //
@@ -15,21 +15,21 @@
 // "App" here is layered directly on store.DesiredService
 // (internal/store/service.go), the closest existing resource, rather
 // than a new, speculative domain type. That surfaces real gaps instead
-// of papering over them with a fuller model TASKS.md 1.9 doesn't
-// actually ask this package to build yet:
+// of papering over them with a fuller model this package doesn't
+// actually need to build yet:
 //
 //   - No replicas or strategy fields on an app: internal/spec's app.yaml
 //     Service has them, store.DesiredService doesn't yet, so this API
 //     can't expose what the store can't hold. Adding them is a
 //     store-schema and deploy-pipeline change, not something this
-//     package should invent on its own. Domains closed once TASKS.md 1.6
-//     added the column: appResource now carries Domains too.
+//     package should invent on its own. Domains closed once that column
+//     was added: appResource now carries Domains too.
 //   - Deploy trigger (deploys.go) only updates desired_services.image; it
-//     doesn't build anything. TASKS.md 1.4's internal/build and
+//     doesn't build anything. internal/build and
 //     internal/deploy already exist and do that, but they're owned by a
 //     different concurrent session as this package was written, so this
 //     endpoint takes an already-built image tag as input, the same
-//     mechanism TASKS.md 1.3 documents for rollback, run forward instead
+//     mechanism used for rollback, run forward instead
 //     of backward. POST /api/v1/apps/{name}/builds (builds.go,
 //     handleTriggerBuild) closes this gap: it invokes the same
 //     internal/deploy.Pipeline the git webhook receiver uses, given a git
@@ -48,7 +48,7 @@
 // set from the store every pass (reconcile.Engine.Source), so a deploy
 // triggered through this API does reconcile on the next pass.
 //
-// Secrets (TASKS.md 1.7): PUT /api/v1/apps/{name}/secrets/{key} sets a
+// Secrets: PUT /api/v1/apps/{name}/secrets/{key} sets a
 // value, encrypted at rest via internal/secrets.Manager. Deliberately
 // set-only, no GET: this package never decrypts a value for a response
 // body, only internal/reconcile/application does, immediately before
@@ -56,11 +56,11 @@
 // with a master key (WithSecretSetter); without one, the route returns
 // 501.
 //
-// Auth foundation ("Dashboard & auth", TASKS.md): POST
+// Auth foundation ("Dashboard & auth"): POST
 // /api/v1/auth/register is the interactive first-run counterpart to
 // BootstrapAdmin's env-var path, gated on "no admin row exists yet" at
 // both the route and the mutation layer. Session auth stays exactly what
-// TASKS.md 1.9 scoped it as (single admin user, no teams, no RBAC); API
+// this package was scoped as (single admin user, no teams, no RBAC); API
 // tokens (POST/GET /api/v1/auth/tokens, DELETE .../{id}) are a separate,
 // additive credential type for non-interactive callers (a future CLI,
 // an MCP server), scoped to abilities (abilities.go:

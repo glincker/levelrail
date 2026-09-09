@@ -52,7 +52,7 @@ type createTokenResponse struct {
 	tokenResource
 	// Token is the plaintext credential, present only in this one
 	// response, GitHub PAT convention: shown once, never recoverable
-	// again, matching TASKS.md's note on this exact endpoint.
+	// again.
 	Token string `json:"token"`
 }
 

@@ -32,7 +32,7 @@ type deployTriggerRequest struct {
 // points the app's desired image at a new tag; the application
 // controller's next reconcile (once main.go wires one for this app, see
 // router.go's package doc comment) is what actually creates a container
-// from it. This is exactly the mechanism TASKS.md 1.3 documents for
+// from it. This is exactly the mechanism used for
 // rollback ("pointing desired.Image back at an older tag and
 // reconciling converges to it the same way any other redeploy does"),
 // run forward with a newer tag instead of an older one. The build that
