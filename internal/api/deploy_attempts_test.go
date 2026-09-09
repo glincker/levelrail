@@ -469,11 +469,12 @@ func TestBeginBuildDeployAttempt_StartRunsBeforeAttemptIsSaveable(t *testing.T) 
 	rt.deployAttempts = fake
 
 	ctx := context.Background()
-	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+	svc := store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}
+	if err := db.SaveDesiredService(ctx, svc); err != nil {
 		t.Fatalf("seed app: %v", err)
 	}
 
-	_, _, finish := rt.beginBuildDeployAttempt(ctx, deploy.Request{ServiceName: "web", ImageRepo: "web", CommitSHA: "sha1"}, store.DeployAttemptSourceManual)
+	_, _, finish := rt.beginBuildDeployAttempt(ctx, deploy.Request{ServiceName: "web", ImageRepo: "web", CommitSHA: "sha1"}, svc, store.DeployAttemptSourceManual)
 	finish(nil)
 
 	if !fake.startedBeforeSave {
@@ -489,11 +490,12 @@ func TestBeginBuildDeployAttempt_SaveFails_RecorderDoesNotLeak(t *testing.T) {
 	rt.deployAttempts = fake
 
 	ctx := context.Background()
-	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+	svc := store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}
+	if err := db.SaveDesiredService(ctx, svc); err != nil {
 		t.Fatalf("seed app: %v", err)
 	}
 
-	rt.beginBuildDeployAttempt(ctx, deploy.Request{ServiceName: "web", ImageRepo: "web", CommitSHA: "sha1"}, store.DeployAttemptSourceManual)
+	rt.beginBuildDeployAttempt(ctx, deploy.Request{ServiceName: "web", ImageRepo: "web", CommitSHA: "sha1"}, svc, store.DeployAttemptSourceManual)
 
 	if fake.lastID == "" {
 		t.Fatal("SaveDeployAttempt was never called")

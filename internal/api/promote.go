@@ -34,6 +34,16 @@ type promotePreviewResource struct {
 
 const promotePreviewNote = "Only the image tag is compared here. Environment variables are not diffed: environment-tier env vars are resolved live per environment at deploy time, not snapshotted per app, so there is nothing stale to compare. Ports, domains, resource limits, and other service configuration are the target app's own settings and are left untouched by a promotion."
 
+// promotePreviewUnsnapshottedFields is its own list, distinct from
+// deploy_compare.go's unsnapshottedDeployFields: that one means "not
+// captured per deploy attempt," this one means "not part of what a
+// promotion changes at all" (see promotePreviewNote), a different reason
+// that happens to name an overlapping but not identical set of fields.
+var promotePreviewUnsnapshottedFields = []string{
+	"env", "port", "host_port", "domains", "resources", "health",
+	"replicas", "strategy", "volumes", "labels",
+}
+
 // handlePromotePreview handles
 // GET /api/v1/apps/{name}/promote/preview?to={environmentId}&target={appName}.
 // See resolvePromotion for how the target app is found or validated.
@@ -58,7 +68,7 @@ func toPromotePreviewResource(res promoteResolution) promotePreviewResource {
 		From:                promotePreviewSide{AppName: res.source.Name, Image: res.source.Image},
 		To:                  promotePreviewSide{AppName: res.target.Name, Image: res.target.Image},
 		Changes:             changes,
-		UnsnapshottedFields: unsnapshottedDeployFields,
+		UnsnapshottedFields: promotePreviewUnsnapshottedFields,
 		Note:                promotePreviewNote,
 	}
 }
@@ -102,7 +112,7 @@ func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rt.recordInstantDeployAttempt(r.Context(), res.target.Name, res.source.Image, store.DeployAttemptSourcePromote)
+	rt.recordInstantDeployAttempt(r.Context(), updated, res.source.Image, store.DeployAttemptSourcePromote)
 
 	writeJSON(w, http.StatusAccepted, toAppResource(updated))
 }

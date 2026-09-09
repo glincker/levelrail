@@ -254,10 +254,25 @@ func (h *Handler) beginDeployAttempt(ctx context.Context, req deploy.Request) (p
 	h.recorder.Start(id)
 
 	image := req.ImageRepo + ":" + req.CommitSHA
+
+	// Built from req.Service (h.cfg.Service, this package's static
+	// app-spec config), not a store.DesiredService: this legacy single-app
+	// path has no store lookup for one. A translation error here (e.g. an
+	// unparsable resources.memory) must never block the deploy itself, so
+	// it's logged and the attempt is still recorded, just with a zero-value
+	// snapshot.
+	var snapshot store.DeployAttemptSnapshot
+	if desired, err := deploy.ToDesiredService(req.ServiceName, image, req.Service); err != nil {
+		h.log.Error("webhook: build deploy attempt snapshot failed", "error", err)
+	} else {
+		snapshot = store.NewDeployAttemptSnapshot(desired)
+	}
+
 	if err := h.attempts.SaveDeployAttempt(ctx, store.DeployAttempt{
 		ID: id, ServiceName: req.ServiceName, Image: image,
 		CommitSHA: req.CommitSHA, Source: store.DeployAttemptSourceWebhook,
 		Status: store.DeployAttemptStatusRunning, StartedAt: time.Now(),
+		Snapshot: snapshot,
 	}); err != nil {
 		h.log.Error("webhook: save deploy attempt failed", "attempt_id", id, "error", err)
 		h.recorder.Finish(ctx, id)

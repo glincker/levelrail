@@ -36,12 +36,16 @@ import (
 // beginBuildDeployAttempt mints a deploy_attempts row for req (shared by
 // handleTriggerBuild and handleGitPushWebhook) and returns its id plus the
 // progress/finish funcs for Builder.Deploy. source distinguishes the two
-// callers in the resulting history row. Falls back to an empty id,
-// SlogProgress, and a no-op finish, logged but not returned as an error,
-// if deployRecorder is unconfigured or minting/saving the row fails: a
-// history-tracking failure must never block a build that would otherwise
-// succeed.
-func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Request, source string) (id string, progress func(build.ProgressEvent), finish func(deployErr error)) {
+// callers in the resulting history row. svc is the service's desired
+// state as of this trigger, snapshotted onto the row for
+// GET .../deploys/compare: a build changes Image, not Env/Port/Domains/
+// Resources, so the caller's already-loaded pre-build DesiredService is
+// exactly what this attempt is building against. Falls back to an empty
+// id, SlogProgress, and a no-op finish, logged but not returned as an
+// error, if deployRecorder is unconfigured or minting/saving the row
+// fails: a history-tracking failure must never block a build that would
+// otherwise succeed.
+func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Request, svc store.DesiredService, source string) (id string, progress func(build.ProgressEvent), finish func(deployErr error)) {
 	noop := func(error) {}
 	fallback := build.SlogProgress(rt.logger)
 
@@ -63,6 +67,7 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 		ID: id, ServiceName: req.ServiceName, Image: image,
 		CommitSHA: req.CommitSHA, Source: source,
 		Status: store.DeployAttemptStatusRunning, StartedAt: time.Now(),
+		Snapshot: store.NewDeployAttemptSnapshot(svc),
 	}); err != nil {
 		rt.logger.Error("api: trigger build: save deploy attempt failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
 		if rt.deployRecorder != nil {
