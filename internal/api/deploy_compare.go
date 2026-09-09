@@ -18,15 +18,15 @@ import (
 // CommitSHA/Source/Status/timestamps, because DesiredService is live
 // state, not a historical record: there is nothing to show for "now".
 //
-// Port/HostPort/Domains/Resources/Env are this side's config snapshot
-// (store.DeployAttemptSnapshot, migrations/0086): for a real attempt it's
-// that attempt's own historical snapshot; for the current side it's
-// built fresh from the app's live DesiredService, so both sides carry
-// the identical shape and diffDeployCompareSides/diffDeployCompareEnv
-// work unchanged either way. An attempt recorded before migrations/0086
-// shows a zero-value snapshot (Port 0, no Env/Domains/Resources), the
-// same "unknown, not a real zero" caveat UnsnapshottedFields/Note has
-// always carried for every other never-captured field.
+// Port/HostPort/Domains/Resources/Env/Health/Replicas/Strategy/Volumes/
+// Labels are this side's config snapshot (store.DeployAttemptSnapshot,
+// migrations/0086): for a real attempt it's that attempt's own historical
+// snapshot; for the current side it's built fresh from the app's live
+// DesiredService, so both sides carry the identical shape and
+// diffDeployCompareSides/diffDeployCompareEnv work unchanged either way.
+// An attempt recorded before migrations/0086 (or before a given field was
+// added to the snapshot) shows a zero value for it, not a real "port 0" or
+// "no health check": Note spells this caveat out on the wire.
 type deployCompareSide struct {
 	DeployID   string     `json:"deploy_id,omitempty"`
 	IsCurrent  bool       `json:"is_current"`
@@ -42,6 +42,11 @@ type deployCompareSide struct {
 	Domains   []string                    `json:"domains,omitempty"`
 	Resources *store.ServiceResources     `json:"resources,omitempty"`
 	Env       []store.DeployAttemptEnvKey `json:"env,omitempty"`
+	Health    *store.ServiceHealth        `json:"health,omitempty"`
+	Replicas  int                         `json:"replicas,omitempty"`
+	Strategy  string                      `json:"strategy,omitempty"`
+	Volumes   []store.ServiceVolume       `json:"volumes,omitempty"`
+	Labels    map[string]string           `json:"labels,omitempty"`
 }
 
 // deployCompareField is one field that differs between From and To.
@@ -90,12 +95,14 @@ type deployCompareResource struct {
 
 // unsnapshottedDeployFields lists DesiredService fields store.DeployAttempt
 // still never captures a per-attempt copy of. Named once so the handler's
-// response and its own doc comment can't drift apart.
-var unsnapshottedDeployFields = []string{
-	"health", "replicas", "strategy", "volumes", "labels",
-}
+// response and its own doc comment can't drift apart. Empty now that
+// health checks, replica count, strategy, volumes, and labels closed the
+// remaining gap: kept as a field (not removed from the response) so a
+// future field added to DesiredService without a matching snapshot update
+// has somewhere to be listed.
+var unsnapshottedDeployFields = []string{}
 
-const deployCompareUnsnapshottedNote = "Deploy attempts record image tag, commit, trigger source, outcome, environment variable keys, ports, domains, and resource limits at trigger time (attempts recorded before this was added show an empty snapshot for those fields). A secret- or database-backed env var's value is never recorded: only its key, and whether it was added or removed, ever appears in env_changes, since this control plane cannot know if such a value changed without decrypting it. Health checks, replica count, deploy strategy, volumes, and labels are still not snapshotted per attempt, so those cannot be diffed across past deploys, only the app's current live values are known for them."
+const deployCompareUnsnapshottedNote = "Deploy attempts record image tag, commit, trigger source, outcome, environment variable keys, ports, domains, resource limits, health check config, replica count, deploy strategy, volumes, and labels at trigger time (attempts recorded before a given field was added show an empty snapshot for it). A secret- or database-backed env var's value is never recorded: only its key, and whether it was added or removed, ever appears in env_changes, since this control plane cannot know if such a value changed without decrypting it."
 
 // handleCompareDeploys handles
 // GET /api/v1/apps/{name}/deploys/compare?from={deployId}&to={deployId}.
@@ -159,6 +166,8 @@ func currentDeployCompareSide(svc store.DesiredService) deployCompareSide {
 		IsCurrent: true, Image: svc.Image,
 		Port: snap.Port, HostPort: snap.HostPort, Domains: snap.Domains,
 		Resources: snap.Resources, Env: snap.Env,
+		Health: snap.Health, Replicas: snap.Replicas, Strategy: snap.Strategy,
+		Volumes: snap.Volumes, Labels: snap.Labels,
 	}
 }
 
@@ -193,6 +202,11 @@ func (rt *Router) loadDeployCompareSide(w http.ResponseWriter, r *http.Request, 
 		Domains:    a.Snapshot.Domains,
 		Resources:  a.Snapshot.Resources,
 		Env:        a.Snapshot.Env,
+		Health:     a.Snapshot.Health,
+		Replicas:   a.Snapshot.Replicas,
+		Strategy:   a.Snapshot.Strategy,
+		Volumes:    a.Snapshot.Volumes,
+		Labels:     a.Snapshot.Labels,
 	}, true
 }
 
@@ -222,8 +236,100 @@ func diffDeployCompareSides(from, to deployCompareSide) []deployCompareField {
 	if fromDomains, toDomains := strings.Join(from.Domains, ", "), strings.Join(to.Domains, ", "); fromDomains != toDomains {
 		changes = append(changes, deployCompareField{Field: "domains", From: fromDomains, To: toDomains})
 	}
+	if from.Strategy != to.Strategy {
+		changes = append(changes, deployCompareField{Field: "strategy", From: from.Strategy, To: to.Strategy})
+	}
+	if from.Replicas != to.Replicas {
+		changes = append(changes, deployCompareField{Field: "replicas", From: strconv.Itoa(from.Replicas), To: strconv.Itoa(to.Replicas)})
+	}
+	if fromVolumes, toVolumes := volumesString(from.Volumes), volumesString(to.Volumes); fromVolumes != toVolumes {
+		changes = append(changes, deployCompareField{Field: "volumes", From: fromVolumes, To: toVolumes})
+	}
+	if fromLabels, toLabels := labelsString(from.Labels), labelsString(to.Labels); fromLabels != toLabels {
+		changes = append(changes, deployCompareField{Field: "labels", From: fromLabels, To: toLabels})
+	}
 	changes = append(changes, diffDeployCompareResources(from.Resources, to.Resources)...)
+	changes = append(changes, diffDeployCompareHealth(from.Health, to.Health)...)
 	return changes
+}
+
+// volumesString renders vols as one comparable string ("name:container_path"
+// pairs, comma-joined), the same "join into a single field" treatment
+// diffDeployCompareSides already gives Domains, since a service's volume
+// list is small and order-stable (DesiredService.Volumes' own storage
+// order) rather than something needing per-item added/removed reporting
+// the way env does.
+func volumesString(vols []store.ServiceVolume) string {
+	parts := make([]string, len(vols))
+	for i, v := range vols {
+		parts[i] = v.Name + ":" + v.ContainerPath
+	}
+	return strings.Join(parts, ", ")
+}
+
+// labelsString renders labels as one comparable string ("key=value" pairs,
+// comma-joined, sorted by key for a stable comparison regardless of map
+// iteration order), the same single-field treatment volumesString gives
+// ServiceVolume above.
+func labelsString(labels map[string]string) string {
+	if len(labels) == 0 {
+		return ""
+	}
+	keys := make([]string, 0, len(labels))
+	for k := range labels {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	parts := make([]string, len(keys))
+	for i, k := range keys {
+		parts[i] = k + "=" + labels[k]
+	}
+	return strings.Join(parts, ", ")
+}
+
+// diffDeployCompareHealth reports one field per readiness/liveness probe
+// sub-field that differs, the same shape diffDeployCompareResources
+// already uses for store.ServiceResources' sub-fields. A nil probe (not
+// configured) is treated as the zero value, matching how a nil Resources
+// side already behaves.
+func diffDeployCompareHealth(from, to *store.ServiceHealth) []deployCompareField {
+	f, t := healthOrZero(from), healthOrZero(to)
+	var changes []deployCompareField
+	changes = append(changes, diffDeployCompareProbe("health.readiness", f.Readiness, t.Readiness)...)
+	changes = append(changes, diffDeployCompareProbe("health.liveness", f.Liveness, t.Liveness)...)
+	return changes
+}
+
+func healthOrZero(h *store.ServiceHealth) store.ServiceHealth {
+	if h == nil {
+		return store.ServiceHealth{}
+	}
+	return *h
+}
+
+func diffDeployCompareProbe(field string, from, to *store.ServiceProbe) []deployCompareField {
+	f, t := probeOrZero(from), probeOrZero(to)
+	var changes []deployCompareField
+	if f.Path != t.Path {
+		changes = append(changes, deployCompareField{Field: field + ".path", From: f.Path, To: t.Path})
+	}
+	if f.Interval != t.Interval {
+		changes = append(changes, deployCompareField{Field: field + ".interval", From: f.Interval.String(), To: t.Interval.String()})
+	}
+	if f.Timeout != t.Timeout {
+		changes = append(changes, deployCompareField{Field: field + ".timeout", From: f.Timeout.String(), To: t.Timeout.String()})
+	}
+	if f.Failures != t.Failures {
+		changes = append(changes, deployCompareField{Field: field + ".failures", From: strconv.Itoa(f.Failures), To: strconv.Itoa(t.Failures)})
+	}
+	return changes
+}
+
+func probeOrZero(p *store.ServiceProbe) store.ServiceProbe {
+	if p == nil {
+		return store.ServiceProbe{}
+	}
+	return *p
 }
 
 // diffDeployCompareResources reports one field per store.ServiceResources

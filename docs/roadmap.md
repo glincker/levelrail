@@ -162,14 +162,16 @@ still open. This page describes what's actually true today.
   build-log persistence. CLI `rollback` and `restart` subcommands.
 - Deploy comparison: `GET /api/v1/apps/{name}/deploys/compare` diffs two
   deploy attempts' image tag, commit, trigger source, env var keys,
-  ports, domains, and resource limits, with a frontend view. Env values
+  ports, domains, resource limits, health check config, replica count,
+  deploy strategy, volumes, and labels, with a frontend view. Env values
   are snapshotted per attempt for ordinary vars only: a secret- or
   database-backed key reports only its key and whether it was added or
   removed, never a value, since this control plane has no way to detect
   a value change for either without decrypting a secret or re-resolving
-  a live database reference. Health checks, replica count, deploy
-  strategy, volumes, and labels still aren't snapshotted per attempt, so
-  those aren't part of the diff yet.
+  a live database reference. Every other DesiredService field is now
+  captured per attempt; the CLI and MCP wire types
+  (`internal/apiclient`, `cmd/levelrail-cli`, `cmd/levelrail-mcp`) still
+  only surface the pre-snapshot field set and are a known follow-up.
 - Build-failure diagnosis: a deterministic pattern matcher over a
   failed build or container's actual log text (Docker daemon down,
   image pull/auth failure, missing Dockerfile, npm/pnpm errors, port
