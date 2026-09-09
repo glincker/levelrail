@@ -41,6 +41,11 @@ node_modules/
 .env.*
 !.env.example
 
+# AI agent instructions and local agent state. Never shipped in the
+# public repo, regardless of which machine or clone this is.
+CLAUDE.md
+.claude/
+
 # OS / editor
 .DS_Store
 .idea/
