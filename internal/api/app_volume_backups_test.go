@@ -71,26 +71,13 @@ func seedServiceWithVolume(t *testing.T, db *store.DB) {
 func TestVolumeBackupRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	routes := []struct {
-		method string
-		target string
-	}{
+	assertRoutesRequireAuth(t, rt, []routeCase{
 		{http.MethodPost, "/api/v1/apps/web/volumes/data/backups"},
 		{http.MethodGet, "/api/v1/apps/web/volumes/data/backups"},
 		{http.MethodPut, "/api/v1/apps/web/volumes/data/backup-schedule"},
 		{http.MethodDelete, "/api/v1/apps/web/volumes/data/backup-schedule"},
 		{http.MethodPost, "/api/v1/apps/web/volumes/data/restore"},
-	}
-	for _, r := range routes {
-		t.Run(r.method+" "+r.target, func(t *testing.T) {
-			req := httptest.NewRequest(r.method, r.target, nil)
-			rec := httptest.NewRecorder()
-			rt.Handler().ServeHTTP(rec, req)
-			if rec.Code != http.StatusUnauthorized {
-				t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
-			}
-		})
-	}
+	})
 }
 
 func TestHandleTriggerVolumeBackup_NoRunnerConfigured(t *testing.T) {

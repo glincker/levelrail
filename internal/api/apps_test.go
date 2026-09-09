@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -79,10 +78,7 @@ func authedRequest(t *testing.T, cookie *http.Cookie, method, target, body strin
 func TestAppsRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	routes := []struct {
-		method string
-		target string
-	}{
+	assertRoutesRequireAuth(t, rt, []routeCase{
 		{http.MethodGet, "/api/v1/apps"},
 		{http.MethodPost, "/api/v1/apps"},
 		{http.MethodGet, "/api/v1/apps/web"},
@@ -90,17 +86,7 @@ func TestAppsRoutes_RequireAuth(t *testing.T) {
 		{http.MethodDelete, "/api/v1/apps/web"},
 		{http.MethodPost, "/api/v1/apps/web/deploys"},
 		{http.MethodGet, "/api/v1/apps/web/deploys"},
-	}
-	for _, r := range routes {
-		t.Run(r.method+" "+r.target, func(t *testing.T) {
-			req := httptest.NewRequest(r.method, r.target, nil)
-			rec := httptest.NewRecorder()
-			rt.Handler().ServeHTTP(rec, req)
-			if rec.Code != http.StatusUnauthorized {
-				t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
-			}
-		})
-	}
+	})
 }
 
 func TestHandleListApps(t *testing.T) {
@@ -154,16 +140,7 @@ func TestHandleListApps_Status(t *testing.T) {
 			t.Fatalf("seed %s: %v", name, err)
 		}
 	}
-	if err := db.UpsertConditions(ctx, "application/healthy-app", []reconcile.Condition{
-		{Type: "Ready", Status: reconcile.ConditionTrue, Reason: "Running"},
-	}); err != nil {
-		t.Fatalf("upsert healthy-app conditions: %v", err)
-	}
-	if err := db.UpsertConditions(ctx, "application/broken-app", []reconcile.Condition{
-		{Type: "Ready", Status: reconcile.ConditionFalse, Reason: "CrashLoop"},
-	}); err != nil {
-		t.Fatalf("upsert broken-app conditions: %v", err)
-	}
+	seedTriStateConditions(t, db, "application", "healthy-app", "broken-app")
 	// pending-app deliberately gets no UpsertConditions call at all.
 
 	rec := httptest.NewRecorder()
@@ -961,14 +938,33 @@ func TestHandleCreateApp_EnvDirty_AlwaysFalse(t *testing.T) {
 // of env_dirty at the HTTP layer: a restart is a real container
 // recreation, so it must clear the restart-required flag that an earlier
 // env save set.
-func TestHandleRestartApp_ClearsEnvDirty(t *testing.T) {
+// newEnvDirtyAppTestRouter seeds a "web" app with EnvDirty already set,
+// the starting point every TestHandle*EnvDirty case below shares before
+// exercising its own action against it.
+func newEnvDirtyAppTestRouter(t *testing.T) (*Router, *store.DB, *http.Cookie) {
+	t.Helper()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	ctx := context.Background()
-
-	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000, EnvDirty: true}); err != nil {
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000, EnvDirty: true}); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
+	return rt, db, cookie
+}
+
+// assertAppEnvDirty proves the "web" app's persisted EnvDirty flag matches want.
+func assertAppEnvDirty(t *testing.T, db *store.DB, want bool) {
+	t.Helper()
+	got, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.EnvDirty != want {
+		t.Errorf("EnvDirty = %v, want %v", got.EnvDirty, want)
+	}
+}
+
+func TestHandleRestartApp_ClearsEnvDirty(t *testing.T) {
+	rt, db, cookie := newEnvDirtyAppTestRouter(t)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/restart", ""))
@@ -976,13 +972,7 @@ func TestHandleRestartApp_ClearsEnvDirty(t *testing.T) {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
 	}
 
-	got, err := db.GetDesiredService(ctx, "web")
-	if err != nil {
-		t.Fatalf("GetDesiredService() error = %v", err)
-	}
-	if got.EnvDirty {
-		t.Error("EnvDirty = true after restart, want false")
-	}
+	assertAppEnvDirty(t, db, false)
 }
 
 // TestHandleTriggerDeploy_ClearsEnvDirty covers handleTriggerDeploy's own
@@ -990,13 +980,7 @@ func TestHandleRestartApp_ClearsEnvDirty(t *testing.T) {
 // its own doc comment), and both a forward redeploy and a rollback
 // create a fresh container that picks up whatever Env is currently saved.
 func TestHandleTriggerDeploy_ClearsEnvDirty(t *testing.T) {
-	rt, db := newTestRouter(t)
-	cookie := loginTestSession(t, rt, db)
-	ctx := context.Background()
-
-	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000, EnvDirty: true}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	rt, db, cookie := newEnvDirtyAppTestRouter(t)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/deploys", `{"image":"levelrail/web:2"}`))
@@ -1004,13 +988,7 @@ func TestHandleTriggerDeploy_ClearsEnvDirty(t *testing.T) {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
 	}
 
-	got, err := db.GetDesiredService(ctx, "web")
-	if err != nil {
-		t.Fatalf("GetDesiredService() error = %v", err)
-	}
-	if got.EnvDirty {
-		t.Error("EnvDirty = true after a deploy trigger, want false")
-	}
+	assertAppEnvDirty(t, db, false)
 }
 
 // TestHandleStartApp_ClearsEnvDirty covers UpdateServiceSuspended(false)'s
@@ -1019,14 +997,8 @@ func TestHandleTriggerDeploy_ClearsEnvDirty(t *testing.T) {
 // suspended), the same fresh-container moment restart/redeploy clear it
 // on.
 func TestHandleStartApp_ClearsEnvDirty(t *testing.T) {
-	rt, db := newTestRouter(t)
-	cookie := loginTestSession(t, rt, db)
-	ctx := context.Background()
-
-	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000, EnvDirty: true}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
-	if err := db.UpdateServiceSuspended(ctx, "web", true); err != nil {
+	rt, db, cookie := newEnvDirtyAppTestRouter(t)
+	if err := db.UpdateServiceSuspended(context.Background(), "web", true); err != nil {
 		t.Fatalf("seed suspended: %v", err)
 	}
 
@@ -1036,25 +1008,13 @@ func TestHandleStartApp_ClearsEnvDirty(t *testing.T) {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
 	}
 
-	got, err := db.GetDesiredService(ctx, "web")
-	if err != nil {
-		t.Fatalf("GetDesiredService() error = %v", err)
-	}
-	if got.EnvDirty {
-		t.Error("EnvDirty = true after start, want false")
-	}
+	assertAppEnvDirty(t, db, false)
 }
 
 // TestHandleStopApp_DoesNotClearEnvDirty: unlike start, stopping an app
 // does not recreate anything, so a pending env edit must stay flagged.
 func TestHandleStopApp_DoesNotClearEnvDirty(t *testing.T) {
-	rt, db := newTestRouter(t)
-	cookie := loginTestSession(t, rt, db)
-	ctx := context.Background()
-
-	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000, EnvDirty: true}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	rt, db, cookie := newEnvDirtyAppTestRouter(t)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/stop", ""))
@@ -1062,13 +1022,7 @@ func TestHandleStopApp_DoesNotClearEnvDirty(t *testing.T) {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
 	}
 
-	got, err := db.GetDesiredService(ctx, "web")
-	if err != nil {
-		t.Fatalf("GetDesiredService() error = %v", err)
-	}
-	if !got.EnvDirty {
-		t.Error("EnvDirty = false after stop, want true (stopping does not recreate a container)")
-	}
+	assertAppEnvDirty(t, db, true)
 }
 
 func TestHandleDeleteApp(t *testing.T) {
@@ -1223,27 +1177,39 @@ func TestHandleSetAppNode_CordonedNode_Rejected(t *testing.T) {
 	}
 }
 
-func TestHandleSetAppNode_PlainWriteToken_Forbidden(t *testing.T) {
+// assertPlainWriteTokenForbidden seeds a "web" app and a write-scoped API
+// token, then proves that token gets a 403 against method+target: the
+// shared shape TestHandleSetAppNode_PlainWriteToken_Forbidden,
+// TestHandleRestartApp_PlainWriteToken_Forbidden, and
+// TestHandleStopApp_PlainWriteToken_Forbidden each need to prove their
+// own route sits behind a fleet/deploy-level ability, not AbilityWrite.
+func assertPlainWriteTokenForbidden(t *testing.T, method, target, body, tokenID, plaintext, reason string) {
+	t.Helper()
 	rt, db := newTestRouter(t)
 	ctx := context.Background()
 
 	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
 		t.Fatalf("seed app: %v", err)
 	}
-	const plaintext = "write-scoped-token" //nolint:gosec // fake fixture, not a real credential
 	if err := db.SaveAPIToken(ctx, store.APIToken{
-		ID: "tok_write", Name: "writer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWrite}, CreatedAt: time.Now(),
+		ID: tokenID, Name: "writer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWrite}, CreatedAt: time.Now(),
 	}); err != nil {
 		t.Fatalf("seed token: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodPut, "/api/v1/apps/web/node", strings.NewReader(`{"node_id":""}`))
+	req := httptest.NewRequest(method, target, strings.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+plaintext)
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d: placement is fleet-level, a plain write token must not reach it", rec.Code, http.StatusForbidden)
+		t.Errorf("status = %d, want %d: %s", rec.Code, http.StatusForbidden, reason)
 	}
+}
+
+func TestHandleSetAppNode_PlainWriteToken_Forbidden(t *testing.T) {
+	assertPlainWriteTokenForbidden(t, http.MethodPut, "/api/v1/apps/web/node", `{"node_id":""}`,
+		"tok_write", "write-scoped-token", //nolint:gosec // fake fixture, not a real credential
+		"placement is fleet-level, a plain write token must not reach it")
 }
 
 func TestHandleRestartApp_Success(t *testing.T) {
@@ -1288,31 +1254,15 @@ func TestHandleRestartApp_UnknownApp_NotFound(t *testing.T) {
 	}
 }
 
+// TestHandleRestartApp_PlainWriteToken_Forbidden: restart is a
+// deploy-adjacent action (it forces a real container recreation), the
+// same ability boundary POST .../deploys and POST .../builds already
+// draw (AbilityDeploy, not AbilityWrite): see router.go's registration
+// of this route for why.
 func TestHandleRestartApp_PlainWriteToken_Forbidden(t *testing.T) {
-	// Restart is a deploy-adjacent action (it forces a real container
-	// recreation), the same ability boundary POST .../deploys and
-	// POST .../builds already draw (AbilityDeploy, not AbilityWrite):
-	// see router.go's registration of this route for why.
-	rt, db := newTestRouter(t)
-	ctx := context.Background()
-
-	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
-	const plaintext = "write-scoped-token" //nolint:gosec // fake fixture, not a real credential
-	if err := db.SaveAPIToken(ctx, store.APIToken{
-		ID: "tok_write", Name: "writer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWrite}, CreatedAt: time.Now(),
-	}); err != nil {
-		t.Fatalf("seed token: %v", err)
-	}
-
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/apps/web/restart", strings.NewReader(""))
-	req.Header.Set("Authorization", "Bearer "+plaintext)
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d: a plain write token must not be able to force a container recreation", rec.Code, http.StatusForbidden)
-	}
+	assertPlainWriteTokenForbidden(t, http.MethodPost, "/api/v1/apps/web/restart", "",
+		"tok_write", "write-scoped-token", //nolint:gosec // fake fixture, not a real credential
+		"a plain write token must not be able to force a container recreation")
 }
 
 func TestHandleStopApp_Success(t *testing.T) {
@@ -1377,27 +1327,11 @@ func TestHandleStartApp_Success(t *testing.T) {
 	}
 }
 
+// TestHandleStopApp_PlainWriteToken_Forbidden checks the same
+// AbilityDeploy boundary as restart (see router.go's registration of
+// this route).
 func TestHandleStopApp_PlainWriteToken_Forbidden(t *testing.T) {
-	// Same AbilityDeploy boundary as restart (see router.go's
-	// registration of this route).
-	rt, db := newTestRouter(t)
-	ctx := context.Background()
-
-	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
-	const plaintext = "write-scoped-token-stop" //nolint:gosec // fake fixture, not a real credential
-	if err := db.SaveAPIToken(ctx, store.APIToken{
-		ID: "tok_write_stop", Name: "writer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWrite}, CreatedAt: time.Now(),
-	}); err != nil {
-		t.Fatalf("seed token: %v", err)
-	}
-
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/apps/web/stop", strings.NewReader(""))
-	req.Header.Set("Authorization", "Bearer "+plaintext)
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusForbidden {
-		t.Errorf("status = %d, want %d: a plain write token must not be able to stop an app", rec.Code, http.StatusForbidden)
-	}
+	assertPlainWriteTokenForbidden(t, http.MethodPost, "/api/v1/apps/web/stop", "",
+		"tok_write_stop", "write-scoped-token-stop", //nolint:gosec // fake fixture, not a real credential
+		"a plain write token must not be able to stop an app")
 }
