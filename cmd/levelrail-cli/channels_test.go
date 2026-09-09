@@ -158,6 +158,24 @@ func TestRun_ChannelsCreate_NtfyWebhookURL(t *testing.T) {
 		"ntfy", "https://ntfy.sh/my-topic")
 }
 
+func TestRun_ChannelsCreate_RocketChatWebhookURL(t *testing.T) {
+	assertChannelsCreate(t, "chn_12",
+		[]string{"--name", "Ops Rocket.Chat", "--kind", "rocketchat", "--notify-url", "https://rocketchat.example.com/hooks/x"},
+		"rocketchat", "https://rocketchat.example.com/hooks/x")
+}
+
+func TestRun_ChannelsCreate_WebexWebhookURL(t *testing.T) {
+	assertChannelsCreate(t, "chn_13",
+		[]string{"--name", "Ops Webex", "--kind", "webex", "--notify-url", "https://webexapis.com/v1/webhooks/incoming/x"},
+		"webex", "https://webexapis.com/v1/webhooks/incoming/x")
+}
+
+func TestRun_ChannelsCreate_GoogleChatWebhookURL(t *testing.T) {
+	assertChannelsCreate(t, "chn_14",
+		[]string{"--name", "Ops Google Chat", "--kind", "googlechat", "--notify-url", "https://chat.googleapis.com/v1/spaces/x/messages"},
+		"googlechat", "https://chat.googleapis.com/v1/spaces/x/messages")
+}
+
 // TestRun_ChannelsCreate_ResendFlags proves --resend-api-key/--resend-to
 // pack into notify_url the same way --pushover-user-key/
 // --pushover-api-token do, and that an omitted --resend-from leaves the
@@ -212,6 +230,32 @@ func TestRun_ChannelsCreate_ResendFromFlag(t *testing.T) {
 	}
 	if parsed.Query().Get("from") != "alerts@example.com" {
 		t.Errorf("notify_url from param = %q, want alerts@example.com", parsed.Query().Get("from"))
+	}
+}
+
+// TestRun_ChannelsCreate_OpsgenieFlags proves --opsgenie-api-key packs
+// into notify_url against opsgenieEndpoint, the same convention
+// --resend-api-key/--pagerduty-routing-key already establish for a
+// channel kind that needs more than a bare webhook URL.
+func TestRun_ChannelsCreate_OpsgenieFlags(t *testing.T) {
+	var gotBody createNotificationChannelRequest
+	srv := newChannelCreateEchoServer(t, "chn_15", &gotBody, nil)
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{
+		"channels", "create", "--name", "Ops Opsgenie", "--kind", "opsgenie",
+		"--opsgenie-api-key", "og_secret123", "--api-url", srv.URL,
+	})
+
+	parsed, err := url.Parse(gotBody.NotifyURL)
+	if err != nil {
+		t.Fatalf("parse built notify_url %q: %v", gotBody.NotifyURL, err)
+	}
+	if parsed.Scheme+"://"+parsed.Host+parsed.Path != opsgenieEndpoint {
+		t.Errorf("notify_url endpoint = %q, want %q", parsed.Scheme+"://"+parsed.Host+parsed.Path, opsgenieEndpoint)
+	}
+	if parsed.Query().Get("key") != "og_secret123" {
+		t.Errorf("notify_url key param = %q, want og_secret123", parsed.Query().Get("key"))
 	}
 }
 

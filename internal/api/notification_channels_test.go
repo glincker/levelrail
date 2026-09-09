@@ -101,6 +101,10 @@ func TestHandleCreateNotificationChannel_NewKindsAccepted(t *testing.T) {
 		{"gotify", "https://gotify.example.com/message?token=app-token"},
 		{"mattermost", "https://mattermost.example.com/hooks/xyz"},
 		{"lark", "https://open.larksuite.com/open-apis/bot/v2/hook/xyz"},
+		{"rocketchat", "https://rocketchat.example.com/hooks/xyz"},
+		{"opsgenie", "https://api.opsgenie.com/v2/alerts?key=og_secret"},
+		{"webex", "https://webexapis.com/v1/webhooks/incoming/xyz"},
+		{"googlechat", "https://chat.googleapis.com/v1/spaces/xyz/messages"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.kind, func(t *testing.T) {

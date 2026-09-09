@@ -35,3 +35,17 @@ func buildResendNotifyURL(apiKey, to, from string) string {
 	}
 	return resendEndpoint + "?" + q.Encode()
 }
+
+// opsgenieEndpoint is Opsgenie's fixed Alerts API endpoint. An opsgenie
+// notify_url is this URL plus a key query param, matching
+// internal/alerting/notify.go's own parseOpsgenieCreds convention.
+const opsgenieEndpoint = "https://api.opsgenie.com/v2/alerts"
+
+// buildOpsgenieNotifyURL packs an Opsgenie API key into the notify_url
+// shape the control plane expects, so an operator can pass it as its own
+// flag instead of hand-building a query string.
+func buildOpsgenieNotifyURL(apiKey string) string {
+	q := url.Values{}
+	q.Set("key", apiKey)
+	return opsgenieEndpoint + "?" + q.Encode()
+}

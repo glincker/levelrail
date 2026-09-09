@@ -684,10 +684,173 @@ func TestNotifyResend_InvalidURL_Errors(t *testing.T) {
 	}
 }
 
+func TestNotifyRocketChat_PostsTextAliasAndEmoji(t *testing.T) {
+	var got rocketChatPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	r := Rule{ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web", NotifyURL: srv.URL, NotifyKind: NotifyRocketChat}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if !strings.Contains(got.Text, "high cpu") {
+		t.Errorf("payload.Text = %q, want it to mention the rule name", got.Text)
+	}
+	if got.Alias != "Levelrail" {
+		t.Errorf("payload.Alias = %q, want Levelrail", got.Alias)
+	}
+	if got.Emoji != ":rotating_light:" {
+		t.Errorf("payload.Emoji = %q, want :rotating_light: for a firing event", got.Emoji)
+	}
+}
+
+func TestNotifyRocketChat_ResolvedEvent_DifferentEmoji(t *testing.T) {
+	var got rocketChatPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	r := Rule{ID: "r1", Name: "high cpu", NotifyURL: srv.URL, NotifyKind: NotifyRocketChat}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r, Resolved: true}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if got.Emoji != ":white_check_mark:" {
+		t.Errorf("payload.Emoji = %q, want :white_check_mark: for a resolved event", got.Emoji)
+	}
+}
+
+func TestNotifyWebex_PostsMarkdownField(t *testing.T) {
+	var got webexPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	r := Rule{ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web", NotifyURL: srv.URL, NotifyKind: NotifyWebex}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if !strings.Contains(got.Markdown, "high cpu") {
+		t.Errorf("payload.Markdown = %q, want it to mention the rule name", got.Markdown)
+	}
+}
+
+func TestNotifyGoogleChat_PostsTextField(t *testing.T) {
+	var got map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	r := Rule{ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web", NotifyURL: srv.URL, NotifyKind: NotifyGoogleChat}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	text, ok := got["text"].(string)
+	if !ok || !strings.Contains(text, "high cpu") {
+		t.Errorf("Google Chat payload = %+v, want a text field mentioning the rule name", got)
+	}
+}
+
+func withOpsgenieAPIURL(t *testing.T, url string) {
+	t.Helper()
+	original := opsgenieAPIURL
+	opsgenieAPIURL = url
+	t.Cleanup(func() { opsgenieAPIURL = original })
+}
+
+func TestNotifyOpsgenie_PostsAuthHeaderAndPayload(t *testing.T) {
+	var got opsgeniePayload
+	var gotAuth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+	withOpsgenieAPIURL(t, srv.URL)
+
+	r := Rule{
+		ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web",
+		NotifyURL: "https://api.opsgenie.com/v2/alerts?key=og_secret123", NotifyKind: NotifyOpsgenie,
+	}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if gotAuth != "GenieKey og_secret123" {
+		t.Errorf("Authorization header = %q, want GenieKey og_secret123", gotAuth)
+	}
+	if got.Message != "high cpu" {
+		t.Errorf("payload.Message = %q, want the rule name", got.Message)
+	}
+	if !strings.Contains(got.Description, "high cpu") {
+		t.Errorf("payload.Description = %q, want it to mention the rule name", got.Description)
+	}
+	if got.Priority != "P1" {
+		t.Errorf("payload.Priority = %q, want P1 for a firing event", got.Priority)
+	}
+}
+
+func TestNotifyOpsgenie_ResolvedEvent_LowerPriority(t *testing.T) {
+	var got opsgeniePayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+	withOpsgenieAPIURL(t, srv.URL)
+
+	r := Rule{ID: "r1", Name: "high cpu", NotifyURL: "https://api.opsgenie.com/v2/alerts?key=og_secret", NotifyKind: NotifyOpsgenie}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r, Resolved: true}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if got.Priority != "P5" {
+		t.Errorf("payload.Priority = %q, want P5 for a resolved event", got.Priority)
+	}
+}
+
+func TestNotifyOpsgenie_MissingKey_Errors(t *testing.T) {
+	r := Rule{ID: "r1", Name: "x", NotifyURL: "https://api.opsgenie.com/v2/alerts", NotifyKind: NotifyOpsgenie}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
+		t.Error("Notify() error = nil, want an error when notify_url is missing the key query parameter")
+	}
+}
+
+func TestNotifyOpsgenie_InvalidURL_Errors(t *testing.T) {
+	r := Rule{ID: "r1", Name: "x", NotifyURL: "://not a url", NotifyKind: NotifyOpsgenie}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
+		t.Error("Notify() error = nil, want an error for an unparseable notify_url")
+	}
+}
+
 func TestNewNotifier_AllValidKinds_Recognized(t *testing.T) {
 	kinds := []NotifyKind{
 		NotifyGeneric, NotifySlack, NotifyDiscord, NotifyTelegram, NotifyPushover,
 		NotifyPagerDuty, NotifyTeams, NotifyMattermost, NotifyLark, NotifyGotify,
+		NotifyRocketChat, NotifyWebex, NotifyGoogleChat,
 	}
 	for _, kind := range kinds {
 		t.Run(string(kind), func(t *testing.T) {

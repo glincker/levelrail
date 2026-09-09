@@ -45,7 +45,7 @@ func channelsUsage(prog string) string {
   %[1]s channels test <id> [flags]                                       send a real test message to a connected channel
   %[1]s channels deliveries <id> [flags]                                lists a channel's recorded send history, newest first
 
-Valid --kind values: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark.
+Valid --kind values: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat.
 
 Run "%[1]s channels <subcommand> -h" for a subcommand's own flags.
 `, prog)

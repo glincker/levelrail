@@ -19,6 +19,10 @@ export const CHANNEL_KIND_LABEL: Record<NotificationChannelKind, string> = {
   gotify: 'Gotify',
   mattermost: 'Mattermost',
   lark: 'Lark',
+  rocketchat: 'Rocket.Chat',
+  opsgenie: 'Opsgenie',
+  webex: 'Webex',
+  googlechat: 'Google Chat',
 }
 
 // Only the brand-mark kinds map to a BrandIconName; generic/email/pushover/
@@ -36,4 +40,8 @@ export const CHANNEL_KIND_BRAND_ICON: Partial<
   mattermost: 'mattermost',
   ntfy: 'ntfy',
   resend: 'resend',
+  rocketchat: 'rocketchat',
+  opsgenie: 'opsgenie',
+  webex: 'webex',
+  googlechat: 'google-chat',
 }
