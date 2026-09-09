@@ -284,10 +284,12 @@ still open. This page describes what's actually true today.
   scheduled-task-failure, node-disk-space, node-resource-usage
   (per-node CPU/memory), and domain-health (a periodic DNS check
   against every domain configured on an app, catching a silently
-  repointed CNAME), each with its own evaluator. Eight notification
+  repointed CNAME), each with its own evaluator. Seventeen notification
   channel kinds: webhook, Slack, Discord, email, Telegram, Pushover,
-  PagerDuty, and Microsoft Teams, plus separate deploy-outcome
-  notifications. Delivery history for every notification channel is
+  PagerDuty, Microsoft Teams, Resend, Gotify, Ntfy, Mattermost, Lark,
+  Rocket.Chat, Opsgenie, Webex, and Google Chat, plus separate
+  deploy-outcome notifications. Delivery history for every notification
+  channel is
   independently queryable via API/CLI/MCP. A dismissible dashboard
   nudge prompts enabling the platform-wide alert rules (patch-status,
   node-disk-space, node-resource-usage) when none are configured yet.
