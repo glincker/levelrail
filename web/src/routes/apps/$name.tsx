@@ -48,8 +48,8 @@ const APP_SECTION_LABELS: Record<string, string> = {
   exec: 'Exec',
 }
 
-// App detail layout route (TASKS.md 1.10, expanded into a per-section
-// nested-route layout): this file used to render all 8 sections itself as client-side
+// App detail layout route, expanded into a per-section nested-route
+// layout: this file used to render all 8 sections itself as client-side
 // Tabs/TabsContent panels. They are now real nested routes under
 // /apps/$name/* (overview.tsx, domains.tsx, environment.tsx, health.tsx,
 // resources.tsx, metrics.tsx, logs.tsx, alerts.tsx), each deep-linkable,

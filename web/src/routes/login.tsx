@@ -38,8 +38,7 @@ type LoginTab = 'sign-in' | 'register'
 // signal from the backend, so this does not auto-detect first-run and
 // render a different screen for it; it's one screen with a tab toggle the
 // operator picks themselves, a real, intentional deviation from
-// auto-detection, not an oversight (see TASKS.md's note on this task for
-// the full reasoning).
+// auto-detection, not an oversight.
 //
 // Already-authenticated visitors get bounced to the dashboard: this
 // route's own job is only ever reached when there's no session to speak

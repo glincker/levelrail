@@ -23,8 +23,8 @@ import { useDeleteNode } from '../queries/nodes'
 // comment in queries/nodes.ts says: DELETE /api/v1/nodes/{id}
 // (internal/api/nodes.go's handleDeleteNode) removes the registry row
 // only. It does not drain the node or disconnect a real agent session
-// (TASKS.md 3.7, not built), so an operator must not read "delete" here
-// as "safely decommission this machine."
+// (not built yet), so an operator must not read "delete" here as
+// "safely decommission this machine."
 export function DeleteNodeDialog({ id, name }: { id: string; name: string }) {
   const [open, setOpen] = useState(false)
   const deleteNode = useDeleteNode()

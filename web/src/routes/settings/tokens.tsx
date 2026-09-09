@@ -8,8 +8,8 @@ import { useBrand } from '../../hooks/useBrand'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 
 // Account-level, not scoped to one app, so it lives under
-// routes/settings/ rather than routes/apps/, per TASKS.md's "Frontend:
-// dashboard UI" task for API token management. Reachable directly at
+// routes/settings/ rather than routes/apps/, for API token management.
+// Reachable directly at
 // /settings/tokens; no nav link wires it in yet, see this route's own
 // report for why (routes/__root.tsx had unrelated concurrent edits in
 // flight when this was built, deliberately avoiding stepping on live

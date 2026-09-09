@@ -19,7 +19,7 @@ import {
   type TimeRangeKey,
 } from '../lib/timeRange'
 
-// Per-app metrics dashboard, TASKS.md 2.4, wired against 2.3's real
+// Per-app metrics dashboard, wired against the real
 // `GET /api/v1/apps/{name}/metrics`. One remaining honest gap against
 // the full per-app metrics list the observability phase requires
 // without configuration, deliberately not papered over: only the 7

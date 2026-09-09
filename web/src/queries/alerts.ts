@@ -1,6 +1,6 @@
 // Query-key factory and fetchers for GET/POST /api/v1/apps/{name}/alerts
-// and DELETE /api/v1/apps/{name}/alerts/{id} (internal/api/alerts.go,
-// TASKS.md 2.5/2.7). Kept in its own module for the same reason
+// and DELETE /api/v1/apps/{name}/alerts/{id} (internal/api/alerts.go).
+// Kept in its own module for the same reason
 // queries/metrics.ts and queries/logs.ts are: a genuinely different
 // resource shape than AppDetail, nested under the same app name.
 //
