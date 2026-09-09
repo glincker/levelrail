@@ -111,8 +111,7 @@ each node independently negotiating and holding its own copy.
 
 ## Verified
 
-Phase 0 spike (`internal/ingress/`, full findings in
-`docs-local/research/caddy-spike.md`) proves the core claim: Caddy runs
+Phase 0 spike (`internal/ingress/`) proves the core claim: Caddy runs
 in-process, configured entirely through `caddy.Load`, the literal function
 backing the admin API's own `POST /load` handler, not a side door. Two real
 integration tests (no mocks, run with `-race`): a plain HTTP reverse proxy

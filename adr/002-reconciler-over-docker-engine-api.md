@@ -7,9 +7,8 @@ Date: 2026-08-11
 
 Levelrail needs to keep running containers converged with declared desired
 state: start what's missing, restart what died, replace what's misconfigured.
-Every competitor studied in Phase 0 (see `docs-local/research/prior-art-*.md`)
-solves this differently, and none of them solve it the way this ADR settles
-on.
+Every competitor studied in Phase 0 solves this differently, and none of
+them solve it the way this ADR settles on.
 
 ## Decision
 

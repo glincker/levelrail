@@ -9,10 +9,10 @@ Levelrail needs a way for the control plane to observe and act on containers
 running on remote nodes, including nodes the operator doesn't control the
 network perimeter of: a home lab box behind residential NAT, a VPS with no
 public inbound firewall rule opened, a machine on a network the operator
-can't get a port-forward on. Every tool studied in Phase 0
-(`docs-local/research/prior-art-*.md`) solves node communication by requiring
-*something* to dial *into* the managed node, whether that's an operator's SSH
-session or a Swarm cluster member reaching a peer directly. That requirement
+can't get a port-forward on. Every tool studied in Phase 0 solves node
+communication by requiring *something* to dial *into* the managed node,
+whether that's an operator's SSH session or a Swarm cluster member
+reaching a peer directly. That requirement
 is the thing this ADR rejects, not any one specific competitor's
 implementation of it.
 

@@ -14,9 +14,8 @@ pile of processes that need `docker compose up` to run, the "lightweight
 alternative" positioning (section 1, "Positioning shorthand") is undercut
 before a single feature is built.
 
-Phase 0 research into every competitor studied (`docs-local/research/prior-art-*.md`)
-confirms this isn't a hypothetical trade-off, it's the exact failure mode of
-the category.
+Phase 0 research into every competitor studied confirms this isn't a
+hypothetical trade-off, it's the exact failure mode of the category.
 
 ## Decision
 
