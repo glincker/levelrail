@@ -48,13 +48,28 @@ func TestDynamicSender_Send_RejectsBeforeLoadingConfig(t *testing.T) {
 }
 
 func TestSMTPSender_RawMessage_HeaderInjectionWouldOtherwiseSucceed(t *testing.T) {
-	// Documents why the guard lives in DynamicSender.Send rather than
-	// smtpSender: net/smtp.SendMail has no header-aware validation of
-	// its own, so smtpSender alone would happily hand a CRLF-carrying
-	// "to" straight into the raw message it builds.
+	// Documents why smtpSender.Send needs its own defense, not just
+	// DynamicSender.Send's: net/smtp.SendMail has no header-aware
+	// validation of its own, so a raw CRLF-carrying "to" reaching this
+	// naive message construction unmodified would inject a real extra
+	// header.
 	to := "victim@example.com\r\nBcc: attacker@evil.com"
 	msg := "To: " + to + "\r\nFrom: a@example.com\r\nSubject: hi\r\n\r\nbody\r\n"
 	if !strings.Contains(msg, "Bcc: attacker@evil.com") {
 		t.Fatal("expected the naive message construction to demonstrate the injected header")
+	}
+}
+
+func TestCRLFReplacer_StripsInjectedHeader(t *testing.T) {
+	to := crlfReplacer.Replace("victim@example.com\r\nBcc: attacker@evil.com")
+	if strings.ContainsAny(to, "\r\n") {
+		t.Fatalf("crlfReplacer left a CR or LF in %q", to)
+	}
+	msg := "To: " + to + "\r\nFrom: a@example.com\r\nSubject: hi\r\n\r\nbody\r\n"
+	// A real injected header line requires a CRLF immediately before
+	// it; with the CR/LF stripped, "Bcc: ..." is stuck onto the end of
+	// the To header's own value instead of starting a new line.
+	if strings.Contains(msg, "\r\nBcc:") {
+		t.Fatal("sanitized value still produced a real extra header line")
 	}
 }
