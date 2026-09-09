@@ -1,0 +1,15 @@
+{
+  "name": "levelrail-docs",
+  "private": true,
+  "version": "0.0.0",
+  "description": "VitePress docs and landing site for Levelrail, built from the existing docs/ markdown with zero content duplication.",
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev .",
+    "build": "vitepress build .",
+    "preview": "vitepress preview ."
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.4"
+  }
+}
