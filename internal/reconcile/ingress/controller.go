@@ -129,6 +129,15 @@ type ServiceStore interface {
 	// (internal/api) must take effect on this controller's very next
 	// pass.
 	GetRegistrySettings(ctx context.Context) (store.RegistrySettings, error)
+	// ListDomainWAF returns every domain with opt-in WAF and/or rate
+	// limiting configured (migrations/0091), read fresh every Reconcile
+	// for the same reason ListDomainBasicAuth is: an operator setting or
+	// clearing a domain's WAF/rate-limit config through PUT/DELETE
+	// /api/v1/apps/{name}/domains/{domain}/waf (internal/api) must take
+	// effect on this controller's very next pass. Unlike basic auth or
+	// BYO TLS certs, there is no secret material here, so no resolver
+	// option is needed to actually enforce it.
+	ListDomainWAF(ctx context.Context) ([]store.DomainWAF, error)
 }
 
 // Applier is the narrow surface this controller needs from
@@ -456,6 +465,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: get registry settings: %w", err)
 	}
+	wafByDomain, err := c.domainWAFByDomain(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list domain waf: %w", err)
+	}
 
 	var routes []ingress.ProxyRoute
 	var maintenanceRoutes []ingress.MaintenanceRoute
@@ -506,7 +519,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		for _, host := range activeHosts {
 			claimedHosts[host] = svc.Name
 		}
-		routes = append(routes, c.routesForService(ctx, activeHosts, dial, authByDomain)...)
+		routes = append(routes, c.routesForService(ctx, activeHosts, dial, authByDomain, wafByDomain)...)
 	}
 
 	var staticRoutes []ingress.StaticRoute
@@ -762,41 +775,79 @@ func splitMaintenanceHosts(domains []string, maintenanceByDomain map[string]bool
 }
 
 // routesForService builds one ProxyRoute per entry in hosts that has
-// basic auth configured (each needs its own Handle chain, since Caddy
-// has no notion of "this host within a shared route is exempt"), plus
-// one shared ProxyRoute carrying every host that doesn't. A service
-// with no protected domains reproduces this controller's behavior
-// before this feature existed exactly: a single route with every host.
-// hosts is the caller's already-filtered subset of the service's own
-// domains (Reconcile excludes any domain in maintenance mode before
-// calling this), not necessarily svc.Domains verbatim.
-func (c *Controller) routesForService(ctx context.Context, hosts []string, dial string, authByDomain map[string]store.DomainBasicAuth) []ingress.ProxyRoute {
+// basic auth and/or WAF/rate-limit configured (each needs its own Handle
+// chain, since Caddy has no notion of "this host within a shared route
+// is exempt"), plus one shared ProxyRoute carrying every host that has
+// neither. A service with no customized domains reproduces this
+// controller's behavior before either feature existed exactly: a single
+// route with every host. hosts is the caller's already-filtered subset
+// of the service's own domains (Reconcile excludes any domain in
+// maintenance mode before calling this), not necessarily svc.Domains
+// verbatim.
+func (c *Controller) routesForService(ctx context.Context, hosts []string, dial string, authByDomain map[string]store.DomainBasicAuth, wafByDomain map[string]store.DomainWAF) []ingress.ProxyRoute {
 	var open []string
 	var routes []ingress.ProxyRoute
 	for _, host := range hosts {
-		auth, protected := authByDomain[host]
-		if !protected {
+		var account *ingress.BasicAuthAccount
+		if auth, protected := authByDomain[host]; protected {
+			resolved, ok := c.resolveBasicAuthAccount(ctx, host, auth)
+			if !ok {
+				// A domain configured for basic auth that this pass cannot
+				// resolve a password for (no resolver wired, or the secret
+				// itself failed to resolve) is left unrouted this pass
+				// rather than served unprotected: failing a security
+				// control closed is worse to leave silent than a domain
+				// being briefly unreachable, unlike dialForService's own
+				// "no backend yet" cases above, which fail open to "just
+				// not routed yet."
+				continue
+			}
+			account = resolved
+		}
+
+		waf := domainWAFConfig(wafByDomain[host])
+		if account == nil && waf == nil {
 			open = append(open, host)
 			continue
 		}
-		account, ok := c.resolveBasicAuthAccount(ctx, host, auth)
-		if !ok {
-			// A domain configured for basic auth that this pass cannot
-			// resolve a password for (no resolver wired, or the secret
-			// itself failed to resolve) is left unrouted this pass
-			// rather than served unprotected: failing a security
-			// control closed is worse to leave silent than a domain
-			// being briefly unreachable, unlike dialForService's own
-			// "no backend yet" cases above, which fail open to "just
-			// not routed yet."
-			continue
-		}
-		routes = append(routes, ingress.ProxyRoute{Hosts: []string{host}, BackendDial: dial, BasicAuth: account})
+		routes = append(routes, ingress.ProxyRoute{Hosts: []string{host}, BackendDial: dial, BasicAuth: account, WAF: waf})
 	}
 	if len(open) > 0 {
 		routes = append(routes, ingress.ProxyRoute{Hosts: open, BackendDial: dial})
 	}
 	return routes
+}
+
+// domainWAFConfig converts row into an ingress.WAFConfig, or nil when
+// row has neither the WAF nor rate limiting turned on: the zero value of
+// store.DomainWAF (what wafByDomain[host] returns for any host with no
+// row at all) always takes this nil branch, reproducing this
+// controller's behavior before this feature existed exactly.
+func domainWAFConfig(row store.DomainWAF) *ingress.WAFConfig {
+	if !row.WAFEnabled && row.RateLimitRPS <= 0 {
+		return nil
+	}
+	return &ingress.WAFConfig{
+		Enabled:        row.WAFEnabled,
+		Blocking:       row.WAFMode == store.DomainWAFModeBlock,
+		RateLimitRPS:   row.RateLimitRPS,
+		RateLimitBurst: row.RateLimitBurst,
+	}
+}
+
+// domainWAFByDomain returns every store.DomainWAF row keyed by domain,
+// mirroring domainBasicAuthByDomain's identical shape for a different
+// per-domain toggle.
+func (c *Controller) domainWAFByDomain(ctx context.Context) (map[string]store.DomainWAF, error) {
+	rows, err := c.store.ListDomainWAF(ctx)
+	if err != nil {
+		return nil, err
+	}
+	byDomain := make(map[string]store.DomainWAF, len(rows))
+	for _, row := range rows {
+		byDomain[row.Domain] = row
+	}
+	return byDomain, nil
 }
 
 // resolveBasicAuthAccount resolves domain's plaintext password through

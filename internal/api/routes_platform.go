@@ -324,6 +324,18 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/tls-cert", rt.requireAbility(AbilityRoot, rt.handleSetDomainTLSCert))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/tls-cert", rt.requireAbility(AbilityRoot, rt.handleClearDomainTLSCert))
 
+	// Opt-in WAF and rate limiting (domain_waf.go): OWASP Coraza and
+	// Caddy's rate_limit handler on one app-owned domain, enforced on
+	// the next ingress reconcile pass. GET is AbilityRead, matching the
+	// auth/maintenance routes' own passive-visibility tier. PUT/DELETE
+	// are AbilityDeploy, the same "app lifecycle, runtime routing
+	// behavior, not a credential" tier PUT/DELETE .../maintenance
+	// already uses: unlike basic auth or a BYO cert, nothing here is
+	// secret material.
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/waf", rt.requireAbility(AbilityRead, rt.handleGetDomainWAF))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/waf", rt.requireAbility(AbilityDeploy, rt.handleSetDomainWAF))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/waf", rt.requireAbility(AbilityDeploy, rt.handleClearDomainWAF))
+
 	// Email settings: same precedent as ingress settings just above.
 	// GET is AbilityRead; PUT is AbilityRoot, real infrastructure config.
 	mux.HandleFunc("GET /api/v1/settings/email", rt.requireAbility(AbilityRead, rt.handleGetEmailSettings))

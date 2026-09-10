@@ -43,6 +43,8 @@ type (
 	domainMaintenanceResource        = apiclient.DomainMaintenanceResource
 	domainTLSCertResource            = apiclient.DomainTLSCertResource
 	setDomainTLSCertRequest          = apiclient.SetDomainTLSCertRequest
+	domainWAFResource                = apiclient.DomainWAFResource
+	setDomainWAFRequest              = apiclient.SetDomainWAFRequest
 	backupHistoryResource            = apiclient.BackupHistoryResource
 	backupVerificationResource       = apiclient.BackupVerificationResource
 	restoreHistoryResource           = apiclient.RestoreHistoryResource

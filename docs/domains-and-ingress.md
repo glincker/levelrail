@@ -112,6 +112,54 @@ Be clear-eyed about where this stands, because it's easy to overstate:
   control). Caddy loads it directly and skips automatic issuance for that
   host.
 
+## Opt-in WAF and rate limiting
+
+Since Caddy already ships embedded in the control plane binary, adding a
+Web Application Firewall and rate limiting is two more Caddy modules
+registered at build time, not a new container or service: OWASP Coraza
+(`github.com/corazawaf/coraza-caddy/v2`, running the stock OWASP Core
+Rule Set) for the WAF, and Caddy's own `rate_limit` module
+(`github.com/mholt/caddy-ratelimit`) for rate limiting. Both are off by
+default for every domain and are configured per domain, not platform-wide.
+
+- **WAF modes: `detect` (default) or `block`.** `detect` runs the full
+  OWASP CRS rule set against every request and logs matches, but never
+  rejects anything. `block` actually rejects a request that matches a
+  CRS rule. **`detect` is the default for a newly enabled domain on
+  purpose:** OWASP's own CRS documentation is explicit that the rule set
+  can produce false positives against a given application's normal
+  traffic, and this project's central risk (see the root `CLAUDE.md`'s
+  "main risk" section) is exactly the class of failure where a new
+  safety control silently breaks something that used to work. Turning
+  the WAF on in `detect` mode first, watching logs for a while, and only
+  then switching to `block` once you're confident it isn't flagging your
+  own legitimate traffic is the safer rollout path. There's no
+  autopromote from detect to block; you flip it yourself once you trust
+  it.
+
+- **Rate limiting is independent of the WAF.** You can rate limit a
+  domain without enabling the WAF, or enable the WAF without rate
+  limiting, or both. Rate limiting is keyed per client IP and takes two
+  numbers: **requests/sec** (a sustained cap, averaged over a 10 second
+  window) and **burst** (a short, 1 second window allowance for values
+  above the sustained rate; set it equal to or below requests/sec for a
+  strict, non-bursting cap). A client that exceeds either gets a 429.
+
+- **Where to configure it:**
+  - Dashboard: each domain's row in an app's **Domains** tab has an "Add
+    WAF / rate limit" control with the WAF toggle, mode selector, and the
+    two rate-limit fields.
+  - API: `GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/waf`.
+  - CLI: `levelrail-cli domains waf get|set|clear <app> <domain>`, e.g.
+    `levelrail-cli domains waf set my-app my-app.example.com --waf --mode detect --rps 20 --burst 50`.
+
+- **What this doesn't do.** There's no UI for authoring custom CRS
+  exclusion or override rules, no per-path or per-route rate-limit
+  scoping (it's whole-domain), and no WAF/rate-limit event log separate
+  from Caddy's own access log. All of that is a real gap, not a hidden
+  default; it may get filled in a later phase, but the on/off-plus-
+  threshold surface here is deliberately the whole v1 scope.
+
 ## Firewall: ports 80 and 443
 
 For real public traffic and ACME's HTTP-01 challenge to work, your server

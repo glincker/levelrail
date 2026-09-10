@@ -26,6 +26,15 @@ import (
 	// DNS-01 automation policy (see config.go's
 	// NewCloudflareDNSACMEIssuer).
 	_ "github.com/caddy-dns/cloudflare"
+
+	// Registers http.handlers.waf (OWASP Coraza, module ID "waf" despite
+	// the import path's own "coraza-caddy" name): opt-in per-domain WAF,
+	// see routes.go's NewCorazaWAFHandler.
+	_ "github.com/corazawaf/coraza-caddy/v2"
+
+	// Registers http.handlers.rate_limit: opt-in per-domain rate
+	// limiting, see routes.go's NewRateLimitHandler.
+	_ "github.com/mholt/caddy-ratelimit"
 )
 
 // Driver drives an in-process Caddy instance through the same code path as
