@@ -95,12 +95,13 @@ Key subcommand groups:
 
 - **apps**: create, list, get, deploy, deploy-compose, deploy-spec,
   group, hook-runs, rollback, deploys, promote, restart, stop, start,
-  delete, status, diagnose, resource-recommendation, network, logs, exec,
-  log-drain, scheduled-tasks, alerts, organizations, projects,
-  environments, previews, secrets, git-source, webhook-deliveries
-- **databases**: create, list, get, delete, resource-recommendation
+  delete, status, diagnose, resource-recommendation, network, logs
+  (`--follow`/`-f` for a live tail), metrics, exec, log-drain,
+  scheduled-tasks, alerts, organizations, projects, environments,
+  previews, secrets, git-source, webhook-deliveries
+- **databases**: create, list, get, delete, resource-recommendation, metrics
 - **nodes**: list, get, delete, join-token, cordon, uncordon, drain,
-  workloads, health, patch-status
+  workloads, health, patch-status, metrics
 - **iam**: policies create/list/get/update/delete/attach/detach
 - **backups** / **app-volume-backups**: list, trigger, restore,
   restore-as-new, schedule, verify, verifications

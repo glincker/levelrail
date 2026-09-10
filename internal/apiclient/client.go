@@ -10,6 +10,7 @@
 package apiclient
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -1687,6 +1688,104 @@ func (c *Client) QueryAppMetrics(ctx context.Context, name, metric string, from,
 	var out AppMetricsResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/metrics?"+query.Encode(), nil, &out)
 	return out, err
+}
+
+// QueryDatabaseMetrics calls GET /api/v1/databases/{name}/metrics?metric=&from=&to=&step=
+// (internal/api/database_metrics.go's handleQueryDatabaseMetrics), the
+// database-kind counterpart to QueryAppMetrics: same params, same
+// response shape, since internal/api's queryResourceMetrics is the
+// shared implementation behind both routes server-side.
+func (c *Client) QueryDatabaseMetrics(ctx context.Context, name, metric string, from, to time.Time, step time.Duration) (AppMetricsResource, error) {
+	query := url.Values{}
+	query.Set("metric", metric)
+	query.Set("from", from.UTC().Format(time.RFC3339))
+	query.Set("to", to.UTC().Format(time.RFC3339))
+	if step > 0 {
+		query.Set("step", step.String())
+	}
+	var out AppMetricsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/metrics?"+query.Encode(), nil, &out)
+	return out, err
+}
+
+// QueryNodeMetrics calls GET /api/v1/nodes/{id}/metrics?metric=&from=&to=&step=
+// (internal/api/node_metrics.go's handleQueryNodeMetrics): a sum of
+// every service placed on the node for most metrics, or a real
+// host-level reading for the rest (disk usage, OS patches available);
+// see that handler's own doc comment for exactly which metric names fall
+// into each group. The server, not this client, is the authority on
+// which metric names are valid.
+func (c *Client) QueryNodeMetrics(ctx context.Context, id, metric string, from, to time.Time, step time.Duration) (NodeMetricsResource, error) {
+	query := url.Values{}
+	query.Set("metric", metric)
+	query.Set("from", from.UTC().Format(time.RFC3339))
+	query.Set("to", to.UTC().Format(time.RFC3339))
+	if step > 0 {
+		query.Set("step", step.String())
+	}
+	var out NodeMetricsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/nodes/"+PathEscape(id)+"/metrics?"+query.Encode(), nil, &out)
+	return out, err
+}
+
+// StreamLogs calls GET /api/v1/apps/{name}/logs/stream
+// (internal/api/live_logs.go's handleLiveLogStream): an SSE connection
+// that replays a short recent backfill then tails live output until ctx
+// is canceled or the server closes the connection. onEntry is called
+// once per line in arrival order; a non-nil return stops the stream
+// early and is returned as-is (never wrapped), so a caller can tell "my
+// own callback chose to stop" apart from a real transport failure.
+//
+// Unlike every other Client method, this builds its own *http.Client
+// with no timeout rather than reusing c.hc: c.hc's own 15-minute cap
+// (NewClient's own doc comment) is sized for one-shot calls, not a tail
+// meant to run indefinitely until the caller's own context is canceled
+// (e.g. Ctrl+C).
+func (c *Client) StreamLogs(ctx context.Context, name string, onEntry func(LogStreamEntry) error) error {
+	path := "/api/v1/apps/" + PathEscape(name) + "/logs/stream"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
+	if err != nil {
+		return fmt.Errorf("build request: %w", err)
+	}
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+	if c.userAgent != "" {
+		req.Header.Set("User-Agent", c.userAgent)
+	}
+
+	streamClient := &http.Client{Transport: c.hc.Transport}
+	resp, err := streamClient.Do(req) //nolint:gosec // same target as above
+	if err != nil {
+		return fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return decodeResponse(resp, nil)
+	}
+
+	scanner := bufio.NewScanner(resp.Body)
+	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
+	for scanner.Scan() {
+		data, ok := strings.CutPrefix(scanner.Text(), "data: ")
+		if !ok {
+			// Comment lines (": connected") and the blank line separating
+			// SSE events, neither of which carries a payload.
+			continue
+		}
+		var entry LogStreamEntry
+		if err := json.Unmarshal([]byte(data), &entry); err != nil {
+			continue
+		}
+		if err := onEntry(entry); err != nil {
+			return err
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("read log stream: %w", err)
+	}
+	return ctx.Err()
 }
 
 // auditLogQuery builds GET /api/v1/audit-log's query string, shared by
