@@ -605,6 +605,50 @@ func TestParseCreateFlags_AttachDatabase(t *testing.T) {
 	}
 }
 
+// TestParseCreateFlags_NodeID covers the fs.Visit-based distinction
+// runAppsCreate relies on: --node-id omitted must not be confused with
+// --node-id "" explicitly given, the same "flag omitted vs explicitly
+// set" concern nodes_workloads.go's own doc comment explains.
+func TestParseCreateFlags_NodeID(t *testing.T) {
+	tests := []struct {
+		name          string
+		args          []string
+		wantNodeID    string
+		wantNodeIDSet bool
+	}{
+		{
+			name:          "omitted",
+			args:          []string{"--name", "web", "--image", "img:v1", "--port", "3000"},
+			wantNodeID:    "",
+			wantNodeIDSet: false,
+		},
+		{
+			name:          "explicit value",
+			args:          []string{"--name", "web", "--image", "img:v1", "--port", "3000", "--node-id", "node_a"},
+			wantNodeID:    "node_a",
+			wantNodeIDSet: true,
+		},
+		{
+			name:          "explicit empty string",
+			args:          []string{"--name", "web", "--image", "img:v1", "--port", "3000", "--node-id", ""},
+			wantNodeID:    "",
+			wantNodeIDSet: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var token, apiURL, profile string
+			f, err := parseCreateFlags("levelrail", tt.args, &strings.Builder{}, &token, &apiURL, &profile)
+			if err != nil {
+				t.Fatalf("parseCreateFlags() error = %v", err)
+			}
+			if f.nodeID != tt.wantNodeID || f.nodeIDSet != tt.wantNodeIDSet {
+				t.Errorf("nodeID=%q nodeIDSet=%v, want nodeID=%q nodeIDSet=%v", f.nodeID, f.nodeIDSet, tt.wantNodeID, tt.wantNodeIDSet)
+			}
+		})
+	}
+}
+
 func TestParseCreateFlags_BuildArg(t *testing.T) {
 	var token, apiURL, profile string
 	f, err := parseCreateFlags("levelrail", []string{

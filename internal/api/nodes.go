@@ -126,6 +126,28 @@ func (rt *Router) validatePlacementTarget(ctx context.Context, nodeID string) er
 	return nil
 }
 
+// respondPlacementValidationError translates a validatePlacementTarget
+// error into the right HTTP response: 400 for a known-bad node_id
+// (unknown or cordoned), or 500 (logged under logMessage) for anything
+// else. Shared by handleCreateApp/handleCreateDatabase's explicit-node_id
+// branch and handleSetAppNode's node-move validation, all three of which
+// want the identical "unknown node_id" / "node is cordoned..." wording;
+// handleDrainNode keeps its own inline switch since it wants different
+// wording ("target_node_id") for the same failure, the reason
+// validatePlacementTarget's own doc comment gives for not writing the
+// response itself.
+func (rt *Router) respondPlacementValidationError(w http.ResponseWriter, err error, nodeID, logMessage string) {
+	switch {
+	case errors.Is(err, store.ErrNodeNotFound):
+		writeError(w, http.StatusBadRequest, "unknown node_id")
+	case errors.Is(err, errNodeCordoned):
+		writeError(w, http.StatusBadRequest, "node is cordoned and not accepting new placements")
+	default:
+		rt.logger.Error(logMessage, slog.String("error", err.Error()), slog.String("node_id", nodeID))
+		writeError(w, http.StatusInternalServerError, "internal error")
+	}
+}
+
 // handleListNodes handles GET /api/v1/nodes.
 func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
 	nodes, err := rt.nodes.ListNodes(r.Context())
@@ -324,12 +346,10 @@ type drainNodeResponse struct {
 // must not block others" principle cmd/levelrail's dynamicSource already
 // applies to reconcile passes, applied here to a bulk placement change.
 // Each resource is attempted independently and its own outcome recorded
-// in the response; a real live-container consequence of this (the
-// previous node's own container is not itself stopped by this call, only
-// desired placement changes, the reconcile engine's next pass is what
-// actually converges each moved resource on its new node) is the same
-// known gap the placement mechanism already left open, not something
-// drain introduces.
+// in the response. After each successful move, the resource's container
+// on id (the node being drained) is torn down in the background, the
+// same teardownServiceContainers/teardownDatabaseContainer call
+// handleSetAppNode/handleSetDatabaseNode make.
 func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	targetNodeID := r.URL.Query().Get("target_node_id")
@@ -382,6 +402,7 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		resp.MovedServices = append(resp.MovedServices, svc.Name)
+		rt.teardownServiceContainers(svc.Name, id)
 	}
 	for _, d := range databases {
 		if err := rt.databases.UpdateDatabaseNode(r.Context(), d.Name, targetNodeID); err != nil {
@@ -390,6 +411,7 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		resp.MovedDatabases = append(resp.MovedDatabases, d.Name)
+		rt.teardownDatabaseContainer(d.Name, id)
 	}
 
 	status := http.StatusOK

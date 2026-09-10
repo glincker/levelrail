@@ -43,6 +43,9 @@ type (
 	domainMaintenanceResource        = apiclient.DomainMaintenanceResource
 	domainTLSCertResource            = apiclient.DomainTLSCertResource
 	setDomainTLSCertRequest          = apiclient.SetDomainTLSCertRequest
+	domainCheckResource              = apiclient.DomainCheckResource
+	cloneAppRequest                  = apiclient.CloneAppRequest
+	imageResource                    = apiclient.ImageResource
 	backupHistoryResource            = apiclient.BackupHistoryResource
 	backupVerificationResource       = apiclient.BackupVerificationResource
 	restoreHistoryResource           = apiclient.RestoreHistoryResource
@@ -176,6 +179,8 @@ type (
 	purgeAuditLogResult   = apiclient.PurgeAuditLogResult
 
 	rotateMasterKeyResult = apiclient.RotateMasterKeyResult
+
+	systemPruneResult = apiclient.SystemPruneResult
 
 	oauthProviderSettingsResource      = apiclient.OAuthProviderSettingsResource
 	updateOAuthProviderSettingsRequest = apiclient.UpdateOAuthProviderSettingsRequest

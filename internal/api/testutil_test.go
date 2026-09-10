@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -338,4 +340,120 @@ func assertGitSourceSurvivesWebhookFailure(t *testing.T, db *store.DB) {
 	if _, err := db.GetGitSource(context.Background(), "web"); err != nil {
 		t.Errorf("GetGitSource() error = %v, want the git source to remain connected despite the webhook failure", err)
 	}
+}
+
+// createResourceViaAPI POSTs body to path, requires the response status
+// to be wantStatus, and (only on a status under 300, where a body is
+// actually expected) decodes the JSON response into a T. Shared by
+// TestHandleCreateApp_AutoPlacement and TestHandleCreateDatabase_AutoPlacement's
+// identical create-then-decode-then-assert shape across their own
+// subtests. The type parameter keeps every call fully statically typed,
+// unlike an `any` parameter would.
+func createResourceViaAPI[T any](t *testing.T, rt *Router, cookie *http.Cookie, path, body string, wantStatus int) T {
+	t.Helper()
+	var out T
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, path, body))
+	if rec.Code != wantStatus {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, wantStatus, rec.Body.String())
+	}
+	if rec.Code < 300 {
+		if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+	}
+	return out
+}
+
+// assertUnreadableBodyRejected proves a POST to path whose body errors on
+// Read is a 400, not a panic or a 500: handleCreateApp/handleCreateDatabase
+// both read the raw body first to probe for an explicit node_id key
+// (nodeIDKeyPresent) before decoding it. Shared by
+// TestHandleCreateApp_UnreadableBody_Returns400 and
+// TestHandleCreateDatabase_UnreadableBody_Returns400.
+func assertUnreadableBodyRejected(t *testing.T, rt *Router, cookie *http.Cookie, path string) {
+	t.Helper()
+	req := authedRequest(t, cookie, http.MethodPost, path, "")
+	req.Body = &errReadCloser{r: strings.NewReader(""), err: errors.New("read failed")}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+// assertAutoPlacementResult checks the NodeID/AutoPlaced fields a create
+// response reported match want, the single repeated assertion every
+// TestHandleCreate{App,Database}_AutoPlacement subtest makes right after
+// creating its resource.
+func assertAutoPlacementResult(t *testing.T, gotNodeID string, gotAutoPlaced bool, wantNodeID string, wantAutoPlaced bool) {
+	t.Helper()
+	if gotNodeID != wantNodeID || gotAutoPlaced != wantAutoPlaced {
+		t.Errorf("got node_id=%q auto_placed=%v, want node_id=%q auto_placed=%v", gotNodeID, gotAutoPlaced, wantNodeID, wantAutoPlaced)
+	}
+}
+
+// erroringNodeStore wraps a real NodeStore, injecting a generic (non-
+// sentinel) error from one chosen method for tests that need
+// validatePlacementTarget/autoPlaceNode to hit their own internal-error
+// branches: a real *store.DB only ever returns store.ErrNodeNotFound or
+// nil from these, so there is no way to reach that branch through it
+// alone.
+type erroringNodeStore struct {
+	NodeStore
+	getNodeErr   error
+	listNodesErr error
+}
+
+func (e *erroringNodeStore) GetNode(ctx context.Context, id string) (*store.Node, error) {
+	if e.getNodeErr != nil {
+		return nil, e.getNodeErr
+	}
+	return e.NodeStore.GetNode(ctx, id)
+}
+
+func (e *erroringNodeStore) ListNodes(ctx context.Context) ([]store.Node, error) {
+	if e.listNodesErr != nil {
+		return nil, e.listNodesErr
+	}
+	return e.NodeStore.ListNodes(ctx)
+}
+
+// erroringAppStore is erroringNodeStore's AppStore counterpart, used to
+// reach handleCreateApp/handleSetAppNode's own internal-error branches
+// (an UpdateServiceNode or GetDesiredService failure) the same way.
+type erroringAppStore struct {
+	AppStore
+	updateServiceNodeErr error
+	getDesiredServiceErr error
+}
+
+func (e *erroringAppStore) UpdateServiceNode(ctx context.Context, name, nodeID string) error {
+	if e.updateServiceNodeErr != nil {
+		return e.updateServiceNodeErr
+	}
+	return e.AppStore.UpdateServiceNode(ctx, name, nodeID)
+}
+
+func (e *erroringAppStore) GetDesiredService(ctx context.Context, name string) (*store.DesiredService, error) {
+	if e.getDesiredServiceErr != nil {
+		return nil, e.getDesiredServiceErr
+	}
+	return e.AppStore.GetDesiredService(ctx, name)
+}
+
+// erroringDatabaseStore is erroringAppStore's DatabaseStore counterpart,
+// used to reach handleSetDatabaseNode's own internal-error branch (a
+// GetDesiredDatabase failure).
+type erroringDatabaseStore struct {
+	DatabaseStore
+	getDesiredDatabaseErr error
+}
+
+func (e *erroringDatabaseStore) GetDesiredDatabase(ctx context.Context, name string) (*store.DesiredDatabase, error) {
+	if e.getDesiredDatabaseErr != nil {
+		return nil, e.getDesiredDatabaseErr
+	}
+	return e.DatabaseStore.GetDesiredDatabase(ctx, name)
 }

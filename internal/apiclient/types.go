@@ -59,8 +59,16 @@ type AppResource struct {
 	Health    *ServiceHealth    `json:"health,omitempty"`
 	// Hooks mirrors internal/api's appResource.Hooks: settable on create
 	// and update, like Resources/Health above.
-	Hooks  *ServiceHooks `json:"hooks,omitempty"`
-	NodeID string        `json:"node_id,omitempty"`
+	Hooks *ServiceHooks `json:"hooks,omitempty"`
+	// NodeID mirrors internal/api's appResource.NodeID: response-only on
+	// update, but settable at create time as an explicit placement
+	// override (omitted entirely lets the server auto-place via simple
+	// spread scheduling instead, see AutoPlaced below).
+	NodeID string `json:"node_id,omitempty"`
+	// AutoPlaced mirrors internal/api's appResource.AutoPlaced:
+	// response-only, true when create left node_id unset and the server
+	// picked a non-local node for it via simple spread scheduling.
+	AutoPlaced bool `json:"auto_placed,omitempty"`
 	// ProjectID mirrors internal/api's appResource.ProjectID:
 	// response-only, set via PUT /api/v1/apps/{name}/project.
 	ProjectID string `json:"project_id,omitempty"`
@@ -327,6 +335,21 @@ type RegistryTagsResource struct {
 	Tags       []string `json:"tags"`
 }
 
+// OAuth provider names accepted by GET/PUT /api/v1/settings/oauth[/{provider}],
+// redeclared from internal/store.OAuthProvider* rather than imported, the
+// same reasoning as ServiceResources above.
+const (
+	OAuthProviderGoogle = "google"
+	OAuthProviderGitHub = "github"
+	OAuthProviderOIDC   = "oidc"
+)
+
+// Email backends accepted by EmailSettingsResource.Backend.
+const (
+	EmailBackendSMTP = "smtp"
+	EmailBackendSES  = "ses"
+)
+
 // DomainBasicAuthResource mirrors internal/api's domainBasicAuthResource
 // (internal/api/domain_basic_auth.go): GET/PUT/DELETE
 // /api/v1/apps/{name}/domains/{domain}/auth's wire shape. The password
@@ -371,6 +394,35 @@ type DomainTLSCertResource struct {
 type SetDomainTLSCertRequest struct {
 	Cert string `json:"cert"`
 	Key  string `json:"key"`
+}
+
+// DomainCheckResource mirrors internal/api's domainCheckResponse
+// (internal/api/domain_check.go): GET
+// /api/v1/apps/{name}/domains/{domain}/check's wire shape.
+type DomainCheckResource struct {
+	Domain        string   `json:"domain"`
+	ExpectedHost  string   `json:"expected_host,omitempty"`
+	HostInferred  bool     `json:"host_inferred,omitempty"`
+	Resolved      bool     `json:"resolved"`
+	ResolvedHosts []string `json:"resolved_hosts,omitempty"`
+	Status        string   `json:"status"`
+	ExpectedIPv4  []string `json:"expected_ipv4,omitempty"`
+	ExpectedIPv6  []string `json:"expected_ipv6,omitempty"`
+}
+
+// CloneAppRequest mirrors internal/api's cloneAppRequest
+// (internal/api/apps_clone.go): POST /api/v1/apps/{name}/clone's
+// request body.
+type CloneAppRequest struct {
+	NewName string `json:"new_name"`
+}
+
+// ImageResource mirrors internal/api's imageResource
+// (internal/api/images.go): one element of GET
+// /api/v1/apps/{name}/images's wire shape.
+type ImageResource struct {
+	Tag       string    `json:"tag"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // BackupHistoryResource mirrors internal/api's backupHistoryResource
@@ -642,14 +694,17 @@ type SessionInfoResource struct {
 }
 
 // DatabaseResource mirrors internal/api's databaseResource
-// (internal/api/databases.go). NodeID is response-only, the same
-// "shown but not settable through this endpoint" boundary AppResource's
-// own NodeID field already documents.
+// (internal/api/databases.go). NodeID is response-only on update, but
+// settable at create time as an explicit placement override, the same
+// boundary AppResource's own NodeID field documents.
 type DatabaseResource struct {
 	Name    string `json:"name"`
 	Engine  string `json:"engine"`
 	Version string `json:"version"`
 	NodeID  string `json:"node_id,omitempty"`
+	// AutoPlaced mirrors internal/api's databaseResource.AutoPlaced: see
+	// AppResource's identically-named field doc comment.
+	AutoPlaced bool `json:"auto_placed,omitempty"`
 	// ProjectID mirrors internal/api's databaseResource.ProjectID:
 	// response-only, set via PUT /api/v1/databases/{name}/project.
 	ProjectID string `json:"project_id,omitempty"`
@@ -1201,6 +1256,21 @@ type DoctorCheckResource struct {
 type SystemDoctorResource struct {
 	OK     bool                  `json:"ok"`
 	Checks []DoctorCheckResource `json:"checks"`
+}
+
+// SystemPruneResult mirrors internal/api's systemPruneResponse
+// (internal/api/system_prune.go): everything POST /system/prune removed
+// and how much space came back, per resource kind, plus any per-stage
+// error that didn't stop the rest.
+type SystemPruneResult struct {
+	ContainersRemoved        []string `json:"containers_removed"`
+	ContainersReclaimedBytes uint64   `json:"containers_reclaimed_bytes"`
+	ImagesRemoved            []string `json:"images_removed"`
+	ImagesReclaimedBytes     uint64   `json:"images_reclaimed_bytes"`
+	VolumesRemoved           []string `json:"volumes_removed"`
+	VolumesReclaimedBytes    uint64   `json:"volumes_reclaimed_bytes"`
+	BuildCacheReclaimedBytes uint64   `json:"build_cache_reclaimed_bytes"`
+	Errors                   []string `json:"errors,omitempty"`
 }
 
 // ContainerPortResource mirrors internal/api's containerPortResource.
