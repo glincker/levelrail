@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -362,6 +363,35 @@ func createResourceViaAPI[T any](t *testing.T, rt *Router, cookie *http.Cookie, 
 		}
 	}
 	return out
+}
+
+// assertUnreadableBodyRejected proves a POST to path whose body errors on
+// Read is a 400, not a panic or a 500: handleCreateApp/handleCreateDatabase
+// both read the raw body first to probe for an explicit node_id key
+// (nodeIDKeyPresent) before decoding it. Shared by
+// TestHandleCreateApp_UnreadableBody_Returns400 and
+// TestHandleCreateDatabase_UnreadableBody_Returns400.
+func assertUnreadableBodyRejected(t *testing.T, rt *Router, cookie *http.Cookie, path string) {
+	t.Helper()
+	req := authedRequest(t, cookie, http.MethodPost, path, "")
+	req.Body = &errReadCloser{r: strings.NewReader(""), err: errors.New("read failed")}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+// assertAutoPlacementResult checks the NodeID/AutoPlaced fields a create
+// response reported match want, the single repeated assertion every
+// TestHandleCreate{App,Database}_AutoPlacement subtest makes right after
+// creating its resource.
+func assertAutoPlacementResult(t *testing.T, gotNodeID string, gotAutoPlaced bool, wantNodeID string, wantAutoPlaced bool) {
+	t.Helper()
+	if gotNodeID != wantNodeID || gotAutoPlaced != wantAutoPlaced {
+		t.Errorf("got node_id=%q auto_placed=%v, want node_id=%q auto_placed=%v", gotNodeID, gotAutoPlaced, wantNodeID, wantAutoPlaced)
+	}
 }
 
 // erroringNodeStore wraps a real NodeStore, injecting a generic (non-

@@ -233,9 +233,7 @@ func TestHandleCreateApp_AutoPlacement(t *testing.T) {
 		cookie := loginTestSession(t, rt, db)
 
 		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`, http.StatusCreated)
-		if got.NodeID != "" || got.AutoPlaced {
-			t.Errorf("got node_id=%q auto_placed=%v, want local and not auto-placed", got.NodeID, got.AutoPlaced)
-		}
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "", false)
 	})
 
 	t.Run("node_id omitted with multiple nodes registered: auto-placed on the least-loaded one", func(t *testing.T) {
@@ -253,9 +251,7 @@ func TestHandleCreateApp_AutoPlacement(t *testing.T) {
 		}
 
 		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`, http.StatusCreated)
-		if got.NodeID != "node_b" || !got.AutoPlaced {
-			t.Errorf("got node_id=%q auto_placed=%v, want node_id=%q auto_placed=true", got.NodeID, got.AutoPlaced, "node_b")
-		}
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "node_b", true)
 
 		saved, err := db.GetDesiredService(ctx, "web")
 		if err != nil {
@@ -273,9 +269,7 @@ func TestHandleCreateApp_AutoPlacement(t *testing.T) {
 		seedOnlineNode(t, db, "node_b", "bravo", true)
 
 		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"node_id":"node_a"}`, http.StatusCreated)
-		if got.NodeID != "node_a" || got.AutoPlaced {
-			t.Errorf("got node_id=%q auto_placed=%v, want node_id=%q auto_placed=false", got.NodeID, got.AutoPlaced, "node_a")
-		}
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "node_a", false)
 	})
 
 	t.Run("explicit empty node_id overrides auto-placement, stays local", func(t *testing.T) {
@@ -285,9 +279,7 @@ func TestHandleCreateApp_AutoPlacement(t *testing.T) {
 		seedOnlineNode(t, db, "node_b", "bravo", true)
 
 		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"node_id":""}`, http.StatusCreated)
-		if got.NodeID != "" || got.AutoPlaced {
-			t.Errorf("got node_id=%q auto_placed=%v, want local and not auto-placed", got.NodeID, got.AutoPlaced)
-		}
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "", false)
 	})
 
 	t.Run("explicit node_id for an unknown node is rejected", func(t *testing.T) {
@@ -307,9 +299,7 @@ func TestHandleCreateApp_AutoPlacement(t *testing.T) {
 		seedOnlineNode(t, db, "node_a", "alpha", true)
 
 		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`, http.StatusCreated)
-		if got.NodeID != "" || got.AutoPlaced {
-			t.Errorf("got node_id=%q auto_placed=%v, want local and not auto-placed", got.NodeID, got.AutoPlaced)
-		}
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "", false)
 	})
 }
 
@@ -320,15 +310,7 @@ func TestHandleCreateApp_AutoPlacement(t *testing.T) {
 func TestHandleCreateApp_UnreadableBody_Returns400(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-
-	req := authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", "")
-	req.Body = &errReadCloser{r: strings.NewReader(""), err: errors.New("read failed")}
-
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
-	}
+	assertUnreadableBodyRejected(t, rt, cookie, "/api/v1/apps")
 }
 
 // TestHandleCreateApp_CordonedNode_Rejected covers handleCreateApp's own

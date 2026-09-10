@@ -3,6 +3,8 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
+	"net/http"
 	"sort"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -96,4 +98,32 @@ func nodeIDKeyPresent(body []byte) bool {
 	}
 	_, ok := probe["node_id"]
 	return ok
+}
+
+// resolveCreateNodePlacement is handleCreateApp/handleCreateDatabase's
+// shared node_id resolution: an explicit node_id in the body (even "")
+// is validated as a placement override and left untouched in *nodeID/
+// *autoPlaced; node_id omitted entirely lets autoPlaceNode pick one via
+// simple spread scheduling, writing its result into both. logContext
+// names the calling handler ("api: create app"/"api: create database")
+// for its own error log lines. ok is false once it has already written
+// the full HTTP response itself; the caller should return immediately.
+func (rt *Router) resolveCreateNodePlacement(w http.ResponseWriter, r *http.Request, body []byte, nodeID *string, autoPlaced *bool, logContext string) (ok bool) {
+	if nodeIDKeyPresent(body) {
+		if err := rt.validatePlacementTarget(r.Context(), *nodeID); err != nil {
+			rt.respondPlacementValidationError(w, err, *nodeID, logContext+": validate node failed")
+			return false
+		}
+		return true
+	}
+
+	placed, err := rt.autoPlaceNode(r.Context())
+	if err != nil {
+		rt.logger.Error(logContext+": auto-place node failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return false
+	}
+	*nodeID = placed
+	*autoPlaced = placed != ""
+	return true
 }

@@ -376,28 +376,8 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// Omitted entirely lets simple spread scheduling (autoPlaceNode) pick
 	// a node when more than one is registered; AutoPlaced only turns
 	// true when that pick actually lands somewhere other than local.
-	if nodeIDKeyPresent(body) {
-		if err := rt.validatePlacementTarget(r.Context(), req.NodeID); err != nil {
-			switch {
-			case errors.Is(err, store.ErrNodeNotFound):
-				writeError(w, http.StatusBadRequest, "unknown node_id")
-			case errors.Is(err, errNodeCordoned):
-				writeError(w, http.StatusBadRequest, "node is cordoned and not accepting new placements")
-			default:
-				rt.logger.Error("api: create app: validate node failed", slog.String("error", err.Error()), slog.String("node_id", req.NodeID))
-				writeError(w, http.StatusInternalServerError, "internal error")
-			}
-			return
-		}
-	} else {
-		placed, err := rt.autoPlaceNode(r.Context())
-		if err != nil {
-			rt.logger.Error("api: create app: auto-place node failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
-		req.NodeID = placed
-		req.AutoPlaced = placed != ""
+	if !rt.resolveCreateNodePlacement(w, r, body, &req.NodeID, &req.AutoPlaced, "api: create app") {
+		return
 	}
 
 	_, err = rt.apps.GetDesiredService(r.Context(), req.Name)
@@ -604,20 +584,11 @@ func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Cordon means "unschedulable for new placements," and this is a new
+	// placement even when the service already exists, since it's
+	// actively choosing to move it here.
 	if err := rt.validatePlacementTarget(r.Context(), req.NodeID); err != nil {
-		switch {
-		case errors.Is(err, store.ErrNodeNotFound):
-			writeError(w, http.StatusBadRequest, "unknown node_id")
-		case errors.Is(err, errNodeCordoned):
-			// Cordon means "unschedulable for new
-			// placements", and this is a new placement even when the
-			// service already exists, since it's actively choosing to
-			// move it here.
-			writeError(w, http.StatusBadRequest, "node is cordoned and not accepting new placements")
-		default:
-			rt.logger.Error("api: set app node: look up node failed", slog.String("error", err.Error()), slog.String("node_id", req.NodeID))
-			writeError(w, http.StatusInternalServerError, "internal error")
-		}
+		rt.respondPlacementValidationError(w, err, req.NodeID, "api: set app node: look up node failed")
 		return
 	}
 

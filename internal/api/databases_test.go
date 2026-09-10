@@ -193,15 +193,7 @@ func TestHandleCreateDatabase_InvalidBody(t *testing.T) {
 func TestHandleCreateDatabase_UnreadableBody_Returns400(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-
-	req := authedRequest(t, cookie, http.MethodPost, "/api/v1/databases", "")
-	req.Body = &errReadCloser{r: strings.NewReader(""), err: errors.New("read failed")}
-
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
-	}
+	assertUnreadableBodyRejected(t, rt, cookie, "/api/v1/databases")
 }
 
 // TestHandleCreateDatabase_MalformedJSON_Returns400 covers the
@@ -288,9 +280,7 @@ func TestHandleCreateDatabase_AutoPlacement(t *testing.T) {
 		cookie := loginTestSession(t, rt, db)
 
 		got := createResourceViaAPI[databaseResource](t, rt, cookie, "/api/v1/databases", `{"name":"main","engine":"redis","version":"7"}`, http.StatusCreated)
-		if got.NodeID != "" || got.AutoPlaced {
-			t.Errorf("got node_id=%q auto_placed=%v, want local and not auto-placed", got.NodeID, got.AutoPlaced)
-		}
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "", false)
 	})
 
 	t.Run("node_id omitted with multiple nodes registered: auto-placed on the least-loaded one", func(t *testing.T) {
@@ -306,9 +296,7 @@ func TestHandleCreateDatabase_AutoPlacement(t *testing.T) {
 		}
 
 		got := createResourceViaAPI[databaseResource](t, rt, cookie, "/api/v1/databases", `{"name":"main","engine":"redis","version":"7"}`, http.StatusCreated)
-		if got.NodeID != "node_b" || !got.AutoPlaced {
-			t.Errorf("got node_id=%q auto_placed=%v, want node_id=%q auto_placed=true", got.NodeID, got.AutoPlaced, "node_b")
-		}
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "node_b", true)
 
 		saved, err := db.GetDesiredDatabase(ctx, "main")
 		if err != nil {
@@ -326,9 +314,7 @@ func TestHandleCreateDatabase_AutoPlacement(t *testing.T) {
 		seedOnlineNode(t, db, "node_b", "bravo", true)
 
 		got := createResourceViaAPI[databaseResource](t, rt, cookie, "/api/v1/databases", `{"name":"main","engine":"redis","version":"7","node_id":"node_a"}`, http.StatusCreated)
-		if got.NodeID != "node_a" || got.AutoPlaced {
-			t.Errorf("got node_id=%q auto_placed=%v, want node_id=%q auto_placed=false", got.NodeID, got.AutoPlaced, "node_a")
-		}
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "node_a", false)
 	})
 
 	t.Run("explicit empty node_id overrides auto-placement, stays local", func(t *testing.T) {
@@ -338,9 +324,7 @@ func TestHandleCreateDatabase_AutoPlacement(t *testing.T) {
 		seedOnlineNode(t, db, "node_b", "bravo", true)
 
 		got := createResourceViaAPI[databaseResource](t, rt, cookie, "/api/v1/databases", `{"name":"main","engine":"redis","version":"7","node_id":""}`, http.StatusCreated)
-		if got.NodeID != "" || got.AutoPlaced {
-			t.Errorf("got node_id=%q auto_placed=%v, want local and not auto-placed", got.NodeID, got.AutoPlaced)
-		}
+		assertAutoPlacementResult(t, got.NodeID, got.AutoPlaced, "", false)
 	})
 
 	t.Run("explicit node_id for an unknown node is rejected", func(t *testing.T) {
@@ -418,21 +402,51 @@ func TestHandleDatabaseStatus_NotFound(t *testing.T) {
 	}
 }
 
+// seedDatabaseOnNode seeds "main" (redis:7, unplaced) and registers
+// nodeID, the shared precondition TestHandleSetDatabaseNode_Success/
+// TeardownDispatchesOnOldNode/NoExecRuntime_NoTeardown all need before
+// moving "main" onto nodeID.
+func seedDatabaseOnNode(t *testing.T, db *store.DB, nodeID string) {
+	t.Helper()
+	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed database: %v", err)
+	}
+	seedNode(t, db, nodeID, "worker-1")
+}
+
+// seedDatabasePlacedOnNode is seedDatabaseOnNode plus actually placing
+// "main" on nodeID, the shared precondition
+// TestHandleSetDatabaseNode_TeardownResolveFailure/TeardownInspectFailure
+// both need before moving "main" back to local.
+func seedDatabasePlacedOnNode(t *testing.T, db *store.DB, nodeID string) {
+	t.Helper()
+	seedDatabaseOnNode(t, db, nodeID)
+	if err := db.UpdateDatabaseNode(context.Background(), "main", nodeID); err != nil {
+		t.Fatalf("seed placement: %v", err)
+	}
+}
+
+// putDatabaseNodeViaAPI PUTs body to /api/v1/databases/main/node and
+// requires 200 OK, returning the response for the caller's own
+// assertions. Shared by TestHandleSetDatabaseNode_*'s repeated move-then-
+// assert-200 tail.
+func putDatabaseNodeViaAPI(t *testing.T, rt *Router, cookie *http.Cookie, body string) *httptest.ResponseRecorder {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/node", body))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	return rec
+}
+
 func TestHandleSetDatabaseNode_Success(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
+	seedDatabaseOnNode(t, db, "node_1")
 
-	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
-		t.Fatalf("seed database: %v", err)
-	}
-	seedNode(t, db, "node_1", "worker-1")
-
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/node", `{"node_id":"node_1"}`))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
+	rec := putDatabaseNodeViaAPI(t, rt, cookie, `{"node_id":"node_1"}`)
 
 	var got databaseResource
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
@@ -486,18 +500,9 @@ func TestHandleSetDatabaseNode_TeardownDispatchesOnOldNode(t *testing.T) {
 	fake := &fakeExecAppRuntime{inspectByNameCalls: make(chan struct{}, 4)}
 	rt, db := newTestRouterWithExecRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
-	ctx := context.Background()
+	seedDatabaseOnNode(t, db, "node_1")
 
-	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
-		t.Fatalf("seed database: %v", err)
-	}
-	seedNode(t, db, "node_1", "worker-1")
-
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/node", `{"node_id":"node_1"}`))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
+	putDatabaseNodeViaAPI(t, rt, cookie, `{"node_id":"node_1"}`)
 
 	select {
 	case <-fake.inspectByNameCalls:
@@ -539,17 +544,9 @@ func TestHandleSetDatabaseNode_NoExecRuntime_NoTeardown(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
+	seedDatabaseOnNode(t, db, "node_1")
 
-	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
-		t.Fatalf("seed database: %v", err)
-	}
-	seedNode(t, db, "node_1", "worker-1")
-
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/node", `{"node_id":"node_1"}`))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
+	putDatabaseNodeViaAPI(t, rt, cookie, `{"node_id":"node_1"}`)
 
 	d, err := db.GetDesiredDatabase(ctx, "main")
 	if err != nil {
@@ -618,21 +615,9 @@ func TestHandleSetDatabaseNode_TeardownResolveFailure(t *testing.T) {
 	resolver := func(string) (docker.Runtime, error) { return nil, errors.New("node offline") }
 	rt := NewRouter(discardLogger(), testBrand(), db, WithExecRuntime(resolver))
 	cookie := loginTestSession(t, rt, db)
-	ctx := context.Background()
+	seedDatabasePlacedOnNode(t, db, "node_1")
 
-	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
-		t.Fatalf("seed database: %v", err)
-	}
-	seedNode(t, db, "node_1", "worker-1")
-	if err := db.UpdateDatabaseNode(ctx, "main", "node_1"); err != nil {
-		t.Fatalf("seed placement: %v", err)
-	}
-
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/node", `{"node_id":""}`))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d, body = %s: an unresolvable old-node runtime must not fail the move itself", rec.Code, http.StatusOK, rec.Body.String())
-	}
+	putDatabaseNodeViaAPI(t, rt, cookie, `{"node_id":""}`)
 }
 
 // TestHandleSetDatabaseNode_TeardownInspectFailure covers Teardown itself
@@ -645,21 +630,9 @@ func TestHandleSetDatabaseNode_TeardownInspectFailure(t *testing.T) {
 	fake := &fakeExecAppRuntime{inspectErr: errors.New("inspect failed"), inspectByNameCalls: make(chan struct{}, 4)}
 	rt, db := newTestRouterWithExecRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
-	ctx := context.Background()
+	seedDatabasePlacedOnNode(t, db, "node_1")
 
-	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
-		t.Fatalf("seed database: %v", err)
-	}
-	seedNode(t, db, "node_1", "worker-1")
-	if err := db.UpdateDatabaseNode(ctx, "main", "node_1"); err != nil {
-		t.Fatalf("seed placement: %v", err)
-	}
-
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/node", `{"node_id":""}`))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
+	putDatabaseNodeViaAPI(t, rt, cookie, `{"node_id":""}`)
 
 	select {
 	case <-fake.inspectByNameCalls:

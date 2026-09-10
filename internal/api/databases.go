@@ -274,28 +274,8 @@ func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if nodeIDKeyPresent(body) {
-		if err := rt.validatePlacementTarget(r.Context(), req.NodeID); err != nil {
-			switch {
-			case errors.Is(err, store.ErrNodeNotFound):
-				writeError(w, http.StatusBadRequest, "unknown node_id")
-			case errors.Is(err, errNodeCordoned):
-				writeError(w, http.StatusBadRequest, "node is cordoned and not accepting new placements")
-			default:
-				rt.logger.Error("api: create database: validate node failed", slog.String("error", err.Error()), slog.String("node_id", req.NodeID))
-				writeError(w, http.StatusInternalServerError, "internal error")
-			}
-			return
-		}
-	} else {
-		placed, err := rt.autoPlaceNode(r.Context())
-		if err != nil {
-			rt.logger.Error("api: create database: auto-place node failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
-		req.NodeID = placed
-		req.AutoPlaced = placed != ""
+	if !rt.resolveCreateNodePlacement(w, r, body, &req.NodeID, &req.AutoPlaced, "api: create database") {
+		return
 	}
 
 	if !rt.createDesiredDatabase(w, r, req) {

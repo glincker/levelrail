@@ -126,6 +126,28 @@ func (rt *Router) validatePlacementTarget(ctx context.Context, nodeID string) er
 	return nil
 }
 
+// respondPlacementValidationError translates a validatePlacementTarget
+// error into the right HTTP response: 400 for a known-bad node_id
+// (unknown or cordoned), or 500 (logged under logMessage) for anything
+// else. Shared by handleCreateApp/handleCreateDatabase's explicit-node_id
+// branch and handleSetAppNode's node-move validation, all three of which
+// want the identical "unknown node_id" / "node is cordoned..." wording;
+// handleDrainNode keeps its own inline switch since it wants different
+// wording ("target_node_id") for the same failure, the reason
+// validatePlacementTarget's own doc comment gives for not writing the
+// response itself.
+func (rt *Router) respondPlacementValidationError(w http.ResponseWriter, err error, nodeID, logMessage string) {
+	switch {
+	case errors.Is(err, store.ErrNodeNotFound):
+		writeError(w, http.StatusBadRequest, "unknown node_id")
+	case errors.Is(err, errNodeCordoned):
+		writeError(w, http.StatusBadRequest, "node is cordoned and not accepting new placements")
+	default:
+		rt.logger.Error(logMessage, slog.String("error", err.Error()), slog.String("node_id", nodeID))
+		writeError(w, http.StatusInternalServerError, "internal error")
+	}
+}
+
 // handleListNodes handles GET /api/v1/nodes.
 func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
 	nodes, err := rt.nodes.ListNodes(r.Context())
