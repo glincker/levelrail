@@ -22,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { toast } from '@/components/ui/toast'
 import { useCreateDatabase } from '../queries/databases'
 import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
 import { useNodeListOptional } from '../queries/nodes'
@@ -30,11 +29,11 @@ import { useProjectListOptional } from '../queries/projects'
 import { useSystemStatusOptional } from '../queries/systemStatus'
 import { useFormDraft } from '../hooks/useFormDraft'
 import {
-  autoPlacementToastDescription,
+  buildCreateResourceSuccessHandler,
   resolveSubmittedNodeId,
   resolveSubmittedProjectId,
 } from '../lib/createResourcePlacement'
-import { DraftRestoredNotice } from './DraftRestoredNotice'
+import { CreateFormShell } from './CreateFormShell'
 import {
   LOCAL_NODE_VALUE,
   NO_PROJECT_VALUE,
@@ -247,37 +246,25 @@ export function CreateDatabaseFields({
         node_id: resolveSubmittedNodeId(showAdvanced, nodeId),
       },
       {
-        onSuccess: (created) => {
-          clearDraft()
-          onCreated()
-          toast.add({
-            title: `Database "${created.name}" created.`,
-            description: autoPlacementToastDescription(created),
-            type: 'success',
-          })
-          void navigate({
-            to: '/databases/$name',
-            params: { name: created.name },
-          })
-        },
+        onSuccess: buildCreateResourceSuccessHandler({
+          resourceLabel: 'Database',
+          clearDraft,
+          onCreated,
+          onNavigate: (name) => {
+            void navigate({ to: '/databases/$name', params: { name } })
+          },
+        }),
       },
     )
   })
 
   return (
-    <form
-      onSubmit={(e) => {
-        void onSubmit(e)
-      }}
-      className="space-y-4"
+    <CreateFormShell
+      onSubmit={onSubmit}
+      restoredFromDraft={restoredFromDraft}
+      onDiscardDraft={discardDraft}
+      onDismissDraftNotice={dismissDraftNotice}
     >
-      {restoredFromDraft ? (
-        <DraftRestoredNotice
-          onDiscard={discardDraft}
-          onDismiss={dismissDraftNotice}
-        />
-      ) : null}
-
       {CREDENTIALED_ENGINES.has(watchedEngine) &&
       systemStatus.data?.secrets_configured === false ? (
         // Warning, not a gate: submission below is never disabled on
@@ -426,6 +413,6 @@ export function CreateDatabaseFields({
           {createDatabase.isPending ? 'Creating...' : 'Create database'}
         </Button>
       </DialogFooter>
-    </form>
+    </CreateFormShell>
   )
 }

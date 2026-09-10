@@ -23,7 +23,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { toast } from '@/components/ui/toast'
 import { useCreateApp } from '../queries/apps'
 import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
@@ -33,11 +32,11 @@ import {
   healthCheckFrom,
 } from '../lib/healthCheckDefaults'
 import {
-  autoPlacementToastDescription,
+  buildCreateResourceSuccessHandler,
   resolveSubmittedNodeId,
   resolveSubmittedProjectId,
 } from '../lib/createResourcePlacement'
-import { DraftRestoredNotice } from './DraftRestoredNotice'
+import { CreateFormShell } from './CreateFormShell'
 import {
   LOCAL_NODE_VALUE,
   NO_PROJECT_VALUE,
@@ -248,37 +247,25 @@ export function CreateAppFields({
         node_id: resolveSubmittedNodeId(showAdvanced, nodeId),
       },
       {
-        onSuccess: (created) => {
-          clearDraft()
-          onCreated()
-          toast.add({
-            title: `App "${created.name}" created.`,
-            description: autoPlacementToastDescription(created),
-            type: 'success',
-          })
-          void navigate({
-            to: '/apps/$name',
-            params: { name: created.name },
-          })
-        },
+        onSuccess: buildCreateResourceSuccessHandler({
+          resourceLabel: 'App',
+          clearDraft,
+          onCreated,
+          onNavigate: (name) => {
+            void navigate({ to: '/apps/$name', params: { name } })
+          },
+        }),
       },
     )
   })
 
   return (
-    <form
-      onSubmit={(e) => {
-        void onSubmit(e)
-      }}
-      className="space-y-4"
+    <CreateFormShell
+      onSubmit={onSubmit}
+      restoredFromDraft={restoredFromDraft}
+      onDiscardDraft={discardDraft}
+      onDismissDraftNotice={dismissDraftNotice}
     >
-      {restoredFromDraft ? (
-        <DraftRestoredNotice
-          onDiscard={discardDraft}
-          onDismiss={dismissDraftNotice}
-        />
-      ) : null}
-
       <div className="space-y-4">
         <FieldSectionLabel>Basics</FieldSectionLabel>
         <Field>
@@ -475,6 +462,6 @@ export function CreateAppFields({
           {createApp.isPending ? 'Creating...' : 'Create app'}
         </Button>
       </DialogFooter>
-    </form>
+    </CreateFormShell>
   )
 }
