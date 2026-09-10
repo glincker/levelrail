@@ -112,6 +112,27 @@ still open. This page describes what's actually true today.
   connected GitHub App installation. GitHub only, matching preview
   environments' own current scope. Wired into the same dashboard card
   and the CLI (`apps previews pr-status enable/disable`).
+- Ephemeral databases per preview: opt-in per database, one level below
+  the preview toggle itself. A `databases:` entry in the connected git
+  source (`ephemeralInPreviews: true`) gets a full, disposable
+  `database.Controller`-managed container of its own for every open pull
+  request (its own volume, its own generated credentials), named
+  `<preview-app>-db-<key>`, provisioned the moment the preview deploys
+  and destroyed the moment the preview is, whichever teardown path fires
+  (pull-request-closed webhook, manual teardown, or the TTL sweep). For a
+  single-service preview with exactly one such database, its connection
+  string is also wired in automatically as `DATABASE_URL`, the same
+  attachment mechanism `PUT /api/v1/apps/{name}/database` already
+  exposes for any app; a multi-service preview, or more than one
+  ephemeral database on the same preview, leaves that wiring to be done
+  by hand since there is no single service to attach it to
+  unambiguously. **Destroyed with no recovery path**: there is no backup,
+  no restore, and no snapshot for an ephemeral preview database, by
+  design, since the entire point is a schema an operator never has to
+  worry about leaking into or diverging from anything real. Never point
+  a production dependency, a shared secret, or real user data at one.
+  Visible in the same dashboard card as the rest of a preview's status,
+  and in `apps previews list`'s own output.
 - Embedded Caddy ingress with automatic TLS and domain routing. TLS
   today defaults to an internal, self-signed issuer; a public ACME
   issuer exists and is toggleable but is still unverified against a
