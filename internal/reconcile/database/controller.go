@@ -354,6 +354,31 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 }
 
+// Teardown stops and removes this database's container, if one exists.
+// Callers must call it themselves right after moving or deleting desired
+// state: Reconcile treats ErrDatabaseNotFound as "not deployed yet," not
+// "stop everything," so a moved-off-this-node or deleted database is
+// never reconciled here again otherwise.
+func (c *Controller) Teardown(ctx context.Context) error {
+	target := containerName(c.dbName)
+	state, err := c.runtime.InspectByName(ctx, target)
+	if err != nil {
+		return fmt.Errorf("database/%s: inspect %q: %w", c.dbName, target, err)
+	}
+	if state == nil {
+		return nil
+	}
+	if state.Running {
+		if err := c.runtime.Stop(ctx, state.ID, defaultStopTimeout); err != nil {
+			return fmt.Errorf("database/%s: stop %q: %w", c.dbName, target, err)
+		}
+	}
+	if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+		return fmt.Errorf("database/%s: remove %q: %w", c.dbName, target, err)
+	}
+	return nil
+}
+
 // reconcileEngine is the real convergence logic, shared by Redis today
 // and by Postgres once credentials are supplied. It ensures the
 // database's data volume exists, then ensures the right container exists
