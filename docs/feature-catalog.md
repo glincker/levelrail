@@ -89,7 +89,9 @@ system status (doctor bundle), containers, updates.
 `app-volume-backups`, `cloudflare-tunnel`, `channels`,
 `backup-targets`, `registry-credentials`, `registry`, `flags`, `nodes`,
 `status`, `version`, `audit-log`, `audit-purge`, `doctor`, `containers`,
-`firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`.
+`firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`,
+`settings`, `github-app`, `gitlab-app`, `bitbucket-app`, `templates`,
+`static-sites`.
 
 Key subcommand groups:
 
@@ -97,7 +99,7 @@ Key subcommand groups:
   group, hook-runs, rollback, deploys, promote, restart, stop, start,
   delete, status, diagnose, resource-recommendation, network, logs, exec,
   log-drain, scheduled-tasks, alerts, organizations, projects,
-  environments, previews, secrets, git-source, webhook-deliveries
+  environments, previews, secrets, git-source, webhook-deliveries, storage
 - **databases**: create, list, get, delete, resource-recommendation
 - **nodes**: list, get, delete, join-token, cordon, uncordon, drain,
   workloads, health, patch-status
@@ -105,6 +107,19 @@ Key subcommand groups:
 - **backups** / **app-volume-backups**: list, trigger, restore,
   restore-as-new, schedule, verify, verifications
 - **migrate**: coolify, dokploy, caprover
+- **domains**: list, cloudflare-dns, basic-auth, maintenance, tls-cert,
+  certificates
+- **settings**: oauth (list/set), email (get/set), ingress (get/set):
+  instance-wide OAuth sign-in, outbound email, and ingress/ACME config,
+  for headless first-run setup with no browser
+- **github-app** / **gitlab-app** / **bitbucket-app**: repos (or
+  `projects` for gitlab-app), branches, use-as-source. Connecting the
+  App/OAuth integration itself stays dashboard-only (a real browser
+  redirect through the provider's own OAuth flow); these subcommands
+  browse and use an already-connected integration's repos from the CLI
+- **templates**: list, get, deploy (deploys a catalog entry's own
+  compose.yaml as an app, the same call `apps deploy-compose` makes)
+- **static-sites**: list
 
 ## Known gaps (backend done, UI thin or missing)
 

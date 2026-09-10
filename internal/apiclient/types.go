@@ -67,6 +67,10 @@ type AppResource struct {
 	// EnvironmentID mirrors internal/api's appResource.EnvironmentID:
 	// response-only, set via PUT /api/v1/apps/{name}/environment.
 	EnvironmentID string `json:"environment_id,omitempty"`
+	// StorageTargetID mirrors internal/api's appResource.StorageTargetID:
+	// response-only, set via PUT/DELETE /api/v1/apps/{name}/storage
+	// (SetAppStorage/ClearAppStorage).
+	StorageTargetID string `json:"storage_target_id,omitempty"`
 	// EnvDirty mirrors internal/api's appResource.EnvDirty: true means
 	// Env was saved since the running container was last recreated, so
 	// the change is not live yet. Clears on restart or redeploy.
@@ -1435,6 +1439,145 @@ type CertificateResource struct {
 	NotBefore time.Time `json:"not_before"`
 	NotAfter  time.Time `json:"not_after"`
 	Status    string    `json:"status"`
+}
+
+// OAuthProviderSettingsResource mirrors internal/api's
+// oauthProviderSettingsResource (internal/api/oauth_settings.go):
+// GET/PUT /api/v1/settings/oauth[/{provider}]'s wire shape. ClientSecret
+// is never included in a response, only HasClientSecret.
+type OAuthProviderSettingsResource struct {
+	Provider           string `json:"provider"`
+	Enabled            bool   `json:"enabled"`
+	ClientID           string `json:"client_id,omitempty"`
+	AllowedEmailDomain string `json:"allowed_email_domain,omitempty"`
+	IssuerURL          string `json:"issuer_url,omitempty"`
+	DisplayName        string `json:"display_name,omitempty"`
+	HasClientSecret    bool   `json:"has_client_secret"`
+}
+
+// UpdateOAuthProviderSettingsRequest mirrors internal/api's
+// updateOAuthProviderSettingsRequest: PUT
+// /api/v1/settings/oauth/{provider}'s request body. An empty
+// ClientSecret leaves the currently stored secret unchanged.
+type UpdateOAuthProviderSettingsRequest struct {
+	Enabled            bool   `json:"enabled"`
+	ClientID           string `json:"client_id"`
+	ClientSecret       string `json:"client_secret,omitempty"`
+	AllowedEmailDomain string `json:"allowed_email_domain"`
+	IssuerURL          string `json:"issuer_url"`
+	DisplayName        string `json:"display_name"`
+}
+
+// EmailSettingsResource mirrors internal/api's emailSettingsResource
+// (internal/api/email_settings.go): the shape of both GET and PUT
+// /api/v1/settings/email. Credential fields are write-only; the
+// corresponding *Set booleans report presence instead.
+type EmailSettingsResource struct {
+	Backend               string `json:"backend"`
+	SMTPHost              string `json:"smtp_host,omitempty"`
+	SMTPPort              int    `json:"smtp_port,omitempty"`
+	SMTPUsername          string `json:"smtp_username,omitempty"`
+	SMTPFrom              string `json:"smtp_from,omitempty"`
+	SMTPPassword          string `json:"smtp_password,omitempty"`
+	SMTPPasswordSet       bool   `json:"smtp_password_set,omitempty"`
+	SESRegion             string `json:"ses_region,omitempty"`
+	SESAccessKeyID        string `json:"ses_access_key_id,omitempty"`
+	SESFrom               string `json:"ses_from,omitempty"`
+	SESSecretAccessKey    string `json:"ses_secret_access_key,omitempty"`
+	SESSecretAccessKeySet bool   `json:"ses_secret_access_key_set,omitempty"`
+}
+
+// IngressSettingsResource mirrors internal/api's ingressSettingsResource
+// (internal/api/ingress_settings.go): the shape of both GET and PUT
+// /api/v1/settings/ingress.
+type IngressSettingsResource struct {
+	PrimaryDomain    string `json:"primary_domain,omitempty"`
+	ACMEEnabled      bool   `json:"acme_enabled"`
+	ACMEEmail        string `json:"acme_email,omitempty"`
+	ACMEDirectoryURL string `json:"acme_directory_url,omitempty"`
+}
+
+// AppStorageResource mirrors internal/api's appStorageResource
+// (internal/api/apps_storage.go): PUT/DELETE
+// /api/v1/apps/{name}/storage's response.
+type AppStorageResource struct {
+	AppName         string `json:"app_name"`
+	StorageTargetID string `json:"storage_target_id,omitempty"`
+}
+
+// SetAppStorageRequest mirrors internal/api's setAppStorageRequest:
+// PUT /api/v1/apps/{name}/storage's request body.
+type SetAppStorageRequest struct {
+	StorageTargetID string `json:"storage_target_id"`
+}
+
+// GitHubAppRepoResource mirrors internal/api's gitHubAppRepoResource:
+// one entry of GET /api/v1/github-app/repos.
+type GitHubAppRepoResource struct {
+	FullName      string `json:"full_name"`
+	Name          string `json:"name"`
+	OwnerLogin    string `json:"owner_login"`
+	Private       bool   `json:"private"`
+	DefaultBranch string `json:"default_branch"`
+	CloneURL      string `json:"clone_url"`
+}
+
+// GitAppBranchResource mirrors the identical branch wire shape every git
+// provider App integration returns: internal/api's gitHubAppBranchResource,
+// gitLabAppBranchResource, and bitbucketAppBranchResource are structurally
+// the same two fields, so this client uses one type for all three.
+type GitAppBranchResource struct {
+	Name      string `json:"name"`
+	CommitSHA string `json:"commit_sha"`
+}
+
+// UseRepoAsSourceRequest mirrors internal/api's useRepoAsSourceRequest:
+// the request body every provider's own use-as-source route shares
+// (github-app, gitlab-app, bitbucket-app).
+type UseRepoAsSourceRequest struct {
+	AppName   string `json:"app_name"`
+	Branch    string `json:"branch,omitempty"`
+	BuildType string `json:"build_type,omitempty"`
+	BuildPath string `json:"build_path,omitempty"`
+}
+
+// UseGitHubRepoAsSourceResponse mirrors internal/api's
+// useGitHubRepoAsSourceResponse: GitSourceResource plus whether the push
+// webhook was actually auto-registered.
+type UseGitHubRepoAsSourceResponse struct {
+	GitSourceResource
+	WebhookRegistered bool   `json:"webhook_registered"`
+	WebhookError      string `json:"webhook_error,omitempty"`
+}
+
+// GitLabAppProjectResource mirrors internal/api's
+// gitLabAppProjectResource: one entry of GET /api/v1/gitlab-app/projects.
+type GitLabAppProjectResource struct {
+	ID                int64  `json:"id"`
+	Name              string `json:"name"`
+	PathWithNamespace string `json:"path_with_namespace"`
+	CloneURL          string `json:"clone_url"`
+	DefaultBranch     string `json:"default_branch"`
+	Visibility        string `json:"visibility"`
+	WebURL            string `json:"web_url"`
+}
+
+// BitbucketAppRepoResource mirrors internal/api's
+// bitbucketAppRepoResource: one entry of GET /api/v1/bitbucket-app/repos.
+type BitbucketAppRepoResource struct {
+	FullName      string `json:"full_name"`
+	Name          string `json:"name"`
+	Private       bool   `json:"private"`
+	DefaultBranch string `json:"default_branch"`
+	CloneURL      string `json:"clone_url"`
+	WebURL        string `json:"web_url"`
+}
+
+// StaticSiteResource mirrors internal/api's staticSiteResource
+// (internal/api/static_sites.go): one entry of GET /api/v1/static-sites.
+type StaticSiteResource struct {
+	Name    string   `json:"name"`
+	Domains []string `json:"domains"`
 }
 
 // apiErrorBody is the JSON shape every non-2xx response from the
