@@ -354,6 +354,37 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 }
 
+// Teardown stops and removes this database's own container, if any:
+// used by a caller that owns this database's full lifecycle (an
+// ephemeral preview database, internal/api/preview_environments_databases.go)
+// rather than just its running state, unlike ordinary DeleteDesiredDatabase
+// callers which leave the container for a future reconcile pass to
+// notice is now orphaned. Idempotent and safe to call again after a
+// partial failure: InspectByName reports the container's real state
+// fresh on every call, so a Stop that already ran (or a Remove that
+// already succeeded) is simply skipped rather than retried into an
+// error. Does not remove the container's data volume; see
+// dataVolumeName's own doc comment.
+func (c *Controller) Teardown(ctx context.Context) error {
+	target := containerName(c.dbName)
+	state, err := c.runtime.InspectByName(ctx, target)
+	if err != nil {
+		return fmt.Errorf("database/%s: inspect %q for teardown: %w", c.dbName, target, err)
+	}
+	if state == nil {
+		return nil
+	}
+	if state.Running {
+		if err := c.runtime.Stop(ctx, state.ID, defaultStopTimeout); err != nil {
+			return fmt.Errorf("database/%s: stop %q for teardown: %w", c.dbName, target, err)
+		}
+	}
+	if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+		return fmt.Errorf("database/%s: remove %q for teardown: %w", c.dbName, target, err)
+	}
+	return nil
+}
+
 // reconcileEngine is the real convergence logic, shared by Redis today
 // and by Postgres once credentials are supplied. It ensures the
 // database's data volume exists, then ensures the right container exists
@@ -564,7 +595,10 @@ func containerName(dbName string) string {
 
 // dataVolumeName is the named Docker volume backing dbName's data,
 // stable across container replacements (engine version bumps) so an
-// upgrade doesn't start the new version against an empty volume.
+// upgrade doesn't start the new version against an empty volume. Never
+// removed by this package, including by Teardown: docker.Runtime has no
+// RemoveVolume method today, the same gap handleDeleteDatabase's own doc
+// comment already documents for an ordinary database delete.
 func dataVolumeName(dbName string) string {
 	return "db-" + dbName + "-data"
 }

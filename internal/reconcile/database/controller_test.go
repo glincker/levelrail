@@ -1297,3 +1297,84 @@ func TestController_Reconcile_Resources_NilLeavesContainerSpecResourcesNil(t *te
 		t.Errorf("created ContainerSpec.Resources = %+v, want nil", got)
 	}
 }
+
+// TestController_Teardown_RemovesRunningContainer covers the create
+// case an ephemeral preview database's teardown depends on: a running
+// container gets stopped and removed in one call.
+func TestController_Teardown_RemovesRunningContainer(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.seed(containerName("previewdb"), "postgres:16", true)
+
+	c := New("previewdb", &fakeStore{}, rt)
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("Teardown() error = %v", err)
+	}
+	if got := rt.count(); got != 0 {
+		t.Errorf("containers after teardown = %d, want 0", got)
+	}
+}
+
+// TestController_Teardown_StoppedContainer_RemovesWithoutStopping covers
+// a database container that crashed or was already stopped: Teardown
+// must still remove it, without calling Stop on an already-stopped
+// container.
+func TestController_Teardown_StoppedContainer_RemovesWithoutStopping(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.seed(containerName("previewdb"), "postgres:16", false)
+
+	c := New("previewdb", &fakeStore{}, rt)
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("Teardown() error = %v", err)
+	}
+	if got := rt.count(); got != 0 {
+		t.Errorf("containers after teardown = %d, want 0", got)
+	}
+}
+
+// TestController_Teardown_NoContainer_NoOp covers a preview whose
+// ephemeral database was tracked but never actually reconciled into a
+// running container (e.g. torn down before its first reconcile pass):
+// not an error, the same "not found is a valid observed state"
+// tolerance InspectByName's own doc comment establishes.
+func TestController_Teardown_NoContainer_NoOp(t *testing.T) {
+	rt := newFakeRuntime()
+	c := New("previewdb", &fakeStore{}, rt)
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("Teardown() error = %v", err)
+	}
+}
+
+// TestController_Teardown_HalfSucceeded_RemoveFailsThenRetrySucceeds is
+// the half-succeeded case this codebase's own testing standard requires
+// for every reconciler (CLAUDE.md section 7): a crash or a transient
+// Docker error between Stop and Remove must leave the container in a
+// state a second Teardown call can still finish cleanly, not stuck or
+// double-stopped.
+func TestController_Teardown_HalfSucceeded_RemoveFailsThenRetrySucceeds(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.seed(containerName("previewdb"), "postgres:16", true)
+	rt.removeErr = errors.New("engine temporarily unavailable")
+
+	c := New("previewdb", &fakeStore{}, rt)
+	if err := c.Teardown(context.Background()); err == nil {
+		t.Fatal("Teardown() error = nil, want the remove failure to surface")
+	}
+	if got := rt.count(); got != 1 {
+		t.Fatalf("containers after failed teardown = %d, want 1 (still present for retry)", got)
+	}
+	state, err := rt.InspectByName(context.Background(), containerName("previewdb"))
+	if err != nil {
+		t.Fatalf("InspectByName() error = %v", err)
+	}
+	if state == nil || state.Running {
+		t.Fatalf("state after failed teardown = %+v, want a stopped container left for retry", state)
+	}
+
+	rt.removeErr = nil
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("retried Teardown() error = %v", err)
+	}
+	if got := rt.count(); got != 0 {
+		t.Errorf("containers after retried teardown = %d, want 0", got)
+	}
+}
