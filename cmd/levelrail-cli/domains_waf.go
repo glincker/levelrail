@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 )
@@ -56,6 +57,28 @@ Run "%[1]s domains waf <subcommand> -h" for a subcommand's own flags.
 `, prog)
 }
 
+// domainWAFResolveArgs collapses the parseAPIFlags/requireArgs/
+// apiClientFromFlags preamble every domains waf subcommand below needs
+// into one place: fs must already have any subcommand-specific flags
+// (e.g. runDomainsWAFSet's --waf/--mode/--rps/--burst) registered on it.
+func domainWAFResolveArgs(
+	fs *flag.FlagSet, args []string, ptrs apiFlagPtrs,
+	prog, cmdLabel string, stderr io.Writer, lookupEnv func(string) (string, bool),
+) (client *Client, appName, domain string, jsonOut bool, of outputFlags, exitCode int, ok bool) {
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, ptrs, prog, stderr)
+	if !ok {
+		return nil, "", "", false, outputFlags{}, exitCode, false
+	}
+
+	rest, argsOK := requireArgs(fs, stderr, prog, cmdLabel, "an app name and a domain", 2)
+	if !argsOK {
+		return nil, "", "", false, outputFlags{}, exitUsage, false
+	}
+
+	client = apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	return client, rest[0], rest[1], jsonOut, of, 0, true
+}
+
 func runDomainsWAFGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains waf get", domainsWAFJSONUsage, stderr)
 	fs.Usage = func() {
@@ -63,18 +86,10 @@ func runDomainsWAFGet(prog string, args []string, stdout, stderr io.Writer, look
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	client, appName, domain, jsonOut, of, exitCode, ok := domainWAFResolveArgs(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, "domains waf get", stderr, lookupEnv)
 	if !ok {
 		return exitCode
 	}
-
-	rest, ok := requireArgs(fs, stderr, prog, "domains waf get", "an app name and a domain", 2)
-	if !ok {
-		return exitUsage
-	}
-	appName, domain := rest[0], rest[1]
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	w, err := client.GetDomainWAF(context.Background(), appName, domain)
 	if err != nil {
@@ -98,18 +113,10 @@ func runDomainsWAFSet(prog string, args []string, stdout, stderr io.Writer, look
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	client, appName, domain, jsonOut, of, exitCode, ok := domainWAFResolveArgs(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, "domains waf set", stderr, lookupEnv)
 	if !ok {
 		return exitCode
 	}
-
-	rest, ok := requireArgs(fs, stderr, prog, "domains waf set", "an app name and a domain", 2)
-	if !ok {
-		return exitUsage
-	}
-	appName, domain := rest[0], rest[1]
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	w, err := client.SetDomainWAF(context.Background(), appName, domain, setDomainWAFRequest{
 		WAFEnabled:     wafFlag,
@@ -131,18 +138,10 @@ func runDomainsWAFClear(prog string, args []string, stdout, stderr io.Writer, lo
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	client, appName, domain, jsonOut, of, exitCode, ok := domainWAFResolveArgs(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, "domains waf clear", stderr, lookupEnv)
 	if !ok {
 		return exitCode
 	}
-
-	rest, ok := requireArgs(fs, stderr, prog, "domains waf clear", "an app name and a domain", 2)
-	if !ok {
-		return exitUsage
-	}
-	appName, domain := rest[0], rest[1]
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	w, err := client.ClearDomainWAF(context.Background(), appName, domain)
 	if err != nil {
