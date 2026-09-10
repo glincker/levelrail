@@ -7,7 +7,7 @@ import (
 	"fmt"
 )
 
-// Domain WAF modes (domain_waf.waf_mode, migrations/0091). DomainWAFModeDetect
+// Domain WAF modes (domain_waf.waf_mode, migrations/0093). DomainWAFModeDetect
 // is the default: OWASP CRS runs but only logs matches, never rejects a
 // request, matching Coraza's own documented SecRuleEngine DetectionOnly
 // behavior.
