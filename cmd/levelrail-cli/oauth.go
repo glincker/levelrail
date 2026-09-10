@@ -87,12 +87,10 @@ func runOAuthList(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	client, jsonOut, of, exitCode, ok := parseListClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr, lookupEnv)
 	if !ok {
 		return exitCode
 	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	settings, err := client.ListOAuthProviderSettings(context.Background())
 	if err != nil {

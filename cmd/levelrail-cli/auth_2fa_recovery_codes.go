@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"io"
 )
@@ -20,17 +19,8 @@ func runAuthTwoFactorRecoveryCodes(prog string, args []string, stdout, stderr io
 	fs.StringVar(&code, "code", "", "current 6-digit code from the authenticator app (required)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, authTwoFactorRecoveryCodesUsage(prog)) }
 
-	jsonOut, of, exitCode, ok := parseSessionFlags(fs, args, jsonOutP, outputFlagP, queryFlagP, prog, stderr)
-	if !ok {
-		return exitCode
-	}
-
-	if code == "" {
-		return reportError(stdout, stderr, jsonOut, newValidationError("--code is required"))
-	}
-
-	ctx := context.Background()
-	sessionClient, exitCode, ok := buildSessionClient(ctx, sessionFlags{*usernameP, *passwordP, *apiURLFlagP, *profileFlagP}, prog, lookupEnv, stdin, stdout, stderr, jsonOut)
+	flags := sessionFlagPtrs{usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}
+	ctx, sessionClient, jsonOut, of, exitCode, ok := requireCodeAndSessionClient(fs, args, &code, flags, prog, lookupEnv, stdin, stdout, stderr)
 	if !ok {
 		return exitCode
 	}

@@ -250,6 +250,16 @@ func buildSessionClient(ctx context.Context, sf sessionFlags, prog string, looku
 	return sessionClient, 0, true
 }
 
+// sessionFlagPtrs bundles sessionFlagSet's returned flag pointers,
+// keeping requireCodeAndSessionClient under golangci-lint's parameter-
+// count limit, the same "bundle related params into one value" pattern
+// apiFlagPtrs/credentialFlags already establish.
+type sessionFlagPtrs struct {
+	username, password, apiURL, profile *string
+	jsonOut                             *bool
+	output, query                       *string
+}
+
 // singleArgCmd bundles a single-positional-argument command's own
 // identity (prog, its cmdLabel, and what that one argument is called in
 // a usage message, e.g. "app name" or "policy id") into one value,
@@ -280,6 +290,19 @@ func parseSingleArgClient(fs *flag.FlagSet, args []string, flags apiFlagPtrs, st
 	}
 
 	return apiClientFromFlags(cmd.prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv), name, jsonOut, of, exitOK, true
+}
+
+// parseListClient is parseSingleArgClient's zero-positional-argument
+// counterpart: the parse-flags-then-build-client sequence every "list"
+// subcommand needs before its own request logic diverges. ok is false
+// once fs.Parse, --help, or an invalid --output has already written its
+// own message to stderr; the caller should return exitCode unchanged.
+func parseListClient(fs *flag.FlagSet, args []string, flags apiFlagPtrs, prog string, stderr io.Writer, lookupEnv func(string) (string, bool)) (client *Client, jsonOut bool, of outputFlags, exitCode int, ok bool) {
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, flags, prog, stderr)
+	if !ok {
+		return nil, false, outputFlags{}, exitCode, false
+	}
+	return apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv), jsonOut, of, exitOK, true
 }
 
 // reorderArgsFlagsFirst rewrites args so every flag (and its value, if

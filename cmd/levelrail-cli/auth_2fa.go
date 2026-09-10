@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"flag"
 	"fmt"
 	"io"
 )
@@ -34,6 +36,27 @@ func runAuthTwoFactor(prog string, args []string, stdout, stderr io.Writer, look
 		_, _ = fmt.Fprint(stderr, authTwoFactorUsage(prog))
 		return exitUsage
 	}
+}
+
+// requireCodeAndSessionClient is "auth 2fa enable"/"auth 2fa
+// recovery-codes"'s shared prelude: parse flags, require --code (both
+// subcommands need a live authenticator code and nothing else), then log
+// in. ok is false once it has already returned the caller's exitCode;
+// the caller should return immediately in that case.
+func requireCodeAndSessionClient(fs *flag.FlagSet, args []string, codeP *string, flags sessionFlagPtrs, prog string, lookupEnv func(string) (string, bool), stdin io.Reader, stdout, stderr io.Writer) (ctx context.Context, client *authSessionClient, jsonOut bool, of outputFlags, exitCode int, ok bool) {
+	jsonOut, of, exitCode, ok = parseSessionFlags(fs, args, flags.jsonOut, flags.output, flags.query, prog, stderr)
+	if !ok {
+		return nil, nil, false, outputFlags{}, exitCode, false
+	}
+	if *codeP == "" {
+		return nil, nil, false, outputFlags{}, reportError(stdout, stderr, jsonOut, newValidationError("--code is required")), false
+	}
+	ctx = context.Background()
+	client, exitCode, ok = buildSessionClient(ctx, sessionFlags{*flags.username, *flags.password, *flags.apiURL, *flags.profile}, prog, lookupEnv, stdin, stdout, stderr, jsonOut)
+	if !ok {
+		return nil, nil, false, outputFlags{}, exitCode, false
+	}
+	return ctx, client, jsonOut, of, 0, true
 }
 
 func authTwoFactorUsage(prog string) string {
