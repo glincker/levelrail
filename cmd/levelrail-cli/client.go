@@ -172,6 +172,8 @@ type (
 	purgeAuditLogResult   = apiclient.PurgeAuditLogResult
 
 	rotateMasterKeyResult = apiclient.RotateMasterKeyResult
+
+	systemPruneResult = apiclient.SystemPruneResult
 )
 
 // NewClient builds a Client, identifying every request as this CLI's own

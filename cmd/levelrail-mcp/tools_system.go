@@ -41,4 +41,15 @@ func registerSystemTools(server *mcp.Server, client *apiclient.Client) {
 		}
 		return nil, state, nil
 	})
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "prune_system",
+		Description: "Remove every stopped container, dangling image, and unused volume or build cache the reconciler's current desired state doesn't need, fleet-wide. A routine day-2 cleanup action, same one 'levelrail-cli system-prune' runs; never touches a container, image, or volume any app or database still desires. Mutating.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.SystemPruneResult, error) {
+		result, err := client.PruneSystem(ctx)
+		if err != nil {
+			return nil, apiclient.SystemPruneResult{}, fmt.Errorf("prune system: %w", err)
+		}
+		return nil, result, nil
+	})
 }
