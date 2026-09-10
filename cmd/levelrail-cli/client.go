@@ -23,6 +23,10 @@ type (
 	conditionResource                = apiclient.ConditionResource
 	networkResource                  = apiclient.NetworkResource
 	logEntryResource                 = apiclient.LogEntryResource
+	logStreamEntry                   = apiclient.LogStreamEntry
+	appMetricsResource               = apiclient.AppMetricsResource
+	metricPointResource              = apiclient.MetricPointResource
+	nodeMetricsResource              = apiclient.NodeMetricsResource
 	execRequest                      = apiclient.ExecRequest
 	execResponse                     = apiclient.ExecResponse
 	domainResource                   = apiclient.DomainResource

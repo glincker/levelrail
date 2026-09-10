@@ -117,8 +117,9 @@ APP_API_TOKEN=dev-root-token ./levelrail-cli apps create \
 
 Run `levelrail-cli apps create -h` for the full set of flags, and
 `levelrail-cli -h` for the rest of the commands (`apps deploy`,
-`apps rollback`, `apps restart`, `apps logs`, `databases create`, and
-so on).
+`apps rollback`, `apps restart`, `apps logs` (add `--follow`/`-f` to
+tail live), `apps metrics`, `databases create`, `databases metrics`,
+`nodes metrics`, and so on).
 
 ### Guided setup
 
