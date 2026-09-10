@@ -210,6 +210,16 @@ type LogEntryResource struct {
 	FieldsJSON json.RawMessage `json:"fields,omitempty"`
 }
 
+// LogStreamEntry mirrors internal/api's sseLogEvent
+// (internal/api/deploy_attempts.go), the exact JSON payload
+// GET /api/v1/apps/{name}/logs/stream sends on each SSE "data:" line: no
+// timestamp, unlike LogEntryResource's historical shape, since a live
+// tail has no persisted-store round trip to attach one from.
+type LogStreamEntry struct {
+	Line   string `json:"line"`
+	Stream string `json:"stream"`
+}
+
 // logsResponse mirrors internal/api's logsResponse (internal/api/logs.go).
 type logsResponse struct {
 	Entries []LogEntryResource `json:"entries"`
@@ -1377,6 +1387,16 @@ type MetricPointResource struct {
 type AppMetricsResource struct {
 	Metric string                `json:"metric"`
 	Points []MetricPointResource `json:"points"`
+}
+
+// NodeMetricsResource mirrors internal/api's nodeMetricsResponse
+// (internal/api/node_metrics.go): AppMetricsResource's fields plus
+// ResourceCount, how many of the node's placed services actually
+// contributed a sample to this response.
+type NodeMetricsResource struct {
+	Metric        string                `json:"metric"`
+	Points        []MetricPointResource `json:"points"`
+	ResourceCount int                   `json:"resource_count"`
 }
 
 // AuditLogEntryResource mirrors internal/api's auditLogEntryResource
