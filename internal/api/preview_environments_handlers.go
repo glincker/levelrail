@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -30,9 +31,34 @@ type previewEnvironmentResource struct {
 	// time.Now().UTC().Format(time.RFC3339Nano)) is reported as not
 	// stale rather than guessed at.
 	Stale bool `json:"stale"`
+	// EphemeralDatabases is every disposable, preview-scoped database
+	// instance provisioned for this preview (spec.Database.EphemeralInPreviews),
+	// empty when the app declares no such database or none opted in.
+	EphemeralDatabases []previewEphemeralDatabaseResource `json:"ephemeral_databases,omitempty"`
 }
 
-func (rt *Router) toPreviewEnvironmentResource(p store.PreviewEnvironment) previewEnvironmentResource {
+// previewEphemeralDatabaseResource is previewEnvironmentResource's own
+// EphemeralDatabases element: store.PreviewEphemeralDatabase's wire
+// shape plus a live Ready status computed from the underlying
+// database.Controller's own reconcile conditions
+// (GetConditions/databaseControllerName), the same "status computed at
+// response time, not persisted" shape databaseListResource already
+// establishes for an ordinary managed database: this row's own Status
+// column only ever tracks provisioned/teardown_failed, never whether the
+// container is actually up.
+type previewEphemeralDatabaseResource struct {
+	SourceKey    string           `json:"source_key"`
+	DatabaseName string           `json:"database_name"`
+	Engine       string           `json:"engine"`
+	Version      string           `json:"version"`
+	Status       string           `json:"status"`
+	StatusReason string           `json:"status_reason,omitempty"`
+	Ready        appStatusSummary `json:"ready"`
+	CreatedAt    string           `json:"created_at"`
+	UpdatedAt    string           `json:"updated_at"`
+}
+
+func (rt *Router) toPreviewEnvironmentResource(ctx context.Context, p store.PreviewEnvironment) previewEnvironmentResource {
 	stale := false
 	if updatedAt, err := time.Parse(time.RFC3339Nano, p.UpdatedAt); err == nil {
 		stale = time.Since(updatedAt) > rt.effectivePreviewTTL()
@@ -41,7 +67,47 @@ func (rt *Router) toPreviewEnvironmentResource(p store.PreviewEnvironment) previ
 		PRNumber: p.PRNumber, PreviewAppID: p.PreviewAppID, Branch: p.Branch, HeadSHA: p.HeadSHA,
 		Domain: p.Domain, Status: p.Status, StatusReason: p.StatusReason,
 		CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt, Stale: stale,
+		EphemeralDatabases: rt.listPreviewEphemeralDatabaseResources(ctx, p.ID),
 	}
+}
+
+// listPreviewEphemeralDatabaseResources loads p's ephemeral databases
+// and their live readiness in one batched conditions query
+// (GetConditionsForControllers), the same shape handleListDatabases
+// already uses to avoid an N+1 GetConditions call per database. A load
+// failure is logged and reported as an empty list rather than failing
+// the whole preview list response: this is a display nicety, not core
+// preview state.
+func (rt *Router) listPreviewEphemeralDatabaseResources(ctx context.Context, previewEnvironmentID string) []previewEphemeralDatabaseResource {
+	dbs, err := rt.previewEnvironments.ListPreviewEphemeralDatabasesByPreview(ctx, previewEnvironmentID)
+	if err != nil {
+		rt.logger.Error("api: list preview ephemeral databases failed", slog.String("error", err.Error()), slog.String("preview_environment_id", previewEnvironmentID))
+		return nil
+	}
+	if len(dbs) == 0 {
+		return nil
+	}
+
+	controllerNames := make([]string, len(dbs))
+	for i, d := range dbs {
+		controllerNames[i] = databaseControllerName(d.DatabaseName)
+	}
+	conditionsByController, err := rt.deploys.GetConditionsForControllers(ctx, controllerNames)
+	if err != nil {
+		rt.logger.Error("api: list preview ephemeral databases: batch load conditions failed", slog.String("error", err.Error()), slog.String("preview_environment_id", previewEnvironmentID))
+		conditionsByController = nil
+	}
+
+	out := make([]previewEphemeralDatabaseResource, 0, len(dbs))
+	for _, d := range dbs {
+		out = append(out, previewEphemeralDatabaseResource{
+			SourceKey: d.SourceKey, DatabaseName: d.DatabaseName, Engine: d.Engine, Version: d.Version,
+			Status: d.Status, StatusReason: d.StatusReason,
+			Ready:     summarizeAppConditions(conditionsByController[databaseControllerName(d.DatabaseName)]),
+			CreatedAt: d.CreatedAt, UpdatedAt: d.UpdatedAt,
+		})
+	}
+	return out
 }
 
 // handleListPreviewEnvironments handles GET /api/v1/apps/{name}/previews.
@@ -61,7 +127,7 @@ func (rt *Router) handleListPreviewEnvironments(w http.ResponseWriter, r *http.R
 
 	out := make([]previewEnvironmentResource, 0, len(previews))
 	for _, p := range previews {
-		out = append(out, rt.toPreviewEnvironmentResource(p))
+		out = append(out, rt.toPreviewEnvironmentResource(r.Context(), p))
 	}
 	writeJSON(w, http.StatusOK, out)
 }

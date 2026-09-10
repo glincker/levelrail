@@ -1076,6 +1076,28 @@ type PreviewEnvironmentResource struct {
 	CreatedAt    string `json:"created_at"`
 	UpdatedAt    string `json:"updated_at"`
 	Stale        bool   `json:"stale"`
+	// EphemeralDatabases mirrors internal/api's own EphemeralDatabases
+	// field: every disposable, preview-scoped database instance
+	// provisioned for this preview (spec.Database.EphemeralInPreviews),
+	// empty when none were declared or none opted in.
+	EphemeralDatabases []PreviewEphemeralDatabaseResource `json:"ephemeral_databases,omitempty"`
+}
+
+// PreviewEphemeralDatabaseResource mirrors internal/api's
+// previewEphemeralDatabaseResource (preview_environments_handlers.go).
+// Ready reuses AppStatusSummary's exact shape: it's computed the same
+// way, from the same database.Controller reconcile conditions GET
+// /api/v1/databases already summarizes per database.
+type PreviewEphemeralDatabaseResource struct {
+	SourceKey    string           `json:"source_key"`
+	DatabaseName string           `json:"database_name"`
+	Engine       string           `json:"engine"`
+	Version      string           `json:"version"`
+	Status       string           `json:"status"`
+	StatusReason string           `json:"status_reason,omitempty"`
+	Ready        AppStatusSummary `json:"ready"`
+	CreatedAt    string           `json:"created_at"`
+	UpdatedAt    string           `json:"updated_at"`
 }
 
 // SetPreviewSettingsRequest mirrors internal/api's
