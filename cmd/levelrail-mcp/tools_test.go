@@ -670,39 +670,23 @@ func TestPruneSystem(t *testing.T) {
 	}
 }
 
-// TestNewTools_Surface403 is the same "ability-check 403 surfaces as a
-// real MCP tool error with the server's own message" contract
-// TestToolError_SurfacesAPIMessage already covers for list_apps, checked
-// individually for every tool added alongside rollback/nodes/previews/
-// alerts/metrics, since each hits its own distinct API path and any of
-// them could regress independently of the others.
-func TestNewTools_Surface403(t *testing.T) {
-	tests := []struct {
-		tool string
-		args map[string]any
-	}{
-		{"rollback_app", map[string]any{"name": "web", "image": "nginx:1"}},
-		{"list_nodes", map[string]any{}},
-		{"get_node", map[string]any{"id": "n1"}},
-		{"get_node_health", map[string]any{"id": "n1"}},
-		{"list_preview_environments", map[string]any{"name": "web"}},
-		{"list_alert_rules", map[string]any{"name": "web"}},
-		{"get_app_metrics", map[string]any{"name": "web", "metric": "cpu_percent"}},
-		{"diagnose_app_failure", map[string]any{"name": "web"}},
-		{"list_feature_flags", map[string]any{"name": "web"}},
-		{"get_feature_flag", map[string]any{"name": "web", "id": "f1"}},
-		{"get_system_doctor", map[string]any{}},
-		{"get_onboarding_status", map[string]any{}},
-		{"list_webhook_deliveries", map[string]any{"name": "web"}},
-		{"list_backup_verifications", map[string]any{"name": "main", "backup_id": "bkp1"}},
-		{"get_latest_backup_verification", map[string]any{"name": "main", "backup_id": "bkp1"}},
-		{"compare_deploys", map[string]any{"name": "web", "from": "dep_1"}},
-		{"list_notification_deliveries", map[string]any{"id": "c1"}},
-		{"list_audit_log", map[string]any{}},
-		{"prune_system", map[string]any{}},
-	}
+// toolCase is one tool name plus the arguments to call it with, the
+// shared shape every *_Surface403 test in this package tables its tools
+// as.
+type toolCase struct {
+	tool string
+	args map[string]any
+}
 
-	for _, tt := range tests {
+// assertToolsSurface403 proves each of cases' tools surfaces a 403
+// ability-check failure as a real MCP tool error carrying the server's
+// own message: the same contract TestToolError_SurfacesAPIMessage
+// checks for list_apps, extracted here since every *_Surface403 test in
+// this package (one per feature area, so each tool's own regression is
+// independently visible) repeated this exact loop body.
+func assertToolsSurface403(t *testing.T, cases []toolCase) {
+	t.Helper()
+	for _, tt := range cases {
 		t.Run(tt.tool, func(t *testing.T) {
 			session := newTestSession(t, func(w http.ResponseWriter, _ *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
@@ -726,6 +710,36 @@ func TestNewTools_Surface403(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestNewTools_Surface403 is the same "ability-check 403 surfaces as a
+// real MCP tool error with the server's own message" contract
+// TestToolError_SurfacesAPIMessage already covers for list_apps, checked
+// individually for every tool added alongside rollback/nodes/previews/
+// alerts/metrics, since each hits its own distinct API path and any of
+// them could regress independently of the others.
+func TestNewTools_Surface403(t *testing.T) {
+	assertToolsSurface403(t, []toolCase{
+		{"rollback_app", map[string]any{"name": "web", "image": "nginx:1"}},
+		{"list_nodes", map[string]any{}},
+		{"get_node", map[string]any{"id": "n1"}},
+		{"get_node_health", map[string]any{"id": "n1"}},
+		{"list_preview_environments", map[string]any{"name": "web"}},
+		{"list_alert_rules", map[string]any{"name": "web"}},
+		{"get_app_metrics", map[string]any{"name": "web", "metric": "cpu_percent"}},
+		{"diagnose_app_failure", map[string]any{"name": "web"}},
+		{"list_feature_flags", map[string]any{"name": "web"}},
+		{"get_feature_flag", map[string]any{"name": "web", "id": "f1"}},
+		{"get_system_doctor", map[string]any{}},
+		{"get_onboarding_status", map[string]any{}},
+		{"list_webhook_deliveries", map[string]any{"name": "web"}},
+		{"list_backup_verifications", map[string]any{"name": "main", "backup_id": "bkp1"}},
+		{"get_latest_backup_verification", map[string]any{"name": "main", "backup_id": "bkp1"}},
+		{"compare_deploys", map[string]any{"name": "web", "from": "dep_1"}},
+		{"list_notification_deliveries", map[string]any{"id": "c1"}},
+		{"list_audit_log", map[string]any{}},
+		{"prune_system", map[string]any{}},
+	})
 }
 
 func TestToolError_NotFound(t *testing.T) {

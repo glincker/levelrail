@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"text/tabwriter"
@@ -127,6 +128,29 @@ func findOAuthProviderSettings(settings []oauthProviderSettingsResource, provide
 	return oauthProviderSettingsResource{}, false
 }
 
+// oauthSubcommandPrelude is get/set/disable's shared prelude: parse
+// flags, require the single <provider> positional argument, validate it
+// against oauthProviders, then build the API client. ok is false once
+// exitCode has already been determined by an earlier step, each of which
+// has already reported its own message; the caller should return
+// exitCode unchanged.
+func oauthSubcommandPrelude(fs *flag.FlagSet, args []string, flags apiFlagPtrs, prog, cmdLabel string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) (client *Client, provider string, jsonOut bool, of outputFlags, exitCode int, ok bool) {
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, flags, prog, stderr)
+	if !ok {
+		return nil, "", false, outputFlags{}, exitCode, false
+	}
+	provider, ok = requireOneArg(fs, stderr, prog, cmdLabel, "provider name")
+	if !ok {
+		return nil, "", false, outputFlags{}, exitUsage, false
+	}
+	if !isKnownOAuthProvider(provider) {
+		exitCode = reportError(stdout, stderr, jsonOut, newValidationError("unknown oauth provider %q, must be one of google, github, oidc", provider))
+		return nil, "", false, outputFlags{}, exitCode, false
+	}
+	client = apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	return client, provider, jsonOut, of, 0, true
+}
+
 func runOAuthGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "oauth get", oauthJSONUsage, stderr)
 	fs.Usage = func() {
@@ -134,19 +158,10 @@ func runOAuthGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	client, provider, jsonOut, of, exitCode, ok := oauthSubcommandPrelude(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, "oauth get", stdout, stderr, lookupEnv)
 	if !ok {
 		return exitCode
 	}
-	provider, ok := requireOneArg(fs, stderr, prog, "oauth get", "provider name")
-	if !ok {
-		return exitUsage
-	}
-	if !isKnownOAuthProvider(provider) {
-		return reportError(stdout, stderr, jsonOut, newValidationError("unknown oauth provider %q, must be one of google, github, oidc", provider))
-	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	settings, err := client.ListOAuthProviderSettings(context.Background())
 	if err != nil {
@@ -195,19 +210,10 @@ func runOAuthSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	client, provider, jsonOut, of, exitCode, ok := oauthSubcommandPrelude(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, "oauth set", stdout, stderr, lookupEnv)
 	if !ok {
 		return exitCode
 	}
-	provider, ok := requireOneArg(fs, stderr, prog, "oauth set", "provider name")
-	if !ok {
-		return exitUsage
-	}
-	if !isKnownOAuthProvider(provider) {
-		return reportError(stdout, stderr, jsonOut, newValidationError("unknown oauth provider %q, must be one of google, github, oidc", provider))
-	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	settings, err := client.UpdateOAuthProviderSettings(context.Background(), provider, updateOAuthProviderSettingsRequest{
 		Enabled:            enabledFlag,
@@ -235,19 +241,10 @@ func runOAuthDisable(prog string, args []string, stdout, stderr io.Writer, looku
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	client, provider, jsonOut, of, exitCode, ok := oauthSubcommandPrelude(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, "oauth disable", stdout, stderr, lookupEnv)
 	if !ok {
 		return exitCode
 	}
-	provider, ok := requireOneArg(fs, stderr, prog, "oauth disable", "provider name")
-	if !ok {
-		return exitUsage
-	}
-	if !isKnownOAuthProvider(provider) {
-		return reportError(stdout, stderr, jsonOut, newValidationError("unknown oauth provider %q, must be one of google, github, oidc", provider))
-	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	current, err := client.ListOAuthProviderSettings(context.Background())
 	if err != nil {

@@ -29,6 +29,11 @@ import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
 import { useSystemStatusOptional } from '../queries/systemStatus'
 import { useFormDraft } from '../hooks/useFormDraft'
+import {
+  autoPlacementToastDescription,
+  resolveSubmittedNodeId,
+  resolveSubmittedProjectId,
+} from '../lib/createResourcePlacement'
 import { DraftRestoredNotice } from './DraftRestoredNotice'
 import {
   LOCAL_NODE_VALUE,
@@ -234,19 +239,12 @@ export function CreateDatabaseFields({
         version: values.version.trim(),
         // Sent directly, same "safe at create time" reasoning
         // CreateAppFields' own onSubmit comment gives.
-        project_id:
-          values.project === NO_PROJECT_VALUE || !values.project
-            ? undefined
-            : values.project,
+        project_id: resolveSubmittedProjectId(values.project),
         // Only sent once the operator has actually opened the advanced
         // panel, the same reasoning CreateAppFields' own onSubmit
         // comment gives: node_id left undefined otherwise lets the
         // server auto-place this database via simple spread scheduling.
-        node_id: showAdvanced
-          ? nodeId === LOCAL_NODE_VALUE
-            ? ''
-            : nodeId
-          : undefined,
+        node_id: resolveSubmittedNodeId(showAdvanced, nodeId),
       },
       {
         onSuccess: (created) => {
@@ -254,9 +252,7 @@ export function CreateDatabaseFields({
           onCreated()
           toast.add({
             title: `Database "${created.name}" created.`,
-            description: created.auto_placed
-              ? `Auto-placed on node "${created.node_id}" (simple spread scheduling).`
-              : undefined,
+            description: autoPlacementToastDescription(created),
             type: 'success',
           })
           void navigate({

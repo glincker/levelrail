@@ -39,46 +39,6 @@ func TestPlanDatabaseCreate(t *testing.T) {
 			wantErr: "--engine must be one of",
 		},
 		{
-			name:  "valid postgres",
-			flags: createDatabaseFlags{name: "main", engine: "postgres", version: "16"},
-			want:  databaseResource{Name: "main", Engine: "postgres", Version: "16"},
-		},
-		{
-			name:  "valid redis",
-			flags: createDatabaseFlags{name: "cache", engine: "redis", version: "7"},
-			want:  databaseResource{Name: "cache", Engine: "redis", Version: "7"},
-		},
-		{
-			name:  "valid mysql",
-			flags: createDatabaseFlags{name: "orders", engine: "mysql", version: "8"},
-			want:  databaseResource{Name: "orders", Engine: "mysql", Version: "8"},
-		},
-		{
-			name:  "valid mongodb",
-			flags: createDatabaseFlags{name: "events", engine: "mongodb", version: "7"},
-			want:  databaseResource{Name: "events", Engine: "mongodb", Version: "7"},
-		},
-		{
-			name:  "valid mariadb",
-			flags: createDatabaseFlags{name: "orders", engine: "mariadb", version: "11"},
-			want:  databaseResource{Name: "orders", Engine: "mariadb", Version: "11"},
-		},
-		{
-			name:  "valid keydb",
-			flags: createDatabaseFlags{name: "cache", engine: "keydb", version: "latest"},
-			want:  databaseResource{Name: "cache", Engine: "keydb", Version: "latest"},
-		},
-		{
-			name:  "valid dragonfly",
-			flags: createDatabaseFlags{name: "hotcache", engine: "dragonfly", version: "v1.27.1"},
-			want:  databaseResource{Name: "hotcache", Engine: "dragonfly", Version: "v1.27.1"},
-		},
-		{
-			name:  "valid clickhouse",
-			flags: createDatabaseFlags{name: "analytics", engine: "clickhouse", version: "24.8"},
-			want:  databaseResource{Name: "analytics", Engine: "clickhouse", Version: "24.8"},
-		},
-		{
 			name:  "node-id omitted leaves NodeID unset",
 			flags: createDatabaseFlags{name: "main", engine: "postgres", version: "16"},
 			want:  databaseResource{Name: "main", Engine: "postgres", Version: "16"},
@@ -107,6 +67,40 @@ func TestPlanDatabaseCreate(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("planDatabaseCreate() = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestPlanDatabaseCreate_ValidEngines covers every supported engine's
+// happy path: a flat (name, engine, version) tuple list rather than a
+// struct-literal-per-case table, since every one of these cases has the
+// exact same "name/engine/version in, matching databaseResource out"
+// shape and repeating that shape eight times as nested struct literals
+// (the form this test used before) is what triggered a duplication
+// finding.
+func TestPlanDatabaseCreate_ValidEngines(t *testing.T) {
+	cases := [][3]string{
+		{"main", "postgres", "16"},
+		{"cache", "redis", "7"},
+		{"orders", "mysql", "8"},
+		{"events", "mongodb", "7"},
+		{"orders", "mariadb", "11"},
+		{"cache", "keydb", "latest"},
+		{"hotcache", "dragonfly", "v1.27.1"},
+		{"analytics", "clickhouse", "24.8"},
+	}
+
+	for _, c := range cases {
+		name, engine, version := c[0], c[1], c[2]
+		t.Run("valid "+engine, func(t *testing.T) {
+			got, err := planDatabaseCreate(createDatabaseFlags{name: name, engine: engine, version: version})
+			if err != nil {
+				t.Fatalf("planDatabaseCreate() error = %v", err)
+			}
+			want := databaseResource{Name: name, Engine: engine, Version: version}
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("planDatabaseCreate() = %+v, want %+v", got, want)
 			}
 		})
 	}

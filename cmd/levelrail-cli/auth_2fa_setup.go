@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 )
@@ -16,24 +15,15 @@ func runAuthTwoFactorSetup(prog string, args []string, stdout, stderr io.Writer,
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "auth 2fa setup", "print the secret and provisioning URI as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, authTwoFactorSetupUsage(prog)) }
 
-	if err := fs.Parse(args); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	jsonOut, of, exitCode, ok := parseSessionFlags(fs, args, jsonOutP, outputFlagP, queryFlagP, prog, stderr)
+	if !ok {
+		return exitCode
 	}
-	jsonOut := *jsonOutP
-	format, ferr := resolveOutputFormat(jsonOut, *outputFlagP)
-	if ferr != nil {
-		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
-		return exitValidation
-	}
-	of := outputFlags{format, *queryFlagP}
 
 	ctx := context.Background()
-	sessionClient, _, err := loggedInSessionClient(ctx, sessionFlags{*usernameP, *passwordP, *apiURLFlagP, *profileFlagP}, prog, lookupEnv, stdin, stderr)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, err)
+	sessionClient, exitCode, ok := buildSessionClient(ctx, sessionFlags{*usernameP, *passwordP, *apiURLFlagP, *profileFlagP}, prog, lookupEnv, stdin, stdout, stderr, jsonOut)
+	if !ok {
+		return exitCode
 	}
 
 	setup, err := sessionClient.SetupTwoFactor(ctx)

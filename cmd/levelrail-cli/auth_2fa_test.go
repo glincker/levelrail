@@ -61,6 +61,20 @@ func TestRun_AuthTwoFactorSetup(t *testing.T) {
 	}
 }
 
+// runTwoFactorCommandOK runs the CLI with args and requires an exitOK
+// result, returning stdout for the caller's own assertions. Extracted
+// from the identical run-then-check-exitOK boilerplate every
+// TestRun_AuthTwoFactor* success case repeated.
+func runTwoFactorCommandOK(t *testing.T, args []string) string {
+	t.Helper()
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", args, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	return stdout.String()
+}
+
 func TestRun_AuthTwoFactorEnable(t *testing.T) {
 	var gotReq twoFactorCodeRequest
 	srv := fakeSessionAuthServer(t, "POST", "/api/v1/auth/2fa/confirm", func(w http.ResponseWriter, r *http.Request) {
@@ -71,18 +85,14 @@ func TestRun_AuthTwoFactorEnable(t *testing.T) {
 		_ = json.NewEncoder(w).Encode(twoFactorRecoveryCodesResponse{RecoveryCodes: []string{"aaaa-bbbb", "cccc-dddd"}})
 	})
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{
+	stdout := runTwoFactorCommandOK(t, []string{
 		"auth", "2fa", "enable", "--code", "123456", "--username", "admin", "--password", "x", "--api-url", srv.URL,
-	}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
+	})
 	if gotReq.Code != "123456" {
 		t.Errorf("request code = %q, want 123456", gotReq.Code)
 	}
-	if !strings.Contains(stdout.String(), "aaaa-bbbb") || !strings.Contains(stdout.String(), "cccc-dddd") {
-		t.Errorf("stdout = %q, want both recovery codes printed", stdout.String())
+	if !strings.Contains(stdout, "aaaa-bbbb") || !strings.Contains(stdout, "cccc-dddd") {
+		t.Errorf("stdout = %q, want both recovery codes printed", stdout)
 	}
 }
 
@@ -97,48 +107,45 @@ func TestRun_AuthTwoFactorEnable_MissingCode(t *testing.T) {
 	}
 }
 
+// TestRun_AuthTwoFactorDisable covers both ways to prove the second
+// factor (a live code or a recovery code): same request/response shape,
+// differing only in which flag is passed and which twoFactorDisableRequest
+// field the server should see set.
 func TestRun_AuthTwoFactorDisable(t *testing.T) {
-	var gotReq twoFactorDisableRequest
-	srv := fakeSessionAuthServer(t, "POST", "/api/v1/auth/2fa/disable", func(w http.ResponseWriter, r *http.Request) {
-		if err := json.NewDecoder(r.Body).Decode(&gotReq); err != nil {
-			t.Fatalf("decode disable request: %v", err)
-		}
-		w.WriteHeader(http.StatusNoContent)
-	})
+	tests := []struct {
+		name         string
+		extraArgs    []string
+		wantCode     string
+		wantRecovery string
+	}{
+		{name: "with code", extraArgs: []string{"--code", "123456"}, wantCode: "123456"},
+		{name: "with recovery code", extraArgs: []string{"--recovery-code", "aaaa-bbbb"}, wantRecovery: "aaaa-bbbb"},
+	}
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{
-		"auth", "2fa", "disable", "--code", "123456", "--username", "admin", "--password", "x", "--api-url", srv.URL,
-	}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
-	if gotReq.Code != "123456" {
-		t.Errorf("request code = %q, want 123456", gotReq.Code)
-	}
-	if !strings.Contains(stdout.String(), "disabled") {
-		t.Errorf("stdout = %q, want a disabled confirmation", stdout.String())
-	}
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotReq twoFactorDisableRequest
+			srv := fakeSessionAuthServer(t, "POST", "/api/v1/auth/2fa/disable", func(w http.ResponseWriter, r *http.Request) {
+				if err := json.NewDecoder(r.Body).Decode(&gotReq); err != nil {
+					t.Fatalf("decode disable request: %v", err)
+				}
+				w.WriteHeader(http.StatusNoContent)
+			})
 
-func TestRun_AuthTwoFactorDisable_WithRecoveryCode(t *testing.T) {
-	var gotReq twoFactorDisableRequest
-	srv := fakeSessionAuthServer(t, "POST", "/api/v1/auth/2fa/disable", func(w http.ResponseWriter, r *http.Request) {
-		if err := json.NewDecoder(r.Body).Decode(&gotReq); err != nil {
-			t.Fatalf("decode disable request: %v", err)
-		}
-		w.WriteHeader(http.StatusNoContent)
-	})
+			args := append([]string{"auth", "2fa", "disable"}, tt.extraArgs...)
+			args = append(args, "--username", "admin", "--password", "x", "--api-url", srv.URL)
+			stdout := runTwoFactorCommandOK(t, args)
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{
-		"auth", "2fa", "disable", "--recovery-code", "aaaa-bbbb", "--username", "admin", "--password", "x", "--api-url", srv.URL,
-	}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
-	if gotReq.RecoveryCode != "aaaa-bbbb" {
-		t.Errorf("request recovery_code = %q, want aaaa-bbbb", gotReq.RecoveryCode)
+			if gotReq.Code != tt.wantCode {
+				t.Errorf("request code = %q, want %q", gotReq.Code, tt.wantCode)
+			}
+			if gotReq.RecoveryCode != tt.wantRecovery {
+				t.Errorf("request recovery_code = %q, want %q", gotReq.RecoveryCode, tt.wantRecovery)
+			}
+			if !strings.Contains(stdout, "disabled") {
+				t.Errorf("stdout = %q, want a disabled confirmation", stdout)
+			}
+		})
 	}
 }
 
@@ -163,18 +170,14 @@ func TestRun_AuthTwoFactorRecoveryCodes(t *testing.T) {
 		_ = json.NewEncoder(w).Encode(twoFactorRecoveryCodesResponse{RecoveryCodes: []string{"eeee-ffff"}})
 	})
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{
+	stdout := runTwoFactorCommandOK(t, []string{
 		"auth", "2fa", "recovery-codes", "--code", "654321", "--username", "admin", "--password", "x", "--api-url", srv.URL,
-	}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
+	})
 	if gotReq.Code != "654321" {
 		t.Errorf("request code = %q, want 654321", gotReq.Code)
 	}
-	if !strings.Contains(stdout.String(), "eeee-ffff") {
-		t.Errorf("stdout = %q, want the new recovery code printed", stdout.String())
+	if !strings.Contains(stdout, "eeee-ffff") {
+		t.Errorf("stdout = %q, want the new recovery code printed", stdout)
 	}
 }
 

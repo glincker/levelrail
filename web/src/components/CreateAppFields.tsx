@@ -32,6 +32,11 @@ import {
   HEALTH_CHECK_DEFAULT_PATH,
   healthCheckFrom,
 } from '../lib/healthCheckDefaults'
+import {
+  autoPlacementToastDescription,
+  resolveSubmittedNodeId,
+  resolveSubmittedProjectId,
+} from '../lib/createResourcePlacement'
 import { DraftRestoredNotice } from './DraftRestoredNotice'
 import {
   LOCAL_NODE_VALUE,
@@ -231,10 +236,7 @@ export function CreateAppFields({
             : values.strategy,
         replicas: values.replicas === '' ? undefined : Number(values.replicas),
         health: healthCheckFrom(values.healthCheckEnabled, values.healthCheckPath),
-        project_id:
-          values.project === NO_PROJECT_VALUE || !values.project
-            ? undefined
-            : values.project,
+        project_id: resolveSubmittedProjectId(values.project),
         // Only sent once the operator has actually opened the advanced
         // panel: leaving node_id undefined (dropped from the JSON body
         // entirely) whenever they never touched it lets the server
@@ -243,11 +245,7 @@ export function CreateAppFields({
         // advanced and submitting "Local node" (the field's own default)
         // still counts as an explicit choice here, sent as '', so it's
         // never silently overridden by that auto-placement.
-        node_id: showAdvanced
-          ? nodeId === LOCAL_NODE_VALUE
-            ? ''
-            : nodeId
-          : undefined,
+        node_id: resolveSubmittedNodeId(showAdvanced, nodeId),
       },
       {
         onSuccess: (created) => {
@@ -255,9 +253,7 @@ export function CreateAppFields({
           onCreated()
           toast.add({
             title: `App "${created.name}" created.`,
-            description: created.auto_placed
-              ? `Auto-placed on node "${created.node_id}" (simple spread scheduling).`
-              : undefined,
+            description: autoPlacementToastDescription(created),
             type: 'success',
           })
           void navigate({

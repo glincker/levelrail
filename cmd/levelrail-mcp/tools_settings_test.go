@@ -85,33 +85,8 @@ func TestGetEmailSettings(t *testing.T) {
 // TestSettingsTools_Surface403 mirrors TestPlatformVisibilityTools_Surface403
 // for the two tools added in this file.
 func TestSettingsTools_Surface403(t *testing.T) {
-	tests := []struct {
-		tool string
-		args map[string]any
-	}{
+	assertToolsSurface403(t, []toolCase{
 		{"get_oauth_providers", map[string]any{}},
 		{"get_email_settings", map[string]any{}},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.tool, func(t *testing.T) {
-			session := newTestSession(t, func(w http.ResponseWriter, _ *http.Request) {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusForbidden)
-				_, _ = w.Write([]byte(`{"error":"token lacks the required ability"}`))
-			})
-
-			result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: tt.tool, Arguments: tt.args})
-			if err != nil {
-				t.Fatalf("CallTool(%s) transport error = %v", tt.tool, err)
-			}
-			if !result.IsError {
-				t.Fatalf("IsError = false, want true for a 403 response")
-			}
-			text := toolResultText(result)
-			if !strings.Contains(text, "token lacks the required ability") {
-				t.Errorf("error text = %q, want it to contain the server's own 403 message", text)
-			}
-		})
-	}
+	})
 }

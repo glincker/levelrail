@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 )
@@ -21,28 +20,19 @@ func runAuthTwoFactorRecoveryCodes(prog string, args []string, stdout, stderr io
 	fs.StringVar(&code, "code", "", "current 6-digit code from the authenticator app (required)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, authTwoFactorRecoveryCodesUsage(prog)) }
 
-	if err := fs.Parse(args); err != nil {
-		if err == flag.ErrHelp {
-			return exitOK
-		}
-		return exitUsage
+	jsonOut, of, exitCode, ok := parseSessionFlags(fs, args, jsonOutP, outputFlagP, queryFlagP, prog, stderr)
+	if !ok {
+		return exitCode
 	}
-	jsonOut := *jsonOutP
-	format, ferr := resolveOutputFormat(jsonOut, *outputFlagP)
-	if ferr != nil {
-		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
-		return exitValidation
-	}
-	of := outputFlags{format, *queryFlagP}
 
 	if code == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--code is required"))
 	}
 
 	ctx := context.Background()
-	sessionClient, _, err := loggedInSessionClient(ctx, sessionFlags{*usernameP, *passwordP, *apiURLFlagP, *profileFlagP}, prog, lookupEnv, stdin, stderr)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, err)
+	sessionClient, exitCode, ok := buildSessionClient(ctx, sessionFlags{*usernameP, *passwordP, *apiURLFlagP, *profileFlagP}, prog, lookupEnv, stdin, stdout, stderr, jsonOut)
+	if !ok {
+		return exitCode
 	}
 
 	recovery, err := sessionClient.RegenerateRecoveryCodes(ctx, code)
