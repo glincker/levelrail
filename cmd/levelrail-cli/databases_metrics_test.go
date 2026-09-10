@@ -33,23 +33,11 @@ func TestRun_DatabasesMetrics(t *testing.T) {
 }
 
 func TestRun_DatabasesMetrics_MissingMetric(t *testing.T) {
-	var stdout, stderr strings.Builder
-	got := run("levelrail-cli-test", []string{"databases", "metrics", "main"}, &stdout, &stderr, envMap())
-	if got != exitValidation {
-		t.Fatalf("exit = %d, want %d", got, exitValidation)
-	}
-	if !strings.Contains(stderr.String(), "--metric is required") {
-		t.Errorf("stderr = %q, want a missing --metric validation error", stderr.String())
-	}
+	testMetricsMissingMetric(t, []string{"databases", "metrics"}, "main")
 }
 
 func TestRun_DatabasesMetrics_NotFound(t *testing.T) {
-	srv := newJSONErrorServer(t, http.StatusNotFound, `{"error":"database not found"}`)
-
-	stderr := runCLIExpectAPIError(t, []string{"databases", "metrics", "missing", "--metric", "cpu_percent", "--api-url", srv.URL})
-	if !strings.Contains(stderr, "database not found") {
-		t.Errorf("stderr = %q, want the server's error message", stderr)
-	}
+	testMetricsNotFound(t, []string{"databases", "metrics"}, "missing", `{"error":"database not found"}`, "database not found")
 }
 
 func TestRun_DatabasesMetrics_NoName(t *testing.T) {
@@ -64,8 +52,5 @@ func TestRun_DatabasesMetrics_NoName(t *testing.T) {
 }
 
 func TestRun_DatabasesMetrics_Help(t *testing.T) {
-	_, stderr := runCLIExpectOK(t, []string{"databases", "metrics", "-h"})
-	if !strings.Contains(stderr, "databases metrics") {
-		t.Errorf("stderr = %q, want usage text", stderr)
-	}
+	testMetricsHelp(t, []string{"databases", "metrics"}, "databases metrics")
 }

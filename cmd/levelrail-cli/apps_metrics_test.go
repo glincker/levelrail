@@ -56,14 +56,7 @@ func TestRun_AppsMetrics_EmptyPoints(t *testing.T) {
 }
 
 func TestRun_AppsMetrics_MissingMetric(t *testing.T) {
-	var stdout, stderr strings.Builder
-	got := run("levelrail-cli-test", []string{"apps", "metrics", "web"}, &stdout, &stderr, envMap())
-	if got != exitValidation {
-		t.Fatalf("exit = %d, want %d", got, exitValidation)
-	}
-	if !strings.Contains(stderr.String(), "--metric is required") {
-		t.Errorf("stderr = %q, want a missing --metric validation error", stderr.String())
-	}
+	testMetricsMissingMetric(t, []string{"apps", "metrics"}, "web")
 }
 
 func TestRun_AppsMetrics_InvalidStep(t *testing.T) {
@@ -78,12 +71,7 @@ func TestRun_AppsMetrics_InvalidStep(t *testing.T) {
 }
 
 func TestRun_AppsMetrics_NotFound(t *testing.T) {
-	srv := newJSONErrorServer(t, http.StatusNotFound, `{"error":"app not found"}`)
-
-	stderr := runCLIExpectAPIError(t, []string{"apps", "metrics", "missing", "--metric", "cpu_percent", "--api-url", srv.URL})
-	if !strings.Contains(stderr, "app not found") {
-		t.Errorf("stderr = %q, want the server's error message", stderr)
-	}
+	testMetricsNotFound(t, []string{"apps", "metrics"}, "missing", `{"error":"app not found"}`, "app not found")
 }
 
 func TestRun_AppsMetrics_NoName(t *testing.T) {
@@ -98,10 +86,7 @@ func TestRun_AppsMetrics_NoName(t *testing.T) {
 }
 
 func TestRun_AppsMetrics_Help(t *testing.T) {
-	_, stderr := runCLIExpectOK(t, []string{"apps", "metrics", "-h"})
-	if !strings.Contains(stderr, "apps metrics") {
-		t.Errorf("stderr = %q, want usage text", stderr)
-	}
+	testMetricsHelp(t, []string{"apps", "metrics"}, "apps metrics")
 }
 
 func TestRun_AppsMetrics_Query(t *testing.T) {

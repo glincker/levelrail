@@ -174,6 +174,44 @@ func testEnvSetClearsAll(t *testing.T, cliArgs []string, id, noun string) {
 	}
 }
 
+// testMetricsMissingMetric runs "<cmdArgs...> <id>" (no --metric) and
+// asserts the "--metric is required" validation error every "* metrics"
+// command shares (metrics_cmd.go's own runMetricsCommand), for "apps
+// metrics"/"databases metrics"/"nodes metrics" alike.
+func testMetricsMissingMetric(t *testing.T, cmdArgs []string, id string) {
+	t.Helper()
+	var stdout, stderr strings.Builder
+	got := run("levelrail-cli-test", append(append([]string{}, cmdArgs...), id), &stdout, &stderr, envMap())
+	if got != exitValidation {
+		t.Fatalf("exit = %d, want %d", got, exitValidation)
+	}
+	if !strings.Contains(stderr.String(), "--metric is required") {
+		t.Errorf("stderr = %q, want a missing --metric validation error", stderr.String())
+	}
+}
+
+// testMetricsNotFound runs "<cmdArgs...> <id> --metric cpu_percent"
+// against a server answering 404 with errBody, and asserts wantSubstr
+// (the server's own error message) reaches stderr unchanged.
+func testMetricsNotFound(t *testing.T, cmdArgs []string, id, errBody, wantSubstr string) {
+	t.Helper()
+	srv := newJSONErrorServer(t, http.StatusNotFound, errBody)
+	stderr := runCLIExpectAPIError(t, append(append([]string{}, cmdArgs...), id, "--metric", "cpu_percent", "--api-url", srv.URL))
+	if !strings.Contains(stderr, wantSubstr) {
+		t.Errorf("stderr = %q, want %q", stderr, wantSubstr)
+	}
+}
+
+// testMetricsHelp runs "<cmdArgs...> -h" and asserts wantSubstr appears
+// in the usage text.
+func testMetricsHelp(t *testing.T, cmdArgs []string, wantSubstr string) {
+	t.Helper()
+	_, stderr := runCLIExpectOK(t, append(append([]string{}, cmdArgs...), "-h"))
+	if !strings.Contains(stderr, wantSubstr) {
+		t.Errorf("stderr = %q, want usage text", stderr)
+	}
+}
+
 // assertUsageErrorMissingName runs "apps <subcommand> <verb>" for each verb
 // and asserts a missing-name usage error.
 func assertUsageErrorMissingName(t *testing.T, subcommand string, verbs []string) {

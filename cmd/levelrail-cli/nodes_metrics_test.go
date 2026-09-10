@@ -50,23 +50,11 @@ func TestRun_NodesMetrics_JSON(t *testing.T) {
 }
 
 func TestRun_NodesMetrics_MissingMetric(t *testing.T) {
-	var stdout, stderr strings.Builder
-	got := run("levelrail-cli-test", []string{"nodes", "metrics", "nd_1"}, &stdout, &stderr, envMap())
-	if got != exitValidation {
-		t.Fatalf("exit = %d, want %d", got, exitValidation)
-	}
-	if !strings.Contains(stderr.String(), "--metric is required") {
-		t.Errorf("stderr = %q, want a missing --metric validation error", stderr.String())
-	}
+	testMetricsMissingMetric(t, []string{"nodes", "metrics"}, "nd_1")
 }
 
 func TestRun_NodesMetrics_NotFound(t *testing.T) {
-	srv := newJSONErrorServer(t, http.StatusNotFound, `{"error":"node not found"}`)
-
-	stderr := runCLIExpectAPIError(t, []string{"nodes", "metrics", "nd_missing", "--metric", "cpu_percent", "--api-url", srv.URL})
-	if !strings.Contains(stderr, "node not found") {
-		t.Errorf("stderr = %q, want the server's error message", stderr)
-	}
+	testMetricsNotFound(t, []string{"nodes", "metrics"}, "nd_missing", `{"error":"node not found"}`, "node not found")
 }
 
 func TestRun_NodesMetrics_NoID(t *testing.T) {
@@ -74,8 +62,5 @@ func TestRun_NodesMetrics_NoID(t *testing.T) {
 }
 
 func TestRun_NodesMetrics_Help(t *testing.T) {
-	_, stderr := runCLIExpectOK(t, []string{"nodes", "metrics", "-h"})
-	if !strings.Contains(stderr, "nodes metrics") {
-		t.Errorf("stderr = %q, want usage text", stderr)
-	}
+	testMetricsHelp(t, []string{"nodes", "metrics"}, "nodes metrics")
 }
