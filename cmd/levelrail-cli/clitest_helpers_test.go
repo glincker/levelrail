@@ -212,6 +212,53 @@ func testMetricsHelp(t *testing.T, cmdArgs []string, wantSubstr string) {
 	}
 }
 
+// testMetricsQuerySuccess runs "<cmdArgs...> <id> --metric <metric>"
+// against a server returning an AppMetricsResource-shaped body, and
+// asserts the request path/query string and that the metric name and
+// point value both appear in the human table output. Shared by "apps
+// metrics"/"databases metrics" tests, whose success path is otherwise
+// identical: QueryAppMetrics and QueryDatabaseMetrics return the exact
+// same AppMetricsResource wire shape (see internal/apiclient's own doc
+// comment on QueryDatabaseMetrics for why). "nodes metrics" returns the
+// differently-shaped NodeMetricsResource (an extra resource_count field),
+// so it keeps its own test rather than reusing this helper.
+func testMetricsQuerySuccess(t *testing.T, cmdArgs []string, id, wantPath, metric string, value float64, wantValueText string) {
+	t.Helper()
+	var gotPath, gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath, gotQuery = r.URL.Path, r.URL.RawQuery
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(appMetricsResource{Metric: metric, Points: []metricPointResource{{Value: value, Count: 1}}})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, append(append([]string{}, cmdArgs...), id, "--metric", metric, "--api-url", srv.URL))
+	if gotPath != wantPath {
+		t.Errorf("path = %q, want %s", gotPath, wantPath)
+	}
+	if !strings.Contains(gotQuery, "metric="+metric) {
+		t.Errorf("query = %q, want metric=%s", gotQuery, metric)
+	}
+	if !strings.Contains(stdout, metric) || !strings.Contains(stdout, wantValueText) {
+		t.Errorf("stdout = %q, want the metric name and point value", stdout)
+	}
+}
+
+// testMetricsNoName runs cmdArgs with no positional id/name argument and
+// asserts the shared "requires exactly one" usage error every
+// apiFlagSet-based single-argument command produces via requireOneArg.
+func testMetricsNoName(t *testing.T, cmdArgs []string) {
+	t.Helper()
+	var stdout, stderr strings.Builder
+	got := run("levelrail-cli-test", cmdArgs, &stdout, &stderr, envMap())
+	if got != exitUsage {
+		t.Fatalf("exit = %d, want %d", got, exitUsage)
+	}
+	if !strings.Contains(stderr.String(), "requires exactly one") {
+		t.Errorf("stderr = %q, want a missing-name usage error", stderr.String())
+	}
+}
+
 // assertUsageErrorMissingName runs "apps <subcommand> <verb>" for each verb
 // and asserts a missing-name usage error.
 func assertUsageErrorMissingName(t *testing.T, subcommand string, verbs []string) {
