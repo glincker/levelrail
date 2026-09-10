@@ -46,25 +46,14 @@ Run "%[1]s static-sites <subcommand> -h" for a subcommand's own flags.
 }
 
 func runStaticSitesList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "static-sites list", "print static sites as a JSON array to stdout and nothing else", stderr)
-	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s static-sites list [flags]\n\nLists every static site currently served directly through embedded\nCaddy.\n\nFlags:\n", prog)
-		fs.PrintDefaults()
-	}
-
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
-	if !ok {
-		return exitCode
-	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-
-	sites, err := client.ListStaticSites(context.Background())
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list static sites: %w", err))
-	}
-
-	return writeScheduledTaskResult(stdout, stderr, of, sites, func() { printStaticSitesTable(stdout, sites) })
+	return runListCommand(prog, args, stdout, stderr, lookupEnv, listCommandParams[[]staticSiteResource]{
+		cmdLabel:  "static-sites list",
+		jsonUsage: "print static sites as a JSON array to stdout and nothing else",
+		usageText: fmt.Sprintf("Usage:\n  %s static-sites list [flags]\n\nLists every static site currently served directly through embedded\nCaddy.\n\nFlags:\n", prog),
+		fetch:     func(c *Client, ctx context.Context) ([]staticSiteResource, error) { return c.ListStaticSites(ctx) },
+		errVerb:   "list static sites",
+		print:     printStaticSitesTable,
+	})
 }
 
 func printStaticSitesTable(out io.Writer, sites []staticSiteResource) {

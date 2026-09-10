@@ -47,25 +47,16 @@ Run "%[1]s settings ingress <subcommand> -h" for a subcommand's own flags.
 }
 
 func runSettingsIngressGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "settings ingress get", "print the ingress settings as JSON to stdout and nothing else", stderr)
-	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s settings ingress get [flags]\n\nShows the current primary domain and ACME settings.\n\nFlags:\n", prog)
-		fs.PrintDefaults()
-	}
-
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
-	if !ok {
-		return exitCode
-	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-
-	settings, err := client.GetIngressSettings(context.Background())
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get ingress settings: %w", err))
-	}
-
-	return writeScheduledTaskResult(stdout, stderr, of, settings, func() { printIngressSettingsHuman(stdout, settings) })
+	return runListCommand(prog, args, stdout, stderr, lookupEnv, listCommandParams[ingressSettingsResource]{
+		cmdLabel:  "settings ingress get",
+		jsonUsage: "print the ingress settings as JSON to stdout and nothing else",
+		usageText: fmt.Sprintf("Usage:\n  %s settings ingress get [flags]\n\nShows the current primary domain and ACME settings.\n\nFlags:\n", prog),
+		fetch: func(c *Client, ctx context.Context) (ingressSettingsResource, error) {
+			return c.GetIngressSettings(ctx)
+		},
+		errVerb: "get ingress settings",
+		print:   printIngressSettingsHuman,
+	})
 }
 
 func runSettingsIngressSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

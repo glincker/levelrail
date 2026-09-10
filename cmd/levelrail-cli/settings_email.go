@@ -46,25 +46,14 @@ Run "%[1]s settings email <subcommand> -h" for a subcommand's own flags.
 }
 
 func runSettingsEmailGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "settings email get", "print the email settings as JSON to stdout and nothing else", stderr)
-	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s settings email get [flags]\n\nShows the current outbound email settings. Credential values are never\nreturned, only whether one is stored.\n\nFlags:\n", prog)
-		fs.PrintDefaults()
-	}
-
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
-	if !ok {
-		return exitCode
-	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-
-	settings, err := client.GetEmailSettings(context.Background())
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get email settings: %w", err))
-	}
-
-	return writeScheduledTaskResult(stdout, stderr, of, settings, func() { printEmailSettingsHuman(stdout, settings) })
+	return runListCommand(prog, args, stdout, stderr, lookupEnv, listCommandParams[emailSettingsResource]{
+		cmdLabel:  "settings email get",
+		jsonUsage: "print the email settings as JSON to stdout and nothing else",
+		usageText: fmt.Sprintf("Usage:\n  %s settings email get [flags]\n\nShows the current outbound email settings. Credential values are never\nreturned, only whether one is stored.\n\nFlags:\n", prog),
+		fetch:     func(c *Client, ctx context.Context) (emailSettingsResource, error) { return c.GetEmailSettings(ctx) },
+		errVerb:   "get email settings",
+		print:     printEmailSettingsHuman,
+	})
 }
 
 func runSettingsEmailSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

@@ -58,25 +58,16 @@ Run "%[1]s templates <subcommand> -h" for a subcommand's own flags.
 }
 
 func runTemplatesList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "templates list", "print the catalog as a JSON array to stdout and nothing else", stderr)
-	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s templates list [flags]\n\nLists every entry in the curated service catalog, without each entry's\ncompose body (see \"templates get\").\n\nFlags:\n", prog)
-		fs.PrintDefaults()
-	}
-
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
-	if !ok {
-		return exitCode
-	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-
-	templates, err := client.ListServiceTemplates(context.Background())
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list service templates: %w", err))
-	}
-
-	return writeScheduledTaskResult(stdout, stderr, of, templates, func() { printTemplatesTable(stdout, templates) })
+	return runListCommand(prog, args, stdout, stderr, lookupEnv, listCommandParams[[]serviceTemplateListItem]{
+		cmdLabel:  "templates list",
+		jsonUsage: "print the catalog as a JSON array to stdout and nothing else",
+		usageText: fmt.Sprintf("Usage:\n  %s templates list [flags]\n\nLists every entry in the curated service catalog, without each entry's\ncompose body (see \"templates get\").\n\nFlags:\n", prog),
+		fetch: func(c *Client, ctx context.Context) ([]serviceTemplateListItem, error) {
+			return c.ListServiceTemplates(ctx)
+		},
+		errVerb: "list service templates",
+		print:   printTemplatesTable,
+	})
 }
 
 func printTemplatesTable(out io.Writer, templates []serviceTemplateListItem) {

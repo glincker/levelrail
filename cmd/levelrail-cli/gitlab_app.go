@@ -12,6 +12,10 @@ import (
 // projects/branches/use-as-source: internal/api/gitlab_app_projects.go's
 // three routes, the GitLab counterpart of runGitHubApp. Connecting the
 // GitLab OAuth Application itself stays dashboard-only, same reasoning.
+// Unlike github-app/bitbucket-app's owner+repo pair, GitLab addresses a
+// project by a single numeric ID, so branches/use-as-source stay their
+// own implementations here rather than going through
+// runTwoArgList/runTwoArgUseAsSource (list_command.go).
 func runGitLabApp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, gitlabAppUsage(prog))
@@ -50,25 +54,16 @@ Run "%[1]s gitlab-app <subcommand> -h" for a subcommand's own flags.
 }
 
 func runGitLabAppProjects(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "gitlab-app projects", "print projects as a JSON array to stdout and nothing else", stderr)
-	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s gitlab-app projects [flags]\n\nLists every project the connected GitLab account can access.\n\nFlags:\n", prog)
-		fs.PrintDefaults()
-	}
-
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
-	if !ok {
-		return exitCode
-	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-
-	projects, err := client.ListGitLabAppProjects(context.Background())
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list gitlab app projects: %w", err))
-	}
-
-	return writeScheduledTaskResult(stdout, stderr, of, projects, func() { printGitLabAppProjectsTable(stdout, projects) })
+	return runListCommand(prog, args, stdout, stderr, lookupEnv, listCommandParams[[]gitLabAppProjectResource]{
+		cmdLabel:  "gitlab-app projects",
+		jsonUsage: "print projects as a JSON array to stdout and nothing else",
+		usageText: fmt.Sprintf("Usage:\n  %s gitlab-app projects [flags]\n\nLists every project the connected GitLab account can access.\n\nFlags:\n", prog),
+		fetch: func(c *Client, ctx context.Context) ([]gitLabAppProjectResource, error) {
+			return c.ListGitLabAppProjects(ctx)
+		},
+		errVerb: "list gitlab app projects",
+		print:   printGitLabAppProjectsTable,
+	})
 }
 
 func printGitLabAppProjectsTable(out io.Writer, projects []gitLabAppProjectResource) {

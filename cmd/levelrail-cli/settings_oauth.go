@@ -49,25 +49,16 @@ Run "%[1]s settings oauth <subcommand> -h" for a subcommand's own flags.
 }
 
 func runSettingsOAuthList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "settings oauth list", "print every provider's settings as a JSON array to stdout and nothing else", stderr)
-	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s settings oauth list [flags]\n\nShows every OAuth sign-in provider's current settings.\n\nFlags:\n", prog)
-		fs.PrintDefaults()
-	}
-
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
-	if !ok {
-		return exitCode
-	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-
-	settings, err := client.GetOAuthSettings(context.Background())
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list oauth settings: %w", err))
-	}
-
-	return writeScheduledTaskResult(stdout, stderr, of, settings, func() { printOAuthSettingsTable(stdout, settings) })
+	return runListCommand(prog, args, stdout, stderr, lookupEnv, listCommandParams[[]oauthProviderSettingsResource]{
+		cmdLabel:  "settings oauth list",
+		jsonUsage: "print every provider's settings as a JSON array to stdout and nothing else",
+		usageText: fmt.Sprintf("Usage:\n  %s settings oauth list [flags]\n\nShows every OAuth sign-in provider's current settings.\n\nFlags:\n", prog),
+		fetch: func(c *Client, ctx context.Context) ([]oauthProviderSettingsResource, error) {
+			return c.GetOAuthSettings(ctx)
+		},
+		errVerb: "list oauth settings",
+		print:   printOAuthSettingsTable,
+	})
 }
 
 func printOAuthSettingsTable(out io.Writer, settings []oauthProviderSettingsResource) {

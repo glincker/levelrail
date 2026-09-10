@@ -50,25 +50,16 @@ Run "%[1]s bitbucket-app <subcommand> -h" for a subcommand's own flags.
 }
 
 func runBitbucketAppRepos(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "bitbucket-app repos", "print repos as a JSON array to stdout and nothing else", stderr)
-	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s bitbucket-app repos [flags]\n\nLists every repository the connected Bitbucket account can access.\n\nFlags:\n", prog)
-		fs.PrintDefaults()
-	}
-
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
-	if !ok {
-		return exitCode
-	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-
-	repos, err := client.ListBitbucketAppRepos(context.Background())
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list bitbucket app repos: %w", err))
-	}
-
-	return writeScheduledTaskResult(stdout, stderr, of, repos, func() { printBitbucketAppReposTable(stdout, repos) })
+	return runListCommand(prog, args, stdout, stderr, lookupEnv, listCommandParams[[]bitbucketAppRepoResource]{
+		cmdLabel:  "bitbucket-app repos",
+		jsonUsage: "print repos as a JSON array to stdout and nothing else",
+		usageText: fmt.Sprintf("Usage:\n  %s bitbucket-app repos [flags]\n\nLists every repository the connected Bitbucket account can access.\n\nFlags:\n", prog),
+		fetch: func(c *Client, ctx context.Context) ([]bitbucketAppRepoResource, error) {
+			return c.ListBitbucketAppRepos(ctx)
+		},
+		errVerb: "list bitbucket app repos",
+		print:   printBitbucketAppReposTable,
+	})
 }
 
 func printBitbucketAppReposTable(out io.Writer, repos []bitbucketAppRepoResource) {
@@ -85,63 +76,28 @@ func printBitbucketAppReposTable(out io.Writer, repos []bitbucketAppRepoResource
 }
 
 func runBitbucketAppBranches(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "bitbucket-app branches", "print branches as a JSON array to stdout and nothing else", stderr)
-	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s bitbucket-app branches <workspace> <repo-slug> [flags]\n\nLists a repo's branches.\n\nFlags:\n", prog)
-		fs.PrintDefaults()
-	}
-
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
-	if !ok {
-		return exitCode
-	}
-
-	rest, ok := requireArgs(fs, stderr, prog, "bitbucket-app branches", "a workspace and a repo slug", 2)
-	if !ok {
-		return exitUsage
-	}
-	workspace, repoSlug := rest[0], rest[1]
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-
-	branches, err := client.ListBitbucketAppBranches(context.Background(), workspace, repoSlug)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list branches for %s/%s: %w", workspace, repoSlug, err))
-	}
-
-	return writeScheduledTaskResult(stdout, stderr, of, branches, func() { printGitAppBranchesTable(stdout, branches) })
+	return runTwoArgList(prog, args, stdout, stderr, lookupEnv, twoArgListParams[[]gitAppBranchResource]{
+		cmdLabel:  "bitbucket-app branches",
+		jsonUsage: "print branches as a JSON array to stdout and nothing else",
+		usageText: fmt.Sprintf("Usage:\n  %s bitbucket-app branches <workspace> <repo-slug> [flags]\n\nLists a repo's branches.\n\nFlags:\n", prog),
+		argsLabel: "a workspace and a repo slug",
+		fetch: func(c *Client, ctx context.Context, workspace, repoSlug string) ([]gitAppBranchResource, error) {
+			return c.ListBitbucketAppBranches(ctx, workspace, repoSlug)
+		},
+		errFmt: "list branches for %s/%s: %w",
+		print:  printGitAppBranchesTable,
+	})
 }
 
 func runBitbucketAppUseAsSource(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "bitbucket-app use-as-source", "print the resulting git source as JSON to stdout and nothing else", stderr)
-	req := bindUseAsSourceFlags(fs)
-	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s bitbucket-app use-as-source <workspace> <repo-slug> --app-name NAME [flags]\n\nConnects the repo as NAME's git source and registers a push webhook.\n\nFlags:\n", prog)
-		fs.PrintDefaults()
-	}
-
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
-	if !ok {
-		return exitCode
-	}
-
-	rest, ok := requireArgs(fs, stderr, prog, "bitbucket-app use-as-source", "a workspace and a repo slug", 2)
-	if !ok {
-		return exitUsage
-	}
-	workspace, repoSlug := rest[0], rest[1]
-	if req.AppName == "" {
-		_, _ = fmt.Fprintf(stderr, "%s: bitbucket-app use-as-source requires --app-name\n\n", prog)
-		fs.Usage()
-		return exitUsage
-	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-
-	result, err := client.UseBitbucketRepoAsSource(context.Background(), workspace, repoSlug, *req)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("use %s/%s as source for app %q: %w", workspace, repoSlug, req.AppName, err))
-	}
-
-	return writeScheduledTaskResult(stdout, stderr, of, result, func() { printGitSourceHuman(stdout, result) })
+	return runTwoArgUseAsSource(prog, args, stdout, stderr, lookupEnv, twoArgUseAsSourceParams[gitSourceResource]{
+		cmdLabel:  "bitbucket-app use-as-source",
+		usageText: fmt.Sprintf("Usage:\n  %s bitbucket-app use-as-source <workspace> <repo-slug> --app-name NAME [flags]\n\nConnects the repo as NAME's git source and registers a push webhook.\n\nFlags:\n", prog),
+		argsLabel: "a workspace and a repo slug",
+		fetch: func(c *Client, ctx context.Context, workspace, repoSlug string, req useRepoAsSourceRequest) (gitSourceResource, error) {
+			return c.UseBitbucketRepoAsSource(ctx, workspace, repoSlug, req)
+		},
+		errFmt: "use %s/%s as source for app %q: %w",
+		print:  printGitSourceHuman,
+	})
 }

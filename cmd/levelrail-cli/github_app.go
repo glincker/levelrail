@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"text/tabwriter"
@@ -54,25 +53,16 @@ Run "%[1]s github-app <subcommand> -h" for a subcommand's own flags.
 }
 
 func runGitHubAppRepos(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "github-app repos", "print repos as a JSON array to stdout and nothing else", stderr)
-	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s github-app repos [flags]\n\nLists every repository the connected GitHub App installation can access.\n\nFlags:\n", prog)
-		fs.PrintDefaults()
-	}
-
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
-	if !ok {
-		return exitCode
-	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-
-	repos, err := client.ListGitHubAppRepos(context.Background())
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list github app repos: %w", err))
-	}
-
-	return writeScheduledTaskResult(stdout, stderr, of, repos, func() { printGitHubAppReposTable(stdout, repos) })
+	return runListCommand(prog, args, stdout, stderr, lookupEnv, listCommandParams[[]gitHubAppRepoResource]{
+		cmdLabel:  "github-app repos",
+		jsonUsage: "print repos as a JSON array to stdout and nothing else",
+		usageText: fmt.Sprintf("Usage:\n  %s github-app repos [flags]\n\nLists every repository the connected GitHub App installation can access.\n\nFlags:\n", prog),
+		fetch: func(c *Client, ctx context.Context) ([]gitHubAppRepoResource, error) {
+			return c.ListGitHubAppRepos(ctx)
+		},
+		errVerb: "list github app repos",
+		print:   printGitHubAppReposTable,
+	})
 }
 
 func printGitHubAppReposTable(out io.Writer, repos []gitHubAppRepoResource) {
@@ -89,31 +79,17 @@ func printGitHubAppReposTable(out io.Writer, repos []gitHubAppRepoResource) {
 }
 
 func runGitHubAppBranches(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "github-app branches", "print branches as a JSON array to stdout and nothing else", stderr)
-	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s github-app branches <owner> <repo> [flags]\n\nLists a repo's branches.\n\nFlags:\n", prog)
-		fs.PrintDefaults()
-	}
-
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
-	if !ok {
-		return exitCode
-	}
-
-	rest, ok := requireArgs(fs, stderr, prog, "github-app branches", "an owner and a repo", 2)
-	if !ok {
-		return exitUsage
-	}
-	owner, repo := rest[0], rest[1]
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-
-	branches, err := client.ListGitHubAppBranches(context.Background(), owner, repo)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list branches for %s/%s: %w", owner, repo, err))
-	}
-
-	return writeScheduledTaskResult(stdout, stderr, of, branches, func() { printGitAppBranchesTable(stdout, branches) })
+	return runTwoArgList(prog, args, stdout, stderr, lookupEnv, twoArgListParams[[]gitAppBranchResource]{
+		cmdLabel:  "github-app branches",
+		jsonUsage: "print branches as a JSON array to stdout and nothing else",
+		usageText: fmt.Sprintf("Usage:\n  %s github-app branches <owner> <repo> [flags]\n\nLists a repo's branches.\n\nFlags:\n", prog),
+		argsLabel: "an owner and a repo",
+		fetch: func(c *Client, ctx context.Context, owner, repo string) ([]gitAppBranchResource, error) {
+			return c.ListGitHubAppBranches(ctx, owner, repo)
+		},
+		errFmt: "list branches for %s/%s: %w",
+		print:  printGitAppBranchesTable,
+	})
 }
 
 func printGitAppBranchesTable(out io.Writer, branches []gitAppBranchResource) {
@@ -130,54 +106,20 @@ func printGitAppBranchesTable(out io.Writer, branches []gitAppBranchResource) {
 }
 
 func runGitHubAppUseAsSource(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "github-app use-as-source", "print the resulting git source as JSON to stdout and nothing else", stderr)
-	req := bindUseAsSourceFlags(fs)
-	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s github-app use-as-source <owner> <repo> --app-name NAME [flags]\n\nConnects the repo as NAME's git source and registers a push webhook\nusing the installation token.\n\nFlags:\n", prog)
-		fs.PrintDefaults()
-	}
-
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
-	if !ok {
-		return exitCode
-	}
-
-	rest, ok := requireArgs(fs, stderr, prog, "github-app use-as-source", "an owner and a repo", 2)
-	if !ok {
-		return exitUsage
-	}
-	owner, repo := rest[0], rest[1]
-	if req.AppName == "" {
-		_, _ = fmt.Fprintf(stderr, "%s: github-app use-as-source requires --app-name\n\n", prog)
-		fs.Usage()
-		return exitUsage
-	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-
-	result, err := client.UseGitHubRepoAsSource(context.Background(), owner, repo, *req)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("use %s/%s as source for app %q: %w", owner, repo, req.AppName, err))
-	}
-
-	return writeScheduledTaskResult(stdout, stderr, of, result, func() {
-		printGitSourceHuman(stdout, result.GitSourceResource)
-		_, _ = fmt.Fprintf(stdout, "webhook_registered: %v\n", result.WebhookRegistered)
-		if result.WebhookError != "" {
-			_, _ = fmt.Fprintf(stdout, "webhook_error:       %s\n", result.WebhookError)
-		}
+	return runTwoArgUseAsSource(prog, args, stdout, stderr, lookupEnv, twoArgUseAsSourceParams[useGitHubRepoAsSourceResponse]{
+		cmdLabel:  "github-app use-as-source",
+		usageText: fmt.Sprintf("Usage:\n  %s github-app use-as-source <owner> <repo> --app-name NAME [flags]\n\nConnects the repo as NAME's git source and registers a push webhook\nusing the installation token.\n\nFlags:\n", prog),
+		argsLabel: "an owner and a repo",
+		fetch: func(c *Client, ctx context.Context, owner, repo string, req useRepoAsSourceRequest) (useGitHubRepoAsSourceResponse, error) {
+			return c.UseGitHubRepoAsSource(ctx, owner, repo, req)
+		},
+		errFmt: "use %s/%s as source for app %q: %w",
+		print: func(out io.Writer, result useGitHubRepoAsSourceResponse) {
+			printGitSourceHuman(out, result.GitSourceResource)
+			_, _ = fmt.Fprintf(out, "webhook_registered: %v\n", result.WebhookRegistered)
+			if result.WebhookError != "" {
+				_, _ = fmt.Fprintf(out, "webhook_error:       %s\n", result.WebhookError)
+			}
+		},
 	})
-}
-
-// bindUseAsSourceFlags registers the four flags every provider's own
-// use-as-source subcommand shares (app-name/branch/build-type/build-path),
-// the same request shape internal/api's useRepoAsSourceRequest defines
-// for all three providers.
-func bindUseAsSourceFlags(fs *flag.FlagSet) *useRepoAsSourceRequest {
-	req := &useRepoAsSourceRequest{}
-	fs.StringVar(&req.AppName, "app-name", "", "app to connect this repo to (required)")
-	fs.StringVar(&req.Branch, "branch", "", "branch to deploy on push (default: the repo's default branch)")
-	fs.StringVar(&req.BuildType, "build-type", "", "dockerfile, railpack, or static (default: dockerfile)")
-	fs.StringVar(&req.BuildPath, "build-path", "", "path within the repo to build from")
-	return req
 }

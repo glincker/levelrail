@@ -15,22 +15,14 @@ import (
 // nothing to configure here (certificates are issued and renewed by the
 // embedded Caddy ingress automatically).
 func runDomainsCertificates(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains certificates", "print certificates as a JSON array to stdout and nothing else", stderr)
-	fs.Usage = func() { _, _ = fmt.Fprint(stderr, domainsCertificatesUsage(prog)) }
-
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
-	if !ok {
-		return exitCode
-	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-
-	certs, err := client.ListCertificates(context.Background())
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list certificates: %w", err))
-	}
-
-	return writeScheduledTaskResult(stdout, stderr, of, certs, func() { printCertificatesTable(stdout, certs) })
+	return runListCommand(prog, args, stdout, stderr, lookupEnv, listCommandParams[[]certificateResource]{
+		cmdLabel:  "domains certificates",
+		jsonUsage: "print certificates as a JSON array to stdout and nothing else",
+		usageText: domainsCertificatesUsage(prog),
+		fetch:     func(c *Client, ctx context.Context) ([]certificateResource, error) { return c.ListCertificates(ctx) },
+		errVerb:   "list certificates",
+		print:     printCertificatesTable,
+	})
 }
 
 // printCertificatesTable prints a compact, aligned table, the same shape
@@ -49,20 +41,5 @@ func printCertificatesTable(out io.Writer, certs []certificateResource) {
 }
 
 func domainsCertificatesUsage(prog string) string {
-	return fmt.Sprintf(`Usage:
-  %[1]s domains certificates [flags]
-
-Lists every certificate currently in this control plane's certmagic
-storage, healthy or not, so expiry can be checked or scripted. Status is
-"healthy", "expiring_soon", or "expired".
-
-Flags:
-  --token string          API token (default: %[2]s env var, then the credentials file)
-  --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
-  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
-  --json                    print certificates as a JSON array to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
-  --query string           JMESPath expression to filter the result before printing
-  -h, --help               show this help
-`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+	return fmt.Sprintf("Usage:\n  %s domains certificates [flags]\n\nLists every certificate currently in this control plane's certmagic\nstorage, healthy or not, so expiry can be checked or scripted. Status is\n\"healthy\", \"expiring_soon\", or \"expired\".\n\nFlags:\n", prog)
 }
