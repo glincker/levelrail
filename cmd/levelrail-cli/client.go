@@ -122,21 +122,22 @@ type (
 	nodePatchStatusResource     = apiclient.NodePatchStatusResource
 	nodeAlertStatusResource     = apiclient.NodeAlertStatusResource
 
-	organizationResource           = apiclient.OrganizationResource
-	createOrganizationRequest      = apiclient.CreateOrganizationRequest
-	projectResource                = apiclient.ProjectResource
-	createProjectRequest           = apiclient.CreateProjectRequest
-	setProjectOrganizationRequest  = apiclient.SetProjectOrganizationRequest
-	setAppProjectRequest           = apiclient.SetAppProjectRequest
-	setDatabaseProjectRequest      = apiclient.SetDatabaseProjectRequest
-	environmentResource            = apiclient.EnvironmentResource
-	createEnvironmentRequest       = apiclient.CreateEnvironmentRequest
-	updateEnvironmentRequest       = apiclient.UpdateEnvironmentRequest
-	setAppEnvironmentRequest       = apiclient.SetAppEnvironmentRequest
-	previewEnvironmentResource     = apiclient.PreviewEnvironmentResource
-	setPreviewSettingsRequest      = apiclient.SetPreviewSettingsRequest
-	previewSettingsResource        = apiclient.PreviewSettingsResource
-	sweepPreviewEnvironmentsResult = apiclient.SweepPreviewEnvironmentsResult
+	organizationResource             = apiclient.OrganizationResource
+	createOrganizationRequest        = apiclient.CreateOrganizationRequest
+	projectResource                  = apiclient.ProjectResource
+	createProjectRequest             = apiclient.CreateProjectRequest
+	setProjectOrganizationRequest    = apiclient.SetProjectOrganizationRequest
+	setAppProjectRequest             = apiclient.SetAppProjectRequest
+	setDatabaseProjectRequest        = apiclient.SetDatabaseProjectRequest
+	environmentResource              = apiclient.EnvironmentResource
+	createEnvironmentRequest         = apiclient.CreateEnvironmentRequest
+	updateEnvironmentRequest         = apiclient.UpdateEnvironmentRequest
+	setAppEnvironmentRequest         = apiclient.SetAppEnvironmentRequest
+	previewEnvironmentResource       = apiclient.PreviewEnvironmentResource
+	previewEphemeralDatabaseResource = apiclient.PreviewEphemeralDatabaseResource
+	setPreviewSettingsRequest        = apiclient.SetPreviewSettingsRequest
+	previewSettingsResource          = apiclient.PreviewSettingsResource
+	sweepPreviewEnvironmentsResult   = apiclient.SweepPreviewEnvironmentsResult
 
 	userResource               = apiclient.UserResource
 	createUserRequest          = apiclient.CreateUserRequest
