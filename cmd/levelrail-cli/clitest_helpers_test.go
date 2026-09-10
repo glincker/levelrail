@@ -34,6 +34,18 @@ func runCLIExpectAPIError(t *testing.T, args []string) string {
 	return stderr.String()
 }
 
+// runCLIExpectValidationError runs the CLI with args, asserts it exits
+// exitValidation, and returns stderr for further assertions.
+func runCLIExpectValidationError(t *testing.T, args []string) string {
+	t.Helper()
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", args, &stdout, &stderr, envMap())
+	if got != exitValidation {
+		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitValidation, stderr.String())
+	}
+	return stderr.String()
+}
+
 // newListEchoServer starts a test server that records the request path in
 // gotPath (when non-nil) and responds with items JSON-encoded.
 func newListEchoServer[T any](t *testing.T, gotPath *string, items T) *httptest.Server {

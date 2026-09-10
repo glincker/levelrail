@@ -82,6 +82,10 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runCloudflareTunnel(prog, args[1:], stdout, stderr, lookupEnv)
 	case "registry":
 		return runRegistry(prog, args[1:], stdout, stderr, lookupEnv)
+	case "oauth":
+		return runOAuth(prog, args[1:], stdout, stderr, lookupEnv)
+	case "email":
+		return runEmail(prog, args[1:], stdout, stderr, lookupEnv)
 	case "channels":
 		return runChannels(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backup-targets":
@@ -151,6 +155,8 @@ Usage:
   %[1]s backup-targets list|get|create|update|delete [flags]   manage connected S3-compatible backup destinations
   %[1]s registry-credentials list|get|create|update|delete [flags]   manage private container registry pull credentials
   %[1]s registry status|enable|disable [flags]                 manage Levelrail's own built-in container registry
+  %[1]s oauth list|get|set|disable [flags]                     configure Google/GitHub/OIDC sign-in
+  %[1]s email get|set [flags]                                  configure outbound email (SMTP or SES)
   %[1]s flags create|list|get|set|delete [flags]              manage feature flags, read live by a running app via GET /api/v1/flags/evaluate/{key}
   %[1]s nodes list|get|delete [flags]                        manage nodes
   %[1]s nodes join-token [flags]                             mint a one-time node enrollment token

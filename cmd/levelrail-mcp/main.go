@@ -135,6 +135,7 @@ func newServer(client *apiclient.Client) *mcp.Server {
 	registerCloudflareTools(server, client)
 	registerCertificateTools(server, client)
 	registerLogDrainTools(server, client)
+	registerSettingsTools(server, client)
 
 	return server
 }

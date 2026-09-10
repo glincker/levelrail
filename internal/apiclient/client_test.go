@@ -1178,3 +1178,110 @@ func TestClient_SetPreviewPostPRComments(t *testing.T) {
 		t.Errorf("SetPreviewPostPRComments() = %+v, want PostPRComments=true", got)
 	}
 }
+
+func TestClient_ListOAuthProviderSettings(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]OAuthProviderSettingsResource{
+			{Provider: OAuthProviderGoogle, Enabled: true, HasClientSecret: true},
+			{Provider: OAuthProviderGitHub, Enabled: false},
+		})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.ListOAuthProviderSettings(context.Background())
+	if err != nil {
+		t.Fatalf("ListOAuthProviderSettings() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/settings/oauth" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/settings/oauth", gotMethod, gotPath)
+	}
+	if len(got) != 2 || got[0].Provider != OAuthProviderGoogle || !got[0].HasClientSecret {
+		t.Errorf("ListOAuthProviderSettings() = %+v, want google enabled with HasClientSecret=true", got)
+	}
+}
+
+func TestClient_UpdateOAuthProviderSettings(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody UpdateOAuthProviderSettingsRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(OAuthProviderSettingsResource{
+			Provider: OAuthProviderGoogle, Enabled: gotBody.Enabled, ClientID: gotBody.ClientID, HasClientSecret: true,
+		})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.UpdateOAuthProviderSettings(context.Background(), OAuthProviderGoogle, UpdateOAuthProviderSettingsRequest{
+		Enabled: true, ClientID: "client-id", ClientSecret: "client-secret",
+	})
+	if err != nil {
+		t.Fatalf("UpdateOAuthProviderSettings() error = %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/settings/oauth/google" {
+		t.Errorf("method/path = %s %s, want PUT /api/v1/settings/oauth/google", gotMethod, gotPath)
+	}
+	if gotBody.ClientSecret != "client-secret" || gotBody.ClientID != "client-id" {
+		t.Errorf("request body = %+v, want ClientID=client-id ClientSecret=client-secret", gotBody)
+	}
+	if !got.Enabled || !got.HasClientSecret {
+		t.Errorf("UpdateOAuthProviderSettings() = %+v, want Enabled=true HasClientSecret=true", got)
+	}
+}
+
+func TestClient_GetEmailSettings(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(EmailSettingsResource{Backend: EmailBackendSMTP, SMTPHost: "smtp.example.com", SMTPPasswordSet: true})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.GetEmailSettings(context.Background())
+	if err != nil {
+		t.Fatalf("GetEmailSettings() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/settings/email" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/settings/email", gotMethod, gotPath)
+	}
+	if got.Backend != EmailBackendSMTP || !got.SMTPPasswordSet {
+		t.Errorf("GetEmailSettings() = %+v, want Backend=smtp SMTPPasswordSet=true", got)
+	}
+}
+
+func TestClient_UpdateEmailSettings(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody EmailSettingsResource
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(EmailSettingsResource{Backend: gotBody.Backend, SMTPHost: gotBody.SMTPHost, SMTPPasswordSet: gotBody.SMTPPassword != ""})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.UpdateEmailSettings(context.Background(), EmailSettingsResource{
+		Backend: EmailBackendSMTP, SMTPHost: "smtp.example.com", SMTPPort: 587, SMTPFrom: "a@example.com", SMTPPassword: "hunter2",
+	})
+	if err != nil {
+		t.Fatalf("UpdateEmailSettings() error = %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/settings/email" {
+		t.Errorf("method/path = %s %s, want PUT /api/v1/settings/email", gotMethod, gotPath)
+	}
+	if gotBody.SMTPPassword != "hunter2" {
+		t.Errorf("request body = %+v, want SMTPPassword=hunter2", gotBody)
+	}
+	if !got.SMTPPasswordSet {
+		t.Errorf("UpdateEmailSettings() = %+v, want SMTPPasswordSet=true", got)
+	}
+}
