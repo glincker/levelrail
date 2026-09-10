@@ -309,6 +309,88 @@ func TestHandleSetDatabaseNode_EmptyMovesToLocal(t *testing.T) {
 	}
 }
 
+// TestHandleSetDatabaseNode_TeardownDispatchesOnOldNode proves moving a
+// database to a different node tears down the container left running on
+// the OLD node, the database counterpart to
+// TestHandleSetAppNode_TeardownDispatchesOnOldNode.
+func TestHandleSetDatabaseNode_TeardownDispatchesOnOldNode(t *testing.T) {
+	fake := &fakeExecAppRuntime{inspectByNameCalls: make(chan struct{}, 4)}
+	rt, db := newTestRouterWithExecRuntime(t, fake)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed database: %v", err)
+	}
+	seedNode(t, db, "node_1", "worker-1")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/node", `{"node_id":"node_1"}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	select {
+	case <-fake.inspectByNameCalls:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for the background teardown to inspect the old node's container")
+	}
+}
+
+// TestHandleSetDatabaseNode_SameNode_NoTeardown proves setting the same
+// node_id a database already has does not dispatch a teardown.
+func TestHandleSetDatabaseNode_SameNode_NoTeardown(t *testing.T) {
+	fake := &fakeExecAppRuntime{inspectByNameCalls: make(chan struct{}, 4)}
+	rt, db := newTestRouterWithExecRuntime(t, fake)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed database: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/node", `{"node_id":""}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	select {
+	case <-fake.inspectByNameCalls:
+		t.Fatal("teardown dispatched for a no-op node move")
+	case <-time.After(200 * time.Millisecond):
+	}
+}
+
+// TestHandleSetDatabaseNode_NoExecRuntime_NoTeardown proves moving a
+// database when no exec runtime is configured is a safe no-op, mirroring
+// TestHandleDeleteApp_TeardownResolveFailure_StillDeletes's own
+// not-configured shape for teardownServiceContainers.
+func TestHandleSetDatabaseNode_NoExecRuntime_NoTeardown(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed database: %v", err)
+	}
+	seedNode(t, db, "node_1", "worker-1")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/node", `{"node_id":"node_1"}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	d, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if d.NodeID != "node_1" {
+		t.Errorf("stored NodeID = %q, want node_1", d.NodeID)
+	}
+}
+
 func TestHandleSetDatabaseNode_UnknownNode_Rejected(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

@@ -1152,6 +1152,61 @@ func TestHandleSetAppNode_EmptyMovesToLocal(t *testing.T) {
 	}
 }
 
+// TestHandleSetAppNode_TeardownDispatchesOnOldNode proves moving an app
+// to a different node tears down the container left running on the OLD
+// node, the same background-dispatch shape
+// TestHandleDeleteApp_TeardownDispatchesContainerRemoval already proves
+// for delete.
+func TestHandleSetAppNode_TeardownDispatchesOnOldNode(t *testing.T) {
+	fake := &fakeExecAppRuntime{listByPrefixCalls: make(chan struct{}, 4)}
+	rt, db := newTestRouterWithExecRuntime(t, fake)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	seedNode(t, db, "node_1", "worker-1")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/node", `{"node_id":"node_1"}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	select {
+	case <-fake.listByPrefixCalls:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for the background teardown to list containers on the old node")
+	}
+}
+
+// TestHandleSetAppNode_SameNode_NoTeardown proves setting the same
+// node_id an app already has does not dispatch a teardown: there is no
+// "old node" to clean up when nothing actually moved.
+func TestHandleSetAppNode_SameNode_NoTeardown(t *testing.T) {
+	fake := &fakeExecAppRuntime{listByPrefixCalls: make(chan struct{}, 4)}
+	rt, db := newTestRouterWithExecRuntime(t, fake)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/node", `{"node_id":""}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	select {
+	case <-fake.listByPrefixCalls:
+		t.Fatal("teardown dispatched for a no-op node move")
+	case <-time.After(200 * time.Millisecond):
+	}
+}
+
 func TestHandleSetAppNode_UnknownNode_Rejected(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
