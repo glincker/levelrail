@@ -1189,6 +1189,21 @@ type SystemDoctorResource struct {
 	Checks []DoctorCheckResource `json:"checks"`
 }
 
+// SystemPruneResult mirrors internal/api's systemPruneResponse
+// (internal/api/system_prune.go): everything POST /system/prune removed
+// and how much space came back, per resource kind, plus any per-stage
+// error that didn't stop the rest.
+type SystemPruneResult struct {
+	ContainersRemoved        []string `json:"containers_removed"`
+	ContainersReclaimedBytes uint64   `json:"containers_reclaimed_bytes"`
+	ImagesRemoved            []string `json:"images_removed"`
+	ImagesReclaimedBytes     uint64   `json:"images_reclaimed_bytes"`
+	VolumesRemoved           []string `json:"volumes_removed"`
+	VolumesReclaimedBytes    uint64   `json:"volumes_reclaimed_bytes"`
+	BuildCacheReclaimedBytes uint64   `json:"build_cache_reclaimed_bytes"`
+	Errors                   []string `json:"errors,omitempty"`
+}
+
 // ContainerPortResource mirrors internal/api's containerPortResource.
 type ContainerPortResource struct {
 	ContainerPort int    `json:"container_port"`

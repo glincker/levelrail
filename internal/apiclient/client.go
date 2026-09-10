@@ -1635,6 +1635,15 @@ func (c *Client) ListContainers(ctx context.Context) ([]ContainerResource, error
 	return out, err
 }
 
+// PruneSystem calls POST /api/v1/system/prune: removes every stopped
+// container, dangling image, and unused volume or build cache the
+// reconciler's current desired state doesn't need, fleet-wide.
+func (c *Client) PruneSystem(ctx context.Context) (SystemPruneResult, error) {
+	var out SystemPruneResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/system/prune", nil, &out)
+	return out, err
+}
+
 // GetUpdates calls GET /api/v1/updates: the running control plane
 // version against GitHub's latest published release.
 func (c *Client) GetUpdates(ctx context.Context) (UpdatesResource, error) {

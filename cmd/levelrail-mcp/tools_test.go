@@ -645,6 +645,31 @@ func TestGetAppMetrics_InvalidStep(t *testing.T) {
 	}
 }
 
+func TestPruneSystem(t *testing.T) {
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/api/v1/system/prune" {
+			t.Errorf("request = %s %s, want POST /api/v1/system/prune", r.Method, r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(apiclient.SystemPruneResult{
+			ContainersRemoved:        []string{"old-web-1"},
+			ContainersReclaimedBytes: 1024,
+			ImagesRemoved:            []string{"nginx:old"},
+			ImagesReclaimedBytes:     2048,
+		})
+	})
+
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "prune_system", Arguments: map[string]any{}})
+	if err != nil {
+		t.Fatalf("CallTool(prune_system) error = %v", err)
+	}
+	var out apiclient.SystemPruneResult
+	decodeStructured(t, result, &out)
+	if len(out.ContainersRemoved) != 1 || out.ImagesReclaimedBytes != 2048 {
+		t.Errorf("out = %+v, want one removed container and 2048 image bytes reclaimed", out)
+	}
+}
+
 // TestNewTools_Surface403 is the same "ability-check 403 surfaces as a
 // real MCP tool error with the server's own message" contract
 // TestToolError_SurfacesAPIMessage already covers for list_apps, checked
@@ -674,6 +699,7 @@ func TestNewTools_Surface403(t *testing.T) {
 		{"compare_deploys", map[string]any{"name": "web", "from": "dep_1"}},
 		{"list_notification_deliveries", map[string]any{"id": "c1"}},
 		{"list_audit_log", map[string]any{}},
+		{"prune_system", map[string]any{}},
 	}
 
 	for _, tt := range tests {
