@@ -65,6 +65,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"secrets":            {subs: map[string]*cmdNode{"list": nil, "set": nil, "lock": nil}},
 		"git-source":         {subs: map[string]*cmdNode{"get": nil, "set": nil, "delete": nil}},
 		"webhook-deliveries": {subs: map[string]*cmdNode{"list": nil, "replay": nil}},
+		"storage":            {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 	}},
 	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "delete": nil, "resource-recommendation": nil, "metrics": nil, "set-project": nil, "clear-project": nil}},
 	"auth":      {subs: map[string]*cmdNode{"login": nil, "whoami": nil}},
@@ -76,6 +77,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"basic-auth":     {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"maintenance":    {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"tls-cert":       {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
+		"certificates":   nil,
 	}},
 	"backups": {subs: map[string]*cmdNode{
 		"list": nil, "trigger": nil, "restore": nil, "restore-as-new": nil, "verify": nil, "verifications": nil,
@@ -119,6 +121,16 @@ var cliCommandTree = map[string]*cmdNode{
 	"secrets":    {subs: map[string]*cmdNode{"rotate-master-key": nil}},
 	"migrate":    {subs: map[string]*cmdNode{"coolify": nil, "dokploy": nil, "caprover": nil}},
 	"completion": {subs: map[string]*cmdNode{"bash": nil, "zsh": nil, "fish": nil}},
+	"settings": {subs: map[string]*cmdNode{
+		"oauth":   {subs: map[string]*cmdNode{"list": nil, "set": nil}},
+		"email":   {subs: map[string]*cmdNode{"get": nil, "set": nil}},
+		"ingress": {subs: map[string]*cmdNode{"get": nil, "set": nil}},
+	}},
+	"github-app":    {subs: map[string]*cmdNode{"repos": nil, "branches": nil, "use-as-source": nil}},
+	"gitlab-app":    {subs: map[string]*cmdNode{"projects": nil, "branches": nil, "use-as-source": nil}},
+	"bitbucket-app": {subs: map[string]*cmdNode{"repos": nil, "branches": nil, "use-as-source": nil}},
+	"templates":     {subs: map[string]*cmdNode{"list": nil, "get": nil, "deploy": nil}},
+	"static-sites":  {subs: map[string]*cmdNode{"list": nil}},
 }
 
 // globalFlags lists the flags apiFlagSet registers on nearly every

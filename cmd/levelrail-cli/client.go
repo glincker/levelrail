@@ -176,6 +176,22 @@ type (
 	purgeAuditLogResult   = apiclient.PurgeAuditLogResult
 
 	rotateMasterKeyResult = apiclient.RotateMasterKeyResult
+
+	oauthProviderSettingsResource      = apiclient.OAuthProviderSettingsResource
+	updateOAuthProviderSettingsRequest = apiclient.UpdateOAuthProviderSettingsRequest
+	emailSettingsResource              = apiclient.EmailSettingsResource
+	ingressSettingsResource            = apiclient.IngressSettingsResource
+	appStorageResource                 = apiclient.AppStorageResource
+	certificateResource                = apiclient.CertificateResource
+	gitHubAppRepoResource              = apiclient.GitHubAppRepoResource
+	gitAppBranchResource               = apiclient.GitAppBranchResource
+	useRepoAsSourceRequest             = apiclient.UseRepoAsSourceRequest
+	useGitHubRepoAsSourceResponse      = apiclient.UseGitHubRepoAsSourceResponse
+	gitLabAppProjectResource           = apiclient.GitLabAppProjectResource
+	bitbucketAppRepoResource           = apiclient.BitbucketAppRepoResource
+	serviceTemplateListItem            = apiclient.ServiceTemplateListItem
+	serviceTemplateDetail              = apiclient.ServiceTemplateDetail
+	staticSiteResource                 = apiclient.StaticSiteResource
 )
 
 // NewClient builds a Client, identifying every request as this CLI's own

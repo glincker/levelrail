@@ -1888,6 +1888,146 @@ func (c *Client) ListCertificates(ctx context.Context) ([]CertificateResource, e
 	return out, err
 }
 
+// GetOAuthSettings calls GET /api/v1/settings/oauth: every OAuth sign-in
+// provider's current configuration.
+func (c *Client) GetOAuthSettings(ctx context.Context) ([]OAuthProviderSettingsResource, error) {
+	var out []OAuthProviderSettingsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/oauth", nil, &out)
+	return out, err
+}
+
+// UpdateOAuthProviderSettings calls PUT
+// /api/v1/settings/oauth/{provider}.
+func (c *Client) UpdateOAuthProviderSettings(ctx context.Context, provider string, req UpdateOAuthProviderSettingsRequest) (OAuthProviderSettingsResource, error) {
+	var out OAuthProviderSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/oauth/"+PathEscape(provider), req, &out)
+	return out, err
+}
+
+// GetEmailSettings calls GET /api/v1/settings/email.
+func (c *Client) GetEmailSettings(ctx context.Context) (EmailSettingsResource, error) {
+	var out EmailSettingsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/email", nil, &out)
+	return out, err
+}
+
+// UpdateEmailSettings calls PUT /api/v1/settings/email.
+func (c *Client) UpdateEmailSettings(ctx context.Context, req EmailSettingsResource) (EmailSettingsResource, error) {
+	var out EmailSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/email", req, &out)
+	return out, err
+}
+
+// GetIngressSettings calls GET /api/v1/settings/ingress.
+func (c *Client) GetIngressSettings(ctx context.Context) (IngressSettingsResource, error) {
+	var out IngressSettingsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/ingress", nil, &out)
+	return out, err
+}
+
+// UpdateIngressSettings calls PUT /api/v1/settings/ingress.
+func (c *Client) UpdateIngressSettings(ctx context.Context, req IngressSettingsResource) (IngressSettingsResource, error) {
+	var out IngressSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/ingress", req, &out)
+	return out, err
+}
+
+// SetAppStorage calls PUT /api/v1/apps/{name}/storage: attaches an
+// already-connected backup target to name as its object-storage
+// credential source.
+func (c *Client) SetAppStorage(ctx context.Context, name, storageTargetID string) (AppStorageResource, error) {
+	var out AppStorageResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/storage", SetAppStorageRequest{StorageTargetID: storageTargetID}, &out)
+	return out, err
+}
+
+// ClearAppStorage calls DELETE /api/v1/apps/{name}/storage: detaches
+// name's object-storage credential source.
+func (c *Client) ClearAppStorage(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/storage", nil, nil)
+}
+
+// ListGitHubAppRepos calls GET /api/v1/github-app/repos: every
+// repository the connected GitHub App installation can access.
+func (c *Client) ListGitHubAppRepos(ctx context.Context) ([]GitHubAppRepoResource, error) {
+	var out []GitHubAppRepoResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/github-app/repos", nil, &out)
+	return out, err
+}
+
+// ListGitHubAppBranches calls GET
+// /api/v1/github-app/repos/{owner}/{repo}/branches.
+func (c *Client) ListGitHubAppBranches(ctx context.Context, owner, repo string) ([]GitAppBranchResource, error) {
+	var out []GitAppBranchResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/github-app/repos/"+PathEscape(owner)+"/"+PathEscape(repo)+"/branches", nil, &out)
+	return out, err
+}
+
+// UseGitHubRepoAsSource calls POST
+// /api/v1/github-app/repos/{owner}/{repo}/use-as-source: connects the
+// repo as req.AppName's git source and registers a push webhook.
+func (c *Client) UseGitHubRepoAsSource(ctx context.Context, owner, repo string, req UseRepoAsSourceRequest) (UseGitHubRepoAsSourceResponse, error) {
+	var out UseGitHubRepoAsSourceResponse
+	err := c.do(ctx, http.MethodPost, "/api/v1/github-app/repos/"+PathEscape(owner)+"/"+PathEscape(repo)+"/use-as-source", req, &out)
+	return out, err
+}
+
+// ListGitLabAppProjects calls GET /api/v1/gitlab-app/projects: every
+// project the connected GitLab account can access.
+func (c *Client) ListGitLabAppProjects(ctx context.Context) ([]GitLabAppProjectResource, error) {
+	var out []GitLabAppProjectResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/gitlab-app/projects", nil, &out)
+	return out, err
+}
+
+// ListGitLabAppBranches calls GET
+// /api/v1/gitlab-app/projects/{id}/branches.
+func (c *Client) ListGitLabAppBranches(ctx context.Context, projectID int64) ([]GitAppBranchResource, error) {
+	var out []GitAppBranchResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/gitlab-app/projects/"+strconv.FormatInt(projectID, 10)+"/branches", nil, &out)
+	return out, err
+}
+
+// UseGitLabProjectAsSource calls POST
+// /api/v1/gitlab-app/projects/{id}/use-as-source.
+func (c *Client) UseGitLabProjectAsSource(ctx context.Context, projectID int64, req UseRepoAsSourceRequest) (GitSourceResource, error) {
+	var out GitSourceResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/gitlab-app/projects/"+strconv.FormatInt(projectID, 10)+"/use-as-source", req, &out)
+	return out, err
+}
+
+// ListBitbucketAppRepos calls GET /api/v1/bitbucket-app/repos: every
+// repository the connected Bitbucket account can access.
+func (c *Client) ListBitbucketAppRepos(ctx context.Context) ([]BitbucketAppRepoResource, error) {
+	var out []BitbucketAppRepoResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/bitbucket-app/repos", nil, &out)
+	return out, err
+}
+
+// ListBitbucketAppBranches calls GET
+// /api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/branches.
+func (c *Client) ListBitbucketAppBranches(ctx context.Context, workspace, repoSlug string) ([]GitAppBranchResource, error) {
+	var out []GitAppBranchResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/bitbucket-app/repos/"+PathEscape(workspace)+"/"+PathEscape(repoSlug)+"/branches", nil, &out)
+	return out, err
+}
+
+// UseBitbucketRepoAsSource calls POST
+// /api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/use-as-source.
+func (c *Client) UseBitbucketRepoAsSource(ctx context.Context, workspace, repoSlug string, req UseRepoAsSourceRequest) (GitSourceResource, error) {
+	var out GitSourceResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/bitbucket-app/repos/"+PathEscape(workspace)+"/"+PathEscape(repoSlug)+"/use-as-source", req, &out)
+	return out, err
+}
+
+// ListStaticSites calls GET /api/v1/static-sites: every build.type:
+// static site currently served directly through embedded Caddy.
+func (c *Client) ListStaticSites(ctx context.Context) ([]StaticSiteResource, error) {
+	var out []StaticSiteResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/static-sites", nil, &out)
+	return out, err
+}
+
 // PathEscape guards against a name containing characters that would
 // otherwise change the request's URL shape (a "/" turning one path
 // segment into two, for instance). Server-side validation is the real
