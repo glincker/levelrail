@@ -510,6 +510,35 @@ func (c *Client) ListRegistryTags(ctx context.Context, repository string) (Regis
 	return out, err
 }
 
+// ListOAuthProviderSettings calls GET /api/v1/settings/oauth: every
+// provider's full sign-in configuration.
+func (c *Client) ListOAuthProviderSettings(ctx context.Context) ([]OAuthProviderSettingsResource, error) {
+	var out []OAuthProviderSettingsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/oauth", nil, &out)
+	return out, err
+}
+
+// UpdateOAuthProviderSettings calls PUT /api/v1/settings/oauth/{provider}.
+func (c *Client) UpdateOAuthProviderSettings(ctx context.Context, provider string, req UpdateOAuthProviderSettingsRequest) (OAuthProviderSettingsResource, error) {
+	var out OAuthProviderSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/oauth/"+PathEscape(provider), req, &out)
+	return out, err
+}
+
+// GetEmailSettings calls GET /api/v1/settings/email.
+func (c *Client) GetEmailSettings(ctx context.Context) (EmailSettingsResource, error) {
+	var out EmailSettingsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/email", nil, &out)
+	return out, err
+}
+
+// UpdateEmailSettings calls PUT /api/v1/settings/email.
+func (c *Client) UpdateEmailSettings(ctx context.Context, req EmailSettingsResource) (EmailSettingsResource, error) {
+	var out EmailSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/email", req, &out)
+	return out, err
+}
+
 // domainAuthPath builds /api/v1/apps/{name}/domains/{domain}/auth,
 // shared by all three domain basic auth methods below.
 func domainAuthPath(name, domain string) string {

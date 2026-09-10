@@ -313,6 +313,70 @@ type RegistryTagsResource struct {
 	Tags       []string `json:"tags"`
 }
 
+// OAuth provider names accepted by GET/PUT /api/v1/settings/oauth[/{provider}],
+// redeclared from internal/store.OAuthProvider* rather than imported, the
+// same reasoning as ServiceResources above.
+const (
+	OAuthProviderGoogle = "google"
+	OAuthProviderGitHub = "github"
+	OAuthProviderOIDC   = "oidc"
+)
+
+// OAuthProviderSettingsResource mirrors internal/api's
+// oauthProviderSettingsResource (internal/api/oauth_settings.go): GET
+// /api/v1/settings/oauth and PUT /api/v1/settings/oauth/{provider}'s wire
+// shape. ClientSecret is never included in a response; HasClientSecret
+// only reports whether one is stored.
+type OAuthProviderSettingsResource struct {
+	Provider           string `json:"provider"`
+	Enabled            bool   `json:"enabled"`
+	ClientID           string `json:"client_id,omitempty"`
+	AllowedEmailDomain string `json:"allowed_email_domain,omitempty"`
+	IssuerURL          string `json:"issuer_url,omitempty"`
+	DisplayName        string `json:"display_name,omitempty"`
+	HasClientSecret    bool   `json:"has_client_secret"`
+}
+
+// UpdateOAuthProviderSettingsRequest mirrors internal/api's
+// updateOAuthProviderSettingsRequest: a full replace of a provider's
+// settings. ClientSecret empty means "leave the currently stored secret
+// unchanged".
+type UpdateOAuthProviderSettingsRequest struct {
+	Enabled            bool   `json:"enabled"`
+	ClientID           string `json:"client_id"`
+	ClientSecret       string `json:"client_secret,omitempty"`
+	AllowedEmailDomain string `json:"allowed_email_domain"`
+	IssuerURL          string `json:"issuer_url"`
+	DisplayName        string `json:"display_name"`
+}
+
+// Email backends accepted by EmailSettingsResource.Backend.
+const (
+	EmailBackendSMTP = "smtp"
+	EmailBackendSES  = "ses"
+)
+
+// EmailSettingsResource mirrors internal/api's emailSettingsResource
+// (internal/api/email_settings.go): GET/PUT /api/v1/settings/email's wire
+// shape. Used as both the read model and the update request: no
+// credential value ever appears in a response, only SMTPPasswordSet/
+// SESSecretAccessKeySet booleans; on a PUT, an empty credential field
+// means "leave whatever is stored alone."
+type EmailSettingsResource struct {
+	Backend               string `json:"backend"`
+	SMTPHost              string `json:"smtp_host,omitempty"`
+	SMTPPort              int    `json:"smtp_port,omitempty"`
+	SMTPUsername          string `json:"smtp_username,omitempty"`
+	SMTPFrom              string `json:"smtp_from,omitempty"`
+	SMTPPassword          string `json:"smtp_password,omitempty"`
+	SMTPPasswordSet       bool   `json:"smtp_password_set,omitempty"`
+	SESRegion             string `json:"ses_region,omitempty"`
+	SESAccessKeyID        string `json:"ses_access_key_id,omitempty"`
+	SESFrom               string `json:"ses_from,omitempty"`
+	SESSecretAccessKey    string `json:"ses_secret_access_key,omitempty"`
+	SESSecretAccessKeySet bool   `json:"ses_secret_access_key_set,omitempty"`
+}
+
 // DomainBasicAuthResource mirrors internal/api's domainBasicAuthResource
 // (internal/api/domain_basic_auth.go): GET/PUT/DELETE
 // /api/v1/apps/{name}/domains/{domain}/auth's wire shape. The password
