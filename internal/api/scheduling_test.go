@@ -54,6 +54,18 @@ func TestSelectLeastLoadedNode(t *testing.T) {
 	}
 }
 
+// TestWithAutoPlacement proves the option sets Router.autoPlacementEnabled,
+// the same shape TestWithSessionTTL (auth_test.go) already establishes
+// for its own option.
+func TestWithAutoPlacement(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db, WithAutoPlacement(false))
+
+	if rt.autoPlacementEnabled {
+		t.Error("autoPlacementEnabled = true, want false after WithAutoPlacement(false)")
+	}
+}
+
 // seedOnlineNode is seedNode (nodes_test.go) plus status/schedulable
 // control, since autoPlaceNode's own eligibility rule (schedulable and
 // online) needs both dimensions exercised, not just presence in the

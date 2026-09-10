@@ -47,10 +47,13 @@ type fakeRuntime struct {
 	stopErr            error
 	removeErr          error
 	updateResourcesErr error
+	inspectErr         error
 
 	createCalls          int
 	ensureVolumeCalls    int
 	updateResourcesCalls int
+	stopCalls            int
+	removeCalls          int
 	// lastUpdateResourcesID/lastUpdateResources record the most recent
 	// UpdateResources call's arguments, for tests asserting a
 	// resource-only diff converges via a live update rather than a
@@ -120,6 +123,9 @@ func (f *fakeRuntime) ListNetworksByPrefix(_ context.Context, _ string) ([]docke
 func (f *fakeRuntime) InspectByName(_ context.Context, name string) (*docker.ContainerState, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if f.inspectErr != nil {
+		return nil, f.inspectErr
+	}
 	cs, ok := f.containers[name]
 	if !ok {
 		return nil, nil
@@ -160,6 +166,7 @@ func (f *fakeRuntime) Start(_ context.Context, id string) error {
 func (f *fakeRuntime) Stop(_ context.Context, id string, _ time.Duration) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	f.stopCalls++
 	if f.stopErr != nil {
 		return f.stopErr
 	}
@@ -174,6 +181,7 @@ func (f *fakeRuntime) Stop(_ context.Context, id string, _ time.Duration) error 
 func (f *fakeRuntime) Remove(_ context.Context, id string, _ bool) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	f.removeCalls++
 	if f.removeErr != nil {
 		return f.removeErr
 	}
@@ -1297,3 +1305,86 @@ func TestController_Reconcile_Resources_NilLeavesContainerSpecResourcesNil(t *te
 		t.Errorf("created ContainerSpec.Resources = %+v, want nil", got)
 	}
 }
+
+// TestController_Teardown covers Teardown's own branches: no container to
+// clean up, a running container (stop then remove), a stopped container
+// (remove only), and each of Docker's own calls failing along the way.
+// Callers (handleSetAppNode/handleSetDatabaseNode's teardown dispatch)
+// treat a moved-off-this-node or deleted database exactly this way: best-
+// effort cleanup, never re-reconciled here again once desired state has
+// moved on.
+func TestController_Teardown(t *testing.T) {
+	tests := []struct {
+		name           string
+		seedRunning    *bool // nil: no container seeded
+		inspectErr     error
+		stopErr        error
+		removeErr      error
+		wantErr        bool
+		wantStopCalls  int
+		wantRemoveCall int
+	}{
+		{
+			name:        "no container: no-op",
+			seedRunning: nil,
+		},
+		{
+			name:           "running container: stops then removes",
+			seedRunning:    boolPtr(true),
+			wantStopCalls:  1,
+			wantRemoveCall: 1,
+		},
+		{
+			name:           "stopped container: removes only",
+			seedRunning:    boolPtr(false),
+			wantStopCalls:  0,
+			wantRemoveCall: 1,
+		},
+		{
+			name:       "inspect fails: propagates error, no stop/remove attempted",
+			inspectErr: errors.New("inspect failed"),
+			wantErr:    true,
+		},
+		{
+			name:          "stop fails: propagates error, remove never attempted",
+			seedRunning:   boolPtr(true),
+			stopErr:       errors.New("stop failed"),
+			wantErr:       true,
+			wantStopCalls: 1,
+		},
+		{
+			name:           "remove fails: propagates error",
+			seedRunning:    boolPtr(true),
+			removeErr:      errors.New("remove failed"),
+			wantErr:        true,
+			wantStopCalls:  1,
+			wantRemoveCall: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := newFakeRuntime()
+			rt.inspectErr = tt.inspectErr
+			rt.stopErr = tt.stopErr
+			rt.removeErr = tt.removeErr
+			if tt.seedRunning != nil {
+				rt.seed(containerName("main"), "redis:7", *tt.seedRunning)
+			}
+			c := New("main", &fakeStore{}, rt)
+
+			err := c.Teardown(context.Background())
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("Teardown() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if rt.stopCalls != tt.wantStopCalls {
+				t.Errorf("stopCalls = %d, want %d", rt.stopCalls, tt.wantStopCalls)
+			}
+			if rt.removeCalls != tt.wantRemoveCall {
+				t.Errorf("removeCalls = %d, want %d", rt.removeCalls, tt.wantRemoveCall)
+			}
+		})
+	}
+}
+
+func boolPtr(v bool) *bool { return &v }

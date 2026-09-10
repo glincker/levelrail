@@ -232,15 +232,7 @@ func TestHandleCreateApp_AutoPlacement(t *testing.T) {
 		rt, db := newTestRouter(t)
 		cookie := loginTestSession(t, rt, db)
 
-		rec := httptest.NewRecorder()
-		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`))
-		if rec.Code != http.StatusCreated {
-			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
-		}
-		var got appResource
-		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-			t.Fatalf("decode: %v", err)
-		}
+		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`, http.StatusCreated)
 		if got.NodeID != "" || got.AutoPlaced {
 			t.Errorf("got node_id=%q auto_placed=%v, want local and not auto-placed", got.NodeID, got.AutoPlaced)
 		}
@@ -260,15 +252,7 @@ func TestHandleCreateApp_AutoPlacement(t *testing.T) {
 			t.Fatalf("place existing service: %v", err)
 		}
 
-		rec := httptest.NewRecorder()
-		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`))
-		if rec.Code != http.StatusCreated {
-			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
-		}
-		var got appResource
-		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-			t.Fatalf("decode: %v", err)
-		}
+		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`, http.StatusCreated)
 		if got.NodeID != "node_b" || !got.AutoPlaced {
 			t.Errorf("got node_id=%q auto_placed=%v, want node_id=%q auto_placed=true", got.NodeID, got.AutoPlaced, "node_b")
 		}
@@ -288,15 +272,7 @@ func TestHandleCreateApp_AutoPlacement(t *testing.T) {
 		seedOnlineNode(t, db, "node_a", "alpha", true)
 		seedOnlineNode(t, db, "node_b", "bravo", true)
 
-		rec := httptest.NewRecorder()
-		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"node_id":"node_a"}`))
-		if rec.Code != http.StatusCreated {
-			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
-		}
-		var got appResource
-		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-			t.Fatalf("decode: %v", err)
-		}
+		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"node_id":"node_a"}`, http.StatusCreated)
 		if got.NodeID != "node_a" || got.AutoPlaced {
 			t.Errorf("got node_id=%q auto_placed=%v, want node_id=%q auto_placed=false", got.NodeID, got.AutoPlaced, "node_a")
 		}
@@ -308,15 +284,7 @@ func TestHandleCreateApp_AutoPlacement(t *testing.T) {
 		seedOnlineNode(t, db, "node_a", "alpha", true)
 		seedOnlineNode(t, db, "node_b", "bravo", true)
 
-		rec := httptest.NewRecorder()
-		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"node_id":""}`))
-		if rec.Code != http.StatusCreated {
-			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
-		}
-		var got appResource
-		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-			t.Fatalf("decode: %v", err)
-		}
+		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"node_id":""}`, http.StatusCreated)
 		if got.NodeID != "" || got.AutoPlaced {
 			t.Errorf("got node_id=%q auto_placed=%v, want local and not auto-placed", got.NodeID, got.AutoPlaced)
 		}
@@ -326,11 +294,7 @@ func TestHandleCreateApp_AutoPlacement(t *testing.T) {
 		rt, db := newTestRouter(t)
 		cookie := loginTestSession(t, rt, db)
 
-		rec := httptest.NewRecorder()
-		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"node_id":"does-not-exist"}`))
-		if rec.Code != http.StatusBadRequest {
-			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
-		}
+		createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"node_id":"does-not-exist"}`, http.StatusBadRequest)
 		if _, err := db.GetDesiredService(ctx, "web"); err == nil {
 			t.Error("a rejected node_id must not have saved the app")
 		}
@@ -342,19 +306,107 @@ func TestHandleCreateApp_AutoPlacement(t *testing.T) {
 		cookie := loginTestSession(t, rt, db)
 		seedOnlineNode(t, db, "node_a", "alpha", true)
 
-		rec := httptest.NewRecorder()
-		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`))
-		if rec.Code != http.StatusCreated {
-			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
-		}
-		var got appResource
-		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-			t.Fatalf("decode: %v", err)
-		}
+		got := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`, http.StatusCreated)
 		if got.NodeID != "" || got.AutoPlaced {
 			t.Errorf("got node_id=%q auto_placed=%v, want local and not auto-placed", got.NodeID, got.AutoPlaced)
 		}
 	})
+}
+
+// TestHandleCreateApp_UnreadableBody_Returns400 covers the io.ReadAll
+// error path handleCreateApp needs to probe the raw body for an explicit
+// node_id key (nodeIDKeyPresent) before decoding it: a request whose body
+// can't even be read must be a 400, not a panic or a 500.
+func TestHandleCreateApp_UnreadableBody_Returns400(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	req := authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", "")
+	req.Body = &errReadCloser{r: strings.NewReader(""), err: errors.New("read failed")}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+// TestHandleCreateApp_CordonedNode_Rejected covers handleCreateApp's own
+// cordon check on an explicit node_id, the create-time counterpart to
+// TestHandleSetAppNode_CordonedNode_Rejected.
+func TestHandleCreateApp_CordonedNode_Rejected(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	seedNode(t, db, "node_1", "worker-1")
+	if err := db.SetNodeSchedulable(ctx, "node_1", false); err != nil {
+		t.Fatalf("cordon node: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"node_id":"node_1"}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	if _, err := db.GetDesiredService(ctx, "web"); err == nil {
+		t.Error("a cordoned node_id must not have saved the app")
+	}
+}
+
+// TestHandleCreateApp_ValidateNodeGenericError_Returns500 covers
+// validatePlacementTarget's default branch: a failure that is neither
+// store.ErrNodeNotFound nor errNodeCordoned, which a real *store.DB has
+// no way to produce on demand, so this uses erroringNodeStore instead.
+func TestHandleCreateApp_ValidateNodeGenericError_Returns500(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	rt.nodes = &erroringNodeStore{NodeStore: rt.nodes, getNodeErr: errors.New("node lookup exploded")}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"node_id":"node_1"}`))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusInternalServerError, rec.Body.String())
+	}
+	if _, err := db.GetDesiredService(context.Background(), "web"); err == nil {
+		t.Error("a validate-node failure must not have saved the app")
+	}
+}
+
+// TestHandleCreateApp_AutoPlaceNodeError_Returns500 covers autoPlaceNode
+// itself failing (its own ListNodes call errored), distinct from a
+// rejected explicit node_id.
+func TestHandleCreateApp_AutoPlaceNodeError_Returns500(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	rt.nodes = &erroringNodeStore{NodeStore: rt.nodes, listNodesErr: errors.New("list nodes exploded")}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusInternalServerError, rec.Body.String())
+	}
+	if _, err := db.GetDesiredService(context.Background(), "web"); err == nil {
+		t.Error("an auto-place failure must not have saved the app")
+	}
+}
+
+// TestHandleCreateApp_AssignNodeFails_Returns500 covers the trailing
+// UpdateServiceNode call handleCreateApp makes after SaveDesiredService
+// succeeds for a non-local placement (SaveDesiredService itself never
+// writes node_id, see toDesiredService): a failure there must still
+// report 500, using erroringAppStore since a real *store.DB has no way to
+// fail this call on demand for a service it just successfully created.
+func TestHandleCreateApp_AssignNodeFails_Returns500(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedOnlineNode(t, db, "node_1", "worker-1", true)
+	rt.apps = &erroringAppStore{AppStore: rt.apps, updateServiceNodeErr: errors.New("assign node exploded")}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"node_id":"node_1"}`))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusInternalServerError, rec.Body.String())
+	}
 }
 
 // TestHandleCreateApp_RecordsDeployAttempt covers the gap found via live
@@ -1229,21 +1281,32 @@ func TestHandleDeleteApp_TeardownResolveFailure_StillDeletes(t *testing.T) {
 	}
 }
 
+// seedAppAndMoveToNode seeds "web" and nodeID, then PUTs node_id to
+// /api/v1/apps/web/node and requires a 200 OK, returning the response
+// for the caller's own assertions. Shared by TestHandleSetAppNode_Success
+// and TestHandleSetAppNode_TeardownDispatchesOnOldNode's identical seed-
+// then-move setup.
+func seedAppAndMoveToNode(t *testing.T, rt *Router, db *store.DB, cookie *http.Cookie, nodeID string) *httptest.ResponseRecorder {
+	t.Helper()
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	seedNode(t, db, nodeID, "worker-1")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/node", `{"node_id":"`+nodeID+`"}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	return rec
+}
+
 func TestHandleSetAppNode_Success(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
 
-	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
-	seedNode(t, db, "node_1", "worker-1")
-
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/node", `{"node_id":"node_1"}`))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
+	rec := seedAppAndMoveToNode(t, rt, db, cookie, "node_1")
 
 	var got appResource
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
@@ -1298,18 +1361,8 @@ func TestHandleSetAppNode_TeardownDispatchesOnOldNode(t *testing.T) {
 	fake := &fakeExecAppRuntime{listByPrefixCalls: make(chan struct{}, 4)}
 	rt, db := newTestRouterWithExecRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
-	ctx := context.Background()
 
-	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
-		t.Fatalf("seed app: %v", err)
-	}
-	seedNode(t, db, "node_1", "worker-1")
-
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/node", `{"node_id":"node_1"}`))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
+	seedAppAndMoveToNode(t, rt, db, cookie, "node_1")
 
 	select {
 	case <-fake.listByPrefixCalls:
@@ -1376,6 +1429,27 @@ func TestHandleSetAppNode_UnknownApp_NotFound(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/ghost/node", `{"node_id":""}`))
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+// TestHandleSetAppNode_LoadExistingGenericError_Returns500 covers the
+// non-ErrServiceNotFound branch of handleSetAppNode's own GetDesiredService
+// call, using erroringAppStore since a real *store.DB has no way to fail
+// this lookup on demand for a service that genuinely exists.
+func TestHandleSetAppNode_LoadExistingGenericError_Returns500(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	rt.apps = &erroringAppStore{AppStore: rt.apps, getDesiredServiceErr: errors.New("load existing exploded")}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/node", `{"node_id":""}`))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusInternalServerError, rec.Body.String())
 	}
 }
 

@@ -1285,3 +1285,96 @@ func TestClient_UpdateEmailSettings(t *testing.T) {
 		t.Errorf("UpdateEmailSettings() = %+v, want SMTPPasswordSet=true", got)
 	}
 }
+
+func TestClient_CloneApp(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody CloneAppRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(AppResource{Name: gotBody.NewName, Image: "levelrail/web:1", Port: 3000})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.CloneApp(context.Background(), "web", "web-copy")
+	if err != nil {
+		t.Fatalf("CloneApp() error = %v", err)
+	}
+	if gotMethod != http.MethodPost || gotPath != "/api/v1/apps/web/clone" {
+		t.Errorf("method/path = %s %s, want POST /api/v1/apps/web/clone", gotMethod, gotPath)
+	}
+	if gotBody.NewName != "web-copy" {
+		t.Errorf("request body = %+v, want NewName=web-copy", gotBody)
+	}
+	if got.Name != "web-copy" {
+		t.Errorf("CloneApp() = %+v, want Name=web-copy", got)
+	}
+}
+
+func TestClient_ListAppImages(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]ImageResource{{Tag: "levelrail/web:abc123"}})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.ListAppImages(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("ListAppImages() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/apps/web/images" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/apps/web/images", gotMethod, gotPath)
+	}
+	if len(got) != 1 || got[0].Tag != "levelrail/web:abc123" {
+		t.Errorf("ListAppImages() = %+v, want one image tagged levelrail/web:abc123", got)
+	}
+}
+
+func TestClient_CheckDomain(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(DomainCheckResource{Domain: "app.example.com", Resolved: true, Status: "ok"})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.CheckDomain(context.Background(), "web", "app.example.com")
+	if err != nil {
+		t.Fatalf("CheckDomain() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/apps/web/domains/app.example.com/check" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/apps/web/domains/app.example.com/check", gotMethod, gotPath)
+	}
+	if got.Domain != "app.example.com" || !got.Resolved || got.Status != "ok" {
+		t.Errorf("CheckDomain() = %+v, want Domain=app.example.com Resolved=true Status=ok", got)
+	}
+}
+
+func TestClient_PruneSystem(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(SystemPruneResult{ContainersRemoved: []string{"c1"}, ImagesReclaimedBytes: 1024})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.PruneSystem(context.Background())
+	if err != nil {
+		t.Fatalf("PruneSystem() error = %v", err)
+	}
+	if gotMethod != http.MethodPost || gotPath != "/api/v1/system/prune" {
+		t.Errorf("method/path = %s %s, want POST /api/v1/system/prune", gotMethod, gotPath)
+	}
+	if len(got.ContainersRemoved) != 1 || got.ContainersRemoved[0] != "c1" || got.ImagesReclaimedBytes != 1024 {
+		t.Errorf("PruneSystem() = %+v, want ContainersRemoved=[c1] ImagesReclaimedBytes=1024", got)
+	}
+}

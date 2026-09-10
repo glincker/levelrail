@@ -453,30 +453,44 @@ func TestHandleGetNodeHealth_NotFound(t *testing.T) {
 	}
 }
 
-func TestHandleDrainNode_MovesServicesAndDatabases(t *testing.T) {
-	rt, db := newTestRouter(t)
-	cookie := loginTestSession(t, rt, db)
+// seedDrainableNodeAndDrain seeds nodeID plus one service and one
+// database placed on it, then POSTs .../drain and requires 200 OK,
+// returning the response for the caller's own assertions. Shared by
+// TestHandleDrainNode_MovesServicesAndDatabases and
+// TestHandleDrainNode_TeardownDispatchesOnDrainedNode's identical seed-
+// then-drain setup.
+func seedDrainableNodeAndDrain(t *testing.T, rt *Router, db *store.DB, cookie *http.Cookie, nodeID string) *httptest.ResponseRecorder {
+	t.Helper()
 	ctx := context.Background()
-	seedNode(t, db, "node_1", "worker-1")
+	seedNode(t, db, nodeID, "worker-1")
 
 	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "img:1", Port: 3000}); err != nil {
 		t.Fatalf("seed service: %v", err)
 	}
-	if err := db.UpdateServiceNode(ctx, "web", "node_1"); err != nil {
+	if err := db.UpdateServiceNode(ctx, "web", nodeID); err != nil {
 		t.Fatalf("place service: %v", err)
 	}
 	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
 		t.Fatalf("seed database: %v", err)
 	}
-	if err := db.UpdateDatabaseNode(ctx, "main", "node_1"); err != nil {
+	if err := db.UpdateDatabaseNode(ctx, "main", nodeID); err != nil {
 		t.Fatalf("place database: %v", err)
 	}
 
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/node_1/drain", ""))
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/"+nodeID+"/drain", ""))
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
 	}
+	return rec
+}
+
+func TestHandleDrainNode_MovesServicesAndDatabases(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	rec := seedDrainableNodeAndDrain(t, rt, db, cookie, "node_1")
 
 	var got drainNodeResponse
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
@@ -531,27 +545,8 @@ func TestHandleDrainNode_TeardownDispatchesOnDrainedNode(t *testing.T) {
 	}
 	rt, db := newTestRouterWithExecRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
-	ctx := context.Background()
-	seedNode(t, db, "node_1", "worker-1")
 
-	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "img:1", Port: 3000}); err != nil {
-		t.Fatalf("seed service: %v", err)
-	}
-	if err := db.UpdateServiceNode(ctx, "web", "node_1"); err != nil {
-		t.Fatalf("place service: %v", err)
-	}
-	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
-		t.Fatalf("seed database: %v", err)
-	}
-	if err := db.UpdateDatabaseNode(ctx, "main", "node_1"); err != nil {
-		t.Fatalf("place database: %v", err)
-	}
-
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/node_1/drain", ""))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
+	seedDrainableNodeAndDrain(t, rt, db, cookie, "node_1")
 
 	select {
 	case <-fake.listByPrefixCalls:
