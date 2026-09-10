@@ -87,6 +87,10 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsGitSource(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "webhook-deliveries":
 		return runAppsWebhookDeliveries(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "clone":
+		return runAppsClone(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "images":
+		return runAppsImages(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps subcommand %q\n\n", prog, args[0]) //nolint:gosec // same guard as above
 		_, _ = fmt.Fprint(stderr, appsUsage(prog))
@@ -131,6 +135,8 @@ func appsUsage(prog string) string {
   %[1]s apps secrets <verb> [flags]   manage an app's encrypted secret values
   %[1]s apps git-source <verb> [flags]   connect a repo for auto-deploy-on-push
   %[1]s apps webhook-deliveries <verb> [flags]   inspect and replay recent inbound git webhook requests
+  %[1]s apps clone <name> <new-name> [flags]   duplicate an app's desired state under a new name
+  %[1]s apps images <name> [flags]   list locally-present image tags under an app's current image repo
 
 Run "%[1]s apps <subcommand> -h" for a subcommand's own flags.
 `, prog)
