@@ -146,7 +146,8 @@
       "properties": {
         "engine": { "enum": ["postgres", "redis", "mysql", "mongodb", "mariadb", "keydb", "clickhouse", "dragonfly"] },
         "version": { "type": "string", "minLength": 1 },
-        "backup": { "$ref": "#/$defs/backup" }
+        "backup": { "$ref": "#/$defs/backup" },
+        "ephemeralInPreviews": { "type": "boolean" }
       }
     },
     "backup": {
