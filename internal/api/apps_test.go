@@ -220,6 +220,143 @@ func TestHandleCreateApp(t *testing.T) {
 	}
 }
 
+// TestHandleCreateApp_AutoPlacement covers handleCreateApp's own node_id
+// resolution: omitted picks the least-loaded registered node, an
+// explicit node_id (including an explicit "") is always honored as an
+// override and never auto-placed, and a single-node install (no other
+// nodes registered) keeps today's local-node behavior unchanged.
+func TestHandleCreateApp_AutoPlacement(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("no other nodes registered: stays local, not auto-placed", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`))
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+		}
+		var got appResource
+		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if got.NodeID != "" || got.AutoPlaced {
+			t.Errorf("got node_id=%q auto_placed=%v, want local and not auto-placed", got.NodeID, got.AutoPlaced)
+		}
+	})
+
+	t.Run("node_id omitted with multiple nodes registered: auto-placed on the least-loaded one", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+		seedOnlineNode(t, db, "node_a", "alpha", true)
+		seedOnlineNode(t, db, "node_b", "bravo", true)
+		// Give node_a a head start so node_b is the unambiguous
+		// least-loaded pick.
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "existing", Image: "img:1", Port: 80}); err != nil {
+			t.Fatalf("seed existing service: %v", err)
+		}
+		if err := db.UpdateServiceNode(ctx, "existing", "node_a"); err != nil {
+			t.Fatalf("place existing service: %v", err)
+		}
+
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`))
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+		}
+		var got appResource
+		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if got.NodeID != "node_b" || !got.AutoPlaced {
+			t.Errorf("got node_id=%q auto_placed=%v, want node_id=%q auto_placed=true", got.NodeID, got.AutoPlaced, "node_b")
+		}
+
+		saved, err := db.GetDesiredService(ctx, "web")
+		if err != nil {
+			t.Fatalf("GetDesiredService: %v", err)
+		}
+		if saved.NodeID != "node_b" {
+			t.Errorf("persisted NodeID = %q, want %q", saved.NodeID, "node_b")
+		}
+	})
+
+	t.Run("explicit node_id overrides auto-placement", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+		seedOnlineNode(t, db, "node_a", "alpha", true)
+		seedOnlineNode(t, db, "node_b", "bravo", true)
+
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"node_id":"node_a"}`))
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+		}
+		var got appResource
+		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if got.NodeID != "node_a" || got.AutoPlaced {
+			t.Errorf("got node_id=%q auto_placed=%v, want node_id=%q auto_placed=false", got.NodeID, got.AutoPlaced, "node_a")
+		}
+	})
+
+	t.Run("explicit empty node_id overrides auto-placement, stays local", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+		seedOnlineNode(t, db, "node_a", "alpha", true)
+		seedOnlineNode(t, db, "node_b", "bravo", true)
+
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"node_id":""}`))
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+		}
+		var got appResource
+		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if got.NodeID != "" || got.AutoPlaced {
+			t.Errorf("got node_id=%q auto_placed=%v, want local and not auto-placed", got.NodeID, got.AutoPlaced)
+		}
+	})
+
+	t.Run("explicit node_id for an unknown node is rejected", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000,"node_id":"does-not-exist"}`))
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+		}
+		if _, err := db.GetDesiredService(ctx, "web"); err == nil {
+			t.Error("a rejected node_id must not have saved the app")
+		}
+	})
+
+	t.Run("auto-placement disabled: stays local even with other nodes registered", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		rt.autoPlacementEnabled = false
+		cookie := loginTestSession(t, rt, db)
+		seedOnlineNode(t, db, "node_a", "alpha", true)
+
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`))
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+		}
+		var got appResource
+		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if got.NodeID != "" || got.AutoPlaced {
+			t.Errorf("got node_id=%q auto_placed=%v, want local and not auto-placed", got.NodeID, got.AutoPlaced)
+		}
+	})
+}
+
 // TestHandleCreateApp_RecordsDeployAttempt covers the gap found via live
 // testing: the existing-image path deserves a deploy_attempts row for
 // history just like any later redeploy (handleTriggerDeploy already

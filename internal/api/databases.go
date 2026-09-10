@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 
@@ -22,16 +23,24 @@ func databaseControllerName(dbName string) string {
 
 // databaseResource is the wire shape for a managed database:
 // store.DesiredDatabase plus its name, the same direct-marshal choice
-// appResource makes for services. NodeID is response-only, the same
-// "shown but not settable through this endpoint" boundary appResource's
-// own NodeID field documents; there is no PUT /databases/{name}/node yet
-// (TASKS-v2's Phase 5 note), UpdateDatabaseNode exists in the store but
-// has no route.
+// appResource makes for services. NodeID is response-only on update, the
+// same boundary appResource's own NodeID field documents; PUT
+// /api/v1/databases/{name}/node (handleSetDatabaseNode) is how an
+// existing database's placement changes. handleCreateDatabase is the one
+// exception, mirroring appResource: an explicit node_id in the create
+// request overrides simple spread scheduling, see that handler's own
+// doc comment.
 type databaseResource struct {
 	Name    string `json:"name"`
 	Engine  string `json:"engine"`
 	Version string `json:"version"`
 	NodeID  string `json:"node_id,omitempty"`
+	// AutoPlaced is response-only, set only by handleCreateDatabase: true
+	// when node_id was omitted from the create request and simple spread
+	// scheduling (autoPlaceNode, scheduling.go) picked a non-local node
+	// for it. Every other handler returning a databaseResource leaves
+	// this false.
+	AutoPlaced bool `json:"auto_placed,omitempty"`
 	// ProjectID: see appResource's own ProjectID field doc comment,
 	// identical response-only-except-at-create-time boundary. Set it on
 	// an existing database via PUT /api/v1/databases/{name}/project
@@ -223,6 +232,20 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 			return false
 		}
 	}
+
+	// SaveDesiredDatabase never writes node_id, so an explicit or
+	// auto-placed non-local req.NodeID needs this trailing call, the same
+	// pattern UpdateDatabaseProject just above already establishes for
+	// ProjectID. req.NodeID is always "" for handleCloneRestore's own
+	// caller (database_clone_restore.go never sets it), so this is a
+	// no-op for that path.
+	if req.NodeID != "" {
+		if err := rt.databases.UpdateDatabaseNode(r.Context(), req.Name, req.NodeID); err != nil {
+			rt.logger.Error("api: create database: assign node failed", slog.String("error", err.Error()), slog.String("name", req.Name), slog.String("node_id", req.NodeID))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return false
+		}
+	}
 	return true
 }
 
@@ -230,12 +253,51 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 // that already exists, the same conflict-not-overwrite convention
 // handleCreateApp establishes. See createDesiredDatabase's own doc
 // comment for the actual creation logic.
+//
+// node_id present in the body (even "") is an explicit placement
+// override, validated the same way handleSetAppNode validates one for
+// apps (handleSetDatabaseNode's own check is looser and left as-is, see
+// that handler's own doc comment; this is a new validation path, not a
+// change to an existing one). Omitted entirely lets simple spread
+// scheduling (autoPlaceNode) pick a node when more than one is
+// registered; AutoPlaced only turns true when that pick actually lands
+// somewhere other than local.
 func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
-	var req databaseResource
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	var req databaseResource
+	if err := json.Unmarshal(body, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if nodeIDKeyPresent(body) {
+		if err := rt.validatePlacementTarget(r.Context(), req.NodeID); err != nil {
+			switch {
+			case errors.Is(err, store.ErrNodeNotFound):
+				writeError(w, http.StatusBadRequest, "unknown node_id")
+			case errors.Is(err, errNodeCordoned):
+				writeError(w, http.StatusBadRequest, "node is cordoned and not accepting new placements")
+			default:
+				rt.logger.Error("api: create database: validate node failed", slog.String("error", err.Error()), slog.String("node_id", req.NodeID))
+				writeError(w, http.StatusInternalServerError, "internal error")
+			}
+			return
+		}
+	} else {
+		placed, err := rt.autoPlaceNode(r.Context())
+		if err != nil {
+			rt.logger.Error("api: create database: auto-place node failed", slog.String("error", err.Error()))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+		req.NodeID = placed
+		req.AutoPlaced = placed != ""
+	}
+
 	if !rt.createDesiredDatabase(w, r, req) {
 		return
 	}

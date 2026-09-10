@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"maps"
 	"net/http"
@@ -68,12 +69,22 @@ type appResource struct {
 	// and sanity-limit rules app.yaml-sourced labels get.
 	Labels map[string]string `json:"labels,omitempty"`
 	// NodeID is the placement field (empty means this control
-	// plane's own local node). Response-only: toDesiredService below
-	// never reads it, the same "shown but not settable through this
+	// plane's own local node). Response-only on update: toDesiredService
+	// below never reads it, the same "shown but not settable through this
 	// endpoint" boundary ruleResource's own evaluation-state fields
-	// already establish for a different resource. Set it via
-	// PUT /api/v1/apps/{name}/node (handleSetAppNode) instead.
+	// already establish for a different resource; PUT /api/v1/apps/{name}/node
+	// (handleSetAppNode) is how an existing app's placement changes.
+	// handleCreateApp is the one exception, mirroring ProjectID below: an
+	// explicit node_id in the create request (including an explicit "")
+	// overrides simple spread scheduling, see that handler's own doc
+	// comment.
 	NodeID string `json:"node_id,omitempty"`
+	// AutoPlaced is response-only, set only by handleCreateApp: true when
+	// node_id was omitted from the create request and simple spread
+	// scheduling (autoPlaceNode, scheduling.go) picked a non-local node
+	// for it. Every other handler returning an appResource leaves this
+	// false.
+	AutoPlaced bool `json:"auto_placed,omitempty"`
 	// ProjectID is which project (projects.go) this app is filed under,
 	// empty meaning no project. Response-only on PUT (handleUpdateApp
 	// echoes back the existing, unchanged value the same way it already
@@ -336,8 +347,13 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 // create-with-a-project case instead of requiring a second client round
 // trip to PUT /api/v1/apps/{name}/project right after creation.
 func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
 	var req appResource
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.Unmarshal(body, &req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
@@ -355,7 +371,36 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := rt.apps.GetDesiredService(r.Context(), req.Name)
+	// node_id present in the body (even "") is an explicit placement
+	// override, validated the same way handleSetAppNode validates one.
+	// Omitted entirely lets simple spread scheduling (autoPlaceNode) pick
+	// a node when more than one is registered; AutoPlaced only turns
+	// true when that pick actually lands somewhere other than local.
+	if nodeIDKeyPresent(body) {
+		if err := rt.validatePlacementTarget(r.Context(), req.NodeID); err != nil {
+			switch {
+			case errors.Is(err, store.ErrNodeNotFound):
+				writeError(w, http.StatusBadRequest, "unknown node_id")
+			case errors.Is(err, errNodeCordoned):
+				writeError(w, http.StatusBadRequest, "node is cordoned and not accepting new placements")
+			default:
+				rt.logger.Error("api: create app: validate node failed", slog.String("error", err.Error()), slog.String("node_id", req.NodeID))
+				writeError(w, http.StatusInternalServerError, "internal error")
+			}
+			return
+		}
+	} else {
+		placed, err := rt.autoPlaceNode(r.Context())
+		if err != nil {
+			rt.logger.Error("api: create app: auto-place node failed", slog.String("error", err.Error()))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+		req.NodeID = placed
+		req.AutoPlaced = placed != ""
+	}
+
+	_, err = rt.apps.GetDesiredService(r.Context(), req.Name)
 	if err == nil {
 		writeError(w, http.StatusConflict, "an app with this name already exists")
 		return
@@ -380,6 +425,18 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	if req.ProjectID != "" {
 		if err := rt.apps.UpdateServiceProject(r.Context(), req.Name, req.ProjectID); err != nil {
 			rt.logger.Error("api: create app: assign project failed", slog.String("error", err.Error()), slog.String("name", req.Name), slog.String("project_id", req.ProjectID))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+	}
+
+	// SaveDesiredService never writes node_id (see toDesiredService above),
+	// so an explicit or auto-placed non-local req.NodeID needs this
+	// trailing call, the same pattern UpdateServiceProject just above
+	// already establishes for ProjectID.
+	if req.NodeID != "" {
+		if err := rt.apps.UpdateServiceNode(r.Context(), req.Name, req.NodeID); err != nil {
+			rt.logger.Error("api: create app: assign node failed", slog.String("error", err.Error()), slog.String("name", req.Name), slog.String("node_id", req.NodeID))
 			writeError(w, http.StatusInternalServerError, "internal error")
 			return
 		}

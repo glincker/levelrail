@@ -78,6 +78,16 @@ func TestPlanDatabaseCreate(t *testing.T) {
 			flags: createDatabaseFlags{name: "analytics", engine: "clickhouse", version: "24.8"},
 			want:  databaseResource{Name: "analytics", Engine: "clickhouse", Version: "24.8"},
 		},
+		{
+			name:  "node-id omitted leaves NodeID unset",
+			flags: createDatabaseFlags{name: "main", engine: "postgres", version: "16"},
+			want:  databaseResource{Name: "main", Engine: "postgres", Version: "16"},
+		},
+		{
+			name:  "node-id explicitly set applies an override",
+			flags: createDatabaseFlags{name: "main", engine: "postgres", version: "16", nodeID: "node_a", nodeIDSet: true},
+			want:  databaseResource{Name: "main", Engine: "postgres", Version: "16", NodeID: "node_a"},
+		},
 	}
 
 	for _, tt := range tests {
