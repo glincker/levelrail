@@ -564,6 +564,17 @@ func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	existing, err := rt.apps.GetDesiredService(r.Context(), name)
+	if errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: set app node: load existing failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	oldNodeID := existing.NodeID
+
 	if err := rt.apps.UpdateServiceNode(r.Context(), name, req.NodeID); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
@@ -571,6 +582,10 @@ func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 		rt.logger.Error("api: set app node failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
+	}
+
+	if oldNodeID != req.NodeID {
+		rt.teardownServiceContainers(name, oldNodeID)
 	}
 
 	rt.reloadAndWriteApp(w, r, name, "set app node")

@@ -1,12 +1,14 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -320,6 +322,17 @@ func (rt *Router) handleSetDatabaseNode(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
+	existing, err := rt.databases.GetDesiredDatabase(r.Context(), name)
+	if errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: set database node: load existing failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	oldNodeID := existing.NodeID
+
 	if err := rt.databases.UpdateDatabaseNode(r.Context(), name, req.NodeID); errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
 		return
@@ -329,7 +342,30 @@ func (rt *Router) handleSetDatabaseNode(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if oldNodeID != req.NodeID {
+		rt.teardownDatabaseContainer(name, oldNodeID)
+	}
+
 	rt.reloadAndWriteDatabase(w, r, name, "set database node")
+}
+
+// teardownDatabaseContainer stops name's running container in the
+// background after its desired state has moved off nodeID, the database
+// counterpart to teardownServiceContainers in apps.go.
+func (rt *Router) teardownDatabaseContainer(name, nodeID string) {
+	if rt.execRuntime == nil {
+		return
+	}
+	runtime, err := rt.execRuntime(nodeID)
+	if err != nil {
+		rt.logger.Error("api: teardown database container: resolve node runtime failed", slog.String("error", err.Error()), slog.String("name", name))
+		return
+	}
+	go func() { //nolint:gosec // deliberately outlives the request, same as teardownServiceContainers
+		if err := database.New(name, rt.databases, runtime).Teardown(context.Background()); err != nil {
+			rt.logger.Error("api: teardown database container failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}()
 }
 
 // setDatabaseProjectRequest is PUT /api/v1/databases/{name}/project's

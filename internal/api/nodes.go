@@ -324,12 +324,10 @@ type drainNodeResponse struct {
 // must not block others" principle cmd/levelrail's dynamicSource already
 // applies to reconcile passes, applied here to a bulk placement change.
 // Each resource is attempted independently and its own outcome recorded
-// in the response; a real live-container consequence of this (the
-// previous node's own container is not itself stopped by this call, only
-// desired placement changes, the reconcile engine's next pass is what
-// actually converges each moved resource on its new node) is the same
-// known gap the placement mechanism already left open, not something
-// drain introduces.
+// in the response. After each successful move, the resource's container
+// on id (the node being drained) is torn down in the background, the
+// same teardownServiceContainers/teardownDatabaseContainer call
+// handleSetAppNode/handleSetDatabaseNode make.
 func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	targetNodeID := r.URL.Query().Get("target_node_id")
@@ -382,6 +380,7 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		resp.MovedServices = append(resp.MovedServices, svc.Name)
+		rt.teardownServiceContainers(svc.Name, id)
 	}
 	for _, d := range databases {
 		if err := rt.databases.UpdateDatabaseNode(r.Context(), d.Name, targetNodeID); err != nil {
@@ -390,6 +389,7 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		resp.MovedDatabases = append(resp.MovedDatabases, d.Name)
+		rt.teardownDatabaseContainer(d.Name, id)
 	}
 
 	status := http.StatusOK

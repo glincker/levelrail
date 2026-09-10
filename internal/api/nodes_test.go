@@ -520,6 +520,51 @@ func TestHandleDrainNode_MovesServicesAndDatabases(t *testing.T) {
 	}
 }
 
+// TestHandleDrainNode_TeardownDispatchesOnDrainedNode proves each moved
+// service and database gets its container on the DRAINED node (not the
+// target) torn down, closing the gap handleDrainNode's own doc comment
+// used to admit.
+func TestHandleDrainNode_TeardownDispatchesOnDrainedNode(t *testing.T) {
+	fake := &fakeExecAppRuntime{
+		listByPrefixCalls:  make(chan struct{}, 4),
+		inspectByNameCalls: make(chan struct{}, 4),
+	}
+	rt, db := newTestRouterWithExecRuntime(t, fake)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	seedNode(t, db, "node_1", "worker-1")
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "img:1", Port: 3000}); err != nil {
+		t.Fatalf("seed service: %v", err)
+	}
+	if err := db.UpdateServiceNode(ctx, "web", "node_1"); err != nil {
+		t.Fatalf("place service: %v", err)
+	}
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("seed database: %v", err)
+	}
+	if err := db.UpdateDatabaseNode(ctx, "main", "node_1"); err != nil {
+		t.Fatalf("place database: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/node_1/drain", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	select {
+	case <-fake.listByPrefixCalls:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for the service teardown to list containers on the drained node")
+	}
+	select {
+	case <-fake.inspectByNameCalls:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for the database teardown to inspect the drained node's container")
+	}
+}
+
 func TestHandleDrainNode_ToExplicitTarget(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
