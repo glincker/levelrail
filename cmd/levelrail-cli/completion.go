@@ -64,6 +64,8 @@ var cliCommandTree = map[string]*cmdNode{
 		"secrets":            {subs: map[string]*cmdNode{"list": nil, "set": nil, "lock": nil}},
 		"git-source":         {subs: map[string]*cmdNode{"get": nil, "set": nil, "delete": nil}},
 		"webhook-deliveries": {subs: map[string]*cmdNode{"list": nil, "replay": nil}},
+		"clone":              nil,
+		"images":             nil,
 	}},
 	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "delete": nil, "resource-recommendation": nil, "set-project": nil, "clear-project": nil}},
 	"auth":      {subs: map[string]*cmdNode{"login": nil, "whoami": nil}},
@@ -75,6 +77,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"basic-auth":     {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"maintenance":    {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"tls-cert":       {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
+		"check":          nil,
 	}},
 	"backups": {subs: map[string]*cmdNode{
 		"list": nil, "trigger": nil, "restore": nil, "restore-as-new": nil, "verify": nil, "verifications": nil,

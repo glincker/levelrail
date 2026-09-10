@@ -180,6 +180,24 @@ func (c *Client) ListApps(ctx context.Context) ([]AppResource, error) {
 	return out, err
 }
 
+// CloneApp calls POST /api/v1/apps/{name}/clone: duplicates name's
+// desired state under newName. Domains, secret values, and node
+// placement are never copied (see internal/api/apps_clone.go's own doc
+// comment for why).
+func (c *Client) CloneApp(ctx context.Context, name, newName string) (AppResource, error) {
+	var out AppResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/clone", CloneAppRequest{NewName: newName}, &out)
+	return out, err
+}
+
+// ListAppImages calls GET /api/v1/apps/{name}/images: every
+// locally-present tag under name's current image's repo, newest first.
+func (c *Client) ListAppImages(ctx context.Context, name string) ([]ImageResource, error) {
+	var out []ImageResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/images", nil, &out)
+	return out, err
+}
+
 // TriggerBuild calls POST /api/v1/apps/{name}/builds.
 func (c *Client) TriggerBuild(ctx context.Context, name string, req BuildTriggerRequest) (BuildTriggerResponse, error) {
 	var out BuildTriggerResponse
@@ -609,6 +627,15 @@ func (c *Client) SetDomainTLSCert(ctx context.Context, name, domain string, req 
 func (c *Client) ClearDomainTLSCert(ctx context.Context, name, domain string) (DomainTLSCertResource, error) {
 	var out DomainTLSCertResource
 	err := c.do(ctx, http.MethodDelete, domainTLSCertPath(name, domain), nil, &out)
+	return out, err
+}
+
+// CheckDomain calls GET /api/v1/apps/{name}/domains/{domain}/check: a
+// real DNS lookup reporting whether domain currently resolves to this
+// control plane's own advertised address.
+func (c *Client) CheckDomain(ctx context.Context, name, domain string) (DomainCheckResource, error) {
+	var out DomainCheckResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/domains/"+PathEscape(domain)+"/check", nil, &out)
 	return out, err
 }
 

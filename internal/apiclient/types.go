@@ -359,6 +359,35 @@ type SetDomainTLSCertRequest struct {
 	Key  string `json:"key"`
 }
 
+// DomainCheckResource mirrors internal/api's domainCheckResponse
+// (internal/api/domain_check.go): GET
+// /api/v1/apps/{name}/domains/{domain}/check's wire shape.
+type DomainCheckResource struct {
+	Domain        string   `json:"domain"`
+	ExpectedHost  string   `json:"expected_host,omitempty"`
+	HostInferred  bool     `json:"host_inferred,omitempty"`
+	Resolved      bool     `json:"resolved"`
+	ResolvedHosts []string `json:"resolved_hosts,omitempty"`
+	Status        string   `json:"status"`
+	ExpectedIPv4  []string `json:"expected_ipv4,omitempty"`
+	ExpectedIPv6  []string `json:"expected_ipv6,omitempty"`
+}
+
+// CloneAppRequest mirrors internal/api's cloneAppRequest
+// (internal/api/apps_clone.go): POST /api/v1/apps/{name}/clone's
+// request body.
+type CloneAppRequest struct {
+	NewName string `json:"new_name"`
+}
+
+// ImageResource mirrors internal/api's imageResource
+// (internal/api/images.go): one element of GET
+// /api/v1/apps/{name}/images's wire shape.
+type ImageResource struct {
+	Tag       string    `json:"tag"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 // BackupHistoryResource mirrors internal/api's backupHistoryResource
 // (internal/api/backups.go). ServiceName/VolumeName are set instead of
 // DatabaseName for an app service volume backup, never alongside it.
