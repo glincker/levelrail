@@ -10,6 +10,7 @@
 package apiclient
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -1754,6 +1755,104 @@ func (c *Client) QueryAppMetrics(ctx context.Context, name, metric string, from,
 	return out, err
 }
 
+// QueryDatabaseMetrics calls GET /api/v1/databases/{name}/metrics?metric=&from=&to=&step=
+// (internal/api/database_metrics.go's handleQueryDatabaseMetrics), the
+// database-kind counterpart to QueryAppMetrics: same params, same
+// response shape, since internal/api's queryResourceMetrics is the
+// shared implementation behind both routes server-side.
+func (c *Client) QueryDatabaseMetrics(ctx context.Context, name, metric string, from, to time.Time, step time.Duration) (AppMetricsResource, error) {
+	query := url.Values{}
+	query.Set("metric", metric)
+	query.Set("from", from.UTC().Format(time.RFC3339))
+	query.Set("to", to.UTC().Format(time.RFC3339))
+	if step > 0 {
+		query.Set("step", step.String())
+	}
+	var out AppMetricsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/metrics?"+query.Encode(), nil, &out)
+	return out, err
+}
+
+// QueryNodeMetrics calls GET /api/v1/nodes/{id}/metrics?metric=&from=&to=&step=
+// (internal/api/node_metrics.go's handleQueryNodeMetrics): a sum of
+// every service placed on the node for most metrics, or a real
+// host-level reading for the rest (disk usage, OS patches available);
+// see that handler's own doc comment for exactly which metric names fall
+// into each group. The server, not this client, is the authority on
+// which metric names are valid.
+func (c *Client) QueryNodeMetrics(ctx context.Context, id, metric string, from, to time.Time, step time.Duration) (NodeMetricsResource, error) {
+	query := url.Values{}
+	query.Set("metric", metric)
+	query.Set("from", from.UTC().Format(time.RFC3339))
+	query.Set("to", to.UTC().Format(time.RFC3339))
+	if step > 0 {
+		query.Set("step", step.String())
+	}
+	var out NodeMetricsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/nodes/"+PathEscape(id)+"/metrics?"+query.Encode(), nil, &out)
+	return out, err
+}
+
+// StreamLogs calls GET /api/v1/apps/{name}/logs/stream
+// (internal/api/live_logs.go's handleLiveLogStream): an SSE connection
+// that replays a short recent backfill then tails live output until ctx
+// is canceled or the server closes the connection. onEntry is called
+// once per line in arrival order; a non-nil return stops the stream
+// early and is returned as-is (never wrapped), so a caller can tell "my
+// own callback chose to stop" apart from a real transport failure.
+//
+// Unlike every other Client method, this builds its own *http.Client
+// with no timeout rather than reusing c.hc: c.hc's own 15-minute cap
+// (NewClient's own doc comment) is sized for one-shot calls, not a tail
+// meant to run indefinitely until the caller's own context is canceled
+// (e.g. Ctrl+C).
+func (c *Client) StreamLogs(ctx context.Context, name string, onEntry func(LogStreamEntry) error) error {
+	path := "/api/v1/apps/" + PathEscape(name) + "/logs/stream"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
+	if err != nil {
+		return fmt.Errorf("build request: %w", err)
+	}
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+	if c.userAgent != "" {
+		req.Header.Set("User-Agent", c.userAgent)
+	}
+
+	streamClient := &http.Client{Transport: c.hc.Transport}
+	resp, err := streamClient.Do(req) //nolint:gosec // same target as above
+	if err != nil {
+		return fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return decodeResponse(resp, nil)
+	}
+
+	scanner := bufio.NewScanner(resp.Body)
+	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
+	for scanner.Scan() {
+		data, ok := strings.CutPrefix(scanner.Text(), "data: ")
+		if !ok {
+			// Comment lines (": connected") and the blank line separating
+			// SSE events, neither of which carries a payload.
+			continue
+		}
+		var entry LogStreamEntry
+		if err := json.Unmarshal([]byte(data), &entry); err != nil {
+			continue
+		}
+		if err := onEntry(entry); err != nil {
+			return err
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("read log stream: %w", err)
+	}
+	return ctx.Err()
+}
+
 // auditLogQuery builds GET /api/v1/audit-log's query string, shared by
 // ListAuditLog and DownloadAuditLogCSV so the CSV export can't drift
 // from the JSON list's own filter params.
@@ -1851,6 +1950,124 @@ func (c *Client) ListDeployAttempts(ctx context.Context, name string) ([]DeployA
 func (c *Client) ListCertificates(ctx context.Context) ([]CertificateResource, error) {
 	var out []CertificateResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/certificates", nil, &out)
+	return out, err
+}
+
+// GetOAuthSettings calls GET /api/v1/settings/oauth: every OAuth sign-in
+// provider's current configuration.
+func (c *Client) GetOAuthSettings(ctx context.Context) ([]OAuthProviderSettingsResource, error) {
+	var out []OAuthProviderSettingsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/oauth", nil, &out)
+	return out, err
+}
+
+// GetIngressSettings calls GET /api/v1/settings/ingress.
+func (c *Client) GetIngressSettings(ctx context.Context) (IngressSettingsResource, error) {
+	var out IngressSettingsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/ingress", nil, &out)
+	return out, err
+}
+
+// UpdateIngressSettings calls PUT /api/v1/settings/ingress.
+func (c *Client) UpdateIngressSettings(ctx context.Context, req IngressSettingsResource) (IngressSettingsResource, error) {
+	var out IngressSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/ingress", req, &out)
+	return out, err
+}
+
+// SetAppStorage calls PUT /api/v1/apps/{name}/storage: attaches an
+// already-connected backup target to name as its object-storage
+// credential source.
+func (c *Client) SetAppStorage(ctx context.Context, name, storageTargetID string) (AppStorageResource, error) {
+	var out AppStorageResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/storage", SetAppStorageRequest{StorageTargetID: storageTargetID}, &out)
+	return out, err
+}
+
+// ClearAppStorage calls DELETE /api/v1/apps/{name}/storage: detaches
+// name's object-storage credential source.
+func (c *Client) ClearAppStorage(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/storage", nil, nil)
+}
+
+// ListGitHubAppRepos calls GET /api/v1/github-app/repos: every
+// repository the connected GitHub App installation can access.
+func (c *Client) ListGitHubAppRepos(ctx context.Context) ([]GitHubAppRepoResource, error) {
+	var out []GitHubAppRepoResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/github-app/repos", nil, &out)
+	return out, err
+}
+
+// ListGitHubAppBranches calls GET
+// /api/v1/github-app/repos/{owner}/{repo}/branches.
+func (c *Client) ListGitHubAppBranches(ctx context.Context, owner, repo string) ([]GitAppBranchResource, error) {
+	var out []GitAppBranchResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/github-app/repos/"+PathEscape(owner)+"/"+PathEscape(repo)+"/branches", nil, &out)
+	return out, err
+}
+
+// UseGitHubRepoAsSource calls POST
+// /api/v1/github-app/repos/{owner}/{repo}/use-as-source: connects the
+// repo as req.AppName's git source and registers a push webhook.
+func (c *Client) UseGitHubRepoAsSource(ctx context.Context, owner, repo string, req UseRepoAsSourceRequest) (UseGitHubRepoAsSourceResponse, error) {
+	var out UseGitHubRepoAsSourceResponse
+	err := c.do(ctx, http.MethodPost, "/api/v1/github-app/repos/"+PathEscape(owner)+"/"+PathEscape(repo)+"/use-as-source", req, &out)
+	return out, err
+}
+
+// ListGitLabAppProjects calls GET /api/v1/gitlab-app/projects: every
+// project the connected GitLab account can access.
+func (c *Client) ListGitLabAppProjects(ctx context.Context) ([]GitLabAppProjectResource, error) {
+	var out []GitLabAppProjectResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/gitlab-app/projects", nil, &out)
+	return out, err
+}
+
+// ListGitLabAppBranches calls GET
+// /api/v1/gitlab-app/projects/{id}/branches.
+func (c *Client) ListGitLabAppBranches(ctx context.Context, projectID int64) ([]GitAppBranchResource, error) {
+	var out []GitAppBranchResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/gitlab-app/projects/"+strconv.FormatInt(projectID, 10)+"/branches", nil, &out)
+	return out, err
+}
+
+// UseGitLabProjectAsSource calls POST
+// /api/v1/gitlab-app/projects/{id}/use-as-source.
+func (c *Client) UseGitLabProjectAsSource(ctx context.Context, projectID int64, req UseRepoAsSourceRequest) (GitSourceResource, error) {
+	var out GitSourceResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/gitlab-app/projects/"+strconv.FormatInt(projectID, 10)+"/use-as-source", req, &out)
+	return out, err
+}
+
+// ListBitbucketAppRepos calls GET /api/v1/bitbucket-app/repos: every
+// repository the connected Bitbucket account can access.
+func (c *Client) ListBitbucketAppRepos(ctx context.Context) ([]BitbucketAppRepoResource, error) {
+	var out []BitbucketAppRepoResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/bitbucket-app/repos", nil, &out)
+	return out, err
+}
+
+// ListBitbucketAppBranches calls GET
+// /api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/branches.
+func (c *Client) ListBitbucketAppBranches(ctx context.Context, workspace, repoSlug string) ([]GitAppBranchResource, error) {
+	var out []GitAppBranchResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/bitbucket-app/repos/"+PathEscape(workspace)+"/"+PathEscape(repoSlug)+"/branches", nil, &out)
+	return out, err
+}
+
+// UseBitbucketRepoAsSource calls POST
+// /api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/use-as-source.
+func (c *Client) UseBitbucketRepoAsSource(ctx context.Context, workspace, repoSlug string, req UseRepoAsSourceRequest) (GitSourceResource, error) {
+	var out GitSourceResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/bitbucket-app/repos/"+PathEscape(workspace)+"/"+PathEscape(repoSlug)+"/use-as-source", req, &out)
+	return out, err
+}
+
+// ListStaticSites calls GET /api/v1/static-sites: every build.type:
+// static site currently served directly through embedded Caddy.
+func (c *Client) ListStaticSites(ctx context.Context) ([]StaticSiteResource, error) {
+	var out []StaticSiteResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/static-sites", nil, &out)
 	return out, err
 }
 

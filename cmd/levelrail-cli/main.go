@@ -82,10 +82,6 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runCloudflareTunnel(prog, args[1:], stdout, stderr, lookupEnv)
 	case "registry":
 		return runRegistry(prog, args[1:], stdout, stderr, lookupEnv)
-	case "oauth":
-		return runOAuth(prog, args[1:], stdout, stderr, lookupEnv)
-	case "email":
-		return runEmail(prog, args[1:], stdout, stderr, lookupEnv)
 	case "channels":
 		return runChannels(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backup-targets":
@@ -122,6 +118,18 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runMigrate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "completion":
 		return runCompletion(prog, args[1:], stdout, stderr, lookupEnv)
+	case "settings":
+		return runSettings(prog, args[1:], stdout, stderr, lookupEnv)
+	case "github-app":
+		return runGitHubApp(prog, args[1:], stdout, stderr, lookupEnv)
+	case "gitlab-app":
+		return runGitLabApp(prog, args[1:], stdout, stderr, lookupEnv)
+	case "bitbucket-app":
+		return runBitbucketApp(prog, args[1:], stdout, stderr, lookupEnv)
+	case "templates":
+		return runTemplates(prog, args[1:], stdout, stderr, lookupEnv)
+	case "static-sites":
+		return runStaticSites(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown command %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, rootUsage(prog))
@@ -155,8 +163,6 @@ Usage:
   %[1]s backup-targets list|get|create|update|delete [flags]   manage connected S3-compatible backup destinations
   %[1]s registry-credentials list|get|create|update|delete [flags]   manage private container registry pull credentials
   %[1]s registry status|enable|disable [flags]                 manage Levelrail's own built-in container registry
-  %[1]s oauth list|get|set|disable [flags]                     configure Google/GitHub/OIDC sign-in
-  %[1]s email get|set [flags]                                  configure outbound email (SMTP or SES)
   %[1]s flags create|list|get|set|delete [flags]              manage feature flags, read live by a running app via GET /api/v1/flags/evaluate/{key}
   %[1]s nodes list|get|delete [flags]                        manage nodes
   %[1]s nodes join-token [flags]                             mint a one-time node enrollment token
@@ -179,6 +185,12 @@ Usage:
   %[1]s tokens create|list|revoke [flags]   manage API tokens (requires a live session, see "%[1]s tokens -h")
   %[1]s migrate coolify --url URL --token TOKEN [flags]   migrate apps from a Coolify instance
   %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"
+  %[1]s settings oauth|email|ingress get|set [flags]      configure OAuth sign-in, outbound email, and ingress/ACME
+  %[1]s github-app repos|branches|use-as-source [flags]   browse and use a connected GitHub App's repos
+  %[1]s gitlab-app projects|branches|use-as-source [flags]   browse and use a connected GitLab App's projects
+  %[1]s bitbucket-app repos|branches|use-as-source [flags]   browse and use a connected Bitbucket App's repos
+  %[1]s templates list|get|deploy [flags]                 browse and deploy from the curated service catalog
+  %[1]s static-sites list [flags]                          list build.type: static apps
 
 Auth and target:
   --token, %[2]s          API token

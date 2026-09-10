@@ -43,6 +43,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"promote":                 nil,
 		"network":                 nil,
 		"logs":                    nil,
+		"metrics":                 nil,
 		"exec":                    nil,
 		"log-drain":               {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"scheduled-tasks":         {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "update": nil, "delete": nil, "run": nil}},
@@ -66,8 +67,9 @@ var cliCommandTree = map[string]*cmdNode{
 		"webhook-deliveries": {subs: map[string]*cmdNode{"list": nil, "replay": nil}},
 		"clone":              nil,
 		"images":             nil,
+		"storage":            {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 	}},
-	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "delete": nil, "resource-recommendation": nil, "set-project": nil, "clear-project": nil}},
+	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "delete": nil, "resource-recommendation": nil, "metrics": nil, "set-project": nil, "clear-project": nil}},
 	"auth": {subs: map[string]*cmdNode{"login": nil, "whoami": nil, "2fa": {subs: map[string]*cmdNode{
 		"status": nil, "setup": nil, "enable": nil, "disable": nil, "recovery-codes": nil,
 	}}}},
@@ -80,6 +82,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"maintenance":    {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"tls-cert":       {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"check":          nil,
+		"certificates":   nil,
 	}},
 	"backups": {subs: map[string]*cmdNode{
 		"list": nil, "trigger": nil, "restore": nil, "restore-as-new": nil, "verify": nil, "verifications": nil,
@@ -94,13 +97,11 @@ var cliCommandTree = map[string]*cmdNode{
 	"backup-targets":       {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},
 	"registry-credentials": {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},
 	"registry":             {subs: map[string]*cmdNode{"status": nil, "enable": nil, "disable": nil, "repositories": nil, "tags": nil}},
-	"oauth":                {subs: map[string]*cmdNode{"list": nil, "get": nil, "set": nil, "disable": nil}},
-	"email":                {subs: map[string]*cmdNode{"get": nil, "set": nil}},
 	"flags":                {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "set": nil, "delete": nil}},
 	"nodes": {subs: map[string]*cmdNode{
 		"list": nil, "get": nil, "delete": nil, "join-token": nil,
 		"cordon": nil, "uncordon": nil, "drain": nil, "workloads": nil,
-		"health": nil, "patch-status": nil,
+		"health": nil, "patch-status": nil, "metrics": nil,
 	}},
 	"status":       nil,
 	"version":      nil,
@@ -126,6 +127,16 @@ var cliCommandTree = map[string]*cmdNode{
 	"secrets":    {subs: map[string]*cmdNode{"rotate-master-key": nil}},
 	"migrate":    {subs: map[string]*cmdNode{"coolify": nil, "dokploy": nil, "caprover": nil}},
 	"completion": {subs: map[string]*cmdNode{"bash": nil, "zsh": nil, "fish": nil}},
+	"settings": {subs: map[string]*cmdNode{
+		"oauth":   {subs: map[string]*cmdNode{"list": nil, "set": nil}},
+		"email":   {subs: map[string]*cmdNode{"get": nil, "set": nil}},
+		"ingress": {subs: map[string]*cmdNode{"get": nil, "set": nil}},
+	}},
+	"github-app":    {subs: map[string]*cmdNode{"repos": nil, "branches": nil, "use-as-source": nil}},
+	"gitlab-app":    {subs: map[string]*cmdNode{"projects": nil, "branches": nil, "use-as-source": nil}},
+	"bitbucket-app": {subs: map[string]*cmdNode{"repos": nil, "branches": nil, "use-as-source": nil}},
+	"templates":     {subs: map[string]*cmdNode{"list": nil, "get": nil, "deploy": nil}},
+	"static-sites":  {subs: map[string]*cmdNode{"list": nil}},
 }
 
 // globalFlags lists the flags apiFlagSet registers on nearly every
