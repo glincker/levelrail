@@ -1729,6 +1729,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithNotificationChannelTester(deployDispatcher),
 		api.WithNotificationDeliveries(alertingDB),
 		api.WithSessionTTL(sessionTTL(logger)),
+		api.WithAutoPlacement(autoPlacementEnabled(logger)),
 		api.WithAPIRateLimit(apiRateLimitReadRPM(logger), apiRateLimitWriteRPM(logger)),
 		api.WithDataDir(dataDir),
 		api.WithDockerPinger(client),
@@ -2025,6 +2026,25 @@ func sessionTTL(logger *slog.Logger) time.Duration {
 		return 0
 	}
 	return d
+}
+
+// autoPlacementEnabled reads APP_AUTO_PLACEMENT as a bool, the value
+// api.WithAutoPlacement configures: whether a create request that omits
+// node_id gets auto-placed onto the least-loaded registered node instead
+// of staying on this control plane's own local node. Defaults to true
+// (enabled) when unset or unparseable, logging a warning in the latter
+// case so a typo'd env var is visible rather than silently ignored.
+func autoPlacementEnabled(logger *slog.Logger) bool {
+	raw := os.Getenv("APP_AUTO_PLACEMENT")
+	if raw == "" {
+		return true
+	}
+	v, err := strconv.ParseBool(raw)
+	if err != nil {
+		logger.Warn("invalid APP_AUTO_PLACEMENT, defaulting to enabled", slog.String("value", raw), slog.String("error", err.Error()))
+		return true
+	}
+	return v
 }
 
 // certExpiryWarningWindow reads APP_CERT_EXPIRY_WARNING_WINDOW as a Go

@@ -185,6 +185,121 @@ func TestHandleCreateDatabase_InvalidBody(t *testing.T) {
 	}
 }
 
+// TestHandleCreateDatabase_AutoPlacement mirrors
+// TestHandleCreateApp_AutoPlacement (apps_test.go): node_id omitted picks
+// the least-loaded registered node, an explicit node_id (including an
+// explicit "") is always honored as an override, and a single-node
+// install keeps today's local-node behavior unchanged.
+func TestHandleCreateDatabase_AutoPlacement(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("no other nodes registered: stays local, not auto-placed", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases", `{"name":"main","engine":"redis","version":"7"}`))
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+		}
+		var got databaseResource
+		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if got.NodeID != "" || got.AutoPlaced {
+			t.Errorf("got node_id=%q auto_placed=%v, want local and not auto-placed", got.NodeID, got.AutoPlaced)
+		}
+	})
+
+	t.Run("node_id omitted with multiple nodes registered: auto-placed on the least-loaded one", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+		seedOnlineNode(t, db, "node_a", "alpha", true)
+		seedOnlineNode(t, db, "node_b", "bravo", true)
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "existing", Image: "img:1", Port: 80}); err != nil {
+			t.Fatalf("seed existing service: %v", err)
+		}
+		if err := db.UpdateServiceNode(ctx, "existing", "node_a"); err != nil {
+			t.Fatalf("place existing service: %v", err)
+		}
+
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases", `{"name":"main","engine":"redis","version":"7"}`))
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+		}
+		var got databaseResource
+		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if got.NodeID != "node_b" || !got.AutoPlaced {
+			t.Errorf("got node_id=%q auto_placed=%v, want node_id=%q auto_placed=true", got.NodeID, got.AutoPlaced, "node_b")
+		}
+
+		saved, err := db.GetDesiredDatabase(ctx, "main")
+		if err != nil {
+			t.Fatalf("GetDesiredDatabase: %v", err)
+		}
+		if saved.NodeID != "node_b" {
+			t.Errorf("persisted NodeID = %q, want %q", saved.NodeID, "node_b")
+		}
+	})
+
+	t.Run("explicit node_id overrides auto-placement", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+		seedOnlineNode(t, db, "node_a", "alpha", true)
+		seedOnlineNode(t, db, "node_b", "bravo", true)
+
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases", `{"name":"main","engine":"redis","version":"7","node_id":"node_a"}`))
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+		}
+		var got databaseResource
+		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if got.NodeID != "node_a" || got.AutoPlaced {
+			t.Errorf("got node_id=%q auto_placed=%v, want node_id=%q auto_placed=false", got.NodeID, got.AutoPlaced, "node_a")
+		}
+	})
+
+	t.Run("explicit empty node_id overrides auto-placement, stays local", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+		seedOnlineNode(t, db, "node_a", "alpha", true)
+		seedOnlineNode(t, db, "node_b", "bravo", true)
+
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases", `{"name":"main","engine":"redis","version":"7","node_id":""}`))
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+		}
+		var got databaseResource
+		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if got.NodeID != "" || got.AutoPlaced {
+			t.Errorf("got node_id=%q auto_placed=%v, want local and not auto-placed", got.NodeID, got.AutoPlaced)
+		}
+	})
+
+	t.Run("explicit node_id for an unknown node is rejected", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		cookie := loginTestSession(t, rt, db)
+
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases", `{"name":"main","engine":"redis","version":"7","node_id":"does-not-exist"}`))
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+		}
+		if _, err := db.GetDesiredDatabase(ctx, "main"); err == nil {
+			t.Error("a rejected node_id must not have saved the database")
+		}
+	})
+}
+
 func TestHandleGetDatabase_NotFound(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

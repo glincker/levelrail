@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
-import { useCreateDatabase, useSetDatabaseNode } from '../queries/databases'
+import { useCreateDatabase } from '../queries/databases'
 import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
 import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
@@ -144,7 +144,6 @@ export function CreateDatabaseFields({
 }) {
   const navigate = useNavigate()
   const createDatabase = useCreateDatabase()
-  const setDatabaseNode = useSetDatabaseNode()
   // Optional convenience only, see useNodeListOptional's own doc
   // comment: a failure or empty list here must never block database
   // creation, so the node field below is simply not rendered rather
@@ -239,6 +238,15 @@ export function CreateDatabaseFields({
           values.project === NO_PROJECT_VALUE || !values.project
             ? undefined
             : values.project,
+        // Only sent once the operator has actually opened the advanced
+        // panel, the same reasoning CreateAppFields' own onSubmit
+        // comment gives: node_id left undefined otherwise lets the
+        // server auto-place this database via simple spread scheduling.
+        node_id: showAdvanced
+          ? nodeId === LOCAL_NODE_VALUE
+            ? ''
+            : nodeId
+          : undefined,
       },
       {
         onSuccess: (created) => {
@@ -246,19 +254,15 @@ export function CreateDatabaseFields({
           onCreated()
           toast.add({
             title: `Database "${created.name}" created.`,
+            description: created.auto_placed
+              ? `Auto-placed on node "${created.node_id}" (simple spread scheduling).`
+              : undefined,
             type: 'success',
           })
           void navigate({
             to: '/databases/$name',
             params: { name: created.name },
           })
-          // Placement is a trailing, best-effort call: the database row
-          // already exists at this point, so a placement failure must
-          // never look like the whole creation failed. Only fired when
-          // a non-default node was actually picked.
-          if (nodeId !== LOCAL_NODE_VALUE) {
-            setDatabaseNode.mutate({ name: created.name, nodeId })
-          }
         },
       },
     )

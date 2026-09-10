@@ -59,8 +59,16 @@ type AppResource struct {
 	Health    *ServiceHealth    `json:"health,omitempty"`
 	// Hooks mirrors internal/api's appResource.Hooks: settable on create
 	// and update, like Resources/Health above.
-	Hooks  *ServiceHooks `json:"hooks,omitempty"`
-	NodeID string        `json:"node_id,omitempty"`
+	Hooks *ServiceHooks `json:"hooks,omitempty"`
+	// NodeID mirrors internal/api's appResource.NodeID: response-only on
+	// update, but settable at create time as an explicit placement
+	// override (omitted entirely lets the server auto-place via simple
+	// spread scheduling instead, see AutoPlaced below).
+	NodeID string `json:"node_id,omitempty"`
+	// AutoPlaced mirrors internal/api's appResource.AutoPlaced:
+	// response-only, true when create left node_id unset and the server
+	// picked a non-local node for it via simple spread scheduling.
+	AutoPlaced bool `json:"auto_placed,omitempty"`
 	// ProjectID mirrors internal/api's appResource.ProjectID:
 	// response-only, set via PUT /api/v1/apps/{name}/project.
 	ProjectID string `json:"project_id,omitempty"`
@@ -628,14 +636,17 @@ type SessionInfoResource struct {
 }
 
 // DatabaseResource mirrors internal/api's databaseResource
-// (internal/api/databases.go). NodeID is response-only, the same
-// "shown but not settable through this endpoint" boundary AppResource's
-// own NodeID field already documents.
+// (internal/api/databases.go). NodeID is response-only on update, but
+// settable at create time as an explicit placement override, the same
+// boundary AppResource's own NodeID field documents.
 type DatabaseResource struct {
 	Name    string `json:"name"`
 	Engine  string `json:"engine"`
 	Version string `json:"version"`
 	NodeID  string `json:"node_id,omitempty"`
+	// AutoPlaced mirrors internal/api's databaseResource.AutoPlaced: see
+	// AppResource's identically-named field doc comment.
+	AutoPlaced bool `json:"auto_placed,omitempty"`
 	// ProjectID mirrors internal/api's databaseResource.ProjectID:
 	// response-only, set via PUT /api/v1/databases/{name}/project.
 	ProjectID string `json:"project_id,omitempty"`

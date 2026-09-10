@@ -47,6 +47,18 @@ type createFlags struct {
 	// apps_create_interactive.go's runAppsCreateWizard.
 	interactive bool
 
+	// nodeID/nodeIDSet back --node-id: an explicit placement override,
+	// honored even when nodeID is "" (pins to the local node). Left unset
+	// (nodeIDSet false) omits node_id from the create request entirely,
+	// letting the control plane auto-place this app via simple spread
+	// scheduling when more than one node is registered. See
+	// parseCreateFlags for how nodeIDSet is derived from fs.Visit, the
+	// same "flag omitted vs explicitly set" distinction
+	// nodes_workloads.go's own doc comment explains plain BoolVar/
+	// StringVar defaults alone can't make.
+	nodeID    string
+	nodeIDSet bool
+
 	// attachDatabase, attachDatabaseEnvVar, attachDatabaseField back
 	// --attach-database and its two optional refinements: a post-create
 	// call to PUT /api/v1/apps/{name}/database (apiclient's
@@ -572,6 +584,19 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 	if err != nil {
 		return reportError(stdout, stderr, f.jsonOut, err)
 	}
+	// --node-id is an explicit override, applied after planFromFlags so
+	// every path (existing-image, git-build, --file) gets it uniformly
+	// rather than threading it through each plan* function. Left unset,
+	// plan.CreateBody.NodeID stays "" and, since AppResource.NodeID
+	// carries `omitempty`, is indistinguishable on the wire from an
+	// explicit --node-id "": the control plane sees a genuinely omitted
+	// field either way and may auto-place this app, see AppResource's own
+	// NodeID field doc comment (internal/apiclient/types.go). Pinning
+	// back to the local node after auto-placement is available via
+	// PUT /api/v1/apps/{name}/node instead.
+	if f.nodeIDSet {
+		plan.CreateBody.NodeID = f.nodeID
+	}
 
 	profile := resolveProfile(profileFlag, lookupEnv)
 	token := resolveToken(tokenFlag, lookupEnv, prog, profile)
@@ -582,6 +607,9 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 	created, err := client.CreateApp(ctx, plan.CreateBody)
 	if err != nil {
 		return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("create app %q: %w", plan.CreateBody.Name, err))
+	}
+	if created.AutoPlaced && !f.jsonOut {
+		_, _ = fmt.Fprintf(stderr, "app %q auto-placed on node %q (simple spread scheduling)\n", created.Name, created.NodeID)
 	}
 
 	if buildErr := triggerCreatePlanBuild(ctx, client, created, plan, stderr, f.jsonOut); buildErr != nil {
@@ -668,6 +696,7 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.StringVar(&f.imageRepo, "image-repo", "", "image name without a tag, e.g. registry.example.com/org/app (git-build path)")
 	fs.StringVar(&f.file, "file", "", "path to an app.yaml (or equivalent) spec file; an alternative to the flag-only paths above")
 	fs.StringVar(&f.service, "service", "", "which service in --file's services: map to create, required when it declares more than one")
+	fs.StringVar(&f.nodeID, "node-id", "", "node to place this app on (default: auto-placed on the least-loaded registered node, or the local node if only one exists)")
 	fs.StringVar(&f.attachDatabase, "attach-database", "", "name of an existing managed database to attach after create (injects a connection env var, see --attach-database-env-var/--attach-database-field)")
 	fs.StringVar(&f.attachDatabaseEnvVar, "attach-database-env-var", "", "env var name the attached database's value is injected as (default: DATABASE_URL); only meaningful with --attach-database")
 	fs.StringVar(&f.attachDatabaseField, "attach-database-field", "", "which field to inject: url, host, port, username, password, or database (default: url); only meaningful with --attach-database")
@@ -685,6 +714,11 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 		return createFlags{}, err
 	}
 	f.outputFlag, f.queryFlag = *outputFlagP, *queryFlagP
+	fs.Visit(func(fl *flag.Flag) {
+		if fl.Name == "node-id" {
+			f.nodeIDSet = true
+		}
+	})
 	return f, nil
 }
 
@@ -756,6 +790,10 @@ Manifest path:
     build.type: image creates the app directly with build.image, no build triggered
   build.args from app.yaml's own build.args flow through automatically for a dockerfile build;
     --build-arg overrides them entirely rather than merging
+
+Placement (any path above):
+  --node-id string        node to place this app on; omitted auto-places it on the
+                                    least-loaded registered node (or the local node if only one exists)
 
 Database attachment (any path above):
   --attach-database string           name of an existing managed database to attach after create

@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
-import { useCreateApp, useSetAppNode } from '../queries/apps'
+import { useCreateApp } from '../queries/apps'
 import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
 import { useFormDraft } from '../hooks/useFormDraft'
@@ -167,7 +167,6 @@ export function CreateAppFields({
 }) {
   const navigate = useNavigate()
   const createApp = useCreateApp()
-  const setAppNode = useSetAppNode()
   // Optional convenience only, see useNodeListOptional's own doc
   // comment: a failure or empty list here must never block app
   // creation, so the node field below is simply not rendered rather
@@ -232,16 +231,23 @@ export function CreateAppFields({
             : values.strategy,
         replicas: values.replicas === '' ? undefined : Number(values.replicas),
         health: healthCheckFrom(values.healthCheckEnabled, values.healthCheckPath),
-        // Unlike node placement, project assignment is sent directly in
-        // this same create request: handleCreateApp's own doc comment
-        // (internal/api/apps.go) explains why that's safe at create
-        // time in a way it isn't through an ordinary update, so there's
-        // no trailing useSetAppProject.mutate() call the way node
-        // placement still needs below.
         project_id:
           values.project === NO_PROJECT_VALUE || !values.project
             ? undefined
             : values.project,
+        // Only sent once the operator has actually opened the advanced
+        // panel: leaving node_id undefined (dropped from the JSON body
+        // entirely) whenever they never touched it lets the server
+        // auto-place this app via simple spread scheduling, see
+        // CreateAppRequest's own doc comment (queries/apps.ts). Opening
+        // advanced and submitting "Local node" (the field's own default)
+        // still counts as an explicit choice here, sent as '', so it's
+        // never silently overridden by that auto-placement.
+        node_id: showAdvanced
+          ? nodeId === LOCAL_NODE_VALUE
+            ? ''
+            : nodeId
+          : undefined,
       },
       {
         onSuccess: (created) => {
@@ -249,19 +255,15 @@ export function CreateAppFields({
           onCreated()
           toast.add({
             title: `App "${created.name}" created.`,
+            description: created.auto_placed
+              ? `Auto-placed on node "${created.node_id}" (simple spread scheduling).`
+              : undefined,
             type: 'success',
           })
           void navigate({
             to: '/apps/$name',
             params: { name: created.name },
           })
-          // Placement is a trailing, best-effort call: the app row
-          // already exists at this point, so a placement failure must
-          // never look like the whole creation failed. Only fired when
-          // a non-default node was actually picked.
-          if (nodeId !== LOCAL_NODE_VALUE) {
-            setAppNode.mutate({ name: created.name, nodeId })
-          }
         },
       },
     )
