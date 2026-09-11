@@ -23,15 +23,11 @@ import (
 // wait for it to finish, get stdout/stderr/exit code back in one
 // response. This is exactly the pattern docker.Runtime.Exec's own
 // ReadCloser-plus-trailing-error contract already supports end to end
-// (internal/docker/runtime.go's Exec doc comment) via Local (this
-// control plane's own node, in-process) today, and via a connected
-// remote agent once GRPCTransport.Exec is implemented for real
-// (internal/agent/grpc_transport.go: it currently always returns
-// "remote Exec not implemented over the agent transport," so this
-// endpoint works today for an app placed on the local node and fails
-// loudly, not silently, for one placed on a remote node, exactly the
-// "fail loudly, never fake it" posture that stub error's own doc
-// comment already establishes for internal/backup's Dumper/Restorer).
+// (internal/docker/runtime.go's Exec doc comment), via Local (this
+// control plane's own node, in-process) and equally via a connected
+// remote agent (internal/agent's GRPCTransport streams the same
+// contract over the Session stream), so this endpoint works the same
+// way wherever the app is placed.
 //
 // What this deliberately is not: a real interactive terminal. No PTY,
 // no resize events, no WebSocket, no shell kept alive between calls.

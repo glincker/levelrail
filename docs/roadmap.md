@@ -326,6 +326,15 @@ still open. This page describes what's actually true today.
 
 - Agent transport abstraction: in-process for single-node, real gRPC
   for multi-node, with reconnection and version negotiation.
+- Full Docker surface over the agent transport, not just container
+  lifecycle: per-app networks and container exec (including streamed
+  stdin) now work on a remote node exactly as they do locally, so
+  database backup and restore, volume archive and restore, app
+  networking, hook commands, and `apps exec` are no longer limited to
+  resources placed on the control plane's own node. Exec is streamed and
+  flow-controlled in both directions, so a slow reader throttles the
+  remote command instead of dropping bytes or buffering a whole dump,
+  and closing the stream early actually stops the remote process.
 - Node registry, join-token issuance, and node CRUD.
 - mTLS between control plane and agents via a minimal self-signed CA.
 - Manual placement: assign or move a service to a specific node.

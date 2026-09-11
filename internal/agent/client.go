@@ -132,18 +132,19 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 
 // serveSession is RunSession's pure loop, split out so it's directly
 // testable against a fake agentClientStream: reads incoming
-// ControlMessage (AgentRequest) frames and dispatches each via Execute
-// against rt, replying with the resulting AgentResponse (and any
-// ProxiedEvent frames a WatchEvents request's relay goroutine produces
-// along the way).
+// ControlMessage frames and dispatches each against rt, replying with
+// the resulting AgentResponse (and any ProxiedEvent or ExecOutput frames
+// a watch or an exec produces along the way).
 //
 // Each request is dispatched in its own goroutine, not handled
 // sequentially in this loop: a slow operation (Create pulling a large
 // image, in particular) must not stall Recv from processing other,
-// unrelated, concurrent requests on the same connection. Send is
-// serialized by sendMu, since a gRPC stream is not safe for concurrent
-// Send calls, the identical reasoning mux.go's own sendMu already
-// documents for the control-plane side of this same connection.
+// unrelated, concurrent requests on the same connection. Exec's own
+// frames are routed to ExecRelay instead, which never blocks this loop
+// for the same reason. Send is serialized by sendMu, since a gRPC stream
+// is not safe for concurrent Send calls, the identical reasoning mux.go's
+// own sendMu already documents for the control-plane side of this same
+// connection.
 func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runtime, logger *slog.Logger) error {
 	var sendMu sync.Mutex
 	send := func(msg *agentpb.AgentMessage) {
@@ -157,15 +158,31 @@ func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runti
 		send(&agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Event{Event: ev}})
 	}
 
+	execs := NewExecRelay(rt, send)
+	defer execs.CloseAll()
+
 	for {
 		msg, err := stream.Recv()
 		if err != nil {
 			return fmt.Errorf("agent: session: recv: %w", err)
 		}
-		req := msg.GetRequest()
-		go func() {
-			resp := Execute(ctx, rt, req, emitEvent)
-			send(&agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Response{Response: resp}})
-		}()
+		switch p := msg.GetPayload().(type) {
+		case *agentpb.ControlMessage_Request:
+			req := p.Request
+			if exec := req.GetExec(); exec != nil {
+				execs.Start(ctx, req.GetRequestId(), exec)
+				continue
+			}
+			go func() {
+				resp := Execute(ctx, rt, req, emitEvent)
+				send(&agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Response{Response: resp}})
+			}()
+		case *agentpb.ControlMessage_ExecInput:
+			execs.Input(p.ExecInput)
+		case *agentpb.ControlMessage_ExecCancel:
+			execs.Cancel(p.ExecCancel.GetExecId())
+		case *agentpb.ControlMessage_ExecCredit:
+			execs.Credit(p.ExecCredit)
+		}
 	}
 }

@@ -177,6 +177,140 @@ func TestGRPCTransport_RemoteError_Propagates(t *testing.T) {
 	}
 }
 
+func TestGRPCTransport_Networks(t *testing.T) {
+	tests := []struct {
+		name string
+		// call drives one transport method and reports what came back,
+		// flattened so every case can share one result shape.
+		call     func(*GRPCTransport) (string, []docker.NetworkInfo, error)
+		respond  func(*agentpb.AgentRequest) *agentpb.AgentResponse
+		wantErr  string
+		wantID   string
+		wantNets []docker.NetworkInfo
+	}{
+		{
+			name: "ensure network",
+			call: func(tr *GRPCTransport) (string, []docker.NetworkInfo, error) {
+				id, err := tr.EnsureNetwork(context.Background(), "levelrail-app-web")
+				return id, nil, err
+			},
+			respond: func(req *agentpb.AgentRequest) *agentpb.AgentResponse {
+				if got := req.GetEnsureNetwork().GetName(); got != "levelrail-app-web" {
+					return &agentpb.AgentResponse{Error: "unexpected name " + got}
+				}
+				return &agentpb.AgentResponse{Result: &agentpb.AgentResponse_EnsureNetwork{
+					EnsureNetwork: &agentpb.EnsureNetworkResponse{Id: "net-abc"},
+				}}
+			},
+			wantID: "net-abc",
+		},
+		{
+			name: "ensure network remote error",
+			call: func(tr *GRPCTransport) (string, []docker.NetworkInfo, error) {
+				id, err := tr.EnsureNetwork(context.Background(), "levelrail-app-web")
+				return id, nil, err
+			},
+			respond: func(*agentpb.AgentRequest) *agentpb.AgentResponse {
+				return &agentpb.AgentResponse{Error: "network create refused"}
+			},
+			wantErr: "network create refused",
+		},
+		{
+			name: "remove network",
+			call: func(tr *GRPCTransport) (string, []docker.NetworkInfo, error) {
+				return "", nil, tr.RemoveNetwork(context.Background(), "levelrail-app-old")
+			},
+			respond: func(req *agentpb.AgentRequest) *agentpb.AgentResponse {
+				if got := req.GetRemoveNetwork().GetName(); got != "levelrail-app-old" {
+					return &agentpb.AgentResponse{Error: "unexpected name " + got}
+				}
+				return &agentpb.AgentResponse{Result: &agentpb.AgentResponse_Empty{Empty: &agentpb.Empty{}}}
+			},
+		},
+		{
+			name: "remove network remote error",
+			call: func(tr *GRPCTransport) (string, []docker.NetworkInfo, error) {
+				return "", nil, tr.RemoveNetwork(context.Background(), "levelrail-app-old")
+			},
+			respond: func(*agentpb.AgentRequest) *agentpb.AgentResponse {
+				return &agentpb.AgentResponse{Error: "network still in use"}
+			},
+			wantErr: "network still in use",
+		},
+		{
+			name: "list networks by prefix",
+			call: func(tr *GRPCTransport) (string, []docker.NetworkInfo, error) {
+				nets, err := tr.ListNetworksByPrefix(context.Background(), "levelrail-app-")
+				return "", nets, err
+			},
+			respond: func(req *agentpb.AgentRequest) *agentpb.AgentResponse {
+				if got := req.GetListNetworksByPrefix().GetPrefix(); got != "levelrail-app-" {
+					return &agentpb.AgentResponse{Error: "unexpected prefix " + got}
+				}
+				return &agentpb.AgentResponse{Result: &agentpb.AgentResponse_ListNetworksByPrefix{
+					ListNetworksByPrefix: &agentpb.ListNetworksByPrefixResponse{
+						Networks: []*agentpb.NetworkInfo{{Id: "n1", Name: "levelrail-app-a"}},
+					},
+				}}
+			},
+			wantNets: []docker.NetworkInfo{{ID: "n1", Name: "levelrail-app-a"}},
+		},
+		{
+			name: "list networks by prefix remote error",
+			call: func(tr *GRPCTransport) (string, []docker.NetworkInfo, error) {
+				nets, err := tr.ListNetworksByPrefix(context.Background(), "levelrail-app-")
+				return "", nets, err
+			},
+			respond: func(*agentpb.AgentRequest) *agentpb.AgentResponse {
+				return &agentpb.AgentResponse{Error: "daemon unreachable"}
+			},
+			wantErr: "daemon unreachable",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			stream := newFakeSessionStream()
+			tr := newGRPCTransport(newMux(stream))
+
+			type result struct {
+				id   string
+				nets []docker.NetworkInfo
+				err  error
+			}
+			done := make(chan result, 1)
+			go func() {
+				id, nets, err := tc.call(tr)
+				done <- result{id, nets, err}
+			}()
+
+			respondToNextCall(t, stream, tc.respond)
+
+			got := <-done
+			if tc.wantErr != "" {
+				if got.err == nil || got.err.Error() != tc.wantErr {
+					t.Fatalf("err = %v, want %q", got.err, tc.wantErr)
+				}
+				return
+			}
+			if got.err != nil {
+				t.Fatalf("unexpected error: %v", got.err)
+			}
+			if got.id != tc.wantID {
+				t.Errorf("id = %q, want %q", got.id, tc.wantID)
+			}
+			if len(got.nets) != len(tc.wantNets) {
+				t.Fatalf("networks = %+v, want %+v", got.nets, tc.wantNets)
+			}
+			for i := range tc.wantNets {
+				if got.nets[i] != tc.wantNets[i] {
+					t.Errorf("networks[%d] = %+v, want %+v", i, got.nets[i], tc.wantNets[i])
+				}
+			}
+		})
+	}
+}
+
 func TestGRPCTransport_Events_RelaysUntilContextCancelled(t *testing.T) {
 	stream := newFakeSessionStream()
 	tr := newGRPCTransport(newMux(stream))
