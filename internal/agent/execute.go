@@ -121,6 +121,31 @@ func Execute(ctx context.Context, rt docker.Runtime, req *agentpb.AgentRequest, 
 		}
 		resp.Result = emptyResult()
 
+	case *agentpb.AgentRequest_EnsureNetwork:
+		id, err := rt.EnsureNetwork(ctx, op.EnsureNetwork.GetName())
+		if err != nil {
+			resp.Error = err.Error()
+			return resp
+		}
+		resp.Result = &agentpb.AgentResponse_EnsureNetwork{EnsureNetwork: &agentpb.EnsureNetworkResponse{Id: id}}
+
+	case *agentpb.AgentRequest_RemoveNetwork:
+		if err := rt.RemoveNetwork(ctx, op.RemoveNetwork.GetName()); err != nil {
+			resp.Error = err.Error()
+			return resp
+		}
+		resp.Result = emptyResult()
+
+	case *agentpb.AgentRequest_ListNetworksByPrefix:
+		networks, err := rt.ListNetworksByPrefix(ctx, op.ListNetworksByPrefix.GetPrefix())
+		if err != nil {
+			resp.Error = err.Error()
+			return resp
+		}
+		resp.Result = &agentpb.AgentResponse_ListNetworksByPrefix{ListNetworksByPrefix: &agentpb.ListNetworksByPrefixResponse{
+			Networks: networkInfosToPB(networks),
+		}}
+
 	case *agentpb.AgentRequest_WatchEvents:
 		watchID := op.WatchEvents.GetWatchId()
 		go relayEvents(ctx, rt, watchID, emitEvent)

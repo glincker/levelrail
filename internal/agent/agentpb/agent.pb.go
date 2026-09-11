@@ -335,6 +335,9 @@ type AgentRequest struct {
 	//	*AgentRequest_EnsureVolume
 	//	*AgentRequest_WatchEvents
 	//	*AgentRequest_UpdateResources
+	//	*AgentRequest_EnsureNetwork
+	//	*AgentRequest_RemoveNetwork
+	//	*AgentRequest_ListNetworksByPrefix
 	Op            isAgentRequest_Op `protobuf_oneof:"op"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -474,6 +477,33 @@ func (x *AgentRequest) GetUpdateResources() *UpdateResourcesRequest {
 	return nil
 }
 
+func (x *AgentRequest) GetEnsureNetwork() *EnsureNetworkRequest {
+	if x != nil {
+		if x, ok := x.Op.(*AgentRequest_EnsureNetwork); ok {
+			return x.EnsureNetwork
+		}
+	}
+	return nil
+}
+
+func (x *AgentRequest) GetRemoveNetwork() *RemoveNetworkRequest {
+	if x != nil {
+		if x, ok := x.Op.(*AgentRequest_RemoveNetwork); ok {
+			return x.RemoveNetwork
+		}
+	}
+	return nil
+}
+
+func (x *AgentRequest) GetListNetworksByPrefix() *ListNetworksByPrefixRequest {
+	if x != nil {
+		if x, ok := x.Op.(*AgentRequest_ListNetworksByPrefix); ok {
+			return x.ListNetworksByPrefix
+		}
+	}
+	return nil
+}
+
 type isAgentRequest_Op interface {
 	isAgentRequest_Op()
 }
@@ -518,6 +548,18 @@ type AgentRequest_UpdateResources struct {
 	UpdateResources *UpdateResourcesRequest `protobuf:"bytes,11,opt,name=update_resources,json=updateResources,proto3,oneof"`
 }
 
+type AgentRequest_EnsureNetwork struct {
+	EnsureNetwork *EnsureNetworkRequest `protobuf:"bytes,12,opt,name=ensure_network,json=ensureNetwork,proto3,oneof"`
+}
+
+type AgentRequest_RemoveNetwork struct {
+	RemoveNetwork *RemoveNetworkRequest `protobuf:"bytes,13,opt,name=remove_network,json=removeNetwork,proto3,oneof"`
+}
+
+type AgentRequest_ListNetworksByPrefix struct {
+	ListNetworksByPrefix *ListNetworksByPrefixRequest `protobuf:"bytes,14,opt,name=list_networks_by_prefix,json=listNetworksByPrefix,proto3,oneof"`
+}
+
 func (*AgentRequest_InspectByName) isAgentRequest_Op() {}
 
 func (*AgentRequest_Create) isAgentRequest_Op() {}
@@ -538,6 +580,12 @@ func (*AgentRequest_WatchEvents) isAgentRequest_Op() {}
 
 func (*AgentRequest_UpdateResources) isAgentRequest_Op() {}
 
+func (*AgentRequest_EnsureNetwork) isAgentRequest_Op() {}
+
+func (*AgentRequest_RemoveNetwork) isAgentRequest_Op() {}
+
+func (*AgentRequest_ListNetworksByPrefix) isAgentRequest_Op() {}
+
 // AgentResponse is the agent's answer to exactly one AgentRequest,
 // carrying the same request_id.
 type AgentResponse struct {
@@ -555,6 +603,8 @@ type AgentResponse struct {
 	//	*AgentResponse_ListImages
 	//	*AgentResponse_ListByPrefix
 	//	*AgentResponse_Empty
+	//	*AgentResponse_EnsureNetwork
+	//	*AgentResponse_ListNetworksByPrefix
 	Result        isAgentResponse_Result `protobuf_oneof:"result"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -656,6 +706,24 @@ func (x *AgentResponse) GetEmpty() *Empty {
 	return nil
 }
 
+func (x *AgentResponse) GetEnsureNetwork() *EnsureNetworkResponse {
+	if x != nil {
+		if x, ok := x.Result.(*AgentResponse_EnsureNetwork); ok {
+			return x.EnsureNetwork
+		}
+	}
+	return nil
+}
+
+func (x *AgentResponse) GetListNetworksByPrefix() *ListNetworksByPrefixResponse {
+	if x != nil {
+		if x, ok := x.Result.(*AgentResponse_ListNetworksByPrefix); ok {
+			return x.ListNetworksByPrefix
+		}
+	}
+	return nil
+}
+
 type isAgentResponse_Result interface {
 	isAgentResponse_Result()
 }
@@ -677,10 +745,18 @@ type AgentResponse_ListByPrefix struct {
 }
 
 type AgentResponse_Empty struct {
-	// Start, Stop, Remove, EnsureVolume, and the WatchEvents
-	// acknowledgment all return nothing but success/Error above, so
-	// none of them needs its own response message.
+	// Start, Stop, Remove, EnsureVolume, RemoveNetwork, and the
+	// WatchEvents acknowledgment all return nothing but success/Error
+	// above, so none of them needs its own response message.
 	Empty *Empty `protobuf:"bytes,7,opt,name=empty,proto3,oneof"`
+}
+
+type AgentResponse_EnsureNetwork struct {
+	EnsureNetwork *EnsureNetworkResponse `protobuf:"bytes,8,opt,name=ensure_network,json=ensureNetwork,proto3,oneof"`
+}
+
+type AgentResponse_ListNetworksByPrefix struct {
+	ListNetworksByPrefix *ListNetworksByPrefixResponse `protobuf:"bytes,9,opt,name=list_networks_by_prefix,json=listNetworksByPrefix,proto3,oneof"`
 }
 
 func (*AgentResponse_InspectByName) isAgentResponse_Result() {}
@@ -692,6 +768,10 @@ func (*AgentResponse_ListImages) isAgentResponse_Result() {}
 func (*AgentResponse_ListByPrefix) isAgentResponse_Result() {}
 
 func (*AgentResponse_Empty) isAgentResponse_Result() {}
+
+func (*AgentResponse_EnsureNetwork) isAgentResponse_Result() {}
+
+func (*AgentResponse_ListNetworksByPrefix) isAgentResponse_Result() {}
 
 type Empty struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1816,6 +1896,279 @@ func (x *EnsureVolumeRequest) GetName() string {
 	return ""
 }
 
+// NetworkInfo mirrors internal/docker.NetworkInfo.
+type NetworkInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NetworkInfo) Reset() {
+	*x = NetworkInfo{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NetworkInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NetworkInfo) ProtoMessage() {}
+
+func (x *NetworkInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NetworkInfo.ProtoReflect.Descriptor instead.
+func (*NetworkInfo) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *NetworkInfo) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *NetworkInfo) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type EnsureNetworkRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EnsureNetworkRequest) Reset() {
+	*x = EnsureNetworkRequest{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EnsureNetworkRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnsureNetworkRequest) ProtoMessage() {}
+
+func (x *EnsureNetworkRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnsureNetworkRequest.ProtoReflect.Descriptor instead.
+func (*EnsureNetworkRequest) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *EnsureNetworkRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type EnsureNetworkResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EnsureNetworkResponse) Reset() {
+	*x = EnsureNetworkResponse{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EnsureNetworkResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnsureNetworkResponse) ProtoMessage() {}
+
+func (x *EnsureNetworkResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnsureNetworkResponse.ProtoReflect.Descriptor instead.
+func (*EnsureNetworkResponse) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *EnsureNetworkResponse) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type RemoveNetworkRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RemoveNetworkRequest) Reset() {
+	*x = RemoveNetworkRequest{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemoveNetworkRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveNetworkRequest) ProtoMessage() {}
+
+func (x *RemoveNetworkRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveNetworkRequest.ProtoReflect.Descriptor instead.
+func (*RemoveNetworkRequest) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *RemoveNetworkRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type ListNetworksByPrefixRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Prefix        string                 `protobuf:"bytes,1,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListNetworksByPrefixRequest) Reset() {
+	*x = ListNetworksByPrefixRequest{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListNetworksByPrefixRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListNetworksByPrefixRequest) ProtoMessage() {}
+
+func (x *ListNetworksByPrefixRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListNetworksByPrefixRequest.ProtoReflect.Descriptor instead.
+func (*ListNetworksByPrefixRequest) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *ListNetworksByPrefixRequest) GetPrefix() string {
+	if x != nil {
+		return x.Prefix
+	}
+	return ""
+}
+
+type ListNetworksByPrefixResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Networks      []*NetworkInfo         `protobuf:"bytes,1,rep,name=networks,proto3" json:"networks,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListNetworksByPrefixResponse) Reset() {
+	*x = ListNetworksByPrefixResponse{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListNetworksByPrefixResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListNetworksByPrefixResponse) ProtoMessage() {}
+
+func (x *ListNetworksByPrefixResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListNetworksByPrefixResponse.ProtoReflect.Descriptor instead.
+func (*ListNetworksByPrefixResponse) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *ListNetworksByPrefixResponse) GetNetworks() []*NetworkInfo {
+	if x != nil {
+		return x.Networks
+	}
+	return nil
+}
+
 // WatchEventsRequest starts (or, sent a second time with the same
 // watch_id, is meaningless and rejected: one watch per Session,
 // matching internal/docker.Runtime.Events' own "until ctx is cancelled"
@@ -1833,7 +2186,7 @@ type WatchEventsRequest struct {
 
 func (x *WatchEventsRequest) Reset() {
 	*x = WatchEventsRequest{}
-	mi := &file_proto_agent_v1_agent_proto_msgTypes[27]
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1845,7 +2198,7 @@ func (x *WatchEventsRequest) String() string {
 func (*WatchEventsRequest) ProtoMessage() {}
 
 func (x *WatchEventsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_agent_v1_agent_proto_msgTypes[27]
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1858,7 +2211,7 @@ func (x *WatchEventsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WatchEventsRequest.ProtoReflect.Descriptor instead.
 func (*WatchEventsRequest) Descriptor() ([]byte, []int) {
-	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{27}
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *WatchEventsRequest) GetWatchId() string {
@@ -1887,7 +2240,7 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x05event\x18\x02 \x01(\v2 .levelrail.agent.v1.ProxiedEventH\x00R\x05eventB\t\n" +
 	"\apayload\"L\n" +
 	"\x0eControlMessage\x12:\n" +
-	"\arequest\x18\x01 \x01(\v2 .levelrail.agent.v1.AgentRequestR\arequest\"\x83\x06\n" +
+	"\arequest\x18\x01 \x01(\v2 .levelrail.agent.v1.AgentRequestR\arequest\"\x93\b\n" +
 	"\fAgentRequest\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12R\n" +
@@ -1902,8 +2255,11 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\rensure_volume\x18\t \x01(\v2'.levelrail.agent.v1.EnsureVolumeRequestH\x00R\fensureVolume\x12K\n" +
 	"\fwatch_events\x18\n" +
 	" \x01(\v2&.levelrail.agent.v1.WatchEventsRequestH\x00R\vwatchEvents\x12W\n" +
-	"\x10update_resources\x18\v \x01(\v2*.levelrail.agent.v1.UpdateResourcesRequestH\x00R\x0fupdateResourcesB\x04\n" +
-	"\x02op\"\xb1\x03\n" +
+	"\x10update_resources\x18\v \x01(\v2*.levelrail.agent.v1.UpdateResourcesRequestH\x00R\x0fupdateResources\x12Q\n" +
+	"\x0eensure_network\x18\f \x01(\v2(.levelrail.agent.v1.EnsureNetworkRequestH\x00R\rensureNetwork\x12Q\n" +
+	"\x0eremove_network\x18\r \x01(\v2(.levelrail.agent.v1.RemoveNetworkRequestH\x00R\rremoveNetwork\x12h\n" +
+	"\x17list_networks_by_prefix\x18\x0e \x01(\v2/.levelrail.agent.v1.ListNetworksByPrefixRequestH\x00R\x14listNetworksByPrefixB\x04\n" +
+	"\x02op\"\xf0\x04\n" +
 	"\rAgentResponse\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12\x14\n" +
@@ -1913,7 +2269,9 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\vlist_images\x18\x05 \x01(\v2&.levelrail.agent.v1.ListImagesResponseH\x00R\n" +
 	"listImages\x12P\n" +
 	"\x0elist_by_prefix\x18\x06 \x01(\v2(.levelrail.agent.v1.ListByPrefixResponseH\x00R\flistByPrefix\x121\n" +
-	"\x05empty\x18\a \x01(\v2\x19.levelrail.agent.v1.EmptyH\x00R\x05emptyB\b\n" +
+	"\x05empty\x18\a \x01(\v2\x19.levelrail.agent.v1.EmptyH\x00R\x05empty\x12R\n" +
+	"\x0eensure_network\x18\b \x01(\v2).levelrail.agent.v1.EnsureNetworkResponseH\x00R\rensureNetwork\x12i\n" +
+	"\x17list_networks_by_prefix\x18\t \x01(\v20.levelrail.agent.v1.ListNetworksByPrefixResponseH\x00R\x14listNetworksByPrefixB\b\n" +
 	"\x06result\"\a\n" +
 	"\x05Empty\"m\n" +
 	"\vPortBinding\x12%\n" +
@@ -1987,7 +2345,20 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"containers\x18\x01 \x03(\v2\".levelrail.agent.v1.ContainerStateR\n" +
 	"containers\")\n" +
 	"\x13EnsureVolumeRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\"/\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"1\n" +
+	"\vNetworkInfo\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\"*\n" +
+	"\x14EnsureNetworkRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"'\n" +
+	"\x15EnsureNetworkResponse\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"*\n" +
+	"\x14RemoveNetworkRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"5\n" +
+	"\x1bListNetworksByPrefixRequest\x12\x16\n" +
+	"\x06prefix\x18\x01 \x01(\tR\x06prefix\"[\n" +
+	"\x1cListNetworksByPrefixResponse\x12;\n" +
+	"\bnetworks\x18\x01 \x03(\v2\x1f.levelrail.agent.v1.NetworkInfoR\bnetworks\"/\n" +
 	"\x12WatchEventsRequest\x12\x19\n" +
 	"\bwatch_id\x18\x01 \x01(\tR\awatchId2\xb4\x01\n" +
 	"\fAgentService\x12O\n" +
@@ -2006,38 +2377,44 @@ func file_proto_agent_v1_agent_proto_rawDescGZIP() []byte {
 	return file_proto_agent_v1_agent_proto_rawDescData
 }
 
-var file_proto_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
+var file_proto_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
 var file_proto_agent_v1_agent_proto_goTypes = []any{
-	(*EnrollRequest)(nil),          // 0: levelrail.agent.v1.EnrollRequest
-	(*EnrollResponse)(nil),         // 1: levelrail.agent.v1.EnrollResponse
-	(*AgentMessage)(nil),           // 2: levelrail.agent.v1.AgentMessage
-	(*ControlMessage)(nil),         // 3: levelrail.agent.v1.ControlMessage
-	(*AgentRequest)(nil),           // 4: levelrail.agent.v1.AgentRequest
-	(*AgentResponse)(nil),          // 5: levelrail.agent.v1.AgentResponse
-	(*Empty)(nil),                  // 6: levelrail.agent.v1.Empty
-	(*PortBinding)(nil),            // 7: levelrail.agent.v1.PortBinding
-	(*Resources)(nil),              // 8: levelrail.agent.v1.Resources
-	(*VolumeMount)(nil),            // 9: levelrail.agent.v1.VolumeMount
-	(*ContainerSpec)(nil),          // 10: levelrail.agent.v1.ContainerSpec
-	(*ContainerState)(nil),         // 11: levelrail.agent.v1.ContainerState
-	(*ImageInfo)(nil),              // 12: levelrail.agent.v1.ImageInfo
-	(*ProxiedEvent)(nil),           // 13: levelrail.agent.v1.ProxiedEvent
-	(*InspectByNameRequest)(nil),   // 14: levelrail.agent.v1.InspectByNameRequest
-	(*InspectByNameResponse)(nil),  // 15: levelrail.agent.v1.InspectByNameResponse
-	(*CreateRequest)(nil),          // 16: levelrail.agent.v1.CreateRequest
-	(*CreateResponse)(nil),         // 17: levelrail.agent.v1.CreateResponse
-	(*StartRequest)(nil),           // 18: levelrail.agent.v1.StartRequest
-	(*StopRequest)(nil),            // 19: levelrail.agent.v1.StopRequest
-	(*RemoveRequest)(nil),          // 20: levelrail.agent.v1.RemoveRequest
-	(*UpdateResourcesRequest)(nil), // 21: levelrail.agent.v1.UpdateResourcesRequest
-	(*ListImagesRequest)(nil),      // 22: levelrail.agent.v1.ListImagesRequest
-	(*ListImagesResponse)(nil),     // 23: levelrail.agent.v1.ListImagesResponse
-	(*ListByPrefixRequest)(nil),    // 24: levelrail.agent.v1.ListByPrefixRequest
-	(*ListByPrefixResponse)(nil),   // 25: levelrail.agent.v1.ListByPrefixResponse
-	(*EnsureVolumeRequest)(nil),    // 26: levelrail.agent.v1.EnsureVolumeRequest
-	(*WatchEventsRequest)(nil),     // 27: levelrail.agent.v1.WatchEventsRequest
-	nil,                            // 28: levelrail.agent.v1.ContainerSpec.EnvEntry
-	(*timestamppb.Timestamp)(nil),  // 29: google.protobuf.Timestamp
+	(*EnrollRequest)(nil),                // 0: levelrail.agent.v1.EnrollRequest
+	(*EnrollResponse)(nil),               // 1: levelrail.agent.v1.EnrollResponse
+	(*AgentMessage)(nil),                 // 2: levelrail.agent.v1.AgentMessage
+	(*ControlMessage)(nil),               // 3: levelrail.agent.v1.ControlMessage
+	(*AgentRequest)(nil),                 // 4: levelrail.agent.v1.AgentRequest
+	(*AgentResponse)(nil),                // 5: levelrail.agent.v1.AgentResponse
+	(*Empty)(nil),                        // 6: levelrail.agent.v1.Empty
+	(*PortBinding)(nil),                  // 7: levelrail.agent.v1.PortBinding
+	(*Resources)(nil),                    // 8: levelrail.agent.v1.Resources
+	(*VolumeMount)(nil),                  // 9: levelrail.agent.v1.VolumeMount
+	(*ContainerSpec)(nil),                // 10: levelrail.agent.v1.ContainerSpec
+	(*ContainerState)(nil),               // 11: levelrail.agent.v1.ContainerState
+	(*ImageInfo)(nil),                    // 12: levelrail.agent.v1.ImageInfo
+	(*ProxiedEvent)(nil),                 // 13: levelrail.agent.v1.ProxiedEvent
+	(*InspectByNameRequest)(nil),         // 14: levelrail.agent.v1.InspectByNameRequest
+	(*InspectByNameResponse)(nil),        // 15: levelrail.agent.v1.InspectByNameResponse
+	(*CreateRequest)(nil),                // 16: levelrail.agent.v1.CreateRequest
+	(*CreateResponse)(nil),               // 17: levelrail.agent.v1.CreateResponse
+	(*StartRequest)(nil),                 // 18: levelrail.agent.v1.StartRequest
+	(*StopRequest)(nil),                  // 19: levelrail.agent.v1.StopRequest
+	(*RemoveRequest)(nil),                // 20: levelrail.agent.v1.RemoveRequest
+	(*UpdateResourcesRequest)(nil),       // 21: levelrail.agent.v1.UpdateResourcesRequest
+	(*ListImagesRequest)(nil),            // 22: levelrail.agent.v1.ListImagesRequest
+	(*ListImagesResponse)(nil),           // 23: levelrail.agent.v1.ListImagesResponse
+	(*ListByPrefixRequest)(nil),          // 24: levelrail.agent.v1.ListByPrefixRequest
+	(*ListByPrefixResponse)(nil),         // 25: levelrail.agent.v1.ListByPrefixResponse
+	(*EnsureVolumeRequest)(nil),          // 26: levelrail.agent.v1.EnsureVolumeRequest
+	(*NetworkInfo)(nil),                  // 27: levelrail.agent.v1.NetworkInfo
+	(*EnsureNetworkRequest)(nil),         // 28: levelrail.agent.v1.EnsureNetworkRequest
+	(*EnsureNetworkResponse)(nil),        // 29: levelrail.agent.v1.EnsureNetworkResponse
+	(*RemoveNetworkRequest)(nil),         // 30: levelrail.agent.v1.RemoveNetworkRequest
+	(*ListNetworksByPrefixRequest)(nil),  // 31: levelrail.agent.v1.ListNetworksByPrefixRequest
+	(*ListNetworksByPrefixResponse)(nil), // 32: levelrail.agent.v1.ListNetworksByPrefixResponse
+	(*WatchEventsRequest)(nil),           // 33: levelrail.agent.v1.WatchEventsRequest
+	nil,                                  // 34: levelrail.agent.v1.ContainerSpec.EnvEntry
+	(*timestamppb.Timestamp)(nil),        // 35: google.protobuf.Timestamp
 }
 var file_proto_agent_v1_agent_proto_depIdxs = []int32{
 	5,  // 0: levelrail.agent.v1.AgentMessage.response:type_name -> levelrail.agent.v1.AgentResponse
@@ -2051,34 +2428,40 @@ var file_proto_agent_v1_agent_proto_depIdxs = []int32{
 	22, // 8: levelrail.agent.v1.AgentRequest.list_images:type_name -> levelrail.agent.v1.ListImagesRequest
 	24, // 9: levelrail.agent.v1.AgentRequest.list_by_prefix:type_name -> levelrail.agent.v1.ListByPrefixRequest
 	26, // 10: levelrail.agent.v1.AgentRequest.ensure_volume:type_name -> levelrail.agent.v1.EnsureVolumeRequest
-	27, // 11: levelrail.agent.v1.AgentRequest.watch_events:type_name -> levelrail.agent.v1.WatchEventsRequest
+	33, // 11: levelrail.agent.v1.AgentRequest.watch_events:type_name -> levelrail.agent.v1.WatchEventsRequest
 	21, // 12: levelrail.agent.v1.AgentRequest.update_resources:type_name -> levelrail.agent.v1.UpdateResourcesRequest
-	15, // 13: levelrail.agent.v1.AgentResponse.inspect_by_name:type_name -> levelrail.agent.v1.InspectByNameResponse
-	17, // 14: levelrail.agent.v1.AgentResponse.create:type_name -> levelrail.agent.v1.CreateResponse
-	23, // 15: levelrail.agent.v1.AgentResponse.list_images:type_name -> levelrail.agent.v1.ListImagesResponse
-	25, // 16: levelrail.agent.v1.AgentResponse.list_by_prefix:type_name -> levelrail.agent.v1.ListByPrefixResponse
-	6,  // 17: levelrail.agent.v1.AgentResponse.empty:type_name -> levelrail.agent.v1.Empty
-	7,  // 18: levelrail.agent.v1.ContainerSpec.ports:type_name -> levelrail.agent.v1.PortBinding
-	28, // 19: levelrail.agent.v1.ContainerSpec.env:type_name -> levelrail.agent.v1.ContainerSpec.EnvEntry
-	8,  // 20: levelrail.agent.v1.ContainerSpec.resources:type_name -> levelrail.agent.v1.Resources
-	9,  // 21: levelrail.agent.v1.ContainerSpec.volumes:type_name -> levelrail.agent.v1.VolumeMount
-	7,  // 22: levelrail.agent.v1.ContainerState.ports:type_name -> levelrail.agent.v1.PortBinding
-	29, // 23: levelrail.agent.v1.ImageInfo.created_at:type_name -> google.protobuf.Timestamp
-	29, // 24: levelrail.agent.v1.ProxiedEvent.time:type_name -> google.protobuf.Timestamp
-	11, // 25: levelrail.agent.v1.InspectByNameResponse.state:type_name -> levelrail.agent.v1.ContainerState
-	10, // 26: levelrail.agent.v1.CreateRequest.spec:type_name -> levelrail.agent.v1.ContainerSpec
-	8,  // 27: levelrail.agent.v1.UpdateResourcesRequest.resources:type_name -> levelrail.agent.v1.Resources
-	12, // 28: levelrail.agent.v1.ListImagesResponse.images:type_name -> levelrail.agent.v1.ImageInfo
-	11, // 29: levelrail.agent.v1.ListByPrefixResponse.containers:type_name -> levelrail.agent.v1.ContainerState
-	0,  // 30: levelrail.agent.v1.AgentService.Enroll:input_type -> levelrail.agent.v1.EnrollRequest
-	2,  // 31: levelrail.agent.v1.AgentService.Session:input_type -> levelrail.agent.v1.AgentMessage
-	1,  // 32: levelrail.agent.v1.AgentService.Enroll:output_type -> levelrail.agent.v1.EnrollResponse
-	3,  // 33: levelrail.agent.v1.AgentService.Session:output_type -> levelrail.agent.v1.ControlMessage
-	32, // [32:34] is the sub-list for method output_type
-	30, // [30:32] is the sub-list for method input_type
-	30, // [30:30] is the sub-list for extension type_name
-	30, // [30:30] is the sub-list for extension extendee
-	0,  // [0:30] is the sub-list for field type_name
+	28, // 13: levelrail.agent.v1.AgentRequest.ensure_network:type_name -> levelrail.agent.v1.EnsureNetworkRequest
+	30, // 14: levelrail.agent.v1.AgentRequest.remove_network:type_name -> levelrail.agent.v1.RemoveNetworkRequest
+	31, // 15: levelrail.agent.v1.AgentRequest.list_networks_by_prefix:type_name -> levelrail.agent.v1.ListNetworksByPrefixRequest
+	15, // 16: levelrail.agent.v1.AgentResponse.inspect_by_name:type_name -> levelrail.agent.v1.InspectByNameResponse
+	17, // 17: levelrail.agent.v1.AgentResponse.create:type_name -> levelrail.agent.v1.CreateResponse
+	23, // 18: levelrail.agent.v1.AgentResponse.list_images:type_name -> levelrail.agent.v1.ListImagesResponse
+	25, // 19: levelrail.agent.v1.AgentResponse.list_by_prefix:type_name -> levelrail.agent.v1.ListByPrefixResponse
+	6,  // 20: levelrail.agent.v1.AgentResponse.empty:type_name -> levelrail.agent.v1.Empty
+	29, // 21: levelrail.agent.v1.AgentResponse.ensure_network:type_name -> levelrail.agent.v1.EnsureNetworkResponse
+	32, // 22: levelrail.agent.v1.AgentResponse.list_networks_by_prefix:type_name -> levelrail.agent.v1.ListNetworksByPrefixResponse
+	7,  // 23: levelrail.agent.v1.ContainerSpec.ports:type_name -> levelrail.agent.v1.PortBinding
+	34, // 24: levelrail.agent.v1.ContainerSpec.env:type_name -> levelrail.agent.v1.ContainerSpec.EnvEntry
+	8,  // 25: levelrail.agent.v1.ContainerSpec.resources:type_name -> levelrail.agent.v1.Resources
+	9,  // 26: levelrail.agent.v1.ContainerSpec.volumes:type_name -> levelrail.agent.v1.VolumeMount
+	7,  // 27: levelrail.agent.v1.ContainerState.ports:type_name -> levelrail.agent.v1.PortBinding
+	35, // 28: levelrail.agent.v1.ImageInfo.created_at:type_name -> google.protobuf.Timestamp
+	35, // 29: levelrail.agent.v1.ProxiedEvent.time:type_name -> google.protobuf.Timestamp
+	11, // 30: levelrail.agent.v1.InspectByNameResponse.state:type_name -> levelrail.agent.v1.ContainerState
+	10, // 31: levelrail.agent.v1.CreateRequest.spec:type_name -> levelrail.agent.v1.ContainerSpec
+	8,  // 32: levelrail.agent.v1.UpdateResourcesRequest.resources:type_name -> levelrail.agent.v1.Resources
+	12, // 33: levelrail.agent.v1.ListImagesResponse.images:type_name -> levelrail.agent.v1.ImageInfo
+	11, // 34: levelrail.agent.v1.ListByPrefixResponse.containers:type_name -> levelrail.agent.v1.ContainerState
+	27, // 35: levelrail.agent.v1.ListNetworksByPrefixResponse.networks:type_name -> levelrail.agent.v1.NetworkInfo
+	0,  // 36: levelrail.agent.v1.AgentService.Enroll:input_type -> levelrail.agent.v1.EnrollRequest
+	2,  // 37: levelrail.agent.v1.AgentService.Session:input_type -> levelrail.agent.v1.AgentMessage
+	1,  // 38: levelrail.agent.v1.AgentService.Enroll:output_type -> levelrail.agent.v1.EnrollResponse
+	3,  // 39: levelrail.agent.v1.AgentService.Session:output_type -> levelrail.agent.v1.ControlMessage
+	38, // [38:40] is the sub-list for method output_type
+	36, // [36:38] is the sub-list for method input_type
+	36, // [36:36] is the sub-list for extension type_name
+	36, // [36:36] is the sub-list for extension extendee
+	0,  // [0:36] is the sub-list for field type_name
 }
 
 func init() { file_proto_agent_v1_agent_proto_init() }
@@ -2101,6 +2484,9 @@ func file_proto_agent_v1_agent_proto_init() {
 		(*AgentRequest_EnsureVolume)(nil),
 		(*AgentRequest_WatchEvents)(nil),
 		(*AgentRequest_UpdateResources)(nil),
+		(*AgentRequest_EnsureNetwork)(nil),
+		(*AgentRequest_RemoveNetwork)(nil),
+		(*AgentRequest_ListNetworksByPrefix)(nil),
 	}
 	file_proto_agent_v1_agent_proto_msgTypes[5].OneofWrappers = []any{
 		(*AgentResponse_InspectByName)(nil),
@@ -2108,6 +2494,8 @@ func file_proto_agent_v1_agent_proto_init() {
 		(*AgentResponse_ListImages)(nil),
 		(*AgentResponse_ListByPrefix)(nil),
 		(*AgentResponse_Empty)(nil),
+		(*AgentResponse_EnsureNetwork)(nil),
+		(*AgentResponse_ListNetworksByPrefix)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -2115,7 +2503,7 @@ func file_proto_agent_v1_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_agent_v1_agent_proto_rawDesc), len(file_proto_agent_v1_agent_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   29,
+			NumMessages:   35,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

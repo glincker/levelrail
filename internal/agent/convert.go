@@ -212,6 +212,28 @@ func imageInfosFromPB(is []*agentpb.ImageInfo) []docker.ImageInfo {
 	return out
 }
 
+func networkInfosToPB(ns []docker.NetworkInfo) []*agentpb.NetworkInfo {
+	if ns == nil {
+		return nil
+	}
+	out := make([]*agentpb.NetworkInfo, len(ns))
+	for i, n := range ns {
+		out[i] = &agentpb.NetworkInfo{Id: n.ID, Name: n.Name}
+	}
+	return out
+}
+
+func networkInfosFromPB(ns []*agentpb.NetworkInfo) []docker.NetworkInfo {
+	if ns == nil {
+		return nil
+	}
+	out := make([]docker.NetworkInfo, len(ns))
+	for i, n := range ns {
+		out[i] = docker.NetworkInfo{ID: n.GetId(), Name: n.GetName()}
+	}
+	return out
+}
+
 func timestampFromPB(ts *timestamppb.Timestamp) time.Time {
 	if ts == nil {
 		return time.Time{}

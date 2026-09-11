@@ -111,6 +111,9 @@ message AgentRequest {
     EnsureVolumeRequest ensure_volume = 9;
     WatchEventsRequest watch_events = 10;
     UpdateResourcesRequest update_resources = 11;
+    EnsureNetworkRequest ensure_network = 12;
+    RemoveNetworkRequest remove_network = 13;
+    ListNetworksByPrefixRequest list_networks_by_prefix = 14;
   }
 }
 
@@ -128,10 +131,12 @@ message AgentResponse {
     CreateResponse create = 4;
     ListImagesResponse list_images = 5;
     ListByPrefixResponse list_by_prefix = 6;
-    // Start, Stop, Remove, EnsureVolume, and the WatchEvents
-    // acknowledgment all return nothing but success/Error above, so
-    // none of them needs its own response message.
+    // Start, Stop, Remove, EnsureVolume, RemoveNetwork, and the
+    // WatchEvents acknowledgment all return nothing but success/Error
+    // above, so none of them needs its own response message.
     Empty empty = 7;
+    EnsureNetworkResponse ensure_network = 8;
+    ListNetworksByPrefixResponse list_networks_by_prefix = 9;
   }
 }
 
@@ -250,6 +255,30 @@ message ListByPrefixResponse {
 
 message EnsureVolumeRequest {
   string name = 1;
+}
+
+// NetworkInfo mirrors internal/docker.NetworkInfo.
+message NetworkInfo {
+  string id = 1;
+  string name = 2;
+}
+
+message EnsureNetworkRequest {
+  string name = 1;
+}
+message EnsureNetworkResponse {
+  string id = 1;
+}
+
+message RemoveNetworkRequest {
+  string name = 1;
+}
+
+message ListNetworksByPrefixRequest {
+  string prefix = 1;
+}
+message ListNetworksByPrefixResponse {
+  repeated NetworkInfo networks = 1;
 }
 
 // WatchEventsRequest starts (or, sent a second time with the same
