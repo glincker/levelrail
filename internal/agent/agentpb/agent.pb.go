@@ -182,15 +182,18 @@ func (x *EnrollResponse) GetCaCertPem() []byte {
 	return nil
 }
 
-// AgentMessage is one frame the agent sends up the Session stream:
-// either a reply to an outstanding AgentRequest, or an unprompted
-// streamed Docker event.
+// AgentMessage is one frame the agent sends up the Session stream: a
+// reply to an outstanding AgentRequest, an unprompted streamed Docker
+// event, or one frame of an in-flight exec's output or stdin flow
+// control.
 type AgentMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Payload:
 	//
 	//	*AgentMessage_Response
 	//	*AgentMessage_Event
+	//	*AgentMessage_ExecOutput
+	//	*AgentMessage_ExecCredit
 	Payload       isAgentMessage_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -251,6 +254,24 @@ func (x *AgentMessage) GetEvent() *ProxiedEvent {
 	return nil
 }
 
+func (x *AgentMessage) GetExecOutput() *ExecOutput {
+	if x != nil {
+		if x, ok := x.Payload.(*AgentMessage_ExecOutput); ok {
+			return x.ExecOutput
+		}
+	}
+	return nil
+}
+
+func (x *AgentMessage) GetExecCredit() *ExecCredit {
+	if x != nil {
+		if x, ok := x.Payload.(*AgentMessage_ExecCredit); ok {
+			return x.ExecCredit
+		}
+	}
+	return nil
+}
+
 type isAgentMessage_Payload interface {
 	isAgentMessage_Payload()
 }
@@ -263,18 +284,36 @@ type AgentMessage_Event struct {
 	Event *ProxiedEvent `protobuf:"bytes,2,opt,name=event,proto3,oneof"`
 }
 
+type AgentMessage_ExecOutput struct {
+	ExecOutput *ExecOutput `protobuf:"bytes,3,opt,name=exec_output,json=execOutput,proto3,oneof"`
+}
+
+type AgentMessage_ExecCredit struct {
+	// ExecCredit here refunds the control plane's stdin window: the
+	// agent has consumed that many ExecInput frames.
+	ExecCredit *ExecCredit `protobuf:"bytes,4,opt,name=exec_credit,json=execCredit,proto3,oneof"`
+}
+
 func (*AgentMessage_Response) isAgentMessage_Payload() {}
 
 func (*AgentMessage_Event) isAgentMessage_Payload() {}
 
+func (*AgentMessage_ExecOutput) isAgentMessage_Payload() {}
+
+func (*AgentMessage_ExecCredit) isAgentMessage_Payload() {}
+
 // ControlMessage is one frame the control plane sends down the Session
-// stream: always a request. (A dedicated envelope message, not just
-// AgentRequest directly, so this type can grow a second oneof arm later
-// without an incompatible wire change, the same reasoning AgentMessage
-// already needs one today for its two arms.)
+// stream: a request, or one frame of an in-flight exec's stdin,
+// cancellation, or output flow control.
 type ControlMessage struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Request       *AgentRequest          `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Payload:
+	//
+	//	*ControlMessage_Request
+	//	*ControlMessage_ExecInput
+	//	*ControlMessage_ExecCancel
+	//	*ControlMessage_ExecCredit
+	Payload       isControlMessage_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -309,12 +348,78 @@ func (*ControlMessage) Descriptor() ([]byte, []int) {
 	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *ControlMessage) GetRequest() *AgentRequest {
+func (x *ControlMessage) GetPayload() isControlMessage_Payload {
 	if x != nil {
-		return x.Request
+		return x.Payload
 	}
 	return nil
 }
+
+func (x *ControlMessage) GetRequest() *AgentRequest {
+	if x != nil {
+		if x, ok := x.Payload.(*ControlMessage_Request); ok {
+			return x.Request
+		}
+	}
+	return nil
+}
+
+func (x *ControlMessage) GetExecInput() *ExecInput {
+	if x != nil {
+		if x, ok := x.Payload.(*ControlMessage_ExecInput); ok {
+			return x.ExecInput
+		}
+	}
+	return nil
+}
+
+func (x *ControlMessage) GetExecCancel() *ExecCancel {
+	if x != nil {
+		if x, ok := x.Payload.(*ControlMessage_ExecCancel); ok {
+			return x.ExecCancel
+		}
+	}
+	return nil
+}
+
+func (x *ControlMessage) GetExecCredit() *ExecCredit {
+	if x != nil {
+		if x, ok := x.Payload.(*ControlMessage_ExecCredit); ok {
+			return x.ExecCredit
+		}
+	}
+	return nil
+}
+
+type isControlMessage_Payload interface {
+	isControlMessage_Payload()
+}
+
+type ControlMessage_Request struct {
+	Request *AgentRequest `protobuf:"bytes,1,opt,name=request,proto3,oneof"`
+}
+
+type ControlMessage_ExecInput struct {
+	ExecInput *ExecInput `protobuf:"bytes,2,opt,name=exec_input,json=execInput,proto3,oneof"`
+}
+
+type ControlMessage_ExecCancel struct {
+	ExecCancel *ExecCancel `protobuf:"bytes,3,opt,name=exec_cancel,json=execCancel,proto3,oneof"`
+}
+
+type ControlMessage_ExecCredit struct {
+	// ExecCredit here refunds the agent's output window: the control
+	// plane has consumed that many ExecOutput frames.
+	ExecCredit *ExecCredit `protobuf:"bytes,4,opt,name=exec_credit,json=execCredit,proto3,oneof"`
+}
+
+func (*ControlMessage_Request) isControlMessage_Payload() {}
+
+func (*ControlMessage_ExecInput) isControlMessage_Payload() {}
+
+func (*ControlMessage_ExecCancel) isControlMessage_Payload() {}
+
+func (*ControlMessage_ExecCredit) isControlMessage_Payload() {}
 
 // AgentRequest is one control-plane-issued operation, tagged with
 // request_id so out-of-order AgentResponse frames on the same stream
@@ -338,6 +443,7 @@ type AgentRequest struct {
 	//	*AgentRequest_EnsureNetwork
 	//	*AgentRequest_RemoveNetwork
 	//	*AgentRequest_ListNetworksByPrefix
+	//	*AgentRequest_Exec
 	Op            isAgentRequest_Op `protobuf_oneof:"op"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -504,6 +610,15 @@ func (x *AgentRequest) GetListNetworksByPrefix() *ListNetworksByPrefixRequest {
 	return nil
 }
 
+func (x *AgentRequest) GetExec() *ExecRequest {
+	if x != nil {
+		if x, ok := x.Op.(*AgentRequest_Exec); ok {
+			return x.Exec
+		}
+	}
+	return nil
+}
+
 type isAgentRequest_Op interface {
 	isAgentRequest_Op()
 }
@@ -560,6 +675,10 @@ type AgentRequest_ListNetworksByPrefix struct {
 	ListNetworksByPrefix *ListNetworksByPrefixRequest `protobuf:"bytes,14,opt,name=list_networks_by_prefix,json=listNetworksByPrefix,proto3,oneof"`
 }
 
+type AgentRequest_Exec struct {
+	Exec *ExecRequest `protobuf:"bytes,15,opt,name=exec,proto3,oneof"`
+}
+
 func (*AgentRequest_InspectByName) isAgentRequest_Op() {}
 
 func (*AgentRequest_Create) isAgentRequest_Op() {}
@@ -585,6 +704,8 @@ func (*AgentRequest_EnsureNetwork) isAgentRequest_Op() {}
 func (*AgentRequest_RemoveNetwork) isAgentRequest_Op() {}
 
 func (*AgentRequest_ListNetworksByPrefix) isAgentRequest_Op() {}
+
+func (*AgentRequest_Exec) isAgentRequest_Op() {}
 
 // AgentResponse is the agent's answer to exactly one AgentRequest,
 // carrying the same request_id.
@@ -2169,6 +2290,451 @@ func (x *ListNetworksByPrefixResponse) GetNetworks() []*NetworkInfo {
 	return nil
 }
 
+// ExecRequest runs cmd inside an already-running container and streams
+// its stdout back as ExecOutput frames tagged with this request's own
+// request_id. The AgentResponse for this request is only an
+// acknowledgment that the exec attached (or the error that stopped it
+// from attaching); output arrives afterwards, frame by frame, exactly
+// as docker.Runtime.Exec's returned io.ReadCloser produces it locally.
+type ExecRequest struct {
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	ContainerId string                 `protobuf:"bytes,1,opt,name=container_id,json=containerId,proto3" json:"container_id,omitempty"`
+	Cmd         []string               `protobuf:"bytes,2,rep,name=cmd,proto3" json:"cmd,omitempty"`
+	// AttachStdin selects docker.Runtime.ExecWithInput over Exec: the
+	// control plane then streams ExecInput frames for the same exec_id.
+	AttachStdin   bool `protobuf:"varint,3,opt,name=attach_stdin,json=attachStdin,proto3" json:"attach_stdin,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecRequest) Reset() {
+	*x = ExecRequest{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecRequest) ProtoMessage() {}
+
+func (x *ExecRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecRequest.ProtoReflect.Descriptor instead.
+func (*ExecRequest) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *ExecRequest) GetContainerId() string {
+	if x != nil {
+		return x.ContainerId
+	}
+	return ""
+}
+
+func (x *ExecRequest) GetCmd() []string {
+	if x != nil {
+		return x.Cmd
+	}
+	return nil
+}
+
+func (x *ExecRequest) GetAttachStdin() bool {
+	if x != nil {
+		return x.AttachStdin
+	}
+	return false
+}
+
+// ExecInput is one stdin frame for the in-flight exec whose request_id
+// is exec_id. Exactly one of chunk, eof, or error is meaningful per
+// frame: eof ends stdin the way closing a pipe's write half does, error
+// carries a failure reading the control plane's own source reader so
+// the exec fails loudly instead of seeing a silently truncated stdin.
+type ExecInput struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ExecId        string                 `protobuf:"bytes,1,opt,name=exec_id,json=execId,proto3" json:"exec_id,omitempty"`
+	Chunk         []byte                 `protobuf:"bytes,2,opt,name=chunk,proto3" json:"chunk,omitempty"`
+	Eof           bool                   `protobuf:"varint,3,opt,name=eof,proto3" json:"eof,omitempty"`
+	Error         string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecInput) Reset() {
+	*x = ExecInput{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecInput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecInput) ProtoMessage() {}
+
+func (x *ExecInput) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecInput.ProtoReflect.Descriptor instead.
+func (*ExecInput) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *ExecInput) GetExecId() string {
+	if x != nil {
+		return x.ExecId
+	}
+	return ""
+}
+
+func (x *ExecInput) GetChunk() []byte {
+	if x != nil {
+		return x.Chunk
+	}
+	return nil
+}
+
+func (x *ExecInput) GetEof() bool {
+	if x != nil {
+		return x.Eof
+	}
+	return false
+}
+
+func (x *ExecInput) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+// ExecCancel ends an in-flight exec early, when the control plane's
+// caller closed the stream before the command finished. The agent stops
+// reading and closes its local exec, so the remote process does not
+// outlive the caller that asked for it.
+type ExecCancel struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ExecId        string                 `protobuf:"bytes,1,opt,name=exec_id,json=execId,proto3" json:"exec_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecCancel) Reset() {
+	*x = ExecCancel{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecCancel) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecCancel) ProtoMessage() {}
+
+func (x *ExecCancel) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecCancel.ProtoReflect.Descriptor instead.
+func (*ExecCancel) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *ExecCancel) GetExecId() string {
+	if x != nil {
+		return x.ExecId
+	}
+	return ""
+}
+
+// ExecCredit refunds flow-control window for one exec, in frames. Both
+// exec directions are windowed: a sender may have at most a fixed
+// number of unacknowledged data frames outstanding, and the receiver
+// credits frames back as it consumes them. Without this, one slow exec
+// consumer would either stall every other logical call sharing the
+// Session stream or force unbounded buffering of a multi-gigabyte dump.
+type ExecCredit struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ExecId        string                 `protobuf:"bytes,1,opt,name=exec_id,json=execId,proto3" json:"exec_id,omitempty"`
+	Frames        uint32                 `protobuf:"varint,2,opt,name=frames,proto3" json:"frames,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecCredit) Reset() {
+	*x = ExecCredit{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecCredit) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecCredit) ProtoMessage() {}
+
+func (x *ExecCredit) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecCredit.ProtoReflect.Descriptor instead.
+func (*ExecCredit) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *ExecCredit) GetExecId() string {
+	if x != nil {
+		return x.ExecId
+	}
+	return ""
+}
+
+func (x *ExecCredit) GetFrames() uint32 {
+	if x != nil {
+		return x.Frames
+	}
+	return 0
+}
+
+// ExecOutput is one stdout frame for an in-flight exec, or that stream's
+// terminal frame. A data frame sets chunk; the terminal frame sets
+// either eof (the command's output ended cleanly) or failure. Exactly
+// one terminal frame is ever sent per exec.
+type ExecOutput struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ExecId        string                 `protobuf:"bytes,1,opt,name=exec_id,json=execId,proto3" json:"exec_id,omitempty"`
+	Chunk         []byte                 `protobuf:"bytes,2,opt,name=chunk,proto3" json:"chunk,omitempty"`
+	Eof           bool                   `protobuf:"varint,3,opt,name=eof,proto3" json:"eof,omitempty"`
+	Failure       *ExecFailure           `protobuf:"bytes,4,opt,name=failure,proto3" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecOutput) Reset() {
+	*x = ExecOutput{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecOutput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecOutput) ProtoMessage() {}
+
+func (x *ExecOutput) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecOutput.ProtoReflect.Descriptor instead.
+func (*ExecOutput) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *ExecOutput) GetExecId() string {
+	if x != nil {
+		return x.ExecId
+	}
+	return ""
+}
+
+func (x *ExecOutput) GetChunk() []byte {
+	if x != nil {
+		return x.Chunk
+	}
+	return nil
+}
+
+func (x *ExecOutput) GetEof() bool {
+	if x != nil {
+		return x.Eof
+	}
+	return false
+}
+
+func (x *ExecOutput) GetFailure() *ExecFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return nil
+}
+
+// ExecFailure is the error that ended an exec's output stream, mirroring
+// the trailing error docker.Runtime.Exec's own io.ReadCloser returns.
+type ExecFailure struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Message string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	// Exit is set when the failure was the command's own non-zero exit
+	// (internal/docker.ExecExitError), so the control plane can rebuild
+	// that typed error rather than a flat string: internal/api's exec
+	// endpoint branches on it with errors.As to report a real exit code.
+	Exit          *ExecExit `protobuf:"bytes,2,opt,name=exit,proto3" json:"exit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecFailure) Reset() {
+	*x = ExecFailure{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecFailure) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecFailure) ProtoMessage() {}
+
+func (x *ExecFailure) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecFailure.ProtoReflect.Descriptor instead.
+func (*ExecFailure) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *ExecFailure) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *ExecFailure) GetExit() *ExecExit {
+	if x != nil {
+		return x.Exit
+	}
+	return nil
+}
+
+type ExecExit struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Cmd           []string               `protobuf:"bytes,1,rep,name=cmd,proto3" json:"cmd,omitempty"`
+	Container     string                 `protobuf:"bytes,2,opt,name=container,proto3" json:"container,omitempty"`
+	ExitCode      int32                  `protobuf:"varint,3,opt,name=exit_code,json=exitCode,proto3" json:"exit_code,omitempty"`
+	Stderr        string                 `protobuf:"bytes,4,opt,name=stderr,proto3" json:"stderr,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecExit) Reset() {
+	*x = ExecExit{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecExit) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecExit) ProtoMessage() {}
+
+func (x *ExecExit) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecExit.ProtoReflect.Descriptor instead.
+func (*ExecExit) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *ExecExit) GetCmd() []string {
+	if x != nil {
+		return x.Cmd
+	}
+	return nil
+}
+
+func (x *ExecExit) GetContainer() string {
+	if x != nil {
+		return x.Container
+	}
+	return ""
+}
+
+func (x *ExecExit) GetExitCode() int32 {
+	if x != nil {
+		return x.ExitCode
+	}
+	return 0
+}
+
+func (x *ExecExit) GetStderr() string {
+	if x != nil {
+		return x.Stderr
+	}
+	return ""
+}
+
 // WatchEventsRequest starts (or, sent a second time with the same
 // watch_id, is meaningless and rejected: one watch per Session,
 // matching internal/docker.Runtime.Events' own "until ctx is cancelled"
@@ -2186,7 +2752,7 @@ type WatchEventsRequest struct {
 
 func (x *WatchEventsRequest) Reset() {
 	*x = WatchEventsRequest{}
-	mi := &file_proto_agent_v1_agent_proto_msgTypes[33]
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2198,7 +2764,7 @@ func (x *WatchEventsRequest) String() string {
 func (*WatchEventsRequest) ProtoMessage() {}
 
 func (x *WatchEventsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_agent_v1_agent_proto_msgTypes[33]
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2211,7 +2777,7 @@ func (x *WatchEventsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WatchEventsRequest.ProtoReflect.Descriptor instead.
 func (*WatchEventsRequest) Descriptor() ([]byte, []int) {
-	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{33}
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *WatchEventsRequest) GetWatchId() string {
@@ -2234,13 +2800,24 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\anode_id\x18\x01 \x01(\tR\x06nodeId\x12&\n" +
 	"\x0fclient_cert_pem\x18\x02 \x01(\fR\rclientCertPem\x12$\n" +
 	"\x0eclient_key_pem\x18\x03 \x01(\fR\fclientKeyPem\x12\x1e\n" +
-	"\vca_cert_pem\x18\x04 \x01(\fR\tcaCertPem\"\x94\x01\n" +
+	"\vca_cert_pem\x18\x04 \x01(\fR\tcaCertPem\"\x9a\x02\n" +
 	"\fAgentMessage\x12?\n" +
 	"\bresponse\x18\x01 \x01(\v2!.levelrail.agent.v1.AgentResponseH\x00R\bresponse\x128\n" +
-	"\x05event\x18\x02 \x01(\v2 .levelrail.agent.v1.ProxiedEventH\x00R\x05eventB\t\n" +
-	"\apayload\"L\n" +
-	"\x0eControlMessage\x12:\n" +
-	"\arequest\x18\x01 \x01(\v2 .levelrail.agent.v1.AgentRequestR\arequest\"\x93\b\n" +
+	"\x05event\x18\x02 \x01(\v2 .levelrail.agent.v1.ProxiedEventH\x00R\x05event\x12A\n" +
+	"\vexec_output\x18\x03 \x01(\v2\x1e.levelrail.agent.v1.ExecOutputH\x00R\n" +
+	"execOutput\x12A\n" +
+	"\vexec_credit\x18\x04 \x01(\v2\x1e.levelrail.agent.v1.ExecCreditH\x00R\n" +
+	"execCreditB\t\n" +
+	"\apayload\"\x9f\x02\n" +
+	"\x0eControlMessage\x12<\n" +
+	"\arequest\x18\x01 \x01(\v2 .levelrail.agent.v1.AgentRequestH\x00R\arequest\x12>\n" +
+	"\n" +
+	"exec_input\x18\x02 \x01(\v2\x1d.levelrail.agent.v1.ExecInputH\x00R\texecInput\x12A\n" +
+	"\vexec_cancel\x18\x03 \x01(\v2\x1e.levelrail.agent.v1.ExecCancelH\x00R\n" +
+	"execCancel\x12A\n" +
+	"\vexec_credit\x18\x04 \x01(\v2\x1e.levelrail.agent.v1.ExecCreditH\x00R\n" +
+	"execCreditB\t\n" +
+	"\apayload\"\xca\b\n" +
 	"\fAgentRequest\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12R\n" +
@@ -2258,7 +2835,8 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x10update_resources\x18\v \x01(\v2*.levelrail.agent.v1.UpdateResourcesRequestH\x00R\x0fupdateResources\x12Q\n" +
 	"\x0eensure_network\x18\f \x01(\v2(.levelrail.agent.v1.EnsureNetworkRequestH\x00R\rensureNetwork\x12Q\n" +
 	"\x0eremove_network\x18\r \x01(\v2(.levelrail.agent.v1.RemoveNetworkRequestH\x00R\rremoveNetwork\x12h\n" +
-	"\x17list_networks_by_prefix\x18\x0e \x01(\v2/.levelrail.agent.v1.ListNetworksByPrefixRequestH\x00R\x14listNetworksByPrefixB\x04\n" +
+	"\x17list_networks_by_prefix\x18\x0e \x01(\v2/.levelrail.agent.v1.ListNetworksByPrefixRequestH\x00R\x14listNetworksByPrefix\x125\n" +
+	"\x04exec\x18\x0f \x01(\v2\x1f.levelrail.agent.v1.ExecRequestH\x00R\x04execB\x04\n" +
 	"\x02op\"\xf0\x04\n" +
 	"\rAgentResponse\x12\x1d\n" +
 	"\n" +
@@ -2358,7 +2936,37 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x1bListNetworksByPrefixRequest\x12\x16\n" +
 	"\x06prefix\x18\x01 \x01(\tR\x06prefix\"[\n" +
 	"\x1cListNetworksByPrefixResponse\x12;\n" +
-	"\bnetworks\x18\x01 \x03(\v2\x1f.levelrail.agent.v1.NetworkInfoR\bnetworks\"/\n" +
+	"\bnetworks\x18\x01 \x03(\v2\x1f.levelrail.agent.v1.NetworkInfoR\bnetworks\"e\n" +
+	"\vExecRequest\x12!\n" +
+	"\fcontainer_id\x18\x01 \x01(\tR\vcontainerId\x12\x10\n" +
+	"\x03cmd\x18\x02 \x03(\tR\x03cmd\x12!\n" +
+	"\fattach_stdin\x18\x03 \x01(\bR\vattachStdin\"b\n" +
+	"\tExecInput\x12\x17\n" +
+	"\aexec_id\x18\x01 \x01(\tR\x06execId\x12\x14\n" +
+	"\x05chunk\x18\x02 \x01(\fR\x05chunk\x12\x10\n" +
+	"\x03eof\x18\x03 \x01(\bR\x03eof\x12\x14\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error\"%\n" +
+	"\n" +
+	"ExecCancel\x12\x17\n" +
+	"\aexec_id\x18\x01 \x01(\tR\x06execId\"=\n" +
+	"\n" +
+	"ExecCredit\x12\x17\n" +
+	"\aexec_id\x18\x01 \x01(\tR\x06execId\x12\x16\n" +
+	"\x06frames\x18\x02 \x01(\rR\x06frames\"\x88\x01\n" +
+	"\n" +
+	"ExecOutput\x12\x17\n" +
+	"\aexec_id\x18\x01 \x01(\tR\x06execId\x12\x14\n" +
+	"\x05chunk\x18\x02 \x01(\fR\x05chunk\x12\x10\n" +
+	"\x03eof\x18\x03 \x01(\bR\x03eof\x129\n" +
+	"\afailure\x18\x04 \x01(\v2\x1f.levelrail.agent.v1.ExecFailureR\afailure\"Y\n" +
+	"\vExecFailure\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\x120\n" +
+	"\x04exit\x18\x02 \x01(\v2\x1c.levelrail.agent.v1.ExecExitR\x04exit\"o\n" +
+	"\bExecExit\x12\x10\n" +
+	"\x03cmd\x18\x01 \x03(\tR\x03cmd\x12\x1c\n" +
+	"\tcontainer\x18\x02 \x01(\tR\tcontainer\x12\x1b\n" +
+	"\texit_code\x18\x03 \x01(\x05R\bexitCode\x12\x16\n" +
+	"\x06stderr\x18\x04 \x01(\tR\x06stderr\"/\n" +
 	"\x12WatchEventsRequest\x12\x19\n" +
 	"\bwatch_id\x18\x01 \x01(\tR\awatchId2\xb4\x01\n" +
 	"\fAgentService\x12O\n" +
@@ -2377,7 +2985,7 @@ func file_proto_agent_v1_agent_proto_rawDescGZIP() []byte {
 	return file_proto_agent_v1_agent_proto_rawDescData
 }
 
-var file_proto_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
+var file_proto_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 42)
 var file_proto_agent_v1_agent_proto_goTypes = []any{
 	(*EnrollRequest)(nil),                // 0: levelrail.agent.v1.EnrollRequest
 	(*EnrollResponse)(nil),               // 1: levelrail.agent.v1.EnrollResponse
@@ -2412,56 +3020,71 @@ var file_proto_agent_v1_agent_proto_goTypes = []any{
 	(*RemoveNetworkRequest)(nil),         // 30: levelrail.agent.v1.RemoveNetworkRequest
 	(*ListNetworksByPrefixRequest)(nil),  // 31: levelrail.agent.v1.ListNetworksByPrefixRequest
 	(*ListNetworksByPrefixResponse)(nil), // 32: levelrail.agent.v1.ListNetworksByPrefixResponse
-	(*WatchEventsRequest)(nil),           // 33: levelrail.agent.v1.WatchEventsRequest
-	nil,                                  // 34: levelrail.agent.v1.ContainerSpec.EnvEntry
-	(*timestamppb.Timestamp)(nil),        // 35: google.protobuf.Timestamp
+	(*ExecRequest)(nil),                  // 33: levelrail.agent.v1.ExecRequest
+	(*ExecInput)(nil),                    // 34: levelrail.agent.v1.ExecInput
+	(*ExecCancel)(nil),                   // 35: levelrail.agent.v1.ExecCancel
+	(*ExecCredit)(nil),                   // 36: levelrail.agent.v1.ExecCredit
+	(*ExecOutput)(nil),                   // 37: levelrail.agent.v1.ExecOutput
+	(*ExecFailure)(nil),                  // 38: levelrail.agent.v1.ExecFailure
+	(*ExecExit)(nil),                     // 39: levelrail.agent.v1.ExecExit
+	(*WatchEventsRequest)(nil),           // 40: levelrail.agent.v1.WatchEventsRequest
+	nil,                                  // 41: levelrail.agent.v1.ContainerSpec.EnvEntry
+	(*timestamppb.Timestamp)(nil),        // 42: google.protobuf.Timestamp
 }
 var file_proto_agent_v1_agent_proto_depIdxs = []int32{
 	5,  // 0: levelrail.agent.v1.AgentMessage.response:type_name -> levelrail.agent.v1.AgentResponse
 	13, // 1: levelrail.agent.v1.AgentMessage.event:type_name -> levelrail.agent.v1.ProxiedEvent
-	4,  // 2: levelrail.agent.v1.ControlMessage.request:type_name -> levelrail.agent.v1.AgentRequest
-	14, // 3: levelrail.agent.v1.AgentRequest.inspect_by_name:type_name -> levelrail.agent.v1.InspectByNameRequest
-	16, // 4: levelrail.agent.v1.AgentRequest.create:type_name -> levelrail.agent.v1.CreateRequest
-	18, // 5: levelrail.agent.v1.AgentRequest.start:type_name -> levelrail.agent.v1.StartRequest
-	19, // 6: levelrail.agent.v1.AgentRequest.stop:type_name -> levelrail.agent.v1.StopRequest
-	20, // 7: levelrail.agent.v1.AgentRequest.remove:type_name -> levelrail.agent.v1.RemoveRequest
-	22, // 8: levelrail.agent.v1.AgentRequest.list_images:type_name -> levelrail.agent.v1.ListImagesRequest
-	24, // 9: levelrail.agent.v1.AgentRequest.list_by_prefix:type_name -> levelrail.agent.v1.ListByPrefixRequest
-	26, // 10: levelrail.agent.v1.AgentRequest.ensure_volume:type_name -> levelrail.agent.v1.EnsureVolumeRequest
-	33, // 11: levelrail.agent.v1.AgentRequest.watch_events:type_name -> levelrail.agent.v1.WatchEventsRequest
-	21, // 12: levelrail.agent.v1.AgentRequest.update_resources:type_name -> levelrail.agent.v1.UpdateResourcesRequest
-	28, // 13: levelrail.agent.v1.AgentRequest.ensure_network:type_name -> levelrail.agent.v1.EnsureNetworkRequest
-	30, // 14: levelrail.agent.v1.AgentRequest.remove_network:type_name -> levelrail.agent.v1.RemoveNetworkRequest
-	31, // 15: levelrail.agent.v1.AgentRequest.list_networks_by_prefix:type_name -> levelrail.agent.v1.ListNetworksByPrefixRequest
-	15, // 16: levelrail.agent.v1.AgentResponse.inspect_by_name:type_name -> levelrail.agent.v1.InspectByNameResponse
-	17, // 17: levelrail.agent.v1.AgentResponse.create:type_name -> levelrail.agent.v1.CreateResponse
-	23, // 18: levelrail.agent.v1.AgentResponse.list_images:type_name -> levelrail.agent.v1.ListImagesResponse
-	25, // 19: levelrail.agent.v1.AgentResponse.list_by_prefix:type_name -> levelrail.agent.v1.ListByPrefixResponse
-	6,  // 20: levelrail.agent.v1.AgentResponse.empty:type_name -> levelrail.agent.v1.Empty
-	29, // 21: levelrail.agent.v1.AgentResponse.ensure_network:type_name -> levelrail.agent.v1.EnsureNetworkResponse
-	32, // 22: levelrail.agent.v1.AgentResponse.list_networks_by_prefix:type_name -> levelrail.agent.v1.ListNetworksByPrefixResponse
-	7,  // 23: levelrail.agent.v1.ContainerSpec.ports:type_name -> levelrail.agent.v1.PortBinding
-	34, // 24: levelrail.agent.v1.ContainerSpec.env:type_name -> levelrail.agent.v1.ContainerSpec.EnvEntry
-	8,  // 25: levelrail.agent.v1.ContainerSpec.resources:type_name -> levelrail.agent.v1.Resources
-	9,  // 26: levelrail.agent.v1.ContainerSpec.volumes:type_name -> levelrail.agent.v1.VolumeMount
-	7,  // 27: levelrail.agent.v1.ContainerState.ports:type_name -> levelrail.agent.v1.PortBinding
-	35, // 28: levelrail.agent.v1.ImageInfo.created_at:type_name -> google.protobuf.Timestamp
-	35, // 29: levelrail.agent.v1.ProxiedEvent.time:type_name -> google.protobuf.Timestamp
-	11, // 30: levelrail.agent.v1.InspectByNameResponse.state:type_name -> levelrail.agent.v1.ContainerState
-	10, // 31: levelrail.agent.v1.CreateRequest.spec:type_name -> levelrail.agent.v1.ContainerSpec
-	8,  // 32: levelrail.agent.v1.UpdateResourcesRequest.resources:type_name -> levelrail.agent.v1.Resources
-	12, // 33: levelrail.agent.v1.ListImagesResponse.images:type_name -> levelrail.agent.v1.ImageInfo
-	11, // 34: levelrail.agent.v1.ListByPrefixResponse.containers:type_name -> levelrail.agent.v1.ContainerState
-	27, // 35: levelrail.agent.v1.ListNetworksByPrefixResponse.networks:type_name -> levelrail.agent.v1.NetworkInfo
-	0,  // 36: levelrail.agent.v1.AgentService.Enroll:input_type -> levelrail.agent.v1.EnrollRequest
-	2,  // 37: levelrail.agent.v1.AgentService.Session:input_type -> levelrail.agent.v1.AgentMessage
-	1,  // 38: levelrail.agent.v1.AgentService.Enroll:output_type -> levelrail.agent.v1.EnrollResponse
-	3,  // 39: levelrail.agent.v1.AgentService.Session:output_type -> levelrail.agent.v1.ControlMessage
-	38, // [38:40] is the sub-list for method output_type
-	36, // [36:38] is the sub-list for method input_type
-	36, // [36:36] is the sub-list for extension type_name
-	36, // [36:36] is the sub-list for extension extendee
-	0,  // [0:36] is the sub-list for field type_name
+	37, // 2: levelrail.agent.v1.AgentMessage.exec_output:type_name -> levelrail.agent.v1.ExecOutput
+	36, // 3: levelrail.agent.v1.AgentMessage.exec_credit:type_name -> levelrail.agent.v1.ExecCredit
+	4,  // 4: levelrail.agent.v1.ControlMessage.request:type_name -> levelrail.agent.v1.AgentRequest
+	34, // 5: levelrail.agent.v1.ControlMessage.exec_input:type_name -> levelrail.agent.v1.ExecInput
+	35, // 6: levelrail.agent.v1.ControlMessage.exec_cancel:type_name -> levelrail.agent.v1.ExecCancel
+	36, // 7: levelrail.agent.v1.ControlMessage.exec_credit:type_name -> levelrail.agent.v1.ExecCredit
+	14, // 8: levelrail.agent.v1.AgentRequest.inspect_by_name:type_name -> levelrail.agent.v1.InspectByNameRequest
+	16, // 9: levelrail.agent.v1.AgentRequest.create:type_name -> levelrail.agent.v1.CreateRequest
+	18, // 10: levelrail.agent.v1.AgentRequest.start:type_name -> levelrail.agent.v1.StartRequest
+	19, // 11: levelrail.agent.v1.AgentRequest.stop:type_name -> levelrail.agent.v1.StopRequest
+	20, // 12: levelrail.agent.v1.AgentRequest.remove:type_name -> levelrail.agent.v1.RemoveRequest
+	22, // 13: levelrail.agent.v1.AgentRequest.list_images:type_name -> levelrail.agent.v1.ListImagesRequest
+	24, // 14: levelrail.agent.v1.AgentRequest.list_by_prefix:type_name -> levelrail.agent.v1.ListByPrefixRequest
+	26, // 15: levelrail.agent.v1.AgentRequest.ensure_volume:type_name -> levelrail.agent.v1.EnsureVolumeRequest
+	40, // 16: levelrail.agent.v1.AgentRequest.watch_events:type_name -> levelrail.agent.v1.WatchEventsRequest
+	21, // 17: levelrail.agent.v1.AgentRequest.update_resources:type_name -> levelrail.agent.v1.UpdateResourcesRequest
+	28, // 18: levelrail.agent.v1.AgentRequest.ensure_network:type_name -> levelrail.agent.v1.EnsureNetworkRequest
+	30, // 19: levelrail.agent.v1.AgentRequest.remove_network:type_name -> levelrail.agent.v1.RemoveNetworkRequest
+	31, // 20: levelrail.agent.v1.AgentRequest.list_networks_by_prefix:type_name -> levelrail.agent.v1.ListNetworksByPrefixRequest
+	33, // 21: levelrail.agent.v1.AgentRequest.exec:type_name -> levelrail.agent.v1.ExecRequest
+	15, // 22: levelrail.agent.v1.AgentResponse.inspect_by_name:type_name -> levelrail.agent.v1.InspectByNameResponse
+	17, // 23: levelrail.agent.v1.AgentResponse.create:type_name -> levelrail.agent.v1.CreateResponse
+	23, // 24: levelrail.agent.v1.AgentResponse.list_images:type_name -> levelrail.agent.v1.ListImagesResponse
+	25, // 25: levelrail.agent.v1.AgentResponse.list_by_prefix:type_name -> levelrail.agent.v1.ListByPrefixResponse
+	6,  // 26: levelrail.agent.v1.AgentResponse.empty:type_name -> levelrail.agent.v1.Empty
+	29, // 27: levelrail.agent.v1.AgentResponse.ensure_network:type_name -> levelrail.agent.v1.EnsureNetworkResponse
+	32, // 28: levelrail.agent.v1.AgentResponse.list_networks_by_prefix:type_name -> levelrail.agent.v1.ListNetworksByPrefixResponse
+	7,  // 29: levelrail.agent.v1.ContainerSpec.ports:type_name -> levelrail.agent.v1.PortBinding
+	41, // 30: levelrail.agent.v1.ContainerSpec.env:type_name -> levelrail.agent.v1.ContainerSpec.EnvEntry
+	8,  // 31: levelrail.agent.v1.ContainerSpec.resources:type_name -> levelrail.agent.v1.Resources
+	9,  // 32: levelrail.agent.v1.ContainerSpec.volumes:type_name -> levelrail.agent.v1.VolumeMount
+	7,  // 33: levelrail.agent.v1.ContainerState.ports:type_name -> levelrail.agent.v1.PortBinding
+	42, // 34: levelrail.agent.v1.ImageInfo.created_at:type_name -> google.protobuf.Timestamp
+	42, // 35: levelrail.agent.v1.ProxiedEvent.time:type_name -> google.protobuf.Timestamp
+	11, // 36: levelrail.agent.v1.InspectByNameResponse.state:type_name -> levelrail.agent.v1.ContainerState
+	10, // 37: levelrail.agent.v1.CreateRequest.spec:type_name -> levelrail.agent.v1.ContainerSpec
+	8,  // 38: levelrail.agent.v1.UpdateResourcesRequest.resources:type_name -> levelrail.agent.v1.Resources
+	12, // 39: levelrail.agent.v1.ListImagesResponse.images:type_name -> levelrail.agent.v1.ImageInfo
+	11, // 40: levelrail.agent.v1.ListByPrefixResponse.containers:type_name -> levelrail.agent.v1.ContainerState
+	27, // 41: levelrail.agent.v1.ListNetworksByPrefixResponse.networks:type_name -> levelrail.agent.v1.NetworkInfo
+	38, // 42: levelrail.agent.v1.ExecOutput.failure:type_name -> levelrail.agent.v1.ExecFailure
+	39, // 43: levelrail.agent.v1.ExecFailure.exit:type_name -> levelrail.agent.v1.ExecExit
+	0,  // 44: levelrail.agent.v1.AgentService.Enroll:input_type -> levelrail.agent.v1.EnrollRequest
+	2,  // 45: levelrail.agent.v1.AgentService.Session:input_type -> levelrail.agent.v1.AgentMessage
+	1,  // 46: levelrail.agent.v1.AgentService.Enroll:output_type -> levelrail.agent.v1.EnrollResponse
+	3,  // 47: levelrail.agent.v1.AgentService.Session:output_type -> levelrail.agent.v1.ControlMessage
+	46, // [46:48] is the sub-list for method output_type
+	44, // [44:46] is the sub-list for method input_type
+	44, // [44:44] is the sub-list for extension type_name
+	44, // [44:44] is the sub-list for extension extendee
+	0,  // [0:44] is the sub-list for field type_name
 }
 
 func init() { file_proto_agent_v1_agent_proto_init() }
@@ -2472,6 +3095,14 @@ func file_proto_agent_v1_agent_proto_init() {
 	file_proto_agent_v1_agent_proto_msgTypes[2].OneofWrappers = []any{
 		(*AgentMessage_Response)(nil),
 		(*AgentMessage_Event)(nil),
+		(*AgentMessage_ExecOutput)(nil),
+		(*AgentMessage_ExecCredit)(nil),
+	}
+	file_proto_agent_v1_agent_proto_msgTypes[3].OneofWrappers = []any{
+		(*ControlMessage_Request)(nil),
+		(*ControlMessage_ExecInput)(nil),
+		(*ControlMessage_ExecCancel)(nil),
+		(*ControlMessage_ExecCredit)(nil),
 	}
 	file_proto_agent_v1_agent_proto_msgTypes[4].OneofWrappers = []any{
 		(*AgentRequest_InspectByName)(nil),
@@ -2487,6 +3118,7 @@ func file_proto_agent_v1_agent_proto_init() {
 		(*AgentRequest_EnsureNetwork)(nil),
 		(*AgentRequest_RemoveNetwork)(nil),
 		(*AgentRequest_ListNetworksByPrefix)(nil),
+		(*AgentRequest_Exec)(nil),
 	}
 	file_proto_agent_v1_agent_proto_msgTypes[5].OneofWrappers = []any{
 		(*AgentResponse_InspectByName)(nil),
@@ -2503,7 +3135,7 @@ func file_proto_agent_v1_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_agent_v1_agent_proto_rawDesc), len(file_proto_agent_v1_agent_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   35,
+			NumMessages:   42,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

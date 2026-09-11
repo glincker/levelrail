@@ -7,9 +7,11 @@ package agent
 // direct in-process call.
 
 import (
+	"bytes"
 	"context"
-	"fmt"
+	"errors"
 	"io"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
@@ -125,36 +127,236 @@ func (t *GRPCTransport) ListByPrefix(ctx context.Context, prefix string) ([]dock
 	return containerStatesFromPB(resp.GetListByPrefix().GetContainers()), nil
 }
 
-// Exec implements Transport (docker.Runtime). Deliberately not wired to
-// the remote agent yet: this is a known, documented gap, not an
-// oversight. docker.Runtime.Exec was added for internal/backup's Dumper,
-// and every other Transport method here fits mux.Call's single
-// request/response shape (or, for Events, its own explicit streaming
-// workaround, see Events' doc comment above); Exec's ReadCloser return
-// needs the same kind of dedicated streaming path Events required, plus
-// a new AgentRequest/AgentResponse op in internal/agent/agentpb, which
-// means a proto change and regeneration, not a small extension of the
-// existing dispatch switch in execute.go. That is real, separate work.
-// Rather than fake it with a call that would silently produce no data or
-// the wrong data, a database backup for a service placed on a remote
-// node fails loudly with this error today; only Local's in-process
-// Transport (this control plane's own node) supports Exec until the
-// wiring above lands.
-func (t *GRPCTransport) Exec(_ context.Context, containerID string, cmd []string) (io.ReadCloser, error) {
-	return nil, fmt.Errorf("agent: remote Exec not implemented over the agent transport (container %q, cmd %v): backups only support databases placed on this control plane's own node today", containerID, cmd)
+// Exec implements Transport (docker.Runtime). The initial round trip is
+// synchronous, matching docker.Client.Exec's own behavior: an exec that
+// cannot attach (no such container, daemon refused) fails here rather
+// than on a later Read. Output arrives afterwards as ExecOutput frames,
+// reassembled by the returned stream.
+func (t *GRPCTransport) Exec(ctx context.Context, containerID string, cmd []string) (io.ReadCloser, error) {
+	return t.startExec(ctx, containerID, cmd, nil, false)
 }
 
-// ExecWithInput implements Transport (docker.Runtime). Exec's own doc
-// comment applies identically here, and then some: ExecWithInput needs
-// everything Exec would (a dedicated streaming path, a new agentpb op)
-// plus a second stream direction for stdin, so it inherits the same
-// documented gap rather than a new one. A database restore for a service
-// placed on a remote node fails loudly with this error today, the same
-// "fail loudly, never fake it" posture Exec's own doc comment describes,
-// until the wiring above lands; only Local's in-process Transport (this
-// control plane's own node) supports ExecWithInput until then.
-func (t *GRPCTransport) ExecWithInput(_ context.Context, containerID string, cmd []string, _ io.Reader) (io.ReadCloser, error) {
-	return nil, fmt.Errorf("agent: remote ExecWithInput not implemented over the agent transport (container %q, cmd %v): restores only support databases placed on this control plane's own node today", containerID, cmd)
+// ExecWithInput implements Transport (docker.Runtime). Exec plus a stdin
+// direction: a goroutine drains stdin into ExecInput frames while output
+// frames stream back, the same concurrency docker.Client.ExecWithInput
+// needs locally to keep a command that writes while it reads from
+// deadlocking.
+func (t *GRPCTransport) ExecWithInput(ctx context.Context, containerID string, cmd []string, stdin io.Reader) (io.ReadCloser, error) {
+	if stdin == nil {
+		// The remote command gets a real stdin pipe either way, so it
+		// needs an EOF from somewhere or it waits forever.
+		stdin = bytes.NewReader(nil)
+	}
+	return t.startExec(ctx, containerID, cmd, stdin, true)
+}
+
+func (t *GRPCTransport) startExec(ctx context.Context, containerID string, cmd []string, stdin io.Reader, attachStdin bool) (io.ReadCloser, error) {
+	execID, err := randomRequestID()
+	if err != nil {
+		return nil, err
+	}
+
+	// Subscribe before issuing the call: the agent starts relaying output
+	// the moment it has attached, which can be before this side has even
+	// seen the acknowledgment.
+	sub := t.mux.subscribeExec(execID)
+	if sub == nil {
+		return nil, ErrSessionClosed
+	}
+
+	if _, callErr := t.mux.CallWithID(ctx, execID, &agentpb.AgentRequest{
+		Op: &agentpb.AgentRequest_Exec{Exec: &agentpb.ExecRequest{
+			ContainerId: containerID,
+			Cmd:         cmd,
+			AttachStdin: attachStdin,
+		}},
+	}); callErr != nil {
+		t.mux.unsubscribeExec(execID)
+		// The acknowledgment may have failed only on this side (a caller
+		// whose ctx expired mid-attach), so tell the agent to drop the
+		// exec rather than leave it running for nobody.
+		_ = t.mux.sendExecCancel(execID)
+		return nil, callErr
+	}
+
+	s := &execStream{mux: t.mux, execID: execID, sub: sub, ctx: ctx, done: make(chan struct{})}
+	go s.watchContext()
+	if attachStdin {
+		go s.pumpStdin(stdin)
+	}
+	return s, nil
+}
+
+// errExecStreamClosed is what a Read blocked on a stream the caller
+// closed returns, distinct from io.EOF (the command's own clean end).
+var errExecStreamClosed = errors.New("agent: exec stream closed")
+
+// execStream is the io.ReadCloser Exec and ExecWithInput return: it
+// reassembles the agent's ExecOutput frames into a byte stream, refunds
+// flow-control credit as it consumes them, and cancels the remote exec
+// if the caller gives up before the command finishes.
+type execStream struct {
+	mux    *mux
+	execID string
+	sub    *execSub
+	ctx    context.Context
+
+	done      chan struct{}
+	closeOnce sync.Once
+
+	// Read's own state, single-goroutine by io.Reader's contract.
+	rem      []byte
+	finished error
+	consumed uint32
+}
+
+func (s *execStream) Read(p []byte) (int, error) {
+	for {
+		if len(s.rem) > 0 {
+			n := copy(p, s.rem)
+			s.rem = s.rem[n:]
+			return n, nil
+		}
+		if s.finished != nil {
+			return 0, s.finished
+		}
+
+		select {
+		case frame, ok := <-s.sub.out:
+			if !ok {
+				s.finished = s.sub.failure()
+				if s.finished == nil {
+					s.finished = ErrSessionClosed
+				}
+				s.finish()
+				return 0, s.finished
+			}
+			if chunk := frame.GetChunk(); len(chunk) > 0 {
+				s.rem = chunk
+				s.creditOne()
+				continue
+			}
+			if failure := frame.GetFailure(); failure != nil {
+				s.finished = execFailureToError(failure)
+				s.finish()
+				return 0, s.finished
+			}
+			if frame.GetEof() {
+				s.finished = io.EOF
+				s.finish()
+				return 0, io.EOF
+			}
+		case <-s.done:
+			if err := s.ctx.Err(); err != nil {
+				return 0, err
+			}
+			return 0, errExecStreamClosed
+		case <-s.ctx.Done():
+			return 0, s.ctx.Err()
+		}
+	}
+}
+
+// Close releases the subscription and, if the command is still running,
+// tells the agent to stop it. Idempotent, and a no-op cancel once the
+// stream already ended on its own.
+func (s *execStream) Close() error {
+	first := false
+	s.closeOnce.Do(func() {
+		first = true
+		close(s.done)
+	})
+	if !first {
+		return nil
+	}
+	s.mux.unsubscribeExec(s.execID)
+	return s.mux.sendExecCancel(s.execID)
+}
+
+// finish marks the stream ended by the agent rather than by the caller,
+// so a later Close neither cancels an already-finished exec nor reports
+// an error for failing to.
+func (s *execStream) finish() {
+	s.mux.unsubscribeExec(s.execID)
+	s.closeOnce.Do(func() { close(s.done) })
+}
+
+func (s *execStream) watchContext() {
+	select {
+	case <-s.ctx.Done():
+		_ = s.Close()
+	case <-s.done:
+	}
+}
+
+// creditOne refunds the agent's output window in batches: without it the
+// agent stops sending once execWindowFrames frames are unacknowledged.
+func (s *execStream) creditOne() {
+	s.consumed++
+	if s.consumed < execCreditBatch {
+		return
+	}
+	frames := s.consumed
+	s.consumed = 0
+	// A failed credit means the session is gone, which the next Read
+	// discovers on its own; there is nothing to recover here.
+	_ = s.mux.sendExecCredit(s.execID, frames)
+}
+
+// pumpStdin drains r into ExecInput frames for as long as the agent's
+// credit allows, then signals end of input. A read failure on r is sent
+// as an explicit error rather than an EOF: a truncated dump must fail
+// the restore, not look like a complete one.
+func (s *execStream) pumpStdin(r io.Reader) {
+	buf := make([]byte, execChunkBytes)
+	credit := uint32(execWindowFrames)
+
+	for {
+		if credit == 0 {
+			select {
+			case refund, ok := <-s.sub.credit:
+				if !ok {
+					return
+				}
+				credit += refund
+			case <-s.done:
+				return
+			case <-s.ctx.Done():
+				return
+			}
+			continue
+		}
+
+		n, readErr := r.Read(buf)
+		if n > 0 {
+			chunk := make([]byte, n)
+			copy(chunk, buf[:n])
+			if err := s.mux.sendExecInput(&agentpb.ExecInput{ExecId: s.execID, Chunk: chunk}); err != nil {
+				return
+			}
+			credit--
+		}
+		if readErr != nil {
+			final := &agentpb.ExecInput{ExecId: s.execID, Eof: true}
+			if !errors.Is(readErr, io.EOF) {
+				final = &agentpb.ExecInput{ExecId: s.execID, Error: readErr.Error()}
+			}
+			_ = s.mux.sendExecInput(final)
+			return
+		}
+	}
+}
+
+func execFailureToError(f *agentpb.ExecFailure) error {
+	if exit := f.GetExit(); exit != nil {
+		return &docker.ExecExitError{
+			Cmd:       exit.GetCmd(),
+			Container: exit.GetContainer(),
+			ExitCode:  int(exit.GetExitCode()),
+			Stderr:    exit.GetStderr(),
+		}
+	}
+	return errors.New(f.GetMessage())
 }
 
 // EnsureNetwork implements Transport (docker.Runtime).

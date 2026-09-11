@@ -75,23 +75,33 @@ message EnrollResponse {
   bytes ca_cert_pem = 4;
 }
 
-// AgentMessage is one frame the agent sends up the Session stream:
-// either a reply to an outstanding AgentRequest, or an unprompted
-// streamed Docker event.
+// AgentMessage is one frame the agent sends up the Session stream: a
+// reply to an outstanding AgentRequest, an unprompted streamed Docker
+// event, or one frame of an in-flight exec's output or stdin flow
+// control.
 message AgentMessage {
   oneof payload {
     AgentResponse response = 1;
     ProxiedEvent event = 2;
+    ExecOutput exec_output = 3;
+    // ExecCredit here refunds the control plane's stdin window: the
+    // agent has consumed that many ExecInput frames.
+    ExecCredit exec_credit = 4;
   }
 }
 
 // ControlMessage is one frame the control plane sends down the Session
-// stream: always a request. (A dedicated envelope message, not just
-// AgentRequest directly, so this type can grow a second oneof arm later
-// without an incompatible wire change, the same reasoning AgentMessage
-// already needs one today for its two arms.)
+// stream: a request, or one frame of an in-flight exec's stdin,
+// cancellation, or output flow control.
 message ControlMessage {
-  AgentRequest request = 1;
+  oneof payload {
+    AgentRequest request = 1;
+    ExecInput exec_input = 2;
+    ExecCancel exec_cancel = 3;
+    // ExecCredit here refunds the agent's output window: the control
+    // plane has consumed that many ExecOutput frames.
+    ExecCredit exec_credit = 4;
+  }
 }
 
 // AgentRequest is one control-plane-issued operation, tagged with
@@ -114,6 +124,7 @@ message AgentRequest {
     EnsureNetworkRequest ensure_network = 12;
     RemoveNetworkRequest remove_network = 13;
     ListNetworksByPrefixRequest list_networks_by_prefix = 14;
+    ExecRequest exec = 15;
   }
 }
 
@@ -279,6 +290,80 @@ message ListNetworksByPrefixRequest {
 }
 message ListNetworksByPrefixResponse {
   repeated NetworkInfo networks = 1;
+}
+
+// ExecRequest runs cmd inside an already-running container and streams
+// its stdout back as ExecOutput frames tagged with this request's own
+// request_id. The AgentResponse for this request is only an
+// acknowledgment that the exec attached (or the error that stopped it
+// from attaching); output arrives afterwards, frame by frame, exactly
+// as docker.Runtime.Exec's returned io.ReadCloser produces it locally.
+message ExecRequest {
+  string container_id = 1;
+  repeated string cmd = 2;
+  // AttachStdin selects docker.Runtime.ExecWithInput over Exec: the
+  // control plane then streams ExecInput frames for the same exec_id.
+  bool attach_stdin = 3;
+}
+
+// ExecInput is one stdin frame for the in-flight exec whose request_id
+// is exec_id. Exactly one of chunk, eof, or error is meaningful per
+// frame: eof ends stdin the way closing a pipe's write half does, error
+// carries a failure reading the control plane's own source reader so
+// the exec fails loudly instead of seeing a silently truncated stdin.
+message ExecInput {
+  string exec_id = 1;
+  bytes chunk = 2;
+  bool eof = 3;
+  string error = 4;
+}
+
+// ExecCancel ends an in-flight exec early, when the control plane's
+// caller closed the stream before the command finished. The agent stops
+// reading and closes its local exec, so the remote process does not
+// outlive the caller that asked for it.
+message ExecCancel {
+  string exec_id = 1;
+}
+
+// ExecCredit refunds flow-control window for one exec, in frames. Both
+// exec directions are windowed: a sender may have at most a fixed
+// number of unacknowledged data frames outstanding, and the receiver
+// credits frames back as it consumes them. Without this, one slow exec
+// consumer would either stall every other logical call sharing the
+// Session stream or force unbounded buffering of a multi-gigabyte dump.
+message ExecCredit {
+  string exec_id = 1;
+  uint32 frames = 2;
+}
+
+// ExecOutput is one stdout frame for an in-flight exec, or that stream's
+// terminal frame. A data frame sets chunk; the terminal frame sets
+// either eof (the command's output ended cleanly) or failure. Exactly
+// one terminal frame is ever sent per exec.
+message ExecOutput {
+  string exec_id = 1;
+  bytes chunk = 2;
+  bool eof = 3;
+  ExecFailure failure = 4;
+}
+
+// ExecFailure is the error that ended an exec's output stream, mirroring
+// the trailing error docker.Runtime.Exec's own io.ReadCloser returns.
+message ExecFailure {
+  string message = 1;
+  // Exit is set when the failure was the command's own non-zero exit
+  // (internal/docker.ExecExitError), so the control plane can rebuild
+  // that typed error rather than a flat string: internal/api's exec
+  // endpoint branches on it with errors.As to report a real exit code.
+  ExecExit exit = 2;
+}
+
+message ExecExit {
+  repeated string cmd = 1;
+  string container = 2;
+  int32 exit_code = 3;
+  string stderr = 4;
 }
 
 // WatchEventsRequest starts (or, sent a second time with the same

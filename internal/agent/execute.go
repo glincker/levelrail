@@ -151,6 +151,12 @@ func Execute(ctx context.Context, rt docker.Runtime, req *agentpb.AgentRequest, 
 		go relayEvents(ctx, rt, watchID, emitEvent)
 		resp.Result = emptyResult()
 
+	case *agentpb.AgentRequest_Exec:
+		// Exec is the one op Execute does not own: it spans many frames
+		// in both directions, so ExecRelay below holds its per-session
+		// state and serveSession routes it there directly.
+		resp.Error = "agent: exec requests are dispatched through ExecRelay, not Execute"
+
 	default:
 		resp.Error = fmt.Sprintf("agent: unknown request op %T", op)
 	}
