@@ -31,7 +31,7 @@ require (
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/smallstep/certificates v0.30.2
 	github.com/tonistiigi/fsutil v0.0.0-20260819142231-83cac42c1c52
-	golang.org/x/crypto v0.55.0
+	golang.org/x/crypto v0.56.0
 	golang.org/x/oauth2 v0.37.0
 	golang.org/x/sync v0.23.0
 	golang.org/x/term v0.45.0
