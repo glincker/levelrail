@@ -10,6 +10,7 @@ import {
   useDeployStatus,
 } from '../../queries/deploys'
 import { summarizeAppStatus } from '../../lib/appStatus'
+import { routeErrorMessage } from '../../lib/apiError'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { CloneAppDialog } from '../../components/CloneAppDialog'
 import { DeleteAppDialog } from '../../components/DeleteAppDialog'
@@ -147,11 +148,11 @@ function AppDetailLayout() {
 // fetchApp (queries/apps.ts) throws a plain Error for a 404, which lands
 // here rather than crashing the whole route tree. Kept deliberately
 // minimal: a name, a message, and a way back to the list.
-function AppDetailError({ error }: { error: Error }) {
+function AppDetailError({ error }: { error: unknown }) {
   return (
     <Alert variant="destructive">
       <AlertDescription>
-        <p>{error.message}</p>
+        <p>{routeErrorMessage(error)}</p>
         <Link to="/apps" className="mt-2 inline-block underline">
           Back to apps
         </Link>

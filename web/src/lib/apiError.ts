@@ -20,6 +20,12 @@ export function isUnauthorized(error: unknown): boolean {
   return error instanceof ApiError && error.status === 401
 }
 
+// TanStack Router's own errorComponent props type error as unknown, not
+// Error, since a thrown value is never actually guaranteed to be one.
+export function routeErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
 // Reads the `{"error": "..."}` body shape every internal/api handler's
 // writeError produces, falling back to a generic message if the body
 // isn't JSON or has no `error` field (e.g. a proxy-generated error page

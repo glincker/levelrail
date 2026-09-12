@@ -15,6 +15,7 @@ import { DrainNodeDialog } from '../../components/DrainNodeDialog'
 import { NodeAlertStatusCard } from '../../components/NodeAlertStatusCard'
 import { NodeMetricsDashboard } from '../../components/NodeMetricsDashboard'
 import { NodePatchStatusCard } from '../../components/NodePatchStatusCard'
+import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -252,11 +253,11 @@ function NodeDetailPage() {
 // fetchNode (queries/nodes.ts) throws a plain ApiError for a 404, which
 // lands here rather than crashing the whole route tree, mirroring
 // DatabaseDetailError.
-function NodeDetailError({ error }: { error: Error }) {
+function NodeDetailError({ error }: { error: unknown }) {
   return (
     <Alert variant="destructive">
       <AlertDescription>
-        <p>{error.message}</p>
+        <p>{routeErrorMessage(error)}</p>
         <Link to="/nodes" className="mt-2 inline-block underline">
           Back to nodes
         </Link>
