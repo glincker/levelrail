@@ -751,6 +751,10 @@ type DatabaseResource struct {
 	BackupSchedule     string            `json:"backup_schedule,omitempty"`
 	BackupRetain       int               `json:"backup_retain,omitempty"`
 	BackupRetainDays   int               `json:"backup_retain_days,omitempty"`
+	// Suspended is set via POST /api/v1/databases/{name}/stop and
+	// .../start (StopDatabase/StartDatabase), the same response-only
+	// boundary NodeID/ProjectID already establish.
+	Suspended bool `json:"suspended,omitempty"`
 	// TLSEnabled mirrors internal/api's databaseResource.TLSEnabled:
 	// response-only, computed fresh on every read, true when this
 	// database's connection string (DATABASE_URL/REDIS_URL, injected

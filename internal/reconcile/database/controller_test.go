@@ -385,6 +385,89 @@ func TestController_Reconcile_Redis_AlreadyRunning_NoOp(t *testing.T) {
 	}
 }
 
+func TestController_Reconcile_Suspended_RemovesRunningContainer(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7", Suspended: true}
+	rt.seed(containerName("main"), "redis:7", true)
+	if err := rt.EnsureVolume(context.Background(), dataVolumeName("main")); err != nil {
+		t.Fatalf("EnsureVolume() error = %v", err)
+	}
+
+	c := New("main", &fakeStore{db: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Reason != "Suspended" {
+		t.Errorf("condition = %+v, want Reason=Suspended", cond)
+	}
+	if rt.count() != 0 {
+		t.Errorf("count() = %d, want 0: suspend must remove the container", rt.count())
+	}
+	if !rt.hasVolume(dataVolumeName("main")) {
+		t.Error("data volume was removed by suspend, want it kept")
+	}
+}
+
+func TestController_Reconcile_Suspended_NoContainerYet_NoOp(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7", Suspended: true}
+
+	c := New("main", &fakeStore{db: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if conditionOf(t, result).Reason != "Suspended" {
+		t.Errorf("condition = %+v, want Reason=Suspended", conditionOf(t, result))
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0: a suspended database must never be created", rt.createCalls)
+	}
+}
+
+func TestController_Reconcile_Suspended_RemoveFails(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.removeErr = errors.New("boom")
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7", Suspended: true}
+	rt.seed(containerName("main"), "redis:7", true)
+
+	c := New("main", &fakeStore{db: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want an error when Remove fails")
+	}
+	if conditionOf(t, result).Reason != "SuspendFailed" {
+		t.Errorf("condition = %+v, want Reason=SuspendFailed", conditionOf(t, result))
+	}
+}
+
+// TestController_Reconcile_Suspended_CredentialsNotRequired proves
+// suspend short-circuits before the per-engine credentials check: a
+// Postgres database with no credentials configured (a permanent,
+// documented block on the normal path, see
+// TestController_Reconcile_Postgres_AlwaysCredentialsBlocked) can still
+// be suspended, since suspend only removes a container and never starts
+// one.
+func TestController_Reconcile_Suspended_CredentialsNotRequired(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16", Suspended: true}
+	rt.seed(containerName("main"), "postgres:16", true)
+
+	c := New("main", &fakeStore{db: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if conditionOf(t, result).Reason != "Suspended" {
+		t.Errorf("condition = %+v, want Reason=Suspended", conditionOf(t, result))
+	}
+	if rt.count() != 0 {
+		t.Errorf("count() = %d, want 0", rt.count())
+	}
+}
+
 func TestController_Reconcile_Redis_RestartAfterCrash(t *testing.T) {
 	rt := newFakeRuntime()
 	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}

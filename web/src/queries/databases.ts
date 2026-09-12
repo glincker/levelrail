@@ -215,6 +215,60 @@ export function useDeleteDatabase() {
   })
 }
 
+// POST /api/v1/databases/{name}/stop and .../start
+// (internal/api/database_stop_start.go's handleStopDatabase/
+// handleStartDatabase): sets/clears Suspended, distinct from delete
+// (which removes desired state entirely). The reconciler, not this
+// request, is what actually removes or recreates the container. No
+// request body. Mirrors queries/apps.ts's stopApp/startApp.
+async function stopDatabase(name: string): Promise<DatabaseResource> {
+  const res = await fetch(`/api/v1/databases/${encodeURIComponent(name)}/stop`, {
+    method: 'POST',
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `stop database failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as DatabaseResource
+}
+
+async function startDatabase(name: string): Promise<DatabaseResource> {
+  const res = await fetch(`/api/v1/databases/${encodeURIComponent(name)}/start`, {
+    method: 'POST',
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `start database failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as DatabaseResource
+}
+
+export function useStopDatabase() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: stopDatabase,
+    onSuccess: (updated) => {
+      queryClient.setQueryData(databaseKeys.detail(updated.name), updated)
+      void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
+    },
+  })
+}
+
+export function useStartDatabase() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: startDatabase,
+    onSuccess: (updated) => {
+      queryClient.setQueryData(databaseKeys.detail(updated.name), updated)
+      void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
+    },
+  })
+}
+
 // PUT /api/v1/databases/{name}/node (internal/api/databases.go's
 // handleSetDatabaseNode), the database counterpart to queries/apps.ts's
 // setAppNode/useSetAppNode: same AbilityRoot gating, same empty-string-

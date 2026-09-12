@@ -267,6 +267,28 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		return notReady("StoreError", err), fmt.Errorf("database/%s: get desired database: %w", c.dbName, err)
 	}
 
+	// Suspended is an operator-requested stop (DesiredDatabase.Suspended's
+	// own doc comment): remove the container and return early. Unlike
+	// application.Controller's own suspend path, there is no replica set
+	// to tear down (containerName's own doc comment explains why a
+	// database controller only ever manages one container), and the data
+	// volume is untouched: dataVolumeName's own volume is never removed
+	// here, only the container that had it mounted, so resuming starts
+	// the same engine against the same data.
+	if desired.Suspended {
+		target := containerName(c.dbName)
+		state, err := c.runtime.InspectByName(ctx, target)
+		if err != nil {
+			return notReady("InspectFailed", err), fmt.Errorf("database/%s: suspend: inspect %q: %w", c.dbName, target, err)
+		}
+		if state != nil {
+			if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+				return notReady("SuspendFailed", err), fmt.Errorf("database/%s: suspend: remove %q: %w", c.dbName, target, err)
+			}
+		}
+		return unknownResult("Suspended"), nil
+	}
+
 	switch desired.Engine {
 	case store.EngineRedis:
 		command, containerPort := redisCommandAndPort(c.tls)
