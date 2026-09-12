@@ -1345,22 +1345,11 @@ func loadOrGenerateMasterKey(dataDir string) (mk *secrets.MasterKey, keyPath str
 // wrapper, the same second-client pattern every BuildKit live test in
 // this codebase already uses.
 //
-// agentRegistry is the build-node routing wiring: db's
-// current nodes are checked for AcceptsBuildWorkloads
-// (migrations/0010_node_workloads.sql), and build.SelectBuildNode picks
-// among the ones currently reachable through agentRegistry's transport.
-// See checkLocalBuildNode's own doc comment for why a
-// selected non-local node makes this function fail loudly rather than
-// silently building locally: actually dispatching a build to a remote
-// node isn't wired yet (internal/build/node.go's package doc comment
-// has the full "why not" and what would need to change), and that
-// refusal applies the same way regardless of which HTTP path
-// eventually triggers a build.
+// agentRegistry is the build-node routing wiring: it backs
+// buildNodeSource below, which build.Router consults per build to decide
+// whether to build here or dispatch to a node an operator marked
+// build-capable (migrations/0010_node_workloads.sql).
 func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry) (*deploy.Pipeline, func() error, error) {
-	if err := checkLocalBuildNode(ctx, db, agentRegistry, logger); err != nil {
-		return nil, nil, fmt.Errorf("select build node: %w", err)
-	}
-
 	rawDockerCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
 	if err != nil {
 		return nil, nil, fmt.Errorf("new docker client for buildkit: %w", err)
@@ -1409,7 +1398,9 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 	if secretsManager != nil {
 		deployOpts = append(deployOpts, deploy.WithSecretChecker(secretsManager))
 	}
-	return deploy.New(buildClient, db, deployOpts...), closer, nil
+
+	router := build.NewRouter(buildClient, buildNodeSource(db, agentRegistry), agent.NewBuildDispatcher(agentRegistry), build.WithRouterLogger(logger))
+	return deploy.New(router, db, deployOpts...), closer, nil
 }
 
 // loadWebhookHandler builds the git webhook receiver, wired
@@ -1562,63 +1553,33 @@ func registryDialAddr() string {
 	return fmt.Sprintf("127.0.0.1:%d", registryreconcile.HostPort)
 }
 
-// checkLocalBuildNode is the build-node routing gate: it
-// looks at every node's AcceptsBuildWorkloads flag
-// (migrations/0010_node_workloads.sql) and, via
-// internal/build.SelectBuildNode, decides which node a build should
-// run on.
-//
-// Two outcomes let loadBuilder proceed exactly as it always has,
-// building against this control plane's own local BuildKit connection:
-// no node is marked build-capable at all (the default, zero-configuration
-// case every deployment already had), which returns a nil error here.
-//
-// A third outcome does not: SelectBuildNode picking a real, reachable,
-// build-capable node. That's the case this function refuses, loudly,
-// rather than silently building locally instead or pretending to
-// dispatch somewhere it can't reach: actually running a build on a
-// remote node needs a way to open a BuildKit connection against that
-// node's Docker daemon, and today's agent.Transport
-// only carries docker.Runtime's container-operation surface, not a raw
-// Docker Engine API connection. Extending that wire protocol is
-// explicitly out of scope here (this only extends internal/build,
-// it doesn't touch the reconciler or transport); see
-// internal/build/node.go's package doc comment for the
-// full reasoning. An operator who marks a node build-capable today gets
-// a clear, specific error here (surfaced as run's usual "webhook not
-// configured" warning, non-fatal to control-plane startup) instead of
-// deploys that quietly keep landing on the control plane's own
-// resources.
-func checkLocalBuildNode(ctx context.Context, db *store.DB, agentRegistry *agent.Registry, logger *slog.Logger) error {
-	nodes, err := db.ListNodes(ctx)
-	if err != nil {
-		return fmt.Errorf("list nodes: %w", err)
-	}
-
-	infos := make([]build.NodeInfo, 0, len(nodes))
-	for _, n := range nodes {
-		online := false
-		if _, err := agentRegistry.Get(n.ID); err == nil {
-			online = true
+// buildNodeSource reports every node build.Router picks between, marking
+// as Online the ones currently reachable through the agent transport, the
+// same reasoning resolveNodeTransport already applies to service and
+// database placement. Consulted per build rather than once at startup, so
+// an operator marking a node build-capable takes effect on the next
+// build, not the next restart.
+func buildNodeSource(db *store.DB, agentRegistry *agent.Registry) build.NodeSource {
+	return func(ctx context.Context) ([]build.NodeInfo, error) {
+		nodes, err := db.ListNodes(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("list nodes: %w", err)
 		}
-		infos = append(infos, build.NodeInfo{
-			ID:                    n.ID,
-			AcceptsBuildWorkloads: n.AcceptsBuildWorkloads,
-			Online:                online,
-		})
-	}
 
-	selected, err := build.SelectBuildNode(infos)
-	if err != nil {
-		return fmt.Errorf("no build-capable node is reachable: %w", err)
+		infos := make([]build.NodeInfo, 0, len(nodes))
+		for _, n := range nodes {
+			online := false
+			if _, err := agentRegistry.Get(n.ID); err == nil {
+				online = true
+			}
+			infos = append(infos, build.NodeInfo{
+				ID:                    n.ID,
+				AcceptsBuildWorkloads: n.AcceptsBuildWorkloads,
+				Online:                online,
+			})
+		}
+		return infos, nil
 	}
-	if selected == "" {
-		return nil
-	}
-
-	logger.Warn("build node selected but remote build dispatch is not implemented yet, refusing to start the webhook handler",
-		slog.String("node_id", selected))
-	return fmt.Errorf("node %q is marked build-capable, but dispatching a build to a remote node isn't implemented yet; unmark it via PUT /api/v1/nodes/%s/workloads or wait for remote build dispatch to land", selected, selected)
 }
 
 // rootHandler combines the HTTP API with the embedded
