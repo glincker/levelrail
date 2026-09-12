@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
 	"github.com/GLINCKER/levelrail/internal/build"
 )
 
@@ -342,6 +343,50 @@ func TestBuildOnNode_CallerGivingUpStopsTheRemoteBuild(t *testing.T) {
 	case <-runner.ctxDone:
 	case <-time.After(20 * time.Second):
 		t.Fatal("the remote build kept running after its caller gave up")
+	}
+}
+
+// TestBuildRelay_PeerOverrunningItsWindowFailsTheBuild drives BuildRelay
+// directly, since the real control plane honors its credit and so can
+// never produce this: a peer that ignores the window has to fail its own
+// build rather than be allowed unbounded buffering on the build node.
+func TestBuildRelay_PeerOverrunningItsWindowFailsTheBuild(t *testing.T) {
+	var (
+		mu     sync.Mutex
+		frames []*agentpb.BuildOutput
+	)
+	send := func(msg *agentpb.AgentMessage) {
+		if out, ok := msg.GetPayload().(*agentpb.AgentMessage_BuildOutput); ok {
+			mu.Lock()
+			frames = append(frames, out.BuildOutput)
+			mu.Unlock()
+		}
+	}
+
+	runner := newFakeBuildRunner()
+	runner.release = make(chan struct{})
+	relay := NewBuildRelay(runner, send)
+	t.Cleanup(relay.CloseAll)
+
+	relay.Start(t.Context(), "b1", &agentpb.BuildRequest{
+		Kind: agentpb.BuildKind_BUILD_KIND_DOCKERFILE,
+		Tag:  "app:sha",
+	})
+
+	// Nothing is consuming credit while the build still waits for its
+	// context, so these overrun the window by construction.
+	for range buildWindowFrames + 2 {
+		relay.Credit(&agentpb.BuildCredit{BuildId: "b1", Frames: 1})
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	if len(frames) != 1 {
+		t.Fatalf("got %d build output frames, want exactly one terminal failure", len(frames))
+	}
+	failure := frames[0].GetFailure()
+	if failure == nil || !strings.Contains(failure.GetMessage(), "flow-control window") {
+		t.Errorf("terminal frame = %+v, want a failure naming the flow-control window", frames[0])
 	}
 }
 
