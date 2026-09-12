@@ -61,8 +61,8 @@ type ContainerState struct {
 }
 
 // VolumeMount attaches one named Docker volume to a path inside a
-// container, e.g. Postgres's /var/lib/postgresql/data or Redis's /data
-// (TASKS.md 1.8). Name is a Docker volume name, not a host path: bind
+// container, e.g. Postgres's /var/lib/postgresql/data or Redis's /data.
+// Name is a Docker volume name, not a host path: bind
 // mounts aren't exposed here, keeping this package's surface to what a
 // single-node managed database actually needs today.
 type VolumeMount struct {
@@ -73,6 +73,22 @@ type VolumeMount struct {
 	// archiver started setting it explicitly true, so this is
 	// byte-identical to every mount created before this field existed.
 	ReadOnly bool
+}
+
+// BindMount attaches a real host directory to a path inside a
+// container, HostPath a real filesystem path on whichever node the
+// container runs on, not a Docker volume name (VolumeMount's own doc
+// comment above). internal/reconcile/application is the only caller
+// today, translating store.ServiceBindMount into this at container-
+// create time; internal/api gates persisting a non-empty BindMounts to
+// AbilityRoot callers and rejects the deny-listed host paths
+// internal/compose's own validateBindMountHostPath defines, both
+// upstream of this package, which trusts HostPath the same way it
+// already trusts VolumeMount.Name.
+type BindMount struct {
+	HostPath      string
+	ContainerPath string
+	ReadOnly      bool
 }
 
 // ContainerSpec is desired state for a container a controller wants to
@@ -94,7 +110,7 @@ type VolumeMount struct {
 // Consequences section already commits to over Coolify's confirmed
 // weaker alternative (health check disabled by default, gated entirely
 // on Docker's own HEALTHCHECK). The prober itself belongs in the
-// application controller (Phase 1, TASKS.md 1.3), not here; this package
+// application controller (Phase 1), not here; this package
 // only needs to make a container reachable, via Ports above.
 type ContainerSpec struct {
 	Name      string
@@ -103,9 +119,13 @@ type ContainerSpec struct {
 	Env       map[string]string
 	Resources *Resources
 	// Volumes are named Docker volumes to mount at create time. A
-	// database controller (TASKS.md 1.8) is the first caller; ordinary
+	// database controller is the first caller; ordinary
 	// application containers leave this nil.
 	Volumes []VolumeMount
+	// BindMounts are real host directories to mount at create time
+	// (BindMount's own doc comment). Nil for every service before this
+	// field existed and for the ordinary stateless service today.
+	BindMounts []BindMount
 	// DNS lists nameserver IPs Docker writes into the container's
 	// /etc/resolv.conf, ahead of whatever the daemon would otherwise
 	// configure. Empty/nil is byte-identical to today: only a caller
@@ -144,6 +164,13 @@ type ContainerSpec struct {
 	// an explicit "tunnel run" argument rather than relying on the
 	// image's bare entrypoint.
 	Command []string
+	// Entrypoint overrides the image's own default ENTRYPOINT. Nil means
+	// the image's own default, unchanged from every container this
+	// codebase created before this field existed. First caller:
+	// internal/reconcile/registry, which needs to write an htpasswd file
+	// from injected env before handing off to the registry image's real
+	// entrypoint.
+	Entrypoint []string
 }
 
 // RegistryAuth is a plaintext username/password pair for pulling a
@@ -327,4 +354,50 @@ type Runtime interface {
 	// The returned ReadCloser carries stdout, identically to Exec's; Close
 	// must be called once done, same contract.
 	ExecWithInput(ctx context.Context, containerID string, cmd []string, stdin io.Reader) (io.ReadCloser, error)
+}
+
+// TTYSize is a terminal's character grid. Zero in either field means
+// "let the daemon pick," the same as leaving Docker's own ConsoleSize
+// unset.
+type TTYSize struct {
+	Rows uint16
+	Cols uint16
+}
+
+// ExecTTYOptions configures one interactive exec. Cmd is required; Env
+// carries the terminal's own environment (TERM above all, without which
+// most full-screen programs refuse to draw).
+type ExecTTYOptions struct {
+	Cmd        []string
+	Env        []string
+	User       string
+	WorkingDir string
+	Size       TTYSize
+}
+
+// ExecSession is one PTY-backed exec running inside a container: Read
+// yields the terminal's output (stdout and stderr merged, as a real
+// terminal merges them), Write feeds its input, Resize tells the
+// process its window changed, and Close ends the session.
+//
+// Read's trailing error carries the exec's own exit status the same way
+// Runtime.Exec's does: io.EOF for a clean exit, *ExecExitError for a
+// non-zero one. Close is best effort at stopping the remote process:
+// the Engine API has no "kill this exec," so closing the PTY is the
+// only lever, which ends a shell but cannot end a process that ignores
+// its terminal hanging up.
+type ExecSession interface {
+	io.ReadWriteCloser
+	Resize(ctx context.Context, size TTYSize) error
+}
+
+// TTYRuntime is the interactive half of Runtime's exec surface, kept
+// separate because Runtime is implemented by a dozen narrow test fakes
+// that have no interactive exec to offer and no reason to grow a stub
+// for one. Every real implementation (docker.Client, the agent's gRPC
+// transport, and the in-process transport wrapping either) implements
+// both, so a caller resolving a node's Runtime type-asserts to this and
+// reports "not supported on this node" if it fails.
+type TTYRuntime interface {
+	ExecTTY(ctx context.Context, containerID string, opts ExecTTYOptions) (ExecSession, error)
 }

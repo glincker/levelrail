@@ -1,5 +1,5 @@
 // Query-key factory and fetcher for GET /api/v1/apps/{name}/logs
-// (internal/api/logs.go, TASKS.md 2.3): a historical full-text search
+// (internal/api/logs.go): a historical full-text search
 // over already-stored log entries. Distinct from queries/deployLogs.ts,
 // which only builds a URL for the live SSE build-log stream and
 // deliberately isn't a TanStack Query fetcher at all (see that module's

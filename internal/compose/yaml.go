@@ -29,6 +29,9 @@ type rawService struct {
 	Networks    Networks          `yaml:"networks"`
 	Restart     string            `yaml:"restart"`
 	Healthcheck *Healthcheck      `yaml:"healthcheck"`
+	DependsOn   DependsOn         `yaml:"depends_on"`
+	Command     Command           `yaml:"command"`
+	Entrypoint  Command           `yaml:"entrypoint"`
 }
 
 // Healthcheck is one service's healthcheck: block, Docker Compose's own
@@ -128,6 +131,34 @@ func (n *Networks) UnmarshalYAML(node *yaml.Node) error {
 	}
 }
 
+// DependsOn is a service's own depends_on:'s list-or-map union, the same
+// shape as Networks: either a plain list of service names, or a map of
+// name to per-dependency config (condition, restart, ...) decoded down
+// to just the names.
+type DependsOn []string
+
+// UnmarshalYAML implements the list-or-map union described above.
+func (d *DependsOn) UnmarshalYAML(node *yaml.Node) error {
+	switch node.Kind {
+	case yaml.SequenceNode:
+		var items []string
+		if err := node.Decode(&items); err != nil {
+			return fmt.Errorf("depends_on: %w", err)
+		}
+		*d = items
+		return nil
+	case yaml.MappingNode:
+		names := make([]string, 0, len(node.Content)/2)
+		for i := 0; i < len(node.Content); i += 2 {
+			names = append(names, node.Content[i].Value)
+		}
+		*d = names
+		return nil
+	default:
+		return fmt.Errorf("depends_on: must be a list or map of service names")
+	}
+}
+
 // UnmarshalYAML supports ports:'s short form only: "container" or
 // "host:container". Long-form mapping entries are rejected rather than
 // silently dropped.
@@ -175,9 +206,14 @@ func parsePort(s string) (int, error) {
 }
 
 // UnmarshalYAML supports volumes:'s short form only: "name:/path",
-// optionally with a trailing ":ro"/":rw" this parses but doesn't use.
-// A path-like "name" (bind mount) decodes with an empty Name so
-// Validate reports it, rather than failing the whole parse here.
+// optionally with a trailing ":ro"/":rw". The left side is a bind mount
+// (HostPath set, Name left empty) when it starts with "/", a real
+// Docker Compose absolute host path; one starting with "." is rejected
+// outright, since there's no defined working directory here to resolve
+// a relative path against (real Compose resolves it against the
+// compose file's own directory, which this package's direct-import
+// path, unlike the git-sourced expand path, doesn't have). Anything
+// else is a named volume, unchanged from before bind mounts existed.
 func (v *Volume) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.ScalarNode {
 		return fmt.Errorf("volumes: long-form entries are not supported, use \"name:/path\"")
@@ -186,13 +222,45 @@ func (v *Volume) UnmarshalYAML(node *yaml.Node) error {
 	if len(parts) < 2 {
 		return fmt.Errorf("volumes: %q must be \"name:/path\"", node.Value)
 	}
-	name, path := parts[0], parts[1]
-	if strings.HasPrefix(name, ".") || strings.HasPrefix(name, "/") {
-		name = ""
+	left, path := parts[0], parts[1]
+	if strings.HasPrefix(left, ".") {
+		return fmt.Errorf("volumes: %q: relative bind-mount paths are not supported, use an absolute path", node.Value)
 	}
-	v.Name = name
+	if strings.HasPrefix(left, "/") {
+		v.HostPath = left
+	} else {
+		v.Name = left
+	}
 	v.ContainerPath = path
+	if len(parts) == 3 {
+		v.ReadOnly = parts[2] == "ro"
+	}
 	return nil
+}
+
+// Command is command:'s and entrypoint:'s shared string-or-list union: a
+// list passes through as exec-form args, a bare string is Compose's own
+// shorthand for shell form, wrapped here as ["/bin/sh", "-c", "<string>"]
+// to match Docker's own documented interpretation of a string CMD or
+// ENTRYPOINT.
+type Command []string
+
+// UnmarshalYAML implements the string-or-list union described above.
+func (c *Command) UnmarshalYAML(node *yaml.Node) error {
+	switch node.Kind {
+	case yaml.ScalarNode:
+		*c = []string{"/bin/sh", "-c", node.Value}
+		return nil
+	case yaml.SequenceNode:
+		var items []string
+		if err := node.Decode(&items); err != nil {
+			return fmt.Errorf("command: %w", err)
+		}
+		*c = items
+		return nil
+	default:
+		return fmt.Errorf("command: must be a string or a list")
+	}
 }
 
 // UnmarshalYAML supports build:'s string-or-object union, just enough

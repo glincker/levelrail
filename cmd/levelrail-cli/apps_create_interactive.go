@@ -138,8 +138,8 @@ func (a wizardAnswers) toSpec() (*spec.Spec, error) {
 // body for a multi-service wizard run (len(a.extra) > 0): the same
 // services map toSpec builds, converted service by service with
 // apps_deploy_spec.go's own toDeploySpecService so a wizard-driven
-// multi-service deploy validates (e.g. rejects secret env vars) exactly
-// like "apps deploy-spec --file" does.
+// multi-service deploy converts exactly like "apps deploy-spec --file"
+// does; the wizard never collects a { secret: true } env var itself.
 func (a wizardAnswers) toDeploySpecRequest() (deploySpecRequest, error) {
 	s, err := a.toSpec()
 	if err != nil {
@@ -150,11 +150,7 @@ func (a wizardAnswers) toDeploySpecRequest() (deploySpecRequest, error) {
 		Services: make(map[string]deploySpecService, len(s.Services)),
 	}
 	for key, svc := range s.Services {
-		converted, convErr := toDeploySpecService(svc)
-		if convErr != nil {
-			return deploySpecRequest{}, fmt.Errorf("service %q: %w", key, convErr)
-		}
-		req.Services[key] = converted
+		req.Services[key] = toDeploySpecService(svc)
 	}
 	return req, nil
 }
@@ -182,8 +178,8 @@ func (a wizardAnswers) appYAML() ([]byte, error) {
 // toCreatePlan turns a into the same createPlan the --file path builds,
 // by handing a synthetic single-service spec.Spec to planFromFile: this
 // is the reuse point for toServiceResources/toServiceHealth and every
-// other rule already encoded there (secret env rejection, missing-port
-// messages, and so on), rather than a second copy of that logic here.
+// other rule already encoded there (missing-port messages and so on),
+// rather than a second copy of that logic here.
 func (a wizardAnswers) toCreatePlan() (createPlan, error) {
 	s, err := a.toSpec()
 	if err != nil {

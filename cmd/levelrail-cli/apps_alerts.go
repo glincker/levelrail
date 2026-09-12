@@ -24,6 +24,8 @@ func runAppsAlerts(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return runAppsAlertsList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "create":
 		return runAppsAlertsCreate(prog, args[1:], stdout, stderr, lookupEnv)
+	case "update":
+		return runAppsAlertsUpdate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
 		return runAppsAlertsDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -44,6 +46,7 @@ func appsAlertsUsage(prog string) string {
   %[1]s apps alerts create <app> --kind node_disk_space [flags]
   %[1]s apps alerts create <app> --kind node_resource_usage [flags]
   %[1]s apps alerts create <app> --kind domain_health [flags]
+  %[1]s apps alerts update <app> <id> --kind KIND [flags]
   %[1]s apps alerts delete <app> <id> [flags]
 
 Manages an app's alert rules. A threshold rule watches a metric; a
@@ -222,7 +225,7 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 	fs.StringVar(&scheduledTaskID, "scheduled-task-id", "", "which of this app's scheduled tasks to watch (--kind scheduled_task_failure only, required for that kind; see \"apps scheduled-tasks list\")")
 	fs.StringVar(&channelID, "channel-id", "", "attach an already-connected notification channel (see \"channels list\")")
 	fs.StringVar(&notifyURL, "notify-url", "", "legacy alternative to --channel-id: a raw webhook URL/destination")
-	fs.StringVar(&notifyKind, "notify-kind", "", "legacy alternative to --channel-id: generic, slack, discord, telegram, email, pushover, pagerduty, teams")
+	fs.StringVar(&notifyKind, "notify-kind", "", "legacy alternative to --channel-id: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat")
 	fs.BoolVar(&disabled, "disabled", false, "create the rule disabled (default: enabled)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsAlertsCreateUsage(prog)) }
 
@@ -306,6 +309,119 @@ Flags:
   --api-url string                    control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string                    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                                 print the created rule as JSON to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
+`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}
+
+// runAppsAlertsUpdate implements "apps alerts update <app> <id>": PUT
+// /api/v1/apps/{name}/alerts/{id}, a full replace of the rule's
+// configuration using the same flags as "apps alerts create". Every
+// field the rule should keep must be passed again on this call, the same
+// full-replace convention "registry-credentials update" and "flags set"
+// already establish in this CLI: there is no partial-update variant.
+func runAppsAlertsUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps alerts update", "print the updated rule as JSON to stdout and nothing else", stderr)
+	var (
+		name, kind, metric, comparator, forDuration string
+		threshold                                   float64
+		restartCountThreshold                       int
+		restartWindow                               string
+		scheduledTaskID                             string
+		channelID, notifyURL, notifyKind            string
+		disabled                                    bool
+	)
+	fs.StringVar(&name, "name", "", "display name for the rule (required)")
+	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health (required)")
+	fs.StringVar(&metric, "metric", "", "metric name (--kind threshold only, required for that kind)")
+	fs.StringVar(&comparator, "comparator", "", "one of >, <, >=, <= (--kind threshold only, required for that kind)")
+	fs.Float64Var(&threshold, "threshold", 0, "threshold value (--kind threshold only)")
+	fs.StringVar(&forDuration, "for-duration", "", "how long the condition must hold before firing, e.g. \"2m\" (--kind threshold or domain_health only, optional)")
+	fs.IntVar(&restartCountThreshold, "restart-count-threshold", 0, "restart count (--kind crashloop) or consecutive-failure count (--kind scheduled_task_failure) that triggers firing, required for both kinds")
+	fs.StringVar(&restartWindow, "restart-window", "", "time window restarts are counted in, e.g. \"5m\" (--kind crashloop only, required for that kind)")
+	fs.StringVar(&scheduledTaskID, "scheduled-task-id", "", "which of this app's scheduled tasks to watch (--kind scheduled_task_failure only, required for that kind; see \"apps scheduled-tasks list\")")
+	fs.StringVar(&channelID, "channel-id", "", "attach an already-connected notification channel (see \"channels list\")")
+	fs.StringVar(&notifyURL, "notify-url", "", "legacy alternative to --channel-id: a raw webhook URL/destination")
+	fs.StringVar(&notifyKind, "notify-kind", "", "legacy alternative to --channel-id: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat")
+	fs.BoolVar(&disabled, "disabled", false, "leave the rule disabled (default: enabled)")
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsAlertsUpdateUsage(prog)) }
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+
+	rest, argsOK := requireArgs(fs, stderr, prog, "apps alerts update", "an app name and a rule id", 2)
+	if !argsOK {
+		return exitUsage
+	}
+	appName, id := rest[0], rest[1]
+
+	if name == "" {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
+	}
+	if err := validateAppsAlertsCreateKind(kind, metric, comparator, restartCountThreshold, restartWindow, scheduledTaskID); err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	updated, err := client.UpdateAlertRule(context.Background(), appName, id, updateAlertRuleRequest{
+		Name: name, Kind: kind, Metric: metric, Comparator: comparator, Threshold: threshold, ForDuration: forDuration,
+		RestartCountThreshold: restartCountThreshold, RestartWindow: restartWindow, ScheduledTaskID: scheduledTaskID,
+		ChannelID: channelID, NotifyURL: notifyURL, NotifyKind: notifyKind,
+		Enabled: !disabled,
+	})
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("update alert rule %q for app %q: %w", id, appName, err))
+	}
+
+	if err := renderResult(stdout, of.Format, of.Query, updated, func() {
+		_, _ = fmt.Fprintf(stdout, "alert rule %q (id %s, kind %s) updated for app %q\n", updated.Name, updated.ID, updated.Kind, appName)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
+}
+
+func appsAlertsUpdateUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s apps alerts update <app> <id> --name NAME --kind threshold --metric METRIC --comparator OP --threshold N [flags]
+  %[1]s apps alerts update <app> <id> --name NAME --kind crashloop --restart-count-threshold N --restart-window DURATION [flags]
+  %[1]s apps alerts update <app> <id> --name NAME --kind cert_expiry [flags]
+  %[1]s apps alerts update <app> <id> --name NAME --kind patch_status [flags]
+  %[1]s apps alerts update <app> <id> --name NAME --kind scheduled_task_failure --scheduled-task-id ID --restart-count-threshold N [flags]
+  %[1]s apps alerts update <app> <id> --name NAME --kind node_disk_space [flags]
+  %[1]s apps alerts update <app> <id> --name NAME --kind node_resource_usage [flags]
+  %[1]s apps alerts update <app> <id> --name NAME --kind domain_health [flags]
+
+Fully replaces an existing alert rule's configuration: every flag you
+want kept must be passed again on this call, the same convention
+"registry-credentials update" uses. Fixing a typo'd --notify-url or
+adjusting a --threshold no longer requires deleting and recreating the
+rule (which would also drop its notification delivery history). Accepts
+the exact same flags as "apps alerts create"; see that command's own
+help for what each kind needs.
+
+Flags:
+  --name string                        display name for the rule (required)
+  --kind string                        threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, or domain_health (required)
+  --metric string                      metric name (--kind threshold only)
+  --comparator string                  >, <, >=, or <= (--kind threshold only)
+  --threshold float                    threshold value (--kind threshold only)
+  --for-duration string                how long the condition must hold before firing, e.g. "2m" (--kind threshold or domain_health only)
+  --restart-count-threshold int        restart count (--kind crashloop) or consecutive-failure count (--kind scheduled_task_failure) that triggers firing
+  --restart-window string              time window restarts are counted in, e.g. "5m" (--kind crashloop only)
+  --scheduled-task-id string           which of <app>'s scheduled tasks to watch (--kind scheduled_task_failure only)
+  --channel-id string                  attach an already-connected notification channel
+  --notify-url string                  legacy alternative to --channel-id
+  --notify-kind string                 legacy alternative to --channel-id
+  --disabled                           leave the rule disabled (default: enabled)
+  --token string                       API token (default: %[2]s env var, then the credentials file)
+  --api-url string                    control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string                    named credentials profile to read (overrides APP_PROFILE, default "default")
+  --json                                 print the updated rule as JSON to stdout, nothing else
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help

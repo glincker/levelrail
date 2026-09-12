@@ -8,14 +8,14 @@ Date: 2026-08-11
 Build time is the part of a deploy the user is staring at a spinner for, and
 it's also the part most self-hosted deploy platforms leave entirely to
 whatever `docker build` or `docker compose build` gives them for free. Phase
-0's competitor clones back this up indirectly: nowhere in
-`docs-local/research/prior-art-*.md` does a studied competitor expose
-build-cache controls as a first-class, programmatically-driven feature.
+0's competitor clones back this up indirectly: nowhere among the studied
+competitors does one expose build-cache controls as a first-class,
+programmatically-driven feature.
 Coolify's rolling update starts from `start_by_compose_file()` running
-`docker compose ... up --build -d` (`prior-art-coolify.md` Q1,
+`docker compose ... up --build -d` (Coolify's own
 `ApplicationDeploymentJob.php:1971`), and Dokploy's build pipeline is
-described as "a single large shell string executed remotely and piped to a
-log file" (`prior-art-dokploy.md` section 5). Neither treats the build
+a single large shell string executed remotely and piped to a
+log file. Neither treats the build
 system as something worth its own architecture; it's whatever the Docker
 CLI happens to do.
 
@@ -103,8 +103,7 @@ standalone. See the Verified section below.
 
 ## Verified
 
-Phase 0 spike (`internal/build/`, full findings in
-`docs-local/research/buildkit-spike.md`) proves the core claim of this ADR:
+Phase 0 spike (`internal/build/`) proves the core claim of this ADR:
 a real image builds from a real Dockerfile through BuildKit's Go client,
 with zero `docker` CLI shelling anywhere in the path. Verified twice:
 `internal/build/build_test.go`'s `TestClient_Build_Live` builds the fixture
@@ -125,7 +124,7 @@ What is still unverified, honestly: remote cache (`CacheImports`/
 unmeasured), SSE log streaming to a frontend, app-spec-driven `Request`
 construction, and behavior against a bare Linux dockerd rather than Docker
 Desktop's `docker` driver on macOS. All four are named explicitly as Phase
-1 scope in `docs-local/research/buildkit-spike.md`, not silently deferred.
+1 scope, not silently deferred.
 
 One process finding worth recording here: the spike caught a real bug in
 this repo's own `.gitignore` (a bare `build/` entry, meant for a future

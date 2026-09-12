@@ -171,6 +171,42 @@ func sendTestNotification(ctx context.Context, client *http.Client, sender email
 		return postJSON(ctx, client, notifyURL, teamsPayload{
 			Type: "MessageCard", Context: "http://schema.org/extensions", Summary: testText, Text: testText,
 		})
+	case NotifyMattermost:
+		return postJSON(ctx, client, notifyURL, mattermostPayload{Text: testText})
+	case NotifyLark:
+		return postJSON(ctx, client, notifyURL, larkPayload{MsgType: "text", Content: larkContent{Text: testText}})
+	case NotifyRocketChat:
+		return postJSON(ctx, client, notifyURL, rocketChatPayload{Text: testText, Alias: "Levelrail", Emoji: ":white_check_mark:"})
+	case NotifyWebex:
+		return postJSON(ctx, client, notifyURL, webexPayload{Markdown: testText})
+	case NotifyGoogleChat:
+		return postJSON(ctx, client, notifyURL, googleChatPayload{Text: testText})
+	case NotifyOpsgenie:
+		key, err := parseOpsgenieCreds(notifyURL)
+		if err != nil {
+			return fmt.Errorf("alerting: test notification: %w", err)
+		}
+		payload := opsgeniePayload{Message: "Levelrail test notification", Description: testText, Priority: "P5"}
+		return postJSONWithAuth(ctx, client, opsgenieAPIURL, payload, "GenieKey "+key)
+	case NotifyGotify:
+		return postJSON(ctx, client, notifyURL, gotifyPayload{Title: "Levelrail", Message: testText, Priority: 5})
+	case NotifyNtfy:
+		token, cleanURL, err := extractNtfyToken(notifyURL)
+		if err != nil {
+			return fmt.Errorf("alerting: test notification: %w", err)
+		}
+		payload := ntfyPayload{Title: "Levelrail", Message: testText, Priority: 4}
+		if token == "" {
+			return postJSON(ctx, client, cleanURL, payload)
+		}
+		return postJSONWithAuth(ctx, client, cleanURL, payload, "Bearer "+token)
+	case NotifyResend:
+		key, to, from, err := parseResendCreds(notifyURL)
+		if err != nil {
+			return fmt.Errorf("alerting: test notification: %w", err)
+		}
+		payload := resendPayload{From: from, To: []string{to}, Subject: "[Levelrail] test notification", Text: testText}
+		return postJSONWithAuth(ctx, client, resendAPIURL, payload, "Bearer "+key)
 	case NotifyEmail:
 		if sender == nil {
 			return fmt.Errorf("alerting: test notification: email is not configured on this control plane")

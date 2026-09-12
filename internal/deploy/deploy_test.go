@@ -883,9 +883,8 @@ func TestPipeline_Deploy_Railpack_SaveFailure(t *testing.T) {
 }
 
 // TestPipeline_Deploy_Railpack_UnsupportedProvider_ExplicitMessage is this
-// slice's load-bearing "fail loudly, not silently" assertion
-// (docs-local/research/railpack-integration-decision.md's recommendation
-// section): when internal/build reports Railpack detected a provider
+// slice's load-bearing "fail loudly, not silently" assertion: when
+// internal/build reports Railpack detected a provider
 // outside supportedRailpackProviders, deployRailpack must surface the
 // service name and the detected provider explicitly, not a generic build
 // failure, matching validateEnv's own tone for unsupported env

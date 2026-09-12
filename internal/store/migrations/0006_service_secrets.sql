@@ -1,5 +1,5 @@
--- TASKS.md 1.7's deferred follow-up: env injection at container-create
--- time. The secrets design specifies per-app data encryption keys
+-- Env injection at container-create time. The secrets design
+-- specifies per-app data encryption keys
 -- wrapped by a master key held only by the control plane; these two
 -- tables hold
 -- exactly that, and nothing else. Neither table nor this migration knows

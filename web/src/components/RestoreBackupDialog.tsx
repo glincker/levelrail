@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { UseMutationResult } from '@tanstack/react-query'
 import {
   ClockCounterClockwiseIcon,
   WarningIcon,
@@ -17,7 +18,9 @@ import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
 import { useTriggerRestore } from '../queries/restoreHistory'
+import type { ApiError } from '../lib/apiError'
 import type { BackupHistoryRecord } from '../types/backupHistory'
+import type { RestoreHistoryRecord } from '../types/restoreHistory'
 
 // One succeeded backup's restore action, triggered from a row in
 // BackupsSection's history table. POST /api/v1/databases/{name}/restore
@@ -40,9 +43,40 @@ export function RestoreBackupDialog({
   databaseName: string
   backup: BackupHistoryRecord
 }) {
+  const triggerRestore = useTriggerRestore(databaseName)
+  return (
+    <ConfirmRestoreDialog
+      target={databaseName}
+      confirmInputId="restore-confirm-name"
+      subjectLabel="data"
+      confirmButtonLabel="Restore database"
+      backupId={backup.id}
+      triggerRestore={triggerRestore}
+    />
+  )
+}
+
+// Shared between RestoreBackupDialog and RestoreVolumeBackupDialog: same
+// type-the-target-name-to-confirm dialog for both resource kinds, only
+// the target string, field labels, and the mutation backing "Restore"
+// differ between callers.
+export function ConfirmRestoreDialog({
+  target,
+  confirmInputId,
+  subjectLabel,
+  confirmButtonLabel,
+  backupId,
+  triggerRestore,
+}: {
+  target: string
+  confirmInputId: string
+  subjectLabel: string
+  confirmButtonLabel: string
+  backupId: string
+  triggerRestore: UseMutationResult<RestoreHistoryRecord, ApiError, string>
+}) {
   const [open, setOpen] = useState(false)
   const [confirmText, setConfirmText] = useState('')
-  const triggerRestore = useTriggerRestore(databaseName)
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -52,7 +86,7 @@ export function RestoreBackupDialog({
     }
   }
 
-  const confirmed = confirmText === databaseName
+  const confirmed = confirmText === target
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -64,20 +98,21 @@ export function RestoreBackupDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">
             <WarningIcon className="size-4" aria-hidden="true" />
-            Restore &ldquo;{databaseName}&rdquo;?
+            Restore &ldquo;{target}&rdquo;?
           </DialogTitle>
           <DialogDescription>
-            This overwrites &ldquo;{databaseName}&rdquo;&apos;s current data
-            with this backup&apos;s contents. Anything written since this backup
-            was taken is permanently lost. This cannot be undone.
+            This overwrites &ldquo;{target}&rdquo;&apos;s current{' '}
+            {subjectLabel} with this backup&apos;s contents. Anything written
+            since this backup was taken is permanently lost. This cannot be
+            undone.
           </DialogDescription>
         </DialogHeader>
         <Field>
-          <FieldLabel htmlFor="restore-confirm-name">
-            Type &ldquo;{databaseName}&rdquo; to confirm
+          <FieldLabel htmlFor={confirmInputId}>
+            Type &ldquo;{target}&rdquo; to confirm
           </FieldLabel>
           <Input
-            id="restore-confirm-name"
+            id={confirmInputId}
             autoComplete="off"
             spellCheck={false}
             value={confirmText}
@@ -106,7 +141,7 @@ export function RestoreBackupDialog({
             variant="destructive"
             disabled={!confirmed || triggerRestore.isPending}
             onClick={() => {
-              triggerRestore.mutate(backup.id, {
+              triggerRestore.mutate(backupId, {
                 onSuccess: () => {
                   setOpen(false)
                   setConfirmText('')
@@ -127,7 +162,7 @@ export function RestoreBackupDialog({
               })
             }}
           >
-            {triggerRestore.isPending ? 'Starting...' : 'Restore database'}
+            {triggerRestore.isPending ? 'Starting...' : confirmButtonLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

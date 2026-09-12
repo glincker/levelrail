@@ -1,7 +1,6 @@
 package api
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -34,18 +33,8 @@ func (rt *Router) handleDownloadVolumeBackup(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	h, err := rt.backupHistory.GetBackupHistory(r.Context(), historyID)
-	if errors.Is(err, store.ErrBackupHistoryNotFound) {
-		writeError(w, http.StatusNotFound, "backup not found")
-		return
-	}
-	if err != nil {
-		rt.logger.Error("api: download volume backup: load backup history failed", slog.String("error", err.Error()), slog.String("backup_id", historyID))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	if h.ServiceName != serviceName || h.VolumeName != volumeName {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("backup %q was not taken from %s/%s", historyID, serviceName, volumeName))
+	h, ok := rt.loadVolumeBackupHistory(w, r, serviceName, volumeName, historyID, "api: download volume backup: load backup history failed")
+	if !ok {
 		return
 	}
 	if h.Status != store.BackupStatusSucceeded {

@@ -22,6 +22,11 @@ type fakeSecretKeyInfo struct {
 // fakeSecretSetter is a hand-written fake for SecretSetter, the same
 // pattern every other test in this package uses instead of a mocking
 // framework.
+type fakeSecretSetterCall struct {
+	service, key, value string
+	overwriteLocked     bool
+}
+
 type fakeSecretSetter struct {
 	err                error
 	calls              int
@@ -39,6 +44,11 @@ type fakeSecretSetter struct {
 	// request (e.g. databases_test.go's TLSEnabled coverage).
 	existsValues map[string]bool
 	existsErr    error
+	// sets records every SetValueGuarded call in order, for tests that
+	// need to verify more than just the most recent one (e.g. create-app
+	// with multiple secrets at once). lastService/lastKey/lastValue above
+	// stay the older, single-call surface every pre-existing test uses.
+	sets []fakeSecretSetterCall
 }
 
 func (f *fakeSecretSetter) Exists(_ context.Context, serviceName, envKey string) (bool, error) {
@@ -53,6 +63,7 @@ func (f *fakeSecretSetter) SetValueGuarded(_ context.Context, serviceName, envKe
 	f.lastService = serviceName
 	f.lastKey = envKey
 	f.lastValue = plaintext
+	f.sets = append(f.sets, fakeSecretSetterCall{service: serviceName, key: envKey, value: plaintext, overwriteLocked: overwriteLocked})
 	if f.locked && !overwriteLocked {
 		return secrets.ErrSecretLocked
 	}

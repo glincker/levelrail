@@ -8,7 +8,7 @@ import (
 
 // TestBuildRoutesConfig_Validation covers the pure-logic error paths for
 // the multi-service builder the ingress reconcile controller
-// (internal/reconcile/ingress, TASKS.md 1.6) uses to assemble one config
+// (internal/reconcile/ingress) uses to assemble one config
 // from every currently routable service.
 func TestBuildRoutesConfig_Validation(t *testing.T) {
 	validRoute := ProxyRoute{Hosts: []string{"app.example.internal"}, BackendDial: "127.0.0.1:9090"}

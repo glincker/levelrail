@@ -6,28 +6,13 @@ import {
   WarningIcon,
   XCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { toast } from '@/components/ui/toast'
+import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useIngressSettings } from '../queries/domains'
 import {
@@ -37,6 +22,13 @@ import {
   useGitHubAppStatus,
 } from '../queries/githubApp'
 import { SetPrimaryDomainPrompt } from './SetPrimaryDomainPrompt'
+import {
+  ConnectionCardHeader,
+  DisconnectConnectionDialog,
+  FormDialogFooter,
+  mutationToastCallbacks,
+  ResettableDialog,
+} from './ConnectionCard'
 import type { GitHubAppStatus } from '@/types/githubApp'
 
 // Status card for the GitHub App connection: not connected / connected
@@ -60,20 +52,11 @@ export function GitHubAppConnectionCard() {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <GithubLogoIcon className="size-4" />
-          </div>
-          <div>
-            <CardTitle>GitHub App</CardTitle>
-            <CardDescription>
-              Connect a GitHub App for private-repository access and
-              installation-based repo browsing.
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
+      <ConnectionCardHeader
+        icon={GithubLogoIcon}
+        title="GitHub App"
+        description="Connect a GitHub App for private-repository access and installation-based repo browsing."
+      />
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
           <div className="space-y-1">
@@ -130,61 +113,30 @@ export function GitHubAppConnectionCard() {
           </div>
 
           {status.connected ? (
-            <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-              <DialogTrigger
-                render={<Button variant="destructive" size="sm" />}
-              >
-                Disconnect
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-sm">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-1.5 text-destructive">
-                    <WarningIcon className="size-4" aria-hidden="true" />
-                    Disconnect GitHub App?
-                  </DialogTitle>
-                  <DialogDescription>
-                    This stops this control plane from using the App to list
-                    repositories or branches. It does not delete or uninstall
-                    the App on GitHub itself; remove it from
-                    github.com/settings/apps if you want it gone entirely.
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setConfirmOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    disabled={disconnect.isPending}
-                    onClick={() => {
-                      disconnect.mutate(undefined, {
-                        onSuccess: () => {
-                          setConfirmOpen(false)
-                          toast.add({
-                            title: 'GitHub App disconnected.',
-                            type: 'success',
-                          })
-                        },
-                        onError: (error) => {
-                          toast.add({
-                            title: 'Could not disconnect the GitHub App.',
-                            description: error.message,
-                            type: 'error',
-                          })
-                        },
-                      })
-                    }}
-                  >
-                    {disconnect.isPending ? 'Disconnecting...' : 'Disconnect'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <DisconnectConnectionDialog
+              open={confirmOpen}
+              onOpenChange={setConfirmOpen}
+              title="Disconnect GitHub App?"
+              description={
+                <>
+                  This stops this control plane from using the App to list
+                  repositories or branches. It does not delete or uninstall
+                  the App on GitHub itself; remove it from
+                  github.com/settings/apps if you want it gone entirely.
+                </>
+              }
+              pending={disconnect.isPending}
+              onConfirm={() => {
+                disconnect.mutate(
+                  undefined,
+                  mutationToastCallbacks(
+                    'GitHub App disconnected.',
+                    'Could not disconnect the GitHub App.',
+                    () => setConfirmOpen(false),
+                  ),
+                )
+              }}
+            />
           ) : (
             <div className="flex shrink-0 items-center gap-2">
               <Button
@@ -300,6 +252,11 @@ function ManifestPreviewDialog({
   // pick" behavior below.
   const displayName = name === '' ? (preview?.app_name ?? '') : name
 
+  function resetForm() {
+    setName('')
+    setInstanceURL('')
+  }
+
   function handleConfirm() {
     const params = new URLSearchParams()
     if (name.trim() !== '') {
@@ -402,16 +359,7 @@ function ManifestPreviewDialog({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) {
-          setName('')
-          setInstanceURL('')
-        }
-        onOpenChange(next)
-      }}
-    >
+    <ResettableDialog open={open} onOpenChange={onOpenChange} onReset={resetForm}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Review before connecting to GitHub</DialogTitle>
@@ -422,16 +370,16 @@ function ManifestPreviewDialog({
           </DialogDescription>
         </DialogHeader>
         {renderPreviewBody()}
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button type="button" disabled={!preview} onClick={handleConfirm}>
-            Continue to GitHub
-          </Button>
-        </DialogFooter>
+        <FormDialogFooter
+          onCancel={() => onOpenChange(false)}
+          submitDisabled={!preview}
+          pending={false}
+          onSubmit={handleConfirm}
+          submitLabel="Continue to GitHub"
+          pendingLabel="Continue to GitHub"
+        />
       </DialogContent>
-    </Dialog>
+    </ResettableDialog>
   )
 }
 
@@ -510,33 +458,19 @@ function ManualConnectDialog({
             : undefined,
         account_login: accountLogin.trim() || undefined,
       },
-      {
-        onSuccess: () => {
-          toast.add({ title: 'GitHub App connected.', type: 'success' })
+      mutationToastCallbacks(
+        'GitHub App connected.',
+        'Could not connect the GitHub App.',
+        () => {
           resetForm()
           onOpenChange(false)
         },
-        onError: (error) => {
-          toast.add({
-            title: 'Could not connect the GitHub App.',
-            description: error.message,
-            type: 'error',
-          })
-        },
-      },
+      ),
     )
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) {
-          resetForm()
-        }
-        onOpenChange(next)
-      }}
-    >
+    <ResettableDialog open={open} onOpenChange={onOpenChange} onReset={resetForm}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Connect a GitHub App manually</DialogTitle>
@@ -674,26 +608,18 @@ function ManualConnectDialog({
             </Field>
           </div>
         </div>
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              resetForm()
-              onOpenChange(false)
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            disabled={!canSubmit || connect.isPending}
-            onClick={handleSubmit}
-          >
-            {connect.isPending ? 'Connecting...' : 'Connect'}
-          </Button>
-        </DialogFooter>
+        <FormDialogFooter
+          onCancel={() => {
+            resetForm()
+            onOpenChange(false)
+          }}
+          submitDisabled={!canSubmit || connect.isPending}
+          pending={connect.isPending}
+          onSubmit={handleSubmit}
+          submitLabel="Connect"
+          pendingLabel="Connecting..."
+        />
       </DialogContent>
-    </Dialog>
+    </ResettableDialog>
   )
 }

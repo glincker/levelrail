@@ -296,22 +296,9 @@ func TestHandleUpdateCloudflareTunnelSettings_RealSecretsManager_RoundTripsThrou
 func TestCloudflareTunnelRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	routes := []struct {
-		method string
-		target string
-	}{
+	assertRoutesRequireAuth(t, rt, []routeCase{
 		{http.MethodGet, "/api/v1/settings/cloudflare-tunnel"},
 		{http.MethodPut, "/api/v1/settings/cloudflare-tunnel"},
 		{http.MethodDelete, "/api/v1/settings/cloudflare-tunnel"},
-	}
-	for _, r := range routes {
-		t.Run(r.method+" "+r.target, func(t *testing.T) {
-			req := httptest.NewRequest(r.method, r.target, nil)
-			rec := httptest.NewRecorder()
-			rt.Handler().ServeHTTP(rec, req)
-			if rec.Code != http.StatusUnauthorized {
-				t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
-			}
-		})
-	}
+	})
 }

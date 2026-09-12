@@ -15,8 +15,8 @@ import (
 
 // TestRollback_Live_ImageSwapBothDirections proves the claim
 // deploy_test.go's own package doc comment names as an explicit gap
-// ("no rollback"), and TASKS.md 1.3 and internal/api/deploys.go's
-// handleTriggerDeploy doc comment both describe: rollback is not a
+// ("no rollback"), and internal/api/deploys.go's
+// handleTriggerDeploy doc comment describes: rollback is not a
 // separate code path, it is the exact same "point desired.Image at a
 // tag and reconcile" mechanism run with an older tag as input. There is
 // nothing rollback-specific in internal/reconcile/application to test in

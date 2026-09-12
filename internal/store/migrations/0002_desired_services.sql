@@ -1,9 +1,9 @@
 -- Desired runtime state for one service: what the application controller
--- (TASKS.md 1.3) reconciles containers against. Deliberately distinct
+-- reconciles containers against. Deliberately distinct
 -- from internal/spec.Service (the app.yaml declaration): spec.Service
 -- describes HOW to build an image, this describes WHICH already-built
 -- image should be running right now, plus what it needs to run. A future
--- deploy pipeline (TASKS.md 1.4/1.5) writes rows here once a build
+-- deploy pipeline writes rows here once a build
 -- produces an image; nothing upstream of that exists yet, so this table
 -- is populated directly (by tests, and eventually that pipeline) rather
 -- than through any automatic translation from app.yaml.

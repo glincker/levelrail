@@ -83,9 +83,7 @@ func TestBackupRoutes_RequireAuth(t *testing.T) {
 func TestHandleTriggerBackup_NoRunnerConfigured(t *testing.T) {
 	rt, db := newTestRouter(t) // no WithBackupRunner
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedRedisDatabaseForTest(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases/main/backups", `{"target_id":"bkt_test1"}`))
@@ -111,9 +109,7 @@ func TestHandleTriggerBackup_MissingTargetID(t *testing.T) {
 	runner := newFakeBackupRunner()
 	rt, db := newTestRouterWithBackupRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedRedisDatabaseForTest(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases/main/backups", `{}`))
@@ -126,9 +122,7 @@ func TestHandleTriggerBackup_TargetNotFound(t *testing.T) {
 	runner := newFakeBackupRunner()
 	rt, db := newTestRouterWithBackupRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedRedisDatabaseForTest(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases/main/backups", `{"target_id":"bkt_missing"}`))
@@ -358,9 +352,7 @@ func TestHandleListBackupHistory_NoRunnerConfigured_StillWorks(t *testing.T) {
 	// comment. This test locks that in.
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedRedisDatabaseForTest(t, db)
 	target := seedBackupTargetForAPI(t, db)
 	if err := db.StartBackupHistory(context.Background(), store.BackupHistory{
 		ID: "bkh_1", DatabaseName: "main", TargetID: target.ID,
@@ -438,9 +430,7 @@ func newBackupHistoryTestRouter(t *testing.T) (*Router, *http.Cookie) {
 	t.Helper()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
-		t.Fatalf("seed database: %v", err)
-	}
+	seedRedisDatabaseForTest(t, db)
 	return rt, cookie
 }
 

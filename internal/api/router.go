@@ -1,6 +1,6 @@
-// Package api implements TASKS.md 1.9: the HTTP API the web frontend
+// Package api implements the HTTP API the web frontend
 // (1.10) and, later, the MCP layer both build on. Scope
-// for this pass, per TASKS.md 1.9 literally: GET /api/v1/brand, apps
+// for this pass: GET /api/v1/brand, apps
 // CRUD, deploy trigger and deploy history, single-admin-user session
 // auth. No teams, no RBAC: explicitly out of scope until Phase 4.
 //
@@ -15,21 +15,21 @@
 // "App" here is layered directly on store.DesiredService
 // (internal/store/service.go), the closest existing resource, rather
 // than a new, speculative domain type. That surfaces real gaps instead
-// of papering over them with a fuller model TASKS.md 1.9 doesn't
-// actually ask this package to build yet:
+// of papering over them with a fuller model this package doesn't
+// actually need to build yet:
 //
 //   - No replicas or strategy fields on an app: internal/spec's app.yaml
 //     Service has them, store.DesiredService doesn't yet, so this API
 //     can't expose what the store can't hold. Adding them is a
 //     store-schema and deploy-pipeline change, not something this
-//     package should invent on its own. Domains closed once TASKS.md 1.6
-//     added the column: appResource now carries Domains too.
+//     package should invent on its own. Domains closed once that column
+//     was added: appResource now carries Domains too.
 //   - Deploy trigger (deploys.go) only updates desired_services.image; it
-//     doesn't build anything. TASKS.md 1.4's internal/build and
+//     doesn't build anything. internal/build and
 //     internal/deploy already exist and do that, but they're owned by a
 //     different concurrent session as this package was written, so this
 //     endpoint takes an already-built image tag as input, the same
-//     mechanism TASKS.md 1.3 documents for rollback, run forward instead
+//     mechanism used for rollback, run forward instead
 //     of backward. POST /api/v1/apps/{name}/builds (builds.go,
 //     handleTriggerBuild) closes this gap: it invokes the same
 //     internal/deploy.Pipeline the git webhook receiver uses, given a git
@@ -48,7 +48,7 @@
 // set from the store every pass (reconcile.Engine.Source), so a deploy
 // triggered through this API does reconcile on the next pass.
 //
-// Secrets (TASKS.md 1.7): PUT /api/v1/apps/{name}/secrets/{key} sets a
+// Secrets: PUT /api/v1/apps/{name}/secrets/{key} sets a
 // value, encrypted at rest via internal/secrets.Manager. Deliberately
 // set-only, no GET: this package never decrypts a value for a response
 // body, only internal/reconcile/application does, immediately before
@@ -56,20 +56,19 @@
 // with a master key (WithSecretSetter); without one, the route returns
 // 501.
 //
-// Auth foundation ("Dashboard & auth", TASKS.md): POST
+// Auth foundation ("Dashboard & auth"): POST
 // /api/v1/auth/register is the interactive first-run counterpart to
 // BootstrapAdmin's env-var path, gated on "no admin row exists yet" at
 // both the route and the mutation layer. Session auth stays exactly what
-// TASKS.md 1.9 scoped it as (single admin user, no teams, no RBAC); API
+// this package was scoped as (single admin user, no teams, no RBAC); API
 // tokens (POST/GET /api/v1/auth/tokens, DELETE .../{id}) are a separate,
 // additive credential type for non-interactive callers (a future CLI,
 // an MCP server), scoped to abilities (abilities.go:
 // read, read:sensitive, write, deploy, root) checked fresh on every
 // call by requireAbility, never a cached decision. Token management
 // itself is session-only via requireAuth: a token can never mint or
-// revoke another token on its own behalf. See docs-local/research/
-// theauth-go-fit-assessment.md and competitor-onboarding-auth-ux.md for
-// why this shape (not theauth-go, not an all-or-nothing key) was chosen.
+// revoke another token on its own behalf. This shape (not theauth-go,
+// not an all-or-nothing key) was a deliberate choice.
 package api
 
 import (
@@ -82,6 +81,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
+	"github.com/GLINCKER/levelrail/internal/registrycatalog"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
@@ -257,6 +257,10 @@ type Router struct {
 	cloudflareTunnelSecrets        CloudflareTunnelSecrets          // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-tunnel return 501, same shape as emailSecrets above
 	cloudflareDNS                  CloudflareDNSStore               // always set, same shape as cloudflareTunnel above
 	cloudflareDNSSecrets           CloudflareDNSSecrets             // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-dns return 501, same shape as cloudflareTunnelSecrets above
+	registry                       RegistryStore                    // always set, same shape as cloudflareTunnel above
+	registrySecrets                RegistrySecrets                  // nil is valid: PUT/DELETE /api/v1/settings/registry return 501, same shape as cloudflareTunnelSecrets above
+	registryCatalog                RegistryCatalogClient            // always set (NewRouter defaults it to a real *registrycatalog.Client, which needs no configuration to construct), overridable in this package's own tests the same way githubAppClient is
+	registryCatalogSecrets         RegistryCatalogSecrets           // nil is valid: GET /api/v1/registry/repositories and /api/v1/registry/tags return 501, same shape as registrySecrets above
 	emailSender                    email.Sender                     // nil is valid: forgot-password still returns its generic success response
 	passwordResetTokens            PasswordResetTokenStore          // always set, same shape as backupTargets above
 	forgotPasswordByIP             *loginLimiter                    // per-IP forgot-password budget, distinct from logins above
@@ -277,6 +281,15 @@ type Router struct {
 	deviceAuth                     DeviceAuthStore                  // always set, same "core Store interface" shape as policies above: device_auth_requests always exists
 	deviceFlow                     *loginLimiter                    // per-IP device-login-start budget, distinct from logins/forgotPasswordByIP above
 	hookRuns                       HookRunStore                     // always set, same "core Store interface" shape as policies above: service_hook_runs always exists, empty is a valid, non-error result
+	invites                        InviteStore                      // always set, same "core Store interface" shape as passwordResetTokens above
+	inviteTTL                      time.Duration                    // 0 means "use defaultInviteTTL", set via WithInviteTTL
+	// autoPlacementEnabled gates autoPlaceNode (scheduling.go): simple
+	// spread scheduling for a create request that omits node_id. Defaults
+	// to true (NewRouter's own struct literal below); cmd/levelrail/
+	// main.go reads APP_AUTO_PLACEMENT and calls WithAutoPlacement(false)
+	// to disable it, the same "this package never reads the environment
+	// directly" convention WithSessionTTL's own doc comment establishes.
+	autoPlacementEnabled bool
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
@@ -340,6 +353,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		emailSettings:               s,
 		cloudflareTunnel:            s,
 		cloudflareDNS:               s,
+		registry:                    s,
+		registryCatalog:             registrycatalog.NewClient(),
 		passwordResetTokens:         s,
 		forgotPasswordByIP:          newLoginLimiter(),
 		forgotPasswordByEmail:       newLoginLimiter(),
@@ -358,6 +373,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		cloneRestoreHistory:         s,
 		volumeCloneRestoreHistory:   s,
 		policies:                    s,
+		invites:                     s,
+		autoPlacementEnabled:        true,
 	}
 	for _, opt := range opts {
 		opt(rt)

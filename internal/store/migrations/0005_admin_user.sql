@@ -1,4 +1,4 @@
--- Single admin user for TASKS.md 1.9's session auth. Phase 1 scope is
+-- Single admin user for session auth. Phase 1 scope is
 -- explicit: single admin user, session auth, no teams or RBAC yet.
 -- The CHECK pins this table to exactly one row rather than a
 -- real multi-row users table with no migration path to add a second row

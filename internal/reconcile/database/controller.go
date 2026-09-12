@@ -1,4 +1,4 @@
-// Package database implements TASKS.md 1.8's managed database controller:
+// Package database implements the managed database controller:
 // the reconcile.Controller that converges a store-backed
 // store.DesiredDatabase to a running, volume-backed container, the same
 // architectural pattern internal/reconcile/application already
@@ -21,7 +21,7 @@
 //
 // Postgres cannot run safely without credentials: database auth needs
 // the same envelope-encrypted secret storage the secrets design specifies
-// (TASKS.md 1.7, internal/secrets.Manager), which exists but is only
+// (internal/secrets.Manager), which exists but is only
 // wired into this controller when the control plane itself has a
 // master key configured (cmd/levelrail's dynamicSource calls
 // postgresCredentialsFor and passes the result via
@@ -89,7 +89,7 @@ type Store interface {
 }
 
 // PostgresCredentials is what Postgres reconciliation needs once
-// TASKS.md 1.7 (envelope-encrypted secrets) lands: a username and
+// envelope-encrypted secrets land: a username and
 // password to inject as POSTGRES_USER/POSTGRES_PASSWORD. Deliberately a
 // plain struct, not wired to any secret store: Controller takes an
 // optional, currently-always-nil *PostgresCredentials so real Postgres
@@ -171,8 +171,8 @@ type Controller struct {
 type Option func(*Controller)
 
 // WithPostgresCredentials supplies the credentials Postgres reconciliation
-// needs. Until TASKS.md 1.7 exists nothing calls this, so every Postgres
-// database reports the credentials-blocked condition instead of starting
+// needs. Until envelope-encrypted secrets exist nothing calls this, so
+// every Postgres database reports the credentials-blocked condition instead of starting
 // an unauthenticated container.
 func WithPostgresCredentials(creds *PostgresCredentials) Option {
 	return func(c *Controller) { c.postgresCreds = creds }
@@ -275,8 +275,8 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	case store.EnginePostgres:
 		if c.postgresCreds == nil {
 			// Deliberately not an error: this is a known, permanent,
-			// documented block until TASKS.md 1.7 lands, not a transient
-			// failure that should retry-and-log-error forever. The
+			// documented block until envelope-encrypted secrets land, not
+			// a transient failure that should retry-and-log-error forever. The
 			// condition itself is the loud explanation.
 			return credentialsBlockedResult(), nil
 		}
@@ -377,6 +377,38 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 }
 
+// Teardown stops and removes this database's container, if one exists.
+// Used both by a caller that owns this database's full lifecycle (an
+// ephemeral preview database, internal/api/preview_environments_databases.go)
+// and by callers that must call it themselves right after moving or
+// deleting desired state: Reconcile treats ErrDatabaseNotFound as "not
+// deployed yet," not "stop everything," so a moved-off-this-node or
+// deleted database is never reconciled here again otherwise. Idempotent
+// and safe to call again after a partial failure: InspectByName reports
+// the container's real state fresh on every call, so a Stop that already
+// ran (or a Remove that already succeeded) is simply skipped rather than
+// retried into an error. Does not remove the container's data volume;
+// see dataVolumeName's own doc comment.
+func (c *Controller) Teardown(ctx context.Context) error {
+	target := containerName(c.dbName)
+	state, err := c.runtime.InspectByName(ctx, target)
+	if err != nil {
+		return fmt.Errorf("database/%s: inspect %q: %w", c.dbName, target, err)
+	}
+	if state == nil {
+		return nil
+	}
+	if state.Running {
+		if err := c.runtime.Stop(ctx, state.ID, defaultStopTimeout); err != nil {
+			return fmt.Errorf("database/%s: stop %q: %w", c.dbName, target, err)
+		}
+	}
+	if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+		return fmt.Errorf("database/%s: remove %q: %w", c.dbName, target, err)
+	}
+	return nil
+}
+
 // reconcileEngine is the real convergence logic, shared by every engine
 // this controller reconciles. It ensures the database's data volume
 // exists, then ensures the right container exists and is running.
@@ -451,7 +483,12 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 			}
 		}
 		if err := c.createAndStart(ctx, spec); err != nil {
-			return notReady("CreateFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+			reason := "CreateFailed"
+			var startErr *startAfterCreateError
+			if errors.As(err, &startErr) {
+				reason = "StartFailedAfterCreate"
+			}
+			return notReady(reason, err), fmt.Errorf("database/%s: %w", c.dbName, err)
 		}
 		justDeployed = true
 
@@ -503,13 +540,22 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	return ready("AlreadyRunning"), nil
 }
 
+// startAfterCreateError marks a createAndStart failure in the Start step,
+// after Create already succeeded, so reconcileEngine can report the
+// half-succeeded case under its own condition reason instead of the
+// plain create-failure one.
+type startAfterCreateError struct{ err error }
+
+func (e *startAfterCreateError) Error() string { return e.err.Error() }
+func (e *startAfterCreateError) Unwrap() error { return e.err }
+
 func (c *Controller) createAndStart(ctx context.Context, spec docker.ContainerSpec) error {
 	id, err := c.runtime.Create(ctx, spec)
 	if err != nil {
 		return fmt.Errorf("create %q: %w", spec.Name, err)
 	}
 	if err := c.runtime.Start(ctx, id); err != nil {
-		return fmt.Errorf("start %q after create: %w", spec.Name, err)
+		return &startAfterCreateError{fmt.Errorf("start %q after create: %w", spec.Name, err)}
 	}
 	return nil
 }
@@ -647,7 +693,10 @@ func containerName(dbName string) string {
 
 // dataVolumeName is the named Docker volume backing dbName's data,
 // stable across container replacements (engine version bumps) so an
-// upgrade doesn't start the new version against an empty volume.
+// upgrade doesn't start the new version against an empty volume. Never
+// removed by this package, including by Teardown: docker.Runtime has no
+// RemoveVolume method today, the same gap handleDeleteDatabase's own doc
+// comment already documents for an ordinary database delete.
 func dataVolumeName(dbName string) string {
 	return "db-" + dbName + "-data"
 }

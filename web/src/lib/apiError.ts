@@ -4,8 +4,7 @@
 // of every fetcher re-implementing its own status check, and the app
 // shell's global QueryCache/MutationCache handler (see main.tsx) can react
 // to it uniformly: redirect to /login, distinct from how a 404/500 still
-// renders in each route's own error boundary. Closes
-// docs-local/research/dashboard-gap-audit-and-devmode.md gap #2.
+// renders in each route's own error boundary.
 
 export class ApiError extends Error {
   readonly status: number
@@ -19,6 +18,12 @@ export class ApiError extends Error {
 
 export function isUnauthorized(error: unknown): boolean {
   return error instanceof ApiError && error.status === 401
+}
+
+// TanStack Router's own errorComponent props type error as unknown, not
+// Error, since a thrown value is never actually guaranteed to be one.
+export function routeErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
 }
 
 // Reads the `{"error": "..."}` body shape every internal/api handler's

@@ -1,6 +1,6 @@
 package network
 
-// This file: TASKS.md 3.4's internal DNS, the half that decides what a
+// This file: the internal DNS, the half that decides what a
 // name means. The half that speaks the DNS wire protocol is in
 // dns_server.go.
 //

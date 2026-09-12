@@ -65,11 +65,25 @@ func TestParse_ValidFull(t *testing.T) {
 	if web.Labels["team"] != "platform" || web.Labels["tier"] != "frontend" || len(web.Labels) != 2 {
 		t.Errorf("Labels = %+v, want map[team:platform tier:frontend]", web.Labels)
 	}
-	if len(web.Volumes) != 1 || web.Volumes[0].Name != "data" || web.Volumes[0].Path != "/var/lib/data" {
-		t.Errorf("Volumes = %+v, want [{data /var/lib/data}]", web.Volumes)
+	if len(web.Volumes) != 2 || web.Volumes[0].Name != "data" || web.Volumes[0].Path != "/var/lib/data" {
+		t.Errorf("Volumes[0] = %+v, want {data  /var/lib/data false}", web.Volumes)
+	}
+	if web.Volumes[1].HostPath != "/srv/web/uploads" || web.Volumes[1].Path != "/uploads" || !web.Volumes[1].ReadOnly {
+		t.Errorf("Volumes[1] = %+v, want {  /srv/web/uploads /uploads true}", web.Volumes[1])
 	}
 	if web.Hooks == nil || web.Hooks.PreDeploy != "rails db:migrate" || web.Hooks.PostDeploy != "curl -f https://hooks.example.com/deployed" {
 		t.Errorf("Hooks = %+v, want PreDeploy=%q PostDeploy=%q", web.Hooks, "rails db:migrate", "curl -f https://hooks.example.com/deployed")
+	}
+	wantCommand := []string{"node", "server.js", "--port", "3000"}
+	if len(web.Command) != len(wantCommand) {
+		t.Errorf("Command = %v, want %v", web.Command, wantCommand)
+	} else {
+		for i, arg := range wantCommand {
+			if web.Command[i] != arg {
+				t.Errorf("Command = %v, want %v", web.Command, wantCommand)
+				break
+			}
+		}
 	}
 
 	dbURL, ok := web.Env["DATABASE_URL"]
@@ -90,6 +104,29 @@ func TestParse_ValidFull(t *testing.T) {
 	}
 	if main.Backup == nil || main.Backup.Retain != 7 {
 		t.Errorf("Databases[main].Backup = %+v, want Retain=7", main.Backup)
+	}
+	if !main.EphemeralInPreviews {
+		t.Error("Databases[main].EphemeralInPreviews = false, want true")
+	}
+}
+
+// TestParse_DatabaseEphemeralInPreviews_DefaultsFalse covers the zero
+// value for every database saved before this field existed: absent from
+// app.yaml must parse as false, not fail, and must not affect any other
+// database in the same file.
+func TestParse_DatabaseEphemeralInPreviews_DefaultsFalse(t *testing.T) {
+	s, err := Parse([]byte(`
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 3000 }
+databases:
+  main: { engine: postgres, version: "16" }
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if s.Databases["main"].EphemeralInPreviews {
+		t.Error("EphemeralInPreviews = true, want false (field omitted)")
 	}
 }
 
@@ -133,6 +170,49 @@ services:
 	}
 	if web.Build.Path != "" {
 		t.Errorf("Build.Path = %q, want empty for build.type: image", web.Build.Path)
+	}
+}
+
+func TestParse_ValidCommand(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, command: ["node", "server.js"] }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	web, ok := s.Services["web"]
+	if !ok {
+		t.Fatal("expected a \"web\" service")
+	}
+	want := []string{"node", "server.js"}
+	if len(web.Command) != len(want) || web.Command[0] != want[0] || web.Command[1] != want[1] {
+		t.Errorf("Command = %v, want %v", web.Command, want)
+	}
+}
+
+func TestParse_ValidBindMountVolume(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web:
+    build: { type: dockerfile }
+    port: 8080
+    volumes:
+      - { hostPath: /srv/web/data, path: /data }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	web, ok := s.Services["web"]
+	if !ok {
+		t.Fatal("expected a \"web\" service")
+	}
+	if len(web.Volumes) != 1 || web.Volumes[0].HostPath != "/srv/web/data" || web.Volumes[0].Name != "" || web.Volumes[0].Path != "/data" {
+		t.Errorf("Volumes = %+v, want a single bind mount at /srv/web/data -> /data", web.Volumes)
 	}
 }
 
@@ -648,6 +728,60 @@ services:
       - { name: other, path: /var/lib/data }
 `,
 			wantErrSubstr: "both mount",
+		},
+		{
+			name: "bind mount host path is a forbidden system path",
+			yaml: `
+version: 1
+services:
+  web:
+    build: { type: dockerfile }
+    port: 8080
+    volumes:
+      - { hostPath: /etc, path: /mnt/etc }
+`,
+			wantErrSubstr: "is not allowed",
+		},
+		{
+			name: "bind mount host path is relative",
+			yaml: `
+version: 1
+services:
+  web:
+    build: { type: dockerfile }
+    port: 8080
+    volumes:
+      - { hostPath: "relative/path", path: /mnt/data }
+`,
+			wantErrSubstr: "must be an absolute path",
+		},
+		{
+			// Caught by the schema's own oneOf (name xor hostPath) before
+			// Validate's own redundant check (validateVolumes) ever runs,
+			// same reasoning as the strategy check in Service.validate.
+			name: "volume sets both name and hostPath",
+			yaml: `
+version: 1
+services:
+  web:
+    build: { type: dockerfile }
+    port: 8080
+    volumes:
+      - { name: data, hostPath: /srv/data, path: /mnt/data }
+`,
+		},
+		{
+			name: "readOnly set on a named volume",
+			yaml: `
+version: 1
+services:
+  web:
+    build: { type: dockerfile }
+    port: 8080
+    volumes:
+      - { name: data, path: /mnt/data, readOnly: true }
+`,
+			wantErrSubstr: "readOnly is only meaningful alongside hostPath",
 		},
 		{
 			name: "too many labels",

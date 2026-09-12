@@ -71,8 +71,8 @@ func TestHandleCompareDeploys_TwoAttempts(t *testing.T) {
 			t.Errorf("field %q = %q -> %q, want %q -> %q", c.Field, c.From, c.To, want[0], want[1])
 		}
 	}
-	if len(got.UnsnapshottedFields) == 0 {
-		t.Error("UnsnapshottedFields is empty, want the non-captured field list")
+	if len(got.UnsnapshottedFields) != 0 {
+		t.Errorf("UnsnapshottedFields = %v, want empty now every DesiredService field is snapshotted", got.UnsnapshottedFields)
 	}
 	if got.Note == "" {
 		t.Error("Note is empty, want an explicit limitation message")

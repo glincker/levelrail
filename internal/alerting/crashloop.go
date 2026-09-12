@@ -164,8 +164,8 @@ func (t *RestartTracker) Run(ctx context.Context, source EventSource, services S
 // rule reconfigured to a much longer window later doesn't silently miss
 // restarts this process already discarded. Generous on purpose: this is
 // an in-memory, not persisted, retention (a process restart loses
-// restart history entirely, a real, accepted limitation noted in
-// TASKS.md), so keeping a day of history costs little.
+// restart history entirely, a real, accepted limitation), so keeping
+// a day of history costs little.
 const maxRestartRetention = 24 * time.Hour
 
 // resolveResourceID reports whether containerName is exactly one of

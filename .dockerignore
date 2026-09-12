@@ -1,0 +1,15 @@
+.git
+.github
+.claude
+docs-local
+data
+*.db
+*.db-wal
+*.db-shm
+*.pem
+.env
+.env.*
+!.env.example
+web/node_modules
+web/dist
+web/build

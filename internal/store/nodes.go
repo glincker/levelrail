@@ -13,28 +13,28 @@ type NodeStatus string
 
 // The four states a node can be in. Pending is the state a newly
 // enrolled node starts in (join token exchanged, no heartbeat received
-// yet, TASKS.md 3.2 territory); Online/Offline track heartbeat presence
-// (TASKS.md 3.7); Cordoned means "unschedulable for new placements, but
-// not evacuated" (also 3.7), a distinct axis from Online/Offline, not a
-// replacement for it: a cordoned node can still be online.
+// yet); Online/Offline track heartbeat presence; Cordoned means
+// "unschedulable for new placements, but not evacuated", a distinct
+// axis from Online/Offline, not a replacement for it: a cordoned node
+// can still be online.
 const (
 	NodeStatusPending NodeStatus = "pending"
 	NodeStatusOnline  NodeStatus = "online"
 	NodeStatusOffline NodeStatus = "offline"
-	// NodeStatusCordoned is unused as of TASKS.md 3.7: cordon's real
+	// NodeStatusCordoned is currently unused: cordon's real
 	// backing state is the Schedulable field / schedulable column
 	// (migration 0010), a separate axis from Status, exactly matching
 	// this constant's own original doc comment promise that a cordoned
 	// node "can still be online." Left defined rather than removed,
-	// since nothing before 3.7 ever set it and removing an exported
+	// since nothing ever set it and removing an exported
 	// constant is a needless breaking change for zero benefit.
 	NodeStatusCordoned NodeStatus = "cordoned"
 )
 
-// Node is one managed machine in the fleet (TASKS.md Phase 3). A row is
+// Node is one managed machine in the fleet. A row is
 // created by the join-token enrollment flow, not by this package's own
 // CRUD surface: SaveNode exists as a real, directly testable primitive
-// for that future enrollment code (TASKS.md 3.2) to call, but nothing in
+// for that future enrollment code to call, but nothing in
 // internal/api wires an operator-facing "create a node" HTTP route to it
 // yet, deliberately, per this migration's own doc comment.
 type Node struct {
@@ -46,7 +46,7 @@ type Node struct {
 	JoinedAt        *time.Time
 	LastSeenAt      *time.Time
 
-	// Schedulable is cordon's backing state (TASKS.md 3.7, migration
+	// Schedulable is cordon's backing state (migration
 	// 0013): false means "unschedulable for new placements, but not
 	// evacuated," an operator-initiated state independent of Status.
 	// New nodes are always schedulable (SaveNode never trusts this
@@ -55,7 +55,7 @@ type Node struct {
 	// convention); the only way to change it is SetNodeSchedulable.
 	Schedulable bool
 
-	// AcceptsAppWorkloads and AcceptsBuildWorkloads are TASKS.md 3.5's
+	// AcceptsAppWorkloads and AcceptsBuildWorkloads are the
 	// node capability flags (migrations/0010_node_workloads.sql): which
 	// kinds of work this node is willing to run, independent of each
 	// other. A node can be either, both, or neither. See the migration's
@@ -64,7 +64,7 @@ type Node struct {
 	AcceptsAppWorkloads   bool
 	AcceptsBuildWorkloads bool
 
-	// MeshPublicKey and MeshAddress are TASKS.md 3.4's WireGuard mesh
+	// MeshPublicKey and MeshAddress are the WireGuard mesh
 	// state (migrations/0014_node_mesh.sql). Both empty means this node
 	// has not joined the mesh yet, which is a normal transient state for
 	// a node that enrolled but has not brought a device up.
@@ -179,7 +179,7 @@ func (db *DB) ListNodes(ctx context.Context) ([]Node, error) {
 // not an error.
 //
 // Still no placement guard at this layer: internal/api's
-// handleDeleteNode (TASKS.md 3.7) is what refuses to call this at all
+// handleDeleteNode is what refuses to call this at all
 // while ListDesiredServicesByNode/ListDesiredDatabasesByNode report any
 // placements remaining, the same "guard at the API boundary, keep the
 // store primitive unconditional" shape this package already uses
@@ -212,8 +212,8 @@ func (db *DB) UpdateNodeStatus(ctx context.Context, id string, status NodeStatus
 	return nil
 }
 
-// UpdateNodeWorkloads sets a node's workload capability flags
-// (TASKS.md 3.5). Returns ErrNodeNotFound if no such node exists, the
+// UpdateNodeWorkloads sets a node's workload capability flags.
+// Returns ErrNodeNotFound if no such node exists, the
 // same "distinguish real failure from a no-op" rigor UpdateNodeStatus
 // already applies to its own conditional UPDATE.
 func (db *DB) UpdateNodeWorkloads(ctx context.Context, id string, acceptsApp, acceptsBuild bool) error {
@@ -236,7 +236,7 @@ func (db *DB) UpdateNodeWorkloads(ctx context.Context, id string, acceptsApp, ac
 // TouchNodeLastSeen updates last_seen_at to now, best-effort by design
 // matching TouchAPITokenLastUsed: a heartbeat recording failure must
 // never block whatever triggered it. Called once at session start
-// (Server.Session) and, per TASKS.md 3.7, repeatedly on a fixed
+// (Server.Session) and repeatedly on a fixed
 // interval for as long as that session's stream stays open
 // (Server.heartbeatLoop): a single call at connect time can't
 // distinguish "still connected" from "connected an hour ago, then the
@@ -253,7 +253,7 @@ func (db *DB) TouchNodeLastSeen(ctx context.Context, id string) error {
 }
 
 // SetNodeSchedulable cordons (schedulable=false) or uncordons
-// (schedulable=true) a node (TASKS.md 3.7). Returns ErrNodeNotFound if
+// (schedulable=true) a node. Returns ErrNodeNotFound if
 // no such node exists, the same "distinguish real failure from a no-op"
 // rigor UpdateNodeStatus applies to its own conditional UPDATE. Does not
 // touch Status and does not evacuate anything already running there:
@@ -280,7 +280,7 @@ func (db *DB) SetNodeSchedulable(ctx context.Context, id string, schedulable boo
 }
 
 // UpdateNodeMesh records a node's WireGuard identity and assigned mesh
-// address (TASKS.md 3.4, migrations/0014_node_mesh.sql).
+// address (migrations/0014_node_mesh.sql).
 //
 // Its own narrow updater rather than a field on SaveNode, matching
 // UpdateNodeStatus and TouchNodeLastSeen: SaveNode is insert-only

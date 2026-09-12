@@ -4,8 +4,8 @@ This directory is the source of truth for Levelrail's user-facing and
 contributor-facing documentation. Two things are true about it on purpose:
 
 - **It ships with the repo, not the binary.** Nothing under `/docs` is
-  `embed.FS`'d into the control plane binary or the Docker image (unlike
-  `web/`'s built frontend assets, see `CLAUDE.md` section 4.1). It's
+  `embed.FS`'d into the control plane binary or the Docker image, unlike
+  `web/`'s built frontend assets. It's
   read on GitHub today; if it ever moves to a hosted docs site
   (`glinr.com` or elsewhere), that's a publishing step on top of these
   files, not a rewrite of them.
@@ -46,8 +46,14 @@ proposals):
 
 | Doc | Covers |
 | --- | --- |
+| [installing.md](installing.md) | Every install path (`install.sh`, Docker, source), verifying, upgrading, and uninstalling |
+| [docker.md](docker.md) | Run the control plane and node agent as containers instead of `install.sh` |
 | [feature-flags.md](feature-flags.md) | Toggle app behavior at runtime without a redeploy |
+| [screenshots.md](screenshots.md) | Regenerate the dashboard screenshots used in the README |
 | [master-key-rotation.md](master-key-rotation.md) | Rotate the envelope-encryption master key without losing access to stored secrets |
+| [migrating-from-coolify-and-dokploy.md](migrating-from-coolify-and-dokploy.md) | Move apps off a live Coolify or Dokploy instance with `levelrail-cli migrate` |
+| [domains-and-ingress.md](domains-and-ingress.md) | Why there's no reverse proxy to install, how `app.yaml` domains route to containers, and TLS's current honest status |
+| [acme-verification-runbook.md](acme-verification-runbook.md) | Verify real ACME certificate issuance against a live domain, step by step |
 
 ### Reference
 

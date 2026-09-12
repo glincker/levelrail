@@ -33,6 +33,10 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsMaintenance(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tls-cert":
 		return runDomainsTLSCert(prog, args[1:], stdout, stderr, lookupEnv)
+	case "check":
+		return runDomainsCheck(prog, args[1:], stdout, stderr, lookupEnv)
+	case "certificates":
+		return runDomainsCertificates(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown domains subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, domainsUsage(prog))
@@ -47,6 +51,8 @@ func domainsUsage(prog string) string {
   %[1]s domains basic-auth <verb> [flags]       protect an app's domain with HTTP Basic Auth
   %[1]s domains maintenance <verb> [flags]      take one of an app's domains in or out of maintenance mode
   %[1]s domains tls-cert <verb> [flags]         upload or clear a domain's own (BYO) TLS certificate
+  %[1]s domains check <app> <domain> [flags]    run a real DNS lookup and report whether the domain reaches this control plane
+  %[1]s domains certificates [flags]            list every certificate in certmagic storage, healthy or not
 
 Run "%[1]s domains <subcommand> -h" for a subcommand's own flags.
 `, prog)

@@ -7,17 +7,26 @@
 // ValidateForBuild) allows build: for exactly that reason: it always
 // has a real checkout. Both paths share the same narrow scope
 // otherwise: environment/ports/volumes support only their short-form
-// syntax, and depends_on parses but is ignored (reconciler-level
-// startup ordering, out of scope here). restart: and networks: parse
-// and are surfaced as non-blocking Notices instead of being silently
-// dropped or translated: see Notices for why neither has a real
-// translation onto how Levelrail runs a service.
+// syntax. restart:, networks:, and depends_on: all parse and are
+// surfaced as non-blocking Notices instead of being silently dropped or
+// translated: see Notices for why none of the three has a real
+// translation onto how Levelrail runs a service (depends_on: in
+// particular is never used to sequence container startup order, that's
+// reconciler-level work out of scope here). command: and
+// entrypoint: both parse and translate into store.DesiredService's own
+// Command and Entrypoint fields. volumes: additionally accepts an
+// absolute host path on the left side as a bind mount (ValidateForBuild
+// rejects one; see that method's own doc comment for why), gated at the
+// HTTP layer to AbilityRoot and, even then, against
+// internal/bindmount's own forbidden-path list (see
+// validateBindMountHostPath).
 package compose
 
 import (
 	"fmt"
 	"sort"
 
+	"github.com/GLINCKER/levelrail/internal/bindmount"
 	"gopkg.in/yaml.v3"
 )
 
@@ -49,12 +58,33 @@ type Service struct {
 	Networks    Networks
 	Restart     string
 	Healthcheck *Healthcheck
+	// DependsOn is depends_on:, never used to sequence container startup
+	// order (see Notices); kept only so Notices can tell it was declared.
+	DependsOn DependsOn
+	// Command overrides the image's own default CMD
+	// (store.DesiredService.Command), parsed from command:'s own
+	// string-or-list union (Command's own UnmarshalYAML in yaml.go): a
+	// plain string is shell-wrapped as ["/bin/sh", "-c", "<string>"],
+	// matching Compose's own documented behavior for that form.
+	Command Command
+	// Entrypoint overrides the image's own default ENTRYPOINT
+	// (store.DesiredService.Entrypoint), parsed with the same
+	// string-or-list union as Command.
+	Entrypoint Command
 }
 
-// Volume is one short-form "name:/container/path" entry.
+// Volume is one short-form "name:/container/path" entry, either a named
+// Docker volume (Name set, HostPath empty) or a bind mount of a real
+// host directory (HostPath set, Name empty): exactly one of the two is
+// ever set, see Volume.UnmarshalYAML (yaml.go) for how the left side of
+// the entry decides which.
 type Volume struct {
 	Name          string
+	HostPath      string
 	ContainerPath string
+	// ReadOnly mounts read-only inside the container, from an optional
+	// trailing ":ro" on the short-form entry.
+	ReadOnly bool
 }
 
 // Port is one short-form ports: entry. ContainerPort is what
@@ -100,24 +130,29 @@ func Parse(data []byte) (*File, error) {
 // a build: block from, so it rejects one outright. See ValidateForBuild
 // for the git-sourced deploy-spec path, which does have one.
 func (f *File) Validate() error {
-	return f.validate(false)
+	return f.validate(false, true)
 }
 
 // ValidateForBuild is Validate, except a service's build: block is
 // allowed rather than rejected: used only by the git-sourced
 // expand-a-compose-file-into-services path (ExpandBuildService), which
 // has a real checkout to resolve a build context against, unlike the
-// direct-import path Validate itself still guards.
+// direct-import path Validate itself still guards. Bind mounts stay
+// rejected on this path even though Validate now allows them: the
+// expanded result is a spec.Service (toSpecService, expand.go), and
+// spec.Volume has no host-path concept to carry one into, so allowing
+// one through here would either drop it silently or produce a
+// nonsensical empty-named volume downstream.
 func (f *File) ValidateForBuild() error {
-	return f.validate(true)
+	return f.validate(true, false)
 }
 
-func (f *File) validate(allowBuild bool) error {
+func (f *File) validate(allowBuild, allowBindMounts bool) error {
 	if len(f.Services) == 0 {
 		return fmt.Errorf("compose: no services declared")
 	}
 
-	errs := validateComposeServices(f, allowBuild)
+	errs := validateComposeServices(f, allowBuild, allowBindMounts)
 	errs = append(errs, validateComposeDomainRefs(f)...)
 
 	if len(errs) == 0 {
@@ -126,10 +161,17 @@ func (f *File) validate(allowBuild bool) error {
 	return joinErrors(errs)
 }
 
+// validateBindMountHostPath delegates to internal/bindmount, shared with
+// internal/spec (see that package's own bindmount.go for why neither
+// compose nor spec can hold this directly without an import cycle).
+func validateBindMountHostPath(hostPath string) error {
+	return bindmount.ValidateHostPath(hostPath)
+}
+
 // validateComposeServices checks each service's own build:/image:
 // declaration and volume names, split out of validate purely to keep
 // that function's own cognitive complexity low.
-func validateComposeServices(f *File, allowBuild bool) []error {
+func validateComposeServices(f *File, allowBuild, allowBindMounts bool) []error {
 	var errs []error
 	for _, name := range sortedServiceNames(f) {
 		svc := f.Services[name]
@@ -140,8 +182,18 @@ func validateComposeServices(f *File, allowBuild bool) []error {
 			errs = append(errs, fmt.Errorf("service %q: image is required", name))
 		}
 		for _, v := range svc.Volumes {
+			if v.HostPath != "" {
+				if !allowBindMounts {
+					errs = append(errs, fmt.Errorf("service %q: bind-mount volume %q is not supported here, use a named volume instead", name, v.ContainerPath))
+					continue
+				}
+				if err := validateBindMountHostPath(v.HostPath); err != nil {
+					errs = append(errs, fmt.Errorf("service %q: %w", name, err))
+				}
+				continue
+			}
 			if v.Name == "" {
-				errs = append(errs, fmt.Errorf("service %q: volume mounted at %q must be a named volume (\"name:/path\"), not a bind mount", name, v.ContainerPath))
+				errs = append(errs, fmt.Errorf("service %q: volume mounted at %q must be a named volume (\"name:/path\") or an absolute bind-mount path", name, v.ContainerPath))
 			}
 		}
 	}

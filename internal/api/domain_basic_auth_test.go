@@ -344,22 +344,9 @@ func TestDomainBasicAuthRoutes_RequireAuth(t *testing.T) {
 	rt, db := newTestRouter(t)
 	seedAppWithDomain(t, db)
 
-	routes := []struct {
-		method string
-		target string
-	}{
+	assertRoutesRequireAuth(t, rt, []routeCase{
 		{http.MethodGet, "/api/v1/apps/web/domains/app.example.com/auth"},
 		{http.MethodPut, "/api/v1/apps/web/domains/app.example.com/auth"},
 		{http.MethodDelete, "/api/v1/apps/web/domains/app.example.com/auth"},
-	}
-	for _, r := range routes {
-		t.Run(r.method+" "+r.target, func(t *testing.T) {
-			req := httptest.NewRequest(r.method, r.target, nil)
-			rec := httptest.NewRecorder()
-			rt.Handler().ServeHTTP(rec, req)
-			if rec.Code != http.StatusUnauthorized {
-				t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
-			}
-		})
-	}
+	})
 }

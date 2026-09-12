@@ -49,10 +49,13 @@ type fakeRuntime struct {
 	stopErr            error
 	removeErr          error
 	updateResourcesErr error
+	inspectErr         error
 
 	createCalls          int
 	ensureVolumeCalls    int
 	updateResourcesCalls int
+	stopCalls            int
+	removeCalls          int
 	// lastUpdateResourcesID/lastUpdateResources record the most recent
 	// UpdateResources call's arguments, for tests asserting a
 	// resource-only diff converges via a live update rather than a
@@ -133,6 +136,9 @@ func (f *fakeRuntime) ListNetworksByPrefix(_ context.Context, _ string) ([]docke
 func (f *fakeRuntime) InspectByName(_ context.Context, name string) (*docker.ContainerState, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if f.inspectErr != nil {
+		return nil, f.inspectErr
+	}
 	cs, ok := f.containers[name]
 	if !ok {
 		return nil, nil
@@ -173,6 +179,7 @@ func (f *fakeRuntime) Start(_ context.Context, id string) error {
 func (f *fakeRuntime) Stop(_ context.Context, id string, _ time.Duration) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	f.stopCalls++
 	if f.stopErr != nil {
 		return f.stopErr
 	}
@@ -187,6 +194,7 @@ func (f *fakeRuntime) Stop(_ context.Context, id string, _ time.Duration) error 
 func (f *fakeRuntime) Remove(_ context.Context, id string, _ bool) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	f.removeCalls++
 	if f.removeErr != nil {
 		return f.removeErr
 	}
@@ -445,6 +453,46 @@ func TestController_Reconcile_Redis_VolumeFailure(t *testing.T) {
 	}
 }
 
+func TestController_Reconcile_Redis_CreateFails(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.createErr = errors.New("no such image")
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want the create failure to surface")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "CreateFailed" {
+		t.Errorf("condition = %+v, want Status=False Reason=CreateFailed", cond)
+	}
+}
+
+// TestController_Reconcile_Redis_CreateSucceedsStartFails is the
+// half-succeeded case the testing standard requires a test for: the
+// container was created but never started. Reported under its own
+// distinct reason so an operator can tell it apart from a clean create
+// failure.
+func TestController_Reconcile_Redis_CreateSucceedsStartFails(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.startErr = errors.New("start failed")
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want the start failure to surface")
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1", rt.createCalls)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "StartFailedAfterCreate" {
+		t.Errorf("condition = %+v, want Status=False Reason=StartFailedAfterCreate", cond)
+	}
+}
+
 func TestController_Reconcile_Postgres_AlwaysCredentialsBlocked(t *testing.T) {
 	rt := newFakeRuntime()
 	desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}
@@ -491,7 +539,7 @@ func TestController_Reconcile_Postgres_CredentialsBlocked_EvenIfAlreadyRunning(t
 
 func TestController_Reconcile_Postgres_WithCredentials_Reconciles(t *testing.T) {
 	// Proves the activation path: once credentials are supplied (as they
-	// will be once TASKS.md 1.7 lands), Postgres reconciles for real
+	// will be once envelope-encrypted secrets land), Postgres reconciles for real
 	// through the same shared logic Redis uses, no rewrite needed.
 	rt := newFakeRuntime()
 	desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}
@@ -1519,3 +1567,167 @@ func TestController_Reconcile_Resources_NilLeavesContainerSpecResourcesNil(t *te
 		t.Errorf("created ContainerSpec.Resources = %+v, want nil", got)
 	}
 }
+
+// TestController_Teardown_RemovesRunningContainer covers the create
+// case an ephemeral preview database's teardown depends on: a running
+// container gets stopped and removed in one call.
+func TestController_Teardown_RemovesRunningContainer(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.seed(containerName("previewdb"), "postgres:16", true)
+
+	c := New("previewdb", &fakeStore{}, rt)
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("Teardown() error = %v", err)
+	}
+	if got := rt.count(); got != 0 {
+		t.Errorf("containers after teardown = %d, want 0", got)
+	}
+}
+
+// TestController_Teardown_StoppedContainer_RemovesWithoutStopping covers
+// a database container that crashed or was already stopped: Teardown
+// must still remove it, without calling Stop on an already-stopped
+// container.
+func TestController_Teardown_StoppedContainer_RemovesWithoutStopping(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.seed(containerName("previewdb"), "postgres:16", false)
+
+	c := New("previewdb", &fakeStore{}, rt)
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("Teardown() error = %v", err)
+	}
+	if got := rt.count(); got != 0 {
+		t.Errorf("containers after teardown = %d, want 0", got)
+	}
+}
+
+// TestController_Teardown_NoContainer_NoOp covers a preview whose
+// ephemeral database was tracked but never actually reconciled into a
+// running container (e.g. torn down before its first reconcile pass):
+// not an error, the same "not found is a valid observed state"
+// tolerance InspectByName's own doc comment establishes.
+func TestController_Teardown_NoContainer_NoOp(t *testing.T) {
+	rt := newFakeRuntime()
+	c := New("previewdb", &fakeStore{}, rt)
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("Teardown() error = %v", err)
+	}
+}
+
+// TestController_Teardown_HalfSucceeded_RemoveFailsThenRetrySucceeds is
+// the half-succeeded case this codebase's own testing standard requires
+// for every reconciler (CLAUDE.md section 7): a crash or a transient
+// Docker error between Stop and Remove must leave the container in a
+// state a second Teardown call can still finish cleanly, not stuck or
+// double-stopped.
+func TestController_Teardown_HalfSucceeded_RemoveFailsThenRetrySucceeds(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.seed(containerName("previewdb"), "postgres:16", true)
+	rt.removeErr = errors.New("engine temporarily unavailable")
+
+	c := New("previewdb", &fakeStore{}, rt)
+	if err := c.Teardown(context.Background()); err == nil {
+		t.Fatal("Teardown() error = nil, want the remove failure to surface")
+	}
+	if got := rt.count(); got != 1 {
+		t.Fatalf("containers after failed teardown = %d, want 1 (still present for retry)", got)
+	}
+	state, err := rt.InspectByName(context.Background(), containerName("previewdb"))
+	if err != nil {
+		t.Fatalf("InspectByName() error = %v", err)
+	}
+	if state == nil || state.Running {
+		t.Fatalf("state after failed teardown = %+v, want a stopped container left for retry", state)
+	}
+
+	rt.removeErr = nil
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("retried Teardown() error = %v", err)
+	}
+	if got := rt.count(); got != 0 {
+		t.Errorf("containers after retried teardown = %d, want 0", got)
+	}
+}
+
+// TestController_Teardown covers Teardown's own branches: no container to
+// clean up, a running container (stop then remove), a stopped container
+// (remove only), and each of Docker's own calls failing along the way.
+// Callers (handleSetAppNode/handleSetDatabaseNode's teardown dispatch)
+// treat a moved-off-this-node or deleted database exactly this way: best-
+// effort cleanup, never re-reconciled here again once desired state has
+// moved on.
+func TestController_Teardown(t *testing.T) {
+	tests := []struct {
+		name           string
+		seedRunning    *bool // nil: no container seeded
+		inspectErr     error
+		stopErr        error
+		removeErr      error
+		wantErr        bool
+		wantStopCalls  int
+		wantRemoveCall int
+	}{
+		{
+			name:        "no container: no-op",
+			seedRunning: nil,
+		},
+		{
+			name:           "running container: stops then removes",
+			seedRunning:    boolPtr(true),
+			wantStopCalls:  1,
+			wantRemoveCall: 1,
+		},
+		{
+			name:           "stopped container: removes only",
+			seedRunning:    boolPtr(false),
+			wantStopCalls:  0,
+			wantRemoveCall: 1,
+		},
+		{
+			name:       "inspect fails: propagates error, no stop/remove attempted",
+			inspectErr: errors.New("inspect failed"),
+			wantErr:    true,
+		},
+		{
+			name:          "stop fails: propagates error, remove never attempted",
+			seedRunning:   boolPtr(true),
+			stopErr:       errors.New("stop failed"),
+			wantErr:       true,
+			wantStopCalls: 1,
+		},
+		{
+			name:           "remove fails: propagates error",
+			seedRunning:    boolPtr(true),
+			removeErr:      errors.New("remove failed"),
+			wantErr:        true,
+			wantStopCalls:  1,
+			wantRemoveCall: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := newFakeRuntime()
+			rt.inspectErr = tt.inspectErr
+			rt.stopErr = tt.stopErr
+			rt.removeErr = tt.removeErr
+			if tt.seedRunning != nil {
+				rt.seed(containerName("main"), "redis:7", *tt.seedRunning)
+			}
+			c := New("main", &fakeStore{}, rt)
+
+			err := c.Teardown(context.Background())
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("Teardown() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if rt.stopCalls != tt.wantStopCalls {
+				t.Errorf("stopCalls = %d, want %d", rt.stopCalls, tt.wantStopCalls)
+			}
+			if rt.removeCalls != tt.wantRemoveCall {
+				t.Errorf("removeCalls = %d, want %d", rt.removeCalls, tt.wantRemoveCall)
+			}
+		})
+	}
+}
+
+func boolPtr(v bool) *bool { return &v }

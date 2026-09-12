@@ -34,7 +34,7 @@ import (
 // host-based routing picked the right backend, not just that some
 // response came back.
 //
-// This is also TASKS.md 3.6's end-to-end proof for cert storage:
+// This is also the end-to-end proof for cert storage:
 // WithCertStore(db), not WithStorageDir, backs Caddy's certificate/ACME
 // storage here, and the assertion at the end checks internal/store's
 // cert_storage table directly, proving the certificate Caddy just served
@@ -184,7 +184,7 @@ func TestController_Reconcile_Live(t *testing.T) {
 		t.Errorf("response for %s unexpectedly looked like nginx's response, routing crossed backends", hostB)
 	}
 
-	// TASKS.md 3.6's own proof: the certificates Caddy just served both
+	// The proof: the certificates Caddy just served both
 	// domains with must actually have come from internal/store's SQLite,
 	// not a local file. WithCertStore above is the only storage
 	// configuration this test gives Caddy; a passing TLS handshake alone

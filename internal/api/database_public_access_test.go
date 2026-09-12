@@ -13,23 +13,10 @@ import (
 func TestDatabasePublicAccessRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	routes := []struct {
-		method string
-		target string
-	}{
+	assertRoutesRequireAuth(t, rt, []routeCase{
 		{http.MethodPut, "/api/v1/databases/main/public-access"},
 		{http.MethodDelete, "/api/v1/databases/main/public-access"},
-	}
-	for _, r := range routes {
-		t.Run(r.method+" "+r.target, func(t *testing.T) {
-			req := httptest.NewRequest(r.method, r.target, nil)
-			rec := httptest.NewRecorder()
-			rt.Handler().ServeHTTP(rec, req)
-			if rec.Code != http.StatusUnauthorized {
-				t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
-			}
-		})
-	}
+	})
 }
 
 func TestHandleSetDatabasePublicAccess_DatabaseNotFound(t *testing.T) {
@@ -46,9 +33,7 @@ func TestHandleSetDatabasePublicAccess_DatabaseNotFound(t *testing.T) {
 func TestHandleSetDatabasePublicAccess_AutoAssign(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedRedisDatabaseForTest(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/public-access", `{}`))
@@ -79,9 +64,7 @@ func TestHandleSetDatabasePublicAccess_AutoAssign(t *testing.T) {
 func TestHandleSetDatabasePublicAccess_ExplicitPort(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedRedisDatabaseForTest(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/public-access", `{"port":15432}`))
@@ -101,9 +84,7 @@ func TestHandleSetDatabasePublicAccess_ExplicitPort(t *testing.T) {
 func TestHandleSetDatabasePublicAccess_PortTooLow(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedRedisDatabaseForTest(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/public-access", `{"port":80}`))
@@ -115,9 +96,7 @@ func TestHandleSetDatabasePublicAccess_PortTooLow(t *testing.T) {
 func TestHandleSetDatabasePublicAccess_ReservedControlPlanePort(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedRedisDatabaseForTest(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/public-access", `{"port":8080}`))
@@ -161,9 +140,7 @@ func TestHandleClearDatabasePublicAccess_DatabaseNotFound(t *testing.T) {
 func TestHandleClearDatabasePublicAccess_Success(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedRedisDatabaseForTest(t, db)
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/public-access", `{}`))
 	if rec.Code != http.StatusOK {
@@ -192,9 +169,7 @@ func TestHandleClearDatabasePublicAccess_Success(t *testing.T) {
 func TestHandleGetDatabase_SurfacesPublicAccess(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedRedisDatabaseForTest(t, db)
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/public-access", `{"port":15432}`))
 	if rec.Code != http.StatusOK {

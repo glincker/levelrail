@@ -20,8 +20,8 @@ type NodeJoinToken struct {
 	TokenHash string
 	CreatedAt time.Time
 	ExpiresAt time.Time
-	// UsedAt is nil until the token is exchanged for a node enrollment
-	// (TASKS.md 3.2). Single-use is enforced by MarkNodeJoinTokenUsed's
+	// UsedAt is nil until the token is exchanged for a node enrollment.
+	// Single-use is enforced by MarkNodeJoinTokenUsed's
 	// atomic conditional UPDATE, not by application code checking this
 	// field first: two concurrent exchange attempts racing on the same
 	// token must not both succeed, the identical concurrency hazard
@@ -52,7 +52,7 @@ func (db *DB) SaveNodeJoinToken(ctx context.Context, t NodeJoinToken) error {
 
 // GetNodeJoinTokenByHash returns the token row matching hash, used or
 // not, expired or not: deciding whether a token is currently redeemable
-// is the caller's job (internal/api's enrollment handler, TASKS.md 3.2),
+// is the caller's job (internal/api's enrollment handler),
 // matching GetAPITokenByHash's identical "pure lookup, not a decision"
 // separation.
 func (db *DB) GetNodeJoinTokenByHash(ctx context.Context, hash string) (*NodeJoinToken, error) {

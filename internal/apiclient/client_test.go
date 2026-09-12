@@ -952,6 +952,165 @@ func TestClient_DisconnectCloudflareTunnel(t *testing.T) {
 	}
 }
 
+func TestClient_GetRegistrySettings(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(RegistrySettingsResource{Enabled: true, Host: "registry.example", HasCredentials: true, Status: "running"}) //nolint:gosec // fake fixture, not a real credential
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.GetRegistrySettings(context.Background())
+	if err != nil {
+		t.Fatalf("GetRegistrySettings() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/settings/registry" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/settings/registry", gotMethod, gotPath)
+	}
+	if !got.Enabled || got.Status != "running" {
+		t.Errorf("GetRegistrySettings() = %+v, want Enabled=true Status=running", got)
+	}
+}
+
+func TestClient_UpdateRegistrySettings(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody UpdateRegistrySettingsRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(RegistrySettingsResource{Enabled: gotBody.Enabled, Host: gotBody.Host, Password: "generated-pw"}) //nolint:gosec // fake fixture, not a real credential
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.UpdateRegistrySettings(context.Background(), UpdateRegistrySettingsRequest{Enabled: true, Host: "registry.example"})
+	if err != nil {
+		t.Fatalf("UpdateRegistrySettings() error = %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/settings/registry" {
+		t.Errorf("method/path = %s %s, want PUT /api/v1/settings/registry", gotMethod, gotPath)
+	}
+	if gotBody.Host != "registry.example" || !gotBody.Enabled {
+		t.Errorf("request body = %+v, want Enabled=true Host=registry.example", gotBody)
+	}
+	if got.Password != "generated-pw" {
+		t.Errorf("UpdateRegistrySettings() = %+v, want Password=generated-pw", got)
+	}
+}
+
+func TestClient_DisableRegistry(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(RegistrySettingsResource{Enabled: false, Status: "stopped"}) //nolint:gosec // fake fixture, not a real credential
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.DisableRegistry(context.Background())
+	if err != nil {
+		t.Fatalf("DisableRegistry() error = %v", err)
+	}
+	if gotMethod != http.MethodDelete || gotPath != "/api/v1/settings/registry" {
+		t.Errorf("method/path = %s %s, want DELETE /api/v1/settings/registry", gotMethod, gotPath)
+	}
+	if got.Enabled {
+		t.Errorf("DisableRegistry() = %+v, want Enabled=false", got)
+	}
+}
+
+func TestClient_ListRegistryRepositories(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(RegistryRepositoriesResource{Repositories: []string{"alpha", "beta"}})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.ListRegistryRepositories(context.Background())
+	if err != nil {
+		t.Fatalf("ListRegistryRepositories() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/registry/repositories" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/registry/repositories", gotMethod, gotPath)
+	}
+	if len(got.Repositories) != 2 {
+		t.Errorf("ListRegistryRepositories() = %+v, want 2 repositories", got)
+	}
+}
+
+func TestClient_ListRegistryTags(t *testing.T) {
+	var gotMethod, gotPath, gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath, gotQuery = r.Method, r.URL.Path, r.URL.Query().Get("repository")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(RegistryTagsResource{Repository: "myapp", Tags: []string{"latest", "v1"}})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.ListRegistryTags(context.Background(), "myapp")
+	if err != nil {
+		t.Fatalf("ListRegistryTags() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/registry/tags" || gotQuery != "myapp" {
+		t.Errorf("method/path/query = %s %s %q, want GET /api/v1/registry/tags myapp", gotMethod, gotPath, gotQuery)
+	}
+	if got.Repository != "myapp" || len(got.Tags) != 2 {
+		t.Errorf("ListRegistryTags() = %+v, want repository myapp with 2 tags", got)
+	}
+}
+
+func TestClient_ListRegistryCredentialRepositories(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(RegistryRepositoriesResource{Repositories: []string{"alpha", "beta"}})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.ListRegistryCredentialRepositories(context.Background(), "regcred_abc")
+	if err != nil {
+		t.Fatalf("ListRegistryCredentialRepositories() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/registry-credentials/regcred_abc/repositories" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/registry-credentials/regcred_abc/repositories", gotMethod, gotPath)
+	}
+	if len(got.Repositories) != 2 {
+		t.Errorf("ListRegistryCredentialRepositories() = %+v, want 2 repositories", got)
+	}
+}
+
+func TestClient_ListRegistryCredentialTags(t *testing.T) {
+	var gotMethod, gotPath, gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath, gotQuery = r.Method, r.URL.Path, r.URL.Query().Get("repository")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(RegistryTagsResource{Repository: "myapp", Tags: []string{"latest", "v1"}})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.ListRegistryCredentialTags(context.Background(), "regcred_abc", "myapp")
+	if err != nil {
+		t.Fatalf("ListRegistryCredentialTags() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/registry-credentials/regcred_abc/tags" || gotQuery != "myapp" {
+		t.Errorf("method/path/query = %s %s %q, want GET /api/v1/registry-credentials/regcred_abc/tags myapp", gotMethod, gotPath, gotQuery)
+	}
+	if got.Repository != "myapp" || len(got.Tags) != 2 {
+		t.Errorf("ListRegistryCredentialTags() = %+v, want repository myapp with 2 tags", got)
+	}
+}
+
 // TestClient_SetPreviewEnabled proves SetPreviewEnabled sends only the
 // enabled toggle: post_pr_comments must stay absent from the request
 // body so the API's own "nil means leave it unchanged" contract
@@ -1017,5 +1176,205 @@ func TestClient_SetPreviewPostPRComments(t *testing.T) {
 	}
 	if !got.PostPRComments {
 		t.Errorf("SetPreviewPostPRComments() = %+v, want PostPRComments=true", got)
+	}
+}
+
+func TestClient_ListOAuthProviderSettings(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]OAuthProviderSettingsResource{
+			{Provider: OAuthProviderGoogle, Enabled: true, HasClientSecret: true},
+			{Provider: OAuthProviderGitHub, Enabled: false},
+		})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.ListOAuthProviderSettings(context.Background())
+	if err != nil {
+		t.Fatalf("ListOAuthProviderSettings() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/settings/oauth" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/settings/oauth", gotMethod, gotPath)
+	}
+	if len(got) != 2 || got[0].Provider != OAuthProviderGoogle || !got[0].HasClientSecret {
+		t.Errorf("ListOAuthProviderSettings() = %+v, want google enabled with HasClientSecret=true", got)
+	}
+}
+
+func TestClient_UpdateOAuthProviderSettings(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody UpdateOAuthProviderSettingsRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(OAuthProviderSettingsResource{
+			Provider: OAuthProviderGoogle, Enabled: gotBody.Enabled, ClientID: gotBody.ClientID, HasClientSecret: true,
+		})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.UpdateOAuthProviderSettings(context.Background(), OAuthProviderGoogle, UpdateOAuthProviderSettingsRequest{
+		Enabled: true, ClientID: "client-id", ClientSecret: "client-secret",
+	})
+	if err != nil {
+		t.Fatalf("UpdateOAuthProviderSettings() error = %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/settings/oauth/google" {
+		t.Errorf("method/path = %s %s, want PUT /api/v1/settings/oauth/google", gotMethod, gotPath)
+	}
+	if gotBody.ClientSecret != "client-secret" || gotBody.ClientID != "client-id" {
+		t.Errorf("request body = %+v, want ClientID=client-id ClientSecret=client-secret", gotBody)
+	}
+	if !got.Enabled || !got.HasClientSecret {
+		t.Errorf("UpdateOAuthProviderSettings() = %+v, want Enabled=true HasClientSecret=true", got)
+	}
+}
+
+func TestClient_GetEmailSettings(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(EmailSettingsResource{Backend: EmailBackendSMTP, SMTPHost: "smtp.example.com", SMTPPasswordSet: true})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.GetEmailSettings(context.Background())
+	if err != nil {
+		t.Fatalf("GetEmailSettings() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/settings/email" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/settings/email", gotMethod, gotPath)
+	}
+	if got.Backend != EmailBackendSMTP || !got.SMTPPasswordSet {
+		t.Errorf("GetEmailSettings() = %+v, want Backend=smtp SMTPPasswordSet=true", got)
+	}
+}
+
+func TestClient_UpdateEmailSettings(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody EmailSettingsResource
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(EmailSettingsResource{Backend: gotBody.Backend, SMTPHost: gotBody.SMTPHost, SMTPPasswordSet: gotBody.SMTPPassword != ""})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.UpdateEmailSettings(context.Background(), EmailSettingsResource{
+		Backend: EmailBackendSMTP, SMTPHost: "smtp.example.com", SMTPPort: 587, SMTPFrom: "a@example.com", SMTPPassword: "hunter2",
+	})
+	if err != nil {
+		t.Fatalf("UpdateEmailSettings() error = %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/settings/email" {
+		t.Errorf("method/path = %s %s, want PUT /api/v1/settings/email", gotMethod, gotPath)
+	}
+	if gotBody.SMTPPassword != "hunter2" {
+		t.Errorf("request body = %+v, want SMTPPassword=hunter2", gotBody)
+	}
+	if !got.SMTPPasswordSet {
+		t.Errorf("UpdateEmailSettings() = %+v, want SMTPPasswordSet=true", got)
+	}
+}
+
+func TestClient_CloneApp(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody CloneAppRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(AppResource{Name: gotBody.NewName, Image: "levelrail/web:1", Port: 3000})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.CloneApp(context.Background(), "web", "web-copy")
+	if err != nil {
+		t.Fatalf("CloneApp() error = %v", err)
+	}
+	if gotMethod != http.MethodPost || gotPath != "/api/v1/apps/web/clone" {
+		t.Errorf("method/path = %s %s, want POST /api/v1/apps/web/clone", gotMethod, gotPath)
+	}
+	if gotBody.NewName != "web-copy" {
+		t.Errorf("request body = %+v, want NewName=web-copy", gotBody)
+	}
+	if got.Name != "web-copy" {
+		t.Errorf("CloneApp() = %+v, want Name=web-copy", got)
+	}
+}
+
+func TestClient_ListAppImages(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]ImageResource{{Tag: "levelrail/web:abc123"}})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.ListAppImages(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("ListAppImages() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/apps/web/images" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/apps/web/images", gotMethod, gotPath)
+	}
+	if len(got) != 1 || got[0].Tag != "levelrail/web:abc123" {
+		t.Errorf("ListAppImages() = %+v, want one image tagged levelrail/web:abc123", got)
+	}
+}
+
+func TestClient_CheckDomain(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(DomainCheckResource{Domain: "app.example.com", Resolved: true, Status: "ok"})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.CheckDomain(context.Background(), "web", "app.example.com")
+	if err != nil {
+		t.Fatalf("CheckDomain() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/apps/web/domains/app.example.com/check" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/apps/web/domains/app.example.com/check", gotMethod, gotPath)
+	}
+	if got.Domain != "app.example.com" || !got.Resolved || got.Status != "ok" {
+		t.Errorf("CheckDomain() = %+v, want Domain=app.example.com Resolved=true Status=ok", got)
+	}
+}
+
+func TestClient_PruneSystem(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(SystemPruneResult{ContainersRemoved: []string{"c1"}, ImagesReclaimedBytes: 1024})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.PruneSystem(context.Background())
+	if err != nil {
+		t.Fatalf("PruneSystem() error = %v", err)
+	}
+	if gotMethod != http.MethodPost || gotPath != "/api/v1/system/prune" {
+		t.Errorf("method/path = %s %s, want POST /api/v1/system/prune", gotMethod, gotPath)
+	}
+	if len(got.ContainersRemoved) != 1 || got.ContainersRemoved[0] != "c1" || got.ImagesReclaimedBytes != 1024 {
+		t.Errorf("PruneSystem() = %+v, want ContainersRemoved=[c1] ImagesReclaimedBytes=1024", got)
 	}
 }

@@ -5,6 +5,7 @@
 import {
   queryOptions,
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
@@ -17,6 +18,10 @@ import { ApiError, readErrorMessage } from '../lib/apiError'
 export const registryCredentialKeys = {
   all: ['registry-credentials'] as const,
   list: () => [...registryCredentialKeys.all, 'list'] as const,
+  repositories: (id: string) =>
+    [...registryCredentialKeys.all, 'repositories', id] as const,
+  tags: (id: string, repository: string) =>
+    [...registryCredentialKeys.all, 'tags', id, repository] as const,
 }
 
 // GET /api/v1/registry-credentials (handleListRegistryCredentials): no
@@ -46,6 +51,14 @@ export function registryCredentialListQueryOptions() {
 
 export function useRegistryCredentials() {
   return useSuspenseQuery(registryCredentialListQueryOptions())
+}
+
+// Non-suspending variant for callers that want the credential list as a
+// supplementary signal without making an unrelated tree's whole Suspense
+// boundary wait on it, the same reasoning queries/registry.ts's
+// useRegistryStatus already uses.
+export function useRegistryCredentialsOptional() {
+  return useQuery(registryCredentialListQueryOptions())
 }
 
 // POST /api/v1/registry-credentials (handleCreateRegistryCredential).
@@ -151,5 +164,101 @@ export async function testRegistryCredential(id: string): Promise<void> {
 export function useTestRegistryCredential() {
   return useMutation<void, ApiError, string>({
     mutationFn: testRegistryCredential,
+  })
+}
+
+// GET /api/v1/registry-credentials/{id}/repositories
+// (handleListRegistryCredentialRepositories): every repository in the
+// external registry this credential authenticates against. Same
+// graceful-degradation shape queries/registryCatalog.ts establishes for
+// the built-in registry's own catalog: a failed lookup here should never
+// block the browse dialog from rendering, just leave the list empty with
+// the error shown alongside it.
+export async function fetchRegistryCredentialRepositories(
+  id: string,
+): Promise<string[]> {
+  const res = await fetch(
+    `/api/v1/registry-credentials/${encodeURIComponent(id)}/repositories`,
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `list registry credential repositories failed: ${res.status}`,
+      ),
+    )
+  }
+  const body = (await res.json()) as { repositories: string[] | null } | null
+  return body?.repositories ?? []
+}
+
+export function registryCredentialRepositoriesQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: registryCredentialKeys.repositories(id),
+    queryFn: () => fetchRegistryCredentialRepositories(id),
+  })
+}
+
+// enabled lets the caller defer the request until a browse dialog is
+// actually open, the same "don't call until told to" gate
+// useRegistryRepositoriesOptional already establishes.
+export function useRegistryCredentialRepositories(
+  id: string,
+  enabled: boolean,
+) {
+  return useQuery({
+    ...registryCredentialRepositoriesQueryOptions(id),
+    enabled,
+    retry: false,
+  })
+}
+
+// GET /api/v1/registry-credentials/{id}/tags?repository=<name>
+// (handleListRegistryCredentialTags): every tag pushed for one
+// repository in the external registry this credential authenticates
+// against.
+export async function fetchRegistryCredentialTags(
+  id: string,
+  repository: string,
+): Promise<string[]> {
+  const res = await fetch(
+    `/api/v1/registry-credentials/${encodeURIComponent(id)}/tags?repository=${encodeURIComponent(repository)}`,
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `list registry credential tags failed: ${res.status}`,
+      ),
+    )
+  }
+  const body = (await res.json()) as { tags: string[] | null } | null
+  return body?.tags ?? []
+}
+
+export function registryCredentialTagsQueryOptions(
+  id: string,
+  repository: string,
+) {
+  return queryOptions({
+    queryKey: registryCredentialKeys.tags(id, repository),
+    queryFn: () => fetchRegistryCredentialTags(id, repository),
+  })
+}
+
+// repository is null until a repository has actually been picked in the
+// browse dialog, the same "nothing picked yet, don't call" gate
+// useRegistryTagsOptional already establishes for the built-in registry.
+export function useRegistryCredentialTags(
+  id: string,
+  repository: string | null,
+  enabled: boolean,
+) {
+  return useQuery({
+    ...registryCredentialTagsQueryOptions(id, repository ?? ''),
+    enabled: enabled && repository !== null && repository !== '',
+    retry: false,
   })
 }

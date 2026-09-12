@@ -11,6 +11,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -27,8 +28,7 @@ import (
 // per-service container to a Docker network when AppID is set, and
 // skipping that for the common single-service case would mean
 // networking only ever works after an app is upgraded to multi-service,
-// which apps_group.go's own doc comment (and CLAUDE.md's dispatch for
-// this feature) both call out as the wrong shape.
+// which apps_group.go's own doc comment calls out as the wrong shape.
 func (rt *Router) ensureAppLinked(ctx context.Context, appName, serviceName string) (string, error) {
 	app, err := rt.appGroups.GetAppByName(ctx, appName)
 	if errors.Is(err, store.ErrAppNotFound) {
@@ -132,6 +132,36 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if deploySpecHasBindMount(req.Services) && !rt.callerHasAbility(r, AbilityRoot) {
+		writeError(w, http.StatusForbidden, "one or more services declare a bind mount, which requires the root ability")
+		return
+	}
+
+	inlineSecrets := deploySpecInlineSecrets(req.Services)
+	if len(inlineSecrets) > 0 && rt.secrets == nil {
+		writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")
+		return
+	}
+	// Set before DeploySpec runs, not after: Pipeline.Deploy's own
+	// validateEnv checks a required secret already exists, so a value
+	// given inline here must be stored before that check runs, not once
+	// the deploy has already finished. svcName mirrors
+	// internal/deploy/multi.go's DeploySpec own "<AppName>-<serviceKey>"
+	// naming convention exactly.
+	for key, values := range inlineSecrets {
+		svcName := name + "-" + key
+		for envKey, value := range values {
+			if err := rt.secrets.SetValueGuarded(r.Context(), svcName, envKey, value, false); err != nil {
+				if errors.Is(err, secrets.ErrSecretLocked) {
+					writeError(w, http.StatusConflict, fmt.Sprintf("service %q secret %q is locked", key, envKey))
+					return
+				}
+				rt.logger.Error("api: deploy spec: set secret failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("service_key", key), slog.String("env_key", envKey))
+				writeError(w, http.StatusInternalServerError, "internal error")
+				return
+			}
+		}
+	}
 
 	imageRepoBase := req.ImageRepoBase
 	if imageRepoBase == "" {
@@ -222,4 +252,43 @@ func validateDeploySpecServiceTypes(services map[string]spec.Service) error {
 		}
 	}
 	return nil
+}
+
+// deploySpecInlineSecrets extracts every inline secret value services
+// declares (an Env entry with Secret: true and a non-empty Value), keyed
+// by service key then env var name. app.yaml itself can never carry a
+// secret value (internal/spec.EnvVar's YAML decoding has no value field
+// alongside secret), so this only ever fires for a JSON request built by
+// a client, e.g. the CLI's --secret flag.
+func deploySpecInlineSecrets(services map[string]spec.Service) map[string]map[string]string {
+	var out map[string]map[string]string
+	for key, svc := range services {
+		for envKey, v := range svc.Env {
+			if !v.Secret || v.Value == "" {
+				continue
+			}
+			if out == nil {
+				out = make(map[string]map[string]string)
+			}
+			if out[key] == nil {
+				out[key] = make(map[string]string)
+			}
+			out[key][envKey] = v.Value
+		}
+	}
+	return out
+}
+
+// deploySpecHasBindMount reports whether any service declares a bind
+// mount, the same signal hasBindMount (apps_compose.go) uses to require
+// AbilityRoot on top of this route's own AbilityDeploy gate.
+func deploySpecHasBindMount(services map[string]spec.Service) bool {
+	for _, svc := range services {
+		for _, v := range svc.Volumes {
+			if v.HostPath != "" {
+				return true
+			}
+		}
+	}
+	return false
 }

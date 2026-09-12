@@ -61,6 +61,20 @@ func WithCloudflareDNSSecrets(s CloudflareDNSSecrets) Option {
 	return func(rt *Router) { rt.cloudflareDNSSecrets = s }
 }
 
+// WithRegistrySecrets enables PUT/DELETE /api/v1/settings/registry.
+// Without one configured (the default), both return 501; GET works
+// regardless, the same shape WithCloudflareTunnelSecrets establishes.
+func WithRegistrySecrets(s RegistrySecrets) Option {
+	return func(rt *Router) { rt.registrySecrets = s }
+}
+
+// WithRegistryCatalogSecrets enables GET /api/v1/registry/repositories
+// and GET /api/v1/registry/tags. Without one configured (the default),
+// both return 501, the same shape WithRegistrySecrets establishes.
+func WithRegistryCatalogSecrets(s RegistryCatalogSecrets) Option {
+	return func(rt *Router) { rt.registryCatalogSecrets = s }
+}
+
 // WithDomainBasicAuthSecrets enables PUT/DELETE
 // /api/v1/apps/{name}/domains/{domain}/auth. Without one configured
 // (the default), both return 501; GET works regardless, the same shape
@@ -246,8 +260,21 @@ func WithSessionTTL(d time.Duration) Option {
 	return func(rt *Router) { rt.sessionTTL = d }
 }
 
+// WithAutoPlacement overrides whether handleCreateApp/handleCreateDatabase
+// auto-place a create request that omits node_id onto the least-loaded
+// registered node (scheduling.go's autoPlaceNode), instead of leaving it
+// on this control plane's own local node. Defaults to true (NewRouter's
+// own struct literal); cmd/levelrail/main.go reads APP_AUTO_PLACEMENT and
+// calls this with false to disable it, the same "this package never
+// reads the environment directly" convention WithSessionTTL's own doc
+// comment establishes. An explicit node_id in a create request always
+// overrides this regardless of its value, on or off.
+func WithAutoPlacement(enabled bool) Option {
+	return func(rt *Router) { rt.autoPlacementEnabled = enabled }
+}
+
 // WithTelemetryQuerier enables GET /api/v1/apps/{name}/metrics and
-// GET /api/v1/apps/{name}/logs (TASKS.md 2.3). Without one configured,
+// GET /api/v1/apps/{name}/logs. Without one configured,
 // both routes return 501, the same "not configured" shape
 // WithSecretSetter's absence produces, rather than the routes not
 // existing at all or panicking on a nil dereference.
@@ -256,7 +283,7 @@ func WithTelemetryQuerier(q TelemetryQuerier) Option {
 }
 
 // WithAlertRules enables POST/GET /api/v1/apps/{name}/alerts and DELETE
-// /api/v1/apps/{name}/alerts/{id} (TASKS.md 2.5/2.7). Without one
+// /api/v1/apps/{name}/alerts/{id}. Without one
 // configured (the default), all three routes return 501, the same
 // "not configured" shape WithSecretSetter and WithTelemetryQuerier's
 // absence already produce: this control plane still starts and serves
@@ -280,7 +307,7 @@ type DeployNotifier interface {
 // WithDeployNotifyTargets enables POST/GET
 // /api/v1/apps/{name}/deploy-notify-targets and DELETE
 // .../deploy-notify-targets/{id}: CRUD for deploy-outcome notification
-// destinations, the sibling surface to WithAlertRules for TASKS.md
+// destinations, the sibling surface to WithAlertRules for
 // wave-2 deploy-outcome notifications. Without one configured (the
 // default), all three routes return 501, the same "not configured"
 // shape WithAlertRules' own absence produces.
@@ -500,6 +527,16 @@ func WithNodeAlertThresholds(patchStatus, nodeDiskSpace, nodeCPU, nodeMemory flo
 // parsed duration here.
 func WithPreviewTTL(d time.Duration) Option {
 	return func(rt *Router) { rt.previewTTL = d }
+}
+
+// WithInviteTTL overrides how long a team invite stays acceptable before
+// GetInviteByHash's expiry check rejects it. Without one configured (or
+// passed as 0), defaultInviteTTL (7 days) applies. Same "no hardcoded
+// thresholds, use env vars" shape as WithPreviewTTL: this package never
+// reads the environment directly, cmd/levelrail/main.go reads
+// APP_INVITE_TTL and passes the parsed duration here.
+func WithInviteTTL(d time.Duration) Option {
+	return func(rt *Router) { rt.inviteTTL = d }
 }
 
 // WithAuditLogRetention overrides how long an audit_log row survives

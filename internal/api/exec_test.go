@@ -35,9 +35,18 @@ type fakeExecAppRuntime struct {
 	updateResourcesCalls     int
 	updateResourcesID        string
 	updateResourcesResources docker.Resources
+
+	listByPrefixResult []docker.ContainerState
+	listByPrefixErr    error
+	listByPrefixCalls  chan struct{}
+
+	inspectByNameCalls chan struct{}
 }
 
 func (f *fakeExecAppRuntime) InspectByName(_ context.Context, _ string) (*docker.ContainerState, error) {
+	if f.inspectByNameCalls != nil {
+		f.inspectByNameCalls <- struct{}{}
+	}
 	return f.inspectState, f.inspectErr
 }
 
@@ -62,7 +71,10 @@ func (f *fakeExecAppRuntime) ListImages(context.Context, string) ([]docker.Image
 	return nil, nil
 }
 func (f *fakeExecAppRuntime) ListByPrefix(context.Context, string) ([]docker.ContainerState, error) {
-	return nil, nil
+	if f.listByPrefixCalls != nil {
+		f.listByPrefixCalls <- struct{}{}
+	}
+	return f.listByPrefixResult, f.listByPrefixErr
 }
 func (f *fakeExecAppRuntime) Stop(context.Context, string, time.Duration) error { return nil }
 func (f *fakeExecAppRuntime) Remove(context.Context, string, bool) error        { return nil }
@@ -193,8 +205,8 @@ func TestHandleExecApp_PlainWriteToken_Forbidden(t *testing.T) {
 // that same token can already trigger a deploy or a restart. Exec sits
 // one tier above those because it is the one route that can read a
 // secret's plaintext back out of the container's own environment
-// (secrets are injected as plaintext env vars at create time, CLAUDE.md
-// 4.10, and this package otherwise never decrypts one into a response
+// (secrets are injected as plaintext env vars at create time, and
+// this package otherwise never decrypts one into a response
 // body, see the secrets route's own doc comment above its registration
 // in router.go). A plain deploy token running `env` inside the
 // container would otherwise exfiltrate every secret the app holds.

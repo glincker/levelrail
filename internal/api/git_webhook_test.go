@@ -697,7 +697,7 @@ func TestHandleGitPushWebhook_ServicesSpec_RoutesThroughDeploySpec(t *testing.T)
 }
 
 // TestHandleGitPushWebhook_ServicesSpec_PartialFailure_OneServiceFailing
-// covers the CLAUDE.md-required case for this dispatch: a fan-out where
+// covers the required case for this dispatch: a fan-out where
 // one service key's own build fails must still deploy every other key
 // (not silently drop it), must not retry or double-trigger the failed
 // key, and must surface the partial failure as 207, mirroring

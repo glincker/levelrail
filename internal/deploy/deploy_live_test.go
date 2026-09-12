@@ -18,12 +18,13 @@ import (
 )
 
 // TestPipeline_Deploy_Live_ThenReconciles is the real end-to-end proof
-// for TASKS.md 1.4, and for how it closes the loop with 1.3: real
-// BuildKit builds a real image from this package's testdata Dockerfile,
-// the pipeline saves it as desired state in a real SQLite store, and the
-// application controller (internal/reconcile/application, built under
-// 1.3) actually converges a real running container from it, exactly the
-// chain a git push will drive once 1.5 (git integration) exists.
+// for the build integration, and for how it closes the loop with the
+// application controller: real BuildKit builds a real image from this
+// package's testdata Dockerfile, the pipeline saves it as desired state
+// in a real SQLite store, and the application controller
+// (internal/reconcile/application) actually converges a real running
+// container from it, exactly the chain a git push will drive once git
+// integration exists.
 func TestPipeline_Deploy_Live_ThenReconciles(t *testing.T) {
 	dockertest.SkipIfShort(t)
 	dockerCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())

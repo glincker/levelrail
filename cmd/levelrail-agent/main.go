@@ -1,4 +1,4 @@
-// Command levelrail-agent is TASKS.md 3.2's node agent binary (the
+// Command levelrail-agent is the node agent binary (the
 // repo layout names it, this is the first pass to actually build it).
 // Dials out to the control plane (ADR 003, never
 // accepts an inbound connection), enrolls once using a one-time join
@@ -27,8 +27,12 @@ import (
 	"syscall"
 	"time"
 
+	dockerclient "github.com/docker/docker/client"
+
 	"github.com/GLINCKER/levelrail/internal/agent"
+	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/version"
 )
 
 const (
@@ -44,6 +48,10 @@ const (
 	// seconds, not minutes.
 	reconnectBaseDelay = 1 * time.Second
 	reconnectMaxDelay  = 30 * time.Second
+
+	// buildKitConnectTimeout bounds the one-time BuildKit connection at
+	// startup, matching cmd/levelrail's own.
+	buildKitConnectTimeout = 10 * time.Second
 )
 
 func main() {
@@ -57,6 +65,8 @@ func main() {
 func run(logger *slog.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	logger.Info("starting", slog.String("version", version.Version))
 
 	addr := os.Getenv("APP_CONTROL_PLANE_ADDR")
 	if addr == "" {
@@ -78,8 +88,48 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
-	runReconnectLoop(ctx, addr, id, client, logger)
+	builder, closeBuilder := loadBuildRunner(ctx, logger)
+	if closeBuilder != nil {
+		defer func() {
+			if cerr := closeBuilder(); cerr != nil {
+				logger.Error("closing buildkit client", slog.String("error", cerr.Error()))
+			}
+		}()
+	}
+
+	runReconnectLoop(ctx, addr, id, client, builder, logger)
 	return nil
+}
+
+// loadBuildRunner connects to this node's own BuildKit, so the control
+// plane can dispatch builds here once an operator marks this node
+// build-capable. Non-fatal: a node whose BuildKit is unreachable still
+// serves every container operation, and a dispatched build fails with a
+// clear reason rather than the agent refusing to start.
+func loadBuildRunner(ctx context.Context, logger *slog.Logger) (agent.BuildRunner, func() error) {
+	rawDockerCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
+	if err != nil {
+		logger.Warn("no docker client for buildkit: this node cannot run dispatched builds", slog.String("error", err.Error()))
+		return nil, nil
+	}
+
+	connectCtx, cancel := context.WithTimeout(ctx, buildKitConnectTimeout)
+	buildClient, err := build.NewClient(connectCtx, rawDockerCli)
+	cancel()
+	if err != nil {
+		_ = rawDockerCli.Close()
+		logger.Warn("no buildkit connection: this node cannot run dispatched builds", slog.String("error", err.Error()))
+		return nil, nil
+	}
+
+	return buildClient, func() error {
+		buildErr := buildClient.Close()
+		dockerErr := rawDockerCli.Close()
+		if buildErr != nil {
+			return buildErr
+		}
+		return dockerErr
+	}
 }
 
 // runReconnectLoop calls agent.RunSession repeatedly with exponential
@@ -91,14 +141,19 @@ func run(logger *slog.Logger) error {
 // strictly worse than the SSH-per-command tools ADR 003 rejected, which
 // at least retry by construction on the next invocation. Only ctx
 // cancellation (process shutdown) ends this loop.
-func runReconnectLoop(ctx context.Context, addr string, id *agent.Identity, rt docker.Runtime, logger *slog.Logger) {
+func runReconnectLoop(ctx context.Context, addr string, id *agent.Identity, rt docker.Runtime, builder agent.BuildRunner, logger *slog.Logger) {
+	var opts []agent.SessionOption
+	if builder != nil {
+		opts = append(opts, agent.WithBuildRunner(builder))
+	}
+
 	delay := reconnectBaseDelay
 	for {
 		if ctx.Err() != nil {
 			return
 		}
 
-		err := agent.RunSession(ctx, addr, id, rt, logger)
+		err := agent.RunSession(ctx, addr, id, rt, logger, opts...)
 		if ctx.Err() != nil {
 			return // shutting down: the session ending is expected, not a failure
 		}

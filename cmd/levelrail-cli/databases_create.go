@@ -41,6 +41,12 @@ type createDatabaseFlags struct {
 	name    string
 	engine  string
 	version string
+	// nodeID/nodeIDSet back --node-id, the database-kind counterpart to
+	// apps_create.go's own createFlags.nodeID/nodeIDSet: see that field's
+	// doc comment for the full "explicit override vs omitted triggers
+	// auto-placement" reasoning.
+	nodeID    string
+	nodeIDSet bool
 }
 
 // planDatabaseCreate validates f and builds the exact databaseResource
@@ -64,7 +70,17 @@ func planDatabaseCreate(f createDatabaseFlags) (databaseResource, error) {
 	if !slices.Contains(supportedEngineParams, f.engine) {
 		return databaseResource{}, newValidationError("--engine must be one of %s", strings.Join(supportedEngineParams, ", "))
 	}
-	return databaseResource{Name: f.name, Engine: f.engine, Version: f.version}, nil
+	plan := databaseResource{Name: f.name, Engine: f.engine, Version: f.version}
+	// --node-id is an explicit override; left unset, NodeID stays "" and,
+	// since DatabaseResource.NodeID carries `omitempty`, is
+	// indistinguishable on the wire from an explicit --node-id "": the
+	// control plane sees a genuinely omitted field either way and may
+	// auto-place this database, see DatabaseResource's own NodeID field
+	// doc comment (internal/apiclient/types.go).
+	if f.nodeIDSet {
+		plan.NodeID = f.nodeID
+	}
+	return plan, nil
 }
 
 // runDatabasesCreate implements "databases create": POST
@@ -79,11 +95,12 @@ func planDatabaseCreate(f createDatabaseFlags) (databaseResource, error) {
 func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs := flag.NewFlagSet(prog+" databases create", flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	var tokenFlag, apiURLFlag, profileFlag, name, engine, version string
+	var tokenFlag, apiURLFlag, profileFlag, name, engine, version, nodeID string
 	var jsonOut, interactive bool
 	fs.StringVar(&name, "name", "", "database name (required)")
 	fs.StringVar(&engine, "engine", "", "database engine: "+strings.Join(supportedEngineParams, ", ")+" (required)")
 	fs.StringVar(&version, "version", "", "engine version, e.g. \"16\" (required)")
+	fs.StringVar(&nodeID, "node-id", "", "node to place this database on (default: auto-placed on the least-loaded registered node, or the local node if only one exists)")
 	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
 	fs.StringVar(&apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
 	fs.StringVar(&profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
@@ -113,7 +130,14 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 		return runDatabasesCreateWizard(stdin, stdout, stderr, credentialFlags{Token: tokenFlag, APIURL: apiURLFlag, Profile: profileFlag}, of, lookupEnv, prog)
 	}
 
-	plan, err := planDatabaseCreate(createDatabaseFlags{name: name, engine: engine, version: version})
+	var nodeIDSet bool
+	fs.Visit(func(fl *flag.Flag) {
+		if fl.Name == "node-id" {
+			nodeIDSet = true
+		}
+	})
+
+	plan, err := planDatabaseCreate(createDatabaseFlags{name: name, engine: engine, version: version, nodeID: nodeID, nodeIDSet: nodeIDSet})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
@@ -124,6 +148,9 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 	created, err := client.CreateDatabase(context.Background(), plan)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create database %q: %w", name, err))
+	}
+	if created.AutoPlaced && !jsonOut {
+		_, _ = fmt.Fprintf(stderr, "database %q auto-placed on node %q (simple spread scheduling)\n", created.Name, created.NodeID)
 	}
 
 	if err := renderResult(stdout, of.Format, of.Query, created, func() {
@@ -151,6 +178,8 @@ Flags:
   --name string           database name (required)
   --engine string        database engine: %[5]s (required)
   --version string      engine version, e.g. "16" (required)
+  --node-id string        node to place this database on; omitted auto-places it on the
+                                    least-loaded registered node (or the local node if only one exists)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")

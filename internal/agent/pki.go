@@ -136,7 +136,7 @@ func (ca *CA) KeyPEM() []byte {
 }
 
 // IssueClientCert issues a client certificate identifying commonName
-// (a node's store.Node.ID), signed by ca, for TASKS.md 3.2's enrollment
+// (a node's store.Node.ID), signed by ca, for the enrollment
 // flow. validFor has no auto-renewal built in here: certificate
 // rotation on a schedule is real, named Phase 3 scope (ADR 003's
 // Consequences section), a caller-level concern layered on top of this
@@ -202,7 +202,7 @@ func (ca *CA) issueLeaf(commonName string, hosts []string, usage x509.ExtKeyUsag
 
 // CertFingerprint returns a stable, hex-encoded SHA-256 digest of a
 // DER-encoded certificate: store.Node.CertFingerprint's own value, and
-// what the control plane's Session handler (TASKS.md 3.2) recomputes
+// what the control plane's Session handler recomputes
 // from an incoming mTLS connection's actual peer certificate to confirm
 // it matches the fingerprint recorded at enrollment, rather than
 // trusting the certificate's CommonName field alone (which a

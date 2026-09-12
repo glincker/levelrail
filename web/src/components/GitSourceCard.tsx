@@ -49,7 +49,7 @@ import type {
 
 // Git source connect/manage card, PUT/GET/DELETE
 // /api/v1/apps/{name}/git-source (internal/api/git_sources.go): the
-// missing UI half of TASKS.md 1.7's own deferred follow-up. Rendered
+// missing UI half of that endpoint's own deferred follow-up. Rendered
 // from routes/apps/$name/overview.tsx, the same section route
 // DeployStrategyEditor already lives on, mirroring
 // DatabasePublicAccessCard.tsx's Card shape (a toggle-style connect/
@@ -61,12 +61,11 @@ import type {
 // instant a repo is first connected.
 //
 // Repo/branch selection is GitRepoSourcePicker (also used by
-// CreateAppFromGitFields.tsx's app-creation wizard, see docs-local/
-// research/git-provider-connect-ux-unification-proposal.md section 4):
-// this card no longer hand-rolls its own URL/branch inputs, so picking a
-// connected GitHub/GitLab/Bitbucket repo here registers a push webhook
-// automatically the same way the wizard does, instead of only ever
-// producing a manual, paste-the-webhook-by-hand connection.
+// CreateAppFromGitFields.tsx's app-creation wizard): this card no longer
+// hand-rolls its own URL/branch inputs, so picking a connected
+// GitHub/GitLab/Bitbucket repo here registers a push webhook automatically
+// the same way the wizard does, instead of only ever producing a manual,
+// paste-the-webhook-by-hand connection.
 const BUILD_PACKS: { value: GitSourceBuildType; label: string }[] = [
   { value: 'railpack', label: 'Auto-detect (Railpack)' },
   { value: 'dockerfile', label: 'Dockerfile' },

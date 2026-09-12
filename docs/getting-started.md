@@ -99,6 +99,13 @@ repository you point it at. Check on it with:
 APP_API_TOKEN=dev-root-token ./levelrail-cli apps status your-app
 ```
 
+Once it's deployed, the dashboard shows live metrics and deploy history
+for the app in one view:
+
+<p align="center">
+  <img src="/assets/screenshots/app-overview.png" alt="Levelrail app overview: live metrics and deploy history in one view" width="800">
+</p>
+
 If you already have a built image and don't need Levelrail to build
 it for you, skip `--file`/`--repo`/`--image-repo` and use the
 existing-image path instead:
@@ -110,8 +117,9 @@ APP_API_TOKEN=dev-root-token ./levelrail-cli apps create \
 
 Run `levelrail-cli apps create -h` for the full set of flags, and
 `levelrail-cli -h` for the rest of the commands (`apps deploy`,
-`apps rollback`, `apps restart`, `apps logs`, `databases create`, and
-so on).
+`apps rollback`, `apps restart`, `apps logs` (add `--follow`/`-f` to
+tail live), `apps metrics`, `databases create`, `databases metrics`,
+`nodes metrics`, and so on).
 
 ### Guided setup
 
@@ -225,6 +233,9 @@ itself.
   node agent, and the reconciler fit together.
 - [docs/app-spec-reference.md](app-spec-reference.md): the full
   `app.yaml` schema.
+- [docs/domains-and-ingress.md](domains-and-ingress.md): why there's no
+  reverse proxy to set up, and how to get your first domain live over
+  HTTPS.
 - [docs/comparison.md](comparison.md): how Levelrail's approach
   differs from Coolify, Dokploy, CapRover, Dokku, and Kamal.
 - [docs/roadmap.md](roadmap.md): what's shipped, what's in progress,

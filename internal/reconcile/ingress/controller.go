@@ -1,4 +1,4 @@
-// Package ingress implements TASKS.md 1.6's ingress controller: the
+// Package ingress implements the ingress controller: the
 // reconcile.Controller that keeps Caddy's config (internal/ingress, ADR
 // 005) in sync with every service that declares domains.
 //
@@ -38,7 +38,7 @@
 // and the same TLS automation policy as every app/static-site route.
 //
 // Two further gaps this package's own doc comment used to flag as open
-// here are also closed, both TASKS.md 3.6:
+// here are also closed:
 //
 //   - Certificate storage no longer has to stay on Caddy's default
 //     file-system storage module (internal/ingress.FileStorage).
@@ -122,6 +122,13 @@ type ServiceStore interface {
 	// /api/v1/apps/{name}/domains/{domain}/tls-cert (internal/api) must
 	// take effect on this controller's very next pass.
 	ListDomainTLSCerts(ctx context.Context) ([]store.DomainTLSCert, error)
+	// GetRegistrySettings returns the built-in registry's single
+	// platform-wide row (store.RegistrySettings), read fresh every
+	// Reconcile like GetIngressSettings: an operator enabling the
+	// registry or changing its Host through PUT /api/v1/settings/registry
+	// (internal/api) must take effect on this controller's very next
+	// pass.
+	GetRegistrySettings(ctx context.Context) (store.RegistrySettings, error)
 }
 
 // Applier is the narrow surface this controller needs from
@@ -180,6 +187,10 @@ const (
 	// service or static site name and never looked up against either
 	// table.
 	dashboardRouteOwner = "platform dashboard"
+
+	// registryRouteOwner is dashboardRouteOwner's exact counterpart for
+	// the built-in registry's route.
+	registryRouteOwner = "builtin registry"
 )
 
 // Controller converges Caddy's config to match every service in
@@ -203,6 +214,13 @@ type Controller struct {
 	// dashboard route", the default, matching how every currently
 	// existing deployment has no such route today.
 	dashboardDial string
+
+	// registryDial is the built-in registry container's loopback dial
+	// address (see WithRegistryDial), reverse-proxied to whenever
+	// store.RegistrySettings.Enabled and .Host are both set. Empty means
+	// "no registry route", the default, the same shape dashboardDial's
+	// own absence already has.
+	registryDial string
 
 	// certStore, if set via WithCertStore, is built into a
 	// *ingress.SQLiteStorage and registered with ingress.SetActiveCertStorage
@@ -260,7 +278,7 @@ func WithAdminListen(addr string) Option {
 
 // WithStorageDir overrides Caddy's certificate/ACME-account storage root
 // (internal/ingress.FileStorage). Empty (the default) keeps Caddy's own
-// OS-specific default location. Production wiring (TASKS.md 1.9/1.10, not
+// OS-specific default location. Production wiring (not
 // yet built) should point this at a path under the control plane's data
 // directory once that constant exists; this package does not invent one,
 // keeping with the repo's brand/path indirection rule (no hardcoded
@@ -270,7 +288,7 @@ func WithStorageDir(dir string) Option {
 }
 
 // WithCertStore points Caddy's certificate/ACME-account storage at
-// internal/store's SQLite (TASKS.md 3.6) instead of the local
+// internal/store's SQLite instead of the local
 // filesystem, so multi-node deployments share cert state instead of each
 // node maintaining its own certificate storage. Takes precedence over
 // WithStorageDir if both are set. certStore is typically
@@ -297,6 +315,23 @@ func WithCertStore(certStore ingress.CertStore) Option {
 // erroring when its prerequisite wiring is absent.
 func WithDashboardDial(dial string) Option {
 	return func(c *Controller) { c.dashboardDial = dial }
+}
+
+// WithRegistryDial enables routing the built-in container registry
+// (internal/reconcile/registry) through this controller's shared Caddy
+// server whenever an operator enables it with a Host set (PUT
+// /api/v1/settings/registry). dial is the registry container's own
+// loopback dial address (127.0.0.1 plus registry.HostPort), the same
+// "published port, dialed via loopback" shape WithDashboardDial's own
+// doc comment establishes. No basic_auth handler is added here: the
+// registry container enforces its own htpasswd auth
+// (internal/reconcile/registry's own doc comment), so this route is a
+// plain TLS-terminating reverse proxy, the same shape the dashboard
+// route already has. Without this option (the default), an enabled
+// registry with a Host set is silently not routed, matching
+// WithDashboardDial's own "fails closed" absence behavior.
+func WithRegistryDial(dial string) Option {
+	return func(c *Controller) { c.registryDial = dial }
 }
 
 // WithCloudflareDNSTokens enables Cloudflare DNS-01 for wildcard domains
@@ -417,6 +452,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain tls certs: %w", err)
 	}
+	registrySettings, err := c.store.GetRegistrySettings(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: get registry settings: %w", err)
+	}
 
 	var routes []ingress.ProxyRoute
 	var maintenanceRoutes []ingress.MaintenanceRoute
@@ -426,7 +465,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			continue
 		}
 		if owner, host, dup := firstDuplicateHost(svc.Name, svc.Domains, claimedHosts); dup {
-			// store.SaveDesiredService (TASKS.md 3.6) now rejects a save
+			// store.SaveDesiredService now rejects a save
 			// that would create this situation for any service written
 			// after that change landed, so reaching this branch means
 			// either data written before the constraint existed, or a
@@ -435,7 +474,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			// host: skip the loser and say so loudly, rather than
 			// silently letting Caddy's own last-match-wins matcher
 			// evaluation decide.
-			c.logger.WarnContext(ctx, "ingress: service claims a domain another service already routed this pass, skipping; internal/store's service_domains uniqueness constraint should prevent this for any service saved since TASKS.md 3.6, this is a defense-in-depth guard for pre-existing data",
+			c.logger.WarnContext(ctx, "ingress: service claims a domain another service already routed this pass, skipping; internal/store's service_domains uniqueness constraint should prevent this for any service saved since that constraint landed, this is a defense-in-depth guard for pre-existing data",
 				slog.String("service", svc.Name),
 				slog.String("domain", host),
 				slog.String("already_routed_to", owner),
@@ -515,6 +554,28 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			routes = append(routes, ingress.ProxyRoute{
 				Hosts:       []string{settings.PrimaryDomain},
 				BackendDial: c.dashboardDial,
+			})
+		}
+	}
+
+	// Built-in registry (store.RegistrySettings): one more reverse-proxy
+	// route, the exact same shape the dashboard route above has (plain
+	// TLS termination, no basic_auth handler, since the registry
+	// container enforces its own htpasswd auth). Requires both a
+	// configured Host and WithRegistryDial having been set; either
+	// missing means no registry route this pass, the same "fails closed"
+	// shape the dashboard route already establishes.
+	if registrySettings.Enabled && registrySettings.Host != "" && c.registryDial != "" {
+		if owner, host, dup := firstDuplicateHost(registryRouteOwner, []string{registrySettings.Host}, claimedHosts); dup {
+			c.logger.WarnContext(ctx, "ingress: built-in registry host is already routed to a service or static site, skipping the registry route",
+				slog.String("domain", host),
+				slog.String("already_routed_to", owner),
+			)
+		} else {
+			claimedHosts[registrySettings.Host] = registryRouteOwner
+			routes = append(routes, ingress.ProxyRoute{
+				Hosts:       []string{registrySettings.Host},
+				BackendDial: c.registryDial,
 			})
 		}
 	}

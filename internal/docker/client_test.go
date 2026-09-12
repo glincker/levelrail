@@ -175,6 +175,56 @@ func TestToDockerMounts(t *testing.T) {
 	}
 }
 
+func TestToDockerBindMounts(t *testing.T) {
+	tests := []struct {
+		name   string
+		mounts []BindMount
+		want   []mount.Mount
+	}{
+		{name: "empty", mounts: nil, want: nil},
+		{
+			name:   "single bind mount",
+			mounts: []BindMount{{HostPath: "/srv/data", ContainerPath: "/data"}},
+			want: []mount.Mount{
+				{Type: mount.TypeBind, Source: "/srv/data", Target: "/data"},
+			},
+		},
+		{
+			name:   "read-only bind mount",
+			mounts: []BindMount{{HostPath: "/srv/config", ContainerPath: "/config", ReadOnly: true}},
+			want: []mount.Mount{
+				{Type: mount.TypeBind, Source: "/srv/config", Target: "/config", ReadOnly: true},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := toDockerBindMounts(tt.mounts)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("toDockerBindMounts() = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBuildHostConfig_MergesVolumesAndBindMounts(t *testing.T) {
+	spec := ContainerSpec{
+		Name:       "web",
+		Volumes:    []VolumeMount{{Name: "web-data", ContainerPath: "/data"}},
+		BindMounts: []BindMount{{HostPath: "/srv/uploads", ContainerPath: "/uploads", ReadOnly: true}},
+	}
+	want := []mount.Mount{
+		{Type: mount.TypeVolume, Source: "web-data", Target: "/data"},
+		{Type: mount.TypeBind, Source: "/srv/uploads", Target: "/uploads", ReadOnly: true},
+	}
+
+	got := buildHostConfig(spec, nat.PortMap{})
+	if !reflect.DeepEqual(got.Mounts, want) {
+		t.Errorf("buildHostConfig().Mounts = %+v, want %+v", got.Mounts, want)
+	}
+}
+
 func TestBuildHostConfig_DNS(t *testing.T) {
 	tests := []struct {
 		name    string

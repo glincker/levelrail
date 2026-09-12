@@ -33,7 +33,7 @@ type NodeStore interface {
 	DeleteNode(ctx context.Context, id string) error
 	SaveNodeJoinToken(ctx context.Context, t store.NodeJoinToken) error
 	UpdateNodeWorkloads(ctx context.Context, id string, acceptsApp, acceptsBuild bool) error
-	// SetNodeSchedulable is TASKS.md 3.7's cordon/uncordon mutation.
+	// SetNodeSchedulable is the cordon/uncordon mutation.
 	SetNodeSchedulable(ctx context.Context, id string, schedulable bool) error
 }
 
@@ -46,7 +46,7 @@ type nodeResource struct {
 	CertFingerprint string     `json:"cert_fingerprint,omitempty"`
 	JoinedAt        *time.Time `json:"joined_at,omitempty"`
 	LastSeenAt      *time.Time `json:"last_seen_at,omitempty"`
-	// Schedulable is TASKS.md 3.7's cordon state: false means the node
+	// Schedulable is the cordon state: false means the node
 	// refuses new placements (handleSetAppNode, handleDrainNode) while
 	// whatever's already running there keeps running, see
 	// store.Node.Schedulable's own doc comment for why this is a
@@ -106,8 +106,8 @@ var errNodeCordoned = errors.New("api: node is cordoned")
 // resource onto: a real, schedulable node, or the empty string (the
 // local-node sentinel, DesiredService.NodeID's own doc comment), which
 // has no row in the nodes table to check and is always valid. Shared by
-// handleSetAppNode (TASKS.md 3.3) and handleDrainNode (TASKS.md 3.7,
-// validating the drain target) so the "is this a legal placement target"
+// handleSetAppNode and handleDrainNode (validating the drain
+// target) so the "is this a legal placement target"
 // rule lives in exactly one place. Returns store.ErrNodeNotFound or
 // errNodeCordoned, both handled explicitly by callers rather than this
 // helper writing the HTTP response itself, since the two call sites want
@@ -126,7 +126,29 @@ func (rt *Router) validatePlacementTarget(ctx context.Context, nodeID string) er
 	return nil
 }
 
-// handleListNodes handles GET /api/v1/nodes (TASKS.md 3.1).
+// respondPlacementValidationError translates a validatePlacementTarget
+// error into the right HTTP response: 400 for a known-bad node_id
+// (unknown or cordoned), or 500 (logged under logMessage) for anything
+// else. Shared by handleCreateApp/handleCreateDatabase's explicit-node_id
+// branch and handleSetAppNode's node-move validation, all three of which
+// want the identical "unknown node_id" / "node is cordoned..." wording;
+// handleDrainNode keeps its own inline switch since it wants different
+// wording ("target_node_id") for the same failure, the reason
+// validatePlacementTarget's own doc comment gives for not writing the
+// response itself.
+func (rt *Router) respondPlacementValidationError(w http.ResponseWriter, err error, nodeID, logMessage string) {
+	switch {
+	case errors.Is(err, store.ErrNodeNotFound):
+		writeError(w, http.StatusBadRequest, "unknown node_id")
+	case errors.Is(err, errNodeCordoned):
+		writeError(w, http.StatusBadRequest, "node is cordoned and not accepting new placements")
+	default:
+		rt.logger.Error(logMessage, slog.String("error", err.Error()), slog.String("node_id", nodeID))
+		writeError(w, http.StatusInternalServerError, "internal error")
+	}
+}
+
+// handleListNodes handles GET /api/v1/nodes.
 func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
 	nodes, err := rt.nodes.ListNodes(r.Context())
 	if err != nil {
@@ -177,7 +199,7 @@ func (rt *Router) handleGetNode(w http.ResponseWriter, r *http.Request) {
 // node ID proceeds straight through, both list calls below simply
 // return empty.
 //
-// TASKS.md 3.7 is what makes this a real, safe delete instead of only
+// The drain check is what makes this a real, safe delete instead of only
 // ever failing loudly: it refuses to run (409) while any service or
 // database still has this node as its NodeID, pointing the operator at
 // POST .../drain, the only way those placements actually clear (short
@@ -227,8 +249,8 @@ type setNodeWorkloadsRequest struct {
 	AcceptsBuildWorkloads bool `json:"accepts_build_workloads"`
 }
 
-// handleSetNodeWorkloads handles PUT /api/v1/nodes/{id}/workloads
-// (TASKS.md 3.5): the only way a node's workload capability changes.
+// handleSetNodeWorkloads handles PUT /api/v1/nodes/{id}/workloads:
+// the only way a node's workload capability changes.
 // This is what internal/build.SelectBuildNode's node list ultimately
 // reflects (via cmd/levelrail's wiring), so toggling
 // accepts_build_workloads here is what actually opts a node in or out
@@ -260,8 +282,8 @@ func (rt *Router) handleSetNodeWorkloads(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, toNodeResource(*n))
 }
 
-// handleCordonNode handles POST /api/v1/nodes/{id}/cordon (TASKS.md
-// 3.7): marks id unschedulable for new placements without evacuating
+// handleCordonNode handles POST /api/v1/nodes/{id}/cordon: marks
+// id unschedulable for new placements without evacuating
 // anything already running there (store.SetNodeSchedulable's own doc
 // comment). Idempotent: cordoning an already-cordoned node is a
 // successful no-op, matching UpdateNodeStatus's own tolerance for
@@ -297,41 +319,54 @@ func (rt *Router) setNodeSchedulable(w http.ResponseWriter, r *http.Request, sch
 }
 
 // drainNodeResponse reports what a drain actually moved, and what it
-// didn't: TASKS.md's own scope note calls out testing "what happens if
-// moving service 2 of 3 off a node fails partway through" as the
-// reconciler-adjacent case to cover here, and the answer has to be
+// didn't: "what happens if moving service 2 of 3 off a node fails
+// partway through" is the reconciler-adjacent case to cover here,
+// and the answer has to be
 // visible to the caller, not just to a log line. A partial failure is
 // not fatal to the request (StatusMultiStatus, not 500): everything that
 // did move stays moved, and Errors names exactly what didn't so an
 // operator can retry just that resource, e.g. via
 // PUT /api/v1/apps/{name}/node directly.
 type drainNodeResponse struct {
-	TargetNodeID   string   `json:"target_node_id"`
+	// TargetNodeID is the explicit override from the request. Left ""
+	// when target_node_id was omitted, since per-resource auto-placement
+	// (see AutoPlaced) may send different resources to different nodes.
+	TargetNodeID string `json:"target_node_id"`
+	// AutoPlaced is true when target_node_id was omitted and simple
+	// spread scheduling (selectLeastLoadedNodeExcluding, scheduling.go)
+	// picked at least one resource's destination itself, the same signal
+	// appResource.AutoPlaced/databaseResource.AutoPlaced give for create.
+	// An explicit target_node_id always leaves this false.
+	AutoPlaced     bool     `json:"auto_placed,omitempty"`
 	MovedServices  []string `json:"moved_services"`
 	MovedDatabases []string `json:"moved_databases"`
 	Errors         []string `json:"errors,omitempty"`
 }
 
-// handleDrainNode handles POST /api/v1/nodes/{id}/drain?target_node_id=
-// (TASKS.md 3.7): moves every service and database currently placed on
-// id to target_node_id (default "", the local-node sentinel), reusing
-// TASKS.md 3.3's own UpdateServiceNode/UpdateDatabaseNode one resource
-// at a time rather than inventing a second placement mechanism. This is
-// the only supported way to clear a node's placements before deleting it
+// handleDrainNode handles POST /api/v1/nodes/{id}/drain?target_node_id=:
+// moves every service and database currently placed on id off it,
+// reusing UpdateServiceNode/UpdateDatabaseNode one resource at a time
+// rather than inventing a second placement mechanism. This is the only
+// supported way to clear a node's placements before deleting it
 // (handleDeleteNode's own doc comment).
+//
+// An explicit target_node_id sends every resource to that one node, same
+// as before. Omitted entirely, each resource gets its own pick from
+// simple spread scheduling (selectLeastLoadedNodeExcluding, scheduling.go)
+// instead of piling everything onto the local node, so draining actually
+// spreads load across whatever else is registered and eligible.
 //
 // One failure does not stop the rest: the same "one broken resource
 // must not block others" principle cmd/levelrail's dynamicSource already
 // applies to reconcile passes, applied here to a bulk placement change.
 // Each resource is attempted independently and its own outcome recorded
-// in the response; a real live-container consequence of this (the
-// previous node's own container is not itself stopped by this call, only
-// desired placement changes, the reconcile engine's next pass is what
-// actually converges each moved resource on its new node) is the same
-// known gap TASKS.md 3.3 already left open, not something drain
-// introduces.
+// in the response. After each successful move, the resource's container
+// on id (the node being drained) is torn down in the background, the
+// same teardownServiceContainers/teardownDatabaseContainer call
+// handleSetAppNode/handleSetDatabaseNode make.
 func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	targetSpecified := r.URL.Query().Has("target_node_id")
 	targetNodeID := r.URL.Query().Get("target_node_id")
 
 	if _, err := rt.nodes.GetNode(r.Context(), id); errors.Is(err, store.ErrNodeNotFound) {
@@ -343,17 +378,19 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := rt.validatePlacementTarget(r.Context(), targetNodeID); err != nil {
-		switch {
-		case errors.Is(err, store.ErrNodeNotFound):
-			writeError(w, http.StatusBadRequest, "unknown target_node_id")
-		case errors.Is(err, errNodeCordoned):
-			writeError(w, http.StatusBadRequest, "target node is cordoned and not accepting new placements")
-		default:
-			rt.logger.Error("api: drain node: validate target failed", slog.String("error", err.Error()), slog.String("node_id", id), slog.String("target_node_id", targetNodeID))
-			writeError(w, http.StatusInternalServerError, "internal error")
+	if targetSpecified {
+		if err := rt.validatePlacementTarget(r.Context(), targetNodeID); err != nil {
+			switch {
+			case errors.Is(err, store.ErrNodeNotFound):
+				writeError(w, http.StatusBadRequest, "unknown target_node_id")
+			case errors.Is(err, errNodeCordoned):
+				writeError(w, http.StatusBadRequest, "target node is cordoned and not accepting new placements")
+			default:
+				rt.logger.Error("api: drain node: validate target failed", slog.String("error", err.Error()), slog.String("node_id", id), slog.String("target_node_id", targetNodeID))
+				writeError(w, http.StatusInternalServerError, "internal error")
+			}
+			return
 		}
-		return
 	}
 
 	services, err := rt.apps.ListDesiredServicesByNode(r.Context(), id)
@@ -375,21 +412,82 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 		MovedDatabases: make([]string, 0, len(databases)),
 	}
 
+	// nextTarget resolves where one resource goes: the explicit override
+	// when given, otherwise this drain's own per-resource pick from
+	// simple spread scheduling. candidateNodes/counts are loaded lazily,
+	// only when there is auto-placing left to do.
+	var (
+		candidatesLoaded bool
+		candidateNodes   []store.Node
+		counts           map[string]int
+	)
+	nextTarget := func() (string, error) {
+		if targetSpecified {
+			return targetNodeID, nil
+		}
+		if !rt.autoPlacementEnabled {
+			return "", nil
+		}
+		if !candidatesLoaded {
+			nodes, err := rt.nodes.ListNodes(r.Context())
+			if err != nil {
+				return "", err
+			}
+			allServices, err := rt.apps.ListDesiredServices(r.Context())
+			if err != nil {
+				return "", err
+			}
+			allDatabases, err := rt.databases.ListDesiredDatabases(r.Context())
+			if err != nil {
+				return "", err
+			}
+			counts = make(map[string]int, len(nodes))
+			for _, s := range allServices {
+				counts[s.NodeID]++
+			}
+			for _, d := range allDatabases {
+				counts[d.NodeID]++
+			}
+			candidateNodes = nodes
+			candidatesLoaded = true
+		}
+		picked := selectLeastLoadedNodeExcluding(candidateNodes, counts, id)
+		if picked != "" {
+			counts[picked]++
+			resp.AutoPlaced = true
+		}
+		return picked, nil
+	}
+
 	for _, svc := range services {
-		if err := rt.apps.UpdateServiceNode(r.Context(), svc.Name, targetNodeID); err != nil {
+		target, err := nextTarget()
+		if err != nil {
+			rt.logger.Error("api: drain node: select placement failed", slog.String("error", err.Error()), slog.String("node_id", id), slog.String("service", svc.Name))
+			resp.Errors = append(resp.Errors, fmt.Sprintf("service %s: %s", svc.Name, err.Error()))
+			continue
+		}
+		if err := rt.apps.UpdateServiceNode(r.Context(), svc.Name, target); err != nil {
 			rt.logger.Error("api: drain node: move service failed", slog.String("error", err.Error()), slog.String("node_id", id), slog.String("service", svc.Name))
 			resp.Errors = append(resp.Errors, fmt.Sprintf("service %s: %s", svc.Name, err.Error()))
 			continue
 		}
 		resp.MovedServices = append(resp.MovedServices, svc.Name)
+		rt.teardownServiceContainers(svc.Name, id)
 	}
 	for _, d := range databases {
-		if err := rt.databases.UpdateDatabaseNode(r.Context(), d.Name, targetNodeID); err != nil {
+		target, err := nextTarget()
+		if err != nil {
+			rt.logger.Error("api: drain node: select placement failed", slog.String("error", err.Error()), slog.String("node_id", id), slog.String("database", d.Name))
+			resp.Errors = append(resp.Errors, fmt.Sprintf("database %s: %s", d.Name, err.Error()))
+			continue
+		}
+		if err := rt.databases.UpdateDatabaseNode(r.Context(), d.Name, target); err != nil {
 			rt.logger.Error("api: drain node: move database failed", slog.String("error", err.Error()), slog.String("node_id", id), slog.String("database", d.Name))
 			resp.Errors = append(resp.Errors, fmt.Sprintf("database %s: %s", d.Name, err.Error()))
 			continue
 		}
 		resp.MovedDatabases = append(resp.MovedDatabases, d.Name)
+		rt.teardownDatabaseContainer(d.Name, id)
 	}
 
 	status := http.StatusOK
@@ -409,8 +507,8 @@ func nodeHealthControllerName(nodeID string) string {
 	return "node-health/" + nodeID
 }
 
-// handleGetNodeHealth handles GET /api/v1/nodes/{id}/health (TASKS.md
-// 3.7): surfaces internal/reconcile/nodehealth's stored Heartbeat
+// handleGetNodeHealth handles GET /api/v1/nodes/{id}/health:
+// surfaces internal/reconcile/nodehealth's stored Heartbeat
 // condition for this node, the identical "read reconcile_status, this
 // handler computes nothing itself" shape handleDeployHistory
 // (deploys.go) already established for applications. A node whose
@@ -445,9 +543,9 @@ type createNodeJoinTokenResponse struct {
 	ExpiresAt time.Time `json:"expires_at"`
 }
 
-// handleCreateNodeJoinToken handles POST /api/v1/nodes/join-tokens
-// (TASKS.md 3.1): mints a one-time token an operator pastes into a new
-// node's enrollment command (TASKS.md 3.2, `cmd/levelrail-agent`, not
+// handleCreateNodeJoinToken handles POST /api/v1/nodes/join-tokens:
+// mints a one-time token an operator pastes into a new
+// node's enrollment command (`cmd/levelrail-agent`, not
 // built yet, is what will eventually exchange this token for a client
 // certificate). Nothing in this codebase redeems a token yet; this
 // handler only mints and persists the hash.

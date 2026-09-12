@@ -13,23 +13,10 @@ import (
 func TestPromoteRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	routes := []struct {
-		method string
-		target string
-	}{
+	assertRoutesRequireAuth(t, rt, []routeCase{
 		{http.MethodGet, "/api/v1/apps/web/promote/preview?to=env_1"},
 		{http.MethodPost, "/api/v1/apps/web/promote"},
-	}
-	for _, r := range routes {
-		t.Run(r.method+" "+r.target, func(t *testing.T) {
-			req := httptest.NewRequest(r.method, r.target, nil)
-			rec := httptest.NewRecorder()
-			rt.Handler().ServeHTTP(rec, req)
-			if rec.Code != http.StatusUnauthorized {
-				t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
-			}
-		})
-	}
+	})
 }
 
 // seedPromotionFixture saves a project, an environment under it, and two

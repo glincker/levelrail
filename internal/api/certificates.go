@@ -43,7 +43,7 @@ type certificateStatus struct {
 	SANs []string `json:"sans,omitempty"`
 	// Issuer is the leaf's issuer CommonName ("Test CA", the internal
 	// issuer's own self-signed CA name, or a real ACME CA's name once
-	// TASKS.md's still-open real-ACME gap closes), purely informational.
+	// the still-open real-ACME gap closes), purely informational.
 	Issuer    string    `json:"issuer,omitempty"`
 	NotBefore time.Time `json:"not_before"`
 	NotAfter  time.Time `json:"not_after"`
@@ -59,7 +59,7 @@ type certificateStatus struct {
 
 // handleListCertificates handles GET /api/v1/certificates: every
 // certificate currently in internal/ingress's SQLite-backed
-// certmagic.Storage (internal/ingress/certstorage.go, TASKS.md 3.6),
+// certmagic.Storage (internal/ingress/certstorage.go),
 // via alerting.ListCertificates, the same computation a kind=cert_expiry
 // alert rule evaluates on its own tick. A control plane that has never
 // issued a certificate returns an empty list, not an error: the same

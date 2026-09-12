@@ -10,8 +10,7 @@ import (
 // loginGraceFailures, loginBaseBackoff, and loginMaxBackoff shape the
 // backoff curve: a handful of free tries (typos happen), then real
 // exponential growth, capped, not CapRover's flat 30-second global
-// back-off after 5 failures with no per-IP separation
-// (docs-local/research/competitor-onboarding-auth-ux.md finding 8).
+// back-off after 5 failures with no per-IP separation.
 const (
 	loginGraceFailures = 3
 	loginBaseBackoff   = 1 * time.Second

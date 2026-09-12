@@ -1,8 +1,8 @@
-// TASKS.md 3.2: the wire contract for ADR 003's reverse-dialed gRPC
+// The wire contract for ADR 003's reverse-dialed gRPC
 // agent. Message shapes mirror internal/docker's Go types (ContainerSpec,
 // ContainerState, Event, ImageInfo, VolumeMount, PortBinding, Resources)
 // field for field, deliberately: this is the exact narrow surface
-// internal/agent.Transport already committed to in TASKS.md 3.1
+// internal/agent.Transport already committed to
 // (docker.Runtime's own 9 methods, no more), not a redesign.
 //
 // AgentService is defined from the control plane's perspective (it is
@@ -42,6 +42,55 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+type BuildKind int32
+
+const (
+	BuildKind_BUILD_KIND_UNSPECIFIED BuildKind = 0
+	BuildKind_BUILD_KIND_DOCKERFILE  BuildKind = 1
+	BuildKind_BUILD_KIND_RAILPACK    BuildKind = 2
+)
+
+// Enum value maps for BuildKind.
+var (
+	BuildKind_name = map[int32]string{
+		0: "BUILD_KIND_UNSPECIFIED",
+		1: "BUILD_KIND_DOCKERFILE",
+		2: "BUILD_KIND_RAILPACK",
+	}
+	BuildKind_value = map[string]int32{
+		"BUILD_KIND_UNSPECIFIED": 0,
+		"BUILD_KIND_DOCKERFILE":  1,
+		"BUILD_KIND_RAILPACK":    2,
+	}
+)
+
+func (x BuildKind) Enum() *BuildKind {
+	p := new(BuildKind)
+	*p = x
+	return p
+}
+
+func (x BuildKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (BuildKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_proto_agent_v1_agent_proto_enumTypes[0].Descriptor()
+}
+
+func (BuildKind) Type() protoreflect.EnumType {
+	return &file_proto_agent_v1_agent_proto_enumTypes[0]
+}
+
+func (x BuildKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use BuildKind.Descriptor instead.
+func (BuildKind) EnumDescriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{0}
+}
 
 type EnrollRequest struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
@@ -182,15 +231,20 @@ func (x *EnrollResponse) GetCaCertPem() []byte {
 	return nil
 }
 
-// AgentMessage is one frame the agent sends up the Session stream:
-// either a reply to an outstanding AgentRequest, or an unprompted
-// streamed Docker event.
+// AgentMessage is one frame the agent sends up the Session stream: a
+// reply to an outstanding AgentRequest, an unprompted streamed Docker
+// event, or one frame of an in-flight exec's output or stdin flow
+// control.
 type AgentMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Payload:
 	//
 	//	*AgentMessage_Response
 	//	*AgentMessage_Event
+	//	*AgentMessage_ExecOutput
+	//	*AgentMessage_ExecCredit
+	//	*AgentMessage_BuildOutput
+	//	*AgentMessage_BuildCredit
 	Payload       isAgentMessage_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -251,6 +305,42 @@ func (x *AgentMessage) GetEvent() *ProxiedEvent {
 	return nil
 }
 
+func (x *AgentMessage) GetExecOutput() *ExecOutput {
+	if x != nil {
+		if x, ok := x.Payload.(*AgentMessage_ExecOutput); ok {
+			return x.ExecOutput
+		}
+	}
+	return nil
+}
+
+func (x *AgentMessage) GetExecCredit() *ExecCredit {
+	if x != nil {
+		if x, ok := x.Payload.(*AgentMessage_ExecCredit); ok {
+			return x.ExecCredit
+		}
+	}
+	return nil
+}
+
+func (x *AgentMessage) GetBuildOutput() *BuildOutput {
+	if x != nil {
+		if x, ok := x.Payload.(*AgentMessage_BuildOutput); ok {
+			return x.BuildOutput
+		}
+	}
+	return nil
+}
+
+func (x *AgentMessage) GetBuildCredit() *BuildCredit {
+	if x != nil {
+		if x, ok := x.Payload.(*AgentMessage_BuildCredit); ok {
+			return x.BuildCredit
+		}
+	}
+	return nil
+}
+
 type isAgentMessage_Payload interface {
 	isAgentMessage_Payload()
 }
@@ -263,18 +353,54 @@ type AgentMessage_Event struct {
 	Event *ProxiedEvent `protobuf:"bytes,2,opt,name=event,proto3,oneof"`
 }
 
+type AgentMessage_ExecOutput struct {
+	ExecOutput *ExecOutput `protobuf:"bytes,3,opt,name=exec_output,json=execOutput,proto3,oneof"`
+}
+
+type AgentMessage_ExecCredit struct {
+	// ExecCredit here refunds the control plane's stdin window: the
+	// agent has consumed that many ExecInput frames.
+	ExecCredit *ExecCredit `protobuf:"bytes,4,opt,name=exec_credit,json=execCredit,proto3,oneof"`
+}
+
+type AgentMessage_BuildOutput struct {
+	BuildOutput *BuildOutput `protobuf:"bytes,5,opt,name=build_output,json=buildOutput,proto3,oneof"`
+}
+
+type AgentMessage_BuildCredit struct {
+	// BuildCredit here refunds the control plane's build-context window:
+	// the agent has consumed that many BuildInput frames.
+	BuildCredit *BuildCredit `protobuf:"bytes,6,opt,name=build_credit,json=buildCredit,proto3,oneof"`
+}
+
 func (*AgentMessage_Response) isAgentMessage_Payload() {}
 
 func (*AgentMessage_Event) isAgentMessage_Payload() {}
 
+func (*AgentMessage_ExecOutput) isAgentMessage_Payload() {}
+
+func (*AgentMessage_ExecCredit) isAgentMessage_Payload() {}
+
+func (*AgentMessage_BuildOutput) isAgentMessage_Payload() {}
+
+func (*AgentMessage_BuildCredit) isAgentMessage_Payload() {}
+
 // ControlMessage is one frame the control plane sends down the Session
-// stream: always a request. (A dedicated envelope message, not just
-// AgentRequest directly, so this type can grow a second oneof arm later
-// without an incompatible wire change, the same reasoning AgentMessage
-// already needs one today for its two arms.)
+// stream: a request, or one frame of an in-flight exec's stdin,
+// cancellation, or output flow control.
 type ControlMessage struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Request       *AgentRequest          `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Payload:
+	//
+	//	*ControlMessage_Request
+	//	*ControlMessage_ExecInput
+	//	*ControlMessage_ExecCancel
+	//	*ControlMessage_ExecCredit
+	//	*ControlMessage_BuildInput
+	//	*ControlMessage_BuildCancel
+	//	*ControlMessage_BuildCredit
+	//	*ControlMessage_ExecResize
+	Payload       isControlMessage_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -309,17 +435,145 @@ func (*ControlMessage) Descriptor() ([]byte, []int) {
 	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *ControlMessage) GetRequest() *AgentRequest {
+func (x *ControlMessage) GetPayload() isControlMessage_Payload {
 	if x != nil {
-		return x.Request
+		return x.Payload
 	}
 	return nil
 }
 
+func (x *ControlMessage) GetRequest() *AgentRequest {
+	if x != nil {
+		if x, ok := x.Payload.(*ControlMessage_Request); ok {
+			return x.Request
+		}
+	}
+	return nil
+}
+
+func (x *ControlMessage) GetExecInput() *ExecInput {
+	if x != nil {
+		if x, ok := x.Payload.(*ControlMessage_ExecInput); ok {
+			return x.ExecInput
+		}
+	}
+	return nil
+}
+
+func (x *ControlMessage) GetExecCancel() *ExecCancel {
+	if x != nil {
+		if x, ok := x.Payload.(*ControlMessage_ExecCancel); ok {
+			return x.ExecCancel
+		}
+	}
+	return nil
+}
+
+func (x *ControlMessage) GetExecCredit() *ExecCredit {
+	if x != nil {
+		if x, ok := x.Payload.(*ControlMessage_ExecCredit); ok {
+			return x.ExecCredit
+		}
+	}
+	return nil
+}
+
+func (x *ControlMessage) GetBuildInput() *BuildInput {
+	if x != nil {
+		if x, ok := x.Payload.(*ControlMessage_BuildInput); ok {
+			return x.BuildInput
+		}
+	}
+	return nil
+}
+
+func (x *ControlMessage) GetBuildCancel() *BuildCancel {
+	if x != nil {
+		if x, ok := x.Payload.(*ControlMessage_BuildCancel); ok {
+			return x.BuildCancel
+		}
+	}
+	return nil
+}
+
+func (x *ControlMessage) GetBuildCredit() *BuildCredit {
+	if x != nil {
+		if x, ok := x.Payload.(*ControlMessage_BuildCredit); ok {
+			return x.BuildCredit
+		}
+	}
+	return nil
+}
+
+func (x *ControlMessage) GetExecResize() *ExecResize {
+	if x != nil {
+		if x, ok := x.Payload.(*ControlMessage_ExecResize); ok {
+			return x.ExecResize
+		}
+	}
+	return nil
+}
+
+type isControlMessage_Payload interface {
+	isControlMessage_Payload()
+}
+
+type ControlMessage_Request struct {
+	Request *AgentRequest `protobuf:"bytes,1,opt,name=request,proto3,oneof"`
+}
+
+type ControlMessage_ExecInput struct {
+	ExecInput *ExecInput `protobuf:"bytes,2,opt,name=exec_input,json=execInput,proto3,oneof"`
+}
+
+type ControlMessage_ExecCancel struct {
+	ExecCancel *ExecCancel `protobuf:"bytes,3,opt,name=exec_cancel,json=execCancel,proto3,oneof"`
+}
+
+type ControlMessage_ExecCredit struct {
+	// ExecCredit here refunds the agent's output window: the control
+	// plane has consumed that many ExecOutput frames.
+	ExecCredit *ExecCredit `protobuf:"bytes,4,opt,name=exec_credit,json=execCredit,proto3,oneof"`
+}
+
+type ControlMessage_BuildInput struct {
+	BuildInput *BuildInput `protobuf:"bytes,5,opt,name=build_input,json=buildInput,proto3,oneof"`
+}
+
+type ControlMessage_BuildCancel struct {
+	BuildCancel *BuildCancel `protobuf:"bytes,6,opt,name=build_cancel,json=buildCancel,proto3,oneof"`
+}
+
+type ControlMessage_BuildCredit struct {
+	// BuildCredit here refunds the agent's output window: the control
+	// plane has consumed that many BuildOutput frames.
+	BuildCredit *BuildCredit `protobuf:"bytes,7,opt,name=build_credit,json=buildCredit,proto3,oneof"`
+}
+
+type ControlMessage_ExecResize struct {
+	ExecResize *ExecResize `protobuf:"bytes,8,opt,name=exec_resize,json=execResize,proto3,oneof"`
+}
+
+func (*ControlMessage_Request) isControlMessage_Payload() {}
+
+func (*ControlMessage_ExecInput) isControlMessage_Payload() {}
+
+func (*ControlMessage_ExecCancel) isControlMessage_Payload() {}
+
+func (*ControlMessage_ExecCredit) isControlMessage_Payload() {}
+
+func (*ControlMessage_BuildInput) isControlMessage_Payload() {}
+
+func (*ControlMessage_BuildCancel) isControlMessage_Payload() {}
+
+func (*ControlMessage_BuildCredit) isControlMessage_Payload() {}
+
+func (*ControlMessage_ExecResize) isControlMessage_Payload() {}
+
 // AgentRequest is one control-plane-issued operation, tagged with
 // request_id so out-of-order AgentResponse frames on the same stream
-// still resolve to the right caller (internal/agent's multiplexer,
-// TASKS.md 3.2, owns matching these).
+// still resolve to the right caller (internal/agent's multiplexer
+// owns matching these).
 type AgentRequest struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	RequestId string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
@@ -335,6 +589,11 @@ type AgentRequest struct {
 	//	*AgentRequest_EnsureVolume
 	//	*AgentRequest_WatchEvents
 	//	*AgentRequest_UpdateResources
+	//	*AgentRequest_EnsureNetwork
+	//	*AgentRequest_RemoveNetwork
+	//	*AgentRequest_ListNetworksByPrefix
+	//	*AgentRequest_Exec
+	//	*AgentRequest_Build
 	Op            isAgentRequest_Op `protobuf_oneof:"op"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -474,6 +733,51 @@ func (x *AgentRequest) GetUpdateResources() *UpdateResourcesRequest {
 	return nil
 }
 
+func (x *AgentRequest) GetEnsureNetwork() *EnsureNetworkRequest {
+	if x != nil {
+		if x, ok := x.Op.(*AgentRequest_EnsureNetwork); ok {
+			return x.EnsureNetwork
+		}
+	}
+	return nil
+}
+
+func (x *AgentRequest) GetRemoveNetwork() *RemoveNetworkRequest {
+	if x != nil {
+		if x, ok := x.Op.(*AgentRequest_RemoveNetwork); ok {
+			return x.RemoveNetwork
+		}
+	}
+	return nil
+}
+
+func (x *AgentRequest) GetListNetworksByPrefix() *ListNetworksByPrefixRequest {
+	if x != nil {
+		if x, ok := x.Op.(*AgentRequest_ListNetworksByPrefix); ok {
+			return x.ListNetworksByPrefix
+		}
+	}
+	return nil
+}
+
+func (x *AgentRequest) GetExec() *ExecRequest {
+	if x != nil {
+		if x, ok := x.Op.(*AgentRequest_Exec); ok {
+			return x.Exec
+		}
+	}
+	return nil
+}
+
+func (x *AgentRequest) GetBuild() *BuildRequest {
+	if x != nil {
+		if x, ok := x.Op.(*AgentRequest_Build); ok {
+			return x.Build
+		}
+	}
+	return nil
+}
+
 type isAgentRequest_Op interface {
 	isAgentRequest_Op()
 }
@@ -518,6 +822,26 @@ type AgentRequest_UpdateResources struct {
 	UpdateResources *UpdateResourcesRequest `protobuf:"bytes,11,opt,name=update_resources,json=updateResources,proto3,oneof"`
 }
 
+type AgentRequest_EnsureNetwork struct {
+	EnsureNetwork *EnsureNetworkRequest `protobuf:"bytes,12,opt,name=ensure_network,json=ensureNetwork,proto3,oneof"`
+}
+
+type AgentRequest_RemoveNetwork struct {
+	RemoveNetwork *RemoveNetworkRequest `protobuf:"bytes,13,opt,name=remove_network,json=removeNetwork,proto3,oneof"`
+}
+
+type AgentRequest_ListNetworksByPrefix struct {
+	ListNetworksByPrefix *ListNetworksByPrefixRequest `protobuf:"bytes,14,opt,name=list_networks_by_prefix,json=listNetworksByPrefix,proto3,oneof"`
+}
+
+type AgentRequest_Exec struct {
+	Exec *ExecRequest `protobuf:"bytes,15,opt,name=exec,proto3,oneof"`
+}
+
+type AgentRequest_Build struct {
+	Build *BuildRequest `protobuf:"bytes,16,opt,name=build,proto3,oneof"`
+}
+
 func (*AgentRequest_InspectByName) isAgentRequest_Op() {}
 
 func (*AgentRequest_Create) isAgentRequest_Op() {}
@@ -538,6 +862,16 @@ func (*AgentRequest_WatchEvents) isAgentRequest_Op() {}
 
 func (*AgentRequest_UpdateResources) isAgentRequest_Op() {}
 
+func (*AgentRequest_EnsureNetwork) isAgentRequest_Op() {}
+
+func (*AgentRequest_RemoveNetwork) isAgentRequest_Op() {}
+
+func (*AgentRequest_ListNetworksByPrefix) isAgentRequest_Op() {}
+
+func (*AgentRequest_Exec) isAgentRequest_Op() {}
+
+func (*AgentRequest_Build) isAgentRequest_Op() {}
+
 // AgentResponse is the agent's answer to exactly one AgentRequest,
 // carrying the same request_id.
 type AgentResponse struct {
@@ -555,6 +889,8 @@ type AgentResponse struct {
 	//	*AgentResponse_ListImages
 	//	*AgentResponse_ListByPrefix
 	//	*AgentResponse_Empty
+	//	*AgentResponse_EnsureNetwork
+	//	*AgentResponse_ListNetworksByPrefix
 	Result        isAgentResponse_Result `protobuf_oneof:"result"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -656,6 +992,24 @@ func (x *AgentResponse) GetEmpty() *Empty {
 	return nil
 }
 
+func (x *AgentResponse) GetEnsureNetwork() *EnsureNetworkResponse {
+	if x != nil {
+		if x, ok := x.Result.(*AgentResponse_EnsureNetwork); ok {
+			return x.EnsureNetwork
+		}
+	}
+	return nil
+}
+
+func (x *AgentResponse) GetListNetworksByPrefix() *ListNetworksByPrefixResponse {
+	if x != nil {
+		if x, ok := x.Result.(*AgentResponse_ListNetworksByPrefix); ok {
+			return x.ListNetworksByPrefix
+		}
+	}
+	return nil
+}
+
 type isAgentResponse_Result interface {
 	isAgentResponse_Result()
 }
@@ -677,10 +1031,18 @@ type AgentResponse_ListByPrefix struct {
 }
 
 type AgentResponse_Empty struct {
-	// Start, Stop, Remove, EnsureVolume, and the WatchEvents
-	// acknowledgment all return nothing but success/Error above, so
-	// none of them needs its own response message.
+	// Start, Stop, Remove, EnsureVolume, RemoveNetwork, and the
+	// WatchEvents acknowledgment all return nothing but success/Error
+	// above, so none of them needs its own response message.
 	Empty *Empty `protobuf:"bytes,7,opt,name=empty,proto3,oneof"`
+}
+
+type AgentResponse_EnsureNetwork struct {
+	EnsureNetwork *EnsureNetworkResponse `protobuf:"bytes,8,opt,name=ensure_network,json=ensureNetwork,proto3,oneof"`
+}
+
+type AgentResponse_ListNetworksByPrefix struct {
+	ListNetworksByPrefix *ListNetworksByPrefixResponse `protobuf:"bytes,9,opt,name=list_networks_by_prefix,json=listNetworksByPrefix,proto3,oneof"`
 }
 
 func (*AgentResponse_InspectByName) isAgentResponse_Result() {}
@@ -692,6 +1054,10 @@ func (*AgentResponse_ListImages) isAgentResponse_Result() {}
 func (*AgentResponse_ListByPrefix) isAgentResponse_Result() {}
 
 func (*AgentResponse_Empty) isAgentResponse_Result() {}
+
+func (*AgentResponse_EnsureNetwork) isAgentResponse_Result() {}
+
+func (*AgentResponse_ListNetworksByPrefix) isAgentResponse_Result() {}
 
 type Empty struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1816,6 +2182,1531 @@ func (x *EnsureVolumeRequest) GetName() string {
 	return ""
 }
 
+// NetworkInfo mirrors internal/docker.NetworkInfo.
+type NetworkInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NetworkInfo) Reset() {
+	*x = NetworkInfo{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NetworkInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NetworkInfo) ProtoMessage() {}
+
+func (x *NetworkInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NetworkInfo.ProtoReflect.Descriptor instead.
+func (*NetworkInfo) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *NetworkInfo) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *NetworkInfo) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type EnsureNetworkRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EnsureNetworkRequest) Reset() {
+	*x = EnsureNetworkRequest{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EnsureNetworkRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnsureNetworkRequest) ProtoMessage() {}
+
+func (x *EnsureNetworkRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnsureNetworkRequest.ProtoReflect.Descriptor instead.
+func (*EnsureNetworkRequest) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *EnsureNetworkRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type EnsureNetworkResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EnsureNetworkResponse) Reset() {
+	*x = EnsureNetworkResponse{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EnsureNetworkResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnsureNetworkResponse) ProtoMessage() {}
+
+func (x *EnsureNetworkResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnsureNetworkResponse.ProtoReflect.Descriptor instead.
+func (*EnsureNetworkResponse) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *EnsureNetworkResponse) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type RemoveNetworkRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RemoveNetworkRequest) Reset() {
+	*x = RemoveNetworkRequest{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemoveNetworkRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveNetworkRequest) ProtoMessage() {}
+
+func (x *RemoveNetworkRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveNetworkRequest.ProtoReflect.Descriptor instead.
+func (*RemoveNetworkRequest) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *RemoveNetworkRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type ListNetworksByPrefixRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Prefix        string                 `protobuf:"bytes,1,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListNetworksByPrefixRequest) Reset() {
+	*x = ListNetworksByPrefixRequest{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListNetworksByPrefixRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListNetworksByPrefixRequest) ProtoMessage() {}
+
+func (x *ListNetworksByPrefixRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListNetworksByPrefixRequest.ProtoReflect.Descriptor instead.
+func (*ListNetworksByPrefixRequest) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *ListNetworksByPrefixRequest) GetPrefix() string {
+	if x != nil {
+		return x.Prefix
+	}
+	return ""
+}
+
+type ListNetworksByPrefixResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Networks      []*NetworkInfo         `protobuf:"bytes,1,rep,name=networks,proto3" json:"networks,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListNetworksByPrefixResponse) Reset() {
+	*x = ListNetworksByPrefixResponse{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListNetworksByPrefixResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListNetworksByPrefixResponse) ProtoMessage() {}
+
+func (x *ListNetworksByPrefixResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListNetworksByPrefixResponse.ProtoReflect.Descriptor instead.
+func (*ListNetworksByPrefixResponse) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *ListNetworksByPrefixResponse) GetNetworks() []*NetworkInfo {
+	if x != nil {
+		return x.Networks
+	}
+	return nil
+}
+
+// ExecRequest runs cmd inside an already-running container and streams
+// its stdout back as ExecOutput frames tagged with this request's own
+// request_id. The AgentResponse for this request is only an
+// acknowledgment that the exec attached (or the error that stopped it
+// from attaching); output arrives afterwards, frame by frame, exactly
+// as docker.Runtime.Exec's returned io.ReadCloser produces it locally.
+type ExecRequest struct {
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	ContainerId string                 `protobuf:"bytes,1,opt,name=container_id,json=containerId,proto3" json:"container_id,omitempty"`
+	Cmd         []string               `protobuf:"bytes,2,rep,name=cmd,proto3" json:"cmd,omitempty"`
+	// AttachStdin selects docker.Runtime.ExecWithInput over Exec: the
+	// control plane then streams ExecInput frames for the same exec_id.
+	AttachStdin bool `protobuf:"varint,3,opt,name=attach_stdin,json=attachStdin,proto3" json:"attach_stdin,omitempty"`
+	// Tty selects docker.TTYRuntime.ExecTTY instead: the command runs on
+	// a real PTY, its output frames carry stdout and stderr already
+	// merged the way a terminal merges them, and the control plane may
+	// send ExecResize frames for the same exec_id. Implies attach_stdin.
+	Tty bool `protobuf:"varint,4,opt,name=tty,proto3" json:"tty,omitempty"`
+	// TtySize is the PTY's initial size, meaningful only when tty is set.
+	TtySize *ExecTTYSize `protobuf:"bytes,5,opt,name=tty_size,json=ttySize,proto3" json:"tty_size,omitempty"`
+	// Env is extra environment for the exec'd process, on top of whatever
+	// the container itself was created with. A terminal needs TERM here.
+	Env           []string `protobuf:"bytes,6,rep,name=env,proto3" json:"env,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecRequest) Reset() {
+	*x = ExecRequest{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecRequest) ProtoMessage() {}
+
+func (x *ExecRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecRequest.ProtoReflect.Descriptor instead.
+func (*ExecRequest) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *ExecRequest) GetContainerId() string {
+	if x != nil {
+		return x.ContainerId
+	}
+	return ""
+}
+
+func (x *ExecRequest) GetCmd() []string {
+	if x != nil {
+		return x.Cmd
+	}
+	return nil
+}
+
+func (x *ExecRequest) GetAttachStdin() bool {
+	if x != nil {
+		return x.AttachStdin
+	}
+	return false
+}
+
+func (x *ExecRequest) GetTty() bool {
+	if x != nil {
+		return x.Tty
+	}
+	return false
+}
+
+func (x *ExecRequest) GetTtySize() *ExecTTYSize {
+	if x != nil {
+		return x.TtySize
+	}
+	return nil
+}
+
+func (x *ExecRequest) GetEnv() []string {
+	if x != nil {
+		return x.Env
+	}
+	return nil
+}
+
+type ExecTTYSize struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Rows          uint32                 `protobuf:"varint,1,opt,name=rows,proto3" json:"rows,omitempty"`
+	Cols          uint32                 `protobuf:"varint,2,opt,name=cols,proto3" json:"cols,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecTTYSize) Reset() {
+	*x = ExecTTYSize{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecTTYSize) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecTTYSize) ProtoMessage() {}
+
+func (x *ExecTTYSize) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecTTYSize.ProtoReflect.Descriptor instead.
+func (*ExecTTYSize) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *ExecTTYSize) GetRows() uint32 {
+	if x != nil {
+		return x.Rows
+	}
+	return 0
+}
+
+func (x *ExecTTYSize) GetCols() uint32 {
+	if x != nil {
+		return x.Cols
+	}
+	return 0
+}
+
+// ExecResize tells the agent that a TTY exec's terminal changed size,
+// so the process inside sees a SIGWINCH and redraws. Ignored for an
+// exec that did not ask for a PTY.
+type ExecResize struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ExecId        string                 `protobuf:"bytes,1,opt,name=exec_id,json=execId,proto3" json:"exec_id,omitempty"`
+	Rows          uint32                 `protobuf:"varint,2,opt,name=rows,proto3" json:"rows,omitempty"`
+	Cols          uint32                 `protobuf:"varint,3,opt,name=cols,proto3" json:"cols,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecResize) Reset() {
+	*x = ExecResize{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecResize) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecResize) ProtoMessage() {}
+
+func (x *ExecResize) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecResize.ProtoReflect.Descriptor instead.
+func (*ExecResize) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *ExecResize) GetExecId() string {
+	if x != nil {
+		return x.ExecId
+	}
+	return ""
+}
+
+func (x *ExecResize) GetRows() uint32 {
+	if x != nil {
+		return x.Rows
+	}
+	return 0
+}
+
+func (x *ExecResize) GetCols() uint32 {
+	if x != nil {
+		return x.Cols
+	}
+	return 0
+}
+
+// ExecInput is one stdin frame for the in-flight exec whose request_id
+// is exec_id. Exactly one of chunk, eof, or error is meaningful per
+// frame: eof ends stdin the way closing a pipe's write half does, error
+// carries a failure reading the control plane's own source reader so
+// the exec fails loudly instead of seeing a silently truncated stdin.
+type ExecInput struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ExecId        string                 `protobuf:"bytes,1,opt,name=exec_id,json=execId,proto3" json:"exec_id,omitempty"`
+	Chunk         []byte                 `protobuf:"bytes,2,opt,name=chunk,proto3" json:"chunk,omitempty"`
+	Eof           bool                   `protobuf:"varint,3,opt,name=eof,proto3" json:"eof,omitempty"`
+	Error         string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecInput) Reset() {
+	*x = ExecInput{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecInput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecInput) ProtoMessage() {}
+
+func (x *ExecInput) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecInput.ProtoReflect.Descriptor instead.
+func (*ExecInput) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *ExecInput) GetExecId() string {
+	if x != nil {
+		return x.ExecId
+	}
+	return ""
+}
+
+func (x *ExecInput) GetChunk() []byte {
+	if x != nil {
+		return x.Chunk
+	}
+	return nil
+}
+
+func (x *ExecInput) GetEof() bool {
+	if x != nil {
+		return x.Eof
+	}
+	return false
+}
+
+func (x *ExecInput) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+// ExecCancel ends an in-flight exec early, when the control plane's
+// caller closed the stream before the command finished. The agent stops
+// reading and closes its local exec, so the remote process does not
+// outlive the caller that asked for it.
+type ExecCancel struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ExecId        string                 `protobuf:"bytes,1,opt,name=exec_id,json=execId,proto3" json:"exec_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecCancel) Reset() {
+	*x = ExecCancel{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecCancel) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecCancel) ProtoMessage() {}
+
+func (x *ExecCancel) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecCancel.ProtoReflect.Descriptor instead.
+func (*ExecCancel) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *ExecCancel) GetExecId() string {
+	if x != nil {
+		return x.ExecId
+	}
+	return ""
+}
+
+// ExecCredit refunds flow-control window for one exec, in frames. Both
+// exec directions are windowed: a sender may have at most a fixed
+// number of unacknowledged data frames outstanding, and the receiver
+// credits frames back as it consumes them. Without this, one slow exec
+// consumer would either stall every other logical call sharing the
+// Session stream or force unbounded buffering of a multi-gigabyte dump.
+type ExecCredit struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ExecId        string                 `protobuf:"bytes,1,opt,name=exec_id,json=execId,proto3" json:"exec_id,omitempty"`
+	Frames        uint32                 `protobuf:"varint,2,opt,name=frames,proto3" json:"frames,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecCredit) Reset() {
+	*x = ExecCredit{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecCredit) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecCredit) ProtoMessage() {}
+
+func (x *ExecCredit) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecCredit.ProtoReflect.Descriptor instead.
+func (*ExecCredit) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *ExecCredit) GetExecId() string {
+	if x != nil {
+		return x.ExecId
+	}
+	return ""
+}
+
+func (x *ExecCredit) GetFrames() uint32 {
+	if x != nil {
+		return x.Frames
+	}
+	return 0
+}
+
+// ExecOutput is one stdout frame for an in-flight exec, or that stream's
+// terminal frame. A data frame sets chunk; the terminal frame sets
+// either eof (the command's output ended cleanly) or failure. Exactly
+// one terminal frame is ever sent per exec.
+type ExecOutput struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ExecId        string                 `protobuf:"bytes,1,opt,name=exec_id,json=execId,proto3" json:"exec_id,omitempty"`
+	Chunk         []byte                 `protobuf:"bytes,2,opt,name=chunk,proto3" json:"chunk,omitempty"`
+	Eof           bool                   `protobuf:"varint,3,opt,name=eof,proto3" json:"eof,omitempty"`
+	Failure       *ExecFailure           `protobuf:"bytes,4,opt,name=failure,proto3" json:"failure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecOutput) Reset() {
+	*x = ExecOutput{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecOutput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecOutput) ProtoMessage() {}
+
+func (x *ExecOutput) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecOutput.ProtoReflect.Descriptor instead.
+func (*ExecOutput) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *ExecOutput) GetExecId() string {
+	if x != nil {
+		return x.ExecId
+	}
+	return ""
+}
+
+func (x *ExecOutput) GetChunk() []byte {
+	if x != nil {
+		return x.Chunk
+	}
+	return nil
+}
+
+func (x *ExecOutput) GetEof() bool {
+	if x != nil {
+		return x.Eof
+	}
+	return false
+}
+
+func (x *ExecOutput) GetFailure() *ExecFailure {
+	if x != nil {
+		return x.Failure
+	}
+	return nil
+}
+
+// ExecFailure is the error that ended an exec's output stream, mirroring
+// the trailing error docker.Runtime.Exec's own io.ReadCloser returns.
+type ExecFailure struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Message string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	// Exit is set when the failure was the command's own non-zero exit
+	// (internal/docker.ExecExitError), so the control plane can rebuild
+	// that typed error rather than a flat string: internal/api's exec
+	// endpoint branches on it with errors.As to report a real exit code.
+	Exit          *ExecExit `protobuf:"bytes,2,opt,name=exit,proto3" json:"exit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecFailure) Reset() {
+	*x = ExecFailure{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecFailure) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecFailure) ProtoMessage() {}
+
+func (x *ExecFailure) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecFailure.ProtoReflect.Descriptor instead.
+func (*ExecFailure) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *ExecFailure) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *ExecFailure) GetExit() *ExecExit {
+	if x != nil {
+		return x.Exit
+	}
+	return nil
+}
+
+type ExecExit struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Cmd           []string               `protobuf:"bytes,1,rep,name=cmd,proto3" json:"cmd,omitempty"`
+	Container     string                 `protobuf:"bytes,2,opt,name=container,proto3" json:"container,omitempty"`
+	ExitCode      int32                  `protobuf:"varint,3,opt,name=exit_code,json=exitCode,proto3" json:"exit_code,omitempty"`
+	Stderr        string                 `protobuf:"bytes,4,opt,name=stderr,proto3" json:"stderr,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecExit) Reset() {
+	*x = ExecExit{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecExit) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecExit) ProtoMessage() {}
+
+func (x *ExecExit) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecExit.ProtoReflect.Descriptor instead.
+func (*ExecExit) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *ExecExit) GetCmd() []string {
+	if x != nil {
+		return x.Cmd
+	}
+	return nil
+}
+
+func (x *ExecExit) GetContainer() string {
+	if x != nil {
+		return x.Container
+	}
+	return ""
+}
+
+func (x *ExecExit) GetExitCode() int32 {
+	if x != nil {
+		return x.ExitCode
+	}
+	return 0
+}
+
+func (x *ExecExit) GetStderr() string {
+	if x != nil {
+		return x.Stderr
+	}
+	return ""
+}
+
+// BuildRequest dispatches one image build to this node's own BuildKit
+// instance, so build CPU lands on a dedicated build node instead of the
+// control plane. The control plane streams the build context up as
+// BuildInput frames tagged with this request's request_id, the agent
+// streams progress and the resulting docker-save image tar back as
+// BuildOutput frames under the same ID, and the AgentResponse for this
+// request is only the acknowledgment that the agent accepted the build.
+type BuildRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Kind  BuildKind              `protobuf:"varint,1,opt,name=kind,proto3,enum=levelrail.agent.v1.BuildKind" json:"kind,omitempty"`
+	// Tag is the image reference the built image is exported under.
+	Tag string `protobuf:"bytes,2,opt,name=tag,proto3" json:"tag,omitempty"`
+	// DockerfilePath is relative to the build context root, since the
+	// control plane's own absolute paths mean nothing on this node. Empty
+	// means the context root's own Dockerfile.
+	DockerfilePath string            `protobuf:"bytes,3,opt,name=dockerfile_path,json=dockerfilePath,proto3" json:"dockerfile_path,omitempty"`
+	Target         string            `protobuf:"bytes,4,opt,name=target,proto3" json:"target,omitempty"`
+	BuildArgs      map[string]string `protobuf:"bytes,5,rep,name=build_args,json=buildArgs,proto3" json:"build_args,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	NoCache        bool              `protobuf:"varint,6,opt,name=no_cache,json=noCache,proto3" json:"no_cache,omitempty"`
+	Cache          *BuildCache       `protobuf:"bytes,7,opt,name=cache,proto3" json:"cache,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *BuildRequest) Reset() {
+	*x = BuildRequest{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BuildRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BuildRequest) ProtoMessage() {}
+
+func (x *BuildRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BuildRequest.ProtoReflect.Descriptor instead.
+func (*BuildRequest) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *BuildRequest) GetKind() BuildKind {
+	if x != nil {
+		return x.Kind
+	}
+	return BuildKind_BUILD_KIND_UNSPECIFIED
+}
+
+func (x *BuildRequest) GetTag() string {
+	if x != nil {
+		return x.Tag
+	}
+	return ""
+}
+
+func (x *BuildRequest) GetDockerfilePath() string {
+	if x != nil {
+		return x.DockerfilePath
+	}
+	return ""
+}
+
+func (x *BuildRequest) GetTarget() string {
+	if x != nil {
+		return x.Target
+	}
+	return ""
+}
+
+func (x *BuildRequest) GetBuildArgs() map[string]string {
+	if x != nil {
+		return x.BuildArgs
+	}
+	return nil
+}
+
+func (x *BuildRequest) GetNoCache() bool {
+	if x != nil {
+		return x.NoCache
+	}
+	return false
+}
+
+func (x *BuildRequest) GetCache() *BuildCache {
+	if x != nil {
+		return x.Cache
+	}
+	return nil
+}
+
+// BuildCache carries only internal/build.CacheConfig's registry backend.
+// Its local-directory backend is deliberately not sent: that path names a
+// directory on the control plane's own disk, which this node does not
+// have, while a registry ref is shared by construction.
+type BuildCache struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	RegistryRef      string                 `protobuf:"bytes,1,opt,name=registry_ref,json=registryRef,proto3" json:"registry_ref,omitempty"`
+	RegistryInsecure bool                   `protobuf:"varint,2,opt,name=registry_insecure,json=registryInsecure,proto3" json:"registry_insecure,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *BuildCache) Reset() {
+	*x = BuildCache{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[43]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BuildCache) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BuildCache) ProtoMessage() {}
+
+func (x *BuildCache) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[43]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BuildCache.ProtoReflect.Descriptor instead.
+func (*BuildCache) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{43}
+}
+
+func (x *BuildCache) GetRegistryRef() string {
+	if x != nil {
+		return x.RegistryRef
+	}
+	return ""
+}
+
+func (x *BuildCache) GetRegistryInsecure() bool {
+	if x != nil {
+		return x.RegistryInsecure
+	}
+	return false
+}
+
+// BuildInput is one build-context frame for the in-flight build whose
+// request_id is build_id, carrying a tar stream of the context
+// directory. Exactly one of chunk, eof, or error is meaningful per frame,
+// the same contract ExecInput follows.
+type BuildInput struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BuildId       string                 `protobuf:"bytes,1,opt,name=build_id,json=buildId,proto3" json:"build_id,omitempty"`
+	Chunk         []byte                 `protobuf:"bytes,2,opt,name=chunk,proto3" json:"chunk,omitempty"`
+	Eof           bool                   `protobuf:"varint,3,opt,name=eof,proto3" json:"eof,omitempty"`
+	Error         string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BuildInput) Reset() {
+	*x = BuildInput{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[44]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BuildInput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BuildInput) ProtoMessage() {}
+
+func (x *BuildInput) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[44]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BuildInput.ProtoReflect.Descriptor instead.
+func (*BuildInput) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{44}
+}
+
+func (x *BuildInput) GetBuildId() string {
+	if x != nil {
+		return x.BuildId
+	}
+	return ""
+}
+
+func (x *BuildInput) GetChunk() []byte {
+	if x != nil {
+		return x.Chunk
+	}
+	return nil
+}
+
+func (x *BuildInput) GetEof() bool {
+	if x != nil {
+		return x.Eof
+	}
+	return false
+}
+
+func (x *BuildInput) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+// BuildCancel ends an in-flight build early, when the control plane's
+// caller gave up before it finished.
+type BuildCancel struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BuildId       string                 `protobuf:"bytes,1,opt,name=build_id,json=buildId,proto3" json:"build_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BuildCancel) Reset() {
+	*x = BuildCancel{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[45]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BuildCancel) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BuildCancel) ProtoMessage() {}
+
+func (x *BuildCancel) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[45]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BuildCancel.ProtoReflect.Descriptor instead.
+func (*BuildCancel) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{45}
+}
+
+func (x *BuildCancel) GetBuildId() string {
+	if x != nil {
+		return x.BuildId
+	}
+	return ""
+}
+
+// BuildCredit refunds flow-control window for one build, in frames, the
+// same windowing ExecCredit documents for exec.
+type BuildCredit struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BuildId       string                 `protobuf:"bytes,1,opt,name=build_id,json=buildId,proto3" json:"build_id,omitempty"`
+	Frames        uint32                 `protobuf:"varint,2,opt,name=frames,proto3" json:"frames,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BuildCredit) Reset() {
+	*x = BuildCredit{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[46]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BuildCredit) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BuildCredit) ProtoMessage() {}
+
+func (x *BuildCredit) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[46]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BuildCredit.ProtoReflect.Descriptor instead.
+func (*BuildCredit) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{46}
+}
+
+func (x *BuildCredit) GetBuildId() string {
+	if x != nil {
+		return x.BuildId
+	}
+	return ""
+}
+
+func (x *BuildCredit) GetFrames() uint32 {
+	if x != nil {
+		return x.Frames
+	}
+	return 0
+}
+
+// BuildOutput is one frame of an in-flight build: a progress update, a
+// chunk of the resulting image tar, or that stream's terminal frame.
+// Exactly one terminal frame (done or failure) is ever sent per build.
+type BuildOutput struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	BuildId string                 `protobuf:"bytes,1,opt,name=build_id,json=buildId,proto3" json:"build_id,omitempty"`
+	// Types that are valid to be assigned to Frame:
+	//
+	//	*BuildOutput_Progress
+	//	*BuildOutput_ImageChunk
+	//	*BuildOutput_Done
+	//	*BuildOutput_Failure
+	Frame         isBuildOutput_Frame `protobuf_oneof:"frame"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BuildOutput) Reset() {
+	*x = BuildOutput{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[47]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BuildOutput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BuildOutput) ProtoMessage() {}
+
+func (x *BuildOutput) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[47]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BuildOutput.ProtoReflect.Descriptor instead.
+func (*BuildOutput) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{47}
+}
+
+func (x *BuildOutput) GetBuildId() string {
+	if x != nil {
+		return x.BuildId
+	}
+	return ""
+}
+
+func (x *BuildOutput) GetFrame() isBuildOutput_Frame {
+	if x != nil {
+		return x.Frame
+	}
+	return nil
+}
+
+func (x *BuildOutput) GetProgress() *BuildProgress {
+	if x != nil {
+		if x, ok := x.Frame.(*BuildOutput_Progress); ok {
+			return x.Progress
+		}
+	}
+	return nil
+}
+
+func (x *BuildOutput) GetImageChunk() []byte {
+	if x != nil {
+		if x, ok := x.Frame.(*BuildOutput_ImageChunk); ok {
+			return x.ImageChunk
+		}
+	}
+	return nil
+}
+
+func (x *BuildOutput) GetDone() *BuildDone {
+	if x != nil {
+		if x, ok := x.Frame.(*BuildOutput_Done); ok {
+			return x.Done
+		}
+	}
+	return nil
+}
+
+func (x *BuildOutput) GetFailure() *BuildFailure {
+	if x != nil {
+		if x, ok := x.Frame.(*BuildOutput_Failure); ok {
+			return x.Failure
+		}
+	}
+	return nil
+}
+
+type isBuildOutput_Frame interface {
+	isBuildOutput_Frame()
+}
+
+type BuildOutput_Progress struct {
+	Progress *BuildProgress `protobuf:"bytes,2,opt,name=progress,proto3,oneof"`
+}
+
+type BuildOutput_ImageChunk struct {
+	ImageChunk []byte `protobuf:"bytes,3,opt,name=image_chunk,json=imageChunk,proto3,oneof"`
+}
+
+type BuildOutput_Done struct {
+	Done *BuildDone `protobuf:"bytes,4,opt,name=done,proto3,oneof"`
+}
+
+type BuildOutput_Failure struct {
+	Failure *BuildFailure `protobuf:"bytes,5,opt,name=failure,proto3,oneof"`
+}
+
+func (*BuildOutput_Progress) isBuildOutput_Frame() {}
+
+func (*BuildOutput_ImageChunk) isBuildOutput_Frame() {}
+
+func (*BuildOutput_Done) isBuildOutput_Frame() {}
+
+func (*BuildOutput_Failure) isBuildOutput_Frame() {}
+
+// BuildProgress mirrors internal/build.ProgressEvent field for field, so
+// a remote build's log lines reach the control plane's existing SSE
+// stream in the same shape a local build's do.
+type BuildProgress struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Step          string                 `protobuf:"bytes,1,opt,name=step,proto3" json:"step,omitempty"`
+	Cached        bool                   `protobuf:"varint,2,opt,name=cached,proto3" json:"cached,omitempty"`
+	Completed     bool                   `protobuf:"varint,3,opt,name=completed,proto3" json:"completed,omitempty"`
+	Error         string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	Log           string                 `protobuf:"bytes,5,opt,name=log,proto3" json:"log,omitempty"`
+	Stream        string                 `protobuf:"bytes,6,opt,name=stream,proto3" json:"stream,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BuildProgress) Reset() {
+	*x = BuildProgress{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[48]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BuildProgress) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BuildProgress) ProtoMessage() {}
+
+func (x *BuildProgress) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[48]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BuildProgress.ProtoReflect.Descriptor instead.
+func (*BuildProgress) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{48}
+}
+
+func (x *BuildProgress) GetStep() string {
+	if x != nil {
+		return x.Step
+	}
+	return ""
+}
+
+func (x *BuildProgress) GetCached() bool {
+	if x != nil {
+		return x.Cached
+	}
+	return false
+}
+
+func (x *BuildProgress) GetCompleted() bool {
+	if x != nil {
+		return x.Completed
+	}
+	return false
+}
+
+func (x *BuildProgress) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *BuildProgress) GetLog() string {
+	if x != nil {
+		return x.Log
+	}
+	return ""
+}
+
+func (x *BuildProgress) GetStream() string {
+	if x != nil {
+		return x.Stream
+	}
+	return ""
+}
+
+// BuildDone carries what internal/build.Result holds beyond the tag the
+// control plane already knows.
+type BuildDone struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	DurationMs       int64                  `protobuf:"varint,1,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty"`
+	ExporterResponse map[string]string      `protobuf:"bytes,2,rep,name=exporter_response,json=exporterResponse,proto3" json:"exporter_response,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *BuildDone) Reset() {
+	*x = BuildDone{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[49]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BuildDone) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BuildDone) ProtoMessage() {}
+
+func (x *BuildDone) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[49]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BuildDone.ProtoReflect.Descriptor instead.
+func (*BuildDone) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{49}
+}
+
+func (x *BuildDone) GetDurationMs() int64 {
+	if x != nil {
+		return x.DurationMs
+	}
+	return 0
+}
+
+func (x *BuildDone) GetExporterResponse() map[string]string {
+	if x != nil {
+		return x.ExporterResponse
+	}
+	return nil
+}
+
+// BuildFailure is the error that ended a build. unsupported_provider is
+// set when the failure was internal/build.UnsupportedProviderError, so
+// the control plane can rebuild that typed error rather than a flat
+// string: internal/deploy branches on it with errors.As.
+type BuildFailure struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	Message             string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	UnsupportedProvider bool                   `protobuf:"varint,2,opt,name=unsupported_provider,json=unsupportedProvider,proto3" json:"unsupported_provider,omitempty"`
+	Provider            string                 `protobuf:"bytes,3,opt,name=provider,proto3" json:"provider,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *BuildFailure) Reset() {
+	*x = BuildFailure{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[50]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BuildFailure) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BuildFailure) ProtoMessage() {}
+
+func (x *BuildFailure) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[50]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BuildFailure.ProtoReflect.Descriptor instead.
+func (*BuildFailure) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{50}
+}
+
+func (x *BuildFailure) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *BuildFailure) GetUnsupportedProvider() bool {
+	if x != nil {
+		return x.UnsupportedProvider
+	}
+	return false
+}
+
+func (x *BuildFailure) GetProvider() string {
+	if x != nil {
+		return x.Provider
+	}
+	return ""
+}
+
 // WatchEventsRequest starts (or, sent a second time with the same
 // watch_id, is meaningless and rejected: one watch per Session,
 // matching internal/docker.Runtime.Events' own "until ctx is cancelled"
@@ -1833,7 +3724,7 @@ type WatchEventsRequest struct {
 
 func (x *WatchEventsRequest) Reset() {
 	*x = WatchEventsRequest{}
-	mi := &file_proto_agent_v1_agent_proto_msgTypes[27]
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1845,7 +3736,7 @@ func (x *WatchEventsRequest) String() string {
 func (*WatchEventsRequest) ProtoMessage() {}
 
 func (x *WatchEventsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_agent_v1_agent_proto_msgTypes[27]
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1858,7 +3749,7 @@ func (x *WatchEventsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WatchEventsRequest.ProtoReflect.Descriptor instead.
 func (*WatchEventsRequest) Descriptor() ([]byte, []int) {
-	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{27}
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *WatchEventsRequest) GetWatchId() string {
@@ -1881,13 +3772,32 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\anode_id\x18\x01 \x01(\tR\x06nodeId\x12&\n" +
 	"\x0fclient_cert_pem\x18\x02 \x01(\fR\rclientCertPem\x12$\n" +
 	"\x0eclient_key_pem\x18\x03 \x01(\fR\fclientKeyPem\x12\x1e\n" +
-	"\vca_cert_pem\x18\x04 \x01(\fR\tcaCertPem\"\x94\x01\n" +
+	"\vca_cert_pem\x18\x04 \x01(\fR\tcaCertPem\"\xa6\x03\n" +
 	"\fAgentMessage\x12?\n" +
 	"\bresponse\x18\x01 \x01(\v2!.levelrail.agent.v1.AgentResponseH\x00R\bresponse\x128\n" +
-	"\x05event\x18\x02 \x01(\v2 .levelrail.agent.v1.ProxiedEventH\x00R\x05eventB\t\n" +
-	"\apayload\"L\n" +
-	"\x0eControlMessage\x12:\n" +
-	"\arequest\x18\x01 \x01(\v2 .levelrail.agent.v1.AgentRequestR\arequest\"\x83\x06\n" +
+	"\x05event\x18\x02 \x01(\v2 .levelrail.agent.v1.ProxiedEventH\x00R\x05event\x12A\n" +
+	"\vexec_output\x18\x03 \x01(\v2\x1e.levelrail.agent.v1.ExecOutputH\x00R\n" +
+	"execOutput\x12A\n" +
+	"\vexec_credit\x18\x04 \x01(\v2\x1e.levelrail.agent.v1.ExecCreditH\x00R\n" +
+	"execCredit\x12D\n" +
+	"\fbuild_output\x18\x05 \x01(\v2\x1f.levelrail.agent.v1.BuildOutputH\x00R\vbuildOutput\x12D\n" +
+	"\fbuild_credit\x18\x06 \x01(\v2\x1f.levelrail.agent.v1.BuildCreditH\x00R\vbuildCreditB\t\n" +
+	"\apayload\"\xb1\x04\n" +
+	"\x0eControlMessage\x12<\n" +
+	"\arequest\x18\x01 \x01(\v2 .levelrail.agent.v1.AgentRequestH\x00R\arequest\x12>\n" +
+	"\n" +
+	"exec_input\x18\x02 \x01(\v2\x1d.levelrail.agent.v1.ExecInputH\x00R\texecInput\x12A\n" +
+	"\vexec_cancel\x18\x03 \x01(\v2\x1e.levelrail.agent.v1.ExecCancelH\x00R\n" +
+	"execCancel\x12A\n" +
+	"\vexec_credit\x18\x04 \x01(\v2\x1e.levelrail.agent.v1.ExecCreditH\x00R\n" +
+	"execCredit\x12A\n" +
+	"\vbuild_input\x18\x05 \x01(\v2\x1e.levelrail.agent.v1.BuildInputH\x00R\n" +
+	"buildInput\x12D\n" +
+	"\fbuild_cancel\x18\x06 \x01(\v2\x1f.levelrail.agent.v1.BuildCancelH\x00R\vbuildCancel\x12D\n" +
+	"\fbuild_credit\x18\a \x01(\v2\x1f.levelrail.agent.v1.BuildCreditH\x00R\vbuildCredit\x12A\n" +
+	"\vexec_resize\x18\b \x01(\v2\x1e.levelrail.agent.v1.ExecResizeH\x00R\n" +
+	"execResizeB\t\n" +
+	"\apayload\"\x84\t\n" +
 	"\fAgentRequest\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12R\n" +
@@ -1902,8 +3812,13 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\rensure_volume\x18\t \x01(\v2'.levelrail.agent.v1.EnsureVolumeRequestH\x00R\fensureVolume\x12K\n" +
 	"\fwatch_events\x18\n" +
 	" \x01(\v2&.levelrail.agent.v1.WatchEventsRequestH\x00R\vwatchEvents\x12W\n" +
-	"\x10update_resources\x18\v \x01(\v2*.levelrail.agent.v1.UpdateResourcesRequestH\x00R\x0fupdateResourcesB\x04\n" +
-	"\x02op\"\xb1\x03\n" +
+	"\x10update_resources\x18\v \x01(\v2*.levelrail.agent.v1.UpdateResourcesRequestH\x00R\x0fupdateResources\x12Q\n" +
+	"\x0eensure_network\x18\f \x01(\v2(.levelrail.agent.v1.EnsureNetworkRequestH\x00R\rensureNetwork\x12Q\n" +
+	"\x0eremove_network\x18\r \x01(\v2(.levelrail.agent.v1.RemoveNetworkRequestH\x00R\rremoveNetwork\x12h\n" +
+	"\x17list_networks_by_prefix\x18\x0e \x01(\v2/.levelrail.agent.v1.ListNetworksByPrefixRequestH\x00R\x14listNetworksByPrefix\x125\n" +
+	"\x04exec\x18\x0f \x01(\v2\x1f.levelrail.agent.v1.ExecRequestH\x00R\x04exec\x128\n" +
+	"\x05build\x18\x10 \x01(\v2 .levelrail.agent.v1.BuildRequestH\x00R\x05buildB\x04\n" +
+	"\x02op\"\xf0\x04\n" +
 	"\rAgentResponse\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12\x14\n" +
@@ -1913,7 +3828,9 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\vlist_images\x18\x05 \x01(\v2&.levelrail.agent.v1.ListImagesResponseH\x00R\n" +
 	"listImages\x12P\n" +
 	"\x0elist_by_prefix\x18\x06 \x01(\v2(.levelrail.agent.v1.ListByPrefixResponseH\x00R\flistByPrefix\x121\n" +
-	"\x05empty\x18\a \x01(\v2\x19.levelrail.agent.v1.EmptyH\x00R\x05emptyB\b\n" +
+	"\x05empty\x18\a \x01(\v2\x19.levelrail.agent.v1.EmptyH\x00R\x05empty\x12R\n" +
+	"\x0eensure_network\x18\b \x01(\v2).levelrail.agent.v1.EnsureNetworkResponseH\x00R\rensureNetwork\x12i\n" +
+	"\x17list_networks_by_prefix\x18\t \x01(\v20.levelrail.agent.v1.ListNetworksByPrefixResponseH\x00R\x14listNetworksByPrefixB\b\n" +
 	"\x06result\"\a\n" +
 	"\x05Empty\"m\n" +
 	"\vPortBinding\x12%\n" +
@@ -1987,9 +3904,120 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"containers\x18\x01 \x03(\v2\".levelrail.agent.v1.ContainerStateR\n" +
 	"containers\")\n" +
 	"\x13EnsureVolumeRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\"/\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"1\n" +
+	"\vNetworkInfo\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\"*\n" +
+	"\x14EnsureNetworkRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"'\n" +
+	"\x15EnsureNetworkResponse\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"*\n" +
+	"\x14RemoveNetworkRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"5\n" +
+	"\x1bListNetworksByPrefixRequest\x12\x16\n" +
+	"\x06prefix\x18\x01 \x01(\tR\x06prefix\"[\n" +
+	"\x1cListNetworksByPrefixResponse\x12;\n" +
+	"\bnetworks\x18\x01 \x03(\v2\x1f.levelrail.agent.v1.NetworkInfoR\bnetworks\"\xc5\x01\n" +
+	"\vExecRequest\x12!\n" +
+	"\fcontainer_id\x18\x01 \x01(\tR\vcontainerId\x12\x10\n" +
+	"\x03cmd\x18\x02 \x03(\tR\x03cmd\x12!\n" +
+	"\fattach_stdin\x18\x03 \x01(\bR\vattachStdin\x12\x10\n" +
+	"\x03tty\x18\x04 \x01(\bR\x03tty\x12:\n" +
+	"\btty_size\x18\x05 \x01(\v2\x1f.levelrail.agent.v1.ExecTTYSizeR\attySize\x12\x10\n" +
+	"\x03env\x18\x06 \x03(\tR\x03env\"5\n" +
+	"\vExecTTYSize\x12\x12\n" +
+	"\x04rows\x18\x01 \x01(\rR\x04rows\x12\x12\n" +
+	"\x04cols\x18\x02 \x01(\rR\x04cols\"M\n" +
+	"\n" +
+	"ExecResize\x12\x17\n" +
+	"\aexec_id\x18\x01 \x01(\tR\x06execId\x12\x12\n" +
+	"\x04rows\x18\x02 \x01(\rR\x04rows\x12\x12\n" +
+	"\x04cols\x18\x03 \x01(\rR\x04cols\"b\n" +
+	"\tExecInput\x12\x17\n" +
+	"\aexec_id\x18\x01 \x01(\tR\x06execId\x12\x14\n" +
+	"\x05chunk\x18\x02 \x01(\fR\x05chunk\x12\x10\n" +
+	"\x03eof\x18\x03 \x01(\bR\x03eof\x12\x14\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error\"%\n" +
+	"\n" +
+	"ExecCancel\x12\x17\n" +
+	"\aexec_id\x18\x01 \x01(\tR\x06execId\"=\n" +
+	"\n" +
+	"ExecCredit\x12\x17\n" +
+	"\aexec_id\x18\x01 \x01(\tR\x06execId\x12\x16\n" +
+	"\x06frames\x18\x02 \x01(\rR\x06frames\"\x88\x01\n" +
+	"\n" +
+	"ExecOutput\x12\x17\n" +
+	"\aexec_id\x18\x01 \x01(\tR\x06execId\x12\x14\n" +
+	"\x05chunk\x18\x02 \x01(\fR\x05chunk\x12\x10\n" +
+	"\x03eof\x18\x03 \x01(\bR\x03eof\x129\n" +
+	"\afailure\x18\x04 \x01(\v2\x1f.levelrail.agent.v1.ExecFailureR\afailure\"Y\n" +
+	"\vExecFailure\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\x120\n" +
+	"\x04exit\x18\x02 \x01(\v2\x1c.levelrail.agent.v1.ExecExitR\x04exit\"o\n" +
+	"\bExecExit\x12\x10\n" +
+	"\x03cmd\x18\x01 \x03(\tR\x03cmd\x12\x1c\n" +
+	"\tcontainer\x18\x02 \x01(\tR\tcontainer\x12\x1b\n" +
+	"\texit_code\x18\x03 \x01(\x05R\bexitCode\x12\x16\n" +
+	"\x06stderr\x18\x04 \x01(\tR\x06stderr\"\xf3\x02\n" +
+	"\fBuildRequest\x121\n" +
+	"\x04kind\x18\x01 \x01(\x0e2\x1d.levelrail.agent.v1.BuildKindR\x04kind\x12\x10\n" +
+	"\x03tag\x18\x02 \x01(\tR\x03tag\x12'\n" +
+	"\x0fdockerfile_path\x18\x03 \x01(\tR\x0edockerfilePath\x12\x16\n" +
+	"\x06target\x18\x04 \x01(\tR\x06target\x12N\n" +
+	"\n" +
+	"build_args\x18\x05 \x03(\v2/.levelrail.agent.v1.BuildRequest.BuildArgsEntryR\tbuildArgs\x12\x19\n" +
+	"\bno_cache\x18\x06 \x01(\bR\anoCache\x124\n" +
+	"\x05cache\x18\a \x01(\v2\x1e.levelrail.agent.v1.BuildCacheR\x05cache\x1a<\n" +
+	"\x0eBuildArgsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\\\n" +
+	"\n" +
+	"BuildCache\x12!\n" +
+	"\fregistry_ref\x18\x01 \x01(\tR\vregistryRef\x12+\n" +
+	"\x11registry_insecure\x18\x02 \x01(\bR\x10registryInsecure\"e\n" +
+	"\n" +
+	"BuildInput\x12\x19\n" +
+	"\bbuild_id\x18\x01 \x01(\tR\abuildId\x12\x14\n" +
+	"\x05chunk\x18\x02 \x01(\fR\x05chunk\x12\x10\n" +
+	"\x03eof\x18\x03 \x01(\bR\x03eof\x12\x14\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error\"(\n" +
+	"\vBuildCancel\x12\x19\n" +
+	"\bbuild_id\x18\x01 \x01(\tR\abuildId\"@\n" +
+	"\vBuildCredit\x12\x19\n" +
+	"\bbuild_id\x18\x01 \x01(\tR\abuildId\x12\x16\n" +
+	"\x06frames\x18\x02 \x01(\rR\x06frames\"\x88\x02\n" +
+	"\vBuildOutput\x12\x19\n" +
+	"\bbuild_id\x18\x01 \x01(\tR\abuildId\x12?\n" +
+	"\bprogress\x18\x02 \x01(\v2!.levelrail.agent.v1.BuildProgressH\x00R\bprogress\x12!\n" +
+	"\vimage_chunk\x18\x03 \x01(\fH\x00R\n" +
+	"imageChunk\x123\n" +
+	"\x04done\x18\x04 \x01(\v2\x1d.levelrail.agent.v1.BuildDoneH\x00R\x04done\x12<\n" +
+	"\afailure\x18\x05 \x01(\v2 .levelrail.agent.v1.BuildFailureH\x00R\afailureB\a\n" +
+	"\x05frame\"\x99\x01\n" +
+	"\rBuildProgress\x12\x12\n" +
+	"\x04step\x18\x01 \x01(\tR\x04step\x12\x16\n" +
+	"\x06cached\x18\x02 \x01(\bR\x06cached\x12\x1c\n" +
+	"\tcompleted\x18\x03 \x01(\bR\tcompleted\x12\x14\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error\x12\x10\n" +
+	"\x03log\x18\x05 \x01(\tR\x03log\x12\x16\n" +
+	"\x06stream\x18\x06 \x01(\tR\x06stream\"\xd3\x01\n" +
+	"\tBuildDone\x12\x1f\n" +
+	"\vduration_ms\x18\x01 \x01(\x03R\n" +
+	"durationMs\x12`\n" +
+	"\x11exporter_response\x18\x02 \x03(\v23.levelrail.agent.v1.BuildDone.ExporterResponseEntryR\x10exporterResponse\x1aC\n" +
+	"\x15ExporterResponseEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"w\n" +
+	"\fBuildFailure\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\x121\n" +
+	"\x14unsupported_provider\x18\x02 \x01(\bR\x13unsupportedProvider\x12\x1a\n" +
+	"\bprovider\x18\x03 \x01(\tR\bprovider\"/\n" +
 	"\x12WatchEventsRequest\x12\x19\n" +
-	"\bwatch_id\x18\x01 \x01(\tR\awatchId2\xb4\x01\n" +
+	"\bwatch_id\x18\x01 \x01(\tR\awatchId*[\n" +
+	"\tBuildKind\x12\x1a\n" +
+	"\x16BUILD_KIND_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15BUILD_KIND_DOCKERFILE\x10\x01\x12\x17\n" +
+	"\x13BUILD_KIND_RAILPACK\x10\x022\xb4\x01\n" +
 	"\fAgentService\x12O\n" +
 	"\x06Enroll\x12!.levelrail.agent.v1.EnrollRequest\x1a\".levelrail.agent.v1.EnrollResponse\x12S\n" +
 	"\aSession\x12 .levelrail.agent.v1.AgentMessage\x1a\".levelrail.agent.v1.ControlMessage(\x010\x01B>Z<github.com/GLINCKER/levelrail/internal/agent/agentpb;agentpbb\x06proto3"
@@ -2006,79 +4034,136 @@ func file_proto_agent_v1_agent_proto_rawDescGZIP() []byte {
 	return file_proto_agent_v1_agent_proto_rawDescData
 }
 
-var file_proto_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
+var file_proto_agent_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_proto_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 55)
 var file_proto_agent_v1_agent_proto_goTypes = []any{
-	(*EnrollRequest)(nil),          // 0: levelrail.agent.v1.EnrollRequest
-	(*EnrollResponse)(nil),         // 1: levelrail.agent.v1.EnrollResponse
-	(*AgentMessage)(nil),           // 2: levelrail.agent.v1.AgentMessage
-	(*ControlMessage)(nil),         // 3: levelrail.agent.v1.ControlMessage
-	(*AgentRequest)(nil),           // 4: levelrail.agent.v1.AgentRequest
-	(*AgentResponse)(nil),          // 5: levelrail.agent.v1.AgentResponse
-	(*Empty)(nil),                  // 6: levelrail.agent.v1.Empty
-	(*PortBinding)(nil),            // 7: levelrail.agent.v1.PortBinding
-	(*Resources)(nil),              // 8: levelrail.agent.v1.Resources
-	(*VolumeMount)(nil),            // 9: levelrail.agent.v1.VolumeMount
-	(*ContainerSpec)(nil),          // 10: levelrail.agent.v1.ContainerSpec
-	(*ContainerState)(nil),         // 11: levelrail.agent.v1.ContainerState
-	(*ImageInfo)(nil),              // 12: levelrail.agent.v1.ImageInfo
-	(*ProxiedEvent)(nil),           // 13: levelrail.agent.v1.ProxiedEvent
-	(*InspectByNameRequest)(nil),   // 14: levelrail.agent.v1.InspectByNameRequest
-	(*InspectByNameResponse)(nil),  // 15: levelrail.agent.v1.InspectByNameResponse
-	(*CreateRequest)(nil),          // 16: levelrail.agent.v1.CreateRequest
-	(*CreateResponse)(nil),         // 17: levelrail.agent.v1.CreateResponse
-	(*StartRequest)(nil),           // 18: levelrail.agent.v1.StartRequest
-	(*StopRequest)(nil),            // 19: levelrail.agent.v1.StopRequest
-	(*RemoveRequest)(nil),          // 20: levelrail.agent.v1.RemoveRequest
-	(*UpdateResourcesRequest)(nil), // 21: levelrail.agent.v1.UpdateResourcesRequest
-	(*ListImagesRequest)(nil),      // 22: levelrail.agent.v1.ListImagesRequest
-	(*ListImagesResponse)(nil),     // 23: levelrail.agent.v1.ListImagesResponse
-	(*ListByPrefixRequest)(nil),    // 24: levelrail.agent.v1.ListByPrefixRequest
-	(*ListByPrefixResponse)(nil),   // 25: levelrail.agent.v1.ListByPrefixResponse
-	(*EnsureVolumeRequest)(nil),    // 26: levelrail.agent.v1.EnsureVolumeRequest
-	(*WatchEventsRequest)(nil),     // 27: levelrail.agent.v1.WatchEventsRequest
-	nil,                            // 28: levelrail.agent.v1.ContainerSpec.EnvEntry
-	(*timestamppb.Timestamp)(nil),  // 29: google.protobuf.Timestamp
+	(BuildKind)(0),                       // 0: levelrail.agent.v1.BuildKind
+	(*EnrollRequest)(nil),                // 1: levelrail.agent.v1.EnrollRequest
+	(*EnrollResponse)(nil),               // 2: levelrail.agent.v1.EnrollResponse
+	(*AgentMessage)(nil),                 // 3: levelrail.agent.v1.AgentMessage
+	(*ControlMessage)(nil),               // 4: levelrail.agent.v1.ControlMessage
+	(*AgentRequest)(nil),                 // 5: levelrail.agent.v1.AgentRequest
+	(*AgentResponse)(nil),                // 6: levelrail.agent.v1.AgentResponse
+	(*Empty)(nil),                        // 7: levelrail.agent.v1.Empty
+	(*PortBinding)(nil),                  // 8: levelrail.agent.v1.PortBinding
+	(*Resources)(nil),                    // 9: levelrail.agent.v1.Resources
+	(*VolumeMount)(nil),                  // 10: levelrail.agent.v1.VolumeMount
+	(*ContainerSpec)(nil),                // 11: levelrail.agent.v1.ContainerSpec
+	(*ContainerState)(nil),               // 12: levelrail.agent.v1.ContainerState
+	(*ImageInfo)(nil),                    // 13: levelrail.agent.v1.ImageInfo
+	(*ProxiedEvent)(nil),                 // 14: levelrail.agent.v1.ProxiedEvent
+	(*InspectByNameRequest)(nil),         // 15: levelrail.agent.v1.InspectByNameRequest
+	(*InspectByNameResponse)(nil),        // 16: levelrail.agent.v1.InspectByNameResponse
+	(*CreateRequest)(nil),                // 17: levelrail.agent.v1.CreateRequest
+	(*CreateResponse)(nil),               // 18: levelrail.agent.v1.CreateResponse
+	(*StartRequest)(nil),                 // 19: levelrail.agent.v1.StartRequest
+	(*StopRequest)(nil),                  // 20: levelrail.agent.v1.StopRequest
+	(*RemoveRequest)(nil),                // 21: levelrail.agent.v1.RemoveRequest
+	(*UpdateResourcesRequest)(nil),       // 22: levelrail.agent.v1.UpdateResourcesRequest
+	(*ListImagesRequest)(nil),            // 23: levelrail.agent.v1.ListImagesRequest
+	(*ListImagesResponse)(nil),           // 24: levelrail.agent.v1.ListImagesResponse
+	(*ListByPrefixRequest)(nil),          // 25: levelrail.agent.v1.ListByPrefixRequest
+	(*ListByPrefixResponse)(nil),         // 26: levelrail.agent.v1.ListByPrefixResponse
+	(*EnsureVolumeRequest)(nil),          // 27: levelrail.agent.v1.EnsureVolumeRequest
+	(*NetworkInfo)(nil),                  // 28: levelrail.agent.v1.NetworkInfo
+	(*EnsureNetworkRequest)(nil),         // 29: levelrail.agent.v1.EnsureNetworkRequest
+	(*EnsureNetworkResponse)(nil),        // 30: levelrail.agent.v1.EnsureNetworkResponse
+	(*RemoveNetworkRequest)(nil),         // 31: levelrail.agent.v1.RemoveNetworkRequest
+	(*ListNetworksByPrefixRequest)(nil),  // 32: levelrail.agent.v1.ListNetworksByPrefixRequest
+	(*ListNetworksByPrefixResponse)(nil), // 33: levelrail.agent.v1.ListNetworksByPrefixResponse
+	(*ExecRequest)(nil),                  // 34: levelrail.agent.v1.ExecRequest
+	(*ExecTTYSize)(nil),                  // 35: levelrail.agent.v1.ExecTTYSize
+	(*ExecResize)(nil),                   // 36: levelrail.agent.v1.ExecResize
+	(*ExecInput)(nil),                    // 37: levelrail.agent.v1.ExecInput
+	(*ExecCancel)(nil),                   // 38: levelrail.agent.v1.ExecCancel
+	(*ExecCredit)(nil),                   // 39: levelrail.agent.v1.ExecCredit
+	(*ExecOutput)(nil),                   // 40: levelrail.agent.v1.ExecOutput
+	(*ExecFailure)(nil),                  // 41: levelrail.agent.v1.ExecFailure
+	(*ExecExit)(nil),                     // 42: levelrail.agent.v1.ExecExit
+	(*BuildRequest)(nil),                 // 43: levelrail.agent.v1.BuildRequest
+	(*BuildCache)(nil),                   // 44: levelrail.agent.v1.BuildCache
+	(*BuildInput)(nil),                   // 45: levelrail.agent.v1.BuildInput
+	(*BuildCancel)(nil),                  // 46: levelrail.agent.v1.BuildCancel
+	(*BuildCredit)(nil),                  // 47: levelrail.agent.v1.BuildCredit
+	(*BuildOutput)(nil),                  // 48: levelrail.agent.v1.BuildOutput
+	(*BuildProgress)(nil),                // 49: levelrail.agent.v1.BuildProgress
+	(*BuildDone)(nil),                    // 50: levelrail.agent.v1.BuildDone
+	(*BuildFailure)(nil),                 // 51: levelrail.agent.v1.BuildFailure
+	(*WatchEventsRequest)(nil),           // 52: levelrail.agent.v1.WatchEventsRequest
+	nil,                                  // 53: levelrail.agent.v1.ContainerSpec.EnvEntry
+	nil,                                  // 54: levelrail.agent.v1.BuildRequest.BuildArgsEntry
+	nil,                                  // 55: levelrail.agent.v1.BuildDone.ExporterResponseEntry
+	(*timestamppb.Timestamp)(nil),        // 56: google.protobuf.Timestamp
 }
 var file_proto_agent_v1_agent_proto_depIdxs = []int32{
-	5,  // 0: levelrail.agent.v1.AgentMessage.response:type_name -> levelrail.agent.v1.AgentResponse
-	13, // 1: levelrail.agent.v1.AgentMessage.event:type_name -> levelrail.agent.v1.ProxiedEvent
-	4,  // 2: levelrail.agent.v1.ControlMessage.request:type_name -> levelrail.agent.v1.AgentRequest
-	14, // 3: levelrail.agent.v1.AgentRequest.inspect_by_name:type_name -> levelrail.agent.v1.InspectByNameRequest
-	16, // 4: levelrail.agent.v1.AgentRequest.create:type_name -> levelrail.agent.v1.CreateRequest
-	18, // 5: levelrail.agent.v1.AgentRequest.start:type_name -> levelrail.agent.v1.StartRequest
-	19, // 6: levelrail.agent.v1.AgentRequest.stop:type_name -> levelrail.agent.v1.StopRequest
-	20, // 7: levelrail.agent.v1.AgentRequest.remove:type_name -> levelrail.agent.v1.RemoveRequest
-	22, // 8: levelrail.agent.v1.AgentRequest.list_images:type_name -> levelrail.agent.v1.ListImagesRequest
-	24, // 9: levelrail.agent.v1.AgentRequest.list_by_prefix:type_name -> levelrail.agent.v1.ListByPrefixRequest
-	26, // 10: levelrail.agent.v1.AgentRequest.ensure_volume:type_name -> levelrail.agent.v1.EnsureVolumeRequest
-	27, // 11: levelrail.agent.v1.AgentRequest.watch_events:type_name -> levelrail.agent.v1.WatchEventsRequest
-	21, // 12: levelrail.agent.v1.AgentRequest.update_resources:type_name -> levelrail.agent.v1.UpdateResourcesRequest
-	15, // 13: levelrail.agent.v1.AgentResponse.inspect_by_name:type_name -> levelrail.agent.v1.InspectByNameResponse
-	17, // 14: levelrail.agent.v1.AgentResponse.create:type_name -> levelrail.agent.v1.CreateResponse
-	23, // 15: levelrail.agent.v1.AgentResponse.list_images:type_name -> levelrail.agent.v1.ListImagesResponse
-	25, // 16: levelrail.agent.v1.AgentResponse.list_by_prefix:type_name -> levelrail.agent.v1.ListByPrefixResponse
-	6,  // 17: levelrail.agent.v1.AgentResponse.empty:type_name -> levelrail.agent.v1.Empty
-	7,  // 18: levelrail.agent.v1.ContainerSpec.ports:type_name -> levelrail.agent.v1.PortBinding
-	28, // 19: levelrail.agent.v1.ContainerSpec.env:type_name -> levelrail.agent.v1.ContainerSpec.EnvEntry
-	8,  // 20: levelrail.agent.v1.ContainerSpec.resources:type_name -> levelrail.agent.v1.Resources
-	9,  // 21: levelrail.agent.v1.ContainerSpec.volumes:type_name -> levelrail.agent.v1.VolumeMount
-	7,  // 22: levelrail.agent.v1.ContainerState.ports:type_name -> levelrail.agent.v1.PortBinding
-	29, // 23: levelrail.agent.v1.ImageInfo.created_at:type_name -> google.protobuf.Timestamp
-	29, // 24: levelrail.agent.v1.ProxiedEvent.time:type_name -> google.protobuf.Timestamp
-	11, // 25: levelrail.agent.v1.InspectByNameResponse.state:type_name -> levelrail.agent.v1.ContainerState
-	10, // 26: levelrail.agent.v1.CreateRequest.spec:type_name -> levelrail.agent.v1.ContainerSpec
-	8,  // 27: levelrail.agent.v1.UpdateResourcesRequest.resources:type_name -> levelrail.agent.v1.Resources
-	12, // 28: levelrail.agent.v1.ListImagesResponse.images:type_name -> levelrail.agent.v1.ImageInfo
-	11, // 29: levelrail.agent.v1.ListByPrefixResponse.containers:type_name -> levelrail.agent.v1.ContainerState
-	0,  // 30: levelrail.agent.v1.AgentService.Enroll:input_type -> levelrail.agent.v1.EnrollRequest
-	2,  // 31: levelrail.agent.v1.AgentService.Session:input_type -> levelrail.agent.v1.AgentMessage
-	1,  // 32: levelrail.agent.v1.AgentService.Enroll:output_type -> levelrail.agent.v1.EnrollResponse
-	3,  // 33: levelrail.agent.v1.AgentService.Session:output_type -> levelrail.agent.v1.ControlMessage
-	32, // [32:34] is the sub-list for method output_type
-	30, // [30:32] is the sub-list for method input_type
-	30, // [30:30] is the sub-list for extension type_name
-	30, // [30:30] is the sub-list for extension extendee
-	0,  // [0:30] is the sub-list for field type_name
+	6,  // 0: levelrail.agent.v1.AgentMessage.response:type_name -> levelrail.agent.v1.AgentResponse
+	14, // 1: levelrail.agent.v1.AgentMessage.event:type_name -> levelrail.agent.v1.ProxiedEvent
+	40, // 2: levelrail.agent.v1.AgentMessage.exec_output:type_name -> levelrail.agent.v1.ExecOutput
+	39, // 3: levelrail.agent.v1.AgentMessage.exec_credit:type_name -> levelrail.agent.v1.ExecCredit
+	48, // 4: levelrail.agent.v1.AgentMessage.build_output:type_name -> levelrail.agent.v1.BuildOutput
+	47, // 5: levelrail.agent.v1.AgentMessage.build_credit:type_name -> levelrail.agent.v1.BuildCredit
+	5,  // 6: levelrail.agent.v1.ControlMessage.request:type_name -> levelrail.agent.v1.AgentRequest
+	37, // 7: levelrail.agent.v1.ControlMessage.exec_input:type_name -> levelrail.agent.v1.ExecInput
+	38, // 8: levelrail.agent.v1.ControlMessage.exec_cancel:type_name -> levelrail.agent.v1.ExecCancel
+	39, // 9: levelrail.agent.v1.ControlMessage.exec_credit:type_name -> levelrail.agent.v1.ExecCredit
+	45, // 10: levelrail.agent.v1.ControlMessage.build_input:type_name -> levelrail.agent.v1.BuildInput
+	46, // 11: levelrail.agent.v1.ControlMessage.build_cancel:type_name -> levelrail.agent.v1.BuildCancel
+	47, // 12: levelrail.agent.v1.ControlMessage.build_credit:type_name -> levelrail.agent.v1.BuildCredit
+	36, // 13: levelrail.agent.v1.ControlMessage.exec_resize:type_name -> levelrail.agent.v1.ExecResize
+	15, // 14: levelrail.agent.v1.AgentRequest.inspect_by_name:type_name -> levelrail.agent.v1.InspectByNameRequest
+	17, // 15: levelrail.agent.v1.AgentRequest.create:type_name -> levelrail.agent.v1.CreateRequest
+	19, // 16: levelrail.agent.v1.AgentRequest.start:type_name -> levelrail.agent.v1.StartRequest
+	20, // 17: levelrail.agent.v1.AgentRequest.stop:type_name -> levelrail.agent.v1.StopRequest
+	21, // 18: levelrail.agent.v1.AgentRequest.remove:type_name -> levelrail.agent.v1.RemoveRequest
+	23, // 19: levelrail.agent.v1.AgentRequest.list_images:type_name -> levelrail.agent.v1.ListImagesRequest
+	25, // 20: levelrail.agent.v1.AgentRequest.list_by_prefix:type_name -> levelrail.agent.v1.ListByPrefixRequest
+	27, // 21: levelrail.agent.v1.AgentRequest.ensure_volume:type_name -> levelrail.agent.v1.EnsureVolumeRequest
+	52, // 22: levelrail.agent.v1.AgentRequest.watch_events:type_name -> levelrail.agent.v1.WatchEventsRequest
+	22, // 23: levelrail.agent.v1.AgentRequest.update_resources:type_name -> levelrail.agent.v1.UpdateResourcesRequest
+	29, // 24: levelrail.agent.v1.AgentRequest.ensure_network:type_name -> levelrail.agent.v1.EnsureNetworkRequest
+	31, // 25: levelrail.agent.v1.AgentRequest.remove_network:type_name -> levelrail.agent.v1.RemoveNetworkRequest
+	32, // 26: levelrail.agent.v1.AgentRequest.list_networks_by_prefix:type_name -> levelrail.agent.v1.ListNetworksByPrefixRequest
+	34, // 27: levelrail.agent.v1.AgentRequest.exec:type_name -> levelrail.agent.v1.ExecRequest
+	43, // 28: levelrail.agent.v1.AgentRequest.build:type_name -> levelrail.agent.v1.BuildRequest
+	16, // 29: levelrail.agent.v1.AgentResponse.inspect_by_name:type_name -> levelrail.agent.v1.InspectByNameResponse
+	18, // 30: levelrail.agent.v1.AgentResponse.create:type_name -> levelrail.agent.v1.CreateResponse
+	24, // 31: levelrail.agent.v1.AgentResponse.list_images:type_name -> levelrail.agent.v1.ListImagesResponse
+	26, // 32: levelrail.agent.v1.AgentResponse.list_by_prefix:type_name -> levelrail.agent.v1.ListByPrefixResponse
+	7,  // 33: levelrail.agent.v1.AgentResponse.empty:type_name -> levelrail.agent.v1.Empty
+	30, // 34: levelrail.agent.v1.AgentResponse.ensure_network:type_name -> levelrail.agent.v1.EnsureNetworkResponse
+	33, // 35: levelrail.agent.v1.AgentResponse.list_networks_by_prefix:type_name -> levelrail.agent.v1.ListNetworksByPrefixResponse
+	8,  // 36: levelrail.agent.v1.ContainerSpec.ports:type_name -> levelrail.agent.v1.PortBinding
+	53, // 37: levelrail.agent.v1.ContainerSpec.env:type_name -> levelrail.agent.v1.ContainerSpec.EnvEntry
+	9,  // 38: levelrail.agent.v1.ContainerSpec.resources:type_name -> levelrail.agent.v1.Resources
+	10, // 39: levelrail.agent.v1.ContainerSpec.volumes:type_name -> levelrail.agent.v1.VolumeMount
+	8,  // 40: levelrail.agent.v1.ContainerState.ports:type_name -> levelrail.agent.v1.PortBinding
+	56, // 41: levelrail.agent.v1.ImageInfo.created_at:type_name -> google.protobuf.Timestamp
+	56, // 42: levelrail.agent.v1.ProxiedEvent.time:type_name -> google.protobuf.Timestamp
+	12, // 43: levelrail.agent.v1.InspectByNameResponse.state:type_name -> levelrail.agent.v1.ContainerState
+	11, // 44: levelrail.agent.v1.CreateRequest.spec:type_name -> levelrail.agent.v1.ContainerSpec
+	9,  // 45: levelrail.agent.v1.UpdateResourcesRequest.resources:type_name -> levelrail.agent.v1.Resources
+	13, // 46: levelrail.agent.v1.ListImagesResponse.images:type_name -> levelrail.agent.v1.ImageInfo
+	12, // 47: levelrail.agent.v1.ListByPrefixResponse.containers:type_name -> levelrail.agent.v1.ContainerState
+	28, // 48: levelrail.agent.v1.ListNetworksByPrefixResponse.networks:type_name -> levelrail.agent.v1.NetworkInfo
+	35, // 49: levelrail.agent.v1.ExecRequest.tty_size:type_name -> levelrail.agent.v1.ExecTTYSize
+	41, // 50: levelrail.agent.v1.ExecOutput.failure:type_name -> levelrail.agent.v1.ExecFailure
+	42, // 51: levelrail.agent.v1.ExecFailure.exit:type_name -> levelrail.agent.v1.ExecExit
+	0,  // 52: levelrail.agent.v1.BuildRequest.kind:type_name -> levelrail.agent.v1.BuildKind
+	54, // 53: levelrail.agent.v1.BuildRequest.build_args:type_name -> levelrail.agent.v1.BuildRequest.BuildArgsEntry
+	44, // 54: levelrail.agent.v1.BuildRequest.cache:type_name -> levelrail.agent.v1.BuildCache
+	49, // 55: levelrail.agent.v1.BuildOutput.progress:type_name -> levelrail.agent.v1.BuildProgress
+	50, // 56: levelrail.agent.v1.BuildOutput.done:type_name -> levelrail.agent.v1.BuildDone
+	51, // 57: levelrail.agent.v1.BuildOutput.failure:type_name -> levelrail.agent.v1.BuildFailure
+	55, // 58: levelrail.agent.v1.BuildDone.exporter_response:type_name -> levelrail.agent.v1.BuildDone.ExporterResponseEntry
+	1,  // 59: levelrail.agent.v1.AgentService.Enroll:input_type -> levelrail.agent.v1.EnrollRequest
+	3,  // 60: levelrail.agent.v1.AgentService.Session:input_type -> levelrail.agent.v1.AgentMessage
+	2,  // 61: levelrail.agent.v1.AgentService.Enroll:output_type -> levelrail.agent.v1.EnrollResponse
+	4,  // 62: levelrail.agent.v1.AgentService.Session:output_type -> levelrail.agent.v1.ControlMessage
+	61, // [61:63] is the sub-list for method output_type
+	59, // [59:61] is the sub-list for method input_type
+	59, // [59:59] is the sub-list for extension type_name
+	59, // [59:59] is the sub-list for extension extendee
+	0,  // [0:59] is the sub-list for field type_name
 }
 
 func init() { file_proto_agent_v1_agent_proto_init() }
@@ -2089,6 +4174,20 @@ func file_proto_agent_v1_agent_proto_init() {
 	file_proto_agent_v1_agent_proto_msgTypes[2].OneofWrappers = []any{
 		(*AgentMessage_Response)(nil),
 		(*AgentMessage_Event)(nil),
+		(*AgentMessage_ExecOutput)(nil),
+		(*AgentMessage_ExecCredit)(nil),
+		(*AgentMessage_BuildOutput)(nil),
+		(*AgentMessage_BuildCredit)(nil),
+	}
+	file_proto_agent_v1_agent_proto_msgTypes[3].OneofWrappers = []any{
+		(*ControlMessage_Request)(nil),
+		(*ControlMessage_ExecInput)(nil),
+		(*ControlMessage_ExecCancel)(nil),
+		(*ControlMessage_ExecCredit)(nil),
+		(*ControlMessage_BuildInput)(nil),
+		(*ControlMessage_BuildCancel)(nil),
+		(*ControlMessage_BuildCredit)(nil),
+		(*ControlMessage_ExecResize)(nil),
 	}
 	file_proto_agent_v1_agent_proto_msgTypes[4].OneofWrappers = []any{
 		(*AgentRequest_InspectByName)(nil),
@@ -2101,6 +4200,11 @@ func file_proto_agent_v1_agent_proto_init() {
 		(*AgentRequest_EnsureVolume)(nil),
 		(*AgentRequest_WatchEvents)(nil),
 		(*AgentRequest_UpdateResources)(nil),
+		(*AgentRequest_EnsureNetwork)(nil),
+		(*AgentRequest_RemoveNetwork)(nil),
+		(*AgentRequest_ListNetworksByPrefix)(nil),
+		(*AgentRequest_Exec)(nil),
+		(*AgentRequest_Build)(nil),
 	}
 	file_proto_agent_v1_agent_proto_msgTypes[5].OneofWrappers = []any{
 		(*AgentResponse_InspectByName)(nil),
@@ -2108,19 +4212,28 @@ func file_proto_agent_v1_agent_proto_init() {
 		(*AgentResponse_ListImages)(nil),
 		(*AgentResponse_ListByPrefix)(nil),
 		(*AgentResponse_Empty)(nil),
+		(*AgentResponse_EnsureNetwork)(nil),
+		(*AgentResponse_ListNetworksByPrefix)(nil),
+	}
+	file_proto_agent_v1_agent_proto_msgTypes[47].OneofWrappers = []any{
+		(*BuildOutput_Progress)(nil),
+		(*BuildOutput_ImageChunk)(nil),
+		(*BuildOutput_Done)(nil),
+		(*BuildOutput_Failure)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_agent_v1_agent_proto_rawDesc), len(file_proto_agent_v1_agent_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   29,
+			NumEnums:      1,
+			NumMessages:   55,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_proto_agent_v1_agent_proto_goTypes,
 		DependencyIndexes: file_proto_agent_v1_agent_proto_depIdxs,
+		EnumInfos:         file_proto_agent_v1_agent_proto_enumTypes,
 		MessageInfos:      file_proto_agent_v1_agent_proto_msgTypes,
 	}.Build()
 	File_proto_agent_v1_agent_proto = out.File

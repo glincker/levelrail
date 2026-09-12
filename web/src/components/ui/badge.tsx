@@ -3,9 +3,8 @@ import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '@/lib/utils'
 
-// Not yet in the shadcn registry pull this repo has done (see
-// TASKS.md's "shadcn/ui setup" entry), hand-written to match the same
-// cva + data-slot conventions button.tsx and alert.tsx already
+// Not yet in the shadcn registry pull this repo has done, hand-written
+// to match the same cva + data-slot conventions button.tsx and alert.tsx already
 // establish, rather than reaching for a bespoke span in the component
 // that needed it first (TokenTable's ability/revoked indicators).
 const badgeVariants = cva(

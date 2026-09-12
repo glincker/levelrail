@@ -17,6 +17,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/gitprovider"
 )
 
 // Client is a small, purpose-built GitLab REST/OAuth client, not a
@@ -31,16 +33,15 @@ func NewClient() *Client {
 	return &Client{HTTP: &http.Client{Timeout: 20 * time.Second}}
 }
 
-type apiError struct {
-	StatusCode int
-	Body       string
-}
+// apiError is gitlabapp's own name for the shared gitprovider.APIError,
+// kept as a distinct type so callers and tests can refer to it without
+// importing internal/gitprovider directly.
+type apiError = gitprovider.APIError
 
-func (e *apiError) Error() string {
-	return fmt.Sprintf("gitlabapp: gitlab api returned %d: %s", e.StatusCode, e.Body)
-}
-
-const maxErrorBodySnippet = 512
+const (
+	errPrefix = "gitlabapp"
+	apiName   = "gitlab"
+)
 
 func apiBaseURL(instanceURL string) string {
 	return strings.TrimRight(instanceURL, "/") + "/api/v4"
@@ -49,7 +50,7 @@ func apiBaseURL(instanceURL string) string {
 func (c *Client) do(ctx context.Context, method, fullURL, authHeader string, body io.Reader, out any) error {
 	req, err := http.NewRequestWithContext(ctx, method, fullURL, body)
 	if err != nil {
-		return fmt.Errorf("gitlabapp: build request: %w", err)
+		return fmt.Errorf("%s: build request: %w", errPrefix, err)
 	}
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
@@ -57,26 +58,7 @@ func (c *Client) do(ctx context.Context, method, fullURL, authHeader string, bod
 	if authHeader != "" {
 		req.Header.Set("Authorization", authHeader)
 	}
-
-	resp, err := c.HTTP.Do(req)
-	if err != nil {
-		return fmt.Errorf("gitlabapp: request %s %s: %w", method, fullURL, err)
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		snippet, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySnippet))
-		return &apiError{StatusCode: resp.StatusCode, Body: string(snippet)}
-	}
-	if out == nil {
-		return nil
-	}
-	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
-		return fmt.Errorf("gitlabapp: decode response for %s %s: %w", method, fullURL, err)
-	}
-	return nil
+	return gitprovider.Execute(c.HTTP, req, errPrefix, apiName, method+" "+fullURL, out)
 }
 
 // Tokens is ExchangeCode's and RefreshToken's shared result.
@@ -139,26 +121,16 @@ func (c *Client) RefreshToken(ctx context.Context, instanceURL, clientID, client
 }
 
 func (c *Client) token(ctx context.Context, instanceURL string, form url.Values) (Tokens, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(instanceURL, "/")+"/oauth/token", strings.NewReader(form.Encode()))
+	tokenURL := strings.TrimRight(instanceURL, "/") + "/oauth/token"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, tokenURL, strings.NewReader(form.Encode()))
 	if err != nil {
-		return Tokens{}, fmt.Errorf("gitlabapp: build token request: %w", err)
+		return Tokens{}, fmt.Errorf("%s: build token request: %w", errPrefix, err)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.HTTP.Do(req)
-	if err != nil {
-		return Tokens{}, fmt.Errorf("gitlabapp: token request: %w", err)
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		snippet, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySnippet))
-		return Tokens{}, &apiError{StatusCode: resp.StatusCode, Body: string(snippet)}
-	}
 	var out tokenResponse
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return Tokens{}, fmt.Errorf("gitlabapp: decode token response: %w", err)
+	if err := gitprovider.Execute(c.HTTP, req, errPrefix, apiName, http.MethodPost+" "+tokenURL, &out); err != nil {
+		return Tokens{}, err
 	}
 	return toTokens(out), nil
 }

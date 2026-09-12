@@ -19,7 +19,7 @@ import {
   type TimeRangeKey,
 } from '../lib/timeRange'
 
-// Per-app metrics dashboard, TASKS.md 2.4, wired against 2.3's real
+// Per-app metrics dashboard, wired against the real
 // `GET /api/v1/apps/{name}/metrics`. One remaining honest gap against
 // the full per-app metrics list the observability phase requires
 // without configuration, deliberately not papered over: only the 7
@@ -162,10 +162,10 @@ function resolveDeployMarkers(
 }
 
 // Deploy markers are color-coded by status so a failed deploy is a
-// visually distinct signal from a routine one, the exact "which deploy
-// caused this" framing CLAUDE.md calls out, matching
-// DeployAttemptsList.tsx's own succeeded/failed/running badge colors so
-// the same status reads the same way in both places.
+// visually distinct signal from a routine one, making "which deploy
+// caused this" a visual question, matching DeployAttemptsList.tsx's own
+// succeeded/failed/running badge colors so the same status reads the
+// same way in both places.
 const DEPLOY_MARKER_COLOR: Record<DeployAttemptStatus, string> = {
   succeeded: '#22c55e',
   failed: '#ef4444',

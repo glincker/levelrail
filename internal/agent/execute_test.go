@@ -42,6 +42,14 @@ type execRuntime struct {
 	volumeName               string
 	events                   chan docker.Event
 	eventErrs                chan error
+	ensureNetworkID          string
+	ensureNetworkErr         error
+	ensureNetworkName        string
+	removeNetworkErr         error
+	removeNetworkName        string
+	networks                 []docker.NetworkInfo
+	networksErr              error
+	networksPrefix           string
 }
 
 func newExecRuntime() *execRuntime {
@@ -96,19 +104,19 @@ func (f *execRuntime) Exec(_ context.Context, _ string, _ []string) (io.ReadClos
 	return nil, errors.New("execRuntime: Exec not implemented")
 }
 
-// EnsureNetwork/RemoveNetwork/ListNetworksByPrefix are unexercised here
-// for the same reason Exec above is: Execute's dispatch switch has no
-// case for any of them yet. Stubbed to satisfy docker.Runtime.
-func (f *execRuntime) EnsureNetwork(_ context.Context, _ string) (string, error) {
-	return "", nil
+func (f *execRuntime) EnsureNetwork(_ context.Context, name string) (string, error) {
+	f.ensureNetworkName = name
+	return f.ensureNetworkID, f.ensureNetworkErr
 }
 
-func (f *execRuntime) RemoveNetwork(_ context.Context, _ string) error {
-	return nil
+func (f *execRuntime) RemoveNetwork(_ context.Context, name string) error {
+	f.removeNetworkName = name
+	return f.removeNetworkErr
 }
 
-func (f *execRuntime) ListNetworksByPrefix(_ context.Context, _ string) ([]docker.NetworkInfo, error) {
-	return nil, nil
+func (f *execRuntime) ListNetworksByPrefix(_ context.Context, prefix string) ([]docker.NetworkInfo, error) {
+	f.networksPrefix = prefix
+	return f.networks, f.networksErr
 }
 
 // ExecWithInput is unexercised here for the same reason Exec above is:
@@ -317,6 +325,116 @@ func TestExecute_EnsureVolume(t *testing.T) {
 	}, nil)
 	if rt.volumeName != "db-data" || resp.GetEmpty() == nil {
 		t.Errorf("volumeName=%q resp=%+v, want db-data and an Empty result", rt.volumeName, resp)
+	}
+}
+
+func TestExecute_Networks(t *testing.T) {
+	tests := []struct {
+		name    string
+		setup   func(*execRuntime)
+		req     *agentpb.AgentRequest
+		wantErr string
+		check   func(*testing.T, *execRuntime, *agentpb.AgentResponse)
+	}{
+		{
+			name:  "ensure network",
+			setup: func(rt *execRuntime) { rt.ensureNetworkID = "net-abc" },
+			req: &agentpb.AgentRequest{Op: &agentpb.AgentRequest_EnsureNetwork{
+				EnsureNetwork: &agentpb.EnsureNetworkRequest{Name: "levelrail-app-web"},
+			}},
+			check: func(t *testing.T, rt *execRuntime, resp *agentpb.AgentResponse) {
+				if rt.ensureNetworkName != "levelrail-app-web" {
+					t.Errorf("ensureNetworkName = %q, want levelrail-app-web", rt.ensureNetworkName)
+				}
+				if got := resp.GetEnsureNetwork().GetId(); got != "net-abc" {
+					t.Errorf("EnsureNetwork().Id = %q, want net-abc", got)
+				}
+			},
+		},
+		{
+			name:  "ensure network error",
+			setup: func(rt *execRuntime) { rt.ensureNetworkErr = errors.New("network create refused") },
+			req: &agentpb.AgentRequest{Op: &agentpb.AgentRequest_EnsureNetwork{
+				EnsureNetwork: &agentpb.EnsureNetworkRequest{Name: "levelrail-app-web"},
+			}},
+			wantErr: "network create refused",
+		},
+		{
+			name:  "remove network",
+			setup: func(*execRuntime) {},
+			req: &agentpb.AgentRequest{Op: &agentpb.AgentRequest_RemoveNetwork{
+				RemoveNetwork: &agentpb.RemoveNetworkRequest{Name: "levelrail-app-old"},
+			}},
+			check: func(t *testing.T, rt *execRuntime, resp *agentpb.AgentResponse) {
+				if rt.removeNetworkName != "levelrail-app-old" {
+					t.Errorf("removeNetworkName = %q, want levelrail-app-old", rt.removeNetworkName)
+				}
+				if resp.GetEmpty() == nil {
+					t.Error("RemoveNetwork response has no Empty result")
+				}
+			},
+		},
+		{
+			name:  "remove network error",
+			setup: func(rt *execRuntime) { rt.removeNetworkErr = errors.New("network still in use") },
+			req: &agentpb.AgentRequest{Op: &agentpb.AgentRequest_RemoveNetwork{
+				RemoveNetwork: &agentpb.RemoveNetworkRequest{Name: "levelrail-app-old"},
+			}},
+			wantErr: "network still in use",
+		},
+		{
+			name: "list networks by prefix",
+			setup: func(rt *execRuntime) {
+				rt.networks = []docker.NetworkInfo{{ID: "n1", Name: "levelrail-app-a"}, {ID: "n2", Name: "levelrail-app-b"}}
+			},
+			req: &agentpb.AgentRequest{Op: &agentpb.AgentRequest_ListNetworksByPrefix{
+				ListNetworksByPrefix: &agentpb.ListNetworksByPrefixRequest{Prefix: "levelrail-app-"},
+			}},
+			check: func(t *testing.T, rt *execRuntime, resp *agentpb.AgentResponse) {
+				if rt.networksPrefix != "levelrail-app-" {
+					t.Errorf("networksPrefix = %q, want levelrail-app-", rt.networksPrefix)
+				}
+				got := resp.GetListNetworksByPrefix().GetNetworks()
+				if len(got) != 2 || got[0].GetId() != "n1" || got[1].GetName() != "levelrail-app-b" {
+					t.Errorf("networks = %+v, want n1/levelrail-app-a and n2/levelrail-app-b", got)
+				}
+			},
+		},
+		{
+			name:  "list networks by prefix error",
+			setup: func(rt *execRuntime) { rt.networksErr = errors.New("daemon unreachable") },
+			req: &agentpb.AgentRequest{Op: &agentpb.AgentRequest_ListNetworksByPrefix{
+				ListNetworksByPrefix: &agentpb.ListNetworksByPrefixRequest{Prefix: "levelrail-app-"},
+			}},
+			wantErr: "daemon unreachable",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rt := newExecRuntime()
+			tc.setup(rt)
+			tc.req.RequestId = "r1"
+
+			resp := Execute(context.Background(), rt, tc.req, nil)
+
+			if resp.GetRequestId() != "r1" {
+				t.Errorf("RequestId = %q, want r1", resp.GetRequestId())
+			}
+			if tc.wantErr != "" {
+				if resp.GetError() != tc.wantErr {
+					t.Fatalf("Error = %q, want %q", resp.GetError(), tc.wantErr)
+				}
+				if resp.GetResult() != nil {
+					t.Errorf("Result = %v, want nil on error", resp.GetResult())
+				}
+				return
+			}
+			if resp.GetError() != "" {
+				t.Fatalf("Error = %q, want empty", resp.GetError())
+			}
+			tc.check(t, rt, resp)
+		})
 	}
 }
 

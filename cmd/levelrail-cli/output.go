@@ -65,6 +65,19 @@ func writeJSONValue(out io.Writer, v any) error {
 	return err
 }
 
+// writeJSONLine marshals v as one unindented line of JSON followed by a
+// newline (JSON Lines), for a live stream (apps logs --follow) that has
+// no complete result set to marshal as one JSON array the way
+// writeJSONValue's --json mode does for every other command.
+func writeJSONLine(out io.Writer, v any) error {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return fmt.Errorf("encode json line: %w", err)
+	}
+	_, err = fmt.Fprintln(out, string(data))
+	return err
+}
+
 // writeJSONError writes {"error": "..."} to out: --json mode's error
 // shape, deliberately the same {"error": "..."} field name
 // internal/api/respond.go's own apiError already uses, so a caller
@@ -326,6 +339,19 @@ func printAppHuman(out io.Writer, a appResource) {
 			_, _ = fmt.Fprintf(out, "post-deploy hook: %s\n", a.Hooks.PostDeploy)
 		}
 	}
+	if len(a.Command) > 0 {
+		_, _ = fmt.Fprintf(out, "command:  %v\n", a.Command)
+	}
+	for _, v := range a.Volumes {
+		_, _ = fmt.Fprintf(out, "volume:   %s -> %s\n", v.Name, v.ContainerPath)
+	}
+	for _, m := range a.BindMounts {
+		ro := ""
+		if m.ReadOnly {
+			ro = " (read-only)"
+		}
+		_, _ = fmt.Fprintf(out, "bind mount: %s -> %s%s\n", m.HostPath, m.ContainerPath, ro)
+	}
 }
 
 // printAppsTable prints a compact, aligned table of apps: list output's
@@ -450,6 +476,24 @@ func printLogEntriesHuman(out io.Writer, entries []logEntryResource) {
 	for _, e := range entries {
 		_, _ = fmt.Fprintf(out, "%s %s %s\n", e.Timestamp.Format(time.RFC3339), e.Stream, e.Message)
 	}
+}
+
+// printMetricPointsHuman prints "apps metrics"/"databases metrics"/
+// "nodes metrics" output: one row per aggregated bucket, oldest first
+// (the order telemetry.Aggregate returns them in), the same table shape
+// every other list command in this package uses.
+func printMetricPointsHuman(out io.Writer, metric string, points []metricPointResource) {
+	_, _ = fmt.Fprintf(out, "metric: %s\n", metric)
+	if len(points) == 0 {
+		_, _ = fmt.Fprintln(out, "no data points in range")
+		return
+	}
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "TIMESTAMP\tVALUE\tCOUNT")
+	for _, p := range points {
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\n", p.Timestamp.Format(time.RFC3339), strconv.FormatFloat(p.Value, 'g', -1, 64), p.Count)
+	}
+	_ = tw.Flush()
 }
 
 // printAppHookRunsHuman prints "apps hook-runs" output: each configured

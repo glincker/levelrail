@@ -1,5 +1,5 @@
 // Package application implements the declarative app spec's service
-// contract and TASKS.md 1.3's application controller: the
+// contract and the application controller: the
 // reconcile.Controller that converges a
 // real, store-backed desired service to a running container, replacing
 // nginxdemo's hardcoded desired state with the real thing.
@@ -14,7 +14,7 @@
 // switching itself (updating Caddy to point at the new container) is
 // deliberately not this controller's job: this codebase's reconciler
 // pattern is a reconcile loop per resource type, and ingress is its own
-// resource type (TASKS.md 1.6, not yet wired in). This controller's
+// resource type (not yet wired in). This controller's
 // contract with that future ingress controller is simple: whichever
 // container currently exists and is running for a service is the one
 // meant to receive traffic.
@@ -48,7 +48,7 @@ type ServiceStore interface {
 }
 
 // SecretResolver is the narrow surface this controller needs from
-// internal/secrets.Manager (TASKS.md 1.7), so tests can fake it without
+// internal/secrets.Manager, so tests can fake it without
 // a real master key or database. *secrets.Manager satisfies this
 // structurally. Resolve's plaintext return value is used exactly once,
 // merged into a container's env map immediately before
@@ -118,7 +118,7 @@ type EnvironmentEnvLister interface {
 }
 
 // DeployRecorder is the narrow surface this controller needs to record
-// TASKS.md 2.1's deploy-frequency metric. *telemetry.DB satisfies this
+// the deploy-frequency metric. *telemetry.DB satisfies this
 // structurally; not imported directly, same reasoning ServiceStore/
 // SecretResolver above already establish. RecordDeploy is only ever
 // called on a real deploy cutover (justDeployed below, the "Deployed"
@@ -193,6 +193,7 @@ type Controller struct {
 	databases      DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
 	hookRuns       HookRunRecorder         // nil is valid: a hook run's outcome just isn't persisted, see WithHookRunRecorder
 	hookTimeout    time.Duration           // defaults to defaultHookTimeout, see WithHookTimeout
+	liveness       *LivenessTracker        // per-container liveness failure counts, in memory only, see LivenessTracker
 }
 
 // Option configures optional Controller behavior.
@@ -222,7 +223,7 @@ func WithSecretResolver(r SecretResolver) Option {
 	return func(ctrl *Controller) { ctrl.secretResolver = r }
 }
 
-// WithDeployRecorder enables recording TASKS.md 2.1's deploy_count
+// WithDeployRecorder enables recording the deploy_count
 // metric every time Reconcile actually performs a deploy cutover.
 // Without one configured (the default), Reconcile behaves exactly as
 // before, deploys just aren't measured.
@@ -331,6 +332,19 @@ func WithHookRunRecorder(r HookRunRecorder) Option {
 	return func(ctrl *Controller) { ctrl.hookRuns = r }
 }
 
+// WithLivenessTracker shares one liveness failure history across every
+// controller a caller builds, which is what makes the failure threshold
+// mean anything: without it each Controller keeps its own, and a caller
+// that rebuilds its controllers every reconcile pass (cmd/levelrail)
+// would never count past a single failure.
+func WithLivenessTracker(t *LivenessTracker) Option {
+	return func(ctrl *Controller) {
+		if t != nil {
+			ctrl.liveness = t
+		}
+	}
+}
+
 // WithHookTimeout overrides how long a single pre/post-deploy hook
 // command may run before it's treated as failed. Defaults to
 // defaultHookTimeout.
@@ -347,6 +361,7 @@ func New(serviceName string, svcStore ServiceStore, runtime docker.Runtime, opts
 		httpClient:  http.DefaultClient,
 		readyBudget: defaultReadyBudget,
 		hookTimeout: defaultHookTimeout,
+		liveness:    NewLivenessTracker(),
 	}
 	for _, opt := range opts {
 		opt(ctrl)
@@ -422,6 +437,14 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 }
 
+// Teardown stops and removes every container this controller owns.
+// Callers must call it themselves right after deleting desired state:
+// Reconcile treats ErrServiceNotFound as "not deployed yet," not "stop
+// everything," so a deleted service is never reconciled again otherwise.
+func (c *Controller) Teardown(ctx context.Context) error {
+	return c.removeStale(ctx, nil)
+}
+
 // reconcileBlueGreen is today's original single-replica shape (this
 // package's own doc comment: create new alongside old, wait for
 // readiness, then remove every other container), generalized to
@@ -473,7 +496,7 @@ func (c *Controller) reconcileBlueGreen(ctx context.Context, targets []string, d
 // naive "always stop everything, then start everything" implementation
 // would tear down and restart a perfectly healthy, already-converged
 // replica set on every single resync tick (every reconcile.Engine pass,
-// TASKS.md 1.3's own resyncInterval), which is a permanent recreate-loop
+// its own resyncInterval), which is a permanent recreate-loop
 // bug, not a strategy. Reconcile must be idempotent (this codebase's own
 // reconciler contract), so this only ever stops anything when the
 // desired target set genuinely differs from what is currently running.
@@ -496,7 +519,7 @@ func (c *Controller) reconcileRecreate(ctx context.Context, targets []string, de
 	}
 
 	if allRunning && len(stale) == 0 {
-		return ready("AlreadyRunning"), nil
+		return c.steadyStateResult(ctx, targets, desired)
 	}
 
 	// Genuinely converging: stop and remove every existing container for
@@ -597,8 +620,12 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 // every strategy's reconcile* method ends with.
 func (c *Controller) finishReconcile(ctx context.Context, targets []string, desired *store.DesiredService, justDeployed bool) (reconcile.Result, error) {
 	if !justDeployed {
-		return ready("AlreadyRunning"), nil
+		return c.steadyStateResult(ctx, targets, desired)
 	}
+
+	// Every target was just (re)started and proven ready, so its
+	// liveness history belongs to an instance that no longer exists.
+	c.liveness.resetAll(c.serviceName, targets, time.Now())
 
 	// Runs once per deploy (this codebase's own DeployRecorder below
 	// already treats "any target freshly (re)created this pass" as one
@@ -1246,7 +1273,7 @@ func (c *Controller) runPreDeployHook(ctx context.Context, containerID string, d
 // (finishReconcile's own PostDeployHookFailed branch), not Status,
 // matching this codebase's existing "the important fact, a healthy set
 // is serving, is still true" tolerance (RunningStaleCleanupFailed/
-// DeployedMetricRecordFailed above). Per CLAUDE.md section 10's own bias
+// DeployedMetricRecordFailed above). In keeping with this project's bias
 // toward surfacing a boring problem loudly rather than swallowing it,
 // this failure still surfaces: the returned error propagates through
 // reconcile.Engine's own logging, and the outcome is persisted via
@@ -1484,7 +1511,7 @@ const hashLen = 8
 // image produce the same name (a genuine no-op redeploy correctly finds
 // nothing to do); two different images always produce different names
 // (so both can exist side by side during a cutover). Exported so the
-// ingress controller (internal/reconcile/ingress, TASKS.md 1.6) can
+// ingress controller (internal/reconcile/ingress) can
 // derive the exact same name to find a service's currently active
 // container, without reimplementing this hash logic a second time and
 // risking the two drifting apart.
@@ -1617,6 +1644,12 @@ func toContainerSpec(name string, desired *store.DesiredService) docker.Containe
 		Env:    desired.Env,
 		Labels: desired.Labels,
 	}
+	if len(desired.Command) > 0 {
+		spec.Command = desired.Command
+	}
+	if len(desired.Entrypoint) > 0 {
+		spec.Entrypoint = desired.Entrypoint
+	}
 	if desired.Port != 0 {
 		binding := docker.PortBinding{ContainerPort: desired.Port}
 		if desired.HostPort != nil {
@@ -1635,12 +1668,27 @@ func toContainerSpec(name string, desired *store.DesiredService) docker.Containe
 	for _, v := range desired.Volumes {
 		spec.Volumes = append(spec.Volumes, docker.VolumeMount{Name: v.Name, ContainerPath: v.ContainerPath})
 	}
+	for _, m := range desired.BindMounts {
+		spec.BindMounts = append(spec.BindMounts, docker.BindMount{HostPath: m.HostPath, ContainerPath: m.ContainerPath, ReadOnly: m.ReadOnly})
+	}
 	return spec
 }
 
 func ready(reason string) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
 		Type: "Ready", Status: reconcile.ConditionTrue, Reason: reason,
+	}}}
+}
+
+// readyWithDetail is ready plus err's text as the condition Message:
+// still serving, but with something an operator should see.
+func readyWithDetail(reason string, err error) reconcile.Result {
+	msg := ""
+	if err != nil {
+		msg = err.Error()
+	}
+	return reconcile.Result{Conditions: []reconcile.Condition{{
+		Type: "Ready", Status: reconcile.ConditionTrue, Reason: reason, Message: msg,
 	}}}
 }
 

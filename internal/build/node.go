@@ -1,35 +1,9 @@
 package build
 
-// This file: TASKS.md 3.5's node-selection piece ("route a deploy's
-// build step to a build-capable node ... instead of always building
-// against the control plane's own local BuildKit connection").
-//
-// What this deliberately does NOT do: actually open a BuildKit
-// connection on a remote node. Doing that needs a way to reach a remote
-// node's Docker daemon from the control plane, and the node
-// communication design is explicit that a managed node has no inbound
-// port and is only ever reached through the reverse-dialed mTLS
-// agent.Transport (TASKS.md
-// 3.1/3.2). Today that transport is exactly docker.Runtime's container-
-// operation surface (internal/agent/transport.go's own doc comment:
-// "Deliberately identical in shape to docker.Runtime... A future RPC
-// surface an agent exposes beyond container operations (build dispatch
-// for 3.5 ...) extends Transport then, not now"), not a raw Docker
-// Engine API connection BuildKit's client needs. Extending that wire
-// protocol with a build-dispatch RPC is a transport and proto change,
-// explicitly out of this task's scope per TASKS.md's Phase 3 sequencing
-// note ("extends internal/build, doesn't touch the reconciler or
-// transport").
-//
-// So this file builds the real, complete decision of *which* node a
-// build should run on, using the same "" == local-node convention
+// This file: the node-selection piece that routes a deploy's build step
+// to a build-capable node, using the same "" == local-node convention
 // migrations/0009_node_placement.sql established for service and
-// database placement. Actually dispatching a build to a non-empty
-// result is the honestly open gap the doc comment above names; a
-// caller that gets a non-empty node ID back from SelectBuildNode must
-// treat "remote build dispatch isn't wired yet" as its own explicit,
-// loud failure rather than silently building locally instead (see
-// cmd/levelrail's loadWebhookHandler, which does exactly that).
+// database placement. Router (router.go) is what acts on the answer.
 
 import (
 	"errors"
@@ -50,7 +24,7 @@ type NodeInfo struct {
 	// in to running build work at all.
 	AcceptsBuildWorkloads bool
 	// Online reports whether this node is currently reachable through
-	// the agent transport (TASKS.md 3.1/3.2), i.e. whether
+	// the agent transport, i.e. whether
 	// agent.Registry.Get for this node's ID currently succeeds. A
 	// build-capable node the control plane cannot currently reach is
 	// not a usable candidate, the same reasoning resolveNodeTransport
@@ -77,7 +51,7 @@ var ErrNoBuildNodeAvailable = errors.New("build: no build-capable node is curren
 //   - No node in nodes has AcceptsBuildWorkloads set: returns "" (this
 //     control plane's own local node) and a nil error. This is the
 //     default, zero-configuration behavior every deployment already had
-//     before TASKS.md 3.5, matching the "" == local convention
+//     before dedicated build nodes, matching the "" == local convention
 //     migrations/0009_node_placement.sql established for service and
 //     database placement: an operator who has never configured a
 //     dedicated build node keeps building locally, unchanged.

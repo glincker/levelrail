@@ -6,7 +6,9 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -21,6 +23,15 @@ services:
     image: redis:7
 `
 
+const bindMountComposeYAML = `
+services:
+  web:
+    image: nginx:1.27
+    ports: ["8080:80"]
+    volumes:
+      - /srv/myapp/data:/data
+`
+
 func TestHandleDeployCompose_RequiresAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
@@ -29,6 +40,68 @@ func TestHandleDeployCompose_RequiresAuth(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusUnauthorized {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
+	}
+}
+
+// TestHandleDeployCompose_BindMount_PlainDeployToken_Forbidden proves a
+// compose file bind-mounting a host directory needs AbilityRoot on top
+// of this route's own AbilityDeploy gate: a token scoped to nothing but
+// AbilityDeploy (this route's own gate, so it can deploy an ordinary
+// compose file fine) must still be rejected here, and must not have
+// created anything.
+func TestHandleDeployCompose_BindMount_PlainDeployToken_Forbidden(t *testing.T) {
+	rt, db := newTestRouter(t)
+	ctx := context.Background()
+
+	const plaintext = "deploy-scoped-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_deploy", Name: "deployer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityDeploy}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/apps/myapp/compose", strings.NewReader(bindMountComposeYAML))
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d: a plain deploy token must not be able to bind-mount a host directory", rec.Code, http.StatusForbidden)
+	}
+
+	if _, err := db.GetAppByName(ctx, "myapp"); err == nil {
+		t.Error("GetAppByName() error = nil, want the app to not have been created")
+	}
+}
+
+// TestHandleDeployCompose_BindMount_RootCaller_Succeeds is the positive
+// counterpart: a root-ability caller (loginTestSession's own bootstrapped
+// admin) can deploy the exact same bind-mounting compose file that
+// TestHandleDeployCompose_BindMount_PlainDeployToken_Forbidden rejects.
+func TestHandleDeployCompose_BindMount_RootCaller_Succeeds(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/compose", bindMountComposeYAML))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got composeDeployResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got.Services) != 1 {
+		t.Fatalf("got %d services, want 1", len(got.Services))
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), got.Services[0].Name)
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	wantBindMounts := []store.ServiceBindMount{{HostPath: "/srv/myapp/data", ContainerPath: "/data"}}
+	if len(svc.BindMounts) != 1 || svc.BindMounts[0] != wantBindMounts[0] {
+		t.Errorf("BindMounts = %+v, want %+v", svc.BindMounts, wantBindMounts)
 	}
 }
 
