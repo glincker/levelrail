@@ -34,6 +34,16 @@ export interface DeployStage {
 
 const ROLLOUT_FAILURE_REASONS = ['CreateFailed', 'StartFailed', 'ReadinessFailed']
 
+// Both are the application controller's own terminal-success Ready
+// reasons (internal/reconcile/application/controller.go's "Deployed",
+// liveness.go's steadyStateResult "AlreadyRunning"): a redeploy to a
+// spec that already matches the running container converges without
+// ever creating anything, so it reports AlreadyRunning instead of
+// Deployed. Treating only "Deployed" as done here left every such
+// redeploy (e.g. re-triggering the same image tag) stuck on "running"
+// forever, since that condition transition never occurs.
+const ROLLOUT_DONE_REASONS = ['Deployed', 'AlreadyRunning']
+
 // Fixed-length tuple, not DeployStage[]: always exactly Build then Roll
 // out, so callers indexing stages[0] don't need an unnecessary
 // possibly-undefined check.
@@ -119,7 +129,7 @@ function computeRolloutStage(
   }
 
   const deployedCondition = conditions.find(
-    (c) => c.Reason === 'Deployed' && isAtOrAfter(c.LastTransitionTime, referenceMs),
+    (c) => ROLLOUT_DONE_REASONS.includes(c.Reason) && isAtOrAfter(c.LastTransitionTime, referenceMs),
   )
   if (deployedCondition) {
     return {
