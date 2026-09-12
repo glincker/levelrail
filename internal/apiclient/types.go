@@ -52,9 +52,18 @@ type AppResource struct {
 	// HostPort mirrors internal/api's appResource.HostPort: nil means
 	// "let Docker assign one", a value pins the host-side port. Settable
 	// on create and update, like Port.
-	HostPort  *int              `json:"host_port,omitempty"`
-	Domains   []string          `json:"domains,omitempty"`
-	Env       map[string]string `json:"env,omitempty"`
+	HostPort *int              `json:"host_port,omitempty"`
+	Domains  []string          `json:"domains,omitempty"`
+	Env      map[string]string `json:"env,omitempty"`
+	// SecretEnv mirrors internal/api's appResource.SecretEnv: names of
+	// env vars backed by encrypted secret storage, values held only in
+	// Secrets below or set later via PUT .../secrets/{key}, never here.
+	SecretEnv []string `json:"secret_env,omitempty"`
+	// Secrets mirrors internal/api's appResource.Secrets: plaintext
+	// values to encrypt and store for SecretEnv-named vars at create
+	// time. Write-only, like SetSecretRequest's own Value: never
+	// populated on a response.
+	Secrets   map[string]string `json:"secrets,omitempty"`
 	Resources *ServiceResources `json:"resources,omitempty"`
 	Health    *ServiceHealth    `json:"health,omitempty"`
 	// Hooks mirrors internal/api's appResource.Hooks: settable on create
