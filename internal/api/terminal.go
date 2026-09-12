@@ -16,31 +16,18 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
-// This file implements GET /api/v1/apps/{name}/terminal: a real
-// interactive shell on an app's running container, over a WebSocket.
+// GET /api/v1/apps/{name}/terminal: an interactive shell on an app's
+// running container.
 //
-// A WebSocket, not SSE, and that is a deliberate, narrow exception to
-// this project's SSE-by-default rule rather than a drift away from it.
-// SSE is one-directional server push with no client channel at all; a
-// terminal needs keystrokes going up, output coming down, and a resize
-// signal going up mid-session, all on the same ordered stream with the
-// same lifetime. Expressed over SSE that becomes an SSE stream plus a
-// second POST channel plus a correlation ID to tie them together, with
-// two independent lifetimes to reconcile, which is strictly more
-// machinery and strictly worse failure behavior than the one thing
-// WebSockets exist for. Log tailing and deploy progress stay on SSE,
-// where the rule's reasoning (clean reconnects, simple through proxies)
-// still holds and nothing needs to travel upward.
+// A WebSocket is a narrow, deliberate exception to this project's
+// SSE-by-default rule: SSE has no upward channel, and a terminal needs
+// keystrokes and resizes going up on the same stream its output comes
+// down. Log tailing and deploy progress stay on SSE.
 //
-// Wire protocol, deliberately minimal: binary frames in both directions
-// are raw terminal bytes, text frames are JSON control messages
-// (client: resize; server: the session's exit status). Keeping terminal
-// bytes out of JSON means no base64 tax on every keystroke and no
-// re-encoding of the escape sequences a terminal is made of.
-//
-// Gated at AbilityRoot, identically to the one-shot exec endpoint and
-// for the identical reason (see exec.go's own doc comment): a shell can
-// read the plaintext secrets injected into the container.
+// Frames: binary is raw terminal bytes in both directions, text is JSON
+// control (client sends resize, server sends the exit status).
+// AbilityRoot-gated for the same reason one-shot exec is (exec.go): a
+// shell can read the container's injected secrets.
 
 // terminalIdleTimeout ends a session that has carried no traffic in
 // either direction for this long. An abandoned tab that never sent a
