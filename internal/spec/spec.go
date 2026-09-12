@@ -198,6 +198,15 @@ type Database struct {
 	Engine  string  `yaml:"engine"`
 	Version string  `yaml:"version,omitempty"`
 	Backup  *Backup `yaml:"backup,omitempty"`
+	// EphemeralInPreviews opts this database into a disposable,
+	// preview-scoped instance of its own (a full container, its own
+	// volume, its own credentials) rather than sharing whatever this
+	// database resolves to in production: one per pull request, created
+	// alongside the preview and destroyed with it, with no restore path
+	// once torn down. Off by default, like every other opt-in toggle in
+	// this codebase; only meaningful for a database attached to an app
+	// with preview environments enabled (store.GitSource.PreviewEnabled).
+	EphemeralInPreviews bool `yaml:"ephemeralInPreviews,omitempty"`
 }
 
 // Backup describes a database's backup schedule.

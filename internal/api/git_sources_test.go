@@ -209,6 +209,68 @@ func TestHandleSetGitSource_AdditionalServices_RoundTrip(t *testing.T) {
 	}
 }
 
+func TestHandleSetGitSource_RejectsInvalidDatabaseName(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","databases":{"Main_DB":{"engine":"postgres","version":"16"}}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+func TestHandleSetGitSource_RejectsUnsupportedDatabaseEngine(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","databases":{"main":{"engine":"oracle","version":"19"}}}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+// TestHandleSetGitSource_Databases_RoundTrip proves Databases persists
+// and reads back through the connect route, the same round-trip
+// TestHandleSetGitSource_AdditionalServices_RoundTrip already proves for
+// AdditionalServices, including EphemeralInPreviews since that's the
+// one field the ephemeral-preview-database feature actually reads.
+func TestHandleSetGitSource_Databases_RoundTrip(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","databases":{"main":{"engine":"postgres","version":"16","ephemeralInPreviews":true}}}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	var created gitSourceResource
+	if err := json.NewDecoder(rec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	main, ok := created.Databases["main"]
+	if !ok || main.Engine != "postgres" || !main.EphemeralInPreviews {
+		t.Fatalf("create response Databases[main] = %+v, ok=%v, want Engine=postgres EphemeralInPreviews=true", main, ok)
+	}
+
+	getRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(getRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/git-source", ""))
+	var got gitSourceResource
+	if err := json.NewDecoder(getRec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode get: %v", err)
+	}
+	if got.Databases["main"].Engine != "postgres" || !got.Databases["main"].EphemeralInPreviews {
+		t.Fatalf("GET Databases[main] = %+v, want Engine=postgres EphemeralInPreviews=true", got.Databases["main"])
+	}
+}
+
 // TestHandleSetGitSource_RejectsServicesAndAdditionalServicesTogether
 // proves validateGitSourceServices's own mutual-exclusion rule: setting
 // both would leave a webhook push with two plausible fan-out targets for

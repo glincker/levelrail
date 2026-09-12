@@ -105,6 +105,29 @@ func TestParse_ValidFull(t *testing.T) {
 	if main.Backup == nil || main.Backup.Retain != 7 {
 		t.Errorf("Databases[main].Backup = %+v, want Retain=7", main.Backup)
 	}
+	if !main.EphemeralInPreviews {
+		t.Error("Databases[main].EphemeralInPreviews = false, want true")
+	}
+}
+
+// TestParse_DatabaseEphemeralInPreviews_DefaultsFalse covers the zero
+// value for every database saved before this field existed: absent from
+// app.yaml must parse as false, not fail, and must not affect any other
+// database in the same file.
+func TestParse_DatabaseEphemeralInPreviews_DefaultsFalse(t *testing.T) {
+	s, err := Parse([]byte(`
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 3000 }
+databases:
+  main: { engine: postgres, version: "16" }
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if s.Databases["main"].EphemeralInPreviews {
+		t.Error("EphemeralInPreviews = true, want false (field omitted)")
+	}
 }
 
 func TestParse_ValidMySQLDatabase(t *testing.T) {

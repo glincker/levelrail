@@ -62,12 +62,14 @@ describe('PreviewEnvironmentsCard', () => {
   let postPRComments: boolean
   let gitSourceConnected: boolean
   let staleFixture: boolean
+  let ephemeralDatabasesFixture: unknown[]
 
   beforeEach(() => {
     previewEnabled = false
     postPRComments = false
     gitSourceConnected = true
     staleFixture = false
+    ephemeralDatabasesFixture = []
     fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrlOf(input)
       const method = init?.method ?? 'GET'
@@ -101,6 +103,7 @@ describe('PreviewEnvironmentsCard', () => {
                     created_at: '2026-01-01T00:00:00Z',
                     updated_at: '2026-01-01T00:00:00Z',
                     stale: staleFixture,
+                    ephemeral_databases: ephemeralDatabasesFixture,
                   },
                 ]
               : [],
@@ -170,6 +173,48 @@ describe('PreviewEnvironmentsCard', () => {
         requestUrlOf(input as RequestInfo) === '/api/v1/apps/demo-app/previews/42/teardown' && (init as RequestInit)?.method === 'POST',
       )).toBe(true)
     })
+  })
+
+  it('shows an ephemeral database row with its live status', async () => {
+    previewEnabled = true
+    ephemeralDatabasesFixture = [
+      {
+        source_key: 'main',
+        database_name: 'demo-app-pr-42-db-main',
+        engine: 'postgres',
+        version: '16',
+        status: 'provisioned',
+        ready: { label: 'Healthy', variant: 'success' },
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+      },
+    ]
+    renderCard()
+
+    await screen.findByText('PR #42')
+    expect(screen.getByText('demo-app-pr-42-db-main')).toBeInTheDocument()
+    expect(screen.getByText('Healthy')).toBeInTheDocument()
+  })
+
+  it('shows a teardown-failed badge for an ephemeral database that could not be removed', async () => {
+    previewEnabled = true
+    ephemeralDatabasesFixture = [
+      {
+        source_key: 'main',
+        database_name: 'demo-app-pr-42-db-main',
+        engine: 'postgres',
+        version: '16',
+        status: 'teardown_failed',
+        status_reason: 'remove container: engine temporarily unavailable',
+        ready: { label: 'Healthy', variant: 'success' },
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+      },
+    ]
+    renderCard()
+
+    await screen.findByText('PR #42')
+    expect(screen.getByText('Teardown failed')).toBeInTheDocument()
   })
 
   it('shows a stale badge and sweep button for a stale preview, and sweeps on click', async () => {

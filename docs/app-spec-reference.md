@@ -52,6 +52,7 @@ databases:
     engine: postgres          # postgres | redis | mysql | mongodb | mariadb | keydb | clickhouse | dragonfly
     version: "16"
     backup: { schedule: "0 3 * * *", retain: 7 }
+    ephemeralInPreviews: true # opt in to a disposable per-pull-request instance, see below
 ```
 
 This matches what `internal/spec` actually parses and validates today
@@ -180,6 +181,7 @@ The object form must set at least one of the three fields.
 | `engine` | string | yes | none | One of `postgres`, `redis`, `mysql`, `mongodb`, `mariadb`, `keydb`, `clickhouse`, `dragonfly`. |
 | `version` | string | no | none | For example `"16"`. |
 | `backup` | `Backup` | no | none | Backup schedule. |
+| `ephemeralInPreviews` | boolean | no | `false` | Provision a full, disposable database of its own for every pull-request preview, destroyed with the preview and with no restore path. Only meaningful once this app.yaml's git source has preview environments enabled; see [preview environments](roadmap.md) for the full lifecycle and its automatic env-var wiring. |
 
 ### `Backup`
 

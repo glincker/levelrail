@@ -355,10 +355,17 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 }
 
 // Teardown stops and removes this database's container, if one exists.
-// Callers must call it themselves right after moving or deleting desired
-// state: Reconcile treats ErrDatabaseNotFound as "not deployed yet," not
-// "stop everything," so a moved-off-this-node or deleted database is
-// never reconciled here again otherwise.
+// Used both by a caller that owns this database's full lifecycle (an
+// ephemeral preview database, internal/api/preview_environments_databases.go)
+// and by callers that must call it themselves right after moving or
+// deleting desired state: Reconcile treats ErrDatabaseNotFound as "not
+// deployed yet," not "stop everything," so a moved-off-this-node or
+// deleted database is never reconciled here again otherwise. Idempotent
+// and safe to call again after a partial failure: InspectByName reports
+// the container's real state fresh on every call, so a Stop that already
+// ran (or a Remove that already succeeded) is simply skipped rather than
+// retried into an error. Does not remove the container's data volume;
+// see dataVolumeName's own doc comment.
 func (c *Controller) Teardown(ctx context.Context) error {
 	target := containerName(c.dbName)
 	state, err := c.runtime.InspectByName(ctx, target)
@@ -603,7 +610,10 @@ func containerName(dbName string) string {
 
 // dataVolumeName is the named Docker volume backing dbName's data,
 // stable across container replacements (engine version bumps) so an
-// upgrade doesn't start the new version against an empty volume.
+// upgrade doesn't start the new version against an empty volume. Never
+// removed by this package, including by Teardown: docker.Runtime has no
+// RemoveVolume method today, the same gap handleDeleteDatabase's own doc
+// comment already documents for an ordinary database delete.
 func dataVolumeName(dbName string) string {
 	return "db-" + dbName + "-data"
 }

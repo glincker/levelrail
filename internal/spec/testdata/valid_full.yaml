@@ -39,3 +39,4 @@ databases:
     engine: postgres
     version: "16"
     backup: { schedule: "0 3 * * *", retain: 7 }
+    ephemeralInPreviews: true
