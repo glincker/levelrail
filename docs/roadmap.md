@@ -17,7 +17,11 @@ still open. This page describes what's actually true today.
 - Docker Engine API wrapper. No shelling out to the `docker` CLI
   anywhere.
 - Application reconciler: desired state to running containers, with
-  readiness and liveness probes.
+  readiness probes gating every deploy's cutover and liveness probes
+  run on each reconcile pass afterward, restarting a container that
+  fails its configured threshold of consecutive checks (the case where
+  a process is still running but wedged) and reporting it as a
+  `LivenessFailedRestarting` condition.
 - BuildKit-based Dockerfile builds with local cache and live build-log
   streaming over SSE.
 - Railpack auto-detection for Node.js and Go.
