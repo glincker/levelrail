@@ -1,4 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import type { UserEvent } from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PromoteAppDialog } from './PromoteAppDialog'
@@ -44,52 +46,50 @@ function jsonRoute(body: unknown, status = 200): () => Promise<Response> {
   return () => Promise.resolve(fakeJsonResponse(body, status))
 }
 
-// Dialog content (and every Select trigger inside it) renders through a
-// base-ui portal appended to document.body, a sibling of RTL's own render
-// container rather than a descendant of it, so lookups below search the
-// whole body instead of a local container.
+// Scoped to ui/select.tsx's own SelectItem markup (data-slot="select-item")
+// rather than a plain screen.getByText: PromoteAppDialog also renders the
+// preview panel's "Target: <app>" line with the same app name once a
+// preview loads, so a text-only lookup is ambiguous the moment both are
+// on screen at once.
+function selectOptionByText(text: string): Element {
+  const items = Array.from(
+    document.body.querySelectorAll('[data-slot="select-item"]'),
+  )
+  const match = items.find((el) => el.textContent?.trim() === text)
+  if (!match) throw new Error(`no select option with text "${text}"`)
+  return match
+}
+
+function selectOptionTexts(): string[] {
+  return Array.from(
+    document.body.querySelectorAll('[data-slot="select-item"]'),
+  ).map((el) => el.textContent?.trim() ?? '')
+}
+
 function triggerById(id: string): Element {
   const el = document.body.querySelector(`#${id}`)
   if (!el) throw new Error(`no trigger with id ${id}`)
   return el
 }
 
-// Identical retry shape to GitRepoSourcePicker.test.tsx's own pickOption:
-// base-ui's Select occasionally drops a synthetic click sent in the same
-// tick a popup opens, observed as the popup staying open and the option
-// click never landing. A handful of real-clock-spaced attempts converges
-// on the same "keep trying until it lands" behavior without turning into
-// a busy loop under waitFor's own immediate-retry semantics.
+// Opens via fireEvent (a plain synthetic click, unaffected by base-ui's
+// pointer-events:none guard during popup positioning) then picks via
+// userEvent (whose fuller hover/focus simulation is what actually gets
+// base-ui's Select.Item to commit a selection in jsdom; a bare
+// fireEvent.click on the item is a no-op there). Retries the whole
+// open+pick pair since base-ui can occasionally drop the interaction
+// under concurrent test-file load, the same shape GitRepoSourcePicker.
+// test.tsx's own pickOption documents.
 async function pickOption(
+  user: UserEvent,
   triggerId: string,
   optionText: string,
-  settled: () => void,
 ) {
-  const trigger = triggerById(triggerId)
   const maxAttempts = 5
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    fireEvent.click(trigger)
+    fireEvent.click(triggerById(triggerId))
     try {
-      fireEvent.click(screen.getByText(optionText))
-      settled()
-      return
-    } catch (err) {
-      if (attempt === maxAttempts) throw err
-      await new Promise((resolve) => setTimeout(resolve, 20))
-    }
-  }
-}
-
-// Same shape as pickOption, but only opens the popup and asserts what's
-// inside without clicking anything: used to check the candidate list
-// itself (which apps got filtered in/out), not a selection.
-async function openAndInspect(triggerId: string, inspect: () => void) {
-  const trigger = triggerById(triggerId)
-  const maxAttempts = 5
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    fireEvent.click(trigger)
-    try {
-      inspect()
+      await user.click(selectOptionByText(optionText))
       return
     } catch (err) {
       if (attempt === maxAttempts) throw err
@@ -162,21 +162,22 @@ function renderDialog() {
   )
 }
 
+// The last matching call, not the first: react-query refires this query
+// on every environmentId/target change, so an early "to=..." call with no
+// target yet is still sitting in fetchMock.mock.calls once a target is
+// picked afterward.
 function findPreviewCallUrl(fetchMock: ReturnType<typeof vi.fn>): string | undefined {
-  const call = fetchMock.mock.calls.find(([input]) =>
+  const calls = fetchMock.mock.calls.filter(([input]) =>
     requestUrlOf(input as RequestInfo | URL).includes('/promote/preview'),
   )
-  return call ? requestUrlOf(call[0] as RequestInfo | URL) : undefined
+  const last = calls.at(-1)
+  return last ? requestUrlOf(last[0] as RequestInfo | URL) : undefined
 }
 
 describe('PromoteAppDialog', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
-    // Same base-ui popup cleanup GitRepoSourcePicker.test.tsx applies: a
-    // test ending right after opening a popup can outrun the async clear
-    // of `pointer-events: none` on <body>, leaking into the next test.
-    document.body.style.pointerEvents = ''
   })
 
   it('offers only apps tagged with the picked environment in this project, excludes the app being promoted, plus auto-detect', async () => {
@@ -185,19 +186,20 @@ describe('PromoteAppDialog', () => {
       'GET /api/v1/apps': jsonRoute(apps),
       'GET /api/v1/apps/web/promote/preview': jsonRoute(fakePreview('web-staging')),
     })
+    const user = userEvent.setup()
     renderDialog()
     fireEvent.click(screen.getByText('Promote to...'))
     await screen.findByLabelText('Environment')
 
-    await pickOption('promote-target-environment', 'staging', () => {
-      expect(triggerById('promote-target-environment')).toHaveTextContent('staging')
-    })
+    await pickOption(user, 'promote-target-environment', 'staging')
 
-    await openAndInspect('promote-target-app', () => {
-      expect(screen.getByText('web-staging')).toBeInTheDocument()
-      expect(screen.queryByText('web-prod')).not.toBeInTheDocument()
-      expect(screen.queryByText('other-staging')).not.toBeInTheDocument()
-    })
+    fireEvent.click(triggerById('promote-target-app'))
+    const options = selectOptionTexts()
+    expect(options).toContain('web-staging')
+    expect(options).not.toContain('web-prod')
+    expect(options).not.toContain('other-staging')
+    // The app being promoted never lists itself as a target.
+    expect(options).not.toContain('web')
   })
 
   it('sends no target param when auto-detect stays selected', async () => {
@@ -206,13 +208,12 @@ describe('PromoteAppDialog', () => {
       'GET /api/v1/apps': jsonRoute(apps),
       'GET /api/v1/apps/web/promote/preview': jsonRoute(fakePreview('web-staging')),
     })
+    const user = userEvent.setup()
     renderDialog()
     fireEvent.click(screen.getByText('Promote to...'))
     await screen.findByLabelText('Environment')
 
-    await pickOption('promote-target-environment', 'staging', () => {
-      expect(triggerById('promote-target-environment')).toHaveTextContent('staging')
-    })
+    await pickOption(user, 'promote-target-environment', 'staging')
 
     await waitFor(() => {
       const url = findPreviewCallUrl(fetchMock)
@@ -227,18 +228,17 @@ describe('PromoteAppDialog', () => {
       'GET /api/v1/apps': jsonRoute(apps),
       'GET /api/v1/apps/web/promote/preview': jsonRoute(fakePreview('web-staging')),
     })
+    const user = userEvent.setup()
     renderDialog()
     fireEvent.click(screen.getByText('Promote to...'))
     await screen.findByLabelText('Environment')
 
-    await pickOption('promote-target-environment', 'staging', () => {
-      expect(triggerById('promote-target-environment')).toHaveTextContent('staging')
-    })
+    await pickOption(user, 'promote-target-environment', 'staging')
+    await pickOption(user, 'promote-target-app', 'web-staging')
 
-    await pickOption('promote-target-app', 'web-staging', () => {
+    await waitFor(() => {
       expect(triggerById('promote-target-app')).toHaveTextContent('web-staging')
     })
-
     await waitFor(() => {
       const url = findPreviewCallUrl(fetchMock)
       expect(url).toBeTruthy()
@@ -254,14 +254,15 @@ describe('PromoteAppDialog', () => {
       ]),
       'GET /api/v1/apps/web/promote/preview': jsonRoute(fakePreview('web')),
     })
+    const user = userEvent.setup()
     renderDialog()
     fireEvent.click(screen.getByText('Promote to...'))
     await screen.findByLabelText('Environment')
 
-    await pickOption('promote-target-environment', 'staging', () => {
-      expect(
-        screen.getByText(/No other apps in this project are tagged/),
-      ).toBeInTheDocument()
-    })
+    await pickOption(user, 'promote-target-environment', 'staging')
+
+    expect(
+      await screen.findByText(/No other apps in this project are tagged/),
+    ).toBeInTheDocument()
   })
 })
