@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { useRestartRequiredToast } from '../hooks/useRestartRequiredToast'
+import { NodeCapacityHint } from './NodeCapacityHint'
 
 // Unit choice: memory is collected as a single whole-number MiB field
 // rather than a "value + unit" pair. formatBytes (lib/format.ts) already
@@ -260,6 +261,10 @@ export function ResourceLimitsEditor({ app }: { app: AppDetail }) {
                           placeholder="512"
                         />
                         <FieldError errors={[formState.errors.memoryMib]} />
+                        <NodeCapacityHint
+                          nodeId={app.node_id}
+                          dimension="memory"
+                        />
                       </Field>
                     </FieldGroup>
                   ) : (
@@ -306,6 +311,7 @@ export function ResourceLimitsEditor({ app }: { app: AppDetail }) {
                           placeholder="0.5"
                         />
                         <FieldError errors={[formState.errors.cpuCores]} />
+                        <NodeCapacityHint nodeId={app.node_id} dimension="cpu" />
                       </Field>
                     </FieldGroup>
                   ) : (

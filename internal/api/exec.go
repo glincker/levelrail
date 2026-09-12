@@ -23,15 +23,11 @@ import (
 // wait for it to finish, get stdout/stderr/exit code back in one
 // response. This is exactly the pattern docker.Runtime.Exec's own
 // ReadCloser-plus-trailing-error contract already supports end to end
-// (internal/docker/runtime.go's Exec doc comment) via Local (this
-// control plane's own node, in-process) today, and via a connected
-// remote agent once GRPCTransport.Exec is implemented for real
-// (internal/agent/grpc_transport.go: it currently always returns
-// "remote Exec not implemented over the agent transport," so this
-// endpoint works today for an app placed on the local node and fails
-// loudly, not silently, for one placed on a remote node, exactly the
-// "fail loudly, never fake it" posture that stub error's own doc
-// comment already establishes for internal/backup's Dumper/Restorer).
+// (internal/docker/runtime.go's Exec doc comment), via Local (this
+// control plane's own node, in-process) and equally via a connected
+// remote agent (internal/agent's GRPCTransport streams the same
+// contract over the Session stream), so this endpoint works the same
+// way wherever the app is placed.
 //
 // What this deliberately is not: a real interactive terminal. No PTY,
 // no resize events, no WebSocket, no shell kept alive between calls.
@@ -154,14 +150,8 @@ func (rt *Router) handleExecApp(w http.ResponseWriter, r *http.Request) {
 
 	name := r.PathValue("name")
 
-	svc, err := rt.apps.GetDesiredService(r.Context(), name)
-	if errors.Is(err, store.ErrServiceNotFound) {
-		writeError(w, http.StatusNotFound, "app not found")
-		return
-	}
-	if err != nil {
-		rt.logger.Error("api: exec app: load app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+	svc, ok := rt.loadExecApp(w, r, name)
+	if !ok {
 		return
 	}
 
@@ -182,29 +172,8 @@ func (rt *Router) handleExecApp(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	rt2, err := rt.execRuntime(svc.NodeID)
-	if err != nil {
-		rt.logger.Error("api: exec app: resolve node runtime failed",
-			slog.String("error", err.Error()), slog.String("name", name), slog.String("node_id", svc.NodeID))
-		writeError(w, http.StatusBadGateway, "app's node is not currently reachable")
-		return
-	}
-
-	// Same target-container derivation internal/reconcile/ingress and
-	// internal/api/system_prune.go already use to find a service's
-	// currently active container from its own desired state, without
-	// this package needing to track container IDs anywhere itself: see
-	// application.ContainerName's own doc comment.
-	target := application.ContainerName(svc.Name, svc.Image, svc.RestartNonce)
-	state, err := rt2.InspectByName(r.Context(), target)
-	if err != nil {
-		rt.logger.Error("api: exec app: inspect container failed",
-			slog.String("error", err.Error()), slog.String("name", name), slog.String("container", target))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	if state == nil || !state.Running {
-		writeError(w, http.StatusConflict, "app has no running container")
+	rt2, state, ok := rt.resolveExecContainer(w, r, svc)
+	if !ok {
 		return
 	}
 
@@ -258,6 +227,53 @@ func (rt *Router) handleExecApp(w http.ResponseWriter, r *http.Request) {
 			slog.String("name", name), slog.String("container", state.ID), slog.Duration("timeout", timeout))
 		writeError(w, http.StatusGatewayTimeout, fmt.Sprintf("command timed out after %s", timeout))
 	}
+}
+
+// loadExecApp loads the app every exec route targets, writing the
+// 404 or 500 itself and reporting false when it cannot.
+func (rt *Router) loadExecApp(w http.ResponseWriter, r *http.Request, name string) (*store.DesiredService, bool) {
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return nil, false
+	}
+	if err != nil {
+		rt.logger.Error("api: exec app: load app failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return nil, false
+	}
+	return svc, true
+}
+
+// resolveExecContainer resolves the node runtime an app is placed on and
+// its currently running container, the target both the one-shot exec
+// endpoint and the interactive terminal run against. Same
+// target-container derivation internal/reconcile/ingress and
+// internal/api/system_prune.go already use, so this package never has to
+// track container IDs itself: see application.ContainerName's own doc
+// comment.
+func (rt *Router) resolveExecContainer(w http.ResponseWriter, r *http.Request, svc *store.DesiredService) (docker.Runtime, *docker.ContainerState, bool) {
+	nodeRuntime, err := rt.execRuntime(svc.NodeID)
+	if err != nil {
+		rt.logger.Error("api: exec app: resolve node runtime failed",
+			slog.String("error", err.Error()), slog.String("name", svc.Name), slog.String("node_id", svc.NodeID))
+		writeError(w, http.StatusBadGateway, "app's node is not currently reachable")
+		return nil, nil, false
+	}
+
+	target := application.ContainerName(svc.Name, svc.Image, svc.RestartNonce)
+	state, err := nodeRuntime.InspectByName(r.Context(), target)
+	if err != nil {
+		rt.logger.Error("api: exec app: inspect container failed",
+			slog.String("error", err.Error()), slog.String("name", svc.Name), slog.String("container", target))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return nil, nil, false
+	}
+	if state == nil || !state.Running {
+		writeError(w, http.StatusConflict, "app has no running container")
+		return nil, nil, false
+	}
+	return nodeRuntime, state, true
 }
 
 // writeExecOutcome turns the result of draining Exec's stream into

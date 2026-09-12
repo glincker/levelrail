@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RegistryImagePicker } from './RegistryImagePicker'
 import type { RegistrySettings } from '../queries/registry'
+import type { RegistryCredential } from '../types/registryCredential'
 
 function requestUrlOf(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input
@@ -44,6 +45,16 @@ const runningRegistry: RegistrySettings = {
   username: 'levelrail',
   has_credentials: true,
   status: 'running',
+}
+
+const noCredentials: () => Promise<Response> = jsonRoute([])
+
+const oneCredential: RegistryCredential = {
+  id: 'cred-1',
+  name: 'ghcr',
+  registry_host: 'ghcr.io',
+  username: 'gdsks',
+  created_at: '2026-01-01T00:00:00Z',
 }
 
 function renderPicker() {
@@ -94,6 +105,7 @@ describe('RegistryImagePicker', () => {
   it('renders nothing when the built-in registry is disabled', async () => {
     mockFetchRoutes({
       'GET /api/v1/settings/registry': jsonRoute({ enabled: false, status: 'stopped', has_credentials: false }),
+      'GET /api/v1/registry-credentials': noCredentials,
     })
 
     const { container } = renderPicker()
@@ -111,6 +123,7 @@ describe('RegistryImagePicker', () => {
         status: 'stopped',
         has_credentials: true,
       }),
+      'GET /api/v1/registry-credentials': noCredentials,
     })
 
     const { container } = renderPicker()
@@ -123,6 +136,7 @@ describe('RegistryImagePicker', () => {
   it('shows the repository picker once the registry is running, and an empty-state note when there are none', async () => {
     mockFetchRoutes({
       'GET /api/v1/settings/registry': jsonRoute(runningRegistry),
+      'GET /api/v1/registry-credentials': noCredentials,
       'GET /api/v1/registry/repositories': jsonRoute({ repositories: [] }),
     })
 
@@ -133,11 +147,13 @@ describe('RegistryImagePicker', () => {
       await screen.findByText('No images have been pushed to the built-in registry yet.'),
     ).toBeInTheDocument()
     expect(screen.queryByText('Tag')).not.toBeInTheDocument()
+    expect(screen.queryByText('Registry')).not.toBeInTheDocument()
   })
 
   it('picking a repository then a tag calls onSelect with the full host/repository:tag reference', async () => {
     mockFetchRoutes({
       'GET /api/v1/settings/registry': jsonRoute(runningRegistry),
+      'GET /api/v1/registry-credentials': noCredentials,
       'GET /api/v1/registry/repositories': jsonRoute({ repositories: ['myapp'] }),
       'GET /api/v1/registry/tags?repository=myapp': jsonRoute({ repository: 'myapp', tags: ['latest', 'v1'] }),
     })
@@ -158,11 +174,66 @@ describe('RegistryImagePicker', () => {
   it('surfaces a repository list fetch error inline', async () => {
     mockFetchRoutes({
       'GET /api/v1/settings/registry': jsonRoute(runningRegistry),
+      'GET /api/v1/registry-credentials': noCredentials,
       'GET /api/v1/registry/repositories': jsonRoute({ error: 'internal error' }, 500),
     })
 
     renderPicker()
 
     expect(await screen.findByText(/internal error/i)).toBeInTheDocument()
+  })
+
+  it('shows a registry source selector once a credential is connected, defaulting to the built-in registry', async () => {
+    mockFetchRoutes({
+      'GET /api/v1/settings/registry': jsonRoute(runningRegistry),
+      'GET /api/v1/registry-credentials': jsonRoute([oneCredential]),
+      'GET /api/v1/registry/repositories': jsonRoute({ repositories: ['myapp'] }),
+    })
+
+    const { container } = renderPicker()
+
+    expect(await screen.findByText('Registry')).toBeInTheDocument()
+
+    await pickOption(container, 'registry-picker-repo', 'myapp', () => {
+      expect(container.querySelector('#registry-picker-tag')).toBeInTheDocument()
+    })
+  })
+
+  it('browsing a connected credential queries its own catalog and calls onSelect with its host', async () => {
+    mockFetchRoutes({
+      'GET /api/v1/settings/registry': jsonRoute({ enabled: false, status: 'stopped', has_credentials: false }),
+      'GET /api/v1/registry-credentials': jsonRoute([oneCredential]),
+      'GET /api/v1/registry-credentials/cred-1/repositories': jsonRoute({ repositories: ['org/app'] }),
+      'GET /api/v1/registry-credentials/cred-1/tags?repository=org%2Fapp': jsonRoute({
+        repository: 'org/app',
+        tags: ['v2'],
+      }),
+    })
+
+    const { onSelect, container } = renderPicker()
+
+    await screen.findByText('Registry')
+    await pickOption(container, 'registry-picker-repo', 'org/app', () => {
+      expect(container.querySelector('#registry-picker-tag')).toBeInTheDocument()
+    })
+
+    await screen.findByText('Tag')
+    await pickOption(container, 'registry-picker-tag', 'v2', () => {
+      expect(onSelect).toHaveBeenCalledWith('ghcr.io/org/app:v2')
+    })
+  })
+
+  it('shows an empty-state note and surfaces fetch errors for a connected credential with no repositories', async () => {
+    mockFetchRoutes({
+      'GET /api/v1/settings/registry': jsonRoute({ enabled: false, status: 'stopped', has_credentials: false }),
+      'GET /api/v1/registry-credentials': jsonRoute([oneCredential]),
+      'GET /api/v1/registry-credentials/cred-1/repositories': jsonRoute({ repositories: [] }),
+    })
+
+    renderPicker()
+
+    expect(
+      await screen.findByText('No repositories found in this registry yet.'),
+    ).toBeInTheDocument()
   })
 })

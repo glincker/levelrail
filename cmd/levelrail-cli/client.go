@@ -45,6 +45,9 @@ type (
 	setDomainTLSCertRequest          = apiclient.SetDomainTLSCertRequest
 	domainWAFResource                = apiclient.DomainWAFResource
 	setDomainWAFRequest              = apiclient.SetDomainWAFRequest
+	domainCheckResource              = apiclient.DomainCheckResource
+	cloneAppRequest                  = apiclient.CloneAppRequest
+	imageResource                    = apiclient.ImageResource
 	backupHistoryResource            = apiclient.BackupHistoryResource
 	backupVerificationResource       = apiclient.BackupVerificationResource
 	restoreHistoryResource           = apiclient.RestoreHistoryResource
@@ -96,6 +99,7 @@ type (
 
 	notificationChannelResource      = apiclient.NotificationChannelResource
 	createNotificationChannelRequest = apiclient.CreateNotificationChannelRequest
+	updateNotificationChannelRequest = apiclient.UpdateNotificationChannelRequest
 	testNotificationChannelRequest   = apiclient.TestNotificationChannelRequest
 	notificationDeliveryResource     = apiclient.NotificationDeliveryResource
 	logDrainResource                 = apiclient.LogDrainResource
@@ -106,6 +110,10 @@ type (
 
 	alertRuleResource      = apiclient.AlertRuleResource
 	createAlertRuleRequest = apiclient.CreateAlertRuleRequest
+	updateAlertRuleRequest = apiclient.UpdateAlertRuleRequest
+
+	deployNotifyTargetResource      = apiclient.DeployNotifyTargetResource
+	createDeployNotifyTargetRequest = apiclient.CreateDeployNotifyTargetRequest
 
 	featureFlagResource  = apiclient.FeatureFlagResource
 	featureFlagRequest   = apiclient.FeatureFlagRequest
@@ -178,6 +186,8 @@ type (
 	purgeAuditLogResult   = apiclient.PurgeAuditLogResult
 
 	rotateMasterKeyResult = apiclient.RotateMasterKeyResult
+
+	systemPruneResult = apiclient.SystemPruneResult
 
 	oauthProviderSettingsResource      = apiclient.OAuthProviderSettingsResource
 	updateOAuthProviderSettingsRequest = apiclient.UpdateOAuthProviderSettingsRequest

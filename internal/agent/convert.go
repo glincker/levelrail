@@ -9,6 +9,7 @@ package agent
 // defined exactly once.
 
 import (
+	"math"
 	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -212,9 +213,49 @@ func imageInfosFromPB(is []*agentpb.ImageInfo) []docker.ImageInfo {
 	return out
 }
 
+func networkInfosToPB(ns []docker.NetworkInfo) []*agentpb.NetworkInfo {
+	if ns == nil {
+		return nil
+	}
+	out := make([]*agentpb.NetworkInfo, len(ns))
+	for i, n := range ns {
+		out[i] = &agentpb.NetworkInfo{Id: n.ID, Name: n.Name}
+	}
+	return out
+}
+
+func networkInfosFromPB(ns []*agentpb.NetworkInfo) []docker.NetworkInfo {
+	if ns == nil {
+		return nil
+	}
+	out := make([]docker.NetworkInfo, len(ns))
+	for i, n := range ns {
+		out[i] = docker.NetworkInfo{ID: n.GetId(), Name: n.GetName()}
+	}
+	return out
+}
+
 func timestampFromPB(ts *timestamppb.Timestamp) time.Time {
 	if ts == nil {
 		return time.Time{}
 	}
 	return ts.AsTime()
+}
+
+func ttySizeFromPB(s *agentpb.ExecTTYSize) docker.TTYSize {
+	return docker.TTYSize{Rows: clampTTYDimension(s.GetRows()), Cols: clampTTYDimension(s.GetCols())}
+}
+
+func ttySizeToPB(s docker.TTYSize) *agentpb.ExecTTYSize {
+	return &agentpb.ExecTTYSize{Rows: uint32(s.Rows), Cols: uint32(s.Cols)}
+}
+
+// clampTTYDimension narrows the wire's uint32 to the uint16 a terminal
+// dimension actually is, since no PTY has 65536 rows and a peer sending
+// one must not wrap around to a small number.
+func clampTTYDimension(v uint32) uint16 {
+	if v > math.MaxUint16 {
+		return math.MaxUint16
+	}
+	return uint16(v)
 }

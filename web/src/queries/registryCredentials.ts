@@ -53,6 +53,14 @@ export function useRegistryCredentials() {
   return useSuspenseQuery(registryCredentialListQueryOptions())
 }
 
+// Non-suspending variant for callers that want the credential list as a
+// supplementary signal without making an unrelated tree's whole Suspense
+// boundary wait on it, the same reasoning queries/registry.ts's
+// useRegistryStatus already uses.
+export function useRegistryCredentialsOptional() {
+  return useQuery(registryCredentialListQueryOptions())
+}
+
 // POST /api/v1/registry-credentials (handleCreateRegistryCredential).
 // 501 means the control plane was started without APP_MASTER_KEY, the
 // same server-configuration-gap case backupTargets.ts's createBackupTarget

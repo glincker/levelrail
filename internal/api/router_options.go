@@ -260,6 +260,19 @@ func WithSessionTTL(d time.Duration) Option {
 	return func(rt *Router) { rt.sessionTTL = d }
 }
 
+// WithAutoPlacement overrides whether handleCreateApp/handleCreateDatabase
+// auto-place a create request that omits node_id onto the least-loaded
+// registered node (scheduling.go's autoPlaceNode), instead of leaving it
+// on this control plane's own local node. Defaults to true (NewRouter's
+// own struct literal); cmd/levelrail/main.go reads APP_AUTO_PLACEMENT and
+// calls this with false to disable it, the same "this package never
+// reads the environment directly" convention WithSessionTTL's own doc
+// comment establishes. An explicit node_id in a create request always
+// overrides this regardless of its value, on or off.
+func WithAutoPlacement(enabled bool) Option {
+	return func(rt *Router) { rt.autoPlacementEnabled = enabled }
+}
+
 // WithTelemetryQuerier enables GET /api/v1/apps/{name}/metrics and
 // GET /api/v1/apps/{name}/logs. Without one configured,
 // both routes return 501, the same "not configured" shape

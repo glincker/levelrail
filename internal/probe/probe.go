@@ -7,12 +7,11 @@
 // weaker default (health checking disabled unless the user opts in,
 // gated entirely on Docker's own HEALTHCHECK).
 //
-// This package implements the readiness half only: waiting for a freshly
-// started container to become ready before an application controller
-// cuts traffic to it or removes the container it's replacing. Liveness
-// (continuously monitoring an already-running container and triggering a
-// restart after repeated failures) is a related but genuinely separate
-// capability, deliberately not built here.
+// Two shapes, one mechanism: WaitReady polls until a freshly started
+// container becomes ready, gating a deploy's cutover. Check runs a
+// single attempt, for the application controller's level-triggered
+// liveness check, where the reconcile loop itself is the loop and this
+// package must not add a second one.
 package probe
 
 import (
@@ -74,6 +73,22 @@ func WaitReady(ctx context.Context, client *http.Client, addr string, cfg Config
 			// try again
 		}
 	}
+}
+
+// Check runs exactly one probe attempt against http://addr+cfg.Path,
+// bounded by cfg.Timeout, and returns nil only for a 2xx response.
+// cfg.Interval is ignored: a caller wanting repetition owns the
+// repetition.
+func Check(ctx context.Context, client *http.Client, addr string, cfg Config) error {
+	timeout := cfg.Timeout
+	if timeout <= 0 {
+		timeout = defaultTimeout
+	}
+	url := "http://" + addr + cfg.Path
+	if err := attempt(ctx, client, url, timeout); err != nil {
+		return fmt.Errorf("probe: %s: %w", url, err)
+	}
+	return nil
 }
 
 func attempt(ctx context.Context, client *http.Client, url string, timeout time.Duration) error {

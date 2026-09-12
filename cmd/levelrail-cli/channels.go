@@ -24,6 +24,8 @@ func runChannels(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runChannelsList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "create":
 		return runChannelsCreate(prog, args[1:], stdout, stderr, lookupEnv)
+	case "update":
+		return runChannelsUpdate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
 		return runChannelsDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	case "test":
@@ -41,6 +43,7 @@ func channelsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s channels list [flags]                                           list connected notification channels
   %[1]s channels create --name NAME --kind KIND [flags]              connect a new notification channel
+  %[1]s channels update <id> --name NAME --kind KIND [flags]         fully replace a channel's configuration
   %[1]s channels delete <id> [flags]                                    disconnect a channel
   %[1]s channels test <id> [flags]                                       send a real test message to a connected channel
   %[1]s channels deliveries <id> [flags]                                lists a channel's recorded send history, newest first

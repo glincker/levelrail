@@ -52,15 +52,32 @@ type AppResource struct {
 	// HostPort mirrors internal/api's appResource.HostPort: nil means
 	// "let Docker assign one", a value pins the host-side port. Settable
 	// on create and update, like Port.
-	HostPort  *int              `json:"host_port,omitempty"`
-	Domains   []string          `json:"domains,omitempty"`
-	Env       map[string]string `json:"env,omitempty"`
+	HostPort *int              `json:"host_port,omitempty"`
+	Domains  []string          `json:"domains,omitempty"`
+	Env      map[string]string `json:"env,omitempty"`
+	// SecretEnv mirrors internal/api's appResource.SecretEnv: names of
+	// env vars backed by encrypted secret storage, values held only in
+	// Secrets below or set later via PUT .../secrets/{key}, never here.
+	SecretEnv []string `json:"secret_env,omitempty"`
+	// Secrets mirrors internal/api's appResource.Secrets: plaintext
+	// values to encrypt and store for SecretEnv-named vars at create
+	// time. Write-only, like SetSecretRequest's own Value: never
+	// populated on a response.
+	Secrets   map[string]string `json:"secrets,omitempty"`
 	Resources *ServiceResources `json:"resources,omitempty"`
 	Health    *ServiceHealth    `json:"health,omitempty"`
 	// Hooks mirrors internal/api's appResource.Hooks: settable on create
 	// and update, like Resources/Health above.
-	Hooks  *ServiceHooks `json:"hooks,omitempty"`
-	NodeID string        `json:"node_id,omitempty"`
+	Hooks *ServiceHooks `json:"hooks,omitempty"`
+	// NodeID mirrors internal/api's appResource.NodeID: response-only on
+	// update, but settable at create time as an explicit placement
+	// override (omitted entirely lets the server auto-place via simple
+	// spread scheduling instead, see AutoPlaced below).
+	NodeID string `json:"node_id,omitempty"`
+	// AutoPlaced mirrors internal/api's appResource.AutoPlaced:
+	// response-only, true when create left node_id unset and the server
+	// picked a non-local node for it via simple spread scheduling.
+	AutoPlaced bool `json:"auto_placed,omitempty"`
 	// ProjectID mirrors internal/api's appResource.ProjectID:
 	// response-only, set via PUT /api/v1/apps/{name}/project.
 	ProjectID string `json:"project_id,omitempty"`
@@ -327,6 +344,21 @@ type RegistryTagsResource struct {
 	Tags       []string `json:"tags"`
 }
 
+// OAuth provider names accepted by GET/PUT /api/v1/settings/oauth[/{provider}],
+// redeclared from internal/store.OAuthProvider* rather than imported, the
+// same reasoning as ServiceResources above.
+const (
+	OAuthProviderGoogle = "google"
+	OAuthProviderGitHub = "github"
+	OAuthProviderOIDC   = "oidc"
+)
+
+// Email backends accepted by EmailSettingsResource.Backend.
+const (
+	EmailBackendSMTP = "smtp"
+	EmailBackendSES  = "ses"
+)
+
 // DomainBasicAuthResource mirrors internal/api's domainBasicAuthResource
 // (internal/api/domain_basic_auth.go): GET/PUT/DELETE
 // /api/v1/apps/{name}/domains/{domain}/auth's wire shape. The password
@@ -393,6 +425,35 @@ type SetDomainWAFRequest struct {
 	WAFMode        string `json:"waf_mode,omitempty"`
 	RateLimitRPS   int    `json:"rate_limit_rps"`
 	RateLimitBurst int    `json:"rate_limit_burst"`
+}
+
+// DomainCheckResource mirrors internal/api's domainCheckResponse
+// (internal/api/domain_check.go): GET
+// /api/v1/apps/{name}/domains/{domain}/check's wire shape.
+type DomainCheckResource struct {
+	Domain        string   `json:"domain"`
+	ExpectedHost  string   `json:"expected_host,omitempty"`
+	HostInferred  bool     `json:"host_inferred,omitempty"`
+	Resolved      bool     `json:"resolved"`
+	ResolvedHosts []string `json:"resolved_hosts,omitempty"`
+	Status        string   `json:"status"`
+	ExpectedIPv4  []string `json:"expected_ipv4,omitempty"`
+	ExpectedIPv6  []string `json:"expected_ipv6,omitempty"`
+}
+
+// CloneAppRequest mirrors internal/api's cloneAppRequest
+// (internal/api/apps_clone.go): POST /api/v1/apps/{name}/clone's
+// request body.
+type CloneAppRequest struct {
+	NewName string `json:"new_name"`
+}
+
+// ImageResource mirrors internal/api's imageResource
+// (internal/api/images.go): one element of GET
+// /api/v1/apps/{name}/images's wire shape.
+type ImageResource struct {
+	Tag       string    `json:"tag"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // BackupHistoryResource mirrors internal/api's backupHistoryResource
@@ -664,14 +725,17 @@ type SessionInfoResource struct {
 }
 
 // DatabaseResource mirrors internal/api's databaseResource
-// (internal/api/databases.go). NodeID is response-only, the same
-// "shown but not settable through this endpoint" boundary AppResource's
-// own NodeID field already documents.
+// (internal/api/databases.go). NodeID is response-only on update, but
+// settable at create time as an explicit placement override, the same
+// boundary AppResource's own NodeID field documents.
 type DatabaseResource struct {
 	Name    string `json:"name"`
 	Engine  string `json:"engine"`
 	Version string `json:"version"`
 	NodeID  string `json:"node_id,omitempty"`
+	// AutoPlaced mirrors internal/api's databaseResource.AutoPlaced: see
+	// AppResource's identically-named field doc comment.
+	AutoPlaced bool `json:"auto_placed,omitempty"`
 	// ProjectID mirrors internal/api's databaseResource.ProjectID:
 	// response-only, set via PUT /api/v1/databases/{name}/project.
 	ProjectID string `json:"project_id,omitempty"`
@@ -828,6 +892,13 @@ type TestNotificationChannelRequest struct {
 	NotifyURL string `json:"notify_url"`
 }
 
+// UpdateNotificationChannelRequest is the same shape as
+// CreateNotificationChannelRequest: handleUpdateNotificationChannel
+// reuses createNotificationChannelRequest.toChannel for both, the same
+// "one request type for create and update" shape ScheduledTaskRequest
+// and FeatureFlagRequest already use for their own resources.
+type UpdateNotificationChannelRequest = CreateNotificationChannelRequest
+
 // NotificationDeliveryResource mirrors internal/api's
 // notificationDeliveryResource (internal/api/notification_channels.go).
 type NotificationDeliveryResource struct {
@@ -931,6 +1002,12 @@ type CreateAlertRuleRequest struct {
 	NotifyKind      string `json:"notify_kind,omitempty"`
 	Enabled         bool   `json:"enabled"`
 }
+
+// UpdateAlertRuleRequest is the same shape as CreateAlertRuleRequest:
+// handleUpdateAlertRule reuses ruleResource.toRule for both, the same
+// "one request type for create and update" shape ScheduledTaskRequest
+// and FeatureFlagRequest already use for their own resources.
+type UpdateAlertRuleRequest = CreateAlertRuleRequest
 
 // BackupTargetResource mirrors internal/api's backupTargetResource
 // (internal/api/backup_targets.go). No credential fields: access_key_id
@@ -1225,6 +1302,21 @@ type SystemDoctorResource struct {
 	Checks []DoctorCheckResource `json:"checks"`
 }
 
+// SystemPruneResult mirrors internal/api's systemPruneResponse
+// (internal/api/system_prune.go): everything POST /system/prune removed
+// and how much space came back, per resource kind, plus any per-stage
+// error that didn't stop the rest.
+type SystemPruneResult struct {
+	ContainersRemoved        []string `json:"containers_removed"`
+	ContainersReclaimedBytes uint64   `json:"containers_reclaimed_bytes"`
+	ImagesRemoved            []string `json:"images_removed"`
+	ImagesReclaimedBytes     uint64   `json:"images_reclaimed_bytes"`
+	VolumesRemoved           []string `json:"volumes_removed"`
+	VolumesReclaimedBytes    uint64   `json:"volumes_reclaimed_bytes"`
+	BuildCacheReclaimedBytes uint64   `json:"build_cache_reclaimed_bytes"`
+	Errors                   []string `json:"errors,omitempty"`
+}
+
 // ContainerPortResource mirrors internal/api's containerPortResource.
 type ContainerPortResource struct {
 	ContainerPort int    `json:"container_port"`
@@ -1394,6 +1486,25 @@ type AlertRuleResource struct {
 	FiringSince     *time.Time `json:"firing_since,omitempty"`
 	LastEvaluatedAt *time.Time `json:"last_evaluated_at,omitempty"`
 	LastValue       *float64   `json:"last_value,omitempty"`
+}
+
+// DeployNotifyTargetResource mirrors internal/api's deployTargetResource
+// (internal/api/deploy_notify_targets.go). NotifyURL/NotifyKind are
+// always the resolved values from the attached channel, response-only.
+type DeployNotifyTargetResource struct {
+	ID         string `json:"id,omitempty"`
+	ResourceID string `json:"resource_id,omitempty"`
+	ChannelID  string `json:"channel_id,omitempty"`
+	NotifyURL  string `json:"notify_url,omitempty"`
+	NotifyKind string `json:"notify_kind,omitempty"`
+	Enabled    bool   `json:"enabled"`
+}
+
+// CreateDeployNotifyTargetRequest mirrors internal/api's
+// createDeployTargetRequest: attach an already-connected channel by ID.
+type CreateDeployNotifyTargetRequest struct {
+	ChannelID string `json:"channel_id"`
+	Enabled   bool   `json:"enabled"`
 }
 
 // MetricPointResource mirrors internal/api's metricPoint

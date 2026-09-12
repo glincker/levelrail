@@ -181,6 +181,24 @@ func (c *Client) ListApps(ctx context.Context) ([]AppResource, error) {
 	return out, err
 }
 
+// CloneApp calls POST /api/v1/apps/{name}/clone: duplicates name's
+// desired state under newName. Domains, secret values, and node
+// placement are never copied (see internal/api/apps_clone.go's own doc
+// comment for why).
+func (c *Client) CloneApp(ctx context.Context, name, newName string) (AppResource, error) {
+	var out AppResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/clone", CloneAppRequest{NewName: newName}, &out)
+	return out, err
+}
+
+// ListAppImages calls GET /api/v1/apps/{name}/images: every
+// locally-present tag under name's current image's repo, newest first.
+func (c *Client) ListAppImages(ctx context.Context, name string) ([]ImageResource, error) {
+	var out []ImageResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/images", nil, &out)
+	return out, err
+}
+
 // TriggerBuild calls POST /api/v1/apps/{name}/builds.
 func (c *Client) TriggerBuild(ctx context.Context, name string, req BuildTriggerRequest) (BuildTriggerResponse, error) {
 	var out BuildTriggerResponse
@@ -511,6 +529,35 @@ func (c *Client) ListRegistryTags(ctx context.Context, repository string) (Regis
 	return out, err
 }
 
+// ListOAuthProviderSettings calls GET /api/v1/settings/oauth: every
+// provider's full sign-in configuration.
+func (c *Client) ListOAuthProviderSettings(ctx context.Context) ([]OAuthProviderSettingsResource, error) {
+	var out []OAuthProviderSettingsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/oauth", nil, &out)
+	return out, err
+}
+
+// UpdateOAuthProviderSettings calls PUT /api/v1/settings/oauth/{provider}.
+func (c *Client) UpdateOAuthProviderSettings(ctx context.Context, provider string, req UpdateOAuthProviderSettingsRequest) (OAuthProviderSettingsResource, error) {
+	var out OAuthProviderSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/oauth/"+PathEscape(provider), req, &out)
+	return out, err
+}
+
+// GetEmailSettings calls GET /api/v1/settings/email.
+func (c *Client) GetEmailSettings(ctx context.Context) (EmailSettingsResource, error) {
+	var out EmailSettingsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/email", nil, &out)
+	return out, err
+}
+
+// UpdateEmailSettings calls PUT /api/v1/settings/email.
+func (c *Client) UpdateEmailSettings(ctx context.Context, req EmailSettingsResource) (EmailSettingsResource, error) {
+	var out EmailSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/email", req, &out)
+	return out, err
+}
+
 // domainAuthPath builds /api/v1/apps/{name}/domains/{domain}/auth,
 // shared by all three domain basic auth methods below.
 func domainAuthPath(name, domain string) string {
@@ -642,6 +689,15 @@ func (c *Client) SetDomainWAF(ctx context.Context, name, domain string, req SetD
 func (c *Client) ClearDomainWAF(ctx context.Context, name, domain string) (DomainWAFResource, error) {
 	var out DomainWAFResource
 	err := c.do(ctx, http.MethodDelete, domainWAFPath(name, domain), nil, &out)
+	return out, err
+}
+
+// CheckDomain calls GET /api/v1/apps/{name}/domains/{domain}/check: a
+// real DNS lookup reporting whether domain currently resolves to this
+// control plane's own advertised address.
+func (c *Client) CheckDomain(ctx context.Context, name, domain string) (DomainCheckResource, error) {
+	var out DomainCheckResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/domains/"+PathEscape(domain)+"/check", nil, &out)
 	return out, err
 }
 
@@ -1127,6 +1183,15 @@ func (c *Client) ListRegistryCredentialTags(ctx context.Context, id, repository 
 func (c *Client) CreateNotificationChannel(ctx context.Context, req CreateNotificationChannelRequest) (NotificationChannelResource, error) {
 	var out NotificationChannelResource
 	err := c.do(ctx, http.MethodPost, "/api/v1/notification-channels", req, &out)
+	return out, err
+}
+
+// UpdateNotificationChannel calls PUT
+// /api/v1/notification-channels/{id}: a full replace of the channel's
+// configuration.
+func (c *Client) UpdateNotificationChannel(ctx context.Context, id string, req UpdateNotificationChannelRequest) (NotificationChannelResource, error) {
+	var out NotificationChannelResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/notification-channels/"+PathEscape(id), req, &out)
 	return out, err
 }
 
@@ -1668,6 +1733,15 @@ func (c *Client) ListContainers(ctx context.Context) ([]ContainerResource, error
 	return out, err
 }
 
+// PruneSystem calls POST /api/v1/system/prune: removes every stopped
+// container, dangling image, and unused volume or build cache the
+// reconciler's current desired state doesn't need, fleet-wide.
+func (c *Client) PruneSystem(ctx context.Context) (SystemPruneResult, error) {
+	var out SystemPruneResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/system/prune", nil, &out)
+	return out, err
+}
+
 // GetUpdates calls GET /api/v1/updates: the running control plane
 // version against GitHub's latest published release.
 func (c *Client) GetUpdates(ctx context.Context) (UpdatesResource, error) {
@@ -1700,9 +1774,39 @@ func (c *Client) CreateAlertRule(ctx context.Context, name string, req CreateAle
 	return out, err
 }
 
+// UpdateAlertRule calls PUT /api/v1/apps/{name}/alerts/{id}: a full
+// replace of the rule's configuration.
+func (c *Client) UpdateAlertRule(ctx context.Context, name, id string, req UpdateAlertRuleRequest) (AlertRuleResource, error) {
+	var out AlertRuleResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/alerts/"+PathEscape(id), req, &out)
+	return out, err
+}
+
 // DeleteAlertRule calls DELETE /api/v1/apps/{name}/alerts/{id}.
 func (c *Client) DeleteAlertRule(ctx context.Context, name, id string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/alerts/"+PathEscape(id), nil, nil)
+}
+
+// ListDeployNotifyTargets calls GET /api/v1/apps/{name}/deploy-notify-targets:
+// every deploy-outcome notification target scoped to name, including
+// disabled ones.
+func (c *Client) ListDeployNotifyTargets(ctx context.Context, name string) ([]DeployNotifyTargetResource, error) {
+	var out []DeployNotifyTargetResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/deploy-notify-targets", nil, &out)
+	return out, err
+}
+
+// CreateDeployNotifyTarget calls POST /api/v1/apps/{name}/deploy-notify-targets.
+func (c *Client) CreateDeployNotifyTarget(ctx context.Context, name string, req CreateDeployNotifyTargetRequest) (DeployNotifyTargetResource, error) {
+	var out DeployNotifyTargetResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/deploy-notify-targets", req, &out)
+	return out, err
+}
+
+// DeleteDeployNotifyTarget calls DELETE
+// /api/v1/apps/{name}/deploy-notify-targets/{id}.
+func (c *Client) DeleteDeployNotifyTarget(ctx context.Context, name, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/deploy-notify-targets/"+PathEscape(id), nil, nil)
 }
 
 // QueryAppMetrics calls GET /api/v1/apps/{name}/metrics?metric=&from=&to=&step=
@@ -1925,28 +2029,6 @@ func (c *Client) ListCertificates(ctx context.Context) ([]CertificateResource, e
 func (c *Client) GetOAuthSettings(ctx context.Context) ([]OAuthProviderSettingsResource, error) {
 	var out []OAuthProviderSettingsResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/settings/oauth", nil, &out)
-	return out, err
-}
-
-// UpdateOAuthProviderSettings calls PUT
-// /api/v1/settings/oauth/{provider}.
-func (c *Client) UpdateOAuthProviderSettings(ctx context.Context, provider string, req UpdateOAuthProviderSettingsRequest) (OAuthProviderSettingsResource, error) {
-	var out OAuthProviderSettingsResource
-	err := c.do(ctx, http.MethodPut, "/api/v1/settings/oauth/"+PathEscape(provider), req, &out)
-	return out, err
-}
-
-// GetEmailSettings calls GET /api/v1/settings/email.
-func (c *Client) GetEmailSettings(ctx context.Context) (EmailSettingsResource, error) {
-	var out EmailSettingsResource
-	err := c.do(ctx, http.MethodGet, "/api/v1/settings/email", nil, &out)
-	return out, err
-}
-
-// UpdateEmailSettings calls PUT /api/v1/settings/email.
-func (c *Client) UpdateEmailSettings(ctx context.Context, req EmailSettingsResource) (EmailSettingsResource, error) {
-	var out EmailSettingsResource
-	err := c.do(ctx, http.MethodPut, "/api/v1/settings/email", req, &out)
 	return out, err
 }
 

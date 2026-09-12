@@ -270,6 +270,87 @@ func TestRun_ChannelsCreate_MissingDestination(t *testing.T) {
 	}
 }
 
+// newChannelUpdateEchoServer mirrors newChannelCreateEchoServer for PUT
+// /api/v1/notification-channels/{id}, returning 200 OK with id preserved
+// from the URL rather than freshly minted.
+func newChannelUpdateEchoServer(t *testing.T, id string, gotBody *updateNotificationChannelRequest, gotPath *string) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if gotPath != nil {
+			*gotPath = r.URL.Path
+		}
+		if err := json.NewDecoder(r.Body).Decode(gotBody); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(notificationChannelResource{
+			ID: id, Name: gotBody.Name, Kind: gotBody.Kind, NotifyURL: gotBody.NotifyURL, Enabled: *gotBody.Enabled,
+		})
+	}))
+}
+
+func TestRun_ChannelsUpdate_NotifyURL(t *testing.T) {
+	var gotPath string
+	var gotBody updateNotificationChannelRequest
+	srv := newChannelUpdateEchoServer(t, "chn_2", &gotBody, &gotPath)
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{
+		"channels", "update", "chn_2", "--name", "Team Slack (fixed)", "--kind", "slack",
+		"--notify-url", "https://hooks.slack.com/services/real", "--api-url", srv.URL,
+	}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if gotPath != "/api/v1/notification-channels/chn_2" {
+		t.Errorf("path = %q, want /api/v1/notification-channels/chn_2", gotPath)
+	}
+	if gotBody.Kind != "slack" || gotBody.NotifyURL != "https://hooks.slack.com/services/real" {
+		t.Errorf("request body = %+v, want kind slack and the given notify_url", gotBody)
+	}
+	if gotBody.Enabled == nil || !*gotBody.Enabled {
+		t.Errorf("request Enabled = %v, want true (default)", gotBody.Enabled)
+	}
+	if !strings.Contains(stdout.String(), `channel "Team Slack (fixed)" (id chn_2, kind slack) updated`) {
+		t.Errorf("stdout = %q, want an update confirmation", stdout.String())
+	}
+}
+
+func TestRun_ChannelsUpdate_Disabled(t *testing.T) {
+	var gotBody updateNotificationChannelRequest
+	srv := newChannelUpdateEchoServer(t, "chn_2", &gotBody, nil)
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{
+		"channels", "update", "chn_2", "--name", "Paused", "--kind", "generic",
+		"--notify-url", "https://example.com", "--disabled", "--api-url", srv.URL,
+	})
+	if gotBody.Enabled == nil || *gotBody.Enabled {
+		t.Errorf("request Enabled = %v, want false: --disabled was passed", gotBody.Enabled)
+	}
+}
+
+func TestRun_ChannelsUpdate_MissingDestination(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"channels", "update", "chn_1", "--name", "x", "--kind", "pushover"}, &stdout, &stderr, envMap())
+	if got != exitValidation {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitValidation, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "--notify-url is required") {
+		t.Errorf("stderr = %q, want a missing destination error", stderr.String())
+	}
+}
+
+func TestRun_ChannelsUpdate_MissingID(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"channels", "update", "--name", "x", "--kind", "slack", "--notify-url", "https://example.com"}, &stdout, &stderr, envMap())
+	if got != exitUsage {
+		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitUsage, stderr.String())
+	}
+}
+
 // assertChannelsPathMethod runs a "channels" subcommand against a
 // no-content echo server and asserts the request method and path.
 func assertChannelsPathMethod(t *testing.T, args []string, wantMethod, wantPath string) {

@@ -13,6 +13,11 @@ import (
 // rotate-master-key. Distinct from "apps secrets" (apps.go), which
 // manages one app's own env-var secret values: this is the control
 // plane's single envelope-encryption master key, not scoped to any app.
+//
+// Deliberately has no cmd/levelrail-mcp tool: a botched or duplicate
+// rotation can leave every stored secret permanently unrecoverable, and
+// --new-key-file's whole design exists to keep key material out of
+// exactly the kind of process an MCP-driven agent runs in.
 func runSecrets(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, secretsUsage(prog))

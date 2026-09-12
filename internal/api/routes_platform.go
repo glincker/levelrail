@@ -90,6 +90,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// WithAlertRules).
 	mux.HandleFunc("POST /api/v1/apps/{name}/alerts", rt.requireAbility(AbilityWrite, rt.handleCreateAlertRule))
 	mux.HandleFunc("GET /api/v1/apps/{name}/alerts", rt.requireAbility(AbilityRead, rt.handleListAlertRules))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/alerts/{id}", rt.requireAbility(AbilityWrite, rt.handleUpdateAlertRule))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/alerts/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteAlertRule))
 
 	// Scheduled tasks: run an arbitrary command inside this app's
@@ -138,6 +139,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// AbilityWrite, same tier as deploy-notify-targets' own POST.
 	mux.HandleFunc("GET /api/v1/notification-channels", rt.requireAbility(AbilityRead, rt.handleListNotificationChannels))
 	mux.HandleFunc("POST /api/v1/notification-channels", rt.requireAbility(AbilityWrite, rt.handleCreateNotificationChannel))
+	mux.HandleFunc("PUT /api/v1/notification-channels/{id}", rt.requireAbility(AbilityWrite, rt.handleUpdateNotificationChannel))
 	mux.HandleFunc("DELETE /api/v1/notification-channels/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteNotificationChannel))
 	mux.HandleFunc("POST /api/v1/notification-channels/test", rt.requireAbility(AbilityWrite, rt.handleTestNotificationChannel))
 	mux.HandleFunc("POST /api/v1/notification-channels/{id}/test", rt.requireAbility(AbilityWrite, rt.handleTestExistingNotificationChannel))

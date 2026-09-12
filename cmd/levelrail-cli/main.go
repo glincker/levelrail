@@ -104,6 +104,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runDoctor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "containers":
 		return runContainers(prog, args[1:], stdout, stderr, lookupEnv)
+	case "system-prune":
+		return runSystemPrune(prog, args[1:], stdout, stderr, lookupEnv)
 	case "users":
 		return runUsers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "invites":
@@ -171,6 +173,7 @@ Usage:
   %[1]s audit-purge [flags]                                   delete audit log entries past the retention window now
   %[1]s doctor [flags]                                        local preflight health check: Docker, disk, ports, database
   %[1]s containers [flags]                                    every container on this node, managed by %[1]s or not
+  %[1]s system-prune [flags]                                  remove stopped containers, dangling images, and unused volumes/build cache, fleet-wide
   %[1]s users list|create|set-abilities|delete|roles [flags]   manage users and their abilities, directly or via a curated role
   %[1]s invites create|list|revoke [flags]                     invite a teammate by email, list or revoke pending invites
   %[1]s iam policies create|list|get|update|delete|attach|detach|attachments [flags]   resource-scoped Allow/Deny policies, additive on top of --abilities

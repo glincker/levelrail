@@ -6,6 +6,7 @@
 import {
   queryOptions,
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
@@ -49,6 +50,15 @@ export function appListQueryOptions() {
     queryKey: appKeys.list(),
     queryFn: fetchApps,
   })
+}
+
+// For call sites that show an app picker as an optional convenience
+// inside another flow (PromoteAppDialog's target-app select): mirrors
+// useNodeListOptional/useProjectListOptional's own doc comment exactly.
+// A failure degrades to "no apps to pick from" rather than blocking the
+// surrounding form.
+export function useAppListOptional() {
+  return useQuery({ ...appListQueryOptions(), retry: false })
 }
 
 // Fetches the full app resource for the detail route, GET
@@ -148,13 +158,19 @@ export function useUpdateApp(name: string) {
 // zero replicas count as "use the store's default"
 // (DefaultDeployStrategy/DefaultReplicas), the exact same fallthrough a
 // service saved without these fields has always had.
-// project_id is optional and, unlike node placement, sent directly in
-// this same create request: handleCreateApp's own doc comment (internal/
-// api/apps.go) explains why a brand-new app is safe to assign a project
-// to at create time in a way an ordinary PUT update is not, so there's
-// no CreateAppFields-side trailing useSetAppProject.mutate() call the
-// way CreateAppFields still needs for node placement (setAppNode is a
-// deliberately excluded-from-create mutation, project assignment isn't).
+// project_id is optional and sent directly in this same create request:
+// handleCreateApp's own doc comment (internal/api/apps.go) explains why a
+// brand-new app is safe to assign a project to at create time in a way an
+// ordinary PUT update is not.
+//
+// node_id is also optional and, unlike every other placement mutation,
+// safe to send directly at create time too (handleCreateApp's own doc
+// comment): omitted (undefined, dropped from the JSON body entirely by
+// JSON.stringify) lets the server auto-place this app via simple spread
+// scheduling when more than one node is registered; an explicit value,
+// including '' for the local node, always overrides that. See
+// CreateAppFields.tsx's own onSubmit for how it decides which of the two
+// to send.
 export interface CreateAppRequest {
   name: string
   image: string
@@ -162,6 +178,7 @@ export interface CreateAppRequest {
   strategy?: DeployStrategy
   replicas?: number
   project_id?: string
+  node_id?: string
   domains?: string[]
   health?: ServiceHealth
 }

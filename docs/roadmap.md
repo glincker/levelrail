@@ -17,7 +17,11 @@ still open. This page describes what's actually true today.
 - Docker Engine API wrapper. No shelling out to the `docker` CLI
   anywhere.
 - Application reconciler: desired state to running containers, with
-  readiness and liveness probes.
+  readiness probes gating every deploy's cutover and liveness probes
+  run on each reconcile pass afterward, restarting a container that
+  fails its configured threshold of consecutive checks (the case where
+  a process is still running but wedged) and reporting it as a
+  `LivenessFailedRestarting` condition.
 - BuildKit-based Dockerfile builds with local cache and live build-log
   streaming over SSE.
 - Railpack auto-detection for Node.js and Go.
@@ -93,12 +97,11 @@ still open. This page describes what's actually true today.
   reachable by host:port like any domain-less app. All three providers'
   webhook payloads are parsed and trigger it: GitHub's `pull_request`
   events, GitLab's Merge Request Hook, and Bitbucket's `pullrequest:*`
-  events. GitLab's and Bitbucket's own full lifecycle (open, redeploy on
-  update, teardown on close) is now proven end-to-end against a real
-  deploy (`test/e2e/preview_environments_gitlab_bitbucket_test.go`);
-  GitHub's own webhook parsing and preview logic is covered at the unit
-  level (`internal/api/preview_environments_github_test.go`) but doesn't
-  yet have a live e2e test of its own. Wired into the dashboard (a card
+  events. All three providers' full lifecycle (open, redeploy on update,
+  teardown on close, including that closing one actually stops and
+  removes the running container) is proven end-to-end against a real
+  deploy (`test/e2e/preview_environments_gitlab_bitbucket_test.go`,
+  `test/e2e/preview_environments_github_test.go`). Wired into the dashboard (a card
   alongside git source settings: toggle, active-preview list, manual
   teardown) and the CLI (`apps previews list/teardown/enable/disable`).
   A scheduled TTL sweep also tears down any preview untouched for 7
@@ -186,6 +189,12 @@ still open. This page describes what's actually true today.
 - Deploy strategies: rolling, recreate, and blue-green, plus replica
   support.
 - One-shot container `exec`, gated to root-level API tokens.
+- Interactive terminal: a real PTY shell on a running container, from
+  the dashboard (xterm.js over a WebSocket) or from
+  `levelrail-cli apps exec --interactive`. Resize crosses both legs, so
+  a terminal on a remote node behaves identically to one on the control
+  plane's own node, and closing the tab ends the shell rather than
+  leaking it. Same root-level gating as one-shot exec.
 - Explicit Stop/Start actions for apps, distinct from Delete/Restart:
   the reconciler tears down containers on stop and brings them back on
   start without touching desired state.
@@ -326,14 +335,31 @@ still open. This page describes what's actually true today.
 
 - Agent transport abstraction: in-process for single-node, real gRPC
   for multi-node, with reconnection and version negotiation.
+- Full Docker surface over the agent transport, not just container
+  lifecycle: per-app networks and container exec (including streamed
+  stdin) now work on a remote node exactly as they do locally, so
+  database backup and restore, volume archive and restore, app
+  networking, hook commands, and `apps exec` are no longer limited to
+  resources placed on the control plane's own node. Exec is streamed and
+  flow-controlled in both directions, so a slow reader throttles the
+  remote command instead of dropping bytes or buffering a whole dump,
+  and closing the stream early actually stops the remote process.
 - Node registry, join-token issuance, and node CRUD.
 - mTLS between control plane and agents via a minimal self-signed CA.
 - Manual placement: assign or move a service to a specific node.
 - WireGuard mesh with internal DNS resolving service names across
   nodes.
 - Dedicated build nodes, with registry-backed remote BuildKit cache and
-  per-node capability flags. The registry backend no longer requires an
-  external service: a built-in registry (`registry:2`, generated
+  per-node capability flags. Marking a node build-capable actually moves
+  builds there: the control plane picks a build-capable, currently
+  reachable node per build, streams the build context up over the same
+  mTLS agent transport everything else uses, runs the solve against that
+  node's own BuildKit, and streams progress and the finished image back,
+  so build logs and the resulting image land exactly where a local build
+  would have put them while the CPU work happens off the control plane.
+  A build node that goes offline mid-build fails that build with the
+  reason rather than silently falling back. The registry backend no
+  longer requires an external service: a built-in registry (`registry:2`, generated
   htpasswd-style credentials via the same envelope encryption as managed
   database passwords, TLS-fronted through the embedded Caddy ingress) can
   be enabled from Settings > Container registry, the CLI's `registry`
