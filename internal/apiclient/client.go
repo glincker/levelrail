@@ -1845,6 +1845,16 @@ func (c *Client) QueryAppMetrics(ctx context.Context, name, metric string, from,
 	return out, err
 }
 
+// ListAppResourceUsage calls GET /api/v1/apps/resource-usage
+// (internal/api/app_resource_usage.go's handleAppResourceUsage): the
+// latest CPU/memory/network reading for every app in one call, for a
+// dashboard-wide ranking rather than one QueryAppMetrics call per app.
+func (c *Client) ListAppResourceUsage(ctx context.Context) ([]AppResourceUsageResource, error) {
+	var out []AppResourceUsageResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/resource-usage", nil, &out)
+	return out, err
+}
+
 // QueryDatabaseMetrics calls GET /api/v1/databases/{name}/metrics?metric=&from=&to=&step=
 // (internal/api/database_metrics.go's handleQueryDatabaseMetrics), the
 // database-kind counterpart to QueryAppMetrics: same params, same

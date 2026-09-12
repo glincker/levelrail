@@ -95,6 +95,48 @@ func (db *DB) Query(ctx context.Context, resourceID, metric string, from, to tim
 	return out, nil
 }
 
+// LatestByMetric returns the most recent sample for every resource_id
+// that has ever recorded metric, one row per resource: the "what is
+// everything doing right now" read a dashboard-wide ranking needs
+// (e.g. "which app is using the most CPU"), where fetching each
+// resource's own time series one at a time would mean one query per
+// app instead of one query total. An empty (nil) result and a nil
+// error mean "no resource has recorded this metric yet," the same
+// convention Query's own doc comment establishes.
+func (db *DB) LatestByMetric(ctx context.Context, metric string) ([]Sample, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT resource_id, ts, value FROM metric_samples m
+		WHERE metric = ? AND ts = (
+			SELECT MAX(ts) FROM metric_samples
+			WHERE resource_id = m.resource_id AND metric = ?
+		)
+	`, metric, metric)
+	if err != nil {
+		return nil, fmt.Errorf("telemetry: latest by metric %s: %w", metric, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []Sample
+	for rows.Next() {
+		var resourceID string
+		var tsUnix int64
+		var value float64
+		if err := rows.Scan(&resourceID, &tsUnix, &value); err != nil {
+			return nil, fmt.Errorf("telemetry: scan latest-by-metric row: %w", err)
+		}
+		out = append(out, Sample{
+			ResourceID: resourceID,
+			Metric:     metric,
+			Timestamp:  time.Unix(tsUnix, 0).UTC(),
+			Value:      value,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("telemetry: iterate latest-by-metric rows: %w", err)
+	}
+	return out, nil
+}
+
 // Retain deletes every sample older than the given cutoff, returning how
 // many rows were removed. The documented default retention (15 days) is
 // a caller concern (the collector or a scheduled sweep decides the

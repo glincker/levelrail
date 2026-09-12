@@ -142,3 +142,49 @@ func TestRetain_DeletesOnlyOlderThanCutoff(t *testing.T) {
 		t.Errorf("remaining samples after Retain() = %+v, want exactly the recent one", remaining)
 	}
 }
+
+func TestLatestByMetric_OneRowPerResource(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+
+	base := time.Unix(1_700_000_000, 0).UTC()
+	err := db.WriteSamples(ctx, []Sample{
+		{ResourceID: "service:web", Metric: "cpu_percent", Timestamp: base, Value: 10},
+		{ResourceID: "service:web", Metric: "cpu_percent", Timestamp: base.Add(time.Minute), Value: 40},
+		{ResourceID: "service:worker", Metric: "cpu_percent", Timestamp: base.Add(30 * time.Second), Value: 25},
+		{ResourceID: "service:web", Metric: "memory_usage_bytes", Timestamp: base.Add(time.Minute), Value: 1024}, // different metric, must not appear in cpu_percent results
+	})
+	if err != nil {
+		t.Fatalf("WriteSamples() error = %v", err)
+	}
+
+	got, err := db.LatestByMetric(ctx, "cpu_percent")
+	if err != nil {
+		t.Fatalf("LatestByMetric() error = %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("LatestByMetric() returned %d rows, want 2 (one per resource)", len(got))
+	}
+
+	byResource := make(map[string]Sample, len(got))
+	for _, s := range got {
+		byResource[s.ResourceID] = s
+	}
+	if s := byResource["service:web"]; s.Value != 40 || !s.Timestamp.Equal(base.Add(time.Minute)) {
+		t.Errorf("service:web latest = %+v, want the newest sample (40 @ base+1m)", s)
+	}
+	if s := byResource["service:worker"]; s.Value != 25 {
+		t.Errorf("service:worker latest = %+v, want 25", s)
+	}
+}
+
+func TestLatestByMetric_NoSamples_ReturnsEmptyNotError(t *testing.T) {
+	db := newTestDB(t)
+	got, err := db.LatestByMetric(context.Background(), "cpu_percent")
+	if err != nil {
+		t.Fatalf("LatestByMetric() error = %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("LatestByMetric() = %+v, want empty", got)
+	}
+}

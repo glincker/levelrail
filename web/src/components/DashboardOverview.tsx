@@ -15,6 +15,7 @@ import { STATUS_DOT_COLOR } from '../lib/appStatus'
 import { CreateResourceWizard } from './CreateResourceWizard'
 import { OnboardingFlow } from './OnboardingFlow'
 import { AlertingQuickSetupPrompt } from './AlertingQuickSetupPrompt'
+import { TopResourceConsumers } from './TopResourceConsumers'
 import { useCompleteOnboarding } from '../queries/onboarding'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -98,6 +99,8 @@ export function DashboardOverview({
           tone="muted"
         />
       </div>
+
+      <TopResourceConsumers apps={apps} />
 
       {attention.length > 0 ? (
         <section>

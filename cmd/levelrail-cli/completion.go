@@ -44,6 +44,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"network":                 nil,
 		"logs":                    nil,
 		"metrics":                 nil,
+		"resource-usage":          nil,
 		"exec":                    nil,
 		"log-drain":               {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"scheduled-tasks":         {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "update": nil, "delete": nil, "run": nil}},

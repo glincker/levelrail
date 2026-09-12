@@ -21,6 +21,11 @@ import (
 type TelemetryQuerier interface {
 	QueryMetrics(ctx context.Context, resourceID, metric string, from, to time.Time) ([]telemetry.Sample, error)
 	QueryLogs(ctx context.Context, resourceID string, from, to time.Time, query string) ([]telemetry.LogEntry, error)
+	// LatestByMetric backs handleAppResourceUsage
+	// (app_resource_usage.go): the dashboard-wide "what is every app
+	// doing right now" ranking, one query per metric rather than one
+	// query per app.
+	LatestByMetric(ctx context.Context, metric string) ([]telemetry.Sample, error)
 }
 
 // resourceIDForApp is telemetry's stable identifier for one app's
