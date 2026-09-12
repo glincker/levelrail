@@ -61,6 +61,8 @@ func runAppsExec(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps exec", "print the full exec result (stdout, stderr, exit_code, truncated) as JSON to stdout and nothing else, instead of writing stdout/stderr directly", stderr)
 	var timeoutSeconds int
 	fs.IntVar(&timeoutSeconds, "timeout", defaultExecTimeoutSeconds, "command timeout in seconds (the server enforces a hard ceiling of its own; this can only ask for less, never more)")
+	var interactive bool
+	fs.BoolVar(&interactive, "interactive", false, "open a real interactive terminal (PTY, resize, a shell kept alive) instead of running one command and printing its output")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsExecUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -69,6 +71,9 @@ func runAppsExec(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	}
 
 	rest := fs.Args()
+	if interactive {
+		return runAppsExecInteractiveFromFlags(fs.Args(), prog, credentialFlags{Token: tokenFlag, APIURL: apiURLFlag, Profile: profileFlag}, lookupEnv, stdout, stderr)
+	}
 	if len(rest) < 2 {
 		_, _ = fmt.Fprintf(stderr, "%s: apps exec requires an app name and a command, e.g. \"%s apps exec web -- ls -la /\"\n\n", prog, prog)
 		fs.Usage()
@@ -107,13 +112,18 @@ func runAppsExec(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 func appsExecUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps exec <name> -- <command> [args...] [flags]
+  %[1]s apps exec <name> --interactive [-- <shell> [args...]]
 
 Runs command inside app <name>'s currently running container and waits
-for it to finish (not an interactive shell: no PTY, no resize, nothing
-kept alive between calls). Prints the command's real stdout/stderr and
-exits this process with the command's own real exit code, not a generic
-CLI success/failure code, so a caller can script against it directly
+for it to finish. Prints the command's real stdout/stderr and exits this
+process with the command's own real exit code, not a generic CLI
+success/failure code, so a caller can script against it directly
 ("%[1]s apps exec web -- test -f /ready.lock && echo ready").
+
+With --interactive you get a real terminal instead: a PTY, a shell kept
+alive, arrow keys and Ctrl-C working, and the remote terminal resizing
+with this one. It needs a terminal on stdin, and names no command by
+default (the server starts bash where the image has it, sh otherwise).
 
 The "--" before the command is required whenever the command itself
 takes flags (anything starting with "-"): without it, this CLI's own
@@ -121,7 +131,8 @@ flag parser will try to consume that flag as its own and reject it as
 unknown. Always safe to include, so every example here does.
 
 Flags:
-  --timeout int            command timeout in seconds, default %[5]d (the server enforces its own hard ceiling; this can only ask for less)
+  --interactive            open a real interactive terminal instead of running one command
+  --timeout int            command timeout in seconds, default %[5]d (the server enforces its own hard ceiling; this can only ask for less, and it does not apply to --interactive)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")

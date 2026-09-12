@@ -250,6 +250,12 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// other tiers rely on" boundary (see restore's own reasoning below).
 	mux.HandleFunc("POST /api/v1/apps/{name}/exec", rt.requireAbility(AbilityRoot, rt.handleExecApp))
 
+	// Interactive terminal (terminal.go): the same AbilityRoot tier as
+	// one-off exec above, since a shell can read the same secrets. A
+	// WebSocket rather than SSE, which that file's own doc comment
+	// argues for at length.
+	mux.HandleFunc("GET /api/v1/apps/{name}/terminal", rt.requireAbility(AbilityRoot, rt.handleAppTerminal))
+
 	// Real deploy-attempt history (deploy_attempts.go): a row per
 	// trigger call across all three real trigger paths, additional to
 	// (not a replacement for) the reconcile-conditions route above. See

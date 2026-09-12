@@ -15,6 +15,7 @@ import (
 	"sync"
 
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
+	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
 // sessionStream is the narrow surface mux needs from a Session gRPC
@@ -413,6 +414,12 @@ func (m *mux) sendExecInput(in *agentpb.ExecInput) error {
 func (m *mux) sendExecCancel(execID string) error {
 	return m.sendFrame(&agentpb.ControlMessage{Payload: &agentpb.ControlMessage_ExecCancel{
 		ExecCancel: &agentpb.ExecCancel{ExecId: execID},
+	}})
+}
+
+func (m *mux) sendExecResize(execID string, size docker.TTYSize) error {
+	return m.sendFrame(&agentpb.ControlMessage{Payload: &agentpb.ControlMessage_ExecResize{
+		ExecResize: &agentpb.ExecResize{ExecId: execID, Rows: uint32(size.Rows), Cols: uint32(size.Cols)},
 	}})
 }
 

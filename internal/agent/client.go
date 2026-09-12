@@ -211,6 +211,8 @@ func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runti
 			execs.Cancel(p.ExecCancel.GetExecId())
 		case *agentpb.ControlMessage_ExecCredit:
 			execs.Credit(p.ExecCredit)
+		case *agentpb.ControlMessage_ExecResize:
+			execs.Resize(p.ExecResize)
 		case *agentpb.ControlMessage_BuildInput:
 			builds.Input(p.BuildInput)
 		case *agentpb.ControlMessage_BuildCancel:

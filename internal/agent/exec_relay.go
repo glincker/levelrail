@@ -20,6 +20,10 @@ import (
 // instead of outliving the caller that asked for the command.
 var errExecCancelled = errors.New("agent: exec cancelled by the control plane")
 
+// ErrTTYUnsupported is what an ExecRequest asking for a PTY gets when
+// this agent's runtime has no interactive exec to offer.
+var ErrTTYUnsupported = errors.New("agent: this node's container runtime does not support interactive exec")
+
 // ExecRelay owns the agent side of every in-flight remote exec on one
 // Session: it runs the command against the local docker.Runtime, streams
 // its output back frame by frame under the control plane's flow-control
@@ -49,9 +53,15 @@ type agentExec struct {
 	in     chan *agentpb.ExecInput
 	credit chan uint32
 	stdin  *io.PipeWriter // nil unless the request attached stdin
+	// resizes carries the newest requested PTY size to this exec's own
+	// resize goroutine. Capacity one, and a full channel has its stale
+	// entry dropped rather than blocking: only the latest size matters,
+	// and Resize runs on the session's receive loop.
+	resizes chan docker.TTYSize
 
 	mu        sync.Mutex
 	out       io.ReadCloser
+	tty       docker.ExecSession // nil unless the request asked for a PTY
 	cancelled bool
 }
 
@@ -65,6 +75,19 @@ func (e *agentExec) attach(rc io.ReadCloser) bool {
 		return false
 	}
 	e.out = rc
+	return true
+}
+
+// attachTTY is attach for a PTY session, additionally keeping the
+// session itself so resize frames have somewhere to land.
+func (e *agentExec) attachTTY(sess docker.ExecSession) bool {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.cancelled {
+		return false
+	}
+	e.out = sess
+	e.tty = sess
 	return true
 }
 
@@ -105,13 +128,16 @@ func (r *ExecRelay) Start(ctx context.Context, execID string, req *agentpb.ExecR
 	// terminal one, and this must accept all of them without ever
 	// blocking the session's receive loop.
 	ex := &agentExec{
-		cancel: cancel,
-		in:     make(chan *agentpb.ExecInput, execWindowFrames+1),
-		credit: make(chan uint32, execWindowFrames+1),
+		cancel:  cancel,
+		in:      make(chan *agentpb.ExecInput, execWindowFrames+1),
+		credit:  make(chan uint32, execWindowFrames+1),
+		resizes: make(chan docker.TTYSize, 1),
 	}
 
 	var stdinR *io.PipeReader
-	if req.GetAttachStdin() {
+	// A PTY is inherently interactive, so it always has a stdin side
+	// whether or not the request bothered to say so.
+	if req.GetAttachStdin() || req.GetTty() {
 		stdinR, ex.stdin = io.Pipe()
 	}
 
@@ -126,15 +152,7 @@ func (r *ExecRelay) Start(ctx context.Context, execID string, req *agentpb.ExecR
 }
 
 func (r *ExecRelay) run(ctx context.Context, execID string, ex *agentExec, req *agentpb.ExecRequest, stdinR *io.PipeReader) {
-	var (
-		rc  io.ReadCloser
-		err error
-	)
-	if stdinR != nil {
-		rc, err = r.rt.ExecWithInput(ctx, req.GetContainerId(), req.GetCmd(), stdinR)
-	} else {
-		rc, err = r.rt.Exec(ctx, req.GetContainerId(), req.GetCmd())
-	}
+	rc, err := r.attachLocal(ctx, ex, req, stdinR)
 	if err != nil {
 		if discarded := r.discard(execID); discarded != nil {
 			discarded.stop()
@@ -144,8 +162,7 @@ func (r *ExecRelay) run(ctx context.Context, execID string, ex *agentExec, req *
 		}})
 		return
 	}
-	if !ex.attach(rc) {
-		_ = rc.Close()
+	if rc == nil {
 		return
 	}
 
@@ -159,6 +176,101 @@ func (r *ExecRelay) run(ctx context.Context, execID string, ex *agentExec, req *
 	// was still arriving leaves pumpStdin blocked on a pipe write nobody
 	// will ever read.
 	ex.stop()
+}
+
+// attachLocal starts the local exec and records it on ex. A nil stream
+// with a nil error means the control plane cancelled while the attach
+// was still in flight, which attachLocal has already cleaned up after.
+func (r *ExecRelay) attachLocal(ctx context.Context, ex *agentExec, req *agentpb.ExecRequest, stdinR *io.PipeReader) (io.ReadCloser, error) {
+	if req.GetTty() {
+		return r.attachTTY(ctx, ex, req, stdinR)
+	}
+
+	var (
+		rc  io.ReadCloser
+		err error
+	)
+	if stdinR != nil {
+		rc, err = r.rt.ExecWithInput(ctx, req.GetContainerId(), req.GetCmd(), stdinR)
+	} else {
+		rc, err = r.rt.Exec(ctx, req.GetContainerId(), req.GetCmd())
+	}
+	if err != nil {
+		return nil, err
+	}
+	if !ex.attach(rc) {
+		_ = rc.Close()
+		return nil, nil
+	}
+	return rc, nil
+}
+
+func (r *ExecRelay) attachTTY(ctx context.Context, ex *agentExec, req *agentpb.ExecRequest, stdinR *io.PipeReader) (io.ReadCloser, error) {
+	tty, ok := r.rt.(docker.TTYRuntime)
+	if !ok {
+		return nil, ErrTTYUnsupported
+	}
+	sess, err := tty.ExecTTY(ctx, req.GetContainerId(), docker.ExecTTYOptions{
+		Cmd:  req.GetCmd(),
+		Env:  req.GetEnv(),
+		Size: ttySizeFromPB(req.GetTtySize()),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !ex.attachTTY(sess) {
+		_ = sess.Close()
+		return nil, nil
+	}
+
+	// pumpStdin already owns the credit accounting on the stdin side, so
+	// the PTY gets fed from the same pipe every other exec uses rather
+	// than a second, parallel flow-control path.
+	if stdinR != nil {
+		go func() {
+			_, _ = io.Copy(sess, stdinR)
+		}()
+	}
+	go r.applyResizes(ctx, ex, sess)
+	return sess, nil
+}
+
+// applyResizes serializes one exec's terminal resizes onto its own
+// goroutine, since each one is a round trip to the daemon that must not
+// happen on the session's receive loop.
+func (r *ExecRelay) applyResizes(ctx context.Context, ex *agentExec, sess docker.ExecSession) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case size := <-ex.resizes:
+			// A failed resize costs a wrongly sized terminal until the
+			// next one, never the session.
+			_ = sess.Resize(ctx, size)
+		}
+	}
+}
+
+// Resize records the newest terminal size for a PTY exec. A no-op for an
+// exec that never asked for one, or that has already ended.
+func (r *ExecRelay) Resize(rz *agentpb.ExecResize) {
+	ex := r.lookup(rz.GetExecId())
+	if ex == nil {
+		return
+	}
+	size := docker.TTYSize{Rows: clampTTYDimension(rz.GetRows()), Cols: clampTTYDimension(rz.GetCols())}
+	select {
+	case ex.resizes <- size:
+	default:
+		select {
+		case <-ex.resizes:
+		default:
+		}
+		select {
+		case ex.resizes <- size:
+		default:
+		}
+	}
 }
 
 // relayOutput streams rc back as ExecOutput frames, sending at most
