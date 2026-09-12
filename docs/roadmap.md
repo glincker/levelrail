@@ -185,6 +185,12 @@ still open. This page describes what's actually true today.
 - Deploy strategies: rolling, recreate, and blue-green, plus replica
   support.
 - One-shot container `exec`, gated to root-level API tokens.
+- Interactive terminal: a real PTY shell on a running container, from
+  the dashboard (xterm.js over a WebSocket) or from
+  `levelrail-cli apps exec --interactive`. Resize crosses both legs, so
+  a terminal on a remote node behaves identically to one on the control
+  plane's own node, and closing the tab ends the shell rather than
+  leaking it. Same root-level gating as one-shot exec.
 - Explicit Stop/Start actions for apps, distinct from Delete/Restart:
   the reconciler tears down containers on stop and brings them back on
   start without touching desired state.
