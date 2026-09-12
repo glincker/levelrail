@@ -35,8 +35,8 @@ export interface NodeCapacityHintData {
 export function useNodeCapacityHint(
   nodeId: string | undefined,
 ): NodeCapacityHintData | undefined {
-  const now = Date.now()
-  const range = { from: new Date(now - RANGE_MS), to: new Date(now) }
+  const now = new Date()
+  const range = { from: new Date(now.getTime() - RANGE_MS), to: now }
 
   const node = useQuery({
     ...nodeDetailQueryOptions(nodeId ?? ''),

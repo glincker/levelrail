@@ -19,6 +19,18 @@ function fakeJsonResponse(body: unknown, status = 200): Response {
   } as unknown as Response
 }
 
+function wasCalledWith(
+  fetchMock: ReturnType<typeof vi.fn>,
+  url: string,
+  method: string,
+): boolean {
+  return fetchMock.mock.calls.some(
+    (call) =>
+      requestUrlOf(call[0] as RequestInfo | URL) === url &&
+      ((call[1] as RequestInit | undefined)?.method ?? 'GET') === method,
+  )
+}
+
 function fakeApp(overrides: Partial<AppDetail> = {}): AppDetail {
   return {
     name: 'demo-app',
@@ -115,13 +127,7 @@ describe('ResourceLimitsEditor', () => {
     await user.click(screen.getByRole('button', { name: /save resource limits/i }))
 
     await waitFor(() => {
-      expect(
-        fetchMock.mock.calls.some(
-          (call) =>
-            requestUrlOf(call[0] as RequestInfo | URL) === '/api/v1/apps/demo-app' &&
-            ((call[1] as RequestInit | undefined)?.method ?? 'GET') === 'PUT',
-        ),
-      ).toBe(true)
+      expect(wasCalledWith(fetchMock, '/api/v1/apps/demo-app', 'PUT')).toBe(true)
     })
   })
 
@@ -149,13 +155,7 @@ describe('ResourceLimitsEditor', () => {
     await user.click(screen.getByRole('button', { name: /save resource limits/i }))
 
     await waitFor(() => {
-      expect(
-        fetchMock.mock.calls.some(
-          (call) =>
-            requestUrlOf(call[0] as RequestInfo | URL) === '/api/v1/apps/demo-app' &&
-            ((call[1] as RequestInit | undefined)?.method ?? 'GET') === 'PUT',
-        ),
-      ).toBe(true)
+      expect(wasCalledWith(fetchMock, '/api/v1/apps/demo-app', 'PUT')).toBe(true)
     })
     expect(screen.queryByText(/currently has/)).not.toBeInTheDocument()
   })

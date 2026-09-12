@@ -19,6 +19,18 @@ function fakeJsonResponse(body: unknown, status = 200): Response {
   } as unknown as Response
 }
 
+function wasCalledWith(
+  fetchMock: ReturnType<typeof vi.fn>,
+  url: string,
+  method: string,
+): boolean {
+  return fetchMock.mock.calls.some(
+    (call) =>
+      requestUrlOf(call[0] as RequestInfo | URL) === url &&
+      ((call[1] as RequestInit | undefined)?.method ?? 'GET') === method,
+  )
+}
+
 function fakeDatabase(
   overrides: Partial<DatabaseResource> = {},
 ): DatabaseResource {
@@ -120,12 +132,7 @@ describe('DatabaseResourceLimitsEditor', () => {
 
     await waitFor(() => {
       expect(
-        fetchMock.mock.calls.some(
-          (call) =>
-            requestUrlOf(call[0] as RequestInfo | URL) ===
-              '/api/v1/databases/demo-db/resources' &&
-            ((call[1] as RequestInit | undefined)?.method ?? 'GET') === 'PUT',
-        ),
+        wasCalledWith(fetchMock, '/api/v1/databases/demo-db/resources', 'PUT'),
       ).toBe(true)
     })
   })
@@ -158,12 +165,7 @@ describe('DatabaseResourceLimitsEditor', () => {
 
     await waitFor(() => {
       expect(
-        fetchMock.mock.calls.some(
-          (call) =>
-            requestUrlOf(call[0] as RequestInfo | URL) ===
-              '/api/v1/databases/demo-db/resources' &&
-            ((call[1] as RequestInit | undefined)?.method ?? 'GET') === 'PUT',
-        ),
+        wasCalledWith(fetchMock, '/api/v1/databases/demo-db/resources', 'PUT'),
       ).toBe(true)
     })
     expect(screen.queryByText(/currently has/)).not.toBeInTheDocument()
