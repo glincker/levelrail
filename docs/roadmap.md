@@ -93,12 +93,11 @@ still open. This page describes what's actually true today.
   reachable by host:port like any domain-less app. All three providers'
   webhook payloads are parsed and trigger it: GitHub's `pull_request`
   events, GitLab's Merge Request Hook, and Bitbucket's `pullrequest:*`
-  events. GitLab's and Bitbucket's own full lifecycle (open, redeploy on
-  update, teardown on close) is now proven end-to-end against a real
-  deploy (`test/e2e/preview_environments_gitlab_bitbucket_test.go`);
-  GitHub's own webhook parsing and preview logic is covered at the unit
-  level (`internal/api/preview_environments_github_test.go`) but doesn't
-  yet have a live e2e test of its own. Wired into the dashboard (a card
+  events. All three providers' full lifecycle (open, redeploy on update,
+  teardown on close, including that closing one actually stops and
+  removes the running container) is proven end-to-end against a real
+  deploy (`test/e2e/preview_environments_gitlab_bitbucket_test.go`,
+  `test/e2e/preview_environments_github_test.go`). Wired into the dashboard (a card
   alongside git source settings: toggle, active-preview list, manual
   teardown) and the CLI (`apps previews list/teardown/enable/disable`).
   A scheduled TTL sweep also tears down any preview untouched for 7
